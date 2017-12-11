@@ -1,6 +1,6 @@
 #!/bin/bash
+declare -r libname="${1}"
 declare -r main_dir="${2}"
-declare -r libname="$1"
 
 # List all files on ortools/"${main_dir}"
 all_cc=( $(ls ortools/"${main_dir}"/*.cc | grep -v test.cc) )
@@ -41,7 +41,7 @@ function print_paths {
 # Output: all the files these files depend on (given by their #include,
 #         by their "import" for proto files).
 function get_dependencies {
-   grep -e "^\(#include\|import\) \"ortools/" "$@"\
+   grep -e "^\(#include\|import\) \"ortools/" "$*"\
      | cut -d '"' -f 2 | sort -u
 }
 
@@ -73,11 +73,9 @@ done
 for file in "${all_cc[@]}"
 do
   name=$(basename "${file}" .cc)
-  # Compute dependencies.
-  all_deps=( $(get_dependencies "${file}") )
-  # Print makefile command.
   echo "\$(OBJ_DIR)/${main_dir}/${name}.\$O: \\"
   echo "    \$(SRC_DIR)/ortools/${main_dir}/${name}.cc \\"
+  all_deps=( $(get_dependencies "${file}") )
   print_paths "${all_deps[@]}"
   echo -e "\t\$(CCC) \$(CFLAGS) -c \$(SRC_DIR)\$Sortools\$S${main_dir}\$S${name}.cc \$(OBJ_OUT)\$(OBJ_DIR)\$S${main_dir}\$S${name}.\$O"
   echo
@@ -87,11 +85,9 @@ done
 for file in "${all_proto[@]}"
 do
   name=$(basename "${file}" .proto)
-  # Compute inter proto dependencies.
-  all_deps=( $(get_dependencies "${file}") )
-  # Print makefile command.
   echo "\$(GEN_DIR)/ortools/${main_dir}/${name}.pb.cc: \\"
   echo -n "    \$(SRC_DIR)/ortools/${main_dir}/${name}.proto"
+  all_deps=( $(get_dependencies "${file}") )
   if [[ "${#all_deps[@]}" != 0 ]]; then
     echo " \\"
     print_paths "${all_deps[@]}"
