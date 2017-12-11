@@ -192,4 +192,3 @@ std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
 }
 
 }  // namespace absl
-

@@ -26,7 +26,7 @@
 #include "ortools/base/split.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/hybrid.h"
-#include "ortools/util/filelineiter.h"
+#include "ortools/base/filelineiter.h"
 
 DEFINE_string(
     data_file, "",

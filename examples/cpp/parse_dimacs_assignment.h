@@ -30,7 +30,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
-#include "ortools/util/filelineiter.h"
+#include "ortools/base/filelineiter.h"
 
 DECLARE_bool(assignment_maximize_cost);
 DECLARE_bool(assignment_optimize_layout);

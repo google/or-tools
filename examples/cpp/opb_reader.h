@@ -24,7 +24,7 @@
 #include "ortools/base/strtoint.h"
 #include "ortools/base/split.h"
 #include "ortools/sat/boolean_problem.pb.h"
-#include "ortools/util/filelineiter.h"
+#include "ortools/base/filelineiter.h"
 
 namespace operations_research {
 namespace sat {

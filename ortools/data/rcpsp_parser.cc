@@ -18,7 +18,7 @@
 #include "ortools/base/split.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/data/rcpsp.pb.h"
-#include "ortools/util/filelineiter.h"
+#include "ortools/base/filelineiter.h"
 
 using ::absl::delimiter::AnyOf;
 

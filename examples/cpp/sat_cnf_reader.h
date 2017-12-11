@@ -28,7 +28,7 @@
 #include "ortools/base/split.h"
 #include "ortools/base/string_view.h"
 #include "ortools/sat/boolean_problem.pb.h"
-#include "ortools/util/filelineiter.h"
+#include "ortools/base/filelineiter.h"
 
 DEFINE_bool(wcnf_use_strong_slack, true,
             "If true, when we add a slack variable to reify a soft clause, we "
