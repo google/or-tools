@@ -17,6 +17,8 @@
 #include "ortools/base/string_view.h"
 #include "ortools/base/stringprintf.h"
 
+namespace absl {
+
 void StrAppend(std::string* s, const AlphaNum& a) { s->append(a.data(), a.size()); }
 void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b) {
   s->reserve(s->size() + a.size() + b.size());
@@ -188,3 +190,6 @@ std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
   StrAppend(&out, a, b, c, d, e, f, g, h, i, j, k, l, m);
   return out;
 }
+
+}  // namespace absl
+
