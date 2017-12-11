@@ -62,6 +62,7 @@ LiteralWatchers::LiteralWatchers()
       stats_("LiteralWatchers") {}
 
 LiteralWatchers::~LiteralWatchers() {
+  STLDeleteElements(&clauses_);
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
 }
 
@@ -176,15 +177,86 @@ SatClause* LiteralWatchers::ReasonClause(int trail_index) const {
   return reasons_[trail_index];
 }
 
+bool LiteralWatchers::AddClause(const std::vector<Literal>& literals,
+                                Trail* trail) {
+  SatClause* clause = SatClause::Create(literals);
+  clauses_.push_back(clause);
+  return AttachAndPropagate(clause, trail);
+}
+
+SatClause* LiteralWatchers::AddRemovableClause(
+    const std::vector<Literal>& literals, Trail* trail) {
+  SatClause* clause = SatClause::Create(literals);
+  clauses_.push_back(clause);
+  CHECK(AttachAndPropagate(clause, trail));
+  return clause;
+}
+
+// Sets up the 2-watchers data structure. It selects two non-false literals
+// and attaches the clause to the event: one of the watched literals become
+// false. It returns false if the clause only contains literals assigned to
+// false. If only one literals is not false, it propagates it to true if it
+// is not already assigned.
 bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   ++num_watched_clauses_;
-  return clause->AttachAndEnqueuePotentialUnitPropagation(trail, this);
+
+  const int size = clause->Size();
+  Literal* literals = clause->literals();
+
+  // Select the first two literals that are not assigned to false and put them
+  // on position 0 and 1.
+  int num_literal_not_false = 0;
+  for (int i = 0; i < size; ++i) {
+    if (!trail->Assignment().LiteralIsFalse(literals[i])) {
+      std::swap(literals[i], literals[num_literal_not_false]);
+      ++num_literal_not_false;
+      if (num_literal_not_false == 2) {
+        break;
+      }
+    }
+  }
+
+  // Returns false if all the literals were false.
+  // This should only happen on an UNSAT problem, and there is no need to attach
+  // the clause in this case.
+  if (num_literal_not_false == 0) return false;
+
+  if (num_literal_not_false == 1) {
+    // To maintain the validity of the 2-watcher algorithm, we need to watch
+    // the false literal with the highest decision level.
+    int max_level = trail->Info(literals[1].Variable()).level;
+    for (int i = 2; i < size; ++i) {
+      const int level = trail->Info(literals[i].Variable()).level;
+      if (level > max_level) {
+        max_level = level;
+        std::swap(literals[1], literals[i]);
+      }
+    }
+
+    // Propagates literals[0] if it is undefined.
+    if (!trail->Assignment().LiteralIsTrue(literals[0])) {
+      reasons_[trail->Index()] = clause;
+      trail->Enqueue(literals[0], propagator_id_);
+    }
+  }
+
+  // Attach the watchers.
+  AttachOnFalse(literals[0], literals[1], clause);
+  AttachOnFalse(literals[1], literals[0], clause);
+  return true;
 }
 
 void LiteralWatchers::LazyDetach(SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
   --num_watched_clauses_;
+
+  const size_t size = clause->Size();
+  if (drat_writer_ != nullptr && size > 2) {
+    drat_writer_->DeleteClause({clause->begin(), size});
+  }
+
+  clauses_info_.erase(clause);
   clause->LazyDetach();
   is_clean_ = false;
   needs_cleaning_.Set(clause->FirstLiteral().Index());
@@ -200,6 +272,15 @@ void LiteralWatchers::CleanUpWatchers() {
   }
   needs_cleaning_.NotifyAllClear();
   is_clean_ = true;
+}
+
+void LiteralWatchers::DeleteDetachedClauses() {
+  DCHECK(is_clean_);
+  std::vector<SatClause*>::iterator iter =
+      std::stable_partition(clauses_.begin(), clauses_.end(),
+                            [](SatClause* a) { return a->IsAttached(); });
+  STLDeleteContainerPointers(iter, clauses_.end());
+  clauses_.erase(iter, clauses_.end());
 }
 
 // ----- BinaryImplicationGraph -----
@@ -568,51 +649,6 @@ bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
   }
   size_ = j;
   return false;
-}
-
-bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
-    Trail* trail, LiteralWatchers* demons) {
-  // Select the first two literals that are not assigned to false and put them
-  // on position 0 and 1.
-  int num_literal_not_false = 0;
-  for (int i = 0; i < size_; ++i) {
-    if (!trail->Assignment().LiteralIsFalse(literals_[i])) {
-      std::swap(literals_[i], literals_[num_literal_not_false]);
-      ++num_literal_not_false;
-      if (num_literal_not_false == 2) {
-        break;
-      }
-    }
-  }
-
-  // Returns false if all the literals were false.
-  // This should only happen on an UNSAT problem, and there is no need to attach
-  // the clause in this case.
-  if (num_literal_not_false == 0) return false;
-
-  if (num_literal_not_false == 1) {
-    // To maintain the validity of the 2-watcher algorithm, we need to watch
-    // the false literal with the highest decision level.
-    int max_level = trail->Info(literals_[1].Variable()).level;
-    for (int i = 2; i < size_; ++i) {
-      const int level = trail->Info(literals_[i].Variable()).level;
-      if (level > max_level) {
-        max_level = level;
-        std::swap(literals_[1], literals_[i]);
-      }
-    }
-
-    // Propagates literals_[0] if it is undefined.
-    if (!trail->Assignment().LiteralIsTrue(literals_[0])) {
-      demons->SetReasonClause(trail->Index(), this);
-      trail->Enqueue(literals_[0], demons->propagator_id_);
-    }
-  }
-
-  // Attach the watchers.
-  demons->AttachOnFalse(literals_[0], literals_[1], this);
-  demons->AttachOnFalse(literals_[1], literals_[0], this);
-  return true;
 }
 
 bool SatClause::IsSatisfied(const VariablesAssignment& assignment) const {

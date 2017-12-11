@@ -72,7 +72,6 @@ SatSolver::SatSolver(Model* model)
 
 SatSolver::~SatSolver() {
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
-  STLDeleteElements(&clauses_);
 }
 
 void SatSolver::SetNumVariables(int num_variables) {
@@ -124,7 +123,6 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   SCOPED_TIME_STAT(&stats_);
   *parameters_ = parameters;
 
-  clauses_propagator_.SetParameters(parameters);
   pb_constraints_.SetParameters(parameters);
 
   random_.seed(parameters.random_seed());
@@ -223,11 +221,9 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals) {
   if (parameters_->treat_binary_clauses_separately() && literals.size() == 2) {
     AddBinaryClauseInternal(literals[0], literals[1]);
   } else {
-    std::unique_ptr<SatClause> clause(SatClause::Create(literals));
-    if (!clauses_propagator_.AttachAndPropagate(clause.get(), trail_)) {
+    if (!clauses_propagator_.AddClause(literals, trail_)) {
       return SetModelUnsat();
     }
-    clauses_.push_back(clause.release());
   }
   return true;
 }
@@ -323,14 +319,6 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     const std::vector<Literal>& literals, bool is_redundant) {
   SCOPED_TIME_STAT(&stats_);
 
-  // Note that we need to output the learned clause before cleaning the clause
-  // database. This is because we already backtracked and some of the clauses
-  // that where needed to infer the conflict may not be "reasons" anymore and
-  // may be deleted.
-  if (drat_writer_ != nullptr) {
-    drat_writer_->AddClause(literals);
-  }
-
   if (literals.size() == 1) {
     // A length 1 clause fix a literal for all the search.
     // ComputeBacktrackLevel() should have returned 0.
@@ -351,23 +339,23 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   }
 
   CleanClauseDatabaseIfNeeded();
-  SatClause* clause = SatClause::Create(literals);
-  clauses_.emplace_back(clause);
 
   // Important: Even though the only literal at the last decision level has
   // been unassigned, its level was not modified, so ComputeLbd() works.
-  const int lbd = ComputeLbd(*clause);
+  const int lbd = ComputeLbd(literals);
   if (is_redundant && lbd > parameters_->clause_cleanup_lbd_bound()) {
     --num_learned_clause_before_cleanup_;
 
+    SatClause* clause =
+        clauses_propagator_.AddRemovableClause(literals, trail_);
+
     // BumpClauseActivity() must be called after clauses_info_[clause] has
     // been created or it will have no effect.
-    DCHECK(clauses_info_.find(clause) == clauses_info_.end());
-    clauses_info_[clause].lbd = lbd;
+    (*clauses_propagator_.mutable_clauses_info())[clause].lbd = lbd;
     BumpClauseActivity(clause);
+  } else {
+    CHECK(clauses_propagator_.AddClause(literals, trail_));
   }
-
-  CHECK(clauses_propagator_.AttachAndPropagate(clause, trail_));
   return lbd;
 }
 
@@ -705,6 +693,14 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   Backtrack(ComputeBacktrackLevel(learned_conflict_));
   DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
 
+  // Note that we need to output the learned clause before cleaning the clause
+  // database. This is because we already backtracked and some of the clauses
+  // that where needed to infer the conflict may not be "reasons" anymore and
+  // may be deleted.
+  if (drat_writer_ != nullptr) {
+    drat_writer_->AddClause(learned_conflict_);
+  }
+
   // Detach any subsumed clause. They will actually be deleted on the next
   // clause cleanup phase.
   bool is_redundant = true;
@@ -712,10 +708,10 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
       parameters_->subsumption_during_conflict_analysis()) {
     for (SatClause* clause : subsumed_clauses_) {
       DCHECK(ClauseSubsumption(learned_conflict_, clause));
-      clauses_propagator_.LazyDetach(clause);
-      if (!ContainsKey(clauses_info_, clause)) {
+      if (!clauses_propagator_.IsRemovable(clause)) {
         is_redundant = false;
       }
+      clauses_propagator_.LazyDetach(clause);
     }
     clauses_propagator_.CleanUpWatchers();
     counters_.num_subsumed_clauses += subsumed_clauses_.size();
@@ -902,7 +898,8 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   if (parameters_->log_search_progress()) {
     LOG(INFO) << "Initial memory usage: " << MemoryUsage();
     LOG(INFO) << "Number of variables: " << num_variables_;
-    LOG(INFO) << "Number of clauses (size > 2): " << clauses_.size();
+    LOG(INFO) << "Number of clauses (size > 2): "
+              << clauses_propagator_.num_clauses();
     LOG(INFO) << "Number of binary clauses: "
               << binary_implication_graph_.NumberOfImplications();
     LOG(INFO) << "Number of linear constraints: "
@@ -1097,15 +1094,15 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
   // that we will keep a clause forever, we don't need to create its Info. More
   // than the speed, this allows to limit as much as possible the activity
   // rescaling.
-  auto it = clauses_info_.find(clause);
-  if (it == clauses_info_.end()) return;
+  auto it = clauses_propagator_.mutable_clauses_info()->find(clause);
+  if (it == clauses_propagator_.mutable_clauses_info()->end()) return;
 
   // Check if the new clause LBD is below our threshold to keep this clause
   // indefinitely. Note that we use a +1 here because the LBD of a newly learned
   // clause decrease by 1 just after the backjump.
   const int new_lbd = ComputeLbd(*clause);
   if (new_lbd + 1 <= parameters_->clause_cleanup_lbd_bound()) {
-    clauses_info_.erase(clause);
+    clauses_propagator_.mutable_clauses_info()->erase(clause);
     return;
   }
 
@@ -1137,7 +1134,7 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
 void SatSolver::RescaleClauseActivities(double scaling_factor) {
   SCOPED_TIME_STAT(&stats_);
   clause_activity_increment_ *= scaling_factor;
-  for (auto& entry : clauses_info_) {
+  for (auto& entry : *(clauses_propagator_.mutable_clauses_info())) {
     entry.second.activity *= scaling_factor;
   }
 }
@@ -1262,11 +1259,13 @@ std::string SatSolver::RunningStatisticsString() const {
   return StringPrintf(
       "%6.2lfs, mem:%s, fails:%" GG_LL_FORMAT
       "d, "
-      "depth:%d, clauses:%lu, tmp:%lu, bin:%llu, restarts:%d, vars:%d",
+      "depth:%d, clauses:%lld, tmp:%lld, bin:%llu, restarts:%d, vars:%d",
       time_in_s, MemoryUsage().c_str(), counters_.num_failures,
-      CurrentDecisionLevel(), clauses_.size() - clauses_info_.size(),
-      clauses_info_.size(), binary_implication_graph_.NumberOfImplications(),
-      restart_->NumRestarts(),
+      CurrentDecisionLevel(),
+      clauses_propagator_.num_clauses() -
+          clauses_propagator_.num_removable_clauses(),
+      clauses_propagator_.num_removable_clauses(),
+      binary_implication_graph_.NumberOfImplications(), restart_->NumRestarts(),
       num_variables_.value() - num_processed_fixed_variables_);
 }
 
@@ -1277,36 +1276,36 @@ void SatSolver::ProcessNewlyFixedVariables() {
   int num_binary = 0;
 
   // We remove the clauses that are always true and the fixed literals from the
-  // others.
-  for (SatClause* clause : clauses_) {
-    if (clause->IsAttached()) {
-      const size_t old_size = clause->Size();
-      if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_->Assignment())) {
-        // The clause is always true, detach it.
-        clauses_propagator_.LazyDetach(clause);
-        ++num_detached_clauses;
-      } else if (clause->Size() != old_size) {
-        if (clause->Size() == 2 &&
-            parameters_->treat_binary_clauses_separately()) {
-          // This clause is now a binary clause, treat it separately. Note that
-          // it is safe to do that because this clause can't be used as a reason
-          // since we are at level zero and the clause is not satisfied.
-          AddBinaryClauseInternal(clause->FirstLiteral(),
-                                  clause->SecondLiteral());
-          clauses_propagator_.LazyDetach(clause);
-          ++num_binary;
-        }
-      }
+  // others. Note that none of the clause should be all false because we should
+  // have detected a conflict before this is called.
+  for (SatClause* clause : clauses_propagator_.AllClausesInCreationOrder()) {
+    if (!clause->IsAttached()) continue;
 
-      const size_t new_size = clause->Size();
-      if (new_size != old_size && drat_writer_ != nullptr) {
-        if (new_size > 0) {
-          drat_writer_->AddClause({clause->begin(), new_size});
-        }
-        drat_writer_->DeleteClause(
-            {clause->begin(), old_size},
-            /*ignore_call=*/clauses_info_.find(clause) == clauses_info_.end());
+    const size_t old_size = clause->Size();
+    if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_->Assignment())) {
+      // The clause is always true, detach it.
+      clauses_propagator_.LazyDetach(clause);
+      ++num_detached_clauses;
+      continue;
+    } else if (clause->Size() != old_size) {
+      if (clause->Size() == 2 &&
+          parameters_->treat_binary_clauses_separately()) {
+        // This clause is now a binary clause, treat it separately. Note that
+        // it is safe to do that because this clause can't be used as a reason
+        // since we are at level zero and the clause is not satisfied.
+        AddBinaryClauseInternal(clause->FirstLiteral(),
+                                clause->SecondLiteral());
+        clauses_propagator_.LazyDetach(clause);
+        ++num_binary;
+        continue;
       }
+    }
+
+    const size_t new_size = clause->Size();
+    if (new_size != old_size && drat_writer_ != nullptr) {
+      CHECK_GT(new_size, 0);
+      drat_writer_->AddClause({clause->begin(), new_size});
+      drat_writer_->DeleteClause({clause->begin(), old_size});
     }
   }
 
@@ -2158,36 +2157,16 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
   conflict->erase(conflict->begin() + index, conflict->end());
 }
 
-void SatSolver::DeleteDetachedClauses() {
-  std::vector<SatClause*>::iterator iter =
-      std::stable_partition(clauses_.begin(), clauses_.end(),
-                            [](SatClause* a) { return a->IsAttached(); });
-  for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end();
-       ++it) {
-    // We do not want to mark as deleted clause of size 2 because they are
-    // still kept in the solver inside the BinaryImplicationGraph.
-    const size_t size = (*it)->Size();
-    if (drat_writer_ != nullptr && size > 2) {
-      drat_writer_->DeleteClause(
-          {(*it)->begin(), size},
-          /*ignore_call=*/clauses_info_.find(*it) == clauses_info_.end());
-    }
-    clauses_info_.erase(*it);
-  }
-  STLDeleteContainerPointers(iter, clauses_.end());
-  clauses_.erase(iter, clauses_.end());
-}
-
 void SatSolver::CleanClauseDatabaseIfNeeded() {
   if (num_learned_clause_before_cleanup_ > 0) return;
   SCOPED_TIME_STAT(&stats_);
 
   // Creates a list of clauses that can be deleted. Note that only the clauses
-  // that appear in clauses_info_ can potentially be removed.
+  // that appear in clauses_info can potentially be removed.
   typedef std::pair<SatClause*, ClauseInfo> Entry;
   std::vector<Entry> entries;
-  for (auto& entry : clauses_info_) {
-    if (!entry.first->IsAttached()) continue;
+  auto& clauses_info = *(clauses_propagator_.mutable_clauses_info());
+  for (auto& entry : clauses_info) {
     if (ClauseIsUsedAsReason(entry.first)) continue;
     if (entry.second.protected_during_next_cleanup) {
       entry.second.protected_during_next_cleanup = false;
@@ -2195,7 +2174,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
     }
     entries.push_back(entry);
   }
-  const int num_protected_clauses = clauses_info_.size() - entries.size();
+  const int num_protected_clauses = clauses_info.size() - entries.size();
 
   if (parameters_->clause_cleanup_ordering() == SatParameters::CLAUSE_LBD) {
     // Order the clauses by decreasing LBD and then increasing activity.
@@ -2222,7 +2201,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
                                   parameters_->clause_cleanup_target());
   int num_deleted_clauses = entries.size() - num_kept_clauses;
 
-  // Tricky: Because the order of the clauses_info_ iteration is NOT
+  // Tricky: Because the order of the clauses_info iteration is NOT
   // deterministic (pointer keys), we also keep all the clauses wich have the
   // same LBD and activity as the last one so the behavior is deterministic.
   while (num_deleted_clauses > 0) {
@@ -2242,8 +2221,8 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
     clauses_propagator_.CleanUpWatchers();
 
     // TODO(user): If the need arise, we could avoid this linear scan on the
-    // full list of clauses by not keeping the clauses from clauses_info_ there.
-    DeleteDetachedClauses();
+    // full list of clauses by not keeping the clauses from clauses_info there.
+    clauses_propagator_.DeleteDetachedClauses();
   }
 
   num_learned_clause_before_cleanup_ = parameters_->clause_cleanup_period();

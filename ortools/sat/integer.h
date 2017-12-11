@@ -484,18 +484,18 @@ class IntegerTrail : public SatPropagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
-  MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
-                               absl::Span<Literal> literal_reason,
-                               absl::Span<IntegerLiteral> integer_reason);
+  MUST_USE_RESULT bool Enqueue(
+      IntegerLiteral i_lit, absl::Span<Literal> literal_reason,
+      absl::Span<IntegerLiteral> integer_reason);
 
   // Same as Enqueue(), but takes an extra argument which if smaller than
   // integer_trail_.size() is interpreted as the trail index of an old Enqueue()
   // that had the same reason as this one. Note that the given Span must still
   // be valid as they are used in case of conflict.
-  MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
-                               absl::Span<Literal> literal_reason,
-                               absl::Span<IntegerLiteral> integer_reason,
-                               int trail_index_with_same_reason);
+  MUST_USE_RESULT bool Enqueue(
+      IntegerLiteral i_lit, absl::Span<Literal> literal_reason,
+      absl::Span<IntegerLiteral> integer_reason,
+      int trail_index_with_same_reason);
 
   // Enqueues the given literal on the trail.
   // See the comment of Enqueue() for the reason format.

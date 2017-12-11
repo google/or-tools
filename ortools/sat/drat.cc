@@ -68,9 +68,7 @@ void DratWriter::AddClause(absl::Span<Literal> clause) {
   WriteClause(clause);
 }
 
-void DratWriter::DeleteClause(absl::Span<Literal> clause,
-                              bool ignore_call) {
-  if (ignore_call) return;
+void DratWriter::DeleteClause(absl::Span<Literal> clause) {
   buffer_ += "d ";
   WriteClause(clause);
 }

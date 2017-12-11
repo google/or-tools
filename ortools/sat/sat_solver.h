@@ -285,7 +285,7 @@ class SatSolver {
   //  - void AddBinaryClause(Literal a, Literal b);
   //  - void AddClause(absl::Span<Literal> clause);
   //
-  // TODO(user): also copy the learned clauses?
+  // TODO(user): also copy the removable clauses?
   template <typename Output>
   void ExtractClauses(Output* out) {
     CHECK(!IsModelUnsat());
@@ -297,16 +297,14 @@ class SatSolver {
     if (num_processed_fixed_variables_ < trail_->Index()) {
       ProcessNewlyFixedVariables();
     }
-    DeleteDetachedClauses();
+    clauses_propagator_.DeleteDetachedClauses();
 
     // Note(user): Putting the binary clauses first help because the presolver
     // currently process the clauses in order.
     binary_implication_graph_.ExtractAllBinaryClauses(out);
-    for (SatClause* clause : clauses_) {
-      // We skip redundant clauses.
-      if (!ContainsKey(clauses_info_, clause)) {
-        out->AddClause(
-            absl::Span<Literal>(clause->begin(), clause->Size()));
+    for (SatClause* clause : clauses_propagator_.AllClausesInCreationOrder()) {
+      if (!clauses_propagator_.IsRemovable(clause)) {
+        out->AddClause(clause->AsSpan());
       }
     }
   }
@@ -352,7 +350,10 @@ class SatSolver {
   // Returns true iff the loaded problem only contains clauses.
   bool ProblemIsPureSat() const { return problem_is_pure_sat_; }
 
-  void SetDratWriter(DratWriter* drat_writer) { drat_writer_ = drat_writer; }
+  void SetDratWriter(DratWriter* drat_writer) {
+    drat_writer_ = drat_writer;
+    clauses_propagator_.SetDratWriter(drat_writer);
+  }
 
   // This function is here to deal with the case where a SAT/CP model is found
   // to be trivially UNSAT while the user is constructing the model. Instead of
@@ -508,9 +509,6 @@ class SatSolver {
   // and add them to the priority queue with the correct weight.
   void Untrail(int target_trail_index);
 
-  // Deletes all the clauses that are detached.
-  void DeleteDetachedClauses();
-
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
 
@@ -622,26 +620,6 @@ class SatSolver {
   std::unique_ptr<Model> owned_model_;
 
   BooleanVariable num_variables_;
-
-  // All the clauses managed by the solver (initial and learned). This vector
-  // has ownership of the pointers. We currently do not use
-  // std::unique_ptr<SatClause> because it can't be used with some STL
-  // algorithms like std::partition.
-  //
-  // Note that the unit clauses are not kept here and if the parameter
-  // treat_binary_clauses_separately is true, the binary clause are not kept
-  // here either.
-  std::vector<SatClause*> clauses_;
-
-  // Clause information used for the clause database management. Note that only
-  // the clauses that can be removed appear here. The problem clauses and
-  // the learned one that we wants to keep forever do not appear.
-  struct ClauseInfo {
-    double activity = 0.0;
-    int32 lbd = 0;
-    bool protected_during_next_cleanup = false;
-  };
-  std::unordered_map<SatClause*, ClauseInfo> clauses_info_;
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
