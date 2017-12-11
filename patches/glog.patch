@@ -1,0 +1,12 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 87f867d..821c441 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -410,6 +410,7 @@ add_compile_options ($<$<BOOL:${HAVE_NO_UNNAMED_TYPE_TEMPLATE_ARGS}>:-Wno-unname
+ add_library (glog
+   ${GLOG_SRCS}
+ )
++add_library(glog::glog ALIAS glog)
+ 
+ set_target_properties (glog PROPERTIES POSITION_INDEPENDENT_CODE ON)
+ 

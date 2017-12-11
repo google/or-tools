@@ -6,8 +6,8 @@ include(UseSWIG)
 find_package(PythonInterp REQUIRED)
 find_package(PythonLibs REQUIRED)
 
-set_property(SOURCE linear_solver.i PROPERTY CPLUSPLUS ON)
-list(APPEND CMAKE_SWIG_FLAGS "-module;pywraplp")
+set_property(SOURCE rcpsp.i PROPERTY CPLUSPLUS ON)
+list(APPEND CMAKE_SWIG_FLAGS "-module;pywraprcpsp")
 # outdir for .py file
 set(CMAKE_SWIG_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/..)
 # outdir for .so file
@@ -22,25 +22,25 @@ foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
 endforeach()
 
 if(${CMAKE_VERSION} VERSION_GREATER 3.8.2)
-	swig_add_library(pywraplp TYPE SHARED LANGUAGE python SOURCES linear_solver.i)
+	swig_add_library(pywraprcpsp TYPE SHARED LANGUAGE python SOURCES rcpsp.i)
 else()
-	swig_add_module(pywraplp python linear_solver.i)
+	swig_add_module(pywraprcpsp python rcpsp.i)
 endif()
 
 # ${SWIG_MODULE_<name>_REAL_NAME} will resolve to _<name>.so TARGET
-target_include_directories(${SWIG_MODULE_pywraplp_REAL_NAME} PRIVATE
+target_include_directories(${SWIG_MODULE_pywraprcpsp_REAL_NAME} PRIVATE
 	${PYTHON_INCLUDE_DIRS})
-target_link_libraries(${SWIG_MODULE_pywraplp_REAL_NAME} PRIVATE
+target_link_libraries(${SWIG_MODULE_pywraprcpsp_REAL_NAME} PRIVATE
 	ortools::ortools ${PYTHON_LIBRARIES})
 if(UNIX)
 	if(NOT APPLE)
-		set_target_properties(${SWIG_MODULE_pywraplp_REAL_NAME} PROPERTIES
+		set_target_properties(${SWIG_MODULE_pywraprcpsp_REAL_NAME} PROPERTIES
 			INSTALL_RPATH "$ORIGIN/../../:$ORIGIN")
 	else()
-		set_target_properties(${SWIG_MODULE_pywraplp_REAL_NAME} PROPERTIES
+		set_target_properties(${SWIG_MODULE_pywraprcpsp_REAL_NAME} PROPERTIES
 			SUFFIX ".so"
 			INSTALL_RPATH	"@loader_path/../..:@loader_path")
-		set_property(TARGET ${SWIG_MODULE_pywraplp_REAL_NAME} APPEND PROPERTY
+		set_property(TARGET ${SWIG_MODULE_pywraprcpsp_REAL_NAME} APPEND PROPERTY
 			LINK_FLAGS "-flat_namespace -undefined suppress")
 	endif()
 endif()

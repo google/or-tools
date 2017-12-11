@@ -1,64 +1,63 @@
-FUNCTION(GET_VERSION_FROM_FILE VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
-    FILE(STRINGS "Version.txt" VERSION_DESC)
-    FOREACH(_VERSION_DESC ${VERSION_DESC})
-        IF(${_VERSION_DESC} MATCHES "OR_TOOLS_MAJOR = (.*)")
-            SET(${VERSION_MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
-        ENDIF()
+function(get_version_from_file VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+	file(STRINGS "Version.txt" VERSION_STR)
+	foreach(STR ${VERSION_STR})
+		if(${STR} MATCHES "OR_TOOLS_MAJOR = (.*)")
+			set(${VERSION_MAJOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
+		endif()
+		if(${STR} MATCHES "OR_TOOLS_MINOR = (.*)")
+			set(${VERSION_MINOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
+		endif()
+	endforeach()
+	set(${VERSION_PATCH} 999 PARENT_SCOPE)
+endfunction()
 
-        IF(${_VERSION_DESC} MATCHES "OR_TOOLS_MINOR = (.*)")
-            SET(${VERSION_MINOR} ${CMAKE_MATCH_1} PARENT_SCOPE)
-        ENDIF()
-    ENDFOREACH()
-ENDFUNCTION()
+function(get_version_from_git VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+	find_package(Git QUIET)
+	if(NOT GIT_FOUND)
+		message(STATUS "Did not find git package, get version from file...")
+		get_version_from_file(MAJOR MINOR PATCH)
+	else()
+		execute_process(COMMAND
+			${GIT_EXECUTABLE}
+			"describe" "--tags"
+			RESULT_VARIABLE _OUTPUT_VAR
+			OUTPUT_VARIABLE FULL
+			ERROR_QUIET)
+		if(NOT _OUTPUT_VAR)
+			execute_process(COMMAND
+				${GIT_EXECUTABLE}
+				"rev-list" "HEAD" "--count"
+				RESULT_VARIABLE _OUTPUT_VAR
+				OUTPUT_VARIABLE PATCH
+				ERROR_QUIET)
+			STRING(STRIP PATCH ${PATCH})
+			STRING(REGEX REPLACE "\n$" "" PATCH ${PATCH})
+			STRING(REGEX REPLACE " " "" PATCH ${PATCH})
+			STRING(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" MAJOR "${FULL}")
+			STRING(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" MINOR "${FULL}")
+		else()
+			message(STATUS "Did not find any tag")
+			get_version_from_file(MAJOR MINOR PATCH)
+		endif()
+	endif()
+	set(${VERSION_MAJOR} ${MAJOR} PARENT_SCOPE)
+	set(${VERSION_MINOR} ${MINOR} PARENT_SCOPE)
+	set(${VERSION_PATCH} ${PATCH} PARENT_SCOPE)
+endfunction()
 
-FUNCTION(GET_VERSION_FROM_GIT OUTPUT_VAR VERSION_MAJOR_ VERSION_MINOR_ VERSION_PATCH_)
-    FIND_PACKAGE(Git QUIET)
-    IF(GIT_FOUND)
-        EXECUTE_PROCESS(COMMAND
-            ${GIT_EXECUTABLE}
-            "describe" "--tags"
-            RESULT_VARIABLE _OUTPUT_VAR
-            OUTPUT_VARIABLE VERSION_FULL
-            ERROR_QUIET)
+function(set_version VERSION)
+	get_filename_component(GIT_DIR ".git" ABSOLUTE)
+	if(EXISTS ${GIT_DIR})
+		get_version_from_git(MAJOR MINOR PATCH)
+	else()
+		get_version_from_file(MAJOR MINOR PATCH)
+	endif()
+	set(${VERSION} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
+endfunction()
 
-        IF(NOT _OUTPUT_VAR)
-            EXECUTE_PROCESS(COMMAND
-                ${GIT_EXECUTABLE}
-                "log" "--oneline"
-                COMMAND
-                "wc"
-                "-l"
-                RESULT_VARIABLE _OUTPUT_VAR
-                OUTPUT_VARIABLE _VERSION_PATCH
-                ERROR_QUIET)
-            STRING(STRIP _VERSION_PATCH ${_VERSION_PATCH})
-            STRING(REGEX REPLACE "\n$" "" _VERSION_PATCH ${_VERSION_PATCH})
-            STRING(REGEX REPLACE " " "" _VERSION_PATCH ${_VERSION_PATCH})
-            STRING(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" _VERSION_MAJOR "${VERSION_FULL}")
-            STRING(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" _VERSION_MINOR "${VERSION_FULL}")
-
-            SET(${VERSION_MAJOR_} "${_VERSION_MAJOR}" PARENT_SCOPE)
-            SET(${VERSION_MINOR_} "${_VERSION_MINOR}" PARENT_SCOPE)
-            SET(${VERSION_PATCH_} "${_VERSION_PATCH}" PARENT_SCOPE)
-        ENDIF()
-    ENDIF()
-    SET(${OUTPUT_VAR} "${_OUTPUT_VAR}" PARENT_SCOPE)
-ENDFUNCTION()
-
-FUNCTION(SET_VERSION VERSION)
-    FIND_PACKAGE(Git QUIET)
-    IF(GIT_FOUND)
-        GET_VERSION_FROM_GIT(GIT_OUTPUT VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
-
-        IF(GIT_OUTPUT)
-            GET_VERSION_FROM_FILE(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
-        ENDIF()
-    ELSE()
-        GET_VERSION_FROM_FILE(VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
-    ENDIF()
-    SET(_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}")
-    IF(VERSION_PATCH)
-        SET(_VERSION "${_VERSION}.${VERSION_PATCH}")
-    ENDIF()
-    SET(${VERSION} ${_VERSION} PARENT_SCOPE)
-ENDFUNCTION()
+function(check_target my_target)
+	if(NOT TARGET ${my_target})
+		message(FATAL_ERROR " Or-Tools: compiling Or-Tools requires a ${my_target}
+		CMake target in your project, see CMake/README.md for more details")
+	endif(NOT TARGET ${my_target})
+endfunction()

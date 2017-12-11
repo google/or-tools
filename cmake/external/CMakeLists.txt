@@ -1,0 +1,191 @@
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Force dependencies to be static
+set(BUILD_SHARED_BCKP ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
+
+# Disable test rules for dependencies
+set(BUILD_TESTING_BCKP ${CMAKE_SKIP_INSTALL_RULES})
+set(BUILD_TESTING OFF)
+
+# Disable install rules for dependencies
+# TODO Keep install rules of dependencies (and adapt them if needed)
+set(SKIP_INSTALL_BCKP ${CMAKE_SKIP_INSTALL_RULES})
+set(CMAKE_SKIP_INSTALL_RULES TRUE)
+
+# Build Dependencies
+#file(READ ${PROJECT_SOURCE_DIR}/Dependencies.txt _Dependency_file)
+#foreach(DEPENDENCY Protobuf gflags glog)
+#    string(REGEX REPLACE ".*${DEPENDENCY} = ([0-9.]+).*" "\\1" ${DEPENDENCY}_VERSION ${_Dependency_file})
+#endforeach()
+
+####################
+##  SWIG (WIN32)  ##
+####################
+if(WIN32)
+	message(STATUS "Subproject: Swig...")
+	# Download and unpack swig at configure time
+	configure_file(
+		${CMAKE_CURRENT_LIST_DIR}/swig.CMakeLists.txt
+		${CMAKE_BINARY_DIR}/swig-download/CMakeLists.txt)
+	execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+		RESULT_VARIABLE result
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/swig-download )
+	if(result)
+		message(FATAL_ERROR "CMake step for swig failed: ${result}")
+	endif()
+	execute_process(COMMAND ${CMAKE_COMMAND} --build .
+		RESULT_VARIABLE result
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/swig-download )
+	if(result)
+		message(FATAL_ERROR "Build step for swig failed: ${result}")
+	endif()
+
+	set(SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/swig/swig.exe
+		CACHE INTERNAL "swig.exe location" FORCE)
+	message(STATUS "Subproject: Swig...DONE")
+endif()
+
+##############
+##  GFLAGS  ##
+##############
+message(STATUS "Subproject: Gflag...")
+# Download and unpack gflags at configure time
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/gflags.CMakeLists.txt
+	${CMAKE_BINARY_DIR}/gflags-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/gflags-download)
+if(result)
+  message(FATAL_ERROR "CMake step for gflags failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/gflags-download)
+if(result)
+  message(FATAL_ERROR "Build step for gflags failed: ${result}")
+endif()
+
+set(GFLAGS_NAMESPACE "gflags" CACHE INTERNAL "Namespace for gflags")
+add_subdirectory(
+	${CMAKE_BINARY_DIR}/gflags-src
+	${CMAKE_BINARY_DIR}/gflags-build
+	EXCLUDE_FROM_ALL)
+message(STATUS "Subproject: Gflag...DONE")
+
+############
+##  GLOG  ##
+############
+message(STATUS "Subproject: Glog...")
+# Download and unpack glog at configure time
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/glog.CMakeLists.txt
+	${CMAKE_BINARY_DIR}/glog-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/glog-download)
+if(result)
+  message(FATAL_ERROR "CMake step for glog failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/glog-download)
+if(result)
+  message(FATAL_ERROR "Build step for glog failed: ${result}")
+endif()
+
+set(gflags_NAMESPACE "gflags" CACHE INTERNAL "Namespace for gflags")
+add_subdirectory(
+	${CMAKE_BINARY_DIR}/glog-src
+	${CMAKE_BINARY_DIR}/glog-build
+	EXCLUDE_FROM_ALL)
+message(STATUS "Subproject: Glog...DONE")
+
+############
+##  ZLIB  ##
+############
+message(STATUS "Subproject: ZLIB...")
+# Download and unpack zlib at configure time
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/zlib.CMakeLists.txt
+	${CMAKE_BINARY_DIR}/zlib-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/zlib-download)
+if(result)
+  message(FATAL_ERROR "CMake step for zlib failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/zlib-download)
+if(result)
+  message(FATAL_ERROR "Build step for zlib failed: ${result}")
+endif()
+
+add_subdirectory(
+	${CMAKE_BINARY_DIR}/zlib-src
+	${CMAKE_BINARY_DIR}/zlib-build
+	EXCLUDE_FROM_ALL)
+message(STATUS "Subproject: ZLIB...DONE")
+
+################
+##  PROTOBUF  ##
+################
+message(STATUS "Subproject: Protobuf...")
+# Download and unpack protobuf at configure time
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/protobuf.CMakeLists.txt
+	${CMAKE_BINARY_DIR}/protobuf-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/protobuf-download )
+if(result)
+  message(FATAL_ERROR "CMake step for protobuf failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/protobuf-download )
+if(result)
+  message(FATAL_ERROR "Build step for protobuf failed: ${result}")
+endif()
+
+set(protobuf_BUILD_TESTS OFF CACHE INTERNAL "Disable Protobuf tests")
+add_subdirectory(
+	${CMAKE_BINARY_DIR}/protobuf-src/cmake
+	${CMAKE_BINARY_DIR}/protobuf-build
+	EXCLUDE_FROM_ALL)
+message(STATUS "Subproject: Protobuf...DONE")
+
+###################
+##  COIN-OR:CBC  ##
+###################
+message(STATUS "Subproject: COIN-OR:Cbc...")
+# Download and unpack cbc at configure time
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/cbc.CMakeLists.txt
+	${CMAKE_BINARY_DIR}/cbc-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/cbc-download)
+if(result)
+  message(FATAL_ERROR "CMake step for cbc failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/cbc-download)
+if(result)
+  message(FATAL_ERROR "Build step for cbc failed: ${result}")
+endif()
+
+add_subdirectory(
+	${CMAKE_BINARY_DIR}/cbc-src
+	${CMAKE_BINARY_DIR}/cbc-build
+	EXCLUDE_FROM_ALL)
+message(STATUS "Subproject: COIN-OR:Cbc...DONE")
+
+# Reapply previous state
+set(BUILD_SHARED_LIBS ${BUILD_SHARED_BCKP})
+set(BUILD_TESTING ${BUILD_TESTING_BCKP})
+set(CMAKE_SKIP_INSTALL_RULES ${SKIP_INSTALL_BCKP})

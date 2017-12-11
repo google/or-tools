@@ -1,79 +1,149 @@
-INCLUDE(FindPythonInterp)
+if(NOT BUILD_PYTHON)
+	return()
+endif()
 
-FILE(GLOB_RECURSE py_proto_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ortools/constraint_solver/*.proto ortools/linear_solver/*.proto)
-LIST(REMOVE_ITEM py_proto_files "ortools/constraint_solver/demon_profiler.proto")
-PROTOBUF_GENERATE_PYTHON(PROTO_PY_SRCS ${py_proto_files})
-ADD_CUSTOM_TARGET(Py${PROJECT_NAME}proto ALL DEPENDS ${PROTO_PY_SRCS})
+if(NOT TARGET ortools::ortools)
+	message(FATAL_ERROR "Python: missing ortools TARGET")
+endif()
 
-IF(BUILD_CXX)
-    ADD_DEPENDENCIES(Py${PROJECT_NAME}proto ${PROJECT_NAME})
-ENDIF()
+# Will need swig
+find_package(SWIG REQUIRED)
+include(UseSWIG)
 
-IF(${PYTHON_VERSION_STRING} VERSION_GREATER 3)
-    SET(CMAKE_SWIG_FLAGS "-py3;-DPY3")
-ENDIF()
+# Generate Protobuf py sources
+set(PROTO_PYS)
+file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
+	"ortools/constraint_solver/*.proto"
+	"ortools/linear_solver/*.proto"
+	"ortools/sat/*.proto"
+	"ortools/util/*.proto"
+	)
+list(REMOVE_ITEM proto_py_files "ortools/constraint_solver/demon_profiler.proto")
+foreach(PROTO_FILE ${proto_py_files})
+	#message(STATUS "protoc proto(py): ${PROTO_FILE}")
+	get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
+	get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
+	set(PROTO_PY ${PROJECT_BINARY_DIR}/${PROTO_DIR}/${PROTO_NAME}_pb2.py)
+	#message(STATUS "protoc py: ${PROTO_PY}")
+	add_custom_command(
+		OUTPUT ${PROTO_PY}
+		COMMAND protobuf::protoc
+		"--proto_path=${PROJECT_SOURCE_DIR}"
+		"--python_out=${PROJECT_BINARY_DIR}"
+		${PROTO_FILE}
+		DEPENDS ${PROTO_FILE} protobuf::protoc
+		COMMENT "Running C++ protocol buffer compiler on ${PROTO_FILE}"
+		VERBATIM)
+	list(APPEND PROTO_PYS ${PROTO_PY})
+endforeach()
+add_custom_target(Py${PROJECT_NAME}_proto DEPENDS ${PROTO_PYS} ortools::ortools)
 
-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+# Setup Python
+set(Python_ADDITIONAL_VERSIONS "3.6;3.5;2.7" CACHE STRING "Python to use for binding")
+find_package(PythonInterp REQUIRED)
+# Force PythonLibs to find the same version than the python interpreter.
+set(Python_ADDITIONAL_VERSIONS "${PYTHON_VERSION_STRING}")
+# PythonLibs require enable_language(CXX)
+enable_language(CXX)
+find_package(PythonLibs REQUIRED)
 
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}/ortools/)
+if(${PYTHON_VERSION_STRING} VERSION_GREATER 3)
+	set(CMAKE_SWIG_FLAGS "-py3;-DPY3")
+endif()
 
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}/ortools/constraint_solver/)
+# CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
+#get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
+set(FLAGS -DUSE_BOP -DUSE_GLOP -DUSE_CBC -DUSE_CLP)
+list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}/ortools/linear_solver/)
+foreach(SUBPROJECT constraint_solver linear_solver sat graph algorithms data)
+	add_subdirectory(ortools/${SUBPROJECT}/python)
+endforeach()
 
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}/ortools/graph/)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/ COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/util COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/constraint_solver/ COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/linear_solver/ COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/sat/ COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/sat/python COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/graph/ COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/algorithms/ COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/__init__.py ${PROJECT_BINARY_DIR}/ortools/data/ COPYONLY)
 
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}/ortools/algorithms/)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/linear_solver/linear_solver_natural_api.py
+	${PROJECT_BINARY_DIR}/ortools/linear_solver/ COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/sat/python/cp_model.py
+	${PROJECT_BINARY_DIR}/ortools/sat/python COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/ortools/sat/python/visualization.py
+	${PROJECT_BINARY_DIR}/ortools/sat/python COPYONLY)
 
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/ortools
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}
-    FILES_MATCHING
-    PATTERN
-    "*.i")
+# To use a cmake generator expression (aka $<>), it must be processed at build time
+# i.e. inside a add_custom_command()
+# This command will depend on TARGET(s) in cmake generator expression
+add_custom_command(OUTPUT setup.py dist ${PROJECT_NAME}.egg-info
+	COMMAND ${CMAKE_COMMAND} -E echo "from setuptools import dist, find_packages, setup" > setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "class BinaryDistribution(dist.Distribution):" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  def is_pure(self):" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "    return False" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  def has_ext_modules(self):" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "    return True" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "setup(" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  name='ortools'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  license='Apache 2.0'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  version='${PROJECT_VERSION}'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  author='Google Inc'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  author_email = 'lperron@google.com'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  description = 'Google OR-Tools python libraries and modules'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  long_description = 'read(README.txt)'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  keywords = ('operations research' +" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  ', constraint programming' +" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  ', linear programming' +" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  ', flow algoritms' +" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  ', python')," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  url = 'https://developers.google.com/optimization/'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  download_url = 'https://github.com/google/or-tools/releases'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  distclass=BinaryDistribution," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  packages=find_packages()," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  package_data={" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools':['$<TARGET_FILE_NAME:ortools>'$<$<NOT:$<PLATFORM_ID:Windows>>:,'$<TARGET_SONAME_FILE:ortools>'>]," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.constraint_solver':['$<TARGET_FILE_NAME:_pywrapcp>']," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.linear_solver':['$<TARGET_FILE_NAME:_pywraplp>']," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.sat':['$<TARGET_FILE_NAME:_pywrapsat>']," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.graph':['$<TARGET_FILE_NAME:_pywrapgraph>']," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.algorithms':['$<TARGET_FILE_NAME:_pywrapknapsack_solver>']," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.data':['$<TARGET_FILE_NAME:_pywraprcpsp>']," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  }," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  include_package_data=True," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  install_requires=[" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'protobuf >= ${Protobuf_VERSION}'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'six >= 1.10'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  ]," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  classifiers=[" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Development Status :: 5 - Production/Stable'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Intended Audience :: Developers'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'License :: OSI Approved :: Apache Software License'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Operating System :: POSIX :: Linux'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Operating System :: MacOS :: MacOS X'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Operating System :: Microsoft :: Windows'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 2'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 2.7'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 3'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 3.5'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 3.6'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Topic :: Office/Business :: Scheduling'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Topic :: Scientific/Engineering'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Topic :: Scientific/Engineering :: Mathematics'," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'Topic :: Software Development :: Libraries :: Python Modules'" >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  ]," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo ")" >> setup.py
+	VERBATIM)
 
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/README
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR})
+# Main Target
+add_custom_target(bdist ALL
+	DEPENDS setup.py Py${PROJECT_NAME}_proto
+	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist
+	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel
+	)
 
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/linear_solver/linear_solver_natural_api.py
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}/ortools/linear_solver/)
-
-FILE(COPY
-    ${CMAKE_CURRENT_SOURCE_DIR}/python/MANIFEST.in
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}/)
-SET(README_FILE README)
-
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/python/setup.py.in ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
-
-SET(PY_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/timestamp)
-ADD_CUSTOM_COMMAND(
-    OUTPUT ${PY_OUTPUT}
-    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/setup.py sdist
-    COMMAND ${CMAKE_COMMAND} -E touch ${PY_OUTPUT}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py)
-ADD_CUSTOM_TARGET(py${PROJECT_NAME} ALL DEPENDS ${PY_OUTPUT})
-
-IF(BUILD_CXX)
-    ADD_DEPENDENCIES(py${PROJECT_NAME} ${PROJECT_NAME})
-ENDIF()

@@ -1,5 +1,5 @@
 file(GLOB _SRCS "*.h" "*.cc")
-set(NAME ${PROJECT_NAME}_graph)
+set(NAME ${PROJECT_NAME}_port)
 
 # Will be merge in libortools.so
 #add_library(${NAME} STATIC ${_SRCS})
@@ -39,4 +39,4 @@ target_compile_definitions(${NAME} PRIVATE
 #  ${PROJECT_NAME}::proto)
 add_dependencies(${NAME}
 	protobuf::libprotobuf gflags glog::glog Cbc::Cbc ${PROJECT_NAME}::proto)
-add_library(${PROJECT_NAME}::graph ALIAS ${NAME})
+add_library(${PROJECT_NAME}::port ALIAS ${NAME})
