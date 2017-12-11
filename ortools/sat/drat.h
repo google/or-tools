@@ -67,14 +67,8 @@ class DratWriter {
   //
   // Because of a limitation a the DRAT-trim tool, it seems the order of the
   // literals during addition and deletion should be EXACTLY the same. Because
-  // of that, we currently can't delete problem clauses since we don't keep the
-  // literal order in our memory representation. We use the ignore_call argument
-  // to simply do nothing by default, and we only set it to false in the places
-  // where we are sure the clause was outputed by an AddClause() call.
-  //
-  // TODO(user): an alternative would be to call AddClause() on all the problem
-  // clause first.
-  void DeleteClause(absl::Span<Literal> clause, bool ignore_call = true);
+  // of this we get warnings for problem clauses.
+  void DeleteClause(absl::Span<Literal> clause);
 
  private:
   void WriteClause(absl::Span<Literal> clause);

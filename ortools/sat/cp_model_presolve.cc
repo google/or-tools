@@ -326,13 +326,13 @@ struct PresolveContext {
 // =============================================================================
 
 MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct,
-                                      PresolveContext* context) {
+                                           PresolveContext* context) {
   ct->Clear();
   return true;
 }
 
 MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
-                                           PresolveContext* context) {
+                                                PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) {
     context->SetLiteralToFalse(ct->enforcement_literal(0));
   } else {
