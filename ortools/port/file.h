@@ -27,6 +27,8 @@ namespace operations_research {
 
 ::util::Status DeleteFile(absl::string_view file_name);
 
+// Returns true if successful.  Outputs temp file to filename.
+bool PortableTemporaryFile(const char* directory_prefix, std::string* filename_out);
 
 }  // namespace operations_research
 
