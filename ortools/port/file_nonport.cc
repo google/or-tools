@@ -26,6 +26,9 @@ namespace operations_research {
   return file::GetContents(file_name, output, file::Defaults());
 }
 
+bool PortableTemporaryFile(const char* directory_prefix, std::string* filename_out) {
+    return false;
+}
 
 ::util::Status DeleteFile(absl::string_view file_name) {
   return file::Delete(file_name, file::Defaults());
