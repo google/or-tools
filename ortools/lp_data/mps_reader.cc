@@ -25,7 +25,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/file.h"
-#include "ortools/util/filelineiter.h"
 #include "ortools/base/numbers.h"  // for safe_strtod
 #include "ortools/base/split.h"
 #include "ortools/base/strutil.h"

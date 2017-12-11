@@ -469,9 +469,9 @@ class RevisedSimplex {
   //   along this dual edge.
   // - target_bound: the bound at which the leaving variable should go when
   //   leaving the basis.
-  Status DualChooseLeavingVariableRow(RowIndex* leaving_row,
-                                      Fractional* cost_variation,
-                                      Fractional* target_bound) MUST_USE_RESULT;
+  Status DualChooseLeavingVariableRow(
+      RowIndex* leaving_row, Fractional* cost_variation,
+      Fractional* target_bound) MUST_USE_RESULT;
 
   // Updates the prices used by DualChooseLeavingVariableRow() after a simplex
   // iteration by using direction_. The prices are stored in

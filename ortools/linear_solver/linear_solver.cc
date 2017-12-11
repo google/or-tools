@@ -521,8 +521,6 @@ void MPSolver::SetIndexConstraints(bool enabled) {
 MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_name)
     const {
   if (!constraint_name_to_index_) {
-    LOG_EVERY_N(WARNING, 100) << "Trying to lookup constraint by name, but "
-                                 "constraints are not indexed";
     return nullptr;
   }
   const auto it = constraint_name_to_index_->find(constraint_name);
