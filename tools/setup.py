@@ -6,7 +6,7 @@ https://pypi.python.org/pypi/setuptools
 make sure you use \"""" + executable + """\" during the installation"""
 
 try:
-    from setuptools import setup, Extension
+    from setuptools import setup, Distribution
 except ImportError:
     raise ImportError(setuptools_import_error_message)
 
@@ -20,10 +20,11 @@ from os.path import dirname
 def read(fname):
     return open(pjoin(dirname(__file__), fname)).read()
 
-dummy_module = Extension('dummy_ortools_dependency',
-                         sources = ['dummy/dummy_ortools_dependency.cc'],
-DELETEUNIX               extra_link_args=['/MANIFEST'],
-                        )
+
+class BinaryDistribution(Distribution):
+  def has_ext_modules(foo):
+      return True
+
 
 setup(
     name='ORTOOLS_PYTHON_VERSION',
@@ -37,7 +38,6 @@ setup(
         'ortools.linear_solver',
         'ortools.sat',
         'ortools.sat.python',],
-    ext_modules = [dummy_module],
     install_requires = [
         'protobuf >= PROTOBUF_TAG',
         'six >= 1.10',
@@ -76,5 +76,6 @@ setup(
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Software Development :: Libraries :: Python Modules'],
+    distclass=BinaryDistribution,
     long_description = read('README.txt'),
 )
