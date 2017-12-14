@@ -91,9 +91,12 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
   // Note(user): It sounds better to inspect the list in order, this is because
   // small clauses like binary or ternary clauses will often propagate and thus
   // stay at the beginning of the list.
-  std::vector<Watcher>::iterator new_it = watchers.begin();
-  for (std::vector<Watcher>::iterator it = watchers.begin();
-       it != watchers.end(); ++it) {
+  auto new_it = watchers.begin();
+  const auto end = watchers.end();
+  while (new_it != end && assignment.LiteralIsTrue(new_it->blocking_literal)) {
+    ++new_it;
+  }
+  for (auto it = new_it; it != end; ++it) {
     // Don't even look at the clause memory if the blocking literal is true.
     if (assignment.LiteralIsTrue(it->blocking_literal)) {
       *new_it++ = *it;
@@ -102,11 +105,13 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
     ++num_inspected_clauses_;
 
     // If the other watched literal is true, just change the blocking literal.
+    // Note that we use the fact that the first two literals of the clause are
+    // the ones currently watched.
     Literal* literals = it->clause->literals();
-    const Literal other_watched_literal =
-        (literals[1] == false_literal) ? literals[0] : literals[1];
-    if (other_watched_literal != it->blocking_literal &&
-        assignment.LiteralIsTrue(other_watched_literal)) {
+    const Literal other_watched_literal(
+        LiteralIndex(literals[0].Index().value() ^ literals[1].Index().value() ^
+                     false_literal.Index().value()));
+    if (assignment.LiteralIsTrue(other_watched_literal)) {
       *new_it++ = Watcher(it->clause, other_watched_literal);
       ++num_inspected_clause_literals_;
       continue;
@@ -119,7 +124,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       while (i < size && assignment.LiteralIsFalse(literals[i])) ++i;
       num_inspected_clause_literals_ += i;
       if (i < size) {
-        // literal[i] is undefined or true, it's now the new literal to watch.
+        // literal[i] is unassigned or true, it's now the new literal to watch.
         // Note that by convention, we always keep the two watched literals at
         // the beginning of the clause.
         literals[0] = other_watched_literal;
@@ -130,7 +135,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       }
     }
 
-    // At this point other_watched_literal is either false or undefined, all
+    // At this point other_watched_literal is either false or unassigned, all
     // other literals are false.
     if (assignment.LiteralIsFalse(other_watched_literal)) {
       // Conflict: All literals of it->clause are false.
@@ -143,7 +148,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       watchers.erase(new_it, it);
       return false;
     } else {
-      // Propagation: other_watched_literal is undefined, set it to true and
+      // Propagation: other_watched_literal is unassigned, set it to true and
       // put it at position 0. Note that the position 0 is important because
       // we will need later to recover the literal that was propagated from the
       // clause using this convention.
@@ -155,7 +160,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
     }
   }
   num_inspected_clause_literals_ += watchers.size();  // The blocking ones.
-  watchers.erase(new_it, watchers.end());
+  watchers.erase(new_it, end);
   return true;
 }
 
@@ -234,7 +239,7 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
       }
     }
 
-    // Propagates literals[0] if it is undefined.
+    // Propagates literals[0] if it is unassigned.
     if (!trail->Assignment().LiteralIsTrue(literals[0])) {
       reasons_[trail->Index()] = clause;
       trail->Enqueue(literals[0], propagator_id_);

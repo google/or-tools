@@ -120,7 +120,15 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
     }
   }
 
+  std::vector<int> used_booleans;
   for (int i = 0; i < model_proto.variables_size(); ++i) {
+    bool is_bool = false;
+    const auto domain = model_proto.variables(i).domain();
+    if (domain[0] >= 0 && domain[domain.size() - 1] <= 1) {
+      is_bool = true;
+      used_booleans.push_back(i);
+    }
+
     // Take into account the presence literal of optional variables.
     if (!model_proto.variables(i).enforcement_literal().empty()) {
       references.literals.insert(
@@ -128,8 +136,7 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
     }
 
     // Make sure that an unused variable is instantiated as an IntegerVariable.
-    if (ContainsKey(references.literals, i)) continue;
-    if (ContainsKey(references.literals, NegatedRef(i))) continue;
+    if (is_bool) continue;
     if (ContainsKey(references.variables, i)) continue;
     if (ContainsKey(references.variables, NegatedRef(i))) continue;
     references.variables.insert(i);
@@ -140,10 +147,8 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
     used_integers.push_back(PositiveRef(var));
   }
 
-  std::vector<int> used_booleans;
-  for (const int lit : references.literals) {
-    used_booleans.push_back(PositiveRef(lit));
-    if (view_all_booleans_as_integers) {
+  if (view_all_booleans_as_integers) {
+    for (const int lit : references.literals) {
       used_integers.push_back(PositiveRef(lit));
     }
   }
@@ -2294,7 +2299,12 @@ CpSolverResponse SolveCpModelInternal(
     for (int i = 0; i < obj.vars_size(); ++i) {
       terms.push_back(std::make_pair(m.Integer(obj.vars(i)), obj.coeffs(i)));
     }
-    objective_var = GetOrCreateVariableGreaterOrEqualToSumOf(terms, m.model());
+    if (parameters.optimize_with_core()) {
+      objective_var = GetOrCreateVariableWithTightBound(terms, model);
+    } else {
+      objective_var =
+          GetOrCreateVariableGreaterOrEqualToSumOf(terms, m.model());
+    }
   }
 
   // Intersect the objective domain with the given one if any.

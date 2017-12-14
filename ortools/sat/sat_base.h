@@ -226,7 +226,7 @@ class Trail {
  public:
   explicit Trail(Model* model) : Trail() {}
 
-  Trail() : num_enqueues_(0) {
+  Trail() {
     current_info_.trail_index = 0;
     current_info_.level = 0;
   }
@@ -246,7 +246,6 @@ class Trail {
     current_info_.type = propagator_id;
     info_[true_literal.Variable()] = current_info_;
     assignment_.AssignFromTrueLiteral(true_literal);
-    ++num_enqueues_;
     ++current_info_.trail_index;
   }
 
@@ -328,7 +327,9 @@ class Trail {
     return l;
   }
   void Untrail(int target_trail_index) {
-    for (int i = target_trail_index; i < current_info_.trail_index; ++i) {
+    const int index = Index();
+    num_untrailed_enqueues_ += index - target_trail_index;
+    for (int i = target_trail_index; i < index; ++i) {
       assignment_.UnassignLiteral(trail_[i]);
     }
     current_info_.trail_index = target_trail_index;
@@ -358,7 +359,7 @@ class Trail {
 
   // Getters.
   int NumVariables() const { return trail_.size(); }
-  int64 NumberOfEnqueues() const { return num_enqueues_; }
+  int64 NumberOfEnqueues() const { return num_untrailed_enqueues_ + Index(); }
   int Index() const { return current_info_.trail_index; }
   const Literal operator[](int index) const { return trail_[index]; }
   const VariablesAssignment& Assignment() const { return assignment_; }
@@ -383,7 +384,7 @@ class Trail {
   }
 
  private:
-  int64 num_enqueues_;
+  int64 num_untrailed_enqueues_ = 0;
   AssignmentInfo current_info_;
   VariablesAssignment assignment_;
   std::vector<Literal> trail_;
