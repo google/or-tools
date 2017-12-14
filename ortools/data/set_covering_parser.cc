@@ -21,7 +21,7 @@
 namespace operations_research {
 namespace scp {
 
-using ::strings::delimiter::AnyOf;
+using ::absl::delimiter::AnyOf;
 
 ScpParser::ScpParser() : section_(INIT), line_(0), remaining_(0), current_(0) {}
 
