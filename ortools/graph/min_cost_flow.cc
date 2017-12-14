@@ -596,7 +596,7 @@ void GenericMinCostFlow<Graph, ArcFlowType,
     // We just saturated all the admissible arcs, so there are no arcs with a
     // positive residual capacity that are incident to the current node.
     // Moreover, during the course of the algorithm, if the residual capacity of
-    // such an arc becomes postive again, then the arc is still not admissible
+    // such an arc becomes positive again, then the arc is still not admissible
     // until we relabel the node (because the reverse arc was admissible for
     // this to happen). In conclusion, the optimization below is correct.
     first_admissible_arc_[node] = Graph::kNilArc;
