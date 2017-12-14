@@ -77,6 +77,7 @@ int main(int argc, char** argv) {
       "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
       "human-readable format";
   FLAGS_log_prefix = false;
+  FLAGS_logtostderr = true;
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);

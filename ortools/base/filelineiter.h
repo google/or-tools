@@ -30,6 +30,7 @@
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/strutil.h"
 
+
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {
  public:

@@ -16,4 +16,23 @@
 
 #include "gflags/gflags.h"
 
+namespace base {
+
+template <class T>
+inline void SetFlag(T* flag, const T& value) {
+  *flag = value;
+}
+
+template <class T, class V>
+inline void SetFlag(T* flag, const V& value) {
+  *flag = value;
+}
+
+template <class T>
+inline const T& GetFlag(T* flag) {
+  return *flag;
+}
+
+}  // namespace base
+
 #endif  // OR_TOOLS_BASE_COMMANDLINEFLAGS_H_

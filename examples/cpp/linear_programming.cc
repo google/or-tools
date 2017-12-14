@@ -120,6 +120,7 @@ void RunAllExamples() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  base::SetFlag(&FLAGS_alsologtostderr, true);
   gflags::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::RunAllExamples();
   return 0;
