@@ -593,15 +593,26 @@ $(OBJ_DIR)/util/optional_boolean.pb.$O: $(GEN_DIR)/ortools/util/optional_boolean
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/util/optional_boolean.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Soptional_boolean.pb.$O
 
 DATA_DEPS = \
-    $(SRC_DIR)/ortools/data/rcpsp_parser.h
+    $(SRC_DIR)/ortools/data/rcpsp_parser.h \
+    $(SRC_DIR)/ortools/data/set_covering_data.h \
+    $(SRC_DIR)/ortools/data/set_covering_parser.h
 
 DATA_LIB_OBJS = \
     $(OBJ_DIR)/data/rcpsp_parser.$O \
+    $(OBJ_DIR)/data/set_covering_data.$O \
+    $(OBJ_DIR)/data/set_covering_parser.$O \
     $(OBJ_DIR)/data/rcpsp.pb.$O
 
 $(SRC_DIR)/ortools/data/rcpsp_parser.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(GEN_DIR)/ortools/data/rcpsp.pb.h
+
+$(SRC_DIR)/ortools/data/set_covering_data.h: \
+    $(SRC_DIR)/ortools/base/integral_types.h
+
+$(SRC_DIR)/ortools/data/set_covering_parser.h: \
+    $(SRC_DIR)/ortools/base/integral_types.h \
+    $(SRC_DIR)/ortools/data/set_covering_data.h
 
 $(OBJ_DIR)/data/rcpsp_parser.$O: \
     $(SRC_DIR)/ortools/data/rcpsp_parser.cc \
@@ -613,6 +624,20 @@ $(OBJ_DIR)/data/rcpsp_parser.$O: \
     $(SRC_DIR)/ortools/data/rcpsp_parser.h \
     $(GEN_DIR)/ortools/data/rcpsp.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Srcpsp_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Srcpsp_parser.$O
+
+$(OBJ_DIR)/data/set_covering_data.$O: \
+    $(SRC_DIR)/ortools/data/set_covering_data.cc \
+    $(SRC_DIR)/ortools/data/set_covering_data.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sset_covering_data.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sset_covering_data.$O
+
+$(OBJ_DIR)/data/set_covering_parser.$O: \
+    $(SRC_DIR)/ortools/data/set_covering_parser.cc \
+    $(SRC_DIR)/ortools/base/filelineiter.h \
+    $(SRC_DIR)/ortools/base/numbers.h \
+    $(SRC_DIR)/ortools/base/split.h \
+    $(SRC_DIR)/ortools/base/strtoint.h \
+    $(SRC_DIR)/ortools/data/set_covering_parser.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sset_covering_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sset_covering_parser.$O
 
 $(GEN_DIR)/ortools/data/rcpsp.pb.cc: \
     $(SRC_DIR)/ortools/data/rcpsp.proto
