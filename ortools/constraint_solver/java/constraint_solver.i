@@ -1,4 +1,4 @@
-// Copyright 2010-2014 Google
+// Copyright 2010-2017 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -80,7 +80,7 @@ namespace operations_research {
 PROTECT_FROM_FAILURE(IntExpr::SetValue(int64 v), arg1->solver());
 PROTECT_FROM_FAILURE(IntExpr::SetMin(int64 v), arg1->solver());
 PROTECT_FROM_FAILURE(IntExpr::SetMax(int64 v), arg1->solver());
-PROTECT_FROM_FAILURE(IntExpr::SetRange(int64 mi, int64 ma), arg1->solver());
+PROTECT_FROM_FAILURE(IntExpr::SetRange(int64 l, int64 u), arg1->solver());
 PROTECT_FROM_FAILURE(IntVar::RemoveValue(int64 v), arg1->solver());
 PROTECT_FROM_FAILURE(IntVar::RemoveValues(const std::vector<int64>& values),
                      arg1->solver());
@@ -97,7 +97,7 @@ PROTECT_FROM_FAILURE(IntervalVar::SetEndMax(int64 m), arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetEndRange(int64 mi, int64 ma),
                      arg1->solver());
 PROTECT_FROM_FAILURE(IntervalVar::SetPerformed(bool val), arg1->solver());
-PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const ct), arg1);
+PROTECT_FROM_FAILURE(Solver::AddConstraint(Constraint* const c), arg1);
 PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 #undef PROTECT_FROM_FAILURE
 }  // namespace operations_research
