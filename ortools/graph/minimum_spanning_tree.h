@@ -144,6 +144,7 @@ std::vector<typename Graph::ArcIndex> BuildPrimMinimumSpanningTree(
 
   AdjustablePriorityQueue<Entry> pq;
   std::vector<Entry> entries;
+  std::vector<bool> touched_entry(graph.num_nodes(), false);
   for (NodeIndex node : graph.AllNodes()) {
     entries.push_back({node, std::numeric_limits<ArcValueType>::max(), -1});
   }
@@ -162,9 +163,10 @@ std::vector<typename Graph::ArcIndex> BuildPrimMinimumSpanningTree(
       if (node_active[neighbor]) {
         const ArcValueType value = arc_value(arc);
         Entry& entry = entries[neighbor];
-        if (value < entry.value) {
+        if (value < entry.value || !touched_entry[neighbor]) {
           node_neighbor[neighbor] = arc;
           entry.value = value;
+          touched_entry[neighbor] = true;
           if (pq.Contains(&entry)) {
             pq.NoteChangedPriority(&entry);
           } else {

@@ -149,7 +149,7 @@
 // We have tried as much as possible in this implementation to keep the
 // notations and namings of the papers cited above, except for 'demand' or
 // 'balance' which have been replaced by 'supply', with the according sign
-// changes to better accomodate with the API of the rest of our tools. A demand
+// changes to better accommodate with the API of the rest of our tools. A demand
 // is denoted by a negative supply.
 //
 // TODO(user): See whether the following can bring any improvements on real-life
