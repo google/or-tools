@@ -188,12 +188,12 @@ DETECTED_CSC_BINARY := $(shell where /F csc | tools\\sed.exe -n "/\".*\"/{p;q;}"
 endif
 
 # Get github revision level
-ifeq ("$(SYSTEM)","unix")
-GIT_REVISION:= $(shell git log --oneline | wc -l | tr -d ' ')
-GIT_HASH:= $(shell git log --pretty=format:'%h' -n 1)
+ifneq ("$(wildcard .git)","")
+  GIT_REVISION:= $(shell git rev-list --count HEAD)
+  GIT_HASH:= $(shell git rev-parse --short HEAD)
 else
-GIT_REVISION:= $(shell git log --oneline | find /C " ")
-GIT_HASH:= $(shell git log --pretty=format:'%h' -n 1)
+  GIT_REVISION:= 999
+  GIT_HASH:= "not_on_git"
 endif
 OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION)
 OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
