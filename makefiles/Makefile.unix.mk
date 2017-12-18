@@ -139,14 +139,10 @@ ifeq ($(PLATFORM),LINUX)
   GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   # This is needed to find libz.a
   ZLIB_LNK = -lz
-  # This is needed to find libprotobuf.a
-  ifeq ($(DISTRIBUTION_ID),Fedora)
-    PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib64/libprotobuf.a
-  else ifeq ($(DISTRIBUTION_ID),CentOS)
-    PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib64/libprotobuf.a
-  else
-    PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
-  endif
+  # libprotobuf.a goes in a different subdirectory depending on the distribution
+  # and architecture, eg. "lib/" or "lib64/" for Fedora and Centos,
+  # "lib/x86_64-linux-gnu/" for Ubuntu (all on 64 bits), etc. So we wildcard it.
+  PROTOBUF_LNK = $(wildcard $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
   # This is needed to find libglog.a
   GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
 

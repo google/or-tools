@@ -25,10 +25,12 @@ BASE_DEPS = \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/map_util.h \
     $(SRC_DIR)/ortools/base/mathutil.h \
+    $(SRC_DIR)/ortools/base/memory.h \
     $(SRC_DIR)/ortools/base/murmur.h \
     $(SRC_DIR)/ortools/base/mutex.h \
     $(SRC_DIR)/ortools/base/numbers.h \
     $(SRC_DIR)/ortools/base/port.h \
+    $(SRC_DIR)/ortools/base/protoutil.h \
     $(SRC_DIR)/ortools/base/ptr_util.h \
     $(SRC_DIR)/ortools/base/python-swig.h \
     $(SRC_DIR)/ortools/base/random.h \
@@ -145,6 +147,11 @@ $(SRC_DIR)/ortools/base/mutex.h: \
 $(SRC_DIR)/ortools/base/numbers.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/join.h
+
+$(SRC_DIR)/ortools/base/protoutil.h: \
+    $(SRC_DIR)/ortools/base/status.h \
+    $(SRC_DIR)/ortools/base/statusor.h \
+    $(SRC_DIR)/ortools/base/time_support.h
 
 $(SRC_DIR)/ortools/base/random.h: \
     $(SRC_DIR)/ortools/base/basictypes.h
