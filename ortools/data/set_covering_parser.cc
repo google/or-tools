@@ -66,6 +66,11 @@ void ScpParser::ProcessLine(const std::string& line, Format format, ScpData* dat
           section_ = COLUMN;
           break;
         }
+        case SPP_FORMAT: {
+          section_ = COLUMN;
+          data->set_is_set_partitioning(true);
+          break;
+        }
       }
       break;
     }
@@ -90,7 +95,9 @@ void ScpParser::ProcessLine(const std::string& line, Format format, ScpData* dat
           LogError(line, "Wrong state in the loader");
           return;
         }
-        case RAILROAD_FORMAT: {
+        case RAILROAD_FORMAT:
+          ABSL_FALLTHROUGH_INTENDED;
+        case SPP_FORMAT: {
           if (words.size() < 2) {
             LogError(line, "Column declaration too short");
             return;
@@ -108,7 +115,7 @@ void ScpParser::ProcessLine(const std::string& line, Format format, ScpData* dat
           }
           current_++;
           if (current_ == data->num_columns()) {
-            section_ = END;
+            section_ = format == RAILROAD_FORMAT ? END : NUM_NON_ZEROS;
           }
           break;
         }
@@ -159,6 +166,14 @@ void ScpParser::ProcessLine(const std::string& line, Format format, ScpData* dat
           section_ = NUM_COLUMNS_IN_ROW;
         }
       }
+      break;
+    }
+    case NUM_NON_ZEROS: {
+      if (words.size() != 1) {
+        LogError(line, "The header of a column should be one number");
+        return;
+      }
+      section_ = END;
       break;
     }
     case END: {
