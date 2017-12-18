@@ -11,19 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_LOGGING_H_
-#define OR_TOOLS_BASE_LOGGING_H_
+#ifndef OR_TOOLS_BASE_MEMORY_H_
+#define OR_TOOLS_BASE_MEMORY_H_
 
-#include <cassert>
+#include <utility>
 
-#if defined(_MSC_VER)
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#endif
+namespace absl {
 
-#include "glog/logging.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/macros.h"
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
 
-#define QCHECK CHECK
+}  // namespace absl
 
-#endif  // OR_TOOLS_BASE_LOGGING_H_
+#endif  // OR_TOOLS_BASE_MEMORY_H_

@@ -58,6 +58,8 @@ inline std::ostream& operator<<(std::ostream& out, const Status& status) {
   return out;
 }
 
+inline Status OkStatus() { return Status(); }
+
 }  // namespace util
 
 #define CHECK_OK(status) CHECK_EQ("OK", (status).ToString())

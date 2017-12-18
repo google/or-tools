@@ -14,4 +14,12 @@
 #ifndef OR_TOOLS_BASE_CANONICAL_ERRORS_H_
 #define OR_TOOLS_BASE_CANONICAL_ERRORS_H_
 
+namespace util {
+
+inline Status InvalidArgumentError(const std::string& message) {
+  return Status(error::INVALID_ARGUMENT, message);
+}
+
+}  // namespace util
+
 #endif  // OR_TOOLS_BASE_CANONICAL_ERRORS_H_

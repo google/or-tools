@@ -34,11 +34,31 @@ namespace absl {
 // http://en.wikipedia.org/wiki/Time_Stamp_Counter#Use.
 int64 GetCurrentTimeNanos();
 
-inline int64 Now() { return GetCurrentTimeNanos(); }
-
 inline double WallTime_Now() { return GetCurrentTimeNanos() * 1e-9; }
 
+typedef double Duration;
+typedef double Time;
+
+inline Time Now() { return WallTime_Now(); }
+
+inline Duration Seconds(double x) { return x; }
+inline Duration Milliseconds(double x) { return x * 1e-3; }
+inline double ToDoubleSeconds(Duration x) { return x; }
+inline int64 ToInt64Milliseconds(Duration x) { return x * 1e3; }
+inline Duration ZeroDuration() { return Duration(0); }
+
 }  // namespace absl
+
+// Temporary support for the legacy "base::" namespace
+namespace base {
+using absl::Duration;             // NOLINT(readability/namespace)
+using absl::Milliseconds;         // NOLINT(readability/namespace)
+using absl::Seconds;              // NOLINT(readability/namespace)
+using absl::Time;                 // NOLINT(readability/namespace)
+using absl::ToDoubleSeconds;      // NOLINT(readability/namespace)
+using absl::ToInt64Milliseconds;  // NOLINT(readability/namespace)
+using absl::ZeroDuration;         // NOLINT(readability/namespace)
+}  // namespace base
 
 inline double ToWallTime(int64 nanos) { return 1e-9 * nanos; }
 

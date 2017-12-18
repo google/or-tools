@@ -118,6 +118,7 @@ class FileLines {
  public:
   FileLines(const std::string& filename, int options) : options_(options) {
     if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) return;
+
   }
 
   explicit FileLines(const std::string& filename)

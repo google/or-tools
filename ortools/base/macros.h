@@ -43,6 +43,10 @@ const bool DEBUG_MODE = true;
   do {                       \
   } while (0)
 #endif
+// Alternate name.
+#ifndef ABSL_FALLTHROUGH_INTENDED
+#define ABSL_FALLTHROUGH_INTENDED FALLTHROUGH_INTENDED
+#endif
 
 template <typename T, size_t N>
 char(&ArraySizeHelper(T(&array)[N]))[N];
