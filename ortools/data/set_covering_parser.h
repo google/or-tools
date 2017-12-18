@@ -41,6 +41,7 @@ class ScpParser {
     COLUMN,
     NUM_COLUMNS_IN_ROW,
     ROW,
+    NUM_NON_ZEROS,
     END,
     ERROR,
   };
@@ -74,7 +75,18 @@ class ScpParser {
     // each column is 1.
     //
     // The Steiner triple covering problems follow this format.
-    TRIPLET_FORMAT
+    TRIPLET_FORMAT,
+    // The spp format is:
+    //   number of rows (m), number of columns (n)
+    //
+    //   for each column j (j=1,...,n): the cost of the column, the number
+    //   of rows that it covers followed by a list of the rows that it
+    //   covers.
+    //
+    //   number of non_zeros
+    //
+    // The set partitioning problems follow this format.
+    SPP_FORMAT
   };
 
   ScpParser();

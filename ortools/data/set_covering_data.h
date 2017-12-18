@@ -23,6 +23,7 @@ namespace scp {
 
 class ScpData {
  public:
+  ScpData() : is_set_partitioning_(false) {}
   // Getters.
   int num_rows() const { return columns_per_row_.size(); }
   int num_columns() const { return rows_per_column_.size(); }
@@ -36,6 +37,9 @@ class ScpData {
   }
   const std::vector<int>& column_costs() const { return column_costs_; }
 
+  bool is_set_partitioning() const { return is_set_partitioning_; }
+  void set_is_set_partitioning(bool v) { is_set_partitioning_ = v; }
+
   // Builders.
   // Calling SetProblemSize() will clear all previous data.
   void SetProblemSize(int num_rows, int num_columns);
@@ -46,6 +50,7 @@ class ScpData {
   std::vector<std::vector<int>> columns_per_row_;
   std::vector<std::vector<int>> rows_per_column_;
   std::vector<int> column_costs_;
+  bool is_set_partitioning_;
 };
 
 }  // namespace scp
