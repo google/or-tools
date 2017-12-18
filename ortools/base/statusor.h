@@ -18,13 +18,11 @@
 
 namespace util {
 
-// T should be a pointer type. Eg. StatusOr<Graph*>.
+// WARNING: This makes a copy of its payload. Ugly.
 template <class T>
 struct StatusOr {
   // Non-explicit constructors, by design.
-  StatusOr(T value) : value_(value) {  // NOLINT
-    CHECK(value != nullptr);  // This enforces that T is a pointer type.
-  }
+  StatusOr(T value) : value_(value) {}                // NOLINT
   StatusOr(const Status& status) : status_(status) {  // NOLINT
     CHECK(!status_.ok()) << status.ToString();
   }
@@ -33,15 +31,13 @@ struct StatusOr {
   StatusOr(const StatusOr& other)
       : value_(other.value_), status_(other.status_) {}
 
-  bool ok() const { return value_ != nullptr; }
+  bool ok() const { return status_.ok(); }
   const T& ValueOrDie() const {
     CHECK(ok());
     return value_;
   }
 
-  Status status() const {
-    return value_ != nullptr ? /*OK*/ Status() : status_;
-  }
+  Status status() const { return status_; }
 
  private:
   T value_;
