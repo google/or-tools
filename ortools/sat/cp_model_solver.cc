@@ -123,7 +123,7 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
   std::vector<int> used_booleans;
   for (int i = 0; i < model_proto.variables_size(); ++i) {
     bool is_bool = false;
-    const auto domain = model_proto.variables(i).domain();
+    const auto& domain = model_proto.variables(i).domain();
     if (domain.Get(0) >= 0 && domain.Get(domain.size() - 1) <= 1) {
       is_bool = true;
       used_booleans.push_back(i);
