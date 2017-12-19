@@ -90,7 +90,7 @@ do
   all_deps=( $(get_dependencies "${file}") )
   if [[ "${#all_deps[@]}" != 0 ]]; then
     echo " \\"
-    print_paths "${all_deps[@]}"
+    print_paths "${all_deps[@]//\.proto/.pb.cc}"
   else
     echo
   fi

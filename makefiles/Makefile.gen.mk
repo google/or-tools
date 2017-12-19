@@ -3515,7 +3515,7 @@ $(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O: $(GEN_DIR)/ortools/constraint
 
 $(GEN_DIR)/ortools/constraint_solver/model.pb.cc: \
     $(SRC_DIR)/ortools/constraint_solver/model.proto \
-    $(SRC_DIR)/ortools/constraint_solver/search_limit.proto
+    $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.cc
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/ortools/constraint_solver/model.proto
 
 $(GEN_DIR)/ortools/constraint_solver/model.pb.h: $(GEN_DIR)/ortools/constraint_solver/model.pb.cc \
@@ -3560,4 +3560,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/ortools/
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
