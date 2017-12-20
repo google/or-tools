@@ -1,0 +1,11 @@
+Format for p-dimensional vector packing instances:
+
+p (number of dimensions)
+W^1 ... W^p (capacity of each dimension)
+m (number of different items)
+w^1_1 ... w^p_1 b_1
+...
+w^1_i ... w^p_i b_i (i-th item weight on each dimension, its demand)
+...
+w^1_m ... w^p_m b_m
+
