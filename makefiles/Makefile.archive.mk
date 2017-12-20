@@ -1,7 +1,7 @@
 
 archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 
-$(INSTALL_DIR)$(ARCHIVE_EXT): $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs cc_archive dotnet_archive java_archive  $(PATCHELF)
+$(INSTALL_DIR)$(ARCHIVE_EXT): $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs cc_archive dotnet_archive java_archive data_archive $(PATCHELF)
 ifeq "$(SYSTEM)" "win"
 	cd temp && ..$Stools$Szip.exe -r ..$S$(INSTALL_DIR).zip $(INSTALL_DIR)
 else
@@ -71,8 +71,14 @@ create_dirs:
 	$(COPY) tools$SREADME.cc.java.csharp temp$S$(INSTALL_DIR)$SREADME
 	$(COPY) tools$SMakefile.cc temp$S$(INSTALL_DIR)$SMakefile
 
-cc_archive: cc
+data_archive:
+ifeq "$(SYSTEM)" "win"
+	tools$Star.exe -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* --exclude *nsplib* examples\\data | tools$Star.exe xvm -C temp\\$(INSTALL_DIR)
+else
+	tar -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* --exclude *nsplib* examples/data | tar xvm -C temp/$(INSTALL_DIR)
+endif
 
+cc_archive: cc
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
@@ -101,26 +107,16 @@ cc_archive: cc
 
 ifeq "$(SYSTEM)" "win"
 	$(COPY) tools$Smake.exe temp$S$(INSTALL_DIR)
-	cd temp$S$(INSTALL_DIR) && ..$S..$Stools$Star.exe -C ..$S.. -c -v --exclude *svn* --exclude *roadef* examples$Sdata | ..$S..$Stools$Star.exe xvm
-
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | ..$S..$S..$Stools$Star.exe xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v glog | ..$S..$S..$Stools$Star.exe xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v google | ..$S..$S..$Stools$Star.exe xvm
 else
-	$(COPY) -R examples$Sdata$Set_jobshop$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
-	$(COPY) -R examples$Sdata$Sflexible_jobshop$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sflexible_jobshop
-	$(COPY) -R examples$Sdata$Sjobshop$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sjobshop
-	$(COPY) -R examples$Sdata$Smultidim_knapsack$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Smultidim_knapsack
-	$(COPY) -R examples$Sdata$Scvrptw$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Scvrptw
-	$(COPY) -R examples$Sdata$Spdptw$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Spdptw
-
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | tar xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v glog | tar xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v google | tar xvm
 endif
 
 dotnet_archive: csharp
-
 	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin
 	$(COPY) bin$S$(CLR_ORTOOLS_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin
 	$(COPY) examples$Scsharp$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp
@@ -128,13 +124,6 @@ dotnet_archive: csharp
 	$(COPY) examples$Sfsharp$SREADME.md temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
 	$(COPY) examples$Sfsharp$Slib$S* temp$S$(INSTALL_DIR)$Sexamples$Sfsharp$Slib
 	$(COPY) examples$Scsharp$Ssolution$SProperties$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
-	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
-	$(COPY) examples$Sdata$Sfill_a_pix$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
-	$(COPY) examples$Sdata$Sminesweeper$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sminesweeper
-	$(COPY) examples$Sdata$Srogo$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Srogo
-	$(COPY) examples$Sdata$Ssurvo_puzzle$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
-	$(COPY) examples$Sdata$Squasigroup_completion$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
-
 ifeq "$(SYSTEM)" "win"
 	$(COPY) examples$Scsharp$SCsharp_examples.sln temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
@@ -146,13 +135,6 @@ endif
 java_archive: java
 	$(COPY) lib$S*.jar temp$S$(INSTALL_DIR)$Slib
 	$(COPY) lib$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT) temp$S$(INSTALL_DIR)$Slib
-
-	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
-	$(COPY) examples$Sdata$Sfill_a_pix$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
-	$(COPY) examples$Sdata$Sminesweeper$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sminesweeper
-	$(COPY) examples$Sdata$Srogo$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Srogo
-	$(COPY) examples$Sdata$Ssurvo_puzzle$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
-	$(COPY) examples$Sdata$Squasigroup_completion$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 	$(COPY) examples$Scom$Sgoogle$Sortools$Ssamples$S*.java temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
 
 TEMP_FZ_DIR = temp_fz
