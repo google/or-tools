@@ -77,6 +77,37 @@ type LinearSolverAlgorithm =
   | LP of LinearProgramming
   | IP of IntegerProgramming
 
+/// Max Flow Solver Result
+module MaximumFlow =
+  let (|Optimal|IntOverflow|BadInput|BadResult|) status =
+    match status with
+    | 0 ->
+      Optimal
+    | 1 ->
+      IntOverflow
+    | 2 ->
+      BadInput
+    | 3 ->
+      BadResult
+
+/// Minimum Cost Flow Result
+module MinimumCostFlow =
+  let (|NotSolved|Optimal|Feasible|Infeasible|Unbalanced|BadResult|BadCostRange|) status =
+    match status with
+    | 0 ->
+      NotSolved
+    | 1 ->
+      Optimal
+    | 2 ->
+      Feasible
+    | 3 ->
+      Infeasible
+    | 4 ->
+      Unbalanced
+    | 5 ->
+      BadResult
+    | 6 ->
+      BadCostRange
 
 type SolverOpts = {
   /// Name of the solver
