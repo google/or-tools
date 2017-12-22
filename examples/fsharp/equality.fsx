@@ -23,7 +23,6 @@
 
 open System
 open Google.OrTools.FSharp
-open Google.OrTools.LinearSolver
 
 let opts = SolverOpts.Default
             .Name("Equality Constraints")
@@ -36,3 +35,4 @@ let opts = SolverOpts.Default
             .Algorithm(LP CLP)
 
 let slvr = opts |> lpSolve |> SolverSummary
+slvr |> ignore
