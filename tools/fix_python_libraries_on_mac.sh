@@ -5,3 +5,5 @@ install_name_tool -change $P @loader_path/../libortools.dylib $1/ortools/ortools
 install_name_tool -change $P @loader_path/../libortools.dylib $1/ortools/ortools/constraint_solver/_pywrapcp.so
 install_name_tool -change $P @loader_path/../libortools.dylib $1/ortools/ortools/graph/_pywrapgraph.so
 install_name_tool -change $P @loader_path/../libortools.dylib $1/ortools/ortools/linear_solver/_pywraplp.so
+install_name_tool -change $P @loader_path/../libortools.dylib $1/ortools/ortools/sat/_pywrapsat.so
+install_name_tool -change $P @loader_path/../libortools.dylib $1/ortools/ortools/data/_pywraprcpsp.so
