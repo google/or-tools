@@ -15,6 +15,7 @@ test_python_examples: python
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Spython$Stsp.py
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Spython$Spyflow_example.py
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Spython$Sknapsack.py
+	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Spython$Sjobshop_ft06_sat.py
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Spython$Slinear_programming.py
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Spython$Sinteger_programming.py
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Stests$Stest_cp_api.py
@@ -40,4 +41,3 @@ test_csharp_examples: $(CSHARPEXE) $(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe $(BIN_
 	$(MONO) $(BIN_DIR)$Scscvrptw$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe
-
