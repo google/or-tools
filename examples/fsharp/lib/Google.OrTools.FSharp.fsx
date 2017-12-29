@@ -3,6 +3,7 @@
 #r "Google.OrTools.dll"
 
 open System
+open Google.OrTools.Algorithms
 open Google.OrTools.LinearSolver
 
 type Goal =
@@ -89,6 +90,8 @@ module MaximumFlow =
       BadInput
     | 3 ->
       BadResult
+    | unknownResult ->
+      failwithf "Unknown result %i" unknownResult
 
 /// Minimum Cost Flow Result
 module MinimumCostFlow =
@@ -108,6 +111,63 @@ module MinimumCostFlow =
       BadResult
     | 6 ->
       BadCostRange
+    | unknownResult ->
+      failwithf "Unknown result %i" unknownResult
+
+/// Knapsack Solver Algorithm
+type KnapsackSolverAlgorithm =
+  | BruteForce
+  | SixtyFourItems
+  | DynamicProgramming
+  | MultidimensionCBC
+  | MultidimensionGLPK
+  | MultidimensionBranchAndBound
+  | MultidimensionSCIP
+  /// Solver Id
+  member this.Id =
+    match this with
+    | BruteForce -> 0
+    | SixtyFourItems -> 1
+    | DynamicProgramming -> 2
+    | MultidimensionCBC -> 3
+    | MultidimensionGLPK -> 4
+    | MultidimensionBranchAndBound -> 5
+    | MultidimensionSCIP -> 6
+
+let knapsackSolve (name: string) (solverAlgorithm:KnapsackSolverAlgorithm) (profits:int64 list) (weights:int64 list) (capacities:int64 list) =
+  // extract the specific algorithm so its Id can be used to create solver
+  let algorithm =
+    match solverAlgorithm with
+    | MultidimensionBranchAndBound ->
+        MultidimensionBranchAndBound.Id
+    | BruteForce ->
+        BruteForce.Id
+    | SixtyFourItems ->
+        SixtyFourItems.Id
+    | DynamicProgramming ->
+        DynamicProgramming.Id
+    | MultidimensionCBC ->
+        MultidimensionCBC.Id
+    | MultidimensionGLPK ->
+        MultidimensionGLPK.Id
+    | MultidimensionSCIP ->
+        MultidimensionSCIP.Id
+
+  let solver = new KnapsackSolver(algorithm, name)
+
+  // transform lists to compatible structures for C++ Solver
+  let profits = new KInt64Vector( List.toArray profits )
+
+  let weights =
+    let tempVector = new KInt64VectorVector(1)
+    let tempWeights = new KInt64Vector(List.toArray weights)
+    tempVector.Add(tempWeights)
+    tempVector
+
+  let capacities = new KInt64Vector (List.toArray capacities)
+
+  solver.Init(profits, weights, capacities)
+  solver
 
 type SolverOpts = {
   /// Name of the solver
