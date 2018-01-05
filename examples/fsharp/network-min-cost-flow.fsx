@@ -31,7 +31,7 @@ printfn "Solving min cost flow with %i sources, and %i targets." numSources numT
 let solveStatus = minCostFlow.Solve();
 
 match solveStatus with
-| MinimumCostFlow.Optimal ->
+| x when x = MinimumCostFlowResult.Optimal.Id ->
   printfn "Total computed flow cost = %i, expected = %i" (minCostFlow.OptimalCost()) expectedCost
 | _ ->
   printfn "Solving the min cost flow problem failed. Solver status: %i" solveStatus
