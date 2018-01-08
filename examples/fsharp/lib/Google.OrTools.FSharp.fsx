@@ -79,40 +79,37 @@ type LinearSolverAlgorithm =
   | IP of IntegerProgramming
 
 /// Max Flow Solver Result
-module MaximumFlow =
-  let (|Optimal|IntOverflow|BadInput|BadResult|) status =
-    match status with
-    | 0 ->
-      Optimal
-    | 1 ->
-      IntOverflow
-    | 2 ->
-      BadInput
-    | 3 ->
-      BadResult
-    | unknownResult ->
-      failwithf "Unknown result %i" unknownResult
+type MaximumFlowResult =
+  | Optimal
+  | IntegerOverflow
+  | BadInput
+  | BadResult
+  member this.Id =
+      match this with
+      | Optimal -> 0
+      | IntegerOverflow -> 1
+      | BadInput -> 2
+      | BadResult -> 3
 
 /// Minimum Cost Flow Result
-module MinimumCostFlow =
-  let (|NotSolved|Optimal|Feasible|Infeasible|Unbalanced|BadResult|BadCostRange|) status =
-    match status with
-    | 0 ->
-      NotSolved
-    | 1 ->
-      Optimal
-    | 2 ->
-      Feasible
-    | 3 ->
-      Infeasible
-    | 4 ->
-      Unbalanced
-    | 5 ->
-      BadResult
-    | 6 ->
-      BadCostRange
-    | unknownResult ->
-      failwithf "Unknown result %i" unknownResult
+type MinimumCostFlowResult =
+  | NotSolved
+  | Optimal
+  | Feasible
+  | Infeasible
+  | Unbalanced
+  | BadResult
+  | BadCostRange
+  member this.Id =
+    match this with
+    | NotSolved -> 0
+    | Optimal -> 1
+    | Feasible -> 2
+    | Infeasible -> 3
+    | Unbalanced -> 4
+    | BadResult -> 5
+    | BadCostRange -> 6
+
 
 /// Knapsack Solver Algorithm
 type KnapsackSolverAlgorithm =
