@@ -1,6 +1,6 @@
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.1
-PROTOBUF_TAG = 3.5.0
+PROTOBUF_TAG = 3.5.1
 GLOG_TAG = 0.3.5
 CBC_TAG = 2.9.9
 ZLIB_TAG = 1.2.11
