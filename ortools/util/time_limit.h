@@ -61,7 +61,7 @@ namespace operations_research {
 // unless the time_limit_use_instruction_count flag is set.
 //
 // The limit is very conservative: it returns true (i.e. the limit is reached)
-// when current_time + std::max(T, ε) >= limit_time, where ε is a small constant (see
+// when current_time + max(T, ε) >= limit_time, where ε is a small constant (see
 // TimeLimit::kSafetyBufferSeconds), and T is the maximum measured time interval
 // between two consecutive calls to LimitReached() over the last kHistorySize
 // calls (so that we only consider "recent" history).

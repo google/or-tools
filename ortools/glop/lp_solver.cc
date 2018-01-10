@@ -303,8 +303,8 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   // The tolerance used is the parameter solution_feasibility_tolerance. To be
   // somewhat independent of the original problem scaling, the thresholds used
   // depend of the quantity involved and of its coordinates:
-  // - tolerance * std::max(1.0, abs(cost[col])) when a reduced cost is infeasible.
-  // - tolerance * std::max(1.0, abs(bound)) when a bound is crossed.
+  // - tolerance * max(1.0, abs(cost[col])) when a reduced cost is infeasible.
+  // - tolerance * max(1.0, abs(bound)) when a bound is crossed.
   // - tolerance for an infeasible dual value (because the limit is always 0.0).
   bool rhs_perturbation_is_too_large = false;
   bool cost_perturbation_is_too_large = false;

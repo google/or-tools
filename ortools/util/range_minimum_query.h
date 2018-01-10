@@ -11,10 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// We use the notation std::min(arr, i, j) for the minimum arr[x] such that i <= x
+// We use the notation min(arr, i, j) for the minimum arr[x] such that i <= x
 // and x < j.
 // Range Minimum Query (RMQ) is a data structure preprocessing an array arr so
-// that querying std::min(arr, i, j) takes O(1) time. The preprocessing takes
+// that querying min(arr, i, j) takes O(1) time. The preprocessing takes
 // O(n*log(n)) time and memory.
 
 // Note: There exists an O(n) preprocessing algorithm, but it is considerably
@@ -24,11 +24,11 @@
 // https://en.wikipedia.org/wiki/Range_minimum_query.
 //
 //
-// Implementation: The idea is to cache every std::min(arr, i, j) where j - i is a
+// Implementation: The idea is to cache every min(arr, i, j) where j - i is a
 // power of two, i.e. j = i + 2^k for some k. Provided this information, we can
 // answer all queries in O(1): given a pair (i, j) find the maximum k such that
 // i + 2^k < j and note that
-// std::min(std::min(arr, i, i+2^k), std::min(arr, j-2^k, j)) = std::min(arr, i, j).
+// std::min(min(arr, i, i+2^k), min(arr, j-2^k, j)) = min(arr, i, j).
 
 #ifndef OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
 #define OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
@@ -55,7 +55,7 @@ class RangeMinimumQuery {
   const std::vector<T>& array() const;
 
  private:
-  // cache_[k][i] = std::min(arr, i, i+2^k).
+  // cache_[k][i] = min(arr, i, i+2^k).
   std::vector<std::vector<T>> cache_;
   Compare cmp_;
 
@@ -95,8 +95,8 @@ inline RangeMinimumQuery<T, Compare>::RangeMinimumQuery(std::vector<T> array)
     : RangeMinimumQuery(std::move(array), Compare()) {}
 
 // Reminder: The task is to fill cache_ so that
-// cache_[k][i] = std::min(arr, i, i+2^k) for every k <= Log2(n) and i <= n-2^k.
-// Note that cache_[k+1][i] = std::min(cache_[k][i], cache_[k][i+2^k]), hence every
+// cache_[k][i] = min(arr, i, i+2^k) for every k <= Log2(n) and i <= n-2^k.
+// Note that cache_[k+1][i] = min(cache_[k][i], cache_[k][i+2^k]), hence every
 // row can be efficiently computed from the previous.
 template <typename T, typename Compare>
 RangeMinimumQuery<T, Compare>::RangeMinimumQuery(std::vector<T> array,

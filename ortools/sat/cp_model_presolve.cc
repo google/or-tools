@@ -280,6 +280,9 @@ struct PresolveContext {
 
   // Set of constraint that implies an "affine relation". We need to mark them,
   // because we can't simplify them using the relation they added.
+  //
+  // WARNING: This assumes the ConstraintProto* to stay valid during the full
+  // presolve even if we add new constraint to the CpModelProto.
   std::unordered_set<ConstraintProto const*> affine_constraints;
 
   // For each constant variable appearing in the model, we maintain a reference
@@ -509,7 +512,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   }
   ct->mutable_int_max()->mutable_vars()->Truncate(new_size);
   if (contains_target_ref) {
-    context->UpdateRuleStats("int_max: x = std::max(x, ...)");
+    context->UpdateRuleStats("int_max: x = max(x, ...)");
     for (const int ref : ct->int_max().vars()) {
       if (ref == target_ref) continue;
       ConstraintProto* new_ct = context->working_model->add_constraints();
@@ -706,7 +709,6 @@ bool ExploitEquivalenceRelations(ConstraintProto* ct,
 }
 
 bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
-  bool var_was_removed = false;
   bool var_constraint_graph_changed = false;
   std::vector<ClosedInterval> rhs = ReadDomain(ct->linear());
 
@@ -728,8 +730,34 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     if (coeff == 0) continue;
     if (context->domains[var].IsFixed()) {
       sum_of_fixed_terms += coeff * context->domains[var].Min();
+      continue;
+    }
+
+    if (!was_affine) {
+      const AffineRelation::Relation r = context->GetAffineRelation(var);
+      if (r.representative != var) {
+        var_constraint_graph_changed = true;
+        sum_of_fixed_terms += coeff * r.offset;
+      }
+      var_to_coeff[r.representative] += coeff * r.coeff;
+      if (var_to_coeff[r.representative] == 0) {
+        var_to_coeff.erase(r.representative);
+      }
     } else {
-      if (!was_affine && context->var_to_constraints[var].size() == 1) {
+      var_to_coeff[var] += coeff;
+      if (var_to_coeff[var] == 0) var_to_coeff.erase(var);
+    }
+  }
+
+  // Test for singleton variable. Not that we need to do that after the
+  // canonicalization of the constraint in case a variable was appearing more
+  // than once.
+  if (!was_affine) {
+    std::vector<int> var_to_erase;
+    for (const auto entry : var_to_coeff) {
+      const int var = entry.first;
+      const int64 coeff = entry.second;
+      if (context->var_to_constraints[var].size() == 1) {
         bool success;
         const auto term_domain = PreciseMultiplicationOfSortedDisjointIntervals(
             context->domains[var].InternalRepresentation(), -coeff, &success);
@@ -738,35 +766,21 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
           // multiplication above because the new domain might not be as strict
           // as the initial constraint otherwise. TODO(user): because of the
           // addition, it might be possible to cover more cases though.
-          var_was_removed = true;
+          var_to_erase.push_back(var);
           rhs = AdditionOfSortedDisjointIntervals(rhs, term_domain);
           continue;
         }
       }
-
-      if (!was_affine) {
-        const AffineRelation::Relation r = context->GetAffineRelation(var);
-        if (r.representative != var) {
-          var_constraint_graph_changed = true;
-          sum_of_fixed_terms += coeff * r.offset;
-        }
-        var_to_coeff[r.representative] += coeff * r.coeff;
-        if (var_to_coeff[r.representative] == 0) {
-          var_to_coeff.erase(r.representative);
-        }
-      } else {
-        var_to_coeff[var] += coeff;
-        if (var_to_coeff[var] == 0) var_to_coeff.erase(var);
-      }
     }
-  }
-  if (var_was_removed) {
-    context->UpdateRuleStats("linear: singleton column");
-    // TODO(user): we could add the constraint to mapping_model only once
-    // instead of adding a reduced version of it each time a new singleton
-    // variable appear in the same constraint later. That would work but would
-    // also force the postsolve to take search decisions...
-    *(context->mapping_model->add_constraints()) = *ct;
+    if (!var_to_erase.empty()) {
+      for (const int var : var_to_erase) var_to_coeff.erase(var);
+      context->UpdateRuleStats("linear: singleton column");
+      // TODO(user): we could add the constraint to mapping_model only once
+      // instead of adding a reduced version of it each time a new singleton
+      // variable appear in the same constraint later. That would work but would
+      // also force the postsolve to take search decisions...
+      *(context->mapping_model->add_constraints()) = *ct;
+    }
   }
 
   // Compute the GCD of all coefficients.
@@ -1720,6 +1734,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
     //
     // TODO(user): Avoid reprocessing the constraints that changed the variables
     // with the use of timestamp.
+    const int old_queue_size = queue.size();
     for (const int v : modified_domains.PositionsSetAtLeastOnce()) {
       if (context.domains[v].IsFixed()) context.ExploitFixedDomain(v);
       for (const int c : context.var_to_constraints[v]) {
@@ -1729,6 +1744,10 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
         }
       }
     }
+
+    // Make sure the order is deterministic! because var_to_constraints[]
+    // order changes from one run to the next.
+    std::sort(queue.begin() + old_queue_size, queue.end());
     modified_domains.SparseClearAll();
   }
 

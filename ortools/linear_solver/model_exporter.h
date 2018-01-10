@@ -16,6 +16,8 @@
 
 #include <unordered_map>
 #include <string>
+#include <vector>
+
 #include "ortools/base/macros.h"
 #include "ortools/base/hash.h"
 

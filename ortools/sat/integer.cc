@@ -128,6 +128,35 @@ IntegerEncoder::FullDomainEncoding(IntegerVariable var) const {
   return encoding;
 }
 
+std::vector<IntegerEncoder::ValueLiteralPair>
+IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
+  std::vector<ValueLiteralPair> encoding;
+
+  // Because the domain of var can be arbitrary large, we use the fact that
+  // when (var == value) is created, then we have (var >= value && var <= value)
+  // too. Except for the min/max of the initial domain.
+  if (var >= encoding_by_var_.size()) return encoding;
+
+  std::set<IntegerValue> possible_values;
+  possible_values.insert(IntegerValue((*domains_)[var].front().start));
+  possible_values.insert(IntegerValue((*domains_)[var].back().end));
+  for (const auto entry : encoding_by_var_[var]) {
+    possible_values.insert(entry.first);
+  }
+  for (const IntegerValue value : possible_values) {
+    const std::pair<IntegerVariable, IntegerValue> key{var, value};
+    const auto it = equality_to_associated_literal_.find(key);
+    if (it == equality_to_associated_literal_.end()) continue;
+    const Literal literal = it->second;
+    if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
+      return {{value, literal}};
+    } else if (!sat_solver_->Assignment().LiteralIsFalse(literal)) {
+      encoding.push_back({value, literal});
+    }
+  }
+  return encoding;
+}
+
 // Note that by not inserting the literal in "order" we can in the worst case
 // use twice as much implication (2 by literals) instead of only one between
 // consecutive literals.
@@ -231,21 +260,30 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
   return literal;
 }
 
-// TODO(user): for the fist and last value, we should also update
-// equality_to_associated_literal_.
 void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
                                                IntegerLiteral i_lit) {
   CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
-
   const auto& domain = (*domains_)[i_lit.var];
-  if (i_lit.bound <= domain.front().start) {
+  const IntegerValue min(domain.front().start);
+  const IntegerValue max(domain.back().end);
+  if (i_lit.bound <= min) {
     sat_solver_->AddUnitClause(literal);
-  } else if (i_lit.bound > domain.back().end) {
+  } else if (i_lit.bound > max) {
     sat_solver_->AddUnitClause(literal.Negated());
   } else {
     const auto pair = Canonicalize(i_lit);
     HalfAssociateGivenLiteral(pair.first, literal);
     HalfAssociateGivenLiteral(pair.second, literal.Negated());
+
+    // Detect the case >= max or <= min and properly register them. Note that
+    // both cases will happen at the same time if there is just two possible
+    // value in the domain.
+    if (pair.first.bound == max) {
+      AssociateToIntegerEqualValue(literal, i_lit.var, max);
+    }
+    if (-pair.second.bound == min) {
+      AssociateToIntegerEqualValue(literal.Negated(), i_lit.var, min);
+    }
   }
 }
 
@@ -275,12 +313,37 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     return;
   }
 
+  // Detect literal view. Note that the same literal can be associated to more
+  // than one variable, and thus already have a view. We don't change it in
+  // this case.
+  if (value == 1 && domain.front().start == 0 && domain.back().end == 1) {
+    if (literal.Index() >= literal_view_.size()) {
+      literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
+      literal_view_[literal.Index()] = var;
+    } else if (literal_view_[literal.Index()] == kNoIntegerVariable) {
+      literal_view_[literal.Index()] = var;
+    }
+  }
+  if (value == -1 && domain.front().start == -1 && domain.back().end == 0) {
+    if (literal.Index() >= literal_view_.size()) {
+      literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
+      literal_view_[literal.Index()] = NegationOf(var);
+    } else if (literal_view_[literal.Index()] == kNoIntegerVariable) {
+      literal_view_[literal.Index()] = NegationOf(var);
+    }
+  }
+
   // If the literal was already assigned before beeing associated, we may
   // not propagate properly the update to the variable domain.
   CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
 
   // Special case for the first and last value.
   if (value == domain.front().start) {
+    // Note that this will recursively call AssociateToIntegerEqualValue() but
+    // since equality_to_associated_literal_[] is now set, the recursion will
+    // stop there. When a domain has just 2 values, this allows to call just
+    // once AssociateToIntegerEqualValue() and also associate the other value to
+    // the negation of the given literal.
     AssociateToIntegerLiteral(literal,
                               IntegerLiteral::LowerOrEqual(var, value));
     return;
@@ -291,7 +354,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     return;
   }
 
-  //  (var == value)  <=>  (var >= value) and (var <= value).
+  // (var == value)  <=>  (var >= value) and (var <= value).
   const Literal a(
       GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(var, value)));
   const Literal b(

@@ -1784,7 +1784,7 @@ bool IsIncreasingAndContiguous(const std::vector<int64>& values) {
 //
 // Rule 4:
 // Input: array_int_element(x, [c1, .., cn], y)
-// Output array_int_element(x, [c1, .., c{std::max(x)}], y)
+// Output array_int_element(x, [c1, .., c{max(x)}], y)
 //
 // Rule 5:
 // Input : array_int_element(x, [c1, .., cn], y) with x0 ci = c0 + i

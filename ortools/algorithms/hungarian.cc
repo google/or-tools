@@ -176,7 +176,7 @@ class HungarianOptimizer {
   // Return to Step 4 without altering any stars, primes, or covered lines.
   void AugmentPath();
 
-  // The size of the problem, i.e. std::max(#agents, #tasks).
+  // The size of the problem, i.e. max(#agents, #tasks).
   int matrix_size_;
 
   // The expanded cost matrix.
@@ -311,7 +311,7 @@ void HungarianOptimizer::FindAssignments(std::vector<int>* preimage,
     }
   }
   // TODO(user)
-  // result_size = std::min(width_, height_);
+  // result_size = min(width_, height_);
   // CHECK image.size() == result_size
   // CHECK preimage.size() == result_size
 }

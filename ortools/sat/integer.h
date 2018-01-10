@@ -163,6 +163,13 @@ struct IntegerDomains
   explicit IntegerDomains(Model* model) {}
 };
 
+// Some heuristics may be generated automatically, for instance by constraints.
+// Those will be stored in a SearchHeuristicsVector object owned by the model.
+//
+// TODO(user): Move this and other similar classes in a "model_singleton" file?
+class SearchHeuristicsVector
+    : public std::vector<std::function<LiteralIndex()>> {};
+
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
 // the integer variables and such literals which can be created by a call to
@@ -210,9 +217,23 @@ class IntegerEncoder {
   // search (for now). This is Checked.
   void FullyEncodeVariable(IntegerVariable var);
 
+  // Returns true iff FullyEncodeVariable(var) has been called. Note that
+  // PartialDomainEncoding() may actually return a full domain encoding, but if
+  // FullyEncodeVariable() was not called, this will still return false.
+  //
+  // TODO(user): Detect this case and mark such variable as fully encoded?
+  bool VariableIsFullyEncoded(IntegerVariable var) const {
+    if (var >= is_fully_encoded_.size()) return false;
+    return is_fully_encoded_[var];
+  }
+
   // Computes the full encoding of a variable on which FullyEncodeVariable() has
   // been called. The returned elements are always sorted by increasing
   // IntegerValue and we filter values associated to false literals.
+  //
+  // Performance note: This function is not particularly fast, however it should
+  // only be required during domain creation, so it should be ok. This allow us
+  // to not waste memory.
   struct ValueLiteralPair {
     ValueLiteralPair(IntegerValue v, Literal l) : value(v), literal(l) {}
     bool operator==(const ValueLiteralPair& o) const {
@@ -223,11 +244,11 @@ class IntegerEncoder {
   };
   std::vector<ValueLiteralPair> FullDomainEncoding(IntegerVariable var) const;
 
-  // Returns true if a variable is fully encoded.
-  bool VariableIsFullyEncoded(IntegerVariable var) const {
-    if (var >= is_fully_encoded_.size()) return false;
-    return is_fully_encoded_[var];
-  }
+  // Same as FullDomainEncoding() but only returns the list of value that are
+  // currently associated to a literal. In particular this has no guarantee to
+  // span the full domain of the given variable (but it might).
+  std::vector<ValueLiteralPair> PartialDomainEncoding(
+      IntegerVariable var) const;
 
   // Returns the "canonical" (i_lit, negation of i_lit) pair. This mainly
   // deal with domain with initial hole like [1,2][5,6] so that if one ask
@@ -289,6 +310,15 @@ class IntegerEncoder {
     return reverse_encoding_[lit.Index()];
   }
 
+  // If it exists, returns a [0,1] integer variable which is equal to 1 iff the
+  // given literal is true. Returns kNoIntegerVariable if such variable does not
+  // exist. Note that one can create one by creating a new IntegerVariable and
+  // calling AssociateToIntegerEqualValue().
+  const IntegerVariable GetLiteralView(Literal lit) const {
+    if (lit.Index() >= literal_view_.size()) return kNoIntegerVariable;
+    return literal_view_[lit.Index()];
+  }
+
   // Returns a Boolean literal associated with a bound lower than or equal to
   // the one of the given IntegerLiteral. If the given IntegerLiteral is true,
   // then the returned literal should be true too. Returns kNoLiteralIndex if no
@@ -299,7 +329,7 @@ class IntegerEncoder {
   // (x >= 2).
   LiteralIndex SearchForLiteralAtOrBefore(IntegerLiteral i) const;
 
-  // Get the literal always set to true, make it if it does not exist.
+  // Gets the literal always set to true, make it if it does not exist.
   Literal GetTrueLiteral() {
     DCHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
     if (literal_index_true_ == kNoLiteralIndex) {
@@ -311,6 +341,17 @@ class IntegerEncoder {
     return Literal(literal_index_true_);
   }
   Literal GetFalseLiteral() { return GetTrueLiteral().Negated(); }
+
+  // Returns the set of Literal associated to IntegerLiteral of the form var >=
+  // value. We make a copy, because this can be easily invalidated when calling
+  // any function of this class. So it is less efficient but safer.
+  std::map<IntegerValue, Literal> PartialGreaterThanEncoding(
+      IntegerVariable var) const {
+    if (var >= encoding_by_var_.size()) {
+      return std::map<IntegerValue, Literal>();
+    }
+    return encoding_by_var_[var];
+  }
 
  private:
   // Only add the equivalence between i_lit and literal, if there is already an
@@ -336,6 +377,10 @@ class IntegerEncoder {
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
   ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
+
+  // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
+  // if there is none.
+  ITIVector<LiteralIndex, IntegerVariable> literal_view_;
 
   // Mapping (variable == value) -> associated literal. Note that even if
   // there is more than one literal associated to the same fact, we just keep
@@ -961,32 +1006,6 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(
   };
 }
 
-// Constraints might not accept Literals as input, forcing the user to pass
-// 0-1 integer views of a literal.
-// This class contains all such literal views of a given model, so that asking
-// for a view of a literal will always return the same IntegerVariable.
-class LiteralViews {
- public:
-  explicit LiteralViews(Model* model) : model_(model) {}
-
-  IntegerVariable GetIntegerView(const Literal lit) {
-    const LiteralIndex index = lit.Index();
-
-    if (!ContainsKey(literal_index_to_integer_, index)) {
-      const IntegerVariable int_var = model_->Add(NewIntegerVariable(0, 1));
-      model_->GetOrCreate<IntegerEncoder>()->AssociateToIntegerEqualValue(
-          lit, int_var, IntegerValue(1));
-      literal_index_to_integer_[index] = int_var;
-    }
-
-    return literal_index_to_integer_[index];
-  }
-
- private:
-  std::unordered_map<LiteralIndex, IntegerVariable> literal_index_to_integer_;
-  Model* model_;
-};
-
 // Creates a 0-1 integer variable "view" of the given literal. It will have a
 // value of 1 when the literal is true, and 0 when the literal is false.
 inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
@@ -998,7 +1017,13 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
     } else if (assignment.LiteralIsFalse(lit)) {
       return model->Add(ConstantIntegerVariable(0));
     } else {
-      return model->GetOrCreate<LiteralViews>()->GetIntegerView(lit);
+      auto* encoder = model->GetOrCreate<IntegerEncoder>();
+      const IntegerVariable candidate = encoder->GetLiteralView(lit);
+      if (candidate != kNoIntegerVariable) return candidate;
+
+      const IntegerVariable var = model->Add(NewIntegerVariable(0, 1));
+      encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
+      return var;
     }
   };
 }

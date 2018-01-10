@@ -1418,7 +1418,7 @@ Fractional RevisedSimplex::ComputeHarrisRatioAndLeavingCandidates(
     if (ratio <= harris_ratio) {
       leaving_candidates->SetCoefficient(row, ratio);
 
-      // The second std::max() makes sure harris_ratio is lower bounded by a small
+      // The second max() makes sure harris_ratio is lower bounded by a small
       // positive value. The more classical approach is to bound it by 0.0 but
       // since we will always perform a small positive step, we allow any
       // variable to go a bit more out of bound (even if it is past the harris

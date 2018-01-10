@@ -111,7 +111,7 @@ inline bool IsPositiveOrNegativeInfinity(FloatType x) {
 // tolerances.
 // Returns true if |x - y| <= a (with a being the absolute_tolerance).
 // The above case is useful for values that are close to zero.
-// Returns true if |x - y| <= std::max(|x|, |y|) * r. (with r being the relative
+// Returns true if |x - y| <= max(|x|, |y|) * r. (with r being the relative
 //                                                tolerance.)
 // The cases for infinities are treated separately to avoid generating NaNs.
 template <typename FloatType>
@@ -206,8 +206,8 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
                                     double* max_relative_coeff_error);
 
 // Same as the function above, but enforces that
-//  -  The sum over i of std::min(0, round(factor * x[i])) >= -max_sum.
-//  -  The sum over i of std::max(0, round(factor * x[i])) <= max_sum.
+//  -  The sum over i of min(0, round(factor * x[i])) >= -max_sum.
+//  -  The sum over i of max(0, round(factor * x[i])) <= max_sum.
 // For any possible values of the x[i] such that x[i] is in [lb[i], ub[i]].
 //
 // This also computes the max_scaled_sum_error which is a bound on the maximum

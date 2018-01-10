@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include "ortools/sat/integer_search.h"
+
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_decision.h"
 
 namespace operations_research {
@@ -91,6 +93,108 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
   };
 }
 
+std::function<LiteralIndex()> ExploitIntegerLpSolution(
+    std::function<LiteralIndex()> heuristic, Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* trail = model->GetOrCreate<Trail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
+
+  // Note that the order of the constraints in lp_constraints does not matter.
+  // TODO(user): keep this list somewhere instead of re-creating it like this?
+  std::set<LinearProgrammingConstraint*> lp_constraints;
+  for (auto entry : *lp_dispatcher) lp_constraints.insert(entry.second);
+
+  // Use the normal heuristic if the LP(s) do not seem to cover enough variables
+  // to be relevant.
+  // TODO(user): Instead, try and depending on the result call it again or not?
+  {
+    int num_lp_variables = 0;
+    for (LinearProgrammingConstraint* lp : lp_constraints) {
+      num_lp_variables += lp->NumVariables();
+    }
+    const int num_integer_variables =
+        model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value() / 2;
+    if (num_integer_variables > 4 * num_lp_variables) return heuristic;
+  }
+
+  bool last_decision_followed_lp = false;
+  int old_level = 0;
+  double old_obj = 0.0;
+  return [=]() mutable {
+    const LiteralIndex decision = heuristic();
+    if (decision == kNoLiteralIndex) {
+      if (last_decision_followed_lp) {
+        VLOG(1) << "Integer LP solution is feasible, level:" << old_level
+                << "->" << trail->CurrentDecisionLevel() << " obj:" << old_obj;
+      }
+      last_decision_followed_lp = false;
+      return kNoLiteralIndex;
+    }
+
+    bool all_lp_integers = true;
+    double obj = 0.0;
+    for (LinearProgrammingConstraint* lp : lp_constraints) {
+      if (!lp->HasSolution() || !lp->SolutionIsInteger()) {
+        all_lp_integers = false;
+        break;
+      }
+      obj += lp->SolutionObjectiveValue();
+    }
+    if (all_lp_integers) {
+      if (!last_decision_followed_lp || obj != old_obj) {
+        old_level = trail->CurrentDecisionLevel();
+        old_obj = obj;
+        VLOG(2) << "Integer LP solution at level:" << old_level
+                << " obj:" << old_obj;
+      }
+      for (IntegerLiteral l : encoder->GetIntegerLiterals(Literal(decision))) {
+        const IntegerVariable positive_var =
+            VariableIsPositive(l.var) ? l.var : NegationOf(l.var);
+        LinearProgrammingConstraint* lp =
+            FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+        if (lp != nullptr) {
+          const IntegerValue value = IntegerValue(static_cast<int64>(
+              std::round(lp->GetSolutionValue(positive_var))));
+
+          // Because our lp solution might be from higher up in the tree, it
+          // is possible that value is now outside the domain of positive_var.
+          // In this case, we just revert to the current literal.
+          const IntegerValue lb = integer_trail->LowerBound(positive_var);
+          const IntegerValue ub = integer_trail->UpperBound(positive_var);
+
+          // We try first (<= value), but if this do not reduce the domain we
+          // try to enqueue (>= value). Note that even for domain with hole,
+          // since we know that this variable is not fixed, one of the two
+          // alternative must reduce the domain.
+          //
+          // TODO(user): use GetOrCreateLiteralAssociatedToEquality() instead?
+          // It may replace two decision by only one. However this function
+          // cannot currently be called during search, but that should be easy
+          // enough to fix.
+          if (value >= lb && value < ub) {
+            const Literal le = encoder->GetOrCreateAssociatedLiteral(
+                IntegerLiteral::LowerOrEqual(positive_var, value));
+            CHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
+            last_decision_followed_lp = true;
+            return le.Index();
+          }
+          if (value > lb && value <= ub) {
+            const Literal ge = encoder->GetOrCreateAssociatedLiteral(
+                IntegerLiteral::GreaterOrEqual(positive_var, value));
+            CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
+            last_decision_followed_lp = true;
+            return ge.Index();
+          }
+        }
+      }
+    }
+
+    last_decision_followed_lp = false;
+    return decision;
+  };
+}
+
 std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver) {
   bool reset_at_next_call = true;
   int next_num_failures = 0;
@@ -132,10 +236,23 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     auto portfolio = CompleteHeuristics(
         incomplete_portfolio,
         SequentialSearch({SatSolverHeuristic(model), next_decision}));
+    if (parameters.exploit_integer_lp_solution()) {
+      for (auto& ref : portfolio) {
+        ref = ExploitIntegerLpSolution(ref, model);
+      }
+    }
     auto default_restart_policy = SatSolverRestartPolicy(model);
     auto restart_policies = std::vector<std::function<bool()>>(
         portfolio.size(), default_restart_policy);
     return SolveProblemWithPortfolioSearch(portfolio, restart_policies, model);
+  }
+
+  if (parameters.exploit_integer_lp_solution() && assumptions.empty()) {
+    return SolveProblemWithPortfolioSearch(
+        {ExploitIntegerLpSolution(
+            SequentialSearch({SatSolverHeuristic(model), next_decision}),
+            model)},
+        {SatSolverRestartPolicy(model)}, model);
   }
 
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
@@ -221,7 +338,12 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     // Get next decision, try to enqueue.
     const LiteralIndex decision = decision_policies[policy_index]();
     if (decision == kNoLiteralIndex) return SatSolver::MODEL_SAT;
+
+    // TODO(user): move the time limit update inside this function?
+    const double saved_deterministic_time = solver->deterministic_time();
     solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
+    time_limit->AdvanceDeterministicTime(solver->deterministic_time() -
+                                         saved_deterministic_time);
     if (solver->IsModelUnsat()) return SatSolver::MODEL_UNSAT;
   }
   return SatSolver::Status::LIMIT_REACHED;

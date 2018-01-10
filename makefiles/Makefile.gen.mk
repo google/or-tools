@@ -1537,6 +1537,7 @@ SAT_DEPS = \
     $(SRC_DIR)/ortools/sat/integer_search.h \
     $(SRC_DIR)/ortools/sat/intervals.h \
     $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
+    $(SRC_DIR)/ortools/sat/linear_relaxation.h \
     $(SRC_DIR)/ortools/sat/lp_utils.h \
     $(SRC_DIR)/ortools/sat/model.h \
     $(SRC_DIR)/ortools/sat/optimization.h \
@@ -1579,6 +1580,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/integer_search.$O \
     $(OBJ_DIR)/sat/intervals.$O \
     $(OBJ_DIR)/sat/linear_programming_constraint.$O \
+    $(OBJ_DIR)/sat/linear_relaxation.$O \
     $(OBJ_DIR)/sat/lp_utils.$O \
     $(OBJ_DIR)/sat/optimization.$O \
     $(OBJ_DIR)/sat/overload_checker.$O \
@@ -1778,9 +1780,14 @@ $(SRC_DIR)/ortools/sat/linear_programming_constraint.h: \
     $(SRC_DIR)/ortools/lp_data/lp_types.h \
     $(SRC_DIR)/ortools/lp_data/matrix_scaler.h \
     $(SRC_DIR)/ortools/sat/integer.h \
-    $(SRC_DIR)/ortools/sat/integer_search.h \
     $(SRC_DIR)/ortools/sat/model.h \
+    $(SRC_DIR)/ortools/util/rev.h \
     $(SRC_DIR)/ortools/util/time_limit.h
+
+$(SRC_DIR)/ortools/sat/linear_relaxation.h: \
+    $(SRC_DIR)/ortools/sat/integer.h \
+    $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
+    $(SRC_DIR)/ortools/sat/model.h
 
 $(SRC_DIR)/ortools/sat/lp_utils.h: \
     $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
@@ -2047,6 +2054,7 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/int_type.h \
     $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+    $(SRC_DIR)/ortools/base/iterator_adaptors.h \
     $(SRC_DIR)/ortools/base/join.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/map_util.h \
@@ -2069,6 +2077,7 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/sat/integer.h \
     $(SRC_DIR)/ortools/sat/intervals.h \
     $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
+    $(SRC_DIR)/ortools/sat/linear_relaxation.h \
     $(SRC_DIR)/ortools/sat/optimization.h \
     $(SRC_DIR)/ortools/sat/pb_constraint.h \
     $(SRC_DIR)/ortools/sat/precedences.h \
@@ -2153,6 +2162,7 @@ $(OBJ_DIR)/sat/integer_expr.$O: \
 $(OBJ_DIR)/sat/integer_search.$O: \
     $(SRC_DIR)/ortools/sat/integer_search.cc \
     $(SRC_DIR)/ortools/sat/integer_search.h \
+    $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
     $(SRC_DIR)/ortools/sat/sat_decision.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sinteger_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_search.$O
 
@@ -2174,6 +2184,12 @@ $(OBJ_DIR)/sat/linear_programming_constraint.$O: \
     $(SRC_DIR)/ortools/graph/strongly_connected_components.h \
     $(SRC_DIR)/ortools/sat/linear_programming_constraint.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_programming_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_programming_constraint.$O
+
+$(OBJ_DIR)/sat/linear_relaxation.$O: \
+    $(SRC_DIR)/ortools/sat/linear_relaxation.cc \
+    $(SRC_DIR)/ortools/base/iterator_adaptors.h \
+    $(SRC_DIR)/ortools/sat/linear_relaxation.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_relaxation.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_relaxation.$O
 
 $(OBJ_DIR)/sat/lp_utils.$O: \
     $(SRC_DIR)/ortools/sat/lp_utils.cc \
@@ -2808,7 +2824,7 @@ $(OBJ_DIR)/linear_solver/scip_interface.$O: \
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.cc: \
     $(SRC_DIR)/ortools/linear_solver/linear_solver.proto \
-    $(SRC_DIR)/ortools/util/optional_boolean.proto
+    $(GEN_DIR)/ortools/util/optional_boolean.pb.cc
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/ortools/linear_solver/linear_solver.proto
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h: $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.cc \
@@ -3534,8 +3550,8 @@ $(OBJ_DIR)/constraint_solver/routing_enums.pb.$O: $(GEN_DIR)/ortools/constraint_
 
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.cc: \
     $(SRC_DIR)/ortools/constraint_solver/routing_parameters.proto \
-    $(SRC_DIR)/ortools/constraint_solver/routing_enums.proto \
-    $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto
+    $(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.cc \
+    $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/ortools/constraint_solver/routing_parameters.proto
 
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h: $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.cc \
@@ -3560,3 +3576,4 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/ortools/
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+

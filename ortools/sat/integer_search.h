@@ -22,11 +22,6 @@
 namespace operations_research {
 namespace sat {
 
-// Some heuristics may be generated automatically, for instance by constraints.
-// Those will be stored in a SearchHeuristicsVector object owned by the model.
-class SearchHeuristicsVector
-    : public std::vector<std::function<LiteralIndex()>> {};
-
 // Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Returns a
 // function that will return the literal corresponding to the fact that the
 // first currently non-fixed variable value is <= its min. The function will
@@ -51,6 +46,12 @@ std::function<LiteralIndex()> SequentialSearch(
 
 // Returns the LiteralIndex advised by the underliying SAT solver.
 std::function<LiteralIndex()> SatSolverHeuristic(Model* model);
+
+// Uses the given heuristics, but when the LP relaxation has an integer
+// solution, use it to change the polarity of the next decision so that the
+// solver will check if this integer LP solution satisfy all the constraints.
+std::function<LiteralIndex()> ExploitIntegerLpSolution(
+    std::function<LiteralIndex()> heuristic, Model* model);
 
 // Always returns kNoLiteralIndex. Useful for compositions.
 std::function<LiteralIndex()> NullSearch();

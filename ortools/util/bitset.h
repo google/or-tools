@@ -74,12 +74,7 @@ inline uint32 LeastSignificantBitWord32(uint32 n) { return n & ~(n - 1); }
 
 #if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
 inline int LeastSignificantBitPosition64Fast(uint64 n) {
-  // Note(user): Do not change the order of instructions. Other patterns were
-  // tried, and the second best was:
-  // return n == 0 ? 0 : __builtin_ctzll(n) which results in an 2x increase of
-  // computation time.
-  const int lsb = __builtin_ctzll(n);
-  return n == 0 ? 0 : lsb;
+  return n == 0 ? 0 : __builtin_ctzll(n);
 }
 #endif
 
@@ -141,8 +136,7 @@ inline int LeastSignificantBitPosition64(uint64 n) {
 
 #if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
 inline int LeastSignificantBitPosition32Fast(uint32 n) {
-  const int lsb = __builtin_ctzl(n);
-  return n == 0 ? 0 : lsb;
+  return n == 0 ? 0 : __builtin_ctzl(n);
 }
 #endif
 
@@ -201,8 +195,7 @@ inline int MostSignificantBitPosition64Fast(uint64 n) {
   // __builtin_clzll(1) should always return 63. There is no penalty in
   // using offset, and the code looks more like its uint32 counterpart.
   const int offset = __builtin_clzll(1);
-  const int msb = offset - __builtin_clzll(n);
-  return n == 0 ? 0 : msb;
+  return n == 0 ? 0 : (offset - __builtin_clzll(n));
 }
 #endif
 
@@ -248,8 +241,7 @@ inline int MostSignificantBitPosition32Fast(uint32 n) {
   // __builtin_clzl(1) returns 63 on a 64-bit machine and 31 on a 32-bit
   // machine.
   const int offset = __builtin_clzl(1);
-  const int msb = offset - __builtin_clzl(n);
-  return n == 0 ? 0 : msb;
+  return n == 0 ? 0 : (offset - __builtin_clzl(n));
 }
 #endif
 

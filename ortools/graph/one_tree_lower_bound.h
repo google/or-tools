@@ -32,18 +32,18 @@
 // 1) let T be the set of 1-trees on the nodes;
 // 2) let U be the set of tours on the nodes; U is a subset of T (tours are
 //    1-trees with all degrees equal to 2), therefore:
-//      std::min(t in T) Cost(t) <= std::min(t in U) Cost(t)
+//      min(t in T) Cost(t) <= min(t in U) Cost(t)
 //    and
-//      std::min(t in T) WeighedCost(t) <= std::min(t in U) WeighedCost(t)
+//      min(t in T) WeighedCost(t) <= min(t in U) WeighedCost(t)
 // 3) weighed_cost(i,j) = cost(i,j) + weight[i] + weight[j], therefore:
 //      for all t in T, WeighedCost(t) = Cost(t) + Sum(weight[i] * degree[i])
 //    and
 //      for all i in U, WeighedCost(t) = Cost(t) + Sum(weight[i] * 2)
-// 4) let t* in U s.t. WeighedCost(t*) = std::min(t in U) WeighedCost(t), therefore:
-//      std::min(t in T)  (Cost(t) + Sum(weight[i] * degree[i]))
+// 4) let t* in U s.t. WeighedCost(t*) = min(t in U) WeighedCost(t), therefore:
+//      min(t in T)  (Cost(t) + Sum(weight[i] * degree[i]))
 //      <= Cost(t*) + Sum(weight[i] * 2)
 //    and
-//      std::min(t in T)  (Cost(t) + Sum(weight[i] * (degree[i] - 2))) <= Cost(t*)
+//      min(t in T)  (Cost(t) + Sum(weight[i] * (degree[i] - 2))) <= Cost(t*)
 //    and
 //      cost(minimum 1-tree) + Sum(weight[i] * (degree[i] - 2)) <= Cost(t*)
 //    and
@@ -89,7 +89,7 @@
 // "Validation of subgradient optimization", Mathematical Programming 6:62-88.
 // It derives from the original Held-Karp formulation:
 //   step(m) = lambda(m) * (wlb - w(m)) / Sum((degree[i] - 2)^2),
-// where wlb is a lower bound to std::max(w(m)) and lambda(m) in [0, 2].
+// where wlb is a lower bound to max(w(m)) and lambda(m) in [0, 2].
 // Help-Karp prove that
 // if w(m') > w(m) and 0 < step < 2 * (w(m') - w(m))/norm(degree(m) - 2)^2,
 // then weight(m+1) is closer to w' than w from which they derive the above

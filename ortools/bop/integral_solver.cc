@@ -1072,8 +1072,8 @@ BopSolveStatus IntegralSolver::SolveWithTimeLimit(
     LPDecomposer decomposer;
     decomposer.Decompose(lp);
     const int num_sub_problems = decomposer.GetNumberOfProblems();
-    LOG(INFO) << "Problem is decomposable into " << num_sub_problems
-              << " components!";
+    VLOG(1) << "Problem is decomposable into " << num_sub_problems
+            << " components!";
     if (num_sub_problems > 1) {
       // The problem can be decomposed. Solve each sub-problem and aggregate the
       // result.

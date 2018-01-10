@@ -503,10 +503,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   } else if (fz_ct.type == "network_flow" ||
              fz_ct.type == "network_flow_cost") {
     // Note that we leave ct empty here (with just the name set).
-
-    // We simply do a linear encoding and forces the global lp constraint to
-    // be run on such problem.
-    parameters.set_use_global_lp_constraint(true);
+    // We simply do a linear encoding of this constraint.
     const bool has_cost = fz_ct.type == "network_flow_cost";
     const std::vector<int> flow = LookupVars(fz_ct.arguments[has_cost ? 3 : 2]);
 

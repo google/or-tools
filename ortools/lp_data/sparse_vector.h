@@ -320,7 +320,7 @@ class SparseVector {
   void AddEntry(Index index, Fractional value) {
     DCHECK_GE(index, 0);
     // Grow the internal storage if there is no space left for the new entry. We
-    // increase the size to std::max(4, 1.5*current capacity).
+    // increase the size to max(4, 1.5*current capacity).
     if (num_entries_ == capacity_) {
       // Reserve(capacity_ == 0 ? EntryIndex(4)
       //                        : EntryIndex(2 * capacity_.value()));

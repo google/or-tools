@@ -57,15 +57,17 @@ LinearProgrammingConstraint::CreateNewConstraint(double lb, double ub) {
 glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
     IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
-  if (!ContainsKey(integer_variable_to_index_, positive_variable)) {
-    integer_variable_to_index_[positive_variable] = integer_variables_.size();
+  if (!ContainsKey(mirror_lp_variable_, positive_variable)) {
+    const glop::ColIndex col = lp_data_.CreateNewVariable();
+    DCHECK_EQ(col, integer_variables_.size());
+    mirror_lp_variable_[positive_variable] = col;
     integer_variables_.push_back(positive_variable);
-    mirror_lp_variables_.push_back(lp_data_.CreateNewVariable());
     lp_solution_.push_back(std::numeric_limits<double>::infinity());
     lp_reduced_cost_.push_back(0.0);
     (*dispatcher_)[positive_variable] = this;
+    return col;
   }
-  return mirror_lp_variables_[integer_variable_to_index_[positive_variable]];
+  return mirror_lp_variable_[positive_variable];
 }
 
 void LinearProgrammingConstraint::SetCoefficient(ConstraintIndex ct,
@@ -119,6 +121,16 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
     container->push_back(HeuristicLPPseudoCostBinary(model));
     container->push_back(HeuristicLPMostInfeasibleBinary(model));
   }
+
+  // Registering it with the trail make sure this class is always in sync when
+  // it is used in the decision heuristics.
+  integer_trail_->RegisterReversibleClass(this);
+}
+
+void LinearProgrammingConstraint::SetLevel(int level) {
+  if (lp_solution_is_set_ && level < lp_solution_level_) {
+    lp_solution_is_set_ = false;
+  }
 }
 
 void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
@@ -132,6 +144,7 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
 // Call Propagate() only if it does.
 bool LinearProgrammingConstraint::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
+  if (!lp_solution_is_set_) return Propagate();
   for (const int index : watch_indices) {
     const double lb = static_cast<double>(
         integer_trail_->LowerBound(integer_variables_[index]).value());
@@ -150,12 +163,12 @@ glop::Fractional LinearProgrammingConstraint::GetVariableValueAtCpScale(
 
 double LinearProgrammingConstraint::GetSolutionValue(
     IntegerVariable variable) const {
-  return lp_solution_[FindOrDie(integer_variable_to_index_, variable)];
+  return lp_solution_[FindOrDie(mirror_lp_variable_, variable).value()];
 }
 
 double LinearProgrammingConstraint::GetSolutionReducedCost(
     IntegerVariable variable) const {
-  return lp_reduced_cost_[FindOrDie(integer_variable_to_index_, variable)];
+  return lp_reduced_cost_[FindOrDie(mirror_lp_variable_, variable).value()];
 }
 
 bool LinearProgrammingConstraint::Propagate() {
@@ -167,13 +180,11 @@ bool LinearProgrammingConstraint::Propagate() {
         static_cast<double>(integer_trail_->LowerBound(cp_var).value());
     const double ub =
         static_cast<double>(integer_trail_->UpperBound(cp_var).value());
-    const double factor = scaler_.col_scale(mirror_lp_variables_[i]);
-    lp_data_.SetVariableBounds(mirror_lp_variables_[i], lb * factor,
-                               ub * factor);
+    const double factor = scaler_.col_scale(glop::ColIndex(i));
+    lp_data_.SetVariableBounds(glop::ColIndex(i), lb * factor, ub * factor);
   }
 
   glop::GlopParameters parameters = simplex_.GetParameters();
-
   if (objective_is_defined_) {
     // We put a limit on the dual objective since there is no point increasing
     // it past our current objective upper-bound (we will already fail as soon
@@ -210,13 +221,11 @@ bool LinearProgrammingConstraint::Propagate() {
       std::vector<double> local_solution;
       for (const IntegerVariable var : generator.vars) {
         if (VariableIsPositive(var)) {
-          const int index = integer_variable_to_index_[var];
-          local_solution.push_back(
-              GetVariableValueAtCpScale(mirror_lp_variables_[index]));
+          const auto index = FindOrDie(mirror_lp_variable_, var);
+          local_solution.push_back(GetVariableValueAtCpScale(index));
         } else {
-          const int index = integer_variable_to_index_[NegationOf(var)];
-          local_solution.push_back(
-              -GetVariableValueAtCpScale(mirror_lp_variables_[index]));
+          const auto index = FindOrDie(mirror_lp_variable_, NegationOf(var));
+          local_solution.push_back(-GetVariableValueAtCpScale(index));
         }
       }
       std::vector<LinearConstraint> cuts =
@@ -224,7 +233,7 @@ bool LinearProgrammingConstraint::Propagate() {
       if (cuts.empty()) continue;
 
       // Add the cuts to the LP!
-      lp_data_.DeleteSlackVariables();
+      if (num_new_cuts == 0) lp_data_.DeleteSlackVariables();
       for (const LinearConstraint& cut : cuts) {
         ++num_new_cuts;
         const glop::RowIndex row = lp_data_.CreateNewConstraint();
@@ -297,11 +306,18 @@ bool LinearProgrammingConstraint::Propagate() {
   // Copy current LP solution.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     const double objective_scale = lp_data_.objective_scaling_factor();
+    lp_solution_is_set_ = true;
+    lp_solution_level_ = trail_->CurrentDecisionLevel();
+    lp_objective_ = simplex_.GetObjectiveValue();
+    lp_solution_is_integer_ = true;
     for (int i = 0; i < num_vars; i++) {
-      lp_solution_[i] = GetVariableValueAtCpScale(mirror_lp_variables_[i]);
-      lp_reduced_cost_[i] = simplex_.GetReducedCost(mirror_lp_variables_[i]) *
-                            scaler_.col_scale(mirror_lp_variables_[i]) *
+      lp_solution_[i] = GetVariableValueAtCpScale(glop::ColIndex(i));
+      lp_reduced_cost_[i] = simplex_.GetReducedCost(glop::ColIndex(i)) *
+                            scaler_.col_scale(glop::ColIndex(i)) *
                             objective_scale;
+      if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) > kEpsilon) {
+        lp_solution_is_integer_ = false;
+      }
     }
   }
   return true;
@@ -317,7 +333,7 @@ void LinearProgrammingConstraint::FillReducedCostsReason() {
     // feasible? If the violation minimum is 10 and a variable has rc 1,
     // then decreasing it by 9 would still leave the problem infeasible.
     // Using this could allow to generalize some explanations.
-    const double rc = simplex_.GetReducedCost(mirror_lp_variables_[i]);
+    const double rc = simplex_.GetReducedCost(glop::ColIndex(i));
     if (rc > kEpsilon) {
       integer_reason_.push_back(
           integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
@@ -337,8 +353,7 @@ void LinearProgrammingConstraint::FillDualRayReason() {
     // of an optimal solution if we were optimizing one direction of one basic
     // variable. The simplex_ interface would need to be slightly extended to
     // retrieve the basis column in question and the variable values though.
-    const double rc =
-        simplex_.GetDualRayRowCombination()[mirror_lp_variables_[i]];
+    const double rc = simplex_.GetDualRayRowCombination()[glop::ColIndex(i)];
     if (rc > kEpsilon) {
       integer_reason_.push_back(
           integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
@@ -361,7 +376,7 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];
-    const glop::ColIndex lp_var = mirror_lp_variables_[i];
+    const glop::ColIndex lp_var = glop::ColIndex(i);
     const double rc = simplex_.GetReducedCost(lp_var);
     const double value = simplex_.GetVariableValue(lp_var);
 
@@ -395,7 +410,7 @@ namespace {
 // TODO(user): we could use a sparser algorithm, even if this do not seems to
 // matter for now.
 void AddIncomingAndOutgoingCutsIfNeeded(
-    const std::vector<int>& s, const std::vector<int>& tails,
+    int num_nodes, const std::vector<int>& s, const std::vector<int>& tails,
     const std::vector<int>& heads, const std::vector<IntegerVariable>& vars,
     const std::vector<double>& lp_solution, int64 rhs_lower_bound,
     std::vector<LinearConstraint>* cuts) {
@@ -406,6 +421,8 @@ void AddIncomingAndOutgoingCutsIfNeeded(
   incoming.lb = outgoing.lb = rhs_lower_bound;
   incoming.ub = outgoing.ub = std::numeric_limits<double>::infinity();
   const std::set<int> subset(s.begin(), s.end());
+
+  // Add incoming/outgoing cut arcs, compute flow through cuts.
   for (int i = 0; i < tails.size(); ++i) {
     const bool out = ContainsKey(subset, tails[i]);
     const bool in = ContainsKey(subset, heads[i]);
@@ -421,6 +438,70 @@ void AddIncomingAndOutgoingCutsIfNeeded(
       incoming.coeffs.push_back(1.0);
     }
   }
+
+  // A node is said to be optional if it can be excluded from the subcircuit,
+  // in which case there is a self-loop on that node.
+  // If there are optional nodes, use extended formula:
+  // sum(cut) >= 1 - optional_loop_in - optional_loop_out
+  // where optional_loop_in's node is in subset, optional_loop_out's is out.
+  // TODO(user): Favor optional loops fixed to zero at root.
+  int num_optional_nodes_in = 0;
+  int num_optional_nodes_out = 0;
+  int optional_loop_in = -1;
+  int optional_loop_out = -1;
+  for (int i = 0; i < tails.size(); ++i) {
+    if (tails[i] != heads[i]) continue;
+    if (ContainsKey(subset, tails[i])) {
+      num_optional_nodes_in++;
+      if (optional_loop_in == -1 ||
+          lp_solution[i] < lp_solution[optional_loop_in]) {
+        optional_loop_in = i;
+      }
+    } else {
+      num_optional_nodes_out++;
+      if (optional_loop_out == -1 ||
+          lp_solution[i] < lp_solution[optional_loop_out]) {
+        optional_loop_out = i;
+      }
+    }
+  }
+  if (num_optional_nodes_in + num_optional_nodes_out > 0) {
+    CHECK_EQ(rhs_lower_bound, 1);
+    // When all optionals of one side are excluded in lp solution, no cut.
+    if (num_optional_nodes_in == subset.size() &&
+        (optional_loop_in == -1 ||
+         lp_solution[optional_loop_in] > 1.0 - 1e-6)) {
+      return;
+    }
+    if (num_optional_nodes_out == num_nodes - subset.size() &&
+        (optional_loop_out == -1 ||
+         lp_solution[optional_loop_out] > 1.0 - 1e-6)) {
+      return;
+    }
+
+    // There is no mandatory node in subset, add optional_loop_in.
+    if (num_optional_nodes_in == subset.size()) {
+      incoming.vars.push_back(vars[optional_loop_in]);
+      incoming.coeffs.push_back(1.0);
+      sum_incoming += lp_solution[optional_loop_in];
+
+      outgoing.vars.push_back(vars[optional_loop_in]);
+      outgoing.coeffs.push_back(1.0);
+      sum_outgoing += lp_solution[optional_loop_in];
+    }
+
+    // There is no mandatory node out of subset, add optional_loop_out.
+    if (num_optional_nodes_out == num_nodes - subset.size()) {
+      incoming.vars.push_back(vars[optional_loop_out]);
+      incoming.coeffs.push_back(1.0);
+      sum_incoming += lp_solution[optional_loop_out];
+
+      outgoing.vars.push_back(vars[optional_loop_out]);
+      outgoing.coeffs.push_back(1.0);
+      sum_outgoing += lp_solution[optional_loop_out];
+    }
+  }
+
   if (sum_incoming < rhs_lower_bound - 1e-6) {
     cuts->push_back(std::move(incoming));
   }
@@ -463,9 +544,9 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
             << " sccs:" << components.size();
     for (const std::vector<int>& component : components) {
       if (component.size() == 1) continue;
-      AddIncomingAndOutgoingCutsIfNeeded(component, tails, heads, vars,
-                                         lp_solution, /*rhs_lower_bound=*/1,
-                                         &cuts);
+      AddIncomingAndOutgoingCutsIfNeeded(num_nodes, component, tails, heads,
+                                         vars, lp_solution,
+                                         /*rhs_lower_bound=*/1, &cuts);
 
       // In this case, the cuts for each component are the same.
       if (components.size() == 2) break;
@@ -521,7 +602,7 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
       CHECK_GE(min_num_vehicles, 1);
 
       AddIncomingAndOutgoingCutsIfNeeded(
-          component, tails, heads, vars, lp_solution,
+          num_nodes, component, tails, heads, vars, lp_solution,
           /*rhs_lower_bound=*/min_num_vehicles, &cuts);
 
       // In this case, the cuts for each component are the same.
@@ -598,7 +679,7 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
 
   // Store average of reduced cost from 1 to 0. The best heuristic only sets
   // variables to one and cares about cost to zero, even though classic
-  // pseudocost will use max_var std::min(cost_to_one[var], cost_to_zero[var]).
+  // pseudocost will use max_var min(cost_to_one[var], cost_to_zero[var]).
   const int num_vars = variables.size();
   std::vector<double> cost_to_zero(num_vars, 0.0);
   std::vector<int> num_cost_to_zero(num_vars);
