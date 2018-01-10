@@ -1,7 +1,7 @@
 # SVN tags of dependencies to checkout.
 
 GFLAGS_TAG = 2.2.1
-PROTOBUF_TAG = 3.5.0
+PROTOBUF_TAG = 3.5.1
 GLOG_TAG = 0.3.5
 CBC_TAG = 2.9.9
 
@@ -226,14 +226,17 @@ dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt:
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
 
-dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_COMPILER) make -j 4 && $(SET_COMPILER) make install
+dependencies/install/bin/cbc: dependencies/sources/Cbc-$(CBC_TAG)/Makefile
+	cd dependencies/sources/Cbc-$(CBC_TAG) && $(SET_COMPILER) make -j 4 && $(SET_COMPILER) make install
 
-dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
+dependencies/sources/Cbc-$(CBC_TAG)/Makefile: dependencies/sources/Cbc-$(CBC_TAG)/Makefile.in
+	cd dependencies/sources/Cbc-$(CBC_TAG) && $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
 
-dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
-	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
+CBC_ARCHIVE:=https://www.coin-or.org/download/source/Cbc/Cbc-${CBC_TAG}.tgz
+
+dependencies/sources/Cbc-$(CBC_TAG)/Makefile.in:
+	wget --continue -P dependencies/archives ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'wget -P dependencies/archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
+	tar xzvf dependencies/archives/Cbc-${CBC_TAG}.tgz -C dependencies/sources/
 
 # Install patchelf on linux platforms.
 dependencies/install/bin/patchelf: dependencies/sources/patchelf-0.8/Makefile
@@ -261,8 +264,8 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
 # Clean everything.
 clean_third_party:
 	-$(DEL) Makefile.local
-	-$(DELREC) dependencies/install
-	-$(DELREC) dependencies/sources/cbc*
+	-$(DELREC) dependencies/archives/Cbc*
+	-$(DELREC) dependencies/sources/Cbc*
 	-$(DELREC) dependencies/sources/coin-cbc*
 	-$(DELREC) dependencies/sources/gflags*
 	-$(DELREC) dependencies/sources/glog*
@@ -280,6 +283,7 @@ clean_third_party:
 	-$(DELREC) dependencies/sources/flex*
 	-$(DELREC) dependencies/sources/help2man*
 	-$(DELREC) dependencies/sources/patchelf*
+	-$(DELREC) dependencies/install
 
 # Create Makefile.local
 makefile_third_party: Makefile.local
