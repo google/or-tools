@@ -25,6 +25,7 @@
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/strutil.h"
+#include "ortools/base/port.h"
 #include "ortools/base/hash.h"
 #include "ortools/linear_solver/linear_solver.h"
 

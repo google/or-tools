@@ -341,6 +341,11 @@ class DisabledScopedTimeDistributionUpdater {
 #ifdef HAS_PERF_SUBSYSTEM
 // Helper classes to count instructions during execution of a block of code and
 // add print the results to logs.
+//
+// Note: To enable instruction counting on machines running Debian, execute the
+// following commands to modify the permissions.
+//   sudo echo "1" > /proc/sys/kernel/perf_event_paranoid
+//   sudo echo "0" > /proc/sys/kernel/kptr_restrict
 class EnabledScopedInstructionCounter {
  public:
   explicit EnabledScopedInstructionCounter(const std::string& name,
@@ -402,8 +407,8 @@ inline std::string RemoveOperationsResearchAndGlop(const std::string& pretty_fun
       pretty_function, {{"operations_research::", ""}, {"glop::", ""}});
 }
 
-#define SCOPED_INSTRUCTION_COUNT(time_limit)                                  \
-  operations_research::ScopedInstructionCounterTemp scoped_instruction_count( \
+#define SCOPED_INSTRUCTION_COUNT(time_limit)                              \
+  operations_research::ScopedInstructionCounter scoped_instruction_count( \
       RemoveOperationsResearchAndGlop(__PRETTY_FUNCTION__), time_limit)
 
 #endif  // HAS_PERF_SUBSYSTEM

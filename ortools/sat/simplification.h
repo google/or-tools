@@ -20,7 +20,6 @@
 #define OR_TOOLS_SAT_SIMPLIFICATION_H_
 
 #include <deque>
-#include <unordered_map>
 #include <memory>
 #include <set>
 #include <vector>
@@ -302,7 +301,8 @@ class SatPresolver {
   // Temporary data for SimpleBva().
   std::set<LiteralIndex> m_lit_;
   std::vector<ClauseIndex> m_cls_;
-  std::unordered_map<LiteralIndex, std::vector<ClauseIndex>> p_;
+  ITIVector<LiteralIndex, int> literal_to_p_size_;
+  std::vector<std::pair<LiteralIndex, ClauseIndex>> flattened_p_;
   std::vector<Literal> tmp_new_clause_;
 
   // List of clauses on which we need to call ProcessClauseToSimplifyOthers().
