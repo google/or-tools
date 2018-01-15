@@ -222,29 +222,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int NumVariables() const { return integer_variables_.size(); }
   std::string DimensionString() const { return lp_data_.GetDimensionString(); }
 
- private:
-  // Generates a set of IntegerLiterals explaining why the best solution can not
-  // be improved using reduced costs. This is used to generate explanations for
-  // both infeasibility and bounds deductions.
-  void FillReducedCostsReason();
-
-  // Same as FillReducedCostReason() but for the case of a DUAL_UNBOUNDED
-  // problem. This exploit the dual ray as a reason for the primal infeasiblity.
-  void FillDualRayReason();
-
-  // Fills the deductions vector with reduced cost deductions that can be made
-  // from the current state of the LP solver. The given delta should be the
-  // difference between the cp objective upper bound and lower bound given by
-  // the lp.
-  void ReducedCostStrengtheningDeductions(double cp_objective_delta);
-
-  // Gets or creates an LP variable that mirrors a CP variable.
-  // The variable should be a positive reference.
-  glop::ColIndex GetOrCreateMirrorVariable(IntegerVariable positive_variable);
-
-  // Returns the variable value on the same scale as the CP variable value.
-  glop::Fractional GetVariableValueAtCpScale(glop::ColIndex var);
-
   // Returns a LiteralIndex guided by the underlying LP constraints.
   // This looks at all unassigned 0-1 variables, takes the one with
   // a support value closest to 0.5, and tries to assign it to 1.
@@ -272,6 +249,29 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // could also do exponential smoothing instead of decaying every N calls, i.e.
   // pseudo = a * pseudo + (1-a) reduced.
   std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model);
+
+ private:
+  // Generates a set of IntegerLiterals explaining why the best solution can not
+  // be improved using reduced costs. This is used to generate explanations for
+  // both infeasibility and bounds deductions.
+  void FillReducedCostsReason();
+
+  // Same as FillReducedCostReason() but for the case of a DUAL_UNBOUNDED
+  // problem. This exploit the dual ray as a reason for the primal infeasiblity.
+  void FillDualRayReason();
+
+  // Fills the deductions vector with reduced cost deductions that can be made
+  // from the current state of the LP solver. The given delta should be the
+  // difference between the cp objective upper bound and lower bound given by
+  // the lp.
+  void ReducedCostStrengtheningDeductions(double cp_objective_delta);
+
+  // Gets or creates an LP variable that mirrors a CP variable.
+  // The variable should be a positive reference.
+  glop::ColIndex GetOrCreateMirrorVariable(IntegerVariable positive_variable);
+
+  // Returns the variable value on the same scale as the CP variable value.
+  glop::Fractional GetVariableValueAtCpScale(glop::ColIndex var);
 
   // TODO(user): use solver's precision epsilon.
   static const double kEpsilon;
@@ -336,6 +336,13 @@ class LinearProgrammingDispatcher
     : public std::unordered_map<IntegerVariable, LinearProgrammingConstraint*> {
  public:
   explicit LinearProgrammingDispatcher(Model* model) {}
+};
+
+// A class that stores the collection of all LP constraints in a model.
+class LinearProgrammingConstraintCollection
+    : public std::vector<LinearProgrammingConstraint*> {
+ public:
+  LinearProgrammingConstraintCollection() {}
 };
 
 // Cut generator for the circuit constraint, where in any feasible solution, the

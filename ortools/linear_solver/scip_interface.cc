@@ -25,6 +25,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/port.h"
 #include "scip/scip.h"
 #include "scip/scipdefplugins.h"
 #include "ortools/base/hash.h"

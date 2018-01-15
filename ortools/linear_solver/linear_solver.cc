@@ -33,6 +33,7 @@
 #include "ortools/port/file.h"
 
 
+#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/hash.h"
@@ -41,8 +42,7 @@
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/fp_utils.h"
-
-// TODO(user): Clean up includes. E.g., parameters.pb.h seems not used.
+#include "ortools/base/canonical_errors.h"
 
 DEFINE_bool(verify_solution, false,
             "Systematically verify the solution when calling Solve()"
@@ -399,7 +399,7 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
 namespace {
 int NumDigits(int n) {
 // Number of digits needed to write a non-negative integer in base 10.
-// Note(user): std::max(1, log(0) + 1) == std::max(1, -inf) == 1.
+// Note(user): max(1, log(0) + 1) == max(1, -inf) == 1.
 #if defined(_MSC_VER)
   return static_cast<int>(std::max(1.0L, log(1.0L * n) / log(10.0L) + 1.0));
 #else
@@ -764,12 +764,12 @@ bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
   }
   double largest_error = 0;
   interface_->ExtractModel();
+
+  // Look further: verify that the variable values are within the bounds.
   int num_vars_out_of_bounds = 0;
   const double tolerance = MPSolverParameters::kDefaultPrimalTolerance;
+  int last_offending_var = -1;
   for (int i = 0; i < response.variable_value_size(); ++i) {
-    // Look further: verify the bounds. Since linear solvers yield (small)
-    // numerical errors, though, we just log a warning if the variables look
-    // like they are out of their bounds. The user should inspect the values.
     const double var_value = response.variable_value(i);
     MPVariable* var = variables_[i];
     // TODO(user): Use parameter when they become available in this class.
@@ -778,8 +778,8 @@ bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
     if (lb_error > tolerance || ub_error > tolerance) {
       ++num_vars_out_of_bounds;
       largest_error = std::max(largest_error, std::max(lb_error, ub_error));
+      last_offending_var = i;
     }
-    var->set_solution_value(var_value);
   }
   if (num_vars_out_of_bounds > 0) {
     LOG(WARNING)
@@ -789,6 +789,7 @@ bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
         << tolerance;
   }
   // Set the objective value, if is known.
+  // NOTE(user): We do not verify the objective, even though we could!
   if (response.has_objective_value()) {
     interface_->objective_value_ = response.objective_value();
   }

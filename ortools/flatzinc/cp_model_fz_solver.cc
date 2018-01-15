@@ -835,7 +835,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     // Enumerate all sat solutions.
     m.parameters.set_enumerate_all_solutions(true);
   }
-  m.parameters.set_use_fixed_search(!p.free_search);
+  if (!p.free_search) {
+      m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
+    }
+
   if (p.time_limit_in_ms > 0) {
     m.parameters.set_max_time_in_seconds(p.time_limit_in_ms * 1e-3);
   }

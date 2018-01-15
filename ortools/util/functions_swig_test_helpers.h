@@ -22,6 +22,7 @@
 // to find (whereas the class methods are easy to find).
 
 #include <functional>
+#include <string>
 #include "ortools/base/integral_types.h"
 
 namespace operations_research {

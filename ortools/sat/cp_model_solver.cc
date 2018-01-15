@@ -506,7 +506,8 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   const bool view_all_booleans_as_integers =
       (parameters.linearization_level() > 2) ||
-      (parameters.use_fixed_search() && model_proto.search_strategy().empty());
+      (parameters.search_branching() == SatParameters::FIXED_SEARCH &&
+       model_proto.search_strategy().empty());
   if (view_all_booleans_as_integers) {
     var_to_instantiate_as_integer.resize(num_proto_variables);
     for (int i = 0; i < num_proto_variables; ++i) {

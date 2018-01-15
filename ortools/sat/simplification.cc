@@ -335,6 +335,10 @@ void SatPresolver::PresolveWithBva() {
 
 // We use the same notation as in the article mentionned in the .h
 void SatPresolver::SimpleBva(LiteralIndex l) {
+  literal_to_p_size_.resize(literal_to_clauses_.size(), 0);
+  DCHECK(std::all_of(literal_to_p_size_.begin(), literal_to_p_size_.end(),
+                     [](int v) { return v == 0; }));
+
   // We will try to add a literal to m_lit_ and take a subset of m_cls_ such
   // that |m_lit_| * |m_cls_| - |m_lit_| - |m_cls_| is maximized.
   m_lit_ = {l};
@@ -342,7 +346,10 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
 
   int reduction = 0;
   while (true) {
-    p_.clear();
+    LiteralIndex lmax = kNoLiteralIndex;
+    int max_size = 0;
+
+    flattened_p_.clear();
     for (const ClauseIndex c : m_cls_) {
       const std::vector<Literal>& clause = clauses_[c];
       if (clause.empty()) continue;  // It has been deleted.
@@ -368,24 +375,21 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
           VLOG(1) << "self-subsumbtion";
         }
 
-        DCHECK(p_[l_diff].empty() || p_[l_diff].back() != c);
-        p_[l_diff].push_back(c);
+        flattened_p_.push_back({l_diff, c});
+        const int new_size = ++literal_to_p_size_[l_diff];
+        if (new_size > max_size) {
+          lmax = l_diff;
+          max_size = new_size;
+        }
       }
     }
 
-    LiteralIndex lmax = kNoLiteralIndex;
-    int max_size = 0;
-    for (const auto& entry : p_) {
-      if (entry.second.size() > max_size) {
-        lmax = entry.first;
-        max_size = entry.second.size();
-      }
-    }
     if (lmax == kNoLiteralIndex) break;
     const int new_m_lit_size = m_lit_.size() + 1;
-    const int new_m_cls_size = p_[lmax].size();
+    const int new_m_cls_size = max_size;
     const int new_reduction =
         new_m_lit_size * new_m_cls_size - new_m_cls_size - new_m_lit_size;
+
     if (new_reduction <= reduction) break;
     CHECK_NE(1, new_m_lit_size);
     CHECK_NE(1, new_m_cls_size);
@@ -396,8 +400,19 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
     // not that often compared to the initial computation of p.
     reduction = new_reduction;
     m_lit_.insert(lmax);
-    m_cls_ = p_[lmax];
+
+    // Set m_cls_ to p_[lmax].
+    m_cls_.clear();
+    for (const auto entry : flattened_p_) {
+      literal_to_p_size_[entry.first] = 0;
+      if (entry.first == lmax) m_cls_.push_back(entry.second);
+    }
+    flattened_p_.clear();
   }
+
+  // Make sure literal_to_p_size_ is all zero.
+  for (const auto entry : flattened_p_) literal_to_p_size_[entry.first] = 0;
+  flattened_p_.clear();
 
   // A strictly positive reduction means that applying the BVA transform will
   // reduce the overall number of clauses by that much. Here we can control

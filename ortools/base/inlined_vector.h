@@ -699,14 +699,14 @@ void InlinedVector<T, N, A>::swap(InlinedVector& other) {
 template <typename T, int N, typename A>
 template <typename Iter>
 inline void InlinedVector<T, N, A>::AppendRange(Iter first, Iter last,
-                                             std::input_iterator_tag) {
+                                                std::input_iterator_tag) {
   std::copy(first, last, std::back_inserter(*this));
 }
 
 template <typename T, int N, typename A>
 template <typename Iter>
 inline void InlinedVector<T, N, A>::AppendRange(Iter first, Iter last,
-                                             std::forward_iterator_tag) {
+                                                std::forward_iterator_tag) {
   typedef typename std::iterator_traits<Iter>::difference_type Length;
   Length length = std::distance(first, last);
   size_t s = size();

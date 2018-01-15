@@ -377,9 +377,9 @@ message CpModelProto {
   // The objective to minimize. Can be empty for pure decision problems.
   CpObjectiveProto objective = 4;
 
-  // Defines the strategy that the solver should follow when the "fixed_search"
-  // parameters is set to true. Note that this strategy is also used as an
-  // heuristic when we are not in fixed search.
+  // Defines the strategy that the solver should follow when the
+  // search_branching parameter is set to FIXED_SEARCH. Note that this strategy
+  // is also used as a heuristic when we are not in fixed search.
   //
   // If empty, the solver will try to assign all variables to their min value in
   // the order of their appearance in the variables field above. Otherwise, it

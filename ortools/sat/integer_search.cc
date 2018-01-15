@@ -19,10 +19,10 @@
 namespace operations_research {
 namespace sat {
 
-// TODO(user): the complexity of this heuristic and the one below is ok when
-// use_fixed_search() is false because it is not executed often, however, we do
-// a linear scan for each search decision when use_fixed_search() is true, which
-// seems bad. Improve.
+// TODO(user): the complexity caused by the linear scan in this heuristic and
+// the one below is ok when search_branching is set to SAT_SEARCH because it is
+// not executed often, but otherwise it is done for each search decision,
+// which seems expensive. Improve.
 std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
   IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
@@ -99,18 +99,15 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
   auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
-
-  // Note that the order of the constraints in lp_constraints does not matter.
-  // TODO(user): keep this list somewhere instead of re-creating it like this?
-  std::set<LinearProgrammingConstraint*> lp_constraints;
-  for (auto entry : *lp_dispatcher) lp_constraints.insert(entry.second);
+  auto* lp_constraints =
+      model->GetOrCreate<LinearProgrammingConstraintCollection>();
 
   // Use the normal heuristic if the LP(s) do not seem to cover enough variables
   // to be relevant.
   // TODO(user): Instead, try and depending on the result call it again or not?
   {
     int num_lp_variables = 0;
-    for (LinearProgrammingConstraint* lp : lp_constraints) {
+    for (LinearProgrammingConstraint* lp : *lp_constraints) {
       num_lp_variables += lp->NumVariables();
     }
     const int num_integer_variables =
@@ -134,7 +131,7 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
 
     bool all_lp_integers = true;
     double obj = 0.0;
-    for (LinearProgrammingConstraint* lp : lp_constraints) {
+    for (LinearProgrammingConstraint* lp : *lp_constraints) {
       if (!lp->HasSolution() || !lp->SolutionIsInteger()) {
         all_lp_integers = false;
         break;
@@ -223,28 +220,56 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
   solver->SetAssumptionLevel(0);
 
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
-  if (parameters.use_fixed_search()) {
-    CHECK(assumptions.empty()) << "Not supported yet";
-    // Note that it is important to do the level-zero propagation if it wasn't
-    // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
-    // the solver is in a "propagated" state.
-    if (!solver->Propagate()) return SatSolver::MODEL_UNSAT;
-  }
-
-  if (parameters.use_portfolio_search() && assumptions.empty()) {
-    auto incomplete_portfolio = AddModelHeuristics({next_decision}, model);
-    auto portfolio = CompleteHeuristics(
-        incomplete_portfolio,
-        SequentialSearch({SatSolverHeuristic(model), next_decision}));
-    if (parameters.exploit_integer_lp_solution()) {
-      for (auto& ref : portfolio) {
-        ref = ExploitIntegerLpSolution(ref, model);
-      }
+  switch (parameters.search_branching()) {
+    case SatParameters::AUTOMATIC_SEARCH:
+      break;
+    case SatParameters::FIXED_SEARCH: {
+      CHECK(assumptions.empty()) << "Not supported yet";
+      // Note that it is important to do the level-zero propagation if it wasn't
+      // already done because EnqueueDecisionAndBackjumpOnConflict() assumes
+      // that the solver is in a "propagated" state.
+      if (!solver->Propagate()) return SatSolver::MODEL_UNSAT;
+      break;
     }
-    auto default_restart_policy = SatSolverRestartPolicy(model);
-    auto restart_policies = std::vector<std::function<bool()>>(
-        portfolio.size(), default_restart_policy);
-    return SolveProblemWithPortfolioSearch(portfolio, restart_policies, model);
+    case SatParameters::PORTFOLIO_SEARCH: {
+      CHECK(assumptions.empty()) << "Not supported yet";
+      auto incomplete_portfolio = AddModelHeuristics({next_decision}, model);
+      auto portfolio = CompleteHeuristics(
+          incomplete_portfolio,
+          SequentialSearch({SatSolverHeuristic(model), next_decision}));
+      if (parameters.exploit_integer_lp_solution()) {
+        for (auto& ref : portfolio) {
+          ref = ExploitIntegerLpSolution(ref, model);
+        }
+      }
+      auto default_restart_policy = SatSolverRestartPolicy(model);
+      auto restart_policies = std::vector<std::function<bool()>>(
+          portfolio.size(), default_restart_policy);
+      return SolveProblemWithPortfolioSearch(portfolio, restart_policies,
+                                             model);
+    }
+    case SatParameters::LP_SEARCH: {
+      CHECK(assumptions.empty()) << "Not supported yet";
+      // Fill portfolio with pseudocost heuristics.
+      std::vector<std::function<LiteralIndex()>> lp_heuristics;
+      for (const auto& ct :
+           *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
+        lp_heuristics.push_back(ct->HeuristicLPPseudoCostBinary(model));
+      }
+      auto portfolio = CompleteHeuristics(
+          lp_heuristics,
+          SequentialSearch({SatSolverHeuristic(model), next_decision}));
+      if (parameters.exploit_integer_lp_solution()) {
+        for (auto& ref : portfolio) {
+          ref = ExploitIntegerLpSolution(ref, model);
+        }
+      }
+      auto default_restart_policy = SatSolverRestartPolicy(model);
+      auto restart_policies = std::vector<std::function<bool()>>(
+          portfolio.size(), default_restart_policy);
+      return SolveProblemWithPortfolioSearch(portfolio, restart_policies,
+                                             model);
+    }
   }
 
   if (parameters.exploit_integer_lp_solution() && assumptions.empty()) {
@@ -259,7 +284,7 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
   while (!time_limit->LimitReached()) {
     // If we are not in fixed search, let the SAT solver do a full search to
     // instantiate all the already created Booleans.
-    if (!parameters.use_fixed_search()) {
+    if (parameters.search_branching() == SatParameters::AUTOMATIC_SEARCH) {
       if (assumptions.empty()) {
         const SatSolver::Status status = solver->Solve();
         if (status != SatSolver::MODEL_SAT) return status;

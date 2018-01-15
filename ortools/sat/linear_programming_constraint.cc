@@ -93,6 +93,7 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
 void LinearProgrammingConstraint::RegisterWith(Model* model) {
   DCHECK(!lp_constraint_is_registered_);
   lp_constraint_is_registered_ = true;
+  model->GetOrCreate<LinearProgrammingConstraintCollection>()->push_back(this);
 
   // Note that the order is important so that the lp objective is exactly the
   // same as the cp objective after scaling by the factor stored in lp_data_.

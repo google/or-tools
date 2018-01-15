@@ -24,9 +24,6 @@
 
 namespace operations_research {
 
-const char inst_retired_event[] = "inst_retired:any_p:u";
-const char cycles_event[] = "cycles:u";
-
 std::string MemoryUsage() {
   const int64 mem = operations_research::sysinfo::MemoryUsageProcess();
   static const int64 kDisplayThreshold = 2;
