@@ -2681,6 +2681,7 @@ $(OBJ_DIR)/linear_solver/bop_interface.$O: \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
     $(SRC_DIR)/ortools/bop/integral_solver.h \
@@ -2693,6 +2694,7 @@ $(OBJ_DIR)/linear_solver/cbc_interface.$O: \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/base/timer.h \
     $(SRC_DIR)/ortools/linear_solver/linear_solver.h
@@ -2704,6 +2706,7 @@ $(OBJ_DIR)/linear_solver/clp_interface.$O: \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/base/strutil.h \
     $(SRC_DIR)/ortools/base/timer.h \
@@ -2721,10 +2724,10 @@ $(OBJ_DIR)/linear_solver/cplex_interface.$O: \
 
 $(OBJ_DIR)/linear_solver/glop_interface.$O: \
     $(SRC_DIR)/ortools/linear_solver/glop_interface.cc \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/glop/lp_solver.h \
     $(GEN_DIR)/ortools/glop/parameters.pb.h \
@@ -2746,6 +2749,7 @@ $(OBJ_DIR)/linear_solver/glpk_interface.$O: \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/base/timer.h \
     $(SRC_DIR)/ortools/linear_solver/linear_solver.h
@@ -2757,6 +2761,7 @@ $(OBJ_DIR)/linear_solver/gurobi_interface.$O: \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/map_util.h \
+    $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/base/timer.h \
     $(SRC_DIR)/ortools/linear_solver/linear_solver.h
@@ -2772,9 +2777,11 @@ $(OBJ_DIR)/linear_solver/linear_expr.$O: \
 $(OBJ_DIR)/linear_solver/linear_solver.$O: \
     $(SRC_DIR)/ortools/linear_solver/linear_solver.cc \
     $(SRC_DIR)/ortools/base/accurate_sum.h \
+    $(SRC_DIR)/ortools/base/canonical_errors.h \
     $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
+    $(SRC_DIR)/ortools/base/join.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/map_util.h \
     $(SRC_DIR)/ortools/base/stl_util.h \
@@ -2817,6 +2824,7 @@ $(OBJ_DIR)/linear_solver/scip_interface.$O: \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/base/timer.h \
     $(SRC_DIR)/ortools/linear_solver/linear_solver.h
