@@ -37,7 +37,9 @@ setup(
         'ortools.graph',
         'ortools.linear_solver',
         'ortools.sat',
-        'ortools.sat.python',],
+        'ortools.sat.python',
+        'ortools.util',
+    ],
     install_requires = [
         'protobuf >= PROTOBUF_TAG',
         'six >= 1.10',
