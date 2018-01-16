@@ -19,6 +19,7 @@
 #endif
 #if defined(_MSC_VER)
 #include <windows.h>
+#include <Winsock2.h>
 #define PATH_MAX 4096
 #else
 #include <sys/time.h>
