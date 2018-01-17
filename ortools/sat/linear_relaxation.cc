@@ -140,8 +140,8 @@ void AppendPartialEncodingRelaxation(
   lower_bound_ct.AddTerm(var, 1);
   for (const auto value_literal : encoding) {
     const double value = static_cast<double>(value_literal.value.value());
-    lower_bound_ct.AddLiteralTerm(value_literal.literal, d_min - value,
-                                  *encoder);
+    CHECK(lower_bound_ct.AddLiteralTerm(value_literal.literal, d_min - value,
+                                        *encoder));
   }
 
   // var <= max + sum li * (xi - max).
@@ -150,8 +150,8 @@ void AppendPartialEncodingRelaxation(
   upper_bound_ct.AddTerm(var, 1);
   for (const auto value_literal : encoding) {
     const double value = static_cast<double>(value_literal.value.value());
-    upper_bound_ct.AddLiteralTerm(value_literal.literal, d_max - value,
-                                  *encoder);
+    CHECK(upper_bound_ct.AddLiteralTerm(value_literal.literal, d_max - value,
+                                        *encoder));
   }
 
   if (!at_most_one_ct.IsEmpty() && encoded_values.size() > 1) {
@@ -196,8 +196,9 @@ void AppendPartialGreaterThanEncodingRelaxation(
         // Add var <= prev_var.
         LinearConstraintBuilder lower_than(
             -std::numeric_limits<double>::infinity(), 0);
-        lower_than.AddLiteralTerm(Literal(literal_index), 1.0, *encoder);
-        lower_than.AddLiteralTerm(Literal(prev_literal_index), -1.0, *encoder);
+        CHECK(lower_than.AddLiteralTerm(Literal(literal_index), 1.0, *encoder));
+        CHECK(lower_than.AddLiteralTerm(Literal(prev_literal_index), -1.0,
+                                        *encoder));
         if (!lower_than.IsEmpty()) constraints->push_back(lower_than.Build());
       }
       prev_used_bound = entry.first;

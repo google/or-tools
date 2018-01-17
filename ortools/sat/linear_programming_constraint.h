@@ -79,7 +79,7 @@ class LinearConstraintBuilder {
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
   bool AddLiteralTerm(Literal lit, double coeff,
-                      const IntegerEncoder& encoder) {
+                      const IntegerEncoder& encoder) MUST_USE_RESULT {
     bool has_direct_view = encoder.GetLiteralView(lit) != kNoIntegerVariable;
     bool has_opposite_view =
         encoder.GetLiteralView(lit.Negated()) != kNoIntegerVariable;

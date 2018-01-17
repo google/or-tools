@@ -170,6 +170,10 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
 std::function<void(Model*)> SubcircuitConstraint(
     const std::vector<std::vector<Literal>>& graph);
 
+std::function<void(Model*)> SubcircuitConstraint(
+    const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<Literal>& arcs);
+
 std::function<void(Model*)> MultipleSubcircuitThroughZeroConstraint(
     const std::vector<std::vector<Literal>>& graph);
 

@@ -34,6 +34,8 @@ from ortools.sat import pywrapsat
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
+INT32_MIN = -2147483648
+INT32_MAX = 2147483647
 
 
 # Cp Solver status (exported to avoid importing cp_model_cp2).
@@ -50,6 +52,14 @@ def AssertIsInt64(x):
     raise TypeError('Not an integer: %s' % x)
   if x < INT_MIN or x > INT_MAX:
     raise OverflowError('Does not fit in an int64: %s' % x)
+
+
+def AssertIsInt32(x):
+  """Asserts that x is integer and x is in [min_int_32, max_int_32]."""
+  if not isinstance(x, numbers.Integral):
+    raise TypeError('Not an integer: %s' % x)
+  if x < INT32_MIN or x > INT32_MAX:
+    raise OverflowError('Does not fit in an int32: %s' % x)
 
 
 def AssertIsBoolean(x):
@@ -561,13 +571,35 @@ class CpModel(object):
     model_ct.element.target = self.GetOrMakeIndex(target)
     return ct
 
-  def AddCircuit(self, nexts):
-    """Adds Circuit(nexts)."""
-    if not nexts:
-      raise ValueError('AddCircuit expects a non empty nexts array')
+  def AddCircuit(self, arcs):
+    """Adds Circuit(arcs).
+
+    Adds a circuit constraints from a sparse list of arcs that encode the graph.
+
+    Args:
+      arcs: a list of arcs. An arc is a tuple
+            (source_node, destination_node, literal).
+            The arc is selected in the circuit if the literal is true.
+            Both source_node and destination_node must be integer value between
+            0 and the number of nodes - 1.
+
+    Returns:
+      The constraint proto.
+
+    Raises:
+      ValueError: If the list of arc is empty.
+    """
+    if not arcs:
+      raise ValueError('AddCircuit expects a non empty array of arcs')
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
-    model_ct.circuit.nexts.extend([self.GetOrMakeIndex(x) for x in nexts])
+    for arc in arcs:
+      AssertIsInt32(arc[0])
+      AssertIsInt32(arc[1])
+      lit = self.GetOrMakeBooleanIndex(arc[2])
+      model_ct.circuit.tails.append(arc[0])
+      model_ct.circuit.heads.append(arc[1])
+      model_ct.circuit.literals.append(lit)
     return ct
 
   def AddAllowedAssignments(self, variables, tuples):

@@ -1011,20 +1011,22 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(
 inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
     Literal lit) {
   return [=](Model* model) {
+    auto* encoder = model->GetOrCreate<IntegerEncoder>();
+    const IntegerVariable candidate = encoder->GetLiteralView(lit);
+    if (candidate != kNoIntegerVariable) return candidate;
+
+    IntegerVariable var;
     const auto& assignment = model->GetOrCreate<SatSolver>()->Assignment();
     if (assignment.LiteralIsTrue(lit)) {
-      return model->Add(ConstantIntegerVariable(1));
+      var = model->Add(ConstantIntegerVariable(1));
     } else if (assignment.LiteralIsFalse(lit)) {
-      return model->Add(ConstantIntegerVariable(0));
+      var = model->Add(ConstantIntegerVariable(0));
     } else {
-      auto* encoder = model->GetOrCreate<IntegerEncoder>();
-      const IntegerVariable candidate = encoder->GetLiteralView(lit);
-      if (candidate != kNoIntegerVariable) return candidate;
-
-      const IntegerVariable var = model->Add(NewIntegerVariable(0, 1));
-      encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
-      return var;
+      var = model->Add(NewIntegerVariable(0, 1));
     }
+
+    encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
+    return var;
   };
 }
 
