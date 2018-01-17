@@ -781,6 +781,9 @@ bool FullEncodingFixedPointComputer::PropagateAutomata(
 
 bool FullEncodingFixedPointComputer::PropagateCircuit(
     const ConstraintProto* ct) {
+  // Skip if sparse specification (or empty).
+  if (ct->circuit().nexts_size() == 0) return true;
+
   for (const int variable : ct->circuit().nexts()) {
     FullyEncode(variable);
   }
@@ -1297,8 +1300,20 @@ std::vector<std::vector<Literal>> GetSquareMatrixFromIntegerVariables(
 }
 
 void LoadCircuitConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
-  const std::vector<IntegerVariable> nexts = m->Integers(ct.circuit().nexts());
-  m->Add(SubcircuitConstraint(GetSquareMatrixFromIntegerVariables(nexts, m)));
+  const auto& circuit = ct.circuit();
+  // We must give either dense or sparse specification.
+  CHECK(circuit.nexts_size() == 0 || circuit.tails_size() == 0);
+  if (circuit.nexts_size() > 0) {
+    const std::vector<IntegerVariable> nexts = m->Integers(circuit.nexts());
+    m->Add(SubcircuitConstraint(GetSquareMatrixFromIntegerVariables(nexts, m)));
+  } else if (circuit.tails_size() > 0) {
+    const std::vector<int> tails(circuit.tails().begin(),
+                                 circuit.tails().end());
+    const std::vector<int> heads(circuit.heads().begin(),
+                                 circuit.heads().end());
+    const std::vector<Literal> arcs = m->Literals(circuit.literals());
+    m->Add(SubcircuitConstraint(tails, heads, arcs));
+  }
 }
 
 // TODO(user): provide a sparse API.
@@ -1728,7 +1743,7 @@ void TryToLinearizeConstraint(
     if (HasEnforcementLiteral(ct)) return;
     LinearConstraintBuilder lc(1.0, kInfinity);
     for (const int ref : ct.bool_or().literals()) {
-      lc.AddLiteralTerm(m->Literal(ref), 1.0, *encoder);
+      CHECK(lc.AddLiteralTerm(m->Literal(ref), 1.0, *encoder));
     }
     linear_constraints->push_back(lc.Build());
   } else if (ct.constraint_case() ==
@@ -1739,8 +1754,8 @@ void TryToLinearizeConstraint(
     for (const int ref : ct.bool_and().literals()) {
       // We linearize (e implies literal) as (e - literals <= 0).
       LinearConstraintBuilder lc(-kInfinity, 0.0);
-      lc.AddLiteralTerm(e, 1.0, *encoder);
-      lc.AddLiteralTerm(m->Literal(ref), -1.0, *encoder);
+      CHECK(lc.AddLiteralTerm(e, 1.0, *encoder));
+      CHECK(lc.AddLiteralTerm(m->Literal(ref), -1.0, *encoder));
       linear_constraints->push_back(lc.Build());
     }
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
@@ -1820,7 +1835,7 @@ void TryToLinearizeConstraint(
         const int64 coeff = ct.linear().coeffs(i);
         lc.AddTerm(m->Integer(ref), coeff);
       }
-      lc.AddLiteralTerm(m->Literal(e), implied_lb - min, *encoder);
+      CHECK(lc.AddLiteralTerm(m->Literal(e), implied_lb - min, *encoder));
       linear_constraints->push_back(lc.Build());
     }
     if (max != kint64max) {
@@ -1831,9 +1846,70 @@ void TryToLinearizeConstraint(
         const int64 coeff = ct.linear().coeffs(i);
         lc.AddTerm(m->Integer(ref), coeff);
       }
-      lc.AddLiteralTerm(m->Literal(e), implied_ub - max, *encoder);
+      CHECK(lc.AddLiteralTerm(m->Literal(e), implied_ub - max, *encoder));
       linear_constraints->push_back(lc.Build());
     }
+  } else if (ct.constraint_case() ==
+             ConstraintProto::ConstraintCase::kCircuit) {
+    if (ct.circuit().nexts_size() > 0 || HasEnforcementLiteral(ct)) {
+      return;
+    }
+    const int num_arcs = ct.circuit().literals_size();
+    CHECK_EQ(num_arcs, ct.circuit().tails_size());
+    CHECK_EQ(num_arcs, ct.circuit().heads_size());
+
+    // Each node must have exctly one incoming and one outgoing arc (note that
+    // it can be the unique self-arc of this node too).
+    std::map<int, std::unique_ptr<LinearConstraintBuilder>>
+        incoming_arc_constraints;
+    std::map<int, std::unique_ptr<LinearConstraintBuilder>>
+        outgoing_arc_constraints;
+    auto get_constraint =
+        [](std::map<int, std::unique_ptr<LinearConstraintBuilder>>* node_map,
+           int node) {
+          if (!ContainsKey(*node_map, node)) {
+            (*node_map)[node].reset(new LinearConstraintBuilder(1, 1));
+          }
+          return (*node_map)[node].get();
+        };
+    for (int i = 0; i < num_arcs; i++) {
+      const Literal arc = m->Literal(ct.circuit().literals(i));
+      const int tail = ct.circuit().tails(i);
+      const int head = ct.circuit().heads(i);
+
+      // Make sure this literal has a view.
+      m->Add(NewIntegerVariableFromLiteral(arc));
+
+      CHECK(get_constraint(&outgoing_arc_constraints, tail)
+                ->AddLiteralTerm(arc, 1.0, *encoder));
+      CHECK(get_constraint(&incoming_arc_constraints, head)
+                ->AddLiteralTerm(arc, 1.0, *encoder));
+    }
+    for (const auto* node_map :
+         {&outgoing_arc_constraints, &incoming_arc_constraints}) {
+      for (const auto& entry : *node_map) {
+        linear_constraints->push_back(entry.second->Build());
+      }
+    }
+  } else if (ct.constraint_case() ==
+             ConstraintProto::ConstraintCase::kElement) {
+    const IntegerVariable index = m->Integer(ct.element().index());
+    const IntegerVariable target = m->Integer(ct.element().target());
+    const std::vector<IntegerVariable> vars = m->Integers(ct.element().vars());
+
+    // We only relax the case where all the vars are constant.
+    // target = sum (index == i) * fixed_vars[i].
+    LinearConstraintBuilder constraint(0.0, 0.0);
+    constraint.AddTerm(target, -1.0);
+    for (const auto literal_value : m->Add(FullyEncodeVariable((index)))) {
+      const IntegerVariable var = vars[literal_value.value.value()];
+      if (!m->Get(IsFixed(var))) return;
+      if (!constraint.AddLiteralTerm(literal_value.literal, m->Get(Value(var)),
+                                     *encoder))
+        return;
+    }
+
+    linear_constraints->push_back(constraint.Build());
   }
 }
 
@@ -1841,7 +1917,8 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
                            const ConstraintProto& ct, ModelWithMapping* m,
                            std::vector<CutGenerator>* cut_generators) {
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
-  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit &&
+      ct.circuit().nexts_size() > 0) {
     // This cut generator is valid only if the circuit must pass by all the
     // points. That is if there is no possible self-arc.
     //
@@ -1901,6 +1978,27 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     }
     cut_generators->push_back(CreateStronglyConnectedGraphCutGenerator(
         num_nodes - ignore_zero_offset, tails, heads, vars));
+  }
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit &&
+      ct.circuit().tails_size() > 0) {
+    const std::vector<int> tails(ct.circuit().tails().begin(),
+                                 ct.circuit().tails().end());
+    const std::vector<int> heads(ct.circuit().heads().begin(),
+                                 ct.circuit().heads().end());
+    const std::vector<Literal> literals = m->Literals(ct.circuit().literals());
+    std::vector<IntegerVariable> vars;
+    vars.reserve(literals.size());
+    for (const Literal& literal : literals) {
+      vars.push_back(m->Add(NewIntegerVariableFromLiteral(literal)));
+    }
+
+    const int num_arcs = tails.size();
+    int max_node = 0;
+    for (int i = 0; i < num_arcs; i++) {
+      max_node = std::max(max_node, std::max(tails[i], heads[i]));
+    }
+    cut_generators->push_back(CreateStronglyConnectedGraphCutGenerator(
+        max_node + 1, tails, heads, vars));
   }
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kRoutes) {
     std::vector<int> tails;
@@ -1966,7 +2064,12 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     if (!ok) continue;
     TryToLinearizeConstraint(model_proto, ct, m, linearization_level,
                              &linear_constraints);
-    TryToAddCutGenerators(model_proto, ct, m, &cut_generators);
+
+    // For now these are only useful on problem with circuit. They can help
+    // a lot on complex problems, but they also slow down simple ones.
+    if (linearization_level > 1) {
+      TryToAddCutGenerators(model_proto, ct, m, &cut_generators);
+    }
   }
 
   // Linearize the encoding of variable that are fully encoded in the proto.
@@ -2314,7 +2417,7 @@ CpSolverResponse SolveCpModelInternal(
     // Make sure the sum take a value inside the objective domain by adding
     // the other side: objective <= sum terms.
     //
-    // TODO(user): Use a better condition to detect when this is not usefull.
+    // TODO(user): Use a better condition to detect when this is not useful.
     if (user_domain != automatic_domain) {
       std::vector<IntegerVariable> vars;
       std::vector<int64> coeffs;

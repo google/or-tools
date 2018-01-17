@@ -401,8 +401,6 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     auto* arg = ct->mutable_all_diff();
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
   } else if (fz_ct.type == "circuit" || fz_ct.type == "subcircuit") {
-    auto* arg = ct->mutable_circuit();
-
     // Try to auto-detect if it is zero or one based.
     bool found_zero = false;
     bool found_size = false;
@@ -411,15 +409,23 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       if (var->domain.Min() == 0) found_zero = true;
       if (var->domain.Max() == size) found_size = true;
     }
-
-    // Add a dummy constant variable at zero if the indexing is one based.
     const bool is_one_based = !found_zero || found_size;
-    if (is_one_based) arg->add_nexts(LookupConstant(0));
+    const int min_index = is_one_based ? 1 : 0;
+    const int max_index = min_index + fz_ct.arguments[0].variables.size() - 1;
 
-    int index = is_one_based ? 1 : 0;
+    // The arc-based mutable circuit.
+    auto* circuit_arg = ct->mutable_circuit();
+
+    // We fully encode all variables so we can use the literal based circuit.
+    // TODO(user): avoid fully encoding more than once?
+    int index = min_index;
     const bool is_circuit = (fz_ct.type == "circuit");
     for (const int var : LookupVars(fz_ct.arguments[0])) {
-      arg->add_nexts(var);
+      // Restrict the domain of var to [min_index, max_index]
+      FillDomain(
+          IntersectionOfSortedDisjointIntervals(
+              ReadDomain(proto.variables(var)), {{min_index, max_index}}),
+          proto.mutable_variables(var));
       if (is_circuit) {
         // We simply make sure that the variable cannot take the value index.
         FillDomain(IntersectionOfSortedDisjointIntervals(
@@ -427,6 +433,47 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                        {{kint64min, index - 1}, {index + 1, kint64max}}),
                    proto.mutable_variables(var));
       }
+
+      const auto domain = ReadDomain(proto.variables(var));
+      for (const auto interval : domain) {
+        for (int64 value = interval.start; value <= interval.end; ++value) {
+          // Create one Boolean variable for this arc.
+          const int literal = proto.variables_size();
+          {
+            auto* new_var = proto.add_variables();
+            new_var->add_domain(0);
+            new_var->add_domain(1);
+          }
+
+          // Add the arc.
+          circuit_arg->add_tails(index);
+          circuit_arg->add_heads(value);
+          circuit_arg->add_literals(literal);
+
+          // literal => var == value.
+          {
+            auto* ct = proto.add_constraints();
+            ct->add_enforcement_literal(literal);
+            ct->mutable_linear()->add_coeffs(1);
+            ct->mutable_linear()->add_vars(var);
+            ct->mutable_linear()->add_domain(value);
+            ct->mutable_linear()->add_domain(value);
+          }
+
+          // not(literal) => var != value
+          {
+            auto* ct = proto.add_constraints();
+            ct->add_enforcement_literal(NegatedRef(literal));
+            ct->mutable_linear()->add_coeffs(1);
+            ct->mutable_linear()->add_vars(var);
+            ct->mutable_linear()->add_domain(kint64min);
+            ct->mutable_linear()->add_domain(value - 1);
+            ct->mutable_linear()->add_domain(value + 1);
+            ct->mutable_linear()->add_domain(kint64max);
+          }
+        }
+      }
+
       ++index;
     }
   } else if (fz_ct.type == "inverse") {

@@ -460,6 +460,36 @@ std::function<void(Model*)> SubcircuitConstraint(
   };
 }
 
+std::function<void(Model*)> SubcircuitConstraint(
+    const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<Literal>& arcs) {
+  return [=](Model* model) {
+    const int n = tails.size();
+    CHECK_GT(n, 0);
+    CHECK_EQ(heads.size(), n);
+    CHECK_EQ(arcs.size(), n);
+
+    int max_node = tails[0];
+    int min_node = tails[0];
+    for (int arc = 0; arc < n; arc++) {
+      max_node = std::max(max_node, std::max(tails[arc], heads[arc]));
+      min_node = std::min(min_node, std::min(tails[arc], heads[arc]));
+    }
+    const int graph_size = max_node - min_node + 1;
+    const Literal kFalseLiteral =
+        model->GetOrCreate<IntegerEncoder>()->GetFalseLiteral();
+    std::vector<std::vector<Literal>> graph(
+        graph_size, std::vector<Literal>(graph_size, kFalseLiteral));
+    for (int arc = 0; arc < n; arc++) {
+      const int tail = tails[arc] - min_node;
+      const int head = heads[arc] - min_node;
+      CHECK_EQ(graph[tail][head], kFalseLiteral);
+      graph[tail][head] = arcs[arc];
+    }
+    return SubcircuitConstraint(graph)(model);
+  };
+}
+
 std::function<void(Model*)> MultipleSubcircuitThroughZeroConstraint(
     const std::vector<std::vector<Literal>>& graph) {
   return [=](Model* model) {

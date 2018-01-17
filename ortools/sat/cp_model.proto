@@ -157,16 +157,21 @@ message ReservoirConstraintProto {
   repeated int64 demands = 4;
 }
 
-// The "next" variable of a node i represents its successor in a graph. Any
-// value that fall outside [0, n = next_variables.size()) or is a self-loop
-// (next[i] == i) takes the special meaning of no-successor.
+// The circuit constraint is defined on a graph where the arc presence are
+// controlled by literals. Each arc is given by an index in the
+// tails/heads/literals lists that must have the same size.
 //
-// The circuit constraint enforces that all nodes with a valid successor must
-// form a circuit, that is a single loop that goes through all of them. Note
-// that to enforce that a node has a valid successor, it is sufficient to
-// reduce its domain to only valid values.
+// For now, the graph nodes are always dense in [min_node, max_node] where the
+// min and max are taken over all the values appearing in tails and heads. Each
+// of these nodes must have exactly one incoming and one outgoing selected arc
+// (i.e. literal at true). All the selected arcs that are not self-loops must
+// form a single circuit.
 message CircuitConstraintProto {
-  repeated int32 nexts = 2;
+  repeated int32 nexts = 2;  // DEPRECATED.
+
+  repeated int32 tails = 3;
+  repeated int32 heads = 4;
+  repeated int32 literals = 5;
 }
 
 // The "VRP" constraint.

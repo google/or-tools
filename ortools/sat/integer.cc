@@ -303,34 +303,35 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   equality_to_associated_literal_[key] = literal;
   equality_to_associated_literal_[{NegationOf(var), -value}] = literal;
 
+  // Detect literal view. Note that the same literal can be associated to more
+  // than one variable, and thus already have a view. We don't change it in
+  // this case.
   const auto& domain = (*domains_)[var];
+  if (value == 1 && domain.front().start >= 0 && domain.back().end <= 1) {
+    if (literal.Index() >= literal_view_.size()) {
+      literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
+      literal_view_[literal.Index()] = var;
+    } else if (literal_view_[literal.Index()] == kNoIntegerVariable) {
+      literal_view_[literal.Index()] = var;
+    }
+  }
+  if (value == -1 && domain.front().start >= -1 && domain.back().end <= 0) {
+    if (literal.Index() >= literal_view_.size()) {
+      literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
+      literal_view_[literal.Index()] = NegationOf(var);
+    } else if (literal_view_[literal.Index()] == kNoIntegerVariable) {
+      literal_view_[literal.Index()] = NegationOf(var);
+    }
+  }
+
+  // Fix literal for value outside the domain or for singleton domain.
   if (!SortedDisjointIntervalsContain(domain, value.value())) {
     sat_solver_->AddUnitClause(literal.Negated());
     return;
   }
   if (value == domain.front().start && value == domain.back().end) {
-    sat_solver_->AddUnitClause(literal);  // fixed variable.
+    sat_solver_->AddUnitClause(literal);
     return;
-  }
-
-  // Detect literal view. Note that the same literal can be associated to more
-  // than one variable, and thus already have a view. We don't change it in
-  // this case.
-  if (value == 1 && domain.front().start == 0 && domain.back().end == 1) {
-    if (literal.Index() >= literal_view_.size()) {
-      literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
-      literal_view_[literal.Index()] = var;
-    } else if (literal_view_[literal.Index()] == kNoIntegerVariable) {
-      literal_view_[literal.Index()] = var;
-    }
-  }
-  if (value == -1 && domain.front().start == -1 && domain.back().end == 0) {
-    if (literal.Index() >= literal_view_.size()) {
-      literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
-      literal_view_[literal.Index()] = NegationOf(var);
-    } else if (literal_view_[literal.Index()] == kNoIntegerVariable) {
-      literal_view_[literal.Index()] = NegationOf(var);
-    }
   }
 
   // If the literal was already assigned before beeing associated, we may

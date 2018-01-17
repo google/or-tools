@@ -626,8 +626,8 @@ LinearProgrammingConstraint::HeuristicLPMostInfeasibleBinary(Model* model) {
       variables.push_back(var);
     }
   }
-  LOG(INFO) << "HeuristicLPMostInfeasibleBinary has " << variables.size()
-            << " variables.";
+  VLOG(1) << "HeuristicLPMostInfeasibleBinary has " << variables.size()
+          << " variables.";
 
   return [this, variables, integer_trail, integer_encoder]() {
     const double kEpsilon = 1e-6;
@@ -675,8 +675,8 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
       variables.push_back(var);
     }
   }
-  LOG(INFO) << "HeuristicLPPseudoCostBinary has " << variables.size()
-            << " variables.";
+  VLOG(1) << "HeuristicLPPseudoCostBinary has " << variables.size()
+          << " variables.";
 
   // Store average of reduced cost from 1 to 0. The best heuristic only sets
   // variables to one and cares about cost to zero, even though classic
