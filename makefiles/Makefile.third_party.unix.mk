@@ -4,6 +4,7 @@ GFLAGS_TAG = 2.2.1
 PROTOBUF_TAG = 3.5.1
 GLOG_TAG = 0.3.5
 CBC_TAG = 2.9.9
+PATCHELF_TAG = 0.9
 
 # Detect if patchelf is needed
 ifeq ($(PLATFORM), LINUX)
@@ -239,14 +240,15 @@ dependencies/sources/Cbc-$(CBC_TAG)/Makefile.in:
 	tar xzvf dependencies/archives/Cbc-${CBC_TAG}.tgz -C dependencies/sources/
 
 # Install patchelf on linux platforms.
-dependencies/install/bin/patchelf: dependencies/sources/patchelf-0.8/Makefile
-	cd dependencies/sources/patchelf-0.8 && make && make install
+dependencies/install/bin/patchelf: dependencies/sources/patchelf-$(PATCHELF_TAG)/Makefile
+	cd dependencies/sources/patchelf-$(PATCHELF_TAG) && make && make install
 
-dependencies/sources/patchelf-0.8/Makefile: dependencies/sources/patchelf-0.8/configure
-	cd dependencies/sources/patchelf-0.8 && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+dependencies/sources/patchelf-$(PATCHELF_TAG)/Makefile: dependencies/sources/patchelf-$(PATCHELF_TAG)/configure
+	cd dependencies/sources/patchelf-$(PATCHELF_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
-dependencies/sources/patchelf-0.8/configure: dependencies/archives/patchelf-0.8.tar.gz
-	cd dependencies/sources && tar xzmf ../archives/patchelf-0.8.tar.gz
+dependencies/sources/patchelf-$(PATCHELF_TAG)/configure:
+	git clone -b $(PATCHELF_TAG) https://github.com/NixOS/patchelf.git dependencies/sources/patchelf-$(PATCHELF_TAG)
+	cd dependencies/sources/patchelf-$(PATCHELF_TAG) && ./bootstrap.sh
 
 
 # Install Java protobuf
