@@ -147,3 +147,24 @@ add_custom_target(bdist ALL
 	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel
 	)
 
+# Test
+if(BUILD_TESTING)
+	# Testing using a vitual environment
+	set(VENV_EXECUTABLE ${PYTHON_EXECUTABLE} -m virtualenv)
+	set(VENV_DIR ${CMAKE_BINARY_DIR}/venv)
+	if(WIN32)
+		set(VENV_BIN_DIR "${VENV_DIR}\\Scripts")
+	else()
+		set(VENV_BIN_DIR ${VENV_DIR}/bin)
+	endif()
+	# make a virtualenv to install our python package in it
+	add_custom_command(TARGET bdist POST_BUILD
+		COMMAND ${VENV_EXECUTABLE} -p ${PYTHON_EXECUTABLE} ${VENV_DIR}
+		COMMAND ${VENV_BIN_DIR}/python setup.py install
+	  COMMAND ${CMAKE_COMMAND} -E copy
+			${CMAKE_CURRENT_SOURCE_DIR}/test.py.in
+			${VENV_DIR}/test.py
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    # run the tests within the virtualenv
+		add_test(pytest_venv ${VENV_BIN_DIR}/python ${VENV_DIR}/test.py)
+endif()

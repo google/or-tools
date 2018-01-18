@@ -1,4 +1,5 @@
 from ortools.linear_solver import pywraplp
+from ortools.linear_solver import linear_solver_pb2
 from ortools.constraint_solver import pywrapcp
 from ortools.sat import pywrapsat
 from ortools.graph import pywrapgraph
