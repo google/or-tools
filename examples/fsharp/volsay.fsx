@@ -15,9 +15,7 @@
 
 #I "../../bin"
 #r "Google.OrTools.dll"
-
-#I "./lib"
-#load "Google.OrTools.FSharp.fsx"
+#r "Google.OrTools.FSharp.dll"
 
 open System
 open Google.OrTools.FSharp

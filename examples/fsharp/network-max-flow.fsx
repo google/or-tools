@@ -28,8 +28,9 @@
 
 *)
 
-#I "./lib"
-#load "Google.OrTools.FSharp.fsx"
+#I "../../bin"
+#r "Google.OrTools.dll"
+#r "Google.OrTools.FSharp.dll"
 
 open Google.OrTools.Graph
 open Google.OrTools.FSharp

@@ -1,5 +1,5 @@
 
-#I "../../../bin"
+#I "../../bin"
 #r "Google.OrTools.dll"
 
 open System
