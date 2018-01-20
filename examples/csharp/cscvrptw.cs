@@ -241,10 +241,12 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     model.AddDimension(demand_callback, 0, vehicle_capacity_, true, "capacity");
 
     // Setting up vehicles
+    NodeEvaluator2[] cost_callbacks = new NodeEvaluator2[number_of_vehicles];
     for (int vehicle = 0; vehicle < number_of_vehicles; ++vehicle) {
       int cost_coefficient = vehicle_cost_coefficients_[vehicle];
       NodeEvaluator2 manhattan_cost_callback =
           new Manhattan(locations_, cost_coefficient);
+      cost_callbacks[vehicle] = manhattan_cost_callback;
       model.SetVehicleCost(vehicle, manhattan_cost_callback);
       model.CumulVar(model.End(vehicle), "time").SetMax(
           vehicle_end_time_[vehicle]);
@@ -266,6 +268,13 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
     Console.WriteLine("Search");
     Assignment solution = model.SolveWithParameters(search_parameters);
+
+    //protect callbacks from the GC
+    GC.KeepAlive(manhattan_callback);
+    GC.KeepAlive(demand_callback);
+    for (int cost_callback_index = 0; cost_callback_index < cost_callbacks.Length; cost_callback_index++) {
+        GC.KeepAlive(cost_callbacks[cost_callback_index]);
+    }
 
     if (solution != null) {
       String output = "Total cost: " + solution.ObjectiveValue() + "\n";
