@@ -15,16 +15,14 @@
 
 #I "../../bin"
 #r "Google.OrTools.dll"
-
-#I "./lib"
-#load "Google.OrTools.FSharp.fsx"
+#r "Google.OrTools.FSharp.dll"
 
 open System
 open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
 
 
-let solver (solverType:LinearProgramming) = 
+let solver (solverType:LinearProgramming) =
   let svr = new Solver("Volsay3", solverType.Id);
 
   let products = ["Gas"; "Chloride"]
@@ -38,7 +36,7 @@ let solver (solverType:LinearProgramming) =
   let production = [ for i in 0 .. (products.Length-1) -> svr.MakeNumVar(0.0, 10000.0, products.[i]) ]
 
   // Constraints
-  
+
   // generate column index selectors
   let cols = [ for i in 0 .. (demand.Length-1) -> i ]
 
@@ -46,11 +44,11 @@ let solver (solverType:LinearProgramming) =
       // generate constraint operands based on indices
       let constraintOperands = List.map (fun c ->  production.[c] * demand.[c].[row]) cols
       let linearExp = List.reduce (+) constraintOperands
-      
+
       // create the constraint
       let rc = RangeConstraint(linearExp, Double.NegativeInfinity, stock.[row])
       svr.Add(rc) |> ignore
-      
+
 
   // Objective
   let objectiveOperands = List.map (fun c ->  profit.[c] * production.[c]) cols
