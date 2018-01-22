@@ -40,7 +40,7 @@ if(UNIX)
 	else()
 		set_target_properties(${SWIG_MODULE_pywrapsat_REAL_NAME} PROPERTIES
 			SUFFIX ".so"
-			INSTALL_RPATH	"@loader_path/../..:@loader_path")
+			INSTALL_RPATH	"@loader_path/../..;@loader_path")
 		set_property(TARGET ${SWIG_MODULE_pywrapsat_REAL_NAME} APPEND PROPERTY
 			LINK_FLAGS "-flat_namespace -undefined suppress")
 	endif()
