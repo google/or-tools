@@ -140,11 +140,26 @@ add_custom_command(OUTPUT setup.py dist ${PROJECT_NAME}.egg-info
 	COMMAND ${CMAKE_COMMAND} -E echo ")" >> setup.py
 	VERBATIM)
 
+# Look for python module wheel
+execute_process(
+	COMMAND ${PYTHON_EXECUTABLE} "-c" "import wheel"
+	RESULT_VARIABLE _RESULT
+	ERROR_QUIET
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+set(BDIST_WHEEL "")
+if(${_RESULT} STREQUAL "0")
+	message(STATUS "Found python module: wheel")
+	set(BDIST_WHEEL "bdist_wheel")
+else()
+	message(WARNING "Can't find python module: wheel")
+endif()
+
 # Main Target
 add_custom_target(bdist ALL
 	DEPENDS setup.py Py${PROJECT_NAME}_proto
-	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist
-	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel
+	COMMAND ${CMAKE_COMMAND} -E remove_directory dist
+	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist ${BDIST_WHEEL}
 	)
 
 # Test
