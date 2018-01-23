@@ -1,17 +1,47 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 3709073..b49f18e 100644
+index 3709073..59bfcb0 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -14,7 +14,7 @@
+@@ -14,9 +14,9 @@
  ##
  ## When this project is a subproject (GFLAGS_IS_SUBPROJECT is TRUE), the default
  ## settings are such that only the static single-threaded library is built without
 -## installation of the gflags files. The "gflags" target is in this case an ALIAS
 +## installation of the gflags files. The "gflags::gflags" target is in this case an ALIAS
  ## library target for the "gflags_nothreads_static" library target. Targets which
- ## depend on the gflags library should link to the "gflags" library target.
+-## depend on the gflags library should link to the "gflags" library target.
++## depend on the gflags library should link to the "gflags::gflags" library target.
  ##
-@@ -490,11 +490,11 @@ if (GFLAGS_IS_SUBPROJECT)
+ ## Example CMakeLists.txt of user project which requires separate gflags installation:
+ ##   cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+@@ -26,7 +26,7 @@
+ ##   find_package(gflags REQUIRED)
+ ##
+ ##   add_executable(foo src/foo.cc)
+-##   target_link_libraries(foo gflags)
++##   target_link_libraries(foo gflags::gflags)
+ ##
+ ## Example CMakeLists.txt of user project which requires separate single-threaded static gflags installation:
+ ##   cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+@@ -36,7 +36,7 @@
+ ##   find_package(gflags COMPONENTS nothreads_static)
+ ##
+ ##   add_executable(foo src/foo.cc)
+-##   target_link_libraries(foo gflags)
++##   target_link_libraries(foo gflags::gflags)
+ ##
+ ## Example CMakeLists.txt of super-project which contains gflags source tree:
+ ##   cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+@@ -46,7 +46,7 @@
+ ##   add_subdirectory(gflags)
+ ##
+ ##   add_executable(foo src/foo.cc)
+-##   target_link_libraries(foo gflags)
++##   target_link_libraries(foo gflags::gflags)
+ ##
+ ## Variables to configure the source files:
+ ## - GFLAGS_IS_A_DLL
+@@ -490,11 +494,11 @@ if (GFLAGS_IS_SUBPROJECT)
    foreach (type IN ITEMS static shared)
      foreach (opts IN ITEMS "_nothreads" "")
        if (TARGET gflags${opts}_${type})
