@@ -1,16 +1,91 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 5739702..f57951a 100644
+index 5739702..6077a67 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -409,6 +409,7 @@ add_compile_options ($<$<BOOL:${HAVE_NO_UNNAMED_TYPE_TEMPLATE_ARGS}>:-Wno-unname
+@@ -1,3 +1,33 @@
++## CMake configuration file of glog project
++##
++## By default, GLOG_IS_SUBPROJECT is set to TRUE when
++## the CMAKE_SOURCE_DIR is not identical to the directory of this CMakeLists.txt
++## file, i.e., the top-level directory of the gflags project source tree.
++##
++## When this project is a subproject (GLOG_IS_SUBPROJECT is TRUE). The
++## "glog::glog" target is in this case an ALIAS library target for the "glog"
++## library target. Targets which depend on the glog library should link to the
++## "glog::glog" library target.
++##
++## Example CMakeLists.txt of user project which requires separate glog installation:
++##   cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
++##
++##   project(Foo)
++##
++##   find_package(glog REQUIRED)
++##
++##   add_executable(foo src/foo.cc)
++##   target_link_libraries(foo glog::glog)
++##
++## Example CMakeLists.txt of super-project which contains glog source tree:
++##   cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
++##
++##   project(Foo)
++##
++##   add_subdirectory(glog)
++##
++##   add_executable(foo src/foo.cc)
++##   target_link_libraries(foo glog::glog)
+ cmake_minimum_required (VERSION 3.0)
+ 
+ if (POLICY CMP0042)
+@@ -8,23 +38,25 @@ if (POLICY CMP0063)
+   cmake_policy (SET CMP0063 NEW)
+ endif (POLICY CMP0063)
+ 
+-project (glog)
++project(glog VERSION 0.3.5 LANGUAGES C CXX)
+ 
+-enable_testing ()
+-
+-set (GLOG_MAJOR_VERSION 0)
+-set (GLOG_MINOR_VERSION 3)
+-set (GLOG_PATCH_VERSION 5)
+-
+-set (GLOG_VERSION
+-  ${GLOG_MAJOR_VERSION}.${GLOG_MINOR_VERSION}.${GLOG_PATCH_VERSION})
++# when glog is included as subproject (e.g., as Git submodule/subtree) in the source
++# tree of a project that uses it, no variables should be added to the CMake cache;
++# users may set the non-cached variable GLOG_IS_SUBPROJECT before add_subdirectory(glog)
++if (NOT DEFINED GLOG_IS_SUBPROJECT)
++  if ("^${CMAKE_SOURCE_DIR}$" STREQUAL "^${PROJECT_SOURCE_DIR}$")
++    set (GLOG_IS_SUBPROJECT FALSE)
++  else ()
++    set (GLOG_IS_SUBPROJECT TRUE)
++  endif ()
++endif ()
+ 
+ set (CPACK_PACKAGE_NAME glog)
+ set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "")
+-set (CPACK_PACKAGE_VERSION_MAJOR ${GLOG_MAJOR_VERSION})
+-set (CPACK_PACKAGE_VERSION_MINOR ${GLOG_MINOR_VERSION})
+-set (CPACK_PACKAGE_VERSION_PATCH ${GLOG_PATCH_VERSION})
+-set (CPACK_PACKAGE_VERSION ${GLOG_VERSION})
++set (CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
++set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
++set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
++set (CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+ 
+ option (WITH_GFLAGS "Use gflags" ON)
+ option (WITH_THREADS "Enable multithreading support" ON)
+@@ -409,6 +441,9 @@ add_compile_options ($<$<BOOL:${HAVE_NO_UNNAMED_TYPE_TEMPLATE_ARGS}>:-Wno-unname
  add_library (glog
    ${GLOG_SRCS}
  )
-+add_library(glog::glog ALIAS glog)
++if (GLOG_IS_SUBPROJECT)
++  add_library(glog::glog ALIAS glog)
++endif ()
  
  set_target_properties (glog PROPERTIES POSITION_INDEPENDENT_CODE ON)
  
-@@ -426,7 +427,7 @@ if (WIN32 AND HAVE_SNPRINTF)
+@@ -426,7 +461,7 @@ if (WIN32 AND HAVE_SNPRINTF)
  endif (WIN32 AND HAVE_SNPRINTF)
  
  if (gflags_FOUND)
@@ -19,3 +94,33 @@ index 5739702..f57951a 100644
  
    if (NOT BUILD_SHARED_LIBS)
      # Don't use __declspec(dllexport|dllimport) if this is a static build
+@@ -434,8 +469,8 @@ if (gflags_FOUND)
+   endif (NOT BUILD_SHARED_LIBS)
+ endif (gflags_FOUND)
+ 
+-set_target_properties (glog PROPERTIES VERSION ${GLOG_MAJOR_VERSION})
+-set_target_properties (glog PROPERTIES SOVERSION ${GLOG_VERSION})
++set_target_properties (glog PROPERTIES VERSION ${PROJECT_VERSION})
++set_target_properties (glog PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
+ 
+ if (WIN32)
+   target_compile_definitions (glog PUBLIC GLOG_NO_ABBREVIATED_SEVERITIES)
+@@ -619,7 +654,7 @@ configure_package_config_file (glog-config.cmake.in
+   NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+ 
+ write_basic_package_version_file (glog-config-version.cmake VERSION
+-  ${GLOG_VERSION} COMPATIBILITY SameMajorVersion)
++  ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+ 
+ export (TARGETS glog NAMESPACE glog:: FILE glog-targets.cmake)
+ export (PACKAGE glog)
+@@ -629,5 +664,7 @@ install (FILES
+   ${CMAKE_CURRENT_BINARY_DIR}/glog-config-version.cmake
+   DESTINATION ${_glog_CMake_INSTALLDIR})
+ 
+-install (EXPORT glog-targets NAMESPACE glog:: DESTINATION
+-  ${_glog_CMake_INSTALLDIR})
++if (NOT GLOG_IS_SUBPROJECT)
++  install (EXPORT glog-targets NAMESPACE glog:: DESTINATION
++    ${_glog_CMake_INSTALLDIR})
++endif ()
