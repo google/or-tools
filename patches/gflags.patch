@@ -1,0 +1,27 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3709073..b49f18e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -14,7 +14,7 @@
+ ##
+ ## When this project is a subproject (GFLAGS_IS_SUBPROJECT is TRUE), the default
+ ## settings are such that only the static single-threaded library is built without
+-## installation of the gflags files. The "gflags" target is in this case an ALIAS
++## installation of the gflags files. The "gflags::gflags" target is in this case an ALIAS
+ ## library target for the "gflags_nothreads_static" library target. Targets which
+ ## depend on the gflags library should link to the "gflags" library target.
+ ##
+@@ -490,11 +490,11 @@ if (GFLAGS_IS_SUBPROJECT)
+   foreach (type IN ITEMS static shared)
+     foreach (opts IN ITEMS "_nothreads" "")
+       if (TARGET gflags${opts}_${type})
+-        add_library (gflags ALIAS gflags${opts}_${type})
++        add_library (gflags::gflags ALIAS gflags${opts}_${type})
+         break ()
+       endif ()
+     endforeach ()
+-    if (TARGET gflags)
++    if (TARGET gflags::gflags)
+        break ()
+     endif ()
+   endforeach ()

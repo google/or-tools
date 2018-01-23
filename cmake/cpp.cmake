@@ -89,7 +89,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 	$<INSTALL_INTERFACE:include>
 	)
 target_link_libraries(${PROJECT_NAME} PUBLIC
-	protobuf::libprotobuf gflags glog
+	protobuf::libprotobuf gflags::gflags glog::glog
 	Cbc::CbcSolver Cbc::OsiCbc Clp::ClpSolver Clp::OsiClp
 	Threads::Threads)
 if(WIN32)

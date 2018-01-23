@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 87f867d..821c441 100644
+index 5739702..f57951a 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -410,6 +410,7 @@ add_compile_options ($<$<BOOL:${HAVE_NO_UNNAMED_TYPE_TEMPLATE_ARGS}>:-Wno-unname
+@@ -409,6 +409,7 @@ add_compile_options ($<$<BOOL:${HAVE_NO_UNNAMED_TYPE_TEMPLATE_ARGS}>:-Wno-unname
  add_library (glog
    ${GLOG_SRCS}
  )
@@ -10,3 +10,12 @@ index 87f867d..821c441 100644
  
  set_target_properties (glog PROPERTIES POSITION_INDEPENDENT_CODE ON)
  
+@@ -426,7 +427,7 @@ if (WIN32 AND HAVE_SNPRINTF)
+ endif (WIN32 AND HAVE_SNPRINTF)
+ 
+ if (gflags_FOUND)
+-  target_link_libraries (glog PUBLIC gflags)
++  target_link_libraries (glog PUBLIC gflags::gflags)
+ 
+   if (NOT BUILD_SHARED_LIBS)
+     # Don't use __declspec(dllexport|dllimport) if this is a static build
