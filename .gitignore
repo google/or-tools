@@ -1,4 +1,5 @@
 Makefile.local
+CMakeLists.txt.user
 
 dependencies/archives/
 !dependencies/archives/autoconf.patch
