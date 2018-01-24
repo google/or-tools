@@ -90,11 +90,12 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 	$<INSTALL_INTERFACE:include>
 	)
 target_link_libraries(${PROJECT_NAME} PUBLIC
-	protobuf::libprotobuf gflags::gflags glog::glog
+	gflags::gflags glog::glog
+	ZLIB::ZLIB protobuf::libprotobuf
 	Cbc::CbcSolver Cbc::OsiCbc Clp::ClpSolver Clp::OsiClp
 	Threads::Threads)
 if(WIN32)
-	target_link_libraries(${PROJECT_NAME} PRIVATE psapi.lib ws2_32.lib)
+	target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
 endif()
 target_compile_definitions(${PROJECT_NAME}
 	PUBLIC	USE_BOP USE_GLOP USE_CBC USE_CLP)
@@ -162,11 +163,16 @@ install(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_export.h
 	DESTINATION	${CMAKE_INSTALL_INCLUDEDIR})
 
 install(TARGETS ${PROJECT_NAME}
+	EXPORT ${PROJECT_NAME}Targets
 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	)
+
+install(EXPORT ${PROJECT_NAME}Targets
+  NAMESPACE ${PROJECT_NAME}::
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 install(DIRECTORY ortools
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 	COMPONENT Devel
@@ -180,13 +186,18 @@ install(DIRECTORY ${PROJECT_BINARY_DIR}/ortools
 	PATTERN CMakeFiles EXCLUDE)
 
 include(CMakePackageConfigHelpers)
+string (TOUPPER "${PROJECT_NAME}" PACKAGE_PREFIX)
+configure_package_config_file(${PROJECT_NAME}Config.cmake.in
+	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+	INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+	NO_CHECK_REQUIRED_COMPONENTS_MACRO)
 write_basic_package_version_file(
-	"${PROJECT_BINARY_DIR}/ortools/${PROJECT_NAME}ConfigVersion.cmake"
+	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
 	COMPATIBILITY SameMajorVersion
 	)
 install(
 	FILES
-	"${PROJECT_SOURCE_DIR}/ortools/cmake/${PROJECT_NAME}Config.cmake"
-	"${PROJECT_BINARY_DIR}/ortools/${PROJECT_NAME}ConfigVersion.cmake"
+	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
 	DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
 	COMPONENT Devel)
