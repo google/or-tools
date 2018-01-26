@@ -187,7 +187,7 @@ install(DIRECTORY ${PROJECT_BINARY_DIR}/ortools
 
 include(CMakePackageConfigHelpers)
 string (TOUPPER "${PROJECT_NAME}" PACKAGE_PREFIX)
-configure_package_config_file(${PROJECT_NAME}Config.cmake.in
+configure_package_config_file(cmake/${PROJECT_NAME}Config.cmake.in
 	"${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
 	INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
 	NO_CHECK_REQUIRED_COMPONENTS_MACRO)
