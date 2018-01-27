@@ -4,7 +4,8 @@ help:
 	@echo "  - C++: cc test_cc clean_cc"
 	@echo "  - Python: python test_python clean_python"
 	@echo "  - Java: java test_java clean_java"
-	@echo "  - .NET: csharp test_csharp clean_csharp "
+	@echo "  - .NET (CSharp): csharp test_csharp clean_csharp"
+	@echo "  - .NET (FSharp): fsharp fsharp-help fsharp-clean"
 	@echo "  - all: all test clean"
 	@echo "  - detect: detect_port detect_python detect_java detect_csharp"
 
@@ -55,6 +56,7 @@ include $(OR_ROOT)makefiles/Makefile.cpp.mk
 include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.csharp.mk
+include $(OR_ROOT)makefiles/Makefile.fsharp.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
 include $(OR_ROOT)makefiles/Makefile.install.mk
 
