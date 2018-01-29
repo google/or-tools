@@ -140,58 +140,55 @@ add_custom_command(OUTPUT setup.py dist ${PROJECT_NAME}.egg-info
 	COMMAND ${CMAKE_COMMAND} -E echo ")" >> setup.py
 	VERBATIM)
 
+function(search_python_module MODULE_NAME)
+	execute_process(
+		COMMAND ${PYTHON_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
+		RESULT_VARIABLE _RESULT
+		OUTPUT_VARIABLE MODULE_VERSION
+		ERROR_QUIET
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+	if(${_RESULT} STREQUAL "0")
+		message(STATUS "Found python module: ${MODULE_NAME} (found version \"${MODULE_VERSION}\")")
+	else()
+		message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
+		execute_process(
+			COMMAND ${PYTHON_EXECUTABLE} -m pip install ${MODULE_NAME}
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+	endif()
+endfunction()
+
 # Look for python module wheel
-execute_process(
-	COMMAND ${PYTHON_EXECUTABLE} "-c" "import wheel"
-	RESULT_VARIABLE _RESULT
-	ERROR_QUIET
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-set(BDIST_WHEEL "")
-if(${_RESULT} STREQUAL "0")
-	message(STATUS "Found python module: wheel")
-	set(BDIST_WHEEL "bdist_wheel")
-else()
-	message(WARNING "Can't find python module: wheel")
-endif()
+search_python_module(wheel)
 
 # Main Target
 add_custom_target(bdist ALL
 	DEPENDS setup.py Py${PROJECT_NAME}_proto
 	COMMAND ${CMAKE_COMMAND} -E remove_directory dist
-	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist ${BDIST_WHEEL}
+	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist bdist_wheel
 	)
 
 # Test
 if(BUILD_TESTING)
 	# Look for python module virtualenv
-	execute_process(
-		COMMAND ${PYTHON_EXECUTABLE} "-c" "import virtualenv"
-		RESULT_VARIABLE _RESULT
-		ERROR_QUIET
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-	if(${_RESULT} STREQUAL "0")
-		message(STATUS "Found python module: virtualenv")
-		# Testing using a vitual environment
-		set(VENV_EXECUTABLE ${PYTHON_EXECUTABLE} -m virtualenv)
-		set(VENV_DIR ${CMAKE_BINARY_DIR}/venv)
-		if(WIN32)
-			set(VENV_BIN_DIR "${VENV_DIR}\\Scripts")
-		else()
-			set(VENV_BIN_DIR ${VENV_DIR}/bin)
-		endif()
-		# make a virtualenv to install our python package in it
-		add_custom_command(TARGET bdist POST_BUILD
-			COMMAND ${VENV_EXECUTABLE} -p ${PYTHON_EXECUTABLE} ${VENV_DIR}
-			COMMAND ${VENV_BIN_DIR}/python setup.py install
-			COMMAND ${CMAKE_COMMAND} -E copy
-			${CMAKE_CURRENT_SOURCE_DIR}/test.py.in
-			${VENV_DIR}/test.py
-			WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-		# run the tests within the virtualenv
-		add_test(pytest_venv ${VENV_BIN_DIR}/python ${VENV_DIR}/test.py)
+	search_python_module(virtualenv)
+	# Testing using a vitual environment
+	set(VENV_EXECUTABLE ${PYTHON_EXECUTABLE} -m virtualenv)
+	set(VENV_DIR ${CMAKE_BINARY_DIR}/venv)
+	if(WIN32)
+		set(VENV_BIN_DIR "${VENV_DIR}\\Scripts")
 	else()
-		message(WARNING "Can't find python module: virtualenv")
+		set(VENV_BIN_DIR ${VENV_DIR}/bin)
 	endif()
+	# make a virtualenv to install our python package in it
+	add_custom_command(TARGET bdist POST_BUILD
+		COMMAND ${VENV_EXECUTABLE} -p ${PYTHON_EXECUTABLE} ${VENV_DIR}
+		COMMAND ${VENV_BIN_DIR}/python setup.py install
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${CMAKE_CURRENT_SOURCE_DIR}/test.py.in
+		${VENV_DIR}/test.py
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+	# run the tests within the virtualenv
+	add_test(pytest_venv ${VENV_BIN_DIR}/python ${VENV_DIR}/test.py)
 endif()
