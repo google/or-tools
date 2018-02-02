@@ -71,5 +71,6 @@ tools/docker/export
 .idea/*
 .idea/
 build/
+cache/
 **/.vscode/*
 .DS_Store
