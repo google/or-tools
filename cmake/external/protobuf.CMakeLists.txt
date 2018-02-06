@@ -9,7 +9,7 @@ project(protobuf-download NONE)
 include(ExternalProject)
 ExternalProject_Add(protobuf_project
 	GIT_REPOSITORY https://github.com/google/protobuf
-	GIT_TAG "v3.5.0"
+	GIT_TAG "v3.5.1"
 	SOURCE_DIR "${CMAKE_BINARY_DIR}/protobuf-src"
 	BINARY_DIR "${CMAKE_BINARY_DIR}/protobuf-build"
 	UPDATE_COMMAND ""

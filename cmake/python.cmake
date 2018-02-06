@@ -107,7 +107,7 @@ add_custom_command(OUTPUT setup.py dist ${PROJECT_NAME}.egg-info
 	COMMAND ${CMAKE_COMMAND} -E echo "  distclass=BinaryDistribution," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "  packages=find_packages()," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "  package_data={" >> setup.py
-	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools':['$<TARGET_FILE_NAME:ortools>'$<$<NOT:$<PLATFORM_ID:Windows>>:,'$<TARGET_SONAME_FILE:ortools>'>]," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools':[$<$<NOT:$<PLATFORM_ID:Windows>>:'../$<TARGET_SONAME_FILE_NAME:ortools>'>]," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.constraint_solver':['$<TARGET_FILE_NAME:_pywrapcp>']," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.linear_solver':['$<TARGET_FILE_NAME:_pywraplp>']," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "	'ortools.sat':['$<TARGET_FILE_NAME:_pywrapsat>']," >> setup.py
@@ -140,15 +140,39 @@ add_custom_command(OUTPUT setup.py dist ${PROJECT_NAME}.egg-info
 	COMMAND ${CMAKE_COMMAND} -E echo ")" >> setup.py
 	VERBATIM)
 
+function(search_python_module MODULE_NAME)
+	execute_process(
+		COMMAND ${PYTHON_EXECUTABLE} -c "import ${MODULE_NAME}; print(${MODULE_NAME}.__version__)"
+		RESULT_VARIABLE _RESULT
+		OUTPUT_VARIABLE MODULE_VERSION
+		ERROR_QUIET
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+	if(${_RESULT} STREQUAL "0")
+		message(STATUS "Found python module: ${MODULE_NAME} (found version \"${MODULE_VERSION}\")")
+	else()
+		message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
+		execute_process(
+			COMMAND ${PYTHON_EXECUTABLE} -m pip install ${MODULE_NAME}
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+	endif()
+endfunction()
+
+# Look for python module wheel
+search_python_module(wheel)
+
 # Main Target
 add_custom_target(bdist ALL
 	DEPENDS setup.py Py${PROJECT_NAME}_proto
-	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist
-	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel
+	COMMAND ${CMAKE_COMMAND} -E remove_directory dist
+	COMMAND ${PYTHON_EXECUTABLE} setup.py bdist bdist_wheel
 	)
 
 # Test
 if(BUILD_TESTING)
+	# Look for python module virtualenv
+	search_python_module(virtualenv)
 	# Testing using a vitual environment
 	set(VENV_EXECUTABLE ${PYTHON_EXECUTABLE} -m virtualenv)
 	set(VENV_DIR ${CMAKE_BINARY_DIR}/venv)
@@ -161,10 +185,10 @@ if(BUILD_TESTING)
 	add_custom_command(TARGET bdist POST_BUILD
 		COMMAND ${VENV_EXECUTABLE} -p ${PYTHON_EXECUTABLE} ${VENV_DIR}
 		COMMAND ${VENV_BIN_DIR}/python setup.py install
-	  COMMAND ${CMAKE_COMMAND} -E copy
-			${CMAKE_CURRENT_SOURCE_DIR}/test.py.in
-			${VENV_DIR}/test.py
+		COMMAND ${CMAKE_COMMAND} -E copy
+		${CMAKE_CURRENT_SOURCE_DIR}/test.py.in
+		${VENV_DIR}/test.py
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-    # run the tests within the virtualenv
-		add_test(pytest_venv ${VENV_BIN_DIR}/python ${VENV_DIR}/test.py)
+	# run the tests within the virtualenv
+	add_test(pytest_venv ${VENV_BIN_DIR}/python ${VENV_DIR}/test.py)
 endif()

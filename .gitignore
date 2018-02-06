@@ -1,4 +1,5 @@
 Makefile.local
+CMakeLists.txt.user
 
 dependencies/archives/
 !dependencies/archives/autoconf.patch
@@ -70,5 +71,6 @@ tools/docker/export
 .idea/*
 .idea/
 build/
+cache/
 **/.vscode/*
 .DS_Store
