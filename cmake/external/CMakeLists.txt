@@ -174,8 +174,7 @@ endif()
 
 add_subdirectory(
 	${CMAKE_BINARY_DIR}/cbc-src
-	${CMAKE_BINARY_DIR}/cbc-build
-	EXCLUDE_FROM_ALL)
+	${CMAKE_BINARY_DIR}/cbc-build)
 message(STATUS "Subproject: COIN-OR:Cbc...DONE")
 
 # Reapply previous state
