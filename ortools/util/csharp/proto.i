@@ -47,13 +47,13 @@
 //        type
 // @param param_name the parameter name
 %define PROTO_INPUT(CppProtoType, CSharpProtoType, param_name)
-%typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, uint8*"
-%typemap(imtype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, byte[]"
+%typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, uint8*"
+%typemap(imtype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int " #param_name "_size, byte[]"
 %typemap(cstype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "CSharpProtoType"
 %typemap(csin)   PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.CalculateSize(), ProtoHelper.ProtoToByteArray($csinput)"
 %typemap(in)     PROTO_TYPE* INPUT, PROTO_TYPE& INPUT {
   $1 = new CppProtoType;
-  bool parsed_ok = $1->ParseFromArray($input, proto_size);
+  bool parsed_ok = $1->ParseFromArray($input, param_name ## _size);
   if (!parsed_ok) {
     SWIG_CSharpSetPendingException(
         SWIG_CSharpSystemException,

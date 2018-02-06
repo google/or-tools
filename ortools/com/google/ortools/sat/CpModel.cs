@@ -27,7 +27,7 @@ public class IntegerExpression
 
   public virtual int GetIndex()
   {
-    return -1;  // Throw error.
+    throw new NotImplementedException();
   }
 
 }
@@ -101,7 +101,7 @@ class Product : IntegerExpression
 
 }
 
-class BoundIntegerExpression
+public class BoundIntegerExpression
 {
 
 }
@@ -147,7 +147,7 @@ public class CpModel
     constant_map_ = new Dictionary<long, IntVar>();
   }
 
-  // Helpers.
+  // Getters.
 
   public CpModelProto Model
   {
@@ -212,7 +212,12 @@ public class CpModel
 
   // TODO: AddLinearConstraintWithBounds
 
-  // TODO: Add
+  public Constraint Add(BoundIntegerExpression lin)
+  {
+    // TODO: Implement me.
+    return null;
+  }
+
 
   public Constraint AddAllDifferent(IEnumerable<IntVar> vars)
   {
@@ -224,10 +229,6 @@ public class CpModel
     }
     return ct;
   }
-
-  private CpModelProto model_;
-  private Dictionary<long, IntVar> constant_map_;
-}
 
   // TODO: AddElement
 
@@ -266,5 +267,85 @@ public class CpModel
   // Scheduling support
 
   // TODO: NewInterval
+
+  // Objective.
+  public void Minimize(IntegerExpression obj)
+  {
+    SetObjective(obj, true);
+  }
+
+  public void Maximize(IntegerExpression obj)
+  {
+    SetObjective(obj, false);
+  }
+
+  bool HasObjective()
+  {
+    return model_.Objective == null;
+  }
+
+  // Internal methods.
+
+  void SetObjective(IntegerExpression obj, bool minimize)
+  {
+    CpObjectiveProto objective = new CpObjectiveProto();
+    if (obj is IntVar)
+    {
+      objective.Coeffs.Add(1L);
+      objective.Offset = 0L;
+      if (minimize)
+      {
+        objective.Vars.Add(obj.Index);
+        objective.ScalingFactor = 1L;
+      }
+      else
+      {
+        objective.Vars.Add(Negated(obj.Index));
+        objective.ScalingFactor = -1L;
+      }
+    }
+    model_.Objective = objective;
+    // TODO: Implement me for general IntegerExpression.
+  }
+
+  private CpModelProto model_;
+  private Dictionary<long, IntVar> constant_map_;
+}
+
+public class CpSolver
+{
+  public CpSolver()
+  {
+  }
+
+  public CpSolverStatus Solve(CpModel model)
+  {
+    if (string_parameters_ != null)
+    {
+      response_ = SatHelper.SolveWithStringParameters(model.Model,
+                                                      string_parameters_);
+    }
+    else
+    {
+      response_ = SatHelper.Solve(model.Model);
+    }
+    return response_.Status;
+  }
+
+  public string StringParameters
+  {
+    get { return string_parameters_; }
+    set { string_parameters_ = value; }
+  }
+
+  public CpSolverResponse Response
+  {
+    get { return response_; }
+  }
+
+  private CpModelProto model_;
+  private CpSolverResponse response_;
+  string string_parameters_;
+}
 
 }  // namespace Google.OrTools.Sat

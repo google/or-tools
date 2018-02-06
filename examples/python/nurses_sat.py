@@ -95,7 +95,7 @@ def main():
   for s in all_working_shifts:
     model.Add(sum(works_shift[(n, s)] for n in all_nurses) <= 2)
 
-  # If s nurses works shifts 2 or 3 on, she must also work that shift the
+  # If a nurse works shifts 2 or 3 on, she must also work that shift the
   # previous day or the following day.
   # This means that on a given day and shift, either she does not work that
   # shift on that day, or she works that shift on the day before, or the day

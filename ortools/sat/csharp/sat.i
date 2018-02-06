@@ -32,7 +32,9 @@ PROTO_INPUT(operations_research::sat::CpModelProto,
             Google.OrTools.Sat.CpModelProto,
             model_proto);
 
-//PROTO_INPUT(operations_research::sat::SatParameters, parameters);
+PROTO_INPUT(operations_research::sat::SatParameters,
+            Google.OrTools.Sat.SatParameters,
+            parameters);
 
 PROTO2_RETURN(
     operations_research::sat::CpSolverResponse,
@@ -45,6 +47,7 @@ PROTO2_RETURN(
 %unignore operations_research::sat::SatHelper;
 %unignore operations_research::sat::SatHelper::Solve;
 //%unignore operations_research::sat::SatHelper::SolveWithParameters;
+%unignore operations_research::sat::SatHelper::SolveWithStringParameters;
 
 %include "ortools/sat/swig_helper.h"
 
