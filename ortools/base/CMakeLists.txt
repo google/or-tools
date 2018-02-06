@@ -12,14 +12,14 @@ target_include_directories(${NAME} PRIVATE
 	${PROJECT_SOURCE_DIR}
 	${PROJECT_BINARY_DIR}
 	$<TARGET_PROPERTY:ZLIB::ZLIB,INTERFACE_INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:gflags,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_options(${NAME} PRIVATE
 	$<TARGET_PROPERTY:ZLIB::ZLIB,INTERFACE_COMPILE_OPTIONS>
-	$<TARGET_PROPERTY:gflags,INTERFACE_COMPILE_OPTIONS>
+	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_COMPILE_OPTIONS>
@@ -27,7 +27,7 @@ target_compile_options(${NAME} PRIVATE
 	)
 target_compile_definitions(${NAME} PRIVATE
 	$<TARGET_PROPERTY:ZLIB::ZLIB,INTERFACE_COMPILE_DEFINITIONS>
-	$<TARGET_PROPERTY:gflags,INTERFACE_COMPILE_DEFINITIONS>
+	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_COMPILE_DEFINITIONS>
@@ -36,11 +36,11 @@ target_compile_definitions(${NAME} PRIVATE
 # CMakeError: Object library may not link to anything.
 #target_link_libraries(${NAME} PRIVATE
 #  ZLIB::ZLIB
-#  protobuf::libprotobuf
-#  gflags
+#  gflags::gflags
 #  glog::glog
+#  protobuf::libprotobuf
 #  Cbc::Cbc
 #  ${PROJECT_NAME}::proto)
 add_dependencies(${NAME}
-	ZLIB::ZLIB protobuf::libprotobuf gflags glog::glog Cbc::Cbc ${PROJECT_NAME}::proto)
+	ZLIB::ZLIB protobuf::libprotobuf gflags::gflags glog::glog Cbc::Cbc ${PROJECT_NAME}::proto)
 add_library(${PROJECT_NAME}::base ALIAS ${NAME})

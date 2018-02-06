@@ -25,11 +25,15 @@ endif
 # The generated DLL name. Defaults to Google.OrTools
 CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
 CLR_ORTOOLS_DLL_NAME?=Google.OrTools
+NETSTANDARD_ORTOOLS_DLL_NAME?=Google.OrTools.Core
 BASE_CLR_ORTOOLS_DLL_NAME:= $(CLR_ORTOOLS_DLL_NAME)
 NAMESPACE_ORTOOLS:= $(BASE_CLR_ORTOOLS_DLL_NAME)
 CLR_ORTOOLS_FZ_DLL_NAME?=Google.OrTools.FlatZinc
 BASE_CLR_ORTOOLS_FZ_DLL_NAME:= $(CLR_ORTOOLS_FZ_DLL_NAME)
 NAMESPACE_ORTOOLS_FZ:=$(BASE_CLR_ORTOOLS_DLL_NAME).Flatzinc
+CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
+NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_IMPORT_DLL_NAME).Native
+
 
 # NuGet specification file name
 ORTOOLS_NUSPEC_NAME := or-tools.nuspec
@@ -124,6 +128,34 @@ clean_csharp:
 	-$(DEL) examples$Scsharp$SCsharp_examples.sln
 	-$(DEL) examples$Scsharp$Ssolution$S*.csproj
 
+clean_netstandard:
+	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*$(DLL)
+	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*.mdb
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.lib
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.pdb
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.exp
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.dll
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)
+	-$(DEL) $(GEN_DIR)$Sortools$Slinear_solver$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Sortools$Sconstraint_solver$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Sortools$Ssat$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Sortools$Salgorithms$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Sortools$Sgraph$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Sortools$Sflatzinc$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties$S*cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs
+	-$(DEL) $(OBJ_DIR)$Sswig$S*csharp_wrap.$O
+	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
+	-$(DEL) examples$Scsharp$SCsharp_examples.sln
+	-$(DEL) examples$Scsharp$Ssolution$S*.csproj	
+
 # Assembly Info
 
 $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: $(GEN_DIR)/com/google/ortools/properties
@@ -155,6 +187,23 @@ endif
 
 csharportools: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
+# setup path for dotnet sdk
+CANONIC_PATH_TO_DOTNET_SDK = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DOTNET_INSTALL_PATH))))
+PATH_TO_DOTNET_EXE = $(CANONIC_PATH_TO_DOTNET_SDK)$Sdotnet.exe
+NETSTANDARD_OBJ_DIR = $(OBJ_DIR)$Snetstandard
+
+ifeq ($(wildcard $(CANONIC_PATH_TO_DOTNET_SDK)),)
+netstandard:
+	@echo "The dotnet sdk path was not set properly. Check Makefile.local for more information."
+
+else
+netstandard: CLR_ORTOOLS_IMPORT_DLL_NAME=$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)
+netstandard: netstandardortools
+BUILT_LANGUAGES +=, NETSTANDARD
+endif
+
+netstandardortools: $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) 
+
 $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)
 
@@ -163,7 +212,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/base/base.i \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(LP_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research_linear_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).LinearSolver -dllimport "$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)$Sortools$Slinear_solver$Scsharp$Slinear_solver.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research_linear_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).LinearSolver -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)$Sortools$Slinear_solver$Scsharp$Slinear_solver.i
 
 $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O: $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O
@@ -175,7 +224,7 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(SRC_DIR)/ortools/util/csharp/functions.i \
 	$(CP_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research_constraint_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).ConstraintSolver -dllimport "$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)$Sortools$Sconstraint_solver$Scsharp$Srouting.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research_constraint_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).ConstraintSolver -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)$Sortools$Sconstraint_solver$Scsharp$Srouting.i
 	$(SED) -i -e 's/CSharp_new_Solver/CSharp_new_CpSolver/g' $(GEN_DIR)/com/google/ortools/constraintsolver/*cs $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_delete_Solver/CSharp_delete_CpSolver/g' $(GEN_DIR)/com/google/ortools/constraintsolver/*cs $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_Solver/CSharp_CpSolver/g' $(GEN_DIR)/com/google/ortools/constraintsolver/*cs $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.*
@@ -192,7 +241,7 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/base/base.i \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(SRC_DIR)/ortools/algorithms/knapsack_solver.h
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc -module operations_research_algorithms -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Algorithms -dllimport "$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc -module operations_research_algorithms -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Algorithms -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
 
 $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O: $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O
@@ -202,7 +251,7 @@ $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/base/base.i \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(GRAPH_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_csharp_wrap.cc -module operations_research_graph -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Graph -dllimport "$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph $(SRC_DIR)$Sortools$Sgraph$Scsharp$Sgraph.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_csharp_wrap.cc -module operations_research_graph -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Graph -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph $(SRC_DIR)$Sortools$Sgraph$Scsharp$Sgraph.i
 
 $(OBJ_DIR)/swig/graph_csharp_wrap.$O: $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sortools$Sgraph$Sgraph_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O
@@ -213,7 +262,7 @@ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/sat/swig_helper.h \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(SAT_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Ssat$Ssat_csharp_wrap.cc -module operations_research_sat -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Sat -dllimport "$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Ssat$Ssat_csharp_wrap.cc -module operations_research_sat -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Sat -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
 
 $(OBJ_DIR)/swig/sat_csharp_wrap.$O: $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O
@@ -285,6 +334,66 @@ else
 	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)/ortools/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/ortools/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/sat/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/ortools/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/ortools/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs $(GEN_DIR)/com/google/ortools/properties/*.cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 endif
+
+$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL): \
+	$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(DLL) \
+	COPY_NETSTANDARD_SOURCE \
+	$(GEN_DIR)/com/google/ortools/properties/AssemblyInfo.cs
+	$(PATH_TO_DOTNET_EXE) restore $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj 
+	$(PATH_TO_DOTNET_EXE) build $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -f netstandard2.0 -o:$(realpath $(BIN_DIR))$S
+
+$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(DLL): \
+	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
+	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
+	$(OBJ_DIR)/swig/sat_csharp_wrap.$O \
+	$(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
+	$(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O \
+	$(OBJ_DIR)/swig/graph_csharp_wrap.$O \
+	$(SRC_DIR)/ortools/com/google/ortools/algorithms/IntArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntVarArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/NetDecisionBuilder.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/SolverHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/ValCstPair.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/DoubleArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/LinearExpr.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/LinearConstraint.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/SolverHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/VariableHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/util/NestedArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/util/ProtoHelper.cs \
+	$(GEN_DIR)/com/google/ortools/constraintsolver/Model.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
+	$(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
+	$(OR_TOOLS_LIBS)
+	$(DYNAMIC_LD) $(LDOUT)$(BIN_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
+
+# dotnet core does not have a simple way to pass source files and library reference through command line.
+# Need to stage a folder with the source code and dummy project file to build 
+# https://github.com/dotnet/corefx/blob/master/Documentation/building/advanced-inner-loop-testing.md
+# https://stackoverflow.com/questions/46065777/is-it-possible-to-compile-a-single-c-sharp-code-file-with-net-core-roslyn-compi
+COPY_NETSTANDARD_SOURCE:
+	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)
+	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Slinearsolver
+	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Ssat
+	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Sconstraintsolver
+	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Salgorithm
+	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Sgraph
+	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Sutil
+	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs $(NETSTANDARD_OBJ_DIR)$Slinearsolver$S
+	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat$S*.cs $(NETSTANDARD_OBJ_DIR)$Ssat$S
+	$(COPY) $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs $(NETSTANDARD_OBJ_DIR)$Slinearsolver$S
+	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(NETSTANDARD_OBJ_DIR)$Sconstraintsolver$S
+	$(COPY) $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(NETSTANDARD_OBJ_DIR)$Sconstraintsolver$S
+	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(NETSTANDARD_OBJ_DIR)$Salgorithm$S
+	$(COPY) $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(NETSTANDARD_OBJ_DIR)$Salgorithm$S
+	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs $(NETSTANDARD_OBJ_DIR)$Sgraph$S
+	$(COPY) $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Sutil$S*.cs $(NETSTANDARD_OBJ_DIR)$Sutil$S
+	$(COPY) tools$SOrTools.NetCore.csproj $(NETSTANDARD_OBJ_DIR)
 
 # csharp linear solver examples
 
