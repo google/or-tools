@@ -92,7 +92,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	gflags::gflags glog::glog
 	ZLIB::ZLIB protobuf::libprotobuf
-	Cbc::CbcSolver Cbc::OsiCbc Clp::ClpSolver Clp::OsiClp
+	Cbc::CbcSolver Cbc::OsiCbc Cbc::ClpSolver Cbc::OsiClp
 	Threads::Threads)
 if(WIN32)
 	target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
