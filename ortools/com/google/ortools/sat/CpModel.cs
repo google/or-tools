@@ -30,15 +30,171 @@ public class IntegerExpression
     throw new NotImplementedException();
   }
 
+  public static IntegerExpression operator+(IntegerExpression a,
+                                            IntegerExpression b) {
+    return new SumArray(a, b);
+  }
+
+  public static IntegerExpression operator+(IntegerExpression a, long v) {
+    return new SumArray(a, v);
+  }
+
+  public static IntegerExpression operator+(long v, IntegerExpression a) {
+    return new SumArray(a, v);
+  }
+
+  public static IntegerExpression operator-(IntegerExpression a,
+                                            IntegerExpression b) {
+    return new SumArray(a, Prod(b, -1));
+  }
+
+  public static IntegerExpression operator-(IntegerExpression a, long v) {
+    return new SumArray(a, -v);
+  }
+
+  public static IntegerExpression operator-(long v, IntegerExpression a) {
+    return new SumArray(Prod(a, -1), v);
+  }
+
+  public static IntegerExpression operator*(IntegerExpression a, long v) {
+    return Prod(a, v);
+  }
+
+  public static IntegerExpression operator*(long v, IntegerExpression a) {
+    return Prod(a, v);
+  }
+
+  public static IntegerExpression operator-(IntegerExpression a) {
+    return Prod(a, -1);
+  }
+
+  public static IntegerExpression Prod(IntegerExpression e, long v)
+  {
+    if (e is ProductCst)
+    {
+      ProductCst p = (ProductCst)e;
+      return new ProductCst(p.Expr, p.Coeff * v);
+    }
+    else
+    {
+      return new ProductCst(e, v);
+    }
+  }
+
+  public static long GetVarValueMap(IntegerExpression e,
+                                    Dictionary<IntVar, long> dict)
+  {
+    List<IntegerExpression> exprs = new List<IntegerExpression>();
+    List<long> coeffs = new List<long>();
+    exprs.Add(e);
+    coeffs.Add(1L);
+    long constant = 0;
+
+    while (exprs.Count > 0)
+    {
+      IntegerExpression expr = exprs[0];
+      exprs.RemoveAt(0);
+      long coeff = coeffs[0];
+      coeffs.RemoveAt(0);
+      if (coeff == 0) continue;
+
+      if (expr is ProductCst)
+      {
+        ProductCst p = (ProductCst)expr;
+        if (p.Coeff != 0)
+        {
+          exprs.Add(p.Expr);
+          coeffs.Add(p.Coeff);
+        }
+      }
+      else if (expr is SumArray)
+      {
+        SumArray a = (SumArray)expr;
+        constant += coeff * a.Constant;
+        foreach (IntegerExpression sub in a.Expressions)
+        {
+          exprs.Add(sub);
+          coeffs.Add(coeff);
+        }
+      }
+      else if (expr is IntVar)
+      {
+        IntVar i = (IntVar)expr;
+        if (dict.ContainsKey(i))
+        {
+          dict[i] += coeff;
+        }
+        else
+        {
+          dict.Add(i, coeff);
+        }
+
+      }
+      else if (expr is NotBooleanVariable)
+      {
+        throw new ArgumentException(
+            "Cannot interpret a literal in an integer expression.");
+      }
+      else
+      {
+        throw new ArgumentException("Cannot interpret '" + expr.ToString() +
+                                    "' in an integer expression");
+      }
+    }
+    return constant;
+  }
 }
 
-class ProductCst : IntegerExpression
+public class ProductCst : IntegerExpression
 {
+  public ProductCst(IntegerExpression e, long v)
+  {
+    expr_ = e;
+    coeff_ = v;
+  }
+
+  public IntegerExpression Expr
+  {
+    get { return expr_; }
+  }
+
+  public long Coeff
+  {
+    get { return coeff_; }
+  }
+
+  private IntegerExpression expr_;
+  private long coeff_;
 
 }
 
-class SumArray : IntegerExpression
+public class SumArray : IntegerExpression
 {
+  public SumArray(IntegerExpression a, IntegerExpression b)
+  {
+    expressions_ = new List<IntegerExpression>();
+    expressions_.Add(a);
+    expressions_.Add(b);
+  }
+
+  public SumArray(IntegerExpression a, long b)
+  {
+    expressions_.Add(a);
+    constant_ = b;
+  }
+
+  public List<IntegerExpression> Expressions
+  {
+    get { return expressions_; }
+  }
+
+  public long Constant
+  {
+    get { return constant_; }
+  }
+
+  private List<IntegerExpression> expressions_;
+  private long constant_;
 
 }
 
@@ -69,6 +225,11 @@ public class IntVar : IntegerExpression
     return index_;
   }
 
+  public override string ToString()
+  {
+    return var_.ToString();
+  }
+
 
   private CpModelProto model_;
   private int index_;
@@ -96,11 +257,6 @@ class NotBooleanVariable : IntegerExpression
   private IntVar boolvar_;
 }
 
-class Product : IntegerExpression
-{
-
-}
-
 public class BoundIntegerExpression
 {
 
@@ -125,9 +281,9 @@ public class Constraint
     get  { return index_; }
   }
 
-  public ConstraintProto Proto()
+  public ConstraintProto Proto
   {
-    return constraint_;
+    get { return constraint_; }
   }
 
   private int index_;
@@ -184,14 +340,55 @@ public class CpModel
                                         long lb, long ub)
   {
     Constraint ct = new Constraint(model_);
-    ConstraintProto model_ct = ct.Proto();
+    LinearConstraintProto lin = new LinearConstraintProto();
     foreach (Tuple<IntVar, long> term in terms)
     {
-      model_ct.Linear.Vars.Add(term.Item1.Index);
-      model_ct.Linear.Coeffs.Add(term.Item2);
+      lin.Vars.Add(term.Item1.Index);
+      lin.Coeffs.Add(term.Item2);
     }
-    model_ct.Linear.Domain.Add(lb);
-    model_ct.Linear.Domain.Add(ub);
+    lin.Domain.Add(lb);
+    lin.Domain.Add(ub);
+    ct.Proto.Linear = lin;
+    return ct;
+  }
+
+  public Constraint AddLinearConstraint(IEnumerable<IntVar> vars,
+                                        IEnumerable<long> coeffs,
+                                        long lb, long ub)
+  {
+    Constraint ct = new Constraint(model_);
+    LinearConstraintProto lin = new LinearConstraintProto();
+    foreach (IntVar var in vars)
+    {
+      lin.Vars.Add(var.Index);
+    }
+    foreach (long coeff in coeffs)
+    {
+      lin.Coeffs.Add(coeff);
+    }
+    lin.Domain.Add(lb);
+    lin.Domain.Add(ub);
+    ct.Proto.Linear = lin;
+    return ct;
+  }
+
+  public Constraint AddLinearConstraint(IEnumerable<IntVar> vars,
+                                        IEnumerable<int> coeffs,
+                                        long lb, long ub)
+  {
+    Constraint ct = new Constraint(model_);
+    LinearConstraintProto lin = new LinearConstraintProto();
+    foreach (IntVar var in vars)
+    {
+      lin.Vars.Add(var.Index);
+    }
+    foreach (int coeff in coeffs)
+    {
+      lin.Coeffs.Add(coeff);
+    }
+    lin.Domain.Add(lb);
+    lin.Domain.Add(ub);
+    ct.Proto.Linear = lin;
     return ct;
   }
 
@@ -199,14 +396,15 @@ public class CpModel
                                      long ub)
   {
     Constraint ct = new Constraint(model_);
-    ConstraintProto model_ct = ct.Proto();
+    LinearConstraintProto lin = new LinearConstraintProto();
     foreach (IntVar var in vars)
     {
-      model_ct.Linear.Vars.Add(var.Index);
-      model_ct.Linear.Coeffs.Add(1L);
+      lin.Vars.Add(var.Index);
+      lin.Coeffs.Add(1L);
     }
-    model_ct.Linear.Domain.Add(lb);
-    model_ct.Linear.Domain.Add(ub);
+    lin.Domain.Add(lb);
+    lin.Domain.Add(ub);
+    ct.Proto.Linear = lin;
     return ct;
   }
 
@@ -222,11 +420,12 @@ public class CpModel
   public Constraint AddAllDifferent(IEnumerable<IntVar> vars)
   {
     Constraint ct = new Constraint(model_);
-    ConstraintProto model_ct = ct.Proto();
+    AllDifferentConstraintProto alldiff = new AllDifferentConstraintProto();
     foreach (IntVar var in vars)
     {
-      model_ct.AllDiff.Vars.Add(var.Index);
+      alldiff.Vars.Add(var.Index);
     }
+    ct.Proto.AllDiff = alldiff;
     return ct;
   }
 
@@ -302,6 +501,33 @@ public class CpModel
       {
         objective.Vars.Add(Negated(obj.Index));
         objective.ScalingFactor = -1L;
+      }
+    }
+    else
+    {
+      Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+      long constant = IntegerExpression.GetVarValueMap(obj, dict);
+      if (minimize)
+      {
+        objective.ScalingFactor = 1L;
+        objective.Offset = constant;
+      }
+      else
+      {
+        objective.ScalingFactor = -1L;
+        objective.Offset = -constant;
+      }
+      foreach (KeyValuePair<IntVar, long> it in dict)
+      {
+        objective.Coeffs.Add(it.Value);
+        if (minimize)
+        {
+          objective.Vars.Add(it.Key.Index);
+        }
+        else
+        {
+          objective.Vars.Add(Negated(it.Key.Index));
+        }
       }
     }
     model_.Objective = objective;

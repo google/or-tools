@@ -40,38 +40,43 @@ public class CsTestCpOperator
 
 
   static void TestSimpleLinearModel() {
+    Console.WriteLine("TestSimpleLinearModel");
     CpModel model = new CpModel();
     IntVar v1 = model.NewIntVar(-10, 10, "v1");
     IntVar v2 = model.NewIntVar(-10, 10, "v2");
     IntVar v3 = model.NewIntVar(-100000, 100000, "v3");
+    model.AddLinearConstraint(new[] {v1, v2}, new[] {1, 1}, -1000000, 100000);
+    model.AddLinearConstraint(new[] {v1, v2, v3}, new[] {1, 2, -1}, 0, 100000);
 
     model.Maximize(v3);
-//    model.Constraints.Add(NewLinear2(0, 1 , 1, 1, -1000000, 100000));
-//    model.Constraints.Add(NewLinear3(0, 1, 2, 1, 2, -1, 0, 100000));
 
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
-
+    Console.WriteLine("Status = " + status);
     Console.WriteLine("model = " + model.Model.ToString());
     Console.WriteLine("response = " + solver.Response.ToString());
   }
 
-  // static void TestSimpleLinearModel2() {
-  //   CpModelProto model = new CpModelProto();
-  //   model.Variables.Add(NewIntegerVariable(-10, 10));
-  //   model.Variables.Add(NewIntegerVariable(-10, 10));
-  //   model.Constraints.Add(NewLinear2(0, 1 , 1, 1, -1000000, 100000));
-  //   model.Objective = NewMaximize2(0, 1, 1, -2);
 
-  //   CpSolverResponse response = SatHelper.Solve(model);
+  static void TestSimpleLinearModel2() {
+    Console.WriteLine("TestSimpleLinearModel2");
+    CpModel model = new CpModel();
+    IntVar v1 = model.NewIntVar(-10, 10, "v1");
+    IntVar v2 = model.NewIntVar(-10, 10, "v2");
+    model.AddLinearConstraint(new[] {v1, v2}, new[] {1, 1}, -1000000, 100000);
+    model.Maximize(v1 - 2 * v2);
 
-  //   Console.WriteLine("model = " + model.ToString());
-  //   Console.WriteLine("response = " + response.ToString());
-  // }
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    Console.WriteLine("Status = " + status);
+    Console.WriteLine("model = " + model.Model.ToString());
+    Console.WriteLine("response = " + solver.Response.ToString());
+  }
+
 
   static void Main() {
     TestSimpleLinearModel();
-//    TestSimpleLinearModel2();
+    TestSimpleLinearModel2();
     if (error_count_ != 0) {
       Console.WriteLine("Found " + error_count_ + " errors.");
       Environment.Exit(1);
