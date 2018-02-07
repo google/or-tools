@@ -52,7 +52,8 @@ cache/%/configure.log: cache/%/docker_devel.tar \
 	CMakeLists.txt cmake/external/CMakeLists.txt ortools/*/CMakeLists.txt \
 	cmake/*.cmake cmake/*Config.cmake.in patches
 	@docker load -i $<
-	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c "cmake -H. -Bcache/$*"
+	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c \
+		"cmake -H. -Bcache/$*"
 	@date > $@
 
 # BUILD
@@ -61,7 +62,8 @@ build: build_alpine build_ubuntu
 build_alpine: cache/alpine/build.log
 build_ubuntu: cache/ubuntu/build.log
 cache/%/build.log: cache/%/configure.log ortools examples
-	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c "cmake --build cache/$* --target all"
+	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c \
+		"cmake --build cache/$* --target all"
 	@date > $@
 
 # TEST
@@ -70,7 +72,8 @@ test: test_ubuntu
 test_alpine: cache/alpine/test.log
 test_ubuntu: cache/ubuntu/test.log
 cache/%/test.log: cache/%/build.log
-	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c "cd cache/$* && ctest --output-on-failure"
+	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c \
+		"cmake --build cache/$* --target test -- CTEST_OUTPUT_ON_FAILURE=1"
 	@date > $@
 
 # INSTALL
@@ -79,7 +82,8 @@ install: install_ubuntu
 install_alpine: cache/alpine/install.log
 install_ubuntu: cache/ubuntu/install.log
 cache/%/install.log: cmake/docker/%/InstallDockerfile cache/%/build.log
-	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c "cmake --build cache/$* --target install -- DESTDIR=install"
+	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c \
+		"cmake --build cache/$* --target install -- DESTDIR=install"
 	@docker image rm -f ${PROJECT}_$*:install 2>/dev/null
 	docker build --no-cache -t ${PROJECT}_$*:install -f $< .
 	docker save ${PROJECT}_$*:install -o cache/$*/docker_install.tar
@@ -101,7 +105,11 @@ test_install_alpine: cache/alpine/test_install.log
 test_install_ubuntu: cache/ubuntu/test_install.log
 cache/%/test_install.log: cache/%/install.log cmake/sample
 	@docker load -i cache/$*/docker_install.tar
-	${DOCKER_INSTALL_CMD} ${PROJECT}_$*:install /bin/sh -c "cmake -H. -B/cache; cmake --build /cache; cmake --build /cache --target test -- ARGS=-V"
+	${DOCKER_INSTALL_CMD} ${PROJECT}_$*:install /bin/sh -c \
+		"cmake -H. -B/cache; \
+		cmake --build /cache; \
+		cmake --build /cache --target test; \
+		cmake --build /cache --target install"
 	@date > $@
 
 # CLEAN
@@ -111,8 +119,10 @@ clean_alpine: clean-alpine
 clean_ubuntu: clean-ubuntu
 clean-%:: cache/%/docker_devel.tar
 	@docker load -i $<
-	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c "cmake --build cache/$* --target clean"
-	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c "rm -rf cache/$*/install"
+	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c \
+		"cmake --build cache/$* --target clean"
+	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c \
+		"rm -rf cache/$*/install"
 	@rm -f cache/$*/test.log
 	@rm -f cache/$*/build.log
 	@rm -f cache/$*/configure.log
@@ -127,6 +137,7 @@ distclean: distclean_alpine distclean_ubuntu
 distclean_alpine: distclean-alpine
 distclean_ubuntu: distclean-ubuntu
 distclean-%::
-	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c "rm -rf cache/$*"
+	${DOCKER_DEVEL_CMD} ${PROJECT}_$*:devel /bin/sh -c \
+		"rm -rf cache/$*"
 	docker image rm -f ${PROJECT}_$*:devel 2>/dev/null
 	docker image rm -f ${PROJECT}_$*:install 2>/dev/null
