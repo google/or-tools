@@ -38,6 +38,14 @@ public class CsTestCpOperator
     }
   }
 
+  static void CheckDoubleEq(double v1, double v2, String message)
+  {
+    if (v1 != v2)
+    {
+      Console.WriteLine("Error: " + v1 + " != " + v2 + " " + message);
+      error_count_++;
+    }
+  }
 
   static void TestSimpleLinearModel() {
     Console.WriteLine("TestSimpleLinearModel");
@@ -52,11 +60,11 @@ public class CsTestCpOperator
 
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
+    Check(status == CpSolverStatus.Optimal, "Wrong status after solve");
     Console.WriteLine("Status = " + status);
     Console.WriteLine("model = " + model.Model.ToString());
     Console.WriteLine("response = " + solver.Response.ToString());
   }
-
 
   static void TestSimpleLinearModel2() {
     Console.WriteLine("TestSimpleLinearModel2");
@@ -68,8 +76,8 @@ public class CsTestCpOperator
 
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
-    Console.WriteLine("Status = " + status);
-    Console.WriteLine("model = " + model.Model.ToString());
+    Check(status == CpSolverStatus.Optimal, "Wrong status after solve");
+    CheckDoubleEq(30.0, solver.ObjectiveValue, "Wrong solution value");
     Console.WriteLine("response = " + solver.Response.ToString());
   }
 

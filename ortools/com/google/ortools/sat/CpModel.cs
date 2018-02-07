@@ -558,6 +558,11 @@ public class CpSolver
     return response_.Status;
   }
 
+  public double ObjectiveValue
+  {
+    get { return response_.ObjectiveValue; }
+  }
+
   public string StringParameters
   {
     get { return string_parameters_; }
