@@ -64,6 +64,7 @@ create_dirs:
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sfsharp$Slib
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Snetstandard
 
 
 #credits
@@ -131,6 +132,23 @@ ifeq "$(SYSTEM)" "win"
 else
 	$(COPY) lib$Slib$(CLR_ORTOOLS_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin
 endif
+
+netstandard_archive: NET_STANDARD_EXAMPLES = $(wildcard examples/csharp/*.cs)
+netstandard_archive: netstandard_example_archive
+	$(COPY) bin$S$(NETSTANDARD_ORTOOLS_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin$S
+	$(COPY) bin$S$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sbin$S
+	$(COPY) bin$S$(NETSTANDARD_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg temp$S$(INSTALL_DIR)$Sbin$S
+	$(COPY) tools$SREADME.netstandard temp$S$(INSTALL_DIR)$Sexamples$Snetstandard
+
+netstandard_example_archive: 
+	$(foreach file, $(NET_STANDARD_EXAMPLES), $(call netstandard_example_archive_copy,$(file))) :
+
+define netstandard_example_archive_copy 
+	$(MKDIR_P) temp$S$(INSTALL_DIR)$Sexamples$Snetstandard$S$(basename $(notdir $(1))) &&\
+	$(COPY) tools$Snetstandard$Snuget.config temp$S$(INSTALL_DIR)$Sexamples$Snetstandard$S$(basename $(notdir $(1))) &&\
+	$(COPY) tools$Snetstandard$Sexample.csproj temp$S$(INSTALL_DIR)$Sexamples$Snetstandard$S$(basename $(notdir $(1))) &&\
+	$(COPY) examples$Scsharp$S$(notdir $(1)) temp$S$(INSTALL_DIR)$Sexamples$Snetstandard$S$(basename $(notdir $(1)))$S &&
+endef
 
 java_archive: java
 	$(COPY) lib$S*.jar temp$S$(INSTALL_DIR)$Slib
