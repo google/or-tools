@@ -195,7 +195,7 @@ endif
 netstandardortools: $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) 
 
 $(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
-	$(NETSTANDARD_CLR_KEYFILE) \
+	netstandard_keyfile \
 	$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs
 	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
 ifdef CLR_KEYFILE
@@ -297,9 +297,9 @@ ifdef CLR_KEYFILE
 	sn -k $(CLR_KEYFILE)
 endif
 
-$(NETSTANDARD_CLR_KEYFILE):
+netstandard_keyfile:
 ifdef CLR_KEYFILE
-	$(PATH_TO_DOTNET_EXE) run tools$Snetstandard$SCreateSigningKey$SCreateSigningKey.dll $(CLR_KEYFILE)
+	$(PATH_TO_DOTNET_EXE) run --project tools$Snetstandard$SCreateSigningKey$SCreateSigningKey.csproj $(CLR_KEYFILE)
 endif
 
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \

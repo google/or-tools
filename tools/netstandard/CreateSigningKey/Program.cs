@@ -8,7 +8,6 @@ namespace CreateSigningKey
     {
         static void Main(string[] args)
         {
-            args = new[] { "or-tools.snk" };
             if (args == null || args.Length == 0)
             {
                 Console.WriteLine("Key filename not specified.");

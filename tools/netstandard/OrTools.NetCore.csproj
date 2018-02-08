@@ -49,6 +49,10 @@
       <Link>graph\%(Filename)%(Extension)</Link>
     </Compile>
     
+    <Compile Include="..\..\ortools\com\google\ortools\sat\*.cs">
+      <Link>sat\%(Filename)%(Extension)</Link>
+    </Compile>
+
     <Compile Include="..\..\ortools\gen\com\google\ortools\sat\*.cs">
       <Link>sat\%(Filename)%(Extension)</Link>
     </Compile>

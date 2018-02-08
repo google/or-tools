@@ -75,4 +75,5 @@ cache/
 **/.vscode/*
 .DS_Store
 
-!tools/netstandard/CreateSigningKey/CreateSigningKey.dll
+tools/netstandard/CreateSigningKey/bin
+tools/netstandard/CreateSigningKey/obj
