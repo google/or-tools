@@ -34,7 +34,7 @@ NAMESPACE_ORTOOLS_FZ:=$(BASE_CLR_ORTOOLS_DLL_NAME).Flatzinc
 CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
 NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_IMPORT_DLL_NAME).Native
 NETSTANDARD_OBJ_DIR = $(OBJ_DIR)$Snetstandard
-NETSTANDARD_RUNTIME_IDENTIFIER=win10-x64
+NETSTANDARD_RUNTIME_IDENTIFIER=
 
 # NuGet specification file name
 ORTOOLS_NUSPEC_NAME := or-tools.nuspec
@@ -69,10 +69,10 @@ endif
 
 ifeq "$(SYSTEM)" "win"
 	NETSTANDARD_RUNTIME_IDENTIFIER=win-$(NETPLATFORM)
-else ifeq ($(PLATFORM),LINUX)
-	NETSTANDARD_RUNTIME_IDENTIFIER=linux-$(NETPLATFORM)
 else ifeq ($(PLATFORM),MACOSX)
-	NETSTANDARD_RUNTIME_IDENTIFIER=osx-$(NETPLATFORM)
+	NETSTANDARD_RUNTIME_IDENTIFIER=osx
+else
+	NETSTANDARD_RUNTIME_IDENTIFIER=linux-$(NETPLATFORM)
 endif
 
 CSHARPEXE = \
@@ -181,7 +181,7 @@ csharportools: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBU
 
 # setup path for dotnet sdk
 CANONIC_PATH_TO_DOTNET_SDK = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DOTNET_INSTALL_PATH))))
-PATH_TO_DOTNET_EXE = $(CANONIC_PATH_TO_DOTNET_SDK)$Sdotnet.exe
+PATH_TO_DOTNET_EXE = $(CANONIC_PATH_TO_DOTNET_SDK)$Sdotnet
 ifeq ($(wildcard $(CANONIC_PATH_TO_DOTNET_SDK)),)
 netstandard:
 	@echo "The dotnet sdk path was not set properly. Check Makefile.local for more information."
@@ -195,7 +195,7 @@ endif
 netstandardortools: $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) 
 
 $(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
-	$(CLR_KEYFILE) \
+	$(NETSTANDARD_CLR_KEYFILE) \
 	$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs
 	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
 ifdef CLR_KEYFILE
@@ -297,6 +297,11 @@ ifdef CLR_KEYFILE
 	sn -k $(CLR_KEYFILE)
 endif
 
+$(NETSTANDARD_CLR_KEYFILE):
+ifdef CLR_KEYFILE
+	$(PATH_TO_DOTNET_EXE) run tools$Snetstandard$SCreateSigningKey$SCreateSigningKey.dll $(CLR_KEYFILE)
+endif
+
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
 	$(GEN_DIR)/com/google/ortools/properties/AssemblyInfo.cs \
 	$(CLR_KEYFILE) \
@@ -337,14 +342,14 @@ else
 endif
 
 $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL): \
-	$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(DLL) \
+	$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_LIB_SUFFIX) \
 	netstandard_create_obj_dir \
 	$(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs
 	$(PATH_TO_DOTNET_EXE) restore $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj 
 	$(PATH_TO_DOTNET_EXE) build $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -f netstandard2.0 -o:$(realpath $(BIN_DIR))$S
-	$(PATH_TO_DOTNET_EXE) pack $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -o:$(realpath $(BIN_DIR))$S /p:PackageVersion=$(OR_TOOLS_VERSION);TargetRid=$(NETSTANDARD_RUNTIME_IDENTIFIER)
+	$(PATH_TO_DOTNET_EXE) pack $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -o:$(realpath $(BIN_DIR))$S /p:PackageVersion=$(OR_TOOLS_VERSION)\;TargetRid=$(NETSTANDARD_RUNTIME_IDENTIFIER)\;NativeDllName=$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)
 
-$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(DLL): \
+$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_LIB_SUFFIX): \
 	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
 	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/sat_csharp_wrap.$O \
@@ -372,7 +377,7 @@ $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(DLL): \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
 	$(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
 	$(OR_TOOLS_LIBS)
-	$(DYNAMIC_LD) $(LDOUT)$(BIN_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(DYNAMIC_LD) $(LDOUT)$(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 
 netstandard_create_obj_dir:
 	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)

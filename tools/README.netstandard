@@ -60,6 +60,25 @@ The project file can be modified in any text editor as well:
 </Target>
 
 * Building
-The build currently does not detect the .NET SDK folder. The DOTNET_INSTALL_PATH variable must be set Makefile.local file in the build root:
+
+To build use the following command:
+
+make netstandard
+
+The .NET Core SDK 2.0 or later must be installed before building. Use the link below to find appropriate
+download for the build platform.
+
+https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.0.0-download.md
+
+Alternatively the command below can be used to install the SDK:
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 2.0
+
+The build will attempt to detect the SDK path. If there are any issues please check the 
+DOTNET_INSTALL_PATH variable in the Makefile.local file:
 
 DOTNET_INSTALL_PATH=C:\Program Files\dotnet
+
+The dotnet restore command will not update the nuget packages if the version does not change. This 
+can cause confusion when testing local builds. Use the command below to clear the package:
+
+dotnet nuget locals all --clear

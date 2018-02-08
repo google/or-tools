@@ -30,18 +30,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="$(MSBuildThisFileDirectory)..\..\runtimes\osx-x64\native\Google.OrTools.Native.so">
+        <Content Include="$(MSBuildThisFileDirectory)..\..\runtimes\osx\native\Google.OrTools.Native.so">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Link>Google.OrTools.Native.so</Link>
         </Content>
     </ItemGroup>
-
-    <ItemGroup>
-        <Content Include="$(MSBuildThisFileDirectory)..\..\runtimes\osx-x86\native\Google.OrTools.Native.so">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Link>Google.OrTools.Native.so</Link>
-        </Content>
-    </ItemGroup>
-
 
 </Project>

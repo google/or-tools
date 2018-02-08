@@ -14,6 +14,13 @@ ifeq ("$(SYSTEM)","unix")
   OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
   DETECTED_PYTHON_VERSION = $(shell python -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
+  # Detect the .net core sdk folder
+  DOTNET_INSTALL_PATH = /usr/local/share/dotnet/sdk
+  ifneq ($(wildcard $(DOTNET_INSTALL_PATH)\dotnet.exe),)
+    DOTNET_INSTALL_PATH = \# DOTNET install path not found
+  endif
+
+
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
     CODEPORT = OpSys-Linux
@@ -136,6 +143,12 @@ ifeq ("$(SYSTEM)","win")
         $(warning "Unrecognized visual studio version")
       endif
     endif
+  endif
+
+  # Detect the .net core sdk folder
+  DOTNET_INSTALL_PATH = $(ProgramW6432)\dotnet
+  ifneq ($(wildcard $(DOTNET_INSTALL_PATH)\dotnet.exe),)
+    DOTNET_INSTALL_PATH = \# DOTNET install path not found
   endif
 
   # Set common windows variables

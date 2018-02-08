@@ -63,8 +63,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\bin\Google.OrTools.Native.dll" Link="Google.OrTools.Native.dll">
-      <PackagePath>runtimes/$(TargetRid)/native/Google.OrTools.Native.dll</PackagePath>
+    <None Include="..\..\bin\$(NativeDllName)" Link="$(NativeDllName)">
+      <PackagePath>runtimes/$(TargetRid)/native/$(NativeDllName)</PackagePath>
       <Pack>true</Pack>
     </None>
     <None Include="..\..\tools\netstandard\OrTools.targets" Link="OrTools.targets">
