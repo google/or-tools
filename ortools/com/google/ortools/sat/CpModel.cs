@@ -30,6 +30,11 @@ public class IntegerExpression
     throw new NotImplementedException();
   }
 
+  public virtual string ShortString()
+  {
+    return ToString();
+  }
+
   public static IntegerExpression operator+(IntegerExpression a,
                                             IntegerExpression b) {
     return new SumArray(a, b);
@@ -68,6 +73,84 @@ public class IntegerExpression
     return Prod(a, -1);
   }
 
+  public static BoundIntegerExpression operator ==(IntegerExpression a,
+                                                   IntegerExpression b) {
+    return new BoundIntegerExpression(a, b, true);
+  }
+
+  public static BoundIntegerExpression operator !=(IntegerExpression a,
+                                                   IntegerExpression b) {
+    return new BoundIntegerExpression(a, b, false);
+  }
+
+  public static BoundIntegerExpression operator ==(IntegerExpression a,
+                                                   long v) {
+    return new BoundIntegerExpression(a, v, true);
+  }
+
+  public static BoundIntegerExpression operator !=(IntegerExpression a,
+                                                   long v) {
+    return new BoundIntegerExpression(a, v, false);
+  }
+
+  public static BoundIntegerExpression operator >=(IntegerExpression a,
+                                                   long v) {
+    return new BoundIntegerExpression(v, a, Int64.MaxValue);
+  }
+
+  public static BoundIntegerExpression operator >=(long v,
+                                                   IntegerExpression a) {
+    return a <= v;
+  }
+
+  public static BoundIntegerExpression operator >(IntegerExpression a,
+                                                  long v) {
+    return new BoundIntegerExpression(v + 1, a, Int64.MaxValue);
+  }
+
+  public static BoundIntegerExpression operator >(long v, IntegerExpression a) {
+    return a < v;
+  }
+
+  public static BoundIntegerExpression operator <=(IntegerExpression a,
+                                                   long v) {
+    return new BoundIntegerExpression(Int64.MinValue, a, v);
+  }
+
+    public static BoundIntegerExpression operator <=(long v,
+                                                     IntegerExpression a) {
+      return a >= v;
+  }
+
+  public static BoundIntegerExpression operator <(IntegerExpression a,
+                                                  long v) {
+    return new BoundIntegerExpression(Int64.MinValue, a, v - 1);
+  }
+
+  public static BoundIntegerExpression operator <(long v, IntegerExpression a) {
+    return a > v;
+  }
+
+  public static BoundIntegerExpression operator >=(IntegerExpression a,
+                                                   IntegerExpression b) {
+    return new BoundIntegerExpression(0, a - b, Int64.MaxValue);
+  }
+
+  public static BoundIntegerExpression operator >(IntegerExpression a,
+                                                  IntegerExpression b) {
+    return new BoundIntegerExpression(1, a - b, Int64.MaxValue);
+  }
+
+  public static BoundIntegerExpression operator <=(IntegerExpression a,
+                                                   IntegerExpression b) {
+    return new BoundIntegerExpression(Int64.MinValue, a - b, 0);
+  }
+
+  public static BoundIntegerExpression operator <(IntegerExpression a,
+                                                  IntegerExpression b) {
+    return new BoundIntegerExpression(Int64.MinValue, a - b, -1);
+  }
+
   public static IntegerExpression Prod(IntegerExpression e, long v)
   {
     if (e is ProductCst)
@@ -82,12 +165,13 @@ public class IntegerExpression
   }
 
   public static long GetVarValueMap(IntegerExpression e,
+                                    long initial_coeff,
                                     Dictionary<IntVar, long> dict)
   {
     List<IntegerExpression> exprs = new List<IntegerExpression>();
     List<long> coeffs = new List<long>();
     exprs.Add(e);
-    coeffs.Add(1L);
+    coeffs.Add(initial_coeff);
     long constant = 0;
 
     while (exprs.Count > 0)
@@ -193,6 +277,61 @@ public class SumArray : IntegerExpression
     get { return constant_; }
   }
 
+  public override string ShortString()
+  {
+    return String.Format("({0})", ToString());
+  }
+
+  public override string ToString()
+  {
+    string result = "";
+    for (int i = 0; i < expressions_.Count; ++i)
+    {
+      bool negated = false;
+      IntegerExpression expr = expressions_[i];
+      if (i != 0)
+      {
+        if (expr is ProductCst && ((ProductCst)expr).Coeff < 0)
+        {
+          result += String.Format(" - ");
+          negated = true;
+        }
+        else
+        {
+          result += String.Format(" + ");
+        }
+      }
+
+      if (expr is IntVar)
+      {
+        result += expr.ShortString();
+      }
+      else if (expr is ProductCst)
+      {
+        ProductCst p = (ProductCst)expr;
+        long coeff = negated ? -p.Coeff : p.Coeff;
+        IntegerExpression sub = p.Expr;
+        if (coeff == 1)
+        {
+          result += sub.ShortString();
+        }
+        else if (coeff == -1)
+        {
+          result += String.Format("-{0}", coeff, sub.ShortString());
+        }
+        else
+        {
+          result += String.Format("{0}*{1}", coeff, sub.ShortString());
+        }
+      }
+      else
+      {
+        result += String.Format("({0})", expr.ShortString());
+      }
+    }
+    return result;
+  }
+
   private List<IntegerExpression> expressions_;
   private long constant_;
 
@@ -230,6 +369,18 @@ public class IntVar : IntegerExpression
     return var_.ToString();
   }
 
+  public override string ShortString()
+  {
+    if (var_.Name != null)
+    {
+      return var_.Name;
+    }
+    else
+    {
+      return var_.ToString();
+    }
+  }
+
 
   private CpModelProto model_;
   private int index_;
@@ -259,7 +410,153 @@ class NotBooleanVariable : IntegerExpression
 
 public class BoundIntegerExpression
 {
+  public enum Type
+  {
+    BoundExpression,
+    VarEqVar,
+    VarDiffVar,
+    VarEqCst,
+    VarDiffCst,
+  }
 
+  public BoundIntegerExpression(long lb, IntegerExpression expr, long ub)
+  {
+    left_ = expr;
+    right_ = null;
+    lb_ = lb;
+    ub_ = ub;
+    type_ = Type.BoundExpression;
+  }
+
+  public BoundIntegerExpression(IntegerExpression left, IntegerExpression right,
+                                bool equality) {
+    left_ = left;
+    right_ = right;
+    lb_ = 0;
+    ub_ = 0;
+    type_ = equality ? Type.VarEqVar : Type.VarDiffVar;
+  }
+
+  public BoundIntegerExpression(IntegerExpression left, long v, bool equality) {
+    left_ = left;
+    right_ = null;
+    lb_ = v;
+    ub_ = 0;
+    type_ = equality ? Type.VarEqCst : Type.VarDiffCst;
+  }
+
+  bool IsTrue()
+  {
+    if (type_ == Type.VarEqVar)
+    {
+      return (object)left_ == (object)right_;
+    }
+    else if (type_ == Type.VarDiffVar)
+    {
+      return (object)left_ != (object)right_;
+    }
+    return false;
+  }
+
+  public static bool operator true(BoundIntegerExpression bie)
+  {
+    return bie.IsTrue();
+  }
+
+  public static bool operator false(BoundIntegerExpression bie)
+  {
+    return !bie.IsTrue();
+  }
+
+  public override string ToString()
+  {
+    switch (type_)
+    {
+      case Type.BoundExpression:
+        return String.Format("{0} <= {1} <= {2}", lb_, left_, ub_);
+      case Type.VarEqVar:
+        return String.Format("{0} == {1}", left_, right_);
+      case Type.VarDiffVar:
+        return String.Format("{0} != {1}", left_, right_);
+      case Type.VarEqCst:
+        return String.Format("{0} == {1}", left_, lb_);
+      case Type.VarDiffCst:
+        return String.Format("{0} != {1}", left_, lb_);
+      default:
+        throw new ArgumentException("Wrong mode in BoundIntegerExpression.");
+    }
+  }
+
+  public static BoundIntegerExpression operator <=(BoundIntegerExpression a,
+                                                   long v) {
+    if (a.CtType != Type.BoundExpression || a.Ub != Int64.MaxValue)
+    {
+      throw new ArgumentException(
+          "Operator <= not supported for this BoundIntegerExpression");
+    }
+    return new BoundIntegerExpression(a.Lb, a.Left, v);
+  }
+
+  public static BoundIntegerExpression operator <(BoundIntegerExpression a,
+                                                  long v) {
+    if (a.CtType != Type.BoundExpression || a.Ub != Int64.MaxValue)
+    {
+      throw new ArgumentException(
+          "Operator < not supported for this BoundIntegerExpression");
+    }
+    return new BoundIntegerExpression(a.Lb, a.Left, v - 1);
+  }
+
+  public static BoundIntegerExpression operator >=(BoundIntegerExpression a,
+                                                   long v) {
+    if (a.CtType != Type.BoundExpression || a.Lb != Int64.MinValue)
+    {
+      throw new ArgumentException(
+          "Operator >= not supported for this BoundIntegerExpression");
+    }
+    return new BoundIntegerExpression(v, a.Left, a.Ub);
+  }
+
+  public static BoundIntegerExpression operator >(BoundIntegerExpression a,
+                                                  long v) {
+    if (a.CtType != Type.BoundExpression || a.Lb != Int64.MinValue)
+    {
+      throw new ArgumentException(
+          "Operator < not supported for this BoundIntegerExpression");
+    }
+    return new BoundIntegerExpression(v + 1, a.Left, a.Ub);
+  }
+
+  public IntegerExpression Left
+  {
+    get { return left_; }
+  }
+
+  public IntegerExpression Right
+  {
+    get { return right_; }
+  }
+
+  public long Lb
+  {
+    get { return lb_; }
+  }
+
+  public long Ub
+  {
+    get { return ub_; }
+  }
+
+  public Type CtType
+  {
+    get { return type_; }
+  }
+
+  private IntegerExpression left_;
+  private IntegerExpression right_;
+  private long lb_;
+  private long ub_;
+  private Type type_;
 }
 
 public class Constraint
@@ -412,7 +709,97 @@ public class CpModel
 
   public Constraint Add(BoundIntegerExpression lin)
   {
-    // TODO: Implement me.
+    switch (lin.CtType)
+    {
+      case BoundIntegerExpression.Type.BoundExpression:
+        {
+          Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+          long constant = IntegerExpression.GetVarValueMap(lin.Left, 1L, dict);
+          Constraint ct = new Constraint(model_);
+          LinearConstraintProto linear = new LinearConstraintProto();
+          foreach (KeyValuePair<IntVar, long> term in dict)
+          {
+            linear.Vars.Add(term.Key.Index);
+            linear.Coeffs.Add(term.Value);
+          }
+          linear.Domain.Add(lin.Lb == Int64.MinValue ? Int64.MinValue
+                            : lin.Lb - constant);
+          linear.Domain.Add(lin.Ub == Int64.MaxValue ? Int64.MaxValue
+                            : lin.Ub - constant);
+          ct.Proto.Linear = linear;
+          return ct;
+        }
+      case BoundIntegerExpression.Type.VarEqVar:
+        {
+          Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+          long constant = IntegerExpression.GetVarValueMap(lin.Left, 1L, dict);
+          constant +=  IntegerExpression.GetVarValueMap(lin.Right, -1L, dict);
+          Constraint ct = new Constraint(model_);
+          LinearConstraintProto linear = new LinearConstraintProto();
+          foreach (KeyValuePair<IntVar, long> term in dict)
+          {
+            linear.Vars.Add(term.Key.Index);
+            linear.Coeffs.Add(term.Value);
+          }
+          linear.Domain.Add(-constant);
+          linear.Domain.Add(-constant);
+          ct.Proto.Linear = linear;
+          return ct;
+        }
+      case BoundIntegerExpression.Type.VarDiffVar:
+        {
+          Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+          long constant = IntegerExpression.GetVarValueMap(lin.Left, 1L, dict);
+          constant +=  IntegerExpression.GetVarValueMap(lin.Right, -1L, dict);
+          Constraint ct = new Constraint(model_);
+          LinearConstraintProto linear = new LinearConstraintProto();
+          foreach (KeyValuePair<IntVar, long> term in dict)
+          {
+            linear.Vars.Add(term.Key.Index);
+            linear.Coeffs.Add(term.Value);
+          }
+          linear.Domain.Add(Int64.MinValue);
+          linear.Domain.Add(-constant - 1);
+          linear.Domain.Add(-constant + 1);
+          linear.Domain.Add(Int64.MaxValue);
+          ct.Proto.Linear = linear;
+          return ct;
+        }
+      case BoundIntegerExpression.Type.VarEqCst:
+        {
+          Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+          long constant = IntegerExpression.GetVarValueMap(lin.Left, 1L, dict);
+          Constraint ct = new Constraint(model_);
+          LinearConstraintProto linear = new LinearConstraintProto();
+          foreach (KeyValuePair<IntVar, long> term in dict)
+          {
+            linear.Vars.Add(term.Key.Index);
+            linear.Coeffs.Add(term.Value);
+          }
+          linear.Domain.Add(lin.Lb - constant);
+          linear.Domain.Add(lin.Lb - constant);
+          ct.Proto.Linear = linear;
+          return ct;
+        }
+      case BoundIntegerExpression.Type.VarDiffCst:
+        {
+          Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
+          long constant = IntegerExpression.GetVarValueMap(lin.Left, 1L, dict);
+          Constraint ct = new Constraint(model_);
+          LinearConstraintProto linear = new LinearConstraintProto();
+          foreach (KeyValuePair<IntVar, long> term in dict)
+          {
+            linear.Vars.Add(term.Key.Index);
+            linear.Coeffs.Add(term.Value);
+          }
+          linear.Domain.Add(Int64.MinValue);
+          linear.Domain.Add(lin.Lb - constant - 1);
+          linear.Domain.Add(lin.Lb - constant + 1);
+          linear.Domain.Add(Int64.MaxValue);
+          ct.Proto.Linear = linear;
+          return ct;
+        }
+    }
     return null;
   }
 
@@ -506,7 +893,7 @@ public class CpModel
     else
     {
       Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-      long constant = IntegerExpression.GetVarValueMap(obj, dict);
+      long constant = IntegerExpression.GetVarValueMap(obj, 1L, dict);
       if (minimize)
       {
         objective.ScalingFactor = 1L;
