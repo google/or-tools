@@ -33,7 +33,8 @@ BASE_CLR_ORTOOLS_FZ_DLL_NAME:= $(CLR_ORTOOLS_FZ_DLL_NAME)
 NAMESPACE_ORTOOLS_FZ:=$(BASE_CLR_ORTOOLS_DLL_NAME).Flatzinc
 CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
 NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_IMPORT_DLL_NAME).Native
-
+NETSTANDARD_OBJ_DIR = $(OBJ_DIR)$Snetstandard
+NETSTANDARD_RUNTIME_IDENTIFIER=win10-x64
 
 # NuGet specification file name
 ORTOOLS_NUSPEC_NAME := or-tools.nuspec
@@ -66,6 +67,14 @@ ifeq ($(SYSTEM),win)
   endif
 endif
 
+ifeq "$(SYSTEM)" "win"
+	NETSTANDARD_RUNTIME_IDENTIFIER=win-$(NETPLATFORM)
+else ifeq ($(PLATFORM),LINUX)
+	NETSTANDARD_RUNTIME_IDENTIFIER=linux-$(NETPLATFORM)
+else ifeq ($(PLATFORM),MACOSX)
+	NETSTANDARD_RUNTIME_IDENTIFIER=osx-$(NETPLATFORM)
+endif
+
 CSHARPEXE = \
 	$(BIN_DIR)/csknapsack$(CLR_EXE_SUFFIX).exe \
 	$(BIN_DIR)/csintegerprogramming$(CLR_EXE_SUFFIX).exe \
@@ -89,13 +98,13 @@ csharp:
 test_csharp: csharp
 
 else
-csharp: csharpsolution csharportools csharpexe
+csharp: clean_dotnet_generated csharpsolution csharportools csharpexe
 test_csharp: test_csharp_examples
 BUILT_LANGUAGES +=, C\#
 endif
 
 # Clean target.
-clean_csharp:
+clean_csharp: clean_dotnet_generated
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*$(DLL)
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.lib
@@ -108,27 +117,11 @@ clean_csharp:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.netmodule
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)
-	-$(DEL) $(GEN_DIR)$Sortools$Slinear_solver$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Sortools$Sconstraint_solver$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Sortools$Ssat$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Sortools$Salgorithms$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Sortools$Sgraph$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Sortools$Sflatzinc$S*csharp_wrap*
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat$S*.cs
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties$S*cs
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs
-	-$(DEL) $(OBJ_DIR)$Sswig$S*csharp_wrap.$O
 	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
 	-$(DEL) examples$Scsharp$SCsharp_examples.sln
 	-$(DEL) examples$Scsharp$Ssolution$S*.csproj
 
-clean_netstandard:
+clean_netstandard: clean_dotnet_generated
 	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*$(DLL)
 	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.lib
@@ -136,6 +129,8 @@ clean_netstandard:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.dll
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)
+
+clean_dotnet_generated:
 	-$(DEL) $(GEN_DIR)$Sortools$Slinear_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Sortools$Sconstraint_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Sortools$Ssat$S*csharp_wrap*
@@ -152,9 +147,6 @@ clean_netstandard:
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs
 	-$(DEL) $(OBJ_DIR)$Sswig$S*csharp_wrap.$O
-	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
-	-$(DEL) examples$Scsharp$SCsharp_examples.sln
-	-$(DEL) examples$Scsharp$Ssolution$S*.csproj	
 
 # Assembly Info
 
@@ -190,19 +182,26 @@ csharportools: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBU
 # setup path for dotnet sdk
 CANONIC_PATH_TO_DOTNET_SDK = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DOTNET_INSTALL_PATH))))
 PATH_TO_DOTNET_EXE = $(CANONIC_PATH_TO_DOTNET_SDK)$Sdotnet.exe
-NETSTANDARD_OBJ_DIR = $(OBJ_DIR)$Snetstandard
-
 ifeq ($(wildcard $(CANONIC_PATH_TO_DOTNET_SDK)),)
 netstandard:
 	@echo "The dotnet sdk path was not set properly. Check Makefile.local for more information."
 
 else
-netstandard: CLR_ORTOOLS_IMPORT_DLL_NAME=$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)
-netstandard: netstandardortools
+netstandard: CLR_ORTOOLS_IMPORT_DLL_NAME = $(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)
+netstandard: clean_dotnet_generated netstandardortools
 BUILT_LANGUAGES +=, NETSTANDARD
 endif
 
 netstandardortools: $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) 
+
+$(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
+	$(CLR_KEYFILE) \
+	$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs
+	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
+ifdef CLR_KEYFILE
+	$(COPY) $(CLR_KEYFILE) $(NETSTANDARD_OBJ_DIR)$S
+	@echo [assembly: AssemblyKeyFile("$(notdir $(CLR_KEYFILE))")] >> $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
+endif
 
 $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)
@@ -339,10 +338,11 @@ endif
 
 $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL): \
 	$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(DLL) \
-	COPY_NETSTANDARD_SOURCE \
-	$(GEN_DIR)/com/google/ortools/properties/AssemblyInfo.cs
+	netstandard_create_obj_dir \
+	$(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs
 	$(PATH_TO_DOTNET_EXE) restore $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj 
 	$(PATH_TO_DOTNET_EXE) build $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -f netstandard2.0 -o:$(realpath $(BIN_DIR))$S
+	$(PATH_TO_DOTNET_EXE) pack $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -o:$(realpath $(BIN_DIR))$S /p:PackageVersion=$(OR_TOOLS_VERSION);TargetRid=$(NETSTANDARD_RUNTIME_IDENTIFIER)
 
 $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(DLL): \
 	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
@@ -374,28 +374,9 @@ $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(DLL): \
 	$(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) $(LDOUT)$(BIN_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 
-# dotnet core does not have a simple way to pass source files and library reference through command line.
-# Need to stage a folder with the source code and dummy project file to build 
-# https://github.com/dotnet/corefx/blob/master/Documentation/building/advanced-inner-loop-testing.md
-# https://stackoverflow.com/questions/46065777/is-it-possible-to-compile-a-single-c-sharp-code-file-with-net-core-roslyn-compi
-COPY_NETSTANDARD_SOURCE:
+netstandard_create_obj_dir:
 	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)
-	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Slinearsolver
-	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Ssat
-	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Sconstraintsolver
-	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Salgorithm
-	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Sgraph
-	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)$Sutil
-	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs $(NETSTANDARD_OBJ_DIR)$Slinearsolver$S
-	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat$S*.cs $(NETSTANDARD_OBJ_DIR)$Ssat$S
-	$(COPY) $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs $(NETSTANDARD_OBJ_DIR)$Slinearsolver$S
-	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(NETSTANDARD_OBJ_DIR)$Sconstraintsolver$S
-	$(COPY) $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(NETSTANDARD_OBJ_DIR)$Sconstraintsolver$S
-	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(NETSTANDARD_OBJ_DIR)$Salgorithm$S
-	$(COPY) $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(NETSTANDARD_OBJ_DIR)$Salgorithm$S
-	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs $(NETSTANDARD_OBJ_DIR)$Sgraph$S
-	$(COPY) $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Sutil$S*.cs $(NETSTANDARD_OBJ_DIR)$Sutil$S
-	$(COPY) tools$SOrTools.NetCore.csproj $(NETSTANDARD_OBJ_DIR)
+	$(COPY) tools$Snetstandard$SOrTools.NetCore.csproj $(NETSTANDARD_OBJ_DIR)
 
 # csharp linear solver examples
 
