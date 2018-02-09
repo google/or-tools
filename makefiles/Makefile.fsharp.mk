@@ -20,7 +20,7 @@ endif
 
 # Check for key pair for strong naming
 ifdef CLR_KEYFILE
-	SIGNING_FLAGS = $(FLAG_PREFIX)keyfile:$(CLR_KEYFILE)
+	FS_SIGNING_FLAGS = $(FLAG_PREFIX)keyfile:$(CLR_KEYFILE)
 endif
 
 .PHONY: default
@@ -34,7 +34,7 @@ fsharp-help:
 .PHONY: fsharp # Build F# OR-Tools. Set environment variable FSHARP_DEBUG=1 for debug symbols.
 fsharp:
 ifneq ($(FSHARP_COMPILER_CHECK),)
-	$(FSHARP_COMPILER) $(FLAG_PREFIX)target:library $(FLAG_PREFIX)out:bin$S$(FSHARP_ORTOOLS_DLL_NAME).dll $(FLAG_PREFIX)platform:anycpu $(FLAG_PREFIX)nocopyfsharpcore $(FLAG_PREFIX)lib:bin $(FLAG_PREFIX)reference:$(BASE_ORTOOLS_DLL_NAME).dll $(FSHARP_DEBUG) $(SIGNING_FLAGS) ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_NAME).fsx
+	$(FSHARP_COMPILER) $(FLAG_PREFIX)target:library $(FLAG_PREFIX)out:bin$S$(FSHARP_ORTOOLS_DLL_NAME).dll $(FLAG_PREFIX)platform:anycpu $(FLAG_PREFIX)nocopyfsharpcore $(FLAG_PREFIX)lib:bin $(FLAG_PREFIX)reference:$(BASE_ORTOOLS_DLL_NAME).dll $(FSHARP_DEBUG) $(FS_SIGNING_FLAGS) ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_NAME).fsx
 else
 	$(error Cannot find '$(FSHARP_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
 endif
