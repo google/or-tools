@@ -16,9 +16,26 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.Sat;
 
+public class NurseSolutionObserver : SolutionCallback
+{
+  public override void OnSolutionCallback()
+  {
+    Console.WriteLine(
+        String.Format("Solution #{0}: time = {1} ms",
+                      solution_count_, WallTime()));
+    solution_count_++;
+  }
+
+  public int SolutionCount()
+  {
+    return solution_count_;
+  }
+
+  private int solution_count_;
+}
+
 public class NursesSat
 {
-
   static void Solve()
   {
     // Data.
@@ -145,7 +162,8 @@ public class NursesSat
 
     // Creates the solver and solve.
     CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
+    NurseSolutionObserver cb = new NurseSolutionObserver();
+    CpSolverStatus status = solver.SearchAllSolutions(model, cb);
     // Display a few solutions picked at random.
   // a_few_solutions = [859, 2034, 5091, 7003]
   // solution_printer = NursesPartialSolutionPrinter(shifts, num_nurses,
@@ -159,6 +177,7 @@ public class NursesSat
     Console.WriteLine("  - conflicts       : " + solver.NumConflicts());
     Console.WriteLine("  - branches        : " + solver.NumBranches());
     Console.WriteLine("  - wall time       : " + solver.WallTime() + " ms");
+    Console.WriteLine("  - #solutions      : " + cb.SolutionCount());
   }
 
   static void Main() {

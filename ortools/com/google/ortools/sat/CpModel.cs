@@ -1050,11 +1050,66 @@ public class CpModel
   private Dictionary<long, IntVar> constant_map_;
 }
 
+public class CpSolverSolutionCallback : SolutionCallback
+{
+  public long Value(IntegerExpression e)
+  {
+    List<IntegerExpression> exprs = new List<IntegerExpression>();
+    List<long> coeffs = new List<long>();
+    exprs.Add(e);
+    coeffs.Add(1L);
+    long constant = 0;
+
+    while (exprs.Count > 0)
+    {
+      IntegerExpression expr = exprs[0];
+      exprs.RemoveAt(0);
+      long coeff = coeffs[0];
+      coeffs.RemoveAt(0);
+      if (coeff == 0) continue;
+
+      if (expr is ProductCst)
+      {
+        ProductCst p = (ProductCst)expr;
+        if (p.Coeff != 0)
+        {
+          exprs.Add(p.Expr);
+          coeffs.Add(p.Coeff * coeff);
+        }
+      }
+      else if (expr is SumArray)
+      {
+        SumArray a = (SumArray)expr;
+        constant += coeff * a.Constant;
+        foreach (IntegerExpression sub in a.Expressions)
+        {
+          exprs.Add(sub);
+          coeffs.Add(coeff);
+        }
+      }
+      else if (expr is IntVar)
+      {
+        int index = expr.Index;
+        long value = Value(index);
+        constant += coeff * value;
+      }
+      else if (expr is NotBooleanVariable)
+      {
+        throw new ArgumentException(
+            "Cannot evaluate a literal in an integer expression.");
+      }
+      else
+      {
+        throw new ArgumentException("Cannot evaluate '" + expr.ToString() +
+                                    "' in an integer expression");
+      }
+    }
+    return constant;
+  }
+}
+
 public class CpSolver
 {
-  public CpSolver()
-  {
-  }
 
   public CpSolverStatus Solve(CpModel model)
   {
@@ -1066,6 +1121,38 @@ public class CpSolver
     else
     {
       response_ = SatHelper.Solve(model.Model);
+    }
+    return response_.Status;
+  }
+
+  public CpSolverStatus SolveWithSolutionCallback(CpModel model,
+                                                  SolutionCallback cb)
+  {
+    if (string_parameters_ != null)
+    {
+      response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(
+          model.Model, string_parameters_, cb);
+    }
+    else
+    {
+      response_ = SatHelper.Solve(model.Model);
+    }
+    return response_.Status;
+  }
+
+  public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
+  {
+    if (string_parameters_ != null)
+    {
+      response_ =
+          SatHelper.SearchAllSolutionsWithStringParametersAndSolutionCallback(
+              model.Model, string_parameters_, cb);
+    }
+    else
+    {
+      response_ =
+          SatHelper.SearchAllSolutionsWithStringParametersAndSolutionCallback(
+              model.Model, "", cb);
     }
     return response_.Status;
   }

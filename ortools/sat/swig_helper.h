@@ -22,6 +22,41 @@
 namespace operations_research {
 namespace sat {
 
+// Useful for director based callbacks.
+class SolutionCallback {
+ public:
+  virtual ~SolutionCallback() {}
+  virtual void OnSolutionCallback() = 0;
+  void Run(const operations_research::sat::CpSolverResponse& response) {
+    response_ = response;
+    OnSolutionCallback();
+  }
+
+  int64 ObjectiveValue() const {
+    return response_.objective_value();
+  }
+
+  int64 NumBranches() const {
+    return response_.num_branches();
+  }
+
+  int64 NumConflicts() const {
+    return response_.num_conflicts();
+  }
+
+  double WallTime() const {
+    return response_.wall_time();
+  }
+
+  long Value(int index) {
+    return index >= 0 ? response_.solution(index)
+                      : -response_.solution(-index - 1);
+  }
+
+ private:
+  CpSolverResponse response_;
+};
+
 class SatHelper {
  public:
   // The arguments of the functions defined below must follow these rules
@@ -75,6 +110,35 @@ class SatHelper {
     Model model;
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(observer));
+    return SolveCpModel(model_proto, &model);
+  }
+
+  static operations_research::sat::CpSolverResponse
+  SolveWithStringParametersAndSolutionCallback(
+      const operations_research::sat::CpModelProto& model_proto,
+      const std::string& parameters,
+      SolutionCallback* callback) {
+    Model model;
+    model.Add(NewSatParameters(parameters));
+    model.Add(NewFeasibleSolutionObserver(
+        [callback](const CpSolverResponse& r) { return callback->Run(r); }));
+    return SolveCpModel(model_proto, &model);
+  }
+
+  static operations_research::sat::CpSolverResponse
+  SearchAllSolutionsWithStringParametersAndSolutionCallback(
+      const operations_research::sat::CpModelProto& model_proto,
+      const std::string& parameters,
+      SolutionCallback* callback) {
+    Model model;
+    SatParameters sat_parameters;
+    sat_parameters.ParseFromString(parameters);
+    sat_parameters.set_enumerate_all_solutions(true);
+    sat_parameters.set_cp_model_presolve(false);
+    std::cout << sat_parameters.DebugString() << std::endl;
+    model.Add(NewSatParameters(sat_parameters));
+    model.Add(NewFeasibleSolutionObserver(
+        [callback](const CpSolverResponse& r) { return callback->Run(r); }));
     return SolveCpModel(model_proto, &model);
   }
 };

@@ -2477,6 +2477,8 @@ CpSolverResponse SolveCpModelInternal(
       // TODO(user): add all solutions to the response? or their count?
       ++num_solutions;
       FillSolutionInResponse(model_proto, m, &response);
+      response.set_wall_time(wall_timer.Get());
+      response.set_user_time(user_timer.Get());
       external_solution_observer(response);
 
       if (!parameters.enumerate_all_solutions()) break;
@@ -2495,9 +2497,12 @@ CpSolverResponse SolveCpModelInternal(
     VLOG(1) << "Initial num_bool: " << model->Get<SatSolver>()->NumVariables();
     const auto solution_observer =
         [&model_proto, &response, &num_solutions, &obj, &m,
-         &external_solution_observer, objective_var](const Model& sat_model) {
+         &external_solution_observer, objective_var, &wall_timer,
+         &user_timer](const Model& sat_model) {
           num_solutions++;
           FillSolutionInResponse(model_proto, m, &response);
+          response.set_wall_time(wall_timer.Get());
+          response.set_user_time(user_timer.Get());
           int64 objective_value = 0;
           for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
             objective_value += model_proto.objective().coeffs(i) *
