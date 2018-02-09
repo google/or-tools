@@ -16,6 +16,23 @@ namespace Google.OrTools.Sat
 using System;
 using System.Collections.Generic;
 
+// Helpers.
+
+// IntVar[] helper class.
+public static class IntVarArrayHelper
+{
+  public static SumArray Sum(this IntVar[] vars)
+  {
+    return new SumArray(vars);
+  }
+}
+
+public interface ILiteral
+{
+  ILiteral Not();
+  int GetIndex();
+}
+
 // Holds an integer expression.
 public class IntegerExpression
 {
@@ -153,7 +170,11 @@ public class IntegerExpression
 
   public static IntegerExpression Prod(IntegerExpression e, long v)
   {
-    if (e is ProductCst)
+    if (v == 1)
+    {
+      return e;
+    }
+    else if (e is ProductCst)
     {
       ProductCst p = (ProductCst)e;
       return new ProductCst(p.Expr, p.Coeff * v);
@@ -259,12 +280,39 @@ public class SumArray : IntegerExpression
     expressions_ = new List<IntegerExpression>();
     expressions_.Add(a);
     expressions_.Add(b);
+    constant_ = 0L;
   }
 
   public SumArray(IntegerExpression a, long b)
   {
     expressions_.Add(a);
     constant_ = b;
+  }
+
+  public SumArray(IEnumerable<IntegerExpression> exprs)
+  {
+    expressions_ = new List<IntegerExpression>();
+    foreach (IntegerExpression e in exprs)
+    {
+      if (e != null)
+      {
+        expressions_.Add(e);
+      }
+    }
+    constant_ = 0L;
+  }
+
+  public SumArray(IEnumerable<IntegerExpression> exprs, long cte)
+  {
+    expressions_ = new List<IntegerExpression>();
+    foreach (IntegerExpression e in exprs)
+    {
+      if (e != null)
+      {
+        expressions_.Add(e);
+      }
+    }
+    constant_ = cte;
   }
 
   public List<IntegerExpression> Expressions
@@ -337,7 +385,7 @@ public class SumArray : IntegerExpression
 
 }
 
-public class IntVar : IntegerExpression
+public class IntVar : IntegerExpression, ILiteral
 {
   public IntVar(CpModelProto model, IEnumerable<long> bounds, string name,
          int is_present_index) {
@@ -348,6 +396,7 @@ public class IntVar : IntegerExpression
     var_.Domain.Add(bounds);
     var_.EnforcementLiteral.Add(is_present_index);
     model.Variables.Add(var_);
+    negation_ = null;
   }
 
   public IntVar(CpModelProto model, IEnumerable<long> bounds, string name) {
@@ -357,6 +406,7 @@ public class IntVar : IntegerExpression
     var_.Name = name;
     var_.Domain.Add(bounds);
     model.Variables.Add(var_);
+    negation_ = null;
   }
 
   public override int GetIndex()
@@ -381,16 +431,34 @@ public class IntVar : IntegerExpression
     }
   }
 
+  public ILiteral Not()
+  {
+    foreach (long b in var_.Domain)
+    {
+      if (b < 0 || b > 1)
+      {
+        throw new ArgumentException(
+            "Cannot call Not() on a non boolean variable");
+      }
+    }
+    if (negation_ == null)
+    {
+      negation_ = new NotBooleanVariable(this);
+    }
+    return negation_;
+  }
+
 
   private CpModelProto model_;
   private int index_;
   private List<long> bounds_;
   private IntegerVariableProto var_;
+  private NotBooleanVariable negation_;
 }
 
-class NotBooleanVariable : IntegerExpression
+public class NotBooleanVariable : IntegerExpression, ILiteral
 {
-  NotBooleanVariable(IntVar boolvar)
+  public NotBooleanVariable(IntVar boolvar)
   {
     boolvar_ = boolvar;
   }
@@ -400,7 +468,7 @@ class NotBooleanVariable : IntegerExpression
     return -boolvar_.Index - 1;
   }
 
-  IntVar Not()
+  public ILiteral Not()
   {
     return boolvar_;
   }
@@ -573,9 +641,9 @@ public class Constraint
     model.Constraints.Add(constraint_);
   }
 
-  public void OnlyEnforceIf(IntegerExpression lit)
+  public void OnlyEnforceIf(ILiteral lit)
   {
-    constraint_.EnforcementLiteral.Add(lit.Index);
+    constraint_.EnforcementLiteral.Add(lit.GetIndex());
   }
 
   public int Index
@@ -839,15 +907,67 @@ public class CpModel
 
   // TODO: AddImplication
 
-  // TODO: AddBoolOr
+  public Constraint AddBoolOr(IEnumerable<ILiteral> literals)
+  {
+    Constraint ct = new Constraint(model_);
+    BoolArgumentProto bool_argument = new BoolArgumentProto();
+    foreach (ILiteral lit in literals)
+    {
+      bool_argument.Literals.Add(lit.GetIndex());
+    }
+    ct.Proto.BoolOr = bool_argument;
+    return ct;
+  }
 
-  // TODO: AddBoolAnd
+  public Constraint AddBoolAnd(IEnumerable<ILiteral> literals)
+  {
+    Constraint ct = new Constraint(model_);
+    BoolArgumentProto bool_argument = new BoolArgumentProto();
+    foreach (ILiteral lit in literals)
+    {
+      bool_argument.Literals.Add(lit.GetIndex());
+    }
+    ct.Proto.BoolAnd = bool_argument;
+    return ct;
+  }
 
-  // TODO: AddBoolXOr
+  public Constraint AddBoolXor(IEnumerable<ILiteral> literals)
+  {
+    Constraint ct = new Constraint(model_);
+    BoolArgumentProto bool_argument = new BoolArgumentProto();
+    foreach (ILiteral lit in literals)
+    {
+      bool_argument.Literals.Add(lit.GetIndex());
+    }
+    ct.Proto.BoolXor = bool_argument;
+    return ct;
+  }
 
-  // TODO: AddMinEquality
+  public Constraint AddMinEquality(IntVar target, IEnumerable<IntVar> vars)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    foreach (IntVar var in vars)
+    {
+      args.Vars.Add(var.Index);
+    }
+    args.Target = target.Index;
+    ct.Proto.IntMin = args;
+    return ct;
+  }
 
-  // TODO: AddMaxEquality
+  public Constraint AddMaxEquality(IntVar target, IEnumerable<IntVar> vars)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    foreach (IntVar var in vars)
+    {
+      args.Vars.Add(var.Index);
+    }
+    args.Target = target.Index;
+    ct.Proto.IntMax = args;
+    return ct;
+  }
 
   // TODO: AddDivisionEquality
 
@@ -1020,6 +1140,21 @@ public class CpSolver
       }
     }
     return constant;
+  }
+
+  public long NumBranches()
+  {
+    return response_.NumBranches;
+  }
+
+  public long NumConflicts()
+  {
+    return response_.NumConflicts;
+  }
+
+  public double WallTime()
+  {
+    return response_.WallTime;
   }
 
 

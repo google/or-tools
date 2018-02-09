@@ -95,6 +95,7 @@ public class CsTestCpOperator
     CheckDoubleEq(-30.0, solver.ObjectiveValue, "Wrong solution value");
     CheckLongEq(-10, solver.Value(v1), "Wrong value");
     CheckLongEq(10, solver.Value(v2), "Wrong value");
+    CheckLongEq(-30, solver.Value(v1 - 2 * v2), "Wrong value");
   }
 
 
