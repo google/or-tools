@@ -86,7 +86,6 @@ public class CsTestCpOperator
     CpModel model = new CpModel();
     IntVar v1 = model.NewIntVar(-10, 10, "v1");
     IntVar v2 = model.NewIntVar(-10, 10, "v2");
-    Console.WriteLine((-100000 <= v1 + 2 * v2 <= 100000).ToString());
     model.Add(-100000 <= v1 + 2 * v2 <= 100000);
     model.Minimize(v1 - 2 * v2);
 
@@ -94,8 +93,8 @@ public class CsTestCpOperator
     CpSolverStatus status = solver.Solve(model);
     Check(status == CpSolverStatus.Optimal, "Wrong status after solve");
     CheckDoubleEq(-30.0, solver.ObjectiveValue, "Wrong solution value");
-    Console.WriteLine("model = " + model.Model.ToString());
-    Console.WriteLine("response = " + solver.Response.ToString());
+    CheckLongEq(-10, solver.Value(v1), "Wrong value");
+    CheckLongEq(10, solver.Value(v2), "Wrong value");
   }
 
 

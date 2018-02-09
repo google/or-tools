@@ -188,7 +188,7 @@ public class IntegerExpression
         if (p.Coeff != 0)
         {
           exprs.Add(p.Expr);
-          coeffs.Add(p.Coeff);
+          coeffs.Add(p.Coeff * coeff);
         }
       }
       else if (expr is SumArray)
@@ -403,6 +403,11 @@ class NotBooleanVariable : IntegerExpression
   IntVar Not()
   {
     return boolvar_;
+  }
+
+  public string ShortString()
+  {
+    return String.Format("Not({0})", boolvar_.ShortString());
   }
 
   private IntVar boolvar_;
@@ -960,6 +965,63 @@ public class CpSolver
   {
     get { return response_; }
   }
+
+  public long Value(IntegerExpression e)
+  {
+    List<IntegerExpression> exprs = new List<IntegerExpression>();
+    List<long> coeffs = new List<long>();
+    exprs.Add(e);
+    coeffs.Add(1L);
+    long constant = 0;
+
+    while (exprs.Count > 0)
+    {
+      IntegerExpression expr = exprs[0];
+      exprs.RemoveAt(0);
+      long coeff = coeffs[0];
+      coeffs.RemoveAt(0);
+      if (coeff == 0) continue;
+
+      if (expr is ProductCst)
+      {
+        ProductCst p = (ProductCst)expr;
+        if (p.Coeff != 0)
+        {
+          exprs.Add(p.Expr);
+          coeffs.Add(p.Coeff * coeff);
+        }
+      }
+      else if (expr is SumArray)
+      {
+        SumArray a = (SumArray)expr;
+        constant += coeff * a.Constant;
+        foreach (IntegerExpression sub in a.Expressions)
+        {
+          exprs.Add(sub);
+          coeffs.Add(coeff);
+        }
+      }
+      else if (expr is IntVar)
+      {
+        int index = expr.Index;
+        long value = index >= 0 ? response_.Solution[index]
+                               : -response_.Solution[-index - 1];
+        constant += coeff * value;
+      }
+      else if (expr is NotBooleanVariable)
+      {
+        throw new ArgumentException(
+            "Cannot evaluate a literal in an integer expression.");
+      }
+      else
+      {
+        throw new ArgumentException("Cannot evaluate '" + expr.ToString() +
+                                    "' in an integer expression");
+      }
+    }
+    return constant;
+  }
+
 
   private CpModelProto model_;
   private CpSolverResponse response_;
