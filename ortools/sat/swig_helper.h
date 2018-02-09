@@ -135,7 +135,6 @@ class SatHelper {
     sat_parameters.ParseFromString(parameters);
     sat_parameters.set_enumerate_all_solutions(true);
     sat_parameters.set_cp_model_presolve(false);
-    std::cout << sat_parameters.DebugString() << std::endl;
     model.Add(NewSatParameters(sat_parameters));
     model.Add(NewFeasibleSolutionObserver(
         [callback](const CpSolverResponse& r) { return callback->Run(r); }));
