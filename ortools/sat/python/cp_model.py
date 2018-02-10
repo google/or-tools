@@ -1008,6 +1008,18 @@ def EvaluateExpression(expression, solution):
   return value
 
 
+def EvaluateBooleanExpression(literal, solution):
+  """Evaluate an boolean expression against a solution."""
+  if isinstance(literal, IntVar) or isinstance(literal, _NotBooleanVariable):
+    index = literal.Index()
+    if index >= 0:
+      return True if solution.solution[index] else False
+    else:
+      return False if solution.solution[-index - 1] else True
+  else:
+    raise TypeError('Cannot interpret %s in a boolean expression.' % literal)
+
+
 class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
   """Nicer solution callback that uses the CpSolver class."""
 
@@ -1017,6 +1029,11 @@ class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
   def Wrap(self, solution_proto):
     self.__current_solution = solution_proto
     self.NewSolution()
+
+  def BooleanValue(self, literal):
+    if not self.__current_solution:
+      raise RuntimeError('Solve() has not be called.')
+    return EvaluateBooleanExpression(literal, self.__current_solution)
 
   def Value(self, expression):
     """Returns the value of an integer expression."""
@@ -1076,6 +1093,11 @@ class CpSolver(object):
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
     return EvaluateExpression(expression, self.__solution)
+
+  def BooleanValue(self, literal):
+    if not self.__solution:
+      raise RuntimeError('Solve() has not be called.')
+    return EvaluateBooleanExpression(literal, self.__solution)
 
   def ObjectiveValue(self):
     """Returns the objective value found after solve."""
