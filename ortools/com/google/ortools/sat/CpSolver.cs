@@ -56,7 +56,7 @@ public class CpSolverSolutionCallback : SolutionCallback
       else if (expr is IntVar)
       {
         int index = expr.Index;
-        long value = Value(index);
+        long value = SolutionValue(index);
         constant += coeff * value;
       }
       else if (expr is NotBooleanVariable)
@@ -71,6 +71,20 @@ public class CpSolverSolutionCallback : SolutionCallback
       }
     }
     return constant;
+  }
+
+  public Boolean BooleanValue(ILiteral literal)
+  {
+    if (literal is IntVar || literal is NotBooleanVariable)
+    {
+      int index = literal.GetIndex();
+      return SolutionBooleanValue(index);
+    }
+    else
+    {
+      throw new ArgumentException("Cannot evaluate '" + literal.ToString() +
+                                  "' as a boolean literal");
+    }
   }
 }
 
@@ -178,7 +192,7 @@ public class CpSolver
       {
         int index = expr.Index;
         long value = index >= 0 ? response_.Solution[index]
-                               : -response_.Solution[-index - 1];
+                                : -response_.Solution[-index - 1];
         constant += coeff * value;
       }
       else if (expr is NotBooleanVariable)
@@ -193,6 +207,27 @@ public class CpSolver
       }
     }
     return constant;
+  }
+
+  public Boolean BooleanValue(ILiteral literal)
+  {
+    if (literal is IntVar || literal is NotBooleanVariable)
+    {
+      int index = literal.GetIndex();
+      if (index >= 0)
+      {
+        return response_.Solution[index] != 0;
+      }
+      else
+      {
+        return response_.Solution[index] == 0;
+      }
+    }
+    else
+    {
+      throw new ArgumentException("Cannot evaluate '" + literal.ToString() +
+                                  "' as a boolean literal");
+    }
   }
 
   public long NumBranches()

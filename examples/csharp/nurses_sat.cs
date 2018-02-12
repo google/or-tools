@@ -16,14 +16,41 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.Sat;
 
-public class NurseSolutionObserver : SolutionCallback
+public class NurseSolutionObserver : CpSolverSolutionCallback
 {
+  public NurseSolutionObserver(IntVar[,,] shifts, int num_nurses, int num_days,
+                               int num_shifts, HashSet<int> to_print) {
+    shifts_ = shifts;
+    num_nurses_ = num_nurses;
+    num_days_ = num_days;
+    num_shifts_ = num_shifts;
+    to_print_ = to_print;
+  }
+
   public override void OnSolutionCallback()
   {
-    Console.WriteLine(
-        String.Format("Solution #{0}: time = {1} ms",
-                      solution_count_, WallTime()));
     solution_count_++;
+    if (to_print_.Contains(solution_count_))
+    {
+      Console.WriteLine(
+          String.Format("Solution #{0}: time = {1:.02} s",
+                        solution_count_, WallTime()));
+      for (int d = 0; d < num_days_; ++d)
+      {
+        Console.WriteLine(String.Format("Day #{0}", d));
+        for (int n = 0; n < num_nurses_; ++n)
+        {
+          for (int s = 0; s < num_shifts_; ++s)
+          {
+            if (BooleanValue(shifts_[n, d, s]))
+            {
+              Console.WriteLine(
+                  String.Format("  Nurse #{0} is working shift #{1}", n, s));
+            }
+          }
+        }
+      }
+    }
   }
 
   public int SolutionCount()
@@ -32,6 +59,11 @@ public class NurseSolutionObserver : SolutionCallback
   }
 
   private int solution_count_;
+  private IntVar[,,] shifts_;
+  private int num_nurses_;
+  private int num_days_;
+  private int num_shifts_;
+  private HashSet<int> to_print_;
 }
 
 public class NursesSat
@@ -162,14 +194,15 @@ public class NursesSat
 
     // Creates the solver and solve.
     CpSolver solver = new CpSolver();
-    NurseSolutionObserver cb = new NurseSolutionObserver();
-    CpSolverStatus status = solver.SearchAllSolutions(model, cb);
     // Display a few solutions picked at random.
-  // a_few_solutions = [859, 2034, 5091, 7003]
-  // solution_printer = NursesPartialSolutionPrinter(shifts, num_nurses,
-  //                                                 num_days, num_shifts,
-  //                                                 a_few_solutions)
-  //         status = solver.SearchForAllSolutions(model, solution_printer);
+    HashSet<int> to_print = new HashSet<int>();
+    to_print.Add(859);
+    to_print.Add(2034);
+    to_print.Add(5091);
+    to_print.Add(7003);
+    NurseSolutionObserver cb = new NurseSolutionObserver(
+        shift, num_nurses, num_days, num_shifts, to_print);
+    CpSolverStatus status = solver.SearchAllSolutions(model, cb);
 
     // Statistics.
     Console.WriteLine("Statistics");

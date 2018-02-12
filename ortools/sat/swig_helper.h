@@ -48,9 +48,17 @@ class SolutionCallback {
     return response_.wall_time();
   }
 
-  long Value(int index) {
+  long SolutionValue(int index) {
     return index >= 0 ? response_.solution(index)
                       : -response_.solution(-index - 1);
+  }
+
+  bool SolutionBooleanValue(int index) {
+    if (index >= 0) {
+      return response_.solution(index) != 0;
+    } else {
+      return response_.solution(index) == 0;
+    }
   }
 
  private:
