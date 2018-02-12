@@ -989,7 +989,7 @@ class CpModel(object):
       raise TypeError('TypeError: ' + str(x) + ' is not a boolean variable')
 
 
-def EvaluateExpression(expression, solution):
+def EvaluateIntegerExpression(expression, solution):
   """Evaluate an integer expression against a solution."""
   value = 0
   to_process = [(expression, 1)]
@@ -1039,7 +1039,7 @@ class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
     """Returns the value of an integer expression."""
     if not self.__current_solution:
       raise RuntimeError('Solve() has not be called.')
-    return EvaluateExpression(expression, self.__current_solution)
+    return EvaluateIntegerExpression(expression, self.__current_solution)
 
   def ObjectiveValue(self):
     """Returns the value of the objective."""
@@ -1092,7 +1092,7 @@ class CpSolver(object):
     """Returns the value of an integer expression."""
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
-    return EvaluateExpression(expression, self.__solution)
+    return EvaluateIntegerExpression(expression, self.__solution)
 
   def BooleanValue(self, literal):
     if not self.__solution:

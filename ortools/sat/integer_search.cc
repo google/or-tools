@@ -254,16 +254,12 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
       std::vector<std::function<LiteralIndex()>> lp_heuristics;
       for (const auto& ct :
            *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
-        lp_heuristics.push_back(ct->HeuristicLPPseudoCostBinary(model));
+        lp_heuristics.push_back(ct->LPReducedCostAverageBranching());
       }
+      if (lp_heuristics.empty()) break;  // Fall back to automatic search.
       auto portfolio = CompleteHeuristics(
           lp_heuristics,
           SequentialSearch({SatSolverHeuristic(model), next_decision}));
-      if (parameters.exploit_integer_lp_solution()) {
-        for (auto& ref : portfolio) {
-          ref = ExploitIntegerLpSolution(ref, model);
-        }
-      }
       auto default_restart_policy = SatSolverRestartPolicy(model);
       auto restart_policies = std::vector<std::function<bool()>>(
           portfolio.size(), default_restart_policy);

@@ -253,12 +253,12 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
   }
 
   if (head == tail) {
-    // A self-arc is either plain SAT or plan UNSAT or it forces something on
+    // A self-arc is either plain SAT or plain UNSAT or it forces something on
     // the given offset_var or l. In any case it could be presolved in something
     // more efficent.
-    LOG(WARNING) << "Self arc! This could be presolved. "
-                 << "var:" << tail << " offset:" << offset
-                 << " offset_var:" << offset_var << " conditioned_by:" << l;
+    VLOG(1) << "Self arc! This could be presolved. "
+            << "var:" << tail << " offset:" << offset
+            << " offset_var:" << offset_var << " conditioned_by:" << l;
     if (offset_var == kNoIntegerVariable) {
       // Always false => l is false, otherwise this is a no op.
       if (offset > 0) trail_->EnqueueWithUnitReason(Literal(l).Negated());

@@ -237,6 +237,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // This computes the mean of reduced costs over successive calls,
   // and tries to fix the variable which has the highest reduced cost.
   // Tie-breaking is done using the variable natural order.
+  // Only works for 0/1 variables.
   //
   // TODO(user): Try to get better pseudocosts than averaging every time
   // the heuristic is called. MIP solvers initialize this with strong branching,
@@ -250,7 +251,20 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // pseudo = a * pseudo + (1-a) reduced.
   std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model);
 
+  // Returns a LiteralIndex guided by the underlying LP constraints.
+  // This computes the mean of reduced costs over successive calls,
+  // and tries to fix the variable which has the highest reduced cost.
+  // Tie-breaking is done using the variable natural order.
+  std::function<LiteralIndex()> LPReducedCostAverageBranching();
+
  private:
+  // The factor to multiply a CP variable value to get the value in the LP side.
+  glop::Fractional CpToLpScalingFactor(glop::ColIndex col) const;
+  glop::Fractional LpToCpScalingFactor(glop::ColIndex col) const;
+
+  // Updates the bounds of the LP variables from the CP bounds.
+  void UpdateBoundsOfLpVariables();
+
   // Generates a set of IntegerLiterals explaining why the best solution can not
   // be improved using reduced costs. This is used to generate explanations for
   // both infeasibility and bounds deductions.
@@ -266,15 +280,23 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // the lp.
   void ReducedCostStrengtheningDeductions(double cp_objective_delta);
 
+  // Returns the variable value on the same scale as the CP variable value.
+  glop::Fractional GetVariableValueAtCpScale(glop::ColIndex var);
+
   // Gets or creates an LP variable that mirrors a CP variable.
   // The variable should be a positive reference.
   glop::ColIndex GetOrCreateMirrorVariable(IntegerVariable positive_variable);
 
-  // Returns the variable value on the same scale as the CP variable value.
-  glop::Fractional GetVariableValueAtCpScale(glop::ColIndex var);
+  // Callback underlying LPReducedCostAverageBranching().
+  LiteralIndex LPReducedCostAverageDecision();
 
-  // TODO(user): use solver's precision epsilon.
-  static const double kEpsilon;
+  // This epsilon is related to the precision of the value/reduced_cost returned
+  // by the LP once they have been scaled back into the CP domain. So for large
+  // domain or cost coefficient, we may have some issues.
+  static const double kCpEpsilon;
+
+  // Same but at the LP scale.
+  static const double kLpEpsilon;
 
   // Underlying LP solver API.
   glop::LinearProgram lp_data_;
@@ -282,6 +304,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // For the scaling.
   glop::SparseMatrixScaler scaler_;
+  double bound_scaling_factor_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].
@@ -302,6 +325,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerTrail* integer_trail_;
   Trail* trail_;
   SearchHeuristicsVector* model_heuristics_;
+  IntegerEncoder* integer_encoder_;
 
   // The dispatcher for all LP propagators of the model, allows to find which
   // LinearProgrammingConstraint has a given IntegerVariable.
@@ -325,6 +349,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   int num_cuts_ = 0;
   std::vector<CutGenerator> cut_generators_;
+
+  // Store some statistics for HeuristicLPReducedCostAverage().
+  bool compute_reduced_cost_averages_ = false;
+  int num_calls_since_reduced_cost_averages_reset_ = 0;
+  std::vector<double> sum_cost_up_;
+  std::vector<double> sum_cost_down_;
+  std::vector<int> num_cost_up_;
+  std::vector<int> num_cost_down_;
 };
 
 // A class that stores which LP propagator is associated to each variable.

@@ -104,7 +104,7 @@ class SatSolver {
   // be UNSAT.
   //
   // TODO(user): Rename this to AddClause().
-  bool AddProblemClause(const std::vector<Literal>& literals);
+  bool AddProblemClause(absl::Span<Literal> literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this

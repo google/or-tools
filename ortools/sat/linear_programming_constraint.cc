@@ -29,7 +29,8 @@
 namespace operations_research {
 namespace sat {
 
-const double LinearProgrammingConstraint::kEpsilon = 1e-6;
+const double LinearProgrammingConstraint::kCpEpsilon = 1e-4;
+const double LinearProgrammingConstraint::kLpEpsilon = 1e-6;
 
 // TODO(user): make SatParameters singleton too, otherwise changing them after
 // a constraint was added will have no effect on this class.
@@ -39,6 +40,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
       model_heuristics_(model->GetOrCreate<SearchHeuristicsVector>()),
+      integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()) {
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
@@ -104,6 +106,16 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   }
   lp_data_.Scale(&scaler_);
   lp_data_.ScaleObjective();
+
+  // ScaleBounds() looks at both the constraints and variable bounds, so we
+  // initialize the LP variable bounds before scaling them.
+  //
+  // TODO(user): As part of the scaling, we may also want to shift the initial
+  // variable bounds so that each variable contain the value zero in their
+  // domain. Maybe just once and for all at the beginning.
+  bound_scaling_factor_ = 1.0;
+  UpdateBoundsOfLpVariables();
+  bound_scaling_factor_ = lp_data_.ScaleBounds();
   lp_data_.AddSlackVariablesWhereNecessary(false);
 
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
@@ -152,14 +164,23 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
     const double ub = static_cast<double>(
         integer_trail_->UpperBound(integer_variables_[index]).value());
     const double value = lp_solution_[index];
-    if (value < lb - kEpsilon || value > ub + kEpsilon) return Propagate();
+    if (value < lb - kCpEpsilon || value > ub + kCpEpsilon) return Propagate();
   }
   return true;
 }
 
+glop::Fractional LinearProgrammingConstraint::CpToLpScalingFactor(
+    glop::ColIndex col) const {
+  return scaler_.col_scale(col) / bound_scaling_factor_;
+}
+glop::Fractional LinearProgrammingConstraint::LpToCpScalingFactor(
+    glop::ColIndex col) const {
+  return bound_scaling_factor_ / scaler_.col_scale(col);
+}
+
 glop::Fractional LinearProgrammingConstraint::GetVariableValueAtCpScale(
     glop::ColIndex var) {
-  return simplex_.GetVariableValue(var) / scaler_.col_scale(var);
+  return simplex_.GetVariableValue(var) * LpToCpScalingFactor(var);
 }
 
 double LinearProgrammingConstraint::GetSolutionValue(
@@ -172,8 +193,7 @@ double LinearProgrammingConstraint::GetSolutionReducedCost(
   return lp_reduced_cost_[FindOrDie(mirror_lp_variable_, variable).value()];
 }
 
-bool LinearProgrammingConstraint::Propagate() {
-  // Copy CP state into LP state.
+void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];
@@ -181,12 +201,18 @@ bool LinearProgrammingConstraint::Propagate() {
         static_cast<double>(integer_trail_->LowerBound(cp_var).value());
     const double ub =
         static_cast<double>(integer_trail_->UpperBound(cp_var).value());
-    const double factor = scaler_.col_scale(glop::ColIndex(i));
+    const double factor = CpToLpScalingFactor(glop::ColIndex(i));
     lp_data_.SetVariableBounds(glop::ColIndex(i), lb * factor, ub * factor);
   }
+}
 
+bool LinearProgrammingConstraint::Propagate() {
+  UpdateBoundsOfLpVariables();
+
+  // TODO(user): It seems the time we loose by not stopping early might be worth
+  // it because we end up with a better explanation at optimality.
   glop::GlopParameters parameters = simplex_.GetParameters();
-  if (objective_is_defined_) {
+  if (/* DISABLES CODE */ (false) && objective_is_defined_) {
     // We put a limit on the dual objective since there is no point increasing
     // it past our current objective upper-bound (we will already fail as soon
     // as we pass it). Note that this limit is properly transformed using the
@@ -194,8 +220,9 @@ bool LinearProgrammingConstraint::Propagate() {
     //
     // Note that we use a bigger epsilon here to be sure that if we abort
     // because of this, we will report a conflict.
-    parameters.set_objective_upper_limit(static_cast<double>(
-        integer_trail_->UpperBound(objective_cp_).value() + 100.0 * kEpsilon));
+    parameters.set_objective_upper_limit(
+        static_cast<double>(integer_trail_->UpperBound(objective_cp_).value() +
+                            100.0 * kCpEpsilon));
   }
 
   // Put an iteration limit on the work we do in the simplex for this call. Note
@@ -212,6 +239,7 @@ bool LinearProgrammingConstraint::Propagate() {
                      << status.error_message();
 
   // Add cuts and resolve.
+  // TODO(user): for the cuts, we scale back and forth, is this really needed?
   if (!cut_generators_.empty() && num_cuts_ < sat_parameters_.max_num_cuts() &&
       (trail_->CurrentDecisionLevel() == 0 ||
        !sat_parameters_.only_add_cuts_at_level_zero()) &&
@@ -242,7 +270,7 @@ bool LinearProgrammingConstraint::Propagate() {
         for (int i = 0; i < cut.vars.size(); ++i) {
           const glop::ColIndex col = GetOrCreateMirrorVariable(cut.vars[i]);
           lp_data_.SetCoefficient(row, col,
-                                  cut.coeffs[i] / scaler_.col_scale(col));
+                                  cut.coeffs[i] * CpToLpScalingFactor(col));
         }
       }
     }
@@ -274,8 +302,11 @@ bool LinearProgrammingConstraint::Propagate() {
     // CP world.
     const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
     const IntegerValue old_lb = integer_trail_->LowerBound(objective_cp_);
+
+    // TODO(user): for large objective value, we can have a big imprecision
+    // there. Not sure what to do (being super defensive, or not).
     const IntegerValue new_lb(
-        static_cast<int64>(std::ceil(relaxed_optimal_objective - kEpsilon)));
+        static_cast<int64>(std::ceil(relaxed_optimal_objective - kCpEpsilon)));
     if (old_lb < new_lb) {
       FillReducedCostsReason();
       const IntegerLiteral deduction =
@@ -311,13 +342,54 @@ bool LinearProgrammingConstraint::Propagate() {
     lp_solution_level_ = trail_->CurrentDecisionLevel();
     lp_objective_ = simplex_.GetObjectiveValue();
     lp_solution_is_integer_ = true;
+    const int num_vars = integer_variables_.size();
     for (int i = 0; i < num_vars; i++) {
       lp_solution_[i] = GetVariableValueAtCpScale(glop::ColIndex(i));
+
+      // The reduced cost need to be divided by LpToCpScalingFactor().
       lp_reduced_cost_[i] = simplex_.GetReducedCost(glop::ColIndex(i)) *
-                            scaler_.col_scale(glop::ColIndex(i)) *
+                            CpToLpScalingFactor(glop::ColIndex(i)) *
                             objective_scale;
-      if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) > kEpsilon) {
+      if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) >
+          kCpEpsilon) {
         lp_solution_is_integer_ = false;
+      }
+    }
+
+    if (compute_reduced_cost_averages_) {
+      // Decay averages.
+      num_calls_since_reduced_cost_averages_reset_++;
+      if (num_calls_since_reduced_cost_averages_reset_ == 10000) {
+        for (int i = 0; i < num_vars; i++) {
+          sum_cost_up_[i] /= 2;
+          num_cost_up_[i] /= 2;
+          sum_cost_down_[i] /= 2;
+          num_cost_down_[i] /= 2;
+        }
+        num_calls_since_reduced_cost_averages_reset_ = 0;
+      }
+
+      // Accumulate pseudo-costs of all unassigned variables.
+      for (int i = 0; i < num_vars; i++) {
+        const IntegerVariable var = this->integer_variables_[i];
+
+        // Skip ignored and fixed variables.
+        if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+        const IntegerValue lb = integer_trail_->LowerBound(var);
+        const IntegerValue ub = integer_trail_->UpperBound(var);
+        if (lb == ub) continue;
+
+        // Skip reduced costs that are zero or close.
+        const double rc = this->GetSolutionReducedCost(var);
+        if (std::abs(rc) < kCpEpsilon) continue;
+
+        if (rc < 0.0) {
+          sum_cost_down_[i] -= rc;
+          num_cost_down_[i]++;
+        } else {
+          sum_cost_up_[i] += rc;
+          num_cost_up_[i]++;
+        }
       }
     }
   }
@@ -335,10 +407,10 @@ void LinearProgrammingConstraint::FillReducedCostsReason() {
     // then decreasing it by 9 would still leave the problem infeasible.
     // Using this could allow to generalize some explanations.
     const double rc = simplex_.GetReducedCost(glop::ColIndex(i));
-    if (rc > kEpsilon) {
+    if (rc > kLpEpsilon) {
       integer_reason_.push_back(
           integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
-    } else if (rc < -kEpsilon) {
+    } else if (rc < -kLpEpsilon) {
       integer_reason_.push_back(
           integer_trail_->UpperBoundAsLiteral(integer_variables_[i]));
     }
@@ -355,10 +427,10 @@ void LinearProgrammingConstraint::FillDualRayReason() {
     // variable. The simplex_ interface would need to be slightly extended to
     // retrieve the basis column in question and the variable values though.
     const double rc = simplex_.GetDualRayRowCombination()[glop::ColIndex(i)];
-    if (rc > kEpsilon) {
+    if (rc > kLpEpsilon) {
       integer_reason_.push_back(
           integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
-    } else if (rc < -kEpsilon) {
+    } else if (rc < -kLpEpsilon) {
       integer_reason_.push_back(
           integer_trail_->UpperBoundAsLiteral(integer_variables_[i]));
     }
@@ -383,20 +455,23 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
 
     if (rc == 0.0) continue;
     const double lp_other_bound = value + lp_objective_delta / rc;
-    const double cp_other_bound = lp_other_bound / scaler_.col_scale(lp_var);
+    const double cp_other_bound = lp_other_bound * LpToCpScalingFactor(lp_var);
 
-    if (rc > kEpsilon) {
+    if (rc > kLpEpsilon) {
       const double ub =
           static_cast<double>(integer_trail_->UpperBound(cp_var).value());
-      const double new_ub = std::floor(cp_other_bound + kEpsilon);
+      const double new_ub = std::floor(cp_other_bound + kCpEpsilon);
       if (new_ub < ub) {
+        // TODO(user): Because rc > kLpEpsilon, the lower_bound of cp_var
+        // will be part of the reason returned by FillReducedCostsReason(), but
+        // we actually do not need it here. Same below.
         const IntegerValue new_ub_int(static_cast<IntegerValue>(new_ub));
         deductions_.push_back(IntegerLiteral::LowerOrEqual(cp_var, new_ub_int));
       }
-    } else if (rc < -kEpsilon) {
+    } else if (rc < -kLpEpsilon) {
       const double lb =
           static_cast<double>(integer_trail_->LowerBound(cp_var).value());
-      const double new_lb = std::ceil(cp_other_bound - kEpsilon);
+      const double new_lb = std::ceil(cp_other_bound - kCpEpsilon);
       if (new_lb > lb) {
         const IntegerValue new_lb_int(static_cast<IntegerValue>(new_lb));
         deductions_.push_back(
@@ -667,7 +742,7 @@ LinearProgrammingConstraint::HeuristicLPMostInfeasibleBinary(Model* model) {
 
 std::function<LiteralIndex()>
 LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
-  // Gather all 0-1 variables that appear in some LP.
+  // Gather all 0-1 variables that appear in this LP.
   std::vector<IntegerVariable> variables;
   for (IntegerVariable var : integer_variables_) {
     if (integer_trail_->LowerBound(var) == 0 &&
@@ -747,6 +822,97 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
 
     return kNoLiteralIndex;
   };
+}
+
+std::function<LiteralIndex()>
+LinearProgrammingConstraint::LPReducedCostAverageBranching() {
+  if (!compute_reduced_cost_averages_) {
+    compute_reduced_cost_averages_ = true;
+    const int num_vars = integer_variables_.size();
+    VLOG(1) << " LPReducedCostAverageBranching has #variables: " << num_vars;
+    sum_cost_down_.resize(num_vars, 0.0);
+    num_cost_down_.resize(num_vars, 0);
+    sum_cost_up_.resize(num_vars, 0.0);
+    num_cost_up_.resize(num_vars, 0);
+  }
+
+  return [this]() { return this->LPReducedCostAverageDecision(); };
+}
+
+LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
+  const int num_vars = integer_variables_.size();
+  // Select noninstantiated variable with highest pseudo-cost.
+  int selected_index = -1;
+  double best_cost = 0.0;
+  for (int i = 0; i < num_vars; i++) {
+    const IntegerVariable var = this->integer_variables_[i];
+    // Skip ignored and fixed variables.
+    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+    const IntegerValue lb = integer_trail_->LowerBound(var);
+    const IntegerValue ub = integer_trail_->UpperBound(var);
+    if (lb == ub) continue;
+
+    // If only one direction exist, we takes its value divided by 2, so that
+    // such variable should have a smaller cost than the min of the two side
+    // except if one direction have a really high reduced costs.
+    double cost_i = 0.0;
+    if (num_cost_down_[i] > 0 && num_cost_up_[i] > 0) {
+      cost_i = std::min(sum_cost_down_[i] / num_cost_down_[i],
+                        sum_cost_up_[i] / num_cost_up_[i]);
+    } else {
+      const double divisor = num_cost_down_[i] + num_cost_up_[i];
+      if (divisor != 0) {
+        cost_i = 0.5 * (sum_cost_down_[i] + sum_cost_up_[i]) / divisor;
+      }
+    }
+
+    if (selected_index == -1 || cost_i > best_cost) {
+      best_cost = cost_i;
+      selected_index = i;
+    }
+  }
+
+  if (selected_index == -1) return kNoLiteralIndex;
+  const IntegerVariable var = this->integer_variables_[selected_index];
+
+  // If ceil(value) is current upper bound, try var == upper bound first.
+  // Guarding with >= prevents numerical problems.
+  // With 0/1 variables, this will tend to try setting to 1 first,
+  // which produces more shallow trees.
+  const IntegerValue ub = integer_trail_->UpperBound(var);
+  const IntegerValue value_ceil(
+      std::ceil(this->GetSolutionValue(var) - kCpEpsilon));
+  if (value_ceil >= ub) {
+    return integer_encoder_
+        ->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(var, ub))
+        .Index();
+  }
+
+  // If floor(value) is current lower bound, try var == lower bound first.
+  // Guarding with <= prevents numerical problems.
+  const IntegerValue lb = integer_trail_->LowerBound(var);
+  const IntegerValue value_floor(
+      std::floor(this->GetSolutionValue(var) + kCpEpsilon));
+  if (value_floor <= lb) {
+    return integer_encoder_
+        ->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(var, lb))
+        .Index();
+  }
+
+  // Here lb < value_floor <= value_ceil < ub.
+  // Try the most promising split between var <= floor or var >= ceil.
+  if (sum_cost_down_[selected_index] / num_cost_down_[selected_index] <
+      sum_cost_up_[selected_index] / num_cost_up_[selected_index]) {
+    return integer_encoder_
+        ->GetOrCreateAssociatedLiteral(
+            IntegerLiteral::LowerOrEqual(var, value_floor))
+        .Index();
+  } else {
+    return integer_encoder_
+        ->GetOrCreateAssociatedLiteral(
+            IntegerLiteral::GreaterOrEqual(var, value_ceil))
+        .Index();
+  }
 }
 
 }  // namespace sat

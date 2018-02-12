@@ -1209,7 +1209,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     presolver.SetDratWriter(drat_writer);
     presolver.SetEquivalentLiteralMapping(equiv_map);
     (*solver)->ExtractClauses(&presolver);
-    (*solver).release();
+    (*solver).reset(nullptr);
     if (!presolver.Presolve()) {
       VLOG(1) << "UNSAT during presolve.";
 

@@ -187,7 +187,7 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
       &tmp_pb_constraint_);
 }
 
-bool SatSolver::AddProblemClause(const std::vector<Literal>& literals) {
+bool SatSolver::AddProblemClause(absl::Span<Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
 
   // TODO(user): To avoid duplication, we currently just call

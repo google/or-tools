@@ -657,8 +657,6 @@ class FullEncodingFixedPointComputer {
         return PropagateTable(ct);
       case ConstraintProto::ConstraintProto::kAutomata:
         return PropagateAutomata(ct);
-      case ConstraintProto::ConstraintProto::kCircuit:
-        return PropagateCircuit(ct);
       case ConstraintProto::ConstraintProto::kInverse:
         return PropagateInverse(ct);
       case ConstraintProto::ConstraintProto::kLinear:
@@ -713,7 +711,6 @@ class FullEncodingFixedPointComputer {
   bool PropagateElement(const ConstraintProto* ct);
   bool PropagateTable(const ConstraintProto* ct);
   bool PropagateAutomata(const ConstraintProto* ct);
-  bool PropagateCircuit(const ConstraintProto* ct);
   bool PropagateInverse(const ConstraintProto* ct);
   bool PropagateLinear(const ConstraintProto* ct);
 
@@ -774,17 +771,6 @@ bool FullEncodingFixedPointComputer::PropagateTable(const ConstraintProto* ct) {
 bool FullEncodingFixedPointComputer::PropagateAutomata(
     const ConstraintProto* ct) {
   for (const int variable : ct->automata().vars()) {
-    FullyEncode(variable);
-  }
-  return true;
-}
-
-bool FullEncodingFixedPointComputer::PropagateCircuit(
-    const ConstraintProto* ct) {
-  // Skip if sparse specification (or empty).
-  if (ct->circuit().nexts_size() == 0) return true;
-
-  for (const int variable : ct->circuit().nexts()) {
     FullyEncode(variable);
   }
   return true;
@@ -1301,41 +1287,25 @@ std::vector<std::vector<Literal>> GetSquareMatrixFromIntegerVariables(
 
 void LoadCircuitConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   const auto& circuit = ct.circuit();
-  // We must give either dense or sparse specification.
-  CHECK(circuit.nexts_size() == 0 || circuit.tails_size() == 0);
-  if (circuit.nexts_size() > 0) {
-    const std::vector<IntegerVariable> nexts = m->Integers(circuit.nexts());
-    m->Add(SubcircuitConstraint(GetSquareMatrixFromIntegerVariables(nexts, m)));
-  } else if (circuit.tails_size() > 0) {
-    const std::vector<int> tails(circuit.tails().begin(),
-                                 circuit.tails().end());
-    const std::vector<int> heads(circuit.heads().begin(),
-                                 circuit.heads().end());
-    const std::vector<Literal> arcs = m->Literals(circuit.literals());
-    m->Add(SubcircuitConstraint(tails, heads, arcs));
-  }
+  if (circuit.tails().empty()) return;
+
+  std::vector<int> tails(circuit.tails().begin(), circuit.tails().end());
+  std::vector<int> heads(circuit.heads().begin(), circuit.heads().end());
+  std::vector<Literal> literals = m->Literals(circuit.literals());
+  const int num_nodes = ReindexArcs(&tails, &heads, &literals);
+  m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals));
 }
 
-// TODO(user): provide a sparse API.
 void LoadRoutesConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
-  int num_nodes = 0;
-  const RoutesConstraintProto& arg = ct.routes();
-  for (const int32 tail : arg.tails()) {
-    num_nodes = std::max(num_nodes, tail + 1);
-  }
-  for (const int32 head : arg.heads()) {
-    num_nodes = std::max(num_nodes, head + 1);
-  }
+  const auto& routes = ct.routes();
+  if (routes.tails().empty()) return;
 
-  const Literal kFalseLiteral =
-      m->GetOrCreate<IntegerEncoder>()->GetFalseLiteral();
-  std::vector<std::vector<Literal>> graph(
-      num_nodes, std::vector<Literal>(num_nodes, kFalseLiteral));
-  const int num_arcs = arg.tails_size();
-  for (int i = 0; i < num_arcs; ++i) {
-    graph[arg.tails(i)][arg.heads(i)] = m->Literal(arg.literals(i));
-  }
-  m->Add(MultipleSubcircuitThroughZeroConstraint(graph));
+  std::vector<int> tails(routes.tails().begin(), routes.tails().end());
+  std::vector<int> heads(routes.heads().begin(), routes.heads().end());
+  std::vector<Literal> literals = m->Literals(routes.literals());
+  const int num_nodes = ReindexArcs(&tails, &heads, &literals);
+  m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals,
+                              /*multiple_subcircuit_through_zero=*/true));
 }
 
 void LoadCircuitCoveringConstraint(const ConstraintProto& ct,
@@ -1493,15 +1463,6 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         absl::StrCat(" - ", num_constants, " constants in {",
                      absl::StrJoin(constant_values, ","), "} \n");
     absl::StrAppend(&result, Summarize(temp));
-  }
-
-  // We create a temporary model with mapping, just to compute the number of
-  // variable we instantiate.
-  {
-    Model model;
-    ModelWithMapping m(model_proto, &model);
-    absl::StrAppend(&result, "#Booleans: ", m.NumBooleanVariables(), "\n");
-    absl::StrAppend(&result, "#Integers: ", m.NumIntegerVariables(), "\n");
   }
 
   std::vector<std::string> constraints;
@@ -1851,9 +1812,7 @@ void TryToLinearizeConstraint(
     }
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kCircuit) {
-    if (ct.circuit().nexts_size() > 0 || HasEnforcementLiteral(ct)) {
-      return;
-    }
+    if (HasEnforcementLiteral(ct)) return;
     const int num_arcs = ct.circuit().literals_size();
     CHECK_EQ(num_arcs, ct.circuit().tails_size());
     CHECK_EQ(num_arcs, ct.circuit().heads_size());
@@ -1904,9 +1863,11 @@ void TryToLinearizeConstraint(
     for (const auto literal_value : m->Add(FullyEncodeVariable((index)))) {
       const IntegerVariable var = vars[literal_value.value.value()];
       if (!m->Get(IsFixed(var))) return;
-      if (!constraint.AddLiteralTerm(literal_value.literal, m->Get(Value(var)),
-                                     *encoder))
-        return;
+
+      // Make sure this literal has a view.
+      m->Add(NewIntegerVariableFromLiteral(literal_value.literal));
+      CHECK(constraint.AddLiteralTerm(literal_value.literal, m->Get(Value(var)),
+                                      *encoder));
     }
 
     linear_constraints->push_back(constraint.Build());
@@ -1917,88 +1878,22 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
                            const ConstraintProto& ct, ModelWithMapping* m,
                            std::vector<CutGenerator>* cut_generators) {
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
-  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit &&
-      ct.circuit().nexts_size() > 0) {
-    // This cut generator is valid only if the circuit must pass by all the
-    // points. That is if there is no possible self-arc.
-    //
-    // For flatzinc problems, we often have nexts[0] fixed to zero, and we need
-    // to find a circuit on the rest of the nodes, it is why we have this
-    // ignore_zero_offset "hack". TODO(user): be even more generic.
-    int ignore_zero_offset = 0;
-    for (int i = 0; i < ct.circuit().nexts_size(); ++i) {
-      const auto domain =
-          ReadDomain(model_proto.variables(ct.circuit().nexts(i)));
-      if (i == 0 && domain.size() == 1 && domain[0].start == 0 &&
-          domain[0].end == 0) {
-        ignore_zero_offset = 1;
-        continue;
-      }
-      if (SortedDisjointIntervalsContain(domain, i)) {
-        VLOG(1) << "Subcircuit constraint, no cuts.";
-        return;
-      }
-    }
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
+    std::vector<int> tails(ct.circuit().tails().begin(),
+                           ct.circuit().tails().end());
+    std::vector<int> heads(ct.circuit().heads().begin(),
+                           ct.circuit().heads().end());
+    std::vector<Literal> literals = m->Literals(ct.circuit().literals());
+    const int num_nodes = ReindexArcs(&tails, &heads, &literals);
 
-    // TODO(user): A bit duplicated with LoadCircuitConstraint() except we
-    // need to convert Literal to IntegerVariable here.
-    const std::vector<IntegerVariable> nexts =
-        m->Integers(ct.circuit().nexts());
-
-    std::vector<int> tails;
-    std::vector<int> heads;
-    std::vector<IntegerVariable> vars;
-    const int num_nodes = nexts.size();
-    for (int i = ignore_zero_offset; i < num_nodes; ++i) {
-      const auto encoding = m->Add(FullyEncodeVariable(nexts[i]));
-      for (const auto& entry : encoding) {
-        // TODO(user): that might gives better result for the case where the
-        // encoding is not part of the model. That said we probably also need to
-        // add the flow conservation constraint somewhere to have a decent
-        // relaxation. Do that in TryToLinearizeConstraint? Maybe it make sense
-        // to create the cut and the linear relaxation in the same place!
-        if (/* DISABLES CODE */ (false)) {
-          // Make sure there is a view and if not create one.
-          m->Add(NewIntegerVariableFromLiteral(entry.literal));
-        }
-
-        // For now we need this Literal to have a view and we CANNOT use the
-        // view of the negated literal. TODO(user): fix this because it can
-        // mess up our connected component code if we don't use the same
-        // representative. Probably the
-        // CreateStronglyConnectedGraphCutGenerator() will need to know for each
-        // arc if the IntegerVariable means presence or absence...
-        const IntegerVariable var = encoder->GetLiteralView(entry.literal);
-        if (var == kNoIntegerVariable) return;
-
-        vars.push_back(var);
-        tails.push_back(i - ignore_zero_offset);
-        heads.push_back(entry.value.value() - ignore_zero_offset);
-      }
-    }
-    cut_generators->push_back(CreateStronglyConnectedGraphCutGenerator(
-        num_nodes - ignore_zero_offset, tails, heads, vars));
-  }
-  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit &&
-      ct.circuit().tails_size() > 0) {
-    const std::vector<int> tails(ct.circuit().tails().begin(),
-                                 ct.circuit().tails().end());
-    const std::vector<int> heads(ct.circuit().heads().begin(),
-                                 ct.circuit().heads().end());
-    const std::vector<Literal> literals = m->Literals(ct.circuit().literals());
     std::vector<IntegerVariable> vars;
     vars.reserve(literals.size());
     for (const Literal& literal : literals) {
       vars.push_back(m->Add(NewIntegerVariableFromLiteral(literal)));
     }
 
-    const int num_arcs = tails.size();
-    int max_node = 0;
-    for (int i = 0; i < num_arcs; i++) {
-      max_node = std::max(max_node, std::max(tails[i], heads[i]));
-    }
     cut_generators->push_back(CreateStronglyConnectedGraphCutGenerator(
-        max_node + 1, tails, heads, vars));
+        num_nodes, tails, heads, vars));
   }
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kRoutes) {
     std::vector<int> tails;
@@ -2647,6 +2542,102 @@ void PostsolveResponse(const CpModelProto& model_proto,
   }
 }
 
+CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
+                                   Model* model) {
+  // TODO(user): find a way to use the TimeLimit inside model.
+  std::unique_ptr<SatSolver> solver(new SatSolver());
+  SatParameters parameters = *model->GetOrCreate<SatParameters>();
+  parameters.set_log_search_progress(true);
+  solver->SetParameters(parameters);
+
+  // Timing.
+  WallTimer wall_timer;
+  UserTimer user_timer;
+  wall_timer.Start();
+  user_timer.Start();
+
+  auto get_literal = [](int ref) {
+    if (ref >= 0) return Literal(BooleanVariable(ref), true);
+    return Literal(BooleanVariable(NegatedRef(ref)), false);
+  };
+
+  std::vector<Literal> temp;
+  solver->SetNumVariables(model_proto.variables_size());
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    switch (ct.constraint_case()) {
+      case ConstraintProto::ConstraintCase::kBoolAnd: {
+        // a => b
+        const Literal not_a = get_literal(ct.enforcement_literal(0)).Negated();
+        for (const int ref : ct.bool_and().literals()) {
+          const Literal b = get_literal(ref);
+          solver->AddProblemClause({not_a, b});
+        }
+        break;
+      }
+      case ConstraintProto::ConstraintCase::kBoolOr:
+        temp.clear();
+        for (const int ref : ct.bool_or().literals()) {
+          temp.push_back(get_literal(ref));
+        }
+        solver->AddProblemClause(temp);
+        break;
+      default:
+        LOG(FATAL) << "Not supported";
+    }
+  }
+
+  // Deal with fixed variables.
+  for (int ref = 0; ref < model_proto.variables().size(); ++ref) {
+    const auto domain = ReadDomain(model_proto.variables(ref));
+    CHECK_EQ(domain.size(), 1);
+    if (domain[0].start == domain[0].end) {
+      if (domain[0].start == 0) {
+        solver->AddUnitClause(get_literal(ref).Negated());
+      } else {
+        solver->AddUnitClause(get_literal(ref));
+      }
+    }
+  }
+
+  std::vector<bool> solution;
+  const SatSolver::Status status =
+      SolveWithPresolve(&solver, &solution, nullptr);
+
+  CpSolverResponse response;
+  switch (status) {
+    case SatSolver::LIMIT_REACHED: {
+      response.set_status(CpSolverStatus::UNKNOWN);
+      break;
+    }
+    case SatSolver::MODEL_SAT: {
+      CHECK(SolutionIsFeasible(
+          model_proto, std::vector<int64>(solution.begin(), solution.end())));
+      for (const bool value : solution) {
+        response.add_solution(value ? 1 : 0);
+      }
+      response.set_status(CpSolverStatus::MODEL_SAT);
+      break;
+    }
+    case SatSolver::MODEL_UNSAT: {
+      response.set_status(CpSolverStatus::MODEL_UNSAT);
+      break;
+    }
+    default:
+      LOG(FATAL) << "Unexpected SatSolver::Status " << status;
+  }
+  response.set_num_booleans(solver->NumVariables());
+  response.set_num_branches(solver->num_branches());
+  response.set_num_conflicts(solver->num_failures());
+  response.set_num_binary_propagations(solver->num_propagations());
+  response.set_num_integer_propagations(0);
+  response.set_wall_time(wall_timer.Get());
+  response.set_user_time(user_timer.Get());
+
+  // TODO(user): This do not take into account presolve.
+  response.set_deterministic_time(solver->deterministic_time());
+  return response;
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -2671,6 +2662,21 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                   file::Defaults()));
   }
 #endif  // __PORTABLE_PLATFORM__
+
+  // Special case for pure-sat problem.
+  // TODO(user): improve the normal presolver to do the same thing.
+  if (!model_proto.has_objective() &&
+      !model->GetOrCreate<SatParameters>()->enumerate_all_solutions()) {
+    bool is_pure_sat = true;
+    for (const ConstraintProto& ct : model_proto.constraints()) {
+      if (ct.constraint_case() != ConstraintProto::ConstraintCase::kBoolOr &&
+          ct.constraint_case() != ConstraintProto::ConstraintCase::kBoolAnd) {
+        is_pure_sat = false;
+        break;
+      }
+    }
+    if (is_pure_sat) return SolvePureSatModel(model_proto, model);
+  }
 
   // Starts by expanding some constraints if needed.
   CpModelProto presolved_proto = ExpandCpModel(model_proto);

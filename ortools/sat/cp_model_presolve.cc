@@ -612,6 +612,7 @@ bool PresolveIntMin(ConstraintProto* ct, PresolveContext* context) {
 }
 
 bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
+  if (HasEnforcementLiteral(*ct)) return false;
   // For now, we only presolve the case where all variable are Booleans.
   const int target_ref = ct->int_prod().target();
   if (!RefIsPositive(target_ref)) return false;

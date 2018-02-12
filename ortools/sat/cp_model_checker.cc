@@ -547,28 +547,45 @@ class ConstraintChecker {
   }
 
   bool CircuitConstraintIsFeasible(const ConstraintProto& ct) {
-    const int num_nodes = ct.circuit().nexts_size();
-    int num_inactive = 0;
-    int last_active = 0;
-    for (int i = 0; i < num_nodes; ++i) {
-      const int value = Value(ct.circuit().nexts(i));
-      if (value < 0 || value == i || value >= num_nodes) {
-        ++num_inactive;
-      } else {
-        last_active = i;
+    const int num_arcs = ct.circuit().tails_size();
+    std::vector<int> nexts;
+    int first_node = kint32max;
+    for (int i = 0; i < num_arcs; ++i) {
+      const int tail = ct.circuit().tails(i);
+      const int head = ct.circuit().heads(i);
+      first_node = std::min(first_node, std::min(tail, head));
+      const int min_size = std::max(tail, head) + 1;
+      if (min_size > nexts.size()) nexts.resize(min_size, -1);
+
+      if (LiteralIsFalse(ct.circuit().literals(i))) continue;
+
+      if (nexts[tail] != -1) return false;  // duplicate.
+      nexts[tail] = head;
+    }
+
+    // All node must have a next.
+    int in_cycle = -1;
+    int cycle_size = 0;
+    for (int i = first_node; i < nexts.size(); ++i) {
+      if (nexts[i] == -1) return false;
+      if (nexts[i] != i) {
+        in_cycle = i;
+        ++cycle_size;
       }
     }
-    if (num_inactive == num_nodes) return true;
 
-    std::vector<bool> visited(num_nodes, false);
-    int current = last_active;
+    if (cycle_size == 0) return true;
+
+    // Check that we have only one cycle.
+    std::vector<bool> visited(nexts.size(), false);
+    int current = in_cycle;
     int num_visited = 0;
     while (!visited[current]) {
       ++num_visited;
       visited[current] = true;
-      current = Value(ct.circuit().nexts(current));
+      current = nexts[current];
     }
-    return num_visited + num_inactive == num_nodes;
+    return num_visited == cycle_size;
   }
 
   bool RoutesConstraintIsFeasible(const ConstraintProto& ct) {

@@ -161,14 +161,11 @@ message ReservoirConstraintProto {
 // controlled by literals. Each arc is given by an index in the
 // tails/heads/literals lists that must have the same size.
 //
-// For now, the graph nodes are always dense in [min_node, max_node] where the
-// min and max are taken over all the values appearing in tails and heads. Each
-// of these nodes must have exactly one incoming and one outgoing selected arc
-// (i.e. literal at true). All the selected arcs that are not self-loops must
-// form a single circuit.
+// For now, we ignore node indices with no incident arc. All the other nodes
+// must have exactly one incoming and one outgoing selected arc (i.e. literal at
+// true). All the selected arcs that are not self-loops must form a single
+// circuit.
 message CircuitConstraintProto {
-  repeated int32 nexts = 2;  // DEPRECATED.
-
   repeated int32 tails = 3;
   repeated int32 heads = 4;
   repeated int32 literals = 5;
@@ -265,7 +262,11 @@ message ConstraintProto {
   oneof constraint {
     BoolArgumentProto bool_or = 3;   // OR(literals) is true.
     BoolArgumentProto bool_and = 4;  // AND(literals) is true.
-    BoolArgumentProto bool_xor = 5;  // XOR(literals) is true.
+
+    // XOR(literals) is true.  For more than two literals, note that
+    // (a_1 XOR a_2 XOR ... XOR a_n) is equivalent to an odd number the a_i
+    // being true.
+    BoolArgumentProto bool_xor = 5;
 
     IntegerArgumentProto int_div = 7;    // target = vars[0] / vars[1]
     IntegerArgumentProto int_mod = 8;    // target = vars[0] % vars[1]

@@ -117,6 +117,10 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
 
   // Add the constraints. We scale each of them individually.
   for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {
+    if (mp_constraint.lower_bound() == -kInfinity &&
+        mp_constraint.upper_bound() == kInfinity) {
+      continue;
+    }
     auto* constraint = cp_model->add_constraints();
     constraint->set_name(mp_constraint.name());
     auto* arg = constraint->mutable_linear();

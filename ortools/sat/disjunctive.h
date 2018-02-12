@@ -138,7 +138,7 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
  private:
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
-  ThetaLambdaTree theta_tree_;
+  ThetaLambdaTree<IntegerValue> theta_tree_;
   std::vector<int> task_to_start_event_;
   std::vector<int> start_event_to_task_;
   std::vector<IntegerValue> start_event_time_;

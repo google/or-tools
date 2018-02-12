@@ -21,6 +21,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include <unordered_map>
 #include "ortools/base/int_type.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -30,15 +31,16 @@
 namespace operations_research {
 namespace sat {
 
-// Initial version of the circuit/sub-circuit constraint.
+// Circuit/sub-circuit constraint.
 //
 // Nodes that are not in the unique allowed sub-circuit must point to themseves.
 // A nodes that has no self-arc must thus be inside the sub-circuit. If there is
 // no self-arc at all, then this constaint forces the circuit to go through all
-// the nodes.
+// the nodes. Multi-arcs are NOT supported.
 //
-// Important: for correctness, this constraint requires to call
-// ExactlyOnePerRowAndPerColumn() on the same graph.
+// Important: for correctness, this constraint requires that "exactly one"
+// constraints have been added for all the incoming (resp. outgoing) arcs of
+// each node. Also, such constraint must propagate before this one.
 class CircuitPropagator : PropagatorInterface, ReversibleInterface {
  public:
   struct Options {
@@ -47,11 +49,11 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
     bool multiple_subcircuit_through_zero = false;
   };
 
-  // The constraints take a dense representation of a graph on [0, n). Each arc
-  // being present when the given literal is true. The special values
-  // kTrueLiteralIndex and kFalseLiteralIndex can be used for arcs that are
-  // either always there or never there.
-  CircuitPropagator(std::vector<std::vector<Literal>> graph, Options options,
+  // The constraints take a sparse representation of a graph on [0, n). Each arc
+  // being present when the given literal is true.
+  CircuitPropagator(int num_nodes, const std::vector<int>& tails,
+                    const std::vector<int>& heads,
+                    const std::vector<Literal>& literals, Options options,
                     Model* model);
 
   void SetLevel(int level) final;
@@ -69,10 +71,18 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   void FillReasonForPath(int start_node, std::vector<Literal>* reason) const;
 
   const int num_nodes_;
-  const std::vector<std::vector<Literal>> graph_;
   const Options options_;
   Trail* trail_;
   const VariablesAssignment& assignment_;
+
+  // We use this to query in O(1) for an arc existence. The self-arcs are
+  // accessed often, so we use a more efficient std::vector<> for them. Note
+  // that we do not add self-arcs to graph_.
+  //
+  // TODO(user): for large dense graph, using a matrix is faster and uses less
+  // memory. If the need arise we can have the two implementations.
+  std::vector<Literal> self_arcs_;
+  std::unordered_map<std::pair<int, int>, Literal> graph_;
 
   // Data used to interpret the watch indices passed to IncrementalPropagate().
   struct Arc {
@@ -96,7 +106,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<Arc> added_arcs_;
 
   // Reversible list of node that must be in a cycle. A node must be in a cycle
-  // iff graph_[node][node] is false. This graph entry can be used as a reason.
+  // iff self_arcs_[node] is false. This graph entry can be used as a reason.
   int rev_must_be_in_cycle_size_ = 0;
   std::vector<int> must_be_in_cycle_;
 
@@ -156,27 +166,23 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
 // Model based functions.
 // ============================================================================
 
-// Enforces that exactly one literal per rows and per columns is true.
-// This only work for a square matrix (but could easily be generalized).
-//
-// If ignore_row_and_column_zero is true, this adds two less constraints by
-// skipping the one for the row zero and for the column zero. Note however that
-// the other constraints are not changed, i.e. matrix[0][5] is still counted
-// in column 5.
+// Changes the node indices so that we get a graph in [0, num_nodes) where every
+// nodes has at least one incoming or outgoing arcs. Returns the number of
+// nodes.
+int ReindexArcs(std::vector<int>* tails, std::vector<int>* heads,
+                std::vector<Literal>* literals);
+
+// This just wraps CircuitPropagator. See the comment there to see what this
+// does. Note that any nodes with no outoing or no incoming arc will cause the
+// problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
+std::function<void(Model*)> SubcircuitConstraint(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<Literal>& literals,
+    bool multiple_subcircuit_through_zero = false);
+
+// TODO(user): Change to a sparse API like for the function above.
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<Literal>>& graph,
-    bool ignore_row_and_column_zero = false);
-
-std::function<void(Model*)> SubcircuitConstraint(
     const std::vector<std::vector<Literal>>& graph);
-
-std::function<void(Model*)> SubcircuitConstraint(
-    const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& arcs);
-
-std::function<void(Model*)> MultipleSubcircuitThroughZeroConstraint(
-    const std::vector<std::vector<Literal>>& graph);
-
 std::function<void(Model*)> CircuitCovering(
     const std::vector<std::vector<Literal>>& graph,
     const std::vector<int>& distinguished_nodes);

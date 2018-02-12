@@ -69,7 +69,6 @@ void AddReferencesUsedByConstraint(const ConstraintProto& ct,
       AddIndices(ct.element().vars(), &output->variables);
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
-      AddIndices(ct.circuit().nexts(), &output->variables);
       AddIndices(ct.circuit().literals(), &output->variables);
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
@@ -225,7 +224,6 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_REPEATED_FIELD(element, vars);
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
-      APPLY_TO_REPEATED_FIELD(circuit, nexts);
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
       break;
