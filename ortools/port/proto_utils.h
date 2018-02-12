@@ -18,8 +18,10 @@
 
 #ifndef __PORTABLE_PLATFORM__
 #include "google/protobuf/generated_enum_reflection.h"
+#include "google/protobuf/text_format.h"
 #endif
 
+#include "ortools/base/port.h"
 #include "ortools/base/join.h"
 
 namespace operations_research {
@@ -39,7 +41,15 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
   return absl::StrCat(enum_value);
 }
 
+template <typename ProtoType>
+bool ProtobufTextFormatMergeFromString(const std::string& proto_text_string
+                                           ATTRIBUTE_UNUSED,
+                                       ProtoType* proto ATTRIBUTE_UNUSED) {
+  return false;
+}
+
 #else  // __PORTABLE_PLATFORM__
+
 template <class P>
 std::string ProtobufDebugString(const P& message) {
   return message.DebugString();
@@ -60,6 +70,12 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
         " for enum type: ", google::protobuf::GetEnumDescriptor<ProtoEnumType>()->name());
   }
   return enum_value_descriptor->name();
+}
+
+template <typename ProtoType>
+bool ProtobufTextFormatMergeFromString(const std::string& proto_text_string,
+                                       ProtoType* proto) {
+  return google::protobuf::TextFormat::MergeFromString(proto_text_string, proto);
 }
 
 #endif  // !__PORTABLE_PLATFORM__
