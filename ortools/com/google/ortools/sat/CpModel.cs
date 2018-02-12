@@ -26,7 +26,7 @@ public class CpModel
   public CpModel()
   {
     model_ = new CpModelProto();
-    constant_map_ = new Dictionary<long, IntVar>();
+    constant_map_ = new Dictionary<long, int>();
   }
 
   // Getters.
@@ -56,6 +56,7 @@ public class CpModel
 
   // Constants (named or not).
 
+  // TODO: Cache constant.
   public IntVar NewConstant(long value)
   {
     long[] bounds = { value, value };
@@ -246,7 +247,6 @@ public class CpModel
     return null;
   }
 
-
   public Constraint AddAllDifferent(IEnumerable<IntVar> vars)
   {
     Constraint ct = new Constraint(model_);
@@ -259,9 +259,64 @@ public class CpModel
     return ct;
   }
 
-  // TODO: AddElement
+  public Constraint AddElement(IntVar index, IEnumerable<IntVar> vars,
+                               IntVar target)
+  {
+    Constraint ct = new Constraint(model_);
+    ElementConstraintProto element = new ElementConstraintProto();
+    element.Index = index.Index;
+    foreach (IntVar var in vars)
+    {
+      element.Vars.Add(var.Index);
+    }
+    element.Target = target.Index;
+    ct.Proto.Element = element;
+    return ct;
+  }
 
-  // TODO: AddCircuit
+  public Constraint AddElement(IntVar index, IEnumerable<long> values,
+                               IntVar target)
+  {
+    Constraint ct = new Constraint(model_);
+    ElementConstraintProto element = new ElementConstraintProto();
+    element.Index = index.Index;
+    foreach (long value in values)
+    {
+      element.Vars.Add(ConvertConstant(value));
+    }
+    element.Target = target.Index;
+    ct.Proto.Element = element;
+    return ct;
+  }
+
+  public Constraint AddElement(IntVar index, IEnumerable<int> values,
+                               IntVar target)
+  {
+    Constraint ct = new Constraint(model_);
+    ElementConstraintProto element = new ElementConstraintProto();
+    element.Index = index.Index;
+    foreach (int value in values)
+    {
+      element.Vars.Add(ConvertConstant(value));
+    }
+    element.Target = target.Index;
+    ct.Proto.Element = element;
+    return ct;
+  }
+
+  public Constraint AddCircuit(IEnumerable<Tuple<int, int, ILiteral>> arcs)
+  {
+    Constraint ct = new Constraint(model_);
+    CircuitConstraintProto circuit = new CircuitConstraintProto();
+    foreach (var arc in arcs)
+    {
+      circuit.Tails.Add(arc.Item1);
+      circuit.Heads.Add(arc.Item2);
+      circuit.Literals.Add(arc.Item3.GetIndex());
+    }
+    ct.Proto.Circuit = circuit;
+    return ct;
+  }
 
   // TODO: AddAllowedAssignments
 
@@ -269,7 +324,22 @@ public class CpModel
 
   // TODO: AddAutomata
 
-  // TODO: AddInverse
+  public Constraint AddInverse(IEnumerable<IntVar> direct,
+                               IEnumerable<IntVar> reverse)
+  {
+    Constraint ct = new Constraint(model_);
+    InverseConstraintProto inverse = new InverseConstraintProto();
+    foreach (IntVar var in direct)
+    {
+      inverse.FDirect.Add(var.Index);
+    }
+    foreach (IntVar var in reverse)
+    {
+      inverse.FInverse.Add(var.Index);
+    }
+    ct.Proto.Inverse = inverse;
+    return ct;
+  }
 
   // TODO: AddReservoirConstraint
 
@@ -416,8 +486,25 @@ public class CpModel
     // TODO: Implement me for general IntegerExpression.
   }
 
+  private int ConvertConstant(long value)
+  {
+    if (constant_map_.ContainsKey(value))
+    {
+      return constant_map_[value];
+    }
+    else
+    {
+      int index = model_.Variables.Count;
+      IntegerVariableProto var = new IntegerVariableProto();
+      var.Domain.Add(value);
+      var.Domain.Add(value);
+      constant_map_.Add(value, index);
+      return index;
+    }
+  }
+
   private CpModelProto model_;
-  private Dictionary<long, IntVar> constant_map_;
+  private Dictionary<long, int> constant_map_;
 }
 
 }  // namespace Google.OrTools.Sat
