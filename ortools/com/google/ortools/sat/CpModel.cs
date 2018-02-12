@@ -54,6 +54,20 @@ public class CpModel
     return new IntVar(model_, bounds, name);
   }
 
+  // Constants (named or not).
+
+  public IntVar NewConstant(long value)
+  {
+    long[] bounds = { value, value };
+    return new IntVar(model_, bounds, String.Format("{0}", value));
+  }
+
+  public IntVar NewConstant(long value, string name)
+  {
+    long[] bounds = { value, value };
+    return new IntVar(model_, bounds, name);
+  }
+
   // TODO: Add optional version of above 2 NewIntVar().
 
   public IntVar NewBoolVar(string name)

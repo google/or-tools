@@ -56,7 +56,7 @@ public class CpSolverSolutionCallback : SolutionCallback
       else if (expr is IntVar)
       {
         int index = expr.Index;
-        long value = SolutionValue(index);
+        long value = SolutionIntegerValue(index);
         constant += coeff * value;
       }
       else if (expr is NotBooleanVariable)

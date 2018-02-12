@@ -68,7 +68,7 @@ PROTO2_RETURN(
 %unignore operations_research::sat::SolutionCallback::NumBranches;
 %unignore operations_research::sat::SolutionCallback::NumConflicts;
 %unignore operations_research::sat::SolutionCallback::WallTime;
-%unignore operations_research::sat::SolutionCallback::SolutionValue;
+%unignore operations_research::sat::SolutionCallback::SolutionIntegerValue;
 %unignore operations_research::sat::SolutionCallback::SolutionBooleanValue;
 
 %include "ortools/sat/swig_helper.h"
