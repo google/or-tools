@@ -1531,7 +1531,6 @@ SAT_DEPS = \
     $(SRC_DIR)/ortools/sat/disjunctive.h \
     $(SRC_DIR)/ortools/sat/drat.h \
     $(SRC_DIR)/ortools/sat/encoding.h \
-    $(SRC_DIR)/ortools/sat/flow_costs.h \
     $(SRC_DIR)/ortools/sat/integer_expr.h \
     $(SRC_DIR)/ortools/sat/integer.h \
     $(SRC_DIR)/ortools/sat/integer_search.h \
@@ -1574,7 +1573,6 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/disjunctive.$O \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
-    $(OBJ_DIR)/sat/flow_costs.$O \
     $(OBJ_DIR)/sat/integer.$O \
     $(OBJ_DIR)/sat/integer_expr.$O \
     $(OBJ_DIR)/sat/integer_search.$O \
@@ -1716,11 +1714,6 @@ $(SRC_DIR)/ortools/sat/encoding.h: \
     $(SRC_DIR)/ortools/sat/pb_constraint.h \
     $(SRC_DIR)/ortools/sat/sat_base.h \
     $(SRC_DIR)/ortools/sat/sat_solver.h
-
-$(SRC_DIR)/ortools/sat/flow_costs.h: \
-    $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
-    $(SRC_DIR)/ortools/sat/integer.h \
-    $(SRC_DIR)/ortools/sat/model.h
 
 $(SRC_DIR)/ortools/sat/integer_expr.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2135,13 +2128,6 @@ $(OBJ_DIR)/sat/encoding.$O: \
     $(SRC_DIR)/ortools/sat/encoding.h \
     $(GEN_DIR)/ortools/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sencoding.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sencoding.$O
-
-$(OBJ_DIR)/sat/flow_costs.$O: \
-    $(SRC_DIR)/ortools/sat/flow_costs.cc \
-    $(SRC_DIR)/ortools/base/int_type.h \
-    $(SRC_DIR)/ortools/base/logging.h \
-    $(SRC_DIR)/ortools/sat/flow_costs.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sflow_costs.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sflow_costs.$O
 
 $(OBJ_DIR)/sat/integer.$O: \
     $(SRC_DIR)/ortools/sat/integer.cc \
