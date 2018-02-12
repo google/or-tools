@@ -13,7 +13,7 @@ ExternalProject_Add(protobuf_project
 	SOURCE_DIR "${CMAKE_BINARY_DIR}/protobuf-src"
 	BINARY_DIR "${CMAKE_BINARY_DIR}/protobuf-build"
 	UPDATE_COMMAND ""
-	PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/protobuf.patch"
+	PATCH_COMMAND git apply "${PROJECT_SOURCE_DIR}/patches/protobuf.patch"
 	CONFIGURE_COMMAND ""
 	BUILD_COMMAND ""
 	INSTALL_COMMAND ""
