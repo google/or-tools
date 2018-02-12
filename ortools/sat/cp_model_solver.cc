@@ -2208,6 +2208,22 @@ CpSolverResponse SolveCpModelInternal(
   CpSolverResponse response;
   response.set_status(CpSolverStatus::MODEL_INVALID);
 
+  auto fill_response_statistics = [&]() {
+    response.set_num_booleans(model->Get<SatSolver>()->NumVariables());
+    response.set_num_branches(model->Get<SatSolver>()->num_branches());
+    response.set_num_conflicts(model->Get<SatSolver>()->num_failures());
+    response.set_num_binary_propagations(
+        model->Get<SatSolver>()->num_propagations());
+    response.set_num_integer_propagations(
+        model->Get<IntegerTrail>() == nullptr
+            ? 0
+            : model->Get<IntegerTrail>()->num_enqueues());
+    response.set_wall_time(wall_timer.Get());
+    response.set_user_time(user_timer.Get());
+    response.set_deterministic_time(
+        model->Get<TimeLimit>()->GetElapsedDeterministicTime());
+  };
+
   // We will add them all at once after model_proto is loaded.
   model->GetOrCreate<IntegerEncoder>()->DisableImplicationBetweenLiteral();
 
@@ -2372,8 +2388,7 @@ CpSolverResponse SolveCpModelInternal(
       // TODO(user): add all solutions to the response? or their count?
       ++num_solutions;
       FillSolutionInResponse(model_proto, m, &response);
-      response.set_wall_time(wall_timer.Get());
-      response.set_user_time(user_timer.Get());
+      fill_response_statistics();
       external_solution_observer(response);
 
       if (!parameters.enumerate_all_solutions()) break;
@@ -2392,12 +2407,11 @@ CpSolverResponse SolveCpModelInternal(
     VLOG(1) << "Initial num_bool: " << model->Get<SatSolver>()->NumVariables();
     const auto solution_observer =
         [&model_proto, &response, &num_solutions, &obj, &m,
-         &external_solution_observer, objective_var, &wall_timer,
-         &user_timer](const Model& sat_model) {
+         &external_solution_observer, objective_var,
+         &fill_response_statistics](const Model& sat_model) {
           num_solutions++;
           FillSolutionInResponse(model_proto, m, &response);
-          response.set_wall_time(wall_timer.Get());
-          response.set_user_time(user_timer.Get());
+          fill_response_statistics();
           int64 objective_value = 0;
           for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
             objective_value += model_proto.objective().coeffs(i) *
@@ -2465,19 +2479,7 @@ CpSolverResponse SolveCpModelInternal(
     default:
       LOG(FATAL) << "Unexpected SatSolver::Status " << status;
   }
-  response.set_num_booleans(model->Get<SatSolver>()->NumVariables());
-  response.set_num_branches(model->Get<SatSolver>()->num_branches());
-  response.set_num_conflicts(model->Get<SatSolver>()->num_failures());
-  response.set_num_binary_propagations(
-      model->Get<SatSolver>()->num_propagations());
-  response.set_num_integer_propagations(
-      model->Get<IntegerTrail>() == nullptr
-          ? 0
-          : model->Get<IntegerTrail>()->num_enqueues());
-  response.set_wall_time(wall_timer.Get());
-  response.set_user_time(user_timer.Get());
-  response.set_deterministic_time(
-      model->Get<TimeLimit>()->GetElapsedDeterministicTime());
+  fill_response_statistics();
   return response;
 }
 
