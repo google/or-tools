@@ -34,7 +34,8 @@
 #include "ortools/base/status.h"
 
 DEFINE_bool(mps_free_form, false, "Read MPS files in free form.");
-DEFINE_bool(mps_stop_after_first_error, true, "Stop after the first error.");
+DEFINE_bool(mps_stop_after_first_error, true,
+            "Stop after the first error.");
 
 namespace operations_research {
 namespace glop {
@@ -108,7 +109,7 @@ void MPSReader::DisplaySummary() {
 
 void MPSReader::SplitLineIntoFields() {
   if (free_form_) {
-    fields_ = absl::StrSplit(line_, ' ', absl::SkipEmpty());
+    fields_ = absl::StrSplit(line_, absl::delimiter::AnyOf(" \t"), absl::SkipEmpty());
     CHECK_GE(kNumFields, fields_.size());
   } else {
     int length = line_.length();
@@ -193,10 +194,18 @@ bool MPSReader::IsCommentOrBlank() const {
 
 void MPSReader::ProcessLine(const std::string& line) {
   ++line_num_;
-  if (!parse_success_ && FLAGS_mps_stop_after_first_error) return;
+  if (!parse_success_ && FLAGS_mps_stop_after_first_error)
+    return;
   line_ = line;
   if (IsCommentOrBlank()) {
     return;  // Skip blank lines and comments.
+  }
+  if (!free_form_ && line_.find('\t') != std::string::npos) {
+    if (log_errors_) {
+      LOG(ERROR) << "Line " << line_num_ << ": contains tab "
+                 << "(Line contents: " << line_ << ").";
+    }
+    parse_success_ = false;
   }
   std::string section;
   if (line[0] != '\0' && line[0] != ' ') {
@@ -347,8 +356,12 @@ void MPSReader::ProcessColumnsSection() {
   // Take into account the INTORG and INTEND markers.
   if (line_.find("'MARKER'") != std::string::npos) {
     if (line_.find("'INTORG'") != std::string::npos) {
+      VLOG(2) << "Entering integer marker.\n" << line_;
+      CHECK(!in_integer_section_);
       in_integer_section_ = true;
     } else if (line_.find("'INTEND'") != std::string::npos) {
+      VLOG(2) << "Leaving integer marker.\n" << line_;
+      CHECK(in_integer_section_);
       in_integer_section_ = false;
     }
     return;
@@ -518,6 +531,10 @@ void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
   switch (bound_type_id) {
     case LOWER_BOUND:
       lower_bound = Fractional(GetDoubleFromString(bound_value));
+      // LI with the value 0.0 specifies general integers with no upper bound.
+      if (bound_type_mnemonic == "LI" && lower_bound == 0.0) {
+        upper_bound = kInfinity;
+      }
       break;
     case UPPER_BOUND:
       upper_bound = Fractional(GetDoubleFromString(bound_value));

@@ -149,7 +149,7 @@ enum class ProblemStatus : int8 {
   // solution.
   DUAL_FEASIBLE,
 
-  // An error occured during the solving process.
+  // An error occurred during the solving process.
   ABNORMAL,
 
   // The input problem was invalid (see LinearProgram.IsValid()).
@@ -343,44 +343,60 @@ typedef StrictITIVector<RowIndex, ColIndex> RowToColMapping;
 // Column of constraints (slack variables) statuses.
 typedef StrictITIVector<RowIndex, ConstraintStatus> ConstraintStatusColumn;
 
-// A simple wrapper that contains references to a DenseColumn and its non-zeros
-// indices. Passing such reference by value when calling a function is
-// equivalent to passing two const references (one to the DenseColumn and one to
-// the RowIndexVector).
-//
-// TODO(user): Create a ScatteredColumn class and use a reference to it instead
-// of this. It will require more work since this class allows one to combine the
-// dense vector and its non-zero positions even if they come from two different
-// places.
-struct ScatteredColumnReference {
-  ScatteredColumnReference(const DenseColumn& _dense_column,
-                           const RowIndexVector& _non_zero_rows)
-      : dense_column(_dense_column), non_zero_rows(_non_zero_rows) {}
+// A simple struct that contains a DenseColumn and its non-zeros indices.
+struct ScatteredColumn {
+  DenseColumn values;
 
-  // For convenience, this constructor takes a column transpose.
-  // TODO(user): Move the Transpose() function in this file and use it here?
-  // Also introduce a function to transpose a RowIndexVector into a
-  // ColIndexVector.
-  ScatteredColumnReference(const DenseRow& dense_row,
-                           const ColIndexVector& non_zero_cols)
-      : dense_column(reinterpret_cast<const DenseColumn&>(dense_row)),
-        non_zero_rows(reinterpret_cast<const RowIndexVector&>(non_zero_cols)) {}
+  // This can be left empty in which case we just have the dense representation
+  // above. Otherwise, it should always be a subset of the actual non-zeros.
+  //
+  // Note that the non-zeros should always be sorted by increasing index. This
+  // allows to have exactly the same iteration behavior if we iterate on the
+  // non-zeros or directly in a dense-way on the values.
+  RowIndexVector non_zeros;
 
-  Fractional operator[](RowIndex row) const { return dense_column[row]; }
-  const DenseColumn& dense_column;
-  const RowIndexVector& non_zero_rows;
-
-  // Density threshold past which a dense sum is used rather than a loop over
-  // the non-zero positions of a vector during a precise sum.
-  static const double kDenseThresholdForPreciseSum;
+  Fractional operator[](RowIndex row) const { return values[row]; }
+  Fractional& operator[](RowIndex row) { return values[row]; }
 };
+
+// Same as ScatteredColumn for a row.
+struct ScatteredRow {
+  DenseRow values;
+  ColIndexVector non_zeros;
+
+  Fractional operator[](ColIndex col) const { return values[col]; }
+  Fractional& operator[](ColIndex col) { return values[col]; }
+};
+
+inline const ScatteredRow& TransposedView(const ScatteredColumn& c) {
+  return reinterpret_cast<const ScatteredRow&>(c);
+}
+inline const ScatteredColumn& TransposedView(const ScatteredRow& r) {
+  return reinterpret_cast<const ScatteredColumn&>(r);
+}
+
+// Returns true if it is more advantageous to use a dense iteration rather than
+// using the non-zeros positions.
+//
+// TODO(user): The constant should depend on what algorithm is used. Clearing a
+// dense vector is a lot more efficient than doing more complex stuff. Clean
+// this up by extracting all the currently used constants in one place with
+// meaningful names.
+template <typename ScatteredRowOrCol>
+bool ShouldUseDenseIteration(const ScatteredRowOrCol& v) {
+  if (v.non_zeros.empty()) return true;
+  const double kThresholdForUsingDenseRepresentation = 0.8;
+  return static_cast<double>(v.non_zeros.size()) >
+         kThresholdForUsingDenseRepresentation *
+             static_cast<double>(v.values.size().value());
+}
 
 // This is used during the deterministic time computation to convert a given
 // number of floating-point operations to something in the same order of
 // magnitude as a second (on a 2014 desktop).
 static inline double DeterministicTimeForFpOperations(int64 n) {
-  const double kConvertionFactor = 2e-9;
-  return kConvertionFactor * static_cast<double>(n);
+  const double kConversionFactor = 2e-9;
+  return kConversionFactor * static_cast<double>(n);
 }
 
 }  // namespace glop

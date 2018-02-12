@@ -33,14 +33,12 @@ Fractional PreciseSquaredNorm(const SparseColumn& v) {
   return sum.Value();
 }
 
-Fractional PreciseSquaredNorm(ScatteredColumnReference v) {
-  if (v.non_zero_rows.size() >
-      ScatteredColumnReference::kDenseThresholdForPreciseSum *
-          v.dense_column.size().value()) {
-    return PreciseSquaredNorm(v.dense_column);
+Fractional PreciseSquaredNorm(const ScatteredColumn& v) {
+  if (ShouldUseDenseIteration(v)) {
+    return PreciseSquaredNorm(v.values);
   }
   KahanSum sum;
-  for (const RowIndex row : v.non_zero_rows) {
+  for (const RowIndex row : v.non_zeros) {
     sum.Add(Square(v[row]));
   }
   return sum.Value();
@@ -48,8 +46,16 @@ Fractional PreciseSquaredNorm(ScatteredColumnReference v) {
 
 Fractional SquaredNorm(const DenseColumn& column) {
   Fractional sum(0.0);
-  for (RowIndex row(0); row < column.size(); ++row) {
-    sum += Square(column[row]);
+  RowIndex row(0);
+  const size_t num_blocks = column.size().value() / 4;
+  for (size_t i = 0; i < num_blocks; ++i) {
+    // See the comment in ScalarProduct in the header for some notes about the
+    // effect of adding up several squares at a time.
+    sum += Square(column[row++]) + Square(column[row++]) +
+           Square(column[row++]) + Square(column[row++]);
+  }
+  while (row < column.size()) {
+    sum += Square(column[row++]);
   }
   return sum;
 }

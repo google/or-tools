@@ -30,6 +30,7 @@
 #include <string>  // for std::string
 #include <vector>  // for vector
 
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/macros.h"  // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/int_type.h"
@@ -38,6 +39,9 @@
 #include "ortools/base/hash.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+
+DECLARE_bool(mps_free_form);
+DECLARE_bool(mps_stop_after_first_error);
 
 namespace operations_research {
 namespace glop {
@@ -101,7 +105,7 @@ class MPSReader {
   std::string GetFirstWord() const;
 
   // Returns true if the line contains a comment (starting with '*') or
-  // if it it is a blank line.
+  // if it is a blank line.
   bool IsCommentOrBlank() const;
 
   // Helper function that returns fields_[offset + index].

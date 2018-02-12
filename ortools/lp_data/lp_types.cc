@@ -16,9 +16,6 @@
 namespace operations_research {
 namespace glop {
 
-// static
-const double ScatteredColumnReference::kDenseThresholdForPreciseSum = 0.8;
-
 std::string GetProblemStatusString(ProblemStatus problem_status) {
   switch (problem_status) {
     case ProblemStatus::OPTIMAL:

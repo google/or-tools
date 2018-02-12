@@ -43,13 +43,33 @@ static inline Fractional Fractionality(Fractional f) {
 
 // Returns the scalar product between u and v.
 // The precise versions use KahanSum and are about two times slower.
-template <class DenseRowOrColumn, class DenseRowOrColumn2>
-Fractional ScalarProduct(const DenseRowOrColumn& u,
+template <class DenseRowOrColumn1, class DenseRowOrColumn2>
+Fractional ScalarProduct(const DenseRowOrColumn1& u,
                          const DenseRowOrColumn2& v) {
   DCHECK_EQ(u.size().value(), v.size().value());
   Fractional sum(0.0);
-  for (typename DenseRowOrColumn::IndexType i(0); i < u.size(); ++i) {
-    sum += u[i] * v[typename DenseRowOrColumn2::IndexType(i.value())];
+  typename DenseRowOrColumn1::IndexType i(0);
+  typename DenseRowOrColumn2::IndexType j(0);
+  const size_t num_blocks = u.size().value() / 4;
+  for (size_t block = 0; block < num_blocks; ++block) {
+    // Computing the sum of 4 elements at once may allow the compiler to
+    // generate more efficient code, e.g. using SIMD and checking the loop
+    // condition much less frequently.
+    //
+    // This produces different results from the case where each multiplication
+    // is added to sum separately. An extreme example of this can be derived
+    // using the fact that 1e11 + 2e-6 == 1e11, but 1e11 + 8e-6 > 1e11.
+    //
+    // While the results are different, they aren't necessarily better or worse.
+    // Typically, sum will be of larger magnitude than any individual
+    // multiplication, so one might expect, in practice, this method to yield
+    // more accurate results. However, if accuracy is vital, use the precise
+    // version.
+    sum += (u[i++] * v[j++]) + (u[i++] * v[j++]) + (u[i++] * v[j++]) +
+           (u[i++] * v[j++]);
+  }
+  while (i < u.size()) {
+    sum += u[i++] * v[j++];
   }
   return sum;
 }
@@ -92,15 +112,13 @@ Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
 
 template <class DenseRowOrColumn>
 Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
-                                ScatteredColumnReference v) {
-  DCHECK_EQ(u.size().value(), v.dense_column.size().value());
-  if (v.non_zero_rows.size() >
-      ScatteredColumnReference::kDenseThresholdForPreciseSum *
-          v.dense_column.size().value()) {
-    return PreciseScalarProduct(u, v.dense_column);
+                                const ScatteredColumn& v) {
+  DCHECK_EQ(u.size().value(), v.values.size().value());
+  if (ShouldUseDenseIteration(v)) {
+    return PreciseScalarProduct(u, v.values);
   }
   KahanSum sum;
-  for (const RowIndex row : v.non_zero_rows) {
+  for (const RowIndex row : v.non_zeros) {
     sum.Add(u[typename DenseRowOrColumn::IndexType(row.value())] * v[row]);
   }
   return sum.Value();
@@ -112,7 +130,7 @@ Fractional SquaredNorm(const SparseColumn& v);
 Fractional SquaredNorm(const DenseColumn& v);
 Fractional PreciseSquaredNorm(const SparseColumn& v);
 Fractional PreciseSquaredNorm(const DenseColumn& v);
-Fractional PreciseSquaredNorm(ScatteredColumnReference v);
+Fractional PreciseSquaredNorm(const ScatteredColumn& v);
 
 // Returns the maximum of the |coefficients| of 'v'.
 Fractional InfinityNorm(const DenseColumn& v);
@@ -259,24 +277,24 @@ inline void ApplyPermutationWhenInputIsProbablySparse(
 }
 
 // Sets a dense vector for which the non zeros are known to be non_zeros.
-template <typename Vector, typename IndexType>
-inline void ClearAndResizeVectorWithNonZeros(
-    IndexType size, Vector* v, std::vector<IndexType>* non_zeros) {
+template <typename IndexType, typename ScatteredRowOrCol>
+inline void ClearAndResizeVectorWithNonZeros(IndexType size,
+                                             ScatteredRowOrCol* v) {
   // Only use the sparse version if there is less than 5% non-zeros positions
   // compared to the wanted size. Note that in most cases the vector will
   // already be of the correct size.
   const double kSparseThreshold = 0.05;
-  if (non_zeros->size() < kSparseThreshold * size.value()) {
-    for (const IndexType index : *non_zeros) {
-      DCHECK_LT(index, v->size());
+  if (v->non_zeros.size() < kSparseThreshold * size.value()) {
+    for (const IndexType index : v->non_zeros) {
+      DCHECK_LT(index, v->values.size());
       (*v)[index] = 0.0;
     }
-    v->resize(size, 0.0);
-    DCHECK(IsAllZero(*v));
+    v->values.resize(size, 0.0);
+    DCHECK(IsAllZero(v->values));
   } else {
-    v->AssignToZero(size);
+    v->values.AssignToZero(size);
   }
-  non_zeros->clear();
+  v->non_zeros.clear();
 }
 
 // Changes the sign of all the entries in the given vector.
