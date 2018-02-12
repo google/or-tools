@@ -13,7 +13,7 @@ ExternalProject_Add(zlib_project
 	SOURCE_DIR "${CMAKE_BINARY_DIR}/zlib-src"
 	BINARY_DIR "${CMAKE_BINARY_DIR}/zlib-build"
 	UPDATE_COMMAND ""
-	PATCH_COMMAND patch < "${CMAKE_SOURCE_DIR}/patches/zlib.patch"
+	PATCH_COMMAND git apply "${PROJECT_SOURCE_DIR}/patches/zlib.patch"
 	CONFIGURE_COMMAND ""
 	BUILD_COMMAND ""
 	INSTALL_COMMAND ""

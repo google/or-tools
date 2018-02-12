@@ -14,7 +14,7 @@ ExternalProject_Add(glog_project
 	SOURCE_DIR "${CMAKE_BINARY_DIR}/glog-src"
 	BINARY_DIR "${CMAKE_BINARY_DIR}/glog-build"
 	UPDATE_COMMAND ""
-	PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/glog.patch"
+	PATCH_COMMAND git apply "${PROJECT_SOURCE_DIR}/patches/glog.patch"
 	CONFIGURE_COMMAND ""
 	BUILD_COMMAND ""
 	INSTALL_COMMAND ""
