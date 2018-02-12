@@ -91,9 +91,9 @@ namespace operations_research {
 //  - KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER: This solver can deal with both
 //    large number of items and several dimensions. This solver is based on
 //    Integer Programming solver CBC.
-//  - KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER: This solver can deal with both
+//  - KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER: This solver can deal with both
 //    large number of items and several dimensions. This solver is based on
-//    Integer Programming solver GLPK.
+//    Integer Programming solver SCIP.
 //
 // KnapsackSolver also implements a problem reduction algorithm based on lower
 // and upper bounds (see Ingargolia and Korsh: A reduction algorithm for
@@ -118,9 +118,6 @@ class KnapsackSolver {
     #if defined(USE_CBC)
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = 3,
     #endif  // USE_CBC
-    #if defined(USE_GLPK)
-    KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER = 4,
-    #endif  // USE_GLPK
     KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER = 5,
     #if defined(USE_SCIP)
     KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = 6,

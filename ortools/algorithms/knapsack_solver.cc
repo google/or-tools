@@ -1143,12 +1143,6 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
           MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, solver_name));
       break;
     #endif  // USE_CBC
-    #if defined(USE_GLPK)
-    case KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER:
-      solver_.reset(new KnapsackMIPSolver(
-          MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, solver_name));
-      break;
-    #endif  // USE_GLPK
     #if defined(USE_SCIP)
     case KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER:
       solver_.reset(new KnapsackMIPSolver(
