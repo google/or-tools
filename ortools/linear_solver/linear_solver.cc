@@ -341,10 +341,6 @@ extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
 
-// TODO(user): use portable static initialization method instead.
-#ifdef __PORTABLE_PLATFORM__
-extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
-#endif
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
@@ -405,6 +401,11 @@ int NumDigits(int n) {
 #else
   return static_cast<int>(std::max(1.0, log10(static_cast<double>(n)) + 1.0));
 #endif
+}
+
+MPSolver::OptimizationProblemType DetourProblemType(
+    MPSolver::OptimizationProblemType problem_type) {
+  return problem_type;
 }
 }  // namespace
 
@@ -581,6 +582,11 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
 
   for (int i = 0; i < input_model.constraint_size(); ++i) {
     const MPConstraintProto& ct_proto = input_model.constraint(i);
+    if (ct_proto.lower_bound() == -infinity() &&
+        ct_proto.upper_bound() == infinity()) {
+      continue;
+    }
+
     MPConstraint* const ct =
         MakeRowConstraint(ct_proto.lower_bound(), ct_proto.upper_bound(),
                           clear_names ? empty : ct_proto.name());
@@ -746,21 +752,24 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   output_model->set_objective_offset(Objective().offset());
 }
 
-bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
+util::Status MPSolver::LoadSolutionFromProto(
+    const MPSolutionResponse& response) {
   interface_->result_status_ = static_cast<ResultStatus>(response.status());
   if (response.status() != MPSOLVER_OPTIMAL &&
       response.status() != MPSOLVER_FEASIBLE) {
-    LOG(ERROR)
-        << "Cannot load a solution unless its status is OPTIMAL or FEASIBLE.";
-    return false;
+    return util::InvalidArgumentError(absl::StrCat(
+        "Cannot load a solution unless its status is OPTIMAL or FEASIBLE"
+        " (status was: ",
+        ProtoEnumToString<MPSolverResponseStatus>(response.status()), ")"));
   }
   // Before touching the variables, verify that the solution looks legit:
   // each variable of the MPSolver must have its value listed exactly once, and
   // each listed solution should correspond to a known variable.
   if (response.variable_value_size() != variables_.size()) {
-    LOG(ERROR) << "Trying to load a solution whose number of variables does not"
-               << " correspond to the Solver.";
-    return false;
+    return util::InvalidArgumentError(absl::StrCat(
+        "Trying to load a solution whose number of variables (",
+        response.variable_value_size(),
+        ") does not correspond to the Solver's (", variables_.size(), ")"));
   }
   double largest_error = 0;
   interface_->ExtractModel();
@@ -782,11 +791,17 @@ bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
     }
   }
   if (num_vars_out_of_bounds > 0) {
-    LOG(WARNING)
-        << "Loaded a solution whose variables matched the solver's, but "
-        << num_vars_out_of_bounds << " out of " << variables_.size()
-        << " exceed one of their bounds by more than the primal tolerance: "
-        << tolerance;
+    return util::InvalidArgumentError(absl::StrCat(
+        "Loaded a solution whose variables matched the solver's, but ",
+        num_vars_out_of_bounds, " of ", variables_.size(),
+        " variables were out of their bounds, by more than the primal"
+        " tolerance which is: ",
+        tolerance, ". Max error: ", largest_error, ", last offendir var is #",
+        last_offending_var, ": '", variables_[last_offending_var]->name(),
+        "'"));
+  }
+  for (int i = 0; i < response.variable_value_size(); ++i) {
+    variables_[i]->set_solution_value(response.variable_value(i));
   }
   // Set the objective value, if is known.
   // NOTE(user): We do not verify the objective, even though we could!
@@ -796,7 +811,7 @@ bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
   // Mark the status as SOLUTION_SYNCHRONIZED, so that users may inspect the
   // solution normally.
   interface_->sync_status_ = MPSolverInterface::SOLUTION_SYNCHRONIZED;
-  return true;
+  return util::OkStatus();
 }
 
 void MPSolver::Clear() {
@@ -1235,19 +1250,19 @@ bool MPSolver::OwnsVariable(const MPVariable* var) const {
   return variables_[var_index] == var;
 }
 
-bool MPSolver::ExportModelAsLpFormat(bool obfuscate, std::string* output) {
+bool MPSolver::ExportModelAsLpFormat(bool obfuscate, std::string* model_str) const {
   MPModelProto proto;
   ExportModelToProto(&proto);
   MPModelProtoExporter exporter(proto);
-  return exporter.ExportModelAsLpFormat(obfuscate, output);
+  return exporter.ExportModelAsLpFormat(obfuscate, model_str);
 }
 
 bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
-                                      std::string* output) {
+                                      std::string* model_str) const {
   MPModelProto proto;
   ExportModelToProto(&proto);
   MPModelProtoExporter exporter(proto);
-  return exporter.ExportModelAsMpsFormat(fixed_format, obfuscate, output);
+  return exporter.ExportModelAsMpsFormat(fixed_format, obfuscate, model_str);
 }
 
 // ---------- MPSolverInterface ----------

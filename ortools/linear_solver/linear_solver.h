@@ -153,6 +153,7 @@
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/base/status.h"
 
 
 namespace operations_research {
@@ -423,7 +424,7 @@ class MPSolver {
   //   // This can be replaced by a stubby call to the linear solver server.
   //   MPSolver::SolveWithProto(model_proto, &solver_response);
   //   if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
-  //     CHECK(my_solver.LoadSolutionFromProto(solver_response));
+  //     CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
   //     ... inspect the solution using the usual API: solution_value(), etc...
   //   }
   //
@@ -432,23 +433,23 @@ class MPSolver {
   // See /.linear_solver_server_integration_test.py.
   //
   // The response must be in OPTIMAL or FEASIBLE status.
-  // Returns false if a problem arised (typically, if it wasn't used like
-  // it should be):
+  // Returns a non-OK status if a problem arised (typically, if it wasn't used
+  // like it should be):
   // - loading a solution whose variables don't correspond to the solver's
   //   current variables
   // - loading a solution with a status other than OPTIMAL / FEASIBLE.
-  // Note: the variable and objective values aren't checked. You can use
-  // VerifySolution() for that.
-  bool LoadSolutionFromProto(const MPSolutionResponse& response);
+  // Note: the objective value isnn't checked. You can use VerifySolution()
+  // for that.
+  util::Status LoadSolutionFromProto(const MPSolutionResponse& response);
 
   // ----- Export model to files or strings -----
   // Shortcuts to the homonymous MPModelProtoExporter methods, via
   // exporting to a MPModelProto with ExportModelToProto() (see above).
   //
   // Produces empty std::string on portable platforms (e.g. android, ios).
-  bool ExportModelAsLpFormat(bool obfuscated, std::string* model_str);
-  bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscated,
-                              std::string* model_str);
+  bool ExportModelAsLpFormat(bool obfuscate, std::string* model_str) const;
+  bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
+                              std::string* model_str) const;
   // ----- Misc -----
 
   // Advanced usage: pass solver specific parameters in text format. The format

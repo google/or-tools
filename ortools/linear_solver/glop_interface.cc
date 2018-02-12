@@ -30,11 +30,9 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/util/time_limit.h"
 
-#ifndef __PORTABLE_PLATFORM__
-#include "google/protobuf/text_format.h"
-#endif
 
 namespace operations_research {
 
@@ -426,17 +424,15 @@ void GLOPInterface::SetLpAlgorithm(int value) {
 
 bool GLOPInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
-#ifdef __PORTABLE_PLATFORM__
   // NOTE(user): Android build uses protocol buffers in lite mode, and
   // parsing data from text format is not supported there. To allow solver
   // specific parameters from std::string on Android, we first need to switch to
   // non-lite version of protocol buffers.
+  if (ProtobufTextFormatMergeFromString(parameters, &parameters_)) {
+    lp_solver_.SetParameters(parameters_);
+    return true;
+  }
   return false;
-#else
-  const bool ok = google::protobuf::TextFormat::MergeFromString(parameters, &parameters_);
-  lp_solver_.SetParameters(parameters_);
-  return ok;
-#endif
 }
 
 void GLOPInterface::NonIncrementalChange() {

@@ -37,7 +37,7 @@
 // const LinearExpr e1 = x + y;
 // const LinearExpr e2 = (e1 + 7.0 + z)/3.0;
 // const LinearRange r = e1 <= e2;
-// solver.AddRowConstraint(r);
+// solver.MakeRowConstraint(r);
 //
 // WARNING, AVOID THIS TRAP:
 //
@@ -87,7 +87,7 @@ class MPVariable;
 //
 //   * Create a constraint in your optimization, e.g.
 //
-//     solver.AddRowConstraint(linear_expr1 <= linear_expr2);
+//     solver.MakeRowConstraint(linear_expr1 <= linear_expr2);
 //
 //   * Get the value of the quantity after solving, e.g.
 //
