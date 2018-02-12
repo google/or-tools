@@ -27,20 +27,19 @@ namespace glop {
 
 const Fractional EtaMatrix::kSparseThreshold = 0.5;
 
-EtaMatrix::EtaMatrix(ColIndex eta_col,
-                     const std::vector<RowIndex>& eta_non_zeros,
-                     DenseColumn* dense_eta)
+EtaMatrix::EtaMatrix(ColIndex eta_col, const ScatteredColumn& direction)
     : eta_col_(eta_col),
-      eta_col_coefficient_((*dense_eta)[ColToRowIndex(eta_col)]),
+      eta_col_coefficient_(direction[ColToRowIndex(eta_col)]),
       eta_coeff_(),
       sparse_eta_coeff_() {
   DCHECK_NE(0.0, eta_col_coefficient_);
-  eta_coeff_.swap(*dense_eta);
+  eta_coeff_ = direction.values;
   eta_coeff_[ColToRowIndex(eta_col_)] = 0.0;
 
   // Only fill sparse_eta_coeff_ if it is sparse enough.
-  if (eta_non_zeros.size() < kSparseThreshold * eta_coeff_.size().value()) {
-    for (const RowIndex row : eta_non_zeros) {
+  if (direction.non_zeros.size() <
+      kSparseThreshold * eta_coeff_.size().value()) {
+    for (const RowIndex row : direction.non_zeros) {
       if (row == ColToRowIndex(eta_col)) continue;
       sparse_eta_coeff_.SetCoefficient(row, eta_coeff_[row]);
     }
@@ -144,11 +143,10 @@ void EtaFactorization::Clear() { STLDeleteElements(&eta_matrix_); }
 
 void EtaFactorization::Update(ColIndex entering_col,
                               RowIndex leaving_variable_row,
-                              const std::vector<RowIndex>& eta_non_zeros,
-                              DenseColumn* dense_eta) {
+                              const ScatteredColumn& direction) {
   const ColIndex leaving_variable_col = RowToColIndex(leaving_variable_row);
   EtaMatrix* const eta_factorization =
-      new EtaMatrix(leaving_variable_col, eta_non_zeros, dense_eta);
+      new EtaMatrix(leaving_variable_col, direction);
   eta_matrix_.push_back(eta_factorization);
 }
 
@@ -288,16 +286,14 @@ Status BasisFactorization::MiddleProductFormUpdate(
 
 Status BasisFactorization::Update(ColIndex entering_col,
                                   RowIndex leaving_variable_row,
-                                  const std::vector<RowIndex>& eta_non_zeros,
-                                  DenseColumn* dense_eta) {
+                                  const ScatteredColumn& direction) {
   if (num_updates_ < max_num_updates_) {
     SCOPED_TIME_STAT(&stats_);
     if (use_middle_product_form_update_) {
       GLOP_RETURN_IF_ERROR(
           MiddleProductFormUpdate(entering_col, leaving_variable_row));
     } else {
-      eta_factorization_.Update(entering_col, leaving_variable_row,
-                                eta_non_zeros, dense_eta);
+      eta_factorization_.Update(entering_col, leaving_variable_row, direction);
     }
     ++num_updates_;
     tau_computation_can_be_optimized_ = false;
@@ -320,19 +316,18 @@ void BasisFactorization::LeftSolve(DenseRow* y) const {
   }
 }
 
-void BasisFactorization::LeftSolveWithNonZeros(
-    DenseRow* y, ColIndexVector* non_zeros) const {
+void BasisFactorization::LeftSolveWithNonZeros(ScatteredRow* y) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
   BumpDeterministicTimeForSolve(matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
-    lu_factorization_.LeftSolveUWithNonZeros(y, non_zeros);
-    rank_one_factorization_.LeftSolveWithNonZeros(y, non_zeros);
-    lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, nullptr);
+    lu_factorization_.LeftSolveUWithNonZeros(y);
+    rank_one_factorization_.LeftSolveWithNonZeros(y);
+    lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
   } else {
-    eta_factorization_.LeftSolve(y);
-    lu_factorization_.LeftSolve(y);
-    ComputeNonZeros(*y, non_zeros);
+    eta_factorization_.LeftSolve(&y->values);
+    lu_factorization_.LeftSolve(&y->values);
+    ComputeNonZeros(y->values, &y->non_zeros);
   }
 }
 
@@ -350,75 +345,72 @@ void BasisFactorization::RightSolve(DenseColumn* d) const {
   }
 }
 
-void BasisFactorization::RightSolveWithNonZeros(
-    DenseColumn* d, std::vector<RowIndex>* non_zeros) const {
+void BasisFactorization::RightSolveWithNonZeros(ScatteredColumn* d) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
-  BumpDeterministicTimeForSolve(non_zeros->size());
+  BumpDeterministicTimeForSolve(d->non_zeros.size());
   if (use_middle_product_form_update_) {
-    lu_factorization_.RightSolveL(d);
-    rank_one_factorization_.RightSolve(d);
+    lu_factorization_.RightSolveL(&d->values);
+    rank_one_factorization_.RightSolve(&d->values);
 
     // We need to clear non-zeros because at this point in the code, they don't
     // correspond to the zeros of d. An empty non_zeros means that
     // RightSolveWithNonZeros() will recompute them.
-    non_zeros->clear();
-    lu_factorization_.RightSolveUWithNonZeros(d, non_zeros);
+    d->non_zeros.clear();
+    lu_factorization_.RightSolveUWithNonZeros(d);
   } else {
-    lu_factorization_.RightSolve(d);
-    eta_factorization_.RightSolve(d);
-    ComputeNonZeros(*d, non_zeros);
+    lu_factorization_.RightSolve(&d->values);
+    eta_factorization_.RightSolve(&d->values);
+    ComputeNonZeros(d->values, &d->non_zeros);
     return;
   }
 }
 
-DenseColumn* BasisFactorization::RightSolveForTau(ScatteredColumnReference a)
-    const {
+DenseColumn* BasisFactorization::RightSolveForTau(
+    const ScatteredColumn& a) const {
   SCOPED_TIME_STAT(&stats_);
   BumpDeterministicTimeForSolve(matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     if (tau_computation_can_be_optimized_) {
-      // Once used, the intermediate result is overriden, so RightSolveForTau()
+      // Once used, the intermediate result is overridden, so RightSolveForTau()
       // can no longer use the optimized algorithm.
       tau_computation_can_be_optimized_ = false;
-      lu_factorization_.RightSolveLWithPermutedInput(a.dense_column, &tau_);
-      tau_non_zeros_.clear();
+      lu_factorization_.RightSolveLWithPermutedInput(a.values, &tau_.values);
+      tau_.non_zeros.clear();
     } else {
-      if (tau_non_zeros_.empty()) {
-        tau_.assign(matrix_.num_rows(), 0);
+      // TODO(user): Extract function.
+      if (tau_.non_zeros.empty()) {
+        tau_.values.assign(matrix_.num_rows(), 0);
       } else {
-        tau_.resize(matrix_.num_rows(), 0);
-        for (const RowIndex row : tau_non_zeros_) {
+        tau_.values.resize(matrix_.num_rows(), 0);
+        for (const RowIndex row : tau_.non_zeros) {
           tau_[row] = 0.0;
         }
       }
-      lu_factorization_.RightSolveLForScatteredColumn(a, &tau_,
-                                                      &tau_non_zeros_);
+      lu_factorization_.RightSolveLForScatteredColumn(a, &tau_);
     }
-    rank_one_factorization_.RightSolveWithNonZeros(&tau_, &tau_non_zeros_);
-    lu_factorization_.RightSolveUWithNonZeros(&tau_, &tau_non_zeros_);
+    rank_one_factorization_.RightSolveWithNonZeros(&tau_);
+    lu_factorization_.RightSolveUWithNonZeros(&tau_);
   } else {
-    tau_ = a.dense_column;
-    lu_factorization_.RightSolve(&tau_);
-    eta_factorization_.RightSolve(&tau_);
+    tau_.values = a.values;
+    lu_factorization_.RightSolve(&tau_.values);
+    eta_factorization_.RightSolve(&tau_.values);
   }
   tau_is_computed_ = true;
-  return &tau_;
+  return &tau_.values;
 }
 
-void BasisFactorization::LeftSolveForUnitRow(ColIndex j, DenseRow* y,
-                                             ColIndexVector* non_zeros) const {
+void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
+                                             ScatteredRow* y) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
   BumpDeterministicTimeForSolve(1);
-  ClearAndResizeVectorWithNonZeros(RowToColIndex(matrix_.num_rows()), y,
-                                   non_zeros);
-
+  ClearAndResizeVectorWithNonZeros(RowToColIndex(matrix_.num_rows()), y);
   if (!use_middle_product_form_update_) {
     (*y)[j] = 1.0;
-    non_zeros->push_back(j);
-    eta_factorization_.SparseLeftSolve(y, non_zeros);
-    lu_factorization_.SparseLeftSolve(y, non_zeros);
+    y->non_zeros.push_back(j);
+    eta_factorization_.SparseLeftSolve(&y->values, &y->non_zeros);
+    lu_factorization_.SparseLeftSolve(&y->values, &y->non_zeros);
     return;
   }
 
@@ -427,72 +419,71 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j, DenseRow* y,
   // all positions in front of the unit will be zero (modulo the column
   // permutation).
   if (left_pool_mapping_[j] == kInvalidCol) {
-    const ColIndex start =
-        lu_factorization_.LeftSolveUForUnitRow(j, y, non_zeros);
-    if (non_zeros->empty()) {
-      left_pool_mapping_[j] =
-          storage_.AddDenseColumnPrefix(Transpose(*y), ColToRowIndex(start));
+    const ColIndex start = lu_factorization_.LeftSolveUForUnitRow(j, y);
+    if (y->non_zeros.empty()) {
+      left_pool_mapping_[j] = storage_.AddDenseColumnPrefix(
+          Transpose(y->values), ColToRowIndex(start));
     } else {
       left_pool_mapping_[j] = storage_.AddDenseColumnWithNonZeros(
-          Transpose(*y), *reinterpret_cast<RowIndexVector*>(non_zeros));
+          Transpose(y->values),
+          *reinterpret_cast<RowIndexVector*>(&y->non_zeros));
     }
   } else {
     DenseColumn* const x = reinterpret_cast<DenseColumn*>(y);
-    RowIndexVector* const nz = reinterpret_cast<RowIndexVector*>(non_zeros);
+    RowIndexVector* const nz = reinterpret_cast<RowIndexVector*>(&y->non_zeros);
     storage_.ColumnCopyToClearedDenseColumnWithNonZeros(left_pool_mapping_[j],
                                                         x, nz);
   }
 
-  rank_one_factorization_.LeftSolveWithNonZeros(y, non_zeros);
+  rank_one_factorization_.LeftSolveWithNonZeros(y);
 
   // We only keep the intermediate result needed for the optimized tau_
   // computation if it was computed after the last time this was called.
   if (tau_is_computed_) {
     tau_is_computed_ = false;
     tau_computation_can_be_optimized_ =
-        lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, &tau_);
-    tau_non_zeros_.clear();
+        lu_factorization_.LeftSolveLWithNonZeros(y, &tau_.values);
+    tau_.non_zeros.clear();
   } else {
     tau_computation_can_be_optimized_ = false;
-    lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, nullptr);
+    lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
   }
 }
 
-void BasisFactorization::RightSolveForProblemColumn(
-    ColIndex col, DenseColumn* d, std::vector<RowIndex>* non_zeros) const {
+void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
+                                                    ScatteredColumn* d) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
   BumpDeterministicTimeForSolve(matrix_.column(col).num_entries().value());
   if (!use_middle_product_form_update_) {
     lu_factorization_.SparseRightSolve(matrix_.column(col), matrix_.num_rows(),
-                                       d);
-    eta_factorization_.RightSolve(d);
-    ComputeNonZeros(*d, non_zeros);
+                                       &d->values);
+    eta_factorization_.RightSolve(&d->values);
+    ComputeNonZeros(d->values, &d->non_zeros);
     return;
   }
 
   // TODO(user): if right_pool_mapping_[col] != kInvalidCol, we can reuse it and
   // just apply the last rank one update since it was computed.
-  ClearAndResizeVectorWithNonZeros(matrix_.num_rows(), d, non_zeros);
-  lu_factorization_.RightSolveLForSparseColumn(matrix_.column(col), d,
-                                               non_zeros);
-  rank_one_factorization_.RightSolveWithNonZeros(d, non_zeros);
+  ClearAndResizeVectorWithNonZeros(matrix_.num_rows(), d);
+  lu_factorization_.RightSolveLForSparseColumn(matrix_.column(col), d);
+  rank_one_factorization_.RightSolveWithNonZeros(d);
   if (col >= right_pool_mapping_.size()) {
     // This is needed because when we do an incremental solve with only new
     // columns, we still reuse the current factorization without calling
     // Refactorize() which would have resized this vector.
     right_pool_mapping_.resize(col + 1, kInvalidCol);
   }
-  if (non_zeros->empty()) {
-    right_pool_mapping_[col] = right_storage_.AddDenseColumn(*d);
+  if (d->non_zeros.empty()) {
+    right_pool_mapping_[col] = right_storage_.AddDenseColumn(d->values);
   } else {
     // The sort is needed if we want to have the same behavior for the sparse or
     // hyper-sparse version.
-    std::sort(non_zeros->begin(), non_zeros->end());
+    std::sort(d->non_zeros.begin(), d->non_zeros.end());
     right_pool_mapping_[col] =
-        right_storage_.AddDenseColumnWithNonZeros(*d, *non_zeros);
+        right_storage_.AddDenseColumnWithNonZeros(d->values, d->non_zeros);
   }
-  lu_factorization_.RightSolveUWithNonZeros(d, non_zeros);
+  lu_factorization_.RightSolveUWithNonZeros(d);
 }
 
 Fractional BasisFactorization::RightSolveSquaredNorm(const SparseColumn& a)

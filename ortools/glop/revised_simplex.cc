@@ -784,48 +784,52 @@ bool RevisedSimplex::InitializeBoundsAndTestIfUnchanged(
   bound_perturbation_.assign(num_cols_, 0.0);
 
   // Variable bounds, for both non-slack and slack variables.
-  DCHECK_EQ(lp.num_variables(), num_cols_);
   bool bounds_are_unchanged = true;
+  DCHECK_EQ(lp.num_variables(), num_cols_);
   for (ColIndex col(0); col < lp.num_variables(); ++col) {
     if (lower_bound_[col] != lp.variable_lower_bounds()[col] ||
         upper_bound_[col] != lp.variable_upper_bounds()[col]) {
       bounds_are_unchanged = false;
+      break;
     }
-    lower_bound_[col] = lp.variable_lower_bounds()[col];
-    upper_bound_[col] = lp.variable_upper_bounds()[col];
   }
-
+  if (!bounds_are_unchanged) {
+    lower_bound_ = lp.variable_lower_bounds();
+    upper_bound_ = lp.variable_upper_bounds();
+  }
   return bounds_are_unchanged;
 }
 
 bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
     const LinearProgram& lp) {
-  DCHECK_EQ(num_cols_, lp.num_variables());
   SCOPED_TIME_STAT(&function_stats_);
 
-  // Note that we use the minimization version of the objective.
   bool objective_is_unchanged = true;
   objective_.resize(num_cols_, 0.0);
-  for (ColIndex col(0); col < lp.num_variables(); ++col) {
-    if (objective_[col] !=
-        lp.GetObjectiveCoefficientForMinimizationVersion(col)) {
-      objective_is_unchanged = false;
-    }
-    objective_[col] = lp.GetObjectiveCoefficientForMinimizationVersion(col);
-  }
-  for (ColIndex col(lp.num_variables()); col < num_cols_; ++col) {
-    if (objective_[col] != 0.0) {
-      objective_is_unchanged = false;
-    }
-    objective_[col] = 0.0;
-  }
-
-  // Sets the members needed to display the objective correctly.
-  objective_offset_ = lp.objective_offset();
-  objective_scaling_factor_ = lp.objective_scaling_factor();
+  DCHECK_EQ(num_cols_, lp.num_variables());
   if (lp.IsMaximizationProblem()) {
-    objective_offset_ = -objective_offset_;
-    objective_scaling_factor_ = -objective_scaling_factor_;
+    // Note that we use the minimization version of the objective internally.
+    for (ColIndex col(0); col < lp.num_variables(); ++col) {
+      const Fractional coeff = -lp.objective_coefficients()[col];
+      if (objective_[col] != coeff) {
+        objective_is_unchanged = false;
+      }
+      objective_[col] = coeff;
+    }
+    objective_offset_ = -lp.objective_offset();
+    objective_scaling_factor_ = -lp.objective_scaling_factor();
+  } else {
+    for (ColIndex col(0); col < lp.num_variables(); ++col) {
+      if (objective_[col] != lp.objective_coefficients()[col]) {
+        objective_is_unchanged = false;
+        break;
+      }
+    }
+    if (!objective_is_unchanged) {
+      objective_ = lp.objective_coefficients();
+    }
+    objective_offset_ = lp.objective_offset();
+    objective_scaling_factor_ = lp.objective_scaling_factor();
   }
   return objective_is_unchanged;
 }
@@ -1332,23 +1336,22 @@ void RevisedSimplex::ComputeVariableValuesError() {
 void RevisedSimplex::ComputeDirection(ColIndex col) {
   SCOPED_TIME_STAT(&function_stats_);
   DCHECK_COL_BOUNDS(col);
-  basis_factorization_.RightSolveForProblemColumn(col, &direction_,
-                                                  &direction_non_zero_);
+  basis_factorization_.RightSolveForProblemColumn(col, &direction_);
   direction_infinity_norm_ = 0.0;
-  for (const RowIndex row : direction_non_zero_) {
+  for (const RowIndex row : direction_.non_zeros) {
     direction_infinity_norm_ =
         std::max(direction_infinity_norm_, std::abs(direction_[row]));
   }
   IF_STATS_ENABLED(ratio_test_stats_.direction_density.Add(
       num_rows_ == 0 ? 0.0
-                     : static_cast<double>(direction_non_zero_.size()) /
+                     : static_cast<double>(direction_.non_zeros.size()) /
                            static_cast<double>(num_rows_.value())));
 }
 
 Fractional RevisedSimplex::ComputeDirectionError(ColIndex col) {
   SCOPED_TIME_STAT(&function_stats_);
   compact_matrix_.ColumnCopyToDenseColumn(col, &error_);
-  for (const RowIndex row : direction_non_zero_) {
+  for (const RowIndex row : direction_.non_zeros) {
     compact_matrix_.ColumnAddMultipleToDenseColumn(col, -direction_[row],
                                                    &error_);
   }
@@ -1404,7 +1407,7 @@ Fractional RevisedSimplex::ComputeHarrisRatioAndLeavingCandidates(
   Fractional harris_ratio = bound_flip_ratio;
   leaving_candidates->Clear();
   const Fractional threshold = parameters_.ratio_test_zero_threshold();
-  for (const RowIndex row : direction_non_zero_) {
+  for (const RowIndex row : direction_.non_zeros) {
     const Fractional magnitude = std::abs(direction_[row]);
     if (magnitude < threshold) continue;
     Fractional ratio = GetRatio<is_entering_reduced_cost_positive>(row);
@@ -1731,7 +1734,7 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
 
   std::vector<BreakPoint> breakpoints;
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
-  for (RowIndex row : direction_non_zero_) {
+  for (RowIndex row : direction_.non_zeros) {
     const Fractional direction =
         reduced_cost > 0.0 ? direction_[row] : -direction_[row];
     const Fractional magnitude = std::abs(direction);
@@ -1898,7 +1901,7 @@ void RevisedSimplex::DualPhaseIUpdatePrice(RowIndex leaving_row,
   // direction).
   const Fractional step =
       dual_pricing_vector_[leaving_row] / direction_[leaving_row];
-  for (const RowIndex row : direction_non_zero_) {
+  for (const RowIndex row : direction_.non_zeros) {
     dual_pricing_vector_[row] -= direction_[row] * step;
     is_dual_entering_candidate_.Set(
         row,
@@ -1949,21 +1952,21 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
         ++num_dual_infeasible_positions_;
       }
       if (!something_to_do) {
-        initially_all_zero_scratchpad_.resize(num_rows_, 0.0);
+        initially_all_zero_scratchpad_.values.resize(num_rows_, 0.0);
         something_to_do = true;
       }
       compact_matrix_.ColumnAddMultipleToDenseColumn(
           col, sign - dual_infeasibility_improvement_direction_[col],
-          &initially_all_zero_scratchpad_);
+          &initially_all_zero_scratchpad_.values);
       dual_infeasibility_improvement_direction_[col] = sign;
     }
   }
   if (something_to_do) {
     const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
     const Fractional threshold = parameters_.ratio_test_zero_threshold();
-    basis_factorization_.RightSolveWithNonZeros(&initially_all_zero_scratchpad_,
-                                                &row_index_vector_scratchpad_);
-    for (const RowIndex row : row_index_vector_scratchpad_) {
+    basis_factorization_.RightSolveWithNonZeros(
+        &initially_all_zero_scratchpad_);
+    for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
       dual_pricing_vector_[row] += initially_all_zero_scratchpad_[row];
       initially_all_zero_scratchpad_[row] = 0.0;
       is_dual_entering_candidate_.Set(
@@ -1971,6 +1974,7 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
           IsDualPhaseILeavingCandidate(dual_pricing_vector_[row],
                                        variable_type[basis_[row]], threshold));
     }
+    initially_all_zero_scratchpad_.non_zeros.clear();
   }
 }
 
@@ -2179,8 +2183,8 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
                                       target_bound);
   }
   UpdateBasis(entering_col, leaving_row, leaving_variable_status);
-  GLOP_RETURN_IF_ERROR(basis_factorization_.Update(
-      entering_col, leaving_row, direction_non_zero_, &direction_));
+  GLOP_RETURN_IF_ERROR(
+      basis_factorization_.Update(entering_col, leaving_row, direction_));
   if (basis_factorization_.IsRefactorized()) {
     PermuteBasis();
   }
@@ -2277,9 +2281,9 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
         return Status::OK();
       }
     } else if (feasibility_phase_) {
-      // Note that direction_non_zero_ contains the positions of the basic
+      // Note that direction_.non_zeros contains the positions of the basic
       // variables whose values were updated during the last iteration.
-      UpdatePrimalPhaseICosts(direction_non_zero_);
+      UpdatePrimalPhaseICosts(direction_.non_zeros);
     }
 
     Fractional reduced_cost = 0.0;
@@ -2316,13 +2320,10 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
 
       // Solve the system B.d = a with a the entering column.
       ComputeDirection(entering_col);
-      primal_edge_norms_.TestEnteringEdgeNormPrecision(
-          entering_col,
-          ScatteredColumnReference(direction_, direction_non_zero_));
+      primal_edge_norms_.TestEnteringEdgeNormPrecision(entering_col,
+                                                       direction_);
       if (!reduced_costs_.TestEnteringReducedCostPrecision(
-              entering_col,
-              ScatteredColumnReference(direction_, direction_non_zero_),
-              &reduced_cost)) {
+              entering_col, direction_, &reduced_cost)) {
         VLOG(1) << "Skipping col #" << entering_col << " whose reduced cost is "
                 << reduced_cost;
         continue;
@@ -2418,13 +2419,10 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       }
     }
 
-    variable_values_.UpdateOnPivoting(
-        ScatteredColumnReference(direction_, direction_non_zero_), entering_col,
-        step);
+    variable_values_.UpdateOnPivoting(direction_, entering_col, step);
     if (leaving_row != kInvalidRow) {
       primal_edge_norms_.UpdateBeforeBasisPivot(
-          entering_col, basis_[leaving_row], leaving_row,
-          ScatteredColumnReference(direction_, direction_non_zero_),
+          entering_col, basis_[leaving_row], leaving_row, direction_,
           &update_row_);
       reduced_costs_.UpdateBeforeBasisPivot(entering_col, leaving_row,
                                             direction_, &update_row_);
@@ -2589,10 +2587,10 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
                                       /*update_basic_values=*/true);
         bound_flip_candidates.clear();
 
-        // The direction_non_zero_ contains the positions for which the basic
+        // The direction_.non_zeros contains the positions for which the basic
         // variable value was changed during the previous iterations.
         variable_values_.UpdatePrimalInfeasibilityInformation(
-            direction_non_zero_);
+            direction_.non_zeros);
       }
     }
 
@@ -2649,7 +2647,8 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
         problem_status_ = ProblemStatus::ABNORMAL;
       } else {
         problem_status_ = ProblemStatus::DUAL_UNBOUNDED;
-        solution_dual_ray_ = update_row_.GetUnitRowLeftInverse().dense_column;
+        solution_dual_ray_ =
+            Transpose(update_row_.GetUnitRowLeftInverse().values);
         update_row_.RecomputeFullUpdateRow(leaving_row);
         solution_dual_ray_row_combination_.assign(num_cols_, 0.0);
         for (const ColIndex col : update_row_.GetNonZeroPositions()) {
@@ -2717,16 +2716,13 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     } else {
       primal_step =
           ComputeStepToMoveBasicVariableToBound(leaving_row, target_bound);
-      variable_values_.UpdateOnPivoting(
-          ScatteredColumnReference(direction_, direction_non_zero_),
-          entering_col, primal_step);
+      variable_values_.UpdateOnPivoting(direction_, entering_col, primal_step);
     }
 
     reduced_costs_.UpdateBeforeBasisPivot(entering_col, leaving_row, direction_,
                                           &update_row_);
     dual_edge_norms_.UpdateBeforeBasisPivot(
-        entering_col, leaving_row,
-        ScatteredColumnReference(direction_, direction_non_zero_),
+        entering_col, leaving_row, direction_,
         update_row_.GetUnitRowLeftInverse());
 
     // It is important to do the actual pivot after the update above!
@@ -2928,7 +2924,7 @@ ITIVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
   ITIVector<RowIndex, SparseRow> dictionary(num_rows_.value());
   for (ColIndex col(0); col < num_cols_; ++col) {
     ComputeDirection(col);
-    for (const RowIndex row : direction_non_zero_) {
+    for (const RowIndex row : direction_.non_zeros) {
       const Fractional scale_coefficient =
           scaler == nullptr
               ? 1.0

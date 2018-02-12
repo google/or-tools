@@ -635,11 +635,8 @@ class RevisedSimplex {
   DenseColumn dual_pricing_vector_;
   DenseBitColumn is_dual_entering_candidate_;
 
-  // A temporary dense column that is always reset to all zero after use.
-  DenseColumn initially_all_zero_scratchpad_;
-
-  // A temporary RowIndexVector used to hold the non-zero positions of a column.
-  RowIndexVector row_index_vector_scratchpad_;
+  // A temporary scattered column that is always reset to all zero after use.
+  ScatteredColumn initially_all_zero_scratchpad_;
 
   // Array of column index, giving the column number corresponding
   // to a given basis row.
@@ -665,10 +662,9 @@ class RevisedSimplex {
 
   // This is known as 'd' in the literature and is set during each pivot to the
   // right inverse of the basic entering column of A by ComputeDirection().
-  // ComputeDirection() also fills direction_non_zero_ with the position of the
+  // ComputeDirection() also fills direction_.non_zeros with the position of the
   // non-zero.
-  DenseColumn direction_;
-  std::vector<RowIndex> direction_non_zero_;
+  ScatteredColumn direction_;
   Fractional direction_infinity_norm_;
 
   // Subpart of direction_ that was ignored during the ratio test. This is only

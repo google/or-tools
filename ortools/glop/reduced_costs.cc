@@ -56,7 +56,7 @@ bool ReducedCosts::NeedsBasisRefactorization() const {
 }
 
 bool ReducedCosts::TestEnteringReducedCostPrecision(
-    ColIndex entering_col, ScatteredColumnReference direction,
+    ColIndex entering_col, const ScatteredColumn& direction,
     Fractional* reduced_cost) {
   SCOPED_TIME_STAT(&stats_);
   if (recompute_basic_objective_) {
@@ -171,7 +171,7 @@ Fractional ReducedCosts::ComputeSumOfDualInfeasibilities() const {
 
 void ReducedCosts::UpdateBeforeBasisPivot(ColIndex entering_col,
                                           RowIndex leaving_row,
-                                          const DenseColumn& direction,
+                                          const ScatteredColumn& direction,
                                           UpdateRow* update_row) {
   SCOPED_TIME_STAT(&stats_);
   const ColIndex leaving_col = basis_[leaving_row];
@@ -485,12 +485,12 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
 
   // Always update the slack variable position so we have the dual values and
   // we can use them in ComputeCurrentDualResidualError().
-  ScatteredColumnReference unit_row_left_inverse =
+  const ScatteredRow& unit_row_left_inverse =
       update_row->GetUnitRowLeftInverse();
-  for (const RowIndex row : unit_row_left_inverse.non_zero_rows) {
-    const ColIndex col = first_slack_col + RowToColIndex(row);
-    const Fractional coeff = unit_row_left_inverse.dense_column[row];
-    reduced_costs_[col] += new_leaving_reduced_cost * coeff;
+  for (const ColIndex col : unit_row_left_inverse.non_zeros) {
+    const ColIndex slack_col = first_slack_col + col;
+    const Fractional coeff = unit_row_left_inverse[col];
+    reduced_costs_[slack_col] += new_leaving_reduced_cost * coeff;
   }
   reduced_costs_[leaving_col] = new_leaving_reduced_cost;
 

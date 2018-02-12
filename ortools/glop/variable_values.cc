@@ -117,7 +117,7 @@ Fractional VariableValues::ComputeSumOfPrimalInfeasibilities() const {
   return sum;
 }
 
-void VariableValues::UpdateOnPivoting(ScatteredColumnReference direction,
+void VariableValues::UpdateOnPivoting(const ScatteredColumn& direction,
                                       ColIndex entering_col, Fractional step) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsFinite(step));
@@ -133,7 +133,7 @@ void VariableValues::UpdateOnPivoting(ScatteredColumnReference direction,
   // Note that there is no need to call variables_info_.Update() on basic
   // variables when they change values. Note also that the status of
   // entering_col will be updated later.
-  for (const RowIndex row : direction.non_zero_rows) {
+  for (const RowIndex row : direction.non_zeros) {
     const ColIndex col = basis_[row];
     variable_values_[col] -= direction[row] * step;
   }
@@ -144,22 +144,24 @@ void VariableValues::UpdateGivenNonBasicVariables(
     const std::vector<ColIndex>& cols_to_update, bool update_basic_variables) {
   SCOPED_TIME_STAT(&stats_);
   if (update_basic_variables) {
-    initially_all_zero_scratchpad_.resize(matrix_.num_rows(), 0.0);
-    DCHECK(IsAllZero(initially_all_zero_scratchpad_));
+    initially_all_zero_scratchpad_.values.resize(matrix_.num_rows(), 0.0);
+    DCHECK(IsAllZero(initially_all_zero_scratchpad_.values));
     for (ColIndex col : cols_to_update) {
       const Fractional old_value = variable_values_[col];
       SetNonBasicVariableValueFromStatus(col);
-      matrix_.ColumnAddMultipleToDenseColumn(col,
-                                             variable_values_[col] - old_value,
-                                             &initially_all_zero_scratchpad_);
+      matrix_.ColumnAddMultipleToDenseColumn(
+          col, variable_values_[col] - old_value,
+          &initially_all_zero_scratchpad_.values);
     }
-    basis_factorization_.RightSolveWithNonZeros(&initially_all_zero_scratchpad_,
-                                                &row_index_vector_scratchpad_);
-    for (const RowIndex row : row_index_vector_scratchpad_) {
+    basis_factorization_.RightSolveWithNonZeros(
+        &initially_all_zero_scratchpad_);
+    for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
       variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
       initially_all_zero_scratchpad_[row] = 0.0;
     }
-    UpdatePrimalInfeasibilityInformation(row_index_vector_scratchpad_);
+    UpdatePrimalInfeasibilityInformation(
+        initially_all_zero_scratchpad_.non_zeros);
+    initially_all_zero_scratchpad_.non_zeros.clear();
   } else {
     for (ColIndex col : cols_to_update) {
       SetNonBasicVariableValueFromStatus(col);

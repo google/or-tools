@@ -38,6 +38,7 @@ using operations_research::glop::Fractional;
 using operations_research::glop::GetProblemStatusString;
 using operations_research::glop::ProblemStatus;
 using operations_research::glop::RowIndex;
+using operations_research::glop::ScatteredRow;
 using operations_research::glop::VariableStatus;
 
 // Struct storing all the state used by the functions in this file.
@@ -1228,11 +1229,10 @@ SCIP_RETCODE SCIPlpiGetBInvRow(SCIP_LPI* lpi,    // LP interface structure
                                ) {
   SCOPED_TIME_STAT(lpi->stats);
   CHECK_NOTNULL(coef);
-  DenseRow solution;
-  ColIndexVector non_zero_positions;
+  ScatteredRow solution;
   lpi->solver->GetBasisFactorization()
-      .LeftSolveForUnitRow(ColIndex(r), &solution, &non_zero_positions);
-  const ColIndex num_cols = solution.size();
+      .LeftSolveForUnitRow(ColIndex(r), &solution);
+  const ColIndex num_cols = solution.values.size();
   for (ColIndex col(0); col < num_cols; ++col) {
     coef[col.value()] = solution[col];
   }

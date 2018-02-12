@@ -50,8 +50,7 @@ namespace glop {
 //             0  ...  0  -e_{n-1}/e_j  0  ...  1 ]
 class EtaMatrix {
  public:
-  EtaMatrix(ColIndex eta_col, const std::vector<RowIndex>& eta_non_zeros,
-            DenseColumn* dense_eta);
+  EtaMatrix(ColIndex eta_col, const ScatteredColumn& direction);
   virtual ~EtaMatrix();
 
   // Solves the system y.E = c, 'c' beeing the initial value of 'y'.
@@ -117,8 +116,7 @@ class EtaFactorization {
   // Updates the eta factorization, i.e. adds the new eta matrix defined by
   // the leaving variable and the corresponding eta column.
   void Update(ColIndex entering_col, RowIndex leaving_variable_row,
-              const std::vector<RowIndex>& eta_non_zeros,
-              DenseColumn* dense_eta);
+              const ScatteredColumn& direction);
 
   // Left solves all systems from right to left, i.e. y_i = y_{i+1}.(E_i)^{-1}
   void LeftSolve(DenseRow* y) const;
@@ -204,35 +202,31 @@ class BasisFactorization {
   // avoid a copy (only if the standard eta update is used). Returns an error if
   // the matrix could not be factorized: i.e. not a basis.
   Status Update(ColIndex entering_col, RowIndex leaving_variable_row,
-                const std::vector<RowIndex>& eta_non_zeros,
-                DenseColumn* dense_eta) MUST_USE_RESULT;
+                const ScatteredColumn& direction) MUST_USE_RESULT;
 
   // Left solves the system y.B = rhs, where y initialy contains rhs.
   // The second version also computes the non-zero positions of the result.
   void LeftSolve(DenseRow* y) const;
-  void LeftSolveWithNonZeros(DenseRow* y, ColIndexVector* non_zeros) const;
+  void LeftSolveWithNonZeros(ScatteredRow* y) const;
 
   // Left solves the system y.B = e_j, where e_j has only 1 non-zero
   // coefficient of value 1.0 at position 'j'.
-  void LeftSolveForUnitRow(ColIndex j, DenseRow* y,
-                           ColIndexVector* non_zeros) const;
+  void LeftSolveForUnitRow(ColIndex j, ScatteredRow* y) const;
 
   // Same as RightSolve() for matrix.column(col).
   // This also exploits its sparsity.
-  void RightSolveForProblemColumn(ColIndex col, DenseColumn* d,
-                                  std::vector<RowIndex>* non_zeros) const;
+  void RightSolveForProblemColumn(ColIndex col, ScatteredColumn* d) const;
 
   // Right solves the system B.d = a where the input is the initial value of d.
   void RightSolve(DenseColumn* d) const;
-  void RightSolveWithNonZeros(DenseColumn* d,
-                              std::vector<RowIndex>* non_zeros) const;
+  void RightSolveWithNonZeros(ScatteredColumn* d) const;
 
   // Specialized version for ComputeTau() in DualEdgeNorms. This reuses an
   // intermediate result of the last LeftSolveForUnitRow() in order to save a
   // permutation if it is available. Note that the input 'a' should always be
   // equal to the last result of LeftSolveForUnitRow() and will be used for a
   // DCHECK() or if the intermediate result wasn't kept.
-  DenseColumn* RightSolveForTau(ScatteredColumnReference a) const;
+  DenseColumn* RightSolveForTau(const ScatteredColumn& a) const;
 
   // Returns the norm of B^{-1}.a, this is a specific function because
   // it is a bit faster and it avoids polluting the stats of RightSolve().
@@ -322,8 +316,7 @@ class BasisFactorization {
   // This is used by RightSolveForTau(). It holds an intermediate result from
   // the last LeftSolveForUnitRow() and also the final result of
   // RightSolveForTau().
-  mutable DenseColumn tau_;
-  mutable std::vector<RowIndex> tau_non_zeros_;
+  mutable ScatteredColumn tau_;
 
   // Booleans controlling the interaction between LeftSolveForUnitRow() that may
   // or may not keep its intermediate results for the optimized

@@ -74,8 +74,8 @@ class VariableValues {
   // Updates the variable during a simplex pivot:
   // - step * direction is substracted from the basic variables value.
   // - step is added to the entering column value.
-  void UpdateOnPivoting(ScatteredColumnReference direction,
-                        ColIndex entering_col, Fractional step);
+  void UpdateOnPivoting(const ScatteredColumn& direction, ColIndex entering_col,
+                        Fractional step);
 
   // Batch version of SetNonBasicVariableValueFromStatus(). This function also
   // updates the basic variable values and infeasibility statuses if
@@ -125,11 +125,8 @@ class VariableValues {
   mutable StatsGroup stats_;
   mutable DenseColumn scratchpad_;
 
-  // A temporary dense column that is always reset to all zero after use.
-  DenseColumn initially_all_zero_scratchpad_;
-
-  // A temporary RowIndexVector used to hold the non-zero positions of a column.
-  RowIndexVector row_index_vector_scratchpad_;
+  // A temporary scattered column that is always reset to all zero after use.
+  ScatteredColumn initially_all_zero_scratchpad_;
 
   DISALLOW_COPY_AND_ASSIGN(VariableValues);
 };

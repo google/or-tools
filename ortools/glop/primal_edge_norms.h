@@ -92,7 +92,7 @@ class PrimalEdgeNorms {
   // GlopParameters). As a side effect, this replace the entering_col edge
   // norm with its precise version.
   void TestEnteringEdgeNormPrecision(ColIndex entering_col,
-                                     ScatteredColumnReference direction);
+                                     const ScatteredColumn& direction);
 
   // Updates any internal data BEFORE the given simplex pivot is applied to B.
   // Note that no updates are needed in case of a bound flip.
@@ -103,7 +103,7 @@ class PrimalEdgeNorms {
   // - The update row (see UpdateRow), which will only be computed if needed.
   void UpdateBeforeBasisPivot(ColIndex entering_col, ColIndex leaving_col,
                               RowIndex leaving_row,
-                              ScatteredColumnReference direction,
+                              const ScatteredColumn& direction,
                               UpdateRow* update_row);
 
   // Sets the algorithm parameters.
@@ -145,7 +145,7 @@ class PrimalEdgeNorms {
   // Compute the left inverse of the direction.
   // The first argument is there for checking precision.
   void ComputeDirectionLeftInverse(ColIndex entering_col,
-                                   ScatteredColumnReference direction);
+                                   const ScatteredColumn& direction);
 
   // Updates edges_squared_norm_ according to the given pivot.
   void UpdateEdgeSquaredNorms(ColIndex entering_col, ColIndex leaving_col,
@@ -195,8 +195,7 @@ class PrimalEdgeNorms {
   // steepest edge paper. Its scalar product with a column 'a' of A gives the
   // value of the scalar product of the 'direction' with the right inverse of
   // 'a'.
-  DenseRow direction_left_inverse_;
-  ColIndexVector direction_left_inverse_non_zeros_;
+  ScatteredRow direction_left_inverse_;
 
   // Used by DeterministicTime().
   int64 num_operations_;

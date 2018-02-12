@@ -62,7 +62,7 @@ class ReducedCosts {
   // or false if this column is actually not good and ChooseEnteringColumn()
   // need to be called again.
   bool TestEnteringReducedCostPrecision(ColIndex entering_col,
-                                        ScatteredColumnReference direction,
+                                        const ScatteredColumn& direction,
                                         Fractional* reduced_cost);
 
   // Computes the current dual residual and infeasibility. Note that these
@@ -80,7 +80,7 @@ class ReducedCosts {
   // - The index in B of the leaving basic variable.
   // - The 'direction', i.e. the right inverse of the entering column.
   void UpdateBeforeBasisPivot(ColIndex entering_col, RowIndex leaving_row,
-                              const DenseColumn& direction,
+                              const ScatteredColumn& direction,
                               UpdateRow* update_row);
 
   // Once a pivot has been done, this need to be called on the column that just

@@ -66,7 +66,7 @@ const DenseRow& PrimalEdgeNorms::GetMatrixColumnNorms() {
 }
 
 void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
-    ColIndex entering_col, ScatteredColumnReference direction) {
+    ColIndex entering_col, const ScatteredColumn& direction) {
   if (!recompute_edge_squared_norms_) {
     SCOPED_TIME_STAT(&stats_);
     // Recompute the squared norm of the edge used during this
@@ -92,7 +92,7 @@ void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
 void PrimalEdgeNorms::UpdateBeforeBasisPivot(ColIndex entering_col,
                                              ColIndex leaving_col,
                                              RowIndex leaving_row,
-                                             ScatteredColumnReference direction,
+                                             const ScatteredColumn& direction,
                                              UpdateRow* update_row) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_NE(entering_col, leaving_col);
@@ -100,7 +100,7 @@ void PrimalEdgeNorms::UpdateBeforeBasisPivot(ColIndex entering_col,
     update_row->ComputeUpdateRow(leaving_row);
     ComputeDirectionLeftInverse(entering_col, direction);
     UpdateEdgeSquaredNorms(entering_col, leaving_col, leaving_row,
-                           direction.dense_column, *update_row);
+                           direction.values, *update_row);
   }
   if (!reset_devex_weights_) {
     // Resets devex weights once in a while. If so, no need to update them
@@ -112,7 +112,7 @@ void PrimalEdgeNorms::UpdateBeforeBasisPivot(ColIndex entering_col,
     } else {
       update_row->ComputeUpdateRow(leaving_row);
       UpdateDevexWeights(entering_col, leaving_col, leaving_row,
-                         direction.dense_column, *update_row);
+                         direction.values, *update_row);
     }
   }
 }
@@ -143,44 +143,42 @@ void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
 }
 
 void PrimalEdgeNorms::ComputeDirectionLeftInverse(
-    ColIndex entering_col, ScatteredColumnReference direction) {
+    ColIndex entering_col, const ScatteredColumn& direction) {
   SCOPED_TIME_STAT(&stats_);
 
-  // Initialize direction_left_inverse_ to direction.dense_column .
+  // Initialize direction_left_inverse_ to direction.values .
   // Note the special case when the non-zero vector is empty which means we
   // don't know and need to use the dense version.
-  const ColIndex size = RowToColIndex(direction.dense_column.size());
+  const ColIndex size = RowToColIndex(direction.values.size());
   const double kThreshold = 0.05 * size.value();
-  if (!direction_left_inverse_non_zeros_.empty() &&
-      (direction_left_inverse_non_zeros_.size() +
-           direction.non_zero_rows.size() <
+  if (!direction_left_inverse_.non_zeros.empty() &&
+      (direction_left_inverse_.non_zeros.size() + direction.non_zeros.size() <
        2 * kThreshold)) {
-    ClearAndResizeVectorWithNonZeros(size, &direction_left_inverse_,
-                                     &direction_left_inverse_non_zeros_);
-    for (const RowIndex row : direction.non_zero_rows) {
-      direction_left_inverse_[RowToColIndex(row)] = direction.dense_column[row];
+    ClearAndResizeVectorWithNonZeros(size, &direction_left_inverse_);
+    for (const RowIndex row : direction.non_zeros) {
+      direction_left_inverse_[RowToColIndex(row)] = direction[row];
     }
   } else {
-    direction_left_inverse_ = Transpose(direction.dense_column);
-    direction_left_inverse_non_zeros_.clear();
+    direction_left_inverse_.values = Transpose(direction.values);
+    direction_left_inverse_.non_zeros.clear();
   }
 
   // Depending on the sparsity of the input, we decide which version to use.
-  if (direction.non_zero_rows.size() < kThreshold) {
-    direction_left_inverse_non_zeros_ =
-        *reinterpret_cast<ColIndexVector const*>(&direction.non_zero_rows);
-    basis_factorization_.LeftSolveWithNonZeros(
-        &direction_left_inverse_, &direction_left_inverse_non_zeros_);
+  if (direction.non_zeros.size() < kThreshold) {
+    direction_left_inverse_.non_zeros =
+        *reinterpret_cast<ColIndexVector const*>(&direction.non_zeros);
+    basis_factorization_.LeftSolveWithNonZeros(&direction_left_inverse_);
   } else {
-    basis_factorization_.LeftSolve(&direction_left_inverse_);
+    basis_factorization_.LeftSolve(&direction_left_inverse_.values);
   }
 
   // TODO(user): Refactorize if estimated accuracy above a threshold.
   IF_STATS_ENABLED(stats_.direction_left_inverse_accuracy.Add(
-      ScalarProduct(direction_left_inverse_, matrix_.column(entering_col)) -
-      SquaredNorm(direction.dense_column)));
+      ScalarProduct(direction_left_inverse_.values,
+                    matrix_.column(entering_col)) -
+      SquaredNorm(direction.values)));
   IF_STATS_ENABLED(stats_.direction_left_inverse_density.Add(
-      Density(direction_left_inverse_)));
+      Density(direction_left_inverse_.values)));
 }
 
 // Let new_edge denote the edge of 'col' in the new basis. We want:
@@ -219,8 +217,8 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
   if (num_omp_threads == 1) {
     for (const ColIndex col : update_row.GetNonZeroPositions()) {
       const Fractional coeff = update_row.GetCoefficient(col);
-      const Fractional scalar_product =
-          compact_matrix_.ColumnScalarProduct(col, direction_left_inverse_);
+      const Fractional scalar_product = compact_matrix_.ColumnScalarProduct(
+          col, direction_left_inverse_.values);
       num_operations_ += compact_matrix_.column(col).num_entries().value();
 
       // Update the edge squared norm of this column. Note that the update
@@ -256,8 +254,8 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
     for (int i = 0; i < parallel_loop_size; i++) {
       const ColIndex col(relevant_rows[i]);
       const Fractional coeff = update_row.GetCoefficient(col);
-      const Fractional scalar_product =
-          compact_matrix_.ColumnScalarProduct(col, direction_left_inverse_);
+      const Fractional scalar_product = compact_matrix_.ColumnScalarProduct(
+          col, direction_left_inverse_.values);
       edge_squared_norms_[col] +=
           coeff * (coeff * leaving_squared_norm + factor * scalar_product);
       const Fractional lower_bound = 1.0 + Square(coeff / pivot);

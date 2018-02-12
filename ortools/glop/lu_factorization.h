@@ -27,9 +27,6 @@ namespace glop {
 // algorithms. The actual algorithm is in markowitz.h and .cc. This class holds
 // all the Solve() functions that deal with the permutations and the L and U
 // factors once they are computed.
-//
-// TODO(user): Add a ScatteredColumn class containing a DenseColumn and
-// an EntryRowIndexVector non-zero pattern.
 class LuFactorization {
  public:
   LuFactorization();
@@ -105,15 +102,14 @@ class LuFactorization {
   void LeftSolveU(DenseRow* y) const;
   void LeftSolveL(DenseRow* y) const;
 
-  // Specialized version of RightSolveL() that takes a SparseColumn (or a
-  // ScatteredColumnReference) as input. non_zeros will either be cleared or set
-  // to the non zeros of the result. Important: the output x must be of the
-  // correct size and all zero.
-  void RightSolveLForSparseColumn(const SparseColumn& b, DenseColumn* x,
-                                  std::vector<RowIndex>* non_zeros) const;
-  void RightSolveLForScatteredColumn(const ScatteredColumnReference& b,
-                                     DenseColumn* x,
-                                     std::vector<RowIndex>* non_zeros) const;
+  // Specialized version of RightSolveL() that takes a SparseColumn or a
+  // ScatteredColumn as input. non_zeros will either be cleared or set to the
+  // non zeros of the result. Important: the output x must be of the correct
+  // size and all zero.
+  void RightSolveLForSparseColumn(const SparseColumn& b,
+                                  ScatteredColumn* x) const;
+  void RightSolveLForScatteredColumn(const ScatteredColumn& b,
+                                     ScatteredColumn* x) const;
 
   // Specialized version of RightSolveL() where x is originaly equal to
   // 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK or when
@@ -126,23 +122,20 @@ class LuFactorization {
   // It also returns the value of col permuted by Q (which is the position
   // of the unit-vector rhs in the solve system: y.U = rhs).
   // Important: the output y must be of the correct size and all zero.
-  ColIndex LeftSolveUForUnitRow(ColIndex col, DenseRow* y,
-                                std::vector<ColIndex>* non_zeros) const;
+  ColIndex LeftSolveUForUnitRow(ColIndex col, ScatteredRow* y) const;
 
   // Specialized version of RightSolveU() and LeftSolveU() that may exploit the
   // initial non-zeros if it is non-empty. In addition,
   // RightSolveUWithNonZeros() always return the non-zeros of the output.
-  void RightSolveUWithNonZeros(DenseColumn* x,
-                               std::vector<RowIndex>* non_zeros) const;
-  void LeftSolveUWithNonZeros(DenseRow* y,
-                              std::vector<ColIndex>* non_zeros) const;
+  void RightSolveUWithNonZeros(ScatteredColumn* x) const;
+  void LeftSolveUWithNonZeros(ScatteredRow* y) const;
 
   // Specialized version of LeftSolveL() that also computes the non-zero
   // pattern of the output. Moreover, if result_before_permutation is not NULL,
   // it is filled with the result just before row_perm_ is applied to it and
   // true is returned. If result_before_permutation is not filled, then false is
   // returned.
-  bool LeftSolveLWithNonZeros(DenseRow* y, ColIndexVector* non_zeros,
+  bool LeftSolveLWithNonZeros(ScatteredRow* y,
                               DenseColumn* result_before_permutation) const;
 
   // Returns the given column of U.

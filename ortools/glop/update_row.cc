@@ -52,24 +52,23 @@ void UpdateRow::IgnoreUpdatePosition(ColIndex col) {
   coefficient_[col] = 0.0;
 }
 
-ScatteredColumnReference UpdateRow::GetUnitRowLeftInverse() const {
+const ScatteredRow& UpdateRow::GetUnitRowLeftInverse() const {
   DCHECK(!compute_update_row_);
-  return ScatteredColumnReference(unit_row_left_inverse_,
-                                  unit_row_left_inverse_non_zeros_);
+  return unit_row_left_inverse_;
 }
 
 void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
   SCOPED_TIME_STAT(&stats_);
   basis_factorization_.LeftSolveForUnitRow(RowToColIndex(leaving_row),
-                                           &unit_row_left_inverse_,
-                                           &unit_row_left_inverse_non_zeros_);
+                                           &unit_row_left_inverse_);
 
   // TODO(user): Refactorize if the estimated accuracy is above a threshold.
   IF_STATS_ENABLED(stats_.unit_row_left_inverse_accuracy.Add(
-      matrix_.ColumnScalarProduct(basis_[leaving_row], unit_row_left_inverse_) -
+      matrix_.ColumnScalarProduct(basis_[leaving_row],
+                                  unit_row_left_inverse_.values) -
       1.0));
   IF_STATS_ENABLED(stats_.unit_row_left_inverse_density.Add(
-      static_cast<double>(unit_row_left_inverse_non_zeros_.size()) /
+      static_cast<double>(unit_row_left_inverse_.non_zeros.size()) /
       static_cast<double>(matrix_.num_rows().value())));
 }
 
@@ -82,7 +81,7 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
   if (parameters_.use_transposed_matrix()) {
     // Number of entries that ComputeUpdatesRowWise() will need to look at.
     EntryIndex num_row_wise_entries(0);
-    for (const ColIndex col : unit_row_left_inverse_non_zeros_) {
+    for (const ColIndex col : unit_row_left_inverse_.non_zeros) {
       num_row_wise_entries += transposed_matrix_.ColumnNumEntries(col);
     }
 
@@ -121,8 +120,8 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
 
 void UpdateRow::ComputeUpdateRowForBenchmark(const DenseRow& lhs,
                                              const std::string& algorithm) {
-  unit_row_left_inverse_ = lhs;
-  ComputeNonZeros(lhs, &unit_row_left_inverse_non_zeros_);
+  unit_row_left_inverse_.values = lhs;
+  ComputeNonZeros(lhs, &unit_row_left_inverse_.non_zeros);
   if (algorithm == "column") {
     ComputeUpdatesColumnWise();
   } else if (algorithm == "row") {
@@ -151,7 +150,7 @@ void UpdateRow::ComputeUpdatesRowWise() {
   SCOPED_TIME_STAT(&stats_);
   const ColIndex num_cols = matrix_.num_cols();
   coefficient_.AssignToZero(num_cols);
-  for (ColIndex col : unit_row_left_inverse_non_zeros_) {
+  for (ColIndex col : unit_row_left_inverse_.non_zeros) {
     const Fractional multiplier = unit_row_left_inverse_[col];
     for (const EntryIndex i : transposed_matrix_.Column(col)) {
       const ColIndex pos = RowToColIndex(transposed_matrix_.EntryRow(i));
@@ -175,7 +174,7 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
   const ColIndex num_cols = matrix_.num_cols();
   non_zero_position_set_.ClearAndResize(num_cols);
   coefficient_.resize(num_cols, 0.0);
-  for (ColIndex col : unit_row_left_inverse_non_zeros_) {
+  for (ColIndex col : unit_row_left_inverse_.non_zeros) {
     const Fractional multiplier = unit_row_left_inverse_[col];
     for (const EntryIndex i : transposed_matrix_.Column(col)) {
       const ColIndex pos = RowToColIndex(transposed_matrix_.EntryRow(i));
@@ -225,7 +224,7 @@ void UpdateRow::RecomputeFullUpdateRow(RowIndex leaving_row) {
   // Fills the non-basic column.
   for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
     const Fractional coeff =
-        matrix_.ColumnScalarProduct(col, unit_row_left_inverse_);
+        matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
     if (std::abs(coeff) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
       coefficient_[col] = coeff;
@@ -247,7 +246,7 @@ void UpdateRow::ComputeUpdatesColumnWise() {
     for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
       // Coefficient of the column right inverse on the 'leaving_row'.
       const Fractional coeff =
-          matrix_.ColumnScalarProduct(col, unit_row_left_inverse_);
+          matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
       // Nothing to do if 'coeff' is (almost) zero which does happen due to
       // sparsity. Note that it shouldn't be too bad to use a non-zero drop
       // tolerance here because even if we introduce some precision issues, the
@@ -268,7 +267,7 @@ void UpdateRow::ComputeUpdatesColumnWise() {
       const ColIndex col(i);
       if (is_relevant.IsSet(col)) {
         coefficient_[col] =
-            matrix_.ColumnScalarProduct(col, unit_row_left_inverse_);
+            matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
       }
     }
     // End of omp parallel for.

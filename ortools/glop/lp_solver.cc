@@ -74,9 +74,9 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
   if (!FLAGS_lp_dump_to_proto_file) return;
 #ifdef __PORTABLE_PLATFORM__
   LOG(WARNING) << "DumpLinearProgramIfRequiredByFlags(linear_program, num) "
-                  "requested for linear_program.name()= ",
-      linear_program.name(), ", num=", num,
-      " but is not implemented for this platform.";
+                  "requested for linear_program.name()='"
+               << linear_program.name() << "', num=" << num
+               << " but is not implemented for this platform.";
 #else
   std::string filename = FLAGS_lp_dump_file_basename;
   if (filename.empty()) {

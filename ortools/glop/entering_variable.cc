@@ -102,11 +102,11 @@ Status EnteringVariable::DualChooseEnteringColumn(
   const Fractional threshold = parameters_.ratio_test_zero_threshold();
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
+  const DenseBitRow& is_boxed = variables_info_.GetNonBasicBoxedVariables();
 
   // Harris ratio test. See below for more explanation. Here this is used to
   // prune the first pass by not enqueueing ColWithRatio for columns that have
   // a ratio greater than the current harris_ratio.
-  const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
   const Fractional harris_tolerance =
       parameters_.harris_tolerance_ratio() *
       reduced_costs_->GetDualFeasibilityTolerance();
@@ -122,7 +122,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
     // In this case, at some point the reduced cost will be positive if not
     // already, and the column will be dual-infeasible.
     if (can_decrease.IsSet(col) && coeff > threshold) {
-      if (variable_type[col] != VariableType::UPPER_AND_LOWER_BOUNDED) {
+      if (!is_boxed[col]) {
         if (-reduced_costs[col] > harris_ratio * coeff) continue;
         harris_ratio = std::min(
             harris_ratio, (-reduced_costs[col] + harris_tolerance) / coeff);
@@ -135,7 +135,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
     // In this case, at some point the reduced cost will be negative if not
     // already, and the column will be dual-infeasible.
     if (can_increase.IsSet(col) && coeff < -threshold) {
-      if (variable_type[col] != VariableType::UPPER_AND_LOWER_BOUNDED) {
+      if (!is_boxed[col]) {
         if (reduced_costs[col] > harris_ratio * -coeff) continue;
         harris_ratio = std::min(
             harris_ratio, (reduced_costs[col] + harris_tolerance) / -coeff);
@@ -185,7 +185,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
     // Note that the actual flipping will be done afterwards by
     // MakeBoxedVariableDualFeasible() in revised_simplex.cc.
     if (variation_magnitude > threshold) {
-      if (variable_type[top.col] == VariableType::UPPER_AND_LOWER_BOUNDED) {
+      if (is_boxed[top.col]) {
         variation_magnitude -=
             variables_info_.GetBoundDifference(top.col) * top.coeff_magnitude;
         if (variation_magnitude > threshold) {

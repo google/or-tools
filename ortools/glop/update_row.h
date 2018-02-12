@@ -56,7 +56,7 @@ class UpdateRow {
   // Returns the left inverse of the unit row as computed by the last call to
   // ComputeUpdateRow(). In debug mode, we check that ComputeUpdateRow() was
   // called since the last Invalidate().
-  ScatteredColumnReference GetUnitRowLeftInverse() const;
+  const ScatteredRow& GetUnitRowLeftInverse() const;
 
   // Returns the update coefficients and non-zero positions corresponding to the
   // last call to ComputeUpdateRow().
@@ -94,7 +94,7 @@ class UpdateRow {
 
  private:
   // Computes the left inverse of the given unit row, and stores it in
-  // unit_row_left_inverse_ and unit_row_left_inverse_non_zeros_.
+  // unit_row_left_inverse_.
   void ComputeUnitRowLeftInverse(RowIndex leaving_row);
 
   // ComputeUpdateRow() does the common work and call one of these functions
@@ -112,8 +112,7 @@ class UpdateRow {
 
   // Left inverse by B of a unit row. Its scalar product with a column 'a' of A
   // gives the value of the right inverse of 'a' on the 'leaving_row'.
-  DenseRow unit_row_left_inverse_;
-  ColIndexVector unit_row_left_inverse_non_zeros_;
+  ScatteredRow unit_row_left_inverse_;
 
   // Holds the current update row data.
   // TODO(user): Introduce a ScatteredSparseRow class?
