@@ -326,7 +326,7 @@ inline uint32 IntervalDown32(uint32 s) {
 // corresponding to the bit at position pos in the bitset.
 // Note: '& 63' is faster than '% 64'
 // TODO(user): rename BitPos and BitOffset to something more understandable.
-inline uint64 BitPos64(uint64 pos) { return (pos & 63); }
+inline uint32 BitPos64(uint64 pos) { return (pos & 63); }
 inline uint32 BitPos32(uint32 pos) { return (pos & 31); }
 
 // Returns the word number corresponding to bit number pos.
@@ -713,7 +713,7 @@ class BitQueue64 {
     DCHECK_GE(i, 0);
     DCHECK_LT(i, size_);
     top_ = std::max(top_, i - 1);
-    int bucket_index = BitOffset64(i);
+    int bucket_index = static_cast<int>(BitOffset64(i));
     data_[bucket_index] |= OneBit64(BitPos64(i)) - 1;
     for (--bucket_index; bucket_index >= 0; --bucket_index) {
       data_[bucket_index] = kAllBits64;
@@ -726,7 +726,7 @@ class BitQueue64 {
   // Clears the Top() bit and recomputes the position of the next Top().
   void ClearTop() {
     DCHECK_NE(top_, -1);
-    int bucket_index = BitOffset64(top_);
+    int bucket_index = static_cast<int>(BitOffset64(top_));
     uint64 bucket = data_[bucket_index] &= ~OneBit64(BitPos64(top_));
     while (!bucket) {
       if (bucket_index == 0) {
@@ -739,7 +739,8 @@ class BitQueue64 {
     // Note(user): I experimented with reversing the bit order in a bucket to
     // use LeastSignificantBitPosition64() and it is only slightly faster at the
     // cost of a lower Set() speed. So I prefered this version.
-    top_ = BitShift64(bucket_index) + MostSignificantBitPosition64(bucket);
+    top_ = static_cast<int>(BitShift64(bucket_index) +
+                            MostSignificantBitPosition64(bucket));
   }
 
  private:
