@@ -124,19 +124,19 @@ class LuFactorization {
   // Important: the output y must be of the correct size and all zero.
   ColIndex LeftSolveUForUnitRow(ColIndex col, ScatteredRow* y) const;
 
-  // Specialized version of RightSolveU() and LeftSolveU() that may exploit the
-  // initial non-zeros if it is non-empty. In addition,
-  // RightSolveUWithNonZeros() always return the non-zeros of the output.
+  // Specialized version that may exploit the initial non-zeros if it is
+  // non-empty.
+  void RightSolveLWithNonZeros(ScatteredColumn* x) const;
   void RightSolveUWithNonZeros(ScatteredColumn* x) const;
   void LeftSolveUWithNonZeros(ScatteredRow* y) const;
 
-  // Specialized version of LeftSolveL() that also computes the non-zero
-  // pattern of the output. Moreover, if result_before_permutation is not NULL,
-  // it is filled with the result just before row_perm_ is applied to it and
-  // true is returned. If result_before_permutation is not filled, then false is
-  // returned.
+  // Specialized version of LeftSolveL() that may exploit the initial non_zeros
+  // of y if it is non empty. Moreover, if result_before_permutation is not
+  // NULL, it might be filled with the result just before row_perm_ is applied
+  // to it and true is returned. If result_before_permutation is not filled,
+  // then false is returned.
   bool LeftSolveLWithNonZeros(ScatteredRow* y,
-                              DenseColumn* result_before_permutation) const;
+                              ScatteredColumn* result_before_permutation) const;
 
   // Returns the given column of U.
   // It will only be valid until the next call to GetColumnOfU().

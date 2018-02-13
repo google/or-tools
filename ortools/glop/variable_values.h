@@ -104,10 +104,6 @@ class VariableValues {
   std::string StatString() const { return stats_.StatString(); }
 
  private:
-  // Internal version of UpdatePrimalInfeasibilityInformation().
-  template <typename Rows>
-  void UpdatePrimalInfeasibilities(const Rows& rows);
-
   // Input problem data.
   const CompactSparseMatrix& matrix_;
   const RowToColMapping& basis_;
@@ -123,7 +119,7 @@ class VariableValues {
   DenseBitColumn primal_infeasible_positions_;
 
   mutable StatsGroup stats_;
-  mutable DenseColumn scratchpad_;
+  mutable ScatteredColumn scratchpad_;
 
   // A temporary scattered column that is always reset to all zero after use.
   ScatteredColumn initially_all_zero_scratchpad_;

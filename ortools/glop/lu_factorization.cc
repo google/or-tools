@@ -195,8 +195,7 @@ DenseColumn* DenseRowAsColumn(DenseRow* y) {
 void LuFactorization::RightSolveL(DenseColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
   if (!is_identity_factorization_) {
-    ApplyPermutationWhenInputIsProbablySparse(row_perm_,
-                                              &dense_zero_scratchpad_, x);
+    PermuteWithScratchpad(row_perm_, &dense_zero_scratchpad_, x);
     lower_.LowerSolve(x);
   }
 }
@@ -295,8 +294,25 @@ void LuFactorization::RightSolveLForSparseColumn(const SparseColumn& b,
   }
 
   lower_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
+  x->non_zeros_are_sorted = true;
   if (x->non_zeros.empty()) {
     lower_.LowerSolveStartingAt(first_column_to_consider, &x->values);
+  } else {
+    lower_.HyperSparseSolve(&x->values, &x->non_zeros);
+  }
+}
+
+void LuFactorization::RightSolveLWithNonZeros(ScatteredColumn* x) const {
+  if (is_identity_factorization_) return;
+  if (x->non_zeros.empty()) {
+    return RightSolveL(&x->values);
+  }
+  PermuteWithKnownNonZeros(row_perm_, &dense_zero_scratchpad_, &x->values,
+                           &x->non_zeros);
+  lower_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
+  x->non_zeros_are_sorted = true;
+  if (x->non_zeros.empty()) {
+    lower_.LowerSolve(&x->values);
   } else {
     lower_.HyperSparseSolve(&x->values, &x->non_zeros);
   }
@@ -307,14 +323,16 @@ void LuFactorization::RightSolveLForSparseColumn(const SparseColumn& b,
 // deduplicate the code.
 void LuFactorization::RightSolveLForScatteredColumn(const ScatteredColumn& b,
                                                     ScatteredColumn* x) const {
+  if (b.non_zeros.empty()) {
+    *x = b;
+    x->non_zeros.clear();
+    return RightSolveL(&x->values);
+  }
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsAllZero(x->values));
   x->non_zeros.clear();
   if (is_identity_factorization_) {
-    for (const RowIndex row : b.non_zeros) {
-      (*x)[row] = b[row];
-      x->non_zeros.push_back(row);
-    }
+    *x = b;
     return;
   }
 
@@ -340,6 +358,7 @@ void LuFactorization::RightSolveLForScatteredColumn(const ScatteredColumn& b,
   }
 
   lower_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
+  x->non_zeros_are_sorted = true;
   if (x->non_zeros.empty()) {
     lower_.LowerSolveStartingAt(first_column_to_consider, &x->values);
   } else {
@@ -350,11 +369,18 @@ void LuFactorization::RightSolveLForScatteredColumn(const ScatteredColumn& b,
 void LuFactorization::LeftSolveUWithNonZeros(ScatteredRow* y) const {
   SCOPED_TIME_STAT(&stats_);
   if (is_identity_factorization_) return;
+  if (!col_perm_.empty()) {
+    // TODO(user): This is just used in the test, in a real solve we never
+    // have a column permutation because we absorb it in the basis.
+    y->non_zeros.clear();
+    LeftSolveU(&y->values);
+    return;
+  }
 
-  DCHECK(col_perm_.empty());
   DenseColumn* const x = DenseRowAsColumn(&y->values);
   RowIndexVector* const nz = reinterpret_cast<RowIndexVector*>(&y->non_zeros);
   transpose_upper_.ComputeRowsToConsiderInSortedOrder(nz);
+  y->non_zeros_are_sorted = true;
   if (nz->empty()) {
     upper_.TransposeUpperSolve(x);
   } else {
@@ -365,7 +391,6 @@ void LuFactorization::LeftSolveUWithNonZeros(ScatteredRow* y) const {
 void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
   if (is_identity_factorization_) {
-    if (x->non_zeros.empty()) ComputeNonZeros(x->values, &x->non_zeros);
     return;
   }
 
@@ -373,8 +398,9 @@ void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn* x) const {
   // non_zeros starts to be too big, we clear it and thus switch back to a
   // normal sparse solve.
   upper_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
+  x->non_zeros_are_sorted = true;
   if (x->non_zeros.empty()) {
-    upper_.UpperSolveWithNonZeros(&x->values, &x->non_zeros);
+    upper_.UpperSolve(&x->values);
   } else {
     upper_.HyperSparseSolveWithReversedNonZeros(&x->values, &x->non_zeros);
   }
@@ -383,16 +409,16 @@ void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn* x) const {
     // Note(user): This is only needed for the test because in Glop the
     // col_perm_ is always "absorbed" by permuting the basis. So it is
     // fine to do it in a non hyper-sparse way.
-    PermuteAndComputeNonZeros(inverse_col_perm_, &dense_zero_scratchpad_,
-                              &x->values, &x->non_zeros);
+    x->non_zeros.clear();
+    PermuteWithScratchpad(inverse_col_perm_, &dense_zero_scratchpad_,
+                          &x->values);
   }
 }
 
 bool LuFactorization::LeftSolveLWithNonZeros(
-    ScatteredRow* y, DenseColumn* result_before_permutation) const {
+    ScatteredRow* y, ScatteredColumn* result_before_permutation) const {
   SCOPED_TIME_STAT(&stats_);
   if (is_identity_factorization_) {
-    if (y->non_zeros.empty()) ComputeNonZeros(y->values, &y->non_zeros);
     // It is not advantageous to fill result_before_permutation in this case.
     return false;
   }
@@ -402,6 +428,7 @@ bool LuFactorization::LeftSolveLWithNonZeros(
   // Hypersparse?
   RowIndex last_non_zero_row = ColToRowIndex(y->values.size() - 1);
   transpose_lower_.ComputeRowsToConsiderInSortedOrder(nz);
+  y->non_zeros_are_sorted = true;
   if (nz->empty()) {
     lower_.TransposeLowerSolve(x, &last_non_zero_row);
   } else {
@@ -414,8 +441,7 @@ bool LuFactorization::LeftSolveLWithNonZeros(
     // should be the case because the hyper-sparse functions makes sure of that.
     // We also DCHECK() this below.
     if (nz->empty()) {
-      PermuteAndComputeNonZeros(inverse_row_perm_, &dense_zero_scratchpad_, x,
-                                nz);
+      PermuteWithScratchpad(inverse_row_perm_, &dense_zero_scratchpad_, x);
     } else {
       PermuteWithKnownNonZeros(inverse_row_perm_, &dense_zero_scratchpad_, x,
                                nz);
@@ -430,7 +456,8 @@ bool LuFactorization::LeftSolveLWithNonZeros(
     // This computes the same thing as in the other branch but also keeps the
     // original x in result_before_permutation. Because of this, it is faster to
     // use a different algorithm.
-    x->swap(*result_before_permutation);
+    result_before_permutation->non_zeros.clear();
+    x->swap(result_before_permutation->values);
     x->AssignToZero(inverse_row_perm_.size());
     y->non_zeros.clear();
     for (RowIndex row(0); row <= last_non_zero_row; ++row) {
@@ -438,7 +465,6 @@ bool LuFactorization::LeftSolveLWithNonZeros(
       if (value != 0.0) {
         const RowIndex permuted_row = inverse_row_perm_[row];
         (*x)[permuted_row] = value;
-        y->non_zeros.push_back(RowToColIndex(permuted_row));
       }
     }
     return true;
@@ -468,6 +494,7 @@ ColIndex LuFactorization::LeftSolveUForUnitRow(ColIndex col,
     RowIndexVector* const nz = reinterpret_cast<RowIndexVector*>(&y->non_zeros);
     DenseColumn* const x = reinterpret_cast<DenseColumn*>(&y->values);
     transpose_upper_.ComputeRowsToConsiderInSortedOrder(nz);
+    y->non_zeros_are_sorted = true;
     if (y->non_zeros.empty()) {
       transpose_upper_.LowerSolveStartingAt(permuted_col, x);
     } else {

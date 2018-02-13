@@ -273,7 +273,7 @@ class ReducedCosts {
   // algorithm, but may gives us a good idea of the current precision of our
   // estimates. It is also faster to compute the unit_row_left_inverse_ because
   // of sparsity.
-  DenseRow basic_objective_left_inverse_;
+  ScatteredRow basic_objective_left_inverse_;
 
   // This is usually parameters_.dual_feasibility_tolerance() except when the
   // dual residual error |y.B - c_B| is higher than it and we have to increase

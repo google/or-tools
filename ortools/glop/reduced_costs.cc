@@ -245,7 +245,7 @@ void ReducedCosts::PerturbCosts() {
         std::max(max_cost_magnitude, std::abs(objective_[col]));
   }
 
-  objective_perturbation_.assign(matrix_.num_cols(), 0.0);
+  objective_perturbation_.AssignToZero(matrix_.num_cols());
   for (ColIndex col(0); col < structural_size; ++col) {
     const Fractional objective = objective_[col];
     const Fractional magnitude =
@@ -297,7 +297,7 @@ void ReducedCosts::ShiftCost(ColIndex col) {
 
 void ReducedCosts::ClearAndRemoveCostShifts() {
   SCOPED_TIME_STAT(&stats_);
-  objective_perturbation_.assign(matrix_.num_cols(), 0.0);
+  objective_perturbation_.AssignToZero(matrix_.num_cols());
   recompute_basic_objective_ = true;
   recompute_basic_objective_left_inverse_ = true;
   recompute_reduced_costs_ = true;
@@ -320,7 +320,7 @@ const DenseRow& ReducedCosts::GetReducedCosts() {
 const DenseColumn& ReducedCosts::GetDualValues() {
   SCOPED_TIME_STAT(&stats_);
   ComputeBasicObjectiveLeftInverse();
-  return Transpose(basic_objective_left_inverse_);
+  return Transpose(basic_objective_left_inverse_.values);
 }
 
 void ReducedCosts::RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded() {
@@ -366,9 +366,9 @@ void ReducedCosts::ComputeReducedCosts() {
 #endif
   if (num_omp_threads == 1) {
     for (ColIndex col(0); col < num_cols; ++col) {
-      reduced_costs_[col] =
-          objective_[col] + objective_perturbation_[col] -
-          matrix_.ColumnScalarProduct(col, basic_objective_left_inverse_);
+      reduced_costs_[col] = objective_[col] + objective_perturbation_[col] -
+                            matrix_.ColumnScalarProduct(
+                                col, basic_objective_left_inverse_.values);
 
       // We also compute the dual residual error y.B - c_B.
       if (is_basic.IsSet(col)) {
@@ -386,9 +386,9 @@ void ReducedCosts::ComputeReducedCosts() {
 #pragma omp parallel for num_threads(num_omp_threads)
     for (int i = 0; i < parallel_loop_size; i++) {
       const ColIndex col(i);
-      reduced_costs_[col] =
-          objective_[col] + objective_perturbation_[col] -
-          matrix_.ColumnScalarProduct(col, basic_objective_left_inverse_);
+      reduced_costs_[col] = objective_[col] + objective_perturbation_[col] -
+                            matrix_.ColumnScalarProduct(
+                                col, basic_objective_left_inverse_.values);
 
       if (is_basic.IsSet(col)) {
         thread_local_dual_residual_error[omp_get_thread_num()] =
@@ -422,15 +422,15 @@ void ReducedCosts::ComputeReducedCosts() {
 
 void ReducedCosts::ComputeBasicObjectiveLeftInverse() {
   SCOPED_TIME_STAT(&stats_);
-  basic_objective_left_inverse_.resize(RowToColIndex(matrix_.num_rows()), 0.0);
   if (recompute_basic_objective_) {
     ComputeBasicObjective();
   }
-  basic_objective_left_inverse_ = basic_objective_;
+  basic_objective_left_inverse_.values = basic_objective_;
+  basic_objective_left_inverse_.non_zeros.clear();
   basis_factorization_.LeftSolve(&basic_objective_left_inverse_);
   recompute_basic_objective_left_inverse_ = false;
   IF_STATS_ENABLED(stats_.basic_objective_left_inverse_density.Add(
-      Density(basic_objective_left_inverse_)));
+      Density(basic_objective_left_inverse_.values)));
 
   // TODO(user): Estimate its accuracy by a few scalar products, and refactorize
   // if it is above a threshold?
@@ -487,10 +487,19 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
   // we can use them in ComputeCurrentDualResidualError().
   const ScatteredRow& unit_row_left_inverse =
       update_row->GetUnitRowLeftInverse();
-  for (const ColIndex col : unit_row_left_inverse.non_zeros) {
-    const ColIndex slack_col = first_slack_col + col;
-    const Fractional coeff = unit_row_left_inverse[col];
-    reduced_costs_[slack_col] += new_leaving_reduced_cost * coeff;
+  if (unit_row_left_inverse.non_zeros.empty()) {
+    const ColIndex num_cols = unit_row_left_inverse.values.size();
+    for (ColIndex col(0); col < num_cols; ++col) {
+      const ColIndex slack_col = first_slack_col + col;
+      const Fractional coeff = unit_row_left_inverse[col];
+      reduced_costs_[slack_col] += new_leaving_reduced_cost * coeff;
+    }
+  } else {
+    for (const ColIndex col : unit_row_left_inverse.non_zeros) {
+      const ColIndex slack_col = first_slack_col + col;
+      const Fractional coeff = unit_row_left_inverse[col];
+      reduced_costs_[slack_col] += new_leaving_reduced_cost * coeff;
+    }
   }
   reduced_costs_[leaving_col] = new_leaving_reduced_cost;
 

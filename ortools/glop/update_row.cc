@@ -68,8 +68,7 @@ void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
                                   unit_row_left_inverse_.values) -
       1.0));
   IF_STATS_ENABLED(stats_.unit_row_left_inverse_density.Add(
-      static_cast<double>(unit_row_left_inverse_.non_zeros.size()) /
-      static_cast<double>(matrix_.num_rows().value())));
+      Density(unit_row_left_inverse_.values())));
 }
 
 void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
@@ -78,7 +77,8 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
   ComputeUnitRowLeftInverse(leaving_row);
   SCOPED_TIME_STAT(&stats_);
 
-  if (parameters_.use_transposed_matrix()) {
+  if (parameters_.use_transposed_matrix() &&
+      !unit_row_left_inverse_.non_zeros.empty()) {
     // Number of entries that ComputeUpdatesRowWise() will need to look at.
     EntryIndex num_row_wise_entries(0);
     for (const ColIndex col : unit_row_left_inverse_.non_zeros) {

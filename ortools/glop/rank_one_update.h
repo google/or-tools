@@ -63,14 +63,13 @@ class RankOneUpdateElementaryMatrix {
         -storage_->ColumnScalarProduct(v_index_, Transpose(*x)) / mu_;
     storage_->ColumnAddMultipleToDenseColumn(u_index_, multiplier, x);
   }
-  void RightSolveWithNonZeros(
-      ScatteredColumn* x, StrictITIVector<RowIndex, bool>* is_non_zero) const {
+  void RightSolveWithNonZeros(ScatteredColumn* x) const {
     DCHECK(!IsSingular());
     const Fractional multiplier =
         -storage_->ColumnScalarProduct(v_index_, Transpose(x->values)) / mu_;
     if (multiplier != 0.0) {
-      storage_->ColumnAddMultipleToDenseColumnAndUpdateNonZeros(
-          u_index_, multiplier, &x->values, is_non_zero, &x->non_zeros);
+      storage_->ColumnAddMultipleToSparseScatteredColumn(u_index_, multiplier,
+                                                         x);
     }
   }
 
@@ -83,16 +82,13 @@ class RankOneUpdateElementaryMatrix {
     storage_->ColumnAddMultipleToDenseColumn(v_index_, multiplier,
                                              reinterpret_cast<DenseColumn*>(y));
   }
-  void LeftSolveWithNonZeros(
-      ScatteredRow* y, StrictITIVector<ColIndex, bool>* is_non_zero) const {
+  void LeftSolveWithNonZeros(ScatteredRow* y) const {
     DCHECK(!IsSingular());
     const Fractional multiplier =
         -storage_->ColumnScalarProduct(u_index_, y->values) / mu_;
     if (multiplier != 0.0) {
-      storage_->ColumnAddMultipleToDenseColumnAndUpdateNonZeros(
-          v_index_, multiplier, reinterpret_cast<DenseColumn*>(&y->values),
-          reinterpret_cast<StrictITIVector<RowIndex, bool>*>(is_non_zero),
-          reinterpret_cast<std::vector<RowIndex>*>(&y->non_zeros));
+      storage_->ColumnAddMultipleToSparseScatteredColumn(
+          v_index_, multiplier, reinterpret_cast<ScatteredColumn*>(y));
     }
   }
 
@@ -172,20 +168,19 @@ class RankOneUpdateFactorization {
     }
 
     // tmp_row_is_non_zero_ is always all false before and after this code.
-    tmp_col_is_non_zero_.resize(y->values.size(), false);
-    DCHECK(std::all_of(tmp_col_is_non_zero_.begin(), tmp_col_is_non_zero_.end(),
-                       [](bool v) { return !v; }));
-    for (const ColIndex col : y->non_zeros) tmp_col_is_non_zero_[col] = true;
+    y->is_non_zero.resize(y->values.size(), false);
+    DCHECK(IsAllFalse(y->is_non_zero));
+    for (const ColIndex col : y->non_zeros) y->is_non_zero[col] = true;
     const int hypersparse_threshold = static_cast<int>(
         hypersparse_ratio_ * static_cast<double>(y->values.size().value()));
     for (int i = elementary_matrices_.size() - 1; i >= 0; --i) {
       if (y->non_zeros.size() < hypersparse_threshold) {
-        elementary_matrices_[i].LeftSolveWithNonZeros(y, &tmp_col_is_non_zero_);
+        elementary_matrices_[i].LeftSolveWithNonZeros(y);
       } else {
         elementary_matrices_[i].LeftSolve(&y->values);
       }
     }
-    for (const ColIndex col : y->non_zeros) tmp_col_is_non_zero_[col] = false;
+    for (const ColIndex col : y->non_zeros) y->is_non_zero[col] = false;
     if (y->non_zeros.size() >= hypersparse_threshold) y->non_zeros.clear();
   }
 
@@ -207,23 +202,21 @@ class RankOneUpdateFactorization {
       return;
     }
 
-    // tmp_row_is_non_zero_ is always all false before and after this code.
-    tmp_row_is_non_zero_.resize(d->values.size(), false);
-    DCHECK(std::all_of(tmp_row_is_non_zero_.begin(), tmp_row_is_non_zero_.end(),
-                       [](bool v) { return !v; }));
-    for (const RowIndex row : d->non_zeros) tmp_row_is_non_zero_[row] = true;
+    // d->is_non_zero is always all false before and after this code.
+    d->is_non_zero.resize(d->values.size(), false);
+    DCHECK(IsAllFalse(d->is_non_zero));
+    for (const RowIndex row : d->non_zeros) d->is_non_zero[row] = true;
     const size_t end = elementary_matrices_.size();
     const int hypersparse_threshold = static_cast<int>(
         hypersparse_ratio_ * static_cast<double>(d->values.size().value()));
     for (int i = 0; i < end; ++i) {
       if (d->non_zeros.size() < hypersparse_threshold) {
-        elementary_matrices_[i].RightSolveWithNonZeros(d,
-                                                       &tmp_row_is_non_zero_);
+        elementary_matrices_[i].RightSolveWithNonZeros(d);
       } else {
         elementary_matrices_[i].RightSolve(&d->values);
       }
     }
-    for (const RowIndex row : d->non_zeros) tmp_row_is_non_zero_[row] = false;
+    for (const RowIndex row : d->non_zeros) d->is_non_zero[row] = false;
     if (d->non_zeros.size() >= hypersparse_threshold) d->non_zeros.clear();
   }
 
@@ -233,8 +226,6 @@ class RankOneUpdateFactorization {
   double hypersparse_ratio_;
   EntryIndex num_entries_;
   std::vector<RankOneUpdateElementaryMatrix> elementary_matrices_;
-  mutable StrictITIVector<RowIndex, bool> tmp_row_is_non_zero_;
-  mutable StrictITIVector<ColIndex, bool> tmp_col_is_non_zero_;
   DISALLOW_COPY_AND_ASSIGN(RankOneUpdateFactorization);
 };
 

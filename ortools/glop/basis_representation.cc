@@ -302,21 +302,7 @@ Status BasisFactorization::Update(ColIndex entering_col,
   return ForceRefactorization();
 }
 
-void BasisFactorization::LeftSolve(DenseRow* y) const {
-  SCOPED_TIME_STAT(&stats_);
-  RETURN_IF_NULL(y);
-  BumpDeterministicTimeForSolve(matrix_.num_rows().value());
-  if (use_middle_product_form_update_) {
-    lu_factorization_.LeftSolveU(y);
-    rank_one_factorization_.LeftSolve(y);
-    lu_factorization_.LeftSolveL(y);
-  } else {
-    eta_factorization_.LeftSolve(y);
-    lu_factorization_.LeftSolve(y);
-  }
-}
-
-void BasisFactorization::LeftSolveWithNonZeros(ScatteredRow* y) const {
+void BasisFactorization::LeftSolve(ScatteredRow* y) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
   BumpDeterministicTimeForSolve(matrix_.num_rows().value());
@@ -324,49 +310,31 @@ void BasisFactorization::LeftSolveWithNonZeros(ScatteredRow* y) const {
     lu_factorization_.LeftSolveUWithNonZeros(y);
     rank_one_factorization_.LeftSolveWithNonZeros(y);
     lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
+    y->SortNonZerosIfNeeded();
   } else {
+    y->non_zeros.clear();
     eta_factorization_.LeftSolve(&y->values);
     lu_factorization_.LeftSolve(&y->values);
-    ComputeNonZeros(y->values, &y->non_zeros);
   }
 }
 
-void BasisFactorization::RightSolve(DenseColumn* d) const {
-  SCOPED_TIME_STAT(&stats_);
-  RETURN_IF_NULL(d);
-  BumpDeterministicTimeForSolve(matrix_.num_rows().value());
-  if (use_middle_product_form_update_) {
-    lu_factorization_.RightSolveL(d);
-    rank_one_factorization_.RightSolve(d);
-    lu_factorization_.RightSolveU(d);
-  } else {
-    lu_factorization_.RightSolve(d);
-    eta_factorization_.RightSolve(d);
-  }
-}
-
-void BasisFactorization::RightSolveWithNonZeros(ScatteredColumn* d) const {
+void BasisFactorization::RightSolve(ScatteredColumn* d) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
   BumpDeterministicTimeForSolve(d->non_zeros.size());
   if (use_middle_product_form_update_) {
-    lu_factorization_.RightSolveL(&d->values);
-    rank_one_factorization_.RightSolve(&d->values);
-
-    // We need to clear non-zeros because at this point in the code, they don't
-    // correspond to the zeros of d. An empty non_zeros means that
-    // RightSolveWithNonZeros() will recompute them.
-    d->non_zeros.clear();
+    lu_factorization_.RightSolveLWithNonZeros(d);
+    rank_one_factorization_.RightSolveWithNonZeros(d);
     lu_factorization_.RightSolveUWithNonZeros(d);
+    d->SortNonZerosIfNeeded();
   } else {
+    d->non_zeros.clear();
     lu_factorization_.RightSolve(&d->values);
     eta_factorization_.RightSolve(&d->values);
-    ComputeNonZeros(d->values, &d->non_zeros);
-    return;
   }
 }
 
-DenseColumn* BasisFactorization::RightSolveForTau(
+const DenseColumn& BasisFactorization::RightSolveForTau(
     const ScatteredColumn& a) const {
   SCOPED_TIME_STAT(&stats_);
   BumpDeterministicTimeForSolve(matrix_.num_rows().value());
@@ -378,26 +346,19 @@ DenseColumn* BasisFactorization::RightSolveForTau(
       lu_factorization_.RightSolveLWithPermutedInput(a.values, &tau_.values);
       tau_.non_zeros.clear();
     } else {
-      // TODO(user): Extract function.
-      if (tau_.non_zeros.empty()) {
-        tau_.values.assign(matrix_.num_rows(), 0);
-      } else {
-        tau_.values.resize(matrix_.num_rows(), 0);
-        for (const RowIndex row : tau_.non_zeros) {
-          tau_[row] = 0.0;
-        }
-      }
+      ClearAndResizeVectorWithNonZeros(matrix_.num_rows(), &tau_);
       lu_factorization_.RightSolveLForScatteredColumn(a, &tau_);
     }
     rank_one_factorization_.RightSolveWithNonZeros(&tau_);
     lu_factorization_.RightSolveUWithNonZeros(&tau_);
   } else {
+    tau_.non_zeros.clear();
     tau_.values = a.values;
     lu_factorization_.RightSolve(&tau_.values);
     eta_factorization_.RightSolve(&tau_.values);
   }
   tau_is_computed_ = true;
-  return &tau_.values;
+  return tau_.values;
 }
 
 void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
@@ -442,12 +403,13 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
   if (tau_is_computed_) {
     tau_is_computed_ = false;
     tau_computation_can_be_optimized_ =
-        lu_factorization_.LeftSolveLWithNonZeros(y, &tau_.values);
+        lu_factorization_.LeftSolveLWithNonZeros(y, &tau_);
     tau_.non_zeros.clear();
   } else {
     tau_computation_can_be_optimized_ = false;
     lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
   }
+  y->SortNonZerosIfNeeded();
 }
 
 void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
@@ -456,10 +418,10 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
   RETURN_IF_NULL(d);
   BumpDeterministicTimeForSolve(matrix_.column(col).num_entries().value());
   if (!use_middle_product_form_update_) {
+    d->non_zeros.clear();
     lu_factorization_.SparseRightSolve(matrix_.column(col), matrix_.num_rows(),
                                        &d->values);
     eta_factorization_.RightSolve(&d->values);
-    ComputeNonZeros(d->values, &d->non_zeros);
     return;
   }
 
@@ -484,6 +446,7 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
         right_storage_.AddDenseColumnWithNonZeros(d->values, d->non_zeros);
   }
   lu_factorization_.RightSolveUWithNonZeros(d);
+  d->SortNonZerosIfNeeded();
 }
 
 Fractional BasisFactorization::RightSolveSquaredNorm(const SparseColumn& a)
@@ -536,7 +499,8 @@ Fractional BasisFactorization::ComputeInverseOneNorm() const {
   const ColIndex num_cols = RowToColIndex(num_rows);
   Fractional norm = 0.0;
   for (ColIndex col(0); col < num_cols; ++col) {
-    DenseColumn right_hand_side(num_rows, 0.0);
+    ScatteredColumn right_hand_side;
+    right_hand_side.values.AssignToZero(num_rows);
     right_hand_side[ColToRowIndex(col)] = 1.0;
     // Get a column of the matrix inverse.
     RightSolve(&right_hand_side);
@@ -557,7 +521,8 @@ Fractional BasisFactorization::ComputeInverseInfinityNorm() const {
   const ColIndex num_cols = RowToColIndex(num_rows);
   DenseColumn row_sum(num_rows, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
-    DenseColumn right_hand_side(num_rows, 0.0);
+    ScatteredColumn right_hand_side;
+    right_hand_side.values.AssignToZero(num_rows);
     right_hand_side[ColToRowIndex(col)] = 1.0;
     // Get a column of the matrix inverse.
     RightSolve(&right_hand_side);

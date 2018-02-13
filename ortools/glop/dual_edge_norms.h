@@ -91,7 +91,7 @@ class DualEdgeNorms {
 
   // Computes the vector tau needed to update the norms using a right solve:
   //     B.tau = (u_i)^T, u_i.B = e_i for i = leaving_row.
-  DenseColumn* ComputeTau(const ScatteredColumn& unit_row_left_inverse);
+  const DenseColumn& ComputeTau(const ScatteredColumn& unit_row_left_inverse);
 
   // Statistics.
   struct Stats : public StatsGroup {

@@ -343,38 +343,6 @@ typedef StrictITIVector<RowIndex, ColIndex> RowToColMapping;
 // Column of constraints (slack variables) statuses.
 typedef StrictITIVector<RowIndex, ConstraintStatus> ConstraintStatusColumn;
 
-// A simple struct that contains a DenseColumn and its non-zeros indices.
-struct ScatteredColumn {
-  DenseColumn values;
-
-  // This can be left empty in which case we just have the dense representation
-  // above. Otherwise, it should always be a subset of the actual non-zeros.
-  //
-  // Note that the non-zeros should always be sorted by increasing index. This
-  // allows to have exactly the same iteration behavior if we iterate on the
-  // non-zeros or directly in a dense-way on the values.
-  RowIndexVector non_zeros;
-
-  Fractional operator[](RowIndex row) const { return values[row]; }
-  Fractional& operator[](RowIndex row) { return values[row]; }
-};
-
-// Same as ScatteredColumn for a row.
-struct ScatteredRow {
-  DenseRow values;
-  ColIndexVector non_zeros;
-
-  Fractional operator[](ColIndex col) const { return values[col]; }
-  Fractional& operator[](ColIndex col) { return values[col]; }
-};
-
-inline const ScatteredRow& TransposedView(const ScatteredColumn& c) {
-  return reinterpret_cast<const ScatteredRow&>(c);
-}
-inline const ScatteredColumn& TransposedView(const ScatteredRow& r) {
-  return reinterpret_cast<const ScatteredColumn&>(r);
-}
-
 // Returns true if it is more advantageous to use a dense iteration rather than
 // using the non-zeros positions.
 //
@@ -389,6 +357,46 @@ bool ShouldUseDenseIteration(const ScatteredRowOrCol& v) {
   return static_cast<double>(v.non_zeros.size()) >
          kThresholdForUsingDenseRepresentation *
              static_cast<double>(v.values.size().value());
+}
+
+// A simple struct that contains a DenseVector and its non-zeros indices.
+template <typename Index>
+struct ScatteredVector {
+  StrictITIVector<Index, Fractional> values;
+
+  // This can be left empty in which case we just have the dense representation
+  // above. Otherwise, it should always be a subset of the actual non-zeros.
+  bool non_zeros_are_sorted = false;
+  std::vector<Index> non_zeros;
+
+  // Temporary vector used in some sparse computation on the ScatteredColumn.
+  // True indicate a possible non-zero value. Note that its state is not always
+  // consistent.
+  StrictITIVector<Index, bool> is_non_zero;
+
+  Fractional operator[](Index index) const { return values[index]; }
+  Fractional& operator[](Index index) { return values[index]; }
+
+  // Sorting the non-zeros is not always needed, but it allows us to have
+  // exactly the same behavior while using a sparse iteration or a dense one. So
+  // we always do it after a Solve().
+  void SortNonZerosIfNeeded() {
+    if (!non_zeros_are_sorted) {
+      std::sort(non_zeros.begin(), non_zeros.end());
+      non_zeros_are_sorted = true;
+    }
+  }
+};
+
+// Specialization used in the code.
+struct ScatteredColumn : public ScatteredVector<RowIndex> {};
+struct ScatteredRow : public ScatteredVector<ColIndex> {};
+
+inline const ScatteredRow& TransposedView(const ScatteredColumn& c) {
+  return reinterpret_cast<const ScatteredRow&>(c);
+}
+inline const ScatteredColumn& TransposedView(const ScatteredRow& r) {
+  return reinterpret_cast<const ScatteredColumn&>(r);
 }
 
 // This is used during the deterministic time computation to convert a given

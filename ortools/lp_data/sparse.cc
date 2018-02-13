@@ -756,36 +756,19 @@ void TriangularMatrix::LowerSolveStartingAtInternal(ColIndex start,
 
 void TriangularMatrix::UpperSolve(DenseColumn* rhs) const {
   if (all_diagonal_coefficients_are_one_) {
-    UpperSolveWithNonZerosInternal<true, false>(rhs, nullptr);
+    UpperSolveInternal<true>(rhs);
   } else {
-    UpperSolveWithNonZerosInternal<false, false>(rhs, nullptr);
+    UpperSolveInternal<false>(rhs);
   }
 }
 
-void TriangularMatrix::UpperSolveWithNonZeros(
-    DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
-  if (all_diagonal_coefficients_are_one_) {
-    UpperSolveWithNonZerosInternal<true, true>(rhs, non_zero_rows);
-  } else {
-    UpperSolveWithNonZerosInternal<false, true>(rhs, non_zero_rows);
-  }
-}
-
-template <bool diagonal_of_ones, bool with_non_zeros>
-void TriangularMatrix::UpperSolveWithNonZerosInternal(
-    DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
+template <bool diagonal_of_ones>
+void TriangularMatrix::UpperSolveInternal(DenseColumn* rhs) const {
   RETURN_IF_NULL(rhs);
-  if (with_non_zeros) {
-    RETURN_IF_NULL(non_zero_rows);
-    non_zero_rows->clear();
-  }
   const ColIndex end = first_non_identity_column_;
   for (ColIndex col(diagonal_coefficients_.size() - 1); col >= end; --col) {
     const Fractional value = (*rhs)[ColToRowIndex(col)];
     if (value == 0.0) continue;
-    if (with_non_zeros) {
-      non_zero_rows->push_back(ColToRowIndex(col));
-    }
     const Fractional coeff =
         diagonal_of_ones ? value : value / diagonal_coefficients_[col];
     if (!diagonal_of_ones) {
@@ -799,18 +782,6 @@ void TriangularMatrix::UpperSolveWithNonZerosInternal(
     for (EntryIndex i(starts_[col + 1] - 1); i >= last; --i) {
       (*rhs)[EntryRow(i)] -= coeff * EntryCoefficient(i);
     }
-  }
-
-  // Finish filling the non_zero_rows vector if needed.
-  if (with_non_zeros) {
-    for (RowIndex row(end.value() - 1); row >= 0; --row) {
-      if ((*rhs)[row] != 0.0) {
-        non_zero_rows->push_back(row);
-      }
-    }
-
-    // Sorting the non-zero positions gives better performance later.
-    std::reverse(non_zero_rows->begin(), non_zero_rows->end());
   }
 }
 

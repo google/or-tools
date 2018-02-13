@@ -205,28 +205,25 @@ class BasisFactorization {
                 const ScatteredColumn& direction) MUST_USE_RESULT;
 
   // Left solves the system y.B = rhs, where y initialy contains rhs.
-  // The second version also computes the non-zero positions of the result.
-  void LeftSolve(DenseRow* y) const;
-  void LeftSolveWithNonZeros(ScatteredRow* y) const;
+  void LeftSolve(ScatteredRow* y) const;
 
   // Left solves the system y.B = e_j, where e_j has only 1 non-zero
   // coefficient of value 1.0 at position 'j'.
   void LeftSolveForUnitRow(ColIndex j, ScatteredRow* y) const;
 
-  // Same as RightSolve() for matrix.column(col).
-  // This also exploits its sparsity.
-  void RightSolveForProblemColumn(ColIndex col, ScatteredColumn* d) const;
-
   // Right solves the system B.d = a where the input is the initial value of d.
-  void RightSolve(DenseColumn* d) const;
-  void RightSolveWithNonZeros(ScatteredColumn* d) const;
+  void RightSolve(ScatteredColumn* d) const;
+
+  // Same as RightSolve() for matrix.column(col). This also exploits its
+  // sparsity.
+  void RightSolveForProblemColumn(ColIndex col, ScatteredColumn* d) const;
 
   // Specialized version for ComputeTau() in DualEdgeNorms. This reuses an
   // intermediate result of the last LeftSolveForUnitRow() in order to save a
   // permutation if it is available. Note that the input 'a' should always be
   // equal to the last result of LeftSolveForUnitRow() and will be used for a
   // DCHECK() or if the intermediate result wasn't kept.
-  DenseColumn* RightSolveForTau(const ScatteredColumn& a) const;
+  const DenseColumn& RightSolveForTau(const ScatteredColumn& a) const;
 
   // Returns the norm of B^{-1}.a, this is a specific function because
   // it is a bit faster and it avoids polluting the stats of RightSolve().

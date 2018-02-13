@@ -137,6 +137,9 @@ Fractional InfinityNorm(const DenseColumn& v);
 Fractional InfinityNorm(const SparseColumn& v);
 
 // Returns the fraction of non-zero entries of the given row.
+//
+// TODO(user): Take a Scattered row/col instead. This is only used to report
+// stats, but we should still have a sparse version to do it faster.
 double Density(const DenseRow& row);
 
 // Sets to 0.0 all entries of the given row whose fabs() is lower than the given
@@ -205,35 +208,31 @@ inline bool IsAllZero(const Container& input) {
   return true;
 }
 
-// Permutes the given dense vector and computes the positions of its non-zeros.
-// It uses for this an all zero dense vector (zero_scratchpad).
-// This operation is efficient for a sparse vector because:
-// - It combines two iterations in one.
-// - It avoids cache pollution by not looking at unecessary permuted locations.
-// Note that the produced non_zeros is not ordered which may be a drawback.
-// TODO(user): Investigate alternatives with an ordered non_zeros.
-template <typename IndexType, typename PermutationIndexType,
-          typename NonZeroIndexType>
-inline void PermuteAndComputeNonZeros(
+// Returns true if the given vector of bool is all false.
+template <typename BoolVector>
+bool IsAllFalse(const BoolVector& v) {
+  return std::all_of(v.begin(), v.end(), [](bool value) { return !value; });
+}
+
+// Permutes the given dense vector. It uses for this an all zero scratchpad.
+template <typename IndexType, typename PermutationIndexType>
+inline void PermuteWithScratchpad(
     const Permutation<PermutationIndexType>& permutation,
     StrictITIVector<IndexType, Fractional>* zero_scratchpad,
-    StrictITIVector<IndexType, Fractional>* output,
-    std::vector<NonZeroIndexType>* non_zeros) {
-  non_zeros->clear();
+    StrictITIVector<IndexType, Fractional>* input_output) {
   DCHECK(IsAllZero(*zero_scratchpad));
-  zero_scratchpad->swap(*output);
-  output->resize(zero_scratchpad->size(), 0.0);
-  const IndexType end = zero_scratchpad->size();
-  for (IndexType index(0); index < end; ++index) {
+  const IndexType size = input_output->size();
+  zero_scratchpad->swap(*input_output);
+  input_output->resize(size, 0.0);
+  for (IndexType index(0); index < size; ++index) {
     const Fractional value = (*zero_scratchpad)[index];
     if (value != 0.0) {
-      (*zero_scratchpad)[index] = 0.0;
       const IndexType permuted_index(
           permutation[PermutationIndexType(index.value())].value());
-      (*output)[permuted_index] = value;
-      non_zeros->push_back(NonZeroIndexType(permuted_index.value()));
+      (*input_output)[permuted_index] = value;
     }
   }
+  zero_scratchpad->assign(size, 0.0);
 }
 
 // Same as PermuteAndComputeNonZeros() except that we assume that the given
@@ -249,30 +248,10 @@ inline void PermuteWithKnownNonZeros(
   output->resize(zero_scratchpad->size(), 0.0);
   for (IndexType& index_ref : *non_zeros) {
     const Fractional value = (*zero_scratchpad)[index_ref];
-    DCHECK_NE(value, 0.0);
     (*zero_scratchpad)[index_ref] = 0.0;
     const IndexType permuted_index(permutation[index_ref]);
     (*output)[permuted_index] = value;
     index_ref = permuted_index;
-  }
-}
-
-// Same algorithm as PermuteAndComputeNonZeros() above when the non-zeros are
-// not needed. This should be faster than a simple ApplyPermutation() if the
-// input vector is relatively sparse. The input is the initial value of output.
-inline void ApplyPermutationWhenInputIsProbablySparse(
-    const Permutation<RowIndex>& permutation, DenseColumn* zero_scratchpad,
-    DenseColumn* output) {
-  const RowIndex num_rows(permutation.size());
-  DCHECK(IsAllZero(*zero_scratchpad));
-  zero_scratchpad->swap(*output);
-  output->resize(num_rows, 0.0);
-  for (RowIndex row(0); row < num_rows; ++row) {
-    const Fractional value = (*zero_scratchpad)[row];
-    if (value != 0.0) {
-      (*zero_scratchpad)[row] = 0.0;
-      (*output)[permutation[row]] = value;
-    }
   }
 }
 
@@ -284,7 +263,8 @@ inline void ClearAndResizeVectorWithNonZeros(IndexType size,
   // compared to the wanted size. Note that in most cases the vector will
   // already be of the correct size.
   const double kSparseThreshold = 0.05;
-  if (v->non_zeros.size() < kSparseThreshold * size.value()) {
+  if (!v->non_zeros.empty() &&
+      v->non_zeros.size() < kSparseThreshold * size.value()) {
     for (const IndexType index : v->non_zeros) {
       DCHECK_LT(index, v->values.size());
       (*v)[index] = 0.0;

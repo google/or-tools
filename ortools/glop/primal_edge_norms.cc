@@ -142,13 +142,16 @@ void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
   recompute_edge_squared_norms_ = false;
 }
 
+// TODO(user): It should be possible to reorganize the code and call this when
+// the value of direction is no longer needed. This will simplify the code and
+// avoid a copy here.
 void PrimalEdgeNorms::ComputeDirectionLeftInverse(
     ColIndex entering_col, const ScatteredColumn& direction) {
   SCOPED_TIME_STAT(&stats_);
 
-  // Initialize direction_left_inverse_ to direction.values .
-  // Note the special case when the non-zero vector is empty which means we
-  // don't know and need to use the dense version.
+  // Initialize direction_left_inverse_ to direction. Note the special case when
+  // the non-zero vector is empty which means we don't know and need to use the
+  // dense version.
   const ColIndex size = RowToColIndex(direction.values.size());
   const double kThreshold = 0.05 * size.value();
   if (!direction_left_inverse_.non_zeros.empty() &&
@@ -163,14 +166,10 @@ void PrimalEdgeNorms::ComputeDirectionLeftInverse(
     direction_left_inverse_.non_zeros.clear();
   }
 
-  // Depending on the sparsity of the input, we decide which version to use.
   if (direction.non_zeros.size() < kThreshold) {
-    direction_left_inverse_.non_zeros =
-        *reinterpret_cast<ColIndexVector const*>(&direction.non_zeros);
-    basis_factorization_.LeftSolveWithNonZeros(&direction_left_inverse_);
-  } else {
-    basis_factorization_.LeftSolve(&direction_left_inverse_.values);
+    direction_left_inverse_.non_zeros = TransposedView(direction).non_zeros;
   }
+  basis_factorization_.LeftSolve(&direction_left_inverse_);
 
   // TODO(user): Refactorize if estimated accuracy above a threshold.
   IF_STATS_ENABLED(stats_.direction_left_inverse_accuracy.Add(

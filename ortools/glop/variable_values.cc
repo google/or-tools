@@ -66,10 +66,11 @@ void VariableValues::RecomputeBasicVariableValues() {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(basis_factorization_.IsRefactorized());
   const RowIndex num_rows = matrix_.num_rows();
-  scratchpad_.assign(num_rows, 0.0);
+  scratchpad_.non_zeros.clear();
+  scratchpad_.values.AssignToZero(num_rows);
   for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
     const Fractional value = variable_values_[col];
-    matrix_.ColumnAddMultipleToDenseColumn(col, -value, &scratchpad_);
+    matrix_.ColumnAddMultipleToDenseColumn(col, -value, &scratchpad_.values);
   }
   basis_factorization_.RightSolve(&scratchpad_);
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -79,13 +80,14 @@ void VariableValues::RecomputeBasicVariableValues() {
 
 Fractional VariableValues::ComputeMaximumPrimalResidual() const {
   SCOPED_TIME_STAT(&stats_);
-  scratchpad_.assign(matrix_.num_rows(), 0.0);
+  scratchpad_.non_zeros.clear();
+  scratchpad_.values.AssignToZero(matrix_.num_rows());
   const ColIndex num_cols = matrix_.num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional value = variable_values_[col];
-    matrix_.ColumnAddMultipleToDenseColumn(col, value, &scratchpad_);
+    matrix_.ColumnAddMultipleToDenseColumn(col, value, &scratchpad_.values);
   }
-  return InfinityNorm(scratchpad_);
+  return InfinityNorm(scratchpad_.values);
 }
 
 Fractional VariableValues::ComputeMaximumPrimalInfeasibility() const {
@@ -144,24 +146,45 @@ void VariableValues::UpdateGivenNonBasicVariables(
     const std::vector<ColIndex>& cols_to_update, bool update_basic_variables) {
   SCOPED_TIME_STAT(&stats_);
   if (update_basic_variables) {
-    initially_all_zero_scratchpad_.values.resize(matrix_.num_rows(), 0.0);
+    const RowIndex num_rows = matrix_.num_rows();
+    initially_all_zero_scratchpad_.values.resize(num_rows, 0.0);
+    initially_all_zero_scratchpad_.is_non_zero.resize(num_rows, false);
     DCHECK(IsAllZero(initially_all_zero_scratchpad_.values));
+    DCHECK(IsAllFalse(initially_all_zero_scratchpad_.is_non_zero));
+
+    // TODO(user): Abort the non-zeros computation earlier if dense.
     for (ColIndex col : cols_to_update) {
       const Fractional old_value = variable_values_[col];
       SetNonBasicVariableValueFromStatus(col);
-      matrix_.ColumnAddMultipleToDenseColumn(
+      matrix_.ColumnAddMultipleToSparseScatteredColumn(
           col, variable_values_[col] - old_value,
-          &initially_all_zero_scratchpad_.values);
+          &initially_all_zero_scratchpad_);
     }
-    basis_factorization_.RightSolveWithNonZeros(
-        &initially_all_zero_scratchpad_);
-    for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
-      variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
-      initially_all_zero_scratchpad_[row] = 0.0;
+    if (ShouldUseDenseIteration(initially_all_zero_scratchpad_)) {
+      initially_all_zero_scratchpad_.non_zeros.clear();
+      initially_all_zero_scratchpad_.is_non_zero.assign(num_rows, false);
+    } else {
+      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
+        initially_all_zero_scratchpad_.is_non_zero[row] = false;
+      }
     }
-    UpdatePrimalInfeasibilityInformation(
-        initially_all_zero_scratchpad_.non_zeros);
-    initially_all_zero_scratchpad_.non_zeros.clear();
+
+    basis_factorization_.RightSolve(&initially_all_zero_scratchpad_);
+    if (initially_all_zero_scratchpad_.non_zeros.empty()) {
+      for (RowIndex row(0); row < num_rows; ++row) {
+        variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
+      }
+      initially_all_zero_scratchpad_.values.AssignToZero(num_rows);
+      ResetPrimalInfeasibilityInformation();
+    } else {
+      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
+        variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
+        initially_all_zero_scratchpad_[row] = 0.0;
+      }
+      UpdatePrimalInfeasibilityInformation(
+          initially_all_zero_scratchpad_.non_zeros);
+      initially_all_zero_scratchpad_.non_zeros.clear();
+    }
   } else {
     for (ColIndex col : cols_to_update) {
       SetNonBasicVariableValueFromStatus(col);
@@ -182,22 +205,31 @@ void VariableValues::ResetPrimalInfeasibilityInformation() {
   const RowIndex num_rows = matrix_.num_rows();
   primal_squared_infeasibilities_.resize(num_rows, 0.0);
   primal_infeasible_positions_.ClearAndResize(num_rows);
-  UpdatePrimalInfeasibilities(
-      util::IntegerRange<RowIndex>(RowIndex(0), num_rows));
+
+  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+  for (RowIndex row(0); row < num_rows; ++row) {
+    const ColIndex col = basis_[row];
+    const Fractional value = variable_values_[col];
+    const Fractional magnitude =
+        std::max(value - upper_bounds[col], lower_bounds[col] - value);
+    if (magnitude > tolerance_) {
+      primal_squared_infeasibilities_[row] = Square(magnitude);
+      primal_infeasible_positions_.Set(row);
+    }
+  }
 }
 
 void VariableValues::UpdatePrimalInfeasibilityInformation(
     const std::vector<RowIndex>& rows) {
   if (primal_squared_infeasibilities_.size() != matrix_.num_rows()) {
     ResetPrimalInfeasibilityInformation();
-  } else {
-    SCOPED_TIME_STAT(&stats_);
-    UpdatePrimalInfeasibilities(rows);
+    return;
   }
-}
 
-template <typename Rows>
-void VariableValues::UpdatePrimalInfeasibilities(const Rows& rows) {
+  // Note(user): this is the same as the code in
+  // ResetPrimalInfeasibilityInformation(), but we do need the clear part.
+  SCOPED_TIME_STAT(&stats_);
   const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
   const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
   for (const RowIndex row : rows) {

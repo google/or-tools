@@ -781,7 +781,7 @@ bool RevisedSimplex::InitializeBoundsAndTestIfUnchanged(
   SCOPED_TIME_STAT(&function_stats_);
   lower_bound_.resize(num_cols_, 0.0);
   upper_bound_.resize(num_cols_, 0.0);
-  bound_perturbation_.assign(num_cols_, 0.0);
+  bound_perturbation_.AssignToZero(num_cols_);
 
   // Variable bounds, for both non-slack and slack variables.
   bool bounds_are_unchanged = true;
@@ -1325,7 +1325,7 @@ void RevisedSimplex::CorrectErrorsOnVariableValues() {
 
 void RevisedSimplex::ComputeVariableValuesError() {
   SCOPED_TIME_STAT(&function_stats_);
-  error_.assign(num_rows_, 0.0);
+  error_.AssignToZero(num_rows_);
   const DenseRow& variable_values = variable_values_.GetDenseRow();
   for (ColIndex col(0); col < num_cols_; ++col) {
     const Fractional value = variable_values[col];
@@ -1338,9 +1338,21 @@ void RevisedSimplex::ComputeDirection(ColIndex col) {
   DCHECK_COL_BOUNDS(col);
   basis_factorization_.RightSolveForProblemColumn(col, &direction_);
   direction_infinity_norm_ = 0.0;
-  for (const RowIndex row : direction_.non_zeros) {
-    direction_infinity_norm_ =
-        std::max(direction_infinity_norm_, std::abs(direction_[row]));
+  if (direction_.non_zeros.empty()) {
+    // We still compute the direction non-zeros because our code relies on it.
+    for (RowIndex row(0); row < num_rows_; ++row) {
+      const Fractional value = direction_[row];
+      if (value != 0.0) {
+        direction_.non_zeros.push_back(row);
+        direction_infinity_norm_ =
+            std::max(direction_infinity_norm_, std::abs(value));
+      }
+    }
+  } else {
+    for (const RowIndex row : direction_.non_zeros) {
+      direction_infinity_norm_ =
+          std::max(direction_infinity_norm_, std::abs(direction_[row]));
+    }
   }
   IF_STATS_ENABLED(ratio_test_stats_.direction_density.Add(
       num_rows_ == 0 ? 0.0
@@ -1952,27 +1964,50 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
         ++num_dual_infeasible_positions_;
       }
       if (!something_to_do) {
+        initially_all_zero_scratchpad_.is_non_zero.resize(num_rows_, false);
         initially_all_zero_scratchpad_.values.resize(num_rows_, 0.0);
         something_to_do = true;
       }
-      compact_matrix_.ColumnAddMultipleToDenseColumn(
+      compact_matrix_.ColumnAddMultipleToSparseScatteredColumn(
           col, sign - dual_infeasibility_improvement_direction_[col],
-          &initially_all_zero_scratchpad_.values);
+          &initially_all_zero_scratchpad_);
       dual_infeasibility_improvement_direction_[col] = sign;
     }
   }
   if (something_to_do) {
+    // TODO(user): This code is duplicated with UpdateGivenNonBasicVariables()
+    // and more generally with the one in RankOneUpdateFactorization. Fix.
+    if (ShouldUseDenseIteration(initially_all_zero_scratchpad_)) {
+      initially_all_zero_scratchpad_.non_zeros.clear();
+      initially_all_zero_scratchpad_.is_non_zero.assign(num_rows_, false);
+    } else {
+      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
+        initially_all_zero_scratchpad_.is_non_zero[row] = false;
+      }
+    }
+
     const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
     const Fractional threshold = parameters_.ratio_test_zero_threshold();
-    basis_factorization_.RightSolveWithNonZeros(
-        &initially_all_zero_scratchpad_);
-    for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
-      dual_pricing_vector_[row] += initially_all_zero_scratchpad_[row];
-      initially_all_zero_scratchpad_[row] = 0.0;
-      is_dual_entering_candidate_.Set(
-          row,
-          IsDualPhaseILeavingCandidate(dual_pricing_vector_[row],
-                                       variable_type[basis_[row]], threshold));
+    basis_factorization_.RightSolve(&initially_all_zero_scratchpad_);
+    if (initially_all_zero_scratchpad_.non_zeros.empty()) {
+      for (RowIndex row(0); row < num_rows_; ++row) {
+        if (initially_all_zero_scratchpad_[row] == 0.0) continue;
+        dual_pricing_vector_[row] += initially_all_zero_scratchpad_[row];
+        is_dual_entering_candidate_.Set(
+            row, IsDualPhaseILeavingCandidate(dual_pricing_vector_[row],
+                                              variable_type[basis_[row]],
+                                              threshold));
+      }
+      initially_all_zero_scratchpad_.values.AssignToZero(num_rows_);
+    } else {
+      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
+        dual_pricing_vector_[row] += initially_all_zero_scratchpad_[row];
+        initially_all_zero_scratchpad_[row] = 0.0;
+        is_dual_entering_candidate_.Set(
+            row, IsDualPhaseILeavingCandidate(dual_pricing_vector_[row],
+                                              variable_type[basis_[row]],
+                                              threshold));
+      }
     }
     initially_all_zero_scratchpad_.non_zeros.clear();
   }
@@ -1999,9 +2034,9 @@ Status RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
       dual_pricing_vector_.empty()) {
     // Recompute everything from scratch.
     num_dual_infeasible_positions_ = 0;
-    dual_pricing_vector_.assign(num_rows_, 0.0);
+    dual_pricing_vector_.AssignToZero(num_rows_);
     is_dual_entering_candidate_.ClearAndResize(num_rows_);
-    dual_infeasibility_improvement_direction_.assign(num_cols_, 0.0);
+    dual_infeasibility_improvement_direction_.AssignToZero(num_cols_);
     DualPhaseIUpdatePriceOnReducedCostChange(
         variables_info_.GetIsRelevantBitRow());
   } else {
@@ -2247,7 +2282,7 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
   if (feasibility_phase_) {
     // Initialize the primal phase-I objective.
     // Note that this temporarily erases the problem objective.
-    objective_.assign(num_cols_, 0.0);
+    objective_.AssignToZero(num_cols_);
     UpdatePrimalPhaseICosts(
         util::IntegerRange<RowIndex>(RowIndex(0), num_rows_));
   }
@@ -2368,7 +2403,7 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       } else {
         VLOG(1) << "Unbounded problem.";
         problem_status_ = ProblemStatus::PRIMAL_UNBOUNDED;
-        solution_primal_ray_.assign(num_cols_, 0.0);
+        solution_primal_ray_.AssignToZero(num_cols_);
         for (RowIndex row(0); row < num_rows_; ++row) {
           const ColIndex col = basis_[row];
           solution_primal_ray_[col] = -direction_[row];
@@ -2650,7 +2685,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
         solution_dual_ray_ =
             Transpose(update_row_.GetUnitRowLeftInverse().values);
         update_row_.RecomputeFullUpdateRow(leaving_row);
-        solution_dual_ray_row_combination_.assign(num_cols_, 0.0);
+        solution_dual_ray_row_combination_.AssignToZero(num_cols_);
         for (const ColIndex col : update_row_.GetNonZeroPositions()) {
           solution_dual_ray_row_combination_[col] =
               update_row_.GetCoefficient(col);
