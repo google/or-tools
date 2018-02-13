@@ -32,7 +32,6 @@ endif()
 project(ortools-meta NONE)
 
 include(CTest)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 if(UNIX)
   # Needed to create python packagefrom the build directory
 	set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
