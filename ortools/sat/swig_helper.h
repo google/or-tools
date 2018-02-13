@@ -22,31 +22,40 @@
 namespace operations_research {
 namespace sat {
 
-// Useful for director based callbacks.
+// Base class for SWIG director based on solution callbacks.
+// See http://www.i.org/Doc3.0/SWIGDocumentation.html#CSharp_directors.
 class SolutionCallback {
  public:
   virtual ~SolutionCallback() {}
+
   virtual void OnSolutionCallback() = 0;
+
   void Run(const operations_research::sat::CpSolverResponse& response) {
     response_ = response;
     OnSolutionCallback();
   }
 
-  int64 ObjectiveValue() const {
-    return response_.objective_value();
+  int64 NumBooleans() const { return response_.num_booleans(); }
+
+  int64 NumBranches() const { return response_.num_branches(); }
+
+  int64 NumConflicts() const { return response_.num_conflicts(); }
+
+  int64 NumBinaryPropagations() const {
+    return response_.num_binary_propagations();
   }
 
-  int64 NumBranches() const {
-    return response_.num_branches();
+  int64 NumIntegerPropagations() const {
+    return response_.num_integer_propagations();
   }
 
-  int64 NumConflicts() const {
-    return response_.num_conflicts();
-  }
+  double WallTime() const { return response_.wall_time(); }
 
-  double WallTime() const {
-    return response_.wall_time();
-  }
+  double UserTime() const { return response_.user_time(); }
+
+  double DeterministicTime() const { return response_.deterministic_time(); }
+
+  int64 ObjectiveValue() const { return response_.objective_value(); }
 
   int64 SolutionIntegerValue(int index) {
     return index >= 0 ? response_.solution(index)
@@ -54,11 +63,8 @@ class SolutionCallback {
   }
 
   bool SolutionBooleanValue(int index) {
-    if (index >= 0) {
-      return response_.solution(index) != 0;
-    } else {
-      return response_.solution(-index - 1) == 0;
-    }
+    return index >= 0 ? response_.solution(index) != 0
+                      : response_.solution(-index - 1) == 0;
   }
 
  private:
@@ -73,6 +79,8 @@ class SatHelper {
   //    namespace.
   // 2) Their names must correspond to the ones declared in the .i
   //    file (see the python/ and java/ subdirectories).
+  // 3) String variations of the parameters have been added for C# as
+  //    C# protobufs do not support proto2.
   static operations_research::sat::CpSolverResponse Solve(
       const operations_research::sat::CpModelProto& model_proto) {
     Model model;
@@ -124,26 +132,9 @@ class SatHelper {
   static operations_research::sat::CpSolverResponse
   SolveWithStringParametersAndSolutionCallback(
       const operations_research::sat::CpModelProto& model_proto,
-      const std::string& parameters,
-      SolutionCallback* callback) {
+      const std::string& parameters, SolutionCallback* callback) {
     Model model;
     model.Add(NewSatParameters(parameters));
-    model.Add(NewFeasibleSolutionObserver(
-        [callback](const CpSolverResponse& r) { return callback->Run(r); }));
-    return SolveCpModel(model_proto, &model);
-  }
-
-  static operations_research::sat::CpSolverResponse
-  SearchAllSolutionsWithStringParametersAndSolutionCallback(
-      const operations_research::sat::CpModelProto& model_proto,
-      const std::string& parameters,
-      SolutionCallback* callback) {
-    Model model;
-    SatParameters sat_parameters;
-    sat_parameters.ParseFromString(parameters);
-    sat_parameters.set_enumerate_all_solutions(true);
-    sat_parameters.set_cp_model_presolve(false);
-    model.Add(NewSatParameters(sat_parameters));
     model.Add(NewFeasibleSolutionObserver(
         [callback](const CpSolverResponse& r) { return callback->Run(r); }));
     return SolveCpModel(model_proto, &model);

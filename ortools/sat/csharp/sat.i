@@ -54,7 +54,6 @@ PROTO2_RETURN(
 %unignore operations_research::sat::SatHelper::SolveWithStringParameters;
 // We use the director version of the API.
 %unignore operations_research::sat::SatHelper::SolveWithStringParametersAndSolutionCallback;
-%unignore operations_research::sat::SatHelper::SearchAllSolutionsWithStringParametersAndSolutionCallback;
 
 // --------- Include the swig helpers file to create the director classes ------
 // We cannot use %ignoreall/%unignoreall as this is not compatible with nested

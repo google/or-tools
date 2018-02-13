@@ -548,6 +548,10 @@ class CpModel(object):
       coeffs_map, constant = ct.Expression().GetVarValueMap()
       bounds = [CapSub(x, constant) for x in ct.Bounds()]
       return self.AddLinearConstraintWithBounds(iteritems(coeffs_map), bounds)
+    elif ct and isinstance(ct, bool):
+      pass  # Nothing to do, was already evaluated to true.
+    elif not ct and isinstance(ct, bool):
+      return self.AddBoolOr([])  # Evaluate to false.
     else:
       raise TypeError('Not supported: CpModel.Add(' + str(ct) + ')')
 
@@ -966,6 +970,9 @@ class CpModel(object):
           self.__model.objective.vars.append(v.Index())
         else:
           self.__model.objective.vars.append(self.Negated(v.Index()))
+    elif isinstance(obj, numbers.Integral):
+      self.__model.objective.offset = obj
+      self.__model.objective.scaling_factor = 1
     else:
       raise TypeError('TypeError: ' + str(obj) + ' is not a valid objective')
 
@@ -1013,11 +1020,11 @@ def EvaluateBooleanExpression(literal, solution):
   if isinstance(literal, IntVar) or isinstance(literal, _NotBooleanVariable):
     index = literal.Index()
     if index >= 0:
-      return True if solution.solution[index] else False
+      return bool(solution.solution[index])
     else:
-      return False if solution.solution[-index - 1] else True
+      return not solution.solution[-index - 1]
   else:
-    raise TypeError('Cannot interpret %s in a boolean expression.' % literal)
+    raise TypeError('Cannot interpret %s as a boolean expression.' % literal)
 
 
 class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):

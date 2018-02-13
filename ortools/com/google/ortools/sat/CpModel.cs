@@ -49,10 +49,13 @@ public class CpModel
     return new IntVar(model_, bounds, name);
   }
 
-  public IntVar NewIntVar(IEnumerable<long> bounds, string name)
+  public IntVar NewEnumeratedIntVar(IEnumerable<long> bounds, string name)
   {
     return new IntVar(model_, bounds, name);
   }
+
+  // TODO: NewOptionalIntVar
+  // TODO: NewOptionalEnumeratedIntVar
 
   // Constants (named or not).
 
@@ -345,7 +348,15 @@ public class CpModel
 
   // TODO: AddMapDomain
 
-  // TODO: AddImplication
+  public Constraint AddImplication(ILiteral a, ILiteral b)
+  {
+    Constraint ct = new Constraint(model_);
+    BoolArgumentProto or = new BoolArgumentProto();
+    or.Literals.Add(a.Not().GetIndex());
+    or.Literals.Add(b.GetIndex());
+    ct.Proto.BoolOr = or;
+    return ct;
+  }
 
   public Constraint AddBoolOr(IEnumerable<ILiteral> literals)
   {
@@ -483,7 +494,6 @@ public class CpModel
       }
     }
     model_.Objective = objective;
-    // TODO: Implement me for general IntegerExpression.
   }
 
   private int ConvertConstant(long value)
