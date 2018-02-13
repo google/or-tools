@@ -32,9 +32,8 @@ endif()
 project(ortools-meta NONE)
 
 include(CTest)
-set(CMAKE_VERBOSE_MAKEFILE ON)
 if(UNIX)
-  # Needed to create python packagefrom the build directory
+  # Needed to create python package from the build directory
 	set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 	option(BUILD_SHARED_LIBS "Build shared libraries(.so)." ON)
 elseif(MSVC)
@@ -42,12 +41,23 @@ elseif(MSVC)
  set(BUILD_SHARED_LIBS OFF)
 endif()
 
+# When incorporating ortools in a CMake Project, then only C++ library will be built.
+# Consequently Python, Java and C# wrapper won't be built.
+if("^${CMAKE_SOURCE_DIR}$" STREQUAL "^${PROJECT_SOURCE_DIR}$")
+	set(ORTOOLS_IS_SUBPROJECT FALSE)
+else()
+	set(ORTOOLS_IS_SUBPROJECT TRUE)
+endif()
+
 include(CMakeDependentOption)
 option(BUILD_DEPS "Force re-build of all dependencies" ON)
 option(BUILD_CXX "Build C++ library" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_PYTHON "Build Python Library" ON "BUILD_CXX"	OFF)
-CMAKE_DEPENDENT_OPTION(BUILD_JAVA "Build Java Library" OFF "BUILD_CXX" OFF)
-CMAKE_DEPENDENT_OPTION(BUILD_CSHARP "Build CSharp Library" OFF "BUILD_CXX" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON	"Build Python Library" ON
+	"BUILD_CXX; NOT ORTOOLS_IS_SUBPROJECT"	OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA "Build Java Library" OFF
+	"BUILD_CXX; NOT ORTOOLS_IS_SUBPROJECT" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_CSHARP "Build CSharp Library" OFF
+	"BUILD_CXX; NOT ORTOOLS_IS_SUBPROJECT" OFF)
 
 message(STATUS "Build all dependencies: ${BUILD_DEPS}")
 message(STATUS "Build CXX library: ${BUILD_CXX}")
@@ -55,7 +65,7 @@ message(STATUS "Build Python Binding: ${BUILD_PYTHON}")
 message(STATUS "Build Java Binding: ${BUILD_JAVA}")
 message(STATUS "Build CSharp Binding: ${BUILD_CSHARP}")
 
-# Build Dependencies
+# Add OR Tools Dependencies as CMake subproject if missing
 add_subdirectory(cmake/external)
 
 include(cpp)
