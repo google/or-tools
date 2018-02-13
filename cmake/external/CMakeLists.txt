@@ -17,8 +17,8 @@ set(BUILD_TESTING OFF)
 ####################
 ##  SWIG (WIN32)  ##
 ####################
-if(WIN32)
-	message(STATUS "Subproject: Swig...")
+if(WIN32 AND (BUILD_PYTHON OR BUILD_JAVA OR BUILD_CSHARP))
+	message(STATUS "Adding CMake Subproject: Swig...")
 	# Download and unpack swig at configure time
 	configure_file(
 		${CMAKE_CURRENT_LIST_DIR}/swig.CMakeLists.txt
@@ -38,7 +38,7 @@ if(WIN32)
 
 	set(SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/swig/swig.exe
 		CACHE INTERNAL "swig.exe location" FORCE)
-	message(STATUS "Subproject: Swig...DONE")
+	message(STATUS "Adding CMake Subproject: Swig...DONE")
 endif()
 
 ##############
