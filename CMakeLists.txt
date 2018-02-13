@@ -33,7 +33,7 @@ project(ortools-meta NONE)
 
 include(CTest)
 if(UNIX)
-  # Needed to create python packagefrom the build directory
+  # Needed to create python package from the build directory
 	set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 	option(BUILD_SHARED_LIBS "Build shared libraries(.so)." ON)
 elseif(MSVC)
@@ -54,7 +54,7 @@ message(STATUS "Build Python Binding: ${BUILD_PYTHON}")
 message(STATUS "Build Java Binding: ${BUILD_JAVA}")
 message(STATUS "Build CSharp Binding: ${BUILD_CSHARP}")
 
-# Build Dependencies
+# Add OR Tools Dependencies as CMake subproject if missing
 add_subdirectory(cmake/external)
 
 include(cpp)

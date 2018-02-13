@@ -52,12 +52,6 @@ add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP)
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 
-find_package(ZLIB REQUIRED)
-find_package(Protobuf REQUIRED)
-find_package(gflags REQUIRED)
-find_package(glog REQUIRED)
-find_package(Cbc REQUIRED)
-
 # Main Target
 if(BUILD_SHARED_LIBS)
 	add_library(${PROJECT_NAME} SHARED "")
