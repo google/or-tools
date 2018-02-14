@@ -444,92 +444,37 @@ public class CpModel
     return ct;
   }
 
-  public Constraint AddDivisionEquality(IntVar x, IntVar y)
+  public Constraint AddDivisionEquality<T, N, D>(T target, N num, D denom)
   {
     Constraint ct = new Constraint(model_);
     IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(x.Index);
-    args.Vars.Add(y.Index);
+    args.Vars.Add(GetOrCreateIndex(num));
+    args.Vars.Add(GetOrCreateIndex(denom));
+    args.Target = GetOrCreateIndex(target);
     ct.Proto.IntDiv = args;
     return ct;
   }
 
-  public Constraint AddDivisionEquality(IntVar x, long y)
+  public Constraint AddModuloEquality<T, V, M>(T target, V v, M m)
   {
     Constraint ct = new Constraint(model_);
     IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(x.Index);
-    args.Vars.Add(ConvertConstant(y));
-    ct.Proto.IntDiv = args;
-    return ct;
-  }
-
-  public Constraint AddDivisionEquality(long x, IntVar y)
-  {
-    Constraint ct = new Constraint(model_);
-    IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(ConvertConstant(x));
-    args.Vars.Add(y.Index);
-    ct.Proto.IntDiv = args;
-    return ct;
-  }
-
-  public Constraint AddModuloEquality(IntVar x, IntVar y)
-  {
-    Constraint ct = new Constraint(model_);
-    IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(x.Index);
-    args.Vars.Add(y.Index);
+    args.Vars.Add(GetOrCreateIndex(v));
+    args.Vars.Add(GetOrCreateIndex(m));
+    args.Target = GetOrCreateIndex(target);
     ct.Proto.IntMod = args;
     return ct;
   }
 
-  public Constraint AddModuloEquality(IntVar x, long y)
+  public Constraint AddProdEquality(IntVar target, IEnumerable<IntVar> vars)
   {
     Constraint ct = new Constraint(model_);
     IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(x.Index);
-    args.Vars.Add(ConvertConstant(y));
-    ct.Proto.IntMod = args;
-    return ct;
-  }
-
-  public Constraint AddModuloEquality(long x, IntVar y)
-  {
-    Constraint ct = new Constraint(model_);
-    IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(ConvertConstant(x));
-    args.Vars.Add(y.Index);
-    ct.Proto.IntMod = args;
-    return ct;
-  }
-
-  public Constraint AddProdEquality(IntVar x, IntVar y)
-  {
-    Constraint ct = new Constraint(model_);
-    IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(x.Index);
-    args.Vars.Add(y.Index);
-    ct.Proto.IntProd = args;
-    return ct;
-  }
-
-  public Constraint AddProdEquality(IntVar x, long y)
-  {
-    Constraint ct = new Constraint(model_);
-    IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(x.Index);
-    args.Vars.Add(ConvertConstant(y));
-    ct.Proto.IntProd = args;
-    return ct;
-  }
-
-  public Constraint AddProdEquality(long x, IntVar y)
-  {
-    Constraint ct = new Constraint(model_);
-    IntegerArgumentProto args = new IntegerArgumentProto();
-    args.Vars.Add(ConvertConstant(x));
-    args.Vars.Add(y.Index);
+    args.Target = target.Index;
+    foreach (IntVar var in vars)
+    {
+      args.Vars.Add(var.Index);
+    }
     ct.Proto.IntProd = args;
     return ct;
   }
@@ -617,8 +562,23 @@ public class CpModel
       var.Domain.Add(value);
       var.Domain.Add(value);
       constant_map_.Add(value, index);
+      model_.Variables.Add(var);
       return index;
     }
+  }
+
+  private int GetOrCreateIndex<X>(X x)
+  {
+    if (typeof(X) == typeof(IntVar))
+    {
+      IntVar vx = (IntVar)(Object)x;
+      return vx.Index;
+    }
+    if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
+    {
+      return ConvertConstant(Convert.ToInt64(x));
+    }
+    throw new ArgumentException("Cannot extract index from argument");
   }
 
   private CpModelProto model_;

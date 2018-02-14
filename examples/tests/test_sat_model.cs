@@ -98,11 +98,45 @@ public class CsTestCpOperator
     CheckLongEq(-30, solver.Value(v1 - 2 * v2), "Wrong value");
   }
 
+  static void TestDivision() {
+    Console.WriteLine("TestDivision");
+    CpModel model = new CpModel();
+    IntVar v1 = model.NewIntVar(0, 10, "v1");
+    IntVar v2 = model.NewIntVar(1, 10, "v2");
+    model.AddDivisionEquality(3, v1, v2);
+
+    Console.WriteLine(model.Model);
+
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    Check(status == CpSolverStatus.ModelSat, "Wrong status after solve");
+    Console.WriteLine("v1 = {0}", solver.Value(v1));
+    Console.WriteLine("v2 = {0}", solver.Value(v2));
+  }
+
+  static void TestModulo() {
+    Console.WriteLine("TestModulo");
+    CpModel model = new CpModel();
+    IntVar v1 = model.NewIntVar(1, 10, "v1");
+    IntVar v2 = model.NewIntVar(1, 10, "v2");
+    model.AddModuloEquality(3, v1, v2);
+
+    Console.WriteLine(model.Model);
+
+    // CpSolver solver = new CpSolver();
+    // CpSolverStatus status = solver.Solve(model);
+    // Check(status == CpSolverStatus.ModelSat, "Wrong status after solve");
+    // Console.WriteLine("v1 = {0}", solver.Value(v1));
+    // Console.WriteLine("v2 = {0}", solver.Value(v2));
+  }
+
 
   static void Main() {
     TestSimpleLinearModel();
     TestSimpleLinearModel2();
     TestSimpleLinearModel3();
+    TestDivision();
+    TestModulo();
     if (error_count_ != 0) {
       Console.WriteLine("Found " + error_count_ + " errors.");
       Environment.Exit(1);
