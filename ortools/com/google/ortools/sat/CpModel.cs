@@ -321,9 +321,33 @@ public class CpModel
     return ct;
   }
 
-  // TODO: AddAllowedAssignments
+  public Constraint AddAllowedAssignments(IEnumerable<IntVar> vars,
+                                          long[,] tuples)
+  {
+    Constraint ct = new Constraint(model_);
+    TableConstraintProto table = new TableConstraintProto();
+    foreach (IntVar var in vars)
+    {
+      table.Vars.Add(var.Index);
+    }
+    for (int i = 0; i < tuples.GetLength(0); ++i)
+    {
+      for (int j = 0; j < tuples.GetLength(1);++j)
+      {
+        table.Values.Add(tuples[i, j]);
+      }
+    }
+    ct.Proto.Table = table;
+    return ct;
+  }
 
-  // TODO: AddForbiddenAssignments
+  public Constraint AddForbiddenAssignments(IEnumerable<IntVar> vars,
+                                            long[,] tuples)
+  {
+    Constraint ct = AddAllowedAssignments(vars, tuples);
+    ct.Proto.Table.Negated = true;
+    return ct;
+  }
 
   // TODO: AddAutomata
 
@@ -420,11 +444,95 @@ public class CpModel
     return ct;
   }
 
-  // TODO: AddDivisionEquality
+  public Constraint AddDivisionEquality(IntVar x, IntVar y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(x.Index);
+    args.Vars.Add(y.Index);
+    ct.Proto.IntDiv = args;
+    return ct;
+  }
 
-  // TODO: AddModuloEquality
+  public Constraint AddDivisionEquality(IntVar x, long y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(x.Index);
+    args.Vars.Add(ConvertConstant(y));
+    ct.Proto.IntDiv = args;
+    return ct;
+  }
 
-  // TODO: AddProdEquality
+  public Constraint AddDivisionEquality(long x, IntVar y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(ConvertConstant(x));
+    args.Vars.Add(y.Index);
+    ct.Proto.IntDiv = args;
+    return ct;
+  }
+
+  public Constraint AddModuloEquality(IntVar x, IntVar y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(x.Index);
+    args.Vars.Add(y.Index);
+    ct.Proto.IntMod = args;
+    return ct;
+  }
+
+  public Constraint AddModuloEquality(IntVar x, long y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(x.Index);
+    args.Vars.Add(ConvertConstant(y));
+    ct.Proto.IntMod = args;
+    return ct;
+  }
+
+  public Constraint AddModuloEquality(long x, IntVar y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(ConvertConstant(x));
+    args.Vars.Add(y.Index);
+    ct.Proto.IntMod = args;
+    return ct;
+  }
+
+  public Constraint AddProdEquality(IntVar x, IntVar y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(x.Index);
+    args.Vars.Add(y.Index);
+    ct.Proto.IntProd = args;
+    return ct;
+  }
+
+  public Constraint AddProdEquality(IntVar x, long y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(x.Index);
+    args.Vars.Add(ConvertConstant(y));
+    ct.Proto.IntProd = args;
+    return ct;
+  }
+
+  public Constraint AddProdEquality(long x, IntVar y)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(ConvertConstant(x));
+    args.Vars.Add(y.Index);
+    ct.Proto.IntProd = args;
+    return ct;
+  }
 
   // Scheduling support
 
