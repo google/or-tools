@@ -16,7 +16,7 @@ ifeq ("$(SYSTEM)","unix")
   DETECTED_PYTHON_VERSION = $(shell python -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
   # Detect the .net core sdk folder
   DOTNET_INSTALL_PATH = /usr/local/share/dotnet/sdk
-  ifneq ($(wildcard $(DOTNET_INSTALL_PATH)\dotnet.exe),)
+  ifneq ($(wildcard $(DOTNET_INSTALL_PATH)\dotnet),)
     DOTNET_INSTALL_PATH = \# DOTNET install path not found
   endif
 
