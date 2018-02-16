@@ -677,8 +677,8 @@ class CpModel(object):
       AssertIsInt64(t[1])
       AssertIsInt64(t[2])
       model_ct.automata.transition_head.append(t[0])
-      model_ct.automata.transition_label.append(t[0])
-      model_ct.automata.transition_tail.append(t[0])
+      model_ct.automata.transition_label.append(t[1])
+      model_ct.automata.transition_tail.append(t[2])
 
   def AddInverse(self, variables, inverse_variables):
     """Adds Inverse(variables, inverse_variables)."""
