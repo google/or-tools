@@ -136,6 +136,68 @@ public class CpModel
     return ct;
   }
 
+  public Constraint AddLinearConstraintWithBounds(
+      IEnumerable<Tuple<IntVar, long>> terms, IEnumerable<long> bounds)
+  {
+    Constraint ct = new Constraint(model_);
+    LinearConstraintProto lin = new LinearConstraintProto();
+    foreach (Tuple<IntVar, long> term in terms)
+    {
+      lin.Vars.Add(term.Item1.Index);
+      lin.Coeffs.Add(term.Item2);
+    }
+    foreach (long b in bounds)
+    {
+      lin.Domain.Add(b);
+    }
+    ct.Proto.Linear = lin;
+    return ct;
+  }
+
+  public Constraint AddLinearConstraintWithBounds(IEnumerable<IntVar> vars,
+                                                  IEnumerable<long> coeffs,
+                                                  IEnumerable<long> bounds)
+  {
+    Constraint ct = new Constraint(model_);
+    LinearConstraintProto lin = new LinearConstraintProto();
+    foreach (IntVar var in vars)
+    {
+      lin.Vars.Add(var.Index);
+    }
+    foreach (long coeff in coeffs)
+    {
+      lin.Coeffs.Add(coeff);
+    }
+    foreach (long b in bounds)
+    {
+      lin.Domain.Add(b);
+    }
+    ct.Proto.Linear = lin;
+    return ct;
+  }
+
+  public Constraint AddLinearConstraintWithBounds(IEnumerable<IntVar> vars,
+                                                  IEnumerable<int> coeffs,
+                                                  IEnumerable<long> bounds)
+  {
+    Constraint ct = new Constraint(model_);
+    LinearConstraintProto lin = new LinearConstraintProto();
+    foreach (IntVar var in vars)
+    {
+      lin.Vars.Add(var.Index);
+    }
+    foreach (int coeff in coeffs)
+    {
+      lin.Coeffs.Add(coeff);
+    }
+    foreach (long b in bounds)
+    {
+      lin.Domain.Add(b);
+    }
+    ct.Proto.Linear = lin;
+    return ct;
+  }
+
   public Constraint AddSumConstraint(IEnumerable<IntVar> vars, long lb,
                                      long ub)
   {
@@ -151,8 +213,6 @@ public class CpModel
     ct.Proto.Linear = lin;
     return ct;
   }
-
-  // TODO: AddLinearConstraintWithBounds
 
   public Constraint Add(BoundIntegerExpression lin)
   {
@@ -349,7 +409,31 @@ public class CpModel
     return ct;
   }
 
-  // TODO: AddAutomata
+  public Constraint AddAutomata(IEnumerable<IntVar> vars,
+                                long starting_state,
+                                long[,] transitions,
+                                IEnumerable<long> final_states) {
+    Constraint ct = new Constraint(model_);
+    AutomataConstraintProto aut = new AutomataConstraintProto();
+    foreach (IntVar var in vars)
+    {
+      aut.Vars.Add(var.Index);
+    }
+    aut.StartingState = starting_state;
+    foreach (long f in final_states)
+    {
+      aut.FinalStates.Add(f);
+    }
+    for (int i = 0; i < transitions.GetLength(0); ++i)
+    {
+      aut.TransitionHead.Add(transitions[i, 0]);
+      aut.TransitionLabel.Add(transitions[i, 1]);
+      aut.TransitionTail.Add(transitions[i, 2]);
+    }
+
+    ct.Proto.Automata = aut;
+    return ct;
+  }
 
   public Constraint AddInverse(IEnumerable<IntVar> direct,
                                IEnumerable<IntVar> reverse)
@@ -368,9 +452,78 @@ public class CpModel
     return ct;
   }
 
-  // TODO: AddReservoirConstraint
+  public Constraint AddReservoirConstraint(IEnumerable<IntVar> times,
+                                           IEnumerable<long> demands,
+                                           long min_level, long max_level)
+  {
+    Constraint ct = new Constraint(model_);
+    ReservoirConstraintProto res = new ReservoirConstraintProto();
+    foreach (IntVar var in times)
+    {
+      res.Times.Add(var.Index);
+    }
+    foreach (long d in demands)
+    {
+      res.Demands.Add(d);
+    }
 
-  // TODO: AddMapDomain
+    ct.Proto.Reservoir = res;
+    return ct;
+  }
+
+  public Constraint AddReservoirConstraint(IEnumerable<IntVar> times,
+                                           IEnumerable<int> demands,
+                                           long min_level, long max_level)
+  {
+    Constraint ct = new Constraint(model_);
+    ReservoirConstraintProto res = new ReservoirConstraintProto();
+    foreach (IntVar var in times)
+    {
+      res.Times.Add(var.Index);
+    }
+    foreach (int d in demands)
+    {
+      res.Demands.Add(d);
+    }
+
+    ct.Proto.Reservoir = res;
+    return ct;
+  }
+
+  public void AddMapDomain(
+      IntVar var, IEnumerable<IntVar> bool_vars, long offset = 0)
+  {
+    int i = 0;
+    foreach (IntVar bool_var in bool_vars)
+    {
+      int b_index = bool_var.Index;
+      int var_index = var.Index;
+
+      ConstraintProto ct1 = new ConstraintProto();
+      LinearConstraintProto lin1 = new LinearConstraintProto();
+      lin1.Vars.Add(var_index);
+      lin1.Coeffs.Add(1L);
+      lin1.Domain.Add(offset + i);
+      lin1.Domain.Add(offset + i);
+      ct1.Linear = lin1;
+      ct1.EnforcementLiteral.Add(b_index);
+      model_.Constraints.Add(ct1);
+
+      ConstraintProto ct2 = new ConstraintProto();
+      LinearConstraintProto lin2 = new LinearConstraintProto();
+      lin2.Vars.Add(var_index);
+      lin2.Coeffs.Add(1L);
+      lin2.Domain.Add(Int64.MinValue);
+      lin2.Domain.Add(offset + i - 1);
+      lin2.Domain.Add(offset + i + 1);
+      lin2.Domain.Add(Int64.MaxValue);
+      ct2.Linear = lin2;
+      ct2.EnforcementLiteral.Add(-b_index - 1);
+      model_.Constraints.Add(ct2);
+
+      i++;
+    }
+  }
 
   public Constraint AddImplication(ILiteral a, ILiteral b)
   {
