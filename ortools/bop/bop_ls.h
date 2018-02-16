@@ -404,7 +404,8 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // Members used by PotentialOneFlipRepairs().
   std::vector<sat::Literal> tmp_potential_repairs_;
   NonOrderedSetHasher<ConstraintIndexWithDirection> constraint_set_hasher_;
-  std::unordered_map<uint64, std::vector<sat::Literal>> hash_to_potential_repairs_;
+  std::unordered_map<uint64, std::vector<sat::Literal>>
+      hash_to_potential_repairs_;
 
   DISALLOW_COPY_AND_ASSIGN(AssignmentAndConstraintFeasibilityMaintainer);
 };

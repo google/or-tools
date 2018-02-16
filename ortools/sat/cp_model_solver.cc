@@ -2349,8 +2349,9 @@ CpSolverResponse SolveCpModelInternal(
       ->AddAllImplicationsBetweenAssociatedLiterals();
   model->GetOrCreate<SatSolver>()->Propagate();
 
-  // TODO(user): add an option?
-  if (model->Mutable<PrecedencesPropagator>() != nullptr) {
+  // Auto detect "at least one of" constraints in the PrecedencesPropagator.
+  if (model->Mutable<PrecedencesPropagator>() != nullptr &&
+      parameters.auto_detect_greater_than_at_least_one_of()) {
     model->Mutable<PrecedencesPropagator>()
         ->AddGreaterThanAtLeastOneOfConstraints(model);
     model->GetOrCreate<SatSolver>()->Propagate();

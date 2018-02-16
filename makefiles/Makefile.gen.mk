@@ -303,7 +303,8 @@ $(SRC_DIR)/ortools/port/file.h: \
     $(SRC_DIR)/ortools/base/string_view.h
 
 $(SRC_DIR)/ortools/port/proto_utils.h: \
-    $(SRC_DIR)/ortools/base/join.h
+    $(SRC_DIR)/ortools/base/join.h \
+    $(SRC_DIR)/ortools/base/port.h
 
 $(SRC_DIR)/ortools/port/sysinfo.h: \
     $(SRC_DIR)/ortools/base/integral_types.h
@@ -657,6 +658,7 @@ $(OBJ_DIR)/data/rcpsp.pb.$O: $(GEN_DIR)/ortools/data/rcpsp.pb.cc
 
 LP_DATA_DEPS = \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
+    $(SRC_DIR)/ortools/lp_data/lp_data_utils.h \
     $(SRC_DIR)/ortools/lp_data/lp_decomposer.h \
     $(SRC_DIR)/ortools/lp_data/lp_print_utils.h \
     $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -674,6 +676,7 @@ LP_DATA_DEPS = \
 
 LP_DATA_LIB_OBJS = \
     $(OBJ_DIR)/lp_data/lp_data.$O \
+    $(OBJ_DIR)/lp_data/lp_data_utils.$O \
     $(OBJ_DIR)/lp_data/lp_decomposer.$O \
     $(OBJ_DIR)/lp_data/lp_print_utils.$O \
     $(OBJ_DIR)/lp_data/lp_types.$O \
@@ -692,10 +695,16 @@ $(SRC_DIR)/ortools/lp_data/lp_data.h: \
     $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
+    $(GEN_DIR)/ortools/glop/parameters.pb.h \
     $(SRC_DIR)/ortools/lp_data/lp_types.h \
-    $(SRC_DIR)/ortools/lp_data/matrix_scaler.h \
     $(SRC_DIR)/ortools/lp_data/sparse.h \
     $(SRC_DIR)/ortools/util/fp_utils.h
+
+$(SRC_DIR)/ortools/lp_data/lp_data_utils.h: \
+    $(GEN_DIR)/ortools/glop/parameters.pb.h \
+    $(SRC_DIR)/ortools/lp_data/lp_data.h \
+    $(SRC_DIR)/ortools/lp_data/lp_types.h \
+    $(SRC_DIR)/ortools/lp_data/matrix_scaler.h
 
 $(SRC_DIR)/ortools/lp_data/lp_decomposer.h: \
     $(SRC_DIR)/ortools/base/mutex.h \
@@ -722,6 +731,10 @@ $(SRC_DIR)/ortools/lp_data/matrix_scaler.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
     $(SRC_DIR)/ortools/base/macros.h \
+    $(GEN_DIR)/ortools/glop/parameters.pb.h \
+    $(SRC_DIR)/ortools/glop/revised_simplex.h \
+    $(SRC_DIR)/ortools/glop/status.h \
+    $(SRC_DIR)/ortools/lp_data/lp_data.h \
     $(SRC_DIR)/ortools/lp_data/lp_types.h
 
 $(SRC_DIR)/ortools/lp_data/matrix_utils.h: \
@@ -733,6 +746,7 @@ $(SRC_DIR)/ortools/lp_data/model_reader.h: \
     $(SRC_DIR)/ortools/lp_data/lp_data.h
 
 $(SRC_DIR)/ortools/lp_data/mps_reader.h: \
+    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/int_type.h \
     $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -784,6 +798,11 @@ $(OBJ_DIR)/lp_data/lp_data.$O: \
     $(SRC_DIR)/ortools/lp_data/permutation.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Slp_data.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Slp_data.$O
 
+$(OBJ_DIR)/lp_data/lp_data_utils.$O: \
+    $(SRC_DIR)/ortools/lp_data/lp_data_utils.cc \
+    $(SRC_DIR)/ortools/lp_data/lp_data_utils.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Slp_data_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Slp_data_utils.$O
+
 $(OBJ_DIR)/lp_data/lp_decomposer.$O: \
     $(SRC_DIR)/ortools/lp_data/lp_decomposer.cc \
     $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
@@ -815,10 +834,13 @@ $(OBJ_DIR)/lp_data/lp_utils.$O: \
 $(OBJ_DIR)/lp_data/matrix_scaler.$O: \
     $(SRC_DIR)/ortools/lp_data/matrix_scaler.cc \
     $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/memory.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
+    $(SRC_DIR)/ortools/glop/revised_simplex.h \
     $(SRC_DIR)/ortools/lp_data/lp_utils.h \
     $(SRC_DIR)/ortools/lp_data/matrix_scaler.h \
-    $(SRC_DIR)/ortools/lp_data/sparse.h
+    $(SRC_DIR)/ortools/lp_data/sparse.h \
+    $(SRC_DIR)/ortools/util/time_limit.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Smatrix_scaler.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smatrix_scaler.$O
 
 $(OBJ_DIR)/lp_data/matrix_utils.$O: \
@@ -959,6 +981,7 @@ $(SRC_DIR)/ortools/glop/lu_factorization.h: \
     $(SRC_DIR)/ortools/util/stats.h
 
 $(SRC_DIR)/ortools/glop/markowitz.h: \
+    $(SRC_DIR)/ortools/base/inlined_vector.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(GEN_DIR)/ortools/glop/parameters.pb.h \
     $(SRC_DIR)/ortools/glop/status.h \
@@ -1016,7 +1039,6 @@ $(SRC_DIR)/ortools/glop/revised_simplex.h: \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
     $(SRC_DIR)/ortools/lp_data/lp_print_utils.h \
     $(SRC_DIR)/ortools/lp_data/lp_types.h \
-    $(SRC_DIR)/ortools/lp_data/matrix_scaler.h \
     $(SRC_DIR)/ortools/lp_data/sparse_row.h \
     $(SRC_DIR)/ortools/util/random_engine.h \
     $(SRC_DIR)/ortools/util/time_limit.h
@@ -1824,6 +1846,7 @@ $(SRC_DIR)/ortools/sat/pb_constraint.h: \
     $(SRC_DIR)/ortools/util/stats.h
 
 $(SRC_DIR)/ortools/sat/precedences.h: \
+    $(SRC_DIR)/ortools/base/inlined_vector.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
     $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -2647,6 +2670,7 @@ $(SRC_DIR)/ortools/linear_solver/glop_utils.h: \
 $(SRC_DIR)/ortools/linear_solver/linear_solver.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/status.h \
     $(SRC_DIR)/ortools/base/timer.h \
     $(GEN_DIR)/ortools/glop/parameters.pb.h \
     $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
@@ -2721,6 +2745,7 @@ $(OBJ_DIR)/linear_solver/glop_interface.$O: \
     $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
     $(SRC_DIR)/ortools/lp_data/lp_types.h \
+    $(SRC_DIR)/ortools/port/proto_utils.h \
     $(SRC_DIR)/ortools/util/time_limit.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sglop_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglop_interface.$O
 

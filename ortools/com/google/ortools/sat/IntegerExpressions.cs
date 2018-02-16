@@ -632,32 +632,4 @@ public class BoundIntegerExpression
   private Type type_;
 }
 
-public class Constraint
-{
-  public Constraint(CpModelProto model)
-  {
-    index_ = model.Constraints.Count;
-    constraint_ = new ConstraintProto();
-    model.Constraints.Add(constraint_);
-  }
-
-  public void OnlyEnforceIf(ILiteral lit)
-  {
-    constraint_.EnforcementLiteral.Add(lit.GetIndex());
-  }
-
-  public int Index
-  {
-    get  { return index_; }
-  }
-
-  public ConstraintProto Proto
-  {
-    get { return constraint_; }
-  }
-
-  private int index_;
-  private ConstraintProto constraint_;
-}
-
 }  // namespace Google.OrTools.Sat

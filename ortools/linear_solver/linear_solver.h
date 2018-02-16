@@ -605,7 +605,7 @@ class MPSolver {
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
   std::unordered_map<std::string, int> variable_name_to_index_;
-  // Whether constraints have been extracted to the underlying interface.
+  // Whether variables have been extracted to the underlying interface.
   std::vector<bool> variable_is_extracted_;
 
   // The vector of constraints in the problem.

@@ -110,7 +110,6 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/lp_data/sparse_row.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/time_limit.h"
@@ -232,7 +231,8 @@ class RevisedSimplex {
   // Computes the dictionary B^-1*N on-the-fly row by row. Returns the resulting
   // matrix as a vector of sparse rows so that it is easy to use it on the left
   // side in the matrix multiplication. Runs in O(num_non_zeros_in_matrix).
-  RowMajorSparseMatrix ComputeDictionary(const SparseMatrixScaler* scaler);
+  // TODO(user): Use row scales as well.
+  RowMajorSparseMatrix ComputeDictionary(const DenseRow* column_scales);
 
  private:
   // Propagates parameters_ to all the other classes that need it.
@@ -803,9 +803,13 @@ class RevisedSimplexDictionary {
 
   // RevisedSimplex cannot be passed const because we have to call a non-const
   // method ComputeDictionary.
-  RevisedSimplexDictionary(const SparseMatrixScaler* scaler,
+  // TODO(user): Overload this to take RevisedSimplex* alone when the
+  // caller would normally pass a nullptr for col_scales so this and
+  // ComputeDictionary can take a const& argument.
+  RevisedSimplexDictionary(const DenseRow* col_scales,
                            RevisedSimplex* revised_simplex)
-      : dictionary_(CHECK_NOTNULL(revised_simplex)->ComputeDictionary(scaler)),
+      : dictionary_(
+            CHECK_NOTNULL(revised_simplex)->ComputeDictionary(col_scales)),
         basis_vars_(CHECK_NOTNULL(revised_simplex)->GetBasisVector()) {}
 
   ConstIterator begin() const { return dictionary_.begin(); }

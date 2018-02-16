@@ -16,11 +16,6 @@ namespace Google.OrTools.Sat
 using System;
 using System.Collections.Generic;
 
-class IntervalVar
-{
-
-}
-
 public class CpModel
 {
   public CpModel()
@@ -429,6 +424,34 @@ public class CpModel
       aut.TransitionHead.Add(transitions[i, 0]);
       aut.TransitionLabel.Add(transitions[i, 1]);
       aut.TransitionTail.Add(transitions[i, 2]);
+    }
+
+    ct.Proto.Automata = aut;
+    return ct;
+  }
+
+  public Constraint AddAutomata(
+      IEnumerable<IntVar> vars,
+      long starting_state,
+      IEnumerable<Tuple<long, long, long>> transitions,
+      IEnumerable<long> final_states) {
+    Constraint ct = new Constraint(model_);
+    AutomataConstraintProto aut = new AutomataConstraintProto();
+    foreach (IntVar var in vars)
+    {
+      aut.Vars.Add(var.Index);
+    }
+    aut.StartingState = starting_state;
+    foreach (long f in final_states)
+    {
+      aut.FinalStates.Add(f);
+    }
+    foreach (Tuple<long, long, long> transition in transitions)
+    {
+
+      aut.TransitionHead.Add(transition.Item1);
+      aut.TransitionLabel.Add(transition.Item2);
+      aut.TransitionTail.Add(transition.Item3);
     }
 
     ct.Proto.Automata = aut;

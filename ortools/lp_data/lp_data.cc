@@ -1075,17 +1075,6 @@ void LinearProgram::DeleteSlackVariables() {
   first_slack_variable_ = kInvalidCol;
 }
 
-void LinearProgram::Scale(SparseMatrixScaler* scaler) {
-  scaler->Init(&matrix_);
-  scaler->Scale();  // Compute R and C, and replace the matrix A by R.A.C
-  scaler->ScaleRowVector(false, &objective_coefficients_);      // oc = oc.C
-  scaler->ScaleRowVector(true, &variable_lower_bounds_);        // cl = cl.C^-1
-  scaler->ScaleRowVector(true, &variable_upper_bounds_);        // cu = cu.C^-1
-  scaler->ScaleColumnVector(false, &constraint_lower_bounds_);  // rl = R.rl
-  scaler->ScaleColumnVector(false, &constraint_upper_bounds_);  // ru = R.ru
-  transpose_matrix_is_consistent_ = false;
-}
-
 namespace {
 
 // Note that we ignore zeros and infinities because they do not matter from a
@@ -1197,7 +1186,8 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {
   matrix_.DeleteRows(new_index, permutation);
 
   // Remove the id of the deleted rows and adjust the index of the other.
-  std::unordered_map<std::string, RowIndex>::iterator it = constraint_table_.begin();
+  std::unordered_map<std::string, RowIndex>::iterator it =
+      constraint_table_.begin();
   while (it != constraint_table_.end()) {
     const RowIndex row = it->second;
     if (permutation[row] != kInvalidRow) {

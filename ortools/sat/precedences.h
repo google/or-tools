@@ -20,6 +20,7 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/inlined_vector.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/sat/integer.h"
@@ -123,6 +124,9 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // GreaterThanAtLeastOneOfConstraint(). Note that this might be a bit slow as
   // it relies on the propagation engine to detect clauses between incoming arcs
   // presence literals.
+  //
+  // TODO(user): This can be quite slow, add some kind of deterministic limit
+  // so that we can use it all the time.
   void AddGreaterThanAtLeastOneOfConstraints(Model* model);
 
  private:
@@ -234,10 +238,11 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   //
   // The first vector (impacted_arcs_) correspond to the arc currently present
   // whereas the second vector (impacted_potential_arcs_) list all the potential
-  // arcs (the one not allways present) and is just used for propagation of the
+  // arcs (the one not always present) and is just used for propagation of the
   // arc presence literals.
-  ITIVector<IntegerVariable, std::vector<int>> impacted_arcs_;
-  ITIVector<IntegerVariable, std::vector<int>> impacted_potential_arcs_;
+  ITIVector<IntegerVariable, absl::InlinedVector<int, 6>> impacted_arcs_;
+  ITIVector<IntegerVariable, absl::InlinedVector<int, 6>>
+      impacted_potential_arcs_;
 
   // Temporary vectors used by ComputePrecedences().
   ITIVector<IntegerVariable, int> var_to_degree_;
@@ -254,13 +259,13 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 
   // The set of arcs that must be added to impacted_arcs_ when a literal become
   // true.
-  ITIVector<LiteralIndex, std::vector<int>> potential_arcs_;
+  ITIVector<LiteralIndex, absl::InlinedVector<int, 6>> potential_arcs_;
 
   // Used for MarkIntegerVariableAsOptional(). The nodes associated to an
   // IntegerVariable whose entry is not kNoLiteralIndex will only propagate
   // something to its neighbors if the coresponding literal is assigned to true.
   ITIVector<IntegerVariable, LiteralIndex> optional_literals_;
-  ITIVector<LiteralIndex, std::vector<int>> potential_nodes_;
+  ITIVector<LiteralIndex, absl::InlinedVector<int, 6>> potential_nodes_;
 
   // TODO(user): rearranging the index so that the arc of the same node are
   // consecutive like in StaticGraph should have a big performance impact.

@@ -113,9 +113,7 @@ void SatPostsolver::Postsolve(VariablesAssignment* assignment) const {
     }
     previous_start = new_start;
     if (set_associated_var) {
-      // Note(user): The VariablesAssignment interface is a bit weird in this
-      // context, because we can only assign an unassigned literal.
-      assignment->UnassignLiteral(associated_literal_[i]);
+      assignment->UnassignLiteral(associated_literal_[i].Negated());
       assignment->AssignFromTrueLiteral(associated_literal_[i]);
     }
   }

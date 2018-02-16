@@ -192,7 +192,7 @@ netstandard: clean_dotnet_generated netstandardortools
 BUILT_LANGUAGES +=, NETSTANDARD
 endif
 
-netstandardortools: $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) 
+netstandardortools: $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
 $(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
 	netstandard_keyfile \
@@ -345,7 +345,7 @@ $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL): \
 	$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_LIB_SUFFIX) \
 	netstandard_create_obj_dir \
 	$(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs
-	$(PATH_TO_DOTNET_EXE) restore $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj 
+	$(PATH_TO_DOTNET_EXE) restore $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj
 	$(PATH_TO_DOTNET_EXE) build $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -f netstandard2.0 -o:$(realpath $(BIN_DIR))$S
 	$(PATH_TO_DOTNET_EXE) pack $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -o:$(realpath $(BIN_DIR))$S /p:PackageVersion=$(OR_TOOLS_VERSION)\;TargetRid=$(NETSTANDARD_RUNTIME_IDENTIFIER)\;NativeDllName=$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)
 
@@ -437,6 +437,12 @@ $(BIN_DIR)/testsat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL
 
 testsat: $(BIN_DIR)/testsat$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestsat$(CLR_EXE_SUFFIX).exe
+
+$(BIN_DIR)/test_sat_model$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/test_sat_model.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Stest_sat_model.cs
+
+test_sat_model: $(BIN_DIR)/test_sat_model$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe
 
 $(BIN_DIR)/issue18$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/issue18.cs
 	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sissue18$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Sissue18.cs

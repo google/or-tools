@@ -19,9 +19,12 @@
 #include <vector>
 
 #include "ortools/base/logging.h"
+#include "ortools/base/memory.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace glop {
@@ -77,7 +80,7 @@ std::string SparseMatrixScaler::DebugInformationString() const {
   return output;
 }
 
-void SparseMatrixScaler::Scale() {
+void SparseMatrixScaler::Scale(GlopParameters::ScalingAlgorithm method) {
   // This is an implementation of the algorithm described in
   // Benichou, M., Gauthier, J-M., Hentges, G., and Ribiere, G.,
   // "The efficient solution of large-scale linear programming problems —
@@ -93,6 +96,15 @@ void SparseMatrixScaler::Scale() {
     return;  // Null matrix: nothing to do.
   }
   VLOG(1) << "Before scaling:\n" << DebugInformationString();
+  if (method == GlopParameters::LINEAR_PROGRAM) {
+    Status lp_status = LPScale();
+    // Revert to the default scaling method if there is an error with the LP.
+    if (lp_status.ok()) {
+      return;
+    } else {
+      VLOG(1) << "Error with LP scaling: " << lp_status.error_message();
+    }
+  }
   // TODO(user): Decide precisely for which value of dynamic range we should cut
   // off geometric scaling.
   const Fractional dynamic_range = max_magnitude / min_magnitude;
@@ -138,6 +150,15 @@ void ScaleVector(const ITIVector<I, Fractional>& scale, bool up,
   }
 }
 
+template <typename InputIndexType>
+ColIndex CreateOrGetScaleIndex(
+    InputIndexType num, LinearProgram* lp,
+    ITIVector<InputIndexType, ColIndex>* scale_var_indices) {
+  if ((*scale_var_indices)[num] == -1) {
+    (*scale_var_indices)[num] = lp->CreateNewVariable();
+  }
+  return (*scale_var_indices)[num];
+}
 }  // anonymous namespace
 
 void SparseMatrixScaler::ScaleRowVector(bool up, DenseRow* row_vector) const {
@@ -324,6 +345,122 @@ void SparseMatrixScaler::Unscale() {
       column->MultiplyByConstant(column_scale);
       column->ComponentWiseMultiply(row_scale_);
     }
+  }
+}
+
+Status SparseMatrixScaler::LPScale() {
+  DCHECK(matrix_ != nullptr);
+
+  auto linear_program = absl::make_unique<LinearProgram>();
+  GlopParameters params;
+  auto simplex = absl::make_unique<RevisedSimplex>();
+  simplex->SetParameters(params);
+
+  // Begin linear program construction.
+  // Beta represents the largest distance from zero among the constraint pairs.
+  // It resembles a slack variable because the 'objective' of each constraint is
+  // to cancel out the log "w" of the original nonzero |a_ij| (a.k.a. |a_rc|).
+  // Approaching 0 by addition in log space is the same as approaching 1 by
+  // multiplication in linear space. Hence, each variable's log magnitude is
+  // subtracted from the log row scale and log column scale. If the sum is
+  // positive, the positive constraint is trivially satisfied, but the negative
+  // constraint will determine the minimum necessary value of beta for that
+  // variable and scaling factors, and vice versa.
+  // For an MxN matrix, the resulting scaling LP has M+N+1 variables and
+  // O(M*N) constraints (2*M*N at maximum). As a result, using this LP to scale
+  // another linear program, will typically increase the time to
+  // optimization by a factor of 4, and has increased the time of some benchmark
+  // LPs by up to 10.
+
+  // Indices to variables in the LinearProgram populated by
+  // GenerateLinearProgram.
+  ITIVector<ColIndex, ColIndex> col_scale_var_indices;
+  ITIVector<RowIndex, ColIndex> row_scale_var_indices;
+  row_scale_var_indices.resize(RowToIntIndex(matrix_->num_rows()), kInvalidCol);
+  col_scale_var_indices.resize(ColToIntIndex(matrix_->num_cols()), kInvalidCol);
+  const ColIndex beta = linear_program->CreateNewVariable();
+  linear_program->SetVariableBounds(beta, -kInfinity, kInfinity);
+  // Default objective is to minimize.
+  linear_program->SetObjectiveCoefficient(beta, 1);
+  matrix_->CleanUp();
+  const ColIndex num_cols = matrix_->num_cols();
+  for (ColIndex col(0); col < num_cols; ++col) {
+    SparseColumn* const column = matrix_->mutable_column(col);
+    // This is the variable representing the log of the scale factor for col.
+    const ColIndex column_scale = CreateOrGetScaleIndex<ColIndex>(
+        col, linear_program.get(), &col_scale_var_indices);
+    linear_program->SetVariableBounds(column_scale, -kInfinity, kInfinity);
+    for (EntryIndex i : column->AllEntryIndices()) {
+      const Fractional log_magnitude =
+          log2(std::abs(column->EntryCoefficient(i)));
+      const RowIndex row = column->EntryRow(i);
+      // This is the variable representing the log of the scale factor for row.
+      const ColIndex row_scale = CreateOrGetScaleIndex<RowIndex>(
+          row, linear_program.get(), &row_scale_var_indices);
+
+      linear_program->SetVariableBounds(row_scale, -kInfinity, kInfinity);
+      // This is derived from the formulation in
+      // min β
+      // Subject to:
+      // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c + β ≥ 0.0
+      // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c     ≤ β
+      // If a variable is integer, its scale factor is zero.
+
+      // Start with the constraint w_cv + s_c + s_v + beta >= 0.
+      const RowIndex positive_constraint =
+          linear_program->CreateNewConstraint();
+      // Subtract the constant w_cv from both sides.
+      linear_program->SetConstraintBounds(positive_constraint, -log_magnitude,
+                                          kInfinity);
+      // +s_c, meaning (log) scale of the constraint C, pointed by row_scale.
+      linear_program->SetCoefficient(positive_constraint, row_scale, 1);
+      // +s_v, meaning (log) scale of the variable V, pointed by column_scale.
+      linear_program->SetCoefficient(positive_constraint, column_scale, 1);
+      // +beta
+      linear_program->SetCoefficient(positive_constraint, beta, 1);
+
+      // Construct the constraint w_cv + s_c + s_v <= beta.
+      const RowIndex negative_constraint =
+          linear_program->CreateNewConstraint();
+      // Subtract w (and beta) from both sides.
+      linear_program->SetConstraintBounds(negative_constraint, -kInfinity,
+                                          -log_magnitude);
+      // +s_c, meaning (log) scale of the constraint C, pointed by row_scale.
+      linear_program->SetCoefficient(negative_constraint, row_scale, 1);
+      // +s_v, meaning (log) scale of the variable V, pointed by column_scale.
+      linear_program->SetCoefficient(negative_constraint, column_scale, 1);
+      // -beta
+      linear_program->SetCoefficient(negative_constraint, beta, -1);
+    }
+  }
+  // End linear program construction.
+
+  linear_program->AddSlackVariablesWhereNecessary(false);
+  const Status simplex_status =
+      simplex->Solve(*linear_program, TimeLimit::Infinite().get());
+  if (!simplex_status.ok()) {
+    return simplex_status;
+  } else {
+    // Now the solution variables can be interpreted and translated from log
+    // space.
+    // For each row scale, unlog it and scale the constraints and constraint
+    // bounds.
+    const ColIndex num_cols = matrix_->num_cols();
+    for (ColIndex col(0); col < num_cols; ++col) {
+      const Fractional column_scale =
+          exp2(-simplex->GetVariableValue(CreateOrGetScaleIndex<ColIndex>(
+              col, linear_program.get(), &col_scale_var_indices)));
+      ScaleMatrixColumn(col, column_scale);
+    }
+    const RowIndex num_rows = matrix_->num_rows();
+    DenseColumn row_scale(num_rows, 0.0);
+    for (RowIndex row(0); row < num_rows; ++row) {
+      row_scale[row] =
+          exp2(-simplex->GetVariableValue(CreateOrGetScaleIndex<RowIndex>(
+              row, linear_program.get(), &row_scale_var_indices)));
+    }
+    ScaleMatrixRows(row_scale);
+    return Status::OK();
   }
 }
 

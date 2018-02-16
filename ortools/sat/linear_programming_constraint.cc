@@ -104,7 +104,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
       lp_data_.SetObjectiveCoefficient(var_coeff.first, var_coeff.second);
     }
   }
-  lp_data_.Scale(&scaler_);
+  Scale(&lp_data_, &scaler_, glop::GlopParameters::DEFAULT);
   lp_data_.ScaleObjective();
 
   // ScaleBounds() looks at both the constraints and variable bounds, so we

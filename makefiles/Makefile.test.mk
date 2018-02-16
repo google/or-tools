@@ -26,7 +26,11 @@ run_Tsp run_LinearProgramming run_IntegerProgramming \
 run_Knapsack run_MultiThreadIntegerProgramming
 
 # csharp test
-test_csharp_examples: $(CSHARPEXE) $(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe $(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe
+test_csharp_examples: \
+		$(CSHARPEXE) \
+		$(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe \
+		$(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe \
+		$(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scslinearprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsintegerprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsrabbitspheasants$(CLR_EXE_SUFFIX).exe
@@ -41,3 +45,5 @@ test_csharp_examples: $(CSHARPEXE) $(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe $(BIN_
 	$(MONO) $(BIN_DIR)$Scscvrptw$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe

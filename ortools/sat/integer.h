@@ -704,8 +704,10 @@ class IntegerTrail : public SatPropagator {
   //
   // TODO(user): We could share the std::vector<ClosedInterval> entry between a
   // variable and its negations instead of having duplicates.
-  RevMap<std::unordered_map<IntegerVariable, int>> var_to_current_lb_interval_index_;
-  std::unordered_map<IntegerVariable, int> var_to_end_interval_index_;  // const entries.
+  RevMap<std::unordered_map<IntegerVariable, int>>
+      var_to_current_lb_interval_index_;
+  std::unordered_map<IntegerVariable, int>
+      var_to_end_interval_index_;                             // const entries.
   std::vector<ClosedInterval> all_intervals_;                 // const entries.
 
   // Temporary data used by MergeReasonInto().

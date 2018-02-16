@@ -64,26 +64,23 @@ Status LuFactorization::ComputeFactorization(const MatrixView& matrix) {
 void LuFactorization::RightSolve(DenseColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
   if (is_identity_factorization_) return;
+
   ApplyPermutation(row_perm_, *x, &dense_column_scratchpad_);
   lower_.LowerSolve(&dense_column_scratchpad_);
   upper_.UpperSolve(&dense_column_scratchpad_);
   ApplyPermutation(inverse_col_perm_, dense_column_scratchpad_, x);
 }
 
-void LuFactorization::SparseRightSolve(const SparseColumn& b, RowIndex num_rows,
-                                       DenseColumn* x) const {
+void LuFactorization::LeftSolve(DenseRow* y) const {
   SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_) {
-    b.CopyToDenseVector(num_rows, x);
-    return;
-  }
-  DCHECK_EQ(num_rows, lower_.num_rows());
-  DCHECK_EQ(num_rows, row_perm_.size());
+  if (is_identity_factorization_) return;
 
-  b.PermutedCopyToDenseVector(row_perm_, num_rows, &dense_column_scratchpad_);
-  lower_.LowerSolve(&dense_column_scratchpad_);
-  upper_.UpperSolve(&dense_column_scratchpad_);
-  ApplyPermutation(inverse_col_perm_, dense_column_scratchpad_, x);
+  // We need to interpret y as a column for the permutation functions.
+  DenseColumn* const x = reinterpret_cast<DenseColumn*>(y);
+  ApplyInversePermutation(inverse_col_perm_, *x, &dense_column_scratchpad_);
+  upper_.TransposeUpperSolve(&dense_column_scratchpad_);
+  lower_.TransposeLowerSolve(&dense_column_scratchpad_, nullptr);
+  ApplyInversePermutation(row_perm_, dense_column_scratchpad_, x);
 }
 
 namespace {
@@ -137,11 +134,6 @@ Fractional LuFactorization::RightSolveSquaredNorm(const SparseColumn& a) const {
                                           &dense_zero_scratchpad_);
 }
 
-void LuFactorization::LeftSolveScratchpad() const {
-  upper_.TransposeUpperSolve(&dense_column_scratchpad_);
-  lower_.TransposeLowerSolve(&dense_column_scratchpad_, nullptr);
-}
-
 Fractional LuFactorization::DualEdgeSquaredNorm(RowIndex row) const {
   if (is_identity_factorization_) return 1.0;
   SCOPED_TIME_STAT(&stats_);
@@ -172,34 +164,6 @@ Fractional LuFactorization::DualEdgeSquaredNorm(RowIndex row) const {
                                           &dense_zero_scratchpad_);
 }
 
-void LuFactorization::LeftSolve(DenseRow* y) const {
-  SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_) return;
-  // We need to interpret y as a column for the permutation functions.
-  DenseColumn* const x = reinterpret_cast<DenseColumn*>(y);
-  ApplyInversePermutation(inverse_col_perm_, *x, &dense_column_scratchpad_);
-  LeftSolveScratchpad();
-  ApplyInversePermutation(row_perm_, dense_column_scratchpad_, x);
-}
-
-namespace {
-
-// Interprets a DenseRow as a DenseColumn. This is useful to reduce the number
-// of different functions needed.
-DenseColumn* DenseRowAsColumn(DenseRow* y) {
-  return reinterpret_cast<DenseColumn*>(y);
-}
-
-}  // namespace
-
-void LuFactorization::RightSolveL(DenseColumn* x) const {
-  SCOPED_TIME_STAT(&stats_);
-  if (!is_identity_factorization_) {
-    PermuteWithScratchpad(row_perm_, &dense_zero_scratchpad_, x);
-    lower_.LowerSolve(x);
-  }
-}
-
 namespace {
 // Returns whether 'b' is equal to 'a' permuted by the given row permutation
 // 'perm'.
@@ -216,46 +180,10 @@ bool AreEqualWithPermutation(const DenseColumn& a, const DenseColumn& b,
 void LuFactorization::RightSolveLWithPermutedInput(const DenseColumn& a,
                                                    DenseColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_) {
-    *x = a;
-  } else {
+  if (!is_identity_factorization_) {
     DCHECK(AreEqualWithPermutation(a, *x, row_perm_));
     lower_.LowerSolve(x);
   }
-}
-
-void LuFactorization::RightSolveU(DenseColumn* x) const {
-  SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_) return;
-  if (col_perm_.empty()) {
-    upper_.UpperSolve(x);
-  } else {
-    x->swap(dense_column_scratchpad_);
-    upper_.UpperSolve(&dense_column_scratchpad_);
-    ApplyPermutation(inverse_col_perm_, dense_column_scratchpad_, x);
-  }
-}
-
-void LuFactorization::LeftSolveU(DenseRow* y) const {
-  SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_) return;
-  if (col_perm_.empty()) {
-    upper_.TransposeUpperSolve(DenseRowAsColumn(y));
-  } else {
-    DenseColumn* const x = DenseRowAsColumn(y);
-    ApplyInversePermutation(inverse_col_perm_, *x, &dense_column_scratchpad_);
-    upper_.TransposeUpperSolve(&dense_column_scratchpad_);
-    x->swap(dense_column_scratchpad_);
-  }
-}
-
-void LuFactorization::LeftSolveL(DenseRow* y) const {
-  SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_) return;
-  DenseColumn* const x = DenseRowAsColumn(y);
-  x->swap(dense_column_scratchpad_);
-  lower_.TransposeLowerSolve(&dense_column_scratchpad_, nullptr);
-  ApplyInversePermutation(row_perm_, dense_column_scratchpad_, x);
 }
 
 void LuFactorization::RightSolveLForSparseColumn(const SparseColumn& b,
@@ -305,8 +233,11 @@ void LuFactorization::RightSolveLForSparseColumn(const SparseColumn& b,
 void LuFactorization::RightSolveLWithNonZeros(ScatteredColumn* x) const {
   if (is_identity_factorization_) return;
   if (x->non_zeros.empty()) {
-    return RightSolveL(&x->values);
+    PermuteWithScratchpad(row_perm_, &dense_zero_scratchpad_, &x->values);
+    lower_.LowerSolve(&x->values);
+    return;
   }
+
   PermuteWithKnownNonZeros(row_perm_, &dense_zero_scratchpad_, &x->values,
                            &x->non_zeros);
   lower_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
@@ -323,17 +254,18 @@ void LuFactorization::RightSolveLWithNonZeros(ScatteredColumn* x) const {
 // deduplicate the code.
 void LuFactorization::RightSolveLForScatteredColumn(const ScatteredColumn& b,
                                                     ScatteredColumn* x) const {
-  if (b.non_zeros.empty()) {
-    *x = b;
-    x->non_zeros.clear();
-    return RightSolveL(&x->values);
-  }
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsAllZero(x->values));
   x->non_zeros.clear();
+
   if (is_identity_factorization_) {
     *x = b;
     return;
+  }
+
+  if (b.non_zeros.empty()) {
+    *x = b;
+    return RightSolveLWithNonZeros(x);
   }
 
   // This code is equivalent to
@@ -368,16 +300,10 @@ void LuFactorization::RightSolveLForScatteredColumn(const ScatteredColumn& b,
 
 void LuFactorization::LeftSolveUWithNonZeros(ScatteredRow* y) const {
   SCOPED_TIME_STAT(&stats_);
+  CHECK(col_perm_.empty());
   if (is_identity_factorization_) return;
-  if (!col_perm_.empty()) {
-    // TODO(user): This is just used in the test, in a real solve we never
-    // have a column permutation because we absorb it in the basis.
-    y->non_zeros.clear();
-    LeftSolveU(&y->values);
-    return;
-  }
 
-  DenseColumn* const x = DenseRowAsColumn(&y->values);
+  DenseColumn* const x = reinterpret_cast<DenseColumn*>(&y->values);
   RowIndexVector* const nz = reinterpret_cast<RowIndexVector*>(&y->non_zeros);
   transpose_upper_.ComputeRowsToConsiderInSortedOrder(nz);
   y->non_zeros_are_sorted = true;
@@ -390,9 +316,8 @@ void LuFactorization::LeftSolveUWithNonZeros(ScatteredRow* y) const {
 
 void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_) {
-    return;
-  }
+  CHECK(col_perm_.empty());
+  if (is_identity_factorization_) return;
 
   // If non-zeros is non-empty, we use an hypersparse solve. Note that if
   // non_zeros starts to be too big, we clear it and thus switch back to a
@@ -404,15 +329,6 @@ void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn* x) const {
   } else {
     upper_.HyperSparseSolveWithReversedNonZeros(&x->values, &x->non_zeros);
   }
-
-  if (!col_perm_.empty()) {
-    // Note(user): This is only needed for the test because in Glop the
-    // col_perm_ is always "absorbed" by permuting the basis. So it is
-    // fine to do it in a non hyper-sparse way.
-    x->non_zeros.clear();
-    PermuteWithScratchpad(inverse_col_perm_, &dense_zero_scratchpad_,
-                          &x->values);
-  }
 }
 
 bool LuFactorization::LeftSolveLWithNonZeros(
@@ -422,7 +338,7 @@ bool LuFactorization::LeftSolveLWithNonZeros(
     // It is not advantageous to fill result_before_permutation in this case.
     return false;
   }
-  DenseColumn* const x = DenseRowAsColumn(&y->values);
+  DenseColumn* const x = reinterpret_cast<DenseColumn*>(&y->values);
   std::vector<RowIndex>* nz = reinterpret_cast<RowIndexVector*>(&y->non_zeros);
 
   // Hypersparse?
@@ -513,34 +429,6 @@ const SparseColumn& LuFactorization::GetColumnOfU(ColIndex col) const {
   upper_.CopyColumnToSparseColumn(col_perm_.empty() ? col : col_perm_[col],
                                   &column_of_upper_);
   return column_of_upper_;
-}
-
-void LuFactorization::SparseLeftSolve(DenseRow* y,
-                                      ColIndexVector* non_zero_indices) const {
-  SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_) return;
-  const RowIndex num_rows = ColToRowIndex(y->size());
-  dense_column_scratchpad_.AssignToZero(num_rows);
-  for (const ColIndex col : *non_zero_indices) {
-    dense_column_scratchpad_[ColToRowIndex(col_perm_[col])] = (*y)[col];
-
-    // Note that we also clear y here.
-    (*y)[col] = 0.0;
-  }
-  LeftSolveScratchpad();
-  non_zero_indices->clear();
-  for (RowIndex row(0); row < num_rows; ++row) {
-    // Using the inverse_row_perm_ is faster but results in a non_zero_indices
-    // which is not filled in order. This is bad for cache, but not a problem
-    // for using the vector. Note as well that when the vector is really sparse,
-    // the cache behavior is not perfect anyway, so this is not a big issue.
-    const Fractional value = dense_column_scratchpad_[row];
-    if (value != 0.0) {
-      const ColIndex corresponding_col = RowToColIndex(inverse_row_perm_[row]);
-      (*y)[corresponding_col] = value;
-      non_zero_indices->push_back(corresponding_col);
-    }
-  }
 }
 
 double LuFactorization::GetFillInPercentage(const MatrixView& matrix) const {

@@ -319,13 +319,8 @@ class Trail {
     return GetEmptyVectorToStoreReason(Index());
   }
 
-  // Dequeues the last assigned literal and returns it.
-  // Note that we do not touch its assignment info.
-  Literal Dequeue() {
-    const Literal l = trail_[--current_info_.trail_index];
-    assignment_.UnassignLiteral(l);
-    return l;
-  }
+  // Reverts the trail and underlying assignment to the given target trail
+  // index. Note that we do not touch the assignment info.
   void Untrail(int target_trail_index) {
     const int index = Index();
     num_untrailed_enqueues_ += index - target_trail_index;
@@ -334,6 +329,7 @@ class Trail {
     }
     current_info_.trail_index = target_trail_index;
   }
+  void Dequeue() { Untrail(Index() - 1); }
 
   // Changes the decision level used by the next Enqueue().
   void SetDecisionLevel(int level) { current_info_.level = level; }

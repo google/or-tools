@@ -371,7 +371,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
     (*y)[j] = 1.0;
     y->non_zeros.push_back(j);
     eta_factorization_.SparseLeftSolve(&y->values, &y->non_zeros);
-    lu_factorization_.SparseLeftSolve(&y->values, &y->non_zeros);
+    lu_factorization_.LeftSolve(&y->values);
     return;
   }
 
@@ -417,17 +417,17 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
   BumpDeterministicTimeForSolve(matrix_.column(col).num_entries().value());
+  ClearAndResizeVectorWithNonZeros(matrix_.num_rows(), d);
+
   if (!use_middle_product_form_update_) {
-    d->non_zeros.clear();
-    lu_factorization_.SparseRightSolve(matrix_.column(col), matrix_.num_rows(),
-                                       &d->values);
+    matrix_.column(col).CopyToDenseVector(matrix_.num_rows(), &d->values);
+    lu_factorization_.RightSolve(&d->values);
     eta_factorization_.RightSolve(&d->values);
     return;
   }
 
   // TODO(user): if right_pool_mapping_[col] != kInvalidCol, we can reuse it and
   // just apply the last rank one update since it was computed.
-  ClearAndResizeVectorWithNonZeros(matrix_.num_rows(), d);
   lu_factorization_.RightSolveLForSparseColumn(matrix_.column(col), d);
   rank_one_factorization_.RightSolveWithNonZeros(d);
   if (col >= right_pool_mapping_.size()) {

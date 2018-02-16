@@ -270,6 +270,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       }
     }
     GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
+    PermuteBasis();
     variable_values_.RecomputeBasicVariableValues();
     reduced_costs_.ClearAndRemoveCostShifts();
 
@@ -2955,16 +2956,22 @@ void RevisedSimplex::DisplayVariableBounds() {
 }
 
 ITIVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
-    const SparseMatrixScaler* scaler) {
+    const DenseRow* column_scales) {
   ITIVector<RowIndex, SparseRow> dictionary(num_rows_.value());
   for (ColIndex col(0); col < num_cols_; ++col) {
     ComputeDirection(col);
     for (const RowIndex row : direction_.non_zeros) {
-      const Fractional scale_coefficient =
-          scaler == nullptr
-              ? 1.0
-              : scaler->col_scale(col) / scaler->col_scale(GetBasis(row));
-      dictionary[row].SetCoefficient(col, direction_[row] * scale_coefficient);
+      if (column_scales == nullptr) {
+        dictionary[row].SetCoefficient(col, direction_[row]);
+        continue;
+      }
+      const Fractional numerator =
+          col < column_scales->size() ? (*column_scales)[col] : 1.0;
+      const Fractional denominator = GetBasis(row) < column_scales->size()
+                                         ? (*column_scales)[GetBasis(row)]
+                                         : 1.0;
+      dictionary[row].SetCoefficient(
+          col, direction_[row] * (numerator / denominator));
     }
   }
   return dictionary;

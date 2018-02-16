@@ -36,13 +36,15 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/hash.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/util/fp_utils.h"
 
 namespace operations_research {
 namespace glop {
+
+class SparseMatrixScaler;
 
 // The LinearProgram class is used to store a linear problem in a form
 // accepted by LPSolver.
@@ -617,6 +619,9 @@ class LinearProgram {
   // The index of the first slack variable added to the linear program by
   // LinearProgram::AddSlackVariablesForAllRows().
   ColIndex first_slack_variable_;
+
+  friend void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
+                    GlopParameters::ScalingAlgorithm scaling_method);
 
   DISALLOW_COPY_AND_ASSIGN(LinearProgram);
 };

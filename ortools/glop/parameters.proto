@@ -22,8 +22,19 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 57
+// next id = 58
 message GlopParameters {
+
+  // Supported algorithms for scaling:
+  // EQUILIBRATION - progressive scaling by row and column norms until the
+  // marginal difference passes below a threshold.
+  // LINEAR_PROGRAM - finding optimal scale factors using
+  // a linear program in the log scale.
+  enum ScalingAlgorithm {
+    DEFAULT = 0;
+    EQUILIBRATION = 1;
+    LINEAR_PROGRAM = 2;
+  }
 
   // Like a Boolean with an extra value to let the algorithm decide what is the
   // best choice.
@@ -70,6 +81,8 @@ message GlopParameters {
     TRIANGULAR = 2;
   }
 
+
+  optional ScalingAlgorithm scaling_method = 57 [default = EQUILIBRATION];
 
   // PricingRule to use during the feasibility phase.
   optional PricingRule feasibility_rule = 1 [default = STEEPEST_EDGE];

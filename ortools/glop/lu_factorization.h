@@ -70,12 +70,6 @@ class LuFactorization {
   // 4/ finally solve Q.x = t, by computing x = Q^{-1}.t.
   void RightSolve(DenseColumn* x) const;
 
-  // Same as RightSolve(), but takes a SparseColumn b as an input. It also needs
-  // the number of rows because if the matrix is the identity matrix, this is
-  // not stored in this class or in the given sparse column.
-  void SparseRightSolve(const SparseColumn& b, RowIndex num_rows,
-                        DenseColumn* x) const;
-
   // Solves 'y.B = r', y initially contains r, and is replaced by r.B^{-1}.
   // Internally, it takes x = y^T, b = r^T and solves B^T.x = b.
   // We have P.B.Q^{-1} = P.B.Q^T = L.U, thus (L.U)^T = Q.B^T.P^T.
@@ -87,45 +81,12 @@ class LuFactorization {
   // 4/ finally, solve P.x = t for x by computing x = P^{-1}.t.
   void LeftSolve(DenseRow* y) const;
 
-  // Same as LeftSolve(), but exploits the given non_zeros of the input.
-  // Also returns the non-zeros patern of the result in non_zeros.
-  void SparseLeftSolve(DenseRow* y, ColIndexVector* non_zeros) const;
-
-  // More fine-grained right/left solve functions.
-  // Note that a solve involving L actually solves P^{-1}.L and a solve
-  // involving U actually solves U.Q. To solve a system with the initial matrix
-  // B, one needs to call:
+  // More fine-grained right/left solve functions that may exploit the initial
+  // non-zeros of the input vector if non-empty. Note that a solve involving L
+  // actually solves P^{-1}.L and a solve involving U actually solves U.Q. To
+  // solve a system with the initial matrix B, one needs to call:
   // - RightSolveL() and then RightSolveU() for a right solve (B.x = initial x).
   // - LeftSolveU() and then LeftSolveL() for a left solve (y.B = initial y).
-  void RightSolveL(DenseColumn* x) const;
-  void RightSolveU(DenseColumn* x) const;
-  void LeftSolveU(DenseRow* y) const;
-  void LeftSolveL(DenseRow* y) const;
-
-  // Specialized version of RightSolveL() that takes a SparseColumn or a
-  // ScatteredColumn as input. non_zeros will either be cleared or set to the
-  // non zeros of the result. Important: the output x must be of the correct
-  // size and all zero.
-  void RightSolveLForSparseColumn(const SparseColumn& b,
-                                  ScatteredColumn* x) const;
-  void RightSolveLForScatteredColumn(const ScatteredColumn& b,
-                                     ScatteredColumn* x) const;
-
-  // Specialized version of RightSolveL() where x is originaly equal to
-  // 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK or when
-  // is_identity_factorization_ is true, in which case the assumption of x is
-  // relaxed since x is not used at all.
-  void RightSolveLWithPermutedInput(const DenseColumn& a, DenseColumn* x) const;
-
-  // Specialized version of LeftSolveU() for an unit right-hand side.
-  // non_zeros will either be cleared or set to the non zeros of the results.
-  // It also returns the value of col permuted by Q (which is the position
-  // of the unit-vector rhs in the solve system: y.U = rhs).
-  // Important: the output y must be of the correct size and all zero.
-  ColIndex LeftSolveUForUnitRow(ColIndex col, ScatteredRow* y) const;
-
-  // Specialized version that may exploit the initial non-zeros if it is
-  // non-empty.
   void RightSolveLWithNonZeros(ScatteredColumn* x) const;
   void RightSolveUWithNonZeros(ScatteredColumn* x) const;
   void LeftSolveUWithNonZeros(ScatteredRow* y) const;
@@ -137,6 +98,26 @@ class LuFactorization {
   // then false is returned.
   bool LeftSolveLWithNonZeros(ScatteredRow* y,
                               ScatteredColumn* result_before_permutation) const;
+
+  // Specialized version of RightSolveLWithNonZeros() that takes a SparseColumn
+  // or a ScatteredColumn as input. non_zeros will either be cleared or set to
+  // the non zeros of the result. Important: the output x must be of the correct
+  // size and all zero.
+  void RightSolveLForSparseColumn(const SparseColumn& b,
+                                  ScatteredColumn* x) const;
+  void RightSolveLForScatteredColumn(const ScatteredColumn& b,
+                                     ScatteredColumn* x) const;
+
+  // Specialized version of RightSolveLWithNonZeros() where x is originaly equal
+  // to 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK.
+  void RightSolveLWithPermutedInput(const DenseColumn& a, DenseColumn* x) const;
+
+  // Specialized version of LeftSolveU() for an unit right-hand side.
+  // non_zeros will either be cleared or set to the non zeros of the results.
+  // It also returns the value of col permuted by Q (which is the position
+  // of the unit-vector rhs in the solve system: y.U = rhs).
+  // Important: the output y must be of the correct size and all zero.
+  ColIndex LeftSolveUForUnitRow(ColIndex col, ScatteredRow* y) const;
 
   // Returns the given column of U.
   // It will only be valid until the next call to GetColumnOfU().

@@ -66,6 +66,10 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/revised_simplex.h"
+#include "ortools/glop/status.h"
+#include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 
 namespace operations_research {
@@ -92,8 +96,14 @@ class SparseMatrixScaler {
   Fractional row_scale(RowIndex row) const;
   Fractional col_scale(ColIndex col) const;
 
+  // TODO(user): rename function and field to col_scales (and row_scales)
+  const DenseRow& col_scale() const { return col_scale_; }
+
   // Scales the matrix.
-  void Scale();
+  void Scale(GlopParameters::ScalingAlgorithm method);
+
+  // Solves the scaling problem as a linear program.
+  Status LPScale();
 
   // Unscales the matrix.
   void Unscale();
@@ -131,6 +141,9 @@ class SparseMatrixScaler {
   ColIndex EquilibrateColumns();
 
  private:
+  // Convert the matrix to be scaled into a linear program.
+  void GenerateLinearProgram(LinearProgram*);
+
   // Scales the row indexed by row by 1/factor.
   // Used by ScaleMatrixRowsGeometrically and EquilibrateRows.
   RowIndex ScaleMatrixRows(const DenseColumn& factors);
@@ -139,6 +152,13 @@ class SparseMatrixScaler {
   // Used by ScaleColumnsGeometrically and EquilibrateColumns.
   void ScaleMatrixColumn(ColIndex col, Fractional factor);
 
+  // Looks up the index to the scale factor variable for this matrix row, in the
+  // LinearProgram, or creates it. Note lp_ must be initialized first.
+  ColIndex GetRowScaleIndex(RowIndex row_num);
+
+  // As above, but for the columns of the matrix.
+  ColIndex GetColumnScaleIndex(ColIndex col_num);
+
   // Returns a std::string containing information on the progress of the scaling
   // algorithm. This is not meant to be called in an optimized mode as it takes
   // some time to compute the displayed quantities.
@@ -146,6 +166,10 @@ class SparseMatrixScaler {
 
   // Pointer to the matrix to be scaled.
   SparseMatrix* matrix_;
+
+  // Member pointer for convenience, in particular for GetRowScaleIndex and
+  //  GetColumnScaleIndex.
+  LinearProgram* lp_;
 
   // Array of scaling factors for each row. Indexed by row number.
   DenseColumn row_scale_;
