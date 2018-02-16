@@ -19,7 +19,7 @@ namespace CreateSigningKey
 
         public static byte[] GenerateStrongNameKeyPair()
         {
-            using (var provider = new RSACryptoServiceProvider(1024, new CspParameters() { KeyNumber = 2 }))
+            using (var provider = new RSACryptoServiceProvider(1024))
             {
                 return provider.ExportCspBlob(!provider.PublicOnly);
             }

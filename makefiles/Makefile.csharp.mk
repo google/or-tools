@@ -35,6 +35,7 @@ CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
 NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_IMPORT_DLL_NAME).Native
 NETSTANDARD_OBJ_DIR = $(OBJ_DIR)$Snetstandard
 NETSTANDARD_RUNTIME_IDENTIFIER=
+NETSTANDRD_SIGN?=0
 
 # NuGet specification file name
 ORTOOLS_NUSPEC_NAME := or-tools.nuspec
@@ -72,7 +73,11 @@ ifeq "$(SYSTEM)" "win"
 else ifeq ($(PLATFORM),MACOSX)
 	NETSTANDARD_RUNTIME_IDENTIFIER=osx
 else
-	NETSTANDARD_RUNTIME_IDENTIFIER=linux-$(NETPLATFORM)
+	ifeq ($(NETPLATFORM),anycpu)
+		NETSTANDARD_RUNTIME_IDENTIFIER=linux-x64
+	else
+		NETSTANDARD_RUNTIME_IDENTIFIER=linux-$(NETPLATFORM)
+	endif
 endif
 
 CSHARPEXE = \
@@ -122,13 +127,13 @@ clean_csharp: clean_dotnet_generated
 	-$(DEL) examples$Scsharp$Ssolution$S*.csproj
 
 clean_netstandard: clean_dotnet_generated
-	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*$(DLL)
-	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*.mdb
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.lib
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.pdb
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.exp
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.dll
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)
+	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*
+	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)*
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)*.lib
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)*.pdb
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)*.exp
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)*.dll
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)
 
 clean_dotnet_generated:
 	-$(DEL) $(GEN_DIR)$Sortools$Slinear_solver$S*csharp_wrap*
@@ -199,12 +204,14 @@ $(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
 	$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs
 	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
 ifdef CLR_KEYFILE
+ifeq ($(NETSTANDRD_SIGN), 1)
 	$(COPY) $(CLR_KEYFILE) $(NETSTANDARD_OBJ_DIR)$S
-	@echo [assembly: AssemblyKeyFile("$(notdir $(CLR_KEYFILE))")] >> $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
+	@echo "[assembly: AssemblyKeyFile(\"$(notdir $(CLR_KEYFILE))\")]" >> $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
+endif
 endif
 
 $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
-	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)
+	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)$S
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
@@ -299,7 +306,9 @@ endif
 
 netstandard_keyfile:
 ifdef CLR_KEYFILE
+ifeq ($(NETSTANDRD_SIGN), 1)
 	$(PATH_TO_DOTNET_EXE) run --project tools$Snetstandard$SCreateSigningKey$SCreateSigningKey.csproj $(CLR_KEYFILE)
+endif
 endif
 
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
