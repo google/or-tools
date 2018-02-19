@@ -387,8 +387,8 @@ public class SumArray : IntegerExpression
 
 public class IntVar : IntegerExpression, ILiteral
 {
-  public IntVar(CpModelProto model, IEnumerable<long> bounds, string name,
-         int is_present_index) {
+  public IntVar(CpModelProto model, IEnumerable<long> bounds,
+                int is_present_index, string name) {
     model_ = model;
     index_ = model.Variables.Count;
     var_ = new IntegerVariableProto();

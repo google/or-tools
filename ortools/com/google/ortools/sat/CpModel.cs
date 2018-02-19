@@ -49,8 +49,18 @@ public class CpModel
     return new IntVar(model_, bounds, name);
   }
 
-  // TODO: NewOptionalIntVar
-  // TODO: NewOptionalEnumeratedIntVar
+  public IntVar NewOptionalIntVar(
+      long lb, long ub, ILiteral is_present, string name)
+  {
+    long[] bounds = { lb, ub };
+    return new IntVar(model_, bounds, is_present.GetIndex(), name);
+  }
+
+  public IntVar NewOptionalEnumeratedIntVar(
+      IEnumerable<long> bounds, ILiteral is_present, string name)
+  {
+    return new IntVar(model_, bounds, is_present.GetIndex(), name);
+  }
 
   // Constants (named or not).
 
@@ -67,7 +77,12 @@ public class CpModel
     return new IntVar(model_, bounds, name);
   }
 
-  // TODO: Add optional version of above 2 NewIntVar().
+  public IntVar NewOptionalConstant(
+      long value, ILiteral is_present, string name)
+  {
+    long[] bounds = { value, value };
+    return new IntVar(model_, bounds, is_present.GetIndex(), name);
+  }
 
   public IntVar NewBoolVar(string name)
   {
@@ -657,7 +672,75 @@ public class CpModel
 
   // Scheduling support
 
-  // TODO: NewInterval
+  public IntervalVar NewIntervalVar<S, D, E>(
+      S start, D duration, E end, string name) {
+    return new IntervalVar(model_,
+                           GetOrCreateIndex(start),
+                           GetOrCreateIndex(duration),
+                           GetOrCreateIndex(end),
+                           name);
+  }
+
+
+  public IntervalVar NewOptionalIntervalVar<S, D, E>(
+      S start, D duration, E end, ILiteral is_present, string name) {
+    int i = is_present.GetIndex();
+    return new IntervalVar(model_,
+                           GetOrCreateOptionalIndex(start, i),
+                           // Size is currently not optional.
+                           GetOrCreateIndex(duration),
+                           GetOrCreateOptionalIndex(end, i),
+                           i,
+                           name);
+  }
+
+  public Constraint AddNoOverlap(IEnumerable<IntervalVar> intervals)
+  {
+    Constraint ct = new Constraint(model_);
+    NoOverlapConstraintProto args = new NoOverlapConstraintProto();
+    foreach (IntervalVar var in intervals)
+    {
+      args.Intervals.Add(var.GetIndex());
+    }
+    ct.Proto.NoOverlap = args;
+    return ct;
+  }
+
+  public Constraint AddNoOverlap2D(IEnumerable<IntervalVar> x_intervals,
+                                   IEnumerable<IntervalVar> y_intervals)
+  {
+    Constraint ct = new Constraint(model_);
+    NoOverlap2DConstraintProto args = new NoOverlap2DConstraintProto();
+    foreach (IntervalVar var in x_intervals)
+    {
+      args.XIntervals.Add(var.GetIndex());
+    }
+    foreach (IntervalVar var in y_intervals)
+    {
+      args.YIntervals.Add(var.GetIndex());
+    }
+    ct.Proto.NoOverlap2D = args;
+    return ct;
+  }
+
+  public Constraint AdCumulative<D, C>(IEnumerable<IntervalVar> intervals,
+                                       IEnumerable<D> demands,
+                                       C capacity) {
+    Constraint ct = new Constraint(model_);
+    CumulativeConstraintProto cumul = new CumulativeConstraintProto();
+    foreach (IntervalVar var in intervals)
+    {
+      cumul.Intervals.Add(var.GetIndex());
+    }
+    foreach (D demand in demands)
+    {
+      cumul.Demands.Add(GetOrCreateIndex(demand));
+    }
+    cumul.Capacity = GetOrCreateIndex(capacity);
+    ct.Proto.Cumulative = cumul;
+    return ct;
+  }
+
 
   // Objective.
   public void Minimize(IntegerExpression obj)
@@ -743,6 +826,25 @@ public class CpModel
     }
   }
 
+  private int ConvertOptionalConstant(long value, int is_present_index)
+  {
+    if (constant_map_.ContainsKey(value))
+    {
+      return constant_map_[value];
+    }
+    else
+    {
+      int index = model_.Variables.Count;
+      IntegerVariableProto var = new IntegerVariableProto();
+      var.Domain.Add(value);
+      var.Domain.Add(value);
+      constant_map_.Add(value, index);
+      var.EnforcementLiteral.Add(is_present_index);
+      model_.Variables.Add(var);
+      return index;
+    }
+  }
+
   private int GetOrCreateIndex<X>(X x)
   {
     if (typeof(X) == typeof(IntVar))
@@ -753,6 +855,20 @@ public class CpModel
     if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
     {
       return ConvertConstant(Convert.ToInt64(x));
+    }
+    throw new ArgumentException("Cannot extract index from argument");
+  }
+
+  private int GetOrCreateOptionalIndex<X>(X x, int is_present_index)
+  {
+    if (typeof(X) == typeof(IntVar))
+    {
+      IntVar vx = (IntVar)(Object)x;
+      return vx.Index;
+    }
+    if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
+    {
+      return ConvertOptionalConstant(Convert.ToInt64(x), is_present_index);
     }
     throw new ArgumentException("Cannot extract index from argument");
   }
