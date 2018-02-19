@@ -62,13 +62,17 @@ PROTO2_RETURN(
 %feature("director") operations_research::sat::SolutionCallback;
 
 %unignore operations_research::sat::SolutionCallback;
-%unignore operations_research::sat::SolutionCallback::OnSolutionCallback;
-%unignore operations_research::sat::SolutionCallback::ObjectiveValue;
+%unignore operations_research::sat::SolutionCallback::NumBinaryPropagations;
+%unignore operations_research::sat::SolutionCallback::NumBooleans;
 %unignore operations_research::sat::SolutionCallback::NumBranches;
 %unignore operations_research::sat::SolutionCallback::NumConflicts;
-%unignore operations_research::sat::SolutionCallback::WallTime;
-%unignore operations_research::sat::SolutionCallback::SolutionIntegerValue;
+%unignore operations_research::sat::SolutionCallback::NumIntegerPropagations;
+%unignore operations_research::sat::SolutionCallback::ObjectiveValue;
+%unignore operations_research::sat::SolutionCallback::OnSolutionCallback;
 %unignore operations_research::sat::SolutionCallback::SolutionBooleanValue;
+%unignore operations_research::sat::SolutionCallback::SolutionIntegerValue;
+%unignore operations_research::sat::SolutionCallback::UserTime;
+%unignore operations_research::sat::SolutionCallback::WallTime;
 
 %include "ortools/sat/swig_helper.h"
 
