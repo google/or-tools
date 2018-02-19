@@ -1,4 +1,4 @@
-# Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
+# Copyright 2010 Hakan Kjellerstrand hakank@gmail.com
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@
   * SICStus Prolog: http://www.hakank.org/sicstus/place_number_puzzle.pl
   * Gecode: http://www.hakank.org/gecode/place_number_puzzle.cpp
 
-  This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
+  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 

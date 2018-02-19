@@ -15,7 +15,7 @@
  * 
  * ************************************************************************
  * 
- * This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
+ * This model was created by Hakan Kjellerstrand (hakank@gmail.com)
  */
 
 import com.google.ortools.linearsolver.MPConstraint;

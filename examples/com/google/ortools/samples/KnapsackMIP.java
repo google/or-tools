@@ -18,7 +18,7 @@
  * the same across knapsacks. Optimizing constrains the count of each item such 
  * that all knapsack capacities are respected, and their values are maximized.
  * 
- * This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
+ * This model was created by Hakan Kjellerstrand (hakank@gmail.com)
  */ 
 
 import com.google.ortools.linearsolver.*;

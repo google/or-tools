@@ -37,7 +37,7 @@
  *  	  which is the MIP version of
  *  		http://www.hakank.org/google_or_tools/coins_grid.py
  *  
- *  	  by Hakan Kjellerstrand (hakank@bonetmail.com).
+ *  	  by Hakan Kjellerstrand (hakank@gmail.com).
  *  
  *  Java version by Darian Sastre (darian.sastre@minimaxlabs.com)
  */

@@ -14,7 +14,7 @@
  * 
  * ************************************************************************
  * 
- * This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
+ * This model was created by Hakan Kjellerstrand (hakank@gmail.com)
  *
  * Java version by Darian Sastre (darian.sastre@minimaxlabs.com)
  */ 

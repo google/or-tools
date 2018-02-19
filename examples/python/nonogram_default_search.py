@@ -1,4 +1,4 @@
-# Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com, lperron@google.com
+# Copyright 2010 Hakan Kjellerstrand hakank@gmail.com, lperron@google.com
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.

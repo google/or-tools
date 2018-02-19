@@ -1,4 +1,4 @@
-# Copyright 2010 Hakan Kjellerstrand hakank@bonetmail.com
+# Copyright 2010 Hakan Kjellerstrand hakank@gmail.com
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@
    * SICStus: http://hakank.org/sicstus/young_tableaux.pl
    * Zinc: http://hakank.org/minizinc/young_tableaux.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
+  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
