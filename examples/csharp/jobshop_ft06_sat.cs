@@ -18,6 +18,21 @@ using Google.OrTools.Sat;
 
 public class JobshopFt06Sat
 {
+
+  public struct Task
+  {
+    public Task(IntVar s, IntVar e, IntervalVar i)
+    {
+      start = s;
+      end = e;
+      interval = i;
+    }
+
+    public IntVar start;
+    public IntVar end;
+    public IntervalVar interval;
+  }
+
   static void Solve()
   {
     int[,] durations = new int[,] { {1, 3, 6, 7, 3, 6},
@@ -52,8 +67,7 @@ public class JobshopFt06Sat
     CpModel model = new CpModel();
 
     // Creates jobs.
-    Tuple<IntVar, IntVar, IntervalVar>[,] all_tasks =
-        new Tuple<IntVar, IntVar, IntervalVar>[num_jobs, num_machines];
+    Task[,] all_tasks = new Task[num_jobs, num_machines];
     foreach (int j in all_jobs)
     {
       foreach (int m in all_machines)
@@ -66,8 +80,7 @@ public class JobshopFt06Sat
         IntervalVar interval_var = model.NewIntervalVar(
             start_var, duration, end_var,
             String.Format("interval_{0}_{1}", j, m));
-        all_tasks[j, m] = new Tuple<IntVar, IntVar, IntervalVar>(
-            start_var, end_var, interval_var);
+        all_tasks[j, m] = new Task(start_var, end_var, interval_var);
       }
     }
 
@@ -81,7 +94,7 @@ public class JobshopFt06Sat
     {
       foreach (int m in all_machines)
       {
-        machine_to_jobs[machines[j, m]].Add(all_tasks[j, m].Item3);
+        machine_to_jobs[machines[j, m]].Add(all_tasks[j, m].interval);
       }
     }
     foreach (int m in all_machines)
@@ -94,7 +107,7 @@ public class JobshopFt06Sat
     {
       for (int k = 0; k < num_machines - 1; ++k)
       {
-        model.Add(all_tasks[j, k + 1].Item1 >= all_tasks[j, k].Item2);
+        model.Add(all_tasks[j, k + 1].start >= all_tasks[j, k].end);
       }
     }
 
@@ -102,11 +115,11 @@ public class JobshopFt06Sat
     IntVar[] all_ends = new IntVar[num_jobs];
     foreach (int j in all_jobs)
     {
-      all_ends[j] = all_tasks[j, num_machines - 1].Item2;
+      all_ends[j] = all_tasks[j, num_machines - 1].end;
     }
-    IntVar obj_var = model.NewIntVar(0, horizon, "makespan");
-    model.AddMaxEquality(obj_var, all_ends);
-    model.Minimize(obj_var);
+    IntVar makespan = model.NewIntVar(0, horizon, "makespan");
+    model.AddMaxEquality(makespan, all_ends);
+    model.Minimize(makespan);
 
     // Creates the solver and solve.
     CpSolver solver = new CpSolver();
