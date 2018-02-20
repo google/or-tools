@@ -723,9 +723,9 @@ public class CpModel
     return ct;
   }
 
-  public Constraint AdCumulative<D, C>(IEnumerable<IntervalVar> intervals,
-                                       IEnumerable<D> demands,
-                                       C capacity) {
+  public Constraint AddCumulative<D, C>(IEnumerable<IntervalVar> intervals,
+                                        IEnumerable<D> demands,
+                                        C capacity) {
     Constraint ct = new Constraint(model_);
     CumulativeConstraintProto cumul = new CumulativeConstraintProto();
     foreach (IntervalVar var in intervals)
