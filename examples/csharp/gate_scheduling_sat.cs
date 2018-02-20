@@ -84,7 +84,7 @@ public class GateSchedulingSat
           model.NewBoolVar(String.Format("perform_{0}_on_m0",  i));
       performed.Add(performed_on_m0);
 
-    // Create an optional copy of interval to be executed on machine 0.
+      // Create an optional copy of interval to be executed on machine 0.
       IntVar start0 = model.NewOptionalIntVar(
           0, horizon, performed_on_m0, String.Format("start_{0}_on_m0",  i));
       IntVar end0 = model.NewOptionalIntVar(
@@ -133,8 +133,7 @@ public class GateSchedulingSat
 
     // Output solution.
     Console.WriteLine("Solution");
-    Console.WriteLine(
-        String.Format("  - makespan = {0}", solver.ObjectiveValue));
+    Console.WriteLine("  - makespan = " + solver.ObjectiveValue);
     foreach (int i in all_jobs)
     {
       long performed_machine = 1 - solver.Value(performed[i]);
