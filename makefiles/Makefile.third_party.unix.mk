@@ -22,6 +22,8 @@ third_party: makefile_third_party install_third_party
 # Create missing directories
 
 MISSING_DIRECTORIES = \
+	dependencies/install \
+	dependencies/archives \
 	bin \
 	lib \
 	objs/algorithms \
@@ -65,6 +67,12 @@ install_third_party: \
 	install_glog \
 	install_cbc \
 	$(CSHARP_THIRD_PARTY)
+
+dependencies/archives:
+	$(MKDIR_P) dependencies/archives
+
+dependencies/install:
+	$(MKDIR_P) dependencies/install
 
 bin:
 	$(MKDIR_P) bin
@@ -267,6 +275,7 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
 clean_third_party:
 	-$(DEL) Makefile.local
 	-$(DELREC) dependencies/archives/Cbc*
+	-$(DELREC) dependencies/archives
 	-$(DELREC) dependencies/sources/Cbc*
 	-$(DELREC) dependencies/sources/coin-cbc*
 	-$(DELREC) dependencies/sources/gflags*
