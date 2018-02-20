@@ -1,42 +1,42 @@
 sudo: required
-dist: trusty
-language: cpp
+language: generic
 
-os:
-  - linux
-  - osx
+matrix:
+  include:
+# Makefile builder
+    - os: linux
+      dist: trusty
+      language: cpp
+      compiler: gcc
+      env: BUILDER=make DISTRO=native LANGUAGE=cc
 
-compiler:
-  - clang
-  - gcc
+    - os: osx
+      language: cpp
+      compiler: clang
+      env: BUILDER=make DISTRO=native LANGUAGE=cc
+# CMake Build Generator
+    - os: linux
+      dist: trusty
+      language: cpp
+      compiler: gcc
+      env: BUILDER=cmake DISTRO=native
+    - os: linux
+      dist: trusty
+      language: cpp
+      compiler: clang
+      env: BUILDER=cmake DISTRO=native
 
-before_install:
-    # apt-get only have swig 2.0.11
-    # work around https://github.com/travis-ci/travis-ci/issues/8363
-  - if [ $TRAVIS_OS_NAME == linux ]; then
-      cd /tmp/ && curl -s -J -O -k -L 'https://sourceforge.net/projects/swig/files/swig/swig-3.0.12/swig-3.0.12.tar.gz/download' &&
-      tar zxf swig-3.0.12.tar.gz && cd swig-3.0.12 &&
-      ./configure --prefix $HOME/swig/ && make && make install &&
-      export PATH=${HOME}/swig/bin:${PATH} &&
-      cd $TRAVIS_BUILD_DIR;
-      pyenv global system 3.6;
-    fi
+    - os: osx
+      language: cpp
+      compiler: gcc
+      env: BUILDER=cmake DISTRO=native
+    - os: osx
+      language: cpp
+      compiler: clang
+      env: BUILDER=cmake DISTRO=native
 
-    # work around https://github.com/travis-ci/travis-ci/issues/8552
-  - if [ $TRAVIS_OS_NAME == osx ]; then
-      sudo chown -R $(whoami) /usr/local;
-      brew update;
-      brew install swig;
-      brew install python3;
-    fi
-
-  - python3.6 -m pip install virtualenv wheel;
+install:
+  - ./.travis/install.sh
 
 script:
-  - cmake --version
-  - swig -version
-  - python3.6 --version
-  - python3.6 -m pip --version
-  - cmake -H. -Bbuild
-  - cmake --build build --target all
-  - CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test
+  - ./.travis/script.sh
