@@ -1,3 +1,16 @@
+// Copyright 2010-2017 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <algorithm>
 #include <iterator>
 #include <string>
@@ -5,10 +18,7 @@
 #include <ostream>
 #include <vector>
 
-
 #include <boost/date_time.hpp>
-#include <boost/format.hpp>
-
 
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"
@@ -37,11 +47,7 @@ struct Visit {
 };
 
 std::ostream &operator<<(std::ostream &out, const Visit &visit) {
-    out << boost::format("%1% [%2%, %3%] %4%")
-           % visit.Location
-           % visit.Begin
-           % visit.End
-           % visit.Duration;
+    out << visit.Location << " [" << visit.Begin << ", " << visit.End << "] " << visit.Duration;
     return out;
 }
 
@@ -61,9 +67,9 @@ struct Break {
 struct Problem {
     static const std::string TIME_DIM;
 
-    Problem(std::vector<Visit> visits,
-            std::vector<std::vector<Break>> breaks,
-            std::vector<std::vector<int64>> distances)
+    Problem(std::vector <Visit> visits,
+            std::vector <std::vector<Break>> breaks,
+            std::vector <std::vector<int64>> distances)
             : Depot{0},
               Visits(std::move(visits)),
               Breaks(std::move(breaks)),
@@ -95,20 +101,102 @@ struct Problem {
     }
 
     const operations_research::RoutingModel::NodeIndex Depot;
-    const std::vector<Visit> Visits;
-    const std::vector<std::vector<Break>> Breaks;
-    const std::vector<std::vector<int64>> Distances;
+    const std::vector <Visit> Visits;
+    const std::vector <std::vector<Break>> Breaks;
+    const std::vector <std::vector<int64>> Distances;
+};
+
+class BreakConstraint : public operations_research::Constraint {
+public:
+    BreakConstraint(const operations_research::RoutingDimension *dimension,
+                    int vehicle,
+                    std::vector<operations_research::IntervalVar *> break_intervals)
+            : Constraint(dimension->model()->solver()),
+              dimension_(dimension),
+              vehicle_(vehicle),
+              break_intervals_(std::move(break_intervals)),
+              status_(solver()->MakeBoolVar(absl::StrCat("status ", vehicle))) {}
+
+    ~BreakConstraint() override = default;
+
+    void Post() override {
+        operations_research::RoutingModel *const model = dimension_->model();
+        operations_research::Constraint *const path_connected_const
+                = solver()->MakePathConnected(model->Nexts(),
+                                              {model->Start(vehicle_)},
+                                              {model->End(vehicle_)},
+                                              {status_});
+
+        solver()->AddConstraint(path_connected_const);
+        operations_research::Demon *const demon
+                = MakeConstraintDemon0(solver(),
+                                       this,
+                                       &BreakConstraint::OnPathClosed,
+                                       absl::StrCat("Path Closed %1%", vehicle_));
+        status_->WhenBound(demon);
+    }
+
+    void InitialPropagate() override {
+        if (status_->Bound()) {
+            OnPathClosed();
+        }
+    }
+
+private:
+    void OnPathClosed() {
+        using boost::posix_time::time_duration;
+        using boost::posix_time::seconds;
+
+        if (status_->Max() == 0) {
+            for (operations_research::IntervalVar *const break_interval : break_intervals_) {
+                break_interval->SetPerformed(false);
+            }
+        } else {
+            operations_research::RoutingModel *const model = dimension_->model();
+            std::vector < operations_research::IntervalVar * > all_intervals;
+            operations_research::IntervalVar *last_interval = nullptr;
+
+            int64 current_index = model->NextVar(model->Start(vehicle_))->Value();
+            while (!model->IsEnd(current_index)) {
+                const auto next_index = model->NextVar(current_index)->Value();
+
+                operations_research::IntervalVar *const current_interval = solver()->MakeFixedDurationIntervalVar(
+                        dimension_->CumulVar(current_index),
+                        dimension_->GetTransitValue(current_index, next_index, vehicle_),
+                        absl::StrCat(current_index, "-", next_index));
+                all_intervals.push_back(current_interval);
+
+                if (last_interval != nullptr) {
+                    solver()->AddConstraint(solver()->MakeIntervalVarRelation(
+                            current_interval, operations_research::Solver::STARTS_AFTER_END, last_interval));
+                }
+
+                last_interval = current_interval;
+                current_index = next_index;
+            }
+
+            std::copy(std::begin(break_intervals_), std::end(break_intervals_), std::back_inserter(all_intervals));
+
+            solver()->AddConstraint(
+                    solver()->MakeStrictDisjunctiveConstraint(all_intervals,
+                                                              absl::StrCat("Vehicle breaks ", vehicle_)));
+        }
+    }
+
+    const operations_research::RoutingDimension *dimension_;
+    const int vehicle_;
+    std::vector<operations_research::IntervalVar *> break_intervals_;
+    operations_research::IntVar *const status_;
 };
 
 const std::string Problem::TIME_DIM{"time"};
 
 int main(int argc, char **argv) {
-    google::InitGoogleLogging(argv[0]);
-    google::InstallFailureSignalHandler();
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     //given
     const Problem problem{
-            std::vector<Visit> {
+            std::vector < Visit > {
                     {0,  "09:00:00", "10:00:00", "00:45:00"},
                     {0,  "09:00:00", "10:00:00", "00:45:00"},
                     {0,  "12:15:00", "13:15:00", "00:45:00"},
@@ -160,133 +248,39 @@ int main(int argc, char **argv) {
                     {13, "09:00:00", "10:00:00", "00:30:00"},
                     {14, "17:30:00", "18:30:00", "00:30:00"}
             },
-            std::vector<std::vector<Break> > {
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"13:00:00", "03:00:00"},
-                            {"21:00:00", "03:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"10:30:00", "01:30:00"},
-                            {"14:00:00", "10:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"13:00:00", "11:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"11:00:00", "13:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"11:00:00", "00:30:00"},
-                            {"13:30:00", "03:00:00"},
-                            {"19:00:00", "00:30:00"},
-                            {"22:00:00", "02:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"10:30:00", "01:30:00"},
-                            {"14:00:00", "10:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"10:30:00", "01:30:00"},
-                            {"14:00:00", "10:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"10:30:00", "01:30:00"},
-                            {"14:00:00", "10:00:00"}
-                    },
-                    {
-                            {"00:00:00", "09:00:00"},
-                            {"11:00:00", "13:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"10:30:00", "01:30:00"},
-                            {"14:00:00", "10:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"11:00:00", "00:30:00"},
-                            {"13:30:00", "03:00:00"},
-                            {"19:00:00", "00:30:00"},
-                            {"22:00:00", "02:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"13:00:00", "11:00:00"}
-                    },
-                    {
-                            {"00:00:00", "16:30:00"},
-                            {"21:30:00", "02:30:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"11:00:00", "01:00:00"},
-                            {"14:00:00", "10:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"11:00:00", "00:30:00"},
-                            {"13:30:00", "03:00:00"},
-                            {"19:00:00", "00:30:00"},
-                            {"22:00:00", "02:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"14:00:00", "03:00:00"},
-                            {"21:00:00", "03:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"10:30:00", "01:30:00"},
-                            {"14:00:00", "10:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"10:30:00", "05:30:00"},
-                            {"19:30:00", "00:30:00"},
-                            {"22:00:00", "02:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"11:00:00", "00:30:00"},
-                            {"13:30:00", "03:00:00"},
-                            {"19:00:00", "00:30:00"},
-                            {"22:00:00", "02:00:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"11:00:00", "00:30:00"},
-                            {"13:30:00", "03:00:00"},
-                            {"19:30:00", "00:30:00"},
-                            {"22:00:00", "02:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"10:30:00", "06:00:00"},
-                            {"21:30:00", "02:30:00"}
-                    },
-                    {
-                            {"00:00:00", "08:00:00"},
-                            {"11:00:00", "13:00:00"}
-                    },
-                    {
-                            {"00:00:00", "07:30:00"},
-                            {"10:30:00", "01:30:00"},
-                            {"14:00:00", "10:00:00"}
-                    },
-                    {
-                            {"00:00:00", "15:00:00"},
-                            {"19:00:00", "05:00:00"}
-                    }
+            std::vector < std::vector < Break > > {
+                    {{"00:00:00", "08:00:00"}, {"13:00:00", "03:00:00"}, {"21:00:00", "03:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"10:30:00", "01:30:00"}, {"14:00:00", "10:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"13:00:00", "11:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"11:00:00", "13:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"11:00:00", "00:30:00"}, {"13:30:00", "03:00:00"},
+                            {"19:00:00", "00:30:00"}, {"22:00:00", "02:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"10:30:00", "01:30:00"}, {"14:00:00", "10:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"10:30:00", "01:30:00"}, {"14:00:00", "10:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"10:30:00", "01:30:00"}, {"14:00:00", "10:00:00"}},
+                    {{"00:00:00", "09:00:00"}, {"11:00:00", "13:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"10:30:00", "01:30:00"}, {"14:00:00", "10:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"11:00:00", "00:30:00"}, {"13:30:00", "03:00:00"},
+                            {"19:00:00", "00:30:00"}, {"22:00:00", "02:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"13:00:00", "11:00:00"}},
+                    {{"00:00:00", "16:30:00"}, {"21:30:00", "02:30:00"}},
+                    {{"00:00:00", "07:30:00"}, {"11:00:00", "01:00:00"}, {"14:00:00", "10:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"11:00:00", "00:30:00"}, {"13:30:00", "03:00:00"},
+                            {"19:00:00", "00:30:00"}, {"22:00:00", "02:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"14:00:00", "03:00:00"}, {"21:00:00", "03:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"10:30:00", "01:30:00"}, {"14:00:00", "10:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"10:30:00", "05:30:00"}, {"19:30:00", "00:30:00"},
+                            {"22:00:00", "02:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"11:00:00", "00:30:00"}, {"13:30:00", "03:00:00"},
+                            {"19:00:00", "00:30:00"}, {"22:00:00", "02:00:00"}},
+                    {{"00:00:00", "08:00:00"}, {"11:00:00", "00:30:00"}, {"13:30:00", "03:00:00"},
+                            {"19:30:00", "00:30:00"}, {"22:00:00", "02:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"10:30:00", "06:00:00"}, {"21:30:00", "02:30:00"}},
+                    {{"00:00:00", "08:00:00"}, {"11:00:00", "13:00:00"}},
+                    {{"00:00:00", "07:30:00"}, {"10:30:00", "01:30:00"}, {"14:00:00", "10:00:00"}},
+                    {{"00:00:00", "15:00:00"}, {"19:00:00", "05:00:00"}}
             },
-            std::vector<std::vector<int64 >> {
+            std::vector < std::vector < int64 >> {
                     {0,    722,  884,  604,  1562, 1129, 855,  655,  547,  432,  327,  945,  1170, 333,  517},
                     {722,  0,    1455, 1006, 1944, 819,  1425, 1376, 1269, 291,  1048, 1516, 1184, 392,  425},
                     {884,  1455, 0,    651,  2070, 1906, 229,  1083, 1140, 1173, 1134, 154,  1935, 1074, 1293},
@@ -340,18 +334,21 @@ int main(int argc, char **argv) {
     }
 
     for (auto vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
-        std::vector<operations_research::IntervalVar *> break_intervals;
+        std::vector < operations_research::IntervalVar * > break_intervals;
         auto break_index = 0;
         for (const auto &break_config : problem.Breaks[vehicle]) {
             auto interval = model.solver()->MakeFixedInterval(break_config.Start.total_seconds(),
                                                               break_config.Duration.total_seconds(),
-                                                              (boost::format("Break %1% of vehicle %2%")
-                                                               % break_index
-                                                               % vehicle).str());
+                                                              absl::StrCat("Break ",
+                                                                           break_index,
+                                                                           " of vehicle ",
+                                                                           vehicle));
             break_intervals.emplace_back(interval);
         }
 
-        time_dimension->SetBreakIntervalsOfVehicle(std::move(break_intervals), vehicle);
+        model.solver()->AddConstraint(
+                model.solver()->RevAlloc(new BreakConstraint(time_dimension, vehicle, std::move(break_intervals))));
+
         model.AddVariableMinimizedByFinalizer(time_dimension->CumulVar(model.Start(vehicle)));
         model.AddVariableMinimizedByFinalizer(time_dimension->CumulVar(model.End(vehicle)));
     }
@@ -387,30 +384,23 @@ int main(int argc, char **argv) {
             return false;
         }
 
-        LOG(ERROR) << boost::format(
-                "The time [%1%, %2%] allocated for the visit (%3%) overlaps with the break [%4%, %5%] of vehicle (%6%)")
-                      % visit_period.begin().time_of_day()
-                      % visit_period.end().time_of_day()
-                      % visit
-                      % break_period.begin().time_of_day()
-                      % break_period.end().time_of_day()
-                      % vehicle;
+        LOG(ERROR) << "The time period [" << visit_period.begin().time_of_day()
+                   << ", " << visit_period.end().time_of_day() << "] allocated for the visit (" << visit << ") "
+                   << "overlaps with the break [" << break_period.begin().time_of_day()
+                   << ", " << break_period.end().time_of_day() << "] of the vehicle (" << vehicle << ")";
         return true;
     };
 
 
     const operations_research::Assignment *solution = model.SolveWithParameters(parameters);
-    if (solution == nullptr) {
-        LOG(ERROR) << "No repro. Try again.";
-        return 0;
-    }
+    CHECK(solution != nullptr) << "Solution not found";
 
     operations_research::Assignment solution_to_check{solution};
     CHECK(model.solver()->CheckAssignment(&solution_to_check));
 
     auto overlap_detected = false;
     for (auto vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
-        std::vector<boost::posix_time::time_period> break_periods;
+        std::vector <boost::posix_time::time_period> break_periods;
         for (const auto &vehicle_break : problem.Breaks.at(static_cast<std::size_t>(vehicle))) {
             break_periods.emplace_back(BreakToPeriod(vehicle_break));
         }
@@ -433,11 +423,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (overlap_detected) {
-        LOG(ERROR) << "Repro found.";
-        return 1;
-    }
-
-    LOG(ERROR) << "No repro. Try again.";
+    CHECK(!overlap_detected) << "Some breaks are violated";
     return 0;
 }
