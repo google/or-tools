@@ -709,4 +709,6 @@ $(patsubst examples/csharp/solution/%.csproj, \"solution%.csproj\"$(COMMA)\"{}\"
 	$(SED) -i -e "s/solution/solution\\/g" -e "s/EndProject/\r\nEndProject\r\n/g" -e "s/ Project/Project/g" examples$Scsharp$SCsharp_examples.sln
 
 detect_csharp:
+	@echo NETSTANDARD_RUNTIME_IDENTIFIER = $(NETSTANDARD_RUNTIME_IDENTIFIER)
 	@echo CSC = $(CSC)
+	@echo MONO = $(MONO)
