@@ -219,6 +219,7 @@ FZ_INSTALL_DIR=or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
 
 detect_port:
 	@echo SYSTEM = $(SYSTEM)
+	@echo OS = $(OS)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PTRLENGTH = $(PTRLENGTH)
 	@echo PORT = $(PORT)
@@ -228,7 +229,10 @@ detect_port:
 	@echo OR_TOOLS_SHORT_VERSION = $(OR_TOOLS_SHORT_VERSION)
 	@echo GIT_REVISION = $(GIT_REVISION)
 	@echo GIT_HASH = $(GIT_HASH)
+	@echo CMAKE = $(CMAKE)
+ifeq ("$(SYSTEM)","win")
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
+endif
 	@echo SWIG_BINARY = $(SWIG_BINARY)
 	@echo SWIG_INC = $(SWIG_INC)
 
