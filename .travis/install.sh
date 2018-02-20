@@ -21,6 +21,8 @@ if [ "${BUILDER}" == make ];then
 			if [ "${LANGUAGE}" == python ];then
 				pyenv global system 3.6;
 				python3.6 -m pip install -q virtualenv wheel six;
+			elif [ "${LANGUAGE}" == csharp ];then
+				sudo apt-get -yqq install mono-complete;
 			fi
 		else
 			# Linux Docker Makefile build:
@@ -36,6 +38,10 @@ if [ "${BUILDER}" == make ];then
 			if [ "${LANGUAGE}" == python ];then
 				brew install python3;
 				python3.6 -m pip install -q virtualenv wheel six;
+			elif [ "${LANGUAGE}" == java ];then
+				brew cask install java;
+			elif [ "${LANGUAGE}" == csharp ];then
+				brew install mono;
 			fi
 		else
 			# MacOS Docker Makefile build:

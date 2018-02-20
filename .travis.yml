@@ -14,6 +14,16 @@ matrix:
       language: cpp
       compiler: gcc
       env: BUILDER=make DISTRO=native LANGUAGE=python
+    - os: linux
+      dist: trusty
+      language: cpp
+      compiler: gcc
+      env: BUILDER=make DISTRO=native LANGUAGE=java
+    - os: linux
+      dist: trusty
+      language: cpp
+      compiler: gcc
+      env: BUILDER=make DISTRO=native LANGUAGE=csharp
 
     - os: osx
       language: cpp
@@ -23,6 +33,14 @@ matrix:
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=python
+    - os: osx
+      language: cpp
+      compiler: clang
+      env: BUILDER=make DISTRO=native LANGUAGE=java
+    - os: osx
+      language: cpp
+      compiler: clang
+      env: BUILDER=make DISTRO=native LANGUAGE=csharp
 # CMake Build Generator
     - os: linux
       dist: trusty

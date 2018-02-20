@@ -13,6 +13,11 @@ function checkenv() {
 	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" == python ];then
 		python3.6 --version
 		python3.6 -m pip --version
+	elif [ "${LANGUAGE}" == java ]; then
+		java -version
+	elif [ "${LANGUAGE}" == csharp ]; then
+		mono --version
+		which csharp
 	fi
 }
 
@@ -30,6 +35,10 @@ if [ "${BUILDER}" == make ];then
 				make detect
 			elif [ "${LANGUAGE}" == python ]; then
 				make detect UNIX_PYTHON_VER=3.6
+			elif [ "${LANGUAGE}" == java ]; then
+				make detect JDK_DIRECTORY=/usr/lib/jvm/java-8-openjdk-amd64
+			elif [ "${LANGUAGE}" == csharp ]; then
+				make detect
 			fi
 			make third_party
 			make "${LANGUAGE}"
@@ -45,6 +54,10 @@ if [ "${BUILDER}" == make ];then
 				make detect
 			elif [ "${LANGUAGE}" == python ]; then
 				make detect UNIX_PYTHON_VER=3.6
+			elif [ "${LANGUAGE}" == java ]; then
+				make detect
+			elif [ "${LANGUAGE}" == csharp ]; then
+				make detect
 			fi
 			make third_party
 			make "${LANGUAGE}"
