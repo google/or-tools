@@ -185,7 +185,7 @@ dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake/Makefile: dependencies/sou
 	         ..
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/CMakeLists.txt:
-	git clone -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
+	git clone --quiet -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
 
 # Install protocol buffers.
 install_protobuf: dependencies/install/bin/protoc
@@ -203,7 +203,7 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build/Makefile: dependencies
 	           ..
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/CMakeLists.txt:
-	git clone https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && git checkout 3d9d1a1
+	git clone --quiet https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && git checkout 3d9d1a1
 
 # Install GLOG.
 install_glog: dependencies/install/include/glog/logging.h
@@ -222,7 +222,7 @@ dependencies/sources/glog-$(GLOG_TAG)/build_cmake/Makefile: dependencies/sources
 	           ..
 
 dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt:
-	git clone -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
+	git clone --quiet -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
@@ -236,8 +236,8 @@ dependencies/sources/Cbc-$(CBC_TAG)/Makefile: dependencies/sources/Cbc-$(CBC_TAG
 CBC_ARCHIVE:=https://www.coin-or.org/download/source/Cbc/Cbc-${CBC_TAG}.tgz
 
 dependencies/sources/Cbc-$(CBC_TAG)/Makefile.in:
-	wget --continue -P dependencies/archives ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'wget -P dependencies/archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
-	tar xzvf dependencies/archives/Cbc-${CBC_TAG}.tgz -C dependencies/sources/
+	wget --quiet --continue -P dependencies/archives ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'wget -P dependencies/archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
+	tar xzf dependencies/archives/Cbc-${CBC_TAG}.tgz -C dependencies/sources/
 
 # Install patchelf on linux platforms.
 dependencies/install/bin/patchelf: dependencies/sources/patchelf-$(PATCHELF_TAG)/Makefile
@@ -247,7 +247,7 @@ dependencies/sources/patchelf-$(PATCHELF_TAG)/Makefile: dependencies/sources/pat
 	cd dependencies/sources/patchelf-$(PATCHELF_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/patchelf-$(PATCHELF_TAG)/configure:
-	git clone -b $(PATCHELF_TAG) https://github.com/NixOS/patchelf.git dependencies/sources/patchelf-$(PATCHELF_TAG)
+	git clone --quiet -b $(PATCHELF_TAG) https://github.com/NixOS/patchelf.git dependencies/sources/patchelf-$(PATCHELF_TAG)
 	cd dependencies/sources/patchelf-$(PATCHELF_TAG) && ./bootstrap.sh
 
 
