@@ -7,11 +7,12 @@ function checkenv() {
 		make --version
 	fi
 	cmake --version
-	if [ "${BUILDER}" == cmake ];then
+	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" != cc ]; then
 		swig -version
+	fi
+	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" == python ];then
 		python3.6 --version
 		python3.6 -m pip --version
-
 	fi
 }
 
@@ -21,8 +22,15 @@ function checkenv() {
 if [ "${BUILDER}" == make ];then
 	if [ "${TRAVIS_OS_NAME}" == linux ];then
 		if [ "${DISTRO}" == native ];then
+			if [ "${LANGUAGE}" != cc ]; then
+				export PATH="${HOME}"/swig/bin:"${PATH}"
+			fi
 			checkenv
-			make detect
+			if [ "${LANGUAGE}" == cc ]; then
+				make detect
+			elif [ "${LANGUAGE}" == python ]; then
+				make detect UNIX_PYTHON_VER=3.6
+			fi
 			make third_party
 			make "${LANGUAGE}"
 			make test_"${LANGUAGE}"
@@ -33,7 +41,11 @@ if [ "${BUILDER}" == make ];then
 	elif [ "${TRAVIS_OS_NAME}" == osx ];then
 		if [ "${DISTRO}" == native ];then
 			checkenv
-			make detect
+			if [ "${LANGUAGE}" == cc ]; then
+				make detect
+			elif [ "${LANGUAGE}" == python ]; then
+				make detect UNIX_PYTHON_VER=3.6
+			fi
 			make third_party
 			make "${LANGUAGE}"
 			make test_"${LANGUAGE}"
