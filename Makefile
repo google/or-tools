@@ -1,6 +1,7 @@
 # Top level declarations
 help:
 	@echo Please define target:
+	@echo "  - Prerequisite: third_party third_party_check clean_third_party"
 	@echo "  - C++: cc test_cc clean_cc"
 	@echo "  - Python: python test_python clean_python"
 	@echo "  - Java: java test_java clean_java"
@@ -67,6 +68,7 @@ include $(OR_ROOT)makefiles/Makefile.test.mk
 -include $(OR_ROOT)Makefile.user
 
 #check if "make third_party" have been run or not
+.PHONY: third_party_check
 third_party_check:
 ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
 	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
