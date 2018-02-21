@@ -49,10 +49,6 @@ FZ_EXE = fzn-or-tools$E
 CD = cd
 ATTRIB = attrib
 TASKKILL = taskkill
-NUGET = nuget.exe
-NUGET_PACK = nuget.exe pack
-NUGET_PUSH = nuget.exe push
-NUGET_SRC = https://www.nuget.org/api/v2/package
 
 # Default paths for libraries and binaries.
 WINDOWS_ZLIB_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install

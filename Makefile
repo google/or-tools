@@ -5,7 +5,7 @@ help:
 	@echo "  - C++: cc test_cc clean_cc"
 	@echo "  - Python: python help_python test_python clean_python"
 	@echo "  - Java: java help_java test_java clean_java"
-	@echo "  - .NET (CSharp): csharp test_csharp clean_csharp"
+	@echo "  - .NET (CSharp): csharp help_csharp test_csharp clean_csharp"
 	@echo "  - .NET (FSharp): fsharp help_fsharp test_fsharp clean_fsharp"
 	@echo "  - all: all test clean"
 	@echo "  - detect: detect_port detect_python detect_java detect_csharp detect_fsharp"

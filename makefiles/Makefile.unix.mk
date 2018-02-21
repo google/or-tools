@@ -68,6 +68,9 @@ MAJOR_PYTHON_VERSION = $(shell python$(UNIX_PYTHON_VER) -c "from sys import vers
 PYTHON_INC += $(shell pkg-config --cflags --libs python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
 endif
 
+MONO_COMPILER ?= mono
+MONO_EXECUTABLE := $(shell which $(MONO_COMPILER))
+
 # This is needed to find gflags/gflags.h
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 # This is needed to find protocol buffers.
@@ -132,8 +135,7 @@ ifeq ($(PLATFORM),LINUX)
   CCC = g++ -fPIC -std=c++0x -fwrapv
   DYNAMIC_LD = g++ -shared
   CMAKE = cmake
-  CSC = $(PATH_TO_CSHARP_COMPILER)
-  MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
+  MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   # This is needed to find libgflags.a
   GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
@@ -203,8 +205,7 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 
   JNI_LIB_EXT = jnilib
-  CSC = $(PATH_TO_CSHARP_COMPILER)
-  MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono
+  MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   ZLIB_LNK = -lz

@@ -205,7 +205,6 @@ DETECTED_CSC_BINARY := $(shell where /F csc | tools\\sed.exe -n "/\".*\"/{p;q;}"
   else
     SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
   endif
-  CSC = "$(PATH_TO_CSHARP_COMPILER)"
 endif # ($(SYSTEM),win)
 
 # Get github revision level
