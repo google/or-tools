@@ -67,12 +67,15 @@ ifeq ($(SYSTEM),win)
   endif
 endif
 
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 	NETSTANDARD_RUNTIME_IDENTIFIER=win-$(NETPLATFORM)
-else ifeq ($(PLATFORM),MACOSX)
-	NETSTANDARD_RUNTIME_IDENTIFIER=osx
-else
+endif
+ifeq ($(SYSTEM),unix)
+  ifeq ($(PLATFORM),LINUX)
 	NETSTANDARD_RUNTIME_IDENTIFIER=linux-$(NETPLATFORM)
+  else
+	NETSTANDARD_RUNTIME_IDENTIFIER=osx
+  endif
 endif
 
 CSHARPEXE = \
