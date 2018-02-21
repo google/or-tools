@@ -123,8 +123,8 @@ dotnet_archive: csharp
 	$(COPY) examples$Scsharp$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Sfsharp$S*fsx temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
 	$(COPY) examples$Sfsharp$SREADME.md temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
-	$(COPY) examples$Sfsharp$Slib$S* temp$S$(INSTALL_DIR)$Sexamples$Sfsharp$Slib
 	$(COPY) examples$Scsharp$Ssolution$SProperties$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
+	-$(COPY) examples$Sfsharp$Slib$S* temp$S$(INSTALL_DIR)$Sexamples$Sfsharp$Slib
 ifeq ($(SYSTEM),win)
 	$(COPY) examples$Scsharp$SCsharp_examples.sln temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution

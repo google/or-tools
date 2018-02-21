@@ -6,9 +6,9 @@ help:
 	@echo "  - Python: python help_python test_python clean_python"
 	@echo "  - Java: java help_java test_java clean_java"
 	@echo "  - .NET (CSharp): csharp test_csharp clean_csharp"
-	@echo "  - .NET (FSharp): fsharp fsharp-help fsharp-clean"
+	@echo "  - .NET (FSharp): fsharp help_fsharp test_fsharp clean_fsharp"
 	@echo "  - all: all test clean"
-	@echo "  - detect: detect_port detect_python detect_java detect_csharp"
+	@echo "  - detect: detect_port detect_python detect_java detect_csharp detect_fsharp"
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
@@ -30,12 +30,12 @@ else
   endif
 endif
 
-.PHONY : help cc python java csharp sat third_party_check
-all: third_party_check cc java python csharp
+.PHONY : help cc python java csharp fsharp sat
+all: third_party_check cc java python csharp fsharp
 	@echo Or-tools have been built for $(BUILT_LANGUAGES)
 
 .PHONY: clean
-clean: clean_cc clean_java clean_python clean_csharp clean_compat
+clean: clean_cc clean_java clean_python clean_csharp clean_compat clean_fsharp
 
 # Read version.
 include $(OR_ROOT)Version.txt
@@ -77,6 +77,6 @@ ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
 endif
 
 .PHONY: detect
-detect: detect_port detect_python detect_java detect_csharp
+detect: detect_port detect_python detect_java detect_csharp detect_fsharp
 
 print-%  : ; @echo $* = $($*)

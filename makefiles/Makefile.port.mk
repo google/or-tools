@@ -240,5 +240,3 @@ ifeq ($(SYSTEM),win)
 endif
 	@echo SWIG_BINARY = $(SWIG_BINARY)
 	@echo SWIG_INC = $(SWIG_INC)
-
-detect: detect_port detect_python detect_java detect_csharp

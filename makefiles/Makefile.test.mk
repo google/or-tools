@@ -1,5 +1,5 @@
-.PHONY : test
-test: test_cc test_python test_java test_csharp
+.PHONY: test
+test: test_cc test_python test_java test_csharp test_fsharp
 	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
 
 test_cc: cc
@@ -48,3 +48,6 @@ test_csharp_examples: \
 	$(MONO) $(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe
+
+test_fsharp_examples: fsharp
+	$(warning F# tests unimplemented)
