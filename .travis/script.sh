@@ -55,11 +55,10 @@ if [ "${BUILDER}" == make ];then
 				make detect
 			elif [ "${LANGUAGE}" == python ]; then
 				make detect UNIX_PYTHON_VER=3.6
-			elif [ "${LANGUAGE}" == java ]; then
-				make detect
-			elif [ "${LANGUAGE}" == csharp ]; then
+			elif [ "${LANGUAGE}" == java ] || [ "${LANGUAGE}" == csharp ]; then
 				make detect
 			fi
+			cat Makefile.local
 			make third_party
 			make "${LANGUAGE}"
 			make test_"${LANGUAGE}"
