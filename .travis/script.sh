@@ -40,6 +40,7 @@ if [ "${BUILDER}" == make ];then
 			elif [ "${LANGUAGE}" == csharp ]; then
 				make detect
 			fi
+			cat Makefile.local
 			make third_party
 			make "${LANGUAGE}"
 			make test_"${LANGUAGE}"
