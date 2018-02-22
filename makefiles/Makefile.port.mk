@@ -13,7 +13,7 @@ endif
 ifeq ($(SYSTEM),unix)
   OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
-  ifeq ("$(UNIX_PYTHON_VER)",)
+  ifeq ($(UNIX_PYTHON_VER),)
     DETECTED_PYTHON_VERSION := $(shell python -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
   else
     DETECTED_PYTHON_VERSION := $(UNIX_PYTHON_VER)
@@ -186,7 +186,7 @@ ifeq ($(SYSTEM),win)
   DETECTED_PATH_TO_PYTHON = $(shell python -c "from sys import executable; from os.path import sep; print(sep.join(executable.split(sep)[:-1]).rstrip())")
    CANONIC_DETECTED_PATH_TO_PYTHON = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DETECTED_PATH_TO_PYTHON))))
    ifeq ($(wildcard $(CANONIC_DETECTED_PATH_TO_PYTHON)),)
-    SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don't include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python27-64)
+    SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don\'t include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python27-64)
   else
     SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
   endif
