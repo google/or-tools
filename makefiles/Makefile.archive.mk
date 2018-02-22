@@ -2,7 +2,7 @@
 archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 
 $(INSTALL_DIR)$(ARCHIVE_EXT): $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs cc_archive dotnet_archive java_archive data_archive $(PATCHELF)
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 	cd temp && ..$Stools$Szip.exe -r ..$S$(INSTALL_DIR).zip $(INSTALL_DIR)
 else
 ifeq ($(PLATFORM),LINUX)
@@ -73,7 +73,7 @@ create_dirs:
 	$(COPY) tools$SMakefile.cc temp$S$(INSTALL_DIR)$SMakefile
 
 data_archive:
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 	tools$Star.exe -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* --exclude *nsplib* examples\\data | tools$Star.exe xvm -C temp\\$(INSTALL_DIR)
 else
 	tar -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* --exclude *nsplib* examples/data | tar xvm -C temp/$(INSTALL_DIR)
@@ -106,7 +106,7 @@ cc_archive: cc
 	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
 
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 	$(COPY) tools$Smake.exe temp$S$(INSTALL_DIR)
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | ..$S..$S..$Stools$Star.exe xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v glog | ..$S..$S..$Stools$Star.exe xvm
@@ -125,7 +125,7 @@ dotnet_archive: csharp
 	$(COPY) examples$Sfsharp$SREADME.md temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
 	$(COPY) examples$Sfsharp$Slib$S* temp$S$(INSTALL_DIR)$Sexamples$Sfsharp$Slib
 	$(COPY) examples$Scsharp$Ssolution$SProperties$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 	$(COPY) examples$Scsharp$SCsharp_examples.sln temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 	$(COPY) examples$Scsharp$Ssolution$Sapp.config temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
@@ -140,10 +140,10 @@ netstandard_archive: netstandard_example_archive
 	$(COPY) bin$S$(NETSTANDARD_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg temp$S$(INSTALL_DIR)$Sbin$S
 	$(COPY) tools$SREADME.netstandard temp$S$(INSTALL_DIR)$Sexamples$Snetstandard
 
-netstandard_example_archive: 
+netstandard_example_archive:
 	$(foreach file, $(NET_STANDARD_EXAMPLES), $(call netstandard_example_archive_copy,$(file))) :
 
-define netstandard_example_archive_copy 
+define netstandard_example_archive_copy
 	$(MKDIR_P) temp$S$(INSTALL_DIR)$Sexamples$Snetstandard$S$(basename $(notdir $(1))) &&\
 	$(COPY) tools$Snetstandard$Snuget.config temp$S$(INSTALL_DIR)$Sexamples$Snetstandard$S$(basename $(notdir $(1))) &&\
 	$(COPY) tools$Snetstandard$Sexample.csproj temp$S$(INSTALL_DIR)$Sexamples$Snetstandard$S$(basename $(notdir $(1))) &&\
@@ -173,7 +173,7 @@ fz_archive: cc fz
 	$(COPY) ortools$Sflatzinc$Smznlib_cp$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
 	$(COPY) ortools$Sflatzinc$Smznlib_sat$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
 	$(COPY) examples$Sflatzinc$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 	cd $(TEMP_FZ_DIR) && ..$Stools$Szip.exe -r ..$S$(FZ_INSTALL_DIR).zip $(FZ_INSTALL_DIR)
 else
 ifeq ($(PLATFORM),LINUX)
@@ -195,7 +195,7 @@ test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 	$(MKDIR) temp
 #this is to make sure the archive tests don't use the root libraries
 	$(RENAME) lib lib2
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 	tools$Sunzip.exe $(INSTALL_DIR).zip -d temp
 else
 	tar -x -v -f $(INSTALL_DIR).tar.gz -C temp
@@ -208,7 +208,7 @@ test_fz_archive: $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
 	$(MKDIR) $(TEMP_FZ_TEST_DIR)
 #this is to make sure the archive tests don't use the root libraries
 	$(RENAME) lib lib2
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 	tools$Sunzip.exe $(FZ_INSTALL_DIR).zip -d $(TEMP_FZ_TEST_DIR)
 else
 	tar -x -v -f $(FZ_INSTALL_DIR).tar.gz -C $(TEMP_FZ_TEST_DIR)
@@ -222,7 +222,7 @@ ifeq "$(PYTHON3)" "true"
     release: pypi_upload
 else #platform check
 
-ifeq "$(SYSTEM)" "win"
+ifeq ($(SYSTEM),win)
 
 ifeq "$(VISUAL_STUDIO_YEAR)" "2013"
     build_release: clean all test
@@ -259,5 +259,5 @@ ifeq "$(PLATFORM)" "MACOSX"
     release: pypi_upload
 endif #ifeq "$(PLATFORM)" "MACOSX"
 
-endif #ifeq "$(SYSTEM)" "win"
+endif #ifeq ($(SYSTEM),win)
 endif #ifeq "$(PYTHON3)" "true"
