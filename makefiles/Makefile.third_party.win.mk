@@ -206,11 +206,11 @@ dependencies\install\lib\zlib.lib: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
 	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.lib dependencies\install\lib
 
 dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h: dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
+	tools\unzip -q -d dependencies\sources dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
 	tools\touch.exe dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
 
 dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
-	tools\wget -P dependencies\archives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
+	tools\wget --quiet -P dependencies\archives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
 
 install_gflags: dependencies/install/lib/gflags.lib
 
@@ -226,11 +226,11 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 	$(TOUCH) dependencies/install/lib/gflags_static.lib
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
-	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
+	tools\unzip -q -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
 	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
+	tools\wget --quiet -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
 	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
 
 
@@ -258,8 +258,8 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependen
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
+	tools\wget --quiet -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
+	tools\unzip -q -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
 
 install_glog: dependencies/install/include/glog/logging.h
 
@@ -275,11 +275,11 @@ dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TA
 	$(TOUCH) dependencies/install/lib/glog_static.lib
 
 dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt: dependencies/archives/glog-$(GLOG_TAG).zip
-	tools\unzip -d dependencies/sources dependencies\archives\glog-$(GLOG_TAG).zip
+	tools\unzip -q -d dependencies/sources dependencies\archives\glog-$(GLOG_TAG).zip
 	-$(TOUCH) dependencies\sources\glog-$(GLOG_TAG)\CMakeLists.txt
 
 dependencies/archives/glog-$(GLOG_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/glog/archive/v$(GLOG_TAG).zip
+	tools\wget --quiet -P dependencies\archives --no-check-certificate https://github.com/google/glog/archive/v$(GLOG_TAG).zip
 	cd dependencies/archives && rename v$(GLOG_TAG).zip glog-$(GLOG_TAG).zip
 
 # Install Coin CBC.
@@ -316,18 +316,18 @@ dependencies\sources\Cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.e
 CBC_ARCHIVE:=https://www.coin-or.org/download/source/Cbc/Cbc-${CBC_TAG}.zip
 
 dependencies\sources\Cbc-$(CBC_TAG)\configure:
-	tools\wget --continue -P dependencies\archives --no-check-certificate ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'tools\wget -P dependencies\archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
-	tools\unzip -d dependencies\sources dependencies\archives\Cbc-$(CBC_TAG).zip
+	tools\wget --quiet --continue -P dependencies\archives --no-check-certificate ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'tools\wget -P dependencies\archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
+	tools\unzip -q -d dependencies\sources dependencies\archives\Cbc-$(CBC_TAG).zip
 
 # Install SWIG.
 install_swig: dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
 
 dependencies\install\swigwin-$(SWIG_TAG)\swig.exe: dependencies\archives\swigwin-$(SWIG_TAG).zip
-	tools\unzip -d dependencies/install dependencies\archives\swigwin-$(SWIG_TAG).zip
+	tools\unzip -q -d dependencies/install dependencies\archives\swigwin-$(SWIG_TAG).zip
 	tools\touch.exe dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
 
 dependencies\archives\swigwin-$(SWIG_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running 'tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
+	tools\wget --quiet -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running 'tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
 
 # Install Java protobuf
 
