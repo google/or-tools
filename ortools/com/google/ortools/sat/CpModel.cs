@@ -436,9 +436,9 @@ public class CpModel
     }
     for (int i = 0; i < transitions.GetLength(0); ++i)
     {
-      aut.TransitionHead.Add(transitions[i, 0]);
+      aut.TransitionTail.Add(transitions[i, 0]);
       aut.TransitionLabel.Add(transitions[i, 1]);
-      aut.TransitionTail.Add(transitions[i, 2]);
+      aut.TransitionHead.Add(transitions[i, 2]);
     }
 
     ct.Proto.Automata = aut;
