@@ -5,13 +5,14 @@ CLEAN_FILES=$(FSHARP_ORTOOLS_DLL_NAME).*
 # Check for required build tools
 ifeq ($(SYSTEM), win)
 	FSHARP_COMPILER:=fsc
+	FSHARP_COMPILER_CHECK:=$(shell where $(FSHARP_COMPILER))
 	FLAG_PREFIX:=/
 else
 	FSHARP_COMPILER:=fsharpc
+	FSHARP_COMPILER_CHECK:=$(shell which $(FSHARP_COMPILER))
 	FLAG_PREFIX:=--
 endif
 
-FSHARP_COMPILER_CHECK:=$(shell which $(FSHARP_COMPILER))
 
 # Check whether to build Debug or Release version
 ifeq (${FSHARP_DEBUG}, 1)
