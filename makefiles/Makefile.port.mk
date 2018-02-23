@@ -198,12 +198,15 @@ ifeq ($(SYSTEM),win)
   WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
 
   #Detect csc
-
-DETECTED_CSC_BINARY := $(shell where /F csc | tools\\sed.exe -n "/\".*\"/{p;q;}" | tools\\sed "s/\"//g")
-  ifeq ($(DETECTED_CSC_BINARY),)
-    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the chsarp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
+  ifeq ($(PATH_TO_CSHARP_COMPILER),)
+    DETECTED_CSC_BINARY := $(shell where /F csc | tools\\sed.exe -n "/\".*\"/{p;q;}" | tools\\sed "s/\"//g")
+    ifeq ($(DETECTED_CSC_BINARY),)
+      SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the chsarp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
+    else
+      SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
+    endif
   else
-    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
+    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
   endif
 endif # ($(SYSTEM),win)
 
