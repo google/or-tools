@@ -4,7 +4,7 @@ help:
 	@echo "  - Prerequisite: third_party third_party_check clean_third_party"
 	@echo "  - C++: cc test_cc clean_cc"
 	@echo "  - Python: python help_python test_python clean_python"
-	@echo "  - Java: java test_java clean_java"
+	@echo "  - Java: java help_java test_java clean_java"
 	@echo "  - .NET (CSharp): csharp test_csharp clean_csharp"
 	@echo "  - .NET (FSharp): fsharp fsharp-help fsharp-clean"
 	@echo "  - all: all test clean"
@@ -30,9 +30,11 @@ else
   endif
 endif
 
-.PHONY : help detect cc python java csharp sat third_party_check
+.PHONY : help cc python java csharp sat third_party_check
 all: third_party_check cc java python csharp
 	@echo Or-tools have been built for $(BUILT_LANGUAGES)
+
+.PHONY: clean
 clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
 # Read version.
@@ -73,5 +75,8 @@ third_party_check:
 ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
 	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
 endif
+
+.PHONY: detect
+detect: detect_port detect_python detect_java detect_csharp
 
 print-%  : ; @echo $* = $($*)
