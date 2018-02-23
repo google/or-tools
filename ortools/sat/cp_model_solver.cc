@@ -72,6 +72,11 @@ DEFINE_string(cp_model_dump_file, "",
               "file will be ovewritten with the last such model. "
               "TODO(fdid): dump all model to a recordio file instead?");
 
+DEFINE_string(
+    drat_output, "",
+    "If non-empty, a proof in DRAT format will be written to this file. "
+    "This will only be used for pure-SAT problems.");
+
 namespace operations_research {
 namespace sat {
 
@@ -2547,11 +2552,22 @@ void PostsolveResponse(const CpModelProto& model_proto,
 
 CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
                                    Model* model) {
-  // TODO(user): find a way to use the TimeLimit inside model.
   std::unique_ptr<SatSolver> solver(new SatSolver());
   SatParameters parameters = *model->GetOrCreate<SatParameters>();
   parameters.set_log_search_progress(true);
   solver->SetParameters(parameters);
+  model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(parameters);
+
+  // Create a DratWriter?
+  std::unique_ptr<DratWriter> drat_writer;
+#if !defined(__PORTABLE_PLATFORM__)
+  if (!FLAGS_drat_output.empty()) {
+    File* output;
+    CHECK_OK(file::Open(FLAGS_drat_output, "w", &output, file::Defaults()));
+    drat_writer.reset(new DratWriter(/*in_binary_format=*/false, output));
+    solver->SetDratWriter(drat_writer.get());
+  }
+#endif  // __PORTABLE_PLATFORM__
 
   // Timing.
   WallTimer wall_timer;
@@ -2565,7 +2581,10 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   };
 
   std::vector<Literal> temp;
-  solver->SetNumVariables(model_proto.variables_size());
+  const int num_variables = model_proto.variables_size();
+  solver->SetNumVariables(num_variables);
+  if (drat_writer != nullptr) drat_writer->SetNumVariables(num_variables);
+
   for (const ConstraintProto& ct : model_proto.constraints()) {
     switch (ct.constraint_case()) {
       case ConstraintProto::ConstraintCase::kBoolAnd: {
@@ -2590,7 +2609,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   }
 
   // Deal with fixed variables.
-  for (int ref = 0; ref < model_proto.variables().size(); ++ref) {
+  for (int ref = 0; ref < num_variables; ++ref) {
     const auto domain = ReadDomain(model_proto.variables(ref));
     CHECK_EQ(domain.size(), 1);
     if (domain[0].start == domain[0].end) {
@@ -2602,22 +2621,38 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
     }
   }
 
-  std::vector<bool> solution;
-  const SatSolver::Status status =
-      SolveWithPresolve(&solver, &solution, nullptr);
-
+  SatSolver::Status status;
   CpSolverResponse response;
+  if (parameters.cp_model_presolve()) {
+    std::vector<bool> solution;
+    status = SolveWithPresolve(&solver, model->GetOrCreate<TimeLimit>(),
+                               &solution, drat_writer.get());
+    if (status == SatSolver::MODEL_SAT) {
+      response.clear_solution();
+      for (int ref = 0; ref < num_variables; ++ref) {
+        response.add_solution(solution[ref]);
+      }
+    }
+  } else {
+    status = solver->SolveWithTimeLimit(model->GetOrCreate<TimeLimit>());
+    if (status == SatSolver::MODEL_SAT) {
+      response.clear_solution();
+      for (int ref = 0; ref < num_variables; ++ref) {
+        response.add_solution(
+            solver->Assignment().LiteralIsTrue(get_literal(ref)) ? 1 : 0);
+      }
+    }
+  }
+
   switch (status) {
     case SatSolver::LIMIT_REACHED: {
       response.set_status(CpSolverStatus::UNKNOWN);
       break;
     }
     case SatSolver::MODEL_SAT: {
-      CHECK(SolutionIsFeasible(
-          model_proto, std::vector<int64>(solution.begin(), solution.end())));
-      for (const bool value : solution) {
-        response.add_solution(value ? 1 : 0);
-      }
+      CHECK(SolutionIsFeasible(model_proto,
+                               std::vector<int64>(response.solution().begin(),
+                                                  response.solution().end())));
       response.set_status(CpSolverStatus::MODEL_SAT);
       break;
     }
@@ -2635,9 +2670,8 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   response.set_num_integer_propagations(0);
   response.set_wall_time(wall_timer.Get());
   response.set_user_time(user_timer.Get());
-
-  // TODO(user): This do not take into account presolve.
-  response.set_deterministic_time(solver->deterministic_time());
+  response.set_deterministic_time(
+      model->Get<TimeLimit>()->GetElapsedDeterministicTime());
   return response;
 }
 

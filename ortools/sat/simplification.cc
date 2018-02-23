@@ -1119,11 +1119,11 @@ void ProbeAndFindEquivalentLiteral(
 }
 
 SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
+                                    TimeLimit* time_limit,
                                     std::vector<bool>* solution,
                                     DratWriter* drat_writer) {
   // We save the initial parameters.
   const SatParameters parameters = (*solver)->parameters();
-  std::unique_ptr<TimeLimit> time_limit = TimeLimit::FromParameters(parameters);
   SatPostsolver postsolver((*solver)->NumVariables());
 
   // Some problems are formulated in such a way that our SAT heuristics
@@ -1139,7 +1139,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     for (int i = 0; i < num_times && !time_limit->LimitReached(); ++i) {
       (*solver)->SetParameters(new_params);
       const SatSolver::Status result =
-          (*solver)->SolveWithTimeLimit(time_limit.get());
+          (*solver)->SolveWithTimeLimit(time_limit);
       if (result != SatSolver::LIMIT_REACHED) {
         if (result == SatSolver::MODEL_SAT) {
           VLOG(1) << "Problem solved by trivial heuristic!";
@@ -1232,8 +1232,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
   }
 
   // Solve.
-  const SatSolver::Status result =
-      (*solver)->SolveWithTimeLimit(time_limit.get());
+  const SatSolver::Status result = (*solver)->SolveWithTimeLimit(time_limit);
   if (result == SatSolver::MODEL_SAT) {
     *solution = postsolver.ExtractAndPostsolveSolution(**solver);
   }

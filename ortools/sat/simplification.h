@@ -33,6 +33,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/time_limit.h"
 #include "ortools/base/adjustable_priority_queue.h"
 
 namespace operations_research {
@@ -397,7 +398,7 @@ void ProbeAndFindEquivalentLiteral(
 // Note that the full presolve is only executed if the problem is a pure SAT
 // problem with only clauses.
 SatSolver::Status SolveWithPresolve(
-    std::unique_ptr<SatSolver>* solver,
+    std::unique_ptr<SatSolver>* solver, TimeLimit* time_limit,
     std::vector<bool>* solution /* only filled if SAT */,
     DratWriter* drat_writer /* can be nullptr */);
 
