@@ -46,7 +46,7 @@ foreach(EXECUTABLE
 		cvrp_disjoint_tw
 		cvrptw
 		cvrptw_with_breaks
-		cvrptw_with_breaks_repro
+		cvrptw_with_uninterrupted_breaks
 		cvrptw_with_refueling
 		cvrptw_with_resources
 		cvrptw_with_stop_times_and_resources
