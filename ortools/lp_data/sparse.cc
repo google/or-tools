@@ -365,7 +365,7 @@ bool SparseMatrix::Equals(const SparseMatrix& a, Fractional tolerance) const {
 }
 
 void SparseMatrix::ComputeMinAndMaxMagnitudes(Fractional* min_magnitude,
-                                              Fractional* max_magnitude) {
+                                              Fractional* max_magnitude) const {
   RETURN_IF_NULL(min_magnitude);
   RETURN_IF_NULL(max_magnitude);
   *min_magnitude = kInfinity;

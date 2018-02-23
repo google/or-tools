@@ -167,7 +167,7 @@ class SparseMatrix {
   // Returns, in min_magnitude and max_magnitude, the minimum and maximum
   // magnitudes of the non-zero coefficients of the calling object.
   void ComputeMinAndMaxMagnitudes(Fractional* min_magnitude,
-                                  Fractional* max_magnitude);
+                                  Fractional* max_magnitude) const;
 
   // Return the matrix dimension.
   RowIndex num_rows() const { return num_rows_; }
