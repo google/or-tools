@@ -190,6 +190,7 @@ ifeq ($(SYSTEM),win)
       SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don\'t include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python27-64)
     else
       SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
+      WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
     endif
   else
     SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(WINDOWS_PATH_TO_PYTHON)
