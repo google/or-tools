@@ -202,7 +202,7 @@ dependencies\install\include\zconf.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib
 	tools\touch.exe dependencies\install\include\zconf.h
 
 dependencies\install\lib\zlib.lib: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	cd dependencies\sources\zlib-$(ZLIB_TAG) && nmake -f win32\Makefile.msc zlib.lib
+	cd dependencies\sources\zlib-$(ZLIB_TAG) && set MAKEFLAGS= && nmake -f win32\Makefile.msc zlib.lib
 	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.lib dependencies\install\lib
 
 dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h: dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
@@ -216,12 +216,12 @@ install_gflags: dependencies/install/lib/gflags.lib
 
 dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md
 	-mkdir dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake
-	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && \
+	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && set MAKEFLAGS= && \
 	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\..\install \
 	           -D CMAKE_BUILD_TYPE=Release \
 	           -G "NMake Makefiles" \
 	           ..
-	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && \
+	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && set MAKEFLAGS= && \
 	nmake install
 	$(TOUCH) dependencies/install/lib/gflags_static.lib
 
@@ -271,7 +271,7 @@ dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TA
 	           -D CMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)\dependencies\install" \
 	           -G "NMake Makefiles" \
 	           ..
-	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && nmake install
+	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && set MAKEFLAGS= && nmake install
 	$(TOUCH) dependencies/install/lib/glog_static.lib
 
 dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt: dependencies/archives/glog-$(GLOG_TAG).zip
