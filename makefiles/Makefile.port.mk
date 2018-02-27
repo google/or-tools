@@ -199,11 +199,11 @@ ifeq ($(SYSTEM),win)
 
   #Detect csc
   ifeq ($(PATH_TO_CSHARP_COMPILER),)
-    DETECTED_CSC_BINARY := $(shell where /F csc | tools\\sed.exe -n "/\".*\"/{p;q;}" | tools\\sed "s/\"//g")
+    DETECTED_CSC_BINARY := $(shell tools\\which.exe csc 2>nul)
     ifeq ($(DETECTED_CSC_BINARY),)
       SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the chsarp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
     else
-      SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
+      SELECTED_CSC_BINARY =\#PATH_TO_CSHARP_COMPILER =
     endif
   else
     SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
