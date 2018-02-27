@@ -32,7 +32,7 @@ if [ "${BUILDER}" == make ]; then
 	if [ "${TRAVIS_OS_NAME}" == linux ]; then
 		if [ "${DISTRO}" == native ]; then
 			sudo apt-get -qq update
-			sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl lsb-release;
+			sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl	lsb-release
 			if [ "${LANGUAGE}" != cc ]; then
 				installswig
 			fi
@@ -41,6 +41,9 @@ if [ "${BUILDER}" == make ]; then
 				python3.6 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == csharp ]; then
 				installmono
+			elif [ "${LANGUAGE}" == fsharp ]; then
+				installmono
+				sudo apt-get -yqq install fsharp
 			fi
 		else
 			# Linux Docker Makefile build:
@@ -58,7 +61,7 @@ if [ "${BUILDER}" == make ]; then
 				python3.6 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == java ]; then
 				brew cask install java;
-			elif [ "${LANGUAGE}" == csharp ]; then
+			elif [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ]; then
 				brew install mono;
 			fi
 		else
