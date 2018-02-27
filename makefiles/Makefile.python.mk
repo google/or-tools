@@ -23,7 +23,7 @@ endif
 
 # Detect python3
 ifneq ($(PYTHON_EXECUTABLE),)
-ifeq ($(shell $(PYTHON_EXECUTABLE) -c "from sys import version_info as v; print (str(v[0]))"),3)
+ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
 PYTHON3 := true
 SWIG_PYTHON3_FLAG := -py3 -DPY3
 PYTHON3_CFLAGS := -DPY3
@@ -46,7 +46,7 @@ test_python: test_python_examples
 BUILT_LANGUAGES +=, Python$(PYTHON_VERSION)
 else
 python:
-	@echo PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}
+	@echo PYTHON_EXECUTABLE = "${PYTHON_EXECUTABLE}"
 	$(warning Cannot find '$(PYTHON_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
 test_python: python
 endif
@@ -96,7 +96,7 @@ ifeq ($(SYSTEM),win)
 else
 	cp dependencies$Sinstall$Sbin$Sprotoc dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Ssrc
 endif
-	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython && $(PYTHON_EXECUTABLE) setup.py build
+	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython && "$(PYTHON_EXECUTABLE)" setup.py build
 
 pyinit: $(GEN_DIR)$Sortools$S__init__.py
 
@@ -312,7 +312,7 @@ endif
 
 rpy: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapsat.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywraprcpsp.$(SWIG_LIB_SUFFIX)  $(EX)
 	@echo Running $(EX)
-	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX) $(ARGS)
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX) $(ARGS)
 
 .PHONY: python_examples_archive # Build stand-alone Python examples archive file for redistribution.
 python_examples_archive:
@@ -424,14 +424,14 @@ else
 endif
 
 pypi_upload: pypi_archive
-	@echo Uploading Pypi module for $(PYTHON_EXECUTABLE).
+	@echo Uploading Pypi module for "$(PYTHON_EXECUTABLE)".
 ifeq ($(SYSTEM),win)
-	cd $(PYPI_ARCHIVE_TEMP_DIR)\ortools && $(PYTHON_EXECUTABLE) setup.py bdist_wheel bdist_wininst
+	cd $(PYPI_ARCHIVE_TEMP_DIR)\ortools && "$(PYTHON_EXECUTABLE)" setup.py bdist_wheel bdist_wininst
 else
   ifeq ($(PLATFORM),MACOSX)
-	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_wheel
+	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && "$(PYTHON_EXECUTABLE)" setup.py bdist_wheel
   else
-	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg
+	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && "$(PYTHON_EXECUTABLE)" setup.py bdist_egg
   endif
 endif
 	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && twine upload dist/*
@@ -439,13 +439,13 @@ endif
 .PHONY: detect_python # Show variables used to build Python OR-Tools.
 detect_python:
 ifeq ($(SYSTEM),win)
-	@echo WINDOWS_PATH_TO_PYTHON = $(WINDOWS_PATH_TO_PYTHON)
+	@echo WINDOWS_PATH_TO_PYTHON = "$(WINDOWS_PATH_TO_PYTHON)"
 endif
 	@echo PYTHON_COMPILER = $(PYTHON_COMPILER)
-	@echo PYTHON_EXECUTABLE = $(PYTHON_EXECUTABLE)
+	@echo PYTHON_EXECUTABLE = "$(PYTHON_EXECUTABLE)"
 	@echo PYTHON_VERSION = $(PYTHON_VERSION)
 	@echo PYTHON3 = $(PYTHON3)
 	@echo SET_PYTHONPATH = "$(SET_PYTHONPATH)"
-	@echo PYTHON_INC = $(PYTHON_INC)
-	@echo PYTHON_LNK = $(PYTHON_LNK)
+	@echo PYTHON_INC = "$(PYTHON_INC)"
+	@echo PYTHON_LNK = "$(PYTHON_LNK)"
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
