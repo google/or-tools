@@ -11,7 +11,7 @@ CLEAN_FILES=$(FSHARP_ORTOOLS_DLL_NAME).*
 # Check for required build tools
 ifeq ($(SYSTEM), win)
 FSHARP_COMPILER := fsc.exe
-FSHARP_EXECUTABLE := $(shell where $(FSHARP_COMPILER))
+FSHARP_EXECUTABLE := $(shell tools\\which.exe $(FSHARP_COMPILER))
 FLAG_PREFIX := /
 else # UNIX
 FSHARP_COMPILER := fsharpc
