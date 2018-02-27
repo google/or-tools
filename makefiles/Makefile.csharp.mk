@@ -2,7 +2,11 @@
 .PHONY: help_csharp # Generate list of targets with descriptions.
 help_csharp:
 	@echo Use one of the following targets:
+ifeq ($(SYSTEM),win)
+	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.csharp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.csharp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+endif
 
 # Check for required build tools
 ifeq ($(SYSTEM),win)

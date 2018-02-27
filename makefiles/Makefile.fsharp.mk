@@ -2,7 +2,11 @@
 .PHONY: help_fsharp # Generate list of targets with descriptions.
 help_fsharp:
 	@echo Use one of the following targets:
+ifeq ($(SYSTEM),win)
+	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+endif
 
 BASE_ORTOOLS_DLL_NAME=Google.OrTools
 FSHARP_ORTOOLS_DLL_NAME=$(BASE_ORTOOLS_DLL_NAME).FSharp
