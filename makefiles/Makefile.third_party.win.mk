@@ -55,6 +55,7 @@ missing_directories: $(MISSING_DIRECTORIES)
 
 build_third_party: \
 	install_directories \
+	archives_directory \
 	missing_directories \
 	install_zlib \
 	install_gflags \
@@ -170,47 +171,52 @@ download_third_party: \
 	dependencies/archives/swigwin-$(SWIG_TAG).zip \
 	dependencies/sources/Cbc-$(CBC_TAG)/configure
 
-# Directories:
+# Directories
 .PHONY: install_directories
-install_directories: dependencies\install\bin dependencies\install\lib\coin dependencies\install\include\coin
+install_directories: dependencies/install/bin dependencies/install/lib/coin dependencies/install/include/coin
 
-dependencies\install\bin: dependencies\install
-	-$(MKDIR_P) dependencies\install\bin
+dependencies/install/bin: dependencies/install
+	$(MKDIR_P) dependencies$Sinstall$Sbin
 
-dependencies\install\lib: dependencies\install
-	-$(MKDIR_P) dependencies\install\lib
+dependencies/install/lib: dependencies/install
+	$(MKDIR_P) dependencies$Sinstall$Slib
 
-dependencies\install\lib\coin: dependencies\install\lib
-	-$(MKDIR_P) dependencies\install\lib\coin
-dependencies\install\include: dependencies\install
-	-$(MKDIR_P) dependencies\install\include
+dependencies/install/lib/coin: dependencies/install/lib
+	$(MKDIR_P) dependencies$Sinstall$Slib$Scoin
 
-dependencies\install\include\coin: dependencies\install\include
-	-$(MKDIR_P) dependencies\install\include\coin
+dependencies/install:
+	$(MKDIR_P) dependencies$Sinstall
 
-dependencies\install:
-	-$(MKDIR_P) dependencies\install
+dependencies/install/include: dependencies/install
+	$(MKDIR_P) dependencies$Sinstall$Sinclude
+
+dependencies/install/include/coin: dependencies/install/include
+	$(MKDIR_P) dependencies$Sinstall$Sinclude$Scoin
+
+.PHONY: archives_directory
+archives_directory:
+	-$(MKDIR_P) dependencies$Sarchives
 
 # Install zlib
-install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
+.PHONY: install_zlib
+install_zlib: dependencies/install/include/zlib.h dependencies/install/include/zconf.h dependencies/install/lib/zlib.lib
 
-dependencies\install\include\zlib.h: dependencies\install\include dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h dependencies\install\include
+dependencies/install/include/zlib.h: dependencies/install/include dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szlib.h dependencies$Sinstall$Sinclude$Szlib.h
 
-dependencies\install\include\zconf.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zconf.h dependencies\install\include
-	tools\touch.exe dependencies\install\include\zconf.h
+dependencies/install/include/zconf.h: dependencies/install/include dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szconf.h dependencies$Sinstall$Sinclude$Szconf.h
 
-dependencies\install\lib\zlib.lib: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	cd dependencies\sources\zlib-$(ZLIB_TAG) && set MAKEFLAGS= && nmake -f win32\Makefile.msc zlib.lib
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.lib dependencies\install\lib
+dependencies/install/lib/zlib.lib: dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+	cd dependencies$Ssources$Szlib-$(ZLIB_TAG) && set MAKEFLAGS= && nmake -f win32$SMakefile.msc zlib.lib
+	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szlib.lib dependencies$Sinstall$Slib
 
-dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h: dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
-	tools\unzip -q -d dependencies\sources dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
-	tools\touch.exe dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
+dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h: dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip
+	tools\unzip -q -d dependencies$Ssources dependencies$Sarchives$Szlib$(ZLIB_ARCHIVE_TAG).zip
+	-$(TOUCH) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szlib.h
 
-dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
-	tools\wget --quiet -P dependencies\archives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
+dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip:
+	tools\wget --quiet -P dependencies$Sarchives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
 
 install_gflags: dependencies/install/lib/gflags.lib
 
@@ -356,6 +362,7 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) dependencies\archives\zlib*.zip
 	-$(DEL) dependencies\archives\v*.zip
 	-$(DEL) dependencies\archives\win_flex_bison*.zip
+	-$(DELREC) dependencies\archives
 	-$(DELREC) dependencies\sources\Cbc-*
 	-$(DELREC) dependencies\sources\gflags*
 	-$(DELREC) dependencies\sources\glpk*

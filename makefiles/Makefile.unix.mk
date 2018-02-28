@@ -52,6 +52,7 @@ RENAME = mv
 S = /
 CPSEP = :
 SED = sed
+GREP = grep
 ARCHIVE_EXT = .tar.gz
 FZ_EXE = fzn-or-tools$E
 

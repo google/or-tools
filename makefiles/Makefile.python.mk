@@ -14,9 +14,9 @@ OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssour
 ifeq ($(SYSTEM),win)
 PYTHON_COMPILER ?= python.exe
 ifneq ($(WINDOWS_PATH_TO_PYTHON),)
-	PYTHON_EXECUTABLE := $(shell set PATH="$(WINDOWS_PATH_TO_PYTHON):%PATH%" && tools\\which.exe $(PYTHON_COMPILER) 2>nul)
+	PYTHON_EXECUTABLE := $(shell set PATH="$(WINDOWS_PATH_TO_PYTHON):%PATH%" && $(WHICH) $(PYTHON_COMPILER) 2>nul)
 else
-PYTHON_EXECUTABLE := $(shell tools\\which.exe $(PYTHON_COMPILER) 2>nul)
+PYTHON_EXECUTABLE := $(shell $(WHICH) $(PYTHON_COMPILER) 2>nul)
 endif
 SET_PYTHONPATH = @set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) &&
 else # UNIX

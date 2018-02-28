@@ -189,13 +189,16 @@ ifeq ($(SYSTEM),win)
     ifeq ($(wildcard $(CANONIC_DETECTED_PATH_TO_PYTHON)),)
       SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don\'t include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python27-64)
     else
-      SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
-      WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
+      SELECTED_PATH_TO_PYTHON =\#WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
     endif
   else
     SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(WINDOWS_PATH_TO_PYTHON)
   endif
-  WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
+  ifeq ($(WINDOWS_PATH_TO_PYTHON),)
+    WINDOWS_PYTHON_VERSION = $(shell python -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
+  else
+    WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
+  endif
 
   #Detect csc
   ifeq ($(PATH_TO_CSHARP_COMPILER),)
@@ -203,7 +206,7 @@ ifeq ($(SYSTEM),win)
     ifeq ($(DETECTED_CSC_BINARY),)
       SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the chsarp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
     else
-      SELECTED_CSC_BINARY =\#PATH_TO_CSHARP_COMPILER =
+      SELECTED_CSC_BINARY =\#PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
     endif
   else
     SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)

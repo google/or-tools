@@ -14,7 +14,7 @@ CSHARP_COMPILER ?= csc.exe
 ifneq ($(PATH_TO_CSHARP_COMPILER),)
 CSHARP_EXECUTABLE := "$(PATH_TO_CSHARP_COMPILER)"
 else
-CSHARP_EXECUTABLE := "$(shell tools\\which.exe $(CSHARP_COMPILER) 2>nul)"
+CSHARP_EXECUTABLE := "$(shell $(WHICH) $(CSHARP_COMPILER) 2>nul)"
 endif
 else # UNIX
 CSHARP_COMPILER ?= mcs
@@ -598,7 +598,7 @@ rcsfz: $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe
 
 ifeq ($(SYSTEM),win)
 NUGET_COMPILER ?= nuget.exe
-NUGET_EXECUTABLE := $(shell tools\\which.exe $(NUGET_COMPILER) 2>nul)
+NUGET_EXECUTABLE := $(shell $(WHICH) $(NUGET_COMPILER) 2>nul)
 else #UNIX
 NUGET_COMPILER ?= nuget
 NUGET_EXECUTABLE := $(shell which $(NUGET_COMPILER))

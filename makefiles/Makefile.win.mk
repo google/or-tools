@@ -40,6 +40,7 @@ MKDIR = md
 MKDIR_P = tools\mkdir.exe -p
 COPY = copy
 TOUCH = tools\touch.exe
+GREP = tools\grep.exe
 SED = tools\sed.exe
 WHICH = tools\which.exe
 CMAKE = cmake
