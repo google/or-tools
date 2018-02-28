@@ -74,6 +74,7 @@ before_build:
 build_script:
   - if "%BUILDER%"=="cmake" cmake --build build --config Release --target ALL_BUILD -- %MSBUILD_FLAGS%
   - if "%BUILDER%"=="make" tools\make third_party
+  - if "%BUILDER%"=="make" tools\make help_%LANGUAGE%
   - if "%BUILDER%"=="make" tools\make %LANGUAGE%
   - if "%BUILDER%"=="make" tools\make test_%LANGUAGE%
 
