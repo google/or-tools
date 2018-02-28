@@ -47,6 +47,15 @@ CMAKE = cmake
 ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
 
+# We Can't force SHELL to cmd.exe if sh.exe is in the PATH
+# cf https://www.gnu.org/software/make/manual/html_node/Choosing-the-Shell.html
+SHCHECK := $(shell where sh.exe)
+ifneq ($(SHCHECK),)
+$(error Please remove sh.exe from your PATH)
+else
+SHELL = cmd
+endif
+
 # Add some additional macros
 CD = cd
 ATTRIB = attrib

@@ -69,6 +69,7 @@ before_build:
   - python -m pip install virtualenv wheel
 #  - set PATH="C:\Program Files\Java\jdk1.8.0\bin";%PATH%
   - if "%BUILDER%"=="cmake" cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release -G "%CMAKE_GENERATOR%"
+  - if "%BUILDER%"=="make" del "C:\Program Files\Git\usr\bin\sh.exe"
   - if "%BUILDER%"=="make" tools\make detect
 
 build_script:
