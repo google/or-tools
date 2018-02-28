@@ -2,7 +2,7 @@
 help:
 	@echo Please define target:
 	@echo "  - Prerequisite: third_party third_party_check clean_third_party"
-	@echo "  - C++: cc test_cc clean_cc"
+	@echo "  - C++: cc help_cc test_cc clean_cc"
 	@echo "  - Python: python help_python test_python clean_python"
 	@echo "  - Java: java help_java test_java clean_java"
 	@echo "  - .NET (CSharp): csharp help_csharp test_csharp clean_csharp"

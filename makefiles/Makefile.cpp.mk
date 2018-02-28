@@ -1,14 +1,23 @@
-# Makefile targets.
+# ---------- C++ support ----------
+.PHONY: help_cc # Generate list of targets with descriptions.
+help_cc:
+	@echo Use one of the following targets:
+ifeq ($(SYSTEM),win)
+	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+else
+	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+endif
 
 .PHONY: ccc rcc clean_cc clean_compat ccexe
 
 # Main target
+.PHONY: cc # Build C++ OR-Tools.
 cc: ortoolslibs ccexe
-
+.PHONY: test_cc # Test C++ OR-Tools using various examples.
+test_cc: test_cc_examples
 BUILT_LANGUAGES += C++
 
-# Clean target
-
+.PHONY: clean_cc # Clean C++ output from previous build.
 clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)

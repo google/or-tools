@@ -2,7 +2,7 @@
 test: test_cc test_python test_java test_csharp test_fsharp
 	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
 
-test_cc: cc
+test_cc_examples: cc
 	$(BIN_DIR)$Sgolomb$E --size=5
 	$(BIN_DIR)$Scvrptw$E
 	$(BIN_DIR)$Sflow_api$E
