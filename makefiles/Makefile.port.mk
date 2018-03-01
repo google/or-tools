@@ -189,14 +189,13 @@ ifeq ($(SYSTEM),win)
     ifeq ($(wildcard $(CANONIC_DETECTED_PATH_TO_PYTHON)),)
       SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don\'t include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python27-64)
     else
-      SELECTED_PATH_TO_PYTHON =\#WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
+      SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
+      WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
     endif
   else
     SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(WINDOWS_PATH_TO_PYTHON)
   endif
-  ifeq ($(WINDOWS_PATH_TO_PYTHON),)
-    WINDOWS_PYTHON_VERSION = $(shell python -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
-  else
+  ifneq ($(WINDOWS_PATH_TO_PYTHON),)
     WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
   endif
 
