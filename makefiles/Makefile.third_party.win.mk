@@ -326,17 +326,18 @@ dependencies\sources\Cbc-$(CBC_TAG)\configure:
 	tools\unzip -q -d dependencies\sources dependencies\archives\Cbc-$(CBC_TAG).zip
 
 # Install SWIG.
-install_swig: dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
+install_swig: dependencies/install/swigwin-$(SWIG_TAG)/swig.exe
 
-dependencies\install\swigwin-$(SWIG_TAG)\swig.exe: dependencies\archives\swigwin-$(SWIG_TAG).zip
-	tools\unzip -q -d dependencies/install dependencies\archives\swigwin-$(SWIG_TAG).zip
-	tools\touch.exe dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
+dependencies/install/swigwin-$(SWIG_TAG)/swig.exe: dependencies/archives/swigwin-$(SWIG_TAG).zip
+	tools$Sunzip -q -d dependencies$Sinstall dependencies$Sarchives$Sswigwin-$(SWIG_TAG).zip
+	tools$Stouch dependencies$Sinstall$Sswigwin-$(SWIG_TAG)$Sswig.exe
 
-dependencies\archives\swigwin-$(SWIG_TAG).zip:
-	tools\wget --quiet -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running 'tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
+SWIG_ARCHIVE:=https://superb-dca2.dl.sourceforge.net/project/swig/swigwin/swigwin-$(SWIG_TAG)/swigwin-$(SWIG_TAG).zip
+
+dependencies/archives/swigwin-$(SWIG_TAG).zip:
+	tools$Swget --quiet -P dependencies$Sarchives --no-check-certificate $(SWIG_ARCHIVE)
 
 # Install Java protobuf
-
 dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
 	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
