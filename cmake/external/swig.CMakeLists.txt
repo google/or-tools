@@ -4,7 +4,8 @@ project(swig-download NONE)
 
 include(ExternalProject)
 ExternalProject_Add(SWIG_project
-	URL "http://prdownloads.sourceforge.net/swig/swigwin-3.0.12.zip"
+	URL
+	"https://superb-dca2.dl.sourceforge.net/project/swig/swigwin/swigwin-3.0.12/swigwin-3.0.12.zip"
 	BUILD_IN_SOURCE 1
 	SOURCE_DIR "${CMAKE_BINARY_DIR}/swig"
 	UPDATE_COMMAND ""
