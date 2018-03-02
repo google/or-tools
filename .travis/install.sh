@@ -56,7 +56,7 @@ if [ "${BUILDER}" == make ]; then
 				brew install swig;
 			fi
 			if [ "${LANGUAGE}" == python ]; then
-				brew install python3;
+				brew upgrade python;
 				python3.6 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == java ]; then
 				brew cask install java;
@@ -87,7 +87,7 @@ if [ "${BUILDER}" == cmake ]; then
 		if [ "${DISTRO}" == native ]; then
 			brew update;
 			brew install swig;
-			brew install python3;
+			brew upgrade python3;
 		else
 			# MacOS Docker CMake build:
 			echo "NOT SUPPORTED"
