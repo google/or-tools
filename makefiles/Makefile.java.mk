@@ -422,3 +422,4 @@ detect_java:
 	@echo JAVA_INC = $(JAVA_INC)
 	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo JAR_BIN = $(JAR_BIN)
+	@echo JNIFLAGS = $(JNIFLAGS)
