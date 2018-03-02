@@ -30,7 +30,7 @@ test_csharp_examples: \
 		$(CSHARPEXE) \
 		$(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe \
 		$(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe \
-		$(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe
+		$(BIN_DIR)/test_sat_model$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scslinearprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsintegerprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsrabbitspheasants$(CLR_EXE_SUFFIX).exe
