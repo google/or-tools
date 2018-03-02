@@ -666,6 +666,7 @@ detect_cc:
 	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
 	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
 	@echo OR_TOOLS_LD_FLAGS = $(OR_TOOLS_LD_FLAGS)
+	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
 
 # Debug
 .PHONY: printdir
