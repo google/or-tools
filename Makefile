@@ -77,6 +77,6 @@ ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
 endif
 
 .PHONY: detect
-detect: detect_port detect_python detect_java detect_csharp detect_fsharp
+detect: detect_port detect_cc detect_python detect_java detect_csharp detect_fsharp
 
 print-%  : ; @echo $* = $($*)

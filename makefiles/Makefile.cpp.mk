@@ -659,7 +659,16 @@ rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
 
+.PHONY: detect_cc # Show variables used to build C++ OR-Tools.
+detect_cc:
+	@echo CCC = $(CCC)
+	@echo CFLAGS = $(CFLAGS)
+	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
+	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
+	@echo OR_TOOLS_LD_FLAGS = $(OR_TOOLS_LD_FLAGS)
+
 # Debug
+.PHONY: printdir
 printdir:
 	@echo LIB_DIR = $(LIB_DIR)
 	@echo BIN_DIR = $(BIN_DIR)
