@@ -1,7 +1,7 @@
 # ---------- C++ support ----------
-.PHONY: help_cc # Generate list of targets with descriptions.
+.PHONY: help_cc # Generate list of C++ targets with descriptions.
 help_cc:
-	@echo Use one of the following targets:
+	@echo Use one of the following C++ targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 else
@@ -12,7 +12,7 @@ endif
 
 # Main target
 .PHONY: cc # Build C++ OR-Tools.
-cc: ortoolslibs ccexe
+cc: third_party_check ortoolslibs ccexe
 .PHONY: test_cc # Test C++ OR-Tools using various examples.
 test_cc: test_cc_examples
 BUILT_LANGUAGES += C++

@@ -1,3 +1,8 @@
+.PHONY: help_third_party # Generate list of Prerequisite targets with descriptions.
+help_third_party:
+	@echo Use one of the following Prerequisite targets:
+	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.win.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.1
 PROTOBUF_TAG = 3.5.1
@@ -11,11 +16,16 @@ SWIG_TAG = 3.0.12
 TSVNCACHE_EXE = TSVNCache.exe
 
 # Main target.
-.PHONY: third_party build_third_party makefile_third_party
+.PHONY: third_party # Build OR-Tools Prerequisite
 third_party: build_third_party makefile_third_party
 
-# Create missing directories
+.PHONY: third_party_check # Check if "make third_party" have been run or not
+third_party_check:
+ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
+	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
+endif
 
+# Create missing directories
 MISSING_DIRECTORIES = \
 	bin \
 	lib \
@@ -53,6 +63,7 @@ MISSING_DIRECTORIES = \
 
 missing_directories: $(MISSING_DIRECTORIES)
 
+.PHONY: build_third_party
 build_third_party: \
 	install_directories \
 	archives_directory \
@@ -353,7 +364,7 @@ kill_tortoisesvn_cache:
 remove_readonly_svn_attribs: kill_tortoisesvn_cache
 	if exist dependencies\sources\* $(ATTRIB) -r /s dependencies\sources\*
 
-# Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
+.PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) Makefile.local
 	-$(DEL) dependencies\archives\swigwin*.zip
@@ -374,6 +385,7 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DELREC) dependencies\install
 
 # Create Makefile.local
+.PHONY: makefile_third_party
 makefile_third_party: Makefile.local
 
 # Make sure that local file lands correctly across platforms

@@ -1,7 +1,7 @@
 # ---------- Java support using SWIG ----------
-.PHONY: help_java # Generate list of targets with descriptions.
+.PHONY: help_java # Generate list of Java targets with descriptions.
 help_java:
-	@echo Use one of the following targets:
+	@echo Use one of the following Java targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.java.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 else

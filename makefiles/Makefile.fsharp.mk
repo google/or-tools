@@ -1,7 +1,7 @@
 # ---------- FSharp support using SWIG ----------
-.PHONY: help_fsharp # Generate list of targets with descriptions.
+.PHONY: help_fsharp # Generate list of F# targets with descriptions.
 help_fsharp:
-	@echo Use one of the following targets:
+	@echo Use one of the following F# targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 else

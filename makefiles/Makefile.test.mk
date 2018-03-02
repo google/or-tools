@@ -1,7 +1,5 @@
-.PHONY: test
-test: test_cc test_python test_java test_csharp test_fsharp
-	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
-
+# Targets to run tests
+.PHONY: test_cc_examples
 test_cc_examples: cc
 	$(BIN_DIR)$Sgolomb$E --size=5
 	$(BIN_DIR)$Scvrptw$E
@@ -10,6 +8,7 @@ test_cc_examples: cc
 	$(BIN_DIR)$Sinteger_programming$E
 	$(BIN_DIR)$Stsp$E
 
+.PHONY: test_python_examples
 test_python_examples: python
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Spython$Shidato_table.py
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Spython$Stsp.py
@@ -21,11 +20,13 @@ test_python_examples: python
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Stests$Stest_cp_api.py
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX_DIR)$Stests$Stest_lp_api.py
 
+.PHONY: test_java_examples
 test_java_examples: java run_RabbitsPheasants run_FlowExample \
 run_Tsp run_LinearProgramming run_IntegerProgramming \
 run_Knapsack run_MultiThreadIntegerProgramming
 
 # csharp test
+.PHONY: test_csharp_examples
 test_csharp_examples: \
 		$(CSHARPEXE) \
 		$(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe \
@@ -49,5 +50,6 @@ test_csharp_examples: \
 	$(MONO) $(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe
 
+.PHONY: test_fsharp_examples
 test_fsharp_examples: fsharp
 	$(warning F# tests unimplemented)

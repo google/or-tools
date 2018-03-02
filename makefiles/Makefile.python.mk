@@ -1,7 +1,7 @@
 # ---------- Python support using SWIG ----------
-.PHONY: help_python # Generate list of targets with descriptions.
+.PHONY: help_python # Generate list of Python targets with descriptions.
 help_python:
-	@echo Use one of the following targets:
+	@echo Use one of the following Python targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.python.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 else

@@ -1,5 +1,9 @@
-# SVN tags of dependencies to checkout.
+.PHONY: help_third_party # Generate list of Prerequisite targets with descriptions.
+help_third_party:
+	@echo Use one of the following Prerequisite targets:
+	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.unix.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
 
+# Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.1
 PROTOBUF_TAG = 3.5.1
 GLOG_TAG = 0.3.5
@@ -16,11 +20,16 @@ ifeq ($(PLATFORM), MACOSX)
 endif
 
 # Main target.
-.PHONY: makefile_third_party missing_directories
+.PHONY: third_party # Build OR-Tools Prerequisite
 third_party: makefile_third_party install_third_party
 
-# Create missing directories
+.PHONY: third_party_check # Check if "make third_party" have been run or not
+third_party_check:
+ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
+	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
+endif
 
+# Create missing directories
 MISSING_DIRECTORIES = \
 	dependencies/install \
 	dependencies/archives \
@@ -58,6 +67,7 @@ MISSING_DIRECTORIES = \
 	ortools/gen/ortools/linear_solver \
 	ortools/gen/ortools/sat
 
+.PHONY: makefile_third_party missing_directories
 missing_directories: $(MISSING_DIRECTORIES)
 
 install_third_party: \
@@ -258,9 +268,7 @@ dependencies/sources/patchelf-$(PATCHELF_TAG)/configure:
 	git clone --quiet -b $(PATCHELF_TAG) https://github.com/NixOS/patchelf.git dependencies/sources/patchelf-$(PATCHELF_TAG)
 	cd dependencies/sources/patchelf-$(PATCHELF_TAG) && ./bootstrap.sh
 
-
 # Install Java protobuf
-
 dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
 	  ../../../install/bin/protoc --java_out=core/src/main/java -I../src \
@@ -271,7 +279,8 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
 # Install C# protobuf
 
 #create .snk file if strong named dll is required (this is the default behaviour)
-# Clean everything.
+
+.PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:
 	-$(DEL) Makefile.local
 	-$(DELREC) dependencies/archives/Cbc*
