@@ -10,36 +10,12 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     VS: 2017
     BUILDER: make
-    LANGUAGE: cc
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    VS: 2017
-    BUILDER: make
-    LANGUAGE: python
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    VS: 2017
-    BUILDER: make
-    LANGUAGE: csharp
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    VS: 2017
-    BUILDER: make
-    LANGUAGE: fsharp
+    LANGUAGE: all
 
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     VS: 2015
     BUILDER: make
-    LANGUAGE: cc
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    VS: 2015
-    BUILDER: make
-    LANGUAGE: python
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    VS: 2015
-    BUILDER: make
-    LANGUAGE: csharp
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    VS: 2015
-    BUILDER: make
-    LANGUAGE: fsharp
+    LANGUAGE: all
 # CMake
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     VS: 2017
