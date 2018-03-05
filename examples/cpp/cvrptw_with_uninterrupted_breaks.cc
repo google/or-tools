@@ -16,14 +16,13 @@
 // a custom constraint is developed.
 //
 // A warning message is printed every time vehicle's break overlaps with a visit.
-//
-// Boost.DateTime header only library is used for human friendly date time manipulation.
 
 #include <algorithm>
 #include <iterator>
 #include <string>
 #include <functional>
 #include <ostream>
+#include <iostream>
 #include <vector>
 
 #include <boost/date_time.hpp>
@@ -33,30 +32,41 @@
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_flags.h"
 
-DEFINE_bool(built_in_breaks,
-false,
-"Use breaks from the routing library that allow for interruptions.");
+DEFINE_bool(built_in_breaks, false, "Use breaks from the routing library that allow for interruptions.");
+
+int64 duration_from_string(const std::string &text) {
+    int hours = 0;
+    int minutes = 0;
+    int seconds = 0;
+
+    std::istringstream input{text};
+
+    input >> hours;
+    input.ignore(1, ':');
+    input >> minutes;
+    input.ignore(1, ':');
+    input >> seconds;
+
+    return 3600 * hours + 60 * minutes + seconds;
+}
 
 struct Visit {
     Visit(std::size_t location, const std::string &begin, const std::string &end, const std::string &duration)
             : Visit{location,
-                    boost::posix_time::duration_from_string(begin),
-                    boost::posix_time::duration_from_string(end),
-                    boost::posix_time::duration_from_string(duration)} {}
+                    duration_from_string(begin),
+                    duration_from_string(end),
+                    duration_from_string(duration)} {}
 
-    Visit(std::size_t location,
-          boost::posix_time::time_duration begin,
-          boost::posix_time::time_duration end,
-          boost::posix_time::time_duration duration)
+    Visit(std::size_t location, int64 begin, int64 end, int64 duration)
             : Location{location},
-              Begin{std::move(begin)},
-              End{std::move(end)},
-              Duration{std::move(duration)} {}
+              Begin{begin},
+              End{end},
+              Duration{duration} {}
 
     const std::size_t Location;
-    const boost::posix_time::time_duration Begin;
-    const boost::posix_time::time_duration End;
-    const boost::posix_time::time_duration Duration;
+    const int64 Begin;
+    const int64 End;
+    const int64 Duration;
 };
 
 std::ostream &operator<<(std::ostream &out, const Visit &visit) {
@@ -64,25 +74,46 @@ std::ostream &operator<<(std::ostream &out, const Visit &visit) {
     return out;
 }
 
-struct Break {
-    Break(const std::string &start, const std::string &duration)
-            : Break{boost::posix_time::duration_from_string(start),
-                    boost::posix_time::duration_from_string(duration)} {}
+struct TimePeriod {
+    TimePeriod(const std::string &start, const std::string &duration)
+            : TimePeriod{duration_from_string(start),
+                    duration_from_string(duration)} {}
 
-    Break(boost::posix_time::time_duration start, boost::posix_time::time_duration duration)
-            : Start{std::move(start)},
-              Duration{std::move(duration)} {}
+    TimePeriod(int64 start, int64 duration)
+            : Start{start},
+              Duration{duration} {}
 
-    const boost::posix_time::time_duration Start;
-    const boost::posix_time::time_duration Duration;
+    TimePeriod Intersection(const TimePeriod &other) const {
+        int64 later_start = std::max(Start, other.Start);
+        int64 earlier_finish = std::min(Finish(), other.Finish());
+
+        if (earlier_finish < later_start) {
+            return {earlier_finish, 0};
+        }
+
+        return {later_start, earlier_finish - later_start};
+    }
+
+    bool operator==(const TimePeriod &other) {
+        return Start == other.Start && Duration == other.Duration;
+    }
+
+    bool operator!=(const TimePeriod &other) {
+        return !this->operator==(other);
+    }
+
+    int64 Finish() const { return Start + Duration; }
+
+    const int64 Start;
+    const int64 Duration;
 };
 
 struct Problem {
     static const std::string TIME_DIM;
 
     Problem(std::vector <Visit> visits,
-            std::vector <std::vector<Break>> breaks,
-            std::vector <std::vector<int64>> distances)
+            std::vector <std::vector<TimePeriod> > breaks,
+            std::vector <std::vector<int64> > distances)
             : Depot{0},
               Visits(std::move(visits)),
               Breaks(std::move(breaks)),
@@ -105,7 +136,7 @@ struct Problem {
             return 0;
         }
 
-        const auto service_time = NodeToVisit(from_node).Duration.total_seconds();
+        const auto service_time = NodeToVisit(from_node).Duration;
         return service_time + distance(from_node, to_node);
     }
 
@@ -115,8 +146,8 @@ struct Problem {
 
     const operations_research::RoutingModel::NodeIndex Depot;
     const std::vector <Visit> Visits;
-    const std::vector <std::vector<Break>> Breaks;
-    const std::vector <std::vector<int64>> Distances;
+    const std::vector <std::vector<TimePeriod> > Breaks;
+    const std::vector <std::vector<int64> > Distances;
 };
 
 const std::string Problem::TIME_DIM{"time"};
@@ -229,7 +260,7 @@ int main(int argc, char **argv) {
         const auto &visit = problem.NodeToVisit(visit_node);
         const auto visit_index = model.NodeToIndex(visit_node);
 
-        time_dimension->CumulVar(visit_index)->SetRange(visit.Begin.total_seconds(), visit.End.total_seconds());
+        time_dimension->CumulVar(visit_index)->SetRange(visit.Begin, visit.End);
         model.AddVariableMinimizedByFinalizer(time_dimension->CumulVar(visit_index));
         model.AddToAssignment(time_dimension->SlackVar(visit_index));
 
@@ -245,8 +276,8 @@ int main(int argc, char **argv) {
         std::vector < IntervalVar * > breaks;
         auto break_index = 0;
         for (const auto &break_config : problem.Breaks[vehicle]) {
-            auto interval = model.solver()->MakeFixedInterval(break_config.Start.total_seconds(),
-                                                              break_config.Duration.total_seconds(),
+            auto interval = model.solver()->MakeFixedInterval(break_config.Start,
+                                                              break_config.Duration,
                                                               absl::StrCat("Break ",
                                                                            break_index,
                                                                            " of vehicle ",
@@ -269,31 +300,21 @@ int main(int argc, char **argv) {
     parameters.set_first_solution_strategy(FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION);
     model.CloseModelWithParameters(parameters);
 
-    static const auto REFERENCE_DATE = second_clock::universal_time().date();
-
-    const auto &BreakToPeriod = [](const Break &vehicle_break) -> time_period {
-        return time_period(ptime(REFERENCE_DATE, vehicle_break.Start), vehicle_break.Duration);
-    };
-
-    const auto &Period = [](int64 start, time_duration duration) -> time_period {
-        return time_period(ptime(REFERENCE_DATE, seconds(start)), duration);
-    };
-
-    const auto &Overlap = [](const time_period &break_period,
-                             const time_period &visit_period,
+    const auto &Overlap = [](const TimePeriod &break_period,
+                             const TimePeriod &visit_period,
                              int vehicle,
                              const Visit &visit) -> bool {
-        static const auto MIN_INTERSECTION = seconds(1);
+        static const auto MIN_INTERSECTION = 1;
 
-        const auto intersection = break_period.intersection(visit_period);
-        if (intersection.is_null() || intersection.length() <= MIN_INTERSECTION) {
+        const auto intersection = break_period.Intersection(visit_period);
+        if (intersection.Duration <= MIN_INTERSECTION) {
             return false;
         }
 
-        LOG(ERROR) << "The time period [" << visit_period.begin().time_of_day()
-                   << ", " << visit_period.end().time_of_day() << "] allocated for the visit (" << visit << ") "
-                   << "overlaps with the break [" << break_period.begin().time_of_day()
-                   << ", " << break_period.end().time_of_day() << "] of the vehicle (" << vehicle << ")";
+        LOG(ERROR) << "The time period [" << visit_period.Start
+                   << ", " << visit_period.Finish() << "] allocated for the visit (" << visit << ") "
+                   << "overlaps with the break [" << break_period.Start
+                   << ", " << break_period.Finish() << "] of the vehicle (" << vehicle << ")";
         return true;
     };
 
@@ -306,17 +327,14 @@ int main(int argc, char **argv) {
 
     auto overlap_detected = false;
     for (auto vehicle = 0; vehicle < model.vehicles(); ++vehicle) {
-        std::vector <time_period> break_periods;
-        for (const auto &vehicle_break : problem.Breaks.at(static_cast<std::size_t>(vehicle))) {
-            break_periods.emplace_back(BreakToPeriod(vehicle_break));
-        }
+        const std::vector <TimePeriod> &break_periods = problem.Breaks.at(static_cast<std::size_t>(vehicle));
 
         auto order = solution->Value(model.NextVar(model.Start(vehicle)));
         while (!model.IsEnd(order)) {
             const auto &visit = problem.NodeToVisit(model.IndexToNode(order));
             const auto &visit_start_var = time_dimension->CumulVar(order);
-            const auto min_period = Period(solution->Min(visit_start_var), visit.Duration);
-            const auto max_period = Period(solution->Max(visit_start_var), visit.Duration);
+            TimePeriod min_period{solution->Min(visit_start_var), visit.Duration};
+            TimePeriod max_period{solution->Max(visit_start_var), visit.Duration};
 
             for (const auto &break_period: break_periods) {
                 overlap_detected |= Overlap(break_period, min_period, vehicle, visit);
@@ -388,7 +406,7 @@ Problem CreateSample() {
                     {13, "09:00:00", "10:00:00", "00:30:00"},
                     {14, "17:30:00", "18:30:00", "00:30:00"}
             },
-            std::vector < std::vector < Break >> {
+            std::vector < std::vector < TimePeriod > > {
                     {
                             {"00:00:00", "08:00:00"},
                             {"13:00:00", "03:00:00"},
@@ -399,7 +417,8 @@ Problem CreateSample() {
                             {"10:30:00", "01:30:00"},
                             {"14:00:00", "10:00:00"}
                     },
-                    {
+                    {//
+
                             {"00:00:00", "08:00:00"},
                             {"13:00:00", "11:00:00"}
                     },
