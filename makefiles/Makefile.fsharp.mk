@@ -33,10 +33,16 @@ ifdef CLR_KEYFILE
 FS_SIGNING_FLAGS := $(FLAG_PREFIX)keyfile:$(CLR_KEYFILE)
 endif
 
+ifeq ("$(VisualStudioVersion)", "15.0")
+FS_NOCPYCORE := $(FLAG_PREFIX)nocopyfsharpcore
+else
+FS_NOCPYCORE :=
+endif
+
 .PHONY: fsharp # Build F# OR-Tools. Set environment variable FSHARP_DEBUG=1 for debug symbols.
 fsharp: csharp
 ifneq ($(FSHARP_EXECUTABLE),)
-	"$(FSHARP_EXECUTABLE)" $(FLAG_PREFIX)target:library $(FLAG_PREFIX)out:bin$S$(FSHARP_ORTOOLS_DLL_NAME).dll $(FLAG_PREFIX)platform:anycpu $(FLAG_PREFIX)nocopyfsharpcore $(FLAG_PREFIX)lib:bin $(FLAG_PREFIX)reference:$(BASE_ORTOOLS_DLL_NAME).dll $(FSHARP_DEBUG) $(FS_SIGNING_FLAGS) ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_NAME).fsx
+	"$(FSHARP_EXECUTABLE)" $(FLAG_PREFIX)target:library $(FLAG_PREFIX)out:bin$S$(FSHARP_ORTOOLS_DLL_NAME).dll $(FLAG_PREFIX)platform:anycpu $(FS_NOCPYCORE) $(FLAG_PREFIX)lib:bin $(FLAG_PREFIX)reference:$(BASE_ORTOOLS_DLL_NAME).dll $(FSHARP_DEBUG) $(FS_SIGNING_FLAGS) ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_NAME).fsx
 else
 	$(warning Cannot find '$(FSHARP_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
 endif
