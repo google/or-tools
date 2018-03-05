@@ -1,3 +1,8 @@
+.PHONY: help_third_party # Generate list of Prerequisite targets with descriptions.
+help_third_party:
+	@echo Use one of the following Prerequisite targets:
+	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.win.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.1
 PROTOBUF_TAG = 3.5.1
@@ -11,11 +16,16 @@ SWIG_TAG = 3.0.12
 TSVNCACHE_EXE = TSVNCache.exe
 
 # Main target.
-.PHONY: third_party build_third_party makefile_third_party
+.PHONY: third_party # Build OR-Tools Prerequisite
 third_party: build_third_party makefile_third_party
 
-# Create missing directories
+.PHONY: third_party_check # Check if "make third_party" have been run or not
+third_party_check:
+ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
+	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
+endif
 
+# Create missing directories
 MISSING_DIRECTORIES = \
 	bin \
 	lib \
@@ -53,8 +63,10 @@ MISSING_DIRECTORIES = \
 
 missing_directories: $(MISSING_DIRECTORIES)
 
+.PHONY: build_third_party
 build_third_party: \
 	install_directories \
+	archives_directory \
 	missing_directories \
 	install_zlib \
 	install_gflags \
@@ -170,67 +182,72 @@ download_third_party: \
 	dependencies/archives/swigwin-$(SWIG_TAG).zip \
 	dependencies/sources/Cbc-$(CBC_TAG)/configure
 
-# Directories:
+# Directories
 .PHONY: install_directories
-install_directories: dependencies\install\bin dependencies\install\lib\coin dependencies\install\include\coin
+install_directories: dependencies/install/bin dependencies/install/lib/coin dependencies/install/include/coin
 
-dependencies\install\bin: dependencies\install
-	-$(MKDIR_P) dependencies\install\bin
+dependencies/install/bin: dependencies/install
+	$(MKDIR_P) dependencies$Sinstall$Sbin
 
-dependencies\install\lib: dependencies\install
-	-$(MKDIR_P) dependencies\install\lib
+dependencies/install/lib: dependencies/install
+	$(MKDIR_P) dependencies$Sinstall$Slib
 
-dependencies\install\lib\coin: dependencies\install\lib
-	-$(MKDIR_P) dependencies\install\lib\coin
-dependencies\install\include: dependencies\install
-	-$(MKDIR_P) dependencies\install\include
+dependencies/install/lib/coin: dependencies/install/lib
+	$(MKDIR_P) dependencies$Sinstall$Slib$Scoin
 
-dependencies\install\include\coin: dependencies\install\include
-	-$(MKDIR_P) dependencies\install\include\coin
+dependencies/install:
+	$(MKDIR_P) dependencies$Sinstall
 
-dependencies\install:
-	-$(MKDIR_P) dependencies\install
+dependencies/install/include: dependencies/install
+	$(MKDIR_P) dependencies$Sinstall$Sinclude
+
+dependencies/install/include/coin: dependencies/install/include
+	$(MKDIR_P) dependencies$Sinstall$Sinclude$Scoin
+
+.PHONY: archives_directory
+archives_directory:
+	-$(MKDIR_P) dependencies$Sarchives
 
 # Install zlib
-install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
+.PHONY: install_zlib
+install_zlib: dependencies/install/include/zlib.h dependencies/install/include/zconf.h dependencies/install/lib/zlib.lib
 
-dependencies\install\include\zlib.h: dependencies\install\include dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h dependencies\install\include
+dependencies/install/include/zlib.h: dependencies/install/include dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szlib.h dependencies$Sinstall$Sinclude$Szlib.h
 
-dependencies\install\include\zconf.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zconf.h dependencies\install\include
-	tools\touch.exe dependencies\install\include\zconf.h
+dependencies/install/include/zconf.h: dependencies/install/include dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szconf.h dependencies$Sinstall$Sinclude$Szconf.h
 
-dependencies\install\lib\zlib.lib: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	cd dependencies\sources\zlib-$(ZLIB_TAG) && nmake -f win32\Makefile.msc zlib.lib
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.lib dependencies\install\lib
+dependencies/install/lib/zlib.lib: dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+	cd dependencies$Ssources$Szlib-$(ZLIB_TAG) && set MAKEFLAGS= && nmake -f win32$SMakefile.msc zlib.lib
+	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szlib.lib dependencies$Sinstall$Slib
 
-dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h: dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
-	tools\touch.exe dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
+dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h: dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip
+	tools\unzip -q -d dependencies$Ssources dependencies$Sarchives$Szlib$(ZLIB_ARCHIVE_TAG).zip
+	-$(TOUCH) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szlib.h
 
-dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
-	tools\wget -P dependencies\archives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
+dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip:
+	tools\wget --quiet -P dependencies$Sarchives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
 
 install_gflags: dependencies/install/lib/gflags.lib
 
 dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md
 	-mkdir dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake
-	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && \
+	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && set MAKEFLAGS= && \
 	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\..\install \
 	           -D CMAKE_BUILD_TYPE=Release \
 	           -G "NMake Makefiles" \
 	           ..
-	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && \
+	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && set MAKEFLAGS= && \
 	nmake install
 	$(TOUCH) dependencies/install/lib/gflags_static.lib
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
-	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
+	tools\unzip -q -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
 	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
+	tools\wget --quiet -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
 	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
 
 
@@ -258,8 +275,8 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependen
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
+	tools\wget --quiet -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
+	tools\unzip -q -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
 
 install_glog: dependencies/install/include/glog/logging.h
 
@@ -271,15 +288,15 @@ dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TA
 	           -D CMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)\dependencies\install" \
 	           -G "NMake Makefiles" \
 	           ..
-	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && nmake install
+	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && set MAKEFLAGS= && nmake install
 	$(TOUCH) dependencies/install/lib/glog_static.lib
 
 dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt: dependencies/archives/glog-$(GLOG_TAG).zip
-	tools\unzip -d dependencies/sources dependencies\archives\glog-$(GLOG_TAG).zip
+	tools\unzip -q -d dependencies/sources dependencies\archives\glog-$(GLOG_TAG).zip
 	-$(TOUCH) dependencies\sources\glog-$(GLOG_TAG)\CMakeLists.txt
 
 dependencies/archives/glog-$(GLOG_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/glog/archive/v$(GLOG_TAG).zip
+	tools\wget --quiet -P dependencies\archives --no-check-certificate https://github.com/google/glog/archive/v$(GLOG_TAG).zip
 	cd dependencies/archives && rename v$(GLOG_TAG).zip glog-$(GLOG_TAG).zip
 
 # Install Coin CBC.
@@ -316,21 +333,22 @@ dependencies\sources\Cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.e
 CBC_ARCHIVE:=https://www.coin-or.org/download/source/Cbc/Cbc-${CBC_TAG}.zip
 
 dependencies\sources\Cbc-$(CBC_TAG)\configure:
-	tools\wget --continue -P dependencies\archives --no-check-certificate ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'tools\wget -P dependencies\archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
-	tools\unzip -d dependencies\sources dependencies\archives\Cbc-$(CBC_TAG).zip
+	tools\wget --quiet --continue -P dependencies\archives --no-check-certificate ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'tools\wget -P dependencies\archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
+	tools\unzip -q -d dependencies\sources dependencies\archives\Cbc-$(CBC_TAG).zip
 
 # Install SWIG.
-install_swig: dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
+install_swig: dependencies/install/swigwin-$(SWIG_TAG)/swig.exe
 
-dependencies\install\swigwin-$(SWIG_TAG)\swig.exe: dependencies\archives\swigwin-$(SWIG_TAG).zip
-	tools\unzip -d dependencies/install dependencies\archives\swigwin-$(SWIG_TAG).zip
-	tools\touch.exe dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
+dependencies/install/swigwin-$(SWIG_TAG)/swig.exe: dependencies/archives/swigwin-$(SWIG_TAG).zip
+	tools$Sunzip -q -d dependencies$Sinstall dependencies$Sarchives$Sswigwin-$(SWIG_TAG).zip
+	tools$Stouch dependencies$Sinstall$Sswigwin-$(SWIG_TAG)$Sswig.exe
 
-dependencies\archives\swigwin-$(SWIG_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running 'tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
+SWIG_ARCHIVE:=https://superb-dca2.dl.sourceforge.net/project/swig/swigwin/swigwin-$(SWIG_TAG)/swigwin-$(SWIG_TAG).zip
+
+dependencies/archives/swigwin-$(SWIG_TAG).zip:
+	tools$Swget --quiet -P dependencies$Sarchives --no-check-certificate $(SWIG_ARCHIVE)
 
 # Install Java protobuf
-
 dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
 	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
@@ -346,7 +364,7 @@ kill_tortoisesvn_cache:
 remove_readonly_svn_attribs: kill_tortoisesvn_cache
 	if exist dependencies\sources\* $(ATTRIB) -r /s dependencies\sources\*
 
-# Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
+.PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) Makefile.local
 	-$(DEL) dependencies\archives\swigwin*.zip
@@ -356,6 +374,7 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) dependencies\archives\zlib*.zip
 	-$(DEL) dependencies\archives\v*.zip
 	-$(DEL) dependencies\archives\win_flex_bison*.zip
+	-$(DELREC) dependencies\archives
 	-$(DELREC) dependencies\sources\Cbc-*
 	-$(DELREC) dependencies\sources\gflags*
 	-$(DELREC) dependencies\sources\glpk*
@@ -366,6 +385,7 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DELREC) dependencies\install
 
 # Create Makefile.local
+.PHONY: makefile_third_party
 makefile_third_party: Makefile.local
 
 # Make sure that local file lands correctly across platforms

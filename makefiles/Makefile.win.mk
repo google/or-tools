@@ -40,19 +40,26 @@ MKDIR = md
 MKDIR_P = tools\mkdir.exe -p
 COPY = copy
 TOUCH = tools\touch.exe
+GREP = tools\grep.exe
 SED = tools\sed.exe
+WHICH = tools\which.exe
 CMAKE = cmake
 ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
+
+# We Can't force SHELL to cmd.exe if sh.exe is in the PATH
+# cf https://www.gnu.org/software/make/manual/html_node/Choosing-the-Shell.html
+SHCHECK := $(shell where sh.exe 2>plop & rm plop)
+ifneq ($(SHCHECK),)
+$(error Please remove sh.exe ($(SHCHECK)) from your PATH (e.g. set PATH=%PATH:C:\Program Files\Git\bin\;=%))
+else
+SHELL = cmd
+endif
 
 # Add some additional macros
 CD = cd
 ATTRIB = attrib
 TASKKILL = taskkill
-NUGET = nuget.exe
-NUGET_PACK = nuget.exe pack
-NUGET_PUSH = nuget.exe push
-NUGET_SRC = https://www.nuget.org/api/v2/package
 
 # Default paths for libraries and binaries.
 WINDOWS_ZLIB_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
@@ -77,7 +84,7 @@ PROTOBUF_INC = /I$(WINDOWS_PROTOBUF_DIR)\\include
 GLOG_INC = /I$(WINDOWS_GLOG_DIR)\\include /DGOOGLE_GLOG_DLL_DECL=
 
 PYTHON_VERSION = $(WINDOWS_PYTHON_VERSION)
-PYTHON_INC=/I"$(WINDOWS_PATH_TO_PYTHON)\\include"
+PYTHON_INC=/I$(WINDOWS_PATH_TO_PYTHON)\\include
 PYTHON_LNK="$(WINDOWS_PATH_TO_PYTHON)\\libs\\python$(PYTHON_VERSION).lib"
 
 # Define CLP_DIR if unset and if CBC_DIR is set.

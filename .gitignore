@@ -64,8 +64,8 @@ tools/docker/export
 *.lib
 
 # Executables
-*.exe
-*.app
+bin/*.exe
+bin/*.app
 
 *build*/*
 .idea/*

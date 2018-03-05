@@ -1,13 +1,18 @@
 # Top level declarations
-help:
-	@echo Please define target:
-	@echo "  - C++: cc test_cc clean_cc"
-	@echo "  - Python: python test_python clean_python"
-	@echo "  - Java: java test_java clean_java"
-	@echo "  - .NET (CSharp): csharp test_csharp clean_csharp"
-	@echo "  - .NET (FSharp): fsharp fsharp-help fsharp-clean"
-	@echo "  - all: all test clean"
-	@echo "  - detect: detect_port detect_python detect_java detect_csharp"
+.PHONY: help
+help: help_all
+
+.PHONY: all
+all: build_all
+
+.PHONY: test
+test: test_all
+
+.PHONY: clean
+clean: clean_all
+
+.PHONY: detect
+detect: detect_all
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
@@ -28,11 +33,6 @@ else
     OR_ROOT = $(OR_TOOLS_TOP)/
   endif
 endif
-
-.PHONY : help detect cc python java csharp sat third_party_check
-all: third_party_check cc java python csharp
-	@echo Or-tools have been built for $(BUILT_LANGUAGES)
-clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
 # Read version.
 include $(OR_ROOT)Version.txt
@@ -66,10 +66,32 @@ include $(OR_ROOT)makefiles/Makefile.test.mk
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
 
-#check if "make third_party" have been run or not
-third_party_check:
-ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
-	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
-endif
+.PHONY: help_usage
+help_usage:
+	@echo Use one of the following targets:
+	@echo help, help_all:	Print this help.
+	@echo all:	Build OR-Tools for all available languages \(need a call to \"make third_party\" first\).
+	@echo test, test_all:	Test OR-Tools for all available languages.
+	@echo clean, clean_all:	Clean output from previous build for all available languages \(won\'t clean third party\).
+	@echo detect, detect_all:	Show variables used to build OR-Tools for all available languages.
+	@echo ""
+
+.PHONY: help_all
+help_all: help_usage help_third_party help_cc help_python help_java help_csharp help_fsharp
+
+.PHONY: build_all
+build_all: cc python java csharp fsharp
+	@echo Or-tools have been built for $(BUILT_LANGUAGES)
+
+.PHONY: test_all
+test_all: test_cc test_python test_java test_csharp test_fsharp
+	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
+
+.PHONY: clean_all
+clean_all: clean_cc clean_python clean_java clean_csharp clean_compat clean_fsharp
+	@echo Or-tools have been cleaned for $(BUILT_LANGUAGES)
+
+.PHONY: detect_all
+detect_all: detect_port detect_cc detect_python detect_java detect_csharp detect_fsharp
 
 print-%  : ; @echo $* = $($*)

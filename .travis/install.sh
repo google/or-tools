@@ -5,10 +5,9 @@ set -e
 function installswig() {
 	# Need SWIG >= 3.0.8
 	cd /tmp/ &&
-		curl -s -J -O -k -L \
-		'https://sourceforge.net/projects/swig/files/swig/swig-3.0.12/swig-3.0.12.tar.gz/download' &&
-		tar zxf swig-3.0.12.tar.gz && cd swig-3.0.12 &&
-		./configure --prefix "${HOME}"/swig/ 1>/dev/null &&
+		wget https://github.com/swig/swig/archive/rel-3.0.12.tar.gz &&
+		tar zxf rel-3.0.12.tar.gz && cd swig-rel-3.0.12 &&
+		./autogen.sh && ./configure --prefix "${HOME}"/swig/ 1>/dev/null &&
 		make >/dev/null &&
 		make install >/dev/null
 }
@@ -32,7 +31,7 @@ if [ "${BUILDER}" == make ]; then
 	if [ "${TRAVIS_OS_NAME}" == linux ]; then
 		if [ "${DISTRO}" == native ]; then
 			sudo apt-get -qq update
-			sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl lsb-release;
+			sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl	lsb-release
 			if [ "${LANGUAGE}" != cc ]; then
 				installswig
 			fi
@@ -41,6 +40,9 @@ if [ "${BUILDER}" == make ]; then
 				python3.6 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == csharp ]; then
 				installmono
+			elif [ "${LANGUAGE}" == fsharp ]; then
+				installmono
+				sudo apt-get -yqq install fsharp
 			fi
 		else
 			# Linux Docker Makefile build:
@@ -54,11 +56,11 @@ if [ "${BUILDER}" == make ]; then
 				brew install swig;
 			fi
 			if [ "${LANGUAGE}" == python ]; then
-				brew install python3;
+				brew upgrade python;
 				python3.6 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == java ]; then
 				brew cask install java;
-			elif [ "${LANGUAGE}" == csharp ]; then
+			elif [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ]; then
 				brew install mono;
 			fi
 		else
@@ -85,7 +87,7 @@ if [ "${BUILDER}" == cmake ]; then
 		if [ "${DISTRO}" == native ]; then
 			brew update;
 			brew install swig;
-			brew install python3;
+			brew upgrade python3;
 		else
 			# MacOS Docker CMake build:
 			echo "NOT SUPPORTED"

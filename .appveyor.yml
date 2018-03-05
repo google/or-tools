@@ -1,0 +1,60 @@
+version: '{build}'
+shallow_clone: true
+
+platform: x64
+
+environment:
+  MSBUILD_FLAGS: /verbosity:minimal /maxcpucount
+  matrix:
+# Makefile
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    VS: 2017
+    BUILDER: make
+    LANGUAGE: all
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    VS: 2015
+    BUILDER: make
+    LANGUAGE: all
+# CMake
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    VS: 2017
+    BUILDER: cmake
+    CMAKE_GENERATOR: "Visual Studio 15 2017 Win64"
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    VS: 2015
+    BUILDER: cmake
+    CMAKE_GENERATOR: "Visual Studio 14 2015 Win64"
+
+matrix:
+  fast_finish: false
+
+before_build:
+  - git config --global user.email "ci@appveyor.com"
+  - git config --global user.name "CI"
+  - if "%VS%"=="2017" call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - if "%VS%"=="2015" call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
+  - if "%VS%"=="2015" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
+  - tools\which csc.exe
+  - tools\which fsc.exe
+  - tools\which dotnet.exe
+  - cmake --version
+  - set PATH=C:\Python36-x64;%PATH%
+  - tools\which python.exe
+  - python -V
+  - python -m pip install virtualenv wheel six
+#  - set PATH="C:\Program Files\Java\jdk1.8.0\bin";%PATH%
+  - if "%BUILDER%"=="cmake" cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release -G "%CMAKE_GENERATOR%"
+  - if "%BUILDER%"=="make" del "C:\Program Files\Git\usr\bin\sh.exe"
+  - if "%BUILDER%"=="make" tools\make detect
+
+build_script:
+  - if "%BUILDER%"=="cmake" cmake --build build --config Release --target ALL_BUILD -- %MSBUILD_FLAGS%
+  - if "%BUILDER%"=="make" tools\make third_party
+  - if "%BUILDER%"=="make" tools\make help_%LANGUAGE%
+  - if "%BUILDER%"=="make" tools\make %LANGUAGE%
+  - if "%BUILDER%"=="make" tools\make test_%LANGUAGE%
+
+test_script:
+  - if "%BUILDER%"=="cmake" cmake --build build --config Release --target RUN_TESTS
+

@@ -3,17 +3,17 @@ SPACE := $(empty) $(empty)
 BACKSLASH_SPACE := $(empty)\ $(empty)
 
 # Let's discover something about where we run
-ifeq ($(OS), Windows_NT)
+ifeq ($(OS),Windows_NT)
   SYSTEM = win
 else
   SYSTEM = unix
 endif
 
 # Unix specific part.
-ifeq ("$(SYSTEM)","unix")
+ifeq ($(SYSTEM),unix)
   OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
-  ifeq ("$(UNIX_PYTHON_VER)",)
+  ifeq ($(UNIX_PYTHON_VER),)
     DETECTED_PYTHON_VERSION := $(shell python -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
   else
     DETECTED_PYTHON_VERSION := $(UNIX_PYTHON_VER)
@@ -23,7 +23,6 @@ ifeq ("$(SYSTEM)","unix")
   ifneq ($(wildcard $(DOTNET_INSTALL_PATH)\dotnet.exe),)
     DOTNET_INSTALL_PATH = \# DOTNET install path not found
   endif
-
 
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
@@ -65,7 +64,7 @@ ifeq ("$(SYSTEM)","unix")
 
     endif
     JDK_DIRECTORY = $(firstword $(wildcard $(CANDIDATE_JDK_ROOTS)))
-  endif
+  endif # ($(OS),Linux)
   ifeq ($(OS),Darwin) # Assume Mac Os X
     PLATFORM = MACOSX
     OS_VERSION = $(shell sw_vers -productVersion)
@@ -80,7 +79,7 @@ ifeq ("$(SYSTEM)","unix")
       JDK_DIRECTORY = $(shell /usr/libexec/java_home)/include
     endif
     MAC_MIN_VERSION = 10.9
-  endif
+  endif # ($(OS),Darwin)
 
   # Look at mono compiler.
   REAL_MCS = $(shell which mcs)
@@ -98,12 +97,12 @@ ifeq ("$(SYSTEM)","unix")
       DETECTED_MCS_BINARY := $(REAL_MCS)
     endif
   endif
-endif
+endif # ($(SYSTEM),unix)
 
 # Windows specific part.
-ifeq ("$(SYSTEM)","win")
+ifeq ($(SYSTEM),win)
   # Detect 32/64bit
-  ifeq ("$(Platform)", "X64")  # Visual Studio 2015 64 bit
+  ifeq ("$(Platform)", "X64")  # Visual Studio 2015/2017 64 bit
     PLATFORM = WIN64
     PTRLENGTH = 64
     CMAKE_SUFFIX = Win64
@@ -184,39 +183,49 @@ ifeq ("$(SYSTEM)","win")
   endif
 
   # Detect Python
-  DETECTED_PATH_TO_PYTHON = $(shell python -c "from sys import executable; from os.path import sep; print(sep.join(executable.split(sep)[:-1]).rstrip())")
-   CANONIC_DETECTED_PATH_TO_PYTHON = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DETECTED_PATH_TO_PYTHON))))
-   ifeq ($(wildcard $(CANONIC_DETECTED_PATH_TO_PYTHON)),)
-    SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don't include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python27-64)
+  ifeq ($(WINDOWS_PATH_TO_PYTHON),)
+    DETECTED_PATH_TO_PYTHON = $(shell python -c "from sys import executable; from os.path import sep; print(sep.join(executable.split(sep)[:-1]).rstrip())")
+    CANONIC_DETECTED_PATH_TO_PYTHON = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DETECTED_PATH_TO_PYTHON))))
+    ifeq ($(wildcard $(CANONIC_DETECTED_PATH_TO_PYTHON)),)
+      SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don\'t include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python27-64)
+    else
+      SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
+      WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
+    endif
   else
-    SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
+    SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(WINDOWS_PATH_TO_PYTHON)
   endif
-  WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
+  ifneq ($(WINDOWS_PATH_TO_PYTHON),)
+    WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
+  endif
 
   #Detect csc
-
-DETECTED_CSC_BINARY := $(shell where /F csc | tools\\sed.exe -n "/\".*\"/{p;q;}" | tools\\sed "s/\"//g")
-  ifeq ($(DETECTED_CSC_BINARY),)
-    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the chsarp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
+  ifeq ($(PATH_TO_CSHARP_COMPILER),)
+    DETECTED_CSC_BINARY := $(shell tools\\which.exe csc 2>nul)
+    ifeq ($(DETECTED_CSC_BINARY),)
+      SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the chsarp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
+    else
+      SELECTED_CSC_BINARY =\#PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
+    endif
   else
-    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
+    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
   endif
-  CSC = "$(PATH_TO_CSHARP_COMPILER)"
-endif
+endif # ($(SYSTEM),win)
 
 # Get github revision level
-ifneq ("$(wildcard .git)","")
-  GIT_REVISION:= $(shell git rev-list --count HEAD)
-  GIT_HASH:= $(shell git rev-parse --short HEAD)
+ifneq ($(wildcard .git),)
+GIT_REVISION:= $(shell git rev-list --count HEAD)
+GIT_HASH:= $(shell git rev-parse --short HEAD)
 else
-  GIT_REVISION:= 999
-  GIT_HASH:= "not_on_git"
+GIT_REVISION:= 999
+GIT_HASH:= "not_on_git"
 endif
 OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION)
 OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
-INSTALL_DIR=or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
-FZ_INSTALL_DIR=or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
+INSTALL_DIR = or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
+FZ_INSTALL_DIR = or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
 
+.PHONY: detect_port # Show variables used to build OR-Tools.
 detect_port:
 	@echo SYSTEM = $(SYSTEM)
 	@echo OS = $(OS)
@@ -230,10 +239,8 @@ detect_port:
 	@echo GIT_REVISION = $(GIT_REVISION)
 	@echo GIT_HASH = $(GIT_HASH)
 	@echo CMAKE = $(CMAKE)
-ifeq ("$(SYSTEM)","win")
+ifeq ($(SYSTEM),win)
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
 endif
 	@echo SWIG_BINARY = $(SWIG_BINARY)
 	@echo SWIG_INC = $(SWIG_INC)
-
-detect: detect_port detect_python detect_java detect_csharp
