@@ -2,28 +2,16 @@
 set -x
 set -e
 
-echo Rebuilding third party...
-make clean_third_party
-make third_party UNIX_PYTHON_VER=2.7
-echo Rebuilding third party...DONE
+# Check all prerequisite
+# cc
+which cmake | xargs echo "cmake: " | tee build.log
+which make | xargs echo "make: " | tee -a build.log
+which swig | xargs echo "swig: " | tee -a build.log
+# python
+which python2.7 | xargs echo "python2.7: " | tee -a build.log
+which python3.5 | xargs echo "python3.5: " | tee -a build.log
+which python3.6 | xargs echo "python3.6: " | tee -a build.log
 
-echo Rebuilding or-tools...
-make clean
-make all fz -l 1 UNIX_PYTHON_VER=2.7
-make test UNIX_PYTHON_VER=2.7
-echo Rebuilding or-tools...DONE
-
-echo Creating standard artifacts...
-rm -rf temp ./*.tar.gz
-make archive fz_archive python_examples_archive UNIX_PYTHON_VER=2.7
-echo Creating standard artifacts...DONE
-
-echo Rebuilding for Python 2.7...
-make clean_python UNIX_PYTHON_VER=2.7
-make python -l 1 UNIX_PYTHON_VER=2.7
-make test_python UNIX_PYTHON_VER=2.7
-make pypi_archive UNIX_PYTHON_VER=2.7
-echo Rebuilding for Python 2.7...DONE
 echo Creating Python 2.7 venv...
 TEMP_DIR=temp-python2.7
 VENV_DIR=${TEMP_DIR}/venv
@@ -34,12 +22,6 @@ python2.7 -m virtualenv -p python2.7 ${VENV_DIR}
 cp test.py.in ${TEMP_DIR}/venv/test.py
 echo Creating Python 2.7 venv...DONE
 
-echo Rebuilding for Python 3.5
-make clean_python UNIX_PYTHON_VER=3.5
-make python -l 1 UNIX_PYTHON_VER=3.5
-make test_python UNIX_PYTHON_VER=3.5
-make pypi_archive UNIX_PYTHON_VER=3.5
-echo Rebuilding for Python 3.5...DONE
 echo Creating Python 3.5 venv...
 TEMP_DIR=temp-python3.5
 VENV_DIR=${TEMP_DIR}/venv
@@ -50,12 +32,6 @@ python3.5 -m virtualenv -p python3.5 ${VENV_DIR}
 cp test.py.in ${TEMP_DIR}/venv/test.py
 echo Creating Python 3.5 venv...DONE
 
-echo Rebuilding for Python 3.6
-make clean_python UNIX_PYTHON_VER=3.6
-make python -l 1 UNIX_PYTHON_VER=3.6
-make test_python UNIX_PYTHON_VER=3.6
-make pypi_archive UNIX_PYTHON_VER=3.6
-echo Rebuilding for Python 3.6...DONE
 echo Creating Python 3.6 venv...
 TEMP_DIR=temp-python3.6
 VENV_DIR=${TEMP_DIR}/venv
