@@ -25,8 +25,6 @@
 #include <iostream>
 #include <vector>
 
-#include <boost/date_time.hpp>
-
 #include "ortools/base/logging.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/constraint_solver/routing.h"
@@ -234,7 +232,6 @@ private:
 };
 
 int main(int argc, char **argv) {
-    using namespace boost::posix_time;
     using namespace operations_research;
 
     google::InitGoogleLogging(argv[0]);
@@ -247,8 +244,8 @@ int main(int argc, char **argv) {
     model.SetArcCostEvaluatorOfAllVehicles(NewPermanentCallback(&problem, &Problem::distance));
 
     static const auto FIX_CUMULATIVE_TO_ZERO = true;
-    static const auto MAX_TIME_SLACK = hours(24).total_seconds();
-    static const auto CAPACITY = hours(24).total_seconds();
+    static const auto MAX_TIME_SLACK = 24 * 60 * 60;
+    static const auto CAPACITY = 24 * 60 * 60;
     model.AddDimension(NewPermanentCallback(&problem, &Problem::service_plus_distance),
                        MAX_TIME_SLACK,
                        CAPACITY,
@@ -417,7 +414,7 @@ Problem CreateSample() {
                             {"10:30:00", "01:30:00"},
                             {"14:00:00", "10:00:00"}
                     },
-                    {//
+                    {
 
                             {"00:00:00", "08:00:00"},
                             {"13:00:00", "11:00:00"}
