@@ -391,7 +391,7 @@ java:
 	$(warning Cannot find 'java' command which is needed for build. Please make sure it is installed and in system path. Check Makefile.local for more information.)
 test_java: java
 else
-java: $(JAVA_ORTOOLS_LIBS)
+java: ortoolslibs $(JAVA_ORTOOLS_LIBS)
 test_java: test_java_examples
 BUILT_LANGUAGES +=, Java
 endif

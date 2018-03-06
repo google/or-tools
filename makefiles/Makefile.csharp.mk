@@ -24,7 +24,11 @@ endif
 .PHONY: csharp # Build C# OR-Tools.
 .PHONY: test_csharp # Test C# OR-Tools using various examples.
 ifneq ($(CSHARP_EXECUTABLE),)
-csharp: clean_dotnet_generated csharpsolution csharportools csharpexe
+csharp: \
+	ortoolslibs \
+	csharpsolution \
+	csharportools \
+	csharpexe
 test_csharp: test_csharp_examples
 BUILT_LANGUAGES +=, C\#
 else
@@ -176,7 +180,8 @@ csharpexe: $(CSHARPEXE)
 
 # Assembly Info
 
-$(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: $(GEN_DIR)/com/google/ortools/properties
+$(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt:
+	-$(MKDIR_P) $(GEN_DIR)/com/google/ortools/properties
 	@echo $(OR_TOOLS_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
 
 # See for background on Windows Explorer File Info Details:

@@ -12,7 +12,7 @@ endif
 
 # Main target
 .PHONY: cc # Build C++ OR-Tools.
-cc: third_party_check ortoolslibs ccexe
+cc: ortoolslibs ccexe
 .PHONY: test_cc # Test C++ OR-Tools using various examples.
 test_cc: test_cc_examples
 BUILT_LANGUAGES += C++
@@ -70,7 +70,7 @@ include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB)
-ortoolslibs: $(OR_TOOLS_LIBS)
+ortoolslibs: third_party_check $(OR_TOOLS_LIBS)
 
 # Specific libraries for examples, and flatzinc.
 
