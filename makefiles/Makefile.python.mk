@@ -446,6 +446,7 @@ endif
 
 .PHONY: detect_python # Show variables used to build Python OR-Tools.
 detect_python:
+	@echo Relevant info for the Python build:
 ifeq ($(SYSTEM),win)
 	@echo WINDOWS_PATH_TO_PYTHON = "$(WINDOWS_PATH_TO_PYTHON)"
 else
@@ -459,3 +460,8 @@ endif
 	@echo PYTHON_INC = $(PYTHON_INC)
 	@echo PYTHON_LNK = $(PYTHON_LNK)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
+ifeq ($(SYSTEM),win)
+	@echo.
+else
+	@echo
+endif

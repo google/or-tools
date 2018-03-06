@@ -746,6 +746,11 @@ $(patsubst examples/csharp/solution/%.csproj, \"solution%.csproj\"$(COMMA)\"{}\"
 
 .PHONY: detect_csharp # Show variables used to build C# OR-Tools.
 detect_csharp:
+ifeq ($(SYSTEM),win)
+	@echo Relevant info for the C# build:
+else
+	@echo Relevant info for the C\# build:
+endif
 	@echo NETSTANDARD_RUNTIME_IDENTIFIER = $(NETSTANDARD_RUNTIME_IDENTIFIER)
 	@echo PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
 	@echo CSHARP_COMPILER = $(CSHARP_COMPILER)
@@ -757,3 +762,8 @@ ifeq ($(SYSTEM),unix)
 endif
 	@echo NUGET_COMPILER = $(NUGET_COMPILER)
 	@echo NUGET_EXECUTABLE = "$(NUGET_EXECUTABLE)"
+ifeq ($(SYSTEM),win)
+	@echo.
+else
+	@echo
+endif

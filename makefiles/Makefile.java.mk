@@ -419,9 +419,15 @@ clean_java:
 
 .PHONY: detect_java # Show variables used to build Java OR-Tools.
 detect_java:
+	@echo Relevant info for the Java build:
 	@echo JDK_DIRECTORY = $(JDK_DIRECTORY)
 	@echo JAVA_BIN = $(JAVA_BIN)
 	@echo JAVA_INC = $(JAVA_INC)
 	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo JAR_BIN = $(JAR_BIN)
 	@echo JNIFLAGS = $(JNIFLAGS)
+ifeq ($(SYSTEM),win)
+	@echo.
+else
+	@echo
+endif

@@ -63,5 +63,15 @@ clean_fsharp:
 
 .PHONY: detect_fsharp # Show variables used to build F# OR-Tools.
 detect_fsharp:
+ifeq ($(SYSTEM),win)
+	@echo Relevant info for the F# build:
+else
+	@echo Relevant info for the F\# build:
+endif
 	@echo FSHARP_COMPILER = $(FSHARP_COMPILER)
 	@echo FSHARP_EXECUTABLE = "$(FSHARP_EXECUTABLE)"
+ifeq ($(SYSTEM),win)
+	@echo.
+else
+	@echo
+endif

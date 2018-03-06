@@ -663,12 +663,18 @@ rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 
 .PHONY: detect_cc # Show variables used to build C++ OR-Tools.
 detect_cc:
+	@echo Relevant info for the C++ build:
 	@echo CCC = $(CCC)
 	@echo CFLAGS = $(CFLAGS)
 	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
 	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
 	@echo OR_TOOLS_LD_FLAGS = $(OR_TOOLS_LD_FLAGS)
 	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
+ifeq ($(SYSTEM),win)
+	@echo.
+else
+	@echo
+endif
 
 # Debug
 .PHONY: printdir

@@ -227,6 +227,7 @@ FZ_INSTALL_DIR = or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
 
 .PHONY: detect_port # Show variables used to build OR-Tools.
 detect_port:
+	@echo Relevant info on the system:
 	@echo SYSTEM = $(SYSTEM)
 	@echo OS = $(OS)
 	@echo PLATFORM = $(PLATFORM)
@@ -244,3 +245,8 @@ ifeq ($(SYSTEM),win)
 endif
 	@echo SWIG_BINARY = $(SWIG_BINARY)
 	@echo SWIG_INC = $(SWIG_INC)
+ifeq ($(SYSTEM),win)
+	@echo.
+else
+	@echo
+endif
