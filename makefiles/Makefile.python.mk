@@ -92,9 +92,10 @@ clean_python:
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
 
 .PHONY:	install_python_modules pypi_archive pypi_archive_dir pyinit pycp pyalgorithms pygraph pylp pysat pydata
-install_python_modules: dependencies/sources/protobuf-$(PROTOBUF-TAG)/python/google/protobuf/descriptor_pb2.py
 
-dependencies/sources/protobuf-$(PROTOBUF-TAG)/python/google/protobuf/descriptor_pb2.py: \
+install_python_modules: dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/google/protobuf/descriptor_pb2.py
+
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/google/protobuf/descriptor_pb2.py: \
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/setup.py
 ifeq ($(SYSTEM),win)
 	copy dependencies$Sinstall$Sbin$Sprotoc.exe dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Ssrc
