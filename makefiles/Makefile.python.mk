@@ -333,10 +333,10 @@ python_examples_archive:
 	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
 ifeq ($(SYSTEM),win)
-	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
+	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* examples\data | ..\..\tools\tar.exe xvm
 	cd temp && ..\tools\zip.exe -r ..\or-tools_python_examples_v$(OR_TOOLS_VERSION).zip ortools_examples
 else
-	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
+	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* examples/data | tar xvm
 	cd temp && tar -c -v -z --no-same-owner -f ../or-tools_python_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz ortools_examples
 endif
 
