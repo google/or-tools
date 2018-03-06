@@ -6,7 +6,7 @@ export:
 images: \
 	ubuntu-14.04-image \
 	ubuntu-16.04-image \
-	ubuntu-17.04-image \
+	ubuntu-17.10-image \
 	centos-7-image \
 	debian-9-image \
 	manylinux1-image
@@ -14,7 +14,7 @@ images: \
 images-no-cache: \
 	ubuntu-14.04-image-no-cache \
 	ubuntu-16.04-image-no-cache \
-	ubuntu-17.04-image-no-cache \
+	ubuntu-17.10-image-no-cache \
 	centos-7-image-no-cache \
 	debian-9-image-no-cache
 
@@ -29,7 +29,7 @@ archives: \
 	debian-9-archive \
 	ubuntu-14.04-archive \
 	ubuntu-16.04-archive \
-	ubuntu-17.04-archive
+	ubuntu-17.10-archive
 
 python: manylinux1-pypi
 
@@ -38,7 +38,7 @@ test: \
 	debian-9-test \
 	ubuntu-14.04-test \
 	ubuntu-16.04-test \
-	ubuntu-17.04-test
+	ubuntu-17.10-test
 
 delivery:  archives python
 
@@ -76,19 +76,29 @@ ubuntu-16.04-test: export ubuntu-16.04-image
 ubuntu-16.04-bash: export ubuntu-16.04-image
 	docker run -it or-tools-ubuntu-16.04-image:latest /bin/bash
 
-# Ubuntu 17.04 images
+# Ubuntu 17.10 images
 
-ubuntu-17.04-image:
-	docker build -f ubuntu-17.04.Dockerfile -t or-tools-ubuntu-17.04-image .
+ubuntu-17.10-image:
+	docker build -f ubuntu-17.10.Dockerfile -t or-tools-ubuntu-17.10-image .
 
-ubuntu-17.04-image-no-cache:
-	docker build --no-cache -f ubuntu-17.04.Dockerfile -t or-tools-ubuntu-17.04-image .
+ubuntu-17.10-image-no-cache:
+	docker build --no-cache -f ubuntu-17.10.Dockerfile -t or-tools-ubuntu-17.10-image .
 
-ubuntu-17.04-archive: export ubuntu-17.04-image
-	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive fz_archive; cp *.tar.gz /export"
+ubuntu-17.10-archive: export ubuntu-17.10-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.10-image:latest /bin/bash -c \
+		"git pull; \
+		make clean; \
+		make all -j 5; \
+		make test; \
+		make archive fz_archive; \
+		cp *.tar.gz /export"
 
-ubuntu-17.04-test: export ubuntu-17.04-image
-	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test"
+ubuntu-17.10-test: export ubuntu-17.10-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.10-image:latest /bin/bash -c \
+		"git pull; \
+		make clean; \
+		make all -j 5; \
+		make test"
 
 # Debian 9 images
 
