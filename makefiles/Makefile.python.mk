@@ -4,8 +4,10 @@ help_python:
 	@echo Use one of the following Python targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.python.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@echo.
 else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.python.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t24
+	@echo
 endif
 
 OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython

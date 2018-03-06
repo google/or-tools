@@ -2,6 +2,7 @@
 help_third_party:
 	@echo Use one of the following Prerequisite targets:
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.unix.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+	@echo
 
 # Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.1

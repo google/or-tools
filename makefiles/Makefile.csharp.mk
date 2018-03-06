@@ -4,8 +4,10 @@ help_csharp:
 	@echo Use one of the following C# targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.csharp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@echo.
 else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.csharp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+	@echo
 endif
 
 # Check for required build tools

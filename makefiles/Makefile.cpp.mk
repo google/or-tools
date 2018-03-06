@@ -4,8 +4,10 @@ help_cc:
 	@echo Use one of the following C++ targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@echo.
 else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+	@echo
 endif
 
 .PHONY: ccc rcc clean_cc clean_compat ccexe

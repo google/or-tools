@@ -4,8 +4,10 @@ help_fsharp:
 	@echo Use one of the following F# targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@echo.
 else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+	@echo
 endif
 
 BASE_ORTOOLS_DLL_NAME=Google.OrTools

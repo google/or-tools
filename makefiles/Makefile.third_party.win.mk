@@ -2,6 +2,7 @@
 help_third_party:
 	@echo Use one of the following Prerequisite targets:
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.win.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@echo.
 
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.1

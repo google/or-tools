@@ -4,8 +4,10 @@ help_java:
 	@echo Use one of the following Java targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.java.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@echo.
 else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.java.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t24
+	@echo
 endif
 
 .PHONY: rjava cjava

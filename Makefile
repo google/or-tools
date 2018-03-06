@@ -74,7 +74,11 @@ help_usage:
 	@echo test, test_all:	Test OR-Tools for all available languages.
 	@echo clean, clean_all:	Clean output from previous build for all available languages \(won\'t clean third party\).
 	@echo detect, detect_all:	Show variables used to build OR-Tools for all available languages.
-	@echo ""
+ifeq ($(SYSTEM),win)
+	@echo.
+else
+	@echo
+endif
 
 .PHONY: help_all
 help_all: help_usage help_third_party help_cc help_python help_java help_csharp help_fsharp
