@@ -223,7 +223,7 @@ netstandard: clean_dotnet_generated netstandardortools
 BUILT_LANGUAGES +=, .NETSTANDARD
 endif
 
-netstandardortools: $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
+netstandardortools: ortoolslibs $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
 $(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
 	netstandard_keyfile \
