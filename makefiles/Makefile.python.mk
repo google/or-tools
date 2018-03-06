@@ -4,7 +4,7 @@ help_python:
 	@echo Use one of the following Python targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.python.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
-	@echo.
+	@echo off & echo(
 else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.python.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t24
 	@echo
@@ -461,7 +461,7 @@ endif
 	@echo PYTHON_LNK = $(PYTHON_LNK)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
 ifeq ($(SYSTEM),win)
-	@echo.
+	@echo off & echo(
 else
 	@echo
 endif

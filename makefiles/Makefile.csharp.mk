@@ -4,7 +4,7 @@ help_csharp:
 	@echo Use one of the following C# targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.csharp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
-	@echo.
+	@echo off & echo(
 else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.csharp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
 	@echo
@@ -763,7 +763,7 @@ endif
 	@echo NUGET_COMPILER = $(NUGET_COMPILER)
 	@echo NUGET_EXECUTABLE = "$(NUGET_EXECUTABLE)"
 ifeq ($(SYSTEM),win)
-	@echo.
+	@echo off & echo(
 else
 	@echo
 endif

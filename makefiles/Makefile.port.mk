@@ -246,7 +246,7 @@ endif
 	@echo SWIG_BINARY = $(SWIG_BINARY)
 	@echo SWIG_INC = $(SWIG_INC)
 ifeq ($(SYSTEM),win)
-	@echo.
+	@echo off & echo(
 else
 	@echo
 endif

@@ -75,7 +75,7 @@ help_usage:
 	@echo clean, clean_all:	Clean output from previous build for all available languages \(won\'t clean third party\).
 	@echo detect, detect_all:	Show variables used to build OR-Tools for all available languages.
 ifeq ($(SYSTEM),win)
-	@echo.
+	@echo off & echo(
 else
 	@echo
 endif

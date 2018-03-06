@@ -4,7 +4,7 @@ help_cc:
 	@echo Use one of the following C++ targets:
 ifeq ($(SYSTEM),win)
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
-	@echo.
+	@echo off & echo(
 else
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.cpp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
 	@echo
@@ -671,7 +671,7 @@ detect_cc:
 	@echo OR_TOOLS_LD_FLAGS = $(OR_TOOLS_LD_FLAGS)
 	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
 ifeq ($(SYSTEM),win)
-	@echo.
+	@echo off & echo(
 else
 	@echo
 endif
