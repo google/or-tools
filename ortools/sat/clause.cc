@@ -43,12 +43,6 @@ void RemoveIf(Container c, Predicate p) {
   c->erase(std::remove_if(c->begin(), c->end(), p), c->end());
 }
 
-// Removes dettached clauses from a watcher list.
-template <typename Watcher>
-bool CleanUpPredicate(const Watcher& watcher) {
-  return !watcher.clause->IsAttached();
-}
-
 }  // namespace
 
 // ----- LiteralWatchers -----
@@ -204,7 +198,6 @@ SatClause* LiteralWatchers::AddRemovableClause(
 // is not already assigned.
 bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
-  ++num_watched_clauses_;
 
   const int size = clause->Size();
   Literal* literals = clause->literals();
@@ -246,33 +239,56 @@ bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
     }
   }
 
-  // Attach the watchers.
+  ++num_watched_clauses_;
   AttachOnFalse(literals[0], literals[1], clause);
   AttachOnFalse(literals[1], literals[0], clause);
   return true;
 }
 
-void LiteralWatchers::LazyDetach(SatClause* clause) {
-  SCOPED_TIME_STAT(&stats_);
-  --num_watched_clauses_;
+void LiteralWatchers::Attach(SatClause* clause, Trail* trail) {
+  Literal* literals = clause->literals();
+  CHECK(!trail->Assignment().LiteralIsAssigned(literals[0]));
+  CHECK(!trail->Assignment().LiteralIsAssigned(literals[1]));
 
+  ++num_watched_clauses_;
+  AttachOnFalse(literals[0], literals[1], clause);
+  AttachOnFalse(literals[1], literals[0], clause);
+}
+
+void LiteralWatchers::InternalDetach(SatClause* clause) {
+  --num_watched_clauses_;
   const size_t size = clause->Size();
   if (drat_writer_ != nullptr && size > 2) {
     drat_writer_->DeleteClause({clause->begin(), size});
   }
-
   clauses_info_.erase(clause);
   clause->LazyDetach();
+}
+
+void LiteralWatchers::LazyDetach(SatClause* clause) {
+  InternalDetach(clause);
   is_clean_ = false;
   needs_cleaning_.Set(clause->FirstLiteral().Index());
   needs_cleaning_.Set(clause->SecondLiteral().Index());
+}
+
+void LiteralWatchers::Detach(SatClause* clause) {
+  InternalDetach(clause);
+  for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
+    needs_cleaning_.Clear(l.Index());
+    RemoveIf(&(watchers_on_false_[l.Index()]), [](const Watcher& watcher) {
+      return !watcher.clause->IsAttached();
+    });
+  }
 }
 
 void LiteralWatchers::CleanUpWatchers() {
   SCOPED_TIME_STAT(&stats_);
   for (LiteralIndex index : needs_cleaning_.PositionsSetAtLeastOnce()) {
     DCHECK(needs_cleaning_[index]);
-    RemoveIf(&(watchers_on_false_[index]), CleanUpPredicate<Watcher>);
+    RemoveIf(&(watchers_on_false_[index]), [](const Watcher& watcher) {
+      return !watcher.clause->IsAttached();
+    });
     needs_cleaning_.Clear(index);
   }
   needs_cleaning_.NotifyAllClear();
@@ -281,6 +297,18 @@ void LiteralWatchers::CleanUpWatchers() {
 
 void LiteralWatchers::DeleteDetachedClauses() {
   DCHECK(is_clean_);
+
+  // Update to_minimize_index_.
+  if (to_minimize_index_ >= clauses_.size()) {
+    to_minimize_index_ = clauses_.size();
+  }
+  to_minimize_index_ =
+      std::stable_partition(clauses_.begin(),
+                            clauses_.begin() + to_minimize_index_,
+                            [](SatClause* a) { return a->IsAttached(); }) -
+      clauses_.begin();
+
+  // Do the proper deletion.
   std::vector<SatClause*>::iterator iter =
       std::stable_partition(clauses_.begin(), clauses_.end(),
                             [](SatClause* a) { return a->IsAttached(); });

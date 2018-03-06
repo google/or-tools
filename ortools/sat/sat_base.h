@@ -291,6 +291,10 @@ class Trail {
   }
 
   // Returns the reason why this variable was assigned.
+  //
+  // Note that this shouldn't be called on a variable at level zero, because we
+  // don't cleanup the reason data for these variables but the underlying
+  // clauses may have been deleted.
   absl::Span<Literal> Reason(BooleanVariable var) const;
 
   // Returns the "type" of an assignment (see AssignmentType). Note that this

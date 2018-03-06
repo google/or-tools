@@ -464,6 +464,11 @@ class MPSolver {
     return solver_specific_parameter_string_;
   }
 
+  // Advanced usage: starting hint. This instructs the solver to first pin some
+  // variables to particular values and use that to quickly get an upper bound
+  // on the solution quality. Currently, only GLIP supports this.
+  void SetHint(const PartialVariableAssignment& hint);
+
   // Advanced usage: possible basis status values for a variable and the
   // slack variable of a linear constraint.
   enum BasisStatus {
@@ -1286,6 +1291,10 @@ class MPSolverInterface {
   virtual void SetStartingLpBasis(
       const std::vector<MPSolver::BasisStatus>& variable_statuses,
       const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
+    LOG(FATAL) << "Not supported by this solver.";
+  }
+
+  virtual void SetHint(const PartialVariableAssignment& hint) {
     LOG(FATAL) << "Not supported by this solver.";
   }
 

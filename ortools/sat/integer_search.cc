@@ -360,11 +360,8 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     const LiteralIndex decision = decision_policies[policy_index]();
     if (decision == kNoLiteralIndex) return SatSolver::MODEL_SAT;
 
-    // TODO(user): move the time limit update inside this function?
-    const double saved_deterministic_time = solver->deterministic_time();
     solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
-    time_limit->AdvanceDeterministicTime(solver->deterministic_time() -
-                                         saved_deterministic_time);
+    solver->AdvanceDeterministicTime(time_limit);
     if (solver->IsModelUnsat()) return SatSolver::MODEL_UNSAT;
   }
   return SatSolver::Status::LIMIT_REACHED;

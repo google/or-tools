@@ -46,6 +46,8 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 // each literal of the initial core "last" at least once, so if such literal can
 // be infered by propagation by any subset of the other literal, it will be
 // removed.
+//
+// Note that this function doest NOT preserve the order of Literal in the core.
 void MinimizeCoreWithPropagation(SatSolver* solver, std::vector<Literal>* core);
 
 // Because the Solve*() functions below are also used in scripts that requires a

@@ -29,6 +29,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/port/sysinfo.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -57,7 +58,6 @@ SatSolver::SatSolver(Model* model)
       num_learned_clause_before_cleanup_(0),
       same_reason_identifier_(*trail_),
       is_relevant_for_core_computation_(true),
-      deterministic_time_at_last_advanced_time_limit_(0.0),
       problem_is_pure_sat_(true),
       drat_writer_(nullptr),
       stats_("SatSolver") {
@@ -98,8 +98,9 @@ int64 SatSolver::num_propagations() const {
 }
 
 double SatSolver::deterministic_time() const {
-  // Each of these counters mesure really basic operations.
-  // The weight are just an estimate of the operation complexity.
+  // Each of these counters mesure really basic operations. The weight are just
+  // an estimate of the operation complexity. Note that these counters are never
+  // reset to zero once a SatSolver is created.
   //
   // TODO(user): Find a better procedure to fix the weight than just educated
   // guess.
@@ -129,7 +130,6 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
 
   restart_->Reset();
   time_limit_->ResetLimitFromParameters(parameters);
-  deterministic_time_at_last_advanced_time_limit_ = deterministic_time();
 }
 
 std::string SatSolver::Indent() const {
@@ -608,7 +608,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
       CHECK(pb_constraints_.AddLearnedConstraint(cst, pb_conflict_.Rhs(),
                                                  trail_));
       CHECK_GT(trail_->Index(), last_decision_or_backtrack_trail_index_);
-      counters_.num_learned_pb_literals_ += cst.size();
+      counters_.num_learned_pb_literals += cst.size();
       return false;
     }
 
@@ -879,11 +879,140 @@ void SatSolver::SetAssumptionLevel(int assumption_level) {
 }
 
 SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
-  deterministic_time_at_last_advanced_time_limit_ = deterministic_time();
   return SolveInternal(time_limit == nullptr ? time_limit_ : time_limit);
 }
 
 SatSolver::Status SatSolver::Solve() { return SolveInternal(time_limit_); }
+
+void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
+  CHECK(Assignment().VariableIsAssigned(variable));
+  if (trail_->Info(variable).level == 0) return;
+  int trail_index = trail_->Info(variable).trail_index;
+  std::vector<bool> is_marked(trail_index + 1, false);  // move to local member.
+  is_marked[trail_index] = true;
+  int num = 1;
+  for (; num > 0 && trail_index >= 0; --trail_index) {
+    if (!is_marked[trail_index]) continue;
+    is_marked[trail_index] = false;
+    --num;
+
+    const BooleanVariable var = (*trail_)[trail_index].Variable();
+    SatClause* clause = ReasonClauseOrNull(var);
+    if (clause != nullptr) {
+      clauses_propagator_.mutable_clauses_info()->erase(clause);
+    }
+    for (const Literal l : trail_->Reason(var)) {
+      const AssignmentInfo& info = trail_->Info(l.Variable());
+      if (info.level == 0) continue;
+      if (!is_marked[info.trail_index]) {
+        is_marked[info.trail_index] = true;
+        ++num;
+      }
+    }
+  }
+}
+
+void SatSolver::TryToMinimizeClause(SatClause* clause) {
+  CHECK_EQ(CurrentDecisionLevel(), 0);
+  ++counters_.minimization_num_clauses;
+
+  std::set<LiteralIndex> moved_last;
+  std::vector<Literal> candidate(clause->begin(), clause->end());
+  while (!is_model_unsat_) {
+    // We want each literal in candidate to appear last once in our propagation
+    // order. We want to do that while maximizing the reutilization of the
+    // current assignment prefix, that is minimizing the number of
+    // decision/progagation we need to perform.
+    const int target_level = MoveOneUnprocessedLiteralLast(
+        moved_last, CurrentDecisionLevel(), &candidate);
+    if (target_level == -1) break;
+    Backtrack(target_level);
+    while (CurrentDecisionLevel() < candidate.size()) {
+      const int level = CurrentDecisionLevel();
+      const Literal literal = candidate[level];
+      if (Assignment().LiteralIsFalse(literal)) {
+        candidate.erase(candidate.begin() + level);
+        continue;
+      } else if (Assignment().LiteralIsTrue(literal)) {
+        const int variable_level =
+            LiteralTrail().Info(literal.Variable()).level;
+        if (variable_level == 0) {
+          counters_.minimization_num_true++;
+          counters_.minimization_num_removed_literals += clause->Size();
+          Backtrack(0);
+          clauses_propagator_.Detach(clause);
+          return;
+        }
+
+        // If literal (at true) wasn't propagated by this clause, then we
+        // know that this clause is subsumed by other clauses in the database,
+        // so we can remove it. Note however that we need to make sure we will
+        // never remove the clauses that subsumes it later.
+        if (ReasonClauseOrNull(literal.Variable()) != clause) {
+          counters_.minimization_num_subsumed++;
+          counters_.minimization_num_removed_literals += clause->Size();
+
+          // TODO(user): do not do that if it make us keep too many clauses?
+          KeepAllClauseUsedToInfer(literal.Variable());
+          Backtrack(0);
+          clauses_propagator_.Detach(clause);
+          return;
+        } else {
+          // Simplify. Note(user): we could only keep in clause the literals
+          // responsible for the propagation, but because of the subsumption
+          // above, this is not needed.
+          if (variable_level + 1 < candidate.size()) {
+            candidate.resize(variable_level);
+            candidate.push_back(literal);
+          }
+        }
+        break;
+      } else {
+        ++counters_.minimization_num_decisions;
+        EnqueueDecisionAndBackjumpOnConflict(literal.Negated());
+        if (!clause->IsAttached()) {
+          Backtrack(0);
+          return;
+        }
+        if (is_model_unsat_) return;
+      }
+    }
+    if (candidate.empty()) {
+      is_model_unsat_ = true;
+      return;
+    }
+    moved_last.insert(candidate.back().Index());
+  }
+
+  Backtrack(0);
+  if (candidate.size() == 1) {
+    if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
+      counters_.minimization_num_removed_literals += clause->Size();
+      trail_->EnqueueWithUnitReason(candidate[0]);
+    }
+    return;
+  }
+
+  if (parameters_->treat_binary_clauses_separately() && candidate.size() == 2) {
+    counters_.minimization_num_removed_literals += clause->Size() - 2;
+    AddBinaryClauseInternal(candidate[0], candidate[1]);
+    clauses_propagator_.Detach(clause);
+    if (drat_writer_ != nullptr) drat_writer_->AddClause(candidate);
+    return;
+  }
+
+  if (candidate.size() < clause->Size()) {
+    counters_.minimization_num_removed_literals +=
+        clause->Size() - candidate.size();
+
+    // TODO(user): If the watched literal didn't change, we could just rewrite
+    // the clause while keeping the two watched literals at the beginning.
+    clauses_propagator_.Detach(clause);
+    clause->Rewrite(candidate);
+    clauses_propagator_.Attach(clause, trail_);
+    if (drat_writer_ != nullptr) drat_writer_->AddClause(candidate);
+  }
+}
 
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
@@ -910,6 +1039,11 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     LOG(INFO) << "Parameters: " << ProtobufShortDebugString(*parameters_);
   }
 
+  // Used to trigger clause minimization via propagation.
+  int64 next_minimization_num_restart =
+      restart_->NumRestarts() +
+      parameters_->minimize_with_propagation_restart_period();
+
   // Variables used to show the search progress.
   const int kDisplayFrequency = 10000;
   int next_display = parameters_->log_search_progress()
@@ -932,12 +1066,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   for (;;) {
     // Test if a limit is reached.
     if (time_limit != nullptr) {
-      const double current_deterministic_time = deterministic_time();
-      time_limit->AdvanceDeterministicTime(
-          current_deterministic_time -
-          deterministic_time_at_last_advanced_time_limit_);
-      deterministic_time_at_last_advanced_time_limit_ =
-          current_deterministic_time;
+      AdvanceDeterministicTime(time_limit);
       if (time_limit->LimitReached()) {
         if (parameters_->log_search_progress()) {
           LOG(INFO) << "The time limit has been reached. Aborting.";
@@ -999,10 +1128,46 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
         Backtrack(assumption_level_);
       }
 
+      // Clause minimization using propagation.
+      if (CurrentDecisionLevel() == 0 &&
+          restart_->NumRestarts() >= next_minimization_num_restart) {
+        next_minimization_num_restart =
+            restart_->NumRestarts() +
+            parameters_->minimize_with_propagation_restart_period();
+        MinimizeSomeClauses(
+            parameters_->minimize_with_propagation_num_decisions());
+        if (is_model_unsat_) return MODEL_UNSAT;
+      }
+
       DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
       EnqueueNewDecision(decision_policy_->NextBranch());
     }
   }
+}
+
+void SatSolver::MinimizeSomeClauses(int decisions_budget) {
+  // Tricky: we don't want TryToMinimizeClause() to delete to_minimize
+  // while we are processing it.
+  block_clause_deletion_ = true;
+
+  const int64 target_num_branches = counters_.num_branches + decisions_budget;
+  while (counters_.num_branches < target_num_branches &&
+         (time_limit_ == nullptr || !time_limit_->LimitReached())) {
+    SatClause* to_minimize = clauses_propagator_.NextClauseToMinimize();
+    if (to_minimize != nullptr) {
+      TryToMinimizeClause(to_minimize);
+      if (is_model_unsat_) return;
+    } else {
+      if (to_minimize == nullptr) {
+        VLOG(1) << "Minimized all clauses, restarting from first one.";
+        clauses_propagator_.ResetToMinimizeIndex();
+      }
+      break;
+    }
+  }
+
+  block_clause_deletion_ = false;
+  clauses_propagator_.DeleteDetachedClauses();
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
@@ -1134,7 +1299,7 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
 void SatSolver::RescaleClauseActivities(double scaling_factor) {
   SCOPED_TIME_STAT(&stats_);
   clause_activity_increment_ *= scaling_factor;
-  for (auto& entry : *(clauses_propagator_.mutable_clauses_info())) {
+  for (auto& entry : *clauses_propagator_.mutable_clauses_info()) {
     entry.second.activity *= scaling_factor;
   }
 }
@@ -1204,64 +1369,77 @@ std::string SatSolver::StatusString(Status status) const {
   return StringPrintf("\n  status: %s\n", SatStatusString(status).c_str()) +
          StringPrintf("  time: %fs\n", time_in_s) +
          StringPrintf("  memory: %s\n", MemoryUsage().c_str()) +
-         StringPrintf("  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
-                      counters_.num_failures,
-                      static_cast<double>(counters_.num_failures) / time_in_s) +
-         StringPrintf("  num branches: %" GG_LL_FORMAT "d (%.0f /sec)\n",
-                      counters_.num_branches,
-                      static_cast<double>(counters_.num_branches) / time_in_s) +
-         StringPrintf("  num propagations: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
-                      num_propagations(),
-                      static_cast<double>(num_propagations()) / time_in_s) +
-         StringPrintf("  num binary propagations: %" GG_LL_FORMAT "d\n",
-                      binary_implication_graph_.num_propagations()) +
-         StringPrintf("  num binary inspections: %" GG_LL_FORMAT "d\n",
-                      binary_implication_graph_.num_inspections()) +
-         StringPrintf("  num binary redundant implications: %" GG_LL_FORMAT
-                      "d\n",
-                      binary_implication_graph_.num_redundant_implications()) +
-         StringPrintf("  num classic minimizations: %" GG_LL_FORMAT
-                      "d"
-                      "  (literals removed: %" GG_LL_FORMAT "d)\n",
-                      counters_.num_minimizations,
-                      counters_.num_literals_removed) +
-         StringPrintf("  num binary minimizations: %" GG_LL_FORMAT
-                      "d"
-                      "  (literals removed: %" GG_LL_FORMAT "d)\n",
-                      binary_implication_graph_.num_minimization(),
-                      binary_implication_graph_.num_literals_removed()) +
-         StringPrintf("  num inspected clauses: %" GG_LL_FORMAT "d\n",
-                      clauses_propagator_.num_inspected_clauses()) +
-         StringPrintf("  num inspected clause_literals: %" GG_LL_FORMAT "d\n",
-                      clauses_propagator_.num_inspected_clause_literals()) +
-         StringPrintf(
-             "  num learned literals: %lld  (avg: %.1f /clause)\n",
+         absl::StrFormat(
+             "  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
+             counters_.num_failures,
+             static_cast<double>(counters_.num_failures) / time_in_s) +
+         absl::StrFormat(
+             "  num branches: %" GG_LL_FORMAT "d (%.0f /sec)\n",
+             counters_.num_branches,
+             static_cast<double>(counters_.num_branches) / time_in_s) +
+         absl::StrFormat("  num propagations: %" GG_LL_FORMAT
+                         "d  (%.0f /sec)\n",
+                         num_propagations(),
+                         static_cast<double>(num_propagations()) / time_in_s) +
+         absl::StrFormat("  num binary propagations: %" GG_LL_FORMAT "d\n",
+                         binary_implication_graph_.num_propagations()) +
+         absl::StrFormat("  num binary inspections: %" GG_LL_FORMAT "d\n",
+                         binary_implication_graph_.num_inspections()) +
+         absl::StrFormat(
+             "  num binary redundant implications: %" GG_LL_FORMAT "d\n",
+             binary_implication_graph_.num_redundant_implications()) +
+         absl::StrFormat("  num classic minimizations: %" GG_LL_FORMAT
+                         "d"
+                         "  (literals removed: %" GG_LL_FORMAT "d)\n",
+                         counters_.num_minimizations,
+                         counters_.num_literals_removed) +
+         absl::StrFormat("  num binary minimizations: %" GG_LL_FORMAT
+                         "d"
+                         "  (literals removed: %" GG_LL_FORMAT "d)\n",
+                         binary_implication_graph_.num_minimization(),
+                         binary_implication_graph_.num_literals_removed()) +
+         absl::StrFormat("  num inspected clauses: %" GG_LL_FORMAT "d\n",
+                         clauses_propagator_.num_inspected_clauses()) +
+         absl::StrFormat("  num inspected clause_literals: %" GG_LL_FORMAT
+                         "d\n",
+                         clauses_propagator_.num_inspected_clause_literals()) +
+         absl::StrFormat(
+             "  num learned literals: %d  (avg: %.1f /clause)\n",
              counters_.num_literals_learned,
              1.0 * counters_.num_literals_learned / counters_.num_failures) +
-         StringPrintf("  num learned PB literals: %lld  (avg: %.1f /clause)\n",
-                      counters_.num_learned_pb_literals_,
-                      1.0 * counters_.num_learned_pb_literals_ /
-                          counters_.num_failures) +
-         StringPrintf("  num subsumed clauses: %lld\n",
-                      counters_.num_subsumed_clauses) +
-         StringPrintf("  pb num threshold updates: %lld\n",
-                      pb_constraints_.num_threshold_updates()) +
-         StringPrintf("  pb num constraint lookups: %lld\n",
-                      pb_constraints_.num_constraint_lookups()) +
-         StringPrintf("  pb num inspected constraint literals: %lld\n",
-                      pb_constraints_.num_inspected_constraint_literals()) +
+         absl::StrFormat(
+             "  num learned PB literals: %d  (avg: %.1f /clause)\n",
+             counters_.num_learned_pb_literals,
+             1.0 * counters_.num_learned_pb_literals / counters_.num_failures) +
+         absl::StrFormat("  num subsumed clauses: %d\n",
+                         counters_.num_subsumed_clauses) +
+         absl::StrFormat("  minimization_num_clauses: %d\n",
+                         counters_.minimization_num_clauses) +
+         absl::StrFormat("  minimization_num_decisions: %d\n",
+                         counters_.minimization_num_decisions) +
+         absl::StrFormat("  minimization_num_true: %d\n",
+                         counters_.minimization_num_true) +
+         absl::StrFormat("  minimization_num_subsumed: %d\n",
+                         counters_.minimization_num_subsumed) +
+         absl::StrFormat("  minimization_num_removed_literals: %d\n",
+                         counters_.minimization_num_removed_literals) +
+         absl::StrFormat("  pb num threshold updates: %d\n",
+                         pb_constraints_.num_threshold_updates()) +
+         absl::StrFormat("  pb num constraint lookups: %d\n",
+                         pb_constraints_.num_constraint_lookups()) +
+         absl::StrFormat("  pb num inspected constraint literals: %d\n",
+                         pb_constraints_.num_inspected_constraint_literals()) +
          restart_->InfoString() +
          StringPrintf("  deterministic time: %f\n", deterministic_time());
 }
 
 std::string SatSolver::RunningStatisticsString() const {
   const double time_in_s = timer_.Get();
-  return StringPrintf(
-      "%6.2lfs, mem:%s, fails:%" GG_LL_FORMAT
+  return absl::StrFormat(
+      "%6.2fs, mem:%s, fails:%" GG_LL_FORMAT
       "d, "
       "depth:%d, clauses:%lld, tmp:%lld, bin:%llu, restarts:%d, vars:%d",
-      time_in_s, MemoryUsage().c_str(), counters_.num_failures,
-      CurrentDecisionLevel(),
+      time_in_s, MemoryUsage().c_str(), counters_.num_failures, CurrentDecisionLevel(),
       clauses_propagator_.num_clauses() -
           clauses_propagator_.num_removable_clauses(),
       clauses_propagator_.num_removable_clauses(),
@@ -2165,7 +2343,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   // that appear in clauses_info can potentially be removed.
   typedef std::pair<SatClause*, ClauseInfo> Entry;
   std::vector<Entry> entries;
-  auto& clauses_info = *(clauses_propagator_.mutable_clauses_info());
+  auto& clauses_info = *clauses_propagator_.mutable_clauses_info();
   for (auto& entry : clauses_info) {
     if (ClauseIsUsedAsReason(entry.first)) continue;
     if (entry.second.protected_during_next_cleanup) {
@@ -2222,7 +2400,9 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
 
     // TODO(user): If the need arise, we could avoid this linear scan on the
     // full list of clauses by not keeping the clauses from clauses_info there.
-    clauses_propagator_.DeleteDetachedClauses();
+    if (!block_clause_deletion_) {
+      clauses_propagator_.DeleteDetachedClauses();
+    }
   }
 
   num_learned_clause_before_cleanup_ = parameters_->clause_cleanup_period();

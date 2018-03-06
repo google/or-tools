@@ -16,6 +16,7 @@
 #include <utility>
 
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/thorough_hash.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -276,10 +277,10 @@ std::string MutableUpperBoundedLinearConstraint::DebugString() {
   std::string result;
   for (BooleanVariable var : PossibleNonZeros()) {
     if (!result.empty()) result += " + ";
-    result += StringPrintf("%lld[%s]", GetCoefficient(var).value(),
-                           GetLiteral(var).DebugString().c_str());
+    result += absl::StrFormat("%lld[%s]", GetCoefficient(var).value(),
+                              GetLiteral(var).DebugString().c_str());
   }
-  result += StringPrintf(" <= %lld", rhs_.value());
+  result += absl::StrFormat(" <= %lld", rhs_.value());
   return result;
 }
 

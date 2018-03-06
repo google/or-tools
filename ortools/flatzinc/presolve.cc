@@ -20,6 +20,7 @@
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/string_view.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/strutil.h"
@@ -1251,9 +1252,11 @@ Presolver::RuleStatus Presolver::PresolveArrayIntElement(Constraint* ct,
 
       if (last_index < ct->arguments[0].Var()->domain.Max() ||
           first_index > ct->arguments[0].Var()->domain.Min()) {
-        StringAppendF(log, "filter index to [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                           "d] and reduce array to size %" GG_LL_FORMAT "d",
-                      first_index, last_index, last_index);
+        StringAppendF(log,
+                              "filter index to [%" GG_LL_FORMAT
+                              "d..%" GG_LL_FORMAT
+                              "d] and reduce array to size %" GG_LL_FORMAT "d",
+                              first_index, last_index, last_index);
         IntersectVarWithInterval(ct->arguments[0].Var(), first_index,
                                  last_index);
         ct->arguments[1].values.resize(last_index);
@@ -1537,8 +1540,9 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
         IntegerVariable* const var = ct->arguments[1].variables[i];
         const int64 bound = rhs / coef;
         if (bound < var->domain.Max()) {
-          StringAppendF(log, ", intersect %s with [0..%" GG_LL_FORMAT "d]",
-                        var->DebugString().c_str(), bound);
+          StringAppendF(log,
+                                ", intersect %s with [0..%" GG_LL_FORMAT "d]",
+                                var->DebugString(), bound);
           IntersectVarWithInterval(var, 0, bound);
         }
       }
@@ -1550,8 +1554,9 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
     IntegerVariable* const var = ct->arguments[1].variables[0];
     const int64 bound = (rhs + coef - 1) / coef;
     if (bound > var->domain.Min()) {
-      StringAppendF(log, ", intersect %s with [%" GG_LL_FORMAT "d .. INT_MAX]",
-                    var->DebugString().c_str(), bound);
+      StringAppendF(
+          log, ", intersect %s with [%" GG_LL_FORMAT "d .. INT_MAX]",
+          var->DebugString(), bound);
       IntersectVarWithInterval(var, bound, kint64max);
       return CONSTRAINT_ALWAYS_TRUE;
     }

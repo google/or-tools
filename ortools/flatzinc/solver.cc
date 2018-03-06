@@ -20,6 +20,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -96,8 +97,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
       return StringPrintf("%s = %s;", output.name.c_str(),
                           value == 1 ? "true" : "false");
     } else {
-      return StringPrintf("%s = %" GG_LL_FORMAT "d;", output.name.c_str(),
-                          value);
+      return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name, value);
     }
   } else {
     const int bound_size = output.bounds.size();
@@ -105,9 +105,9 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
         StringPrintf("%s = array%dd(", output.name.c_str(), bound_size);
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
-        result.append(StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
-                                   output.bounds[i].min_value,
-                                   output.bounds[i].max_value));
+        result.append(absl::StrFormat(
+            "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
+            output.bounds[i].min_value, output.bounds[i].max_value));
       } else {
         result.append("{},");
       }
@@ -859,40 +859,40 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
       proven = true;
     }
     solver_status.append(
-        StringPrintf("%%%%  total runtime:        %" GG_LL_FORMAT "d ms\n",
-                     solve_time + build_time));
-    solver_status.append(StringPrintf(
+        absl::StrFormat("%%%%  total runtime:        %" GG_LL_FORMAT "d ms\n",
+                        solve_time + build_time));
+    solver_status.append(absl::StrFormat(
         "%%%%  build time:           %" GG_LL_FORMAT "d ms\n", build_time));
-    solver_status.append(StringPrintf(
+    solver_status.append(absl::StrFormat(
         "%%%%  solve time:           %" GG_LL_FORMAT "d ms\n", solve_time));
     solver_status.append(
         StringPrintf("%%%%  solutions:            %d\n", num_solutions));
     solver_status.append(StringPrintf("%%%%  constraints:          %d\n",
                                       solver_->constraints()));
-    solver_status.append(StringPrintf(
+    solver_status.append(absl::StrFormat(
         "%%%%  normal propagations:  %" GG_LL_FORMAT "d\n",
         solver_->demon_runs(operations_research::Solver::NORMAL_PRIORITY)));
-    solver_status.append(StringPrintf(
+    solver_status.append(absl::StrFormat(
         "%%%%  delayed propagations: %" GG_LL_FORMAT "d\n",
         solver_->demon_runs(operations_research::Solver::DELAYED_PRIORITY)));
     solver_status.append(
-        StringPrintf("%%%%  branches:             %" GG_LL_FORMAT "d\n",
-                     solver_->branches()));
+        absl::StrFormat("%%%%  branches:             %" GG_LL_FORMAT "d\n",
+                        solver_->branches()));
     solver_status.append(
-        StringPrintf("%%%%  failures:             %" GG_LL_FORMAT "d\n",
-                     solver_->failures()));
+        absl::StrFormat("%%%%  failures:             %" GG_LL_FORMAT "d\n",
+                        solver_->failures()));
     solver_status.append(StringPrintf("%%%%  memory:               %s\n",
                                       MemoryUsage().c_str()));
     const int64 best = report->BestSolution();
     if (model_.objective() != nullptr) {
       if (!model_.maximize() && num_solutions > 0) {
-        solver_status.append(
-            StringPrintf("%%%%  min objective:        %" GG_LL_FORMAT "d%s\n",
-                         best, (proven ? " (proven)" : "")));
+        solver_status.append(absl::StrFormat(
+            "%%%%  min objective:        %" GG_LL_FORMAT "d%s\n", best,
+            (proven ? " (proven)" : "")));
       } else if (num_solutions > 0) {
-        solver_status.append(
-            StringPrintf("%%%%  max objective:        %" GG_LL_FORMAT "d%s\n",
-                         best, (proven ? " (proven)" : "")));
+        solver_status.append(absl::StrFormat(
+            "%%%%  max objective:        %" GG_LL_FORMAT "d%s\n", best,
+            (proven ? " (proven)" : "")));
       }
     }
 
@@ -916,16 +916,16 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
     solver_status.append(
         "%%  name, status, obj, solns, s_time, b_time, br, "
         "fails, cts, demon, delayed, mem, search\n");
-    solver_status.append(StringPrintf(
+    solver_status.append(absl::StrFormat(
         "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
         "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
         "d, %" GG_LL_FORMAT "d, %s, %s",
-        model_.name().c_str(), status_string.c_str(), obj_string.c_str(),
-        num_solutions, solve_time, build_time, solver_->branches(),
-        solver_->failures(), solver_->constraints(),
+        model_.name(), status_string, obj_string, num_solutions, solve_time,
+        build_time, solver_->branches(), solver_->failures(),
+        solver_->constraints(),
         solver_->demon_runs(operations_research::Solver::NORMAL_PRIORITY),
         solver_->demon_runs(operations_research::Solver::DELAYED_PRIORITY),
-        MemoryUsage().c_str(), search_name_.c_str()));
+        MemoryUsage(), search_name_));
     report->Print(p.thread_id, search_status);
     if (p.statistics) {
       report->Print(p.thread_id, solver_status);

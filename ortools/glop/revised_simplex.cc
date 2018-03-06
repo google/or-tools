@@ -27,6 +27,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/glop/initial_basis.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -439,7 +440,7 @@ const BasisFactorization& RevisedSimplex::GetBasisFactorization() const {
 }
 
 std::string RevisedSimplex::GetPrettySolverStats() const {
-  return StringPrintf(
+  return absl::StrFormat(
       "Problem status                               : %s\n"
       "Solving time                                 : %-6.4g\n"
       "Number of iterations                         : %llu\n"

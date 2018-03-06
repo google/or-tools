@@ -14,6 +14,7 @@
 #include "ortools/bop/bop_portfolio.h"
 
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
@@ -411,10 +412,10 @@ void OptimizerSelector::SetOptimizerRunnability(OptimizerIndex optimizer_index,
 
 std::string OptimizerSelector::PrintStats(OptimizerIndex optimizer_index) const {
   const RunInfo& info = run_infos_[info_positions_[optimizer_index]];
-  return StringPrintf(
-      "    %40s : %3d/%-3d  (%6.2f%%)  Total gain: %6lld  Total Dtime: %0.3f "
+  return absl::StrFormat(
+      "    %40s : %3d/%-3d  (%6.2f%%)  Total gain: %6d  Total Dtime: %0.3f "
       "score: %f\n",
-      info.name.c_str(), info.num_successes, info.num_calls,
+      info.name, info.num_successes, info.num_calls,
       100.0 * info.num_successes / info.num_calls, info.total_gain,
       info.time_spent, info.score);
 }

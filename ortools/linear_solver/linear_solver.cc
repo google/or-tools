@@ -39,6 +39,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/fp_utils.h"
@@ -309,6 +310,10 @@ void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters) {
   solver_specific_parameter_string_ = parameters;
   return interface_->SetSolverSpecificParametersAsString(parameters);
+}
+
+void MPSolver::SetHint(const PartialVariableAssignment& hint) {
+  interface_->SetHint(hint);
 }
 
 // ----- Solver -----
@@ -1025,9 +1030,9 @@ std::string PrettyPrintVar(const MPVariable& var) {
     if (lb > ub) {
       return prefix + "∅";
     } else if (lb == ub) {
-      return StringPrintf("%s{ %lld }", prefix.c_str(), lb);
+      return absl::StrFormat("%s{ %lld }", prefix.c_str(), lb);
     } else {
-      return StringPrintf("%s{ %lld, %lld }", prefix.c_str(), lb, ub);
+      return absl::StrFormat("%s{ %lld, %lld }", prefix.c_str(), lb, ub);
     }
   }
   // Special case: single (non-infinite) real value.
@@ -1672,4 +1677,3 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
-

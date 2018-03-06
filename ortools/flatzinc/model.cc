@@ -20,6 +20,7 @@
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/join.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
@@ -373,8 +374,8 @@ std::string Domain::DebugString() const {
     if (values.empty()) {
       return "int";
     } else {
-      return StringPrintf("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]", values[0],
-                          values[1]);
+      return absl::StrFormat("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
+                             values[0], values[1]);
     }
   } else if (values.size() == 1) {
     return StrCat(values.back());
@@ -449,10 +450,10 @@ Argument Argument::FromDomain(const Domain& domain) {
 std::string Argument::DebugString() const {
   switch (type) {
     case INT_VALUE:
-      return StringPrintf("% " GG_LL_FORMAT "d", values[0]);
+      return absl::StrFormat("% " GG_LL_FORMAT "d", values[0]);
     case INT_INTERVAL:
-      return StringPrintf("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]", values[0],
-                          values[1]);
+      return absl::StrFormat("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
+                             values[0], values[1]);
     case INT_LIST:
       return StringPrintf("[%s]", absl::StrJoin(values, ", ").c_str());
     case DOMAIN_LIST:
@@ -620,7 +621,7 @@ bool IntegerVariable::Merge(const std::string& other_name,
 
 std::string IntegerVariable::DebugString() const {
   if (!domain.is_interval && domain.values.size() == 1) {
-    return StringPrintf("% " GG_LL_FORMAT "d", domain.values.back());
+    return absl::StrFormat("% " GG_LL_FORMAT "d", domain.values.back());
   } else {
     return StringPrintf(
         "%s(%s%s%s)%s", name.c_str(), domain.DebugString().c_str(),
@@ -788,8 +789,8 @@ std::string Annotation::DebugString() const {
                           JoinDebugString(annotations, ", ").c_str());
     }
     case INTERVAL: {
-      return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
-                          interval_min, interval_max);
+      return absl::StrFormat("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
+                             interval_min, interval_max);
     }
     case INT_VALUE: {
       return StrCat(interval_min);
@@ -816,8 +817,8 @@ std::string Annotation::DebugString() const {
 // ----- SolutionOutputSpecs -----
 
 std::string SolutionOutputSpecs::Bounds::DebugString() const {
-  return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min_value,
-                      max_value);
+  return absl::StrFormat("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min_value,
+                         max_value);
 }
 
 SolutionOutputSpecs SolutionOutputSpecs::SingleVariable(

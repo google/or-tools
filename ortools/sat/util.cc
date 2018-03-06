@@ -41,5 +41,43 @@ void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters) {
   parameters->set_random_branches_ratio(random->OneIn(2) ? 0.01 : 0.0);
 }
 
+int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
+                                  int relevant_prefix_size,
+                                  std::vector<Literal>* literals) {
+  if (literals->empty()) return -1;
+  if (!ContainsKey(processed, literals->back().Index())) {
+    return std::min<int>(relevant_prefix_size, literals->size());
+  }
+
+  // To get O(n log n) size of suffixes, we will first process the last n/2
+  // literals, we then move all of them first and process the n/2 literals left.
+  // We use the same algorithm recursively. The sum of the suffixes' size S(n)
+  // is thus S(n/2) + n + S(n/2). That gives us the correct complexity. The code
+  // below simulates one step of this algorithm and is made to be "robust" when
+  // from one call to the next, some literals have been removed (but the order
+  // of literals is preserved).
+  int num_processed = 0;
+  int num_not_processed = 0;
+  int target_prefix_size = literals->size() - 1;
+  for (int i = literals->size() - 1; i >= 0; i--) {
+    if (ContainsKey(processed, (*literals)[i].Index())) {
+      ++num_processed;
+    } else {
+      ++num_not_processed;
+      target_prefix_size = i;
+    }
+    if (num_not_processed >= num_processed) break;
+  }
+  if (num_not_processed == 0) return -1;
+  target_prefix_size = std::min(target_prefix_size, relevant_prefix_size);
+
+  // Once a prefix size has been decided, it is always better to
+  // enqueue the literal already processed first.
+  std::stable_partition(
+      literals->begin() + target_prefix_size, literals->end(),
+      [&processed](Literal l) { return ContainsKey(processed, l.Index()); });
+  return target_prefix_size;
+}
+
 }  // namespace sat
 }  // namespace operations_research

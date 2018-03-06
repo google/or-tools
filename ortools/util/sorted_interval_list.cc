@@ -17,13 +17,14 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 
 std::string ClosedInterval::DebugString() const {
-  if (start == end) return StringPrintf("[%" GG_LL_FORMAT "d]", start);
-  return StringPrintf("[%" GG_LL_FORMAT "d,%" GG_LL_FORMAT "d]", start, end);
+  if (start == end) return absl::StrFormat("[%" GG_LL_FORMAT "d]", start);
+  return absl::StrFormat("[%" GG_LL_FORMAT "d,%" GG_LL_FORMAT "d]", start, end);
 }
 
 std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals) {

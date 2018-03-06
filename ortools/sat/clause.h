@@ -95,6 +95,13 @@ class SatClause {
   // old_size) of literals().
   bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
 
+  // Rewrites a clause with another shorter one. Note that the clause shouldn't
+  // be attached when this is called.
+  void Rewrite(absl::Span<Literal> new_clause) {
+    size_ = 0;
+    for (const Literal l : new_clause) literals_[size_++] = l;
+  }
+
   // Returns true if the clause is satisfied for the given assignment. Note that
   // the assignment may be partial, so false does not mean that the clause can't
   // be satisfied by completing the assignment.
@@ -175,6 +182,13 @@ class LiteralWatchers : public SatPropagator {
   void LazyDetach(SatClause* clause);
   void CleanUpWatchers();
 
+  // Detaches the given clause right away.
+  void Detach(SatClause* clause);
+
+  // Attaches the given clause. The first two literal of the clause must
+  // be unassigned and the clause must not be already attached.
+  void Attach(SatClause* clause, Trail* trail);
+
   // Reclaims the memory of the detached clauses and remove them from
   // AllClausesInCreationOrder() this work in O(num_clauses()).
   void DeleteDetachedClauses();
@@ -206,6 +220,22 @@ class LiteralWatchers : public SatPropagator {
 
   void SetDratWriter(DratWriter* drat_writer) { drat_writer_ = drat_writer; }
 
+  // Really basic algorithm to return a clause to try to minimize. We simply
+  // loop over the clause that we keep forever, in creation order. This starts
+  // by the problem clauses and then the learned one that we keep forever.
+  SatClause* NextClauseToMinimize() {
+    for (; to_minimize_index_ < clauses_.size(); ++to_minimize_index_) {
+      if (!clauses_[to_minimize_index_]->IsAttached()) continue;
+      if (!IsRemovable(clauses_[to_minimize_index_])) {
+        return clauses_[to_minimize_index_++];
+      }
+    }
+    return nullptr;
+  }
+
+  // Restart the scan in NextClauseToMinimize() from the first problem clause.
+  void ResetToMinimizeIndex() { to_minimize_index_ = 0; }
+
  private:
   // Attaches the given clause. This eventually propagates a literal which is
   // enqueued on the trail. Returns false if a contradiction was encountered.
@@ -220,6 +250,9 @@ class LiteralWatchers : public SatPropagator {
   // speed up PropagateOnFalse() by skipping the clause if it is true.
   void AttachOnFalse(Literal literal, Literal blocking_literal,
                      SatClause* clause);
+
+  // Common code between LazyDetach() and Detach().
+  void InternalDetach(SatClause* clause);
 
   // Contains, for each literal, the list of clauses that need to be inspected
   // when the corresponding literal becomes false.
@@ -252,6 +285,8 @@ class LiteralWatchers : public SatPropagator {
   // treat_binary_clauses_separately is true, the binary clause are not kept
   // here either.
   std::vector<SatClause*> clauses_;
+
+  int to_minimize_index_ = 0;
 
   // Only contains removable clause.
   std::unordered_map<SatClause*, ClauseInfo> clauses_info_;

@@ -24,6 +24,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/graph/io.h"
 #endif  // __PORTABLE_PLATFORM__
@@ -424,10 +425,10 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
       hard_weight += weight;
       ++i;
     }
-    output += StringPrintf("p wcnf %d %d %lld\n", first_slack_variable,
-                           static_cast<int>(problem.constraints_size() +
-                                            non_slack_objective.size()),
-                           hard_weight);
+    output += absl::StrFormat("p wcnf %d %d %lld\n", first_slack_variable,
+                              static_cast<int>(problem.constraints_size() +
+                                               non_slack_objective.size()),
+                              hard_weight);
   } else {
     output += StringPrintf("p cnf %d %d\n", problem.num_variables(),
                            problem.constraints_size());
@@ -448,7 +449,7 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
       }
     }
     if (is_wcnf) {
-      output += StringPrintf("%lld ", weight);
+      output += absl::StrFormat("%lld ", weight);
     }
     output += constraint_output + " 0\n";
   }
@@ -459,8 +460,7 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
       // Since it is falsifying this clause that cost "weigtht", we need to take
       // its negation.
       const Literal literal(-p.first);
-      output +=
-          StringPrintf("%lld %s 0\n", p.second, literal.DebugString().c_str());
+      output += absl::StrFormat("%lld %s 0\n", p.second, literal.DebugString().c_str());
     }
   }
 

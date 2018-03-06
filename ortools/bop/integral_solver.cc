@@ -289,9 +289,9 @@ std::string IntegralVariable::DebugString() const {
   std::string str;
   CHECK_EQ(bits_.size(), weights_.size());
   for (int i = 0; i < bits_.size(); ++i) {
-    str += StringPrintf("%lld [%d] ", weights_[i], bits_[i].value());
+    str += absl::StrFormat("%lld [%lld] ", weights_[i], bits_[i].value());
   }
-  str += StringPrintf(" Offset: %lld", offset_);
+  str += absl::StrFormat(" Offset: %lld", offset_);
   return str;
 }
 

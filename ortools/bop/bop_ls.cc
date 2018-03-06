@@ -14,6 +14,7 @@
 #include "ortools/bop/bop_ls.h"
 
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
 
@@ -384,10 +385,11 @@ std::string AssignmentAndConstraintFeasibilityMaintainer::DebugString() const {
   str += "\nmin  curr  max\n";
   for (ConstraintIndex ct(0); ct < constraint_values_.size(); ++ct) {
     if (constraint_lower_bounds_[ct] == kint64min) {
-      str += StringPrintf("-  %lld  %lld\n", constraint_values_[ct],
-                          constraint_upper_bounds_[ct]);
+      str += absl::StrFormat("-  %d  %d\n", constraint_values_[ct],
+                             constraint_upper_bounds_[ct]);
     } else {
-      str += StringPrintf("%lld  %lld  %lld\n", constraint_lower_bounds_[ct],
+      str +=
+          absl::StrFormat("%d  %d  %d\n", constraint_lower_bounds_[ct],
                           constraint_values_[ct], constraint_upper_bounds_[ct]);
     }
   }

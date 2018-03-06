@@ -19,6 +19,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/flatzinc/logging.h"
@@ -131,8 +132,8 @@ class MtOptimizeVar : public OptimizeVar {
       if (verbose_) {
         report_->Log(
             thread_id_,
-            StringPrintf("Polling improved objective %" GG_LL_FORMAT "d",
-                         polled_best));
+            absl::StrFormat("Polling improved objective %" GG_LL_FORMAT "d",
+                            polled_best));
       }
       best_ = polled_best;
     }
@@ -236,8 +237,8 @@ void MultiThreadReporting::OnOptimizeSolution(int thread_id, int64 value,
           if (verbose_) {
             LogNoLock(
                 thread_id,
-                StringPrintf("solution found with value %" GG_LL_FORMAT "d",
-                             value));
+                absl::StrFormat("solution found with value %" GG_LL_FORMAT "d",
+                                value));
           }
           if (ShouldPrintAllSolutions() || MaxNumSolutions() > 1) {
             Print(thread_id, solution_string);
@@ -255,8 +256,8 @@ void MultiThreadReporting::OnOptimizeSolution(int thread_id, int64 value,
           if (verbose_) {
             LogNoLock(
                 thread_id,
-                StringPrintf("solution found with value %" GG_LL_FORMAT "d",
-                             value));
+                absl::StrFormat("solution found with value %" GG_LL_FORMAT "d",
+                                value));
           }
           if (ShouldPrintAllSolutions() || MaxNumSolutions() > 1) {
             Print(thread_id, solution_string);
@@ -294,8 +295,8 @@ void MultiThreadReporting::OnSearchEnd(int thread_id, bool interrupted) {
   if (!last_solution_.empty()) {
     if (verbose_) {
       LogNoLock(last_thread_,
-                StringPrintf("solution found with value %" GG_LL_FORMAT "d",
-                             best_objective_));
+                absl::StrFormat("solution found with value %" GG_LL_FORMAT "d",
+                                best_objective_));
     }
     Print(thread_id, last_solution_);
     last_solution_.clear();

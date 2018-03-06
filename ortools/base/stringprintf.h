@@ -21,4 +21,8 @@ std::string StringPrintf(const char* const format, ...);
 void SStringPrintf(std::string* const dst, const char* const format, ...);
 void StringAppendF(std::string* const dst, const char* const format, ...);
 }  // namespace operations_research
+
+namespace absl {
+std::string StrFormat(const char* const format, ...);
+}  // namespace absl
 #endif  // OR_TOOLS_BASE_STRINGPRINTF_H_

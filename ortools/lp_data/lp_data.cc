@@ -24,6 +24,7 @@
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/join.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
@@ -416,7 +417,7 @@ Fractional LinearProgram::GetObjectiveCoefficientForMinimizationVersion(
 }
 
 std::string LinearProgram::GetDimensionString() const {
-  return StringPrintf(
+  return absl::StrFormat(
       "%d rows, %d columns, %lld entries", num_constraints().value(),
       num_variables().value(),
       // static_cast<int64> is needed because the Android port uses int32.
@@ -437,8 +438,8 @@ std::string LinearProgram::GetObjectiveStatsString() const {
   if (num_non_zeros == 0) {
     return "No objective term. This is a pure feasibility problem.";
   } else {
-    return StringPrintf("%lld non-zeros, range [%e, %e]", num_non_zeros,
-                        min_value, max_value);
+    return absl::StrFormat("%lld non-zeros, range [%e, %e]", num_non_zeros,
+                           min_value, max_value);
   }
 }
 

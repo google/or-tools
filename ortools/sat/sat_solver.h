@@ -379,6 +379,19 @@ class SatSolver {
   // Mainly visible for testing.
   bool Propagate();
 
+  // This must be called at level zero. It will spend the given num decision and
+  // use propagation to try to minimize some clauses from the database.
+  void MinimizeSomeClauses(int decisions_budget);
+
+  // Advance the given time limit with all the deterministic time that was
+  // elapsed since last call.
+  void AdvanceDeterministicTime(TimeLimit* limit) {
+    const double current = deterministic_time();
+    limit->AdvanceDeterministicTime(
+        current - deterministic_time_at_last_advanced_time_limit_);
+    deterministic_time_at_last_advanced_time_limit_ = current;
+  }
+
  private:
   // Calls Propagate() and returns true if no conflict occurred. Otherwise,
   // learns the conflict, backtracks, enqueues the consequence of the learned
@@ -473,8 +486,8 @@ class SatSolver {
            ReasonClauseOrNull(var) == clause;
   }
 
-  // Add a problem clause. Not that the clause is assumed to be "cleaned", that
-  // is no duplicate variables (not strictly required) and not empty.
+  // Add a problem clause. The clause is assumed to be "cleaned", that is no
+  // duplicate variables (not strictly required) and not empty.
   bool AddProblemClauseInternal(const std::vector<Literal>& literals);
 
   // This is used by all the Add*LinearConstraint() functions. It detects
@@ -615,6 +628,16 @@ class SatSolver {
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
 
+  // Marks as "non-deletable" all clauses that were used to infer the given
+  // variable. The variable must be currently assigned.
+  void KeepAllClauseUsedToInfer(BooleanVariable variable);
+
+  // Use propagation to try to minimize the given clause. This is really similar
+  // to MinimizeCoreWithPropagation(). It must be called when the current
+  // decision level is zero. Note that because this do a small tree search, it
+  // will impact the variable/clauses activities and may add new conflicts.
+  void TryToMinimizeClause(SatClause* clause);
+
   // This is used by the old non-model constructor.
   Model* model_;
   std::unique_ptr<Model> owned_model_;
@@ -673,30 +696,27 @@ class SatSolver {
 
   // Tracks various information about the solver progress.
   struct Counters {
-    int64 num_branches;
-    int64 num_failures;
+    int64 num_branches = 0;
+    int64 num_failures = 0;
 
     // Minimization stats.
-    int64 num_minimizations;
-    int64 num_literals_removed;
+    int64 num_minimizations = 0;
+    int64 num_literals_removed = 0;
 
     // PB constraints.
-    int64 num_learned_pb_literals_;
+    int64 num_learned_pb_literals = 0;
 
     // Clause learning /deletion stats.
-    int64 num_literals_learned;
-    int64 num_literals_forgotten;
-    int64 num_subsumed_clauses;
+    int64 num_literals_learned = 0;
+    int64 num_literals_forgotten = 0;
+    int64 num_subsumed_clauses = 0;
 
-    Counters()
-        : num_branches(0),
-          num_failures(0),
-          num_minimizations(0),
-          num_literals_removed(0),
-          num_learned_pb_literals_(0),
-          num_literals_learned(0),
-          num_literals_forgotten(0),
-          num_subsumed_clauses(0) {}
+    // TryToMinimizeClause() stats.
+    int64 minimization_num_clauses = 0;
+    int64 minimization_num_decisions = 0;
+    int64 minimization_num_true = 0;
+    int64 minimization_num_subsumed = 0;
+    int64 minimization_num_removed_literals = 0;
   };
   Counters counters_;
 
@@ -737,6 +757,13 @@ class SatSolver {
   std::vector<Literal> extra_reason_literals_;
   std::vector<SatClause*> subsumed_clauses_;
 
+  // When true, temporarily disable the deletion of clauses that are not needed
+  // anymore. This is a hack for TryToMinimizeClause() because we use
+  // propagation in this function which might trigger a clause database
+  // deletion, but we still want the pointer to the clause we wants to minimize
+  // to be valid until the end of that function.
+  bool block_clause_deletion_ = false;
+
   // "cache" to avoid inspecting many times the same reason during conflict
   // analysis.
   VariableWithSameReasonIdentifier same_reason_identifier_;
@@ -756,7 +783,7 @@ class SatSolver {
   // The deterministic time when the time limit was updated.
   // As the deterministic time in the time limit has to be advanced manually,
   // it is necessary to keep track of the last time the time was advanced.
-  double deterministic_time_at_last_advanced_time_limit_;
+  double deterministic_time_at_last_advanced_time_limit_ = 0;
 
   // This is true iff the loaded problem only contains clauses.
   bool problem_is_pure_sat_;

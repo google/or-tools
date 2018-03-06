@@ -30,6 +30,7 @@
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/join.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -75,7 +76,7 @@ std::string CnfObjectiveLine(const LinearBooleanProblem& problem,
                         Coefficient objective) {
   const double scaled_objective =
       AddOffsetAndScaleObjectiveValue(problem, objective);
-  return StringPrintf("o %lld", static_cast<int64>(scaled_objective));
+  return absl::StrFormat("o %lld", static_cast<int64>(scaled_objective));
 }
 
 struct LiteralWithCoreIndex {
@@ -248,51 +249,42 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
 void MinimizeCoreWithPropagation(SatSolver* solver,
                                  std::vector<Literal>* core) {
   std::set<LiteralIndex> moved_last;
-  std::deque<Literal> candidate(core->begin(), core->end());
-  while (true) {
-    {
-      // Cyclic shift. We stop as soon as we are back in the original core
-      // order. Because we always preserve the order in the candidate reduction
-      // below, we can abort the first time we see someone we moved back.
-      CHECK(!candidate.empty());
-      const Literal temp = candidate[0];
-      if (ContainsKey(moved_last, temp.Index())) break;
-      moved_last.insert(temp.Index());
-      candidate.erase(candidate.begin());
-      candidate.push_back(temp);
-    }
+  std::vector<Literal> candidate(core->begin(), core->end());
 
-    solver->Backtrack(0);
-    solver->SetAssumptionLevel(0);
+  solver->Backtrack(0);
+  solver->SetAssumptionLevel(0);
+  while (true) {
+    // We want each literal in candidate to appear last once in our propagation
+    // order. We want to do that while maximizing the reutilization of the
+    // current assignment prefix, that is minimizing the number of
+    // decision/progagation we need to perform.
+    const int target_level = MoveOneUnprocessedLiteralLast(
+        moved_last, solver->CurrentDecisionLevel(), &candidate);
+    if (target_level == -1) break;
+    solver->Backtrack(target_level);
     while (solver->CurrentDecisionLevel() < candidate.size()) {
       const Literal decision = candidate[solver->CurrentDecisionLevel()];
       if (solver->Assignment().LiteralIsTrue(decision)) {
         candidate.erase(candidate.begin() + solver->CurrentDecisionLevel());
         continue;
       } else if (solver->Assignment().LiteralIsFalse(decision)) {
-        const int level =
-            solver->LiteralTrail().Info(decision.Variable()).level;
-        if (level + 1 != candidate.size()) {
-          candidate.resize(level);
-          candidate.push_back(decision);
-        }
+        // This is a "weird" API to get the subset of decisions that caused
+        // this literal to be false with reason analysis.
+        solver->EnqueueDecisionAndBacktrackOnConflict(decision);
+        candidate = solver->GetLastIncompatibleDecisions();
         break;
       } else {
         solver->EnqueueDecisionAndBackjumpOnConflict(decision);
       }
     }
+    if (candidate.empty() || solver->IsModelUnsat()) return;
+    moved_last.insert(candidate.back().Index());
   }
 
+  solver->Backtrack(0);
+  solver->SetAssumptionLevel(0);
   if (candidate.size() < core->size()) {
     VLOG(1) << "minimization " << core->size() << " -> " << candidate.size();
-
-    // Check that the order is indeed preserved.
-    int index = 0;
-    for (const Literal l : *core) {
-      if (index < candidate.size() && l == candidate[index]) ++index;
-    }
-    CHECK_EQ(index, candidate.size());
-
     core->assign(candidate.begin(), candidate.end());
   }
 }
@@ -570,9 +562,9 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
       }
     }
     if (!to_delete.empty()) {
-      logger.Log(StringPrintf("c fixed %zu assumptions, %d with cost > %lld",
-                              to_delete.size(), num_above_threshold,
-                              hardening_threshold.value()));
+      logger.Log(absl::StrFormat("c fixed %zu assumptions, %d with cost > %lld",
+                                 to_delete.size(), num_above_threshold,
+                                 hardening_threshold.value()));
       DeleteVectorIndices(to_delete, &assumptions);
       DeleteVectorIndices(to_delete, &costs);
       DeleteVectorIndices(to_delete, &reference);
@@ -647,10 +639,9 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
     lower_bound += min_cost;
 
     // Print the search progress.
-    logger.Log(
-        StringPrintf("c iter:%d core:%zu lb:%lld min_cost:%lld strat:%lld",
-                     iter, core.size(), lower_bound.value(), min_cost.value(),
-                     stratified_lower_bound.value()));
+    logger.Log(absl::StrFormat(
+        "c iter:%d core:%zu lb:%lld min_cost:%lld strat:%lld", iter, core.size(),
+        lower_bound.value(), min_cost.value(), stratified_lower_bound.value()));
 
     // This simple line helps a lot on the packup-wpms instances!
     //
@@ -1039,13 +1030,13 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     const std::string gap_string =
         (upper_bound == kCoefficientMax)
             ? ""
-            : StringPrintf(" gap:%lld", (upper_bound - lower_bound).value());
+            : absl::StrFormat(" gap:%lld", (upper_bound - lower_bound).value());
     logger.Log(
-        StringPrintf("c iter:%d [%s] lb:%lld%s assumptions:%zu depth:%d",
-                     iter, previous_core_info.c_str(),
-                     lower_bound.value() - offset.value() +
-                         static_cast<int64>(problem.objective().offset()),
-                     gap_string.c_str(), nodes.size(), max_depth));
+        absl::StrFormat("c iter:%d [%s] lb:%lld%s assumptions:%zu depth:%d", iter,
+                        previous_core_info.c_str(),
+                        lower_bound.value() - offset.value() +
+                            static_cast<int64>(problem.objective().offset()),
+                        gap_string.c_str(), nodes.size(), max_depth));
 
     // Solve under the assumptions.
     const SatSolver::Status result =
@@ -1079,7 +1070,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     // The lower bound will be increased by that much.
     const Coefficient min_weight = ComputeCoreMinWeight(nodes, core);
     previous_core_info =
-        StringPrintf("core:%zu mw:%lld", core.size(), min_weight.value());
+        absl::StrFormat("core:%zu mw:%lld", core.size(), min_weight.value());
 
     // Increase stratified_lower_bound according to the parameters.
     if (stratified_lower_bound < min_weight &&
@@ -1555,10 +1546,10 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
 
       max_depth = std::max(max_depth, new_depth);
       if (log_info) {
-        LOG(INFO) << StringPrintf(
-            "core:%zu weight:[%lld,%lld] domain:[%lld,%lld] depth:%d",
-            core.size(), min_weight.value(), max_weight.value(),
-            new_var_lb.value(), new_var_ub.value(), new_depth);
+        LOG(INFO) << absl::StrFormat(
+            "core:%zu weight:[%lld,%lld] domain:[%lld,%lld] depth:%d", core.size(),
+            min_weight.value(), max_weight.value(), new_var_lb.value(),
+            new_var_ub.value(), new_depth);
       }
 
       // We will "transfer" min_weight from all the variables of the core
