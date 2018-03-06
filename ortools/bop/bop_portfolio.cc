@@ -415,7 +415,7 @@ std::string OptimizerSelector::PrintStats(OptimizerIndex optimizer_index) const 
   return absl::StrFormat(
       "    %40s : %3d/%-3d  (%6.2f%%)  Total gain: %6d  Total Dtime: %0.3f "
       "score: %f\n",
-      info.name, info.num_successes, info.num_calls,
+      info.name.c_str(), info.num_successes, info.num_calls,
       100.0 * info.num_successes / info.num_calls, info.total_gain,
       info.time_spent, info.score);
 }
