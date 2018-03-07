@@ -187,8 +187,6 @@ ortools/gen/ortools/sat:
 # Install gflags. This uses cmake.
 install_gflags: dependencies/install/include/gflags/gflags.h
 
-CMAKE_MISSING = "cmake not found in /Applications, nor in the PATH. Install the official version, or from brew"
-
 dependencies/install/include/gflags/gflags.h: dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake/Makefile
 	cd dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake && \
 	$(SET_COMPILER) make -j 4 && make install

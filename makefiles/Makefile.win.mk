@@ -43,7 +43,6 @@ TOUCH = tools\touch.exe
 GREP = tools\grep.exe
 SED = tools\sed.exe
 WHICH = tools\which.exe
-CMAKE = cmake
 ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
 
@@ -54,6 +53,11 @@ ifneq ($(SHCHECK),)
 $(error Please remove sh.exe ($(SHCHECK)) from your PATH (e.g. set PATH=%PATH:C:\Program Files\Git\bin\;=%))
 else
 SHELL = cmd
+endif
+
+CMAKE := $(shell $(WHICH) cmake)
+ifeq ($(CMAKE),)
+$(error Please add "cmake" to your PATH)
 endif
 
 # Add some additional macros

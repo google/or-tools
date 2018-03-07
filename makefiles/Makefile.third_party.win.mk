@@ -235,7 +235,7 @@ install_gflags: dependencies/install/lib/gflags.lib
 dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md
 	-mkdir dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake
 	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && set MAKEFLAGS= && \
-	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\..\install \
+	  "$(CMAKE)" -D CMAKE_INSTALL_PREFIX=..\..\..\install \
 	           -D CMAKE_BUILD_TYPE=Release \
 	           -G "NMake Makefiles" \
 	           ..
@@ -273,7 +273,7 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependenc
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
 	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build
 	tools\sed -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && "$(CMAKE)" -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 	tools\wget --quiet -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
@@ -284,7 +284,7 @@ install_glog: dependencies/install/include/glog/logging.h
 dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt install_gflags
 	-md dependencies\sources\glog-$(GLOG_TAG)\build_cmake
 	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && \
-	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\..\install \
+	  "$(CMAKE)" -D CMAKE_INSTALL_PREFIX=..\..\..\install \
 	           -D CMAKE_BUILD_TYPE=Release \
 	           -D CMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)\dependencies\install" \
 	           -G "NMake Makefiles" \

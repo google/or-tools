@@ -53,8 +53,14 @@ S = /
 CPSEP = :
 SED = sed
 GREP = grep
+WHICH = which
 ARCHIVE_EXT = .tar.gz
 FZ_EXE = fzn-or-tools$E
+
+CMAKE := $(shell $(WHICH) cmake)
+ifeq ($(CMAKE),)
+$(error Please add "cmake" to your PATH)
+endif
 
 # This is needed to find python.h
 PYTHON_VERSION = $(UNIX_PYTHON_VER)
@@ -70,7 +76,7 @@ PYTHON_INC += $(shell pkg-config --cflags --libs python$(MAJOR_PYTHON_VERSION) 2
 endif
 
 MONO_COMPILER ?= mono
-MONO_EXECUTABLE := $(shell which $(MONO_COMPILER))
+MONO_EXECUTABLE := $(shell $(WHICH) $(MONO_COMPILER))
 
 # This is needed to find gflags/gflags.h
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
@@ -135,7 +141,6 @@ endif
 ifeq ($(PLATFORM),LINUX)
   CCC = g++ -fPIC -std=c++0x -fwrapv
   DYNAMIC_LD = g++ -shared
-  CMAKE = cmake
   MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   # This is needed to find libgflags.a
@@ -197,13 +202,6 @@ ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
   CCC = clang++ -fPIC -std=c++11  $(MAC_VERSION) -stdlib=libc++
   DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version $(OR_TOOLS_SHORT_VERSION) -current_version $(OR_TOOLS_SHORT_VERSION)
-
-  CMAKE := $(shell which cmake)
-  ifeq ($(CMAKE),)
-    CMAKE = /Applications/CMake.app/Contents/bin/cmake
-  else
-    $(warning "cmake found: $(CMAKE)")
-  endif
 
   JNI_LIB_EXT = jnilib
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
