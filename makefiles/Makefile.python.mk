@@ -38,6 +38,7 @@ endif
 
 .PHONY: python # Build Python OR-Tools.
 .PHONY: test_python # Test Python OR-Tools using various examples.
+.PHONY: install_python # Install Python OR-Tools on the host system
 ifneq ($(PYTHON_EXECUTABLE),)
 python: \
 	ortoolslibs \
@@ -49,13 +50,20 @@ python: \
 	pylp \
 	pysat \
 	pyrcpsp
+
 test_python: test_python_examples
+
+install_python: pypi_archive
+	@cd "$(PYPI_ARCHIVE_TEMP_DIR)$Sortools" &&  "$(PYTHON_EXECUTABLE)" setup.py install --user
+
 BUILT_LANGUAGES +=, Python$(PYTHON_VERSION)
 else
 python:
 	@echo PYTHON_EXECUTABLE = "${PYTHON_EXECUTABLE}"
 	$(warning Cannot find '$(PYTHON_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
+
 test_python: python
+install_python: python
 endif
 
 .PHONY: clean_python # Clean Python output from previous build.
