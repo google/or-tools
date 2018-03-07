@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Google.OrTools.FSharp</id>
+    <version>VVVV</version>
+    <authors>Google</authors>
+    <licenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</licenseUrl>
+    <projectUrl>https://developers.google.com/optimization</projectUrl>
+    <description>F# wrapper for the Operations Research Tools project</description>
+    <copyright>Copyright 2018 Google, Inc</copyright>
+    <tags>Operations Research Math Linear Constraint Programming F#</tags>
+    <dependencies>
+      <dependency id="Google.OrTools" version="VVVV" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin/Google.OrTools.FSharp.dll" target="lib/netstandard2.0"/>
+    <file src="examples\fsharp\*.*" target="examples"/>
+    <file src="LICENSE-2.0.txt"/>
+  </files>
+</package>
