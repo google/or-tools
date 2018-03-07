@@ -53,6 +53,7 @@ setup(
         'ortools.sat' : ['_pywrapsat.dll'],
         DELETEWIN 'ortools' : ['libortools.DLL']
     },
+    include_package_data=True,
     license='Apache 2.0',
     author = 'Google Inc',
     author_email = 'lperron@google.com',
