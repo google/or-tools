@@ -310,7 +310,7 @@ makefile_third_party: Makefile.local
 Makefile.local: makefiles/Makefile.third_party.unix.mk
 	-$(DEL) Makefile.local
 	@echo Generating Makefile.local
-	@echo JDK_DIRECTORY = $(JDK_DIRECTORY)>> Makefile.local
+	@echo JAVA_HOME = $(JAVA_HOME)>> Makefile.local
 	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION)>> Makefile.local
 	@echo PATH_TO_CSHARP_COMPILER = $(DETECTED_MCS_BINARY)>> Makefile.local
 	@echo DOTNET_INSTALL_PATH = $(DOTNET_INSTALL_PATH)>> Makefile.local

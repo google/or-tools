@@ -36,7 +36,7 @@ if [ "${BUILDER}" == make ];then
 			elif [ "${LANGUAGE}" == python ]; then
 				make detect UNIX_PYTHON_VER=3.6
 			elif [ "${LANGUAGE}" == java ]; then
-				make detect JDK_DIRECTORY=/usr/lib/jvm/java-8-openjdk-amd64
+				make detect JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 			elif [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ] ; then
 				make detect
 			fi

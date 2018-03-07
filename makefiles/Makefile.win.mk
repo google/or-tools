@@ -141,10 +141,10 @@ endif
 
 SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(GUROBI_SWIG) -DUSE_GLOP -DUSE_BOP
 
-JAVA_INC=/I"$(JDK_DIRECTORY)\\include" /I"$(JDK_DIRECTORY)\\include\\win32"
-JAVAC_BIN="$(JDK_DIRECTORY)/bin/javac"
-JAVA_BIN="$(JDK_DIRECTORY)/bin/java"
-JAR_BIN="$(JDK_DIRECTORY)/bin/jar"
+JAVA_INC=/I"$(JAVA_HOME)\\include" /I"$(JAVA_HOME)\\include\\win32"
+JAVAC_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\javac")"
+JAVA_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\java")"
+JAR_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\jar")"
 
 CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I$(INC_DIR) /I$(GEN_DIR) \
         $(GFLAGS_INC) $(ZLIB_INC) $(MINISAT_INC) $(PROTOBUF_INC) $(GLOG_INC) \

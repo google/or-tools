@@ -386,9 +386,9 @@ endif # ifeq ($(EX),)
 # Main target
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
-CANONIC_JDK_DIRECTORY = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(JDK_DIRECTORY))))
-ifeq ($(wildcard $(CANONIC_JDK_DIRECTORY)),)
+ifeq ($(JAVA_BIN),)
 java:
+	$@echo JAVA_HOME = ${JAVA_HOME}
 	$@echo JAVA_BIN = ${JAVA_BIN}
 	$(warning Cannot find 'java' command which is needed for build. Please make sure it is installed and in system path. Check Makefile.local for more information.)
 test_java: java
@@ -420,7 +420,7 @@ clean_java:
 .PHONY: detect_java # Show variables used to build Java OR-Tools.
 detect_java:
 	@echo Relevant info for the Java build:
-	@echo JDK_DIRECTORY = $(JDK_DIRECTORY)
+	@echo JAVA_HOME = $(JAVA_HOME)
 	@echo JAVA_BIN = $(JAVA_BIN)
 	@echo JAVA_INC = $(JAVA_INC)
 	@echo JAVAC_BIN = $(JAVAC_BIN)

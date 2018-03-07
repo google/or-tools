@@ -392,7 +392,7 @@ makefile_third_party: Makefile.local
 # Make sure that local file lands correctly across platforms
 Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	-$(DEL) Makefile.local
-	@echo JDK_DIRECTORY = $(JDK_DIRECTORY)>> Makefile.local
+	@echo $(SELECTED_PATH_TO_JDK)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
 	@echo $(SELECTED_CSC_BINARY)>> Makefile.local
 	@echo DOTNET_INSTALL_PATH = $(DOTNET_INSTALL_PATH)>> Makefile.local

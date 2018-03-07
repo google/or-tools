@@ -63,7 +63,7 @@ ifeq ($(SYSTEM),unix)
         /usr/lib/jvm/java-7-openjdk-i386
 
     endif
-    JDK_DIRECTORY = $(firstword $(wildcard $(CANDIDATE_JDK_ROOTS)))
+    JAVA_HOME ?= $(firstword $(wildcard $(CANDIDATE_JDK_ROOTS)))
   endif # ($(OS),Linux)
   ifeq ($(OS),Darwin) # Assume Mac Os X
     PLATFORM = MACOSX
@@ -74,9 +74,9 @@ ifeq ($(SYSTEM),unix)
     PTRLENGTH = 64
     GUROBI_PLATFORM=mac64
     ifeq ($(wildcard /usr/libexec/java_home),)
-      JDK_DIRECTORY = \\\# /usr/libexec/java_home could not be found on your system. Set this variable to the path to jdk to build the java files.
+      JAVA_HOME = \\\# /usr/libexec/java_home could not be found on your system. Set this variable to the path to jdk to build the java files.
     else
-      JDK_DIRECTORY = $(shell /usr/libexec/java_home)/include
+      JAVA_HOME = $(shell /usr/libexec/java_home)
     endif
     MAC_MIN_VERSION = 10.9
   endif # ($(OS),Darwin)
@@ -177,9 +177,9 @@ ifeq ($(SYSTEM),win)
 
   # Java specific
   ifeq ($(JAVA_HOME),)
-    JDK_DIRECTORY = \# JAVA_HOME is not set on your system. Set the JDK_DIRECTORY variable to the path to jdk to build the java files.
+    SELECTED_PATH_TO_JDK = JAVA_HOME = \# JAVA_HOME is not set on your system. Set it to the path to jdk to build the java files.
   else
-    JDK_DIRECTORY = $(JAVA_HOME)
+    SELECTED_PATH_TO_JDK = JAVA_HOME = $(JAVA_HOME)
   endif
 
   # Detect Python

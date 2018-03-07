@@ -186,10 +186,10 @@ ifeq ($(PLATFORM),LINUX)
     endif
   endif
   SYS_LNK = -lrt -lpthread
-  JAVA_INC = -I$(JDK_DIRECTORY)/include -I$(JDK_DIRECTORY)/include/linux
-  JAVAC_BIN = $(JDK_DIRECTORY)/bin/javac
-  JAVA_BIN = $(JDK_DIRECTORY)/bin/java
-  JAR_BIN = $(JDK_DIRECTORY)/bin/jar
+  JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+  JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
+  JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
+  JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
   JNI_LIB_EXT = so
   LIB_SUFFIX = so
   SWIG_LIB_SUFFIX = so
@@ -213,10 +213,10 @@ ifeq ($(PLATFORM),MACOSX)
 
   SYS_LNK =
 
-  JAVA_INC = -I$(JDK_DIRECTORY) -I$(JDK_DIRECTORY)/darwin
-  JAVAC_BIN = javac
-  JAVA_BIN = java
-  JAR_BIN = jar
+  JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
+  JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
+  JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
+  JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
 
   PRE_LIB = -L$(OR_ROOT)lib -l
   POST_LIB =
