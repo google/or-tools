@@ -251,9 +251,9 @@ inline uint64 Hash1(int value) { return Hash1(static_cast<uint32>(value)); }
 
 inline uint64 Hash1(void* const ptr) {
 #if defined(ARCH_K8) || defined(__powerpc64__) || defined(__aarch64__)
-  return Hash1(bit_cast<uint64>(ptr));
+  return Hash1(absl::bit_cast<uint64>(ptr));
 #else
-  return Hash1(bit_cast<uint32>(ptr));
+  return Hash1(absl::bit_cast<uint32>(ptr));
 #endif
 }
 

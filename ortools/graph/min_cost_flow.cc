@@ -20,6 +20,7 @@
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/graph/graph.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/graphs.h"
@@ -272,7 +273,7 @@ std::string GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugStri
   // ReducedCost fails.
   const CostValue reduced_cost = scaled_arc_unit_cost_[arc] +
                                  node_potential_[tail] - node_potential_[head];
-  return StringPrintf(
+  return absl::StrFormat(
       "%s Arc %d, from %d to %d, "
       "Capacity = %lld, Residual capacity = %lld, "
       "Flow = residual capacity for reverse arc = %lld, "

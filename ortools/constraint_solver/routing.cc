@@ -1086,7 +1086,7 @@ uint64 RoutingModel::GetFingerprintOfEvaluator(
     // If we don't fingerprint the data returned by the evaluator, we can
     // just return the address as fingerprint (ensures that evaluators with the
     // same address are considered as equivalent).
-    return bit_cast<uint64>(evaluator);
+    return absl::bit_cast<uint64>(evaluator);
   }
   uint64 evaluator_fprint = 0;
   const int max_row_size = Size() + vehicles_;

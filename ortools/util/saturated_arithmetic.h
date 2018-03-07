@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 #define OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 
-#include "ortools/base/casts.h"
 #include "ortools/base/integral_types.h"
 
+#include "ortools/base/casts.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
@@ -39,13 +39,13 @@ namespace operations_research {
 inline int64 TwosComplementAddition(int64 x, int64 y) {
   static_assert(static_cast<uint64>(-1LL) == ~0ULL,
                 "The target architecture does not use two's complement.");
-  return bit_cast<int64>(static_cast<uint64>(x) + static_cast<uint64>(y));
+  return absl::bit_cast<int64>(static_cast<uint64>(x) + static_cast<uint64>(y));
 }
 
 inline int64 TwosComplementSubtraction(int64 x, int64 y) {
   static_assert(static_cast<uint64>(-1LL) == ~0ULL,
                 "The target architecture does not use two's complement.");
-  return bit_cast<int64>(static_cast<uint64>(x) - static_cast<uint64>(y));
+  return absl::bit_cast<int64>(static_cast<uint64>(x) - static_cast<uint64>(y));
 }
 
 // Helper function that returns true if an overflow has occured in computing
@@ -202,7 +202,7 @@ inline int64 CapProdGeneric(int64 x, int64 y) {
   // These can be optimized as follows (and if the condition is false, it is
   // safe to compute x * y.
   if (u_prod >= static_cast<uint64>(cap)) return cap;
-  const int64 abs_result = bit_cast<int64>(u_prod);
+  const int64 abs_result = absl::bit_cast<int64>(u_prod);
   return cap < 0 ? -abs_result : abs_result;
 }
 

@@ -24,5 +24,6 @@ void StringAppendF(std::string* const dst, const char* const format, ...);
 
 namespace absl {
 std::string StrFormat(const char* const format, ...);
+void StrAppendFormat(std::string* const dst, const char* const format, ...);
 }  // namespace absl
 #endif  // OR_TOOLS_BASE_STRINGPRINTF_H_

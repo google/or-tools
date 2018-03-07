@@ -36,7 +36,7 @@
 //   #include "ortools/graph/linear_assignment.h"
 //
 //   // Choose a graph implementation (we recommend StaticGraph<>).
-//   typedef operations_research::StaticGraph<> Graph;
+//   typedef util::StaticGraph<> Graph;
 //
 //   // Define a num_nodes / 2 by num_nodes / 2 assignment problem:
 //   const int num_nodes = ...
@@ -55,9 +55,9 @@
 //   // instead, but then the ComputeAssignment() below will be slower. It is
 //   // okay if your graph is small and performance is not critical though.
 //   {
-//     std::vector<typename GraphType::ArcIndex> arc_permutation;
-//     graph->get()->Build(&arc_permutation);
-//     operations_research::Permute(arc_permutation, &arc_costs);
+//     std::vector<Graph::ArcIndex> arc_permutation;
+//     graph.Build(&arc_permutation);
+//     util::Permute(arc_permutation, &arc_costs);
 //   }
 //
 //   // Construct the LinearSumAssignment.
@@ -84,7 +84,7 @@
 //
 // In the following, we consider a bipartite graph
 //   G = (V = X union Y, E subset XxY),
-// where V denodes the set of nodes (vertices) in the graph, E denotes
+// where V denotes the set of nodes (vertices) in the graph, E denotes
 // the set of arcs (edges), n = |V| denotes the number of nodes in the
 // graph, and m = |E| denotes the number of arcs in the graph.
 //
@@ -208,6 +208,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/util/permutation.h"
@@ -391,7 +392,7 @@ class LinearSumAssignment {
       refinements_ += that.refinements_;
     }
     std::string StatsString() const {
-      return StringPrintf(
+      return absl::StrFormat(
           "%lld refinements; %lld relabelings; "
           "%lld double pushes; %lld pushes",
           refinements_, relabelings_, double_pushes_, pushes_);

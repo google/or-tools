@@ -48,6 +48,7 @@
 %unignore operations_research::SimpleMaxFlow::SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::~SimpleMaxFlow;
 %rename (addArcWithCapacity) operations_research::SimpleMaxFlow::AddArcWithCapacity;
+%rename (setArcCapacity) operations_research::SimpleMaxFlow::SetArcCapacity;
 %rename (getNumNodes) operations_research::SimpleMaxFlow::NumNodes;  // untested
 %rename (getNumArcs) operations_research::SimpleMaxFlow::NumArcs;
 %rename (getTail) operations_research::SimpleMaxFlow::Tail;

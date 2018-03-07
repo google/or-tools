@@ -1252,7 +1252,7 @@ Presolver::RuleStatus Presolver::PresolveArrayIntElement(Constraint* ct,
 
       if (last_index < ct->arguments[0].Var()->domain.Max() ||
           first_index > ct->arguments[0].Var()->domain.Min()) {
-        StringAppendF(log,
+        absl::StrAppendFormat(log,
                               "filter index to [%" GG_LL_FORMAT
                               "d..%" GG_LL_FORMAT
                               "d] and reduce array to size %" GG_LL_FORMAT "d",

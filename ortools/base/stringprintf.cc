@@ -118,4 +118,12 @@ std::string StrFormat(const char* const format, ...) {
   va_end(ap);
   return result;
 }
+
+void StrAppendFormat(std::string* const dst, const char* const format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  ::operations_research::StringAppendV(dst, format, ap);
+  va_end(ap);
+}
 }  // namespace absl
+

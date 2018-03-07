@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 
@@ -45,6 +46,10 @@ NodeIndex SimpleMaxFlow::Head(ArcIndex arc) const { return arc_head_[arc]; }
 
 FlowQuantity SimpleMaxFlow::Capacity(ArcIndex arc) const {
   return arc_capacity_[arc];
+}
+
+void SimpleMaxFlow::SetArcCapacity(ArcIndex arc, FlowQuantity capacity) {
+  arc_capacity_[arc] = capacity;
 }
 
 SimpleMaxFlow::Status SimpleMaxFlow::Solve(NodeIndex source, NodeIndex sink) {
@@ -315,7 +320,7 @@ std::string GenericMaxFlow<Graph>::DebugString(const std::string& context,
                                           ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
-  return StringPrintf(
+  return absl::StrFormat(
       "%s Arc %d, from %d to %d, "
       "Capacity = %lld, Residual capacity = %lld, "
       "Flow = residual capacity for reverse arc = %lld, "

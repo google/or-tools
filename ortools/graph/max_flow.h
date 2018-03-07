@@ -149,8 +149,7 @@ class GenericMaxFlow;
 // more memory in order to hide the somewhat involved construction of the
 // static graph.
 //
-// TODO(user): If the need arises, extend this interface to support warm start
-// and incrementality between solves.
+// TODO(user): If the need arises, extend this interface to support warm start.
 class SimpleMaxFlow {
  public:
   // The constructor takes no size.
@@ -223,6 +222,12 @@ class SimpleMaxFlow {
   // Creates the protocol buffer representation of the problem used by the last
   // Solve() call. This is mainly useful for debugging.
   FlowModel CreateFlowModelOfLastSolve();
+
+  // Change the capacity of an arc.
+  // WARNING: This looks like it enables incremental solves, but as of 2018-02,
+  // the next Solve() will restart from scratch anyway.
+  // TODO(user): Support incrementality in the max flow implementation.
+  void SetArcCapacity(ArcIndex arc, FlowQuantity capacity);
 
  private:
   NodeIndex num_nodes_;
