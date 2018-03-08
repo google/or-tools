@@ -2,6 +2,8 @@
 
 [![Build
 Status](https://travis-ci.org/google/or-tools.svg?branch=master)](https://travis-ci.org/google/or-tools)
+[![PyPI version](https://badge.fury.io/py/ortools.svg)](https://badge.fury.io/py/ortools)
+[![NuGet version](https://badge.fury.io/nu/Google.OrTools.svg)](https://badge.fury.io/nu/Google.OrTools)
 
 Google's software suite for combinatorial optimization.
 
