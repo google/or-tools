@@ -1542,7 +1542,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
         if (bound < var->domain.Max()) {
           StringAppendF(log,
                                 ", intersect %s with [0..%" GG_LL_FORMAT "d]",
-                                var->DebugString(), bound);
+                        var->DebugString().c_str(), bound);
           IntersectVarWithInterval(var, 0, bound);
         }
       }
@@ -1556,7 +1556,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
     if (bound > var->domain.Min()) {
       StringAppendF(
           log, ", intersect %s with [%" GG_LL_FORMAT "d .. INT_MAX]",
-          var->DebugString(), bound);
+          var->DebugString().c_str(), bound);
       IntersectVarWithInterval(var, bound, kint64max);
       return CONSTRAINT_ALWAYS_TRUE;
     }

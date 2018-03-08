@@ -155,7 +155,7 @@ class FixedModulo : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat("(%s %% %s == %" GG_LL_FORMAT "d)",
-                           var_->DebugString(), mod_->DebugString(), residual_);
+                           var_->DebugString().c_str(), mod_->DebugString().c_str(), residual_);
   }
 
  private:
@@ -307,8 +307,8 @@ class IsBooleanSumInRange : public Constraint {
   std::string DebugString() const override {
     return absl::StrFormat("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
                            "d] == %s",
-                           JoinDebugStringPtr(vars_, ", "), range_min_,
-                           range_max_, target_->DebugString());
+                           JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
+                           range_max_, target_->DebugString().c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -426,7 +426,7 @@ class BooleanSumInRange : public Constraint {
   std::string DebugString() const override {
     return absl::StrFormat(
         "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
-        JoinDebugStringPtr(vars_, ", "), range_min_, range_max_);
+        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_, range_max_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {

@@ -97,7 +97,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
       return StringPrintf("%s = %s;", output.name.c_str(),
                           value == 1 ? "true" : "false");
     } else {
-      return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name, value);
+      return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name.c_str(), value);
     }
   } else {
     const int bound_size = output.bounds.size();
@@ -920,12 +920,12 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
         "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
         "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
         "d, %" GG_LL_FORMAT "d, %s, %s",
-        model_.name(), status_string, obj_string, num_solutions, solve_time,
+        model_.name().c_str(), status_string.c_str(), obj_string.c_str(), num_solutions, solve_time,
         build_time, solver_->branches(), solver_->failures(),
         solver_->constraints(),
         solver_->demon_runs(operations_research::Solver::NORMAL_PRIORITY),
         solver_->demon_runs(operations_research::Solver::DELAYED_PRIORITY),
-        MemoryUsage(), search_name_));
+        MemoryUsage().c_str(), search_name_.c_str()));
     report->Print(p.thread_id, search_status);
     if (p.statistics) {
       report->Print(p.thread_id, solver_status);
