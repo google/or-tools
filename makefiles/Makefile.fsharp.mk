@@ -48,10 +48,17 @@ endif
 .PHONY: fsharp # Build F# OR-Tools. Set environment variable FSHARP_DEBUG=1 for debug symbols.
 fsharp: csharp
 ifneq ($(FSHARP_EXECUTABLE),)
-	"$(FSHARP_EXECUTABLE)" $(FLAG_PREFIX)target:library $(FLAG_PREFIX)out:bin$S$(FSHARP_ORTOOLS_DLL_NAME).dll $(FLAG_PREFIX)platform:anycpu $(FS_NOCPYCORE) $(FLAG_PREFIX)lib:bin $(FLAG_PREFIX)reference:$(BASE_ORTOOLS_DLL_NAME).dll $(FSHARP_DEBUG) $(FS_SIGNING_FLAGS) ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_NAME).fsx
+	$(SED) -i -e "s/MMMM/$(FSHARP_ORTOOLS_DLL_NAME)/" ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_ASSEMBLYINFO_FILE)
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_ASSEMBLYINFO_FILE)
+	"$(FSHARP_EXECUTABLE)" $(FLAG_PREFIX)target:library $(FLAG_PREFIX)out:bin$S$(FSHARP_ORTOOLS_DLL_NAME).dll $(FLAG_PREFIX)platform:anycpu $(FS_NOCPYCORE) $(FLAG_PREFIX)lib:bin $(FLAG_PREFIX)reference:$(BASE_ORTOOLS_DLL_NAME).dll $(FSHARP_DEBUG) $(FS_SIGNING_FLAGS) ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_NAME).fsx ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_ASSEMBLYINFO_FILE)
 else
 	$(warning Cannot find '$(FSHARP_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
 endif
+
+.PHONY: nuget-pkg_fsharp # Build Nuget Package for distribution.
+nuget-pkg_fsharp: fsharp
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" ortools$Sfsharp$S$(FSHARP_ORTOOLS_NUSPEC_FILE)
+	$(NUGET_EXECUTABLE) pack ortools$Sfsharp$S$(FSHARP_ORTOOLS_NUSPEC_FILE) -Basepath . -OutputDirectory $(ORTOOLS_NUGET_DIR)
 
 .PHONY: test_fsharp # Test F# OR-Tools using various examples.
 ifneq ($(FSHARP_EXECUTABLE),)
