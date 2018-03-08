@@ -23,11 +23,11 @@ One can also use the makefile found in the root folder to accomplish the same ta
 ```shell
 make fsharp
 ```
-To see the targets type `make fsharp-help`. Note that a keyfile must exist in the `bin` folder as it will be used to sign the assembly.
+To see the targets type `make help_fsharp`. Note that a keyfile must exist in the `bin` folder as it will be used to sign the assembly.
 
 ## Building Nuget package
 Ensure nuget executable is installed and then from root folder run the following:
 ```shell
-make fsharp-build-nuget
+make nuget-pkg_fsharp
 ```
 The output package will include the FSharp binary and examples. It is compiled against the `netstandard2.0` metaframework.
