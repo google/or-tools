@@ -23,21 +23,23 @@ BUILT_LANGUAGES += C++
 clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sdata$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
-	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
+	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
+	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
 	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
-	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
@@ -45,14 +47,14 @@ clean_cc:
 	-$(DEL) $(LP_BINARIES)
 	-$(DEL) $(GEN_DIR)$Sortools$Sbop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sortools$Sconstraint_solver$S*.pb.*
-	-$(DEL) $(GEN_DIR)$Sortools$Slinear_solver$S*.pb.*
-	-$(DEL) $(GEN_DIR)$Sortools$Sgraph$S*.pb.*
-	-$(DEL) $(GEN_DIR)$Sortools$Sbop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sortools$Sdata$S*.pb.*
-	-$(DEL) $(GEN_DIR)$Sortools$Sflatzinc$Sparser.*
-	-$(DEL) $(GEN_DIR)$Sortools$Sglop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sortools$Sflatzinc$S*.tab.*
 	-$(DEL) $(GEN_DIR)$Sortools$Sflatzinc$S*.yy.*
+	-$(DEL) $(GEN_DIR)$Sortools$Sflatzinc$Sparser.*
+	-$(DEL) $(GEN_DIR)$Sortools$Sglop$S*.pb.*
+	-$(DEL) $(GEN_DIR)$Sortools$Sgraph$S*.pb.*
+	-$(DEL) $(GEN_DIR)$Sortools$Slinear_solver$S*.pb.*
+	-$(DEL) $(GEN_DIR)$Sortools$Ssat$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sortools$Sutil$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
