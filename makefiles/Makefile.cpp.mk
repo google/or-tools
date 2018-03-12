@@ -43,6 +43,7 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
+	-$(DEL) $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(CC_EXAMPLES)))
 	-$(DEL) $(CP_BINARIES)
 	-$(DEL) $(LP_BINARIES)
 	-$(DEL) $(GEN_DIR)$Sortools$Sbop$S*.pb.*
@@ -126,46 +127,45 @@ FLATZINC_DEPS = \
 FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
 
 # Binaries
+CC_EXAMPLES = \
+costas_array \
+cryptarithm \
+cvrp_disjoint_tw \
+cvrptw \
+cvrptw_with_breaks \
+cvrptw_with_refueling \
+cvrptw_with_resources \
+cvrptw_with_stop_times_and_resources \
+dimacs_assignment \
+dobble_ls \
+flow_api \
+frequency_assignment_problem \
+golomb \
+integer_programming \
+jobshop \
+jobshop_earlytardy \
+jobshop_ls \
+jobshop_sat \
+linear_assignment_api \
+linear_programming \
+linear_solver_protocol_buffers \
+ls_api \
+magic_square \
+model_util \
+mps_driver \
+multidim_knapsack \
+network_routing \
+nqueens \
+pdptw \
+rcpsp_sat \
+shift_minimization_sat \
+solve \
+sports_scheduling \
+strawberry_fields_with_column_generation \
+tsp \
+weighted_tardiness_sat
 
-CC_BINARIES = \
-	$(BIN_DIR)/costas_array$E \
-	$(BIN_DIR)/cryptarithm$E \
-	$(BIN_DIR)/cvrp_disjoint_tw$E \
-	$(BIN_DIR)/cvrptw$E \
-	$(BIN_DIR)/cvrptw_with_breaks$E \
-	$(BIN_DIR)/cvrptw_with_refueling$E \
-	$(BIN_DIR)/cvrptw_with_resources$E \
-	$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E \
-	$(BIN_DIR)/dimacs_assignment$E \
-	$(BIN_DIR)/dobble_ls$E \
-	$(BIN_DIR)/flow_api$E \
-	$(BIN_DIR)/frequency_assignment_problem$E \
-	$(BIN_DIR)/golomb$E \
-	$(BIN_DIR)/integer_programming$E \
-	$(BIN_DIR)/jobshop$E \
-	$(BIN_DIR)/jobshop_earlytardy$E \
-	$(BIN_DIR)/jobshop_ls$E \
-	$(BIN_DIR)/jobshop_sat$E \
-	$(BIN_DIR)/linear_assignment_api$E \
-	$(BIN_DIR)/linear_programming$E \
-	$(BIN_DIR)/linear_solver_protocol_buffers$E \
-	$(BIN_DIR)/ls_api$E \
-	$(BIN_DIR)/magic_square$E \
-	$(BIN_DIR)/model_util$E \
-	$(BIN_DIR)/mps_driver$E \
-	$(BIN_DIR)/multidim_knapsack$E \
-	$(BIN_DIR)/network_routing$E \
-	$(BIN_DIR)/nqueens$E \
-	$(BIN_DIR)/pdptw$E \
-	$(BIN_DIR)/rcpsp_sat$E \
-	$(BIN_DIR)/shift_minimization_sat$E \
-	$(BIN_DIR)/solve$E \
-	$(BIN_DIR)/sports_scheduling$E \
-	$(BIN_DIR)/strawberry_fields_with_column_generation$E \
-	$(BIN_DIR)/tsp$E \
-	$(BIN_DIR)/weighted_tardiness_sat$E
-
-ccexe: $(CC_BINARIES)
+ccexe: $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_EXAMPLES)))
 
 # CVRPTW common library
 
