@@ -90,6 +90,22 @@ clean_python:
 	-$(DEL) $(GEN_DIR)$Sortools$Slinear_solver$S*.pyc
 	-$(DEL) $(GEN_DIR)$Sortools$Ssat$S*.pyc
 	-$(DEL) $(GEN_DIR)$Sortools$Sutil$S*.pyc
+	-$(DELREC) $(GEN_DIR)$Sortools$Salgorithms$S__pycache__
+	-$(DELREC) $(GEN_DIR)$Sortools$Sconstraint_solver$S__pycache__
+	-$(DELREC) $(GEN_DIR)$Sortools$Sdata$S__pycache__
+	-$(DELREC) $(GEN_DIR)$Sortools$Sgraph$S__pycache__
+	-$(DELREC) $(GEN_DIR)$Sortools$Slinear_solver$S__pycache__
+	-$(DELREC) $(GEN_DIR)$Sortools$Ssat$S__pycache__
+	-$(DELREC) $(GEN_DIR)$Sortools$Sutil$S__pycache__
+	-$(DELREC) ortools$S__pycache__
+	-$(DELREC) ortools$Salgorithms$S__pycache__
+	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
+	-$(DELREC) ortools$Sdata$S__pycache__
+	-$(DELREC) ortools$Sgraph$S__pycache__
+	-$(DELREC) ortools$Slinear_solver$S__pycache__
+	-$(DELREC) ortools$Ssat$S__pycache__
+	-$(DELREC) ortools$Ssat$Spython$S__pycache__
+	-$(DELREC) ortools$Sutil$S__pycache__
 	-$(DEL) $(GEN_DIR)$Sortools$Salgorithms$S_pywrap*
 	-$(DEL) $(GEN_DIR)$Sortools$Sconstraint_solver$S_pywrap*
 	-$(DEL) $(GEN_DIR)$Sortools$Sdata$S_pywrap*
