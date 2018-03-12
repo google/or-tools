@@ -42,6 +42,7 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
 	-$(DEL) $(BIN_DIR)$Sfz$E
+	-$(DEL) $(BIN_DIR)$Sparser_main$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
 	-$(DEL) $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(CC_EXAMPLES)))
 	-$(DEL) $(CP_BINARIES)
