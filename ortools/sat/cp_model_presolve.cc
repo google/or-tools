@@ -1370,6 +1370,85 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
   return false;
 }
 
+bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
+  if (HasEnforcementLiteral(*ct)) return false;
+  CircuitConstraintProto& proto = *ct->mutable_circuit();
+
+  std::vector<std::vector<int>> incoming_arcs;
+  std::vector<std::vector<int>> outgoing_arcs;
+  const int num_arcs = proto.literals_size();
+  for (int i = 0; i < num_arcs; ++i) {
+    const int ref = proto.literals(i);
+    if (context->LiteralIsFalse(ref)) continue;
+    const int tail = proto.tails(i);
+    const int head = proto.heads(i);
+    if (std::max(tail, head) >= incoming_arcs.size()) {
+      incoming_arcs.resize(std::max(tail, head) + 1);
+      outgoing_arcs.resize(std::max(tail, head) + 1);
+    }
+    incoming_arcs[head].push_back(ref);
+    outgoing_arcs[tail].push_back(ref);
+  }
+
+  int num_fixed_at_true = 0;
+  for (const auto& node_to_refs : {incoming_arcs, outgoing_arcs}) {
+    for (const std::vector<int>& refs : node_to_refs) {
+      if (refs.size() == 1) {
+        if (!context->LiteralIsTrue(refs.front())) {
+          ++num_fixed_at_true;
+          context->SetLiteralToTrue(refs.front());
+        }
+        continue;
+      }
+
+      // At most one true, so if there is one, mark all the other to false.
+      int num_true = 0;
+      int true_ref;
+      for (const int ref : refs) {
+        if (context->LiteralIsTrue(ref)) {
+          ++num_true;
+          true_ref = ref;
+          break;
+        }
+      }
+      if (num_true > 0) {
+        for (const int ref : refs) {
+          if (ref != true_ref) {
+            context->SetLiteralToFalse(ref);
+          }
+        }
+      }
+    }
+  }
+  if (num_fixed_at_true > 0) {
+    context->UpdateRuleStats("circuit: fixed singleton arcs.");
+  }
+
+  // Remove false arcs.
+  //
+  // TODO(user): all the outgoing/incoming arc of a node should not be all false
+  // at the same time. Report unsat in this case. Note however that this part is
+  // not well defined since if a node have no incoming/outgoing arcs in the
+  // initial proto, it will just be ignored.
+  int new_size = 0;
+  for (int i = 0; i < num_arcs; ++i) {
+    const int ref = proto.literals(i);
+    if (context->LiteralIsFalse(ref)) continue;
+    proto.set_tails(new_size, proto.tails(i));
+    proto.set_heads(new_size, proto.heads(i));
+    proto.set_literals(new_size, proto.literals(i));
+    ++new_size;
+  }
+  if (new_size < num_arcs) {
+    proto.mutable_tails()->Truncate(new_size);
+    proto.mutable_heads()->Truncate(new_size);
+    proto.mutable_literals()->Truncate(new_size);
+    context->UpdateRuleStats("circuit: removed false arcs.");
+    return true;
+  }
+  return false;
+}
+
 template <typename ClauseContainer>
 void ExtractClauses(const ClauseContainer& container, CpModelProto* proto) {
   // We regroup the "implication" into bool_and to have a more consise proto and
@@ -1689,6 +1768,9 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
           break;
         case ConstraintProto::ConstraintCase::kCumulative:
           changed |= PresolveCumulative(ct, &context);
+          break;
+        case ConstraintProto::ConstraintCase::kCircuit:
+          changed |= PresolveCircuit(ct, &context);
           break;
         default:
           break;

@@ -60,6 +60,7 @@ class LinearConstraintBuilder {
  public:
   LinearConstraintBuilder(double lb, double ub) : lb_(lb), ub_(ub) {}
 
+  int size() const { return terms_.size(); }
   bool IsEmpty() const { return terms_.empty(); }
 
   // Adds var * coeff to the constraint.

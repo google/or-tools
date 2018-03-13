@@ -159,8 +159,14 @@ void LoadBooleanProblem(const std::string& filename, LinearBooleanProblem* probl
         FLAGS_core_enc) {
       reader.InterpretCnfAsMaxSat(true);
     }
-    if (!reader.Load(filename, problem)) {
-      LOG(FATAL) << "Cannot load file '" << filename << "'.";
+    if (FLAGS_use_cp_model) {
+      if (!reader.Load(filename, cp_model)) {
+        LOG(FATAL) << "Cannot load file '" << filename << "'.";
+      }
+    } else {
+      if (!reader.Load(filename, problem)) {
+        LOG(FATAL) << "Cannot load file '" << filename << "'.";
+      }
     }
   } else if (FLAGS_use_cp_model) {
     LOG(INFO) << "Reading a CpModelProto.";
@@ -204,15 +210,6 @@ int Run() {
   std::unique_ptr<SatSolver> solver(new SatSolver());
   solver->SetParameters(parameters);
 
-  // Create a DratWriter?
-  std::unique_ptr<DratWriter> drat_writer;
-  if (!FLAGS_drat_output.empty()) {
-    File* output;
-    CHECK_OK(file::Open(FLAGS_drat_output, "w", &output, file::Defaults()));
-    drat_writer.reset(new DratWriter(/*in_binary_format=*/false, output));
-    solver->SetDratWriter(drat_writer.get());
-  }
-
   // Read the problem.
   LinearBooleanProblem problem;
   CpModelProto cp_model;
@@ -224,7 +221,7 @@ int Run() {
 
   // TODO(user): clean this hack. Ideally LinearBooleanProblem should be
   // completely replaced by the more general CpModelProto.
-  if (cp_model.variables_size() != 0) {
+  if (!cp_model.variables().empty()) {
     problem.Clear();  // We no longer need it, release memory.
     bool stopped = false;
     Model model;
@@ -235,6 +232,15 @@ int Run() {
     LOG(INFO) << CpModelStats(cp_model);
     const CpSolverResponse response = SolveCpModel(cp_model, &model);
     LOG(INFO) << CpSolverResponseStats(response);
+
+    if (!FLAGS_output.empty()) {
+      if (strings::EndsWith(FLAGS_output, ".txt")) {
+        CHECK_OK(file::SetTextProto(FLAGS_output, response, file::Defaults()));
+      } else {
+        CHECK_OK(
+            file::SetBinaryProto(FLAGS_output, response, file::Defaults()));
+      }
+    }
 
     // The SAT competition requires a particular exit code and since we don't
     // really use it for any other purpose, we comply.
@@ -282,10 +288,6 @@ int Run() {
           Coefficient(atoi64(FLAGS_lower_bound)), !FLAGS_upper_bound.empty(),
           Coefficient(atoi64(FLAGS_upper_bound)), solver.get())) {
     LOG(INFO) << "UNSAT when setting the objective constraint.";
-  }
-
-  if (drat_writer != nullptr) {
-    drat_writer->SetNumVariables(solver->NumVariables());
   }
 
   // Symmetries!
@@ -340,7 +342,9 @@ int Run() {
     parameters.set_log_search_progress(true);
     solver->SetParameters(parameters);
     if (FLAGS_presolve) {
-      result = SolveWithPresolve(&solver, &solution, drat_writer.get());
+      std::unique_ptr<TimeLimit> time_limit =
+          TimeLimit::FromParameters(parameters);
+      result = SolveWithPresolve(&solver, time_limit.get(), &solution, nullptr);
       if (result == SatSolver::MODEL_SAT) {
         CHECK(IsAssignmentValid(problem, solution));
       }

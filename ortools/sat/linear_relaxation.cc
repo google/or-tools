@@ -125,10 +125,10 @@ void AppendPartialEncodingRelaxation(
       CHECK(exactly_one_ct.AddLiteralTerm(lit, 1, *encoder));
       CHECK(encoding_ct.AddLiteralTerm(lit, -coeff, *encoder));
     }
-    if (!exactly_one_ct.IsEmpty()) {
+    if (exactly_one_ct.size() > 1) {
       constraints->push_back(exactly_one_ct.Build());
     }
-    if (!encoding_ct.IsEmpty()) {
+    if (encoding_ct.size() > 1) {
       constraints->push_back(encoding_ct.Build());
     }
     return;
@@ -154,13 +154,11 @@ void AppendPartialEncodingRelaxation(
                                         *encoder));
   }
 
-  if (!at_most_one_ct.IsEmpty() && encoded_values.size() > 1) {
-    // This constraint is trivial for just one value.
-    // TODO(user): Do not add trivial constraint in a more general way.
+  if (at_most_one_ct.size() > 1 && encoded_values.size() > 1) {
     constraints->push_back(at_most_one_ct.Build());
   }
-  if (!lower_bound_ct.IsEmpty()) constraints->push_back(lower_bound_ct.Build());
-  if (!upper_bound_ct.IsEmpty()) constraints->push_back(upper_bound_ct.Build());
+  if (lower_bound_ct.size() > 1) constraints->push_back(lower_bound_ct.Build());
+  if (upper_bound_ct.size() > 1) constraints->push_back(upper_bound_ct.Build());
 }
 
 void AppendPartialGreaterThanEncodingRelaxation(

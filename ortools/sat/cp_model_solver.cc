@@ -1822,7 +1822,7 @@ void TryToLinearizeConstraint(
     CHECK_EQ(num_arcs, ct.circuit().tails_size());
     CHECK_EQ(num_arcs, ct.circuit().heads_size());
 
-    // Each node must have exctly one incoming and one outgoing arc (note that
+    // Each node must have exactly one incoming and one outgoing arc (note that
     // it can be the unique self-arc of this node too).
     std::map<int, std::unique_ptr<LinearConstraintBuilder>>
         incoming_arc_constraints;
@@ -1852,7 +1852,9 @@ void TryToLinearizeConstraint(
     for (const auto* node_map :
          {&outgoing_arc_constraints, &incoming_arc_constraints}) {
       for (const auto& entry : *node_map) {
-        linear_constraints->push_back(entry.second->Build());
+        if (entry.second->size() > 1) {
+          linear_constraints->push_back(entry.second->Build());
+        }
       }
     }
   } else if (ct.constraint_case() ==
@@ -1942,6 +1944,15 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     // We linearize fully/partially encoded variable differently, so we just
     // skip all these constraint that corresponds to these encoding.
     if (m->IgnoreConstraint(&ct)) continue;
+
+    // Make sure the literal from a circuit constraint always have a view.
+    if (linearization_level > 1) {
+      if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
+        for (const int ref : ct.circuit().literals()) {
+          m->Add(NewIntegerVariableFromLiteral(m->Literal(ref)));
+        }
+      }
+    }
 
     // For now, we skip any constraint with literals that do not have an integer
     // view. Ideally it should be up to the constraint to decide if creating a

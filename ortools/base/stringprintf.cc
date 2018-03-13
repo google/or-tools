@@ -126,4 +126,3 @@ void StrAppendFormat(std::string* const dst, const char* const format, ...) {
   va_end(ap);
 }
 }  // namespace absl
-
