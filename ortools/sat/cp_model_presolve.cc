@@ -1377,11 +1377,13 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
   std::vector<std::vector<int>> incoming_arcs;
   std::vector<std::vector<int>> outgoing_arcs;
   const int num_arcs = proto.literals_size();
+  int num_nodes = 0;
   for (int i = 0; i < num_arcs; ++i) {
     const int ref = proto.literals(i);
-    if (context->LiteralIsFalse(ref)) continue;
     const int tail = proto.tails(i);
     const int head = proto.heads(i);
+    num_nodes = std::max(tail, head) + 1;
+    if (context->LiteralIsFalse(ref)) continue;
     if (std::max(tail, head) >= incoming_arcs.size()) {
       incoming_arcs.resize(std::max(tail, head) + 1);
       outgoing_arcs.resize(std::max(tail, head) + 1);
@@ -1431,14 +1433,60 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
   // not well defined since if a node have no incoming/outgoing arcs in the
   // initial proto, it will just be ignored.
   int new_size = 0;
+  int num_true = 0;
+  int circuit_start = -1;
+  std::vector<int> next(num_nodes, -1);
   for (int i = 0; i < num_arcs; ++i) {
     const int ref = proto.literals(i);
     if (context->LiteralIsFalse(ref)) continue;
+    if (context->LiteralIsTrue(ref)) {
+      if (next[proto.tails(i)] != -1) {
+        context->is_unsat = true;
+        return true;
+      }
+      next[proto.tails(i)] = proto.heads(i);
+      if (proto.tails(i) != proto.heads(i)) {
+        circuit_start = proto.tails(i);
+      }
+      ++num_true;
+    }
     proto.set_tails(new_size, proto.tails(i));
     proto.set_heads(new_size, proto.heads(i));
     proto.set_literals(new_size, proto.literals(i));
     ++new_size;
   }
+
+  // Test if a subcircuit is already present.
+  if (circuit_start != -1) {
+    std::vector<bool> visited(num_nodes, false);
+    int current = circuit_start;
+    while (current != -1 && !visited[current]) {
+      visited[current] = true;
+      current = next[current];
+    }
+    if (current == circuit_start) {
+      // We have a sub-circuit! mark all other arc false except self-loop not in
+      // circuit.
+      for (int i = 0; i < num_arcs; ++i) {
+        if (visited[proto.tails(i)]) continue;
+        if (proto.tails(i) == proto.heads(i)) {
+          context->SetLiteralToTrue(proto.literals(i));
+        } else {
+          context->SetLiteralToFalse(proto.literals(i));
+        }
+      }
+      context->UpdateRuleStats("circuit: fully specified.");
+      return RemoveConstraint(ct, context);
+    }
+  } else {
+    // All self loop?
+    if (num_true == new_size) {
+      context->UpdateRuleStats("circuit: empty circuit.");
+      return RemoveConstraint(ct, context);
+    }
+  }
+
+  // Truncate the circuit and return.
   if (new_size < num_arcs) {
     proto.mutable_tails()->Truncate(new_size);
     proto.mutable_heads()->Truncate(new_size);
