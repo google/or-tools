@@ -541,12 +541,14 @@ techtalk_scheduling: $(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe
 
 else # This generic rule will be used if EX variable is set
 
-$(BIN_DIR)$S$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX)
+ifneq ($(CLR_EXE_SUFFIX),) # otherwise this rule has the same target than the one in use for cc files.
+$(BIN_DIR)/$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX)
 	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /debug /out:$(BIN_DIR)$S$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX)
+endif # ifneq ($(CLR_EXE_SUFFIX),)
 
-csc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe
+csc: $(BIN_DIR)/$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe
 
-rcs: $(BIN_DIR)$S$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe
+rcs: $(BIN_DIR)/$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe
 	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$S$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe $(ARGS)
 
