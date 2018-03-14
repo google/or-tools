@@ -27,11 +27,7 @@ run_Knapsack run_MultiThreadIntegerProgramming
 
 # csharp test
 .PHONY: test_csharp_examples
-test_csharp_examples: \
-		$(CSHARPEXE) \
-		$(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe \
-		$(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe \
-		$(BIN_DIR)/test_sat_model$(CLR_EXE_SUFFIX).exe
+test_csharp_examples: csharp
 	$(MONO) $(BIN_DIR)$Scslinearprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsintegerprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsrabbitspheasants$(CLR_EXE_SUFFIX).exe
@@ -46,8 +42,8 @@ test_csharp_examples: \
 	$(MONO) $(BIN_DIR)$Scsls_api$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scstsp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scscvrptw$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe
 
 .PHONY: test_fsharp_examples

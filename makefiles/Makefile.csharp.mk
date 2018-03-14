@@ -54,7 +54,8 @@ clean_csharp: clean_dotnet_generated
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.netmodule
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)
-	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
+	-$(DEL) $(addsuffix $(CLR_EXE_SUFFIX).exe, $(addprefix $(BIN_DIR)$S, $(CSHARP_EXAMPLES)))
+	-$(DEL) $(addsuffix $(CLR_EXE_SUFFIX).exe, $(addprefix $(BIN_DIR)$S, $(CSHARP_TESTS)))
 	-$(DEL) examples$Scsharp$SCsharp_examples.sln
 	-$(DEL) examples$Scsharp$Ssolution$S*.csproj
 
@@ -163,22 +164,30 @@ ifeq ($(SYSTEM),unix)
   endif
 endif
 
-CSHARPEXE = \
-	$(BIN_DIR)/csknapsack$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/csintegerprogramming$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/cslinearprogramming$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/csls_api$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/csflow$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/csrabbitspheasants$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/cstsp$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/furniture_moving_intervals$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/organize_day_intervals$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/nurses_sat$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/jobshop_ft06_sat$(CLR_EXE_SUFFIX).exe \
-	$(BIN_DIR)/cscvrptw$(CLR_EXE_SUFFIX).exe \
+# Binaries
+CSHARP_EXAMPLES = \
+csknapsack \
+csintegerprogramming \
+cslinearprogramming \
+csls_api \
+csflow \
+csrabbitspheasants \
+cstsp \
+furniture_moving_intervals \
+organize_day_intervals \
+techtalk_scheduling \
+nurses_sat \
+jobshop_ft06_sat \
+cscvrptw
+CSHARP_TESTS = \
+testlp \
+testcp \
+test_sat_model
 
-csharpexe: $(CSHARPEXE)
+csharpexe: \
+$(addsuffix $(CLR_EXE_SUFFIX).exe, $(addprefix $(BIN_DIR)/, $(CSHARP_EXAMPLES))) \
+$(addsuffix $(CLR_EXE_SUFFIX).exe, $(addprefix $(BIN_DIR)/, $(CSHARP_TESTS)))
+
 
 # Assembly Info
 
