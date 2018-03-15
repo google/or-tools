@@ -1003,6 +1003,17 @@ class CpModel(object):
     return self.__model.HasField('objective')
 
   def AddDecisionStrategy(self, variables, var_strategy, domain_strategy):
+    """Adds a decision strategy to the model.
+
+    Args:
+      variables: a list of variables this strategy will assign.
+      var_strategy: heuristic to choose the next variable to assign.
+      domain_strategy: heuristic to reduce the domain of the selected variable.
+
+    Currently, this is advanced code, as this strategy needs to be complete,
+    i.e. instantiates all variables. Otherwise, Solve() will fail.
+    """
+
     strategy = self.__model.search_strategy.add()
     for v in variables:
       strategy.variables.append(v.Index())
