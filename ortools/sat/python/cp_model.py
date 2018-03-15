@@ -45,6 +45,21 @@ MODEL_SAT = cp_model_pb2.MODEL_SAT
 MODEL_UNSAT = cp_model_pb2.MODEL_UNSAT
 OPTIMAL = cp_model_pb2.OPTIMAL
 
+# Variable selection strategy
+CHOOSE_FIRST = cp_model_pb2.DecisionStrategyProto.CHOOSE_FIRST
+CHOOSE_LOWEST_MIN = cp_model_pb2.DecisionStrategyProto.CHOOSE_LOWEST_MIN
+CHOOSE_HIGHEST_MAX = cp_model_pb2.DecisionStrategyProto.CHOOSE_HIGHEST_MAX
+CHOOSE_MIN_DOMAIN_SIZE = (
+    cp_model_pb2.DecisionStrategyProto.CHOOSE_MIN_DOMAIN_SIZE)
+CHOOSE_MAX_DOMAIN_SIZE = (
+    cp_model_pb2.DecisionStrategyProto.CHOOSE_MAX_DOMAIN_SIZE)
+
+# Domain reduction strategy
+SELECT_MIN_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MIN_VALUE
+SELECT_MAX_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MAX_VALUE
+SELECT_LOWER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_LOWER_HALF
+SELECT_UPPER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_UPPER_HALF
+
 
 def AssertIsInt64(x):
   """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
@@ -986,6 +1001,13 @@ class CpModel(object):
 
   def HasObjective(self):
     return self.__model.HasField('objective')
+
+  def AddDecisionStrategy(self, variables, var_strategy, domain_strategy):
+    strategy = self.__model.search_strategy.add()
+    for v in variables:
+      strategy.variables.append(v.Index())
+    strategy.variable_selection_strategy = var_strategy
+    strategy.domain_reduction_strategy = domain_strategy
 
   def AssertIsBooleanVariable(self, x):
     if isinstance(x, IntVar):
