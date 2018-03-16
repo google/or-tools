@@ -220,7 +220,9 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build/Makefile: dependencies
 	           ..
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/CMakeLists.txt:
-	git clone --quiet https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && git checkout 3d9d1a1
+	git clone --quiet https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
+		cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
+		git checkout tags/v$(PROTOBUF_TAG) -b $(PROTOBUF_TAG)
 
 # Install GLOG.
 install_glog: dependencies/install/include/glog/logging.h
