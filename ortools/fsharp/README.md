@@ -25,6 +25,20 @@ make fsharp
 ```
 To see the targets type `make help_fsharp`. Note that a keyfile must exist in the `bin` folder as it will be used to sign the assembly.
 
+## Test the Library
+Run the following to execute the tests. It requires the `dotnet` CLI tool. It uses the xUnit framework.
+```shell
+make test_fsharp
+
+xUnit.net Console Runner (64-bit .NET Core 4.6.0.0)
+  Discovering: Google.OrTools.FSharp.Test
+  Discovered:  Google.OrTools.FSharp.Test
+  Starting:    Google.OrTools.FSharp.Test
+  Finished:    Google.OrTools.FSharp.Test
+=== TEST EXECUTION SUMMARY ===
+   Google.OrTools.FSharp.Test  Total: 1, Errors: 0, Failed: 0, Skipped: 0, Time: 0.355s
+```
+
 ## Building Nuget package
 Ensure nuget executable is installed and then from root folder run the following:
 ```shell
