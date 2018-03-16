@@ -1867,6 +1867,10 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
     // with the use of timestamp.
     const int old_queue_size = queue.size();
     for (const int v : modified_domains.PositionsSetAtLeastOnce()) {
+      if (context.domains[v].IsEmpty()) {
+        context.is_unsat = true;
+        break;
+      }
       if (context.domains[v].IsFixed()) context.ExploitFixedDomain(v);
       for (const int c : context.var_to_constraints[v]) {
         if (c >= 0 && !in_queue[c]) {
