@@ -60,14 +60,14 @@ endif
 .PHONY: nuget-pkg_fsharp # Build Nuget Package for distribution.
 nuget-pkg_fsharp: fsharp
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" ortools$Sfsharp$S$(FSHARP_ORTOOLS_NUSPEC_FILE)
-	$(NUGET_EXECUTABLE) pack ortools$Sfsharp$S$(FSHARP_ORTOOLS_NUSPEC_FILE) -Basepath . -OutputDirectory $(ORTOOLS_NUGET_DIR)
+	"$(NUGET_EXECUTABLE)" pack ortools$Sfsharp$S$(FSHARP_ORTOOLS_NUSPEC_FILE) -Basepath . -OutputDirectory $(ORTOOLS_NUGET_DIR)
 
 .PHONY: test_fsharp # Tests for F# OR-Tools
 test_fsharp: fsharp
 ifneq ($(DOTNET_EXECUTABLE),)
-	$(DOTNET_EXECUTABLE) restore --packages "ortools$Sfsharp$Stest$Spackages" "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj"
-	$(DOTNET_EXECUTABLE) build "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj" -o ".$Sbin"
-	env "DYLD_FALLBACK_LIBRARY_PATH=.$Slib" $(DOTNET_EXECUTABLE) "ortools$Sfsharp$Stest$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sfsharp$Stest$Sbin$S$(FSHARP_ORTOOLS_DLL_NAME).Test.dll"
+	"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sfsharp$Stest$Spackages" "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj"
+	"$(DOTNET_EXECUTABLE)" build "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj" -o ".$Sbin"
+	env "DYLD_FALLBACK_LIBRARY_PATH=.$Slib" "$(DOTNET_EXECUTABLE)" "ortools$Sfsharp$Stest$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sfsharp$Stest$Sbin$S$(FSHARP_ORTOOLS_DLL_NAME).Test.dll"
 else
 	$(warning Cannot find '$(DOTNET_EXECUTABLE)' command which is needed to run tests. Please make sure it is installed and in system path.)
 endif
