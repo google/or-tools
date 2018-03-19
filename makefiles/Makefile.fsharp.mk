@@ -47,6 +47,14 @@ else
 FS_NOCPYCORE :=
 endif
 
+FSHARP_LIB_DIR :=
+ifeq ($(PLATFORM),MACOSX)
+FSHARP_LIB_DIR = env DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR)
+endif
+ifeq ($(PLATFORM),LINUX)
+FSHARP_LIB_DIR = env LD_LIBRARY_PATH=$(LIB_DIR)
+endif
+
 .PHONY: fsharp # Build F# OR-Tools. Set environment variable FSHARP_DEBUG=1 for debug symbols.
 fsharp: csharp
 ifneq ($(FSHARP_EXECUTABLE),)
@@ -67,7 +75,7 @@ test_fsharp: fsharp
 ifneq ($(DOTNET_EXECUTABLE),)
 	"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sfsharp$Stest$Spackages" "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj"
 	"$(DOTNET_EXECUTABLE)" build "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj" -o ".$Sbin"
-	env "DYLD_FALLBACK_LIBRARY_PATH=.$Slib" "$(DOTNET_EXECUTABLE)" "ortools$Sfsharp$Stest$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sfsharp$Stest$Sbin$S$(FSHARP_ORTOOLS_DLL_NAME).Test.dll"
+	$(FSHARP_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sfsharp$Stest$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sfsharp$Stest$Sbin$S$(FSHARP_ORTOOLS_DLL_NAME).Test.dll"
 else
 	$(warning Cannot find '$(DOTNET_EXECUTABLE)' command which is needed to run tests. Please make sure it is installed and in system path.)
 endif
