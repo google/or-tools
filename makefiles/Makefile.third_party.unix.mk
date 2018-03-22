@@ -231,7 +231,7 @@ dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TA
 	cd dependencies/sources/glog-$(GLOG_TAG)/build_cmake && $(SET_COMPILER) make -j 4 && make install
 	touch $@
 
-dependencies/sources/glog-$(GLOG_TAG)/build_cmake/Makefile: dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt install_gflags
+dependencies/sources/glog-$(GLOG_TAG)/build_cmake/Makefile: dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt | install_gflags
 	-$(MKDIR) dependencies/sources/glog-$(GLOG_TAG)/build_cmake
 	cd dependencies/sources/glog-$(GLOG_TAG)/build_cmake && \
 	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=../../../install \
