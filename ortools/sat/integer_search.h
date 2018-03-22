@@ -38,6 +38,19 @@ std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
 std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model);
 
+// Set the first unassigned Literal/Variable to its value.
+//
+// TODO(user): This is currently quadratic as we scan all variables to find the
+// first unassigned one. Fix. Note that this is also the case in many other
+// heuristics and should be fixed.
+struct BooleanOrIntegerVariable {
+  BooleanVariable bool_var = kNoBooleanVariable;
+  IntegerVariable int_var = kNoIntegerVariable;
+};
+std::function<LiteralIndex()> FollowHint(
+    const std::vector<BooleanOrIntegerVariable>& vars,
+    const std::vector<IntegerValue>& values, Model* model);
+
 // Combines search heuristics in order: if the i-th one returns kNoLiteralIndex,
 // ask the (i+1)-th. If every heuristic returned kNoLiteralIndex,
 // returns kNoLiteralIndex.

@@ -3411,6 +3411,24 @@ bool Presolver::Run(Model* model) {
     }
   }
 
+  // Remove offset from array_int_element.
+  for (Constraint* const ct : model->constraints()) {
+    if (ct->active && ct->type == "array_int_element" &&
+        ct->arguments[0].variables.size() == 1) {
+      IntegerVariable* const index_var = ct->arguments[0].Var();
+      if (ContainsKey(affine_map_, index_var)) {
+        const AffineMapping& mapping = affine_map_[index_var];
+        if (mapping.coefficient == 1 && mapping.offset == 1) {
+          FZVLOG << "remove offset by one from " << ct->DebugString();
+          ct->type += "_no_offset";
+          ct->arguments[0].variables[0] = mapping.variable;
+          FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+          successful_rules_["RemoveOffsetFromElement"]++;
+        }
+      }
+    }
+  }
+
   // Report presolve rules statistics.
   if (!successful_rules_.empty()) {
     FZLOG << "  - presolve looped " << loops << " times over the model"

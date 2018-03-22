@@ -48,82 +48,6 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-// =============================================================================
-// Utilities.
-// =============================================================================
-
-// An in-memory representation of a variable domain with convenient functions.
-class Domain {
- public:
-  // This takes a pointer to an "external" SparseBitset whose position "id" will
-  // be set to true each time this domain changes.
-  Domain(const IntegerVariableProto& var_proto, int id,
-         SparseBitset<int64>* watcher)
-      : id_(id),
-        watcher_(watcher),
-        sorted_disjoint_intervals_(ReadDomain(var_proto)) {}
-
-  bool IsEmpty() const { return sorted_disjoint_intervals_.empty(); }
-  int64 Min() const { return sorted_disjoint_intervals_.front().start; }
-  int64 Max() const { return sorted_disjoint_intervals_.back().end; }
-
-  bool Contains(int64 value) const {
-    return SortedDisjointIntervalsContain(sorted_disjoint_intervals_, value);
-  }
-
-  bool IsFixedTo(int64 value) const {
-    if (IsEmpty()) return false;
-    return Min() == value && Max() == value;
-  }
-
-  bool IsFixed() const {
-    if (IsEmpty()) return false;
-    return Min() == Max();
-  }
-
-  // Returns true iff the domain changed.
-  bool IntersectWith(const std::vector<ClosedInterval>& intervals) {
-    tmp_ = IntersectionOfSortedDisjointIntervals(sorted_disjoint_intervals_,
-                                                 intervals);
-    if (tmp_ != sorted_disjoint_intervals_) {
-      watcher_->Set(id_);
-      sorted_disjoint_intervals_ = tmp_;
-      return true;
-    }
-    return false;
-  }
-  bool IntersectWith(const Domain& domain) {
-    return IntersectWith(domain.sorted_disjoint_intervals_);
-  }
-
-  // This works in O(n).
-  // TODO(user): Move to O(log(n)) if needed.
-  void RemovePoint(int64 point) {
-    CHECK_NE(point, kint64min);
-    CHECK_NE(point, kint64max);
-    if (Contains(point)) {
-      watcher_->Set(id_);
-      IntersectWith({{kint64min, point - 1}, {point + 1, kint64max}});
-    }
-  }
-
-  void CopyToIntegerVariableProto(IntegerVariableProto* proto) const {
-    FillDomain(sorted_disjoint_intervals_, proto);
-  }
-
-  const std::vector<ClosedInterval>& InternalRepresentation() const {
-    return sorted_disjoint_intervals_;
-  }
-
-  void NotifyChanged() { watcher_->Set(id_); }
-
- private:
-  const int id_;
-  SparseBitset<int64>* watcher_;
-  std::vector<ClosedInterval> sorted_disjoint_intervals_;
-  std::vector<ClosedInterval> tmp_;
-};
-
 // Returns the sorted list of variables used by a constraint.
 std::vector<int> UsedVariables(const ConstraintProto& ct) {
   IndexReferences references;
@@ -143,24 +67,83 @@ std::vector<int> UsedVariables(const ConstraintProto& ct) {
   return used_variables;
 }
 
+// Wrap the CpModelProto we are presolving with extra data structure like the
+// in-memory domain of each variables and the constraint variable graph.
 struct PresolveContext {
-  bool LiteralIsTrue(int lit) const {
-    if (lit >= 0) return !domains[lit].Contains(0);
-    return domains[NegatedRef(lit)].IsFixedTo(0);
+  bool DomainIsEmpty(int ref) const {
+    return domains[PositiveRef(ref)].empty();
   }
-  bool LiteralIsFalse(int lit) const { return LiteralIsTrue(NegatedRef(lit)); }
+
+  bool IsFixed(int ref) const {
+    CHECK(!DomainIsEmpty(ref));
+    return domains[PositiveRef(ref)].front().start ==
+           domains[PositiveRef(ref)].back().end;
+  }
+
+  bool LiteralIsTrue(int lit) const {
+    if (!IsFixed(lit)) return false;
+    if (RefIsPositive(lit)) {
+      return domains[lit].front().start == 1ll;
+    } else {
+      return domains[PositiveRef(lit)].front().start == 0ll;
+    }
+  }
+
+  bool LiteralIsFalse(int lit) const {
+    if (!IsFixed(lit)) return false;
+    if (RefIsPositive(lit)) {
+      return domains[lit].front().start == 0ll;
+    } else {
+      return domains[PositiveRef(lit)].front().start == 1ll;
+    }
+  }
+
+  int64 MinOf(int ref) const {
+    CHECK(!DomainIsEmpty(ref));
+    return RefIsPositive(ref) ? domains[PositiveRef(ref)].front().start
+                              : -domains[PositiveRef(ref)].back().end;
+  }
+
+  int64 MaxOf(int ref) const {
+    CHECK(!DomainIsEmpty(ref));
+    return RefIsPositive(ref) ? domains[PositiveRef(ref)].back().end
+                              : -domains[PositiveRef(ref)].front().start;
+  }
+
+  // Returns true if this ref only appear in one constraint.
+  bool IsUnique(int ref) const {
+    return var_to_constraints[PositiveRef(ref)].size() == 1;
+  }
+
+  std::vector<ClosedInterval> GetRefDomain(int ref) const {
+    if (RefIsPositive(ref)) return domains[ref];
+    return NegationOfSortedDisjointIntervals(domains[PositiveRef(ref)]);
+  }
+
+  // Returns false if the domain changed.
+  bool IntersectDomainWith(int ref, const std::vector<ClosedInterval>& domain) {
+    const int var = PositiveRef(ref);
+    tmp_domain = IntersectionOfSortedDisjointIntervals(
+        domains[var], RefIsPositive(ref)
+                          ? domain
+                          : NegationOfSortedDisjointIntervals(domain));
+    if (tmp_domain != domains[var]) {
+      modified_domains.Set(var);
+      domains[var] = tmp_domain;
+      if (tmp_domain.empty()) {
+        is_unsat = true;
+      }
+      return true;
+    }
+    return false;
+  }
 
   void SetLiteralToFalse(int lit) {
     const int var = PositiveRef(lit);
-    if (lit >= 0) {
-      domains[var].IntersectWith({{0ll, 0ll}});
-    } else {
-      domains[var].RemovePoint(0ll);
-    }
-    if (domains[var].IsEmpty()) {
-      is_unsat = true;
-    }
+    const int64 value = RefIsPositive(lit) ? 0ll : 1ll;
+    IntersectDomainWith(var, {{value, value}});
   }
+
   void SetLiteralToTrue(int lit) { return SetLiteralToFalse(NegatedRef(lit)); }
 
   void UpdateRuleStats(const std::string& name) { stats_by_rule_name[name]++; }
@@ -173,25 +156,11 @@ struct PresolveContext {
     for (const int v : constraint_to_vars[c]) var_to_constraints[v].insert(c);
   }
 
-  int64 MinOf(int ref) const {
-    return RefIsPositive(ref) ? domains[ref].Min()
-                              : -domains[PositiveRef(ref)].Max();
-  }
-  int64 MaxOf(int ref) const {
-    return RefIsPositive(ref) ? domains[ref].Max()
-                              : -domains[PositiveRef(ref)].Min();
-  }
-
-  bool IsUniqueOrFixed(int ref) {
-    return var_to_constraints[PositiveRef(ref)].size() == 1 ||
-           domains[PositiveRef(ref)].IsFixed();
-  }
-
   // Regroups fixed variables with the same value.
   // TODO(user): Also regroup cte and -cte?
   void ExploitFixedDomain(int var) {
-    CHECK(domains[var].IsFixed());
-    const int min = domains[var].Min();
+    CHECK(IsFixed(var));
+    const int min = MinOf(var);
     if (ContainsKey(constant_to_ref, min)) {
       const int representative = constant_to_ref[min];
       if (representative != var) {
@@ -208,7 +177,7 @@ struct PresolveContext {
                          int64 coeff, int64 offset) {
     int x = PositiveRef(ref_x);
     int y = PositiveRef(ref_y);
-    if (domains[x].IsFixed() || domains[y].IsFixed()) return;
+    if (IsFixed(x) || IsFixed(y)) return;
 
     int64 c = RefIsPositive(ref_x) == RefIsPositive(ref_y) ? coeff : -coeff;
     int64 o = RefIsPositive(ref_x) ? offset : -offset;
@@ -222,10 +191,10 @@ struct PresolveContext {
     const int rep_x = affine_relations.Get(x).representative;
     const int rep_y = affine_relations.Get(y).representative;
     bool force = false;
-    if (domains[rep_y].Min() == 0 && domains[rep_y].Max() == 1) {
+    if (MinOf(rep_y) == 0 && MaxOf(rep_y) == 1) {
       // We force the new representative to be rep_y.
       force = true;
-    } else if (domains[rep_x].Min() == 0 && domains[rep_x].Max() == 1) {
+    } else if (MinOf(rep_x) == 0 && MaxOf(rep_x) == 1) {
       // We force the new representative to be rep_x.
       force = true;
       std::swap(x, y);
@@ -243,8 +212,8 @@ struct PresolveContext {
     if (added) {
       // The domain didn't change, but this notification allows to re-process
       // any constraint containing these variables.
-      domains[x].NotifyChanged();
-      domains[y].NotifyChanged();
+      modified_domains.Set(x);
+      modified_domains.Set(y);
       affine_constraints.insert(&ct);
     }
   }
@@ -260,15 +229,15 @@ struct PresolveContext {
     return r;
   }
 
-  // Returns the current domain of the given variable reference.
-  std::vector<ClosedInterval> GetRefDomain(int ref) const {
-    if (RefIsPositive(ref)) return domains[ref].InternalRepresentation();
-    return NegationOfSortedDisjointIntervals(
-        domains[PositiveRef(ref)].InternalRepresentation());
+  // Create the internal structure for any new variables in working_model.
+  void InitializeNewDomains() {
+    for (int i = domains.size(); i < working_model->variables_size(); ++i) {
+      domains.push_back(ReadDomain(working_model->variables(i)));
+      if (IsFixed(i)) ExploitFixedDomain(i);
+    }
+    modified_domains.Resize(domains.size());
+    var_to_constraints.resize(domains.size());
   }
-
-  // The current domain of each variables.
-  std::vector<Domain> domains;
 
   // This regroup all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
@@ -311,11 +280,18 @@ struct PresolveContext {
   // Just used to display statistics on the presolve rules that were used.
   std::unordered_map<std::string, int> stats_by_rule_name;
 
-  // Temporary storage for PresolveLinear().
+  // Temporary storage.
+  std::vector<int> tmp_literals;
+  std::vector<ClosedInterval> tmp_domain;
   std::vector<std::vector<ClosedInterval>> tmp_term_domains;
   std::vector<std::vector<ClosedInterval>> tmp_left_domains;
 
-  std::vector<int> tmp_literals;
+  // Each time a domain is modified this is set to true.
+  SparseBitset<int64> modified_domains;
+
+ private:
+  // The current domain of each variables.
+  std::vector<std::vector<ClosedInterval>> domains;
 };
 
 // =============================================================================
@@ -369,7 +345,7 @@ bool PresolveEnforcementLiteral(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("false enforcement literal");
     return RemoveConstraint(ct, context);
   }
-  if (context->var_to_constraints[PositiveRef(literal)].size() == 1) {
+  if (context->IsUnique(literal)) {
     // We can simply set it to false and ignore the constraint in this case.
     context->UpdateRuleStats("enforcement literal not used");
     context->SetLiteralToFalse(literal);
@@ -407,7 +383,7 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
     // We can just set the variable to true in this case since it is not
     // used in any other constraint (note that we artifically bump the
     // objective var usage by 1).
-    if (context->var_to_constraints[PositiveRef(literal)].size() == 1) {
+    if (context->IsUnique(literal)) {
       context->UpdateRuleStats("bool_or: singleton");
       context->SetLiteralToTrue(literal);
       return RemoveConstraint(ct, context);
@@ -463,7 +439,7 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
       changed = true;
       continue;
     }
-    if (context->var_to_constraints[PositiveRef(literal)].size() == 1) {
+    if (context->IsUnique(literal)) {
       changed = true;
       context->SetLiteralToTrue(literal);
       continue;
@@ -538,11 +514,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
           IntersectionOfSortedDisjointIntervals(context->GetRefDomain(ref),
                                                 {{target_min, kint64max}}));
     }
-    if (!RefIsPositive(target_ref)) {
-      infered_domain = NegationOfSortedDisjointIntervals(infered_domain);
-    }
-    domain_reduced |=
-        context->domains[target_var].IntersectWith(infered_domain);
+    domain_reduced |= context->IntersectDomainWith(target_ref, infered_domain);
   }
 
   // Pass 2, update the argument domains. Filter them eventually.
@@ -551,13 +523,8 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   const int64 target_max = context->MaxOf(target_ref);
   for (const int ref : ct->int_max().vars()) {
     if (!HasEnforcementLiteral(*ct)) {
-      if (RefIsPositive(ref)) {
-        domain_reduced |= context->domains[PositiveRef(ref)].IntersectWith(
-            {{kint64min, target_max}});
-      } else {
-        domain_reduced |= context->domains[PositiveRef(ref)].IntersectWith(
-            {{-target_max, kint64max}});
-      }
+      domain_reduced |=
+          context->IntersectDomainWith(ref, {{kint64min, target_max}});
     }
     if (context->MaxOf(ref) >= target_min) {
       ct->mutable_int_max()->set_vars(new_size++, ref);
@@ -579,7 +546,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   // TODO(user): If the domains have holes, it is possible we will only detect
   // UNSAT at postsolve time, that might be an issue.
   if (new_size > 0 && !HasEnforcementLiteral(*ct) &&
-      context->var_to_constraints[target_var].size() == 1) {
+      context->IsUnique(target_var)) {
     context->UpdateRuleStats("int_max: singleton target");
     *(context->mapping_model->add_constraints()) = *ct;
     return RemoveConstraint(ct, context);
@@ -618,8 +585,8 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   if (!RefIsPositive(target_ref)) return false;
   for (const int var : ct->int_prod().vars()) {
     if (!RefIsPositive(var)) return false;
-    if (context->domains[var].Min() != 0) return false;
-    if (context->domains[var].Max() != 1) return false;
+    if (context->MinOf(var) != 0) return false;
+    if (context->MaxOf(var) != 1) return false;
   }
 
   // This is a bool constraint!
@@ -649,16 +616,17 @@ bool PresolveIntDiv(ConstraintProto* ct, PresolveContext* context) {
   const int ref_x = ct->int_div().vars(0);
   const int ref_div = ct->int_div().vars(1);
   if (!RefIsPositive(target) || !RefIsPositive(ref_x) ||
-      !RefIsPositive(ref_div) || !context->domains[ref_div].IsFixed()) {
+      !RefIsPositive(ref_div) || !context->IsFixed(ref_div)) {
     return false;
   }
 
-  const int64 divisor = context->domains[ref_div].Min();
+  const int64 divisor = context->MinOf(ref_div);
   if (divisor == 1) {
     context->UpdateRuleStats("TODO int_div: rewrite to equality");
   }
-  if (context->domains[target].IntersectWith(DivisionOfSortedDisjointIntervals(
-          context->GetRefDomain(ref_x), divisor))) {
+  if (context->IntersectDomainWith(
+          target, DivisionOfSortedDisjointIntervals(
+                      context->GetRefDomain(ref_x), divisor))) {
     context->UpdateRuleStats(
         "int_div: updated domain of target in target = X / cte");
   }
@@ -698,7 +666,7 @@ bool ExploitEquivalenceRelations(ConstraintProto* ct,
         if (r.representative != var) {
           const bool is_positive = (r.offset == 0 && r.coeff == 1);
           CHECK(is_positive || r.offset == 1 && r.coeff == -1 ||
-                context->domains[var].IsFixed());
+                context->IsFixed(var));
           *ref = (is_positive == RefIsPositive(*ref))
                      ? r.representative
                      : NegatedRef(r.representative);
@@ -729,8 +697,8 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     const int64 coeff =
         RefIsPositive(arg.vars(i)) ? arg.coeffs(i) : -arg.coeffs(i);
     if (coeff == 0) continue;
-    if (context->domains[var].IsFixed()) {
-      sum_of_fixed_terms += coeff * context->domains[var].Min();
+    if (context->IsFixed(var)) {
+      sum_of_fixed_terms += coeff * context->MinOf(var);
       continue;
     }
 
@@ -758,10 +726,10 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     for (const auto entry : var_to_coeff) {
       const int var = entry.first;
       const int64 coeff = entry.second;
-      if (context->var_to_constraints[var].size() == 1) {
+      if (context->IsUnique(var)) {
         bool success;
         const auto term_domain = PreciseMultiplicationOfSortedDisjointIntervals(
-            context->domains[var].InternalRepresentation(), -coeff, &success);
+            context->GetRefDomain(var), -coeff, &success);
         if (success) {
           // Note that we can't do that if we loose information in the
           // multiplication above because the new domain might not be as strict
@@ -847,11 +815,10 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("linear: size one");
     const int var = PositiveRef(arg.vars(0));
     if (coeff == 1) {
-      context->domains[var].IntersectWith(rhs);
+      context->IntersectDomainWith(var, rhs);
     } else {
       DCHECK_EQ(coeff, -1);  // Because of the GCD above.
-      context->domains[var].IntersectWith(
-          NegationOfSortedDisjointIntervals(rhs));
+      context->IntersectDomainWith(var, NegationOfSortedDisjointIntervals(rhs));
     }
     return RemoveConstraint(ct, context);
   }
@@ -867,7 +834,7 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   for (int i = 0; i < num_vars; ++i) {
     const int var = PositiveRef(arg.vars(i));
     const int64 coeff = arg.coeffs(i);
-    const auto& domain = context->domains[var].InternalRepresentation();
+    const auto& domain = context->GetRefDomain(var);
 
     // TODO(user): Try PreciseMultiplicationOfSortedDisjointIntervals() if
     // the size is reasonable.
@@ -926,7 +893,7 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
       new_domain = InverseMultiplicationOfSortedDisjointIntervals(
           AdditionOfSortedDisjointIntervals(left_domains[i], right_domain),
           -arg.coeffs(i));
-      if (context->domains[arg.vars(i)].IntersectWith(new_domain)) {
+      if (context->IntersectDomainWith(arg.vars(i), new_domain)) {
         new_bounds = true;
       }
     }
@@ -973,8 +940,8 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
   int64 offset = 0;
   for (int i = 0; i < num_vars; ++i) {
     const int var = PositiveRef(arg.vars(i));
-    if (context->domains[var].Min() != 0) return false;
-    if (context->domains[var].Max() != 1) return false;
+    if (context->MinOf(var) != 0) return false;
+    if (context->MaxOf(var) != 1) return false;
     const int64 coeff = arg.coeffs(i);
     if (coeff > 0) {
       min_coeff = std::min(min_coeff, coeff);
@@ -1043,35 +1010,33 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
 }
 
 bool PresolveInterval(ConstraintProto* ct, PresolveContext* context) {
-  // TODO(user): find a way to not care about this by extending the context API.
-  if (!RefIsPositive(ct->interval().start())) return false;
-  if (!RefIsPositive(ct->interval().end())) return false;
-  if (!RefIsPositive(ct->interval().size())) return false;
-
-  Domain& start = context->domains[PositiveRef(ct->interval().start())];
-  Domain& end = context->domains[PositiveRef(ct->interval().end())];
-  Domain& size = context->domains[PositiveRef(ct->interval().size())];
+  const int start = ct->interval().start();
+  const int end = ct->interval().end();
+  const int size = ct->interval().size();
   bool changed = false;
-  changed |= end.IntersectWith(AdditionOfSortedDisjointIntervals(
-      start.InternalRepresentation(), size.InternalRepresentation()));
-  changed |= start.IntersectWith(AdditionOfSortedDisjointIntervals(
-      end.InternalRepresentation(),
-      NegationOfSortedDisjointIntervals(size.InternalRepresentation())));
-  changed |= size.IntersectWith(AdditionOfSortedDisjointIntervals(
-      end.InternalRepresentation(),
-      NegationOfSortedDisjointIntervals(start.InternalRepresentation())));
+  changed |= context->IntersectDomainWith(
+      end, AdditionOfSortedDisjointIntervals(context->GetRefDomain(start),
+                                             context->GetRefDomain(size)));
+  changed |= context->IntersectDomainWith(
+      start, AdditionOfSortedDisjointIntervals(
+                 context->GetRefDomain(end), NegationOfSortedDisjointIntervals(
+                                                 context->GetRefDomain(size))));
+  changed |= context->IntersectDomainWith(
+      size, AdditionOfSortedDisjointIntervals(
+                context->GetRefDomain(end), NegationOfSortedDisjointIntervals(
+                                                context->GetRefDomain(start))));
   if (changed) {
     context->UpdateRuleStats("interval: reduced domains");
   }
 
   // TODO(user): This currently has a side effect that both the interval and
   // a linear constraint are added to the presolved model. Fix.
-  if (false && size.IsFixed()) {
+  if (false && context->IsFixed(size)) {
     // We add it even if the interval is optional.
     // TODO(user): we must verify that all the variable of an optional interval
     // do not appear in a constraint which is not reified by the same literal.
     context->AddAffineRelation(*ct, ct->interval().end(),
-                               ct->interval().start(), 1, size.Min());
+                               ct->interval().start(), 1, context->MinOf(size));
   }
 
   // This never change the constraint-variable graph.
@@ -1081,8 +1046,6 @@ bool PresolveInterval(ConstraintProto* ct, PresolveContext* context) {
 bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   const int index_ref = ct->element().index();
   const int target_ref = ct->element().target();
-  const bool unique_index = context->IsUniqueOrFixed(index_ref);
-  const bool unique_target = context->IsUniqueOrFixed(target_ref);
 
   // TODO(user): think about this once we do have such constraint.
   if (HasEnforcementLiteral(*ct)) return false;
@@ -1098,13 +1061,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   if (index_domain.front().start < 0 ||
       index_domain.back().end >= ct->element().vars_size()) {
     reduced_index_domain = true;
-    if (RefIsPositive(index_ref)) {
-      context->domains[PositiveRef(index_ref)].IntersectWith(
-          {{0, ct->element().vars_size() - 1}});
-    } else {
-      context->domains[PositiveRef(index_ref)].IntersectWith(
-          {{-ct->element().vars_size() + 1, 0}});
-    }
+    context->IntersectDomainWith(index_ref,
+                                 {{0, ct->element().vars_size() - 1}});
   }
   std::vector<ClosedInterval> infered_domain;
   const std::vector<ClosedInterval> target_dom =
@@ -1116,8 +1074,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
       const int ref = ct->element().vars(i);
       const auto& domain = context->GetRefDomain(ref);
       if (IntersectionOfSortedDisjointIntervals(target_dom, domain).empty()) {
-        context->domains[PositiveRef(index_ref)].RemovePoint(
-            RefIsPositive(index_ref) ? i : -i);
+        context->IntersectDomainWith(index_ref,
+                                     {{kint64min, i - 1}, {i + 1, kint64max}});
         reduced_index_domain = true;
       } else {
         ++num_vars;
@@ -1138,12 +1096,12 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   if (reduced_index_domain) {
     context->UpdateRuleStats("element: reduced index domain");
   }
-  if (!RefIsPositive(target_ref)) {
-    infered_domain = NegationOfSortedDisjointIntervals(infered_domain);
-  }
-  if (context->domains[PositiveRef(target_ref)].IntersectWith(infered_domain)) {
+  if (context->IntersectDomainWith(target_ref, infered_domain)) {
     context->UpdateRuleStats("element: reduced target domain");
   }
+
+  const bool unique_index =
+      context->IsUnique(index_ref) || context->IsFixed(index_ref);
   if (all_constants && unique_index) {
     // This constraint is just here to reduce the domain of the target! We can
     // add it to the mapping_model to reconstruct the index value during
@@ -1152,6 +1110,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     *(context->mapping_model->add_constraints()) = *ct;
     return RemoveConstraint(ct, context);
   }
+  const bool unique_target =
+      context->IsUnique(target_ref) || context->IsFixed(target_ref);
   if (all_included_in_target_domain && unique_target) {
     context->UpdateRuleStats("element: trivial index domain reduction");
     *(context->mapping_model->add_constraints()) = *ct;
@@ -1165,7 +1125,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   if (unique_target) {
     context->UpdateRuleStats("TODO element: target not used elsewhere");
   }
-  if (context->domains[PositiveRef(index_ref)].IsFixed()) {
+  if (context->IsFixed(index_ref)) {
     context->UpdateRuleStats("TODO element: fixed index.");
   } else if (unique_index) {
     context->UpdateRuleStats("TODO element: index not used elsewhere");
@@ -1198,8 +1158,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
       const int ref = ct->table().vars(j);
       const int64 v = ct->table().values(i * num_vars + j);
       tuple[j] = v;
-      if (!context->domains[PositiveRef(ref)].Contains(
-              RefIsPositive(ref) ? v : -v)) {
+      if (!SortedDisjointIntervalsContain(context->GetRefDomain(ref), v)) {
         delete_row = true;
         break;
       }
@@ -1229,9 +1188,9 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   bool changed = false;
   for (int j = 0; j < num_vars; ++j) {
     const int ref = ct->table().vars(j);
-    changed |= context->domains[PositiveRef(ref)].IntersectWith(
-        SortedDisjointIntervalsFromValues(
-            std::vector<int64>(new_domains[j].begin(), new_domains[j].end())));
+    changed |= context->IntersectDomainWith(
+        PositiveRef(ref), SortedDisjointIntervalsFromValues(std::vector<int64>(
+                              new_domains[j].begin(), new_domains[j].end())));
   }
   if (changed) {
     context->UpdateRuleStats("table: reduced variable domains");
@@ -1300,7 +1259,7 @@ bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
 
   bool contains_fixed_variable = false;
   for (int i = 0; i < size; ++i) {
-    if (context->domains[PositiveRef(ct->all_diff().vars(i))].IsFixed()) {
+    if (context->IsFixed(ct->all_diff().vars(i))) {
       contains_fixed_variable = true;
       break;
     }
@@ -1314,10 +1273,8 @@ bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
 bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
   const CumulativeConstraintProto& proto = ct->cumulative();
-  if (!context->domains[PositiveRef(proto.capacity())].IsFixed()) {
-    return false;
-  }
-  const int64 capacity = context->domains[PositiveRef(proto.capacity())].Min();
+  if (!context->IsFixed(proto.capacity())) return false;
+  const int64 capacity = context->MinOf(proto.capacity());
 
   const int size = proto.intervals_size();
   std::vector<int> start_indices(size, -1);
@@ -1332,11 +1289,12 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
     start_indices[i] = interval.start();
     const int duration_index = interval.size();
     const int demand_index = proto.demands(i);
-    if (context->domains[duration_index].IsFixedTo(1)) {
+    if (context->IsFixed(duration_index) &&
+        context->MinOf(duration_index) == 1) {
       num_duration_one++;
     }
-    const int64 demand_min = context->domains[demand_index].Min();
-    const int64 demand_max = context->domains[demand_index].Max();
+    const int64 demand_min = context->MinOf(demand_index);
+    const int64 demand_max = context->MaxOf(demand_index);
     if (demand_min > capacity / 2) {
       num_greater_half_capacity++;
     }
@@ -1641,9 +1599,6 @@ void PresolvePureSatPart(PresolveContext* context) {
   }
 
   // Add any new variables to our internal structure.
-  //
-  // TODO(user): This code is not really safe, as it is easy to forget to
-  // resize one vector of the context. Clean this up.
   const int new_num_variables = presolver.NumVariables();
   if (new_num_variables > context->working_model->variables_size()) {
     LOG(INFO) << "New variables added by the SAT presolver.";
@@ -1652,9 +1607,8 @@ void PresolvePureSatPart(PresolveContext* context) {
       IntegerVariableProto* var_proto = context->working_model->add_variables();
       var_proto->add_domain(0);
       var_proto->add_domain(1);
-      context->domains.push_back(Domain(*var_proto, i, nullptr));
     }
-    context->var_to_constraints.resize(new_num_variables);
+    context->InitializeNewDomains();
   }
 
   // Add the presolver clauses back into the model.
@@ -1707,14 +1661,6 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   // constraint.
   EncodeObjectiveAsSingleVariable(context.working_model);
 
-  // Initialize the domains.
-  SparseBitset<int64> modified_domains(context.working_model->variables_size());
-  for (int i = 0; i < context.working_model->variables_size(); ++i) {
-    context.domains.push_back(
-        Domain(context.working_model->variables(i), i, &modified_domains));
-    if (context.domains[i].IsFixed()) context.ExploitFixedDomain(i);
-  }
-
   // The queue of "active" constraints, initialized to all of them.
   std::vector<bool> in_queue(context.working_model->constraints_size(), true);
   std::deque<int> queue(context.working_model->constraints_size());
@@ -1724,6 +1670,9 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   // appearing anywhere else) to not call the presolve more than once for this
   // reason.
   std::unordered_set<std::pair<int, int>> var_constraint_pair_already_called;
+
+  // Initialize the initial context.working_model domains.
+  context.InitializeNewDomains();
 
   // Initialize the constraint <-> variable graph.
   context.constraint_to_vars.resize(context.working_model->constraints_size());
@@ -1866,12 +1815,12 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
     // TODO(user): Avoid reprocessing the constraints that changed the variables
     // with the use of timestamp.
     const int old_queue_size = queue.size();
-    for (const int v : modified_domains.PositionsSetAtLeastOnce()) {
-      if (context.domains[v].IsEmpty()) {
+    for (const int v : context.modified_domains.PositionsSetAtLeastOnce()) {
+      if (context.DomainIsEmpty(v)) {
         context.is_unsat = true;
         break;
       }
-      if (context.domains[v].IsFixed()) context.ExploitFixedDomain(v);
+      if (context.IsFixed(v)) context.ExploitFixedDomain(v);
       for (const int c : context.var_to_constraints[v]) {
         if (c >= 0 && !in_queue[c]) {
           in_queue[c] = true;
@@ -1883,7 +1832,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
     // Make sure the order is deterministic! because var_to_constraints[]
     // order changes from one run to the next.
     std::sort(queue.begin() + old_queue_size, queue.end());
-    modified_domains.SparseClearAll();
+    context.modified_domains.SparseClearAll();
   }
 
   // Run SAT specific presolve on the pure-SAT part of the problem.
@@ -2042,7 +1991,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   // with a fixed size.
   int num_affine_relations = 0;
   for (int var = 0; var < presolved_model->variables_size(); ++var) {
-    if (context.domains[var].IsFixed()) continue;
+    if (context.IsFixed(var)) continue;
 
     const AffineRelation::Relation r = context.GetAffineRelation(var);
     if (r.representative == var) continue;
@@ -2058,7 +2007,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
           AdditionOfSortedDisjointIntervals({{-r.offset, -r.offset}},
                                             context.GetRefDomain(var)),
           r.coeff);
-      if (context.domains[r.representative].IntersectWith(implied)) {
+      if (context.IntersectDomainWith(r.representative, implied)) {
         LOG(WARNING) << "Domain of " << r.representative
                      << " was not fully propagated using the affine relation "
                      << "(representative =" << r.representative
@@ -2103,7 +2052,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
       const int var = PositiveRef(ref);
 
       // Remove fixed variables.
-      if (context.domains[var].IsFixed()) continue;
+      if (context.IsFixed(var)) continue;
 
       // There is not point having a variable appear twice, so we only keep
       // the first occurrence in the first strategy in which it occurs.
@@ -2137,9 +2086,8 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   }
 
   // Update the variables domain of the presolved_model.
-  for (int i = 0; i < context.domains.size(); ++i) {
-    context.domains[i].CopyToIntegerVariableProto(
-        presolved_model->mutable_variables(i));
+  for (int i = 0; i < presolved_model->variables_size(); ++i) {
+    FillDomain(context.GetRefDomain(i), presolved_model->mutable_variables(i));
   }
 
   // Set the variables of the mapping_model.
@@ -2224,6 +2172,22 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
         new_transform->set_var(ref >= 0 ? image : NegatedRef(image));
       }
     }
+  }
+
+  // Remap the solution hint.
+  if (proto->has_solution_hint()) {
+    auto* mutable_hint = proto->mutable_solution_hint();
+    int new_size = 0;
+    for (int i = 0; i < mutable_hint->vars_size(); ++i) {
+      const int image = mapping[PositiveRef(mutable_hint->vars(i))];
+      if (image >= 0) {
+        mutable_hint->set_vars(new_size, image);
+        mutable_hint->set_values(new_size, mutable_hint->values(i));
+        ++new_size;
+      }
+    }
+    mutable_hint->mutable_vars()->Truncate(new_size);
+    mutable_hint->mutable_values()->Truncate(new_size);
   }
 
   // Move the variable definitions.

@@ -319,20 +319,24 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   } else if (fz_ct.type == "array_int_element" ||
              fz_ct.type == "array_bool_element" ||
              fz_ct.type == "array_var_int_element" ||
-             fz_ct.type == "array_var_bool_element") {
+             fz_ct.type == "array_var_bool_element" ||
+             fz_ct.type == "array_int_element_no_offset") {
     if (fz_ct.arguments[0].type == fz::Argument::INT_VAR_REF) {
       auto* arg = ct->mutable_element();
       arg->set_index(LookupVar(fz_ct.arguments[0]));
       arg->set_target(LookupVar(fz_ct.arguments[2]));
 
-      // Add a dummy variable at position zero because flatzinc index start at
-      // 1.
-      // TODO(user): Make sure that zero is not in the index domain...
-      arg->add_vars(arg->target());
+      if (!strings::EndsWith(fz_ct.type, "no_offset")) {
+        // Add a dummy variable at position zero because flatzinc index start at
+        // 1.
+        // TODO(user): Make sure that zero is not in the index domain...
+        arg->add_vars(arg->target());
+      }
       for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
     } else {
       // Special case added by the presolve (not in flatzinc). We encode this
       // as a table constraint.
+      CHECK(!strings::EndsWith(fz_ct.type, "no_offset"));
       auto* arg = ct->mutable_table();
 
       // the constraint is:

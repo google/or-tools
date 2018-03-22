@@ -73,10 +73,12 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
                 value = -(coeff * ub + offset);
                 break;
               case DecisionStrategyProto::CHOOSE_MIN_DOMAIN_SIZE:
-                value = coeff * (ub - lb);
+                // TODO(user): Evaluate an exact domain computation.
+                value = coeff * (ub - lb + 1);
                 break;
               case DecisionStrategyProto::CHOOSE_MAX_DOMAIN_SIZE:
-                value = -coeff * (ub - lb);
+                // TODO(user): Evaluate an exact domain computation.
+                value = -coeff * (ub - lb + 1);
                 break;
               default:
                 LOG(FATAL) << "Unknown VariableSelectionStrategy "

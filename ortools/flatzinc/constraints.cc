@@ -435,6 +435,28 @@ void ExtractArrayIntElement(fz::SolverData* data, fz::Constraint* ct) {
   }
 }
 
+void ExtractArrayIntElementNoOffset(fz::SolverData* data, fz::Constraint* ct) {
+  CHECK_EQ(1, ct->arguments[0].variables.size());
+  Solver* const solver = data->solver();
+  if (ct->arguments[0].type == fz::Argument::INT_VAR_REF) {
+    IntVar* const index = data->GetOrCreateExpression(ct->arguments[0])->Var();
+    const std::vector<int64>& values = ct->arguments[1].values;
+    if (ct->target_variable != nullptr) {
+      DCHECK_EQ(ct->arguments[2].Var(), ct->target_variable);
+      IntExpr* const target = solver->MakeElement(values, index);
+      FZVLOG << "  - creating " << ct->target_variable->DebugString()
+             << " := " << target->DebugString() << FZENDL;
+      data->SetExtracted(ct->target_variable, target);
+    } else {
+      IntVar* const target =
+          data->GetOrCreateExpression(ct->arguments[2])->Var();
+      Constraint* const constraint =
+          solver->MakeElementEquality(values, index, target);
+      AddConstraint(solver, ct, constraint);
+    }
+  }
+}
+
 void ExtractArrayVarIntElement(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
   IntExpr* const index = data->GetOrCreateExpression(ct->arguments[0]);
@@ -2930,6 +2952,8 @@ void ExtractConstraint(SolverData* data, Constraint* ct) {
     ExtractArrayBoolXor(data, ct);
   } else if (type == "array_int_element") {
     ExtractArrayIntElement(data, ct);
+  } else if (type == "array_int_element_no_offset") {
+    ExtractArrayIntElementNoOffset(data, ct);
   } else if (type == "array_var_bool_element") {
     ExtractArrayVarIntElement(data, ct);
   } else if (type == "array_var_int_element") {

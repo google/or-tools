@@ -388,7 +388,11 @@ std::function<void(Model*)> TransitionConstraint(
         in_states.push_back(IntegerValue(transition[0]));
 
         transition_values.push_back(IntegerValue(transition[1]));
-        out_states.push_back(IntegerValue(transition[2]));
+
+        // On the last step we don't need to distinguish the output states, so
+        // we use zero.
+        out_states.push_back(time + 1 == n ? IntegerValue(0)
+                                           : IntegerValue(transition[2]));
       }
 
       // Fully instantiate vars[time].
@@ -414,26 +418,26 @@ std::function<void(Model*)> TransitionConstraint(
         }
       }
 
-      // For each possible out states, create one Boolean variable.
-      //
-      // TODO(user): enforce an at most one constraint? it is not really needed
-      // though, so I am not sure it will improve or hurt the performance. To
-      // investigate on real problems.
+      // For each possible out states, create one Boolean variable. Note that
+      // enforcing the exactly one constraint on them result in a better
+      // propagation.
       {
         std::vector<IntegerValue> s = out_states;
         STLSortAndRemoveDuplicates(&s);
 
         out_encoding.clear();
+        std::vector<Literal> state_literals;
         if (s.size() == 2) {
           const BooleanVariable var = model->Add(NewBooleanVariable());
           out_encoding[s.front()] = Literal(var, true);
           out_encoding[s.back()] = Literal(var, false);
         } else if (s.size() > 1) {
-          // Enforce at most one constraint?
           for (const IntegerValue state : s) {
-            out_encoding[state] =
-                Literal(model->Add(NewBooleanVariable()), true);
+            const Literal l = Literal(model->Add(NewBooleanVariable()), true);
+            out_encoding[state] = l;
+            state_literals.push_back(l);
           }
+          model->Add(ExactlyOneConstraint(state_literals));
         }
       }
 

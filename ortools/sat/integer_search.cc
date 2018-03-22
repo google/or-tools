@@ -93,6 +93,53 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
   };
 }
 
+std::function<LiteralIndex()> FollowHint(
+    const std::vector<BooleanOrIntegerVariable>& vars,
+    const std::vector<IntegerValue>& values, Model* model) {
+  const Trail* trail = model->GetOrCreate<Trail>();
+  const IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  return [=] {  // copy
+    for (int i = 0; i < vars.size(); ++i) {
+      const IntegerValue value = values[i];
+      if (vars[i].bool_var != kNoBooleanVariable) {
+        if (trail->Assignment().VariableIsAssigned(vars[i].bool_var)) {
+          continue;
+        }
+        return Literal(vars[i].bool_var, value == 1).Index();
+      } else {
+        const IntegerVariable integer_var = vars[i].int_var;
+        const IntegerValue lb = integer_trail->LowerBound(integer_var);
+        const IntegerValue ub = integer_trail->LowerBound(integer_var);
+        if (lb == ub) continue;
+
+        // We try first (<= value), but if this do not reduce the domain we
+        // try to enqueue (>= value). Note that even for domain with hole,
+        // since we know that this variable is not fixed, one of the two
+        // alternative must reduce the domain.
+        //
+        // TODO(user): De-dup with logic in ExploitIntegerLpSolution.
+        if (value >= lb && value < ub) {
+          const Literal le = encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::LowerOrEqual(integer_var, value));
+          CHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
+          return le.Index();
+        }
+        if (value > lb && value <= ub) {
+          const Literal ge = encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::GreaterOrEqual(integer_var, value));
+          CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
+          return ge.Index();
+        }
+
+        // If the value is outside the current possible domain, we skip it.
+        continue;
+      }
+    }
+    return kNoLiteralIndex;
+  };
+}
+
 std::function<LiteralIndex()> ExploitIntegerLpSolution(
     std::function<LiteralIndex()> heuristic, Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
@@ -225,11 +272,9 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
       break;
     case SatParameters::FIXED_SEARCH: {
       CHECK(assumptions.empty()) << "Not supported yet";
-      // Note that it is important to do the level-zero propagation if it wasn't
-      // already done because EnqueueDecisionAndBackjumpOnConflict() assumes
-      // that the solver is in a "propagated" state.
-      if (!solver->Propagate()) return SatSolver::MODEL_UNSAT;
-      break;
+      auto no_restart = []() { return false; };
+      return SolveProblemWithPortfolioSearch({next_decision}, {no_restart},
+                                             model);
     }
     case SatParameters::PORTFOLIO_SEARCH: {
       CHECK(assumptions.empty()) << "Not supported yet";
@@ -268,7 +313,8 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     }
   }
 
-  if (parameters.exploit_integer_lp_solution() && assumptions.empty()) {
+  if (parameters.exploit_integer_lp_solution() && assumptions.empty() &&
+      parameters.search_branching() != SatParameters::FIXED_SEARCH) {
     return SolveProblemWithPortfolioSearch(
         {ExploitIntegerLpSolution(
             SequentialSearch({SatSolverHeuristic(model), next_decision}),
@@ -278,19 +324,17 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
 
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
   while (!time_limit->LimitReached()) {
-    // If we are not in fixed search, let the SAT solver do a full search to
-    // instantiate all the already created Booleans.
-    if (parameters.search_branching() == SatParameters::AUTOMATIC_SEARCH) {
-      if (assumptions.empty()) {
-        const SatSolver::Status status = solver->Solve();
-        if (status != SatSolver::MODEL_SAT) return status;
-      } else {
-        // TODO(user): We actually don't want to reset the solver from one
-        // loop to the next as it is less efficient.
-        const SatSolver::Status status =
-            solver->ResetAndSolveWithGivenAssumptions(assumptions);
-        if (status != SatSolver::MODEL_SAT) return status;
-      }
+    // Let the SAT solver do a full search to instantiate all the already
+    // created Booleans.
+    if (assumptions.empty()) {
+      const SatSolver::Status status = solver->Solve();
+      if (status != SatSolver::MODEL_SAT) return status;
+    } else {
+      // TODO(user): We actually don't want to reset the solver from one
+      // loop to the next as it is less efficient.
+      const SatSolver::Status status =
+          solver->ResetAndSolveWithGivenAssumptions(assumptions);
+      if (status != SatSolver::MODEL_SAT) return status;
     }
 
     // Look for the "best" non-instantiated integer variable.
@@ -348,7 +392,11 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
   // Main search loop.
   int policy_index = 0;
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
-  while (!time_limit->LimitReached()) {
+  const int64 old_num_conflicts = solver->num_failures();
+  const int64 conflict_limit =
+      model->GetOrCreate<SatParameters>()->max_number_of_conflicts();
+  while (!time_limit->LimitReached() &&
+         (solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
     if (restart_policies[policy_index]()) {
       solver->Backtrack(0);

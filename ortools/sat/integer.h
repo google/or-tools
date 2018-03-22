@@ -1125,6 +1125,13 @@ inline std::function<void(Model*)> ImpliesInInterval(Literal in_interval,
                                                      IntegerVariable v,
                                                      int64 lb, int64 ub) {
   return [=](Model* model) {
+    if (lb == ub) {
+      IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+      model->Add(Implication(in_interval,
+                             encoder->GetOrCreateLiteralAssociatedToEquality(
+                                 v, IntegerValue(lb))));
+      return;
+    }
     model->Add(Implication(
         in_interval, IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb))));
     model->Add(Implication(in_interval,

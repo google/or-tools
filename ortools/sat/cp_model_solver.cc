@@ -2396,6 +2396,47 @@ CpSolverResponse SolveCpModelInternal(
   // Solve.
   int num_solutions = 0;
   SatSolver::Status status;
+
+  // Load solution hint.
+  // We follow it and allow for a tiny number of conflicts before giving up.
+  //
+  // TODO(user): Double check that when this get a feasible solution, it is
+  // properly used in the various optimization algorithm. some of them will
+  // reset the solver to its initial state, but then with phase saving it
+  // should still follow the same path again.
+  if (model_proto.has_solution_hint()) {
+    VLOG(0) << "Loading solution hint ... ";
+    const int64 old_conflict_limit = parameters.max_number_of_conflicts();
+    model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(10);
+    std::vector<BooleanOrIntegerVariable> vars;
+    std::vector<IntegerValue> values;
+    for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+      const int ref = model_proto.solution_hint().vars(i);
+      CHECK(RefIsPositive(ref));
+      BooleanOrIntegerVariable var;
+      if (m.IsBoolean(ref)) {
+        var.bool_var = m.Boolean(ref);
+      } else {
+        var.int_var = m.Integer(ref);
+      }
+      vars.push_back(var);
+      values.push_back(IntegerValue(model_proto.solution_hint().values(i)));
+    }
+    std::vector<std::function<LiteralIndex()>> decision_policies = {
+        SequentialSearch({FollowHint(vars, values, model),
+                          SatSolverHeuristic(model), next_decision})};
+    auto no_restart = []() { return false; };
+    status =
+        SolveProblemWithPortfolioSearch(decision_policies, {no_restart}, model);
+    if (status == SatSolver::Status::MODEL_SAT) {
+      VLOG(0) << "Solution hint: success, feasible solution found.";
+    } else {
+      VLOG(0) << "Solution: failure, no feasible solution found.";
+    }
+    model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(
+        old_conflict_limit);
+  }
+
   if (!model_proto.has_objective()) {
     while (true) {
       status = SolveIntegerProblemWithLazyEncoding(
@@ -2713,7 +2754,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Special case for pure-sat problem.
   // TODO(user): improve the normal presolver to do the same thing.
-  if (!model_proto.has_objective() &&
+  // TODO(user): Support solution hint, but then the first TODO will make it
+  // automatic.
+  if (!model_proto.has_objective() && !model_proto.has_solution_hint() &&
       !model->GetOrCreate<SatParameters>()->enumerate_all_solutions()) {
     bool is_pure_sat = true;
     for (const ConstraintProto& ct : model_proto.constraints()) {
