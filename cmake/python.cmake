@@ -153,7 +153,7 @@ function(search_python_module MODULE_NAME)
 	else()
 		message(WARNING "Can't find python module \"${MODULE_NAME}\", install it using pip...")
 		execute_process(
-			COMMAND ${PYTHON_EXECUTABLE} -m pip install ${MODULE_NAME}
+			COMMAND ${PYTHON_EXECUTABLE} -m pip install --user ${MODULE_NAME}
 			OUTPUT_STRIP_TRAILING_WHITESPACE
 			)
 	endif()
