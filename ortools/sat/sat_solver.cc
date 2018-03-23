@@ -465,24 +465,51 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   return last_decision_or_backtrack_trail_index_;
 }
 
-void SatSolver::RestoreSolverToAssumptionLevel() {
-  CHECK(!is_model_unsat_);
+bool SatSolver::RestoreSolverToAssumptionLevel() {
+  if (is_model_unsat_) return false;
   if (CurrentDecisionLevel() > assumption_level_) {
     Backtrack(assumption_level_);
-  } else {
-    // Finish current propagation.
-    while (!PropagateAndStopAfterOneConflictResolution()) {
-      if (is_model_unsat_) break;
-    }
-    // Reapply any assumption that was backtracked over.
-    if (CurrentDecisionLevel() < assumption_level_) {
-      int unused = 0;
-      const int64 old_num_branches = counters_.num_branches;
-      ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
-      counters_.num_branches = old_num_branches;
-      assumption_level_ = CurrentDecisionLevel();
-    }
+    return true;
   }
+  if (!FinishPropagation()) return false;
+  return ReapplyAssumptionsIfNeeded();
+}
+
+bool SatSolver::FinishPropagation() {
+  if (is_model_unsat_) return false;
+  while (!PropagateAndStopAfterOneConflictResolution()) {
+    if (is_model_unsat_) return false;
+  }
+  return true;
+}
+
+bool SatSolver::ResetWithGivenAssumptions(
+    const std::vector<Literal>& assumptions) {
+  if (is_model_unsat_) return false;
+  assumption_level_ = 0;
+  Backtrack(0);
+  if (!FinishPropagation()) {
+    return false;
+  }
+  assumption_level_ = assumptions.size();
+  for (int i = 0; i < assumptions.size(); ++i) {
+    decisions_[i].literal = assumptions[i];
+  }
+  return ReapplyAssumptionsIfNeeded();
+}
+
+// Note that we do not count these as "branches" for a reporting purpose.
+bool SatSolver::ReapplyAssumptionsIfNeeded() {
+  if (is_model_unsat_) return false;
+  if (CurrentDecisionLevel() >= assumption_level_) return true;
+
+  int unused = 0;
+  const int64 old_num_branches = counters_.num_branches;
+  const SatSolver::Status status =
+      ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
+  counters_.num_branches = old_num_branches;
+  assumption_level_ = CurrentDecisionLevel();
+  return (status == SatSolver::MODEL_SAT);
 }
 
 bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
@@ -854,13 +881,7 @@ int NextMultipleOf(int64 value, int64 interval) {
 SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
     const std::vector<Literal>& assumptions) {
   SCOPED_TIME_STAT(&stats_);
-  if (is_model_unsat_) return MODEL_UNSAT;
-  CHECK_LE(assumptions.size(), num_variables_);
-  Backtrack(0);
-  assumption_level_ = assumptions.size();
-  for (int i = 0; i < assumptions.size(); ++i) {
-    decisions_[i].literal = assumptions[i];
-  }
+  if (!ResetWithGivenAssumptions(assumptions)) return UnsatStatus();
   return SolveInternal(time_limit_);
 }
 
@@ -1108,16 +1129,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
       if (is_model_unsat_) return StatusWithLog(MODEL_UNSAT);
     } else {
       // We need to reapply any assumptions that are not currently applied.
-      // Note that we do not count these as "branches" for a reporting purpose.
-      if (CurrentDecisionLevel() < assumption_level_) {
-        int unused = 0;
-        const int64 old_num_branches = counters_.num_branches;
-        const Status status =
-            ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
-        counters_.num_branches = old_num_branches;
-        if (status != MODEL_SAT) return StatusWithLog(status);
-        assumption_level_ = CurrentDecisionLevel();
-      }
+      if (!ReapplyAssumptionsIfNeeded()) return StatusWithLog(UnsatStatus());
 
       // At a leaf?
       if (trail_->Index() == num_variables_.value()) {

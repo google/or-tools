@@ -78,10 +78,6 @@ std::function<LiteralIndex()> SequentialSearch(
   };
 }
 
-std::function<LiteralIndex()> NullSearch() {
-  return []() { return kNoLiteralIndex; };
-}
-
 std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   Trail* trail = model->GetOrCreate<Trail>();
@@ -262,22 +258,29 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     const std::vector<Literal>& assumptions,
     const std::function<LiteralIndex()>& next_decision, Model* model) {
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
-  if (solver->IsModelUnsat()) return SatSolver::MODEL_UNSAT;
-  solver->Backtrack(0);
-  solver->SetAssumptionLevel(0);
-
+  if (!solver->ResetWithGivenAssumptions(assumptions)) {
+    return solver->UnsatStatus();
+  }
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   switch (parameters.search_branching()) {
-    case SatParameters::AUTOMATIC_SEARCH:
-      break;
+    case SatParameters::AUTOMATIC_SEARCH: {
+      if (parameters.exploit_integer_lp_solution()) {
+        return SolveProblemWithPortfolioSearch(
+            {ExploitIntegerLpSolution(
+                SequentialSearch({SatSolverHeuristic(model), next_decision}),
+                model)},
+            {SatSolverRestartPolicy(model)}, model);
+      }
+      return SolveProblemWithPortfolioSearch(
+          {SequentialSearch({SatSolverHeuristic(model), next_decision})},
+          {SatSolverRestartPolicy(model)}, model);
+    }
     case SatParameters::FIXED_SEARCH: {
-      CHECK(assumptions.empty()) << "Not supported yet";
       auto no_restart = []() { return false; };
       return SolveProblemWithPortfolioSearch({next_decision}, {no_restart},
                                              model);
     }
     case SatParameters::PORTFOLIO_SEARCH: {
-      CHECK(assumptions.empty()) << "Not supported yet";
       auto incomplete_portfolio = AddModelHeuristics({next_decision}, model);
       auto portfolio = CompleteHeuristics(
           incomplete_portfolio,
@@ -294,7 +297,6 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
                                              model);
     }
     case SatParameters::LP_SEARCH: {
-      CHECK(assumptions.empty()) << "Not supported yet";
       // Fill portfolio with pseudocost heuristics.
       std::vector<std::function<LiteralIndex()>> lp_heuristics;
       for (const auto& ct :
@@ -312,43 +314,7 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
                                              model);
     }
   }
-
-  if (parameters.exploit_integer_lp_solution() && assumptions.empty() &&
-      parameters.search_branching() != SatParameters::FIXED_SEARCH) {
-    return SolveProblemWithPortfolioSearch(
-        {ExploitIntegerLpSolution(
-            SequentialSearch({SatSolverHeuristic(model), next_decision}),
-            model)},
-        {SatSolverRestartPolicy(model)}, model);
-  }
-
-  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
-  while (!time_limit->LimitReached()) {
-    // Let the SAT solver do a full search to instantiate all the already
-    // created Booleans.
-    if (assumptions.empty()) {
-      const SatSolver::Status status = solver->Solve();
-      if (status != SatSolver::MODEL_SAT) return status;
-    } else {
-      // TODO(user): We actually don't want to reset the solver from one
-      // loop to the next as it is less efficient.
-      const SatSolver::Status status =
-          solver->ResetAndSolveWithGivenAssumptions(assumptions);
-      if (status != SatSolver::MODEL_SAT) return status;
-    }
-
-    // Look for the "best" non-instantiated integer variable.
-    // If all variables are instantiated, we have a solution.
-    const LiteralIndex decision =
-        next_decision == nullptr ? kNoLiteralIndex : next_decision();
-    if (decision == kNoLiteralIndex) return SatSolver::MODEL_SAT;
-
-    // Always try to Enqueue this literal as the next decision so we bypass
-    // any default polarity heuristic the solver may use on this literal.
-    solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
-    if (solver->IsModelUnsat()) return SatSolver::MODEL_UNSAT;
-  }
-  return SatSolver::Status::LIMIT_REACHED;
+  return SatSolver::LIMIT_REACHED;
 }
 
 std::vector<std::function<LiteralIndex()>> AddModelHeuristics(
@@ -358,7 +324,6 @@ std::vector<std::function<LiteralIndex()>> AddModelHeuristics(
   auto* extra_heuristics = model->GetOrCreate<SearchHeuristicsVector>();
   heuristics.insert(heuristics.end(), extra_heuristics->begin(),
                     extra_heuristics->end());
-  heuristics.push_back(NullSearch());
   return heuristics;
 }
 
@@ -378,16 +343,14 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     std::vector<std::function<LiteralIndex()>> decision_policies,
     std::vector<std::function<bool()>> restart_policies, Model* model) {
   const int num_policies = decision_policies.size();
+  if (num_policies == 0) return SatSolver::MODEL_SAT;
   CHECK_EQ(num_policies, restart_policies.size());
-  CHECK_GT(num_policies, 0);
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
-  if (solver->IsModelUnsat()) return SatSolver::MODEL_UNSAT;
-  solver->Backtrack(0);
 
   // Note that it is important to do the level-zero propagation if it wasn't
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
   // the solver is in a "propagated" state.
-  if (!solver->Propagate()) return SatSolver::MODEL_UNSAT;
+  if (!solver->FinishPropagation()) return solver->UnsatStatus();
 
   // Main search loop.
   int policy_index = 0;
@@ -399,8 +362,9 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
          (solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
     if (restart_policies[policy_index]()) {
-      solver->Backtrack(0);
-      if (!solver->Propagate()) return SatSolver::MODEL_UNSAT;
+      if (!solver->RestoreSolverToAssumptionLevel()) {
+        return solver->UnsatStatus();
+      }
       policy_index = (policy_index + 1) % num_policies;
     }
 
@@ -408,9 +372,11 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     const LiteralIndex decision = decision_policies[policy_index]();
     if (decision == kNoLiteralIndex) return SatSolver::MODEL_SAT;
 
+    // TODO(user): on some problems, this function can be quite long. Expand
+    // so that we can check the time limit at each step?
     solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
     solver->AdvanceDeterministicTime(time_limit);
-    if (solver->IsModelUnsat()) return SatSolver::MODEL_UNSAT;
+    if (!solver->ReapplyAssumptionsIfNeeded()) return solver->UnsatStatus();
   }
   return SatSolver::Status::LIMIT_REACHED;
 }

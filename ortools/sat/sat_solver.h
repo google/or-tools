@@ -277,8 +277,30 @@ class SatSolver {
   // or re-enqueue any assumptions that may have been backtracked over due to
   // conflits resolution. In both cases, the propagation is finished.
   //
-  // Note that this may prove the model to be UNSAT (check IsModelUnsat()).
-  void RestoreSolverToAssumptionLevel();
+  // Note that this may prove the model to be UNSAT or ASSUMPTION_UNSAT in which
+  // case it will return false.
+  bool RestoreSolverToAssumptionLevel();
+
+  // Advanced usage. Finish the progation if it was interupted. Note that this
+  // might run into conflict and will propagate again until a fixed point is
+  // reached or the model was proven UNSAT. Returns IsModelUnsat().
+  bool FinishPropagation();
+
+  // Changes the assumptions level and the current solver assumptions. Returns
+  // false if the model is UNSAT or ASSUMPTION_UNSAT, true otherwise.
+  bool ResetWithGivenAssumptions(const std::vector<Literal>& assumptions);
+
+  // Advanced usage. If the decision level is smaller than the assumption level,
+  // this will try to reapply all assumptions. Returns true if this was doable,
+  // otherwise returns false in which case the model is either UNSAT or
+  // ASSUMPTION_UNSAT.
+  bool ReapplyAssumptionsIfNeeded();
+
+  // Helper functions to get the correct status when one of the functions above
+  // returns false.
+  Status UnsatStatus() const {
+    return IsModelUnsat() ? MODEL_UNSAT : ASSUMPTIONS_UNSAT;
+  }
 
   // Extract the current problem clauses. The Output type must support the two
   // functions:

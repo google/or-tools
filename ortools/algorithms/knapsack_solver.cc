@@ -195,7 +195,7 @@ bool KnapsackPropagator::Update(bool revert,
 
 void KnapsackPropagator::CopyCurrentStateToSolution(
     bool has_one_propagator, std::vector<bool>* solution) const {
-  CHECK_NOTNULL(solution);
+  CHECK(solution != nullptr);
   for (const KnapsackItem* const item : items_) {
     const int item_id = item->id;
     (*solution)[item_id] = state_.is_bound(item_id) && state_.is_in(item_id);
@@ -281,7 +281,7 @@ bool KnapsackCapacityPropagator::UpdatePropagator(
 
 void KnapsackCapacityPropagator::CopyCurrentStateToSolutionPropagator(
     std::vector<bool>* solution) const {
-  CHECK_NOTNULL(solution);
+  CHECK(solution != nullptr);
   int64 remaining_capacity = capacity_ - consumed_capacity_;
   for (const KnapsackItem* const item : sorted_items_) {
     if (!state().is_bound(item->id)) {
@@ -369,8 +369,8 @@ void KnapsackGenericSolver::GetLowerAndUpperBoundWhenItem(int item_id,
                                                           bool is_item_in,
                                                           int64* lower_bound,
                                                           int64* upper_bound) {
-  CHECK_NOTNULL(lower_bound);
-  CHECK_NOTNULL(upper_bound);
+  CHECK(lower_bound != nullptr);
+  CHECK(upper_bound != nullptr);
   KnapsackAssignment assignment(item_id, is_item_in);
   const bool fail = !IncrementalUpdate(false, assignment);
   if (fail) {
@@ -1353,8 +1353,8 @@ void BaseKnapsackSolver::GetLowerAndUpperBoundWhenItem(int item_id,
                                                        bool is_item_in,
                                                        int64* lower_bound,
                                                        int64* upper_bound) {
-  CHECK_NOTNULL(lower_bound);
-  CHECK_NOTNULL(upper_bound);
+  CHECK(lower_bound != nullptr);
+  CHECK(upper_bound != nullptr);
   *lower_bound = 0LL;
   *upper_bound = kint64max;
 }

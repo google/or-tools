@@ -276,7 +276,7 @@ inline IntTupleSet::IntTupleSet(const IntTupleSet& set) : data_(set.data_) {
 }
 
 inline IntTupleSet::~IntTupleSet() {
-  CHECK_NOTNULL(data_);
+  CHECK(data_ != nullptr);
   if (data_->RemovedSharedOwner()) {
     delete data_;
   }

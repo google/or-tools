@@ -66,9 +66,6 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model);
 std::function<LiteralIndex()> ExploitIntegerLpSolution(
     std::function<LiteralIndex()> heuristic, Model* model);
 
-// Always returns kNoLiteralIndex. Useful for compositions.
-std::function<LiteralIndex()> NullSearch();
-
 // A restart policy that restarts every k failures.
 std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver);
 
@@ -99,16 +96,16 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     const std::vector<Literal>& assumptions,
     const std::function<LiteralIndex()>& next_decision, Model* model);
 
-// Shortcut for SolveIntegerProblemWithLazyEncoding() when there is no
-// assumption and we consider all variables in their index order for the next
-// search decision.
-SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
-
 // Solves a problem with the given heuristics.
 // heuristics[i] will be used with restart_policies[i] only.
 SatSolver::Status SolveProblemWithPortfolioSearch(
     std::vector<std::function<LiteralIndex()>> decision_policies,
     std::vector<std::function<bool()>> restart_policies, Model* model);
+
+// Shortcut for SolveIntegerProblemWithLazyEncoding() when there is no
+// assumption and we consider all variables in their index order for the next
+// search decision.
+SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 
 }  // namespace sat
 }  // namespace operations_research
