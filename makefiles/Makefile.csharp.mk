@@ -124,9 +124,9 @@ NETSTANDARD_RUNTIME_IDENTIFIER=
 
 # NuGet specification file name
 ORTOOLS_NUSPEC_NAME := or-tools.nuspec
-ORTOOLS_NUGET_DIR = temp\or-tools
+ORTOOLS_NUGET_DIR = temp$Sor-tools
 FZ_NUSPEC_NAME := fz.nuspec
-FZ_NUGET_DIR = temp\flatzinc
+FZ_NUGET_DIR = temp$Sflatzinc
 # TODO: TBD: add FlatZinc variables...
 
 # Building to DLLs named per-platform
