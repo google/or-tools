@@ -320,7 +320,7 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "# Define UNIX_SCIP_DIR to point to a compiled version of SCIP to use it ">> Makefile.local
-	@echo "#   i.e.: <path>/scipoptsuite-4.0.0/scip-4.0.0" >> Makefile.local
+	@echo "#   i.e.: <path>/scipoptsuite-4.0.1/scip" >> Makefile.local
 	@echo "#   On Mac OS X, compile scip with: " >> Makefile.local
 	@echo "#     make GMP=false READLINE=false TPI=tny" >> Makefile.local
 	@echo "#   On Linux, compile scip with: " >> Makefile.local
