@@ -1,6 +1,6 @@
 open System.Reflection
 
-[<assembly: AssemblyTitle("MMMM")>]
+[<assembly: AssemblyTitle("Google.OrTools.FSharp")>]
 [<assembly: AssemblyDescription(".NET F# Assembly for the Operations Research Tools project")>]
 
 [<assembly: AssemblyConfiguration("")>]
@@ -9,7 +9,7 @@ open System.Reflection
 [<assembly: AssemblyCopyright("Copyright © 2018")>]
 [<assembly: AssemblyTrademark("")>]
 
-[<assembly: AssemblyVersion("VVVV")>]
-[<assembly: AssemblyFileVersion("VVVV")>]
+[<assembly: AssemblyVersion("6.7.4984")>]
+[<assembly: AssemblyFileVersion("6.7.4984")>]
 
 ()
