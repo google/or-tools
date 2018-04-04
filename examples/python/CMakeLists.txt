@@ -9,6 +9,10 @@ foreach(TEST
 		linear_programming
 		pyflow_example
 		tsp
+		vrp
+		vrpgs
+		cvrp
+		cvrptw
 		)
 	add_test(py${TEST}_venv ${VENV_BIN_DIR}/python ${CMAKE_CURRENT_SOURCE_DIR}/${TEST}.py)
 	set_tests_properties(py${TEST}_venv PROPERTIES DEPENDS build_venv)
