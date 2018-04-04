@@ -76,13 +76,13 @@ ifeq ($(SYSTEM),win)
 	"$(FSHARP_EXECUTABLE)" $(FLAG_PREFIX)target:exe $(FLAG_PREFIX)out:bin$Sequality.exe $(FLAG_PREFIX)platform:anycpu $(FLAG_PREFIX)lib:bin examples$Sfsharp$Sequality.fsx
 	bin$Sequality.exe
 else
-	ifneq ($(DOTNET_EXECUTABLE),)
-		"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sfsharp$Stest$Spackages" "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj"
-		"$(DOTNET_EXECUTABLE)" build "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj" -o ".$Sbin"
-		$(FSHARP_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sfsharp$Stest$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sfsharp$Stest$Sbin$S$(FSHARP_ORTOOLS_DLL_NAME).Test.dll"
-	else
-		$(warning Cannot find '$(DOTNET_EXECUTABLE)' command which is needed to run tests. Please make sure it is installed and in system path.)
-	endif
+ifneq ($(DOTNET_EXECUTABLE),)
+	"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sfsharp$Stest$Spackages" "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj"
+	"$(DOTNET_EXECUTABLE)" build "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj" -o ".$Sbin"
+	$(FSHARP_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sfsharp$Stest$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sfsharp$Stest$Sbin$S$(FSHARP_ORTOOLS_DLL_NAME).Test.dll"
+else
+	$(warning Cannot find 'dotnet' command which is needed to run tests. Please make sure it is installed and in system path.)
+endif
 endif
 
 .PHONY: clean_fsharp # Clean F# output from previous build.
