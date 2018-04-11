@@ -258,7 +258,7 @@ void ParseAndSolve() {
     entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
     for (const std::string& entry : entries) {
       numbers.push_back(0);
-      safe_strto32(entry, &numbers.back());
+      strings::safe_strto32(entry, &numbers.back());
     }
   }
 

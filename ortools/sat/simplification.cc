@@ -269,7 +269,7 @@ void SatPresolver::LoadProblemIntoSatSolver(SatSolver* solver) {
       temp.push_back(Literal(mapping[l.Variable()], l.IsPositive()));
     }
     if (!temp.empty()) solver->AddProblemClause(temp);
-    STLClearObject(&clause_ref);
+    gtl::STLClearObject(&clause_ref);
   }
 }
 
@@ -589,7 +589,7 @@ void SatPresolver::RemoveAndRegisterForPostsolveAllClauseContaining(Literal x) {
   for (ClauseIndex i : literal_to_clauses_[x.Index()]) {
     if (!clauses_[i].empty()) RemoveAndRegisterForPostsolve(i, x);
   }
-  STLClearObject(&literal_to_clauses_[x.Index()]);
+  gtl::STLClearObject(&literal_to_clauses_[x.Index()]);
   literal_to_clause_sizes_[x.Index()] = 0;
 }
 
@@ -693,7 +693,7 @@ void SatPresolver::Remove(ClauseIndex ci) {
   if (drat_writer_ != nullptr) {
     drat_writer_->DeleteClause(clauses_[ci]);
   }
-  STLClearObject(&clauses_[ci]);
+  gtl::STLClearObject(&clauses_[ci]);
 }
 
 void SatPresolver::RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x) {

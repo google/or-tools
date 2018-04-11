@@ -67,8 +67,8 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
 
     // Tricky: For self-arc, we watch instead when the arc become false.
     const Literal watched_literal = tail == head ? literal.Negated() : literal;
-    int watch_index =
-        FindWithDefault(literal_to_watch_index, watched_literal.Index(), -1);
+    int watch_index = gtl::FindWithDefault(literal_to_watch_index,
+                                           watched_literal.Index(), -1);
     if (watch_index == -1) {
       watch_index = watch_index_to_literal_.size();
       literal_to_watch_index[watched_literal.Index()] = watch_index;

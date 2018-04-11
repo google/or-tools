@@ -383,19 +383,19 @@ void SequenceVarElement::SetUnperformed(const std::vector<int>& unperformed) {
 bool SequenceVarElement::CheckClassInvariants() {
   std::unordered_set<int> visited;
   for (const int forward_sequence : forward_sequence_) {
-    if (ContainsKey(visited, forward_sequence)) {
+    if (gtl::ContainsKey(visited, forward_sequence)) {
       return false;
     }
     visited.insert(forward_sequence);
   }
   for (const int backward_sequence : backward_sequence_) {
-    if (ContainsKey(visited, backward_sequence)) {
+    if (gtl::ContainsKey(visited, backward_sequence)) {
       return false;
     }
     visited.insert(backward_sequence);
   }
   for (const int unperformed : unperformed_) {
-    if (ContainsKey(visited, unperformed)) {
+    if (gtl::ContainsKey(visited, unperformed)) {
       return false;
     }
     visited.insert(unperformed);
@@ -455,7 +455,7 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
     if (name.empty()) {
       LOG(INFO) << "Cannot save/load variables with empty name"
                 << "; variable will be ignored";
-    } else if (ContainsKey(*id_to_element_map, name)) {
+    } else if (gtl::ContainsKey(*id_to_element_map, name)) {
       LOG(INFO) << "Cannot save/load variables with duplicate names: " << name
                 << "; variable will be ignored";
     } else {
@@ -470,7 +470,7 @@ void LoadElement(const std::unordered_map<std::string, E*>& id_to_element_map,
   const std::string& var_id = proto.var_id();
   CHECK(!var_id.empty());
   E* element = nullptr;
-  if (FindCopy(id_to_element_map, var_id, &element)) {
+  if (gtl::FindCopy(id_to_element_map, var_id, &element)) {
     element->LoadFromProto(proto);
   } else {
     LOG(INFO) << "Variable " << var_id

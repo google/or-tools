@@ -36,12 +36,13 @@ TimeTablingPerTask::TimeTablingPerTask(
   // the profile is shaped like the Hanoi tower. The additional space is for
   // both extremities and the sentinels.
   profile_.reserve(2 * num_tasks_ + 4);
-  scp_.reserve(num_tasks_);
-  ecp_.reserve(num_tasks_);
 
   // Reversible set of tasks to consider for propagation.
-  num_tasks_to_sweep_ = num_tasks_;
-  tasks_to_sweep_.resize(num_tasks_);
+  forward_num_tasks_to_sweep_ = num_tasks_;
+  forward_tasks_to_sweep_.resize(num_tasks_);
+  backward_num_tasks_to_sweep_ = num_tasks_;
+  backward_tasks_to_sweep_.resize(num_tasks_);
+
   num_active_tasks_ = num_tasks_;
   active_tasks_.resize(num_tasks_);
   num_profile_tasks_ = 0;
@@ -60,7 +61,8 @@ TimeTablingPerTask::TimeTablingPerTask(
   by_end_min_.resize(num_tasks_);
 
   for (int t = 0; t < num_tasks_; ++t) {
-    tasks_to_sweep_[t] = t;
+    forward_tasks_to_sweep_[t] = t;
+    backward_tasks_to_sweep_[t] = t;
     active_tasks_[t] = t;
     profile_tasks_[t] = t;
     positions_in_profile_tasks_[t] = t;
@@ -86,7 +88,8 @@ bool TimeTablingPerTask::Propagate() {
   // if (num_tasks_to_sweep_ == 0) return true;
 
   // Save the current state of the set of tasks.
-  rev_repository_int_.SaveState(&num_tasks_to_sweep_);
+  rev_repository_int_.SaveState(&forward_num_tasks_to_sweep_);
+  rev_repository_int_.SaveState(&backward_num_tasks_to_sweep_);
   rev_repository_int_.SaveState(&num_active_tasks_);
   rev_repository_int_.SaveState(&num_profile_tasks_);
 
@@ -97,11 +100,11 @@ bool TimeTablingPerTask::Propagate() {
     // This can fail if the profile exceeds the resource capacity.
     if (!BuildProfile()) return false;
     // Update the minimum start times.
-    if (!SweepAllTasks()) return false;
+    if (!SweepAllTasks(/*is_forward=*/true)) return false;
     // We reuse the same profile, but reversed, to update the maximum end times.
     ReverseProfile();
     // Update the maximum end times (reversed problem).
-    if (!SweepAllTasks()) return false;
+    if (!SweepAllTasks(/*is_forward=*/false)) return false;
   }
 
   // Reduce the profile now that we know that it is stable.
@@ -138,13 +141,6 @@ bool TimeTablingPerTask::BuildProfile() {
   // Likely to be already or almost sorted.
   IncrementalSort(by_start_max_.begin() + left_start_,
                   by_start_max_.begin() + right_start_);
-  // Build start of compulsory part events.
-  scp_.clear();
-  for (int i = left_start_; i < right_start_; ++i) {
-    if (IsInProfile(by_start_max_[i].task_index)) {
-      scp_.push_back(by_start_max_[i]);
-    }
-  }
 
   // Update end value of active tasks.
   for (int i = left_end_; i < right_end_; ++i) {
@@ -153,13 +149,6 @@ bool TimeTablingPerTask::BuildProfile() {
   // Likely to be already or almost sorted.
   IncrementalSort(by_end_min_.begin() + left_end_,
                   by_end_min_.begin() + right_end_);
-  // Build end of compulsory part events.
-  ecp_.clear();
-  for (int i = left_end_; i < right_end_; ++i) {
-    if (IsInProfile(by_end_min_[i].task_index)) {
-      ecp_.push_back(by_end_min_[i]);
-    }
-  }
 
   // Build the profile.
   // ------------------
@@ -170,41 +159,41 @@ bool TimeTablingPerTask::BuildProfile() {
   IntegerValue max_height_start = kMinIntegerValue;
 
   // Add a sentinel to simplify the algorithm.
-  profile_.push_back(
-      ProfileRectangle(kMinIntegerValue, kMinIntegerValue, IntegerValue(0)));
+  profile_.emplace_back(kMinIntegerValue, IntegerValue(0));
 
   // Start and height of the currently built profile rectange.
   IntegerValue current_start = kMinIntegerValue;
   IntegerValue current_height = starting_profile_height_;
 
-  // Next scp and ecp events to be processed.
-  int next_scp = 0;
-  int next_ecp = 0;
-
-  while (next_ecp < ecp_.size()) {
+  // Next start/end of the compulsory parts to be processed. Note that only the
+  // task for which IsInProfile() is true must be considered.
+  int next_start = left_start_;
+  int next_end = left_end_;
+  while (next_end < right_end_) {
     const IntegerValue old_height = current_height;
 
-    // Next time point.
-    IntegerValue t = ecp_[next_ecp].time;
-    if (next_scp < scp_.size()) {
-      t = std::min(t, scp_[next_scp].time);
+    IntegerValue t = by_end_min_[next_end].time;
+    if (next_start < right_start_) {
+      t = std::min(t, by_start_max_[next_start].time);
     }
 
     // Process the starting compulsory parts.
-    while (next_scp < scp_.size() && scp_[next_scp].time == t) {
-      current_height += DemandMin(scp_[next_scp].task_index);
-      next_scp++;
+    while (next_start < right_start_ && by_start_max_[next_start].time == t) {
+      const int task_index = by_start_max_[next_start].task_index;
+      if (IsInProfile(task_index)) current_height += DemandMin(task_index);
+      ++next_start;
     }
 
     // Process the ending compulsory parts.
-    while (next_ecp < ecp_.size() && ecp_[next_ecp].time == t) {
-      current_height -= DemandMin(ecp_[next_ecp].task_index);
-      next_ecp++;
+    while (next_end < right_end_ && by_end_min_[next_end].time == t) {
+      const int task_index = by_end_min_[next_end].task_index;
+      if (IsInProfile(task_index)) current_height -= DemandMin(task_index);
+      ++next_end;
     }
 
     // Insert a new profile rectangle if any.
     if (current_height != old_height) {
-      profile_.push_back(ProfileRectangle(current_start, t, old_height));
+      profile_.emplace_back(current_start, old_height);
       if (current_height > profile_max_height_) {
         profile_max_height_ = current_height;
         max_height_start = t;
@@ -212,14 +201,13 @@ bool TimeTablingPerTask::BuildProfile() {
       current_start = t;
     }
   }
+
   // Build the last profile rectangle.
   DCHECK_GE(current_height, 0);
-  profile_.push_back(
-      ProfileRectangle(current_start, kMaxIntegerValue, IntegerValue(0)));
+  profile_.emplace_back(current_start, IntegerValue(0));
 
   // Add a sentinel to simplify the algorithm.
-  profile_.push_back(
-      ProfileRectangle(kMaxIntegerValue, kMaxIntegerValue, IntegerValue(0)));
+  profile_.emplace_back(kMaxIntegerValue, IntegerValue(0));
 
   // Increase the capacity variable if required.
   return IncreaseCapacity(max_height_start, profile_max_height_);
@@ -288,61 +276,56 @@ void TimeTablingPerTask::ReduceProfile() {
 
 void TimeTablingPerTask::ReverseProfile() {
   helper_->SetTimeDirection(false);  // backward
-  // Do not swap sentinels.
-  int left = 1;
-  int right = profile_.size() - 2;
-  // Swap and reverse profile rectangles.
-  while (left < right) {
-    IntegerValue tmp = profile_[left].start;
-    profile_[left].start = -profile_[right].end;
-    profile_[right].end = -tmp;
 
-    tmp = profile_[left].end;
-    profile_[left].end = -profile_[right].start;
-    profile_[right].start = -tmp;
-
-    std::swap(profile_[left].height, profile_[right].height);
-
-    left++;
-    right--;
+  // We keep the sentinels inchanged.
+  for (int i = 1; i + 1 < profile_.size(); ++i) {
+    profile_[i].start = -profile_[i + 1].start;
   }
-  // Reverse the profile rectangle in the middle if any.
-  if (left == right) {
-    const IntegerValue tmp = profile_[left].start;
-    profile_[left].start = -profile_[left].end;
-    profile_[left].end = -tmp;
-  }
+  std::reverse(profile_.begin() + 1, profile_.end() - 1);
 }
 
-bool TimeTablingPerTask::SweepAllTasks() {
+bool TimeTablingPerTask::SweepAllTasks(bool is_forward) {
   // Tasks with a lower or equal demand will not be pushed.
-  const IntegerValue min_demand = CapSub(CapacityMax(), profile_max_height_);
+  const IntegerValue demand_threshold =
+      CapSub(CapacityMax(), profile_max_height_);
 
-  for (int i = num_tasks_to_sweep_ - 1; i >= 0; --i) {
-    const int t = tasks_to_sweep_[i];
-    const bool fixed_start = helper_->StartMin(t) == helper_->StartMax(t);
-    const bool fixed_end = helper_->EndMin(t) == helper_->EndMax(t);
-    // A task does not have to be considered for propagation in the rest of the
-    // sub-tree if it is absent or if it is present and respects one of these
-    // conditions:
-    // - its start and end variables are fixed;
-    // - it has a maximum duration of 0;
-    // - it has a maximum demand of 0;
+  // Select the correct members depending on the direction.
+  int& num_tasks =
+      is_forward ? forward_num_tasks_to_sweep_ : backward_num_tasks_to_sweep_;
+  std::vector<int>& tasks =
+      is_forward ? forward_tasks_to_sweep_ : backward_tasks_to_sweep_;
+
+  // TODO(user): On some problem, a big chunk of the time is spend just checking
+  // these conditions below because it requires indirect memory access to fetch
+  // the demand/duration/presence/start ...
+  for (int i = num_tasks - 1; i >= 0; --i) {
+    const int t = tasks[i];
     if (helper_->IsAbsent(t) ||
-        (helper_->IsPresent(t) &&
-         ((fixed_start && fixed_end) || helper_->DurationMax(t) == 0 ||
-          DemandMax(t) == 0))) {
-      // Remove the task from the set of tasks to sweep.
-      std::swap(tasks_to_sweep_[i], tasks_to_sweep_[--num_tasks_to_sweep_]);
+        (helper_->IsPresent(t) && helper_->StartIsFixed(t))) {
+      // This tasks does not have to be considered for propagation in the rest
+      // of the sub-tree. Note that StartIsFixed() depends on the time
+      // direction, it is why we use two lists.
+      std::swap(tasks[i], tasks[--num_tasks]);
       continue;
     }
-    // A task does not have to be considered for propagation in this particular
-    // iteration if it respects one of these conditions:
-    // - it is present and its start variable is fixed;
-    // - its minimum demand cannot lead to a resource overload;
-    // - its minimum duration is 0.
-    if ((helper_->IsPresent(t) && fixed_start) || DemandMin(t) <= min_demand ||
-        helper_->DurationMin(t) == 0) {
+
+    // Skip if demand is too low.
+    if (DemandMin(t) <= demand_threshold) {
+      if (DemandMax(t) == 0) {
+        // We can ignore this task for the rest of the subtree like above.
+        std::swap(tasks[i], tasks[--num_tasks]);
+      }
+
+      // This task does not have to be considered for propagation in this
+      // particular iteration, but maybe it does later.
+      continue;
+    }
+
+    // Skip if duration is zero.
+    if (helper_->DurationMin(t) == 0) {
+      if (helper_->DurationMax(t) == 0) {
+        std::swap(tasks[i], tasks[--num_tasks]);
+      }
       continue;
     }
 
@@ -361,10 +344,16 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
   IntegerValue new_start_min = initial_start_min;
   IntegerValue new_end_min = initial_end_min;
 
-  // Find the profile rectangle that overlpas the minimum start time of task_id.
+  // Find the profile rectangle that overlaps the minimum start time of task_id.
   // The sentinel prevents out of bound exceptions.
-  int rec_id = 1;
-  while (profile_[rec_id].end <= new_start_min) rec_id++;
+  DCHECK(is_sorted(profile_.begin(), profile_.end()));
+  int rec_id =
+      std::upper_bound(profile_.begin(), profile_.end(), new_start_min,
+                       [&](IntegerValue value, const ProfileRectangle& rect) {
+                         return value < rect.start;
+                       }) -
+      profile_.begin();
+  --rec_id;
 
   // A profile rectangle is in conflict with the task if its height exceeds
   // conflict_height.
@@ -388,7 +377,8 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
   // take care of rebuilding the profile with these possible changes and to
   // propagate again in order to reach the timetabling consistency or to fail if
   // the profile exceeds the resource capacity.
-  for (; profile_[rec_id].start < std::min(start_max, new_end_min); ++rec_id) {
+  IntegerValue limit = std::min(start_max, new_end_min);
+  for (; profile_[rec_id].start < limit; ++rec_id) {
     // If the profile rectangle is not conflicting, go to the next rectangle.
     if (profile_[rec_id].height <= conflict_height) continue;
 
@@ -396,12 +386,13 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
 
     // Compute the next minimum start and end times of task_id. The variables
     // are not updated yet.
-    new_start_min = profile_[rec_id].end;
+    new_start_min = profile_[rec_id + 1].start;  // i.e. profile_[rec_id].end
     if (start_max < new_start_min) {
       new_start_min = start_max;
       overload = !IsInProfile(task_id);
     }
     new_end_min = std::max(new_end_min, new_start_min + duration_min);
+    limit = std::min(start_max, new_end_min);
 
     if (profile_[rec_id].start < initial_end_min) {
       last_initial_conflict = std::min(new_start_min, initial_end_min) - 1;
@@ -422,7 +413,7 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
   // the old condition). A solution is to update those vector before calling
   // ReduceProfile() or to ReduceProfile() directly after BuildProfile() in the
   // main loop.
-  profile_changed_ |= true;
+  profile_changed_ = true;
 
   // Explain that the task should be absent or explain the resource overload.
   if (overload) return OverloadOrRemove(task_id, start_max);
@@ -486,7 +477,7 @@ bool TimeTablingPerTask::OverloadOrRemove(int task_id, IntegerValue time) {
 
   AddProfileReason(time, time + 1);
 
-  // We know that task_id was not part of the profile we it was built. We thus
+  // We know that task_id was not part of the profile when it was built. We thus
   // have to add it manualy since it will not be added by AddProfileReason.
   helper_->AddStartMaxReason(task_id, time);
   helper_->AddEndMinReason(task_id, time + 1);

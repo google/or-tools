@@ -52,7 +52,7 @@ std::string Stat::StatString() const {
   return std::string(name_ + ": " + ValueAsString());
 }
 
-StatsGroup::~StatsGroup() { STLDeleteValues(&time_distributions_); }
+StatsGroup::~StatsGroup() { gtl::STLDeleteValues(&time_distributions_); }
 
 void StatsGroup::Register(Stat* stat) { stats_.push_back(stat); }
 

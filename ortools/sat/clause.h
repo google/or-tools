@@ -202,7 +202,7 @@ class LiteralWatchers : public SatPropagator {
   // that some learned clause are kept forever (heuristics) and do not appear
   // here.
   bool IsRemovable(SatClause* const clause) const {
-    return ContainsKey(clauses_info_, clause);
+    return gtl::ContainsKey(clauses_info_, clause);
   }
   int64 num_removable_clauses() const { return clauses_info_.size(); }
   std::unordered_map<SatClause*, ClauseInfo>* mutable_clauses_info() {

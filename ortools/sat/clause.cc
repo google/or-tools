@@ -56,7 +56,7 @@ LiteralWatchers::LiteralWatchers()
       stats_("LiteralWatchers") {}
 
 LiteralWatchers::~LiteralWatchers() {
-  STLDeleteElements(&clauses_);
+  gtl::STLDeleteElements(&clauses_);
   IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
 }
 
@@ -312,7 +312,7 @@ void LiteralWatchers::DeleteDetachedClauses() {
   std::vector<SatClause*>::iterator iter =
       std::stable_partition(clauses_.begin(), clauses_.end(),
                             [](SatClause* a) { return a->IsAttached(); });
-  STLDeleteContainerPointers(iter, clauses_.end());
+  gtl::STLDeleteContainerPointers(iter, clauses_.end());
   clauses_.erase(iter, clauses_.end());
 }
 
@@ -634,8 +634,8 @@ void BinaryImplicationGraph::RemoveFixedVariables(
     for (Literal lit : implications_[true_literal.NegatedIndex()]) {
       is_marked_.Set(lit.NegatedIndex());
     }
-    STLClearObject(&(implications_[true_literal.Index()]));
-    STLClearObject(&(implications_[true_literal.NegatedIndex()]));
+    gtl::STLClearObject(&(implications_[true_literal.Index()]));
+    gtl::STLClearObject(&(implications_[true_literal.NegatedIndex()]));
   }
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
     RemoveIf(&implications_[i], [&assignment](const Literal& lit) {

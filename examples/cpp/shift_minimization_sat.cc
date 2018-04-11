@@ -259,7 +259,7 @@ void LoadAndSolve(const std::string& file_name) {
     }
 
     // Check that we have not already visited this exact set of candidate jobs.
-    if (ContainsKey(visited_job_lists, intersecting_jobs)) continue;
+    if (gtl::ContainsKey(visited_job_lists, intersecting_jobs)) continue;
     visited_job_lists.insert(intersecting_jobs);
 
     // Collect the relevant literals, and regroup them per worker.
@@ -275,7 +275,7 @@ void LoadAndSolve(const std::string& file_name) {
     std::vector<Literal> active_worker_literals;
     for (const auto& it : active_literals_per_workers) {
       Literal active;
-      if (ContainsKey(active_literal_cache, it.second)) {
+      if (gtl::ContainsKey(active_literal_cache, it.second)) {
         active = active_literal_cache[it.second];
         num_reused_literals++;
       } else {

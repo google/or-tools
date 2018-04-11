@@ -117,7 +117,7 @@ class NetworkRoutingData {
 
   // Returns the capacity of an arc, and 0 if the arc is not defined.
   int Capacity(int node1, int node2) const {
-    return FindWithDefault(
+    return gtl::FindWithDefault(
         all_arcs_,
         std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
   }
@@ -125,8 +125,8 @@ class NetworkRoutingData {
   // Returns the demand between the source and the destination, and 0 if
   // there are no demands between the source and the destination.
   int Demand(int source, int destination) const {
-    return FindWithDefault(all_demands_, std::make_pair(source, destination),
-                           0);
+    return gtl::FindWithDefault(all_demands_,
+                                std::make_pair(source, destination), 0);
   }
 
   // External building API.
@@ -636,7 +636,7 @@ class NetworkRoutingSolver {
       for (int i = 0; i < demands; ++i) {
         const OnePath& path = all_paths_[i][Value(i)];
         for (const int arc : arcs_to_release) {
-          if (ContainsKey(path, arc)) {
+          if (gtl::ContainsKey(path, arc)) {
             AppendToFragment(i);
             break;
           }

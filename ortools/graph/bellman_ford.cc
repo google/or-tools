@@ -14,6 +14,7 @@
 
 #include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "ortools/base/integral_types.h"

@@ -106,7 +106,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
 
 // ----- NoGood -----
 
-NoGood::~NoGood() { STLDeleteElements(&terms_); }
+NoGood::~NoGood() { gtl::STLDeleteElements(&terms_); }
 
 void NoGood::AddIntegerVariableEqualValueTerm(IntVar* const var, int64 value) {
   terms_.push_back(new IntegerVariableNoGoodTerm(var, value, true));
@@ -162,7 +162,7 @@ class NaiveNoGoodManager : public NoGoodManager {
   explicit NaiveNoGoodManager(Solver* const solver) : NoGoodManager(solver) {}
   ~NaiveNoGoodManager() override { Clear(); }
 
-  void Clear() override { STLDeleteElements(&nogoods_); }
+  void Clear() override { gtl::STLDeleteElements(&nogoods_); }
 
   void Init() override {}
 

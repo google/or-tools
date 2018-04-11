@@ -46,9 +46,8 @@ std::function<void(Model*)> Disjunctive(
       return;
     }
 
-    SchedulingConstraintHelper* helper = new SchedulingConstraintHelper(
-        vars, model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>(),
-        repository);
+    SchedulingConstraintHelper* helper =
+        new SchedulingConstraintHelper(vars, model);
     model->TakeOwnership(helper);
     GenericLiteralWatcher* watcher =
         model->GetOrCreate<GenericLiteralWatcher>();
@@ -345,7 +344,7 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
     // From there, we deduce that the start-min of t is greater or equal to the
     // end-min of the critical tasks.
     //
-    // Note that this works as well when task_is_currently_present_[t] is false.
+    // Note that this works as well when IsPresent(t) is false.
     int critical_index = 0;
     const IntegerValue min_end_of_critical_tasks =
         task_set_.ComputeEndMin(/*task_to_ignore=*/t, &critical_index);
@@ -405,7 +404,7 @@ bool DisjunctivePrecedences::Propagate() {
                                    task_is_currently_present_, &before_);
 
   // We don't care about the initial content of this vector.
-  reason_for_beeing_before_.resize(num_tasks, kNoLiteralIndex);
+  reason_for_being_before_.resize(num_tasks, absl::InlinedVector<Literal, 6>());
   int critical_index;
   const int size = before_.size();
   for (int i = 0; i < size;) {
@@ -414,7 +413,7 @@ bool DisjunctivePrecedences::Propagate() {
     task_set_.Clear();
     for (; i < size && before_[i].var == var; ++i) {
       const int task = before_[i].index;
-      reason_for_beeing_before_[task] = before_[i].reason;
+      reason_for_being_before_[task] = before_[i].reason;
       task_set_.AddUnsortedEntry(
           {task, helper_->StartMin(task), helper_->DurationMin(task)});
     }
@@ -436,9 +435,8 @@ bool DisjunctivePrecedences::Propagate() {
         helper_->AddPresenceReason(ct);
         helper_->AddDurationMinReason(ct);
         helper_->AddStartMinReason(ct, window_start);
-        if (reason_for_beeing_before_[ct] != kNoLiteralIndex) {
-          helper_->MutableLiteralReason()->push_back(
-              Literal(reason_for_beeing_before_[ct]).Negated());
+        for (const Literal l : reason_for_being_before_[ct]) {
+          helper_->MutableLiteralReason()->push_back(l.Negated());
         }
       }
 

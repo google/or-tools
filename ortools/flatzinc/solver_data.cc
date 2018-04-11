@@ -55,7 +55,7 @@ std::vector<IntVar*> SolverData::GetOrCreateVariableArray(const Argument& arg) {
 }
 
 IntExpr* SolverData::Extract(IntegerVariable* var) {
-  IntExpr* result = FindPtrOrNull(extracted_map_, var);
+  IntExpr* result = gtl::FindPtrOrNull(extracted_map_, var);
   if (result != nullptr) {
     return result;
   }
@@ -96,7 +96,7 @@ void SolverData::StoreAllDifferent(std::vector<IntegerVariable*> diffs) {
 
 bool SolverData::IsAllDifferent(std::vector<IntegerVariable*> diffs) const {
   std::sort(diffs.begin(), diffs.end());
-  return ContainsKey(alldiffs_, diffs);
+  return gtl::ContainsKey(alldiffs_, diffs);
 }
 
 void SolverData::CreateSatPropagatorAndAddToSolver() {

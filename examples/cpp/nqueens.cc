@@ -61,7 +61,7 @@ class NQueenSymmetry : public SymmetryBreaker {
 
  protected:
   int Index(IntVar* const var) const {
-    return FindWithDefault(indices_, var, -1);
+    return gtl::FindWithDefault(indices_, var, -1);
   }
   IntVar* Var(int index) const {
     DCHECK_GE(index, 0);

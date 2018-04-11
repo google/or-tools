@@ -71,6 +71,9 @@ DEFINE_string(cp_model_dump_file, "",
               "SolveCpModel() will dump its model to this file. Note that the "
               "file will be ovewritten with the last such model. "
               "TODO(fdid): dump all model to a recordio file instead?");
+DEFINE_string(cp_model_params, "",
+              "This is interpreted as a text SatParameters proto. The "
+              "specified fields will override the normal ones for all solves.");
 
 DEFINE_string(
     drat_output, "",
@@ -220,7 +223,7 @@ class ModelWithMapping {
   // skip constraints that correspond to a basic encoding detected by
   // ExtractEncoding().
   bool IgnoreConstraint(const ConstraintProto* ct) const {
-    return ContainsKey(ct_to_ignore_, ct);
+    return gtl::ContainsKey(ct_to_ignore_, ct);
   }
 
   Model* model() const { return model_; }
@@ -556,7 +559,7 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
     for (int& ref : var_to_instantiate_as_integer) {
       if (!RefIsPositive(ref)) ref = PositiveRef(ref);
     }
-    STLSortAndRemoveDuplicates(&var_to_instantiate_as_integer);
+    gtl::STLSortAndRemoveDuplicates(&var_to_instantiate_as_integer);
   }
   integers_.resize(num_proto_variables, kNoIntegerVariable);
   for (const int i : var_to_instantiate_as_integer) {
@@ -646,7 +649,7 @@ class FullEncodingFixedPointComputer {
       const int variable = variables_to_propagate_.back();
       variables_to_propagate_.pop_back();
       for (const ConstraintProto* ct : variable_watchers_[variable]) {
-        if (ContainsKey(constraint_is_finished_, ct)) continue;
+        if (gtl::ContainsKey(constraint_is_finished_, ct)) continue;
         const bool finished = PropagateFullEncoding(ct);
         if (finished) constraint_is_finished_.insert(ct);
       }
@@ -675,7 +678,7 @@ class FullEncodingFixedPointComputer {
   // Constraint ct is interested by (full-encoding) state of variable.
   void Register(const ConstraintProto* ct, int variable) {
     variable = PositiveRef(variable);
-    if (!ContainsKey(constraint_is_registered_, ct)) {
+    if (!gtl::ContainsKey(constraint_is_registered_, ct)) {
       constraint_is_registered_.insert(ct);
     }
     if (variable_watchers_.size() <= variable) {
@@ -756,7 +759,7 @@ bool FullEncodingFixedPointComputer::PropagateElement(
   }
 
   // If some variables are not fully encoded, register on those.
-  if (!ContainsKey(constraint_is_registered_, ct)) {
+  if (!gtl::ContainsKey(constraint_is_registered_, ct)) {
     for (const int v : ct->element().vars()) Register(ct, v);
     Register(ct, target);
   }
@@ -798,7 +801,7 @@ bool FullEncodingFixedPointComputer::PropagateLinear(
   if (ct->linear().domain(0) != ct->linear().domain(1)) return true;
 
   // If some domain is too large, abort;
-  if (!ContainsKey(constraint_is_registered_, ct)) {
+  if (!gtl::ContainsKey(constraint_is_registered_, ct)) {
     for (const int v : ct->linear().vars()) {
       const IntegerVariable var = model_->Integer(v);
       IntegerTrail* integer_trail = model_->GetOrCreate<IntegerTrail>();
@@ -835,7 +838,7 @@ bool FullEncodingFixedPointComputer::PropagateLinear(
     if (num_fully_encoded == num_vars) return true;
 
     // Register on remaining variables if not already done.
-    if (!ContainsKey(constraint_is_registered_, ct)) {
+    if (!gtl::ContainsKey(constraint_is_registered_, ct)) {
       for (const int var : ct->linear().vars()) {
         if (!IsFullyEncoded(var)) Register(ct, var);
       }
@@ -1166,7 +1169,7 @@ void LoadElementConstraintAC(const ConstraintProto& ct, ModelWithMapping* m) {
       const IntegerValue value = var_literal_value.value;
       const Literal var_is_value = var_literal_value.literal;
 
-      if (!ContainsKey(target_map, value)) {
+      if (!gtl::ContainsKey(target_map, value)) {
         // No need to add to value_to_literals, selected[i][value] is always
         // false.
         m->Add(Implication(i_lit, var_is_value.Negated()));
@@ -1188,7 +1191,7 @@ void LoadElementConstraintAC(const ConstraintProto& ct, ModelWithMapping* m) {
     const IntegerValue value = entry.first;
     const Literal target_is_value = entry.second;
 
-    if (!ContainsKey(value_to_literals, value)) {
+    if (!gtl::ContainsKey(value_to_literals, value)) {
       m->Add(ClauseConstraint({target_is_value.Negated()}));
     } else {
       m->Add(ReifiedBoolOr(value_to_literals[value], target_is_value));
@@ -1394,8 +1397,8 @@ void LoadInverseConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
 std::string Summarize(const std::string& input) {
   if (input.size() < 105) return input;
   const int half = 50;
-  return StrCat(input.substr(0, half), " ... ",
-                input.substr(input.size() - half, half));
+  return absl::StrCat(input.substr(0, half), " ... ",
+                      input.substr(input.size() - half, half));
 }
 
 }  // namespace.
@@ -1831,7 +1834,7 @@ void TryToLinearizeConstraint(
     auto get_constraint =
         [](std::map<int, std::unique_ptr<LinearConstraintBuilder>>* node_map,
            int node) {
-          if (!ContainsKey(*node_map, node)) {
+          if (!gtl::ContainsKey(*node_map, node)) {
             (*node_map)[node].reset(new LinearConstraintBuilder(1, 1));
           }
           return (*node_map)[node].get();
@@ -2077,7 +2080,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   for (int i = 0; i < num_lp_constraints; i++) {
     const int id = components.GetClassRepresentative(get_constraint_index(i));
     if (components_to_size[id] <= 1) continue;
-    if (!ContainsKey(representative_to_lp_constraint, id)) {
+    if (!gtl::ContainsKey(representative_to_lp_constraint, id)) {
       auto* lp = m->model()->Create<LinearProgrammingConstraint>();
       representative_to_lp_constraint[id] = lp;
       lp_constraints.push_back(lp);
@@ -2097,7 +2100,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   for (int i = 0; i < num_lp_cut_generators; i++) {
     const int id =
         components.GetClassRepresentative(get_cut_generator_index(i));
-    if (!ContainsKey(representative_to_lp_constraint, id)) {
+    if (!gtl::ContainsKey(representative_to_lp_constraint, id)) {
       auto* lp = m->model()->Create<LinearProgrammingConstraint>();
       representative_to_lp_constraint[id] = lp;
       lp_constraints.push_back(lp);
@@ -2118,7 +2121,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
       const IntegerVariable var = m->Integer(model_proto.objective().vars(i));
       const int64 coeff = model_proto.objective().coeffs(i);
       const int id = components.GetClassRepresentative(get_var_index(var));
-      if (ContainsKey(representative_to_lp_constraint, id)) {
+      if (gtl::ContainsKey(representative_to_lp_constraint, id)) {
         representative_to_lp_constraint[id]->SetObjectiveCoefficient(var,
                                                                      coeff);
         representative_to_cp_terms[id].push_back(std::make_pair(var, coeff));
@@ -2131,7 +2134,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     for (const auto& it : representative_to_cp_terms) {
       const int id = it.first;
       LinearProgrammingConstraint* lp =
-          FindOrDie(representative_to_lp_constraint, id);
+          gtl::FindOrDie(representative_to_lp_constraint, id);
       const std::vector<std::pair<IntegerVariable, int64>>& terms = it.second;
       const IntegerVariable sub_obj_var =
           GetOrCreateVariableGreaterOrEqualToSumOf(terms, m->model());
@@ -2405,7 +2408,7 @@ CpSolverResponse SolveCpModelInternal(
   // reset the solver to its initial state, but then with phase saving it
   // should still follow the same path again.
   if (model_proto.has_solution_hint()) {
-    VLOG(0) << "Loading solution hint ... ";
+    LOG(INFO) << "Loading solution hint ... ";
     const int64 old_conflict_limit = parameters.max_number_of_conflicts();
     model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(10);
     std::vector<BooleanOrIntegerVariable> vars;
@@ -2429,9 +2432,9 @@ CpSolverResponse SolveCpModelInternal(
     status =
         SolveProblemWithPortfolioSearch(decision_policies, {no_restart}, model);
     if (status == SatSolver::Status::MODEL_SAT) {
-      VLOG(0) << "Solution hint: success, feasible solution found.";
+      LOG(INFO) << "Solution hint: success, feasible solution found.";
     } else {
-      VLOG(0) << "Solution: failure, no feasible solution found.";
+      LOG(INFO) << "Solution: failure, no feasible solution found.";
     }
     model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(
         old_conflict_limit);
@@ -2749,6 +2752,17 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
               << "'.";
     CHECK_OK(file::SetBinaryProto(FLAGS_cp_model_dump_file, model_proto,
                                   file::Defaults()));
+  }
+
+  // Override parameters?
+  if (!FLAGS_cp_model_params.empty()) {
+    SatParameters params = *model->GetOrCreate<SatParameters>();
+    SatParameters flag_params;
+    CHECK(google::protobuf::TextFormat::ParseFromString(FLAGS_cp_model_params,
+                                              &flag_params));
+    params.MergeFrom(flag_params);
+    model->Add(NewSatParameters(params));
+    LOG(INFO) << "Parameters: " << params.ShortDebugString();
   }
 #endif  // __PORTABLE_PLATFORM__
 

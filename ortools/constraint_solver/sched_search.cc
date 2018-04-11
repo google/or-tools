@@ -131,7 +131,7 @@ void SequenceVar::ActiveHorizonRange(int64* const hmin,
   int64 hor_min = kint64max;
   int64 hor_max = kint64min;
   for (int i = 0; i < intervals_.size(); ++i) {
-    if (!ContainsKey(decided, i)) {
+    if (!gtl::ContainsKey(decided, i)) {
       IntervalVar* const t = intervals_[i];
       hor_min = std::min(hor_min, t->StartMin());
       hor_max = std::max(hor_max, t->EndMax());

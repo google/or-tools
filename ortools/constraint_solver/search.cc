@@ -2154,7 +2154,7 @@ SolutionCollector::~SolutionCollector() {
   for (auto& data : solution_data_) {
     delete data.solution;
   }
-  STLDeleteElements(&recycle_solutions_);
+  gtl::STLDeleteElements(&recycle_solutions_);
 }
 
 void SolutionCollector::Add(IntVar* const var) {
@@ -2203,7 +2203,7 @@ void SolutionCollector::EnterSearch() {
   for (auto& data : solution_data_) {
     delete data.solution;
   }
-  STLDeleteElements(&recycle_solutions_);
+  gtl::STLDeleteElements(&recycle_solutions_);
   solution_data_.clear();
   recycle_solutions_.clear();
 }
@@ -3322,7 +3322,7 @@ void GuidedLocalSearchPenaltiesMap::Reset() {
 
 int64 GuidedLocalSearchPenaltiesMap::Value(const Arc& arc) const {
   if (penalized_.Get(arc.first)) {
-    return FindWithDefault(penalties_, arc, 0LL);
+    return gtl::FindWithDefault(penalties_, arc, 0LL);
   }
   return 0LL;
 }
@@ -3527,7 +3527,7 @@ int64 GuidedLocalSearch::Evaluate(const Assignment* delta,
     const IntVarElement& new_element = container.Element(i);
     IntVar* var = new_element.Var();
     int64 index = -1;
-    if (FindCopy(indices_, var, &index)) {
+    if (gtl::FindCopy(indices_, var, &index)) {
       penalty -= out_values[index];
       int64 new_penalty = 0;
       if (EvaluateElementValue(container, index, &i, &new_penalty)) {

@@ -34,29 +34,23 @@ IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
   is_present_.push_back(is_present);
 
   // Link properly all its components.
-  if (SizeVar(i) != kNoIntegerVariable) {
-    precedences_->AddPrecedenceWithVariableOffset(StartVar(i), EndVar(i),
-                                                  SizeVar(i));
-    precedences_->AddPrecedenceWithVariableOffset(EndVar(i), StartVar(i),
-                                                  NegationOf(SizeVar(i)));
-  } else {
-    precedences_->AddPrecedenceWithOffset(StartVar(i), EndVar(i), fixed_size);
-    precedences_->AddPrecedenceWithOffset(EndVar(i), StartVar(i), -fixed_size);
-  }
-  if (IsOptional(i)) {
-    const Literal literal(is_present);
-    integer_trail_->MarkIntegerVariableAsOptional(StartVar(i), literal);
-    integer_trail_->MarkIntegerVariableAsOptional(EndVar(i), literal);
-  }
+  precedences_->AddPrecedenceWithAllOptions(StartVar(i), EndVar(i), fixed_size,
+                                            SizeVar(i), is_present);
+  precedences_->AddPrecedenceWithAllOptions(EndVar(i), StartVar(i), -fixed_size,
+                                            SizeVar(i) == kNoIntegerVariable
+                                                ? kNoIntegerVariable
+                                                : NegationOf(SizeVar(i)),
+                                            is_present);
   return i;
 }
 
 SchedulingConstraintHelper::SchedulingConstraintHelper(
-    const std::vector<IntervalVariable>& tasks, Trail* trail,
-    IntegerTrail* integer_trail, IntervalsRepository* repository)
-    : trail_(trail),
-      integer_trail_(integer_trail),
+    const std::vector<IntervalVariable>& tasks, Model* model)
+    : trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      precedences_(model->GetOrCreate<PrecedencesPropagator>()),
       current_time_direction_(true) {
+  auto* repository = model->GetOrCreate<IntervalsRepository>();
   start_vars_.clear();
   end_vars_.clear();
   minus_end_vars_.clear();
@@ -159,58 +153,46 @@ bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral bound) {
   return integer_trail_->Enqueue(bound, literal_reason_, integer_reason_);
 }
 
-bool SchedulingConstraintHelper::IncreaseStartMin(int t,
-                                                  IntegerValue new_min_start) {
-  if (!integer_trail_->Enqueue(
-          IntegerLiteral::GreaterOrEqual(start_vars_[t], new_min_start),
-          literal_reason_, integer_reason_)) {
-    return false;
-  }
-
-  // Skip if the task is now absent.
+bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   if (IsAbsent(t)) return true;
 
-  // We propagate right away the new end-min lower-bound we have.
-  const IntegerValue min_end_lb = new_min_start + DurationMin(t);
-  if (EndMin(t) < min_end_lb) {
-    ClearReason();
-    AddStartMinReason(t, new_min_start);
-    AddDurationMinReason(t);
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::GreaterOrEqual(end_vars_[t], min_end_lb),
-            literal_reason_, integer_reason_)) {
-      return false;
+  // TODO(user): we can also push lit.var if its presence implies the interval
+  // presence.
+  if (IsOptional(t) && integer_trail_->OptionalLiteralIndex(lit.var) !=
+                           reason_for_presence_[t]) {
+    if (IsPresent(t)) {
+      // We can still push, but we do need the presence reason.
+      AddPresenceReason(t);
+    } else {
+      // In this case we cannot push lit.var, but we may detect the interval
+      // absence.
+      if (lit.bound > integer_trail_->UpperBound(lit.var)) {
+        integer_reason_.push_back(
+            IntegerLiteral::LowerOrEqual(lit.var, lit.bound - 1));
+        PushTaskAbsence(t);
+      }
+      return true;
     }
   }
 
-  return true;
+  if (!integer_trail_->Enqueue(lit, literal_reason_, integer_reason_)) {
+    return false;
+  }
+
+  if (IsAbsent(t)) return true;
+  return precedences_->PropagateOutgoingArcs(lit.var);
+}
+
+bool SchedulingConstraintHelper::IncreaseStartMin(int t,
+                                                  IntegerValue new_min_start) {
+  return PushIntervalBound(
+      t, IntegerLiteral::GreaterOrEqual(start_vars_[t], new_min_start));
 }
 
 bool SchedulingConstraintHelper::DecreaseEndMax(int t,
                                                 IntegerValue new_max_end) {
-  if (!integer_trail_->Enqueue(
-          IntegerLiteral::LowerOrEqual(end_vars_[t], new_max_end),
-          literal_reason_, integer_reason_)) {
-    return false;
-  }
-
-  // Skip if the task is now absent.
-  if (IsAbsent(t)) return true;
-
-  // We propagate right away the new start-max upper-bound we have.
-  const IntegerValue max_start_ub = new_max_end - DurationMin(t);
-  if (StartMax(t) > max_start_ub) {
-    ClearReason();
-    AddEndMaxReason(t, new_max_end);
-    AddDurationMinReason(t);
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(start_vars_[t], max_start_ub),
-            literal_reason_, integer_reason_)) {
-      return false;
-    }
-  }
-
-  return true;
+  return PushIntervalBound(
+      t, IntegerLiteral::LowerOrEqual(end_vars_[t], new_max_end));
 }
 
 void SchedulingConstraintHelper::PushTaskAbsence(int t) {

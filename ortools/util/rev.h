@@ -121,9 +121,9 @@ class RevMap : ReversibleInterface {
   void SetLevel(int level) final;
   int Level() const { return first_op_index_of_next_level_.size(); }
 
-  bool ContainsKey(key_type key) const { return ::ContainsKey(map_, key); }
+  bool ContainsKey(key_type key) const { return gtl::ContainsKey(map_, key); }
   const mapped_type& FindOrDie(key_type key) const {
-    return ::FindOrDie(map_, key);
+    return gtl::FindOrDie(map_, key);
   }
 
   void EraseOrDie(key_type key);

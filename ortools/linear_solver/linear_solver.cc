@@ -72,7 +72,7 @@ namespace operations_research {
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (var == nullptr) return 0.0;
-  return FindWithDefault(coefficients_, var, 0.0);
+  return gtl::FindWithDefault(coefficients_, var, 0.0);
 }
 
 void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
@@ -154,7 +154,7 @@ bool MPConstraint::ContainsNewVariables() {
 double MPObjective::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (var == nullptr) return 0.0;
-  return FindWithDefault(coefficients_, var, 0.0);
+  return gtl::FindWithDefault(coefficients_, var, 0.0);
 }
 
 void MPObjective::SetCoefficient(const MPVariable* const var, double coeff) {
@@ -739,7 +739,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     std::vector<std::pair<int, double> > linear_term;
     for (CoeffEntry entry : constraint->coefficients_) {
       const MPVariable* const var = entry.first;
-      const int var_index = FindWithDefault(var_to_index, var, -1);
+      const int var_index = gtl::FindWithDefault(var_to_index, var, -1);
       DCHECK_NE(-1, var_index);
       const double coeff = entry.second;
       linear_term.push_back(std::pair<int, double>(var_index, coeff));
@@ -821,8 +821,8 @@ util::Status MPSolver::LoadSolutionFromProto(
 
 void MPSolver::Clear() {
   MutableObjective()->Clear();
-  STLDeleteElements(&variables_);
-  STLDeleteElements(&constraints_);
+  gtl::STLDeleteElements(&variables_);
+  gtl::STLDeleteElements(&constraints_);
   variables_.clear();
   variable_name_to_index_.clear();
   variable_is_extracted_.clear();
@@ -850,7 +850,7 @@ MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
   const int var_index = NumVariables();
   const std::string fixed_name =
       name.empty() ? StringPrintf("auto_v_%09d", var_index) : name;
-  InsertOrDie(&variable_name_to_index_, fixed_name, var_index);
+  gtl::InsertOrDie(&variable_name_to_index_, fixed_name, var_index);
   MPVariable* v =
       new MPVariable(var_index, lb, ub, integer, fixed_name, interface_.get());
   variables_.push_back(v);
@@ -916,7 +916,8 @@ MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
   const std::string fixed_name =
       name.empty() ? StringPrintf("auto_c_%09d", constraint_index) : name;
   if (constraint_name_to_index_) {
-    InsertOrDie(constraint_name_to_index_.get(), fixed_name, constraint_index);
+    gtl::InsertOrDie(&*constraint_name_to_index_, fixed_name,
+                     constraint_index);
   }
   MPConstraint* const constraint =
       new MPConstraint(constraint_index, lb, ub, fixed_name, interface_.get());
@@ -1246,13 +1247,11 @@ double MPSolver::ComputeExactConditionNumber() const {
 
 bool MPSolver::OwnsVariable(const MPVariable* var) const {
   if (var == nullptr) return false;
-  // First, verify that a variable with the same name exists, and look up
-  // its index (names are unique, so there can be only one).
-  const int var_index =
-      FindWithDefault(variable_name_to_index_, var->name(), -1);
-  if (var_index == -1) return false;
-  // Then, verify that the variable with this index has the same address.
-  return variables_[var_index] == var;
+  if (var->index() >= 0 && var->index() < variables_.size()) {
+    // Then, verify that the variable with this index has the same address.
+    return variables_[var->index()] == var;
+  }
+  return false;
 }
 
 bool MPSolver::ExportModelAsLpFormat(bool obfuscate, std::string* model_str) const {

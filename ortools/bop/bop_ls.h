@@ -612,7 +612,8 @@ class LocalSearchAssignmentIterator {
   // Ideally, this should be related to the maximum number of decision in the
   // LS, but that requires templating the whole LS optimizer.
   bool use_transposition_table_;
-  std::unordered_set<std::array<int32, kStoredMaxDecisions>> transposition_table_;
+  std::unordered_set<std::array<int32, kStoredMaxDecisions>>
+      transposition_table_;
 
   bool use_potential_one_flip_repairs_;
 

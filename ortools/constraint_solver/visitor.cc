@@ -82,42 +82,42 @@ void ArgumentHolder::SetSequenceArrayArgument(
 
 bool ArgumentHolder::HasIntegerExpressionArgument(
     const std::string& arg_name) const {
-  return ContainsKey(integer_expression_argument_, arg_name);
+  return gtl::ContainsKey(integer_expression_argument_, arg_name);
 }
 
 bool ArgumentHolder::HasIntegerVariableArrayArgument(
     const std::string& arg_name) const {
-  return ContainsKey(integer_variable_array_argument_, arg_name);
+  return gtl::ContainsKey(integer_variable_array_argument_, arg_name);
 }
 
 int64 ArgumentHolder::FindIntegerArgumentWithDefault(const std::string& arg_name,
                                                      int64 def) const {
-  return FindWithDefault(integer_argument_, arg_name, def);
+  return gtl::FindWithDefault(integer_argument_, arg_name, def);
 }
 
 int64 ArgumentHolder::FindIntegerArgumentOrDie(const std::string& arg_name) const {
-  return FindOrDie(integer_argument_, arg_name);
+  return gtl::FindOrDie(integer_argument_, arg_name);
 }
 
 const std::vector<int64>& ArgumentHolder::FindIntegerArrayArgumentOrDie(
     const std::string& arg_name) const {
-  return FindOrDie(integer_array_argument_, arg_name);
+  return gtl::FindOrDie(integer_array_argument_, arg_name);
 }
 
 IntExpr* ArgumentHolder::FindIntegerExpressionArgumentOrDie(
     const std::string& arg_name) const {
-  return FindOrDie(integer_expression_argument_, arg_name);
+  return gtl::FindOrDie(integer_expression_argument_, arg_name);
 }
 
 const std::vector<IntVar*>&
 ArgumentHolder::FindIntegerVariableArrayArgumentOrDie(
     const std::string& arg_name) const {
-  return FindOrDie(integer_variable_array_argument_, arg_name);
+  return gtl::FindOrDie(integer_variable_array_argument_, arg_name);
 }
 
 const IntTupleSet& ArgumentHolder::FindIntegerMatrixArgumentOrDie(
     const std::string& arg_name) const {
-  return FindOrDie(matrix_argument_, arg_name);
+  return gtl::FindOrDie(matrix_argument_, arg_name);
 }
 
 // ---------- ModelParser ---------

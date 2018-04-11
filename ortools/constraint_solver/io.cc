@@ -181,7 +181,7 @@ class FirstPassVisitor : public ModelVisitor {
 
  private:
   void Register(const IntExpr* const expression) {
-    if (!ContainsKey(expression_map_, expression)) {
+    if (!gtl::ContainsKey(expression_map_, expression)) {
       const int index = expression_map_.size();
       CHECK_EQ(index, expression_list_.size());
       expression_map_[expression] = index;
@@ -194,7 +194,7 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   void Register(const IntervalVar* const interval) {
-    if (!ContainsKey(interval_map_, interval)) {
+    if (!gtl::ContainsKey(interval_map_, interval)) {
       const int index = interval_map_.size();
       CHECK_EQ(index, interval_list_.size());
       interval_map_[interval] = index;
@@ -203,7 +203,7 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   void Register(const SequenceVar* const sequence) {
-    if (!ContainsKey(sequence_map_, sequence)) {
+    if (!gtl::ContainsKey(sequence_map_, sequence)) {
       const int index = sequence_map_.size();
       CHECK_EQ(index, sequence_list_.size());
       sequence_map_[sequence] = index;
@@ -212,19 +212,19 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   void VisitSubArgument(IntExpr* const expression) {
-    if (!ContainsKey(expression_map_, expression)) {
+    if (!gtl::ContainsKey(expression_map_, expression)) {
       expression->Accept(this);
     }
   }
 
   void VisitSubArgument(IntervalVar* const interval) {
-    if (!ContainsKey(interval_map_, interval)) {
+    if (!gtl::ContainsKey(interval_map_, interval)) {
       interval->Accept(this);
     }
   }
 
   void VisitSubArgument(SequenceVar* const sequence) {
-    if (!ContainsKey(sequence_map_, sequence)) {
+    if (!gtl::ContainsKey(sequence_map_, sequence)) {
       sequence->Accept(this);
     }
   }
@@ -388,15 +388,15 @@ class ArgumentHolder {
   }
 
   int64 FindIntegerArgumentWithDefault(const std::string& arg_name, int64 def) {
-    return FindWithDefault(integer_argument_, arg_name, def);
+    return gtl::FindWithDefault(integer_argument_, arg_name, def);
   }
 
   int64 FindIntegerArgumentOrDie(const std::string& arg_name) {
-    return FindOrDie(integer_argument_, arg_name);
+    return gtl::FindOrDie(integer_argument_, arg_name);
   }
 
   int64 FindIntegerExpressionArgumentOrDie(const std::string& arg_name) {
-    return FindOrDie(integer_expression_argument_, arg_name);
+    return gtl::FindOrDie(integer_expression_argument_, arg_name);
   }
 
  private:
@@ -781,7 +781,7 @@ class SecondPassVisitor : public ModelVisitor {
     CHECK(!holders_.empty());
     delete holders_.back();
     holders_.pop_back();
-    STLDeleteElements(&extensions_);
+    gtl::STLDeleteElements(&extensions_);
     extensions_.clear();
   }
 
@@ -802,15 +802,15 @@ class SecondPassVisitor : public ModelVisitor {
   }
 
   int FindExpressionIndexOrDie(IntExpr* const expression) const {
-    return FindOrDie(expression_map_, expression);
+    return gtl::FindOrDie(expression_map_, expression);
   }
 
   int FindIntervalIndexOrDie(IntervalVar* const interval) const {
-    return FindOrDie(interval_map_, interval);
+    return gtl::FindOrDie(interval_map_, interval);
   }
 
   int FindSequenceIndexOrDie(SequenceVar* const sequence) const {
-    return FindOrDie(sequence_map_, sequence);
+    return gtl::FindOrDie(sequence_map_, sequence);
   }
 
   std::unordered_map<const IntExpr*, int> expression_map_;
@@ -2534,45 +2534,45 @@ bool Solver::UpgradeModel(CpModel* const proto) {
 }
 
 void Solver::RegisterBuilder(const std::string& tag, ConstraintBuilder builder) {
-  InsertOrDie(&constraint_builders_, tag, builder);
+  gtl::InsertOrDie(&constraint_builders_, tag, builder);
 }
 
 void Solver::RegisterBuilder(const std::string& tag,
                              IntegerExpressionBuilder builder) {
-  InsertOrDie(&expression_builders_, tag, builder);
+  gtl::InsertOrDie(&expression_builders_, tag, builder);
 }
 
 void Solver::RegisterBuilder(const std::string& tag,
                              IntervalVariableBuilder builder) {
-  InsertOrDie(&interval_builders_, tag, builder);
+  gtl::InsertOrDie(&interval_builders_, tag, builder);
 }
 
 void Solver::RegisterBuilder(const std::string& tag,
                              SequenceVariableBuilder builder) {
-  InsertOrDie(&sequence_builders_, tag, builder);
+  gtl::InsertOrDie(&sequence_builders_, tag, builder);
 }
 
 Solver::ConstraintBuilder Solver::GetConstraintBuilder(
     const std::string& tag) const {
-  return FindWithDefault(constraint_builders_, tag, nullptr);
+  return gtl::FindWithDefault(constraint_builders_, tag, nullptr);
 }
 
 Solver::IntegerExpressionBuilder Solver::GetIntegerExpressionBuilder(
     const std::string& tag) const {
-  return FindWithDefault(expression_builders_, tag, nullptr);
+  return gtl::FindWithDefault(expression_builders_, tag, nullptr);
 }
 
 Solver::IntervalVariableBuilder Solver::GetIntervalVariableBuilder(
     const std::string& tag) const {
   IntervalVariableBuilder builder =
-      FindWithDefault(interval_builders_, tag, nullptr);
+      gtl::FindWithDefault(interval_builders_, tag, nullptr);
   return builder;
 }
 
 Solver::SequenceVariableBuilder Solver::GetSequenceVariableBuilder(
     const std::string& tag) const {
   SequenceVariableBuilder builder =
-      FindWithDefault(sequence_builders_, tag, nullptr);
+      gtl::FindWithDefault(sequence_builders_, tag, nullptr);
   return builder;
 }
 

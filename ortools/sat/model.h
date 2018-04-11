@@ -81,15 +81,15 @@ class Model {
   // TODO(user): Rename to GetOrCreateSingleton().
   template <typename T>
   T* GetOrCreate() {
-    const size_t type_id = FastTypeId<T>();
-    if (!ContainsKey(singletons_, type_id)) {
+    const size_t type_id = gtl::FastTypeId<T>();
+    if (!gtl::ContainsKey(singletons_, type_id)) {
       // TODO(user): directly store std::unique_ptr<> in singletons_?
       T* new_t = MyNew<T>(0);
       singletons_[type_id] = new_t;
       TakeOwnership(new_t);
       return new_t;
     }
-    return static_cast<T*>(FindOrDie(singletons_, type_id));
+    return static_cast<T*>(gtl::FindOrDie(singletons_, type_id));
   }
 
   // Likes GetOrCreate() but do not create the object if it is non-existing.
@@ -97,14 +97,14 @@ class Model {
   template <typename T>
   const T* Get() const {
     return static_cast<const T*>(
-        FindWithDefault(singletons_, FastTypeId<T>(), nullptr));
+        gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
   }
 
   // Same as Get(), but returns a mutable version of the object.
   template <typename T>
   T* Mutable() const {
     return static_cast<T*>(
-        FindWithDefault(singletons_, FastTypeId<T>(), nullptr));
+        gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
   }
 
   // Gives ownership of a pointer to this model.

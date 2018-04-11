@@ -155,9 +155,9 @@ class CollectVariablesVisitor : public ModelParser {
       delegate->Accept(this);
       IgnoreIntegerVariable(const_cast<IntVar*>(variable));
     } else {
-      if (!ContainsKey(primary_set_, var) &&
-          !ContainsKey(secondary_set_, var) &&
-          !ContainsKey(ignored_set_, var) && !var->Bound()) {
+      if (!gtl::ContainsKey(primary_set_, var) &&
+          !gtl::ContainsKey(secondary_set_, var) &&
+          !gtl::ContainsKey(ignored_set_, var) && !var->Bound()) {
         primary_set_.insert(var);
       }
     }

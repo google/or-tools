@@ -71,7 +71,7 @@ FlatzincParameters::FlatzincParameters()
 // ----- Solver -----
 
 int64 Solver::SolutionValue(IntegerVariable* var) const {
-  IntExpr* const result = FindPtrOrNull(data_.extracted_map(), var);
+  IntExpr* const result = gtl::FindPtrOrNull(data_.extracted_map(), var);
   if (result != nullptr) {
     if (result->IsVar()) {
       return result->Var()->Value();
@@ -118,7 +118,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
       if (output.display_as_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {
-        StrAppend(&result, value);
+        absl::StrAppend(&result, value);
       }
       if (i != output.flat_variables.size() - 1) {
         result.append(", ");
@@ -158,7 +158,7 @@ struct ConstraintsWithRequiredVariables {
     // Collect required variables.
     for (const Argument& arg : ct->arguments) {
       for (IntegerVariable* const var : arg.variables) {
-        if (var != cte->target_variable && ContainsKey(defined, var)) {
+        if (var != cte->target_variable && gtl::ContainsKey(defined, var)) {
           required.insert(var);
         }
       }
@@ -284,7 +284,7 @@ bool Solver::Extract() {
     // TODO(user): Implement recovery mode.
     sorted.push_back(ctio->ct);
     IntegerVariable* const var = ctio->ct->target_variable;
-    if (var != nullptr && ContainsKey(dependencies, var)) {
+    if (var != nullptr && gtl::ContainsKey(dependencies, var)) {
       FZDLOG << "  - clean " << var->DebugString() << FZENDL;
       for (ConstraintsWithRequiredVariables* const to_clean :
            dependencies[var]) {
@@ -391,7 +391,7 @@ void Solver::ParseSearchAnnotations(bool ignore_unknown,
       for (IntegerVariable* const fz_var : fz_vars) {
         IntVar* const to_add = data_.Extract(fz_var)->Var();
         const int occ = statistics_.NumVariableOccurrences(fz_var);
-        if (!ContainsKey(added, to_add) && !to_add->Bound()) {
+        if (!gtl::ContainsKey(added, to_add) && !to_add->Bound()) {
           added.insert(to_add);
           int_vars.push_back(to_add);
           occurrences.push_back(occ);
@@ -458,7 +458,7 @@ void Solver::ParseSearchAnnotations(bool ignore_unknown,
       for (IntegerVariable* const fz_var : fz_vars) {
         IntVar* const to_add = data_.Extract(fz_var)->Var();
         const int occ = statistics_.NumVariableOccurrences(fz_var);
-        if (!ContainsKey(added, to_add) && !to_add->Bound()) {
+        if (!gtl::ContainsKey(added, to_add) && !to_add->Bound()) {
           added.insert(to_add);
           bool_vars.push_back(to_add);
           occurrences.push_back(occ);
@@ -490,7 +490,7 @@ void Solver::ParseSearchAnnotations(bool ignore_unknown,
 
   // Create the active_variables array, push smaller variables first.
   for (IntVar* const var : active_variables_) {
-    if (!ContainsKey(added, var) && !var->Bound()) {
+    if (!gtl::ContainsKey(added, var) && !var->Bound()) {
       if (var->Size() < 0xFFFF) {
         added.insert(var);
         active_variables->push_back(var);
@@ -499,7 +499,7 @@ void Solver::ParseSearchAnnotations(bool ignore_unknown,
     }
   }
   for (IntVar* const var : active_variables_) {
-    if (!ContainsKey(added, var) && !var->Bound()) {
+    if (!gtl::ContainsKey(added, var) && !var->Bound()) {
       if (var->Size() >= 0xFFFF) {
         added.insert(var);
         active_variables->push_back(var);
@@ -514,13 +514,13 @@ void Solver::ParseSearchAnnotations(bool ignore_unknown,
 void Solver::CollectOutputVariables(std::vector<IntVar*>* out) {
   for (const SolutionOutputSpecs& output : model_.output()) {
     if (output.variable != nullptr) {
-      if (!ContainsKey(implied_variables_, output.variable)) {
+      if (!gtl::ContainsKey(implied_variables_, output.variable)) {
         out->push_back(data_.Extract(output.variable)->Var());
       }
     }
     for (IntegerVariable* const var : output.flat_variables) {
       if (var->defining_constraint == nullptr &&
-          !ContainsKey(implied_variables_, var)) {
+          !gtl::ContainsKey(implied_variables_, var)) {
         out->push_back(data_.Extract(var)->Var());
       }
     }
@@ -538,12 +538,12 @@ void Solver::AddCompletionDecisionBuilders(
   CollectOutputVariables(&output_variables);
   std::vector<IntVar*> secondary_vars;
   for (IntVar* const var : active_variables) {
-    if (!ContainsKey(defined_set, var) && !var->Bound()) {
+    if (!gtl::ContainsKey(defined_set, var) && !var->Bound()) {
       secondary_vars.push_back(var);
     }
   }
   for (IntVar* const var : output_variables) {
-    if (!ContainsKey(defined_set, var) && !var->Bound()) {
+    if (!gtl::ContainsKey(defined_set, var) && !var->Bound()) {
       secondary_vars.push_back(var);
     }
   }
@@ -689,7 +689,7 @@ void Solver::SyncWithModel() {
 
   for (IntegerVariable* const fz_var : model_.variables()) {
     if (!fz_var->active || fz_var->defining_constraint != nullptr ||
-        ContainsKey(implied_variables_, fz_var)) {
+        gtl::ContainsKey(implied_variables_, fz_var)) {
       continue;
     }
     IntExpr* const expr = data_.Extract(fz_var);
@@ -912,7 +912,8 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
                              ? "**sat**"
                              : (timeout ? "**feasible**" : "**proven**")));
     const std::string obj_string =
-        (model_.objective() != nullptr && !no_solutions ? StrCat(best) : "");
+        (model_.objective() != nullptr && !no_solutions ? absl::StrCat(best)
+                                                        : "");
     solver_status.append(
         "%%  name, status, obj, solns, s_time, b_time, br, "
         "fails, cts, demon, delayed, mem, search\n");

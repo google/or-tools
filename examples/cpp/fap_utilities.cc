@@ -31,8 +31,8 @@ bool CheckConstraintSatisfaction(
     const std::map<int, int>& index_from_key) {
   bool status = true;
   for (const FapConstraint& ct : data_constraints) {
-    const int index1 = FindOrDie(index_from_key, ct.variable1);
-    const int index2 = FindOrDie(index_from_key, ct.variable2);
+    const int index1 = gtl::FindOrDie(index_from_key, ct.variable1);
+    const int index2 = gtl::FindOrDie(index_from_key, ct.variable2);
     CHECK_LT(index1, variables.size());
     CHECK_LT(index2, variables.size());
     const int var1 = variables[index1];
@@ -63,7 +63,7 @@ bool CheckVariablePosition(const std::map<int, FapVariable>& data_variables,
                            const std::map<int, int>& index_from_key) {
   bool status = true;
   for (const auto& it : data_variables) {
-    const int index = FindOrDie(index_from_key, it.first);
+    const int index = gtl::FindOrDie(index_from_key, it.first);
     CHECK_LT(index, variables.size());
     const int var = variables[index];
 

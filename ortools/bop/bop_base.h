@@ -17,6 +17,7 @@
 #include <string>
 
 #include "ortools/base/basictypes.h"
+#include "ortools/base/mutex.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/lp_data/lp_types.h"

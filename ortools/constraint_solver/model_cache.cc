@@ -445,18 +445,18 @@ class NonReversibleCache : public ModelCache {
   }
 
   ~NonReversibleCache() override {
-    STLDeleteElements(&var_constant_constraints_);
-    STLDeleteElements(&expr_expr_constraints_);
-    STLDeleteElements(&var_constant_constant_constraints_);
-    STLDeleteElements(&expr_expressions_);
-    STLDeleteElements(&expr_constant_expressions_);
-    STLDeleteElements(&expr_expr_expressions_);
-    STLDeleteElements(&var_constant_constant_expressions_);
-    STLDeleteElements(&var_constant_array_expressions_);
-    STLDeleteElements(&var_array_expressions_);
-    STLDeleteElements(&var_array_constant_array_expressions_);
-    STLDeleteElements(&var_array_constant_expressions_);
-    STLDeleteElements(&expr_expr_constant_expressions_);
+    gtl::STLDeleteElements(&var_constant_constraints_);
+    gtl::STLDeleteElements(&expr_expr_constraints_);
+    gtl::STLDeleteElements(&var_constant_constant_constraints_);
+    gtl::STLDeleteElements(&expr_expressions_);
+    gtl::STLDeleteElements(&expr_constant_expressions_);
+    gtl::STLDeleteElements(&expr_expr_expressions_);
+    gtl::STLDeleteElements(&var_constant_constant_expressions_);
+    gtl::STLDeleteElements(&var_constant_array_expressions_);
+    gtl::STLDeleteElements(&var_array_expressions_);
+    gtl::STLDeleteElements(&var_array_constant_array_expressions_);
+    gtl::STLDeleteElements(&var_array_constant_expressions_);
+    gtl::STLDeleteElements(&expr_expr_constant_expressions_);
   }
 
   void Clear() override {

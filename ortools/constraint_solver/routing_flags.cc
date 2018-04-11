@@ -130,8 +130,8 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
           {"DefaultStrategy", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE},
           {"", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE}};
   FirstSolutionStrategy::Value strategy;
-  if (FindCopy(first_solution_string_to_parameters,
-               FLAGS_routing_first_solution, &strategy)) {
+  if (gtl::FindCopy(first_solution_string_to_parameters,
+                    FLAGS_routing_first_solution, &strategy)) {
     parameters->set_first_solution_strategy(strategy);
   }
   parameters->set_use_filtered_first_solution_strategy(

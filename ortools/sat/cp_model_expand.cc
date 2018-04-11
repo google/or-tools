@@ -128,7 +128,7 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
         const int time_j = reservoir.times(j);
         const std::pair<int, int> p = std::make_pair(time_i, time_j);
         const std::pair<int, int> rev_p = std::make_pair(time_j, time_i);
-        if (ContainsKey(helper->precedence_cache, p)) continue;
+        if (gtl::ContainsKey(helper->precedence_cache, p)) continue;
 
         const int i_lesseq_j = helper->AddBoolVar();
         helper->precedence_cache[p] = i_lesseq_j;
@@ -164,7 +164,7 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
       for (int j = 0; j < num_variables; ++j) {
         if (i == j) continue;
         const int time_j = reservoir.times(j);
-        level->mutable_linear()->add_vars(FindOrDieNoPrint(
+        level->mutable_linear()->add_vars(gtl::FindOrDieNoPrint(
             helper->precedence_cache, std::make_pair(time_j, time_i)));
         level->mutable_linear()->add_coeffs(reservoir.demands(j));
       }

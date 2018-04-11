@@ -303,7 +303,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
       for (const int64 value : InitAndGetValues(iterators_[var_index])) {
-        if (!ContainsKey(mask, value)) {
+        if (!gtl::ContainsKey(mask, value)) {
           to_remove_.push_back(value);
         }
       }
@@ -366,7 +366,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   bool Supported(int var_index, int64 value) {
     DCHECK_GE(var_index, 0);
     DCHECK_LT(var_index, arity_);
-    DCHECK(ContainsKey(masks_[var_index], value));
+    DCHECK(gtl::ContainsKey(masks_[var_index], value));
     const std::vector<uint64>& mask = masks_[var_index][value];
     int tmp = 0;
     return active_tuples_.Intersects(mask, &tmp);

@@ -282,8 +282,8 @@ std::string ValidateCpModel(const CpModelProto& model) {
   if (model.has_objective()) {
     for (const int v : model.objective().vars()) {
       if (!VariableReferenceIsValid(model, v)) {
-        return StrCat("Out of bound objective variable ", v, " : ",
-                      ProtobufShortDebugString(model.objective()));
+        return absl::StrCat("Out of bound objective variable ", v, " : ",
+                            ProtobufShortDebugString(model.objective()));
       }
     }
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
@@ -403,7 +403,7 @@ class ConstraintChecker {
   bool AllDiffConstraintIsFeasible(const ConstraintProto& ct) {
     std::unordered_set<int64> values;
     for (const int v : ct.all_diff().vars()) {
-      if (ContainsKey(values, Value(v))) return false;
+      if (gtl::ContainsKey(values, Value(v))) return false;
       values.insert(Value(v));
     }
     return true;
@@ -535,7 +535,7 @@ class ConstraintChecker {
     for (int i = 0; i < num_steps; ++i) {
       const std::pair<int64, int64> key = {current_state,
                                            Value(ct.automata().vars(i))};
-      CHECK(ContainsKey(transition_map, key));
+      CHECK(gtl::ContainsKey(transition_map, key));
       current_state = transition_map[key];
     }
 

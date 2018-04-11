@@ -293,7 +293,7 @@ class Linearizer : public ModelParser {
   void PopActive() { actives_.pop_back(); }
 
   void RegisterExpression(const IntExpr* const cp_expr) {
-    if (!ContainsKey(*translation_, cp_expr)) {
+    if (!gtl::ContainsKey(*translation_, cp_expr)) {
       MPVariable* const mp_var =
           mp_solver_->MakeIntVar(cp_expr->Min(), cp_expr->Max(), "");
       (*translation_)[cp_expr] = mp_var;
@@ -301,7 +301,7 @@ class Linearizer : public ModelParser {
   }
 
   void VisitSubExpression(IntExpr* const cp_expr) {
-    if (!ContainsKey(*translation_, cp_expr)) {
+    if (!gtl::ContainsKey(*translation_, cp_expr)) {
       cp_expr->Accept(this);
     }
   }
@@ -313,7 +313,7 @@ class Linearizer : public ModelParser {
   }
 
   MPVariable* Translated(const IntExpr* const cp_expr) {
-    return FindOrDie((*translation_), cp_expr);
+    return gtl::FindOrDie((*translation_), cp_expr);
   }
 
   void VisitBinaryRowConstraint(double lhs, double rhs) {

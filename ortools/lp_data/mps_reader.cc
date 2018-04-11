@@ -28,7 +28,7 @@
 #include "ortools/base/numbers.h"  // for safe_strtod
 #include "ortools/base/split.h"
 #include "ortools/base/strutil.h"
-#include "ortools/base/map_util.h"  // for FindOrNull, FindWithDefault
+#include "ortools/base/map_util.h"  // for FindOrNull, gtl::FindWithDefault
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/status.h"
@@ -211,7 +211,7 @@ void MPSReader::ProcessLine(const std::string& line) {
   if (line[0] != '\0' && line[0] != ' ') {
     section = GetFirstWord();
     section_ =
-        FindWithDefault(section_name_to_id_map_, section, UNKNOWN_SECTION);
+        gtl::FindWithDefault(section_name_to_id_map_, section, UNKNOWN_SECTION);
     if (section_ == UNKNOWN_SECTION) {
       if (log_errors_) {
         LOG(ERROR) << "At line " << line_num_
@@ -295,7 +295,7 @@ void MPSReader::ProcessLine(const std::string& line) {
 
 double MPSReader::GetDoubleFromString(const std::string& param) {
   double result;
-  if (!safe_strtod(param, &result)) {
+  if (!strings::safe_strtod(param, &result)) {
     if (log_errors_) {
       LOG(ERROR) << "At line " << line_num_
                  << ": Failed to convert std::string to double. String = " << param
@@ -311,7 +311,7 @@ void MPSReader::ProcessRowsSection() {
   std::string row_type_name = fields_[0];
   std::string row_name = fields_[1];
   MPSRowType row_type =
-      FindWithDefault(row_name_to_id_map_, row_type_name, UNKNOWN_ROW_TYPE);
+      gtl::FindWithDefault(row_name_to_id_map_, row_type_name, UNKNOWN_ROW_TYPE);
   if (row_type == UNKNOWN_ROW_TYPE) {
     if (log_errors_) {
       LOG(ERROR) << "At line " << line_num_ << ": Unknown row type "
@@ -499,7 +499,7 @@ void MPSReader::StoreRange(const std::string& row_name, const std::string& range
 void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
                            const std::string& column_name,
                            const std::string& bound_value) {
-  const BoundTypeId bound_type_id = FindWithDefault(
+  const BoundTypeId bound_type_id = gtl::FindWithDefault(
       bound_name_to_id_map_, bound_type_mnemonic, UNKNOWN_BOUND_TYPE);
   if (bound_type_id == UNKNOWN_BOUND_TYPE) {
     parse_success_ = false;

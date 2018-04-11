@@ -218,7 +218,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
 
   TaskSet task_set_;
   std::vector<bool> task_is_currently_present_;
-  std::vector<LiteralIndex> reason_for_beeing_before_;
+  std::vector<absl::InlinedVector<Literal, 6>> reason_for_being_before_;
   std::vector<PrecedencesPropagator::IntegerPrecedences> before_;
 };
 

@@ -45,7 +45,7 @@ int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
                                   int relevant_prefix_size,
                                   std::vector<Literal>* literals) {
   if (literals->empty()) return -1;
-  if (!ContainsKey(processed, literals->back().Index())) {
+  if (!gtl::ContainsKey(processed, literals->back().Index())) {
     return std::min<int>(relevant_prefix_size, literals->size());
   }
 
@@ -60,7 +60,7 @@ int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
   int num_not_processed = 0;
   int target_prefix_size = literals->size() - 1;
   for (int i = literals->size() - 1; i >= 0; i--) {
-    if (ContainsKey(processed, (*literals)[i].Index())) {
+    if (gtl::ContainsKey(processed, (*literals)[i].Index())) {
       ++num_processed;
     } else {
       ++num_not_processed;
@@ -73,9 +73,10 @@ int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
 
   // Once a prefix size has been decided, it is always better to
   // enqueue the literal already processed first.
-  std::stable_partition(
-      literals->begin() + target_prefix_size, literals->end(),
-      [&processed](Literal l) { return ContainsKey(processed, l.Index()); });
+  std::stable_partition(literals->begin() + target_prefix_size, literals->end(),
+                        [&processed](Literal l) {
+                          return gtl::ContainsKey(processed, l.Index());
+                        });
   return target_prefix_size;
 }
 

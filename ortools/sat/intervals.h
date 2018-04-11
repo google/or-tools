@@ -54,11 +54,6 @@ class IntervalsRepository {
   // Functions to add a new interval to the repository.
   // - If size == kNoIntegerVariable, then the size is fixed to fixed_size.
   // - If is_present != kNoLiteralIndex, then this is an optional interval.
-  //
-  // TRICKY: for optional interval, the start and end variables are
-  // automatically marked as "ignorable" and the relation start + size <= end
-  // will still be propagated even if the interval is not present. Note that we
-  // never mark the size as "ignorable" here.
   IntervalVariable CreateInterval(IntegerVariable start, IntegerVariable end,
                                   IntegerVariable size, IntegerValue fixed_size,
                                   LiteralIndex is_present);
@@ -124,8 +119,7 @@ class SchedulingConstraintHelper {
   // All the functions below refer to a task by its index t in the tasks
   // vector given at construction.
   SchedulingConstraintHelper(const std::vector<IntervalVariable>& tasks,
-                             Trail* trail, IntegerTrail* integer_trail,
-                             IntervalsRepository* intervals_repository);
+                             Model* model);
 
   // Returns the number of task.
   int NumTasks() const { return start_vars_.size(); }
@@ -148,9 +142,13 @@ class SchedulingConstraintHelper {
   IntegerValue EndMin(int t) const;
   IntegerValue EndMax(int t) const;
 
+  bool StartIsFixed(int t) const;
+  bool EndIsFixed(int t) const;
+
   // Returns true if the corresponding fact is known for sure. A normal task is
   // always present. For optional task for which the presence is still unknown,
   // both of these function will return false.
+  bool IsOptional(int t) const;
   bool IsPresent(int t) const;
   bool IsAbsent(int t) const;
 
@@ -191,6 +189,12 @@ class SchedulingConstraintHelper {
   // Push something using the current reason. Note that IncreaseStartMin() will
   // also increase the end-min, and DecreaseEndMax() will also decrease the
   // start-max.
+  //
+  // Important: IncreaseStartMin() and DecreaseEndMax() can be called on an
+  // optional interval whose presence is still unknown and push a bound
+  // conditionned on its presence. The functions will do the correct thing
+  // depending on whether or not the start_min/end_max are optional variables
+  // whose presence implies the interval presence.
   bool IncreaseStartMin(int t, IntegerValue new_min_start);
   bool DecreaseEndMax(int t, IntegerValue new_max_end);
   void PushTaskAbsence(int t);
@@ -206,8 +210,12 @@ class SchedulingConstraintHelper {
   void WatchAllTasks(int id, GenericLiteralWatcher* watcher) const;
 
  private:
+  // Internal function for IncreaseStartMin()/DecreaseEndMax().
+  bool PushIntervalBound(int t, IntegerLiteral lit);
+
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  PrecedencesPropagator* precedences_;
 
   // All the underlying variables of the tasks.
   // The vectors are indexed by the task index t.
@@ -266,6 +274,18 @@ inline IntegerValue SchedulingConstraintHelper::EndMin(int t) const {
 
 inline IntegerValue SchedulingConstraintHelper::EndMax(int t) const {
   return integer_trail_->UpperBound(end_vars_[t]);
+}
+
+inline bool SchedulingConstraintHelper::StartIsFixed(int t) const {
+  return StartMin(t) == StartMax(t);
+}
+
+inline bool SchedulingConstraintHelper::EndIsFixed(int t) const {
+  return EndMin(t) == EndMax(t);
+}
+
+inline bool SchedulingConstraintHelper::IsOptional(int t) const {
+  return reason_for_presence_[t] != kNoLiteralIndex;
 }
 
 inline bool SchedulingConstraintHelper::IsPresent(int t) const {
@@ -417,6 +437,23 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
   };
 }
 
+inline std::function<IntervalVariable(Model*)>
+NewOptionalIntervalWithOptionalVariables(int64 min_start, int64 max_end,
+                                         int64 size, Literal is_present) {
+  return [=](Model* model) {
+    // Note that we need to mark the optionality first.
+    const IntegerVariable start =
+        model->Add(NewIntegerVariable(min_start, max_end));
+    const IntegerVariable end =
+        model->Add(NewIntegerVariable(min_start, max_end));
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    integer_trail->MarkIntegerVariableAsOptional(start, is_present);
+    integer_trail->MarkIntegerVariableAsOptional(end, is_present);
+    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+        start, end, kNoIntegerVariable, IntegerValue(size), is_present.Index());
+  };
+}
+
 inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
     IntegerVariable start, IntegerVariable end, IntegerVariable size,
     Literal is_present) {
@@ -436,20 +473,6 @@ NewOptionalIntervalWithVariableSize(int64 min_start, int64 max_end,
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_size, max_size)), IntegerValue(0),
         is_present.Index());
-  };
-}
-
-inline std::function<IntervalVariable(Model*)> NewIntervalFromStartAndSizeVars(
-    IntegerVariable start, IntegerVariable size) {
-  return [=](Model* model) {
-    // Create the "end" variable.
-    // TODO(user): deal with overflow.
-    IntegerTrail* t = model->GetOrCreate<IntegerTrail>();
-    const IntegerValue end_lb = t->LowerBound(start) + t->LowerBound(size);
-    const IntegerValue end_ub = t->UpperBound(start) + t->UpperBound(size);
-    const IntegerVariable end = t->AddIntegerVariable(end_lb, end_ub);
-    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        start, end, size, IntegerValue(0), kNoLiteralIndex);
   };
 }
 

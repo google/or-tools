@@ -402,8 +402,8 @@ class StateDependentRoutingCache : public RoutingModel::VariableNodeEvaluator2 {
         index_functions_delete.insert(transit.transit_plus_identity);
       }
     }
-    STLDeleteElements(&value_functions_delete);
-    STLDeleteElements(&index_functions_delete);
+    gtl::STLDeleteElements(&value_functions_delete);
+    gtl::STLDeleteElements(&index_functions_delete);
   }
   bool IsRepeatable() const override { return true; }
   // This method returns cached results of the callback.
@@ -638,9 +638,9 @@ void RoutingModel::InitializeBuilders(Solver* solver) {
 }
 
 RoutingModel::~RoutingModel() {
-  STLDeleteElements(&owned_node_callbacks_);
-  STLDeleteElements(&dimensions_);
-  STLDeleteElements(&owned_state_dependent_callbacks_);
+  gtl::STLDeleteElements(&owned_node_callbacks_);
+  gtl::STLDeleteElements(&dimensions_);
+  gtl::STLDeleteElements(&owned_state_dependent_callbacks_);
 }
 
 RoutingModelParameters RoutingModel::DefaultModelParameters() {
@@ -799,10 +799,10 @@ bool RoutingModel::InitializeDimensionInternal(
     delete dimension;
     std::unordered_set<NodeEvaluator2*> evaluator_set(evaluators.begin(),
                                                       evaluators.end());
-    STLDeleteElements(&evaluator_set);
+    gtl::STLDeleteElements(&evaluator_set);
     std::unordered_set<VariableNodeEvaluator2*> dependent_evaluator_set(
         state_dependent_evaluators.begin(), state_dependent_evaluators.end());
-    STLDeleteElements(&dependent_evaluator_set);
+    gtl::STLDeleteElements(&dependent_evaluator_set);
     return false;
   }
 }
@@ -993,18 +993,18 @@ std::vector<std::string> RoutingModel::GetAllDimensionNames() const {
 }
 
 bool RoutingModel::HasDimension(const std::string& dimension_name) const {
-  return ContainsKey(dimension_name_to_index_, dimension_name);
+  return gtl::ContainsKey(dimension_name_to_index_, dimension_name);
 }
 
 RoutingModel::DimensionIndex RoutingModel::GetDimensionIndex(
     const std::string& dimension_name) const {
-  return FindWithDefault(dimension_name_to_index_, dimension_name,
+  return gtl::FindWithDefault(dimension_name_to_index_, dimension_name,
                          kNoDimension);
 }
 
 const RoutingDimension& RoutingModel::GetDimensionOrDie(
     const std::string& dimension_name) const {
-  return *dimensions_[FindOrDie(dimension_name_to_index_, dimension_name)];
+  return *dimensions_[gtl::FindOrDie(dimension_name_to_index_, dimension_name)];
 }
 
 RoutingDimension* RoutingModel::GetMutableDimension(
@@ -1173,7 +1173,7 @@ void RoutingModel::ComputeCostClasses(
     // we can avoid to: we detect duplicate evaluators, for example, and if
     // there's only one evaluator callback used, we don't bother computing its
     // fingerprint.
-    if (!FindCopy(evaluator_to_fprint, uncached_evaluator, &evaluator_fprint)) {
+    if (!gtl::FindCopy(evaluator_to_fprint, uncached_evaluator, &evaluator_fprint)) {
       evaluator_fprint =
           all_evaluators_equal
               ? kAllEquivalentEvaluatorFprint
@@ -1183,7 +1183,7 @@ void RoutingModel::ComputeCostClasses(
       evaluator_to_fprint[uncached_evaluator] = evaluator_fprint;
     }
     NodeEvaluator2** cached_evaluator =
-        &LookupOrInsert(&fprint_to_cached_evaluator, evaluator_fprint, nullptr);
+        &gtl::LookupOrInsert(&fprint_to_cached_evaluator, evaluator_fprint, nullptr);
     if (*cached_evaluator == nullptr) {
       *cached_evaluator = NewCachedCallback(uncached_evaluator);
     }
@@ -1202,7 +1202,7 @@ void RoutingModel::ComputeCostClasses(
     // Try inserting the CostClass, if it's not already present.
     const CostClassIndex num_cost_classes(cost_classes_.size());
     const CostClassIndex cost_class_index =
-        LookupOrInsert(&cost_class_map, cost_class, num_cost_classes);
+        gtl::LookupOrInsert(&cost_class_map, cost_class, num_cost_classes);
     if (cost_class_index == kCostClassIndexOfZeroCost) {
       has_vehicle_with_zero_cost_class = true;
     } else if (cost_class_index == num_cost_classes) {  // New cost class.
@@ -1304,7 +1304,7 @@ void RoutingModel::ComputeVehicleClasses() {
         nodes_unvisitability_bitmask.get(), nodes_unvisitability_num_bytes);
     const VehicleClassIndex num_vehicle_classes(vehicle_classes_.size());
     const VehicleClassIndex vehicle_class_index =
-        LookupOrInsert(&vehicle_class_map, vehicle_class, num_vehicle_classes);
+        gtl::LookupOrInsert(&vehicle_class_map, vehicle_class, num_vehicle_classes);
     if (vehicle_class_index == num_vehicle_classes) {  // New vehicle class
       vehicle_classes_.push_back(vehicle_class);
     }
@@ -1644,7 +1644,7 @@ class RoutingModelInspector : public ModelVisitor {
     for (int node = 0; node < model_->Size(); ++node) {
       const int component =
           same_vehicle_components_.GetClassRepresentative(node);
-      if (InsertIfNotPresent(&component_indices, component, component_index)) {
+      if (gtl::InsertIfNotPresent(&component_indices, component, component_index)) {
         ++component_index;
       }
     }
@@ -1652,25 +1652,25 @@ class RoutingModelInspector : public ModelVisitor {
     for (int node = 0; node < model_->Size(); ++node) {
       const int component =
           same_vehicle_components_.GetClassRepresentative(node);
-      DCHECK(ContainsKey(component_indices, component));
+      DCHECK(gtl::ContainsKey(component_indices, component));
       model_->SetSameVehicleGroup(
-          node, FindWithDefault(component_indices, component, 0));
+          node, gtl::FindWithDefault(component_indices, component, 0));
     }
     // TODO(user): Perform transitive closure of dimension precedence graphs.
     // TODO(user): Have a single annotated precedence graph.
   }
   void EndVisitConstraint(const std::string& type_name,
                           const Constraint* const constraint) override {
-    FindWithDefault(constraint_inspectors_, type_name, []() {})();
+    gtl::FindWithDefault(constraint_inspectors_, type_name, []() {})();
   }
   void VisitIntegerExpressionArgument(const std::string& type_name,
                                       IntExpr* const expr) override {
-    FindWithDefault(expr_inspectors_, type_name,
+    gtl::FindWithDefault(expr_inspectors_, type_name,
                     [](const IntExpr* expr) {})(expr);
   }
   void VisitIntegerArrayArgument(const std::string& arg_name,
                                  const std::vector<int64>& values) override {
-    FindWithDefault(array_inspectors_, arg_name,
+    gtl::FindWithDefault(array_inspectors_, arg_name,
                     [](const std::vector<int64>& int_array) {})(values);
   }
 
@@ -1695,7 +1695,7 @@ class RoutingModelInspector : public ModelVisitor {
         const std::vector<int64>& int_array) { ends_argument_ = int_array; };
     constraint_inspectors_[kNotMember] = [this]() {
       std::pair<RoutingDimension*, int> dim_index;
-      if (FindCopy(cumul_to_dim_indices_, expr_, &dim_index)) {
+      if (gtl::FindCopy(cumul_to_dim_indices_, expr_, &dim_index)) {
         RoutingDimension* const dimension = dim_index.first;
         const int index = dim_index.second;
         dimension->forbidden_intervals_[index].InsertIntervals(starts_argument_,
@@ -1710,8 +1710,8 @@ class RoutingModelInspector : public ModelVisitor {
     constraint_inspectors_[kEquality] = [this]() {
       int left_index = 0;
       int right_index = 0;
-      if (FindCopy(vehicle_var_to_indices_, left_, &left_index) &&
-          FindCopy(vehicle_var_to_indices_, right_, &right_index)) {
+      if (gtl::FindCopy(vehicle_var_to_indices_, left_, &left_index) &&
+          gtl::FindCopy(vehicle_var_to_indices_, right_, &right_index)) {
         VLOG(2) << "Vehicle variables for " << left_index << " and "
                 << right_index << " are equal.";
         same_vehicle_components_.AddArc(left_index, right_index);
@@ -1722,8 +1722,8 @@ class RoutingModelInspector : public ModelVisitor {
     constraint_inspectors_[kLessOrEqual] = [this]() {
       std::pair<RoutingDimension*, int> left_index;
       std::pair<RoutingDimension*, int> right_index;
-      if (FindCopy(cumul_to_dim_indices_, left_, &left_index) &&
-          FindCopy(cumul_to_dim_indices_, right_, &right_index)) {
+      if (gtl::FindCopy(cumul_to_dim_indices_, left_, &left_index) &&
+          gtl::FindCopy(cumul_to_dim_indices_, right_, &right_index)) {
         RoutingDimension* const dimension = left_index.first;
         if (dimension == right_index.first) {
           VLOG(2) << "For dimension " << dimension->name() << ", cumul for "
@@ -2057,13 +2057,13 @@ class RouteConstructor {
     // linear and that given we managed to build a solution would be stupid to
     // drop it now.
     for (int chain_index = 0; chain_index < chains_.size(); ++chain_index) {
-      if (!ContainsKey(deleted_chains_, chain_index)) {
+      if (!gtl::ContainsKey(deleted_chains_, chain_index)) {
         final_chains_.push_back(chains_[chain_index]);
       }
     }
     std::sort(final_chains_.begin(), final_chains_.end(), ChainComparator);
     for (int route_index = 0; route_index < routes_.size(); ++route_index) {
-      if (!ContainsKey(deleted_routes_, route_index)) {
+      if (!gtl::ContainsKey(deleted_routes_, route_index)) {
         final_routes_.push_back(routes_[route_index]);
       }
     }
@@ -2164,8 +2164,8 @@ class RouteConstructor {
     while (it != route.end()) {
       const int previous = *it;
       const int64 cumul_previous = cumul;
-      InsertOrDie(&(new_possible_cumuls_[dimension_index]), previous,
-                  cumul_previous);
+      gtl::InsertOrDie(&(new_possible_cumuls_[dimension_index]), previous,
+                       cumul_previous);
       ++it;
       if (it == route.end()) {
         return true;
@@ -2234,7 +2234,7 @@ class RouteConstructor {
     feasible_route =
         FeasibleRoute(route2, new_available_cumul_head2, dimension_index);
     const int64 new_possible_cumul_tail2 =
-        ContainsKey(new_possible_cumuls_[dimension_index], tail2)
+        gtl::ContainsKey(new_possible_cumuls_[dimension_index], tail2)
             ? new_possible_cumuls_[dimension_index][tail2]
             : cumuls_[dimension_index][tail2];
 
@@ -2294,7 +2294,7 @@ class RouteConstructor {
     for (int chain_index = 0; chain_index < chains_.size(); ++chain_index) {
       if ((chain_index != new_chain_index) &&
           (chain_index != old_chain_index) &&
-          (!ContainsKey(deleted_chains_, chain_index))) {
+          (!gtl::ContainsKey(deleted_chains_, chain_index))) {
         const int start = chains_[chain_index].head;
         const int end = chains_[chain_index].tail;
         temp_assignment->Add(model_->NextVar(model_->Start(chain_index)));
@@ -3352,7 +3352,7 @@ bool RoutingModel::RoutesToAssignment(
   // Deactivate other nodes (by pointing them to themselves).
   if (close_routes) {
     for (int index = 0; index < Size(); ++index) {
-      if (!ContainsKey(visited_indices, index)) {
+      if (!gtl::ContainsKey(visited_indices, index)) {
         IntVar* const next_var = NextVar(index);
         if (!assignment->Contains(next_var)) {
           assignment->Add(next_var);
@@ -3694,7 +3694,7 @@ std::string RoutingModel::DebugOutputAssignment(
                       "%" GG_LL_FORMAT "d Vehicle(%" GG_LL_FORMAT "d) ", index,
                       solution_assignment.Value(vehicle_var));
         for (const RoutingDimension* const dimension : dimensions_) {
-          if (ContainsKey(dimension_names, dimension->name())) {
+          if (gtl::ContainsKey(dimension_names, dimension->name())) {
             const IntVar* const var = dimension->CumulVar(index);
             StringAppendF(
                 &output, "%s(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d) ",
@@ -4438,7 +4438,7 @@ RoutingModel::NodeEvaluator2* RoutingModel::NewCachedCallback(
   const int size = node_to_index_.size();
   if (cache_callbacks_) {
     NodeEvaluator2* cached_evaluator = nullptr;
-    if (!FindCopy(cached_node_callbacks_, callback, &cached_evaluator)) {
+    if (!gtl::FindCopy(cached_node_callbacks_, callback, &cached_evaluator)) {
       cached_evaluator = new RoutingCache(callback, size);
       cached_node_callbacks_[callback] = cached_evaluator;
       // Make sure that both the cache and the base callback get deleted
@@ -4462,7 +4462,7 @@ RoutingModel::NewCachedStateDependentCallback(
     VariableNodeEvaluator2* callback) {
   const int size = node_to_index_.size();
   VariableNodeEvaluator2* cached_evaluator = nullptr;
-  if (!FindCopy(cached_state_dependent_callbacks_, callback,
+  if (!gtl::FindCopy(cached_state_dependent_callbacks_, callback,
                 &cached_evaluator)) {
     cached_evaluator = new StateDependentRoutingCache(callback, size);
     cached_state_dependent_callbacks_[callback] = cached_evaluator;
@@ -4524,7 +4524,7 @@ int64 RoutingModel::GetTransitValue(const std::string& dimension_name,
                                     int64 from_index, int64 to_index,
                                     int64 vehicle) const {
   DimensionIndex dimension_index(-1);
-  if (FindCopy(dimension_name_to_index_, dimension_name, &dimension_index)) {
+  if (gtl::FindCopy(dimension_name_to_index_, dimension_name, &dimension_index)) {
     return dimensions_[dimension_index]->GetTransitValue(from_index, to_index,
                                                          vehicle);
   } else {
@@ -4780,7 +4780,7 @@ void ComputeTransitClasses(const std::vector<NodeEvaluator*>& node_evaluators,
   for (int i = 0; i < node_evaluators.size(); ++i) {
     NodeEvaluator* const evaluator = node_evaluators[i];
     int evaluator_class = -1;
-    if (!FindCopy(evaluator_to_class, evaluator, &evaluator_class)) {
+    if (!gtl::FindCopy(evaluator_to_class, evaluator, &evaluator_class)) {
       evaluator_class = class_evaluators->size();
       evaluator_to_class[evaluator] = evaluator_class;
       class_evaluators->emplace_back([model, evaluator](int64 from, int64 to) {

@@ -139,7 +139,7 @@ EtaFactorization::EtaFactorization() : eta_matrix_() {}
 
 EtaFactorization::~EtaFactorization() { Clear(); }
 
-void EtaFactorization::Clear() { STLDeleteElements(&eta_matrix_); }
+void EtaFactorization::Clear() { gtl::STLDeleteElements(&eta_matrix_); }
 
 void EtaFactorization::Update(ColIndex entering_col,
                               RowIndex leaving_variable_row,

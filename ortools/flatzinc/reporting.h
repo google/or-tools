@@ -16,8 +16,8 @@
 
 #include <string>
 #include "ortools/base/integral_types.h"
-#include "ortools/base/mutex.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/mutex.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -184,7 +184,7 @@ class MultiThreadReporting : public SearchReportingInterface {
   void LogNoLock(int thread_id, const std::string& message);
 
   const bool verbose_;
-  mutable Mutex mutex_;
+  mutable absl::Mutex mutex_;
   Type type_ GUARDED_BY(mutex_);
   std::string last_solution_ GUARDED_BY(mutex_);
   int last_thread_ GUARDED_BY(mutex_);

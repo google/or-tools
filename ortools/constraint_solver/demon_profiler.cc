@@ -55,8 +55,8 @@ class DemonProfiler : public PropagationMonitor {
         start_time_ns_(absl::GetCurrentTimeNanos()) {}
 
   ~DemonProfiler() override {
-    STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
-                                         constraint_map_.end());
+    gtl::STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
+                                              constraint_map_.end());
   }
 
   // In microseconds.
@@ -195,8 +195,8 @@ class DemonProfiler : public PropagationMonitor {
 
   // Restarts a search and clears all previously collected information.
   void RestartSearch() override {
-    STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
-                                         constraint_map_.end());
+    gtl::STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
+                                              constraint_map_.end());
     constraint_map_.clear();
     demon_map_.clear();
     demons_per_constraint_.clear();

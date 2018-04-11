@@ -192,7 +192,7 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
         const IntegerVariable positive_var =
             VariableIsPositive(l.var) ? l.var : NegationOf(l.var);
         LinearProgrammingConstraint* lp =
-            FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+            gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
         if (lp != nullptr) {
           const IntegerValue value = IntegerValue(static_cast<int64>(
               std::round(lp->GetSolutionValue(positive_var))));

@@ -56,9 +56,9 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
             IntegerValue value(0);
             IntegerValue coeff(1);
             IntegerValue offset(0);
-            if (ContainsKey(var_to_coeff_offset_pair, var.value())) {
+            if (gtl::ContainsKey(var_to_coeff_offset_pair, var.value())) {
               const auto coeff_offset =
-                  FindOrDie(var_to_coeff_offset_pair, var.value());
+                  gtl::FindOrDie(var_to_coeff_offset_pair, var.value());
               coeff = coeff_offset.first;
               offset = coeff_offset.second;
             }
@@ -158,7 +158,7 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
       const IntegerVariable var =
           RefIsPositive(ref) ? variable_mapping[ref]
                              : NegationOf(variable_mapping[PositiveRef(ref)]);
-      if (!ContainsKey(var_to_coeff_offset_pair, var.value())) {
+      if (!gtl::ContainsKey(var_to_coeff_offset_pair, var.value())) {
         var_to_coeff_offset_pair[var.value()] = {tranform.positive_coeff(),
                                                  tranform.offset()};
       }
@@ -189,7 +189,8 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
     if (decision == kNoLiteralIndex) return decision;
 
     const int level = model->Get<Trail>()->CurrentDecisionLevel();
-    std::string to_display = StrCat("Diff since last call, level=", level, "\n");
+    std::string to_display =
+        absl::StrCat("Diff since last call, level=", level, "\n");
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     for (const int ref : ref_to_display) {
       const IntegerVariable var = variable_mapping[ref];
@@ -198,8 +199,8 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
           integer_trail->UpperBound(var).value());
       if (new_domain != old_domains[ref]) {
         old_domains[ref] = new_domain;
-        StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
-                  new_domain.first, ",", new_domain.second, "]\n");
+        absl::StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
+                        new_domain.first, ",", new_domain.second, "]\n");
       }
     }
     LOG(INFO) << to_display;

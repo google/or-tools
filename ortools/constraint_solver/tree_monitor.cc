@@ -262,7 +262,7 @@ class TreeNode {
   TreeNode(TreeNode* parent, int id)
       : cycles_(1), id_(id), name_(""), node_type_(TRY), parent_(parent) {}
 
-  ~TreeNode() { STLDeleteElements(&children_); }
+  ~TreeNode() { gtl::STLDeleteElements(&children_); }
 
   // Gets the value of a decision's branch.
   int64 branch_value(int branch) const { return branch_values_[branch]; }
@@ -322,7 +322,7 @@ class TreeNode {
       for (int i = 0; i < children_.size(); ++i) {
         // Reuse existing branch if possible
         if (children_[i]->name_ == name &&
-            branch_values_[i] == FindOrDie(last_value, name_)) {
+            branch_values_[i] == gtl::FindOrDie(last_value, name_)) {
           children_[i]->AddCycle();
           *child = children_[i];
           return false;
@@ -334,7 +334,7 @@ class TreeNode {
     tree_node->set_name(name);
     tree_node->SetDomain(vars);
     children_.push_back(tree_node);
-    branch_values_.push_back(FindOrDie(last_value, name_));
+    branch_values_.push_back(gtl::FindOrDie(last_value, name_));
     *child = tree_node;
 
     return true;
@@ -438,7 +438,7 @@ class TreeNode {
                                       : domain_;
 
         const std::vector<int64>* const domain_values =
-            FindOrNull(domain, name_);
+            gtl::FindOrNull(domain, name_);
         if (domain_values) {
           tree_writer->AddAttribute("size", StrCat(domain_values->size()));
         } else {

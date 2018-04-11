@@ -60,10 +60,21 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
 
+  // Propagates all the outgoing arcs of the given variable (and only those). It
+  // is more efficient to do all these propagation in one go by calling
+  // Propagate(), but for scheduling problem, we wants to propagate right away
+  // the end of an interval when its start moved.
+  bool PropagateOutgoingArcs(IntegerVariable var);
+
   // Add a precedence relation (i1 + offset <= i2) between integer variables.
+  //
+  // Important: The optionality of the variable should be marked BEFORE this
+  // is called.
   void AddPrecedence(IntegerVariable i1, IntegerVariable i2);
   void AddPrecedenceWithOffset(IntegerVariable i1, IntegerVariable i2,
                                IntegerValue offset);
+  void AddPrecedenceWithVariableOffset(IntegerVariable i1, IntegerVariable i2,
+                                       IntegerVariable offset_var);
 
   // Same as above, but the relation is only true when the given literal is.
   void AddConditionalPrecedence(IntegerVariable i1, IntegerVariable i2,
@@ -71,18 +82,6 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   void AddConditionalPrecedenceWithOffset(IntegerVariable i1,
                                           IntegerVariable i2,
                                           IntegerValue offset, Literal l);
-
-  // Note that we currently do not support marking a variable appearing as
-  // an offset_var as optional (with MarkIntegerVariableAsOptional()). We could
-  // give it a meaning (like the arcs are not propagated if it is optional), but
-  // the code currently do not implement this.
-  //
-  // TODO(user): support optional offset_var?
-  //
-  // TODO(user): the variable offset should probably be tested more because
-  // when I wrote this, I just had a couple of problems to test this on.
-  void AddPrecedenceWithVariableOffset(IntegerVariable i1, IntegerVariable i2,
-                                       IntegerVariable offset_var);
 
   // Generic function that cover all of the above case and more.
   void AddPrecedenceWithAllOptions(IntegerVariable i1, IntegerVariable i2,
@@ -107,7 +106,9 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   struct IntegerPrecedences {
     int index;            // in vars.
     IntegerVariable var;  // An IntegerVariable that is >= to vars[index].
-    LiteralIndex reason;  // The reason for it to be >= or kNoLiteralIndex.
+
+    // The reason for it to be >=.
+    absl::InlinedVector<Literal, 6> reason;
 
     // Only needed for testing.
     bool operator==(const IntegerPrecedences& o) const {
@@ -130,6 +131,9 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   void AddGreaterThanAtLeastOneOfConstraints(Model* model);
 
  private:
+  DEFINE_INT_TYPE(ArcIndex, int);
+  DEFINE_INT_TYPE(OptionalArcIndex, int);
+
   // Information about an individual arc.
   struct ArcInfo {
     IntegerVariable tail_var;
@@ -137,28 +141,14 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 
     IntegerValue offset;
     IntegerVariable offset_var;  // kNoIntegerVariable if none.
-    LiteralIndex presence_l;     // kNoLiteralIndex if none.
+
+    // This arc is "present" iff all these literals are true.
+    absl::InlinedVector<Literal, 6> presence_literals;
 
     // Used temporarily by our implementation of the Bellman-Ford algorithm. It
     // should be false at the beginning of BellmanFordTarjan().
     mutable bool is_marked;
   };
-
-  // An optional integer variable has a special behavior:
-  // - If the bounds on i cross each other, then is_present must be false.
-  // - It will only propagate any outgoing arcs if is_present is true.
-  //
-  // TODO(user): Accept a BinaryImplicationGraph* here, so that and arc
-  // (tail -> head) can still propagate if tail.is_present => head.is_present.
-  // Note that such propagation is only useful if the status of tail presence
-  // is still undecided. Note that we do propagate if tail and head have the
-  // same presence literal (see ArcShouldPropagate()).
-  //
-  // TODO(user): use instead integer_trail_->VariableIsOptional()? Note that the
-  // meaning is not exactly the same, because here we also do not propagate the
-  // outgoing arcs. And we need to watch the is_present variable, so we still
-  // need to call this function.
-  void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_present);
 
   // Internal functions to add new precedence relations.
   //
@@ -169,23 +159,11 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   void AddArc(IntegerVariable tail, IntegerVariable head, IntegerValue offset,
               IntegerVariable offset_var, LiteralIndex l);
 
-  // Helper function for a slightly more readable code.
-  LiteralIndex OptionalLiteralOf(IntegerVariable var) const {
-    return optional_literals_[var];
-  }
-
   // Enqueue a new lower bound for the variable arc.head_lb that was deduced
   // from the current value of arc.tail_lb and the offset of this arc.
   bool EnqueueAndCheck(const ArcInfo& arc, IntegerValue new_head_lb,
                        Trail* trail);
   IntegerValue ArcOffset(const ArcInfo& arc) const;
-
-  // Returns true iff this arc should propagate. For now, this is true when:
-  // - tail node is non-optional
-  // - tail node is optional and present.
-  // - tail node is optional, its presence is unknown, and its presence literal
-  //   is the same as the one of head.
-  bool ArcShouldPropagate(const ArcInfo& arc, const Trail& trail) const;
 
   // Inspect all the optional arcs that needs inspection (to stay sparse) and
   // check if their presence literal can be propagated to false.
@@ -211,7 +189,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   bool BellmanFordTarjan(Trail* trail);
   bool DisassembleSubtree(int source, int target,
                           std::vector<bool>* can_be_skipped);
-  void ReportPositiveCycle(int first_arc, Trail* trail);
+  void ReportPositiveCycle(ArcIndex first_arc, Trail* trail);
   void CleanUpMarkedArcsAndParents();
 
   // Loops over all the arcs and verify that there is no propagation left.
@@ -230,19 +208,25 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // IntegerVariable that changed since the last clear.
   SparseBitset<IntegerVariable> modified_vars_;
 
-  // An arc needs to be inspected for propagation (i.e. is impacted) if:
-  // - Its tail_var changed.
-  // - Its offset_var changed.
+  // An arc needs to be inspected for propagation (i.e. is impacted) if its
+  // tail_var changed. If an arc has 3 variables (tail, offset, head), it will
+  // appear as 6 different entries in the arcs_ vector, one for each variable
+  // and its negation, each time with a different tail.
   //
-  // All the int are arc indices in the arcs_ vector.
+  // TODO(user): rearranging the index so that the arc of the same node are
+  // consecutive like in StaticGraph should have a big performance impact.
   //
-  // The first vector (impacted_arcs_) correspond to the arc currently present
-  // whereas the second vector (impacted_potential_arcs_) list all the potential
-  // arcs (the one not always present) and is just used for propagation of the
-  // arc presence literals.
-  ITIVector<IntegerVariable, absl::InlinedVector<int, 6>> impacted_arcs_;
-  ITIVector<IntegerVariable, absl::InlinedVector<int, 6>>
+  // TODO(user): We do not need to store ArcInfo.tail_var here.
+  ITIVector<IntegerVariable, absl::InlinedVector<ArcIndex, 6>> impacted_arcs_;
+  ITIVector<ArcIndex, ArcInfo> arcs_;
+
+  // This is similar to impacted_arcs_/arcs_ but it is only used to propagate
+  // one of the presence literals when the arc cannot be present. An arc needs
+  // to appear only once in potential_arcs_, but it will be referenced by
+  // all its variable in impacted_potential_arcs_.
+  ITIVector<IntegerVariable, absl::InlinedVector<OptionalArcIndex, 6>>
       impacted_potential_arcs_;
+  ITIVector<OptionalArcIndex, ArcInfo> potential_arcs_;
 
   // Temporary vectors used by ComputePrecedences().
   ITIVector<IntegerVariable, int> var_to_degree_;
@@ -257,19 +241,16 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   std::vector<SortedVar> tmp_sorted_vars_;
   std::vector<IntegerPrecedences> tmp_precedences_;
 
-  // The set of arcs that must be added to impacted_arcs_ when a literal become
-  // true.
-  ITIVector<LiteralIndex, absl::InlinedVector<int, 6>> potential_arcs_;
-
-  // Used for MarkIntegerVariableAsOptional(). The nodes associated to an
-  // IntegerVariable whose entry is not kNoLiteralIndex will only propagate
-  // something to its neighbors if the coresponding literal is assigned to true.
-  ITIVector<IntegerVariable, LiteralIndex> optional_literals_;
-  ITIVector<LiteralIndex, absl::InlinedVector<int, 6>> potential_nodes_;
-
-  // TODO(user): rearranging the index so that the arc of the same node are
-  // consecutive like in StaticGraph should have a big performance impact.
-  std::vector<ArcInfo> arcs_;
+  // Each time a literal becomes true, this list the set of arcs for which we
+  // need to decrement their count. When an arc count reach zero, it must be
+  // added to the set of impacted_arcs_. Note that counts never becomes
+  // negative.
+  //
+  // TODO(user): Try a one-watcher approach instead. Note that in most cases
+  // arc should be controlled by 1 or 2 literals, so not sure it is worth it.
+  ITIVector<LiteralIndex, absl::InlinedVector<ArcIndex, 6>>
+      literal_to_new_impacted_arcs_;
+  ITIVector<ArcIndex, int> arc_counts_;
 
   // Temp vectors to hold the reason of an assignment.
   std::vector<Literal> literal_reason_;
@@ -281,7 +262,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   std::deque<int> bf_queue_;
   std::vector<bool> bf_in_queue_;
   std::vector<bool> bf_can_be_skipped_;
-  std::vector<int> bf_parent_arc_of_;
+  std::vector<ArcIndex> bf_parent_arc_of_;
 
   // Temp vector used by the tree traversal in DisassembleSubtree().
   std::vector<int> tmp_vector_;

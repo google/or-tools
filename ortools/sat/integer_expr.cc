@@ -540,7 +540,7 @@ std::function<void(Model*)> IsOneOf(IntegerVariable var,
       unique_values.push_back(values[i].value());
       value_to_selector[values[i].value()].push_back(selectors[i]);
     }
-    STLSortAndRemoveDuplicates(&unique_values);
+    gtl::STLSortAndRemoveDuplicates(&unique_values);
 
     integer_trail->UpdateInitialDomain(
         var, SortedDisjointIntervalsFromValues(unique_values));

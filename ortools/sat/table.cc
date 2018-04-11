@@ -91,11 +91,11 @@ void ProcessOneColumn(
   // is false too (i.e not possible).
   for (int i = 0; i < values.size(); ++i) {
     const IntegerValue v = values[i];
-    if (!ContainsKey(encoding, v)) {
+    if (!gtl::ContainsKey(encoding, v)) {
       model->Add(ClauseConstraint({line_literals[i].Negated()}));
     } else {
       value_to_list_of_line_literals[v].push_back(line_literals[i]);
-      model->Add(Implication(FindOrDie(encoding, v).Negated(),
+      model->Add(Implication(gtl::FindOrDie(encoding, v).Negated(),
                              line_literals[i].Negated()));
     }
   }
@@ -104,7 +104,7 @@ void ProcessOneColumn(
   // false too.
   for (const auto& entry : value_to_list_of_line_literals) {
     std::vector<Literal> clause = entry.second;
-    clause.push_back(FindOrDie(encoding, entry.first).Negated());
+    clause.push_back(gtl::FindOrDie(encoding, entry.first).Negated());
     model->Add(ClauseConstraint(clause));
   }
 }
@@ -140,7 +140,7 @@ std::function<void(Model*)> TableConstraint(
     for (const std::vector<int64>& tuple : tuples) {
       bool keep = true;
       for (int i = 0; i < n; ++i) {
-        if (!ContainsKey(values_per_var[i], tuple[i])) {
+        if (!gtl::ContainsKey(values_per_var[i], tuple[i])) {
           keep = false;
           break;
         }
@@ -202,8 +202,8 @@ std::function<void(Model*)> NegatedTableConstraint(
     for (const std::vector<int64>& tuple : tuples) {
       bool add_tuple = true;
       for (int i = 0; i < n; ++i) {
-        if (ContainsKey(mapping[i], tuple[i])) {
-          clause[i] = FindOrDie(mapping[i], tuple[i]).Negated();
+        if (gtl::ContainsKey(mapping[i], tuple[i])) {
+          clause[i] = gtl::FindOrDie(mapping[i], tuple[i]).Negated();
         } else {
           add_tuple = false;
           break;
@@ -311,7 +311,7 @@ std::function<void(Model*)> TransitionConstraint(
       for (const std::vector<int64>& transition : automata) {
         CHECK_EQ(transition.size(), 3);
         const std::pair<int64, int64> p{transition[0], transition[1]};
-        CHECK(!ContainsKey(unique_transition_checker, p))
+        CHECK(!gtl::ContainsKey(unique_transition_checker, p))
             << "Duplicate outgoing transitions with value " << transition[1]
             << " from state " << transition[0] << ".";
         unique_transition_checker.insert(p);
@@ -341,8 +341,8 @@ std::function<void(Model*)> TransitionConstraint(
     // all the possible transitions.
     for (int time = 0; time + 1 < n; ++time) {
       for (const std::vector<int64>& transition : automata) {
-        if (!ContainsKey(reachable_states[time], transition[0])) continue;
-        if (!ContainsKey(possible_values[time], transition[1])) continue;
+        if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
+        if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         reachable_states[time + 1].insert(transition[2]);
       }
     }
@@ -351,9 +351,10 @@ std::function<void(Model*)> TransitionConstraint(
     for (int time = n - 1; time > 0; --time) {
       std::set<int64> new_set;
       for (const std::vector<int64>& transition : automata) {
-        if (!ContainsKey(reachable_states[time], transition[0])) continue;
-        if (!ContainsKey(possible_values[time], transition[1])) continue;
-        if (!ContainsKey(reachable_states[time + 1], transition[2])) continue;
+        if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
+        if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
+        if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
+          continue;
         new_set.insert(transition[0]);
       }
       reachable_states[time].swap(new_set);
@@ -376,9 +377,10 @@ std::function<void(Model*)> TransitionConstraint(
       std::vector<IntegerValue> transition_values;
       std::vector<IntegerValue> out_states;
       for (const std::vector<int64>& transition : automata) {
-        if (!ContainsKey(reachable_states[time], transition[0])) continue;
-        if (!ContainsKey(possible_values[time], transition[1])) continue;
-        if (!ContainsKey(reachable_states[time + 1], transition[2])) continue;
+        if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
+        if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
+        if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
+          continue;
 
         // TODO(user): if this transition correspond to just one in-state or
         // one-out state or one variable value, we could reuse the corresponding
@@ -398,7 +400,7 @@ std::function<void(Model*)> TransitionConstraint(
       // Fully instantiate vars[time].
       {
         std::vector<IntegerValue> s = transition_values;
-        STLSortAndRemoveDuplicates(&s);
+        gtl::STLSortAndRemoveDuplicates(&s);
 
         encoding.clear();
         if (s.size() > 1) {
@@ -423,7 +425,7 @@ std::function<void(Model*)> TransitionConstraint(
       // propagation.
       {
         std::vector<IntegerValue> s = out_states;
-        STLSortAndRemoveDuplicates(&s);
+        gtl::STLSortAndRemoveDuplicates(&s);
 
         out_encoding.clear();
         std::vector<Literal> state_literals;

@@ -495,7 +495,14 @@ class IntegerTrail : public SatPropagator {
     DCHECK(IsOptional(i));
     return Literal(is_ignored_literals_[i]);
   }
+  LiteralIndex OptionalLiteralIndex(IntegerVariable i) const {
+    return is_ignored_literals_[i] == kNoLiteralIndex
+               ? kNoLiteralIndex
+               : Literal(is_ignored_literals_[i]).NegatedIndex();
+  }
   void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_considered) {
+    DCHECK(is_ignored_literals_[i] == kNoLiteralIndex ||
+           is_ignored_literals_[i] == is_considered.NegatedIndex());
     is_ignored_literals_[i] = is_considered.NegatedIndex();
     is_ignored_literals_[NegationOf(i)] = is_considered.NegatedIndex();
   }
@@ -523,6 +530,10 @@ class IntegerTrail : public SatPropagator {
   //
   // IMPORTANT: Notice the inversed sign in the literal reason. This is a bit
   // confusing but internally SAT use this direction for efficiency.
+  //
+  // Note(user): Duplicates Literal/IntegerLiteral are supported because we call
+  // STLSortAndRemoveDuplicates() in MergeReasonInto(), but maybe they shouldn't
+  // for efficiency reason.
   //
   // TODO(user): provide an API to give the reason lazily.
   //

@@ -83,7 +83,7 @@ PortfolioOptimizer::~PortfolioOptimizer() {
 
   // Note that unique pointers are not used due to unsupported emplace_back
   // in ITIVectors.
-  STLDeleteElements(&optimizers_);
+  gtl::STLDeleteElements(&optimizers_);
 }
 
 BopOptimizerBase::Status PortfolioOptimizer::SynchronizeIfNeeded(

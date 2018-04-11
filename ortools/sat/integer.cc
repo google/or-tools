@@ -57,7 +57,7 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   } else {
     for (int i = 0; i < values.size(); ++i) {
       const std::pair<IntegerVariable, IntegerValue> key{var, values[i]};
-      if (ContainsKey(equality_to_associated_literal_, key)) {
+      if (gtl::ContainsKey(equality_to_associated_literal_, key)) {
         literals.push_back(equality_to_associated_literal_[key]);
       } else {
         literals.push_back(Literal(sat_solver_->NewBooleanVariable(), true));
@@ -117,7 +117,7 @@ IntegerEncoder::FullDomainEncoding(IntegerVariable var) const {
     for (IntegerValue value(interval.start); value <= interval.end; ++value) {
       const std::pair<IntegerVariable, IntegerValue> key{var, value};
       const Literal literal =
-          FindOrDieNoPrint(equality_to_associated_literal_, key);
+          gtl::FindOrDieNoPrint(equality_to_associated_literal_, key);
       if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
         return {{value, literal}};
       } else if (!sat_solver_->Assignment().LiteralIsFalse(literal)) {
@@ -167,7 +167,7 @@ void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
 
   std::map<IntegerValue, Literal>& map_ref =
       encoding_by_var_[IntegerVariable(i_lit.var)];
-  CHECK(!ContainsKey(map_ref, i_lit.bound));
+  CHECK(!gtl::ContainsKey(map_ref, i_lit.bound));
 
   if (add_implications_) {
     auto after_it = map_ref.lower_bound(i_lit.bound);
@@ -291,7 +291,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
                                                   IntegerVariable var,
                                                   IntegerValue value) {
   const std::pair<IntegerVariable, IntegerValue> key{var, value};
-  if (ContainsKey(equality_to_associated_literal_, key)) {
+  if (gtl::ContainsKey(equality_to_associated_literal_, key)) {
     // If this key is already associated, make the two literals equal.
     const Literal representative = equality_to_associated_literal_[key];
     if (representative != literal) {
@@ -530,11 +530,11 @@ IntegerVariable IntegerTrail::AddIntegerVariable(
 std::vector<ClosedInterval> IntegerTrail::InitialVariableDomain(
     IntegerVariable var) const {
   const int interval_index =
-      FindWithDefault(var_to_current_lb_interval_index_, var, -1);
+      gtl::FindWithDefault(var_to_current_lb_interval_index_, var, -1);
   if (interval_index >= 0) {
     return std::vector<ClosedInterval>(
         &all_intervals_[interval_index],
-        &all_intervals_[FindOrDie(var_to_end_interval_index_, var)]);
+        &all_intervals_[gtl::FindOrDie(var_to_end_interval_index_, var)]);
   } else {
     std::vector<ClosedInterval> result;
     result.push_back({LevelZeroBound(var).value(),
@@ -569,7 +569,7 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
       {}));
 
   // TODO(user): reuse the memory if possible.
-  if (ContainsKey(var_to_current_lb_interval_index_, var)) {
+  if (gtl::ContainsKey(var_to_current_lb_interval_index_, var)) {
     var_to_current_lb_interval_index_.EraseOrDie(var);
     var_to_end_interval_index_.erase(var);
     var_to_current_lb_interval_index_.EraseOrDie(NegationOf(var));
@@ -580,7 +580,7 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
     for (const ClosedInterval interval : domain) {
       all_intervals_.push_back(interval);
     }
-    InsertOrDie(&var_to_end_interval_index_, var, all_intervals_.size());
+    gtl::InsertOrDie(&var_to_end_interval_index_, var, all_intervals_.size());
 
     // Copy for the negated variable.
     var_to_current_lb_interval_index_.Set(NegationOf(var),
@@ -588,8 +588,8 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
     for (const ClosedInterval interval : ::gtl::reversed_view(domain)) {
       all_intervals_.push_back({-interval.end, -interval.start});
     }
-    InsertOrDie(&var_to_end_interval_index_, NegationOf(var),
-                all_intervals_.size());
+    gtl::InsertOrDie(&var_to_end_interval_index_, NegationOf(var),
+                     all_intervals_.size());
   }
 
   // If the variable is fully encoded, set to false excluded literals.
@@ -622,7 +622,8 @@ IntegerVariable IntegerTrail::GetOrCreateConstantIntegerVariable(
   if (insert.second) {  // new element.
     const IntegerVariable new_var = AddIntegerVariable(value, value);
     insert.first->second = new_var;
-    if (value != 0) InsertOrDie(&constant_map_, -value, NegationOf(new_var));
+    if (value != 0)
+      gtl::InsertOrDie(&constant_map_, -value, NegationOf(new_var));
   }
   return insert.first->second;
 }
@@ -802,9 +803,9 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   // we always map these to enqueued literals during conflict resolution.
   {
     int interval_index =
-        FindWithDefault(var_to_current_lb_interval_index_, var, -1);
+        gtl::FindWithDefault(var_to_current_lb_interval_index_, var, -1);
     if (interval_index >= 0) {
-      const int end_index = FindOrDie(var_to_end_interval_index_, var);
+      const int end_index = gtl::FindOrDie(var_to_end_interval_index_, var);
       while (interval_index < end_index &&
              i_lit.bound > all_intervals_[interval_index].end) {
         ++interval_index;
@@ -1108,7 +1109,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
   for (const IntegerVariable var : tmp_to_clear_) {
     tmp_var_to_trail_index_in_queue_[var] = 0;
   }
-  STLSortAndRemoveDuplicates(output);
+  gtl::STLSortAndRemoveDuplicates(output);
 }
 
 absl::Span<Literal> IntegerTrail::Reason(const Trail& trail,

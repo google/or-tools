@@ -71,7 +71,7 @@ bool CheckAllDifferentInt(
   std::unordered_set<int64> visited;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64 value = EvalAt(ct.arguments[0], i, evaluator);
-    if (ContainsKey(visited, value)) {
+    if (gtl::ContainsKey(visited, value)) {
       return false;
     }
     visited.insert(value);
@@ -86,7 +86,7 @@ bool CheckAlldifferentExcept0(
   std::unordered_set<int64> visited;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64 value = EvalAt(ct.arguments[0], i, evaluator);
-    if (value != 0 && ContainsKey(visited, value)) {
+    if (value != 0 && gtl::ContainsKey(visited, value)) {
       return false;
     }
     visited.insert(value);
@@ -403,7 +403,7 @@ std::vector<int64> ComputeGlobalCardinalityCards(
   }
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int value = EvalAt(ct.arguments[0], i, evaluator);
-    if (ContainsKey(positions, value)) {
+    if (gtl::ContainsKey(positions, value)) {
       cards[positions[value]]++;
     }
   }
@@ -1163,7 +1163,7 @@ bool CheckSolution(const Model& model,
   const CallMap call_map = CreateCallMap();
   for (Constraint* ct : model.constraints()) {
     if (!ct->active) continue;
-    const auto& checker = FindOrDie(call_map, ct->type);
+    const auto& checker = gtl::FindOrDie(call_map, ct->type);
     if (!checker(*ct, evaluator)) {
       FZLOG << "Failing constraint " << ct->DebugString() << FZENDL;
       ok = false;

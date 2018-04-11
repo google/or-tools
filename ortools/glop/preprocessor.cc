@@ -15,8 +15,10 @@
 #include "ortools/glop/preprocessor.h"
 
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
+#include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
 
@@ -144,7 +146,7 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
   if (preprocessor->Run(lp)) {
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
-    VLOG(1) << StringPrintf(
+    VLOG(1) << absl::StrFormat(
         "%s(%fs): %d(%d) rows, %d(%d) columns, %lld(%lld) entries.",
         name.c_str(), preprocess_time, lp->num_constraints().value(),
         (lp->num_constraints() - initial_num_rows_).value(),

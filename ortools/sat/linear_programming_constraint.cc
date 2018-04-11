@@ -59,7 +59,7 @@ LinearProgrammingConstraint::CreateNewConstraint(double lb, double ub) {
 glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
     IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
-  if (!ContainsKey(mirror_lp_variable_, positive_variable)) {
+  if (!gtl::ContainsKey(mirror_lp_variable_, positive_variable)) {
     const glop::ColIndex col = lp_data_.CreateNewVariable();
     DCHECK_EQ(col, integer_variables_.size());
     mirror_lp_variable_[positive_variable] = col;
@@ -185,12 +185,13 @@ glop::Fractional LinearProgrammingConstraint::GetVariableValueAtCpScale(
 
 double LinearProgrammingConstraint::GetSolutionValue(
     IntegerVariable variable) const {
-  return lp_solution_[FindOrDie(mirror_lp_variable_, variable).value()];
+  return lp_solution_[gtl::FindOrDie(mirror_lp_variable_, variable).value()];
 }
 
 double LinearProgrammingConstraint::GetSolutionReducedCost(
     IntegerVariable variable) const {
-  return lp_reduced_cost_[FindOrDie(mirror_lp_variable_, variable).value()];
+  return lp_reduced_cost_[gtl::FindOrDie(mirror_lp_variable_, variable)
+                              .value()];
 }
 
 void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
@@ -250,10 +251,11 @@ bool LinearProgrammingConstraint::Propagate() {
       std::vector<double> local_solution;
       for (const IntegerVariable var : generator.vars) {
         if (VariableIsPositive(var)) {
-          const auto index = FindOrDie(mirror_lp_variable_, var);
+          const auto index = gtl::FindOrDie(mirror_lp_variable_, var);
           local_solution.push_back(GetVariableValueAtCpScale(index));
         } else {
-          const auto index = FindOrDie(mirror_lp_variable_, NegationOf(var));
+          const auto index =
+              gtl::FindOrDie(mirror_lp_variable_, NegationOf(var));
           local_solution.push_back(-GetVariableValueAtCpScale(index));
         }
       }
@@ -500,8 +502,8 @@ void AddIncomingAndOutgoingCutsIfNeeded(
 
   // Add incoming/outgoing cut arcs, compute flow through cuts.
   for (int i = 0; i < tails.size(); ++i) {
-    const bool out = ContainsKey(subset, tails[i]);
-    const bool in = ContainsKey(subset, heads[i]);
+    const bool out = gtl::ContainsKey(subset, tails[i]);
+    const bool in = gtl::ContainsKey(subset, heads[i]);
     if (out && in) continue;
     if (out) {
       sum_outgoing += lp_solution[i];
@@ -527,7 +529,7 @@ void AddIncomingAndOutgoingCutsIfNeeded(
   int optional_loop_out = -1;
   for (int i = 0; i < tails.size(); ++i) {
     if (tails[i] != heads[i]) continue;
-    if (ContainsKey(subset, tails[i])) {
+    if (gtl::ContainsKey(subset, tails[i])) {
       num_optional_nodes_in++;
       if (optional_loop_in == -1 ||
           lp_solution[i] < lp_solution[optional_loop_in]) {

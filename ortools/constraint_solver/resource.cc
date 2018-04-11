@@ -446,7 +446,7 @@ class NotLast {
   NotLast(Solver* const solver, const std::vector<IntervalVar*>& intervals,
           bool mirror, bool strict);
 
-  ~NotLast() { STLDeleteElements(&by_start_min_); }
+  ~NotLast() { gtl::STLDeleteElements(&by_start_min_); }
 
   bool Propagate();
 
@@ -546,7 +546,7 @@ class EdgeFinderAndDetectablePrecedences {
   EdgeFinderAndDetectablePrecedences(Solver* const solver,
                                      const std::vector<IntervalVar*>& intervals,
                                      bool mirror, bool strict);
-  ~EdgeFinderAndDetectablePrecedences() { STLDeleteElements(&by_start_min_); }
+  ~EdgeFinderAndDetectablePrecedences() { gtl::STLDeleteElements(&by_start_min_); }
   int64 size() const { return by_start_min_.size(); }
   IntervalVar* interval(int index) { return by_start_min_[index]->interval; }
   void UpdateEst();
@@ -563,7 +563,7 @@ class EdgeFinderAndDetectablePrecedences {
   // use them must first sort them in the right order.
 
   // All of these vectors store the same set of objects. Therefore, at
-  // destruction time, STLDeleteElements should be called on only one of them.
+  // destruction time, gtl::STLDeleteElements should be called on only one of them.
   // It does not matter which one.
 
   ThetaTree theta_tree_;
@@ -1403,8 +1403,8 @@ class EdgeFinder : public Constraint {
         has_zero_demand_tasks_(true) {}
 
   ~EdgeFinder() override {
-    STLDeleteElements(&tasks_);
-    STLDeleteValues(&update_map_);
+    gtl::STLDeleteElements(&tasks_);
+    gtl::STLDeleteValues(&update_map_);
   }
 
   void Post() override {
@@ -1437,7 +1437,7 @@ class EdgeFinder : public Constraint {
 
  private:
   UpdatesForADemand* GetOrMakeUpdate(int64 demand_min) {
-    UpdatesForADemand* update = FindPtrOrNull(update_map_, demand_min);
+    UpdatesForADemand* update = gtl::FindPtrOrNull(update_map_, demand_min);
     if (update == nullptr) {
       update = new UpdatesForADemand(tasks_.size());
       update_map_[demand_min] = update;
@@ -1717,7 +1717,7 @@ class CumulativeTimeTable : public Constraint {
     profile_unique_time_.reserve(profile_max_size);
   }
 
-  ~CumulativeTimeTable() override { STLDeleteElements(&by_start_min_); }
+  ~CumulativeTimeTable() override { gtl::STLDeleteElements(&by_start_min_); }
 
   void InitialPropagate() override {
     BuildProfile();
@@ -1917,7 +1917,7 @@ class TimeTableSync : public Constraint {
     demands_.reserve(num_tasks_);
   }
 
-  ~TimeTableSync() override { STLDeleteElements(&tasks_); }
+  ~TimeTableSync() override { gtl::STLDeleteElements(&tasks_); }
 
   void InitialPropagate() override {
     // Reset data structures.

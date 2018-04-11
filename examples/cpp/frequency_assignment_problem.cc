@@ -194,8 +194,8 @@ class OrderingBuilder : public DecisionBuilder {
   Decision* Next(Solver* const s) override {
     if (iter_ < size_) {
       FapConstraint constraint = data_constraints_[iter_];
-      const int index1 = FindOrDie(index_from_key_, constraint.variable1);
-      const int index2 = FindOrDie(index_from_key_, constraint.variable2);
+      const int index1 = gtl::FindOrDie(index_from_key_, constraint.variable1);
+      const int index2 = gtl::FindOrDie(index_from_key_, constraint.variable2);
       IntVar* variable1 = variables_[index1];
       IntVar* variable2 = variables_[index2];
 
@@ -272,8 +272,8 @@ class OrderingBuilder : public DecisionBuilder {
   Order Hint(const FapConstraint& constraint) {
     const int id1 = constraint.variable1;
     const int id2 = constraint.variable2;
-    const int variable1 = FindOrDie(index_from_key_, id1);
-    const int variable2 = FindOrDie(index_from_key_, id2);
+    const int variable1 = gtl::FindOrDie(index_from_key_, id1);
+    const int variable2 = gtl::FindOrDie(index_from_key_, id2);
     const int value = constraint.value;
     CHECK_LT(variable1, variable_state_.size());
     CHECK_LT(variable2, variable_state_.size());
@@ -361,7 +361,7 @@ int64 ValueEvaluator(
   }
   std::pair<int64, int64> new_value_ranking =
       std::make_pair(new_value, new_ranking);
-  InsertOrUpdate(value_evaluator_map, variable_index, new_value_ranking);
+  gtl::InsertOrUpdate(value_evaluator_map, variable_index, new_value_ranking);
 
   return new_ranking;
 }
@@ -372,7 +372,7 @@ int64 VariableEvaluator(const std::vector<int>& key_from_index,
                         const std::map<int, FapVariable>& data_variables,
                         int64 variable_index) {
   FapVariable variable =
-      FindOrDie(data_variables, key_from_index[variable_index]);
+      gtl::FindOrDie(data_variables, key_from_index[variable_index]);
   int64 result = -(variable.degree * 100 / variable.domain_size);
   return result;
 }
@@ -395,7 +395,7 @@ void CreateModelVariables(const std::map<int, FapVariable>& data_variables,
   for (const auto& it : data_variables) {
     CHECK_LT(index, model_variables->size());
     (*model_variables)[index] = solver->MakeIntVar(it.second.domain);
-    InsertOrUpdate(index_from_key, it.first, index);
+    gtl::InsertOrUpdate(index_from_key, it.first, index);
     (*key_from_index)[index] = it.first;
 
     if ((it.second.initial_position != -1) && (it.second.hard)) {
@@ -415,8 +415,8 @@ void CreateModelConstraints(const std::vector<FapConstraint>& data_constraints,
   CHECK_NOTNULL(solver);
 
   for (const FapConstraint& ct : data_constraints) {
-    const int index1 = FindOrDie(index_from_key, ct.variable1);
-    const int index2 = FindOrDie(index_from_key, ct.variable2);
+    const int index1 = gtl::FindOrDie(index_from_key, ct.variable1);
+    const int index2 = gtl::FindOrDie(index_from_key, ct.variable2);
     CHECK_LT(index1, variables.size());
     CHECK_LT(index2, variables.size());
     IntVar* var1 = variables[index1];
@@ -630,10 +630,10 @@ void SplitVariablesHardSoft(const std::map<int, FapVariable>& data_variables,
     if (it.second.initial_position != -1) {
       if (it.second.hard) {
         CHECK_LT(it.second.mobility_cost, 0);
-        InsertOrUpdate(hard_variables, it.first, it.second);
+        gtl::InsertOrUpdate(hard_variables, it.first, it.second);
       } else {
         CHECK_GE(it.second.mobility_cost, 0);
-        InsertOrUpdate(soft_variables, it.first, it.second);
+        gtl::InsertOrUpdate(soft_variables, it.first, it.second);
       }
     }
   }
@@ -662,7 +662,7 @@ void PenalizeVariablesViolation(
     const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
     Solver* solver) {
   for (const auto& it : soft_variables) {
-    const int index = FindOrDie(index_from_key, it.first);
+    const int index = gtl::FindOrDie(index_from_key, it.first);
     CHECK_LT(index, variables.size());
     IntVar* const displaced = solver->MakeIsDifferentCstVar(
         variables[index], it.second.initial_position);
@@ -692,8 +692,8 @@ void PenalizeConstraintsViolation(
   }
 
   for (const FapConstraint& ct : soft_constraints) {
-    const int index1 = FindOrDie(index_from_key, ct.variable1);
-    const int index2 = FindOrDie(index_from_key, ct.variable2);
+    const int index1 = gtl::FindOrDie(index_from_key, ct.variable1);
+    const int index2 = gtl::FindOrDie(index_from_key, ct.variable2);
     CHECK_LT(index1, variables.size());
     CHECK_LT(index2, variables.size());
     IntVar* const absolute_difference =

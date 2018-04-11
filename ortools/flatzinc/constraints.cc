@@ -218,7 +218,7 @@ void ExtractArrayBoolAnd(fz::SolverData* data, fz::Constraint* ct) {
   const std::vector<IntVar*> tmp_vars =
       data->GetOrCreateVariableArray(ct->arguments[0]);
   for (IntVar* const to_add : tmp_vars) {
-    if (!ContainsKey(added, to_add) && to_add->Min() != 1) {
+    if (!gtl::ContainsKey(added, to_add) && to_add->Min() != 1) {
       variables.push_back(to_add);
       added.insert(to_add);
     }
@@ -271,7 +271,7 @@ void ExtractArrayBoolOr(fz::SolverData* data, fz::Constraint* ct) {
   const std::vector<IntVar*> tmp_vars =
       data->GetOrCreateVariableArray(ct->arguments[0]);
   for (IntVar* const to_add : tmp_vars) {
-    if (!ContainsKey(added, to_add) && to_add->Max() != 0) {
+    if (!gtl::ContainsKey(added, to_add) && to_add->Max() != 0) {
       variables.push_back(to_add);
       added.insert(to_add);
     }

@@ -82,7 +82,7 @@ class LPDecomposer {
   const LinearProgram* original_problem_;
   std::vector<std::vector<ColIndex>> clusters_;
 
-  mutable Mutex mutex_;
+  mutable absl::Mutex mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(LPDecomposer);
 };

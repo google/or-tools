@@ -21,6 +21,8 @@
 #define strtoll _strtoi64
 #endif  // _MSC_VER
 
+namespace strings {
+
 bool safe_strtof(const char* str, float* value) {
   char* endptr;
   *value = strtof(str, &endptr);
@@ -67,5 +69,7 @@ bool safe_strto32(const std::string& str, int* value) {
   *value = strtol(str.c_str(), &endptr, /*base=*/10);  // NOLINT
   return *endptr == '\0' && str[0] != '\0';
 }
+
+}  // namespace strings
 #undef strtof
 #undef strtoll

@@ -87,8 +87,8 @@ void SatTableConstraint::Post() {
 }
 
 int BooleanVariableManager::RegisterIntVar(IntVar* int_var) {
-  const int reg_index = LookupOrInsert(&registration_index_map_, int_var,
-                                       registered_int_vars_.size());
+  const int reg_index = gtl::LookupOrInsert(&registration_index_map_, int_var,
+                                            registered_int_vars_.size());
   if (reg_index < registered_int_vars_.size()) return reg_index;
   registered_int_vars_.push_back(int_var);
 

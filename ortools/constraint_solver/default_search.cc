@@ -399,7 +399,7 @@ class ImpactRecorder : public SearchMonitor {
     }
     d->Accept(&find_var_);
     if (find_var_.operation() == FindVar::ASSIGN &&
-        ContainsKey(var_map_, find_var_.var())) {
+        gtl::ContainsKey(var_map_, find_var_.var())) {
       current_var_ = var_map_[find_var_.var()];
       current_value_ = find_var_.value();
       current_log_space_ = domain_watcher_->LogSearchSpaceSize();
@@ -912,7 +912,7 @@ class RestartMonitor : public SearchMonitor {
         const int64 value = choice.value();
         if (choice.left()) {
           nogood->AddIntegerVariableEqualValueTerm(var, value);
-        } else if (!ContainsKey(positive_variable, choice.var())) {
+        } else if (!gtl::ContainsKey(positive_variable, choice.var())) {
           nogood->AddIntegerVariableNotEqualValueTerm(var, value);
         }
       }
@@ -961,7 +961,7 @@ class RunHeuristicsAsDives : public Decision {
     Init(solver, vars, heuristic_num_failures_limit);
   }
 
-  ~RunHeuristicsAsDives() override { STLDeleteElements(&heuristics_); }
+  ~RunHeuristicsAsDives() override { gtl::STLDeleteElements(&heuristics_); }
 
   void Apply(Solver* const solver) override {
     if (!RunAllHeuristics(solver)) {

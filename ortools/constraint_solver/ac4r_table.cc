@@ -128,7 +128,8 @@ class TableVar {
   }
 
   ~TableVar() {
-    STLDeleteElements(&tuples_per_value_);  // delete all elements of a vector
+    // delete all elements of a vector
+    gtl::STLDeleteElements(&tuples_per_value_);
   }
 
   IntVar* Variable() const { return var_; }
@@ -321,7 +322,7 @@ class Ac4TableConstraint : public Constraint {
   }
 
   ~Ac4TableConstraint() {
-    STLDeleteElements(&vars_);  // delete all elements of a vector
+    gtl::STLDeleteElements(&vars_);  // delete all elements of a vector
     if (delete_table_) {
       delete table_;
     }

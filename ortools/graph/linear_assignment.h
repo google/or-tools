@@ -1447,7 +1447,7 @@ void LinearSumAssignment<GraphType>::ReportAndAccumulateStats() {
 
 template <typename GraphType>
 bool LinearSumAssignment<GraphType>::ComputeAssignment() {
-  CHECK_NOTNULL(graph_);
+  CHECK(graph_ != nullptr);
   bool ok = graph_->num_nodes() == 2 * num_left_nodes_;
   if (!ok) return false;
   // Note: FinalizeSetup() might have been called already by white-box

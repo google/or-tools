@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <string>
 
-namespace operations_research {
+namespace gtl {
 
 // STLDeleteContainerPointers()
 //  For a range within a container of pointers, calls delete
@@ -116,5 +116,5 @@ inline void STLSortAndRemoveDuplicates(T* v) {
   v->erase(std::unique(v->begin(), v->end()), v->end());
 }
 
-}  // namespace operations_research
+}  // namespace gtl
 #endif  // OR_TOOLS_BASE_STL_UTIL_H_

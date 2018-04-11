@@ -95,7 +95,7 @@ class MddFactory {
    public:
     VmRec(Mdd* value = nullptr) : mdd_(), vmr_(), value_(value) {}
 
-    ~VmRec() { STLDeleteElements(&vmr_); }
+    ~VmRec() { gtl::STLDeleteElements(&vmr_); }
 
     VmRec* next(Mdd* mdd) {
       if (mdd == nullptr) {
@@ -139,7 +139,7 @@ class MddFactory {
   std::vector<VectorMap<int64> > vm_;
   MddFactory() : nb_instance(1) {}
 
-  ~MddFactory() { STLDeleteElements(&g_); }
+  ~MddFactory() { gtl::STLDeleteElements(&g_); }
 
   int getNbInstance() { return nb_instance; }
 
@@ -1042,7 +1042,7 @@ class MddTableVar {
     }
   }
 
-  ~MddTableVar() { STLDeleteElements(&edges_per_value_); }
+  ~MddTableVar() { gtl::STLDeleteElements(&edges_per_value_); }
 
   IntVar* Variable() const { return var_; }
 
@@ -1297,7 +1297,7 @@ class Ac4MddTableConstraint : public Constraint {
   }
 
   ~Ac4MddTableConstraint() {
-    STLDeleteElements(&vars_);  // delete all elements of a vector
+    gtl::STLDeleteElements(&vars_);  // delete all elements of a vector
     delete shared_positions_edges_;
   }
 

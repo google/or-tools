@@ -17,6 +17,7 @@
 #include <utility>
 #include "ortools/base/logging.h"
 
+namespace gtl {
 // Perform a lookup in a map or std::unordered_map.
 // If the key is present in the map then the value associated with that
 // key is returned, otherwise the value passed as a default is returned.
@@ -190,5 +191,5 @@ typename Collection::value_type::second_type& LookupOrInsert(
       collection->insert(typename Collection::value_type(key, value));
   return ret.first->second;
 }
-
+}  // namespace gtl
 #endif  // OR_TOOLS_BASE_MAP_UTIL_H_

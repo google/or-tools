@@ -1214,7 +1214,7 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
     int new_size = 0;
     std::set<Literal> temp(core.begin(), core.end());
     for (int i = 0; i < assumptions.size(); ++i) {
-      if (ContainsKey(temp, assumptions[i])) continue;
+      if (gtl::ContainsKey(temp, assumptions[i])) continue;
       assumptions[new_size++] = assumptions[i];
     }
     assumptions.resize(new_size);
@@ -1489,8 +1489,8 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     for (int i = 0; i < integer_assumptions.size(); ++i) {
       assumptions.push_back(integer_encoder->GetOrCreateAssociatedLiteral(
           integer_assumptions[i]));
-      InsertOrDie(&assumption_to_term_index, assumptions.back().Index(),
-                  term_indices[i]);
+      gtl::InsertOrDie(&assumption_to_term_index, assumptions.back().Index(),
+                       term_indices[i]);
     }
 
     // Solve under the assumptions.
@@ -1527,7 +1527,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       IntegerValue new_var_ub(0);
       int new_depth = 0;
       for (const Literal lit : core) {
-        const int index = FindOrDie(assumption_to_term_index, lit.Index());
+        const int index = gtl::FindOrDie(assumption_to_term_index, lit.Index());
         min_weight = std::min(min_weight, terms[index].weight);
         max_weight = std::max(max_weight, terms[index].weight);
         new_depth = std::max(new_depth, terms[index].depth + 1);
@@ -1564,7 +1564,8 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
         std::vector<IntegerVariable> constraint_vars;
         std::vector<int64> constraint_coeffs;
         for (const Literal lit : core) {
-          const int index = FindOrDie(assumption_to_term_index, lit.Index());
+          const int index =
+              gtl::FindOrDie(assumption_to_term_index, lit.Index());
           terms[index].weight -= min_weight;
           constraint_vars.push_back(terms[index].var);
           constraint_coeffs.push_back(1);
@@ -1726,7 +1727,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
       } else {
         assumptions.push_back(integer_encoder->GetOrCreateAssociatedLiteral(
             IntegerLiteral::LowerOrEqual(variables[i], hs_value)));
-        InsertOrDie(&assumption_to_index, assumptions.back().Index(), i);
+        gtl::InsertOrDie(&assumption_to_index, assumptions.back().Index(), i);
       }
     }
 
@@ -1766,7 +1767,8 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     sat_solver->SetAssumptionLevel(0);
     for (const std::vector<Literal>& core : cores) {
       if (core.size() == 1) {
-        const int index = FindOrDie(assumption_to_index, core.front().Index());
+        const int index =
+            gtl::FindOrDie(assumption_to_index, core.front().Index());
         hs_model.mutable_variable(index)->set_lower_bound(
             integer_trail->LowerBound(variables[index]).value());
         continue;
@@ -1776,7 +1778,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
       MPConstraintProto* ct = hs_model.add_constraint();
       ct->set_lower_bound(1.0);
       for (const Literal lit : core) {
-        const int index = FindOrDie(assumption_to_index, lit.Index());
+        const int index = gtl::FindOrDie(assumption_to_index, lit.Index());
         const double lb = integer_trail->LowerBound(variables[index]).value();
         const double hs_value = response.variable_value(index);
         if (hs_value == lb) {
@@ -1785,7 +1787,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
           ct->set_lower_bound(ct->lower_bound() + lb);
         } else {
           const std::pair<int, double> key = {index, hs_value};
-          if (!ContainsKey(created_var, key)) {
+          if (!gtl::ContainsKey(created_var, key)) {
             const int new_var_index = hs_model.variable_size();
             created_var[key] = new_var_index;
 
@@ -1803,7 +1805,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
             implication->add_var_index(new_var_index);
             implication->add_coefficient(lb - hs_value - 1);
           }
-          ct->add_var_index(FindOrDieNoPrint(created_var, key));
+          ct->add_var_index(gtl::FindOrDieNoPrint(created_var, key));
           ct->add_coefficient(1.0);
         }
       }

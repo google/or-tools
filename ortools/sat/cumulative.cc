@@ -123,7 +123,7 @@ std::function<void(Model*)> Cumulative(
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
     SchedulingConstraintHelper* helper =
-        new SchedulingConstraintHelper(vars, trail, integer_trail, intervals);
+        new SchedulingConstraintHelper(vars, model);
     model->TakeOwnership(helper);
 
     // Propagator responsible for applying Timetabling filtering rule. It

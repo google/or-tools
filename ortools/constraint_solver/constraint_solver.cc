@@ -983,7 +983,7 @@ class Search {
         jmpbuf_filled_(false),
         backtrack_at_the_end_of_the_search_(true) {}
 
-  ~Search() { STLDeleteElements(&marker_stack_); }
+  ~Search() { gtl::STLDeleteElements(&marker_stack_); }
 
   void EnterSearch();
   void RestartSearch();
@@ -1443,7 +1443,7 @@ Solver::~Solver() {
   DCHECK_EQ(finalType, SENTINEL);
   // Not popping initial SENTINEL in Solver destructor.
   DCHECK_EQ(info.int_info, SOLVER_CTOR_SENTINEL);
-  STLDeleteElements(&searches_);
+  gtl::STLDeleteElements(&searches_);
   DeleteDemonProfiler(demon_profiler_);
   DeleteLocalSearchProfiler(local_search_profiler_);
   DeleteBuilders();
@@ -2411,7 +2411,8 @@ void Solver::RestartCurrentSearch() {
 // ----- Cast Expression -----
 
 IntExpr* Solver::CastExpression(const IntVar* const var) const {
-  const IntegerCastInfo* const cast_info = FindOrNull(cast_information_, var);
+  const IntegerCastInfo* const cast_info =
+      gtl::FindOrNull(cast_information_, var);
   if (cast_info != nullptr) {
     return cast_info->expression;
   }
@@ -2421,12 +2422,12 @@ IntExpr* Solver::CastExpression(const IntVar* const var) const {
 // --- Propagation object names ---
 
 std::string Solver::GetName(const PropagationBaseObject* object) {
-  const std::string* name = FindOrNull(propagation_object_names_, object);
+  const std::string* name = gtl::FindOrNull(propagation_object_names_, object);
   if (name != nullptr) {
     return *name;
   }
   const IntegerCastInfo* const cast_info =
-      FindOrNull(cast_information_, object);
+      gtl::FindOrNull(cast_information_, object);
   if (cast_info != nullptr && cast_info->expression != nullptr) {
     if (cast_info->expression->HasName()) {
       return StringPrintf("Var<%s>", cast_info->expression->name().c_str());
@@ -2458,8 +2459,8 @@ void Solver::SetName(const PropagationBaseObject* object, const std::string& nam
 }
 
 bool Solver::HasName(const PropagationBaseObject* const object) const {
-  return ContainsKey(propagation_object_names_,
-                     const_cast<PropagationBaseObject*>(object)) ||
+  return gtl::ContainsKey(propagation_object_names_,
+                          const_cast<PropagationBaseObject*>(object)) ||
          (!object->BaseName().empty() && parameters_.name_all_variables());
 }
 
@@ -3202,7 +3203,7 @@ void Constraint::Accept(ModelVisitor* const visitor) const {
 }
 
 bool Constraint::IsCastConstraint() const {
-  return ContainsKey(solver()->cast_constraints_, this);
+  return gtl::ContainsKey(solver()->cast_constraints_, this);
 }
 
 IntVar* Constraint::Var() { return nullptr; }

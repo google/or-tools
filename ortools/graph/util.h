@@ -308,7 +308,7 @@ void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path) {
   int node = graph.Tail(arc_path->front());
   int new_size = 0;
   while (new_size < arc_path->size()) {  // To prevent cycle on bad input.
-    const int arc = FindOrDie(last_arc_leaving_node, node);
+    const int arc = gtl::FindOrDie(last_arc_leaving_node, node);
     if (arc == -1) break;
     (*arc_path)[new_size++] = arc;
     node = graph.Head(arc);
@@ -322,7 +322,7 @@ bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path) {
   std::set<int> seen;
   seen.insert(graph.Tail(arc_path.front()));
   for (const int arc : arc_path) {
-    if (!InsertIfNotPresent(&seen, graph.Head(arc))) return true;
+    if (!gtl::InsertIfNotPresent(&seen, graph.Head(arc))) return true;
   }
   return false;
 }

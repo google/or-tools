@@ -5024,7 +5024,7 @@ class AssignmentContainer {
     // but also how the map is hashed (e.g., number of buckets). This is not
     // what we want.
     for (const E& element : container.elements_) {
-      const int position = FindWithDefault(elements_map_, element.Var(), -1);
+      const int position = gtl::FindWithDefault(elements_map_, element.Var(), -1);
       if (position < 0 || elements_[position] != element) {
         return false;
       }
@@ -5059,7 +5059,7 @@ class AssignmentContainer {
     } else {
       EnsureMapIsUpToDate();
       DCHECK_EQ(elements_map_.size(), elements_.size());
-      return FindCopy(elements_map_, var, index);
+      return gtl::FindCopy(elements_map_, var, index);
     }
   }
 

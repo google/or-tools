@@ -15,7 +15,7 @@
 
 #include "ortools/base/mutex.h"
 
-namespace operations_research {
+namespace absl {
 Mutex::Mutex() {}
 Mutex::~Mutex() {}
 void Mutex::Lock() { real_mutex_.lock(); }
@@ -30,4 +30,4 @@ void CondVar::Wait(Mutex* const mu) {
 }
 void CondVar::Signal() { real_condition_.notify_one(); }
 void CondVar::SignalAll() { real_condition_.notify_all(); }
-}  // namespace operations_research
+}  // namespace absl

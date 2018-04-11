@@ -501,7 +501,7 @@ class IdGenerator {
   // a new id, otherwise return the previously generated id.
   int GetId(int type, Coefficient coefficient) {
     const std::pair<int, int64> key(type, coefficient.value());
-    return LookupOrInsert(&id_map_, key, id_map_.size());
+    return gtl::LookupOrInsert(&id_map_, key, id_map_.size());
   }
 
  private:

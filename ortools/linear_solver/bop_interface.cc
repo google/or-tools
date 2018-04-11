@@ -303,8 +303,7 @@ void BopInterface::ExtractNewVariables() {
   const glop::ColIndex num_cols(solver_->variables_.size());
   for (glop::ColIndex col(last_variable_index_); col < num_cols; ++col) {
     MPVariable* const var = solver_->variables_[col.value()];
-    const glop::ColIndex new_col =
-        linear_program_.FindOrCreateVariable(var->name());
+    const glop::ColIndex new_col = linear_program_.CreateNewVariable();
     DCHECK_EQ(new_col, col);
     set_variable_as_extracted(col.value(), true);
     linear_program_.SetVariableBounds(col, var->lb(), var->ub());
@@ -326,8 +325,7 @@ void BopInterface::ExtractNewConstraints() {
 
     const double lb = ct->lb();
     const double ub = ct->ub();
-    const glop::RowIndex new_row =
-        linear_program_.FindOrCreateConstraint(ct->name());
+    const glop::RowIndex new_row = linear_program_.CreateNewConstraint();
     DCHECK_EQ(new_row, row);
     linear_program_.SetConstraintBounds(row, lb, ub);
 

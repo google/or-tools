@@ -1148,7 +1148,13 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
             parameters_->minimize_with_propagation_restart_period();
         MinimizeSomeClauses(
             parameters_->minimize_with_propagation_num_decisions());
-        if (is_model_unsat_) return MODEL_UNSAT;
+
+        // Corner case: the minimization above being based on propagation may
+        // fix the remaining variables or prove UNSAT.
+        if (is_model_unsat_) return StatusWithLog(MODEL_UNSAT);
+        if (trail_->Index() == num_variables_.value()) {
+          return StatusWithLog(MODEL_SAT);
+        }
       }
 
       DCHECK_GE(CurrentDecisionLevel(), assumption_level_);

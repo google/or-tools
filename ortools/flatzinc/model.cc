@@ -34,7 +34,7 @@ Domain Domain::IntegerList(std::vector<int64> values) {
   Domain result;
   result.is_interval = false;
   result.values = std::move(values);
-  STLSortAndRemoveDuplicates(&result.values);
+  gtl::STLSortAndRemoveDuplicates(&result.values);
   result.display_as_boolean = false;
   result.is_a_set = false;
   return result;
@@ -198,7 +198,7 @@ bool Domain::IntersectWithListOfIntegers(const std::vector<int64>& integers) {
     for (const int64 v : integers) {
       if (v >= dmin && v <= dmax) values.push_back(v);
     }
-    STLSortAndRemoveDuplicates(&values);
+    gtl::STLSortAndRemoveDuplicates(&values);
     if (!values.empty() &&
         values.back() - values.front() == values.size() - 1 &&
         values.size() >= 2) {
@@ -222,7 +222,7 @@ bool Domain::IntersectWithListOfIntegers(const std::vector<int64>& integers) {
     new_values.reserve(std::min(values.size(), integers.size()));
     bool changed = false;
     for (const int64 val : values) {
-      if (ContainsKey(other_values, val)) {
+      if (gtl::ContainsKey(other_values, val)) {
         if (new_values.empty() || val != new_values.back()) {
           new_values.push_back(val);
         }
@@ -304,7 +304,7 @@ bool Domain::OverlapsIntList(const std::vector<int64>& vec) const {
             ? std::unordered_set<int64>(vec.begin(), vec.end())
             : std::unordered_set<int64>(values.begin(), values.end());
     for (int64 value : to_scan) {
-      if (ContainsKey(container, value)) {
+      if (gtl::ContainsKey(container, value)) {
         return true;
       }
     }
@@ -378,7 +378,7 @@ std::string Domain::DebugString() const {
                              values[0], values[1]);
     }
   } else if (values.size() == 1) {
-    return StrCat(values.back());
+    return absl::StrCat(values.back());
   } else {
     return StringPrintf("[%s]", absl::StrJoin(values, ", ").c_str());
   }
@@ -593,7 +593,7 @@ IntegerVariable::IntegerVariable(const std::string& name_, const Domain& domain_
       temporary(temporary_),
       active(true) {
   if (!domain.is_interval) {
-    STLSortAndRemoveDuplicates(&domain.values);
+    gtl::STLSortAndRemoveDuplicates(&domain.values);
   }
 }
 
@@ -793,7 +793,7 @@ std::string Annotation::DebugString() const {
                              interval_min, interval_max);
     }
     case INT_VALUE: {
-      return StrCat(interval_min);
+      return absl::StrCat(interval_min);
     }
     case INT_VAR_REF: {
       return variables.front()->name;
@@ -862,8 +862,8 @@ std::string SolutionOutputSpecs::DebugString() const {
 // ----- Model -----
 
 Model::~Model() {
-  STLDeleteElements(&variables_);
-  STLDeleteElements(&constraints_);
+  gtl::STLDeleteElements(&variables_);
+  gtl::STLDeleteElements(&constraints_);
 }
 
 IntegerVariable* Model::AddVariable(const std::string& name, const Domain& domain,
@@ -875,8 +875,8 @@ IntegerVariable* Model::AddVariable(const std::string& name, const Domain& domai
 
 // TODO(user): Create only once constant per value.
 IntegerVariable* Model::AddConstant(int64 value) {
-  IntegerVariable* const var =
-      new IntegerVariable(StrCat(value), Domain::IntegerValue(value), true);
+  IntegerVariable* const var = new IntegerVariable(
+      absl::StrCat(value), Domain::IntegerValue(value), true);
   variables_.push_back(var);
   return var;
 }

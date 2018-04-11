@@ -587,7 +587,7 @@ void PathOperator::InitializePathStarts() {
         new_index = index;
       }
       for (int j = 0; j < base_nodes_.size(); ++j) {
-        if (base_paths_[j] == i && !ContainsKey(found_bases, j)) {
+        if (base_paths_[j] == i && !gtl::ContainsKey(found_bases, j)) {
           found_bases.insert(j);
           base_paths_[j] = new_index;
           // If the current position of the base node is a removed empty path,
@@ -1376,7 +1376,7 @@ bool TSPLns::MakeNeighbor() {
   breaks_set.insert(base_node);
   while (breaks_set.size() < tsp_size_) {
     const int64 one_break = nodes[rand_.Uniform(nodes.size())];
-    if (!ContainsKey(breaks_set, one_break)) {
+    if (!gtl::ContainsKey(breaks_set, one_break)) {
       breaks_set.insert(one_break);
     }
   }
@@ -1392,7 +1392,7 @@ bool TSPLns::MakeNeighbor() {
   int64 node_path = Path(node);
   while (!IsPathEnd(node)) {
     int64 next = Next(node);
-    if (ContainsKey(breaks_set, node)) {
+    if (gtl::ContainsKey(breaks_set, node)) {
       breaks.push_back(node);
       meta_node_costs.push_back(cost);
       cost = 0;

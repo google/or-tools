@@ -301,13 +301,13 @@ Presolver::RuleStatus Presolver::PresolveIntEq(Constraint* ct, std::string* log)
   // Rule 1
   if (ct->arguments[0].IsVariable() && ct->arguments[1].HasOneValue() &&
       ct->arguments[1].Value() == 0 &&
-      ContainsKey(difference_map_, ct->arguments[0].Var())) {
+      gtl::ContainsKey(difference_map_, ct->arguments[0].Var())) {
     log->append("propagate equality");
     IntersectVarWithSingleton(ct->arguments[0].Var(), 0);
 
     log->append(", transform null differences");
     const std::pair<IntegerVariable*, IntegerVariable*>& diff =
-        FindOrDie(difference_map_, ct->arguments[0].Var());
+        gtl::FindOrDie(difference_map_, ct->arguments[0].Var());
     ct->arguments[0] = Argument::IntVarRef(diff.first);
     ct->arguments[1] = Argument::IntVarRef(diff.second);
     return CONSTRAINT_REWRITTEN;
@@ -1485,7 +1485,7 @@ Presolver::RuleStatus Presolver::RegroupLinear(Constraint* ct, std::string* log)
     for (int i = 0; i < original_size; ++i) {
       IntegerVariable* fz_var = ct->arguments[1].variables[i];
       const int64 coefficient = coefficients[fz_var];
-      if (!ContainsKey(processed, fz_var)) {
+      if (!gtl::ContainsKey(processed, fz_var)) {
         processed.insert(fz_var);
         if (coefficient != 0) {
           ct->arguments[1].variables[index] = fz_var;
@@ -1688,7 +1688,7 @@ Presolver::RuleStatus Presolver::PresolveStoreMapping(Constraint* ct,
   if (ct->arguments[0].values.size() == 2 &&
       ct->arguments[1].variables[0] == ct->target_variable &&
       ct->arguments[0].values[0] == -1 &&
-      !ContainsKey(affine_map_, ct->target_variable) &&
+      !gtl::ContainsKey(affine_map_, ct->target_variable) &&
       ct->strong_propagation) {
     affine_map_[ct->target_variable] =
         AffineMapping(ct->arguments[1].variables[1], ct->arguments[0].values[1],
@@ -1700,7 +1700,7 @@ Presolver::RuleStatus Presolver::PresolveStoreMapping(Constraint* ct,
   if (ct->arguments[0].values.size() == 2 &&
       ct->arguments[1].variables[1] == ct->target_variable &&
       ct->arguments[0].values[1] == -1 &&
-      !ContainsKey(affine_map_, ct->target_variable)) {
+      !gtl::ContainsKey(affine_map_, ct->target_variable)) {
     affine_map_[ct->target_variable] =
         AffineMapping(ct->arguments[1].variables[0], ct->arguments[0].values[0],
                       -ct->arguments[2].Value(), ct);
@@ -1711,7 +1711,7 @@ Presolver::RuleStatus Presolver::PresolveStoreMapping(Constraint* ct,
   if (ct->arguments[0].values.size() == 3 &&
       ct->arguments[1].variables[0] == ct->target_variable &&
       ct->arguments[0].values[0] == -1 && ct->arguments[0].values[2] == 1 &&
-      !ContainsKey(array2d_index_map_, ct->target_variable) &&
+      !gtl::ContainsKey(array2d_index_map_, ct->target_variable) &&
       ct->strong_propagation) {
     array2d_index_map_[ct->target_variable] = Array2DIndexMapping(
         ct->arguments[1].variables[1], ct->arguments[0].values[1],
@@ -1723,7 +1723,7 @@ Presolver::RuleStatus Presolver::PresolveStoreMapping(Constraint* ct,
   if (ct->arguments[0].values.size() == 3 &&
       ct->arguments[1].variables[0] == ct->target_variable &&
       ct->arguments[0].values[0] == -1 && ct->arguments[0].values[1] == 1 &&
-      !ContainsKey(array2d_index_map_, ct->target_variable) &&
+      !gtl::ContainsKey(array2d_index_map_, ct->target_variable) &&
       ct->strong_propagation) {
     array2d_index_map_[ct->target_variable] = Array2DIndexMapping(
         ct->arguments[1].variables[2], ct->arguments[0].values[2],
@@ -1735,7 +1735,7 @@ Presolver::RuleStatus Presolver::PresolveStoreMapping(Constraint* ct,
   if (ct->arguments[0].values.size() == 3 &&
       ct->arguments[1].variables[2] == ct->target_variable &&
       ct->arguments[0].values[2] == -1 && ct->arguments[0].values[1] == 1 &&
-      !ContainsKey(array2d_index_map_, ct->target_variable)) {
+      !gtl::ContainsKey(array2d_index_map_, ct->target_variable)) {
     array2d_index_map_[ct->target_variable] = Array2DIndexMapping(
         ct->arguments[1].variables[0], ct->arguments[0].values[0],
         ct->arguments[1].variables[1], -ct->arguments[2].Value(), ct);
@@ -1746,7 +1746,7 @@ Presolver::RuleStatus Presolver::PresolveStoreMapping(Constraint* ct,
   if (ct->arguments[0].values.size() == 3 &&
       ct->arguments[1].variables[2] == ct->target_variable &&
       ct->arguments[0].values[2] == -1 && ct->arguments[0].values[0] == 1 &&
-      !ContainsKey(array2d_index_map_, ct->target_variable)) {
+      !gtl::ContainsKey(array2d_index_map_, ct->target_variable)) {
     array2d_index_map_[ct->target_variable] = Array2DIndexMapping(
         ct->arguments[1].variables[1], ct->arguments[0].values[1],
         ct->arguments[1].variables[0], -ct->arguments[2].Value(), ct);
@@ -1848,7 +1848,7 @@ Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
   IntegerVariable* const index_var = ct->arguments[0].Var();
 
   // Rule 2.
-  if (ContainsKey(affine_map_, index_var)) {
+  if (gtl::ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const Domain& domain = mapping.variable->domain;
     if (domain.is_interval && domain.values.empty()) {
@@ -1905,7 +1905,7 @@ Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
   }
 
   // Rule 3.
-  if (ContainsKey(array2d_index_map_, index_var)) {
+  if (gtl::ContainsKey(array2d_index_map_, index_var)) {
     log->append("rewrite as a 2d element");
     const Array2DIndexMapping& mapping = array2d_index_map_[index_var];
     // Rewrite constraint.
@@ -1966,7 +1966,7 @@ Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
         for (int64 v = std::max<int64>(1, domain.values[0]);
              v <= std::min<int64>(array_size, domain.values[1]); ++v) {
           const int64 value = array[v - 1];
-          if (ContainsKey(all_values, value)) {
+          if (gtl::ContainsKey(all_values, value)) {
             to_keep.push_back(v);
           } else {
             remove_some = true;
@@ -1981,7 +1981,7 @@ Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
             remove_some = true;
           } else {
             const int64 value = array[v - 1];
-            if (!ContainsKey(all_values, value)) {
+            if (!gtl::ContainsKey(all_values, value)) {
               remove_some = true;
             } else {
               to_keep.push_back(v);
@@ -2057,7 +2057,7 @@ Presolver::RuleStatus Presolver::PresolveSimplifyExprElement(Constraint* ct,
 
   // Rule 3.
   IntegerVariable* const index_var = ct->arguments[0].Var();
-  if (ContainsKey(affine_map_, index_var)) {
+  if (gtl::ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const Domain& domain = mapping.variable->domain;
     if ((domain.is_interval && domain.values.empty()) ||
@@ -2350,8 +2350,8 @@ Presolver::RuleStatus Presolver::StoreIntEqReif(Constraint* ct, std::string* log
     IntegerVariable* const first = ct->arguments[0].Var();
     IntegerVariable* const second = ct->arguments[1].Var();
     IntegerVariable* const boolvar = ct->arguments[2].Var();
-    if (ContainsKey(int_eq_reif_map_, first) &&
-        ContainsKey(int_eq_reif_map_[first], second)) {
+    if (gtl::ContainsKey(int_eq_reif_map_, first) &&
+        gtl::ContainsKey(int_eq_reif_map_[first], second)) {
       return NOT_CHANGED;
     }
     log->append("store eq_var info");
@@ -2371,9 +2371,9 @@ Presolver::RuleStatus Presolver::SimplifyIntNeReif(Constraint* ct,
                                                    std::string* log) {
   if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable() &&
       ct->arguments[2].IsVariable() &&
-      ContainsKey(int_eq_reif_map_, ct->arguments[0].Var()) &&
-      ContainsKey(int_eq_reif_map_[ct->arguments[0].Var()],
-                  ct->arguments[1].Var())) {
+      gtl::ContainsKey(int_eq_reif_map_, ct->arguments[0].Var()) &&
+      gtl::ContainsKey(int_eq_reif_map_[ct->arguments[0].Var()],
+                       ct->arguments[1].Var())) {
     log->append("merge constraint with opposite constraint");
     IntegerVariable* const opposite_boolvar =
         int_eq_reif_map_[ct->arguments[0].Var()][ct->arguments[1].Var()];
@@ -2388,7 +2388,7 @@ Presolver::RuleStatus Presolver::SimplifyIntNeReif(Constraint* ct,
 
 // Store the mapping x = abs(y) for future use.
 Presolver::RuleStatus Presolver::StoreAbs(Constraint* ct, std::string* log) {
-  if (!ContainsKey(abs_map_, ct->arguments[1].Var())) {
+  if (!gtl::ContainsKey(abs_map_, ct->arguments[1].Var())) {
     // Stores abs() map.
     log->append("Store abs map");
     abs_map_[ct->arguments[1].Var()] = ct->arguments[0].Var();
@@ -2404,7 +2404,7 @@ Presolver::RuleStatus Presolver::StoreAbs(Constraint* ct, std::string* log) {
 Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
                                                         std::string* log) {
   if (ct->arguments[1].HasOneValue() &&
-      ContainsKey(abs_map_, ct->arguments[0].Var())) {
+      gtl::ContainsKey(abs_map_, ct->arguments[0].Var())) {
     log->append("remove abs from constraint");
     ct->arguments[0].variables[0] = abs_map_[ct->arguments[0].Var()];
     const int64 value = ct->arguments[1].Value();
@@ -2428,7 +2428,7 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
 Presolver::RuleStatus Presolver::RemoveAbsFromIntEqNeReif(Constraint* ct,
                                                           std::string* log) {
   if (ct->arguments[1].HasOneValue() && ct->arguments[1].Value() == 0 &&
-      ContainsKey(abs_map_, ct->arguments[0].Var())) {
+      gtl::ContainsKey(abs_map_, ct->arguments[0].Var())) {
     log->append("remove abs from constraint");
     ct->arguments[0].variables[0] = abs_map_[ct->arguments[0].Var()];
     return CONSTRAINT_REWRITTEN;
@@ -2851,7 +2851,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct, std::string* lo
   for (int time = 0; time + 1 < num_vars; ++time) {
     const Domain& domain = vars[time]->domain;
     for (const std::vector<int64>& transition : automata) {
-      if (!ContainsKey(reachable_states[time], transition[0])) continue;
+      if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
       if (!domain.Contains(transition[1])) continue;
       reachable_states[time + 1].insert(transition[2]);
     }
@@ -2862,9 +2862,10 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct, std::string* lo
     std::unordered_set<int64> new_set;
     const Domain& domain = vars[time]->domain;
     for (const std::vector<int64>& transition : automata) {
-      if (!ContainsKey(reachable_states[time], transition[0])) continue;
+      if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
       if (!domain.Contains(transition[1])) continue;
-      if (!ContainsKey(reachable_states[time + 1], transition[2])) continue;
+      if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
+        continue;
       new_set.insert(transition[0]);
     }
     reachable_states[time].swap(new_set);
@@ -2876,9 +2877,10 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct, std::string* lo
     // Collect valid values.
     std::unordered_set<int64> reached_values;
     for (const std::vector<int64>& transition : automata) {
-      if (!ContainsKey(reachable_states[time], transition[0])) continue;
+      if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
       if (!domain.Contains(transition[1])) continue;
-      if (!ContainsKey(reachable_states[time + 1], transition[2])) continue;
+      if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
+        continue;
       reached_values.insert(transition[1]);
     }
     // Scan domain to check if we will remove values.
@@ -2886,7 +2888,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct, std::string* lo
     bool remove_some = false;
     if (domain.is_interval) {
       for (int64 v = domain.values[0]; v <= domain.values[1]; ++v) {
-        if (ContainsKey(reached_values, v)) {
+        if (gtl::ContainsKey(reached_values, v)) {
           to_keep.push_back(v);
         } else {
           remove_some = true;
@@ -2894,7 +2896,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct, std::string* lo
       }
     } else {
       for (int64 v : domain.values) {
-        if (ContainsKey(reached_values, v)) {
+        if (gtl::ContainsKey(reached_values, v)) {
           to_keep.push_back(v);
         } else {
           remove_some = true;
@@ -3110,7 +3112,8 @@ void Presolver::MergeIntEqNe(Model* model) {
       }
       if (var != nullptr) {
         IntegerVariable* boolvar = ct->arguments[2].Var();
-        IntegerVariable* stored = FindPtrOrNull(int_eq_reif_map[var], value);
+        IntegerVariable* stored =
+            gtl::FindPtrOrNull(int_eq_reif_map[var], value);
         if (stored == nullptr) {
           FZVLOG << "Store " << ct->DebugString() << FZENDL;
           int_eq_reif_map[var][value] = boolvar;
@@ -3137,7 +3140,8 @@ void Presolver::MergeIntEqNe(Model* model) {
       }
       if (var != nullptr) {
         IntegerVariable* boolvar = ct->arguments[2].Var();
-        IntegerVariable* stored = FindPtrOrNull(int_ne_reif_map[var], value);
+        IntegerVariable* stored =
+            gtl::FindPtrOrNull(int_ne_reif_map[var], value);
         if (stored == nullptr) {
           FZVLOG << "Store " << ct->DebugString() << FZENDL;
           int_ne_reif_map[var][value] = boolvar;
@@ -3294,7 +3298,7 @@ bool Presolver::RegroupDifferent(Model* model) {
     const int right_index = variables_to_dense_index.IndexOrDie(right);
     const std::pair<int, int> p = std::make_pair(
         std::min(left_index, right_index), std::max(left_index, right_index));
-    if (ContainsKey(replace_map, p)) {
+    if (gtl::ContainsKey(replace_map, p)) {
       FZVLOG << "Apply rule RegroupDifferent on " << ct->DebugString()
              << FZENDL;
       const std::vector<int>& rep = replace_map[p];
@@ -3307,7 +3311,7 @@ bool Presolver::RegroupDifferent(Model* model) {
       ct->arguments.pop_back();
       new_all_diffs++;
       FZVLOG << "  - constraint is modified to " << ct->DebugString() << FZENDL;
-    } else if (ContainsKey(to_kill, p)) {
+    } else if (gtl::ContainsKey(to_kill, p)) {
       ct->MarkAsInactive();
       killed++;
     }
@@ -3416,7 +3420,7 @@ bool Presolver::Run(Model* model) {
     if (ct->active && ct->type == "array_int_element" &&
         ct->arguments[0].variables.size() == 1) {
       IntegerVariable* const index_var = ct->arguments[0].Var();
-      if (ContainsKey(affine_map_, index_var)) {
+      if (gtl::ContainsKey(affine_map_, index_var)) {
         const AffineMapping& mapping = affine_map_[index_var];
         if (mapping.coefficient == 1 && mapping.offset == 1) {
           FZVLOG << "remove offset by one from " << ct->DebugString();
@@ -3486,7 +3490,7 @@ IntegerVariable* Presolver::FindRepresentativeOfVar(IntegerVariable* var) {
   // First loop: find the top parent.
   for (;;) {
     IntegerVariable* parent =
-        FindWithDefault(var_representative_map_, var, var);
+        gtl::FindWithDefault(var_representative_map_, var, var);
     if (parent == var) break;
     var = parent;
   }
@@ -3496,7 +3500,7 @@ IntegerVariable* Presolver::FindRepresentativeOfVar(IntegerVariable* var) {
     var_representative_map_[start_var] = var;
     start_var = parent;
   }
-  return FindWithDefault(var_representative_map_, var, var);
+  return gtl::FindWithDefault(var_representative_map_, var, var);
 }
 
 void Presolver::SubstituteEverywhere(Model* model) {
@@ -3795,7 +3799,7 @@ void Presolver::CleanUpModelForTheCpSolver(Model* model, bool use_sat) {
         for (IntegerVariable* const var : ct->arguments[1].variables) {
           variables_in_array.insert(var);
         }
-        if (ContainsKey(variables_in_array, ct->target_variable)) {
+        if (gtl::ContainsKey(variables_in_array, ct->target_variable)) {
           FZVLOG << "Remove target variable from " << ct->DebugString()
                  << " as it appears in the array of variables" << FZENDL;
           ct->RemoveTargetVariable();

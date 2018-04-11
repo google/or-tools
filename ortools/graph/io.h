@@ -141,7 +141,8 @@ util::StatusOr<Graph*> ReadGraphFile(
     ++num_lines_read;
     if (num_lines_read == 1) {
       std::vector<int64> header_ints;
-      if (!SplitStringAndParse(line, " ", &safe_strto64, &header_ints) ||
+      if (!SplitStringAndParse(line, " ", &strings::safe_strto64,
+                               &header_ints) ||
           header_ints.size() < 2 || header_ints[0] < 0 || header_ints[1] < 0) {
         return util::Status(
             util::error::INVALID_ARGUMENT,

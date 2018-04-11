@@ -73,7 +73,7 @@ class SatPropagator : public Constraint {
     CHECK(solver()->IsBooleanVar(expr, &expr_var, &expr_negated));
     SATDLOG << "  - SAT: Parse " << expr->DebugString() << " to "
             << expr_var->DebugString() << "/" << expr_negated << FZENDL;
-    if (ContainsKey(indices_, expr_var)) {
+    if (gtl::ContainsKey(indices_, expr_var)) {
       return sat::Literal(indices_[expr_var], !expr_negated);
     }
     const sat::BooleanVariable var = sat_.NewBooleanVariable();

@@ -238,6 +238,16 @@ void CBCInterface::AddVariable(MPVariable* const var) {
 // Solve the LP/MIP. Returns true only if the optimal solution was revealed.
 // Returns the status of the search.
 MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
+  // CBC requires unique variable and constraint names. By using Lookup*, we
+  // generate variable and constraint indices and ensure the duplicate name
+  // crash will happen here with a readable error message.
+  if (!solver_->variables_.empty()) {
+    solver_->LookupVariableOrNull(solver_->variables_[0]->name());
+  }
+  if (!solver_->constraints_.empty()) {
+    solver_->LookupConstraintOrNull(solver_->constraints_[0]->name());
+  }
+
   WallTimer timer;
   timer.Start();
 

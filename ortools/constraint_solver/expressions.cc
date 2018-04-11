@@ -6429,7 +6429,7 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values,
   if (values.size() == 1) return MakeIntConst(values[0], name);
   // Sort and remove duplicates.
   std::vector<int64> unique_sorted_values = values;
-  STLSortAndRemoveDuplicates(&unique_sorted_values);
+  gtl::STLSortAndRemoveDuplicates(&unique_sorted_values);
   // Case when we have a single value, after clean-up.
   if (unique_sorted_values.size() == 1) return MakeIntConst(values[0], name);
   // Case when the values are a dense interval of integers.

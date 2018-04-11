@@ -19,7 +19,7 @@
 
 #include "ortools/base/macros.h"
 
-namespace operations_research {
+namespace absl {
 class Mutex {
  public:
   Mutex();
@@ -68,5 +68,5 @@ class CondVar {
 #define EXCLUSIVE_LOCKS_REQUIRED(x)
 #define NO_THREAD_SAFETY_ANALYSIS
 #define GUARDED_BY(x)
-}  // namespace operations_research
+}  // namespace absl
 #endif  // OR_TOOLS_BASE_MUTEX_H_

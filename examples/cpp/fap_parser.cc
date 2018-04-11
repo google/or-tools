@@ -52,7 +52,7 @@ void VariableParser::Parse() {
       variable.initial_position = atoi32(tokens[2].c_str());
       variable.mobility_index = atoi32(tokens[3].c_str());
     }
-    InsertOrUpdate(&variables_, atoi32(tokens[0].c_str()), variable);
+    gtl::InsertOrUpdate(&variables_, atoi32(tokens[0].c_str()), variable);
   }
 }
 
@@ -81,7 +81,7 @@ void DomainParser::Parse() {
     }
 
     if (!domain.empty()) {
-      InsertOrUpdate(&domains_, key, domain);
+      gtl::InsertOrUpdate(&domains_, key, domain);
     }
   }
 }
@@ -193,8 +193,8 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
   for (const FapConstraint& constraint : constraints) {
     const int variable_id1 = constraint.variable1;
     const int variable_id2 = constraint.variable2;
-    const FapVariable& variable1 = FindOrDie(variables, variable_id1);
-    const FapVariable& variable2 = FindOrDie(variables, variable_id2);
+    const FapVariable& variable1 = gtl::FindOrDie(variables, variable_id1);
+    const FapVariable& variable2 = gtl::FindOrDie(variables, variable_id2);
     CHECK_LT(variable_id1, in_component.size());
     CHECK_LT(variable_id2, in_component.size());
     if (in_component[variable_id1] < 0 && in_component[variable_id2] < 0) {
@@ -202,19 +202,19 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
       // Create a new one.
       FapComponent component;
       const int component_index = constraint_index;
-      InsertOrUpdate(&(component.variables), variable_id1, variable1);
-      InsertOrUpdate(&(component.variables), variable_id2, variable2);
+      gtl::InsertOrUpdate(&(component.variables), variable_id1, variable1);
+      gtl::InsertOrUpdate(&(component.variables), variable_id2, variable2);
       in_component[variable_id1] = component_index;
       in_component[variable_id2] = component_index;
       component.constraints.push_back(constraint);
-      InsertOrUpdate(components, component_index, component);
+      gtl::InsertOrUpdate(components, component_index, component);
     } else if (in_component[variable_id1] >= 0 &&
                in_component[variable_id2] < 0) {
       // If variable1 belongs to an existing component, variable2 should
       // also be included in the same component.
       const int component_index = in_component[variable_id1];
-      CHECK(ContainsKey(*components, component_index));
-      InsertOrUpdate(&((*components)[component_index].variables), variable_id2,
+      CHECK(gtl::ContainsKey(*components, component_index));
+      gtl::InsertOrUpdate(&((*components)[component_index].variables), variable_id2,
                      variable2);
       in_component[variable_id2] = component_index;
       (*components)[component_index].constraints.push_back(constraint);
@@ -223,8 +223,8 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
       // If variable2 belongs to an existing component, variable1 should
       // also be included in the same component.
       const int component_index = in_component[variable_id2];
-      CHECK(ContainsKey(*components, component_index));
-      InsertOrUpdate(&((*components)[component_index].variables), variable_id1,
+      CHECK(gtl::ContainsKey(*components, component_index));
+      gtl::InsertOrUpdate(&((*components)[component_index].variables), variable_id1,
                      variable1);
       in_component[variable_id1] = component_index;
       (*components)[component_index].constraints.push_back(constraint);
@@ -236,8 +236,8 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
           std::min(component_index1, component_index2);
       const int max_component_index =
           std::max(component_index1, component_index2);
-      CHECK(ContainsKey(*components, min_component_index));
-      CHECK(ContainsKey(*components, max_component_index));
+      CHECK(gtl::ContainsKey(*components, min_component_index));
+      CHECK(gtl::ContainsKey(*components, max_component_index));
       if (min_component_index != max_component_index) {
         // Update the component_index of maximum indexed component's variables.
         for (const auto& variable :
@@ -272,8 +272,8 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
 int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
                              const int max_weight_cost,
                              const FapConstraint constraint) {
-  const FapVariable& variable1 = FindOrDie(variables, constraint.variable1);
-  const FapVariable& variable2 = FindOrDie(variables, constraint.variable2);
+  const FapVariable& variable1 = gtl::FindOrDie(variables, constraint.variable1);
+  const FapVariable& variable2 = gtl::FindOrDie(variables, constraint.variable2);
   const int degree1 = variable1.degree;
   const int degree2 = variable2.degree;
   const int max_degree = std::max(degree1, degree2);
@@ -321,7 +321,7 @@ void ParseInstance(const std::string& data_directory, bool find_components,
 
   // Make the variables of the instance.
   for (auto& it : *variables) {
-    it.second.domain = FindOrDie(dom.domains(), it.second.domain_index);
+    it.second.domain = gtl::FindOrDie(dom.domains(), it.second.domain_index);
     it.second.domain_size = it.second.domain.size();
 
     if ((it.second.mobility_index == -1) || (it.second.mobility_index == 0)) {
@@ -347,7 +347,7 @@ void ParseInstance(const std::string& data_directory, bool find_components,
     ++((*variables)[ct.variable2]).degree;
   }
   // Make the available frequencies of the instance.
-  *frequencies = FindOrDie(dom.domains(), 0);
+  *frequencies = gtl::FindOrDie(dom.domains(), 0);
   // Make the objective of the instance.
   *objective = cst.objective();
 

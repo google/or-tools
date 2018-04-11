@@ -37,12 +37,18 @@ class TimeTablingPerTask : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  // The rectangle will be ordered by start, and the end of each rectangle
+  // will be equal to the start of the next one.
   struct ProfileRectangle {
     /* const */ IntegerValue start;
-    /* const */ IntegerValue end;
     /* const */ IntegerValue height;
-    ProfileRectangle(IntegerValue start, IntegerValue end, IntegerValue height)
-        : start(start), end(end), height(height) {}
+
+    ProfileRectangle(IntegerValue start, IntegerValue height)
+        : start(start), height(height) {}
+
+    bool operator<(const ProfileRectangle& other) const {
+      return start < other.start;
+    }
   };
 
   // Builds the profile and increases the lower bound of the capacity
@@ -64,7 +70,7 @@ class TimeTablingPerTask : public PropagatorInterface {
   // Tries to increase the minimum start time of each task according to the
   // current profile. This function can be called after ReverseProfile() and
   // ReverseVariables to update the maximum end time of each task.
-  bool SweepAllTasks();
+  bool SweepAllTasks(bool is_forward);
 
   // Tries to increase the minimum start time of task_id.
   bool SweepTask(int task_id);
@@ -138,10 +144,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   int left_end_;
   int right_end_;
 
-  // Start (resp. end) of the compulsory parts used to build the profile.
-  std::vector<SchedulingConstraintHelper::TaskTime> scp_;
-  std::vector<SchedulingConstraintHelper::TaskTime> ecp_;
-
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;
   IntegerValue profile_max_height_;
@@ -154,10 +156,14 @@ class TimeTablingPerTask : public PropagatorInterface {
   // and changed the shape of the profile.
   bool profile_changed_;
 
-  // Reversible set of tasks to consider for propagation. The set contains the
-  // tasks in the [0, num_tasks_to_sweep_) prefix of tasks_to_sweep_.
-  std::vector<int> tasks_to_sweep_;
-  int num_tasks_to_sweep_;
+  // Reversible sets of tasks to consider for the forward (resp. backward)
+  // propagation. A task with a fixed start do not need to be considered for the
+  // forward pass, same for task with fixed end for the backward pass. It is why
+  // we use two sets.
+  std::vector<int> forward_tasks_to_sweep_;
+  std::vector<int> backward_tasks_to_sweep_;
+  int forward_num_tasks_to_sweep_;
+  int backward_num_tasks_to_sweep_;
 
   // Reversible set of tasks to consider for reducing the profile. The set
   // contains the [0, num_active_tasks_) prefix of active_tasks_.

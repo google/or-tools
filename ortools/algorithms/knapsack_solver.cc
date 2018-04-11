@@ -166,7 +166,7 @@ KnapsackPropagator::KnapsackPropagator(const KnapsackState& state)
       profit_upper_bound_(kint64max),
       state_(state) {}
 
-KnapsackPropagator::~KnapsackPropagator() { STLDeleteElements(&items_); }
+KnapsackPropagator::~KnapsackPropagator() { gtl::STLDeleteElements(&items_); }
 
 void KnapsackPropagator::Init(const std::vector<int64>& profits,
                               const std::vector<int64>& weights) {
@@ -441,8 +441,8 @@ int64 KnapsackGenericSolver::Solve(TimeLimit* time_limit,
 }
 
 void KnapsackGenericSolver::Clear() {
-  STLDeleteElements(&propagators_);
-  STLDeleteElements(&search_nodes_);
+  gtl::STLDeleteElements(&propagators_);
+  gtl::STLDeleteElements(&search_nodes_);
 }
 
 // Returns false when at least one propagator fails.

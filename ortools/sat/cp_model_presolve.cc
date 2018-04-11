@@ -63,7 +63,7 @@ std::vector<int> UsedVariables(const ConstraintProto& ct) {
   if (HasEnforcementLiteral(ct)) {
     used_variables.push_back(PositiveRef(ct.enforcement_literal(0)));
   }
-  STLSortAndRemoveDuplicates(&used_variables);
+  gtl::STLSortAndRemoveDuplicates(&used_variables);
   return used_variables;
 }
 
@@ -161,7 +161,7 @@ struct PresolveContext {
   void ExploitFixedDomain(int var) {
     CHECK(IsFixed(var));
     const int min = MinOf(var);
-    if (ContainsKey(constant_to_ref, min)) {
+    if (gtl::ContainsKey(constant_to_ref, min)) {
       const int representative = constant_to_ref[min];
       if (representative != var) {
         affine_relations.TryAdd(var, representative, 1, 0);
@@ -474,8 +474,8 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   int new_size = 0;
   for (const int ref : ct->int_max().vars()) {
     if (ref == target_ref) contains_target_ref = true;
-    if (ContainsKey(used_ref, ref)) continue;
-    if (ContainsKey(used_ref, NegatedRef(ref)) ||
+    if (gtl::ContainsKey(used_ref, ref)) continue;
+    if (gtl::ContainsKey(used_ref, NegatedRef(ref)) ||
         ref == NegatedRef(target_ref)) {
       target_min = std::max(target_min, 0ll);
     }
@@ -638,7 +638,7 @@ bool PresolveIntDiv(ConstraintProto* ct, PresolveContext* context) {
 
 bool ExploitEquivalenceRelations(ConstraintProto* ct,
                                  PresolveContext* context) {
-  if (ContainsKey(context->affine_constraints, ct)) return false;
+  if (gtl::ContainsKey(context->affine_constraints, ct)) return false;
   bool changed = false;
 
   // Remap equal and negated variables to their representative.
@@ -691,7 +691,7 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   int64 sum_of_fixed_terms = 0;
   std::map<int, int64> var_to_coeff;
   const LinearConstraintProto& arg = ct->linear();
-  const bool was_affine = ContainsKey(context->affine_constraints, ct);
+  const bool was_affine = gtl::ContainsKey(context->affine_constraints, ct);
   for (int i = 0; i < arg.vars_size(); ++i) {
     const int var = PositiveRef(arg.vars(i));
     const int64 coeff =
@@ -933,7 +933,7 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
 bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
   // TODO(user): the alternative to mark any newly created constraints might
   // be better.
-  if (ContainsKey(context->affine_constraints, ct)) return false;
+  if (gtl::ContainsKey(context->affine_constraints, ct)) return false;
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
   int64 min_coeff = kint64max;
@@ -1010,6 +1010,7 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
 }
 
 bool PresolveInterval(ConstraintProto* ct, PresolveContext* context) {
+  if (!ct->enforcement_literal().empty()) return false;
   const int start = ct->interval().start();
   const int end = ct->interval().end();
   const int size = ct->interval().size();
@@ -1171,7 +1172,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
       new_domains[j].insert(RefIsPositive(ref) ? v : -v);
     }
   }
-  STLSortAndRemoveDuplicates(&new_tuples);
+  gtl::STLSortAndRemoveDuplicates(&new_tuples);
 
   // Update the list of tuples if needed.
   if (new_tuples.size() < num_tuples) {
@@ -1227,7 +1228,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
         index /= var_to_values[j].size();
       }
     }
-    STLSortAndRemoveDuplicates(&all_tuples);
+    gtl::STLSortAndRemoveDuplicates(&all_tuples);
 
     // Compute the complement of new_tuples.
     std::vector<std::vector<int64>> diff(prod - new_tuples.size());
@@ -1472,11 +1473,11 @@ void ExtractClauses(const ClauseContainer& container, CpModelProto* proto) {
       const int b = clause[1].IsPositive()
                         ? clause[1].Variable().value()
                         : NegatedRef(clause[1].Variable().value());
-      if (ContainsKey(ref_to_bool_and, NegatedRef(a))) {
+      if (gtl::ContainsKey(ref_to_bool_and, NegatedRef(a))) {
         const int ct_index = ref_to_bool_and[NegatedRef(a)];
         proto->mutable_constraints(ct_index)->mutable_bool_and()->add_literals(
             b);
-      } else if (ContainsKey(ref_to_bool_and, NegatedRef(b))) {
+      } else if (gtl::ContainsKey(ref_to_bool_and, NegatedRef(b))) {
         const int ct_index = ref_to_bool_and[NegatedRef(b)];
         proto->mutable_constraints(ct_index)->mutable_bool_and()->add_literals(
             a);
@@ -1799,8 +1800,8 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
       if (constraints.size() != 1) continue;
       const int c = *constraints.begin();
       if (c < 0) continue;
-      if (ContainsKey(var_constraint_pair_already_called,
-                      std::pair<int, int>(v, c))) {
+      if (gtl::ContainsKey(var_constraint_pair_already_called,
+                           std::pair<int, int>(v, c))) {
         continue;
       }
       var_constraint_pair_already_called.insert({v, c});
@@ -1964,7 +1965,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
       // TODO(user): for now we don't remove interval because they can be used
       // in constraints.
       ConstraintProto* ct = presolved_model->mutable_constraints(i);
-      if (ContainsKey(context.affine_constraints, ct)) {
+      if (gtl::ContainsKey(context.affine_constraints, ct)) {
         ct->Clear();
         context.UpdateConstraintVariableUsage(i);
         continue;
@@ -2056,7 +2057,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
 
       // There is not point having a variable appear twice, so we only keep
       // the first occurrence in the first strategy in which it occurs.
-      if (ContainsKey(used_variables, var)) continue;
+      if (gtl::ContainsKey(used_variables, var)) continue;
       used_variables.insert(var);
 
       if (context.var_to_constraints[var].empty()) {
@@ -2130,7 +2131,7 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   auto mapping_function = [&mapping](int* ref) {
     const int image = mapping[PositiveRef(*ref)];
     CHECK_GE(image, 0);
-    *ref = *ref >= 0 ? image : NegatedRef(image);
+    *ref = RefIsPositive(*ref) ? image : NegatedRef(image);
   };
   for (ConstraintProto& ct_ref : *proto->mutable_constraints()) {
     ApplyToAllVariableIndices(mapping_function, &ct_ref);
@@ -2144,10 +2145,8 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
 
   // Remap the objective variables.
   if (proto->has_objective()) {
-    for (int& mutable_var : *proto->mutable_objective()->mutable_vars()) {
-      const int image = mapping[PositiveRef(mutable_var)];
-      CHECK_GE(image, 0);
-      mutable_var = (mutable_var >= 0 ? image : NegatedRef(image));
+    for (int& mutable_ref : *proto->mutable_objective()->mutable_vars()) {
+      mapping_function(&mutable_ref);
     }
   }
 
@@ -2159,7 +2158,7 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
     for (const int ref : copy.variables()) {
       const int image = mapping[PositiveRef(ref)];
       if (image >= 0) {
-        strategy.add_variables(ref >= 0 ? image : NegatedRef(image));
+        strategy.add_variables(RefIsPositive(ref) ? image : NegatedRef(image));
       }
     }
     strategy.clear_transformations();
@@ -2169,7 +2168,7 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
       if (image >= 0) {
         auto* new_transform = strategy.add_transformations();
         *new_transform = transform;
-        new_transform->set_var(ref >= 0 ? image : NegatedRef(image));
+        new_transform->set_var(RefIsPositive(ref) ? image : NegatedRef(image));
       }
     }
   }
@@ -2179,15 +2178,21 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
     auto* mutable_hint = proto->mutable_solution_hint();
     int new_size = 0;
     for (int i = 0; i < mutable_hint->vars_size(); ++i) {
-      const int image = mapping[PositiveRef(mutable_hint->vars(i))];
+      const int ref = mutable_hint->vars(i);
+      const int image = mapping[PositiveRef(ref)];
       if (image >= 0) {
-        mutable_hint->set_vars(new_size, image);
+        mutable_hint->set_vars(new_size,
+                               RefIsPositive(ref) ? image : NegatedRef(image));
         mutable_hint->set_values(new_size, mutable_hint->values(i));
         ++new_size;
       }
     }
-    mutable_hint->mutable_vars()->Truncate(new_size);
-    mutable_hint->mutable_values()->Truncate(new_size);
+    if (new_size > 0) {
+      mutable_hint->mutable_vars()->Truncate(new_size);
+      mutable_hint->mutable_values()->Truncate(new_size);
+    } else {
+      proto->clear_solution_hint();
+    }
   }
 
   // Move the variable definitions.
