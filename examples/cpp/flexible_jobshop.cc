@@ -44,21 +44,13 @@
 #include "examples/cpp/flexible_jobshop.h"
 #include "ortools/util/string_array.h"
 
-DEFINE_string(
-    data_file,
-    "",
-    "Required: input file description the scheduling problem to solve, "
-    "in our jssp format:\n"
-    "  - the first line is \"instance <instance name>\"\n"
-    "  - the second line is \"<number of jobs> <number of machines>\"\n"
-    "  - then one line per job, with a single space-separated "
-    "list of \"<machine index> <duration>\"\n"
-    "note: jobs with one task are not supported");
+DEFINE_string(data_file, "", "A flexible shobshop problem (.fjs).");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, 0 means no limit.");
 
 namespace operations_research {
+
 struct TaskAlternative {
-  TaskAlternative(int j) : job_id(j), alternative_variable(nullptr) {}
+  explicit TaskAlternative(int j) : job_id(j), alternative_variable(nullptr) {}
   int job_id;
   std::vector<IntervalVar*> intervals;
   IntVar* alternative_variable;
@@ -92,12 +84,8 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
       for (int alt = 0; alt < task.machines.size(); ++alt) {
         const int machine_id = task.machines[alt];
         const int duration = task.durations[alt];
-        const string name = StringPrintf("J%dI%dA%dM%dD%d",
-                                         task.job_id,
-                                         task_index,
-                                         alt,
-                                         machine_id,
-                                         duration);
+        const std::string name = StringPrintf("J%dI%dA%dM%dD%d", task.job_id,
+                                         task_index, alt, machine_id, duration);
         IntervalVar* const interval = solver.MakeFixedDurationIntervalVar(
             0, horizon, duration, optional, name);
         jobs_to_tasks[job_id].back().intervals.push_back(interval);
@@ -106,7 +94,7 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
           active_variables.push_back(interval->PerformedExpr()->Var());
         }
       }
-      string alternative_name = StringPrintf("J%dI%d", job_id, task_index);
+      std::string alternative_name = StringPrintf("J%dI%d", job_id, task_index);
       IntVar* alt_var =
           solver.MakeIntVar(0, task.machines.size() - 1, alternative_name);
       jobs_to_tasks[job_id].back().alternative_variable = alt_var;
@@ -152,7 +140,7 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
   // whose job is to sequence interval variables.
   std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
-    const string name = StringPrintf("Machine_%d", machine_id);
+    const std::string name = StringPrintf("Machine_%d", machine_id);
     DisjunctiveConstraint* const ct =
         solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
     solver.AddConstraint(ct);
@@ -191,10 +179,8 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
   // we can schedule each task at its earliest start time. This is
   // conveniently done by fixing the objective variable to its
   // minimum value.
-  DecisionBuilder* const obj_phase =
-      solver.MakePhase(objective_var,
-                       Solver::CHOOSE_FIRST_UNBOUND,
-                       Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const obj_phase = solver.MakePhase(
+      objective_var, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
 
   // The main decision builder (ranks all tasks, then fixes the
   // objective_variable).
@@ -206,7 +192,7 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
   SearchMonitor* const search_log =
       solver.MakeSearchLog(kLogFrequency, objective_monitor);
 
-  SearchLimit* limit = NULL;
+  SearchLimit* limit = nullptr;
   if (FLAGS_time_limit_in_ms > 0) {
     limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
   }
@@ -217,15 +203,12 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
   collector->Add(all_sequences);
 
   // Search.
-  if (solver.Solve(main_phase,
-                   search_log,
-                   objective_monitor,
-                   limit,
+  if (solver.Solve(main_phase, search_log, objective_monitor, limit,
                    collector)) {
     for (int m = 0; m < machine_count; ++m) {
       SequenceVar* const seq = all_sequences[m];
       LOG(INFO) << seq->name() << ": "
-                << strings::Join(collector->ForwardSequence(0, seq), ", ");
+                << absl::StrJoin(collector->ForwardSequence(0, seq), ", ");
     }
   }
 }
@@ -244,5 +227,5 @@ int main(int argc, char **argv) {
   operations_research::FlexibleJobShopData data;
   data.Load(FLAGS_data_file);
   operations_research::FlexibleJobshop(data);
-  return 0;
+  return EXIT_SUCCESS;
 }
