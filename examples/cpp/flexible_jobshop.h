@@ -50,17 +50,17 @@ namespace operations_research {
 class FlexibleJobShopData {
  public:
   // A task is the basic block of a jobshop.
+  // The diference in a flexible jobshop is that a task has a list of machine
+  // on which it can be scheduled (with possibly not the same duration).
   struct Task {
     Task(int j, const std::vector<int>& m, const std::vector<int>& d)
         : job_id(j), machines(m), durations(d) {}
 
-    string DebugString() const {
-      string out = StringPrintf("Task(", job_id);
+    std::string DebugString() const {
+      std::string out = StringPrintf("Job %d Task(", job_id);
       for (int k = 0; k < machines.size(); ++k) {
+        if (k > 0) out.append(" | ");
         out.append(StringPrintf("<m%d,%d>", machines[k], durations[k]));
-        if (k < machines.size() - 1) {
-          out.append(" | ");
-        }
       }
       out.append(")");
       return out;
@@ -80,11 +80,15 @@ class FlexibleJobShopData {
 
   ~FlexibleJobShopData() {}
 
-  // Parses a file in jssp or taillard format and loads the model. See the flag
-  // --data_file for a description of the format. Note that the format
-  // is only partially checked: bad inputs might cause undefined
-  // behavior.
-  void Load(const string& filename) {
+  // Parses a file in .fjp format and loads the model. Note that the format is
+  // only partially checked: bad inputs might cause undefined behavior.
+  void Load(const std::string& filename) {
+    size_t found = filename.find_last_of("/\\");
+    if (found != std::string::npos) {
+      name_ = filename.substr(found + 1);
+    } else {
+      name_ = filename;
+    }
     for (const std::string& line : FileLines(filename)) {
       if (line.empty()) {
         continue;
@@ -100,7 +104,7 @@ class FlexibleJobShopData {
   int job_count() const { return job_count_; }
 
   // The name of the jobshop instance.
-  const string& name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // The horizon of the workshop (the sum of all durations), which is
   // a trivial upper bound of the optimal make_span.
@@ -111,8 +115,8 @@ class FlexibleJobShopData {
     return all_tasks_[job_id];
   }
 
-  string DebugString() const {
-    string out =
+  std::string DebugString() const {
+    std::string out =
         StringPrintf("FlexibleJobshop(name = %s, %d machines, %d jobs)\n",
                      name_.c_str(), machine_count_, job_count_);
     for (int j = 0; j < all_tasks_.size(); ++j) {
@@ -131,8 +135,8 @@ class FlexibleJobShopData {
 
  private:
   void ProcessNewLine(const std::string& line) {
-    static const char kWordDelimiters[] = " ";
-    std::vector<string> words = absl::StrSplit(line, " ", absl::SkipEmpty());
+    const std::vector<std::string> words =
+        absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (machine_count_ == -1 && words.size() > 1) {
       job_count_ = atoi32(words[0]);
       machine_count_ = atoi32(words[1]);
@@ -175,12 +179,13 @@ class FlexibleJobShopData {
     horizon_ += SumOfDurations(durations);
   }
 
-  string name_;
+  std::string name_;
   int machine_count_;
   int job_count_;
   int horizon_;
   std::vector<std::vector<Task> > all_tasks_;
   int current_job_index_;
 };
-}       // namespace operations_research
+
+}  // namespace operations_research
 #endif  // OR_TOOLS_EXAMPLES_FLEXIBLE_JOBSHOP_H_

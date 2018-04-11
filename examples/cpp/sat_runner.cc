@@ -183,7 +183,8 @@ std::string SolutionString(const LinearBooleanProblem& problem,
   BooleanVariable limit(problem.original_num_variables());
   for (BooleanVariable index(0); index < limit; ++index) {
     if (index > 0) output += " ";
-    StrAppend(&output, Literal(index, assignment[index.value()]).SignedValue());
+    absl::StrAppend(&output,
+                    Literal(index, assignment[index.value()]).SignedValue());
   }
   return output;
 }

@@ -37,6 +37,9 @@ DEFINE_string(params, "", "Sat parameters in text proto format.");
 DEFINE_bool(use_boolean_precedences, false,
             "Whether we create Boolean variables for all the possible "
             "precedences between tasks on the same machine, or not.");
+DEFINE_bool(use_optional_variables, true,
+            "Whether we use optional variables for bounds of an optional "
+            "interval or not.");
 
 namespace {
 struct Task {
@@ -108,15 +111,31 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
       if (num_alternatives == 1) {
         machine_to_intervals[task.machines[0]].push_back(interval);
       } else {
-        std::vector<IntervalVariable> alternatives;
-        for (int i = 0; i < num_alternatives; ++i) {
-          const Literal is_present(model.Add(NewBooleanVariable()), true);
-          const IntervalVariable alternative = model.Add(
-              NewOptionalInterval(0, horizon, task.durations[i], is_present));
-          alternatives.push_back(alternative);
-          machine_to_intervals[task.machines[i]].push_back(alternative);
+        if (FLAGS_use_optional_variables) {
+          std::vector<IntervalVariable> alternatives;
+          for (int i = 0; i < num_alternatives; ++i) {
+            const Literal is_present(model.Add(NewBooleanVariable()), true);
+            const IntervalVariable alternative =
+                model.Add(NewOptionalIntervalWithOptionalVariables(
+                    0, horizon, task.durations[i], is_present));
+            alternatives.push_back(alternative);
+            machine_to_intervals[task.machines[i]].push_back(alternative);
+          }
+          model.Add(IntervalWithAlternatives(interval, alternatives));
+        } else {
+          std::vector<Literal> exactly_one;
+          for (int i = 0; i < num_alternatives; ++i) {
+            const Literal is_present(model.Add(NewBooleanVariable()), true);
+            exactly_one.push_back(is_present);
+            const IntervalVariable alternative =
+                model.GetOrCreate<IntervalsRepository>()->CreateInterval(
+                    model.Get(StartVar(interval)), model.Get(EndVar(interval)),
+                    kNoIntegerVariable, IntegerValue(task.durations[i]),
+                    is_present.Index());
+            machine_to_intervals[task.machines[i]].push_back(alternative);
+          }
+          model.Add(ExactlyOneConstraint(exactly_one));
         }
-        model.Add(IntervalWithAlternatives(interval, alternatives));
       }
     }
 
@@ -133,6 +152,13 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
     }
   }
 
+  // Auto detect "at least one of" constraints in the PrecedencesPropagator.
+  if (model.Mutable<PrecedencesPropagator>() != nullptr) {
+    model.Mutable<PrecedencesPropagator>()
+        ->AddGreaterThanAtLeastOneOfConstraints(&model);
+    model.GetOrCreate<SatSolver>()->Propagate();
+  }
+
   LOG(INFO) << "#machines:" << num_machines;
   LOG(INFO) << "#jobs:" << tasks_per_job.size();
   LOG(INFO) << "#tasks:" << model.Get<IntervalsRepository>()->NumIntervals();
@@ -143,7 +169,7 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
   }
   MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
       /*log_info=*/true, makespan,
-      FirstUnassignedVarAtItsMinHeuristic(decision_variables, &model),
+      UnassignedVarWithLowestMinAtItsMinHeuristic(decision_variables, &model),
       /*feasible_solution_observer=*/
       [makespan](const Model& model) {
         LOG(INFO) << "Makespan " << model.Get(LowerBound(makespan));

@@ -109,7 +109,7 @@ void ExportLinks(const CpModel& model, const std::string& source, const T& proto
 // integer variable with min_value == max_value.
 bool GetValueIfConstant(const CpModel& model, const CpIntegerExpression& proto,
                         int64* const value) {
-  CHECK_NOTNULL(value);
+  CHECK(value != nullptr);
   const int expr_type = proto.type_index();
   if (model.tags(expr_type) != ModelVisitor::kIntegerVariable) {
     return false;
@@ -144,7 +144,7 @@ void DeclareExpression(int index, const CpModel& proto,
   if (!expr.name().empty()) {
     exporter->WriteNode(label, expr.name(), "oval", kGreen1);
   } else if (GetValueIfConstant(proto, expr, &value)) {
-    exporter->WriteNode(label, StrCat(value), "oval", kYellow);
+    exporter->WriteNode(label, absl::StrCat(value), "oval", kYellow);
   } else {
     const std::string& type = proto.tags(expr.type_index());
     exporter->WriteNode(label, type, "oval", kWhite);
