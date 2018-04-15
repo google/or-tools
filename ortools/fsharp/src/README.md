@@ -1,0 +1,1 @@
+Referenced this [github issue](https://github.com/morelinq/MoreLINQ/pull/420/files) to fix compilation issue with dotnet-cli and targeting net 4.X
