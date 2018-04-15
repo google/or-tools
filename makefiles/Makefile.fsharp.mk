@@ -22,10 +22,12 @@ CLEAN_FILES=$(FSHARP_ORTOOLS_DLL_NAME).*
 ifeq ($(SYSTEM), win)
 FSHARP_COMPILER := fsc.exe
 FSHARP_EXECUTABLE := $(shell $(WHICH) $(FSHARP_COMPILER) 2>nul)
+DOTNET_EXECUTABLE := $(shell $(WHICH) dotnet.exe 2>nul)
 FLAG_PREFIX := /
 else # UNIX
 FSHARP_COMPILER := fsharpc
 FSHARP_EXECUTABLE := $(shell which $(FSHARP_COMPILER))
+DOTNET_EXECUTABLE := $(shell which dotnet)
 FLAG_PREFIX := --
 endif
 
@@ -45,6 +47,14 @@ else
 FS_NOCPYCORE :=
 endif
 
+FSHARP_LIB_DIR :=
+ifeq ($(PLATFORM),MACOSX)
+FSHARP_LIB_DIR = env DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR)
+endif
+ifeq ($(PLATFORM),LINUX)
+FSHARP_LIB_DIR = env LD_LIBRARY_PATH=$(LIB_DIR)
+endif
+
 .PHONY: fsharp # Build F# OR-Tools. Set environment variable FSHARP_DEBUG=1 for debug symbols.
 fsharp: csharp
 ifneq ($(FSHARP_EXECUTABLE),)
@@ -58,14 +68,21 @@ endif
 .PHONY: nuget-pkg_fsharp # Build Nuget Package for distribution.
 nuget-pkg_fsharp: fsharp
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" ortools$Sfsharp$S$(FSHARP_ORTOOLS_NUSPEC_FILE)
-	$(NUGET_EXECUTABLE) pack ortools$Sfsharp$S$(FSHARP_ORTOOLS_NUSPEC_FILE) -Basepath . -OutputDirectory $(ORTOOLS_NUGET_DIR)
+	"$(NUGET_EXECUTABLE)" pack ortools$Sfsharp$S$(FSHARP_ORTOOLS_NUSPEC_FILE) -Basepath . -OutputDirectory $(ORTOOLS_NUGET_DIR)
 
-.PHONY: test_fsharp # Test F# OR-Tools using various examples.
-ifneq ($(FSHARP_EXECUTABLE),)
-test_fsharp: test_fsharp_examples
-BUILT_LANGUAGES +=, F\#
-else
+.PHONY: test_fsharp # Tests for F# OR-Tools
 test_fsharp: fsharp
+ifeq ($(SYSTEM),win)
+	"$(FSHARP_EXECUTABLE)" $(FLAG_PREFIX)target:exe $(FLAG_PREFIX)out:bin$Sequality.exe $(FLAG_PREFIX)platform:anycpu $(FLAG_PREFIX)lib:bin examples$Sfsharp$Sequality.fsx
+	bin$Sequality.exe
+else
+ifneq ($(DOTNET_EXECUTABLE),)
+	"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sfsharp$Stest$Spackages" "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj"
+	"$(DOTNET_EXECUTABLE)" build "ortools$Sfsharp$Stest$S$(FSHARP_ORTOOLS_DLL_NAME).Test.fsproj" -o ".$Sbin"
+	$(FSHARP_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sfsharp$Stest$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sfsharp$Stest$Sbin$S$(FSHARP_ORTOOLS_DLL_NAME).Test.dll"
+else
+	$(warning Cannot find 'dotnet' command which is needed to run tests. Please make sure it is installed and in system path.)
+endif
 endif
 
 .PHONY: clean_fsharp # Clean F# output from previous build.
@@ -81,6 +98,8 @@ else
 endif
 	@echo FSHARP_COMPILER = $(FSHARP_COMPILER)
 	@echo FSHARP_EXECUTABLE = "$(FSHARP_EXECUTABLE)"
+	@echo DOTNET_EXECUTABLE = "$(DOTNET_EXECUTABLE)"
+	@echo NUGET_EXECUTABLE = "$(NUGET_EXECUTABLE)"
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

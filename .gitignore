@@ -75,5 +75,9 @@ cache/
 **/.vscode/*
 .DS_Store
 
+ortools/fsharp/test/bin
+ortools/fsharp/test/obj
+ortools/fsharp/test/packages
+
 tools/netstandard/CreateSigningKey/bin
 tools/netstandard/CreateSigningKey/obj
