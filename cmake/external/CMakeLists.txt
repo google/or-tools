@@ -46,7 +46,7 @@ endif()
 ##############
 if(NOT TARGET gflags::gflags)
 	message(STATUS "Target gflags::gflags not found.")
-	message(STATUS "Adding CMake Subproject: Gflag...")
+	message(STATUS "Adding CMake Subproject: Gflags...")
 	# Download and unpack gflags at configure time
 	configure_file(
 		${CMAKE_CURRENT_SOURCE_DIR}/gflags.CMakeLists.txt
