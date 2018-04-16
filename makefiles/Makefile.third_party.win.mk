@@ -407,3 +407,51 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME, WINDOWS_GFLAGS_DIR, >> Makefile.local
 	@echo # WINDOWS_PROTOBUF_DIR, WINDOWS_GLOG_DIR, WINDOWS_SWIG_BINARY, >> Makefile.local
 	@echo # WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
+
+.PHONY: detect_third_party # Show variables used to find third party
+detect_third_party:
+	@echo Relevant info on third party:
+	@echo ZLIB_INC = $(ZLIB_INC)
+	@echo WINDOWS_GFLAGS_DIR = $(WINDOWS_GFLAGS_DIR)
+	@echo GFLAGS_INC = $(GFLAGS_INC)
+	@echo GFLAGS_LNK = $(GFLAGS_LNK)
+	@echo WINDOWS_GLOG_DIR = $(WINDOWS_GLOG_DIR)
+	@echo GLOG_INC = $(GLOG_INC)
+	@echo GLOG_LNK = $(GLOG_LNK)
+	@echo WINDOWS_PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
+	@echo PROTOBUF_DIR = $(PROTOBUF_DIR)
+	@echo PROTOBUF_INC = $(PROTOBUF_INC)
+	@echo PROTOBUF_LNK = $(PROTOBUF_LNK)
+	@echo WINDOWS_CBC_DIR = $(WINDOWS_CBC_DIR)
+	@echo CBC_INC = $(CBC_INC)
+	@echo DYNAMIC_CBC_LNK = $(DYNAMIC_CBC_LNK)
+	@echo STATIC_CBC_LNK = $(STATIC_CBC_LNK)
+	@echo WINDOWS_CLP_DIR = $(WINDOWS_CLP_DIR)
+	@echo CLP_INC = $(CLP_INC)
+	@echo DYNAMIC_CLP_LNK = $(DYNAMIC_CLP_LNK)
+	@echo STATIC_CLP_LNK = $(STATIC_CLP_LNK)
+ifdef WINDOWS_GLPK_DIR
+	@echo WINDOWS_GLPK_DIR = $(WINDOWS_GLPK_DIR)
+	@echo GLPK_INC = $(GLPK_INC)
+	@echo DYNAMIC_GLPK_LNK = $(DYNAMIC_GLPK_LNK)
+	@echo STATIC_GLPK_LNK = $(STATIC_GLPK_LNK)
+endif
+ifdef WINDOWS_SCIP_DIR
+	@echo WINDOWS_SCIP_DIR = $(WINDOWS_SCIP_DIR)
+	@echo SCIP_INC = $(SCIP_INC)
+	@echo DYNAMIC_SCIP_LNK = $(DYNAMIC_SCIP_LNK)
+	@echo STATIC_SCIP_LNK = $(STATIC_SCIP_LNK)
+endif
+ifdef WINDOWS_CPLEX_DIR
+	@echo WINDOWS_CPLEX_DIR = $(WINDOWS_CPLEX_DIR)
+	@echo CPLEX_INC = $(CPLEX_INC)
+	@echo DYNAMIC_CPLEX_LNK = $(DYNAMIC_CPLEX_LNK)
+	@echo STATIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
+endif
+ifdef WINDOWS_GUROBI_DIR
+	@echo WINDOWS_GUROBI_DIR = $(WINDOWS_GUROBI_DIR)
+	@echo GUROBI_INC = $(GUROBI_INC)
+	@echo DYNAMIC_GUROBI_LNK = $(DYNAMIC_GUROBI_LNK)
+	@echo STATIC_GUROBI_LNK = $(STATIC_GUROBI_LNK)
+endif
+	@echo off & echo(

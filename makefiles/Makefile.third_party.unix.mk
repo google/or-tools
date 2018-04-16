@@ -331,3 +331,44 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo "# Define UNIX_GFLAGS_DIR, UNIX_PROTOBUF_DIR, UNIX_GLOG_DIR," >> Makefile.local
 	@echo "# UNIX_CLP_DIR, UNIX_CBC_DIR, UNIX_SWIG_BINARY if you wish to " >> Makefile.local
 	@echo "# use a custom version. " >> Makefile.local
+
+.PHONY: detect_third_party # Show variables used to find third party
+detect_third_party:
+	@echo Relevant info on third party:
+	@echo UNIX_GFLAGS_DIR = $(UNIX_GFLAGS_DIR)
+	@echo GFLAGS_INC = $(GFLAGS_INC)
+	@echo GFLAGS_LNK = $(GFLAGS_LNK)
+	@echo UNIX_GLOG_DIR = $(UNIX_GLOG_DIR)
+	@echo GLOG_INC = $(GLOG_INC)
+	@echo GLOG_LNK = $(GLOG_LNK)
+	@echo UNIX_PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
+	@echo PROTOBUF_DIR = $(PROTOBUF_DIR)
+	@echo PROTOBUF_INC = $(PROTOBUF_INC)
+	@echo PROTOBUF_LNK = $(PROTOBUF_LNK)
+	@echo UNIX_CBC_DIR = $(UNIX_CBC_DIR)
+	@echo CBC_INC = $(CBC_INC)
+	@echo CBC_LNK = $(CBC_LNK)
+	@echo UNIX_CLP_DIR = $(UNIX_CLP_DIR)
+	@echo CLP_INC = $(CLP_INC)
+	@echo CLP_LNK = $(CLP_LNK)
+ifdef UNIX_GLPK_DIR
+	@echo UNIX_GLPK_DIR = $(UNIX_GLPK_DIR)
+	@echo GLPK_INC = $(GLPK_INC)
+	@echo GLPK_LNK = $(GLPK_LNK)
+endif
+ifdef UNIX_SCIP_DIR
+	@echo UNIX_SCIP_DIR = $(UNIX_SCIP_DIR)
+	@echo SCIP_INC = $(SCIP_INC)
+	@echo SCIP_LNK = $(SCIP_LNK)
+endif
+ifdef UNIX_CPLEX_DIR
+	@echo UNIX_CPLEX_DIR = $(UNIX_CPLEX_DIR)
+	@echo CPLEX_INC = $(CPLEX_INC)
+	@echo CPLEX_LNK = $(CPLEX_LNK)
+endif
+ifdef UNIX_GUROBI_DIR
+	@echo UNIX_GUROBI_DIR = $(UNIX_GUROBI_DIR)
+	@echo GUROBI_INC = $(GUROBI_INC)
+	@echo GUROBI_LNK = $(GUROBI_LNK)
+endif
+	@echo
