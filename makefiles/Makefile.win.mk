@@ -1,6 +1,4 @@
 # Windows specific definitions
-PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
-SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 LIB_DIR = $(OR_ROOT)lib
 LIB_PREFIX =
 STATIC_LIB_SUFFIX = lib
@@ -69,12 +67,15 @@ TASKKILL = taskkill
 WINDOWS_ZLIB_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
 WINDOWS_ZLIB_NAME ?= zlib.lib
 WINDOWS_GFLAGS_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
+WINDOWS_GLOG_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
 WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_SWIG_BINARY ?= "$(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe"
-WINDOWS_CLP_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
 WINDOWS_CBC_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
+WINDOWS_CLP_DIR ?= $(WINDOWS_CBC_DIR)
+WINDOWS_SWIG_BINARY ?= "$(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe"
 
 # Compilation macros.
+PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
+SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 DEBUG=/O2 -DNDEBUG
 ifeq ("$(VISUAL_STUDIO_YEAR)","2015")
 CCC=cl /EHsc /MD /nologo /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
@@ -82,21 +83,15 @@ else
 CCC=cl /EHsc /MD /nologo
 endif
 
-GFLAGS_INC = /I$(WINDOWS_GFLAGS_DIR)\\include /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG=
 ZLIB_INC = /I$(WINDOWS_ZLIB_DIR)\\include
-PROTOBUF_INC = /I$(WINDOWS_PROTOBUF_DIR)\\include
+GFLAGS_INC = /I$(WINDOWS_GFLAGS_DIR)\\include /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG=
 GLOG_INC = /I$(WINDOWS_GLOG_DIR)\\include /DGOOGLE_GLOG_DLL_DECL=
+PROTOBUF_INC = /I$(WINDOWS_PROTOBUF_DIR)\\include
 
 PYTHON_VERSION = $(WINDOWS_PYTHON_VERSION)
 PYTHON_INC=/I$(WINDOWS_PATH_TO_PYTHON)\\include
 PYTHON_LNK="$(WINDOWS_PATH_TO_PYTHON)\\libs\\python$(PYTHON_VERSION).lib"
 
-# Define CLP_DIR if unset and if CBC_DIR is set.
-ifdef WINDOWS_CBC_DIR
-ifndef WINDOWS_CLP_DIR
-WINDOWS_CLP_DIR=$(WINDOWS_CBC_DIR)
-endif
-endif
 # This is needed to find Coin LP include files and libraries.
 ifdef WINDOWS_CLP_DIR
 CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /I$(WINDOWS_CLP_DIR)\\include\\coin /DUSE_CLP

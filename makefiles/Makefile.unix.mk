@@ -5,10 +5,10 @@
 # Checks if the user has overwritten default libraries and binaries.
 
 UNIX_GFLAGS_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
-UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_CBC_DIR ?= $(OR_ROOT_FULL)/dependencies/install
-UNIX_CLP_DIR ?= $(OR_ROOT_FULL)/dependencies/install
+UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
 
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
@@ -85,12 +85,6 @@ PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
 # This is needed to find sparse hash containers.
 GLOG_INC = -I$(UNIX_GLOG_DIR)/include
 
-# Define UNIX_CLP_DIR if unset and if UNIX_CBC_DIR is set.
-ifdef UNIX_CBC_DIR
-  ifndef UNIX_CLP_DIR
-    UNIX_CLP_DIR = $(UNIX_CBC_DIR)
-  endif
-endif
 # This is needed to find Coin LP include files.
 ifdef UNIX_CLP_DIR
   CLP_INC = -I$(UNIX_GLPK_DIR)/include -I$(UNIX_CLP_DIR)/include/coin -DUSE_CLP
