@@ -22,8 +22,23 @@ third_party: build_third_party makefile_third_party
 
 .PHONY: third_party_check # Check if "make third_party" have been run or not
 third_party_check:
-ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
-	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
+ifeq ($(wildcard $(WINDOWS_ZLIB_DIR)/include/zlib.h),)
+	$(error Third party ZLIB files was not found! did you run 'make third_party' or set WINDOWS_ZLIB_DIR ?)
+endif
+ifeq ($(wildcard $(WINDOWS_GFLAGS_DIR)/include/gflags/gflags.h),)
+	$(error Third party GFlags files was not found! did you run 'make third_party' or set WINDOWS_GFLAGS_DIR ?)
+endif
+ifeq ($(wildcard $(WINDOWS_GLOG_DIR)/include/glog/logging.h),)
+	$(error Third party GLog files was not found! did you run 'make third_party' or set WINDOWS_GLOG_DIR ?)
+endif
+ifeq ($(wildcard $(WINDOWS_PROTOBUF_DIR)/include/google/protobuf/descriptor.h),)
+	$(error Third party Protobuf files was not found! did you run 'make third_party' or set WINDOWS_PROTOBUF_DIR ?)
+endif
+ifeq ($(wildcard $(WINDOWS_CBC_DIR)/include/coin/CbcModel.hpp),)
+	$(error Third party Cbc files was not found! did you run 'make third_party' or set WINDOWS_CBC_DIR ?)
+endif
+ifeq ($(wildcard $(WINDOWS_CLP_DIR)/include/coin/ClpSimplex.hpp),)
+	$(error Third party Clp files was not found! did you run 'make third_party' or set WINDOWS_CLP_DIR ?)
 endif
 
 # Create missing directories
