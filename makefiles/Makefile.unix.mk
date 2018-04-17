@@ -90,6 +90,11 @@ CBC_SWIG = $(CBC_INC)
 # This is needed to find Coin LP include files.
 CLP_INC = -I$(UNIX_CLP_DIR)/include -I$(UNIX_CLP_DIR)/include/coin -DUSE_CLP
 CLP_SWIG = $(CLP_INC)
+# Install Path used when installing coin using pkgsource
+# e.g. brew coin-or-tools/homebrew-coinor/cbc.rb
+COIN_INC = -I$(UNIX_CBC_DIR)/include/coinutils/coin -I$(UNIX_CBC_DIR)/include/cbc/coin -I$(UNIX_CLP_DIR)/include/clp/coin
+COIN_SWIG = $(COIN_INC)
+
 # This is needed to find GLPK include files.
 ifdef UNIX_GLPK_DIR
   GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
@@ -109,7 +114,9 @@ ifdef UNIX_CPLEX_DIR
   CPLEX_SWIG = $(CPLEX_INC)
 endif
 
-SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG) -DUSE_GLOP -DUSE_BOP
+SWIG_INC = $(CLP_SWIG) $(CBC_SWIG) $(COIN_SWIG) \
+ -DUSE_GLOP -DUSE_BOP \
+ $(GLPK_SWIG) $(SCIP_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG)
 
 # Compilation flags
 DEBUG = -O4 -DNDEBUG
@@ -235,11 +242,21 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 endif  # MAC OS X
 
-CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) \
-  -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
-        $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP $(GLOG_INC)
+CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
+ $(GFLAGS_INC) $(GLOG_INC) $(PROTOBUF_INC) \
+ $(CBC_INC) $(CLP_INC) $(COIN_INC) \
+ -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
+ $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC)
 
-JNIFLAGS = $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) \
-        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP
-DEPENDENCIES_LNK = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK) $(LM_LNK) $(GUROBI_LNK) $(CPLEX_LNK) $(GFLAGS_LNK) $(PROTOBUF_LNK) $(GLOG_LNK)
+JNIFLAGS = $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
+ $(GFLAGS_INC) $(GLOG_INC) $(PROTOBUF_INC) \
+ $(CBC_INC) $(CLP_INC) $(COIN_INC) \
+ -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
+ $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC)
+
+DEPENDENCIES_LNK = $(LM_LNK) \
+ $(GFLAGS_LNK) $(GLOG_LNK) $(PROTOBUF_LNK) \
+ $(CBC_LNK) $(CLP_LNK) \
+ $(GLPK_LNK) $(SCIP_LNK) $(GUROBI_LNK) $(CPLEX_LNK)
+
 OR_TOOLS_LD_FLAGS = $(ZLIB_LNK) $(SYS_LNK)
