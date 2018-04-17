@@ -323,9 +323,9 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
             reduced_costs_.ComputeMaximumDualInfeasibility();
         if (primal_infeasibility > primal_tolerance &&
             dual_infeasibility > dual_tolerance) {
-          VLOG() << "OPTIMAL was reported, yet both of the infeasibility "
-                    "are above the tolerance after the "
-                    "shift/perturbation are removed.";
+          VLOG(1) << "OPTIMAL was reported, yet both of the infeasibility "
+                     "are above the tolerance after the "
+                     "shift/perturbation are removed.";
           problem_status_ = ProblemStatus::IMPRECISE;
         } else if (primal_infeasibility > primal_tolerance) {
           VLOG(1) << "Re-optimizing with dual simplex ... ";
