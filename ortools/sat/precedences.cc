@@ -725,6 +725,7 @@ void PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(
 
       const int old_level = solver->CurrentDecisionLevel();
       solver->EnqueueDecisionAndBacktrackOnConflict(literal.Negated());
+      if (solver->IsModelUnsat()) return;
       const int new_level = solver->CurrentDecisionLevel();
       if (new_level <= old_level) {
         clause = solver->GetLastIncompatibleDecisions();
@@ -756,7 +757,7 @@ void PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(
         selectors.push_back(Literal(arcs_[a].presence_literals.front()));
       }
       model->Add(GreaterThanAtLeastOneOf(target, vars, offsets, selectors));
-      solver->Propagate();
+      if (!solver->FinishPropagation()) return;
     }
   }
 

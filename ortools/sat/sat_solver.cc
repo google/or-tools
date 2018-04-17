@@ -1005,7 +1005,14 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     moved_last.insert(candidate.back().Index());
   }
 
+  // Returns if we don't have any minimization.
   Backtrack(0);
+  if (candidate.size() == clause->Size()) return;
+
+  // Write the new clause to the proof before the deletion of the old one
+  // happens (when we will detach it).
+  if (drat_writer_ != nullptr) drat_writer_->AddClause(candidate);
+
   if (candidate.size() == 1) {
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
       counters_.minimization_num_removed_literals += clause->Size();
@@ -1018,21 +1025,17 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     counters_.minimization_num_removed_literals += clause->Size() - 2;
     AddBinaryClauseInternal(candidate[0], candidate[1]);
     clauses_propagator_.Detach(clause);
-    if (drat_writer_ != nullptr) drat_writer_->AddClause(candidate);
     return;
   }
 
-  if (candidate.size() < clause->Size()) {
-    counters_.minimization_num_removed_literals +=
-        clause->Size() - candidate.size();
+  counters_.minimization_num_removed_literals +=
+      clause->Size() - candidate.size();
 
-    // TODO(user): If the watched literal didn't change, we could just rewrite
-    // the clause while keeping the two watched literals at the beginning.
-    clauses_propagator_.Detach(clause);
-    clause->Rewrite(candidate);
-    clauses_propagator_.Attach(clause, trail_);
-    if (drat_writer_ != nullptr) drat_writer_->AddClause(candidate);
-  }
+  // TODO(user): If the watched literal didn't change, we could just rewrite
+  // the clause while keeping the two watched literals at the beginning.
+  clauses_propagator_.Detach(clause);
+  clause->Rewrite(candidate);
+  clauses_propagator_.Attach(clause, trail_);
 }
 
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
@@ -1471,6 +1474,17 @@ void SatSolver::ProcessNewlyFixedVariables() {
   int num_detached_clauses = 0;
   int num_binary = 0;
 
+  if (drat_writer_ != nullptr) {
+    // We need to output the literals that are fixed so we can remove all
+    // clauses that contains them. Note that this doesn't seems to be needed
+    // for drat-trim.
+    Literal temp;
+    for (int i = num_processed_fixed_variables_; i < trail_->Index(); ++i) {
+      temp = (*trail_)[i];
+      drat_writer_->AddClause({&temp, 1});
+    }
+  }
+
   // We remove the clauses that are always true and the fixed literals from the
   // others. Note that none of the clause should be all false because we should
   // have detected a conflict before this is called.
@@ -1483,25 +1497,25 @@ void SatSolver::ProcessNewlyFixedVariables() {
       clauses_propagator_.LazyDetach(clause);
       ++num_detached_clauses;
       continue;
-    } else if (clause->Size() != old_size) {
-      if (clause->Size() == 2 &&
-          parameters_->treat_binary_clauses_separately()) {
-        // This clause is now a binary clause, treat it separately. Note that
-        // it is safe to do that because this clause can't be used as a reason
-        // since we are at level zero and the clause is not satisfied.
-        AddBinaryClauseInternal(clause->FirstLiteral(),
-                                clause->SecondLiteral());
-        clauses_propagator_.LazyDetach(clause);
-        ++num_binary;
-        continue;
-      }
     }
 
     const size_t new_size = clause->Size();
-    if (new_size != old_size && drat_writer_ != nullptr) {
+    if (new_size == old_size) continue;
+
+    if (drat_writer_ != nullptr) {
       CHECK_GT(new_size, 0);
       drat_writer_->AddClause({clause->begin(), new_size});
       drat_writer_->DeleteClause({clause->begin(), old_size});
+    }
+
+    if (new_size == 2 && parameters_->treat_binary_clauses_separately()) {
+      // This clause is now a binary clause, treat it separately. Note that
+      // it is safe to do that because this clause can't be used as a reason
+      // since we are at level zero and the clause is not satisfied.
+      AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral());
+      clauses_propagator_.LazyDetach(clause);
+      ++num_binary;
+      continue;
     }
   }
 

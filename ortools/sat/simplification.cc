@@ -161,13 +161,15 @@ void SatPresolver::AddClause(absl::Span<Literal> clause) {
   in_clause_to_process_.push_back(true);
   clause_to_process_.push_back(ci);
 
+  bool changed = false;
   std::vector<Literal>& clause_ref = clauses_.back();
   if (!equiv_mapping_.empty()) {
     for (int i = 0; i < clause_ref.size(); ++i) {
+      const Literal old_literal = clause_ref[i];
       clause_ref[i] = Literal(equiv_mapping_[clause_ref[i].Index()]);
+      if (old_literal != clause_ref[i]) changed = true;
     }
   }
-  const int old_size = clause_ref.size();
   std::sort(clause_ref.begin(), clause_ref.end());
   clause_ref.erase(std::unique(clause_ref.begin(), clause_ref.end()),
                    clause_ref.end());
@@ -184,7 +186,7 @@ void SatPresolver::AddClause(absl::Span<Literal> clause) {
     }
   }
 
-  if (drat_writer_ != nullptr && clause_ref.size() < old_size) {
+  if (drat_writer_ != nullptr && changed) {
     drat_writer_->AddClause(clause_ref);
     drat_writer_->DeleteClause(clause);
   }
