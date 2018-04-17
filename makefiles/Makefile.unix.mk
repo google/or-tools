@@ -92,7 +92,7 @@ CLP_INC = -I$(UNIX_CLP_DIR)/include -I$(UNIX_CLP_DIR)/include/coin -DUSE_CLP
 CLP_SWIG = $(CLP_INC)
 # Install Path used when installing coin using pkgsource
 # e.g. brew coin-or-tools/homebrew-coinor/cbc.rb
-COIN_INC = -I$(UNIX_CBC_DIR)/include/coinutils/coin -I$(UNIX_CBC_DIR)/include/cbc/coin -I$(UNIX_CLP_DIR)/include/clp/coin
+COIN_INC = -I$(UNIX_CBC_DIR)/include/coinutils/coin -I$(UNIX_CBC_DIR)/include/osi/coin -I$(UNIX_CBC_DIR)/include/cbc/coin -I$(UNIX_CLP_DIR)/include/clp/coin
 COIN_SWIG = $(COIN_INC)
 
 # This is needed to find GLPK include files.
