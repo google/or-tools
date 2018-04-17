@@ -292,8 +292,8 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
           variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
           reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
-        LOG(WARNING) << "DUAL_UNBOUNDED was reported, but the residual and/or"
-                     << "dual infeasibility is above the tolerance";
+        VLOG(1) << "DUAL_UNBOUNDED was reported, but the residual and/or"
+                << "dual infeasibility is above the tolerance";
       }
       break;
     }
@@ -306,9 +306,9 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
       if (variable_values_.ComputeMaximumPrimalResidual() >
               solution_tolerance ||
           reduced_costs_.ComputeMaximumDualResidual() > solution_tolerance) {
-        LOG(WARNING) << "OPTIMAL was reported, yet one of the residuals is "
-                        "above the solution feasibility tolerance after the "
-                        "shift/perturbation are removed.";
+        VLOG(1) << "OPTIMAL was reported, yet one of the residuals is "
+                   "above the solution feasibility tolerance after the "
+                   "shift/perturbation are removed.";
         problem_status_ = ProblemStatus::IMPRECISE;
       } else {
         // We use the "precise" tolerances here to try to report the best
@@ -323,9 +323,9 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
             reduced_costs_.ComputeMaximumDualInfeasibility();
         if (primal_infeasibility > primal_tolerance &&
             dual_infeasibility > dual_tolerance) {
-          LOG(WARNING) << "OPTIMAL was reported, yet both of the infeasibility "
-                          "are above the tolerance after the "
-                          "shift/perturbation are removed.";
+          VLOG() << "OPTIMAL was reported, yet both of the infeasibility "
+                    "are above the tolerance after the "
+                    "shift/perturbation are removed.";
           problem_status_ = ProblemStatus::IMPRECISE;
         } else if (primal_infeasibility > primal_tolerance) {
           VLOG(1) << "Re-optimizing with dual simplex ... ";
@@ -1004,23 +1004,23 @@ Status RevisedSimplex::CreateInitialBasis() {
         if (parameters_.use_scaling()) {
           initial_basis.CompleteBixbyBasis(first_slack_col_, &basis);
         } else {
-          LOG(WARNING) << "Bixby initial basis algorithm requires the problem "
-                       << "to be scaled. Skipping Bixby's algorithm.";
+          VLOG(1) << "Bixby initial basis algorithm requires the problem "
+                  << "to be scaled. Skipping Bixby's algorithm.";
         }
       } else if (parameters_.initial_basis() == GlopParameters::TRIANGULAR) {
         // Note the use of num_cols_ here because this algorithm
         // benefits from treating fixed slack columns like any other column.
         RowToColMapping basis_copy = basis;
         if (!initial_basis.CompleteTriangularPrimalBasis(num_cols_, &basis)) {
-          LOG(WARNING) << "Reverting to Bixby's initial basis algorithm.";
+          VLOG(1) << "Reverting to Bixby's initial basis algorithm.";
           basis = basis_copy;
           if (parameters_.use_scaling()) {
             initial_basis.CompleteBixbyBasis(first_slack_col_, &basis);
           }
         }
       } else {
-        LOG(WARNING) << "Unsupported initial_basis parameters: "
-                     << parameters_.initial_basis();
+        VLOG(1) << "Unsupported initial_basis parameters: "
+                << parameters_.initial_basis();
       }
     }
   }
@@ -1129,8 +1129,8 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
         reduced_costs_.ClearAndRemoveCostShifts();
         solve_from_scratch = false;
       } else {
-        LOG(WARNING) << "RevisedSimplex is not using the externally provided "
-                        "basis because it is not factorizable.";
+        VLOG(1) << "RevisedSimplex is not using the externally provided "
+                   "basis because it is not factorizable.";
       }
     } else if (!parameters_.use_dual_simplex()) {
       // With primal simplex, always clear dual norms and dual pricing.
