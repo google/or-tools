@@ -80,21 +80,16 @@ MONO_EXECUTABLE := $(shell $(WHICH) $(MONO_COMPILER))
 
 # This is needed to find gflags/gflags.h
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
-# This is needed to find protocol buffers.
-PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
 # This is needed to find sparse hash containers.
 GLOG_INC = -I$(UNIX_GLOG_DIR)/include
-
-# This is needed to find Coin LP include files.
-ifdef UNIX_CLP_DIR
-  CLP_INC = -I$(UNIX_GLPK_DIR)/include -I$(UNIX_CLP_DIR)/include/coin -DUSE_CLP
-  CLP_SWIG = $(CLP_INC)
-endif
+# This is needed to find protocol buffers.
+PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
 # This is needed to find Coin Branch and Cut include files.
-ifdef UNIX_CBC_DIR
-  CBC_INC = -I$(UNIX_CBC_DIR)/include -I$(UNIX_CBC_DIR)/include/coin -DUSE_CBC
-  CBC_SWIG = $(CBC_INC)
-endif
+CBC_INC = -I$(UNIX_CBC_DIR)/include -I$(UNIX_CBC_DIR)/include/coin -DUSE_CBC
+CBC_SWIG = $(CBC_INC)
+# This is needed to find Coin LP include files.
+CLP_INC = -I$(UNIX_CLP_DIR)/include -I$(UNIX_CLP_DIR)/include/coin -DUSE_CLP
+CLP_SWIG = $(CLP_INC)
 # This is needed to find GLPK include files.
 ifdef UNIX_GLPK_DIR
   GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
