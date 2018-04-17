@@ -19,6 +19,140 @@ cc: ortoolslibs ccexe
 test_cc: test_cc_examples
 BUILT_LANGUAGES += C++
 
+MISSING_BUILD_DIRECTORIES = \
+ bin \
+ lib \
+ objs/algorithms \
+ objs/base \
+ objs/bop \
+ objs/com/google/ortools \
+ objs/constraint_solver \
+ objs/data \
+ objs/flatzinc \
+ objs/glop \
+ objs/graph \
+ objs/linear_solver \
+ objs/lp_data \
+ objs/sat \
+ objs/port \
+ objs/swig \
+ objs/util \
+ ortools/gen/com/google/ortools/algorithms \
+ ortools/gen/com/google/ortools/constraintsolver \
+ ortools/gen/com/google/ortools/flatzinc \
+ ortools/gen/com/google/ortools/graph \
+ ortools/gen/com/google/ortools/sat \
+ ortools/gen/com/google/ortools/linearsolver \
+ ortools/gen/com/google/ortools/properties \
+ ortools/gen/ortools/algorithms \
+ ortools/gen/ortools/bop \
+ ortools/gen/ortools/constraint_solver \
+ ortools/gen/ortools/data \
+ ortools/gen/ortools/flatzinc \
+ ortools/gen/ortools/glop \
+ ortools/gen/ortools/graph \
+ ortools/gen/ortools/linear_solver \
+ ortools/gen/ortools/sat
+
+bin:
+	$(MKDIR_P) bin
+
+lib:
+	$(MKDIR_P) lib
+
+objs/algorithms:
+	$(MKDIR_P) objs$Salgorithms
+
+objs/base:
+	$(MKDIR_P) objs$Sbase
+
+objs/bop:
+	$(MKDIR_P) objs$Sbop
+
+objs/com/google/ortools:
+	$(MKDIR_P) objs$Scom$Sgoogle$Sortools
+
+objs/constraint_solver:
+	$(MKDIR_P) objs$Sconstraint_solver
+
+objs/data:
+	$(MKDIR_P) objs$Sdata
+
+objs/flatzinc:
+	$(MKDIR_P) objs$Sflatzinc
+
+objs/glop:
+	$(MKDIR_P) objs$Sglop
+
+objs/graph:
+	$(MKDIR_P) objs$Sgraph
+
+objs/linear_solver:
+	$(MKDIR_P) objs$Slinear_solver
+
+objs/lp_data:
+	$(MKDIR_P) objs$Slp_data
+
+objs/port:
+	$(MKDIR_P) objs$Sport
+
+objs/sat:
+	$(MKDIR_P) objs$Ssat
+
+objs/swig:
+	$(MKDIR_P) objs$Sswig
+
+objs/util:
+	$(MKDIR_P) objs$Sutil
+
+ortools/gen/com/google/ortools/algorithms:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Salgorithms
+
+ortools/gen/com/google/ortools/constraintsolver:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
+
+ortools/gen/com/google/ortools/graph:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sgraph
+
+ortools/gen/com/google/ortools/linearsolver:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
+
+ortools/gen/com/google/ortools/flatzinc:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sflatzinc
+
+ortools/gen/com/google/ortools/sat:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Ssat
+
+ortools/gen/com/google/ortools/properties:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sproperties
+
+ortools/gen/ortools/algorithms:
+	$(MKDIR_P) ortools$Sgen$Sortools$Salgorithms
+
+ortools/gen/ortools/bop:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sbop
+
+ortools/gen/ortools/constraint_solver:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sconstraint_solver
+
+ortools/gen/ortools/data:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sdata
+
+ortools/gen/ortools/flatzinc:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sflatzinc
+
+ortools/gen/ortools/glop:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sglop
+
+ortools/gen/ortools/graph:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sgraph
+
+ortools/gen/ortools/linear_solver:
+	$(MKDIR_P) ortools$Sgen$Sortools$Slinear_solver
+
+ortools/gen/ortools/sat:
+	$(MKDIR_P) ortools$Sgen$Sortools$Ssat
+
 .PHONY: clean_cc # Clean C++ output from previous build.
 clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
@@ -76,7 +210,7 @@ include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB)
-ortoolslibs: third_party_check $(OR_TOOLS_LIBS)
+ortoolslibs: third_party_check $(MISSING_BUILD_DIRECTORIES) $(OR_TOOLS_LIBS)
 
 # Specific libraries for examples, and flatzinc.
 
