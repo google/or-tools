@@ -56,7 +56,7 @@ archives_directory:
 	$(MKDIR_P) dependencies$Sarchives
 
 .PHONY: install_directories
-install_directories: dependencies/install/bin dependencies/install/lib/coin dependencies/install/include/coin
+install_directories: dependencies/install/bin dependencies/install/lib dependencies/install/include/coin
 
 dependencies/install:
 	$(MKDIR_P) dependencies$Sinstall
@@ -66,9 +66,6 @@ dependencies/install/bin: dependencies/install
 
 dependencies/install/lib: dependencies/install
 	$(MKDIR_P) dependencies$Sinstall$Slib
-
-dependencies/install/lib/coin: dependencies/install/lib
-	$(MKDIR_P) dependencies$Sinstall$Slib$Scoin
 
 dependencies/install/include: dependencies/install
 	$(MKDIR_P) dependencies$Sinstall$Sinclude
