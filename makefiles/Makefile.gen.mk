@@ -24,6 +24,7 @@ BASE_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/map_util.h \
+    $(SRC_DIR)/ortools/base/match.h \
     $(SRC_DIR)/ortools/base/mathutil.h \
     $(SRC_DIR)/ortools/base/memory.h \
     $(SRC_DIR)/ortools/base/murmur.h \
@@ -130,6 +131,9 @@ $(SRC_DIR)/ortools/base/logging.h: \
 
 $(SRC_DIR)/ortools/base/map_util.h: \
     $(SRC_DIR)/ortools/base/logging.h
+
+$(SRC_DIR)/ortools/base/match.h: \
+    $(SRC_DIR)/ortools/base/string_view.h
 
 $(SRC_DIR)/ortools/base/mathutil.h: \
     $(SRC_DIR)/ortools/base/basictypes.h \
@@ -601,15 +605,22 @@ $(OBJ_DIR)/util/optional_boolean.pb.$O: $(GEN_DIR)/ortools/util/optional_boolean
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/util/optional_boolean.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Soptional_boolean.pb.$O
 
 DATA_DEPS = \
+    $(SRC_DIR)/ortools/data/jobshop_scheduling_parser.h \
     $(SRC_DIR)/ortools/data/rcpsp_parser.h \
     $(SRC_DIR)/ortools/data/set_covering_data.h \
     $(SRC_DIR)/ortools/data/set_covering_parser.h
 
 DATA_LIB_OBJS = \
+    $(OBJ_DIR)/data/jobshop_scheduling_parser.$O \
     $(OBJ_DIR)/data/rcpsp_parser.$O \
     $(OBJ_DIR)/data/set_covering_data.$O \
     $(OBJ_DIR)/data/set_covering_parser.$O \
+    $(OBJ_DIR)/data/jobshop_scheduling.pb.$O \
     $(OBJ_DIR)/data/rcpsp.pb.$O
+
+$(SRC_DIR)/ortools/data/jobshop_scheduling_parser.h: \
+    $(SRC_DIR)/ortools/base/match.h \
+    $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h
 
 $(SRC_DIR)/ortools/data/rcpsp_parser.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
@@ -621,6 +632,18 @@ $(SRC_DIR)/ortools/data/set_covering_data.h: \
 $(SRC_DIR)/ortools/data/set_covering_parser.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/data/set_covering_data.h
+
+$(OBJ_DIR)/data/jobshop_scheduling_parser.$O: \
+    $(SRC_DIR)/ortools/data/jobshop_scheduling_parser.cc \
+    $(SRC_DIR)/ortools/base/filelineiter.h \
+    $(SRC_DIR)/ortools/base/integral_types.h \
+    $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/split.h \
+    $(SRC_DIR)/ortools/base/stringprintf.h \
+    $(SRC_DIR)/ortools/base/strtoint.h \
+    $(SRC_DIR)/ortools/data/jobshop_scheduling_parser.h \
+    $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sjobshop_scheduling_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sjobshop_scheduling_parser.$O
 
 $(OBJ_DIR)/data/rcpsp_parser.$O: \
     $(SRC_DIR)/ortools/data/rcpsp_parser.cc \
@@ -646,6 +669,15 @@ $(OBJ_DIR)/data/set_covering_parser.$O: \
     $(SRC_DIR)/ortools/base/strtoint.h \
     $(SRC_DIR)/ortools/data/set_covering_parser.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sset_covering_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sset_covering_parser.$O
+
+$(GEN_DIR)/ortools/data/jobshop_scheduling.pb.cc: \
+    $(SRC_DIR)/ortools/data/jobshop_scheduling.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/ortools/data/jobshop_scheduling.proto
+
+$(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h: $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.cc \
+
+$(OBJ_DIR)/data/jobshop_scheduling.pb.$O: $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sjobshop_scheduling.pb.$O
 
 $(GEN_DIR)/ortools/data/rcpsp.pb.cc: \
     $(SRC_DIR)/ortools/data/rcpsp.proto
@@ -806,6 +838,7 @@ $(OBJ_DIR)/lp_data/lp_data_utils.$O: \
 $(OBJ_DIR)/lp_data/lp_decomposer.$O: \
     $(SRC_DIR)/ortools/lp_data/lp_decomposer.cc \
     $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
+    $(SRC_DIR)/ortools/base/mutex.h \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
     $(SRC_DIR)/ortools/lp_data/lp_decomposer.h \
     $(SRC_DIR)/ortools/lp_data/lp_utils.h
@@ -1129,6 +1162,7 @@ $(OBJ_DIR)/glop/preprocessor.$O: \
     $(SRC_DIR)/ortools/glop/preprocessor.h \
     $(SRC_DIR)/ortools/glop/revised_simplex.h \
     $(SRC_DIR)/ortools/glop/status.h \
+    $(SRC_DIR)/ortools/lp_data/lp_data_utils.h \
     $(SRC_DIR)/ortools/lp_data/lp_utils.h \
     $(SRC_DIR)/ortools/lp_data/matrix_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sglop$Spreprocessor.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Spreprocessor.$O
@@ -1297,6 +1331,7 @@ $(SRC_DIR)/ortools/graph/io.h: \
     $(SRC_DIR)/ortools/base/split.h \
     $(SRC_DIR)/ortools/base/status.h \
     $(SRC_DIR)/ortools/base/statusor.h \
+    $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/graph/graph.h
 
 $(SRC_DIR)/ortools/graph/linear_assignment.h: \
@@ -1418,7 +1453,6 @@ $(OBJ_DIR)/graph/min_cost_flow.$O: \
 
 $(OBJ_DIR)/graph/shortestpaths.$O: \
     $(SRC_DIR)/ortools/graph/shortestpaths.cc \
-    $(SRC_DIR)/ortools/base/casts.h \
     $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
@@ -1916,7 +1950,8 @@ $(SRC_DIR)/ortools/sat/simplification.h: \
     $(SRC_DIR)/ortools/sat/drat.h \
     $(SRC_DIR)/ortools/sat/sat_base.h \
     $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
-    $(SRC_DIR)/ortools/sat/sat_solver.h
+    $(SRC_DIR)/ortools/sat/sat_solver.h \
+    $(SRC_DIR)/ortools/util/time_limit.h
 
 $(SRC_DIR)/ortools/sat/swig_helper.h: \
     $(GEN_DIR)/ortools/sat/cp_model.pb.h \
@@ -1957,6 +1992,7 @@ $(SRC_DIR)/ortools/sat/timetable.h: \
 
 $(SRC_DIR)/ortools/sat/util.h: \
     $(SRC_DIR)/ortools/base/random.h \
+    $(SRC_DIR)/ortools/sat/sat_base.h \
     $(GEN_DIR)/ortools/sat/sat_parameters.pb.h
 
 $(OBJ_DIR)/sat/all_different.$O: \
@@ -2286,6 +2322,7 @@ $(OBJ_DIR)/sat/sat_solver.$O: \
     $(SRC_DIR)/ortools/port/proto_utils.h \
     $(SRC_DIR)/ortools/port/sysinfo.h \
     $(SRC_DIR)/ortools/sat/sat_solver.h \
+    $(SRC_DIR)/ortools/sat/util.h \
     $(SRC_DIR)/ortools/util/saturated_arithmetic.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_solver.$O
 
@@ -2404,6 +2441,7 @@ BOP_LIB_OBJS = \
 
 $(SRC_DIR)/ortools/bop/bop_base.h: \
     $(SRC_DIR)/ortools/base/basictypes.h \
+    $(SRC_DIR)/ortools/base/mutex.h \
     $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
     $(SRC_DIR)/ortools/bop/bop_solution.h \
     $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -2522,6 +2560,7 @@ $(SRC_DIR)/ortools/bop/integral_solver.h: \
 
 $(OBJ_DIR)/bop/bop_base.$O: \
     $(SRC_DIR)/ortools/bop/bop_base.cc \
+    $(SRC_DIR)/ortools/base/mutex.h \
     $(SRC_DIR)/ortools/bop/bop_base.h \
     $(SRC_DIR)/ortools/sat/boolean_problem.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbop$Sbop_base.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_base.$O

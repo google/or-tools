@@ -41,6 +41,7 @@
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "examples/cpp/sat_cnf_reader.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
@@ -122,10 +123,6 @@ DEFINE_bool(reduce_memory_usage, false,
             "If true, do not keep a copy of the original problem in memory."
             "This reduce the memory usage, but disable the solution cheking at "
             "the end.");
-
-DEFINE_string(
-    drat_output, "",
-    "If non-empty, a proof in DRAT format will be written to this file.");
 
 namespace operations_research {
 namespace sat {
