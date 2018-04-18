@@ -1,6 +1,6 @@
 namespace Google.OrTools
 
-#I "../../../../bin"
+#I "../../../bin"
 #r "Google.OrTools.dll"
 
 module FSharp =

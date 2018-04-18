@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "OrTools.FSharp", "OrTools.FSharp\OrTools.FSharp.fsproj", "{B7DC098E-1334-47D2-88D4-7DA1EF8A4076}"
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "OrTools.FSharp", "OrTools.FSharp\OrTools.FSharp.fsproj", "{B7DC098E-1334-47D2-88D4-7DA1EF8A4076}"
+EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "OrTools.FSharp.Test", "OrTools.FSharp.Test\OrTools.FSharp.Test.fsproj", "{C3B40B0A-23B6-4629-9A45-01F52722A97D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,5 +32,17 @@ Global
 		{B7DC098E-1334-47D2-88D4-7DA1EF8A4076}.Release|x64.Build.0 = Release|x64
 		{B7DC098E-1334-47D2-88D4-7DA1EF8A4076}.Release|x86.ActiveCfg = Release|x86
 		{B7DC098E-1334-47D2-88D4-7DA1EF8A4076}.Release|x86.Build.0 = Release|x86
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Debug|x64.ActiveCfg = Debug|x64
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Debug|x64.Build.0 = Debug|x64
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Debug|x86.ActiveCfg = Debug|x86
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Debug|x86.Build.0 = Debug|x86
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Release|x64.ActiveCfg = Release|x64
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Release|x64.Build.0 = Release|x64
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Release|x86.ActiveCfg = Release|x86
+		{C3B40B0A-23B6-4629-9A45-01F52722A97D}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 EndGlobal

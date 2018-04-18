@@ -1,25 +1,12 @@
 # Google OrTools - F# 
 
+## Pre-requisites
+- dotnet core 2.0
+- Mono framework 5.4+
+
 ## Compiling a standalone binary
-This command must be run from the root folder of the repository:
-```shell
-fsharpc --target:library --out:bin/Google.OrTools.FSharp.dll --platform:anycpu --lib:bin --nocopyfsharpcore --keyfile:bin/keyfile.snk -r:Google.OrTools.dll ortools/fsharp/Google.OrTools.FSharp.fsx
-```
-For debug information add the `--debug` flag. The library must be coupled with the `Google.OrTools.dll`. Once installed it can be used as follows:
-```fsharp
-#r "Google.OrTools.dll"
-#r "Google.OrTools.Fsharp.dll"
 
-open System
-open Google.OrTools.FSharp
-
-let opts = SolverOpts.Default
-            .Name("Equality Constraints")
-            .Goal(Minimize)
-...
-```
-
-One can also use the makefile found in the root folder to accomplish the same task.
+Use the makefile found in the root folder. IT to accomplish the same task.
 ```shell
 make fsharp
 ```
@@ -30,4 +17,4 @@ Ensure nuget executable is installed and then from root folder run the following
 ```shell
 make nuget-pkg_fsharp
 ```
-The output package will include the FSharp binary and examples. It is compiled against the `netstandard2.0` metaframework.
+The output package will include the FSharp binary and examples. It contains binaries for  `netstandard2.0` metaframework and `net462`. If using the NETstandard binary you'll need to include a reference in the example to that library on your local system.

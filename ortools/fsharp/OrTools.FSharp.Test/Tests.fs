@@ -1,12 +1,23 @@
 namespace Google.OrTools.FSharp
 
-module Tests =
 
+module Tests =
   open System
   open Xunit
 
   open Google.OrTools.LinearSolver
-  // open Google.OrTools.FSharp
+  open Google.OrTools.FSharp
+
+
+  [<Fact>]
+  let ``Equality Matrix cannot be empty`` () =
+      try
+        let opts = SolverOpts.Default.Name("Equality Constraints").Goal(Minimize).Objective([2.0;1.0;0.0;0.0;0.0]).Algorithm(LP CLP)
+        opts |> lpSolve |> SolverSummary |> ignore
+      with
+      | Failure msg ->
+          Assert.Equal("Must provide at least one Matrix/Vector pair for inequality/equality contraints", msg)
+
 
   [<Fact>]
   let ``Linear Solver with GLOP Solver`` () =
