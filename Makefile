@@ -96,6 +96,6 @@ clean_all: clean_cc clean_python clean_java clean_csharp clean_compat clean_fsha
 	@echo Or-tools have been cleaned for $(BUILT_LANGUAGES)
 
 .PHONY: detect_all
-detect_all: detect_port detect_cc detect_python detect_java detect_csharp detect_fsharp
+detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_csharp detect_fsharp
 
 print-%  : ; @echo $* = $($*)

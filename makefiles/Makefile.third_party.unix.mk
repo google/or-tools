@@ -26,8 +26,20 @@ third_party: makefile_third_party install_third_party
 
 .PHONY: third_party_check # Check if "make third_party" have been run or not
 third_party_check:
-ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
-	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
+ifeq ($(wildcard $(UNIX_GFLAGS_DIR)/include/gflags/gflags.h),)
+	$(error Third party GFlags files was not found! did you run 'make third_party' or set UNIX_GFLAGS_DIR ?)
+endif
+ifeq ($(wildcard $(UNIX_GLOG_DIR)/include/glog/logging.h),)
+	$(error Third party GLog files was not found! did you run 'make third_party' or set UNIX_GLOG_DIR ?)
+endif
+ifeq ($(wildcard $(UNIX_PROTOBUF_DIR)/include/google/protobuf/descriptor.h),)
+	$(error Third party Protobuf files was not found! did you run 'make third_party' or set UNIX_PROTOBUF_DIR ?)
+endif
+ifeq ($(wildcard $(UNIX_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(UNIX_CBC_DIR)/include/coin/CbcModel.hpp),)
+	$(error Third party Cbc files was not found! did you run 'make third_party' or set UNIX_CBC_DIR ?)
+endif
+ifeq ($(wildcard $(UNIX_CLP_DIR)/include/clp/coin/ClpSimplex.hpp $(UNIX_CLP_DIR)/include/coin/ClpSimplex.hpp),)
+	$(error Third party Clp files was not found! did you run 'make third_party' or set UNIX_CLP_DIR ?)
 endif
 
 # Create missing directories
@@ -331,3 +343,44 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo "# Define UNIX_GFLAGS_DIR, UNIX_PROTOBUF_DIR, UNIX_GLOG_DIR," >> Makefile.local
 	@echo "# UNIX_CLP_DIR, UNIX_CBC_DIR, UNIX_SWIG_BINARY if you wish to " >> Makefile.local
 	@echo "# use a custom version. " >> Makefile.local
+
+.PHONY: detect_third_party # Show variables used to find third party
+detect_third_party:
+	@echo Relevant info on third party:
+	@echo UNIX_GFLAGS_DIR = $(UNIX_GFLAGS_DIR)
+	@echo GFLAGS_INC = $(GFLAGS_INC)
+	@echo GFLAGS_LNK = $(GFLAGS_LNK)
+	@echo UNIX_GLOG_DIR = $(UNIX_GLOG_DIR)
+	@echo GLOG_INC = $(GLOG_INC)
+	@echo GLOG_LNK = $(GLOG_LNK)
+	@echo UNIX_PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
+	@echo PROTOBUF_DIR = $(PROTOBUF_DIR)
+	@echo PROTOBUF_INC = $(PROTOBUF_INC)
+	@echo PROTOBUF_LNK = $(PROTOBUF_LNK)
+	@echo UNIX_CBC_DIR = $(UNIX_CBC_DIR)
+	@echo CBC_INC = $(CBC_INC)
+	@echo CBC_LNK = $(CBC_LNK)
+	@echo UNIX_CLP_DIR = $(UNIX_CLP_DIR)
+	@echo CLP_INC = $(CLP_INC)
+	@echo CLP_LNK = $(CLP_LNK)
+ifdef UNIX_GLPK_DIR
+	@echo UNIX_GLPK_DIR = $(UNIX_GLPK_DIR)
+	@echo GLPK_INC = $(GLPK_INC)
+	@echo GLPK_LNK = $(GLPK_LNK)
+endif
+ifdef UNIX_SCIP_DIR
+	@echo UNIX_SCIP_DIR = $(UNIX_SCIP_DIR)
+	@echo SCIP_INC = $(SCIP_INC)
+	@echo SCIP_LNK = $(SCIP_LNK)
+endif
+ifdef UNIX_CPLEX_DIR
+	@echo UNIX_CPLEX_DIR = $(UNIX_CPLEX_DIR)
+	@echo CPLEX_INC = $(CPLEX_INC)
+	@echo CPLEX_LNK = $(CPLEX_LNK)
+endif
+ifdef UNIX_GUROBI_DIR
+	@echo UNIX_GUROBI_DIR = $(UNIX_GUROBI_DIR)
+	@echo GUROBI_INC = $(GUROBI_INC)
+	@echo GUROBI_LNK = $(GUROBI_LNK)
+endif
+	@echo
