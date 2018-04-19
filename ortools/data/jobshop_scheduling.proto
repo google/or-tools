@@ -68,7 +68,7 @@ message Job {
   // The ordered sequence of tasks.
   repeated Task tasks = 1;
   // This date, if set, specifies a hard constraint on when the job can start.
-  int64 earliest_start = 2;
+  google.protobuf.Int64Value earliest_start = 2;
   // This date specifies the earliest time the job should end. If
   // this is set, then the earliness_cost_per_time_unit should be set
   // too with a positive value.
@@ -91,7 +91,7 @@ message Job {
   // This date, if set, specifies a hard constraint on when the job
   // can end.  If both earliest_start and latest_end are specified,
   // then earliest_start <= latest_end must hold.
-  int64 latest_end = 7;
+  google.protobuf.Int64Value latest_end = 7;
   // Optional. A name for the job. This will only be used for logging purposes.
   string name = 16;
 }
@@ -121,7 +121,7 @@ message JsspInputProblem {
   // If set, the cost coefficients are multiplied by this factor.
   // It is set to 1000 by the parser when reading early tardy taillard problems
   // where the weight of a job is a floating point value.
-  double scaling_factor = 4;
+  google.protobuf.DoubleValue scaling_factor = 4;
   // Sometimes, the academic data files contain extra information. We store it
   // in the input problem message.
   int32 seed = 24;
