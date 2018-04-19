@@ -25,7 +25,12 @@
     <GenerateTailCalls>true</GenerateTailCalls>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="OrTools.fsx" />
+    <Compile Include="OrTools.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Google.OrTools">
+      <HintPath>..\..\..\bin\Google.OrTools.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

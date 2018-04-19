@@ -1,8 +1,5 @@
 namespace Google.OrTools
 
-#I "../../../bin"
-#r "Google.OrTools.dll"
-
 module FSharp =
 
   open System
