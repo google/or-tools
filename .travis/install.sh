@@ -24,6 +24,17 @@ function installmono() {
 		sudo apt-get install -yqq mono-complete
 }
 
+function installdotnetsdk(){
+    # Installs for Ubuntu Trusty distro
+    curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg &&
+    sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg &&
+    sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-trusty-prod trusty main" > /etc/apt/sources.list.d/dotnetdev.list' &&
+    # Install dotnet sdk 2.1
+    sudo apt-get install apt-transport-https &&
+    sudo apt-get update -qq &&
+    sudo apt-get install -yqq dotnet-sdk-2.1.105
+}
+
 ################
 ##  MAKEFILE  ##
 ################
@@ -42,7 +53,8 @@ if [ "${BUILDER}" == make ]; then
 				installmono
 			elif [ "${LANGUAGE}" == fsharp ]; then
 				installmono
-				sudo apt-get -yqq install fsharp
+        sudo apt-get -yqq install fsharp
+        installdotnetsdk
 			fi
 		else
 			# Linux Docker Makefile build:
@@ -62,6 +74,7 @@ if [ "${BUILDER}" == make ]; then
 				brew cask install java;
 			elif [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ]; then
 				brew install mono;
+        brew cask install dotnet-sdk
 			fi
 		else
 			# MacOS Docker Makefile build:
