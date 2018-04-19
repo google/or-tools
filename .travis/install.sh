@@ -75,10 +75,9 @@ if [ "${BUILDER}" == make ]; then
 			elif [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ]; then
 				brew install mono;
         # Installer changes path but won't be picked up in current terminal session
-        # Need to explicitly add to path in current session (see https://github.com/dotnet/cli/issues/533#issuecomment-323395794)
+        # Need to explicitly add location (see Makefile.fsharp.mk)
         brew tap caskroom/cask
         brew cask install dotnet-sdk;
-        eval $(/usr/libexec/path_helper -s)
 			fi
 		else
 			# MacOS Docker Makefile build:

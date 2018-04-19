@@ -21,7 +21,11 @@ CLEAN_FILES=Google.$(FSHARP_ORTOOLS_DLL_NAME).* FSharp.Core.dll System.ValueTupl
 ifeq ($(SYSTEM), win)
 DOTNET_EXECUTABLE := $(shell $(WHICH) dotnet.exe 2>nul)
 else # UNIX
+ifeq ($(PLATFORM),MACOSX)
+DOTNET_EXECUTABLE := $(shell dirname ${DOTNET_INSTALL_PATH})$Sdotnet
+else # LINUX
 DOTNET_EXECUTABLE := $(shell which dotnet)
+endif
 endif
 
 DOTNET_TARGET_FRAMEWORK:=net462
