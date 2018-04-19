@@ -77,7 +77,7 @@ IntExpr* SolverData::Extract(IntegerVariable* var) {
 }
 
 void SolverData::SetExtracted(IntegerVariable* fz_var, IntExpr* expr) {
-  CHECK(!ContainsKey(extracted_map_, fz_var));
+  CHECK(!gtl::ContainsKey(extracted_map_, fz_var));
   if (!expr->IsVar() && !fz_var->domain.is_interval) {
     FZVLOG << "  - lift to var" << FZENDL;
     expr = expr->Var();

@@ -369,10 +369,10 @@ var_or_value:
 | IDENTIFIER {
   // A reference to an existing integer constant or variable.
   const std::string& id = $1;
-  if (ContainsKey(context->integer_map, id)) {
-    $$ = VariableRefOrValue::Value(FindOrDie(context->integer_map, id));
-  } else if (ContainsKey(context->variable_map, id)) {
-    $$ = VariableRefOrValue::VariableRef(FindOrDie(context->variable_map, id));
+  if (gtl::ContainsKey(context->integer_map, id)) {
+    $$ = VariableRefOrValue::Value(gtl::FindOrDie(context->integer_map, id));
+  } else if (gtl::ContainsKey(context->variable_map, id)) {
+    $$ = VariableRefOrValue::VariableRef(gtl::FindOrDie(context->variable_map, id));
   } else {
     LOG(ERROR) << "Unknown symbol " << id;
     $$ = VariableRefOrValue::Undefined();
@@ -383,12 +383,12 @@ var_or_value:
   // A given element of an existing constant array or variable array.
   const std::string& id = $1;
   const int64 value = $3;
-  if (ContainsKey(context->integer_array_map, id)) {
+  if (gtl::ContainsKey(context->integer_array_map, id)) {
     $$ = VariableRefOrValue::Value(
-        Lookup(FindOrDie(context->integer_array_map, id), value));
-  } else if (ContainsKey(context->variable_array_map, id)) {
+        Lookup(gtl::FindOrDie(context->integer_array_map, id), value));
+  } else if (gtl::ContainsKey(context->variable_array_map, id)) {
     $$ = VariableRefOrValue::VariableRef(
-        Lookup(FindOrDie(context->variable_array_map, id), value));
+        Lookup(gtl::FindOrDie(context->variable_array_map, id), value));
   } else {
     LOG(ERROR) << "Unknown symbol " << id;
     $$ = VariableRefOrValue::Undefined();
@@ -435,9 +435,9 @@ integers:
 
 integer:
   IVALUE { $$ = $1; }
-| IDENTIFIER { $$ = FindOrDie(context->integer_map, $1); }
+| IDENTIFIER { $$ = gtl::FindOrDie(context->integer_map, $1); }
 | IDENTIFIER '[' IVALUE ']' {
-  $$ = Lookup(FindOrDie(context->integer_array_map, $1), $3);
+  $$ = Lookup(gtl::FindOrDie(context->integer_array_map, $1), $3);
 }
 
 floats:
@@ -446,9 +446,9 @@ floats:
 
 float:
   DVALUE { $$ = $1; }
-| IDENTIFIER { $$ = FindOrDie(context->float_map, $1); }
+| IDENTIFIER { $$ = gtl::FindOrDie(context->float_map, $1); }
 | IDENTIFIER '[' IVALUE ']' {
-  $$ = Lookup(FindOrDie(context->float_array_map, $1), $3);
+  $$ = Lookup(gtl::FindOrDie(context->float_array_map, $1), $3);
 }
 
 const_literal:
@@ -464,10 +464,10 @@ const_literal:
   CHECK_EQ(std::round($1), $1);
   $$ = Domain::IntegerValue(static_cast<int64>($1));
 }  // TODO(lperron): floats.
-| IDENTIFIER { $$ = Domain::IntegerValue(FindOrDie(context->integer_map, $1)); }
+| IDENTIFIER { $$ = Domain::IntegerValue(gtl::FindOrDie(context->integer_map, $1)); }
 | IDENTIFIER '[' IVALUE ']' {
   $$ = Domain::IntegerValue(
-      Lookup(FindOrDie(context->integer_array_map, $1), $3));
+      Lookup(gtl::FindOrDie(context->integer_array_map, $1), $3));
 }
 
 const_literals:
@@ -527,49 +527,49 @@ argument:
 }
 | IDENTIFIER {
   const std::string& id = $1;
-  if (ContainsKey(context->integer_map, id)) {
-    $$ = Argument::IntegerValue(FindOrDie(context->integer_map, id));
-  } else if (ContainsKey(context->integer_array_map, id)) {
-    $$ = Argument::IntegerList(FindOrDie(context->integer_array_map, id));
-  } else if (ContainsKey(context->float_map, id)) {
-    const double d = FindOrDie(context->float_map, id);
+  if (gtl::ContainsKey(context->integer_map, id)) {
+    $$ = Argument::IntegerValue(gtl::FindOrDie(context->integer_map, id));
+  } else if (gtl::ContainsKey(context->integer_array_map, id)) {
+    $$ = Argument::IntegerList(gtl::FindOrDie(context->integer_array_map, id));
+  } else if (gtl::ContainsKey(context->float_map, id)) {
+    const double d = gtl::FindOrDie(context->float_map, id);
     $$ = Argument::IntegerValue(ConvertAsIntegerOrDie(d));
-  } else if (ContainsKey(context->float_array_map, id)) {
-    const auto& double_values = FindOrDie(context->float_array_map, id);
+  } else if (gtl::ContainsKey(context->float_array_map, id)) {
+    const auto& double_values = gtl::FindOrDie(context->float_array_map, id);
     std::vector<int64> integer_values;
     for (const double d : double_values) {
       const int64 i = ConvertAsIntegerOrDie(d);
       integer_values.push_back(i);
     }
     $$ = Argument::IntegerList(std::move(integer_values));
-  } else if (ContainsKey(context->variable_map, id)) {
-    $$ = Argument::IntVarRef(FindOrDie(context->variable_map, id));
-  } else if (ContainsKey(context->variable_array_map, id)) {
-    $$ = Argument::IntVarRefArray(FindOrDie(context->variable_array_map, id));
-  } else if (ContainsKey(context->domain_map, id)) {
-    const Domain& d = FindOrDie(context->domain_map, id);
+  } else if (gtl::ContainsKey(context->variable_map, id)) {
+    $$ = Argument::IntVarRef(gtl::FindOrDie(context->variable_map, id));
+  } else if (gtl::ContainsKey(context->variable_array_map, id)) {
+    $$ = Argument::IntVarRefArray(gtl::FindOrDie(context->variable_array_map, id));
+  } else if (gtl::ContainsKey(context->domain_map, id)) {
+    const Domain& d = gtl::FindOrDie(context->domain_map, id);
     $$ = Argument::FromDomain(d);
   } else {
-    CHECK(ContainsKey(context->domain_array_map, id)) << "Unknown identifier: "
+    CHECK(gtl::ContainsKey(context->domain_array_map, id)) << "Unknown identifier: "
                                                       << id;
-    const std::vector<Domain>& d = FindOrDie(context->domain_array_map, id);
+    const std::vector<Domain>& d = gtl::FindOrDie(context->domain_array_map, id);
     $$ = Argument::DomainList(d);
   }
 }
 | IDENTIFIER '[' IVALUE ']' {
   const std::string& id = $1;
   const int64 index = $3;
-  if (ContainsKey(context->integer_array_map, id)) {
+  if (gtl::ContainsKey(context->integer_array_map, id)) {
     $$ = Argument::IntegerValue(
-        Lookup(FindOrDie(context->integer_array_map, id), index));
-  } else if (ContainsKey(context->variable_array_map, id)) {
+        Lookup(gtl::FindOrDie(context->integer_array_map, id), index));
+  } else if (gtl::ContainsKey(context->variable_array_map, id)) {
     $$ = Argument::IntVarRef(
-        Lookup(FindOrDie(context->variable_array_map, id), index));
+        Lookup(gtl::FindOrDie(context->variable_array_map, id), index));
   } else {
-    CHECK(ContainsKey(context->domain_array_map, id))
+    CHECK(gtl::ContainsKey(context->domain_array_map, id))
         << "Unknown identifier: " << id;
     const Domain& d =
-        Lookup(FindOrDie(context->domain_array_map, id), index);
+        Lookup(gtl::FindOrDie(context->domain_array_map, id), index);
     $$ = Argument::FromDomain(d);
   }
 }
@@ -623,10 +623,10 @@ annotation:
 | SVALUE { $$ = Annotation::String($1); }
 | IDENTIFIER {
   const std::string& id = $1;
-  if (ContainsKey(context->variable_map, id)) {
-    $$ = Annotation::Variable(FindOrDie(context->variable_map, id));
-  } else if (ContainsKey(context->variable_array_map, id)) {
-    $$ = Annotation::VariableList(FindOrDie(context->variable_array_map, id));
+  if (gtl::ContainsKey(context->variable_map, id)) {
+    $$ = Annotation::Variable(gtl::FindOrDie(context->variable_map, id));
+  } else if (gtl::ContainsKey(context->variable_array_map, id)) {
+    $$ = Annotation::VariableList(gtl::FindOrDie(context->variable_array_map, id));
   } else {
     $$ = Annotation::Identifier(id);
   }
@@ -641,10 +641,10 @@ annotation:
   }
 }
 | IDENTIFIER '[' IVALUE ']' {
-  CHECK(ContainsKey(context->variable_array_map, $1))
+  CHECK(gtl::ContainsKey(context->variable_array_map, $1))
       << "Unknown identifier: " << $1;
   $$ = Annotation::Variable(
-      Lookup(FindOrDie(context->variable_array_map, $1), $3));
+      Lookup(gtl::FindOrDie(context->variable_array_map, $1), $3));
 }
 | '[' annotation_arguments ']' {
   std::vector<Annotation>* const annotations = $2;

@@ -398,7 +398,7 @@ std::vector<int64> ComputeGlobalCardinalityCards(
   std::unordered_map<int64, int> positions;
   for (int i = 0; i < ct.arguments[1].values.size(); ++i) {
     const int64 value = ct.arguments[1].values[i];
-    CHECK(!ContainsKey(positions, value));
+    CHECK(!gtl::ContainsKey(positions, value));
     positions[value] = i;
   }
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {

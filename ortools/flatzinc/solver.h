@@ -107,7 +107,7 @@ class Solver {
   int64 StoredValue(int solution_index, IntegerVariable* var) {
     CHECK_GE(solution_index, 0);
     CHECK_LT(solution_index, stored_values_.size());
-    CHECK(ContainsKey(stored_values_[solution_index], var));
+    CHECK(gtl::ContainsKey(stored_values_[solution_index], var));
     return stored_values_[solution_index][var];
   }
 
