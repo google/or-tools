@@ -77,10 +77,7 @@
   byte[] tmp = new byte[4];
   System.IntPtr data = $imcall;
   System.Runtime.InteropServices.Marshal.Copy(data, tmp, 0, 4);
-  int size = Convert.ToInt32(tmp[0]) +
-      Convert.ToInt32(tmp[1]) * 0xFF +
-      Convert.ToInt32(tmp[2]) * 0xFFFF +
-      Convert.ToInt32(tmp[3]) * 0xFFFFFF;
+  int size = System.BitConverter.ToInt32(tmp, 0);
   byte[] buf = new byte[size + 4];
   System.Runtime.InteropServices.Marshal.Copy(data, buf, 0, size + 4);
   // TODO(user): delete the C++ buffer.
@@ -100,8 +97,8 @@
   $result = new uint8[size + 4];
   $1.SerializeWithCachedSizesToArray($result + 4);
   $result[0] = size & 0xFF;
-  $result[1] = (size << 8) & 0xFF;
-  $result[2] = (size << 16) & 0xFF;
-  $result[3] = (size << 24) & 0xFF;
+  $result[1] = (size >> 8) & 0xFF;
+  $result[2] = (size >> 16) & 0xFF;
+  $result[3] = (size >> 24) & 0xFF;
 }
 %enddef // end PROTO2_RETURN
