@@ -6,7 +6,7 @@
 
 ## Compiling a standalone binary
 
-Use the makefile found in the root folder. IT to accomplish the same task.
+Use the makefile found in the root folder.
 ```shell
 make fsharp
 ```
