@@ -84,6 +84,7 @@ GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 GLOG_INC = -I$(UNIX_GLOG_DIR)/include
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
+PROTOBUF_PROTOC_INC = $(PROTOBUF_INC)
 # This is needed to find Coin Branch and Cut include files.
 CBC_INC = -I$(UNIX_CBC_DIR)/include -I$(UNIX_CBC_DIR)/include/coin -DUSE_CBC
 CBC_SWIG = $(CBC_INC)
