@@ -4,6 +4,18 @@ help_third_party:
 	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.unix.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
 	@echo
 
+# Checks if the user has overwritten default libraries and binaries.
+UNIX_GFLAGS_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+UNIX_CBC_DIR ?= $(OR_ROOT_FULL)/dependencies/install
+UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
+
+# Unix specific definitions
+PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
+UNIX_SWIG_BINARY ?= swig
+SWIG_BINARY = $(UNIX_SWIG_BINARY)
+
 # Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.1
 PROTOBUF_TAG = 3.5.1
