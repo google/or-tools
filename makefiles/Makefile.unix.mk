@@ -121,18 +121,6 @@ SWIG_INC = $(CLP_SWIG) $(CBC_SWIG) $(COIN_SWIG) \
 DEBUG = -O4 -DNDEBUG
 JNIDEBUG = -O1 -DNDEBUG
 
-# Check wether CBC/CLP need a coin subdir in library.
-ifdef UNIX_CBC_DIR
-  ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
-    UNIX_CBC_COIN = /coin
-  endif
-endif
-ifdef UNIX_CLP_DIR
-  ifneq ($(wildcard $(UNIX_CLP_DIR)/lib/coin),)
-    UNIX_CLP_COIN = /coin
-  endif
-endif
-
 ifeq ($(PLATFORM),LINUX)
   CCC = g++ -fPIC -std=c++0x -fwrapv
   DYNAMIC_LD = g++ -shared
@@ -149,14 +137,23 @@ ifeq ($(PLATFORM),LINUX)
   # "lib/x86_64-linux-gnu/" for Ubuntu (all on 64 bits), etc. So we wildcard it.
   PROTOBUF_LNK = $(wildcard $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
 
-  ifdef UNIX_GLPK_DIR
-  GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
+  ifdef UNIX_CBC_DIR
+    # Check wether CBC need a coin subdir in library.
+    ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
+      UNIX_CBC_COIN = /coin
+    endif
+  CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCgl.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsi.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a
   endif
   ifdef UNIX_CLP_DIR
-  CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
+    # Check wether CLP need a coin subdir in library.
+    ifneq ($(wildcard $(UNIX_CLP_DIR)/lib/coin),)
+      UNIX_CLP_COIN = /coin
+    endif
+  CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
   endif
-  ifdef UNIX_CBC_DIR
-  CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCgl.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsi.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiClp.a
+
+  ifdef UNIX_GLPK_DIR
+  GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_SCIP_DIR
     ifeq ($(PTRLENGTH),64)
@@ -220,14 +217,23 @@ ifeq ($(PLATFORM),MACOSX)
   LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version $(OR_TOOLS_SHORT_VERSION) -current_version $(OR_TOOLS_SHORT_VERSION)
   LINK_PREFIX = -o # Space needed.
 
-  ifdef UNIX_GLPK_DIR
-    GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
+  ifdef UNIX_CBC_DIR
+    # Check wether CBC need a coin subdir in library.
+    ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
+      UNIX_CBC_COIN = /coin
+    endif
+    CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCgl.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsi.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a
   endif
   ifdef UNIX_CLP_DIR
-    CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
+    # Check wether CBC need a coin subdir in library.
+    ifneq ($(wildcard $(UNIX_CLP_DIR)/lib/coin),)
+      UNIX_CLP_COIN = /coin
+    endif
+    CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
   endif
-  ifdef UNIX_CBC_DIR
-    CBC_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbcSolver.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCgl.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsi.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
+
+  ifdef UNIX_GLPK_DIR
+    GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_ARCH = darwin.x86_64.gnu.opt
