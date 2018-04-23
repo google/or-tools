@@ -23,11 +23,6 @@ GLOG_TAG = 0.3.5
 CBC_TAG = 2.9.9
 PATCHELF_TAG = 0.9
 
-# Detect if patchelf is needed
-ifeq ($(PLATFORM), LINUX)
-    PATCHELF=dependencies/install/bin/patchelf
-endif
-
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
 third_party: makefile_third_party install_third_party
@@ -155,7 +150,14 @@ dependencies/sources/Cbc-$(CBC_TAG)/Makefile.in:
 	wget --quiet --no-check-certificate --continue -P dependencies/archives ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'wget -P dependencies/archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
 	tar xzf dependencies/archives/Cbc-${CBC_TAG}.tgz -C dependencies/sources/
 
-# Install patchelf on linux platforms.
+############################################
+##  Install Patchelf on linux platforms.  ##
+############################################
+# Detect if patchelf is needed
+ifeq ($(PLATFORM), LINUX)
+  PATCHELF=dependencies/install/bin/patchelf
+endif
+
 dependencies/install/bin/patchelf: dependencies/sources/patchelf-$(PATCHELF_TAG)/Makefile
 	cd dependencies/sources/patchelf-$(PATCHELF_TAG) && make && make install
 
