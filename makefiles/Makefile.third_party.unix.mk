@@ -129,6 +129,10 @@ GLOG_INC = -I$(UNIX_GLOG_DIR)/include
 STATIC_GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
 DYNAMIC_GLOG_LNK = -L$(UNIX_GLOG_DIR)/lib -lglog
 
+################
+##  Protobuf  ##
+################
+# This uses Protobuf cmake-based build.
 install_protobuf: dependencies/install/bin/protoc
 
 dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build/Makefile
@@ -137,16 +141,36 @@ dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/c
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build/Makefile: dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/CMakeLists.txt
 	-$(MKDIR) dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build && \
-	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=../../../../install \
-		   -D protobuf_BUILD_TESTS=OFF \
-                   -D BUILD_SHARED_LIBS=OFF \
-                   -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
-	           ..
+	$(CMAKE) -D CMAKE_INSTALL_PREFIX=../../../../install \
+           -D protobuf_BUILD_TESTS=OFF \
+           -D BUILD_SHARED_LIBS=OFF \
+           -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+           ..
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/CMakeLists.txt:
 	git clone --quiet https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
 		cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
 		git checkout tags/v$(PROTOBUF_TAG) -b $(PROTOBUF_TAG)
+
+# Install Java protobuf
+dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
+	  ../../../install/bin/protoc --java_out=core/src/main/java -I../src \
+	  ../src/google/protobuf/descriptor.proto
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/core/src/main/java && \
+		$(JAVAC_BIN) com/google/protobuf/*java
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/core/src/main/java && \
+		$(JAR_BIN) cvf ../../../../../../../install/lib/protobuf.jar com/google/protobuf/*class
+
+# This is needed to find protocol buffers.
+PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
+PROTOBUF_PROTOC_INC = $(PROTOBUF_INC)
+# libprotobuf.a goes in a different subdirectory depending on the distribution
+# and architecture, eg. "lib/" or "lib64/" for Fedora and Centos,
+# "lib/x86_64-linux-gnu/" for Ubuntu (all on 64 bits), etc. So we wildcard it.
+STATIC_PROTOBUF_LNK = $(wildcard $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a \
+                          $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
+DYNAMIC_PROTOBUF_LNK = -L$(dir $(STATIC_PROTOBUF_LNK)) -lprotobuf
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
@@ -178,8 +202,13 @@ else
   DEPENDENCIES_LNK += $(DYNAMIC_GLOG_LNK)
 	OR_TOOLS_LNK += $(DYNAMIC_GLOG_LNK)
 endif
+ifeq ($(UNIX_PROTOBUF_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+  DEPENDENCIES_LNK += $(STATIC_PROTOBUF_LNK)
+else
+  DEPENDENCIES_LNK += $(DYNAMIC_PROTOBUF_LNK)
+	OR_TOOLS_LNK += $(DYNAMIC_PROTOBUF_LNK)
+endif
 DEPENDENCIES_LNK += \
-  $(PROTOBUF_LNK) \
   $(CBC_LNK) $(CLP_LNK)
 
 ############################################
@@ -199,18 +228,6 @@ dependencies/sources/patchelf-$(PATCHELF_TAG)/Makefile: dependencies/sources/pat
 dependencies/sources/patchelf-$(PATCHELF_TAG)/configure:
 	git clone --quiet -b $(PATCHELF_TAG) https://github.com/NixOS/patchelf.git dependencies/sources/patchelf-$(PATCHELF_TAG)
 	cd dependencies/sources/patchelf-$(PATCHELF_TAG) && ./bootstrap.sh
-
-# Install Java protobuf
-dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
-	  ../../../install/bin/protoc --java_out=core/src/main/java -I../src \
-	  ../src/google/protobuf/descriptor.proto
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/core/src/main/java && $(JAVAC_BIN) com/google/protobuf/*java
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/core/src/main/java && $(JAR_BIN) cvf ../../../../../../../install/lib/protobuf.jar com/google/protobuf/*class
-
-# Install C# protobuf
-
-#create .snk file if strong named dll is required (this is the default behaviour)
 
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:

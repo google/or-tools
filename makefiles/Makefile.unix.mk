@@ -62,9 +62,6 @@ endif
 MONO_COMPILER ?= mono
 MONO_EXECUTABLE := $(shell $(WHICH) $(MONO_COMPILER))
 
-# This is needed to find protocol buffers.
-PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
-PROTOBUF_PROTOC_INC = $(PROTOBUF_INC)
 # This is needed to find Coin Branch and Cut include files.
 CBC_INC = -I$(UNIX_CBC_DIR)/include -I$(UNIX_CBC_DIR)/include/coin -DUSE_CBC
 CBC_SWIG = $(CBC_INC)
@@ -110,11 +107,6 @@ ifeq ($(PLATFORM),LINUX)
 
   # This is needed to find libz.a
   ZLIB_LNK = -lz
-  # libprotobuf.a goes in a different subdirectory depending on the distribution
-  # and architecture, eg. "lib/" or "lib64/" for Fedora and Centos,
-  # "lib/x86_64-linux-gnu/" for Ubuntu (all on 64 bits), etc. So we wildcard it.
-  PROTOBUF_LNK = $(wildcard $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
-
   ifdef UNIX_CBC_DIR
     # Check wether CBC need a coin subdir in library.
     ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
@@ -177,8 +169,6 @@ ifeq ($(PLATFORM),MACOSX)
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   ZLIB_LNK = -lz
-  PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
-
   ifdef UNIX_CBC_DIR
     # Check wether CBC need a coin subdir in library.
     ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
