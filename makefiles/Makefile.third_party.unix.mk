@@ -28,10 +28,6 @@ ifeq ($(PLATFORM), LINUX)
     PATCHELF=dependencies/install/bin/patchelf
 endif
 
-ifeq ($(PLATFORM), MACOSX)
-  SET_COMPILER = CXX="$(CCC)"
-endif
-
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
 third_party: makefile_third_party install_third_party
