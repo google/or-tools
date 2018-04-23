@@ -76,7 +76,10 @@ dependencies/install/include: dependencies/install
 dependencies/install/include/coin: dependencies/install/include
 	$(MKDIR_P) dependencies$Sinstall$Sinclude$Scoin
 
-# Install gflags. This uses cmake.
+##############
+##  GFLAGS  ##
+##############
+# This uses gflags cmake-based build.
 install_gflags: dependencies/install/include/gflags/gflags.h
 
 dependencies/install/include/gflags/gflags.h: dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake/Makefile
@@ -88,15 +91,18 @@ dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake/Makefile: dependencies/sou
 	-mkdir dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake
 	cd dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake && $(SET_COMPILER) \
 	$(CMAKE) -D BUILD_SHARED_LIBS=OFF \
-		 -D BUILD_STATIC_LIBS=ON \
-	         -D CMAKE_INSTALL_PREFIX=../../../install \
-		 -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
-	         ..
+           -D BUILD_STATIC_LIBS=ON \
+           -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+           -D CMAKE_INSTALL_PREFIX=../../../install \
+           ..
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/CMakeLists.txt:
 	git clone --quiet -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
 
-# Install protocol buffers.
+GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
+STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
+DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
+
 install_protobuf: dependencies/install/bin/protoc
 
 dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build/Makefile
@@ -149,6 +155,19 @@ CBC_ARCHIVE:=https://www.coin-or.org/download/source/Cbc/Cbc-${CBC_TAG}.tgz
 dependencies/sources/Cbc-$(CBC_TAG)/Makefile.in:
 	wget --quiet --no-check-certificate --continue -P dependencies/archives ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'wget -P dependencies/archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
 	tar xzf dependencies/archives/Cbc-${CBC_TAG}.tgz -C dependencies/sources/
+
+##################################
+##  USE DYNAMIC DEPENDENCIES ?  ##
+##################################
+ifeq ($(UNIX_GFLAGS_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+  DEPENDENCIES_LNK += $(STATIC_GFLAGS_LNK)
+else
+  DEPENDENCIES_LNK += $(DYNAMIC_GFLAGS_LNK)
+	OR_TOOLS_LNK += $(DYNAMIC_GFLAGS_LNK)
+endif
+DEPENDENCIES_LNK += \
+  $(GLOG_LNK) $(PROTOBUF_LNK) \
+  $(CBC_LNK) $(CLP_LNK)
 
 ############################################
 ##  Install Patchelf on linux platforms.  ##

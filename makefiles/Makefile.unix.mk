@@ -62,8 +62,6 @@ endif
 MONO_COMPILER ?= mono
 MONO_EXECUTABLE := $(shell $(WHICH) $(MONO_COMPILER))
 
-# This is needed to find gflags/gflags.h
-GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 # This is needed to find sparse hash containers.
 GLOG_INC = -I$(UNIX_GLOG_DIR)/include
 # This is needed to find protocol buffers.
@@ -114,8 +112,6 @@ ifeq ($(PLATFORM),LINUX)
 
   # This is needed to find libz.a
   ZLIB_LNK = -lz
-  # This is needed to find libgflags.a
-  GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   # This is needed to find libglog.a
   GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
   # libprotobuf.a goes in a different subdirectory depending on the distribution
@@ -185,7 +181,6 @@ ifeq ($(PLATFORM),MACOSX)
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   ZLIB_LNK = -lz
-  GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
   PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
 
@@ -241,10 +236,5 @@ DEPENDENCIES_INC = -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
 
 CFLAGS = $(DEBUG) $(DEPENDENCIES_INC)
 JNIFLAGS = $(JNIDEBUG) $(DEPENDENCIES_INC)
-
-DEPENDENCIES_LNK = $(LM_LNK) \
- $(GFLAGS_LNK) $(GLOG_LNK) $(PROTOBUF_LNK) \
- $(CBC_LNK) $(CLP_LNK) \
- $(GLPK_LNK) $(SCIP_LNK) $(GUROBI_LNK) $(CPLEX_LNK)
-
 OR_TOOLS_LD_FLAGS = $(ZLIB_LNK) $(SYS_LNK)
+DEPENDENCIES_LNK = $(GLPK_LNK) $(SCIP_LNK) $(GUROBI_LNK) $(CPLEX_LNK)
