@@ -12,11 +12,9 @@ UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
 
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
-ifdef UNIX_SWIG_BINARY
-  SWIG_BINARY = $(UNIX_SWIG_BINARY)
-else
-  SWIG_BINARY = swig
-endif
+UNIX_SWIG_BINARY ?= swig
+SWIG_BINARY = $(UNIX_SWIG_BINARY)
+
 MKDIR = mkdir
 MKDIR_P = mkdir -p
 COPY = cp
