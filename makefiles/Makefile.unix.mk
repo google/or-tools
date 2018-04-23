@@ -138,16 +138,16 @@ ifeq ($(PLATFORM),LINUX)
   DYNAMIC_LD = g++ -shared
   MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
-  # This is needed to find libgflags.a
-  GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   # This is needed to find libz.a
   ZLIB_LNK = -lz
+  # This is needed to find libgflags.a
+  GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
+  # This is needed to find libglog.a
+  GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
   # libprotobuf.a goes in a different subdirectory depending on the distribution
   # and architecture, eg. "lib/" or "lib64/" for Fedora and Centos,
   # "lib/x86_64-linux-gnu/" for Ubuntu (all on 64 bits), etc. So we wildcard it.
   PROTOBUF_LNK = $(wildcard $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
-  # This is needed to find libglog.a
-  GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
 
   ifdef UNIX_GLPK_DIR
   GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
@@ -201,10 +201,10 @@ ifeq ($(PLATFORM),MACOSX)
   JNI_LIB_EXT = jnilib
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
-  GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   ZLIB_LNK = -lz
-  PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
+  GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
+  PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
 
   SYS_LNK =
 
