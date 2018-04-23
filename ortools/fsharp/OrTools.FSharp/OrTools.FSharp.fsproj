@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="../netfx.props" />
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyTitle>Google.OrTools.FSharp</AssemblyTitle>
+    <TargetFrameworks>netstandard2.0;net462</TargetFrameworks>
+    <AssemblyName>Google.OrTools.FSharp</AssemblyName>
+    <NuspecFile>OrTools.FSharp.nuspec</NuspecFile>
+
+    <AssemblyOriginatorKeyFile>..\..\..\bin\or-tools.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <Version>0.0.0.0</Version>
+    <AssemblyVersion>0.0.0.0</AssemblyVersion>
+    <FileVersion>0.0.0.0</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <GenerateTailCalls>true</GenerateTailCalls>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="OrTools.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Google.OrTools">
+      <HintPath>..\..\..\bin\Google.OrTools.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

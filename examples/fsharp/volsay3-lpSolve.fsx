@@ -18,9 +18,7 @@
 #r "Google.OrTools.dll"
 #r "Google.OrTools.FSharp.dll"
 
-open System
 open Google.OrTools.FSharp
-open Google.OrTools.LinearSolver
 
 let opts = SolverOpts.Default
             .Name("Volsay3")
@@ -33,3 +31,4 @@ let opts = SolverOpts.Default
             .Algorithm(LP CLP)
 
 let slvr = opts |> lpSolve |> SolverSummary
+slvr |> ignore

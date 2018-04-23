@@ -77,3 +77,7 @@ cache/
 
 tools/netstandard/CreateSigningKey/bin
 tools/netstandard/CreateSigningKey/obj
+
+ortools/fsharp/**/bin
+ortools/fsharp/**/obj
+ortools/fsharp/**/packages
