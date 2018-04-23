@@ -62,17 +62,6 @@ endif
 MONO_COMPILER ?= mono
 MONO_EXECUTABLE := $(shell $(WHICH) $(MONO_COMPILER))
 
-# This is needed to find Coin Branch and Cut include files.
-CBC_INC = -I$(UNIX_CBC_DIR)/include -I$(UNIX_CBC_DIR)/include/coin -DUSE_CBC
-CBC_SWIG = $(CBC_INC)
-# This is needed to find Coin LP include files.
-CLP_INC = -I$(UNIX_CLP_DIR)/include -I$(UNIX_CLP_DIR)/include/coin -DUSE_CLP
-CLP_SWIG = $(CLP_INC)
-# Install Path used when installing coin using pkgsource
-# e.g. brew coin-or-tools/homebrew-coinor/cbc.rb
-COIN_INC = -I$(UNIX_CBC_DIR)/include/coinutils/coin -I$(UNIX_CBC_DIR)/include/osi/coin -I$(UNIX_CBC_DIR)/include/cbc/coin -I$(UNIX_CLP_DIR)/include/clp/coin
-COIN_SWIG = $(COIN_INC)
-
 # This is needed to find GLPK include files.
 ifdef UNIX_GLPK_DIR
   GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
@@ -107,21 +96,6 @@ ifeq ($(PLATFORM),LINUX)
 
   # This is needed to find libz.a
   ZLIB_LNK = -lz
-  ifdef UNIX_CBC_DIR
-    # Check wether CBC need a coin subdir in library.
-    ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
-      UNIX_CBC_COIN = /coin
-    endif
-  CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCgl.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsi.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a
-  endif
-  ifdef UNIX_CLP_DIR
-    # Check wether CLP need a coin subdir in library.
-    ifneq ($(wildcard $(UNIX_CLP_DIR)/lib/coin),)
-      UNIX_CLP_COIN = /coin
-    endif
-  CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
-  endif
-
   ifdef UNIX_GLPK_DIR
   GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
@@ -169,21 +143,6 @@ ifeq ($(PLATFORM),MACOSX)
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   ZLIB_LNK = -lz
-  ifdef UNIX_CBC_DIR
-    # Check wether CBC need a coin subdir in library.
-    ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
-      UNIX_CBC_COIN = /coin
-    endif
-    CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCgl.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsi.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a
-  endif
-  ifdef UNIX_CLP_DIR
-    # Check wether CBC need a coin subdir in library.
-    ifneq ($(wildcard $(UNIX_CLP_DIR)/lib/coin),)
-      UNIX_CLP_COIN = /coin
-    endif
-    CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
-  endif
-
   ifdef UNIX_GLPK_DIR
     GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
@@ -215,7 +174,7 @@ endif  # MAC OS X
 
 DEPENDENCIES_INC = -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
  $(GFLAGS_INC) $(GLOG_INC) $(PROTOBUF_INC) \
- $(CBC_INC) $(CLP_INC) $(COIN_INC) \
+ $(COIN_INC) \
  -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
  $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC)
 

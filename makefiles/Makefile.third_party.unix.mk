@@ -8,8 +8,11 @@ help_third_party:
 UNIX_GFLAGS_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
-UNIX_CBC_DIR ?= $(OR_ROOT_FULL)/dependencies/install
+UNIX_CBC_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
+UNIX_CGL_DIR ?= $(UNIX_CBC_DIR)
+UNIX_OSI_DIR ?= $(UNIX_CBC_DIR)
+UNIX_COINUTILS_DIR ?= $(UNIX_CBC_DIR)
 
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
@@ -172,20 +175,107 @@ STATIC_PROTOBUF_LNK = $(wildcard $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a \
                           $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
 DYNAMIC_PROTOBUF_LNK = -L$(dir $(STATIC_PROTOBUF_LNK)) -lprotobuf
 
-# Install Coin CBC.
+###############
+##  COIN-OR  ##
+###############
+# Install Coin CBC/CLP/CGL/OSI/COINUTILS.
 install_cbc: dependencies/install/bin/cbc
 
 dependencies/install/bin/cbc: dependencies/sources/Cbc-$(CBC_TAG)/Makefile
 	cd dependencies/sources/Cbc-$(CBC_TAG) && $(SET_COMPILER) make -j 4 && $(SET_COMPILER) make install
 
 dependencies/sources/Cbc-$(CBC_TAG)/Makefile: dependencies/sources/Cbc-$(CBC_TAG)/Makefile.in
-	cd dependencies/sources/Cbc-$(CBC_TAG) && $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --with-pic --enable-cbc-parallel ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
+	cd dependencies/sources/Cbc-$(CBC_TAG) && \
+		$(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install \
+		--disable-bzlib --without-lapack --enable-static --with-pic \
+		--enable-cbc-parallel ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
 
 CBC_ARCHIVE:=https://www.coin-or.org/download/source/Cbc/Cbc-${CBC_TAG}.tgz
 
 dependencies/sources/Cbc-$(CBC_TAG)/Makefile.in:
-	wget --quiet --no-check-certificate --continue -P dependencies/archives ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'wget -P dependencies/archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
+	wget --quiet --no-check-certificate --continue -P dependencies/archives ${CBC_ARCHIVE} || \
+		(@echo wget failed to dowload $(CBC_ARCHIVE), try running 'wget -P dependencies/archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
 	tar xzf dependencies/archives/Cbc-${CBC_TAG}.tgz -C dependencies/sources/
+
+# This is needed to find CBC include files.
+CBC_COIN_DIR = $(firstword $(wildcard $(UNIX_CBC_DIR)/include/cbc/coin \
+                                      $(UNIX_CBC_DIR)/include/coin))
+CBC_INC = -I$(UNIX_CBC_DIR)/include -I$(CBC_COIN_DIR) -DUSE_CBC
+CBC_SWIG = $(CBC_INC)
+ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
+ UNIX_CBC_COIN = /coin
+endif
+STATIC_CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a \
+          $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a \
+          $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a
+DYNAMIC_CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lOsiCbc
+
+# This is needed to find CLP include files.
+CLP_COIN_DIR = $(firstword $(wildcard $(UNIX_CLP_DIR)/include/clp/coin \
+                                      $(UNIX_CLP_DIR)/include/coin))
+CLP_INC = -I$(UNIX_CLP_DIR)/include -I$(CLP_COIN_DIR) -DUSE_CLP
+CLP_SWIG = $(CLP_INC)
+ifneq ($(wildcard $(UNIX_CLP_DIR)/lib/coin),)
+ UNIX_CLP_COIN = /coin
+endif
+STATIC_CLP_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CLP_COIN)/libClpSolver.a \
+          $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a \
+          $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a
+DYNAMIC_CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClpSolver -lClp -lOsiClp
+
+# This is needed to find CGL include files.
+CGL_COIN_DIR = $(firstword $(wildcard $(UNIX_CGL_DIR)/include/cgl/coin \
+                                      $(UNIX_CGL_DIR)/include/coin))
+CGL_INC = -I$(UNIX_CGL_DIR)/include -I$(CGL_COIN_DIR)
+CGL_SWIG = $(CGL_INC)
+ifneq ($(wildcard $(UNIX_CGL_DIR)/lib/coin),)
+ UNIX_CGL_COIN = /coin
+endif
+STATIC_CGL_LNK = $(UNIX_CGL_DIR)/lib$(UNIX_CGL_COIN)/libCgl.a
+DYNAMIC_CGL_LNK = -L$(UNIX_CGL_DIR)/lib$(UNIX_CGL_COIN) -lCgl
+
+# This is needed to find OSI include files.
+OSI_COIN_DIR = $(firstword $(wildcard $(UNIX_OSI_DIR)/include/osi/coin \
+                                      $(UNIX_OSI_DIR)/include/coin))
+OSI_INC = -I$(UNIX_OSI_DIR)/include -I$(OSI_COIN_DIR)
+OSI_SWIG = $(OSI_INC)
+ifneq ($(wildcard $(UNIX_OSI_DIR)/lib/coin),)
+ UNIX_OSI_COIN = /coin
+endif
+STATIC_OSI_LNK = $(UNIX_OSI_DIR)/lib$(UNIX_OSI_COIN)/libOsi.a
+DYNAMIC_OSI_LNK = -L$(UNIX_OSI_DIR)/lib$(UNIX_OSI_COIN) -lOsi
+
+# This is needed to find COINUTILS include files.
+COINUTILS_COIN_DIR = $(firstword $(wildcard $(UNIX_COINUTILS_DIR)/include/coinutils/coin \
+                                      $(UNIX_COINUTILS_DIR)/include/coin))
+COINUTILS_INC = -I$(UNIX_COINUTILS_DIR)/include -I$(COINUTILS_COIN_DIR)
+COINUTILS_SWIG = $(COINUTILS_INC)
+ifneq ($(wildcard $(UNIX_COINUTILS_DIR)/lib/coin),)
+ UNIX_COINUTILS_COIN = /coin
+endif
+STATIC_COINUTILS_LNK = $(UNIX_COINUTILS_DIR)/lib$(UNIX_COINUTILS_COIN)/libCoinUtils.a
+DYNAMIC_COINUTILS_LNK = -L$(UNIX_COINUTILS_DIR)/lib$(UNIX_COINUTILS_COIN) -lCoinUtils
+
+# Agregate all previous coin packages
+COIN_INC = \
+  $(COINUTILS_INC) \
+  $(OSI_INC) \
+  $(CGL_INC) \
+  $(CLP_INC) \
+  $(CBC_INC)
+COIN_SWIG = $(COIN_INC)
+STATIC_COIN_LNK = \
+	$(STATIC_CBC_LNK) \
+  $(STATIC_CLP_LNK) \
+  $(STATIC_CGL_LNK) \
+  $(STATIC_OSI_LNK) \
+  $(STATIC_COINUTILS_LNK)
+DYNAMIC_COIN_LNK = \
+  $(DYNAMIC_CBC_LNK) \
+  $(DYNAMIC_CLP_LNK) \
+  $(DYNAMIC_CGL_LNK) \
+  $(DYNAMIC_OSI_LNK) \
+	$(DYNAMIC_COINUTILS_LNK)
 
 ##################################
 ##  USE DYNAMIC DEPENDENCIES ?  ##
@@ -208,8 +298,12 @@ else
   DEPENDENCIES_LNK += $(DYNAMIC_PROTOBUF_LNK)
 	OR_TOOLS_LNK += $(DYNAMIC_PROTOBUF_LNK)
 endif
-DEPENDENCIES_LNK += \
-  $(CBC_LNK) $(CLP_LNK)
+ifeq ($(UNIX_CBC_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+  DEPENDENCIES_LNK += $(STATIC_COIN_LNK)
+else
+  DEPENDENCIES_LNK += $(DYNAMIC_COIN_LNK)
+	OR_TOOLS_LNK += $(DYNAMIC_COIN_LNK)
+endif
 
 ############################################
 ##  Install Patchelf on linux platforms.  ##
@@ -300,6 +394,15 @@ detect_third_party:
 	@echo UNIX_CLP_DIR = $(UNIX_CLP_DIR)
 	@echo CLP_INC = $(CLP_INC)
 	@echo CLP_LNK = $(CLP_LNK)
+	@echo UNIX_CGL_DIR = $(UNIX_CGL_DIR)
+	@echo CGL_INC = $(CGL_INC)
+	@echo CGL_LNK = $(CGL_LNK)
+	@echo UNIX_OSI_DIR = $(UNIX_OSI_DIR)
+	@echo OSI_INC = $(OSI_INC)
+	@echo OSI_LNK = $(OSI_LNK)
+	@echo UNIX_COINUTILS_DIR = $(UNIX_COINUTILS_DIR)
+	@echo COINUTILS_INC = $(COINUTILS_INC)
+	@echo COINUTILS_LNK = $(COINUTILS_LNK)
 ifdef UNIX_GLPK_DIR
 	@echo UNIX_GLPK_DIR = $(UNIX_GLPK_DIR)
 	@echo GLPK_INC = $(GLPK_INC)
