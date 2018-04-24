@@ -82,3 +82,8 @@ tools/netstandard/CreateSigningKey/obj
 ortools/fsharp/**/bin
 ortools/fsharp/**/obj
 ortools/fsharp/**/packages
+
+ortools/dotnet/**/bin
+ortools/dotnet/**/obj
+ortools/dotnet/**/packages
+*.userprefs
