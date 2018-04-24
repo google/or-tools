@@ -209,7 +209,7 @@ clean_compat:
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
-OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB)
+OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
 ortoolslibs: third_party_check $(MISSING_BUILD_DIRECTORIES) $(OR_TOOLS_LIBS)
 
 # Specific libraries for examples, and flatzinc.
