@@ -350,12 +350,17 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
       StringAppendF(output, " %.0f <= %s <= %.0f\n", lb,
                     exported_variable_names_[var_index].c_str(), ub);
     } else {
-      if (lb != -std::numeric_limits<double>::infinity()) {
-        absl::StrAppend(output, " ", DoubleToString(lb), " <= ");
-      }
-      absl::StrAppend(output, exported_variable_names_[var_index]);
-      if (ub != std::numeric_limits<double>::infinity()) {
-        absl::StrAppend(output, " <= ", DoubleToString(ub));
+      absl::StrAppend(output, " ");
+      if (lb == -std::numeric_limits<double>::infinity() && ub == std::numeric_limits<double>::infinity()) {
+        absl::StrAppend(output, exported_variable_names_[var_index], " free");
+      } else {
+        if (lb != -std::numeric_limits<double>::infinity()) {
+          absl::StrAppend(output, DoubleToString(lb), " <= ");
+        }
+        absl::StrAppend(output, exported_variable_names_[var_index]);
+        if (ub != std::numeric_limits<double>::infinity()) {
+          absl::StrAppend(output, " <= ", DoubleToString(ub));
+        }
       }
       absl::StrAppend(output, "\n");
     }
