@@ -20,7 +20,7 @@ ORTOOLS_NUSPEC_FILE=$(ORTOOLS_DLL_NAME).nuspec
 
 CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
 CLR_ORTOOLS_DLL_NAME?=Google.$(ORTOOLS_DLL_NAME)
-BASE_CLR_ORTOOLS_DLL_NAME:= $(CLR_ORTOOLS_DLL_NAME)
+BASE_CLR_ORTOOLS_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
 CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
 
 # Check for required build tools
@@ -213,9 +213,21 @@ dotnet: \
 	csharp_dotnet \
 	fsharp_dotnet
 
+
+ifeq ($(SYSTEM),win)
+NUGET_COMPILER ?= nuget.exe
+NUGET_EXECUTABLE := $(shell $(WHICH) $(NUGET_COMPILER) 2>nul)
+else #UNIX
+NUGET_COMPILER ?= nuget
+NUGET_EXECUTABLE := $(shell which $(NUGET_COMPILER))
+endif
+NUGET_SRC = https://www.nuget.org/api/v2/package
+
 .PHONY: pkg_dotnet # Build Nuget Package
 pkg_dotnet:
-	$(warning Not Implemented)
+	$(SED) -i -e "s/MMMM/$(CLR_ORTOOLS_DLL_NAME)/" ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+	$(NUGET_EXECUTABLE) pack ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
 
 .PHONY: pkg_dotnet-upload # Upload Nuget Package
 pkg_dotnet-upload: nuget_archive
@@ -231,6 +243,7 @@ else
 endif
 	@echo DOTNET_EXECUTABLE = "$(DOTNET_EXECUTABLE)"
 	@echo MONO_EXECUTABLE = "$(MONO_EXECUTABLE)"
+	@echo NUGET_EXECUTABLE = "$(NUGET_EXECUTABLE)"
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else
