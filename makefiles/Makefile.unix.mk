@@ -31,6 +31,7 @@ S = /
 CPSEP = :
 
 COPY = cp
+COPYREC = cp -r
 DEL = rm -f
 DELREC = rm -rf
 GREP = grep

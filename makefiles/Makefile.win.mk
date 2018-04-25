@@ -41,6 +41,7 @@ S = \\
 CPSEP =;
 
 COPY = copy
+COPYREC = xcopy
 DEL = del
 DELREC = tools\rm.exe -rf
 GREP = tools\grep.exe
