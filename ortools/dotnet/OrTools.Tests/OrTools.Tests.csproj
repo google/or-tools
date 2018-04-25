@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+    <AssemblyName>Google.OrTools.Tests</AssemblyName>
+    <RootNamespace>Google.OrTools.Tests</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.console" Version="2.3.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Google.OrTools">
+      <HintPath>..\..\..\bin\Google.OrTools.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

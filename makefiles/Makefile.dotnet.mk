@@ -13,6 +13,8 @@ endif
 ORTOOLS_DLL_NAME=OrTools
 ORTOOLS_NUSPEC_FILE=$(ORTOOLS_DLL_NAME).nuspec
 
+ORTOOLS_DLL_TEST=$(ORTOOLS_DLL_NAME).Tests
+
 CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
 CLR_ORTOOLS_DLL_NAME?=Google.$(ORTOOLS_DLL_NAME)
 BASE_CLR_ORTOOLS_DLL_NAME:= $(CLR_ORTOOLS_DLL_NAME)
@@ -29,6 +31,15 @@ DOTNET_EXECUTABLE := $(shell which dotnet)
 endif
 endif
 
+DOTNET_LIB_DIR :=
+ifeq ($(PLATFORM),MACOSX)
+DOTNET_LIB_DIR = env DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR)
+endif
+ifeq ($(PLATFORM),LINUX)
+DOTNET_LIB_DIR = env LD_LIBRARY_PATH=$(LIB_DIR)
+endif
+
+CLEAN_FILES=$(CLR_PROTOBUF_DLL_NAME).* $(CLR_ORTOOLS_DLL_NAME).*
 
 .PHONY: csharp_dotnet # Build C# OR-Tools.
 csharp_dotnet: \
@@ -164,15 +175,23 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
 	$(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
 	$(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
-	$(SED) -i -e "s/0.0.0.0/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	# $(SED) -i -e "s/0.0.0.0/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" restore ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" build -c Debug ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" build -c Release ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	$(COPY) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sbin$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
 
-
-.PHONY: clean_dotnet # Build Nuget Package for distribution.
+.PHONY: clean_dotnet # Clean files
 clean_dotnet:
-	$(warning Not Implemented)
+	$(foreach var,$(CLEAN_FILES), $(DEL) bin$S$(var);)
+
+.PHONY: test_dotnet # Test dotnet version of OR-Tools
+test_dotnet:
+	"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sdotnet$Spackages" "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$S$(ORTOOLS_DLL_TEST).csproj"
+	"$(DOTNET_EXECUTABLE)" clean "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$S$(ORTOOLS_DLL_TEST).csproj"
+	"$(DOTNET_EXECUTABLE)" build "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$S$(ORTOOLS_DLL_TEST).csproj"
+	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$Sbin$SDebug$Snetcoreapp2.0$SGoogle.$(ORTOOLS_DLL_TEST).dll" -verbose
+
 
 .PHONY: pkg_dotnet # Build Nuget Package for distribution.
 pkg_dotnet:
