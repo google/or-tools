@@ -1,48 +1,55 @@
+#  ----- You should not need to modify the following, unless the -----
+#  ----- configuration is not standard. In that case, please tell us -----
+#  ----- about it. -----
+
 # Windows specific definitions
-LIB_DIR = $(OR_ROOT)lib
 LIB_PREFIX =
-STATIC_LIB_SUFFIX = lib
+PRE_LIB = $(OR_ROOT)lib\\
+POST_LIB = .lib
 LIB_SUFFIX = lib
+SWIG_LIB_SUFFIX = dll
+JNI_LIB_EXT = dll
+STATIC_PRE_LIB = $(OR_ROOT)lib\\
+STATIC_POST_LIB = .lib
+STATIC_LIB_SUFFIX = lib
+LINK_CMD = lib
+LINK_PREFIX = /OUT:
+STATIC_LINK_CMD = lib
+STATIC_LINK_PREFIX = /OUT:
+
+LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
 GEN_DIR = $(OR_ROOT)ortools\\gen
 OBJ_DIR = $(OR_ROOT)objs
 SRC_DIR = $(OR_ROOT).
 EX_DIR  = $(OR_ROOT)examples
 INC_DIR = $(OR_ROOT).
-LINK_CMD = lib
-LINK_PREFIX = /OUT:
-STATIC_LINK_CMD = lib
-STATIC_LINK_PREFIX = /OUT:
-PRE_LIB = $(OR_ROOT)lib\\
-POST_LIB = .lib
-STATIC_PRE_LIB = $(OR_ROOT)lib\\
-STATIC_POST_LIB = .lib
+
 O=obj
 E=.exe
 L=.lib
 DLL=.dll
 PDB=.pdb
 EXP=.exp
+ARCHIVE_EXT = .zip
+FZ_EXE = fzn-or-tools$E
 OBJ_OUT = /Fo
 EXE_OUT = /Fe
-SWIG_LIB_SUFFIX = dll
-JNI_LIB_EXT = dll
 LDOUT = /OUT:
 DYNAMIC_LD = link /DLL /LTCG /debug
 S = \\
 CPSEP =;
+
+COPY = copy
 DEL = del
 DELREC = tools\rm.exe -rf
-RENAME = rename
+GREP = tools\grep.exe
 MKDIR = md
 MKDIR_P = tools\mkdir.exe -p
-COPY = copy
-TOUCH = tools\touch.exe
-GREP = tools\grep.exe
+RENAME = rename
 SED = tools\sed.exe
+TOUCH = tools\touch.exe
 WHICH = tools\which.exe
-ARCHIVE_EXT = .zip
-FZ_EXE = fzn-or-tools$E
 
 # We Can't force SHELL to cmd.exe if sh.exe is in the PATH
 # cf https://www.gnu.org/software/make/manual/html_node/Choosing-the-Shell.html
