@@ -13,6 +13,10 @@ endif
 ORTOOLS_DLL_NAME=OrTools
 ORTOOLS_NUSPEC_FILE=$(ORTOOLS_DLL_NAME).nuspec
 
+CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
+CLR_ORTOOLS_DLL_NAME?=Google.$(ORTOOLS_DLL_NAME)
+BASE_CLR_ORTOOLS_DLL_NAME:= $(CLR_ORTOOLS_DLL_NAME)
+CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
 
 # Check for required build tools
 ifeq ($(SYSTEM), win)
@@ -25,38 +29,24 @@ DOTNET_EXECUTABLE := $(shell which dotnet)
 endif
 endif
 
-.PHONY: csharp_dotnet # Build OrTools
-csharp_dotnet: ortoolslib \
-	$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs \
-	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
-	$(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
-	$(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O \
-	$(OBJ_DIR)/swig/graph_csharp_wrap.$O \
-	$(OBJ_DIR)/swig/sat_csharp_wrap.$O \
-	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs \
-	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs \
-	$(GEN_DIR)/com/google/ortools/constraintsolver/Model.g.cs \
-	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs \
-	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs \
-	$(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
-	$(GEN_DIR)/com/google/ortools/sat/SatParameters.g.cs
 
-	$(SED) -i -e "s/0.0.0.0/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
-	"$(DOTNET_EXECUTABLE)" build ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+.PHONY: csharp_dotnet # Build C# OR-Tools.
+csharp_dotnet: \
+	ortoolslibs \
+	csharportools
+BUILT_LANGUAGES +=, netstandard2.0
 
 
-$(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: \
-	| $(GEN_DIR)/com/google/ortools/properties
+# Assembly Info
+$(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt:
 	@echo $(OR_TOOLS_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
 
-# See for background on Windows Explorer File Info Details:
-#  https://social.msdn.microsoft.com/Forums/vstudio/en-US/27894a09-1eed-48d9-8a0f-2198388d492c/csc-modulelink-or-just-csc-dll-plus-some-external-dllobj-references
-#  also, https://blogs.msdn.microsoft.com/texblog/2007/04/05/linking-native-c-into-c-applications/
-$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs: \
-	$(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt
-	$(COPY) tools$Scsharp$SCommonAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
-	$(SED) -i -e "s/XXXX/$(OR_TOOLS_VERSION)/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
+# csharp ortools
+csharportools: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
+# Auto-generated code
+$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
+	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
@@ -142,14 +132,54 @@ $(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs: $(SRC_DIR)/ortools/sat/cp_model.
 $(GEN_DIR)/com/google/ortools/sat/SatParameters.g.cs: $(SRC_DIR)/ortools/sat/sat_parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat --csharp_opt=file_extension=.g.cs $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
 
+# Main DLL
+$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
+	$(CLR_KEYFILE) \
+	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
+	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
+	$(OBJ_DIR)/swig/sat_csharp_wrap.$O \
+	$(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
+	$(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O \
+	$(OBJ_DIR)/swig/graph_csharp_wrap.$O \
+	$(SRC_DIR)/ortools/com/google/ortools/algorithms/IntArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntVarArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/NetDecisionBuilder.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/SolverHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/ValCstPair.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/DoubleArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/LinearExpr.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/LinearConstraint.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/SolverHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/VariableHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/sat/CpModel.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/util/NestedArrayHelper.cs \
+	$(SRC_DIR)/ortools/com/google/ortools/util/ProtoHelper.cs \
+	$(GEN_DIR)/com/google/ortools/constraintsolver/Model.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
+	$(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
+	$(OR_TOOLS_LIBS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(SED) -i -e "s/0.0.0.0/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	"$(DOTNET_EXECUTABLE)" restore ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	"$(DOTNET_EXECUTABLE)" build -c Debug ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	"$(DOTNET_EXECUTABLE)" build -c Release ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 
+
+.PHONY: clean_dotnet # Build Nuget Package for distribution.
+clean_dotnet:
+	$(warning Not Implemented)
 
 .PHONY: pkg_dotnet # Build Nuget Package for distribution.
 pkg_dotnet:
 	$(warning Not Implemented)
 
 .PHONY: pkg_dotnet-upload # Upload Nuget Package
-nuget-pkg_dotnet-upload: nuget_archive
+pkg_dotnet-upload: nuget_archive
 	$(warning Not Implemented)
 
 

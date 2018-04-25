@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\netfx.props" />
+
   <PropertyGroup>
 
     <OutputType>Library</OutputType>
     <AssemblyTitle>Google.OrTools</AssemblyTitle>
-    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Google.OrTools</AssemblyName>
     <UseSharedCompilation>False</UseSharedCompilation>
-    <NuspecFile>OrTools.nuspec</NuspecFile>
+    <NuspecFile>..\OrTools.nuspec</NuspecFile>
 
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 
@@ -23,7 +25,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\..\ortools\gen\com\google\ortools\properties\CommonAssemblyInfo.cs" Link="CommonAssemblyInfo.cs" />
 
     <Compile Include="..\..\..\ortools\gen\com\google\ortools\linearsolver\*.cs">
       <Link>linearsolver\%(Filename)%(Extension)</Link>
