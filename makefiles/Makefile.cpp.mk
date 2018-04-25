@@ -10,6 +10,14 @@ else
 	@echo
 endif
 
+# Checks if the user has overwritten default install prefix.
+# cf https://www.gnu.org/prep/standards/html_node/Directory-Variables.html#index-prefix
+ifeq ($(SYSTEM),win)
+	prefix ?= C:\\Program Files\\or-tools
+else
+  prefix ?= /usr/local
+endif
+
 # Main target
 .PHONY: cc # Build C++ OR-Tools.
 cc: ortoolslibs ccexe
@@ -798,6 +806,46 @@ ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
+
+###############
+##  INSTALL  ##
+###############
+install_dirs:
+	-$(MKDIR) "$(prefix)"
+	-$(MKDIR) "$(prefix)$Slib"
+	-$(MKDIR) "$(prefix)$Sinclude"
+	-$(DELREC) "$(prefix)$Sinclude$Sortools"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Salgorithms"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sbase"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sbop"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sconstraint_solver"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sglop"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sgraph"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Slinear_solver"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Slp_data"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Ssat"
+	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sutil"
+
+.PHONY: install_cc # Install C++ OR-Tools to $(prefix)/.
+install_cc: ortoolslibs $(PATCHELF) install_dirs
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) "$(prefix)$Slib"
+	$(COPY) ortools$Salgorithms$S*.h "$(prefix)$Sinclude$Sortools$Salgorithms"
+	$(COPY) ortools$Sbase$S*.h "$(prefix)$Sinclude$Sortools$Sbase"
+	$(COPY) ortools$Sconstraint_solver$S*.h "$(prefix)$Sinclude$Sortools$Sconstraint_solver"
+	$(COPY) ortools$Sgen$Sortools$Sconstraint_solver$S*.pb.h "$(prefix)$Sinclude$Sortools$Sconstraint_solver"
+	$(COPY) ortools$Sbop$S*.h "$(prefix)$Sinclude$Sortools$Sbop"
+	$(COPY) ortools$Sgen$Sortools$Sbop$S*.pb.h "$(prefix)$Sinclude$Sortools$Sbop"
+	$(COPY) ortools$Sglop$S*.h "$(prefix)$Sinclude$Sortools$Sglop"
+	$(COPY) ortools$Sgen$Sortools$Sglop$S*.pb.h "$(prefix)$Sinclude$Sortools$Sglop"
+	$(COPY) ortools$Sgraph$S*.h "$(prefix)$Sinclude$Sortools$Sgraph"
+	$(COPY) ortools$Sgen$Sortools$Sgraph$S*.h "$(prefix)$Sinclude$Sortools$Sgraph"
+	$(COPY) ortools$Slinear_solver$S*.h "$(prefix)$Sinclude$Sortools$Slinear_solver"
+	$(COPY) ortools$Slp_data$S*.h "$(prefix)$Sinclude$Sortools$Slp_data"
+	$(COPY) ortools$Sgen$Sortools$Slinear_solver$S*.pb.h "$(prefix)$Sinclude$Sortools$Slinear_solver"
+	$(COPY) ortools$Ssat$S*.h "$(prefix)$Sinclude$Sortools$Ssat"
+	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h "$(prefix)$Sinclude$Sortools$Ssat"
+	$(COPY) ortools$Sutil$S*.h "$(prefix)$Sinclude$Sortools$Sutil"
 
 .PHONY: detect_cc # Show variables used to build C++ OR-Tools.
 detect_cc:

@@ -27,6 +27,7 @@ objs/
 temp/
 temp-python*
 lib/
+install/
 examples/csharp/solution/*.csproj
 examples/csharp/*.sln
 examples/notebook/.ipynb_checkpoints
