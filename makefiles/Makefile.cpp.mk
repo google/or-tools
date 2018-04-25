@@ -10,8 +10,6 @@ else
 	@echo
 endif
 
-.PHONY: ccc rcc clean_cc clean_compat ccexe
-
 # Main target
 .PHONY: cc # Build C++ OR-Tools.
 cc: ortoolslibs ccexe
@@ -197,6 +195,7 @@ clean_cc:
 	-$(DELREC) $(OR_ROOT)src$Sgen$Sflatzinc$S*
 	-$(DELREC) $(OR_ROOT)objs$Sflatzinc$S*
 
+.PHONY: clean_compat
 clean_compat:
 	-$(DELREC) $(OR_ROOT)constraint_solver
 	-$(DELREC) $(OR_ROOT)linear_solver
@@ -300,6 +299,7 @@ strawberry_fields_with_column_generation \
 tsp \
 weighted_tardiness_sat
 
+.PHONY: ccexe
 ccexe: $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_EXAMPLES)))
 
 # CVRPTW common library
@@ -791,9 +791,10 @@ $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
 	  $(OR_TOOLS_LD_FLAGS)
 
 # compile and run C++ examples
-
+.PHONY: ccc
 ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 
+.PHONY: rcc
 rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
