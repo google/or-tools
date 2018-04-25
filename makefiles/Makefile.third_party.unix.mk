@@ -355,6 +355,8 @@ makefile_third_party: Makefile.local
 Makefile.local: makefiles/Makefile.third_party.unix.mk
 	-$(DEL) Makefile.local
 	@echo Generating Makefile.local
+	@echo "# Define UNIX_SWIG_BINARY to use a custom version." >> Makefile.local
+	@echo "#   e.g. UNIX_SWIG_BINARY = /opt/swig-x.y.z/bin/swig" >> Makefile.local
 	@echo JAVA_HOME = $(JAVA_HOME)>> Makefile.local
 	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION)>> Makefile.local
 	@echo PATH_TO_CSHARP_COMPILER = $(DETECTED_MCS_BINARY)>> Makefile.local
@@ -362,8 +364,9 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo CLR_KEYFILE = bin/or-tools.snk>> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
+	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
 	@echo "# Define UNIX_SCIP_DIR to point to a compiled version of SCIP to use it ">> Makefile.local
-	@echo "#   i.e.: <path>/scipoptsuite-4.0.1/scip" >> Makefile.local
+	@echo "#   e.g. UNIX_SCIP_DIR = <path>/scipoptsuite-4.0.1/scip" >> Makefile.local
 	@echo "#   On Mac OS X, compile scip with: " >> Makefile.local
 	@echo "#     make GMP=false READLINE=false TPI=tny" >> Makefile.local
 	@echo "#   On Linux, compile scip with: " >> Makefile.local
@@ -371,9 +374,19 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo "# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi" >> Makefile.local
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo >> Makefile.local
-	@echo "# Define UNIX_GFLAGS_DIR, UNIX_PROTOBUF_DIR, UNIX_GLOG_DIR," >> Makefile.local
-	@echo "# UNIX_CLP_DIR, UNIX_CBC_DIR, UNIX_SWIG_BINARY if you wish to " >> Makefile.local
-	@echo "# use a custom version. " >> Makefile.local
+	@echo "# By default OR-Tools will compile and use Gflags, Glog, Protobuf and CBC as static dependencies," >> Makefile.local
+	@echo "# Define UNIX_GFLAGS_DIR to depend on external Gflags dynamic library" >> Makefile.local
+	@echo "#   e.g. UNIX_GFLAGS_DIR = /opt/gflags-x.y.z" >> Makefile.local
+	@echo "# Define UNIX_GLOG_DIR to depend on external Glog dynamic library" >> Makefile.local
+	@echo "#   e.g. UNIX_GLOG_DIR = /opt/glog-x.y.z" >> Makefile.local
+	@echo "# Define UNIX_PROTOBUF_DIR to depend on external Protobuf dynamic library" >> Makefile.local
+	@echo "#   e.g. UNIX_PROTOBUF_DIR = /opt/protobuf-x.y.z" >> Makefile.local
+	@echo "# Define UNIX_CBC_DIR to depend on external CBC dynamic library" >> Makefile.local
+	@echo "#   e.g. UNIX_CBC_DIR = /opt/cbc-x.y.z" >> Makefile.local
+	@echo "#   If you use a splitted version of CBC you can also define:" >> Makefile.local
+	@echo "#     UNIX_CLP_DIR, UNIX_CGL_DIR, UNIX_OSI_DIR, UNIX_COINUTILS_DIR" >> Makefile.local
+	@echo "#   note: by default they all point to UNIX_CBC_DIR" >> Makefile.local
+	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
 
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
