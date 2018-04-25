@@ -808,18 +808,15 @@ detect_cc:
 	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
 	@echo OR_TOOLS_LD_FLAGS = $(OR_TOOLS_LD_FLAGS)
 	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
-ifeq ($(SYSTEM),win)
-	@echo off & echo(
-else
-	@echo
-endif
-
-# Debug
-.PHONY: printdir
-printdir:
 	@echo LIB_DIR = $(LIB_DIR)
 	@echo BIN_DIR = $(BIN_DIR)
 	@echo GEN_DIR = $(GEN_DIR)
 	@echo OBJ_DIR = $(OBJ_DIR)
 	@echo SRC_DIR = $(SRC_DIR)
 	@echo EX_DIR  = $(EX_DIR)
+	@echo prefix  = $(prefix)
+ifeq ($(SYSTEM),win)
+	@echo off & echo(
+else
+	@echo
+endif
