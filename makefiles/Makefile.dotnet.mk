@@ -1,4 +1,4 @@
-# ---------- CSharp support using SWIG ----------
+# ---------- dotnet support using SWIG ----------
 .PHONY: help_dotnet # Generate list of dotnet targets with descriptions.
 help_dotnet:
 	@echo Use one of the following dotnet targets:
@@ -11,9 +11,12 @@ else
 endif
 
 ORTOOLS_DLL_NAME=OrTools
-ORTOOLS_NUSPEC_FILE=$(ORTOOLS_DLL_NAME).nuspec
-
 ORTOOLS_DLL_TEST=$(ORTOOLS_DLL_NAME).Tests
+
+FSHARP_ORTOOLS_DLL_NAME=$(ORTOOLS_DLL_NAME).FSharp
+FSHARP_ORTOOLS_DLL_TEST=$(ORTOOLS_DLL_NAME).FSharp.Tests
+
+ORTOOLS_NUSPEC_FILE=$(ORTOOLS_DLL_NAME).nuspec
 
 CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
 CLR_ORTOOLS_DLL_NAME?=Google.$(ORTOOLS_DLL_NAME)
@@ -39,9 +42,9 @@ ifeq ($(PLATFORM),LINUX)
 DOTNET_LIB_DIR = env LD_LIBRARY_PATH=$(LIB_DIR)
 endif
 
-CLEAN_FILES=$(CLR_PROTOBUF_DLL_NAME).* $(CLR_ORTOOLS_DLL_NAME).*
+CLEAN_FILES=$(CLR_PROTOBUF_DLL_NAME).* $(CLR_ORTOOLS_DLL_NAME).* Google.$(FSHARP_ORTOOLS_DLL_NAME).*
 
-.PHONY: csharp_dotnet # Build C# OR-Tools.
+.PHONY: csharp_dotnet # Build C# OR-Tools
 csharp_dotnet: \
 	ortoolslibs \
 	csharportools
@@ -181,6 +184,14 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
 	"$(DOTNET_EXECUTABLE)" build -c Release ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	$(COPY) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sbin$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
 
+.PHONY: fsharp_dotnet # Build F# OR-Tools
+fsharp_dotnet:
+	# $(SED) -i -e "s/0.0.0.0/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
+	"$(DOTNET_EXECUTABLE)" restore ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
+	"$(DOTNET_EXECUTABLE)" build -c Debug ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
+	"$(DOTNET_EXECUTABLE)" build -c Release ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
+	$(COPY) ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$Sbin$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
+
 .PHONY: clean_dotnet # Clean files
 clean_dotnet:
 	$(foreach var,$(CLEAN_FILES), $(DEL) bin$S$(var);)
@@ -190,10 +201,19 @@ test_dotnet:
 	"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sdotnet$Spackages" "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$S$(ORTOOLS_DLL_TEST).csproj"
 	"$(DOTNET_EXECUTABLE)" clean "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$S$(ORTOOLS_DLL_TEST).csproj"
 	"$(DOTNET_EXECUTABLE)" build "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$S$(ORTOOLS_DLL_TEST).csproj"
+	"$(DOTNET_EXECUTABLE)" clean "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$S$(FSHARP_ORTOOLS_DLL_TEST).fsproj"
+	"$(DOTNET_EXECUTABLE)" build "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$S$(FSHARP_ORTOOLS_DLL_TEST).fsproj"
 	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$Sbin$SDebug$Snetcoreapp2.0$SGoogle.$(ORTOOLS_DLL_TEST).dll" -verbose
+	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$Sbin$SDebug$Snetcoreapp2.0$SGoogle.$(FSHARP_ORTOOLS_DLL_TEST).dll" -verbose
 
 
-.PHONY: pkg_dotnet # Build Nuget Package for distribution.
+.PHONY: dotnet # Build OrTools for .NET
+dotnet: \
+	clean_dotnet \
+	csharp_dotnet \
+	fsharp_dotnet
+
+.PHONY: pkg_dotnet # Build Nuget Package
 pkg_dotnet:
 	$(warning Not Implemented)
 
