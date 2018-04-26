@@ -27,9 +27,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/base/port.h"
 #include "ortools/base/hash.h"
-
-#include "ortools/port/file.h"
-
 #include "ortools/linear_solver/linear_solver.h"
 
 #if defined(USE_CBC)
@@ -144,8 +141,6 @@ class CBCInterface : public MPSolverInterface {
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
 
-  bool ReadParameterFile(const std::string& filename) override;
-  
   OsiClpSolverInterface osi_;
   // TODO(user): remove and query number of iterations directly from CbcModel
   int64 iterations_;
@@ -153,7 +148,6 @@ class CBCInterface : public MPSolverInterface {
   double best_objective_bound_;
   // Special way to handle the relative MIP gap parameter.
   double relative_mip_gap_;
-  std::string solver_specific_parameters_;
 };
 
 // ----- Solver -----
@@ -164,8 +158,7 @@ CBCInterface::CBCInterface(MPSolver* const solver)
       iterations_(0),
       nodes_(0),
       best_objective_bound_(-std::numeric_limits<double>::infinity()),
-      relative_mip_gap_(MPSolverParameters::kDefaultRelativeMipGap),
-      solver_specific_parameters_("") {
+      relative_mip_gap_(MPSolverParameters::kDefaultRelativeMipGap) {
   osi_.setStrParam(OsiProbName, solver_->name_);
   osi_.setObjSense(1);
 }
@@ -380,10 +373,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // through callCbc.
   model.setAllowableFractionGap(relative_mip_gap_);
   // NOTE: Trailing space is required to avoid buffer overflow in cbc.
-  std::string call_string = " -solve ";
-  call_string = solver_specific_parameters_ + call_string;
-  int return_status = callCbc(call_string, model);
-
+  int return_status = callCbc("-solve ", model);
   const int kBadReturnStatus = 777;
   CHECK_NE(kBadReturnStatus, return_status);  // Should never happen according
                                               // to the CBC source
@@ -531,10 +521,6 @@ void CBCInterface::SetScalingMode(int value) {
 
 void CBCInterface::SetLpAlgorithm(int value) {
   SetUnsupportedIntegerParam(MPSolverParameters::LP_ALGORITHM);
-}
-
-bool CBCInterface::ReadParameterFile(const std::string& filename) {
-  return FileGetContents(filename, &solver_specific_parameters_).ok();
 }
 
 MPSolverInterface* BuildCBCInterface(MPSolver* const solver) {
