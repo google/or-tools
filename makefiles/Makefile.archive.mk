@@ -1,7 +1,7 @@
 
 archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 
-$(INSTALL_DIR)$(ARCHIVE_EXT): $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs cc_archive dotnet_archive java_archive data_archive $(PATCHELF)
+$(INSTALL_DIR)$(ARCHIVE_EXT): $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) create_dirs cc_archive dotnet_archive java_archive data_archive $(PATCHELF)
 ifeq ($(SYSTEM),win)
 	cd temp && ..$Stools$Szip.exe -r ..$S$(INSTALL_DIR).zip $(INSTALL_DIR)
 else
