@@ -23,12 +23,7 @@ matrix:
       dist: trusty
       language: cpp
       compiler: gcc
-      env: BUILDER=make DISTRO=native LANGUAGE=csharp
-    - os: linux
-      dist: trusty
-      language: cpp
-      compiler: gcc
-      env: BUILDER=make DISTRO=native LANGUAGE=fsharp
+      env: BUILDER=make DISTRO=native LANGUAGE=dotnet
 
     - os: osx
       language: cpp
@@ -45,11 +40,7 @@ matrix:
     - os: osx
       language: cpp
       compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=csharp
-    - os: osx
-      language: cpp
-      compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=fsharp
+      env: BUILDER=make DISTRO=native LANGUAGE=dotnet
 # CMake Build Generator
     - os: linux
       dist: trusty

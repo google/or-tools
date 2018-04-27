@@ -49,9 +49,7 @@ if [ "${BUILDER}" == make ]; then
 			if [ "${LANGUAGE}" == python ]; then
 				pyenv global system 3.6;
 				python3.6 -m pip install -q virtualenv wheel six;
-			elif [ "${LANGUAGE}" == csharp ]; then
-				installmono
-			elif [ "${LANGUAGE}" == fsharp ]; then
+			elif [ "${LANGUAGE}" == dotnet ]; then
 				installmono
 				sudo apt-get -yqq install fsharp
 				installdotnetsdk
@@ -72,10 +70,12 @@ if [ "${BUILDER}" == make ]; then
 				python3.6 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == java ]; then
 				brew cask install java;
-			elif [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ]; then
-				brew install mono
+			elif [ "${LANGUAGE}" == dotnet ]; then
+				brew install mono;
+				# Installer changes path but won't be picked up in current terminal session
+				# Need to explicitly add location (see Makefile.fsharp.mk)
 				brew tap caskroom/cask
-				brew cask install dotnet-sdk
+				brew cask install dotnet-sdk;
 			fi
 		else
 			# MacOS Docker Makefile build:
