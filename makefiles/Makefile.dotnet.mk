@@ -145,6 +145,11 @@ $(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs: $(SRC_DIR)/ortools/sat/cp_model.
 $(GEN_DIR)/com/google/ortools/sat/SatParameters.g.cs: $(SRC_DIR)/ortools/sat/sat_parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat --csharp_opt=file_extension=.g.cs $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
 
+$(CLR_KEYFILE):
+ifdef CLR_KEYFILE
+	sn -k $(CLR_KEYFILE)
+endif
+
 # Main DLL
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
 	$(CLR_KEYFILE) \
@@ -235,11 +240,7 @@ pkg_dotnet-upload: nuget_archive
 
 .PHONY: detect_dotnet # Show variables used to build dotnet OR-Tools.
 detect_dotnet:
-ifeq ($(SYSTEM),win)
 	@echo Relevant info for the dotnet build:
-else
-	@echo Relevant info for the dotnet build:
-endif
 	@echo DOTNET_EXECUTABLE = "$(DOTNET_EXECUTABLE)"
 	@echo MONO_EXECUTABLE = "$(MONO_EXECUTABLE)"
 	@echo NUGET_EXECUTABLE = "$(NUGET_EXECUTABLE)"
