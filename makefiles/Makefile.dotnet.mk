@@ -182,19 +182,31 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
 	$(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
 	$(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
-	$(SED) -i -e "s/0.0.0.0/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	$(SED) -i -e "s/<Version>.*<\/Version>/<Version>$(OR_TOOLS_VERSION)<\/Version>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	$(SED) -i -e "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$(OR_TOOLS_VERSION)<\/AssemblyVersion>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	$(SED) -i -e "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$(OR_TOOLS_VERSION)<\/FileVersion>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" restore ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" build -c Debug ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" build -c Release ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+ifeq ($(SYSTEM),win)
+	$(COPY) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sbin$Sx64$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
+else
 	$(COPY) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sbin$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
+endif
 
 .PHONY: fsharp_dotnet # Build F# OR-Tools
 fsharp_dotnet:
-	$(SED) -i -e "s/0.0.0.0/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
+	$(SED) -i -e "s/<Version>.*<\/Version>/<Version>$(OR_TOOLS_VERSION)<\/Version>/" ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
+	$(SED) -i -e "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$(OR_TOOLS_VERSION)<\/AssemblyVersion>/" ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
+	$(SED) -i -e "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$(OR_TOOLS_VERSION)<\/FileVersion>/" ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
 	"$(DOTNET_EXECUTABLE)" restore ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
 	"$(DOTNET_EXECUTABLE)" build -c Debug ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
 	"$(DOTNET_EXECUTABLE)" build -c Release ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
+ifeq ($(SYSTEM),win)
+	$(COPY) ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$Sbin$Sx64$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
+else
 	$(COPY) ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$Sbin$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
+endif
 
 .PHONY: clean_dotnet # Clean files
 clean_dotnet:
