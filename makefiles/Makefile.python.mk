@@ -98,14 +98,23 @@ clean_python:
 	-$(DELREC) $(GEN_DIR)$Sortools$Ssat$S__pycache__
 	-$(DELREC) $(GEN_DIR)$Sortools$Sutil$S__pycache__
 	-$(DELREC) ortools$S__pycache__
+	-$(DEL) ortools$S*.pyc
 	-$(DELREC) ortools$Salgorithms$S__pycache__
+	-$(DEL) ortools$Salgorithms$S*.pyc
 	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
+	-$(DEL) ortools$Sconstraint_solver$S*.pyc
 	-$(DELREC) ortools$Sdata$S__pycache__
+	-$(DEL) ortools$Sdata$S*.pyc
 	-$(DELREC) ortools$Sgraph$S__pycache__
+	-$(DEL) ortools$Sgraph$S*.pyc
 	-$(DELREC) ortools$Slinear_solver$S__pycache__
+	-$(DEL) ortools$Slinear_solver$S*.pyc
 	-$(DELREC) ortools$Ssat$S__pycache__
+	-$(DEL) ortools$Ssat$S*.pyc
 	-$(DELREC) ortools$Ssat$Spython$S__pycache__
+	-$(DEL) ortools$Ssat$Spython$S*.pyc
 	-$(DELREC) ortools$Sutil$S__pycache__
+	-$(DEL) ortools$Sutil$S*.pyc
 	-$(DEL) $(GEN_DIR)$Sortools$Salgorithms$S_pywrap*
 	-$(DEL) $(GEN_DIR)$Sortools$Sconstraint_solver$S_pywrap*
 	-$(DEL) $(GEN_DIR)$Sortools$Sdata$S_pywrap*
