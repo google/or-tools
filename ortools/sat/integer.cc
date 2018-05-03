@@ -966,13 +966,17 @@ IntegerTrail::Dependencies(int trail_index) const {
 void IntegerTrail::AppendLiteralsReason(int trail_index,
                                         std::vector<Literal>* output) const {
   const int reason_index = integer_trail_[trail_index].reason_index;
-  output->insert(
-      output->end(),
-      literals_reason_buffer_.begin() + literals_reason_starts_[reason_index],
-      reason_index + 1 < literals_reason_starts_.size()
-          ? literals_reason_buffer_.begin() +
-                literals_reason_starts_[reason_index + 1]
-          : literals_reason_buffer_.end());
+  const int start = literals_reason_starts_[reason_index];
+  const int end = reason_index + 1 < literals_reason_starts_.size()
+                      ? literals_reason_starts_[reason_index + 1]
+                      : literals_reason_buffer_.size();
+  for (int i = start; i < end; ++i) {
+    const Literal l = literals_reason_buffer_[i];
+    if (!added_variables_[l.Variable()]) {
+      added_variables_.Set(l.Variable());
+      output->push_back(l);
+    }
+  }
 }
 
 std::vector<Literal> IntegerTrail::ReasonFor(IntegerLiteral literal) const {
@@ -1014,6 +1018,11 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
   DCHECK(std::all_of(tmp_var_to_trail_index_in_queue_.begin(),
                      tmp_var_to_trail_index_in_queue_.end(),
                      [](int v) { return v == 0; }));
+
+  added_variables_.ClearAndResize(BooleanVariable(trail_->NumVariables()));
+  for (const Literal l : *output) {
+    added_variables_.Set(l.Variable());
+  }
 
   // During the algorithm execution, all the queue entries that do not match the
   // content of tmp_var_to_trail_index_in_queue_[] will be ignored.
@@ -1109,13 +1118,13 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
   for (const IntegerVariable var : tmp_to_clear_) {
     tmp_var_to_trail_index_in_queue_[var] = 0;
   }
-  gtl::STLSortAndRemoveDuplicates(output);
 }
 
 absl::Span<Literal> IntegerTrail::Reason(const Trail& trail,
                                                int trail_index) const {
   const int index = boolean_trail_index_to_integer_one_[trail_index];
   std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);
+  added_variables_.ClearAndResize(BooleanVariable(trail_->NumVariables()));
   AppendLiteralsReason(index, reason);
   DCHECK(tmp_queue_.empty());
   for (const IntegerLiteral lit : Dependencies(index)) {

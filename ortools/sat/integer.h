@@ -648,7 +648,9 @@ class IntegerTrail : public SatPropagator {
   Dependencies(int trail_index) const;
 
   // Helper function to append the Literal part of the reason for this bound
-  // assignment.
+  // assignment. We use added_variables_ to not add the same literal twice.
+  // Note that looking at literal.Variable() is enough since all the literals
+  // of a reason must be false.
   void AppendLiteralsReason(int trail_index,
                             std::vector<Literal>* output) const;
 
@@ -725,6 +727,7 @@ class IntegerTrail : public SatPropagator {
   mutable std::vector<int> tmp_queue_;
   mutable std::vector<IntegerVariable> tmp_to_clear_;
   mutable ITIVector<IntegerVariable, int> tmp_var_to_trail_index_in_queue_;
+  mutable SparseBitset<BooleanVariable> added_variables_;
 
   // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
   // lazily. This vector indicates the correspondence between a literal that

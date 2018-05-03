@@ -11,32 +11,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/drat.h"
+#include "ortools/sat/drat_proof_handler.h"
 
 #include <algorithm>
-#include <cstdlib>
-#include <memory>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#endif  // !__PORTABLE_PLATFORM__
+#include "ortools/base/memory.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/status.h"
 
 namespace operations_research {
 namespace sat {
 
-DratWriter::~DratWriter() {
-  if (output_ != nullptr) {
-#if !defined(__PORTABLE_PLATFORM__)
-    CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
-    CHECK_OK(output_->Close(file::Defaults()));
-#endif  // !__PORTABLE_PLATFORM__
+DratProofHandler::DratProofHandler()
+    : variable_index_(0), drat_checker_(new DratChecker()) {}
+
+DratProofHandler::DratProofHandler(bool in_binary_format, File* output,
+                                   bool check)
+    : variable_index_(0),
+      drat_writer_(new DratWriter(in_binary_format, output)) {
+  if (check) {
+    drat_checker_ = absl::make_unique<DratChecker>();
   }
 }
 
-void DratWriter::ApplyMapping(
+void DratProofHandler::ApplyMapping(
     const ITIVector<BooleanVariable, BooleanVariable>& mapping) {
   ITIVector<BooleanVariable, BooleanVariable> new_mapping;
   for (BooleanVariable v(0); v < mapping.size(); ++v) {
@@ -53,49 +51,67 @@ void DratWriter::ApplyMapping(
   std::swap(new_mapping, reverse_mapping_);
 }
 
-void DratWriter::SetNumVariables(int num_variables) {
+void DratProofHandler::SetNumVariables(int num_variables) {
   CHECK_GE(num_variables, reverse_mapping_.size());
   while (reverse_mapping_.size() < num_variables) {
     reverse_mapping_.push_back(BooleanVariable(variable_index_++));
   }
 }
 
-void DratWriter::AddOneVariable() {
+void DratProofHandler::AddOneVariable() {
   reverse_mapping_.push_back(BooleanVariable(variable_index_++));
 }
 
-void DratWriter::AddClause(absl::Span<Literal> clause) {
-  WriteClause(clause);
+void DratProofHandler::AddProblemClause(absl::Span<Literal> clause) {
+  if (drat_checker_ != nullptr) {
+    drat_checker_->AddProblemClause(clause);
+  }
 }
 
-void DratWriter::DeleteClause(absl::Span<Literal> clause) {
-  buffer_ += "d ";
-  WriteClause(clause);
+void DratProofHandler::AddClause(absl::Span<Literal> clause) {
+  MapClause(clause);
+  if (drat_checker_ != nullptr) {
+    drat_checker_->AddInferedClause(values_);
+  }
+  if (drat_writer_ != nullptr) {
+    drat_writer_->AddClause(values_);
+  }
 }
 
-void DratWriter::WriteClause(absl::Span<Literal> clause) {
+void DratProofHandler::DeleteClause(absl::Span<Literal> clause) {
+  MapClause(clause);
+  if (drat_checker_ != nullptr) {
+    drat_checker_->DeleteClause(values_);
+  }
+  if (drat_writer_ != nullptr) {
+    drat_writer_->DeleteClause(values_);
+  }
+}
+
+DratChecker::Status DratProofHandler::Check(double max_time_in_seconds) {
+  if (drat_checker_ != nullptr) {
+    // The empty clause is not explicitly added by the solver.
+    drat_checker_->AddInferedClause({});
+    return drat_checker_->Check(max_time_in_seconds);
+  }
+  return DratChecker::Status::UNKNOWN;
+}
+
+void DratProofHandler::MapClause(absl::Span<Literal> clause) {
   values_.clear();
   for (const Literal l : clause) {
     CHECK_LT(l.Variable(), reverse_mapping_.size());
     const Literal original_literal =
         Literal(reverse_mapping_[l.Variable()], l.IsPositive());
-    values_.push_back(original_literal.SignedValue());
+    values_.push_back(original_literal);
   }
 
   // The sorting is such that new variables appear first. This is important for
   // BVA since DRAT-trim only check the RAT property with respect to the first
   // variable of the clause.
-  std::sort(values_.begin(), values_.end(),
-            [](int a, int b) { return std::abs(a) > std::abs(b); });
-
-  for (const int v : values_) StringAppendF(&buffer_, "%d ", v);
-  buffer_ += "0\n";
-  if (buffer_.size() > 10000) {
-#if !defined(__PORTABLE_PLATFORM__)
-    CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
-#endif  // !__PORTABLE_PLATFORM__
-    buffer_.clear();
-  }
+  std::sort(values_.begin(), values_.end(), [](Literal a, Literal b) {
+    return std::abs(a.SignedValue()) > std::abs(b.SignedValue());
+  });
 }
 
 }  // namespace sat

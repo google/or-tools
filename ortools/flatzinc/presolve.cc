@@ -146,6 +146,16 @@ bool OverlapsAt(const Argument& array, int pos, const Argument& other) {
     return false;
   }
 }
+
+template <class T>
+void AppendIfNotInSet(T* value, std::unordered_set<T*>* s,
+                      std::vector<T*>* vec) {
+  if (s->insert(value).second) {
+    vec->push_back(value);
+  }
+  DCHECK_EQ(s->size(), vec->size());
+}
+
 }  // namespace
 
 // For the author's reference, here is an indicative list of presolve rules
@@ -187,7 +197,7 @@ void Presolver::ApplyRule(
     }
     case CONSTRAINT_REWRITTEN: {
       AddConstraintToMapping(ct);
-      changed_constraints_.insert(ct);
+      AppendIfNotInSet(ct, &changed_constraints_, &changed_constraints_vector_);
       if (HASVLOG) {
         const std::string after = ct->DebugString();
         if (after != before) {
@@ -212,7 +222,7 @@ void Presolver::ApplyRule(
 }
 
 void Presolver::MarkChangedVariable(IntegerVariable* var) {
-  changed_variables_.insert(var);
+  AppendIfNotInSet(var, &changed_variables_, &changed_variables_vector_);
 }
 
 void Presolver::AddConstraintToMapping(Constraint* ct) {
@@ -1540,7 +1550,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
         IntegerVariable* const var = ct->arguments[1].variables[i];
         const int64 bound = rhs / coef;
         if (bound < var->domain.Max()) {
-          StringAppendF(log,
+          absl::StrAppendFormat(log,
                                 ", intersect %s with [0..%" GG_LL_FORMAT "d]",
                         var->DebugString().c_str(), bound);
           IntersectVarWithInterval(var, 0, bound);
@@ -1554,7 +1564,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
     IntegerVariable* const var = ct->arguments[1].variables[0];
     const int64 bound = (rhs + coef - 1) / coef;
     if (bound > var->domain.Min()) {
-      StringAppendF(
+      absl::StrAppendFormat(
           log, ", intersect %s with [%" GG_LL_FORMAT "d .. INT_MAX]",
           var->DebugString().c_str(), bound);
       IntersectVarWithInterval(var, bound, kint64max);
@@ -3362,7 +3372,7 @@ bool Presolver::Run(Model* model) {
            << model->constraints().size() << " constraints." << FZENDL;
     for (Constraint* const ct : model->constraints()) {
       if (ct->active) {
-        changed_constraints_.erase(ct);  // Optim: remove from postponed queue.
+        // TODO(user):  Optim: remove from postponed queue.
         PresolveOneConstraint(ct);
         if (!ct->active || ct->type == "false_constraint") {
           changed_since_start = true;
@@ -3383,27 +3393,32 @@ bool Presolver::Run(Model* model) {
     FZVLOG << "--- loop " << loops << FZENDL;
     changed_since_start = true;
     std::unordered_set<Constraint*> to_scan;
+    std::vector<Constraint*> to_scan_vector;
 
-    for (IntegerVariable* var : changed_variables_) {
+    for (IntegerVariable* var : changed_variables_vector_) {
       for (Constraint* ct : var_to_constraints_[var]) {
         if (ct->active) {
-          to_scan.insert(ct);
+          AppendIfNotInSet(ct, &to_scan, &to_scan_vector);
         }
       }
     }
-    for (Constraint* ct : changed_constraints_) {
+    for (Constraint* ct : changed_constraints_vector_) {
       if (ct->active) {
-        to_scan.insert(ct);
+        AppendIfNotInSet(ct, &to_scan, &to_scan_vector);
       }
     }
 
     changed_variables_.clear();
     changed_constraints_.clear();
+    changed_variables_vector_.clear();
+    changed_constraints_vector_.clear();
+
     var_representative_map_.clear();
     FZVLOG << "  - processing " << to_scan.size() << " constraints" << FZENDL;
-    for (Constraint* const ct : to_scan) {
+    for (Constraint* const ct : to_scan_vector) {
       if (!var_representative_map_.empty()) {
-        changed_constraints_.insert(ct);  // Carry over to next round.
+        AppendIfNotInSet(ct, &changed_constraints_,
+                         &changed_constraints_vector_);
       } else if (ct->active) {
         PresolveOneConstraint(ct);
       }

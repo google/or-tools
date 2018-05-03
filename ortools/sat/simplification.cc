@@ -186,9 +186,9 @@ void SatPresolver::AddClause(absl::Span<Literal> clause) {
     }
   }
 
-  if (drat_writer_ != nullptr && changed) {
-    drat_writer_->AddClause(clause_ref);
-    drat_writer_->DeleteClause(clause);
+  if (drat_proof_handler_ != nullptr && changed) {
+    drat_proof_handler_->AddClause(clause_ref);
+    drat_proof_handler_->DeleteClause(clause);
   }
 
   const Literal max_literal = clause_ref.back();
@@ -214,7 +214,7 @@ void SatPresolver::SetNumVariables(int num_variables) {
 }
 
 void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
-  if (drat_writer_ != nullptr) drat_writer_->AddClause(*clause);
+  if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddClause(*clause);
 
   DCHECK(std::is_sorted(clause->begin(), clause->end()));
   CHECK_GT(clause->size(), 0) << "TODO(fdid): Unsat during presolve?";
@@ -431,7 +431,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   bva_pq_elements_[x_false.value()].literal = x_false;
 
   // Add the new clauses.
-  if (drat_writer_ != nullptr) drat_writer_->AddOneVariable();
+  if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddOneVariable();
   for (const LiteralIndex lit : m_lit_) {
     tmp_new_clause_ = {Literal(lit), Literal(x_true)};
     AddClauseInternal(&tmp_new_clause_);
@@ -519,9 +519,9 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
         } else {
           CHECK_NE(opposite_literal, lit.Index());
           if (clauses_[ci].empty()) return false;  // UNSAT.
-          if (drat_writer_ != nullptr) {
+          if (drat_proof_handler_ != nullptr) {
             // TODO(user): remove the old clauses_[ci] afterwards.
-            drat_writer_->AddClause(clauses_[ci]);
+            drat_proof_handler_->AddClause(clauses_[ci]);
           }
 
           // Remove ci from the occurrence list. Note that the occurrence list
@@ -564,9 +564,9 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
       if (SimplifyClause(clause, &clauses_[ci], &opposite_literal)) {
         CHECK_EQ(opposite_literal, lit.NegatedIndex());
         if (clauses_[ci].empty()) return false;  // UNSAT.
-        if (drat_writer_ != nullptr) {
+        if (drat_proof_handler_ != nullptr) {
           // TODO(user): remove the old clauses_[ci] afterwards.
-          drat_writer_->AddClause(clauses_[ci]);
+          drat_proof_handler_->AddClause(clauses_[ci]);
         }
         if (!in_clause_to_process_[ci]) {
           in_clause_to_process_[ci] = true;
@@ -692,8 +692,8 @@ void SatPresolver::Remove(ClauseIndex ci) {
     UpdateBvaPriorityQueue(Literal(e.Variable(), true).Index());
     UpdateBvaPriorityQueue(Literal(e.Variable(), false).Index());
   }
-  if (drat_writer_ != nullptr) {
-    drat_writer_->DeleteClause(clauses_[ci]);
+  if (drat_proof_handler_ != nullptr) {
+    drat_proof_handler_->DeleteClause(clauses_[ci]);
   }
   gtl::STLClearObject(&clauses_[ci]);
 }
@@ -1016,7 +1016,8 @@ class PropagationGraph {
 };
 
 void ProbeAndFindEquivalentLiteral(
-    SatSolver* solver, SatPostsolver* postsolver, DratWriter* drat_writer,
+    SatSolver* solver, SatPostsolver* postsolver,
+    DratProofHandler* drat_proof_handler,
     ITIVector<LiteralIndex, LiteralIndex>* mapping) {
   solver->Backtrack(0);
   mapping->clear();
@@ -1081,7 +1082,9 @@ void ProbeAndFindEquivalentLiteral(
                                      ? Literal(rep)
                                      : Literal(rep).Negated();
         solver->AddUnitClause(true_lit);
-        if (drat_writer != nullptr) drat_writer->AddClause({true_lit});
+        if (drat_proof_handler != nullptr) {
+          drat_proof_handler->AddClause({true_lit});
+        }
       }
     }
     for (LiteralIndex i(0); i < size; ++i) {
@@ -1093,7 +1096,9 @@ void ProbeAndFindEquivalentLiteral(
                                        ? Literal(i)
                                        : Literal(i).Negated();
           solver->AddUnitClause(true_lit);
-          if (drat_writer != nullptr) drat_writer->AddClause({true_lit});
+          if (drat_proof_handler != nullptr) {
+            drat_proof_handler->AddClause({true_lit});
+          }
         }
       } else if (assignment.LiteralIsAssigned(Literal(i))) {
         if (!assignment.LiteralIsAssigned(Literal(rep))) {
@@ -1101,15 +1106,15 @@ void ProbeAndFindEquivalentLiteral(
                                        ? Literal(rep)
                                        : Literal(rep).Negated();
           solver->AddUnitClause(true_lit);
-          if (drat_writer != nullptr) {
-            drat_writer->AddClause({true_lit});
+          if (drat_proof_handler != nullptr) {
+            drat_proof_handler->AddClause({true_lit});
           }
         }
       } else if (rep != i) {
         ++num_equiv;
         postsolver->Add(Literal(i), {Literal(i), Literal(rep).Negated()});
-        if (drat_writer != nullptr) {
-          drat_writer->AddClause({Literal(i), Literal(rep).Negated()});
+        if (drat_proof_handler != nullptr) {
+          drat_proof_handler->AddClause({Literal(i), Literal(rep).Negated()});
         }
       }
     }
@@ -1123,7 +1128,7 @@ void ProbeAndFindEquivalentLiteral(
 SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
                                     TimeLimit* time_limit,
                                     std::vector<bool>* solution,
-                                    DratWriter* drat_writer) {
+                                    DratProofHandler* drat_proof_handler) {
   // We save the initial parameters.
   const SatParameters parameters = (*solver)->parameters();
   SatPostsolver postsolver((*solver)->NumVariables());
@@ -1182,8 +1187,8 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     // Probe + find equivalent literals.
     // TODO(user): Use a derived time limit in the probing phase.
     ITIVector<LiteralIndex, LiteralIndex> equiv_map;
-    ProbeAndFindEquivalentLiteral((*solver).get(), &postsolver, drat_writer,
-                                  &equiv_map);
+    ProbeAndFindEquivalentLiteral((*solver).get(), &postsolver,
+                                  drat_proof_handler, &equiv_map);
     if ((*solver)->IsModelUnsat()) {
       VLOG(1) << "UNSAT during probing.";
       return SatSolver::MODEL_UNSAT;
@@ -1206,7 +1211,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     // TODO(user): Pass the time_limit to the presolver.
     SatPresolver presolver(&postsolver);
     presolver.SetParameters(parameters);
-    presolver.SetDratWriter(drat_writer);
+    presolver.SetDratProofHandler(drat_proof_handler);
     presolver.SetEquivalentLiteralMapping(equiv_map);
     (*solver)->ExtractClauses(&presolver);
     (*solver)->AdvanceDeterministicTime(time_limit);
@@ -1220,13 +1225,13 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     }
 
     postsolver.ApplyMapping(presolver.VariableMapping());
-    if (drat_writer != nullptr) {
-      drat_writer->ApplyMapping(presolver.VariableMapping());
+    if (drat_proof_handler != nullptr) {
+      drat_proof_handler->ApplyMapping(presolver.VariableMapping());
     }
 
     // Load the presolved problem in a new solver.
     (*solver).reset(new SatSolver());
-    (*solver)->SetDratWriter(drat_writer);
+    (*solver)->SetDratProofHandler(drat_proof_handler);
     (*solver)->SetParameters(parameters);
     presolver.LoadProblemIntoSatSolver((*solver).get());
 

@@ -485,20 +485,6 @@ VariableStatus RevisedSimplex::ComputeDefaultVariableStatus(
     return VariableStatus::FREE;
   }
 
-  // Special case for singleton column so UseSingletonColumnInInitialBasis()
-  // works better. We set the initial value of a boxed variable to its bound
-  // that minimizes the cost.
-  if (parameters_.exploit_singleton_column_in_initial_basis() &&
-      matrix_with_slack_.column(col).num_entries() == 1) {
-    const Fractional objective = objective_[col];
-    if (objective > 0 && IsFinite(lower_bound_[col])) {
-      return VariableStatus::AT_LOWER_BOUND;
-    }
-    if (objective < 0 && IsFinite(upper_bound_[col])) {
-      return VariableStatus::AT_UPPER_BOUND;
-    }
-  }
-
   // Returns the bound with the lowest magnitude. Note that it must be finite
   // because the VariableStatus::FREE case was tested earlier.
   DCHECK(IsFinite(lower_bound_[col]) || IsFinite(upper_bound_[col]));
@@ -954,7 +940,26 @@ Status RevisedSimplex::CreateInitialBasis() {
 
   // If possible, for the primal simplex we replace some slack variables with
   // some singleton columns present in the problem.
-  if (!parameters_.use_dual_simplex()) {
+  if (!parameters_.use_dual_simplex() &&
+      parameters_.exploit_singleton_column_in_initial_basis()) {
+    // For UseSingletonColumnInInitialBasis() to work better, we change
+    // the value of the boxed singleton column with a non-zero cost to the best
+    // of their two bounds.
+    for (ColIndex col(0); col < num_cols_; ++col) {
+      if (matrix_with_slack_.column(col).num_entries() != 1) continue;
+      const VariableStatus status = variables_info_.GetStatusRow()[col];
+      const Fractional objective = objective_[col];
+      if (objective > 0 && IsFinite(lower_bound_[col]) &&
+          status == VariableStatus::AT_UPPER_BOUND) {
+        SetNonBasicVariableStatusAndDeriveValue(col,
+                                                VariableStatus::AT_LOWER_BOUND);
+      } else if (objective < 0 && IsFinite(upper_bound_[col]) &&
+                 status == VariableStatus::AT_LOWER_BOUND) {
+        SetNonBasicVariableStatusAndDeriveValue(col,
+                                                VariableStatus::AT_UPPER_BOUND);
+      }
+    }
+
     // Compute the primal infeasibility of the initial variable values in
     // error_.
     ComputeVariableValuesError();
@@ -965,15 +970,13 @@ Status RevisedSimplex::CreateInitialBasis() {
     // - At the end of phase I, restore the slack variable bounds and perform
     //   the same algorithm to start with feasible and "optimal" values of the
     //   singleton columns.
-    if (parameters_.exploit_singleton_column_in_initial_basis()) {
-      basis.assign(num_rows_, kInvalidCol);
-      UseSingletonColumnInInitialBasis(&basis);
+    basis.assign(num_rows_, kInvalidCol);
+    UseSingletonColumnInInitialBasis(&basis);
 
-      // Eventually complete the basis with fixed slack columns.
-      for (RowIndex row(0); row < num_rows_; ++row) {
-        if (basis[row] == kInvalidCol) {
-          basis[row] = SlackColIndex(row);
-        }
+    // Eventually complete the basis with fixed slack columns.
+    for (RowIndex row(0); row < num_rows_; ++row) {
+      if (basis[row] == kInvalidCol) {
+        basis[row] = SlackColIndex(row);
       }
     }
   }

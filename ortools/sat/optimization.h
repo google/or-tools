@@ -145,6 +145,14 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
 
+// Use a low conflict limit and performs a binary search to try to restrict the
+// domain of objective_var.
+void RestrictObjectiveDomainWithBinarySearch(
+    IntegerVariable objective_var,
+    const std::function<LiteralIndex()>& next_decision,
+    const std::function<void(const Model&)>& feasible_solution_observer,
+    Model* model);
+
 // Same as MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
 // a core-based approach instead. Note that the given objective_var is just used
 // for reporting the lower-bound and do not need to be linked with its linear

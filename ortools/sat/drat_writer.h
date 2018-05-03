@@ -11,11 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_DRAT_H_
-#define OR_TOOLS_SAT_DRAT_H_
+#ifndef OR_TOOLS_SAT_DRAT_WRITER_H_
+#define OR_TOOLS_SAT_DRAT_WRITER_H_
 
 #include <string>
-#include <vector>
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
@@ -23,7 +22,6 @@
 class File {};
 #endif  // !__PORTABLE_PLATFORM__
 #include "ortools/base/span.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
@@ -38,59 +36,29 @@ namespace sat {
 class DratWriter {
  public:
   DratWriter(bool in_binary_format, File* output)
-      : variable_index_(0),
-        in_binary_format_(in_binary_format),
-        output_(output) {}
+      : in_binary_format_(in_binary_format), output_(output) {}
   ~DratWriter();
 
-  // During the presolve step, variable get deleted and the set of non-deleted
-  // variable is remaped in a dense set. This allows to keep track of that and
-  // always output the DRAT clauses in term of the original variables.
-  //
-  // TODO(user): This is exactly the same mecanism as in the SatPostsolver
-  // class. Factor out the code.
-  void ApplyMapping(const ITIVector<BooleanVariable, BooleanVariable>& mapping);
-
-  // This need to be called when new variables are created.
-  void SetNumVariables(int num_variables);
-  void AddOneVariable();
-
-  // Writes a new clause to the DRAT output. The output clause is sorted so that
-  // newer variables always comes first. This is needed because in the DRAT
-  // format, the clause is checked for the RAT property with only its first
-  // literal.
+  // Writes a new clause to the DRAT output. Note that the RAT property is only
+  // checked on the first literal.
   void AddClause(absl::Span<Literal> clause);
 
   // Writes a "deletion" information about a clause that has been added before
   // to the DRAT output. Note that it is also possible to delete a clause from
   // the problem.
-  //
-  // Because of a limitation a the DRAT-trim tool, it seems the order of the
-  // literals during addition and deletion should be EXACTLY the same. Because
-  // of this we get warnings for problem clauses.
   void DeleteClause(absl::Span<Literal> clause);
 
  private:
   void WriteClause(absl::Span<Literal> clause);
-
-  // We need to keep track of the variable newly created.
-  int variable_index_;
 
   // TODO(user): Support binary format as proof in text format can be large.
   bool in_binary_format_;
   File* output_;
 
   std::string buffer_;
-
-  // Temporary vector used for sorting the outputed clauses.
-  std::vector<int> values_;
-
-  // This mapping will be applied to all clause passed to AddClause() or
-  // DeleteClause() so that they are in term of the original problem.
-  ITIVector<BooleanVariable, BooleanVariable> reverse_mapping_;
 };
 
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_DRAT_H_
+#endif  // OR_TOOLS_SAT_DRAT_WRITER_H_

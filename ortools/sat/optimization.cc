@@ -1132,6 +1132,8 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     LOG(INFO) << "#Boolean_variables:" << sat_solver->NumVariables();
   }
 
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
+
   // Simple linear scan algorithm to find the optimal.
   SatSolver::Status result;
   bool model_is_feasible = false;
@@ -1148,6 +1150,9 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     model_is_feasible = true;
     if (feasible_solution_observer != nullptr) {
       feasible_solution_observer(*model);
+    }
+    if (parameters.stop_after_first_solution()) {
+      return SatSolver::LIMIT_REACHED;
     }
 
     // Restrict the objective.
@@ -1176,6 +1181,103 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
                  best_bound.value());
   }
   return result;
+}
+
+void RestrictObjectiveDomainWithBinarySearch(
+    IntegerVariable objective_var,
+    const std::function<LiteralIndex()>& next_decision,
+    const std::function<void(const Model&)>& feasible_solution_observer,
+    Model* model) {
+  const SatParameters old_params = *model->GetOrCreate<SatParameters>();
+  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+
+  // Set the requested conflict limit.
+  {
+    SatParameters new_params = old_params;
+    new_params.set_max_number_of_conflicts(
+        old_params.binary_search_num_conflicts());
+    *model->GetOrCreate<SatParameters>() = new_params;
+  }
+
+  // The assumption (objective <= value) for values in
+  // [unknown_min, unknown_max] reached the conflict limit.
+  bool loop = true;
+  IntegerValue unknown_min = integer_trail->UpperBound(objective_var);
+  IntegerValue unknown_max = integer_trail->LowerBound(objective_var);
+  while (loop) {
+    sat_solver->Backtrack(0);
+    const IntegerValue lb = integer_trail->LowerBound(objective_var);
+    const IntegerValue ub = integer_trail->UpperBound(objective_var);
+    unknown_min = std::min(unknown_min, ub);
+    unknown_max = std::max(unknown_max, lb);
+
+    // We first refine the lower bound and then the upper bound.
+    IntegerValue target;
+    if (lb < unknown_min) {
+      target = lb + (unknown_min - lb) / 2;
+    } else if (unknown_max < ub) {
+      target = ub - (ub - unknown_max) / 2;
+    } else {
+      VLOG(1) << "Binary-search, done.";
+      break;
+    }
+    VLOG(1) << "Binary-search, objective: [" << lb << "," << ub << "]"
+            << " tried: [" << unknown_min << "," << unknown_max << "]"
+            << " target: obj<=" << target;
+    SatSolver::Status result;
+    if (target < ub) {
+      const Literal assumption = integer_encoder->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::LowerOrEqual(objective_var, target));
+      result = SolveIntegerProblemWithLazyEncoding({assumption}, next_decision,
+                                                   model);
+    } else {
+      result = SolveIntegerProblemWithLazyEncoding({}, next_decision, model);
+    }
+
+    switch (result) {
+      case SatSolver::MODEL_UNSAT: {
+        loop = false;
+        break;
+      }
+      case SatSolver::ASSUMPTIONS_UNSAT: {
+        // Update the objective lower bound.
+        sat_solver->Backtrack(0);
+        if (!integer_trail->Enqueue(
+                IntegerLiteral::GreaterOrEqual(objective_var, target + 1), {},
+                {})) {
+          loop = false;
+        }
+        break;
+      }
+      case SatSolver::MODEL_SAT: {
+        // The objective is the current lower bound of the objective_var.
+        const IntegerValue objective = integer_trail->LowerBound(objective_var);
+        if (feasible_solution_observer != nullptr) {
+          feasible_solution_observer(*model);
+        }
+
+        // We have a solution, restrict the objective upper bound to only look
+        // for better ones now.
+        sat_solver->Backtrack(0);
+        if (!integer_trail->Enqueue(
+                IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {},
+                {})) {
+          loop = false;
+        }
+        break;
+      }
+      case SatSolver::LIMIT_REACHED: {
+        unknown_min = std::min(target, unknown_min);
+        unknown_max = std::max(target, unknown_max);
+        break;
+      }
+    }
+  }
+
+  sat_solver->Backtrack(0);
+  *model->GetOrCreate<SatParameters>() = old_params;
 }
 
 namespace {

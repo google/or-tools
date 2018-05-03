@@ -233,7 +233,9 @@ class Presolver {
 
   // Store changed objects.
   std::unordered_set<IntegerVariable*> changed_variables_;
+  std::vector<IntegerVariable*> changed_variables_vector_;
   std::unordered_set<Constraint*> changed_constraints_;
+  std::vector<Constraint*> changed_constraints_vector_;
 };
 }  // namespace fz
 }  // namespace operations_research

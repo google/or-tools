@@ -31,7 +31,7 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/hash.h"
-#include "ortools/sat/drat.h"
+#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
@@ -218,7 +218,9 @@ class LiteralWatchers : public SatPropagator {
   // Number of clauses currently watched.
   int64 num_watched_clauses() const { return num_watched_clauses_; }
 
-  void SetDratWriter(DratWriter* drat_writer) { drat_writer_ = drat_writer; }
+  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
+    drat_proof_handler_ = drat_proof_handler;
+  }
 
   // Really basic algorithm to return a clause to try to minimize. We simply
   // loop over the clause that we keep forever, in creation order. This starts
@@ -291,7 +293,7 @@ class LiteralWatchers : public SatPropagator {
   // Only contains removable clause.
   std::unordered_map<SatClause*, ClauseInfo> clauses_info_;
 
-  DratWriter* drat_writer_ = nullptr;
+  DratProofHandler* drat_proof_handler_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(LiteralWatchers);
 };

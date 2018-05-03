@@ -257,6 +257,9 @@ std::function<bool()> SatSolverRestartPolicy(Model* model) {
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     const std::vector<Literal>& assumptions,
     const std::function<LiteralIndex()>& next_decision, Model* model) {
+  if (model->GetOrCreate<TimeLimit>()->LimitReached()) {
+    return SatSolver::LIMIT_REACHED;
+  }
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
   if (!solver->ResetWithGivenAssumptions(assumptions)) {
     return solver->UnsatStatus();

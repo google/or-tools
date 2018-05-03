@@ -36,7 +36,7 @@
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/hash.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/drat.h"
+#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
@@ -372,9 +372,9 @@ class SatSolver {
   // Returns true iff the loaded problem only contains clauses.
   bool ProblemIsPureSat() const { return problem_is_pure_sat_; }
 
-  void SetDratWriter(DratWriter* drat_writer) {
-    drat_writer_ = drat_writer;
-    clauses_propagator_.SetDratWriter(drat_writer);
+  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
+    drat_proof_handler_ = drat_proof_handler;
+    clauses_propagator_.SetDratProofHandler(drat_proof_handler_);
   }
 
   // This function is here to deal with the case where a SAT/CP model is found
@@ -547,6 +547,9 @@ class SatSolver {
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
 
+  // Output to the DRAT proof handler any newly fixed variables.
+  void ProcessNewlyFixedVariablesForDratProof();
+
   // Returns the maximum trail_index of the literals in the given clause.
   // All the literals must be assigned. Returns -1 if the clause is empty.
   int ComputeMaxTrailIndex(absl::Span<Literal> clause) const;
@@ -716,6 +719,9 @@ class SatSolver {
   int num_processed_fixed_variables_;
   double deterministic_time_of_last_fixed_variables_cleanup_;
 
+  // Used in ProcessNewlyFixedVariablesForDratProof().
+  int drat_num_processed_fixed_variables_ = 0;
+
   // Tracks various information about the solver progress.
   struct Counters {
     int64 num_branches = 0;
@@ -810,7 +816,7 @@ class SatSolver {
   // This is true iff the loaded problem only contains clauses.
   bool problem_is_pure_sat_;
 
-  DratWriter* drat_writer_;
+  DratProofHandler* drat_proof_handler_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);

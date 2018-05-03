@@ -68,7 +68,6 @@ DEFINE_bool(mpsolver_bypass_model_validation, false,
 // operations_research namespace in open_source/base).
 namespace operations_research {
 
-
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (var == nullptr) return 0.0;

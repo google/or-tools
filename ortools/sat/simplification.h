@@ -29,7 +29,7 @@
 #include "ortools/base/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/sat/drat.h"
+#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -140,7 +140,7 @@ class SatPresolver {
   explicit SatPresolver(SatPostsolver* postsolver)
       : postsolver_(postsolver),
         num_trivial_clauses_(0),
-        drat_writer_(nullptr) {}
+        drat_proof_handler_(nullptr) {}
   void SetParameters(const SatParameters& params) { parameters_ = params; }
 
   // Registers a mapping to encode equivalent literals.
@@ -208,7 +208,9 @@ class SatPresolver {
   // Visible for testing. Just applies the BVA step of the presolve.
   void PresolveWithBva();
 
-  void SetDratWriter(DratWriter* drat_writer) { drat_writer_ = drat_writer; }
+  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
+    drat_proof_handler_ = drat_proof_handler;
+  }
 
  private:
   // Internal function to add clauses generated during the presolve. The clause
@@ -331,7 +333,7 @@ class SatPresolver {
 
   int num_trivial_clauses_;
   SatParameters parameters_;
-  DratWriter* drat_writer_;
+  DratProofHandler* drat_proof_handler_;
 
   DISALLOW_COPY_AND_ASSIGN(SatPresolver);
 };
@@ -384,7 +386,8 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 // only pure SAT problem, but the returned mapping do need to be applied to all
 // constraints.
 void ProbeAndFindEquivalentLiteral(
-    SatSolver* solver, SatPostsolver* postsolver, DratWriter* drat_writer,
+    SatSolver* solver, SatPostsolver* postsolver,
+    DratProofHandler* drat_proof_handler,
     ITIVector<LiteralIndex, LiteralIndex>* mapping);
 
 // Given a 'solver' with a problem already loaded, this will try to simplify the
@@ -400,7 +403,7 @@ void ProbeAndFindEquivalentLiteral(
 SatSolver::Status SolveWithPresolve(
     std::unique_ptr<SatSolver>* solver, TimeLimit* time_limit,
     std::vector<bool>* solution /* only filled if SAT */,
-    DratWriter* drat_writer /* can be nullptr */);
+    DratProofHandler* drat_proof_handler /* can be nullptr */);
 
 }  // namespace sat
 }  // namespace operations_research

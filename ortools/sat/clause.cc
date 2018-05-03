@@ -258,8 +258,8 @@ void LiteralWatchers::Attach(SatClause* clause, Trail* trail) {
 void LiteralWatchers::InternalDetach(SatClause* clause) {
   --num_watched_clauses_;
   const size_t size = clause->Size();
-  if (drat_writer_ != nullptr && size > 2) {
-    drat_writer_->DeleteClause({clause->begin(), size});
+  if (drat_proof_handler_ != nullptr && size > 2) {
+    drat_proof_handler_->DeleteClause({clause->begin(), size});
   }
   clauses_info_.erase(clause);
   clause->LazyDetach();

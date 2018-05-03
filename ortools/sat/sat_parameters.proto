@@ -18,7 +18,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 98
+// NEXT TAG: 100
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -168,6 +168,22 @@ message SatParameters {
   // Same as for the clauses, but for the learned pseudo-Boolean constraints.
   optional int32 pb_cleanup_increment = 46 [default = 200];
   optional double pb_cleanup_ratio = 47 [default = 0.5];
+
+  // Parameters for an heuristic similar to the one descibed in "An effective
+  // learnt clause minimization approach for CDCL Sat Solvers",
+  // https://www.ijcai.org/proceedings/2017/0098.pdf
+  //
+  // For now, we have a somewhat simpler implementation where every x restart we
+  // spend y decisions on clause minimization. The minimization technique is the
+  // same as the one used to minimize core in max-sat. We also minimize problem
+  // clauses and not just the learned clause that we keep forever like in the
+  // paper.
+  //
+  // Changing these parameters or the kind of clause we minimize seems to have
+  // a big impact on the overall perf on our benchmarks. So this technique seems
+  // definitely useful, but it is hard to tune properly.
+  optional int32 minimize_with_propagation_restart_period = 96 [default = 10];
+  optional int32 minimize_with_propagation_num_decisions = 97 [default = 1000];
 
   // ==========================================================================
   // Variable and clause activities
@@ -507,6 +523,12 @@ message SatParameters {
   // lower bound instead.
   optional bool optimize_with_core = 83 [default = false];
 
+  // If non-negative, perform a binary search on the objective variable in order
+  // to find an [min, max] interval outside of which the solver proved unsat/sat
+  // under this amount of conflict. This can quickly reduce the objective domain
+  // on some problems.
+  optional int32 binary_search_num_conflicts = 99 [default = -1];
+
   // This has no effect if optimize_with_core is false. If true, use a different
   // core-based algorithm similar to the max-HS algo for max-SAT. This is a
   // hybrid MIP/CP approach and it uses a MIP solver in addition to the CP/SAT
@@ -535,19 +557,6 @@ message SatParameters {
   // of precedence.
   optional bool auto_detect_greater_than_at_least_one_of = 95 [default = true];
 
-  // Parameters for an heuristic similar to the one descibed in "An effective
-  // learnt clause minimization approach for CDCL Sat Solvers",
-  // https://www.ijcai.org/proceedings/2017/0098.pdf
-  //
-  // For now, we have a somewhat simpler implementation where every x restart we
-  // spend y decisions on clause minimization. The minimization technique is the
-  // same as the one used to minimize core in max-sat. We also minimize problem
-  // clauses and not just the learned clause that we keep forever like in the
-  // paper.
-  //
-  // Changing these parameters or the kind of clause we minimize seems to have
-  // a big impact on the overall perf on our benchmarks. So this technique seems
-  // definitely useful, but it is hard to tune properly.
-  optional int32 minimize_with_propagation_restart_period = 96 [default = 10];
-  optional int32 minimize_with_propagation_num_decisions = 97 [default = 1000];
+  // For an optimization problem, stop the solver as soon as we have a solution.
+  optional bool stop_after_first_solution = 98 [default = false];
 }

@@ -59,7 +59,7 @@ SatSolver::SatSolver(Model* model)
       same_reason_identifier_(*trail_),
       is_relevant_for_core_computation_(true),
       problem_is_pure_sat_(true),
-      drat_writer_(nullptr),
+      drat_proof_handler_(nullptr),
       stats_("SatSolver") {
   // TODO(user): move these 3 classes in the Model so that everyone can access
   // them if needed and we don't have the wiring here.
@@ -724,8 +724,8 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // database. This is because we already backtracked and some of the clauses
   // that where needed to infer the conflict may not be "reasons" anymore and
   // may be deleted.
-  if (drat_writer_ != nullptr) {
-    drat_writer_->AddClause(learned_conflict_);
+  if (drat_proof_handler_ != nullptr) {
+    drat_proof_handler_->AddClause(learned_conflict_);
   }
 
   // Detach any subsumed clause. They will actually be deleted on the next
@@ -958,6 +958,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
         const int variable_level =
             LiteralTrail().Info(literal.Variable()).level;
         if (variable_level == 0) {
+          ProcessNewlyFixedVariablesForDratProof();
           counters_.minimization_num_true++;
           counters_.minimization_num_removed_literals += clause->Size();
           Backtrack(0);
@@ -1011,7 +1012,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
 
   // Write the new clause to the proof before the deletion of the old one
   // happens (when we will detach it).
-  if (drat_writer_ != nullptr) drat_writer_->AddClause(candidate);
+  if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddClause(candidate);
 
   if (candidate.size() == 1) {
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
@@ -1460,12 +1461,34 @@ std::string SatSolver::RunningStatisticsString() const {
       "%6.2fs, mem:%s, fails:%" GG_LL_FORMAT
       "d, "
       "depth:%d, clauses:%lld, tmp:%lld, bin:%llu, restarts:%d, vars:%d",
-      time_in_s, MemoryUsage().c_str(), counters_.num_failures, CurrentDecisionLevel(),
+      time_in_s, MemoryUsage(), counters_.num_failures, CurrentDecisionLevel(),
       clauses_propagator_.num_clauses() -
           clauses_propagator_.num_removable_clauses(),
       clauses_propagator_.num_removable_clauses(),
       binary_implication_graph_.NumberOfImplications(), restart_->NumRestarts(),
       num_variables_.value() - num_processed_fixed_variables_);
+}
+
+void SatSolver::ProcessNewlyFixedVariablesForDratProof() {
+  if (drat_proof_handler_ == nullptr) return;
+  if (CurrentDecisionLevel() != 0) return;
+
+  // We need to output the literals that are fixed so we can remove all
+  // clauses that contains them. Note that this doesn't seems to be needed
+  // for drat-trim.
+  //
+  // TODO(user): Ideally we could output such literal as soon as they are fixed,
+  // but this is not that easy to do. Spend some time to find a cleaner
+  // alternative? Currently this works, but:
+  // - We will output some fixed literals twice since we already output learnt
+  //   clauses of size one.
+  // - We need to call this function when needed.
+  Literal temp;
+  for (; drat_num_processed_fixed_variables_ < trail_->Index();
+       ++drat_num_processed_fixed_variables_) {
+    temp = (*trail_)[drat_num_processed_fixed_variables_];
+    drat_proof_handler_->AddClause({&temp, 1});
+  }
 }
 
 void SatSolver::ProcessNewlyFixedVariables() {
@@ -1474,16 +1497,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   int num_detached_clauses = 0;
   int num_binary = 0;
 
-  if (drat_writer_ != nullptr) {
-    // We need to output the literals that are fixed so we can remove all
-    // clauses that contains them. Note that this doesn't seems to be needed
-    // for drat-trim.
-    Literal temp;
-    for (int i = num_processed_fixed_variables_; i < trail_->Index(); ++i) {
-      temp = (*trail_)[i];
-      drat_writer_->AddClause({&temp, 1});
-    }
-  }
+  ProcessNewlyFixedVariablesForDratProof();
 
   // We remove the clauses that are always true and the fixed literals from the
   // others. Note that none of the clause should be all false because we should
@@ -1502,10 +1516,10 @@ void SatSolver::ProcessNewlyFixedVariables() {
     const size_t new_size = clause->Size();
     if (new_size == old_size) continue;
 
-    if (drat_writer_ != nullptr) {
+    if (drat_proof_handler_ != nullptr) {
       CHECK_GT(new_size, 0);
-      drat_writer_->AddClause({clause->begin(), new_size});
-      drat_writer_->DeleteClause({clause->begin(), old_size});
+      drat_proof_handler_->AddClause({clause->begin(), new_size});
+      drat_proof_handler_->DeleteClause({clause->begin(), old_size});
     }
 
     if (new_size == 2 && parameters_->treat_binary_clauses_separately()) {

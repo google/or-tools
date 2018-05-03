@@ -80,6 +80,15 @@ DEFINE_string(
     "If non-empty, a proof in DRAT format will be written to this file. "
     "This will only be used for pure-SAT problems.");
 
+DEFINE_bool(drat_check, false,
+            "If true, a proof in DRAT format will be stored in memory and "
+            "checked if the problem is UNSAT. This will only be used for "
+            "pure-SAT problems.");
+
+DEFINE_double(max_drat_time_in_seconds, std::numeric_limits<double>::infinity(),
+              "Maximum time in seconds to check the DRAT proof. This will only "
+              "be used is the drat_check flag is enabled.");
+
 namespace operations_research {
 namespace sat {
 
@@ -2014,9 +2023,19 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     }
   }
 
+  // Remove size one LP constraints, they are not useful.
+  const int num_extra_constraints = linear_constraints.size() - old_size;
+  {
+    int new_size = 0;
+    for (int i = 0; i < linear_constraints.size(); ++i) {
+      if (linear_constraints[i].vars.size() == 1) continue;
+      std::swap(linear_constraints[new_size++], linear_constraints[i]);
+    }
+    linear_constraints.resize(new_size);
+  }
+
   VLOG(1) << "num_full_encoding_relaxations: " << num_full_encoding_relaxations;
-  VLOG(1) << "num_integer_encoding_constraints: "
-          << linear_constraints.size() - old_size;
+  VLOG(1) << "num_integer_encoding_constraints: " << num_extra_constraints;
   VLOG(1) << linear_constraints.size() << " constraints in the LP relaxation.";
   VLOG(1) << cut_generators.size() << " cuts generators.";
 
@@ -2303,10 +2322,25 @@ CpSolverResponse SolveCpModelInternal(
     return response;
   }
 
+  model->GetOrCreate<IntegerEncoder>()
+      ->AddAllImplicationsBetweenAssociatedLiterals();
+  model->GetOrCreate<SatSolver>()->Propagate();
+
+  // Auto detect "at least one of" constraints in the PrecedencesPropagator.
+  // Note that we do that before we finish loading the problem (objective and LP
+  // relaxation), because propagation will be faster at this point and it should
+  // be enough for the purpose of this auto-detection.
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
+  if (model->Mutable<PrecedencesPropagator>() != nullptr &&
+      parameters.auto_detect_greater_than_at_least_one_of()) {
+    model->Mutable<PrecedencesPropagator>()
+        ->AddGreaterThanAtLeastOneOfConstraints(model);
+    model->GetOrCreate<SatSolver>()->Propagate();
+  }
+
   // Create an objective variable and its associated linear constraint if
   // needed.
   IntegerVariable objective_var = kNoIntegerVariable;
-  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   if (is_real_solve && parameters.linearization_level() > 0) {
     // Linearize some part of the problem and register LP constraint(s).
     objective_var =
@@ -2364,17 +2398,7 @@ CpSolverResponse SolveCpModelInternal(
 
   // Note that we do one last propagation at level zero once all the constraints
   // where added.
-  model->GetOrCreate<IntegerEncoder>()
-      ->AddAllImplicationsBetweenAssociatedLiterals();
   model->GetOrCreate<SatSolver>()->Propagate();
-
-  // Auto detect "at least one of" constraints in the PrecedencesPropagator.
-  if (model->Mutable<PrecedencesPropagator>() != nullptr &&
-      parameters.auto_detect_greater_than_at_least_one_of()) {
-    model->Mutable<PrecedencesPropagator>()
-        ->AddGreaterThanAtLeastOneOfConstraints(model);
-    model->GetOrCreate<SatSolver>()->Propagate();
-  }
 
   // Probing Boolean variables. Because we don't have a good deterministic time
   // yet in the non-Boolean part of the problem, we disable it by default.
@@ -2501,9 +2525,16 @@ CpSolverResponse SolveCpModelInternal(
             next_decision, solution_observer, model);
       }
     } else {
+      if (parameters.binary_search_num_conflicts() >= 0) {
+        RestrictObjectiveDomainWithBinarySearch(objective_var, next_decision,
+                                                solution_observer, model);
+      }
       status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           /*log_info=*/false, objective_var, next_decision, solution_observer,
           model);
+      if (num_solutions > 0 && status == SatSolver::MODEL_UNSAT) {
+        status = SatSolver::MODEL_SAT;
+      }
     }
 
     if (status == SatSolver::LIMIT_REACHED) {
@@ -2613,14 +2644,19 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   solver->SetParameters(parameters);
   model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(parameters);
 
-  // Create a DratWriter?
-  std::unique_ptr<DratWriter> drat_writer;
+  // Create a DratProofHandler?
+  std::unique_ptr<DratProofHandler> drat_proof_handler;
 #if !defined(__PORTABLE_PLATFORM__)
-  if (!FLAGS_drat_output.empty()) {
-    File* output;
-    CHECK_OK(file::Open(FLAGS_drat_output, "w", &output, file::Defaults()));
-    drat_writer.reset(new DratWriter(/*in_binary_format=*/false, output));
-    solver->SetDratWriter(drat_writer.get());
+  if (!FLAGS_drat_output.empty() || FLAGS_drat_check) {
+    if (!FLAGS_drat_output.empty()) {
+      File* output;
+      CHECK_OK(file::Open(FLAGS_drat_output, "w", &output, file::Defaults()));
+      drat_proof_handler.reset(new DratProofHandler(
+          /*in_binary_format=*/false, output, FLAGS_drat_check));
+    } else {
+      drat_proof_handler.reset(nullptr);
+    }
+    solver->SetDratProofHandler(drat_proof_handler.get());
   }
 #endif  // __PORTABLE_PLATFORM__
 
@@ -2638,7 +2674,9 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   std::vector<Literal> temp;
   const int num_variables = model_proto.variables_size();
   solver->SetNumVariables(num_variables);
-  if (drat_writer != nullptr) drat_writer->SetNumVariables(num_variables);
+  if (drat_proof_handler != nullptr) {
+    drat_proof_handler->SetNumVariables(num_variables);
+  }
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
     switch (ct.constraint_case()) {
@@ -2648,6 +2686,9 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
         for (const int ref : ct.bool_and().literals()) {
           const Literal b = get_literal(ref);
           solver->AddProblemClause({not_a, b});
+          if (drat_proof_handler != nullptr) {
+            drat_proof_handler->AddProblemClause({not_a, b});
+          }
         }
         break;
       }
@@ -2657,6 +2698,9 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
           temp.push_back(get_literal(ref));
         }
         solver->AddProblemClause(temp);
+        if (drat_proof_handler != nullptr) {
+          drat_proof_handler->AddProblemClause(temp);
+        }
         break;
       default:
         LOG(FATAL) << "Not supported";
@@ -2668,10 +2712,11 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
     const auto domain = ReadDomain(model_proto.variables(ref));
     CHECK_EQ(domain.size(), 1);
     if (domain[0].start == domain[0].end) {
-      if (domain[0].start == 0) {
-        solver->AddUnitClause(get_literal(ref).Negated());
-      } else {
-        solver->AddUnitClause(get_literal(ref));
+      const Literal ref_literal =
+          domain[0].start == 0 ? get_literal(ref).Negated() : get_literal(ref);
+      solver->AddUnitClause(ref_literal);
+      if (drat_proof_handler != nullptr) {
+        drat_proof_handler->AddProblemClause({ref_literal});
       }
     }
   }
@@ -2681,7 +2726,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   if (parameters.cp_model_presolve()) {
     std::vector<bool> solution;
     status = SolveWithPresolve(&solver, model->GetOrCreate<TimeLimit>(),
-                               &solution, drat_writer.get());
+                               &solution, drat_proof_handler.get());
     if (status == SatSolver::MODEL_SAT) {
       response.clear_solution();
       for (int ref = 0; ref < num_variables; ++ref) {
@@ -2727,6 +2772,35 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   response.set_user_time(user_timer.Get());
   response.set_deterministic_time(
       model->Get<TimeLimit>()->GetElapsedDeterministicTime());
+
+  if (status == SatSolver::MODEL_UNSAT && drat_proof_handler != nullptr) {
+    wall_timer.Restart();
+    user_timer.Restart();
+    DratChecker::Status drat_status =
+        drat_proof_handler->Check(FLAGS_max_drat_time_in_seconds);
+    switch (drat_status) {
+      case DratChecker::UNKNOWN:
+        LOG(INFO) << "DRAT status: UNKNOWN";
+        break;
+      case DratChecker::VALID:
+        LOG(INFO) << "DRAT status: VALID";
+        break;
+      case DratChecker::INVALID:
+        LOG(ERROR) << "DRAT status: INVALID";
+        break;
+      default:
+        // Should not happen.
+        break;
+    }
+    LOG(INFO) << "DRAT wall time: " << wall_timer.Get();
+    LOG(INFO) << "DRAT user time: " << user_timer.Get();
+  } else if (drat_proof_handler != nullptr) {
+    // Always log a DRAT status to make it easier to extract it from a multirun
+    // result with awk.
+    LOG(INFO) << "DRAT status: NA";
+    LOG(INFO) << "DRAT wall time: NA";
+    LOG(INFO) << "DRAT user time: NA";
+  }
   return response;
 }
 
