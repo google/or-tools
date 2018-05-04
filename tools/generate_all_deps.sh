@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+# usage: ./tools/generate_all_deps.sh > makefiles/Makefile.gen.mk
 tools/generate_deps.sh BASE base
 tools/generate_deps.sh PORT port base
 tools/generate_deps.sh UTIL util base port
