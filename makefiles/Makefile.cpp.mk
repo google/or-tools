@@ -13,7 +13,7 @@ endif
 # Checks if the user has overwritten default install prefix.
 # cf https://www.gnu.org/prep/standards/html_node/Directory-Variables.html#index-prefix
 ifeq ($(SYSTEM),win)
-	prefix ?= C:\\Program Files\\or-tools
+  prefix ?= C:\\Program Files\\or-tools
 else
   prefix ?= /usr/local
 endif
