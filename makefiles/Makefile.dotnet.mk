@@ -220,11 +220,11 @@ test_dotnet:
 	"$(DOTNET_EXECUTABLE)" clean "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$S$(FSHARP_ORTOOLS_DLL_TEST).fsproj"
 	"$(DOTNET_EXECUTABLE)" build "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$S$(FSHARP_ORTOOLS_DLL_TEST).fsproj"
 
-	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" \
-	"ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" \
-	"ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$Sbin$SDebug$Snetcoreapp2.0$SGoogle.$(ORTOOLS_DLL_TEST).dll" \
-	"ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$Sbin$SDebug$Snetcoreapp2.0$SGoogle.$(FSHARP_ORTOOLS_DLL_TEST).dll" \
-	-verbose
+ifeq ($(SYSTEM),win)
+	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$Sbin$Sx64$SDebug$Snetcoreapp2.0$SGoogle.$(ORTOOLS_DLL_TEST).dll" "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$Sbin$Sx64$SDebug$Snetcoreapp2.0$SGoogle.$(FSHARP_ORTOOLS_DLL_TEST).dll" -verbose
+else
+	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$Sbin$SDebug$Snetcoreapp2.0$SGoogle.$(ORTOOLS_DLL_TEST).dll" "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$Sbin$SDebug$Snetcoreapp2.0$SGoogle.$(FSHARP_ORTOOLS_DLL_TEST).dll" -verbose
+endif
 
 
 .PHONY: dotnet # Build OrTools for .NET
