@@ -4,13 +4,28 @@ help_third_party:
 	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.third_party.win.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 	@echo off & echo(
 
+# Checks if the user has overwritten default libraries and binaries.
+WINDOWS_ZLIB_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
+WINDOWS_ZLIB_NAME ?= zlib.lib
+WINDOWS_GFLAGS_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
+WINDOWS_GLOG_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
+WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
+WINDOWS_CBC_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
+WINDOWS_CLP_DIR ?= $(WINDOWS_CBC_DIR)
+WINDOWS_SWIG_BINARY ?= "$(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe"
+
+# Variable use in others Makefiles
+PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
+SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
+
 # tags of dependencies to checkout.
-GFLAGS_TAG = 2.2.1
-PROTOBUF_TAG = 3.5.1
-GLOG_TAG = 0.3.5
-CBC_TAG = 2.9.9
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
+GFLAGS_TAG = 2.2.1
+GLOG_TAG = 0.3.5
+PROTOBUF_TAG = 3.5.1
+CBC_TAG = 2.9.9
+CLP_TAG = 1.16.11
 SWIG_TAG = 3.0.12
 
 # Added in support of clean third party targets
@@ -214,6 +229,21 @@ CBC_ARCHIVE:=https://www.coin-or.org/download/source/Cbc/Cbc-${CBC_TAG}.zip
 dependencies\sources\Cbc-$(CBC_TAG)\configure:
 	tools\wget --quiet --continue -P dependencies\archives --no-check-certificate ${CBC_ARCHIVE} || (@echo wget failed to dowload $(CBC_ARCHIVE), try running 'tools\wget -P dependencies\archives --no-check-certificate $(CBC_ARCHIVE)' then rerun 'make third_party' && exit 1)
 	tools\unzip -q -d dependencies\sources dependencies\archives\Cbc-$(CBC_TAG).zip
+
+# This is needed to find Coin LP include files and libraries.
+ifdef WINDOWS_CLP_DIR
+CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /I$(WINDOWS_CLP_DIR)\\include\\coin /DUSE_CLP
+CLP_SWIG = -DUSE_CLP
+DYNAMIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
+STATIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
+endif
+# This is needed to find Coin Branch and Cut include files and libraries.
+ifdef WINDOWS_CBC_DIR
+CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /I$(WINDOWS_CBC_DIR)\\include\\coin /DUSE_CBC
+CBC_SWIG = -DUSE_CBC
+DYNAMIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
+STATIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
+endif
 
 # Install SWIG.
 install_swig: dependencies/install/swigwin-$(SWIG_TAG)/swig.exe

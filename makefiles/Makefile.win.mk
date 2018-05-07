@@ -70,19 +70,7 @@ endif
 ATTRIB = attrib
 TASKKILL = taskkill
 
-# Default paths for libraries and binaries.
-WINDOWS_ZLIB_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_ZLIB_NAME ?= zlib.lib
-WINDOWS_GFLAGS_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_GLOG_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_CBC_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_CLP_DIR ?= $(WINDOWS_CBC_DIR)
-WINDOWS_SWIG_BINARY ?= "$(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe"
-
 # Compilation macros.
-PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
-SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 DEBUG=/O2 -DNDEBUG
 ifeq ("$(VISUAL_STUDIO_YEAR)","2015")
 CCC=cl /EHsc /MD /nologo /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
@@ -100,20 +88,6 @@ PYTHON_VERSION = $(WINDOWS_PYTHON_VERSION)
 PYTHON_INC=/I$(WINDOWS_PATH_TO_PYTHON)\\include
 PYTHON_LNK="$(WINDOWS_PATH_TO_PYTHON)\\libs\\python$(PYTHON_VERSION).lib"
 
-# This is needed to find Coin LP include files and libraries.
-ifdef WINDOWS_CLP_DIR
-CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /I$(WINDOWS_CLP_DIR)\\include\\coin /DUSE_CLP
-CLP_SWIG = -DUSE_CLP
-DYNAMIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
-STATIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
-endif
-# This is needed to find Coin Branch and Cut include files and libraries.
-ifdef WINDOWS_CBC_DIR
-CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /I$(WINDOWS_CBC_DIR)\\include\\coin /DUSE_CBC
-CBC_SWIG = -DUSE_CBC
-DYNAMIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
-STATIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
-endif
 # This is needed to find GLPK include files and libraries.
 ifdef WINDOWS_GLPK_DIR
 GLPK_INC = /I$(WINDOWS_GLPK_DIR)\\include /DUSE_GLPK
@@ -157,10 +131,11 @@ JAVAC_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\javac")"
 JAVA_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\java")"
 JAR_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\jar")"
 
-CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I$(INC_DIR) /I$(GEN_DIR) \
-        $(GFLAGS_INC) $(ZLIB_INC) $(MINISAT_INC) $(PROTOBUF_INC) $(GLOG_INC) \
-	$(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(CPLEX_INC) $(GUROBI_INC) /DUSE_GLOP \
-	/DUSE_BOP /D__WIN32__ /DPSAPI_VERSION=1
+CFLAGS = -nologo $(SYSCFLAGS) $(DEBUG) /I$(INC_DIR) /I$(GEN_DIR) \
+ $(GFLAGS_INC) $(GLOG_INC) $(ZLIB_INC) $(MINISAT_INC) $(PROTOBUF_INC) \
+ $(CBC_INC) $(CLP_INC) \
+ $(GLPK_INC) $(SCIP_INC) $(CPLEX_INC) $(GUROBI_INC) \
+ /DUSE_GLOP /DUSE_BOP /D__WIN32__ /DPSAPI_VERSION=1
 JNIFLAGS=$(CFLAGS) $(JAVA_INC)
 DYNAMIC_GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\lib\\gflags_static.lib
 STATIC_GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\lib\\gflags_static.lib
