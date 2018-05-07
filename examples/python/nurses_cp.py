@@ -24,7 +24,7 @@ def main():
 
   for j in range(num_shifts):
     for i in range(num_days):
-      nurses[(j, i)] = solver.IntVar(0, num_shifts - 1, "shift%d day%d" % (j,i))
+      nurses[(j, i)] = solver.IntVar(0, num_nurses - 1, "shift%d day%d" % (j,i))
   # Set relationships between shifts and nurses.
   for day in range(num_days):
     nurses_for_day = [nurses[(j, day)] for j in range(num_shifts)]
