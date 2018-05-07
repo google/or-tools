@@ -67,7 +67,6 @@ $(error Please add "cmake" to your PATH)
 endif
 
 # Add some additional macros
-CD = cd
 ATTRIB = attrib
 TASKKILL = taskkill
 

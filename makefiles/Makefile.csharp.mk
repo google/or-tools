@@ -678,11 +678,11 @@ nuget_archive: \
 
 $(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: \
 	tools\$(ORTOOLS_NUSPEC_NAME)
-	$(CD) $(ORTOOLS_NUGET_DIR) && "$(NUGET_EXECUTABLE)" pack $(ORTOOLS_NUSPEC_NAME)
+	cd $(ORTOOLS_NUGET_DIR) && "$(NUGET_EXECUTABLE)" pack $(ORTOOLS_NUSPEC_NAME)
 
 .PHONY: nuget_upload
 nuget_upload: nuget_archive
-	$(CD) $(ORTOOLS_NUGET_DIR) && "$(NUGET_EXECUTABLE)" push $(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg -Source $(NUGET_SRC)
+	cd $(ORTOOLS_NUGET_DIR) && "$(NUGET_EXECUTABLE)" push $(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg -Source $(NUGET_SRC)
 
 clean_csharpfz_nuget:
 ifeq ($(SYSTEM),win)
@@ -717,7 +717,7 @@ endif # ($(SYSTEM),win)
 csharpfz_nuget_pack: \
 	tools\$(FZ_NUSPEC_NAME)
 ifeq ($(SYSTEM),win)
-	$(CD) $(FZ_NUGET_DIR) && "$(NUGET_EXECUTABLE)" pack $(FZ_NUSPEC_NAME)
+	cd $(FZ_NUGET_DIR) && "$(NUGET_EXECUTABLE)" pack $(FZ_NUSPEC_NAME)
 endif # ($(SYSTEM),win)
 
 $(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: \
@@ -725,7 +725,7 @@ $(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: \
 
 csharpfz_nuget_push: \
 	$(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg
-	$(CD) $(FZ_NUGET_DIR) && "$(NUGET_EXECUTABLE)" push $(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg -Source $(NUGET_SRC)
+	cd $(FZ_NUGET_DIR) && "$(NUGET_EXECUTABLE)" push $(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg -Source $(NUGET_SRC)
 
 # Mirror the same approach for the root Google.OrTools
 nuget_upload_fz: csharpfz_nuget_push
