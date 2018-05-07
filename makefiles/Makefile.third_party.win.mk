@@ -33,7 +33,7 @@ TSVNCACHE_EXE = TSVNCache.exe
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
-third_party: build_third_party makefile_third_party
+third_party: makefile_third_party build_third_party
 
 .PHONY: third_party_check # Check if "make third_party" have been run or not
 third_party_check:
