@@ -25,8 +25,8 @@ EXP=.exp
 ARCHIVE_EXT = .tar.gz
 FZ_EXE = fzn-or-tools$E
 LDOUT = -o # need the space.
-OBJ_OUT = -o #
-EXE_OUT = -o #
+OBJ_OUT = -o # need the space
+EXE_OUT = -o # need the space
 S = /
 CPSEP = :
 
@@ -165,7 +165,6 @@ ifeq ($(PLATFORM),MACOSX)
   JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
   JNI_LIB_EXT = jnilib
 
-  LIB_SUFFIX = dylib
   SWIG_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
   LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version $(OR_TOOLS_SHORT_VERSION) -current_version $(OR_TOOLS_SHORT_VERSION)
   LINK_PREFIX = -o # Space needed.
