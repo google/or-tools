@@ -800,10 +800,10 @@ $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
 
 # compile and run C++ examples
 .PHONY: ccc
-ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+ccc: $(BIN_DIR)/$(basename $(notdir $(EX)))$E
 
 .PHONY: rcc
-rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+rcc: $(BIN_DIR)/$(basename $(notdir $(EX)))$E
 	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
 
