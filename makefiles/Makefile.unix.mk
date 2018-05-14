@@ -151,7 +151,10 @@ ifeq ($(PLATFORM),LINUX)
   PRE_LIB = -L$(OR_ROOT_FULL)/lib -l
   #PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
   POST_LIB =
-  LINK_FLAGS = -Wl,-rpath,"\$$ORIGIN:\$$ORIGIN/../lib:\$$ORIGIN/../dependencies/install/lib"
+  LINK_FLAGS = \
+ -Wl,-rpath,"\$$ORIGIN" \
+ -Wl,-rpath,"\$$ORIGIN/../lib" \
+ -Wl,-rpath,"\$$ORIGIN/../dependencies/install/lib"
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
@@ -206,7 +209,7 @@ ifeq ($(PLATFORM),MACOSX)
  -Wl,-rpath,@loader_path \
  -Wl,-rpath,@loader_path/../lib \
  -Wl,-rpath,@loader_path/../dependencies/install/lib
-  LD_FLAGS = -install_name @rpath/$(LIB_PREFIX)ortools.$L #
+  LDFLAGS = -install_name @rpath/$(LIB_PREFIX)ortools.$L #
 endif # ifeq ($(PLATFORM),MACOSX)
 
 DEPENDENCIES_INC = -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
@@ -217,7 +220,7 @@ DEPENDENCIES_INC = -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
 
 CFLAGS = $(DEBUG) $(DEPENDENCIES_INC)
 JNIFLAGS = $(JNIDEBUG) $(DEPENDENCIES_INC)
-LD_FLAGS += $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
+LDFLAGS += $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
 DEPENDENCIES_LNK = $(GLPK_LNK) $(SCIP_LNK) $(GUROBI_LNK) $(CPLEX_LNK)
 
 OR_TOOLS_LNK =
