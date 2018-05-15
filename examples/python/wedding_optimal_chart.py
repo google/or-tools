@@ -51,14 +51,14 @@ def main():
 	#
 
 	# Easy problem (from the paper)
-	n = 2  # number of tables
-	a = 10 # maximum number of guests a table can seat
-	b = 1  # minimum number of people each guest knows at their table
+	# n = 2  # number of tables
+	# a = 10 # maximum number of guests a table can seat
+	# b = 1  # minimum number of people each guest knows at their table
 
 	# Slightly harder problem (also from the paper)
-	# n = 5 # number of tables
-	# a = 4 # maximum number of guests a table can seat
-	# b = 1 # minimum number of people each guest knows at their table
+	n = 5 # number of tables
+	a = 4 # maximum number of guests a table can seat
+	b = 1 # minimum number of people each guest knows at their table
 
 	# Connection matrix: who knows who, and how strong
 	# is the relation

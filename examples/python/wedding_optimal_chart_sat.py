@@ -180,10 +180,13 @@ def main():
   for g1 in range(num_guests - 1):
     for g2 in range(g1 + 1, num_guests):
       for t in all_tables:
-        # Maintain same_table.
+        # Link same_table and seats.
         model.AddBoolOr([seats[(t, g1)].Not(),
                          seats[(t, g2)].Not(),
                          same_table[(g1, g2, t)]])
+        model.AddImplication(same_table[(g1, g2, t)], seats[(t, g1)])
+        model.AddImplication(same_table[(g1, g2, t)], seats[(t, g2)])
+
       # Link colocated and same_table.
       model.Add(sum(same_table[(g1, g2, t)]
                     for t in all_tables) == colocated[(g1, g2)])
