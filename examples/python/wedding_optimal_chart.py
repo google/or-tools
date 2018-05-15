@@ -37,7 +37,7 @@ In order to make this process easier, we present a mathematical
 formulation that models the seating chart problem. This model can
 be solved to find the optimal arrangement of guests at tables.
 At the very least, it can provide a starting point and hopefully
-minimize stress and arguments…
+minimize stress and arguments.
 
 Adapted from https://github.com/google/or-tools/blob/master/examples/csharp/wedding_optimal_chart.cs
 """
