@@ -7,12 +7,12 @@
 // If SCIP is compiled with this .cpp, then it will use Glop as the underlying
 // LP solver. This is done in the target scip:libscip_with_glop.
 //
-// TODO(fdid): currently a lot of functions are left unimplemented and result
+// TODO(user): currently a lot of functions are left unimplemented and result
 // in a LOG(FATAL) if they are called. It seems that SCIP never uses them when
 // called through the MPSolver interface (on July 2013; based on solving a
 // couple of MIP problems).
 //
-// TODO(fdid): The function comments come from the SCIP lpi.h file and are not
+// TODO(user): The function comments come from the SCIP lpi.h file and are not
 // compliant with the Google style guide. We could remove them since they are
 // in the .h, but given the file size, they are quite helpful.
 
@@ -49,7 +49,7 @@ struct SCIP_LPi {
   operations_research::glop::GlopParameters* parameters;
   operations_research::StatsGroup* stats;
 
-  // TODO(fdid): Store the parameters not yet supported by this interface.
+  // TODO(user): Store the parameters not yet supported by this interface.
   // In debug mode, SCIP check that set() and then get() work as expected, so
   // we need to store them.
   bool from_scratch;
@@ -173,7 +173,7 @@ SCIP_RETCODE SCIPlpiAddCols(
                            // NULL if nnonz == 0
     ) {
   SCOPED_TIME_STAT(lpi->stats);
-  // TODO(fdid): propagate the names?
+  // TODO(user): propagate the names?
   VLOG(1) << "calling SCIPlpiAddCols ncols=" << ncols << " nnonz=" << nnonz;
   int nz = 0;
   for (int i = 0; i < ncols; ++i) {
@@ -256,7 +256,7 @@ SCIP_RETCODE SCIPlpiAddRows(
                            // NULL if nnonz == 0
     ) {
   SCOPED_TIME_STAT(lpi->stats);
-  // TODO(fdid): propagate the names?
+  // TODO(user): propagate the names?
   VLOG(1) << "calling SCIPlpiAddRows nrows=" << nrows << " nnonz=" << nnonz;
   int nz = 0;
   for (int i = 0; i < nrows; ++i) {
@@ -700,7 +700,7 @@ SCIP_RETCODE SCIPlpiSolveBarrier(SCIP_LPI* lpi,       // LP interface structure
 SCIP_RETCODE SCIPlpiStartStrongbranch(SCIP_LPI* lpi) {
   SCOPED_TIME_STAT(lpi->stats);
   VLOG(1) << "calling SCIPlpiStartStrongbranch";
-  // TODO(fdid): Save state and do all the branching from there.
+  // TODO(user): Save state and do all the branching from there.
   return SCIP_OKAY;
 }
 
@@ -708,7 +708,7 @@ SCIP_RETCODE SCIPlpiStartStrongbranch(SCIP_LPI* lpi) {
 SCIP_RETCODE SCIPlpiEndStrongbranch(SCIP_LPI* lpi) {
   SCOPED_TIME_STAT(lpi->stats);
   VLOG(1) << "calling SCIPlpiEndStrongbranch";
-  // TODO(fdid): Restore the saved state in SCIPlpiStartStrongbranch().
+  // TODO(user): Restore the saved state in SCIPlpiStartStrongbranch().
   return SCIP_OKAY;
 }
 
@@ -748,7 +748,7 @@ SCIP_RETCODE SCIPlpiStrongbranchFrac(
   const Fractional ub = lpi->linear_program->variable_upper_bounds()[col];
 
   // Configure solver.
-  // TODO(fdid): use the iteration limit once glop support incrementality.
+  // TODO(user): use the iteration limit once glop support incrementality.
   int num_iterations = 0;
   lpi->parameters->set_use_dual_simplex(true);
   lpi->solver->SetParameters(*(lpi->parameters));
@@ -854,7 +854,7 @@ SCIP_RETCODE SCIPlpiStrongbranchesInt(
 SCIP_Bool SCIPlpiWasSolved(SCIP_LPI* lpi) {
   SCOPED_TIME_STAT(lpi->stats);
 
-  // TODO(fdid): track this to avoid uneeded resolving.
+  // TODO(user): track this to avoid uneeded resolving.
   return !(lpi->lp_modified_since_last_solve);
 }
 
@@ -934,7 +934,7 @@ SCIP_Bool SCIPlpiHasDualRay(SCIP_LPI* lpi) {
   SCOPED_TIME_STAT(lpi->stats);
   VLOG(1) << "calling SCIPlpiHasDualRay";
   const ProblemStatus status = lpi->solver->GetProblemStatus();
-  // TODO(fdid): check the sign of SCIPlpiGetDualfarkas()
+  // TODO(user): check the sign of SCIPlpiGetDualfarkas()
   return status == ProblemStatus::DUAL_UNBOUNDED;
 }
 
@@ -1382,7 +1382,7 @@ SCIP_RETCODE SCIPlpiWriteState(SCIP_LPI* lpi,     // LP interface structure
 // SCIP_LPiNorms stores norm information so they are not recomputed from one
 // state to the next.
 //
-// TODO(fdid): Implement this.
+// TODO(user): Implement this.
 struct SCIP_LPiNorms {};
 
 // stores LPi pricing norms information

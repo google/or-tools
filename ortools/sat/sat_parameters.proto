@@ -543,12 +543,13 @@ message SatParameters {
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
 
-  // Whether we enumerate all solutions of a SAT problem.
-  //
-  // TODO(user): When used with cp_model_presolve, it is possible that not all
-  // solutions are enumerated. This is because our presolver currently do not
-  // look at this parameter and only guarantee the existence of one feasible
+  // Whether we enumerate all solutions of a problem without objective. Note
+  // that setting this to true automatically disable the presolve. This is
+  // because the presolve rules only guarantee the existence of one feasible
   // solution to the presolved problem.
+  //
+  // TODO(user): Activate the presolve but with just the rules that do not
+  // change the set of feasible solutions.
   optional bool enumerate_all_solutions = 87 [default = false];
 
   // If true, then the precedences propagator try to detect for each variable if

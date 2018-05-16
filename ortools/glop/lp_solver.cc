@@ -179,6 +179,9 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
 
   const bool postsolve_is_needed = preprocessor.Run(&current_linear_program_);
 
+  VLOG(1) << "Presolved problem: "
+          << current_linear_program_.GetDimensionString();
+
   // At this point, we need to initialize a ProblemSolution with the correct
   // size and status.
   ProblemSolution solution(current_linear_program_.num_constraints(),
@@ -193,7 +196,17 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   }
 
   if (postsolve_is_needed) preprocessor.RecoverSolution(&solution);
-  return LoadAndVerifySolution(lp, solution);
+  const ProblemStatus status = LoadAndVerifySolution(lp, solution);
+
+  // LOG some statistics that can be parsed by our benchmark script.
+  VLOG(1) << "status: " << status;
+  VLOG(1) << "objective: " << GetObjectiveValue();
+  VLOG(1) << "iterations: " << GetNumberOfSimplexIterations();
+  VLOG(1) << "time: " << time_limit->GetElapsedTime();
+  VLOG(1) << "deterministic_time: "
+          << time_limit->GetElapsedDeterministicTime();
+
+  return status;
 }
 
 void LPSolver::Clear() {

@@ -2830,7 +2830,7 @@ Fractional RevisedSimplex::ComputeInitialProblemObjectiveValue() const {
 
 void RevisedSimplex::SetParameters(const GlopParameters& parameters) {
   SCOPED_TIME_STAT(&function_stats_);
-  random_.seed(parameters_.random_seed());
+  random_.seed(parameters.random_seed());
   initial_parameters_ = parameters;
   parameters_ = parameters;
   PropagateParameters();

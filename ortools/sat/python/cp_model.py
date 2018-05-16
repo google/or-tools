@@ -1118,15 +1118,12 @@ class CpSolver(object):
                       'satisfiability problems')
     # Store old values.
     enumerate_all = self.parameters.enumerate_all_solutions
-    presolve = self.parameters.cp_model_presolve
     self.parameters.enumerate_all_solutions = True
-    self.parameters.cp_model_presolve = False
     self.__solution = (
         pywrapsat.SatHelper.SolveWithParametersAndSolutionObserver(
             model.ModelProto(), self.parameters, callback))
     # Restore parameters.
     self.parameters.enumerate_all_solutions = enumerate_all
-    self.parameters.cp_model_presolve = presolve
     return self.__solution.status
 
   def Value(self, expression):

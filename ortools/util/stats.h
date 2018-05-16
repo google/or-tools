@@ -61,6 +61,7 @@
 // times your function calls!
 //
 // IMPORTANT: The SCOPED_TIME_STAT() macro only does something if OR_STATS is
+// defined, so you need to build your code with blaze build --copt='-DOR_STATS'.
 // The idea is that by default the instrumentation is off. You can also use the
 // macro IF_STATS_ENABLED() that does nothing if OR_STATS is not defined or just
 // translates to its argument otherwise.

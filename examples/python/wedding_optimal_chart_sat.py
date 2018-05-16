@@ -71,7 +71,7 @@ class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
     return self.__solution_count
 
 
-def main():
+def BuildData():
   #
   # Data
   #
@@ -128,6 +128,11 @@ def main():
       "DeAnn (G)",
       "Lori (G)"
   ]
+  return num_tables, table_capacity, min_known_neighbors, C, names
+
+
+def SolveWithDiscreteModel():
+  num_tables, table_capacity, min_known_neighbors, C, names = BuildData()
 
   num_guests = len(C)
 
@@ -212,6 +217,10 @@ def main():
   print('  - branches     : %i' % solver.NumBranches())
   print('  - wall time    : %f ms' % solver.WallTime())
   print('  - num solutions: %i' % solution_printer.NumSolutions())
+
+
+def main():
+  SolveWithDiscreteModel()
 
 
 if __name__ == '__main__':

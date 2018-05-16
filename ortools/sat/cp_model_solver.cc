@@ -1713,15 +1713,13 @@ void TryToLinearizeConstraint(
     const CpModelProto& model_proto, const ConstraintProto& ct,
     ModelWithMapping* m, int linearization_level,
     std::vector<LinearConstraint>* linear_constraints) {
-  auto* encoder = m->GetOrCreate<IntegerEncoder>();
-  if (encoder == nullptr) return;
   const double kInfinity = std::numeric_limits<double>::infinity();
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
     if (linearization_level < 2) return;
     if (HasEnforcementLiteral(ct)) return;
-    LinearConstraintBuilder lc(1.0, kInfinity);
+    LinearConstraintBuilder lc(m->model(), 1.0, kInfinity);
     for (const int ref : ct.bool_or().literals()) {
-      CHECK(lc.AddLiteralTerm(m->Literal(ref), 1.0, *encoder));
+      CHECK(lc.AddLiteralTerm(m->Literal(ref), 1.0));
     }
     linear_constraints->push_back(lc.Build());
   } else if (ct.constraint_case() ==
@@ -1731,9 +1729,9 @@ void TryToLinearizeConstraint(
     const Literal e = m->Literal(ct.enforcement_literal(0));
     for (const int ref : ct.bool_and().literals()) {
       // We linearize (e implies literal) as (e - literals <= 0).
-      LinearConstraintBuilder lc(-kInfinity, 0.0);
-      CHECK(lc.AddLiteralTerm(e, 1.0, *encoder));
-      CHECK(lc.AddLiteralTerm(m->Literal(ref), -1.0, *encoder));
+      LinearConstraintBuilder lc(m->model(), -kInfinity, 0.0);
+      CHECK(lc.AddLiteralTerm(e, 1.0));
+      CHECK(lc.AddLiteralTerm(m->Literal(ref), -1.0));
       linear_constraints->push_back(lc.Build());
     }
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
@@ -1743,7 +1741,7 @@ void TryToLinearizeConstraint(
       // This deal with the corner case X = max(X, Y, Z, ..) !
       // Note that this can be presolved into X >= Y, X >= Z, ...
       if (target == var) continue;
-      LinearConstraintBuilder lc(-kInfinity, 0.0);
+      LinearConstraintBuilder lc(m->model(), -kInfinity, 0.0);
       lc.AddTerm(m->Integer(var), 1.0);
       lc.AddTerm(m->Integer(target), -1.0);
       linear_constraints->push_back(lc.Build());
@@ -1753,7 +1751,7 @@ void TryToLinearizeConstraint(
     const int target = ct.int_min().target();
     for (const int var : ct.int_min().vars()) {
       if (target == var) continue;
-      LinearConstraintBuilder lc(-kInfinity, 0.0);
+      LinearConstraintBuilder lc(m->model(), -kInfinity, 0.0);
       lc.AddTerm(m->Integer(target), 1.0);
       lc.AddTerm(m->Integer(var), -1.0);
       linear_constraints->push_back(lc.Build());
@@ -1769,7 +1767,8 @@ void TryToLinearizeConstraint(
     if (min == kint64min && max == kint64max) return;
 
     if (!HasEnforcementLiteral(ct)) {
-      LinearConstraintBuilder lc((min == kint64min) ? -kInfinity : min,
+      LinearConstraintBuilder lc(m->model(),
+                                 (min == kint64min) ? -kInfinity : min,
                                  (max == kint64max) ? kInfinity : max);
       for (int i = 0; i < ct.linear().vars_size(); i++) {
         const int ref = ct.linear().vars(i);
@@ -1807,24 +1806,24 @@ void TryToLinearizeConstraint(
     const int e = ct.enforcement_literal(0);
     if (min != kint64min) {
       // (e => terms >= min) <=> terms >= implied_lb + e * (min - implied_lb);
-      LinearConstraintBuilder lc(implied_lb, kInfinity);
+      LinearConstraintBuilder lc(m->model(), implied_lb, kInfinity);
       for (int i = 0; i < ct.linear().vars_size(); i++) {
         const int ref = ct.linear().vars(i);
         const int64 coeff = ct.linear().coeffs(i);
         lc.AddTerm(m->Integer(ref), coeff);
       }
-      CHECK(lc.AddLiteralTerm(m->Literal(e), implied_lb - min, *encoder));
+      CHECK(lc.AddLiteralTerm(m->Literal(e), implied_lb - min));
       linear_constraints->push_back(lc.Build());
     }
     if (max != kint64max) {
       // (e => terms <= max) <=> terms <= implied_ub + e * (max - implied_ub)
-      LinearConstraintBuilder lc(-kInfinity, implied_ub);
+      LinearConstraintBuilder lc(m->model(), -kInfinity, implied_ub);
       for (int i = 0; i < ct.linear().vars_size(); i++) {
         const int ref = ct.linear().vars(i);
         const int64 coeff = ct.linear().coeffs(i);
         lc.AddTerm(m->Integer(ref), coeff);
       }
-      CHECK(lc.AddLiteralTerm(m->Literal(e), implied_ub - max, *encoder));
+      CHECK(lc.AddLiteralTerm(m->Literal(e), implied_ub - max));
       linear_constraints->push_back(lc.Build());
     }
   } else if (ct.constraint_case() ==
@@ -1841,10 +1840,11 @@ void TryToLinearizeConstraint(
     std::map<int, std::unique_ptr<LinearConstraintBuilder>>
         outgoing_arc_constraints;
     auto get_constraint =
-        [](std::map<int, std::unique_ptr<LinearConstraintBuilder>>* node_map,
-           int node) {
+        [m](std::map<int, std::unique_ptr<LinearConstraintBuilder>>* node_map,
+            int node) {
           if (!gtl::ContainsKey(*node_map, node)) {
-            (*node_map)[node].reset(new LinearConstraintBuilder(1, 1));
+            (*node_map)[node].reset(
+                new LinearConstraintBuilder(m->model(), 1, 1));
           }
           return (*node_map)[node].get();
         };
@@ -1857,9 +1857,9 @@ void TryToLinearizeConstraint(
       m->Add(NewIntegerVariableFromLiteral(arc));
 
       CHECK(get_constraint(&outgoing_arc_constraints, tail)
-                ->AddLiteralTerm(arc, 1.0, *encoder));
+                ->AddLiteralTerm(arc, 1.0));
       CHECK(get_constraint(&incoming_arc_constraints, head)
-                ->AddLiteralTerm(arc, 1.0, *encoder));
+                ->AddLiteralTerm(arc, 1.0));
     }
     for (const auto* node_map :
          {&outgoing_arc_constraints, &incoming_arc_constraints}) {
@@ -1877,7 +1877,7 @@ void TryToLinearizeConstraint(
 
     // We only relax the case where all the vars are constant.
     // target = sum (index == i) * fixed_vars[i].
-    LinearConstraintBuilder constraint(0.0, 0.0);
+    LinearConstraintBuilder constraint(m->model(), 0.0, 0.0);
     constraint.AddTerm(target, -1.0);
     for (const auto literal_value : m->Add(FullyEncodeVariable((index)))) {
       const IntegerVariable var = vars[literal_value.value.value()];
@@ -1885,8 +1885,8 @@ void TryToLinearizeConstraint(
 
       // Make sure this literal has a view.
       m->Add(NewIntegerVariableFromLiteral(literal_value.literal));
-      CHECK(constraint.AddLiteralTerm(literal_value.literal, m->Get(Value(var)),
-                                      *encoder));
+      CHECK(
+          constraint.AddLiteralTerm(literal_value.literal, m->Get(Value(var))));
     }
 
     linear_constraints->push_back(constraint.Build());
@@ -1896,7 +1896,6 @@ void TryToLinearizeConstraint(
 void TryToAddCutGenerators(const CpModelProto& model_proto,
                            const ConstraintProto& ct, ModelWithMapping* m,
                            std::vector<CutGenerator>* cut_generators) {
-  auto* encoder = m->GetOrCreate<IntegerEncoder>();
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
     std::vector<int> tails(ct.circuit().tails().begin(),
                            ct.circuit().tails().end());
@@ -1919,6 +1918,7 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     std::vector<int> heads;
     std::vector<IntegerVariable> vars;
     int num_nodes = 0;
+    auto* encoder = m->GetOrCreate<IntegerEncoder>();
     for (int i = 0; i < ct.routes().tails_size(); ++i) {
       const IntegerVariable var =
           encoder->GetLiteralView(m->Literal(ct.routes().literals(i)));
@@ -2654,7 +2654,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
       drat_proof_handler.reset(new DratProofHandler(
           /*in_binary_format=*/false, output, FLAGS_drat_check));
     } else {
-      drat_proof_handler.reset(nullptr);
+      drat_proof_handler.reset(new DratProofHandler());
     }
     solver->SetDratProofHandler(drat_proof_handler.get());
   }
@@ -2844,14 +2844,23 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // TODO(user): improve the normal presolver to do the same thing.
   // TODO(user): Support solution hint, but then the first TODO will make it
   // automatic.
+  const SatParameters& params = *model->GetOrCreate<SatParameters>();
   if (!model_proto.has_objective() && !model_proto.has_solution_hint() &&
-      !model->GetOrCreate<SatParameters>()->enumerate_all_solutions()) {
+      !params.enumerate_all_solutions()) {
     bool is_pure_sat = true;
-    for (const ConstraintProto& ct : model_proto.constraints()) {
-      if (ct.constraint_case() != ConstraintProto::ConstraintCase::kBoolOr &&
-          ct.constraint_case() != ConstraintProto::ConstraintCase::kBoolAnd) {
+    for (const IntegerVariableProto& var : model_proto.variables()) {
+      if (var.domain_size() != 2 || var.domain(0) < 0 || var.domain(1) > 1) {
         is_pure_sat = false;
         break;
+      }
+    }
+    if (is_pure_sat) {
+      for (const ConstraintProto& ct : model_proto.constraints()) {
+        if (ct.constraint_case() != ConstraintProto::ConstraintCase::kBoolOr &&
+            ct.constraint_case() != ConstraintProto::ConstraintCase::kBoolAnd) {
+          is_pure_sat = false;
+          break;
+        }
       }
     }
     if (is_pure_sat) return SolvePureSatModel(model_proto, model);
@@ -2860,8 +2869,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Starts by expanding some constraints if needed.
   CpModelProto presolved_proto = ExpandCpModel(model_proto);
 
+  // Solve without presolving ?
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
-  if (!model->GetOrCreate<SatParameters>()->cp_model_presolve()) {
+  if (!params.cp_model_presolve() || params.enumerate_all_solutions()) {
     return SolveCpModelInternal(presolved_proto, true,
                                 [&](const CpSolverResponse& response) {
                                   for (const auto& observer : observers) {
