@@ -3,28 +3,28 @@
 #  ----- about it. -----
 
 LIB_PREFIX = lib
-ifeq ($(PLATFORM),MACOSX) # Keep the path in the lib as it is stored upon construction.
-LIB_DIR = $(OR_ROOT_FULL)/lib
-else # No need to keep the path in the lib, it is not stored there on linux.
-LIB_DIR = $(OR_ROOT)lib
-endif
-BIN_DIR = $(OR_ROOT)bin
-GEN_DIR = $(OR_ROOT)ortools/gen
-OBJ_DIR = $(OR_ROOT)objs
 SRC_DIR = $(OR_ROOT).
 EX_DIR  = $(OR_ROOT)examples
+GEN_DIR = $(OR_ROOT)ortools/gen
+OBJ_DIR = $(OR_ROOT)objs
+LIB_DIR = $(OR_ROOT)lib
+BIN_DIR = $(OR_ROOT)bin
 INC_DIR = $(OR_ROOT).
 DEP_BIN_DIR = $(OR_ROOT)dependencies/install/bin
 
 O = o
 E =
-L=.a
+ifeq ($(PLATFORM),LINUX)
+L = so
+else # MACOS
+L = dylib
+endif
 DLL=.dll
 PDB=.pdb
 EXP=.exp
 ARCHIVE_EXT = .tar.gz
 FZ_EXE = fzn-or-tools$E
-LDOUT = -o # need the space.
+LD_OUT = -o # need the space.
 OBJ_OUT = -o # need the space
 EXE_OUT = -o # need the space
 S = /
@@ -82,7 +82,8 @@ ifdef UNIX_CPLEX_DIR
   CPLEX_SWIG = $(CPLEX_INC)
 endif
 
-SWIG_INC = $(CLP_SWIG) $(CBC_SWIG) $(COIN_SWIG) \
+SWIG_INC = \
+ $(GFLAGS_SWIG) $(GLOG_SWIG) $(PROTOBUF_SWIG) $(COIN_SWIG) \
  -DUSE_GLOP -DUSE_BOP \
  $(GLPK_SWIG) $(SCIP_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG)
 
@@ -91,8 +92,9 @@ DEBUG = -O4 -DNDEBUG
 JNIDEBUG = -O1 -DNDEBUG
 
 ifeq ($(PLATFORM),LINUX)
-  CCC = g++ -fPIC -std=c++0x -fwrapv
+  CCC = g++ -fPIC -std=c++11 -fwrapv
   DYNAMIC_LD = g++ -shared
+  DYNAMIC_LDFLAGS = -Wl,-rpath,\"\\\$$\$$ORIGIN\"
   MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   # This is needed to find libz.a
@@ -106,20 +108,35 @@ ifeq ($(PLATFORM),LINUX)
     else
       SCIP_ARCH = linux.x86.gnu.opt
     endif
-    SCIP_LNK = $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libtpitny.$(SCIP_ARCH).a
+    SCIP_LNK = \
+ $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a \
+ $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a \
+ $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a \
+ $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a \
+ $(UNIX_SCIP_DIR)/lib/static/libtpitny.$(SCIP_ARCH).a
   endif
   ifdef UNIX_GUROBI_DIR
     ifeq ($(PTRLENGTH),64)
-      GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux64/lib/ -L$(UNIX_GUROBI_DIR)/linux64/lib/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
+      GUROBI_LNK = \
+ -Wl,-rpath $(UNIX_GUROBI_DIR)/linux64/lib/ \
+ -L$(UNIX_GUROBI_DIR)/linux64/lib/ -m64 -lc -ldl -lm -lpthread \
+ -lgurobi$(GUROBI_LIB_VERSION)
     else
-      GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux32/lib/ -L$(UNIX_GUROBI_DIR)/linux32/lib/ -m32 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
+      GUROBI_LNK = \
+ -Wl,-rpath $(UNIX_GUROBI_DIR)/linux32/lib/ \
+ -L$(UNIX_GUROBI_DIR)/linux32/lib/ -m32 -lc -ldl -lm -lpthread \
+ -lgurobi$(GUROBI_LIB_VERSION)
     endif
   endif
   ifdef UNIX_CPLEX_DIR
     ifeq ($(PTRLENGTH),64)
-      CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic/libcplex.a -lm -lpthread
+      CPLEX_LNK = \
+ $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic/libcplex.a \
+ -lm -lpthread
     else
-      CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic/libcplex.a -lm -lpthread
+      CPLEX_LNK = \
+ $(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic/libcplex.a \
+ -lm -lpthread
     endif
   endif
   SYS_LNK = -lrt -lpthread
@@ -129,18 +146,21 @@ ifeq ($(PLATFORM),LINUX)
   JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
   JNI_LIB_EXT = so
 
-  LIB_SUFFIX = so
   SWIG_LIB_SUFFIX = so
-  LINK_CMD = g++ -shared
-  LINK_PREFIX = -o # Need the space.
-  PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
+  LINK_CMD = $(DYNAMIC_LD)
+  PRE_LIB = -L$(OR_ROOT_FULL)/lib -l
+  #PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
   POST_LIB =
-endif  # LINUX
+  LINK_FLAGS = -Wl,-rpath,"\$$ORIGIN:\$$ORIGIN/../lib:\$$ORIGIN/../dependencies/install/lib"
+endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
   CCC = clang++ -fPIC -std=c++11  $(MAC_VERSION) -stdlib=libc++
-  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version $(OR_TOOLS_SHORT_VERSION) -current_version $(OR_TOOLS_SHORT_VERSION)
-
+  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress \
+ -macosx_version_min $(MAC_MIN_VERSION) -lSystem \
+ -compatibility_version $(OR_TOOLS_SHORT_VERSION) \
+ -current_version $(OR_TOOLS_SHORT_VERSION)
+  DYNAMIC_LDFLAGS = -Wl,-rpath,\"@loader_path\"
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   ZLIB_LNK = -lz
@@ -149,13 +169,22 @@ ifeq ($(PLATFORM),MACOSX)
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_ARCH = darwin.x86_64.gnu.opt
-    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/libtpitny.$(SCIP_ARCH).a
+    SCIP_LNK = \
+ -force_load $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a \
+ $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a \
+ -force_load $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a \
+ -force_load $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a \
+ -force_load $(UNIX_SCIP_DIR)/lib/static/libtpitny.$(SCIP_ARCH).a
   endif
   ifdef UNIX_GUROBI_DIR
-    GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
+    GUROBI_LNK = \
+ -L$(UNIX_GUROBI_DIR)/mac64/bin/ -lc -ldl -lm -lpthread \
+ -lgurobi$(GUROBI_LIB_VERSION)
   endif
   ifdef UNIX_CPLEX_DIR
-    CPLEX_LNK = -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a -lm -lpthread -framework CoreFoundation -framework IOKit
+    CPLEX_LNK = \
+ -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a \
+ -lm -lpthread -framework CoreFoundation -framework IOKit
   endif
   SYS_LNK =
   SET_COMPILER = CXX="$(CCC)"
@@ -166,11 +195,19 @@ ifeq ($(PLATFORM),MACOSX)
   JNI_LIB_EXT = jnilib
 
   SWIG_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
-  LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version $(OR_TOOLS_SHORT_VERSION) -current_version $(OR_TOOLS_SHORT_VERSION)
-  LINK_PREFIX = -o # Space needed.
+  LINK_CMD = clang++ -dynamiclib \
+ -Wl,-search_paths_first \
+ -Wl,-headerpad_max_install_names \
+ -current_version $(OR_TOOLS_SHORT_VERSION) \
+ -compatibility_version $(OR_TOOLS_SHORT_VERSION)
   PRE_LIB = -L$(OR_ROOT)lib -l
   POST_LIB =
-endif  # MAC OS X
+  LINK_FLAGS = \
+ -Wl,-rpath,@loader_path \
+ -Wl,-rpath,@loader_path/../lib \
+ -Wl,-rpath,@loader_path/../dependencies/install/lib
+  LD_FLAGS = -install_name @rpath/$(LIB_PREFIX)ortools.$L #
+endif # ifeq ($(PLATFORM),MACOSX)
 
 DEPENDENCIES_INC = -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
  $(GFLAGS_INC) $(GLOG_INC) $(PROTOBUF_INC) \
@@ -180,5 +217,8 @@ DEPENDENCIES_INC = -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
 
 CFLAGS = $(DEBUG) $(DEPENDENCIES_INC)
 JNIFLAGS = $(JNIDEBUG) $(DEPENDENCIES_INC)
-OR_TOOLS_LD_FLAGS = $(ZLIB_LNK) $(SYS_LNK)
+LD_FLAGS += $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
 DEPENDENCIES_LNK = $(GLPK_LNK) $(SCIP_LNK) $(GUROBI_LNK) $(CPLEX_LNK)
+
+OR_TOOLS_LNK =
+OR_TOOLS_LDFLAGS = $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)

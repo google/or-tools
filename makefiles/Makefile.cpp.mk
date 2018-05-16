@@ -161,11 +161,11 @@ ortools/gen/ortools/sat:
 
 .PHONY: clean_cc # Clean C++ output from previous build.
 clean_cc:
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
@@ -215,13 +215,13 @@ clean_compat:
 
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
+OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
 OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
 ortoolslibs: third_party_check $(MISSING_BUILD_DIRECTORIES) $(OR_TOOLS_LIBS)
 
 # Specific libraries for examples, and flatzinc.
 
-CVRPTW_LIBS   = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
+CVRPTW_LIBS   = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
 CVRPTW_DEPS = \
 	$(EX_DIR)/cpp/cvrptw_lib.h \
 	$(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
@@ -229,7 +229,7 @@ CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
 cvrptwlibs: $(CVRPTW_LIBS)
 
 
-DIMACS_LIBS   = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
+DIMACS_LIBS   = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
 DIMACS_DEPS = \
 	$(EX_DIR)/cpp/parse_dimacs_assignment.h \
 	$(EX_DIR)/cpp/print_dimacs_assignment.h \
@@ -237,7 +237,7 @@ DIMACS_DEPS = \
 DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
 dimacslibs: $(DIMACS_LIBS)
 
-FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
+FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
 FAP_DEPS = \
 	$(EX_DIR)/cpp/fap_model_printer.h \
 	$(EX_DIR)/cpp/fap_parser.h \
@@ -248,7 +248,7 @@ FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
 faplibs: $(FAP_LIBS)
 
 
-FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX)
+FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$L
 FLATZINC_DEPS = \
 	$(SRC_DIR)/ortools/flatzinc/checker.h \
 	$(SRC_DIR)/ortools/flatzinc/constraints.h \
@@ -318,8 +318,8 @@ CVRPTW_OBJS=\
 $(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h 	$(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX): $(CVRPTW_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) $(CVRPTW_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L: $(CVRPTW_OBJS)
+	$(LINK_CMD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L $(CVRPTW_OBJS)
 
 # DIMACS challenge problem format library
 
@@ -329,8 +329,8 @@ DIMACS_OBJS=\
 $(OBJ_DIR)/parse_dimacs_assignment.$O: $(EX_DIR)/cpp/parse_dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/parse_dimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sparse_dimacs_assignment.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX): $(DIMACS_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) $(DIMACS_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)dimacs.$L: $(DIMACS_OBJS)
+	$(LINK_CMD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L $(DIMACS_OBJS)
 
 # FAP challenge problem format library
 
@@ -346,8 +346,8 @@ $(OBJ_DIR)/fap_parser.$O: $(EX_DIR)/cpp/fap_parser.cc
 $(OBJ_DIR)/fap_utilities.$O: $(EX_DIR)/cpp/fap_utilities.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sfap_utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_utilities.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX): $(FAP_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX) $(FAP_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)fap.$L: $(FAP_OBJS)
+	$(LINK_CMD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fap.$L $(FAP_OBJS)
 
 # Flatzinc code
 
@@ -417,8 +417,8 @@ $(OBJ_DIR)/flatzinc/solver_data.$O: $(SRC_DIR)/ortools/flatzinc/solver_data.cc $
 $(OBJ_DIR)/flatzinc/solver_util.$O: $(SRC_DIR)/ortools/flatzinc/solver_util.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Ssolver_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver_util.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX): $(FLATZINC_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(FLATZINC_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)fz.$L: $(FLATZINC_OBJS)
+	$(LINK_CMD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fz.$L $(FLATZINC_OBJS)
 
 $(OBJ_DIR)/flatzinc/fz.$O: $(SRC_DIR)/ortools/flatzinc/fz.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz.$O
@@ -426,7 +426,7 @@ $(OBJ_DIR)/flatzinc/fz.$O: $(SRC_DIR)/ortools/flatzinc/fz.cc $(FLATZINC_DEPS)
 $(OBJ_DIR)/flatzinc/parser_main.$O: $(SRC_DIR)/ortools/flatzinc/parser_main.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sparser_main.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser_main.$O
 
-fz : $(BIN_DIR)/fz$E $(BIN_DIR)/parser_main$E
+fz: $(BIN_DIR)/fz$E $(BIN_DIR)/parser_main$E
 
 $(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(FLATZINC_LIBS) $(OR_TOOLS_LIBS)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
@@ -768,7 +768,7 @@ $(BIN_DIR)/sat_runner$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/sat/sat_runner.$O
 
 # OR Tools unique library.
 
-$(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
+$(LIB_DIR)/$(LIB_PREFIX)ortools.$L: \
     $(BASE_LIB_OBJS) \
     $(PORT_LIB_OBJS) \
     $(UTIL_LIB_OBJS) \
@@ -782,21 +782,21 @@ $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
     $(LP_LIB_OBJS) \
     $(CP_LIB_OBJS)
 	$(LINK_CMD) \
-	  $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) \
-	  $(BASE_LIB_OBJS) \
-	  $(PORT_LIB_OBJS) \
-	  $(UTIL_LIB_OBJS) \
-	  $(DATA_LIB_OBJS) \
-	  $(LP_DATA_LIB_OBJS) \
-	  $(GLOP_LIB_OBJS) \
-	  $(GRAPH_LIB_OBJS) \
-	  $(ALGORITHMS_LIB_OBJS) \
-	  $(SAT_LIB_OBJS) \
-	  $(BOP_LIB_OBJS) \
-	  $(LP_LIB_OBJS) \
-	  $(CP_LIB_OBJS) \
-	  $(DEPENDENCIES_LNK) \
-	  $(OR_TOOLS_LD_FLAGS)
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L \
+ $(BASE_LIB_OBJS) \
+ $(PORT_LIB_OBJS) \
+ $(UTIL_LIB_OBJS) \
+ $(DATA_LIB_OBJS) \
+ $(LP_DATA_LIB_OBJS) \
+ $(GLOP_LIB_OBJS) \
+ $(GRAPH_LIB_OBJS) \
+ $(ALGORITHMS_LIB_OBJS) \
+ $(SAT_LIB_OBJS) \
+ $(BOP_LIB_OBJS) \
+ $(LP_LIB_OBJS) \
+ $(CP_LIB_OBJS) \
+ $(DEPENDENCIES_LNK) \
+ $(OR_TOOLS_LD_FLAGS)
 
 # compile and run C++ examples
 .PHONY: ccc
@@ -828,8 +828,10 @@ install_dirs:
 	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sutil"
 
 .PHONY: install_cc # Install C++ OR-Tools to $(prefix)/.
-install_cc: ortoolslibs $(PATCHELF) install_dirs
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) "$(prefix)$Slib"
+install_cc: install_ortools install_third_party
+
+install_ortools: ortoolslibs install_dirs
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(prefix)$Slib"
 	$(COPY) ortools$Salgorithms$S*.h "$(prefix)$Sinclude$Sortools$Salgorithms"
 	$(COPY) ortools$Sbase$S*.h "$(prefix)$Sinclude$Sortools$Sbase"
 	$(COPY) ortools$Sconstraint_solver$S*.h "$(prefix)$Sinclude$Sortools$Sconstraint_solver"
@@ -847,11 +849,38 @@ install_cc: ortoolslibs $(PATCHELF) install_dirs
 	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h "$(prefix)$Sinclude$Sortools$Ssat"
 	$(COPY) ortools$Sutil$S*.h "$(prefix)$Sinclude$Sortools$Sutil"
 
+install_third_party:
+ifeq ($(UNIX_GFLAGS_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Sbin$Sgflags_completions.sh "$(prefix)$Sbin"
+	$(COPYREC) dependencies$Sinstall$Slib$Slibgflags* "$(prefix)$Slib"
+endif
+ifeq ($(UNIX_GLOG_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sglog "$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Slib$Slibglog* "$(prefix)$Slib"
+endif
+ifeq ($(UNIX_PROTOBUF_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Sbin$Sprotoc "$(prefix)$Sbin"
+	$(COPYREC) dependencies$Sinstall$Slib$Slibproto* "$(prefix)$Slib"
+endif
+ifeq ($(UNIX_CBC_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Scoin "$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Sbin$Scbc "$(prefix)$Sbin"
+	$(COPYREC) dependencies$Sinstall$Sbin$Sclp "$(prefix)$Sbin"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibCbc* "$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibCgl* "$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibClp* "$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibOsi* "$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibCoinUtils* "$(prefix)$Slib"
+endif
+
 .PHONY: detect_cc # Show variables used to build C++ OR-Tools.
 detect_cc:
 	@echo Relevant info for the C++ build:
 	@echo CCC = $(CCC)
 	@echo CFLAGS = $(CFLAGS)
+	@echo LINK_CMD = $(LINK_CMD)
 	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
 	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
 	@echo OR_TOOLS_LD_FLAGS = $(OR_TOOLS_LD_FLAGS)
