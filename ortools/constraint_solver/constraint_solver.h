@@ -4615,11 +4615,11 @@ class SequenceVar : public PropagationBaseObject {
   // of all currently unranked interval vars.
   void RankNotFirst(int index);
 
-  // Ranks the index_th interval var first of all unranked interval
+  // Ranks the index_th interval var last of all unranked interval
   // vars. After that, it will no longer be considered ranked.
   void RankLast(int index);
 
-  // Indicates that the index_th interval var will not be ranked first
+  // Indicates that the index_th interval var will not be ranked last
   // of all currently unranked interval vars.
   void RankNotLast(int index);
 
