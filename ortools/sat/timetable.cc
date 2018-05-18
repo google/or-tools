@@ -406,14 +406,20 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
     return false;
   }
 
-  // The profile needs to be recomputed if the task has a mandatory part.
+  // The profile needs to be recomputed if we pushed something (because it can
+  // have side effects). Note that for the case where the interval is optional
+  // but not its start, it is possible that UpdateStartingTime() didn't change
+  // the start, so we need to test this in order to avoid an infinite loop.
+  //
   // TODO(user): find an efficient way to keep the start_max < new_end_min
   // condition. The problem is that ReduceProfile() assumes that by_end_min and
   // by_start_max are up to date (this is not necessarily the case if we use
   // the old condition). A solution is to update those vector before calling
   // ReduceProfile() or to ReduceProfile() directly after BuildProfile() in the
   // main loop.
-  profile_changed_ = true;
+  if (helper_->StartMin(task_id) != initial_start_min) {
+    profile_changed_ = true;
+  }
 
   // Explain that the task should be absent or explain the resource overload.
   if (overload) return OverloadOrRemove(task_id, start_max);

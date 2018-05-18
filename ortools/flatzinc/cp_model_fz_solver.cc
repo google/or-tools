@@ -537,7 +537,19 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     arg->set_capacity(capacity);
     for (int i = 0; i < starts.size(); ++i) {
       arg->add_intervals(intervals[i]);
-      arg->add_demands(demands[i]);
+
+      // Special case for a 0-1 demand, we mark the interval as optional instead
+      // and fix the demand to 1.
+      if (proto.variables(demands[i]).domain().size() == 2 &&
+          proto.variables(demands[i]).domain(0) == 0 &&
+          proto.variables(demands[i]).domain(1) == 1 &&
+          proto.variables(capacity).domain(1) == 1) {
+        proto.mutable_constraints(intervals[i])
+            ->add_enforcement_literal(demands[i]);
+        arg->add_demands(LookupConstant(1));
+      } else {
+        arg->add_demands(demands[i]);
+      }
     }
   } else if (fz_ct.type == "diffn") {
     const std::vector<int> x = LookupVars(fz_ct.arguments[0]);

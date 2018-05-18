@@ -62,38 +62,38 @@ std::function<void(Model*)> Disjunctive(
       watcher->SetPropagatorPriority(id, 1);
       model->TakeOwnership(overload_checker);
     }
-    for (const bool time_direction : {true, false}) {
-      DisjunctiveDetectablePrecedences* detectable_precedences =
-          new DisjunctiveDetectablePrecedences(time_direction, helper);
-      const int id = detectable_precedences->RegisterWith(watcher);
-      watcher->SetPropagatorPriority(id, 2);
-      model->TakeOwnership(detectable_precedences);
-    }
-    for (const bool time_direction : {true, false}) {
-      DisjunctiveNotLast* not_last =
-          new DisjunctiveNotLast(time_direction, helper);
-      const int id = not_last->RegisterWith(watcher);
-      watcher->SetPropagatorPriority(id, 3);
-      model->TakeOwnership(not_last);
-    }
-    for (const bool time_direction : {true, false}) {
-      DisjunctiveEdgeFinding* edge_finding =
-          new DisjunctiveEdgeFinding(time_direction, helper);
-      const int id = edge_finding->RegisterWith(watcher);
-      watcher->SetPropagatorPriority(id, 4);
-      model->TakeOwnership(edge_finding);
-    }
-    if (model->GetOrCreate<SatParameters>()
-            ->use_precedences_in_disjunctive_constraint()) {
       for (const bool time_direction : {true, false}) {
-        DisjunctivePrecedences* precedences = new DisjunctivePrecedences(
-            time_direction, helper, model->GetOrCreate<IntegerTrail>(),
-            model->GetOrCreate<PrecedencesPropagator>());
-        const int id = precedences->RegisterWith(watcher);
-        watcher->SetPropagatorPriority(id, 5);
-        model->TakeOwnership(precedences);
+        DisjunctiveDetectablePrecedences* detectable_precedences =
+            new DisjunctiveDetectablePrecedences(time_direction, helper);
+        const int id = detectable_precedences->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 2);
+        model->TakeOwnership(detectable_precedences);
       }
-    }
+      for (const bool time_direction : {true, false}) {
+        DisjunctiveNotLast* not_last =
+            new DisjunctiveNotLast(time_direction, helper);
+        const int id = not_last->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 3);
+        model->TakeOwnership(not_last);
+      }
+      for (const bool time_direction : {true, false}) {
+        DisjunctiveEdgeFinding* edge_finding =
+            new DisjunctiveEdgeFinding(time_direction, helper);
+        const int id = edge_finding->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 4);
+        model->TakeOwnership(edge_finding);
+      }
+      if (model->GetOrCreate<SatParameters>()
+              ->use_precedences_in_disjunctive_constraint()) {
+        for (const bool time_direction : {true, false}) {
+          DisjunctivePrecedences* precedences = new DisjunctivePrecedences(
+              time_direction, helper, model->GetOrCreate<IntegerTrail>(),
+              model->GetOrCreate<PrecedencesPropagator>());
+          const int id = precedences->RegisterWith(watcher);
+          watcher->SetPropagatorPriority(id, 5);
+          model->TakeOwnership(precedences);
+        }
+      }
   };
 }
 
@@ -209,8 +209,11 @@ bool DisjunctiveOverloadChecker::Propagate() {
   int num_events_ = 0;
   for (const auto task_time : helper_->TaskByIncreasingStartMin()) {
     const int task = task_time.task_index;
-    // TODO(user): Add max energy deduction for variable durations.
-    // Those would take into account tasks with DurationMin(task) == 0.
+
+    // TODO(user): We need to take into account task with zero duration because
+    // in this constraint, such a task cannot be overlapped by other. However,
+    // we currently use the fact that the energy min is zero to detect that a
+    // task is present and non-optional in the theta_tree_. Fix.
     if (helper_->IsAbsent(task) || helper_->DurationMin(task) == 0) {
       task_to_start_event_[task] = -1;
       continue;
@@ -231,14 +234,18 @@ bool DisjunctiveOverloadChecker::Propagate() {
 
     {
       const int current_event = task_to_start_event_[current_task];
-      const bool is_present = helper_->IsPresent(current_task);
-      // TODO(user): consider reducing max available duration.
-      const IntegerValue energy_max = helper_->DurationMin(current_task);
-      const IntegerValue energy_min = is_present ? energy_max : IntegerValue(0);
-
-      theta_tree_.AddOrUpdateEvent(current_event,
-                                   start_event_time_[current_event], energy_min,
-                                   energy_max);
+      const IntegerValue energy_min = helper_->DurationMin(current_task);
+      if (helper_->IsPresent(current_task)) {
+        // TODO(user, stevengay): Add max energy deduction for variable
+        // durations by putting the energy_max here and modifying the code
+        // dealing with the optional enveloppe greater than current_end below.
+        theta_tree_.AddOrUpdateEvent(current_event,
+                                     start_event_time_[current_event],
+                                     energy_min, energy_min);
+      } else {
+        theta_tree_.AddOrUpdateOptionalEvent(
+            current_event, start_event_time_[current_event], energy_min);
+      }
     }
 
     const IntegerValue current_end = task_time.time;
@@ -250,7 +257,6 @@ bool DisjunctiveOverloadChecker::Propagate() {
       const IntegerValue window_start = start_event_time_[critical_event];
       const IntegerValue window_end =
           theta_tree_.GetEnvelopeOf(critical_event) - 1;
-
       for (int event = critical_event; event < num_events; event++) {
         if (theta_tree_.EnergyMin(event) > 0) {
           const int task = start_event_to_task_[event];
@@ -271,16 +277,15 @@ bool DisjunctiveOverloadChecker::Propagate() {
       helper_->ClearReason();
       int critical_event;
       int optional_event;
-      IntegerValue unused;
+      IntegerValue available_energy;
       theta_tree_.GetEventsWithOptionalEnvelopeGreaterThan(
-          current_end, &critical_event, &optional_event, &unused);
+          current_end, &critical_event, &optional_event, &available_energy);
 
-      const IntegerValue window_start = start_event_time_[critical_event];
       const int optional_task = start_event_to_task_[optional_event];
-      const IntegerValue window_end =
-          theta_tree_.GetEnvelopeOf(critical_event) +
-          helper_->DurationMin(optional_task) - 1;
-
+      const IntegerValue window_start = start_event_time_[critical_event];
+      const IntegerValue window_end = current_end +
+                                      helper_->DurationMin(optional_task) -
+                                      available_energy - 1;
       for (int event = critical_event; event < num_events; event++) {
         if (theta_tree_.EnergyMin(event) > 0) {
           const int task = start_event_to_task_[event];
@@ -377,7 +382,10 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
         return false;
       }
 
-      // We need to reorder t inside task_set_.
+      // We need to reorder t inside task_set_. Note that if t is in the set,
+      // it means that the task is present and that IncreaseStartMin() did push
+      // its start (by opposition to an optional interval where the push might
+      // not happen if its start is not optional).
       task_set_.NotifyEntryIsNowLastIfPresent(
           {t, helper_->StartMin(t), helper_->DurationMin(t)});
     }

@@ -1283,16 +1283,24 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
   int num_duration_one = 0;
   int num_greater_half_capacity = 0;
 
+  bool has_optional_interval = false;
   for (int i = 0; i < size; ++i) {
     // TODO(user): adapt in the presence of optional intervals.
-    const IntervalConstraintProto& interval =
-        context->working_model->constraints(proto.intervals(i)).interval();
+    const ConstraintProto& ct =
+        context->working_model->constraints(proto.intervals(i));
+    if (!ct.enforcement_literal().empty()) has_optional_interval = true;
+    const IntervalConstraintProto& interval = ct.interval();
     start_indices[i] = interval.start();
     const int duration_index = interval.size();
     const int demand_index = proto.demands(i);
     if (context->IsFixed(duration_index) &&
         context->MinOf(duration_index) == 1) {
       num_duration_one++;
+    }
+    if (context->MinOf(duration_index) == 0) {
+      // The behavior for zero-duration interval is currently not the same in
+      // the no-overlap and the cumulative constraint.
+      return false;
     }
     const int64 demand_min = context->MinOf(demand_index);
     const int64 demand_max = context->MaxOf(demand_index);
@@ -1307,7 +1315,7 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
   }
 
   if (num_greater_half_capacity == size) {
-    if (num_duration_one == size) {
+    if (num_duration_one == size && !has_optional_interval) {
       context->UpdateRuleStats("cumulative: convert to all_different");
       ConstraintProto* new_ct = context->working_model->add_constraints();
       auto* arg = new_ct->mutable_all_diff();
