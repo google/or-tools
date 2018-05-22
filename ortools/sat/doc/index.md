@@ -1,8 +1,6 @@
 # Using the CP-SAT solver
 
 
-[TOC]
-
 
 This document presents modeling recipes for the CP/SAT solver.
 These are grouped by type:

@@ -1,8 +1,6 @@
 # Boolean logic recipes for the CP-SAT solver.
 
 
-[TOC]
-
 
 ## Introduction
 
