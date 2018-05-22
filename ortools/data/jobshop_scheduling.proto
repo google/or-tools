@@ -113,15 +113,25 @@ message Machine {
   string name = 16;
 }
 
+// Specifies a precedence relation between jobs.
+// It states: start(second_job) >= end(first_job) + min_delay.
+message JobPrecedence {
+  int32 first_job_index = 1;
+  int32 second_job_index = 2;
+  int64 min_delay = 3;
+}
+
+
 // The input of a problem.
 message JsspInputProblem {
   repeated Job jobs = 1;
   repeated Machine machines = 2;
-  int64 makespan_cost_per_time_unit = 3;
+  repeated JobPrecedence precedences = 3;
+  int64 makespan_cost_per_time_unit = 4;
   // If set, the cost coefficients are multiplied by this factor.
   // It is set to 1000 by the parser when reading early tardy taillard problems
   // where the weight of a job is a floating point value.
-  google.protobuf.DoubleValue scaling_factor = 4;
+  google.protobuf.DoubleValue scaling_factor = 5;
   // Sometimes, the academic data files contain extra information. We store it
   // in the input problem message.
   int32 seed = 24;

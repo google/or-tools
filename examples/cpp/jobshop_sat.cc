@@ -29,6 +29,7 @@
 #include "ortools/data/jobshop_scheduling_parser.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 
 DEFINE_string(input, "", "Jobshop data file name.");
@@ -37,9 +38,13 @@ DEFINE_bool(use_optional_variables, true,
             "Whether we use optional variables for bounds of an optional "
             "interval or not.");
 DEFINE_bool(display_model, false, "Display jobshop proto before solving.");
+DEFINE_bool(display_sat_model, false, "Display sat proto before solving.");
 using operations_research::data::jssp::Job;
+using operations_research::data::jssp::JobPrecedence;
 using operations_research::data::jssp::JsspInputProblem;
+using operations_research::data::jssp::Machine;
 using operations_research::data::jssp::Task;
+using operations_research::data::jssp::TransitionTimeMatrix;
 
 namespace operations_research {
 namespace sat {
@@ -51,8 +56,7 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
   int64 max_earliest_start = 0;
   for (const Job& job : problem.jobs()) {
     if (job.has_latest_end()) {
-      max_latest_end =
-          std::max<int64>(max_latest_end, job.latest_end().value());
+      max_latest_end = std::max<int64>(max_latest_end, job.latest_end().value());
     } else {
       max_latest_end = kint64max;
     }
@@ -68,7 +72,23 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
       sum_of_durations += max_duration;
     }
   }
-  return std::min(max_latest_end, sum_of_durations + max_earliest_start);
+
+  const int num_jobs = problem.jobs_size();
+  int64 sum_of_transitions = 0;
+  for (const Machine& machine : problem.machines()) {
+    if (!machine.has_transition_time_matrix()) continue;
+    const TransitionTimeMatrix& matrix = machine.transition_time_matrix();
+    for (int i = 0; i < num_jobs; ++i) {
+      int64 max_transition = 0;
+      for (int j = 0; j < num_jobs; ++j) {
+        max_transition =
+            std::max<int64>(max_transition, matrix.transition_time(i * num_jobs + j));
+      }
+      sum_of_transitions += max_transition;
+    }
+  }
+  return std::min(max_latest_end,
+                  sum_of_durations + sum_of_transitions + max_earliest_start);
   // TODO(user): Uses transitions.
 }
 
@@ -124,15 +144,21 @@ void Solve(const JsspInputProblem& problem) {
     return index;
   };
 
-  auto add_precedence = [&cp_model](int before, int after) {
+  auto add_precedence_with_delay = [&cp_model](int before, int after,
+                                               int64 min_delay) {
     LinearConstraintProto* const lin =
         cp_model.add_constraints()->mutable_linear();
     lin->add_vars(after);
     lin->add_coeffs(1L);
     lin->add_vars(before);
     lin->add_coeffs(-1L);
-    lin->add_domain(0L);
+    lin->add_domain(min_delay);
     lin->add_domain(kint64max);
+  };
+
+  auto add_precedence = [&cp_model, &add_precedence_with_delay](int before,
+                                                                int after) {
+    return add_precedence_with_delay(before, after, 0L);
   };
 
   auto add_conditional_equality = [&cp_model](int left, int right, int lit) {
@@ -146,6 +172,19 @@ void Solve(const JsspInputProblem& problem) {
     lin->add_domain(0L);
     lin->add_domain(0);
   };
+
+  auto add_conditional_precedence_with_offset =
+      [&cp_model](int before, int after, int lit, int64 offset) {
+        ConstraintProto* const ct = cp_model.add_constraints();
+        ct->add_enforcement_literal(lit);
+        LinearConstraintProto* const lin = ct->mutable_linear();
+        lin->add_vars(after);
+        lin->add_coeffs(1L);
+        lin->add_vars(before);
+        lin->add_coeffs(-1L);
+        lin->add_domain(offset);
+        lin->add_domain(kint64max);
+      };
 
   auto add_sum_equal_one = [&cp_model](const std::vector<int>& vars) {
     LinearConstraintProto* lin = cp_model.add_constraints()->mutable_linear();
@@ -203,6 +242,13 @@ void Solve(const JsspInputProblem& problem) {
   CpObjectiveProto* const obj = cp_model.mutable_objective();
 
   std::vector<std::vector<int>> machine_to_intervals(num_machines);
+  std::vector<std::vector<int>> machine_to_jobs(num_machines);
+  std::vector<std::vector<int>> machine_to_starts(num_machines);
+  std::vector<std::vector<int>> machine_to_ends(num_machines);
+  std::vector<std::vector<int>> machine_to_presences(num_machines);
+  std::vector<int> job_starts(num_jobs);
+  std::vector<int> job_ends(num_jobs);
+
   for (int j = 0; j < num_jobs; ++j) {
     const Job& job = problem.jobs(j);
     int previous_end = -1;
@@ -229,6 +275,14 @@ void Solve(const JsspInputProblem& problem) {
       const int end = new_variable(hard_start, hard_end);
       const int interval = new_interval(start, duration, end);
 
+      // Stores starts and ends of jobs for precedences.
+      if (t == 0) {
+        job_starts[j] = start;
+      }
+      if (t == job.tasks_size() - 1) {
+        job_ends[j] = end;
+      }
+
       // Chain the task belonging to the same job.
       if (previous_end != -1) {
         add_precedence(previous_end, start);
@@ -239,7 +293,15 @@ void Solve(const JsspInputProblem& problem) {
       heuristic->add_variables(start);
 
       if (num_alternatives == 1) {
-        machine_to_intervals[task.machine(0)].push_back(interval);
+        const int m = task.machine(0);
+        machine_to_intervals[m].push_back(interval);
+        machine_to_jobs[m].push_back(j);
+        machine_to_starts[m].push_back(start);
+        machine_to_ends[m].push_back(end);
+        machine_to_presences[m].push_back(new_constant(1));
+        if (task.cost_size() > 0) {
+          obj->set_offset(obj->offset() + task.cost(0));
+        }
       } else {
         std::vector<int> presences;
         for (int a = 0; a < num_alternatives; ++a) {
@@ -262,8 +324,19 @@ void Solve(const JsspInputProblem& problem) {
             // TODO(user): Experiment with the following implication.
             add_conditional_equality(duration, local_duration, presence);
           }
-          // Add local interval to machine.
-          machine_to_intervals[task.machine(a)].push_back(local_interval);
+          // Record relevant variables for later use.
+          const int m = task.machine(a);
+          machine_to_intervals[m].push_back(local_interval);
+          machine_to_jobs[m].push_back(j);
+          machine_to_starts[m].push_back(local_start);
+          machine_to_ends[m].push_back(local_end);
+          machine_to_presences[m].push_back(presence);
+
+          // Add cost if present.
+          if (task.cost_size() > 0) {
+            obj->add_vars(presence);
+            obj->add_coeffs(task.cost(a));
+          }
           // Collect presence variables.
           presences.push_back(presence);
         }
@@ -294,6 +367,52 @@ void Solve(const JsspInputProblem& problem) {
     for (const int i : machine_to_intervals[m]) {
       no_overlap->add_intervals(i);
     }
+
+    if (problem.machines(m).has_transition_time_matrix()) {
+      const TransitionTimeMatrix& transitions =
+          problem.machines(m).transition_time_matrix();
+      const int num_intervals = machine_to_intervals[m].size();
+
+      // Create circuit constraint on a machine.
+      // Node 0 and num_intervals + 1 are source and sink.
+      CircuitConstraintProto* const circuit =
+          cp_model.add_constraints()->mutable_circuit();
+      for (int i = 0; i < num_intervals; ++i) {
+        const int job_i = machine_to_jobs[m][i];
+        // Source to nodes.
+        circuit->add_tails(0);
+        circuit->add_heads(i + 1);
+        circuit->add_literals(new_variable(0, 1));
+        // Node to sink.
+        circuit->add_tails(i + 1);
+        circuit->add_heads(0);
+        circuit->add_literals(new_variable(0, 1));
+        // Node to node.
+        for (int j = 0; j < num_intervals; ++j) {
+          circuit->add_tails(i + 1);
+          circuit->add_heads(j + 1);
+          if (i == j) {
+            circuit->add_literals(NegatedRef(machine_to_presences[m][i]));
+          } else {
+            const int job_j = machine_to_jobs[m][j];
+            const int64 transition =
+                transitions.transition_time(job_i * num_jobs + job_j);
+            const int lit = new_variable(0, 1);
+            circuit->add_literals(lit);
+            add_conditional_precedence_with_offset(machine_to_ends[m][i],
+                                                   machine_to_starts[m][j], lit,
+                                                   transition);
+          }
+        }
+      }
+    }
+  }
+
+  // Add job precedences.
+  for (const JobPrecedence& precedence : problem.precedences()) {
+    add_precedence_with_delay(job_ends[precedence.first_job_index()],
+                              job_starts[precedence.second_job_index()],
+                              precedence.min_delay());
   }
 
   // Add objective.
@@ -308,6 +427,10 @@ void Solve(const JsspInputProblem& problem) {
   LOG(INFO) << "#machines:" << num_machines;
   LOG(INFO) << "#jobs:" << num_jobs;
   LOG(INFO) << "horizon:" << horizon;
+
+  if (FLAGS_display_sat_model) {
+    LOG(INFO) << cp_model.DebugString();
+  }
 
   LOG(INFO) << CpModelStats(cp_model);
 
