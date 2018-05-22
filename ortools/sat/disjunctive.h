@@ -75,10 +75,6 @@ class TaskSet {
   void NotifyEntryIsNowLastIfPresent(const Entry& e);
   void RemoveEntryWithIndex(int index);
 
-  // Like AddEntry() when we already know that e.min_start will be the largest
-  // one. This is checked in debug mode.
-  void AddOrderedLastEntry(const Entry& e);
-
   // Advanced usage. Instead of calling many AddEntry(), it is more efficient to
   // call AddUnsortedEntry() instead, but then Sort() MUST be called just after
   // the insertions. Nothing is checked here, so it is up to the client to do
@@ -130,7 +126,7 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
                              SchedulingConstraintHelper* helper)
       : time_direction_(time_direction), helper_(helper), theta_tree_() {
     // Resize this once and for all.
-    task_to_start_event_.resize(helper_->NumTasks());
+    task_to_event_.resize(helper_->NumTasks());
   }
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
@@ -138,10 +134,11 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
  private:
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
+
   ThetaLambdaTree<IntegerValue> theta_tree_;
-  std::vector<int> task_to_start_event_;
-  std::vector<int> start_event_to_task_;
-  std::vector<IntegerValue> start_event_time_;
+  std::vector<int> task_to_event_;
+  std::vector<int> event_to_task_;
+  std::vector<IntegerValue> event_time_;
 };
 
 class DisjunctiveDetectablePrecedences : public PropagatorInterface {
@@ -179,16 +176,19 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
  public:
   DisjunctiveEdgeFinding(bool time_direction,
                          SchedulingConstraintHelper* helper)
-      : time_direction_(time_direction),
-        helper_(helper),
-        task_set_(helper->NumTasks()) {}
+      : time_direction_(time_direction), helper_(helper) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
-  TaskSet task_set_;
+
+  ThetaLambdaTree<IntegerValue> theta_tree_;
+  std::vector<int> non_gray_task_to_event_;
+  std::vector<int> event_to_task_;
+  std::vector<IntegerValue> event_time_;
+
   std::vector<bool> is_gray_;
 };
 
