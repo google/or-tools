@@ -153,14 +153,20 @@ ifeq ($(PLATFORM),LINUX)
  -Wl,-rpath,"\$$ORIGIN" \
  -Wl,-rpath,"\$$ORIGIN/../lib" \
  -Wl,-rpath,"\$$ORIGIN/../dependencies/install/lib"
+  PYTHON_LDFLAGS = \
+ -Wl,-rpath,"\$$ORIGIN" \
+ -Wl,-rpath,"\$$ORIGIN/../../ortools" \
+ -Wl,-rpath,"\$$ORIGIN/../../../../lib" \
+ -Wl,-rpath,"\$$ORIGIN/../../../../dependencies/install/lib"
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
   CCC = clang++ -fPIC -std=c++11  $(MAC_VERSION) -stdlib=libc++
-  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress \
- -macosx_version_min $(MAC_MIN_VERSION) -lSystem \
- -compatibility_version $(OR_TOOLS_SHORT_VERSION) \
- -current_version $(OR_TOOLS_SHORT_VERSION)
+  DYNAMIC_LD = clang++ -dynamiclib \
+ -Wl,-search_paths_first \
+ -Wl,-headerpad_max_install_names \
+ -current_version $(OR_TOOLS_SHORT_VERSION) \
+ -compatibility_version $(OR_TOOLS_SHORT_VERSION)
   DYNAMIC_LDFLAGS = -Wl,-rpath,\"@loader_path\"
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
@@ -208,6 +214,11 @@ ifeq ($(PLATFORM),MACOSX)
  -Wl,-rpath,@loader_path/../lib \
  -Wl,-rpath,@loader_path/../dependencies/install/lib
   LDFLAGS = -install_name @rpath/$(LIB_PREFIX)ortools.$L #
+  PYTHON_LDFLAGS = \
+ -Wl,-rpath,@loader_path \
+ -Wl,-rpath,@loader_path/../../ortools \
+ -Wl,-rpath,@loader_path/../../../../lib \
+ -Wl,-rpath,@loader_path/../../../../dependencies/install/lib
 endif # ifeq ($(PLATFORM),MACOSX)
 
 DEPENDENCIES_INC = -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) \
