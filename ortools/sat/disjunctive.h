@@ -59,11 +59,11 @@ class TaskSet {
 
   struct Entry {
     int task;
-    IntegerValue min_start;
-    IntegerValue min_duration;
+    IntegerValue start_min;
+    IntegerValue duration_min;
 
     // Note that the tie-breaking is not important here.
-    bool operator<(Entry other) const { return min_start < other.min_start; }
+    bool operator<(Entry other) const { return start_min < other.start_min; }
   };
 
   // Insertion and modification. These leave sorted_tasks_ sorted.
@@ -96,7 +96,7 @@ class TaskSet {
   // A reason for the min end is:
   // - The duration-min of all the critical tasks.
   // - The fact that all critical tasks have a start-min greater or equal to the
-  //   first of them, that is SortedTasks()[critical_index].min_start.
+  //   first of them, that is SortedTasks()[critical_index].start_min.
   //
   // It is possible to behave like if one task was not in the set by setting
   // task_to_ignore to the id of this task. This returns 0 if the set is empty

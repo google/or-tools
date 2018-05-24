@@ -62,38 +62,38 @@ std::function<void(Model*)> Disjunctive(
       watcher->SetPropagatorPriority(id, 1);
       model->TakeOwnership(overload_checker);
     }
+    for (const bool time_direction : {true, false}) {
+      DisjunctiveDetectablePrecedences* detectable_precedences =
+          new DisjunctiveDetectablePrecedences(time_direction, helper);
+      const int id = detectable_precedences->RegisterWith(watcher);
+      watcher->SetPropagatorPriority(id, 2);
+      model->TakeOwnership(detectable_precedences);
+    }
+    for (const bool time_direction : {true, false}) {
+      DisjunctiveNotLast* not_last =
+          new DisjunctiveNotLast(time_direction, helper);
+      const int id = not_last->RegisterWith(watcher);
+      watcher->SetPropagatorPriority(id, 3);
+      model->TakeOwnership(not_last);
+    }
+    for (const bool time_direction : {true, false}) {
+      DisjunctiveEdgeFinding* edge_finding =
+          new DisjunctiveEdgeFinding(time_direction, helper);
+      const int id = edge_finding->RegisterWith(watcher);
+      watcher->SetPropagatorPriority(id, 4);
+      model->TakeOwnership(edge_finding);
+    }
+    if (model->GetOrCreate<SatParameters>()
+            ->use_precedences_in_disjunctive_constraint()) {
       for (const bool time_direction : {true, false}) {
-        DisjunctiveDetectablePrecedences* detectable_precedences =
-            new DisjunctiveDetectablePrecedences(time_direction, helper);
-        const int id = detectable_precedences->RegisterWith(watcher);
-        watcher->SetPropagatorPriority(id, 2);
-        model->TakeOwnership(detectable_precedences);
+        DisjunctivePrecedences* precedences = new DisjunctivePrecedences(
+            time_direction, helper, model->GetOrCreate<IntegerTrail>(),
+            model->GetOrCreate<PrecedencesPropagator>());
+        const int id = precedences->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 5);
+        model->TakeOwnership(precedences);
       }
-      for (const bool time_direction : {true, false}) {
-        DisjunctiveNotLast* not_last =
-            new DisjunctiveNotLast(time_direction, helper);
-        const int id = not_last->RegisterWith(watcher);
-        watcher->SetPropagatorPriority(id, 3);
-        model->TakeOwnership(not_last);
-      }
-      for (const bool time_direction : {true, false}) {
-        DisjunctiveEdgeFinding* edge_finding =
-            new DisjunctiveEdgeFinding(time_direction, helper);
-        const int id = edge_finding->RegisterWith(watcher);
-        watcher->SetPropagatorPriority(id, 4);
-        model->TakeOwnership(edge_finding);
-      }
-      if (model->GetOrCreate<SatParameters>()
-              ->use_precedences_in_disjunctive_constraint()) {
-        for (const bool time_direction : {true, false}) {
-          DisjunctivePrecedences* precedences = new DisjunctivePrecedences(
-              time_direction, helper, model->GetOrCreate<IntegerTrail>(),
-              model->GetOrCreate<PrecedencesPropagator>());
-          const int id = precedences->RegisterWith(watcher);
-          watcher->SetPropagatorPriority(id, 5);
-          model->TakeOwnership(precedences);
-        }
-      }
+    }
   };
 }
 
@@ -131,7 +131,7 @@ std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
 void TaskSet::AddEntry(const Entry& e) {
   int j = sorted_tasks_.size();
   sorted_tasks_.push_back(e);
-  while (j > 0 && sorted_tasks_[j - 1].min_start > e.min_start) {
+  while (j > 0 && sorted_tasks_[j - 1].start_min > e.start_min) {
     sorted_tasks_[j] = sorted_tasks_[j - 1];
     --j;
   }
@@ -168,22 +168,22 @@ IntegerValue TaskSet::ComputeEndMin(int task_to_ignore,
   DCHECK(std::is_sorted(sorted_tasks_.begin(), sorted_tasks_.end()));
   bool ignored = false;
   const int size = sorted_tasks_.size();
-  IntegerValue min_end = kMinIntegerValue;
+  IntegerValue end_min = kMinIntegerValue;
   for (int i = optimized_restart_; i < size; ++i) {
     const Entry& e = sorted_tasks_[i];
     if (e.task == task_to_ignore) {
       ignored = true;
       continue;
     }
-    if (e.min_start >= min_end) {
+    if (e.start_min >= end_min) {
       *critical_index = i;
       if (!ignored) optimized_restart_ = i;
-      min_end = e.min_start + e.min_duration;
+      end_min = e.start_min + e.duration_min;
     } else {
-      min_end += e.min_duration;
+      end_min += e.duration_min;
     }
   }
-  return min_end;
+  return end_min;
 }
 
 // TODO(user): Improve the Overload Checker using delayed insertion.
@@ -307,24 +307,24 @@ int DisjunctiveOverloadChecker::RegisterWith(GenericLiteralWatcher* watcher) {
 
 bool DisjunctiveDetectablePrecedences::Propagate() {
   helper_->SetTimeDirection(time_direction_);
-  const auto& task_by_increasing_min_end = helper_->TaskByIncreasingEndMin();
-  const auto& task_by_decreasing_max_start =
+  const auto& task_by_increasing_end_min = helper_->TaskByIncreasingEndMin();
+  const auto& task_by_decreasing_start_max =
       helper_->TaskByDecreasingStartMax();
 
   const int num_tasks = helper_->NumTasks();
   int queue_index = num_tasks - 1;
   task_set_.Clear();
-  for (const auto task_time : task_by_increasing_min_end) {
+  for (const auto task_time : task_by_increasing_end_min) {
     const int t = task_time.task_index;
-    const IntegerValue min_end = task_time.time;
+    const IntegerValue end_min = task_time.time;
 
     if (helper_->IsAbsent(t)) continue;
 
     while (queue_index >= 0) {
-      const auto to_insert = task_by_decreasing_max_start[queue_index];
+      const auto to_insert = task_by_decreasing_start_max[queue_index];
       const int task_index = to_insert.task_index;
-      const IntegerValue max_start = to_insert.time;
-      if (min_end <= max_start) break;
+      const IntegerValue start_max = to_insert.time;
+      if (end_min <= start_max) break;
       if (helper_->IsPresent(task_index)) {
         task_set_.AddEntry({task_index, helper_->StartMin(task_index),
                             helper_->DurationMin(task_index)});
@@ -333,7 +333,7 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
     }
 
     // task_set_ contains all the tasks that must be executed before t.
-    // They are in "dectable precedence" because their max_start is smaller than
+    // They are in "dectable precedence" because their start_max is smaller than
     // the end-min of t like so:
     //          [(the task t)
     //                     (a task in task_set_)]
@@ -342,34 +342,34 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
     //
     // Note that this works as well when IsPresent(t) is false.
     int critical_index = 0;
-    const IntegerValue min_end_of_critical_tasks =
+    const IntegerValue end_min_of_critical_tasks =
         task_set_.ComputeEndMin(/*task_to_ignore=*/t, &critical_index);
-    if (min_end_of_critical_tasks > helper_->StartMin(t)) {
+    if (end_min_of_critical_tasks > helper_->StartMin(t)) {
       const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
       helper_->ClearReason();
 
       // We need:
       // - StartMax(ct) < EndMin(t) for the detectable precedence.
-      // - StartMin(ct) > window_start for the min_end_of_critical_tasks reason.
-      const IntegerValue window_start = sorted_tasks[critical_index].min_start;
+      // - StartMin(ct) > window_start for the end_min_of_critical_tasks reason.
+      const IntegerValue window_start = sorted_tasks[critical_index].start_min;
       for (int i = critical_index; i < sorted_tasks.size(); ++i) {
         const int ct = sorted_tasks[i].task;
         if (ct == t) continue;
         DCHECK(helper_->IsPresent(ct));
         DCHECK_GE(helper_->StartMin(ct), window_start);
-        DCHECK_LT(helper_->StartMax(ct), min_end);
+        DCHECK_LT(helper_->StartMax(ct), end_min);
         helper_->AddPresenceReason(ct);
         helper_->AddDurationMinReason(ct);
         helper_->AddStartMinReason(ct, window_start);
-        helper_->AddStartMaxReason(ct, min_end - 1);
+        helper_->AddStartMaxReason(ct, end_min - 1);
       }
 
       // Add the reason for t (we only need the end-min).
-      helper_->AddEndMinReason(t, min_end);
+      helper_->AddEndMinReason(t, end_min);
 
       // This augment the start-min of t and subsequently it can augment the
-      // next min_end_of_critical_tasks, but our deduction is still valid.
-      if (!helper_->IncreaseStartMin(t, min_end_of_critical_tasks)) {
+      // next end_min_of_critical_tasks, but our deduction is still valid.
+      if (!helper_->IncreaseStartMin(t, end_min_of_critical_tasks)) {
         return false;
       }
 
@@ -420,13 +420,13 @@ bool DisjunctivePrecedences::Propagate() {
     if (integer_trail_->IsCurrentlyIgnored(var)) continue;
     task_set_.Sort();
 
-    const IntegerValue min_end =
+    const IntegerValue end_min =
         task_set_.ComputeEndMin(/*task_to_ignore=*/-1, &critical_index);
-    if (min_end > integer_trail_->LowerBound(var)) {
+    if (end_min > integer_trail_->LowerBound(var)) {
       const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
       helper_->ClearReason();
 
-      const IntegerValue window_start = sorted_tasks[critical_index].min_start;
+      const IntegerValue window_start = sorted_tasks[critical_index].start_min;
       for (int i = critical_index; i < sorted_tasks.size(); ++i) {
         const int ct = sorted_tasks[i].task;
         DCHECK(helper_->IsPresent(ct));
@@ -442,7 +442,7 @@ bool DisjunctivePrecedences::Propagate() {
       // TODO(user): If var is actually a start-min of an interval, we
       // could push the end-min and check the interval consistency right away.
       if (!helper_->PushIntegerLiteral(
-              IntegerLiteral::GreaterOrEqual(var, min_end))) {
+              IntegerLiteral::GreaterOrEqual(var, end_min))) {
         return false;
       }
     }
@@ -459,18 +459,18 @@ int DisjunctivePrecedences::RegisterWith(GenericLiteralWatcher* watcher) {
 
 bool DisjunctiveNotLast::Propagate() {
   helper_->SetTimeDirection(time_direction_);
-  const auto& task_by_decreasing_max_start =
+  const auto& task_by_decreasing_start_max =
       helper_->TaskByDecreasingStartMax();
 
   const int num_tasks = helper_->NumTasks();
   int queue_index = num_tasks - 1;
 
   task_set_.Clear();
-  const auto& task_by_increasing_max_end =
+  const auto& task_by_increasing_end_max =
       ::gtl::reversed_view(helper_->TaskByDecreasingEndMax());
-  for (const auto task_time : task_by_increasing_max_end) {
+  for (const auto task_time : task_by_increasing_end_max) {
     const int t = task_time.task_index;
-    const IntegerValue max_end = task_time.time;
+    const IntegerValue end_max = task_time.time;
 
     if (helper_->IsAbsent(t)) continue;
 
@@ -478,10 +478,10 @@ bool DisjunctiveNotLast::Propagate() {
     // These are the only candidates that have a chance to decrease the end-max
     // of t.
     while (queue_index >= 0) {
-      const auto to_insert = task_by_decreasing_max_start[queue_index];
+      const auto to_insert = task_by_decreasing_start_max[queue_index];
       const int task_index = to_insert.task_index;
-      const IntegerValue max_start = to_insert.time;
-      if (max_end <= max_start) break;
+      const IntegerValue start_max = to_insert.time;
+      if (end_max <= start_max) break;
       if (helper_->IsPresent(task_index)) {
         task_set_.AddEntry({task_index, helper_->StartMin(task_index),
                             helper_->DurationMin(task_index)});
@@ -500,47 +500,47 @@ bool DisjunctiveNotLast::Propagate() {
     //
     // Note that this works as well when task_is_currently_present_[t] is false.
     int critical_index = 0;
-    const IntegerValue min_end_of_critical_tasks =
+    const IntegerValue end_min_of_critical_tasks =
         task_set_.ComputeEndMin(/*task_to_ignore=*/t, &critical_index);
-    if (min_end_of_critical_tasks <= helper_->StartMax(t)) continue;
+    if (end_min_of_critical_tasks <= helper_->StartMax(t)) continue;
 
     // Find the largest start-max of the critical tasks (excluding t). The
     // end-max for t need to be smaller than or equal to this.
-    IntegerValue largest_ct_max_start = kMinIntegerValue;
+    IntegerValue largest_ct_start_max = kMinIntegerValue;
     const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
     const int sorted_tasks_size = sorted_tasks.size();
     for (int i = critical_index; i < sorted_tasks_size; ++i) {
       const int ct = sorted_tasks[i].task;
       if (t == ct) continue;
-      const IntegerValue max_start = helper_->StartMax(ct);
-      if (max_start > largest_ct_max_start) {
-        largest_ct_max_start = max_start;
+      const IntegerValue start_max = helper_->StartMax(ct);
+      if (start_max > largest_ct_start_max) {
+        largest_ct_start_max = start_max;
       }
     }
 
     // If we have any critical task, the test will always be true because
     // of the tasks we put in task_set_.
-    DCHECK(largest_ct_max_start == kMinIntegerValue ||
-           max_end > largest_ct_max_start);
-    if (max_end > largest_ct_max_start) {
+    DCHECK(largest_ct_start_max == kMinIntegerValue ||
+           end_max > largest_ct_start_max);
+    if (end_max > largest_ct_start_max) {
       helper_->ClearReason();
 
-      const IntegerValue window_start = sorted_tasks[critical_index].min_start;
+      const IntegerValue window_start = sorted_tasks[critical_index].start_min;
       for (int i = critical_index; i < sorted_tasks_size; ++i) {
         const int ct = sorted_tasks[i].task;
         if (ct == t) continue;
         helper_->AddPresenceReason(ct);
         helper_->AddDurationMinReason(ct);
         helper_->AddStartMinReason(ct, window_start);
-        helper_->AddStartMaxReason(ct, largest_ct_max_start);
+        helper_->AddStartMaxReason(ct, largest_ct_start_max);
       }
 
       // Add the reason for t, we only need the start-max.
-      helper_->AddStartMaxReason(t, min_end_of_critical_tasks - 1);
+      helper_->AddStartMaxReason(t, end_min_of_critical_tasks - 1);
 
       // Enqueue the new end-max for t.
       // Note that changing it will not influence the rest of the loop.
-      if (!helper_->DecreaseEndMax(t, largest_ct_max_start)) return false;
+      if (!helper_->DecreaseEndMax(t, largest_ct_start_max)) return false;
     }
   }
   return true;
