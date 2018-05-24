@@ -35,6 +35,9 @@ and C++.
 
     #include "ortools/sat/cp_model.pb.h"
 
+    namespace operations_research {
+    namespace sat {
+
     CpModelProto cp_model;
 
     auto new_variable = [&cp_model](int64 lb, int64 ub) {
@@ -64,3 +67,6 @@ and C++.
     const int duration_var = new_constant(10);
     const int end_var = new_variable(0, horizon);
     const int interval_var = new_interval(start_var, duration_var, end_var);
+
+    }  // namespace sat
+    }  // namespace operations_research
