@@ -11,6 +11,9 @@ from the opposite operation on integer variables.
 
 ## Boolean variables and literals
 
+We can create a boolean variable 'x' and a literal 'lit' equal to the logical
+negation of 'x'.
+
 ### Python code
 
 ```python
@@ -18,7 +21,7 @@ from google3.util.operations_research.sat.python import cp_model
 
 model = cp_model.CpModel()
 x = model.NewBoolVar('x')
-literal = x.Not()
+lit = x.Not()
 ```
 
 ### C++ code
@@ -41,7 +44,7 @@ auto new_boolean_variable = [&cp_model]() {
 };
 
 const int x = new_boolean_variable();
-const int literal = NegatedRef(x);
+const int lit = NegatedRef(x);
 
 }  // namespace sat
 }  // namespace operations_research
@@ -112,7 +115,9 @@ where the constraint must hold if the literal is true.
 Please note that this is not an equivalence relation. The constraint can hold
 even if the literal is false.
 
-So we can write b => And(x, not y).
+So we can write b => And(x, not y). That is if b is true, then x is true and y
+is false. Note, that you can also write (b => x) and (b => not y), which then is
+written as Or(not b, x) and Or(not b, not y).
 
 ### Python code
 
@@ -123,7 +128,11 @@ model = cp_model.CpModel()
 x = model.NewBoolVar('x')
 y = model.NewBoolVar('y')
 b = model.NewBoolVar('b')
+# First version using a half-reified bool and.
 model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
+# Second version using implications.
+model.AddImplication(b, x)
+model.AddImplication(b, y.Not())
 ```
 
 ### C++ code
@@ -145,6 +154,14 @@ auto new_boolean_variable = [&cp_model]() {
   return index;
 };
 
+auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
+  BooleanArgumentProto* const bool_or =
+      model.add_constraints()->mutable_bool_or();
+  for (const int lit : literals) {
+    mutable_bool_or->add_literals(lit);
+  }
+};
+
 auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
                                         const int literal) {
   Constraint* const ct = model.add_constraints();
@@ -157,8 +174,11 @@ auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
 const int x = new_boolean_variable();
 const int y = new_boolean_variable();
 const int b = new_boolean_variable();
-
+// First version using a half-reified bool and.
 add_reified_bool_and({x, NegatedRef(y)}, b);
+// Second version using implications.
+add_bool_or({NegatedRef(b), x});
+add_bool_or({NegatedRef(b), NegatedRef(y)});
 
 }  // namespace sat
 }  // namespace operations_research
