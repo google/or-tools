@@ -4,23 +4,25 @@
 
 ## Introduction
 
-The CP-SAT solver can express boolean variables and constraints. A **boolean
+The CP-SAT solver can express Boolean variables and constraints. A **Boolean
 variable** is a integer variable between 0 and 1. A **literal** is either a
-boolean variable or its negation. Please note that this negation is different
+Boolean variable or its negation. Please note that this negation is different
 from the opposite operation on integer variables.
 
 ## Boolean variables and literals
 
-We can create a boolean variable 'x' and a literal 'lit' equal to the logical
+We can create a Boolean variable 'x' and a literal 'lit' equal to the logical
 negation of 'x'.
 
 ### Python code
 
 ```python
-from google3.util.operations_research.sat.python import cp_model
+from ortools.sat.python import cp_model
 
 model = cp_model.CpModel()
+
 x = model.NewBoolVar('x')
+
 lit = x.Not()
 ```
 
@@ -52,20 +54,22 @@ const int lit = NegatedRef(x);
 
 ## Boolean constraints
 
-There are three boolean constraints.
+There are three Boolean constraints.
 
--   or(literal1, .., literaln)
--   and(literal1, .., literaln)
--   xor(literal1, .., literaln)
+-   or(literal_1, .., literal_n)
+-   and(literal_1, .., literal_n)
+-   xor(literal_1, .., literal_n)
 
 ### Python code
 
 ```python
-from google3.util.operations_research.sat.python import cp_model
+from ortools.sat.python import cp_model
 
 model = cp_model.CpModel()
+
 x = model.NewBoolVar('x')
 y = model.NewBoolVar('y')
+
 model.AddBoolOr([x, y.Not()])
 ```
 
@@ -122,14 +126,17 @@ written as Or(not b, x) and Or(not b, not y).
 ### Python code
 
 ```python
-from google3.util.operations_research.sat.python import cp_model
+from ortools.sat.python import cp_model
 
 model = cp_model.CpModel()
+
 x = model.NewBoolVar('x')
 y = model.NewBoolVar('y')
 b = model.NewBoolVar('b')
+
 # First version using a half-reified bool and.
 model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
+
 # Second version using implications.
 model.AddImplication(b, x)
 model.AddImplication(b, y.Not())
@@ -174,8 +181,10 @@ auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
 const int x = new_boolean_variable();
 const int y = new_boolean_variable();
 const int b = new_boolean_variable();
+
 // First version using a half-reified bool and.
 add_reified_bool_and({x, NegatedRef(y)}, b);
+
 // Second version using implications.
 add_bool_or({NegatedRef(b), x});
 add_bool_or({NegatedRef(b), NegatedRef(y)});

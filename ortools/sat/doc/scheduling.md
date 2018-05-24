@@ -24,7 +24,7 @@ and C++.
 ### Python code
 
 ```python
-from google3.util.operations_research.sat.python import cp_model
+from ortools.sat.python import cp_model
 
 model = cp_model.CpModel()
 start_var = model.NewIntVar(0, horizon, 'start')
