@@ -4,3 +4,4 @@
 
 ## Introduction
 
+The CP-SAT solver can express integer variables and constraints.

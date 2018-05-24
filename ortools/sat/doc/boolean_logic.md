@@ -92,3 +92,62 @@ There are three boolean constraints.
 
     }  // namespace sat
     }  // namespace operations_research
+
+## Reified constraints
+
+The CP-SAT solver supports half-reified constraints. These are the following:
+
+    literal implies constraint
+
+where the constraint must hold if the literal is true.
+
+Please note that this is not an equivalence relation. The constraint can hold
+even if the literal is false.
+
+So we can write b => And(x, not y).
+
+### Python code
+
+    from google3.util.operations_research.sat.python import cp_model
+
+    model = cp_model.CpModel()
+    x = model.NewBoolVar('x')
+    y = model.NewBoolVar('y')
+    b = model.NewBoolVar('b')
+    model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
+
+### C++ code
+
+    #include "ortools/sat/cp_model.pb.h"
+    #include "ortools/sat/cp_model_utils.h"
+
+    namespace operations_research {
+    namespace sat {
+
+    CpModelProto cp_model;
+
+    auto new_boolean_variable = [&cp_model]() {
+      const int index = cp_model.variables_size();
+      IntegerVariableProto* const var = cp_model.add_variables();
+      var->add_domain(0);
+      var->add_domain(1);
+      return index;
+    };
+
+    auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
+                                            const int literal) {
+      Constraint* const ct = model.add_constraints();
+      ct->add_enforcement_literal(literal);
+      for (const int lit : literals) {
+        ct->mutable_bool_and()->add_literals(lit);
+      }
+    };
+
+    const int x = new_boolean_variable();
+    const int y = new_boolean_variable();
+    const int b = new_boolean_variable();
+
+    add_reified_bool_and({x, NegatedRef(y)}, b);
+
+    }  // namespace sat
+    }  // namespace operations_research

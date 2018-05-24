@@ -135,8 +135,8 @@ Scheduling constraints:
     a black box.
 *   [lp_utils.h](http://google3/ortools/sat/lp_utils.h):
     Utility to scale and convert a MIP model into CP.
-    
+
 ## Recipes
 
-You can find a set a code recipes in the
-[documentation directory](doc/index.md).
+You can find a set a code recipes in
+[the documentation directory](doc/index.md).
