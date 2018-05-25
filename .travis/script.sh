@@ -60,8 +60,8 @@ if [ "${BUILDER}" == make ];then
 			fi
 			cat Makefile.local
 			make third_party
+			make "${LANGUAGE}"
 			if [ "${LANGUAGE}" != fsharp ]; then
-			  make "${LANGUAGE}"
 				make test_"${LANGUAGE}"
 			fi
 		else
