@@ -2871,14 +2871,34 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Solve without presolving ?
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
+  const int num_original_variables = model_proto.variables_size();
   if (!params.cp_model_presolve() || params.enumerate_all_solutions()) {
-    return SolveCpModelInternal(presolved_proto, true,
-                                [&](const CpSolverResponse& response) {
-                                  for (const auto& observer : observers) {
-                                    observer(response);
-                                  }
-                                },
-                                model);
+    CpSolverResponse response = SolveCpModelInternal(
+        presolved_proto, true,
+        [&](const CpSolverResponse& intermediate_response) {
+          if (observers.empty()) return;
+          // Truncate the solution in case model expansion added more variables.
+          CpSolverResponse truncated_response = intermediate_response;
+          truncated_response.mutable_solution()->Truncate(
+              num_original_variables);
+          DCHECK(SolutionIsFeasible(
+              model_proto,
+              std::vector<int64>(truncated_response.solution().begin(),
+                                 truncated_response.solution().end())));
+          for (const auto& observer : observers) {
+            observer(truncated_response);
+          }
+        },
+        model);
+    if (response.status() == CpSolverStatus::MODEL_SAT ||
+        response.status() == CpSolverStatus::OPTIMAL) {
+      // Truncate the solution in case model expansion added more variables.
+      response.mutable_solution()->Truncate(num_original_variables);
+      CHECK(SolutionIsFeasible(model_proto,
+                               std::vector<int64>(response.solution().begin(),
+                                                  response.solution().end())));
+    }
+    return response;
   }
 
   // Do the actual presolve.
