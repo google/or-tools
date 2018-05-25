@@ -18,11 +18,6 @@ ifeq ($(SYSTEM),unix)
   else
     DETECTED_PYTHON_VERSION := $(UNIX_PYTHON_VER)
   endif
-  # Detect the .net core sdk folder
-  DOTNET_INSTALL_PATH = /usr/local/share/dotnet/sdk
-  ifneq ($(wildcard $(DOTNET_INSTALL_PATH)\dotnet.exe),)
-    DOTNET_INSTALL_PATH = \# DOTNET install path not found
-  endif
 
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
@@ -96,6 +91,12 @@ ifeq ($(SYSTEM),unix)
     else
       DETECTED_MCS_BINARY := $(REAL_MCS)
     endif
+  endif
+
+  # Look at dotnet compiler.
+  REAL_DOTNET = $(shell which dotnet)
+  ifneq ($(REAL_DOTNET),)
+    DETECTED_DOTNET_BINARY := $(REAL_DOTNET)
   endif
 endif # ($(SYSTEM),unix)
 
@@ -203,12 +204,24 @@ ifeq ($(SYSTEM),win)
   ifeq ($(PATH_TO_CSHARP_COMPILER),)
     DETECTED_CSC_BINARY := $(shell tools\\which.exe csc 2>nul)
     ifeq ($(DETECTED_CSC_BINARY),)
-      SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the chsarp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
+      SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the csharp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
     else
       SELECTED_CSC_BINARY =\#PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
     endif
   else
     SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
+  endif
+
+  #Detect dotnet
+  ifeq ($(PATH_TO_DOTNET_COMPILER),)
+    DETECTED_DOTNET_BINARY := $(shell tools\\which.exe dotnet 2>nul)
+    ifeq ($(DETECTED_DOTNET_BINARY),)
+      SELECTED_DOTNET_BINARY = PATH_TO_DOTNET_COMPILER =\# dotnet was not found. Set this variable to the path of dotnet to build the fsharp files. (ex: PATH_TO_DOTNET_COMPILER = C:\Program Files\dotnet\dotnet.exe)
+    else
+      SELECTED_DOTNET_BINARY =\#PATH_TO_DOTNET_COMPILER = $(DETECTED_DOTNET_BINARY)
+    endif
+  else
+    SELECTED_DOTNET_BINARY = PATH_TO_DOTNET_COMPILER = $(PATH_TO_DOTNET_COMPILER)
   endif
 endif # ($(SYSTEM),win)
 

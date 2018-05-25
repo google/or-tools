@@ -12,15 +12,19 @@ endif
 
 # Check for required build tools
 ifeq ($(SYSTEM),win)
-CSHARP_COMPILER ?= csc.exe
-ifneq ($(PATH_TO_CSHARP_COMPILER),)
-CSHARP_EXECUTABLE := $(PATH_TO_CSHARP_COMPILER)
-else
-CSHARP_EXECUTABLE := $(shell $(WHICH) $(CSHARP_COMPILER) 2>nul)
-endif
+  ifneq ($(PATH_TO_CSHARP_COMPILER),)
+  CSHARP_EXECUTABLE := $(PATH_TO_CSHARP_COMPILER)
+  else
+  CSHARP_COMPILER ?= csc.exe
+  CSHARP_EXECUTABLE := $(shell $(WHICH) $(CSHARP_COMPILER) 2>nul)
+  endif
 else # UNIX
-CSHARP_COMPILER ?= mcs
-CSHARP_EXECUTABLE := $(shell which $(CSHARP_COMPILER))
+  ifneq ($(PATH_TO_CSHARP_COMPILER),)
+  CSHARP_EXECUTABLE := $(PATH_TO_CSHARP_COMPILER)
+  else
+  CSHARP_COMPILER ?= mcs
+  CSHARP_EXECUTABLE := $(shell which $(CSHARP_COMPILER))
+  endif
 endif
 
 .PHONY: csharp # Build C# OR-Tools.

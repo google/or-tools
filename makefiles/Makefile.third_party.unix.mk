@@ -360,7 +360,7 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo JAVA_HOME = $(JAVA_HOME)>> Makefile.local
 	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION)>> Makefile.local
 	@echo PATH_TO_CSHARP_COMPILER = $(DETECTED_MCS_BINARY)>> Makefile.local
-	@echo DOTNET_INSTALL_PATH = $(DOTNET_INSTALL_PATH)>> Makefile.local
+	@echo PATH_TO_DOTNET_COMPILER = $(DETECTED_DOTNET_BINARY)>> Makefile.local
 	@echo CLR_KEYFILE = bin/or-tools.snk>> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local

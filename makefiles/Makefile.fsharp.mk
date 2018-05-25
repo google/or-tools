@@ -19,13 +19,19 @@ CLEAN_FILES=Google.$(FSHARP_ORTOOLS_DLL_NAME).* FSharp.Core.dll System.ValueTupl
 
 # Check for required build tools
 ifeq ($(SYSTEM), win)
-DOTNET_EXECUTABLE := $(shell $(WHICH) dotnet.exe 2>nul)
+  ifneq ($(PATH_TO_DOTNET_COMPILER),)
+  DOTNET_EXECUTABLE := $(PATH_TO_DOTNET_COMPILER)
+  else
+  DOTNET_COMPILER ?= dotnet.exe
+  DOTNET_EXECUTABLE := $(shell $(WHICH) $(DOTNET_COMPILER) 2>nul)
+  endif
 else # UNIX
-ifeq ($(PLATFORM),MACOSX)
-DOTNET_EXECUTABLE := $(shell dirname ${DOTNET_INSTALL_PATH})$Sdotnet
-else # LINUX
-DOTNET_EXECUTABLE := $(shell which dotnet)
-endif
+  ifneq ($(PATH_TO_DOTNET_COMPILER),)
+  DOTNET_EXECUTABLE := $(PATH_TO_DOTNET_COMPILER)
+  else
+  DOTNET_COMPILER ?= dotnet
+  DOTNET_EXECUTABLE := $(shell which $(DOTNET_COMPILER))
+  endif
 endif
 
 DOTNET_TARGET_FRAMEWORK:=net462
