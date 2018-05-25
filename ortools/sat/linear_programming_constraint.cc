@@ -271,8 +271,11 @@ bool LinearProgrammingConstraint::Propagate() {
         lp_data_.SetConstraintBounds(row, cut.lb, cut.ub);
         for (int i = 0; i < cut.vars.size(); ++i) {
           const glop::ColIndex col = GetOrCreateMirrorVariable(cut.vars[i]);
+          // The returned coefficients correspond to variables at the CP scale,
+          // so we need to divide them by CpToLpScalingFactor() which is the
+          // same as multiplying by LpToCpScalingFactor().
           lp_data_.SetCoefficient(row, col,
-                                  cut.coeffs[i] * CpToLpScalingFactor(col));
+                                  cut.coeffs[i] * LpToCpScalingFactor(col));
         }
       }
     }
