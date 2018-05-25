@@ -50,7 +50,7 @@ ifneq ($(DOTNET_EXECUTABLE),)
 	$(SED) -i -e "s/0.0.0.0/$(OR_TOOLS_VERSION)/" ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
 	"$(DOTNET_EXECUTABLE)" build -f $(DOTNET_TARGET_FRAMEWORK) ortools$Sfsharp$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj -o ..$S..$S..$Sbin$S
 else
-	$(warning Cannot find '$(DOTNET_EXECUTABLE)' command which is needed for build. Please make sure it is installed and in system path.)
+	$(warning Cannot find 'dotnet' command which is needed for build. Please make sure it is installed and in system path.)
 endif
 
 .PHONY: test_fsharp # Test F# OR-Tools.
