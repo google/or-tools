@@ -61,7 +61,9 @@ if [ "${BUILDER}" == make ];then
 			cat Makefile.local
 			make third_party
 			make "${LANGUAGE}"
-			make test_"${LANGUAGE}"
+			if [ "${LANGUAGE}" != fsharp ]; then
+				make test_"${LANGUAGE}"
+			fi
 		else
 			# MacOS Docker Makefile build:
 			echo "NOT SUPPORTED"
