@@ -691,7 +691,7 @@ class ConstraintChecker {
   bool ReservoirConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_variables = ct.reservoir().times_size();
     const int64 min_level = ct.reservoir().min_level();
-    const int64 max_level = ct.reservoir().min_level();
+    const int64 max_level = ct.reservoir().max_level();
     std::map<int64, int64> deltas;
     deltas[0] = 0;
     for (int i = 0; i < num_variables; i++) {
