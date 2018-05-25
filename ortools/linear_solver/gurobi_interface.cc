@@ -21,6 +21,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <stdexcept>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
@@ -176,10 +177,13 @@ class GurobiInterface : public MPSolverInterface {
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
     : MPSolverInterface(solver), model_(nullptr), env_(nullptr), mip_(mip) {
-    if (GRBloadenv(&env_, nullptr) != 0 || env_ == nullptr) {
-      LOG(FATAL) << "Error: could not create environment: "
-                 << GRBgeterrormsg(env_);
-    }
+
+  int ret = GRBloadenv(&env_, nullptr);
+  if (ret != 0 || env_ == nullptr) {
+    std::string err_msg = GRBgeterrormsg(env_);
+    LOG(DFATAL) << "Error: could not create environment: " << err_msg;
+    throw std::runtime_error(std::to_string(ret) + ", " + err_msg);
+  }
 
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
