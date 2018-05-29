@@ -63,7 +63,7 @@ For Boolean variables x and y, the following are elementary Boolean constraints:
 -   not(x)
 
 More complicated constraints can be built up by combining these elementary
-constraints.
+constraints. For instance, we can add a constraint Or(x, not(y)).
 
 ### Python code
 
@@ -123,7 +123,7 @@ The CP-SAT solver supports *half-reified* constraints, also called
 where the constraint must hold if *x* is true.
 
 Please note that this is not an equivalence relation. The constraint can still
-be true if the *x* is false.
+be true if *x* is false.
 
 So we can write b => And(x, not y). That is, if b is true, then x is true and y
 is false. Note that in this particular example, there are multiple ways to
