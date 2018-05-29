@@ -148,7 +148,7 @@ model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
 model.AddImplication(b, x)
 model.AddImplication(b, y.Not())
 
-# Third version using Or.
+# Third version using bool or.
 model.AddBoolOr([b.Not(), x])
 model.AddBoolOt([b.Not(), y.Not()])
 ```
