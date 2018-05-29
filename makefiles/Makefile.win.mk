@@ -13,9 +13,7 @@ STATIC_PRE_LIB = $(OR_ROOT)lib\\
 STATIC_POST_LIB = .lib
 STATIC_LIB_SUFFIX = lib
 LINK_CMD = lib
-LINK_PREFIX = /OUT:
 STATIC_LINK_CMD = lib
-STATIC_LINK_PREFIX = /OUT:
 
 LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
@@ -27,7 +25,7 @@ INC_DIR = $(OR_ROOT).
 
 O=obj
 E=.exe
-L=.lib
+L=lib
 DLL=.dll
 PDB=.pdb
 EXP=.exp
@@ -35,7 +33,7 @@ ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
 OBJ_OUT = /Fo
 EXE_OUT = /Fe
-LDOUT = /OUT:
+LD_OUT = /OUT:
 DYNAMIC_LD = link /DLL /LTCG /debug
 S = \\
 CPSEP =;
@@ -67,23 +65,10 @@ $(error Please add "cmake" to your PATH)
 endif
 
 # Add some additional macros
-CD = cd
 ATTRIB = attrib
 TASKKILL = taskkill
 
-# Default paths for libraries and binaries.
-WINDOWS_ZLIB_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_ZLIB_NAME ?= zlib.lib
-WINDOWS_GFLAGS_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_GLOG_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_CBC_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_CLP_DIR ?= $(WINDOWS_CBC_DIR)
-WINDOWS_SWIG_BINARY ?= "$(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe"
-
 # Compilation macros.
-PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
-SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 DEBUG=/O2 -DNDEBUG
 ifeq ("$(VISUAL_STUDIO_YEAR)","2015")
 CCC=cl /EHsc /MD /nologo /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
@@ -101,20 +86,6 @@ PYTHON_VERSION = $(WINDOWS_PYTHON_VERSION)
 PYTHON_INC=/I$(WINDOWS_PATH_TO_PYTHON)\\include
 PYTHON_LNK="$(WINDOWS_PATH_TO_PYTHON)\\libs\\python$(PYTHON_VERSION).lib"
 
-# This is needed to find Coin LP include files and libraries.
-ifdef WINDOWS_CLP_DIR
-CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /I$(WINDOWS_CLP_DIR)\\include\\coin /DUSE_CLP
-CLP_SWIG = -DUSE_CLP
-DYNAMIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
-STATIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
-endif
-# This is needed to find Coin Branch and Cut include files and libraries.
-ifdef WINDOWS_CBC_DIR
-CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /I$(WINDOWS_CBC_DIR)\\include\\coin /DUSE_CBC
-CBC_SWIG = -DUSE_CBC
-DYNAMIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
-STATIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
-endif
 # This is needed to find GLPK include files and libraries.
 ifdef WINDOWS_GLPK_DIR
 GLPK_INC = /I$(WINDOWS_GLPK_DIR)\\include /DUSE_GLPK
@@ -158,21 +129,23 @@ JAVAC_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\javac")"
 JAVA_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\java")"
 JAR_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\jar")"
 
-CFLAGS= -nologo $(SYSCFLAGS) $(DEBUG) /I$(INC_DIR) /I$(GEN_DIR) \
-        $(GFLAGS_INC) $(ZLIB_INC) $(MINISAT_INC) $(PROTOBUF_INC) $(GLOG_INC) \
-	$(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(CPLEX_INC) $(GUROBI_INC) /DUSE_GLOP \
-	/DUSE_BOP /D__WIN32__ /DPSAPI_VERSION=1
+CFLAGS = -nologo $(SYSCFLAGS) $(DEBUG) /I$(INC_DIR) /I$(GEN_DIR) \
+ $(GFLAGS_INC) $(GLOG_INC) $(ZLIB_INC) $(MINISAT_INC) $(PROTOBUF_INC) \
+ $(CBC_INC) $(CLP_INC) \
+ $(GLPK_INC) $(SCIP_INC) $(CPLEX_INC) $(GUROBI_INC) \
+ /DUSE_GLOP /DUSE_BOP /D__WIN32__ /DPSAPI_VERSION=1
 JNIFLAGS=$(CFLAGS) $(JAVA_INC)
 DYNAMIC_GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\lib\\gflags_static.lib
 STATIC_GFLAGS_LNK = $(WINDOWS_GFLAGS_DIR)\\lib\\gflags_static.lib
 ZLIB_LNK = $(WINDOWS_ZLIB_DIR)\\lib\\$(WINDOWS_ZLIB_NAME)
-DYNAMIC_PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
-STATIC_PROTOBUF_LNK = $(PROTOBUF_DIR)\\lib\\libprotobuf.lib
-DYNAMIC_GLOG_LNK = $(PROTOBUF_DIR)\\lib\\glog.lib
-STATIC_GLOG_LNK = $(PROTOBUF_DIR)\\lib\\glog.lib
+DYNAMIC_PROTOBUF_LNK = $(WINDOWS_PROTOBUF_DIR)\\lib\\libprotobuf.lib
+STATIC_PROTOBUF_LNK = $(WINDOWS_PROTOBUF_DIR)\\lib\\libprotobuf.lib
+DYNAMIC_GLOG_LNK = $(WINDOWS_PROTOBUF_DIR)\\lib\\glog.lib
+STATIC_GLOG_LNK = $(WINDOWS_PROTOBUF_DIR)\\lib\\glog.lib
 SYS_LNK=psapi.lib ws2_32.lib shlwapi.lib
 DEPENDENCIES_LNK = $(STATIC_CBC_LNK) $(STATIC_CLP_LNK) $(STATIC_GLPK_LNK) $(STATIC_SCIP_LNK) $(STATIC_CPLEX_LNK) $(STATIC_GUROBI_LNK) $(STATIC_GLOG_LNK) $(STATIC_GFLAGS_LNK) $(STATIC_PROTOBUF_LNK)
-OR_TOOLS_LD_FLAGS = $(ZLIB_LNK) $(SYS_LNK)
+LDFLAGS = $(ZLIB_LNK) $(SYS_LNK)
 
+OR_TOOLS_LDFLAGS = $(ZLIB_LNK) $(SYS_LNK)
 COMMA := ,
 BACK_SLASH := \\

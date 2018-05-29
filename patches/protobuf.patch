@@ -1,19 +1,23 @@
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index f159f60e..549c7fd2 100644
+index f159f60e..83bc4a8c 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
-@@ -8,6 +8,10 @@ endif()
+@@ -7,6 +7,14 @@ endif()
+ 
  # CMake policies
  cmake_policy(SET CMP0022 NEW)
- 
++# Clear VERSION variables when no VERSION is given to project()
 +if (POLICY CMP0048)
-+  cmake_policy (SET CMP0048 NEW)
++  cmake_policy(SET CMP0048 NEW)
 +endif ()
-+
++# On MacOS use @rpath for target's install name
++if (POLICY CMP0042)
++  cmake_policy(SET CMP0042 NEW)
++endif ()
+ 
  # Project
  project(protobuf C CXX)
- 
-@@ -21,13 +25,8 @@ else (BUILD_SHARED_LIBS)
+@@ -21,13 +29,8 @@ else (BUILD_SHARED_LIBS)
  endif (BUILD_SHARED_LIBS)
  option(protobuf_BUILD_SHARED_LIBS "Build Shared Libraries" ${protobuf_BUILD_SHARED_LIBS_DEFAULT})
  include(CMakeDependentOption)
@@ -29,7 +33,7 @@ index f159f60e..549c7fd2 100644
  option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
  set(protobuf_DEBUG_POSTFIX "d"
    CACHE STRING "Default debug postfix")
-@@ -157,7 +156,7 @@ if (MSVC)
+@@ -157,7 +160,7 @@ if (MSVC)
    string(REPLACE "/" "\\" PROTOBUF_SOURCE_WIN32_PATH ${protobuf_SOURCE_DIR})
    string(REPLACE "/" "\\" PROTOBUF_BINARY_WIN32_PATH ${protobuf_BINARY_DIR})
    configure_file(extract_includes.bat.in extract_includes.bat)
@@ -39,10 +43,38 @@ index f159f60e..549c7fd2 100644
    set(CMAKE_STATIC_LINKER_FLAGS /ignore:4221)
  endif (MSVC)
 diff --git a/cmake/install.cmake b/cmake/install.cmake
-index 441bf553..38d9b971 100644
+index 441bf553..e98b316f 100644
 --- a/cmake/install.cmake
 +++ b/cmake/install.cmake
-@@ -100,22 +100,24 @@ configure_file(protobuf-module.cmake.in
+@@ -13,6 +13,13 @@ foreach(_library
+     PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+     $<BUILD_INTERFACE:${protobuf_source_dir}/src>
+     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
++  if (UNIX AND NOT APPLE)
++    set_property(TARGET ${_library}
++      PROPERTY INSTALL_RPATH "$ORIGIN")
++  elseif (APPLE)
++    set_property(TARGET ${_library}
++      PROPERTY INSTALL_RPATH "@loader_path")
++  endif()
+   install(TARGETS ${_library} EXPORT protobuf-targets
+     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT ${_library}
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${_library}
+@@ -21,6 +28,13 @@ endforeach()
+ 
+ install(TARGETS protoc EXPORT protobuf-targets
+   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT protoc)
++if (UNIX AND NOT APPLE)
++  set_property(TARGET protoc
++    PROPERTY INSTALL_RPATH "$ORIGIN/../lib")
++elseif (APPLE)
++  set_property(TARGET protoc
++    PROPERTY INSTALL_RPATH "@loader_path/../lib")
++endif()
+ 
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/protobuf.pc ${CMAKE_CURRENT_BINARY_DIR}/protobuf-lite.pc DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+ 
+@@ -100,22 +114,24 @@ configure_file(protobuf-module.cmake.in
  configure_file(protobuf-options.cmake
    ${CMAKE_INSTALL_CMAKEDIR}/protobuf-options.cmake @ONLY)
  

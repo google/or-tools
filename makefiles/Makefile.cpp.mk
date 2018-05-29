@@ -19,7 +19,7 @@ else
 endif
 
 # Main target
-.PHONY: cc # Build C++ OR-Tools.
+.PHONY: cc # Build C++ OR-Tools and C++ Examples.
 cc: ortoolslibs ccexe
 .PHONY: test_cc # Test C++ OR-Tools using various examples.
 test_cc: test_cc_examples
@@ -112,60 +112,60 @@ objs/util:
 	$(MKDIR_P) objs$Sutil
 
 ortools/gen/com/google/ortools/algorithms:
-	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Salgorithms
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms
 
 ortools/gen/com/google/ortools/constraintsolver:
-	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver
 
 ortools/gen/com/google/ortools/graph:
-	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sgraph
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph
 
 ortools/gen/com/google/ortools/linearsolver:
-	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver
 
 ortools/gen/com/google/ortools/flatzinc:
-	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sflatzinc
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc
 
 ortools/gen/com/google/ortools/sat:
-	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Ssat
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat
 
 ortools/gen/com/google/ortools/properties:
-	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sproperties
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
 
 ortools/gen/ortools/algorithms:
-	$(MKDIR_P) ortools$Sgen$Sortools$Salgorithms
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Salgorithms
 
 ortools/gen/ortools/bop:
-	$(MKDIR_P) ortools$Sgen$Sortools$Sbop
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Sbop
 
 ortools/gen/ortools/constraint_solver:
-	$(MKDIR_P) ortools$Sgen$Sortools$Sconstraint_solver
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Sconstraint_solver
 
 ortools/gen/ortools/data:
-	$(MKDIR_P) ortools$Sgen$Sortools$Sdata
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Sdata
 
 ortools/gen/ortools/flatzinc:
-	$(MKDIR_P) ortools$Sgen$Sortools$Sflatzinc
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Sflatzinc
 
 ortools/gen/ortools/glop:
-	$(MKDIR_P) ortools$Sgen$Sortools$Sglop
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Sglop
 
 ortools/gen/ortools/graph:
-	$(MKDIR_P) ortools$Sgen$Sortools$Sgraph
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Sgraph
 
 ortools/gen/ortools/linear_solver:
-	$(MKDIR_P) ortools$Sgen$Sortools$Slinear_solver
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Slinear_solver
 
 ortools/gen/ortools/sat:
-	$(MKDIR_P) ortools$Sgen$Sortools$Ssat
+	$(MKDIR_P) $(GEN_DIR)$Sortools$Ssat
 
 .PHONY: clean_cc # Clean C++ output from previous build.
 clean_cc:
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
@@ -200,8 +200,8 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Sortools$Sutil$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
-	-$(DELREC) $(OR_ROOT)src$Sgen$Sflatzinc$S*
-	-$(DELREC) $(OR_ROOT)objs$Sflatzinc$S*
+	-$(DELREC) $(GEN_DIR)$Sflatzinc$S*
+	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
 
 .PHONY: clean_compat
 clean_compat:
@@ -215,29 +215,33 @@ clean_compat:
 
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
+OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
 OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
 ortoolslibs: third_party_check $(MISSING_BUILD_DIRECTORIES) $(OR_TOOLS_LIBS)
 
 # Specific libraries for examples, and flatzinc.
-
-CVRPTW_LIBS   = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
+CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
 CVRPTW_DEPS = \
 	$(EX_DIR)/cpp/cvrptw_lib.h \
 	$(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
+ifeq ($(PLATFORM),MACOSX)
+CVRPTW_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+endif
 cvrptwlibs: $(CVRPTW_LIBS)
 
-
-DIMACS_LIBS   = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
+DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
 DIMACS_DEPS = \
 	$(EX_DIR)/cpp/parse_dimacs_assignment.h \
 	$(EX_DIR)/cpp/print_dimacs_assignment.h \
 	$(GRAPH_DEPS)
 DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
+ifeq ($(PLATFORM),MACOSX)
+DIMACS_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+endif
 dimacslibs: $(DIMACS_LIBS)
 
-FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
+FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
 FAP_DEPS = \
 	$(EX_DIR)/cpp/fap_model_printer.h \
 	$(EX_DIR)/cpp/fap_parser.h \
@@ -245,10 +249,12 @@ FAP_DEPS = \
 	$(CP_DEPS) \
 	$(LP_DEPS)
 FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
+ifeq ($(PLATFORM),MACOSX)
+FAP_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+endif
 faplibs: $(FAP_LIBS)
 
-
-FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX)
+FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$L
 FLATZINC_DEPS = \
 	$(SRC_DIR)/ortools/flatzinc/checker.h \
 	$(SRC_DIR)/ortools/flatzinc/constraints.h \
@@ -267,6 +273,9 @@ FLATZINC_DEPS = \
 	$(CP_DEPS) \
 	$(SAT_DEPS)
 FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
+ifeq ($(PLATFORM),MACOSX)
+FLATZINK_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+endif
 
 # Binaries
 CC_EXAMPLES = \
@@ -311,29 +320,32 @@ weighted_tardiness_sat
 ccexe: $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_EXAMPLES)))
 
 # CVRPTW common library
-
-CVRPTW_OBJS=\
-	$(OBJ_DIR)/cvrptw_lib.$O
-
-$(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h 	$(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
+CVRPTW_OBJS= $(OBJ_DIR)/cvrptw_lib.$O
+$(CVRPTW_OBJS): $(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h 	$(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX): $(CVRPTW_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) $(CVRPTW_OBJS)
+$(CVRPTW_LIBS): ortoolslibs $(CVRPTW_OBJS)
+	$(LINK_CMD) \
+ $(CVRPTW_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L \
+ $(CVRPTW_OBJS) \
+ $(OR_TOOLS_LNK) \
+ $(OR_TOOLS_LDFLAGS)
 
 # DIMACS challenge problem format library
-
-DIMACS_OBJS=\
-	$(OBJ_DIR)/parse_dimacs_assignment.$O
-
-$(OBJ_DIR)/parse_dimacs_assignment.$O: $(EX_DIR)/cpp/parse_dimacs_assignment.cc
+DIMACS_OBJS= $(OBJ_DIR)/parse_dimacs_assignment.$O
+$(DIMACS_OBJS): $(EX_DIR)/cpp/parse_dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/parse_dimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sparse_dimacs_assignment.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX): $(DIMACS_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) $(DIMACS_OBJS)
+$(DIMACS_LIBS): ortoolslibs $(DIMACS_OBJS)
+	$(LINK_CMD) \
+ $(DIMACS_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L \
+ $(DIMACS_OBJS) \
+ $(OR_TOOLS_LNK) \
+ $(OR_TOOLS_LDFLAGS)
 
 # FAP challenge problem format library
-
 FAP_OBJS=\
 	$(OBJ_DIR)/fap_model_printer.$O \
 	$(OBJ_DIR)/fap_parser.$O \
@@ -346,11 +358,15 @@ $(OBJ_DIR)/fap_parser.$O: $(EX_DIR)/cpp/fap_parser.cc
 $(OBJ_DIR)/fap_utilities.$O: $(EX_DIR)/cpp/fap_utilities.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sfap_utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_utilities.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX): $(FAP_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX) $(FAP_OBJS)
+$(FAP_LIBS): ortoolslibs $(FAP_OBJS)
+	$(LINK_CMD) \
+ $(FAP_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fap.$L \
+ $(FAP_OBJS) \
+ $(OR_TOOLS_LNK) \
+ $(OR_TOOLS_LDFLAGS)
 
 # Flatzinc code
-
 FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/checker.$O \
 	$(OBJ_DIR)/flatzinc/constraints.$O \
@@ -417,8 +433,13 @@ $(OBJ_DIR)/flatzinc/solver_data.$O: $(SRC_DIR)/ortools/flatzinc/solver_data.cc $
 $(OBJ_DIR)/flatzinc/solver_util.$O: $(SRC_DIR)/ortools/flatzinc/solver_util.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Ssolver_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver_util.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX): $(FLATZINC_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(FLATZINC_OBJS)
+$(FLATZINC_LIBS): ortoolslibs $(FLATZINC_OBJS)
+	$(LINK_CMD) \
+ $(FLATZINK_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fz.$L \
+ $(FLATZINC_OBJS) \
+ $(OR_TOOLS_LNK) \
+ $(OR_TOOLS_LDFLAGS)
 
 $(OBJ_DIR)/flatzinc/fz.$O: $(SRC_DIR)/ortools/flatzinc/fz.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz.$O
@@ -426,13 +447,13 @@ $(OBJ_DIR)/flatzinc/fz.$O: $(SRC_DIR)/ortools/flatzinc/fz.cc $(FLATZINC_DEPS)
 $(OBJ_DIR)/flatzinc/parser_main.$O: $(SRC_DIR)/ortools/flatzinc/parser_main.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sparser_main.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser_main.$O
 
-fz : $(BIN_DIR)/fz$E $(BIN_DIR)/parser_main$E
+fz: $(BIN_DIR)/fz$E $(BIN_DIR)/parser_main$E
 
 $(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(FLATZINC_LIBS) $(OR_TOOLS_LIBS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
 
 $(BIN_DIR)/parser_main$E: $(OBJ_DIR)/flatzinc/parser_main.$O $(FLATZINC_LIBS) $(OR_TOOLS_LIBS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sparser_main.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sparser_main$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sparser_main.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sparser_main$E
 
 # Flow and linear assignment cpp
 
@@ -440,19 +461,19 @@ $(OBJ_DIR)/linear_assignment_api.$O: $(EX_DIR)/cpp/linear_assignment_api.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_assignment_api.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_assignment_api.$O
 
 $(BIN_DIR)/linear_assignment_api$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/linear_assignment_api.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_assignment_api.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_assignment_api$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_assignment_api.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_assignment_api$E
 
 $(OBJ_DIR)/flow_api.$O: $(EX_DIR)/cpp/flow_api.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/flow_api.cc $(OBJ_OUT)$(OBJ_DIR)$Sflow_api.$O
 
 $(BIN_DIR)/flow_api$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/flow_api.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/flow_api.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sflow_api$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/flow_api.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sflow_api$E
 
 $(OBJ_DIR)/dimacs_assignment.$O: $(EX_DIR)/cpp/dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/dimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
 
 $(BIN_DIR)/dimacs_assignment$E: $(DIMACS_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/dimacs_assignment.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/dimacs_assignment.$O $(DIMACS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/dimacs_assignment.$O $(DIMACS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
 
 # Pure CP and Routing Examples
 
@@ -460,181 +481,181 @@ $(OBJ_DIR)/acp_challenge.$O: $(EX_DIR)/cpp/acp_challenge.cc $(SRC_DIR)/ortools/c
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/acp_challenge.cc $(OBJ_OUT)$(OBJ_DIR)$Sacp_challenge.$O
 
 $(BIN_DIR)/acp_challenge$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/acp_challenge.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge$E
 
 $(OBJ_DIR)/acp_challenge_routing.$O: $(EX_DIR)/cpp/acp_challenge_routing.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/acp_challenge_routing.cc $(OBJ_OUT)$(OBJ_DIR)$Sacp_challenge_routing.$O
 
 $(BIN_DIR)/acp_challenge_routing$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/acp_challenge_routing.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge_routing.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge_routing$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge_routing.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge_routing$E
 
 $(OBJ_DIR)/costas_array.$O: $(EX_DIR)/cpp/costas_array.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/costas_array.cc $(OBJ_OUT)$(OBJ_DIR)$Scostas_array.$O
 
 $(BIN_DIR)/costas_array$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/costas_array.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/costas_array.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scostas_array$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/costas_array.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scostas_array$E
 
 $(OBJ_DIR)/cryptarithm.$O: $(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cryptarithm.cc $(OBJ_OUT)$(OBJ_DIR)$Scryptarithm.$O
 
 $(BIN_DIR)/cryptarithm$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/cryptarithm.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cryptarithm.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scryptarithm$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cryptarithm.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scryptarithm$E
 
 $(OBJ_DIR)/cvrp_disjoint_tw.$O: $(EX_DIR)/cpp/cvrp_disjoint_tw.cc $(CVRPTW_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrp_disjoint_tw.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrp_disjoint_tw.$O
 
 $(BIN_DIR)/cvrp_disjoint_tw$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrp_disjoint_tw.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrp_disjoint_tw.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp_disjoint_tw$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrp_disjoint_tw.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp_disjoint_tw$E
 
 $(OBJ_DIR)/cvrptw.$O: $(EX_DIR)/cpp/cvrptw.cc $(CVRPTW_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw.$O
 
 $(BIN_DIR)/cvrptw$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrptw.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
 
 $(OBJ_DIR)/cvrptw_with_breaks.$O: $(EX_DIR)/cpp/cvrptw_with_breaks.cc $(CVRPTW_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_breaks.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_breaks.$O
 
 $(BIN_DIR)/cvrptw_with_breaks$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrptw_with_breaks.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_breaks.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_breaks$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_breaks.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_breaks$E
 
 $(OBJ_DIR)/cvrptw_with_refueling.$O: $(EX_DIR)/cpp/cvrptw_with_refueling.cc $(CVRPTW_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_refueling.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_refueling.$O
 
 $(BIN_DIR)/cvrptw_with_refueling$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrptw_with_refueling.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
 
 $(OBJ_DIR)/cvrptw_with_resources.$O: $(EX_DIR)/cpp/cvrptw_with_resources.cc $(CVRPTW_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_resources.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_resources.$O
 
 $(BIN_DIR)/cvrptw_with_resources$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrptw_with_resources.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_resources.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_resources.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
 
 $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O: $(EX_DIR)/cpp/cvrptw_with_stop_times_and_resources.cc $(CVRPTW_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_stop_times_and_resources.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_stop_times_and_resources.$O
 
 $(BIN_DIR)/cvrptw_with_stop_times_and_resources$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
 
 $(OBJ_DIR)/dobble_ls.$O: $(EX_DIR)/cpp/dobble_ls.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/dobble_ls.cc $(OBJ_OUT)$(OBJ_DIR)$Sdobble_ls.$O
 
 $(BIN_DIR)/dobble_ls$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/dobble_ls.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/dobble_ls.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sdobble_ls$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/dobble_ls.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdobble_ls$E
 
 $(OBJ_DIR)/flexible_jobshop.$O: $(EX_DIR)/cpp/flexible_jobshop.cc $(EX_DIR)/cpp/flexible_jobshop.h $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/flexible_jobshop.cc $(OBJ_OUT)$(OBJ_DIR)$Sflexible_jobshop.$O
 
 $(BIN_DIR)/flexible_jobshop$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/flexible_jobshop.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/flexible_jobshop.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sflexible_jobshop$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/flexible_jobshop.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sflexible_jobshop$E
 
 $(OBJ_DIR)/golomb.$O: $(EX_DIR)/cpp/golomb.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/golomb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgolomb.$O
 
 $(BIN_DIR)/golomb$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/golomb.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/golomb.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sgolomb$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/golomb.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sgolomb$E
 
 $(OBJ_DIR)/jobshop.$O: $(EX_DIR)/cpp/jobshop.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop.cc $(OBJ_OUT)$(OBJ_DIR)$Sjobshop.$O
 
 $(BIN_DIR)/jobshop$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/jobshop.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop$E
 
 $(OBJ_DIR)/jobshop_ls.$O: $(EX_DIR)/cpp/jobshop_ls.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_ls.cc $(OBJ_OUT)$(OBJ_DIR)$Sjobshop_ls.$O
 
 $(BIN_DIR)/jobshop_ls$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/jobshop_ls.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_ls.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_ls$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_ls.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_ls$E
 
 $(OBJ_DIR)/jobshop_earlytardy.$O: $(EX_DIR)/cpp/jobshop_earlytardy.cc $(EX_DIR)/cpp/jobshop_earlytardy.h $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_earlytardy.cc $(OBJ_OUT)$(OBJ_DIR)$Sjobshop_earlytardy.$O
 
 $(BIN_DIR)/jobshop_earlytardy$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/jobshop_earlytardy.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_earlytardy.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_earlytardy$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_earlytardy.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_earlytardy$E
 
 $(OBJ_DIR)/jobshop_sat.$O: $(EX_DIR)/cpp/jobshop_sat.cc $(SAT_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Sjobshop_sat.$O
 
 $(BIN_DIR)/jobshop_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/jobshop_sat.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_sat$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_sat$E
 
 $(OBJ_DIR)/magic_square.$O: $(EX_DIR)/cpp/magic_square.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/magic_square.cc $(OBJ_OUT)$(OBJ_DIR)$Smagic_square.$O
 
 $(BIN_DIR)/magic_square$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/magic_square.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/magic_square.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smagic_square$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/magic_square.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Smagic_square$E
 
 $(OBJ_DIR)/model_util.$O: $(EX_DIR)/cpp/model_util.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/model_util.cc $(OBJ_OUT)$(OBJ_DIR)$Smodel_util.$O
 
 $(BIN_DIR)/model_util$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/model_util.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/model_util.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smodel_util$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/model_util.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Smodel_util$E
 
 $(OBJ_DIR)/multidim_knapsack.$O: $(EX_DIR)/cpp/multidim_knapsack.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/multidim_knapsack.cc $(OBJ_OUT)$(OBJ_DIR)$Smultidim_knapsack.$O
 
 $(BIN_DIR)/multidim_knapsack$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/multidim_knapsack.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/multidim_knapsack.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smultidim_knapsack$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/multidim_knapsack.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Smultidim_knapsack$E
 
 $(OBJ_DIR)/network_routing.$O: $(EX_DIR)/cpp/network_routing.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/network_routing.cc $(OBJ_OUT)$(OBJ_DIR)$Snetwork_routing.$O
 
 $(BIN_DIR)/network_routing$E: $(OR_TOOLS_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/network_routing.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/network_routing.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snetwork_routing$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/network_routing.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Snetwork_routing$E
 
 $(OBJ_DIR)/nqueens.$O: $(EX_DIR)/cpp/nqueens.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/nqueens.cc $(OBJ_OUT)$(OBJ_DIR)$Snqueens.$O
 
 $(BIN_DIR)/nqueens$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/nqueens.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens$E
 
 $(OBJ_DIR)/nqueens2.$O: $(EX_DIR)/cpp/nqueens2.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/nqueens2.cc $(OBJ_OUT)$(OBJ_DIR)$Snqueens2.$O
 
 $(BIN_DIR)/nqueens2$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/nqueens2.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens2.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens2$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens2.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens2$E
 
 $(OBJ_DIR)/pdptw.$O: $(EX_DIR)/cpp/pdptw.cc $(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/pdptw.cc $(OBJ_OUT)$(OBJ_DIR)$Spdptw.$O
 
 $(BIN_DIR)/pdptw$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/pdptw.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/pdptw.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Spdptw$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/pdptw.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Spdptw$E
 
 $(OBJ_DIR)/rcpsp_sat.$O: $(EX_DIR)/cpp/rcpsp_sat.cc $(SAT_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/rcpsp_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Srcpsp_sat.$O
 
 $(BIN_DIR)/rcpsp_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/rcpsp_sat.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/rcpsp_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Srcpsp_sat$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/rcpsp_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Srcpsp_sat$E
 
 $(OBJ_DIR)/shift_minimization_sat.$O: $(EX_DIR)/cpp/shift_minimization_sat.cc $(SAT_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/shift_minimization_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Sshift_minimization_sat.$O
 
 $(BIN_DIR)/shift_minimization_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/shift_minimization_sat.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/shift_minimization_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sshift_minimization_sat$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/shift_minimization_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sshift_minimization_sat$E
 
 $(OBJ_DIR)/slitherlink.$O: $(EX_DIR)/cpp/slitherlink.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/slitherlink.cc $(OBJ_OUT)$(OBJ_DIR)$Sslitherlink.$O
 
 $(BIN_DIR)/slitherlink$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/slitherlink.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/slitherlink.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sslitherlink$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/slitherlink.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sslitherlink$E
 
 $(OBJ_DIR)/sports_scheduling.$O: $(EX_DIR)/cpp/sports_scheduling.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/sports_scheduling.cc $(OBJ_OUT)$(OBJ_DIR)$Ssports_scheduling.$O
 
 $(BIN_DIR)/sports_scheduling$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/sports_scheduling.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/sports_scheduling.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssports_scheduling$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/sports_scheduling.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Ssports_scheduling$E
 
 $(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/tsp.cc $(OBJ_OUT)$(OBJ_DIR)$Stsp.$O
 
 $(BIN_DIR)/tsp$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/tsp.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/tsp.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Stsp$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/tsp.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Stsp$E
 
 $(OBJ_DIR)/weighted_tardiness_sat.$O: $(EX_DIR)/cpp/weighted_tardiness_sat.cc $(SAT_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/weighted_tardiness_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Sweighted_tardiness_sat.$O
 
 $(BIN_DIR)/weighted_tardiness_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/weighted_tardiness_sat.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/weighted_tardiness_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sweighted_tardiness_sat$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/weighted_tardiness_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sweighted_tardiness_sat$E
 
 # CP tests.
 
@@ -642,67 +663,67 @@ $(OBJ_DIR)/bug_pack.$O: $(EX_DIR)/tests/bug_pack.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/bug_pack.cc $(OBJ_OUT)$(OBJ_DIR)$Sbug_pack.$O
 
 $(BIN_DIR)/bug_pack$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/bug_pack.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_pack.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_pack$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_pack.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_pack$E
 
 $(OBJ_DIR)/bug_fz1.$O: $(EX_DIR)/tests/bug_fz1.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/bug_fz1.cc $(OBJ_OUT)$(OBJ_DIR)$Sbug_fz1.$O
 
 $(BIN_DIR)/bug_fz1$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/bug_fz1.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_fz1.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_fz1$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_fz1.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_fz1$E
 
 $(OBJ_DIR)/ac4r_table_test.$O: $(EX_DIR)/tests/ac4r_table_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/ac4r_table_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sac4r_table_test.$O
 
 $(BIN_DIR)/ac4r_table_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/ac4r_table_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/ac4r_table_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sac4r_table_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/ac4r_table_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sac4r_table_test$E
 
 $(OBJ_DIR)/forbidden_intervals_test.$O: $(EX_DIR)/tests/forbidden_intervals_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/forbidden_intervals_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sforbidden_intervals_test.$O
 
 $(BIN_DIR)/forbidden_intervals_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/forbidden_intervals_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/forbidden_intervals_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sforbidden_intervals_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/forbidden_intervals_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sforbidden_intervals_test$E
 
 $(OBJ_DIR)/gcc_test.$O: $(EX_DIR)/tests/gcc_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/gcc_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sgcc_test.$O
 
 $(BIN_DIR)/gcc_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/gcc_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/gcc_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sgcc_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/gcc_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sgcc_test$E
 
 $(OBJ_DIR)/min_max_test.$O: $(EX_DIR)/tests/min_max_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/min_max_test.cc $(OBJ_OUT)$(OBJ_DIR)$Smin_max_test.$O
 
 $(BIN_DIR)/min_max_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/min_max_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/min_max_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smin_max_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/min_max_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Smin_max_test$E
 
 $(OBJ_DIR)/issue57.$O: $(EX_DIR)/tests/issue57.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/issue57.cc $(OBJ_OUT)$(OBJ_DIR)$Sissue57.$O
 
 $(BIN_DIR)/issue57$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/issue57.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue57.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue57$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue57.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue57$E
 
 $(OBJ_DIR)/issue173.$O: $(EX_DIR)/tests/issue173.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/issue173.cc $(OBJ_OUT)$(OBJ_DIR)$Sissue173.$O
 
 $(BIN_DIR)/issue173$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/issue173.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue173.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue173$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue173.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue173$E
 
 $(OBJ_DIR)/visitor_test.$O: $(EX_DIR)/tests/visitor_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/visitor_test.cc $(OBJ_OUT)$(OBJ_DIR)$Svisitor_test.$O
 
 $(BIN_DIR)/visitor_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/visitor_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/visitor_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Svisitor_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/visitor_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Svisitor_test$E
 
 $(OBJ_DIR)/boolean_test.$O: $(EX_DIR)/tests/boolean_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/boolean_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_test.$O
 
 $(BIN_DIR)/boolean_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/boolean_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/boolean_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sboolean_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/boolean_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sboolean_test$E
 
 $(OBJ_DIR)/ls_api.$O: $(EX_DIR)/cpp/ls_api.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/ls_api.cc $(OBJ_OUT)$(OBJ_DIR)$Sls_api.$O
 
 $(BIN_DIR)/ls_api$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/ls_api.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/ls_api.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sls_api$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/ls_api.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sls_api$E
 
 $(OBJ_DIR)/cpp11_test.$O: $(EX_DIR)/tests/cpp11_test.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/cpp11_test.cc $(OBJ_OUT)$(OBJ_DIR)$Scpp11_test.$O
@@ -716,7 +737,7 @@ $(OBJ_DIR)/frequency_assignment_problem.$O: $(EX_DIR)/cpp/frequency_assignment_p
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/frequency_assignment_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sfrequency_assignment_problem.$O
 
 $(BIN_DIR)/frequency_assignment_problem$E: $(FAP_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/frequency_assignment_problem.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
 
 # Linear Programming Examples
 
@@ -724,37 +745,37 @@ $(OBJ_DIR)/strawberry_fields_with_column_generation.$O: $(EX_DIR)/cpp/strawberry
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/strawberry_fields_with_column_generation.cc $(OBJ_OUT)$(OBJ_DIR)$Sstrawberry_fields_with_column_generation.$O
 
 $(BIN_DIR)/strawberry_fields_with_column_generation$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/strawberry_fields_with_column_generation.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/strawberry_fields_with_column_generation.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sstrawberry_fields_with_column_generation$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/strawberry_fields_with_column_generation.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sstrawberry_fields_with_column_generation$E
 
 $(OBJ_DIR)/linear_programming.$O: $(EX_DIR)/cpp/linear_programming.cc $(LP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_programming.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_programming.$O
 
 $(BIN_DIR)/linear_programming$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/linear_programming.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_programming.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_programming$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_programming.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_programming$E
 
 $(OBJ_DIR)/linear_solver_protocol_buffers.$O: $(EX_DIR)/cpp/linear_solver_protocol_buffers.cc $(LP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_solver_protocol_buffers.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver_protocol_buffers.$O
 
 $(BIN_DIR)/linear_solver_protocol_buffers$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/linear_solver_protocol_buffers.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_solver_protocol_buffers.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_solver_protocol_buffers$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_solver_protocol_buffers.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_solver_protocol_buffers$E
 
 $(OBJ_DIR)/integer_programming.$O: $(EX_DIR)/cpp/integer_programming.cc $(LP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/integer_programming.cc $(OBJ_OUT)$(OBJ_DIR)$Sinteger_programming.$O
 
 $(BIN_DIR)/integer_programming$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/integer_programming.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/integer_programming.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sinteger_programming$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/integer_programming.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sinteger_programming$E
 
 $(OBJ_DIR)/glop/mps_driver.$O: $(EX_DIR)/cpp/mps_driver.cc $(GEN_DIR)/ortools/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Smps_driver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smps_driver.$O
 
 $(BIN_DIR)/mps_driver$E: $(OBJ_DIR)/glop/mps_driver.$O $(OR_TOOLS_LIBS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Smps_driver.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smps_driver$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Smps_driver.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Smps_driver$E
 
 $(OBJ_DIR)/glop/solve.$O: $(EX_DIR)/cpp/solve.cc $(GEN_DIR)/ortools/glop/parameters.pb.h $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssolve.$O
 
 $(BIN_DIR)/solve$E: $(OBJ_DIR)/glop/solve.$O $(OR_TOOLS_LIBS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Ssolve.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssolve$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Ssolve.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Ssolve$E
 
 # Sat solver
 
@@ -764,11 +785,10 @@ $(OBJ_DIR)/sat/sat_runner.$O: $(EX_DIR)/cpp/sat_runner.cc $(EX_DIR)/cpp/opb_read
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_runner.$O
 
 $(BIN_DIR)/sat_runner$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/sat/sat_runner.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Ssat$Ssat_runner.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Ssat$Ssat_runner.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
 
 # OR Tools unique library.
-
-$(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
+$(OR_TOOLS_LIBS): \
     $(BASE_LIB_OBJS) \
     $(PORT_LIB_OBJS) \
     $(UTIL_LIB_OBJS) \
@@ -782,87 +802,121 @@ $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
     $(LP_LIB_OBJS) \
     $(CP_LIB_OBJS)
 	$(LINK_CMD) \
-	  $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) \
-	  $(BASE_LIB_OBJS) \
-	  $(PORT_LIB_OBJS) \
-	  $(UTIL_LIB_OBJS) \
-	  $(DATA_LIB_OBJS) \
-	  $(LP_DATA_LIB_OBJS) \
-	  $(GLOP_LIB_OBJS) \
-	  $(GRAPH_LIB_OBJS) \
-	  $(ALGORITHMS_LIB_OBJS) \
-	  $(SAT_LIB_OBJS) \
-	  $(BOP_LIB_OBJS) \
-	  $(LP_LIB_OBJS) \
-	  $(CP_LIB_OBJS) \
-	  $(DEPENDENCIES_LNK) \
-	  $(OR_TOOLS_LD_FLAGS)
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L \
+ $(BASE_LIB_OBJS) \
+ $(PORT_LIB_OBJS) \
+ $(UTIL_LIB_OBJS) \
+ $(DATA_LIB_OBJS) \
+ $(LP_DATA_LIB_OBJS) \
+ $(GLOP_LIB_OBJS) \
+ $(GRAPH_LIB_OBJS) \
+ $(ALGORITHMS_LIB_OBJS) \
+ $(SAT_LIB_OBJS) \
+ $(BOP_LIB_OBJS) \
+ $(LP_LIB_OBJS) \
+ $(CP_LIB_OBJS) \
+ $(DEPENDENCIES_LNK) \
+ $(LDFLAGS)
 
 # compile and run C++ examples
 .PHONY: ccc
-ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+ccc: $(BIN_DIR)/$(basename $(notdir $(EX)))$E
 
 .PHONY: rcc
-rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+rcc: $(BIN_DIR)/$(basename $(notdir $(EX)))$E
 	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
 
 ###############
 ##  INSTALL  ##
 ###############
+# ref: https://www.gnu.org/prep/standards/html_node/Directory-Variables.html#index-prefix
+# ref: https://www.gnu.org/prep/standards/html_node/DESTDIR.html
 install_dirs:
-	-$(MKDIR) "$(prefix)"
-	-$(MKDIR) "$(prefix)$Slib"
-	-$(MKDIR) "$(prefix)$Sinclude"
-	-$(DELREC) "$(prefix)$Sinclude$Sortools"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Salgorithms"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sbase"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sbop"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sconstraint_solver"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sglop"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sgraph"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Slinear_solver"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Slp_data"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Ssat"
-	$(MKDIR) "$(prefix)$Sinclude$Sortools$Sutil"
+	-$(MKDIR) "$(DESTDIR)$(prefix)"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude"
+	-$(DELREC) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbase"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbop"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sconstraint_solver"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sglop"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
 
-.PHONY: install_cc # Install C++ OR-Tools to $(prefix)/.
-install_cc: ortoolslibs $(PATCHELF) install_dirs
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) "$(prefix)$Slib"
-	$(COPY) ortools$Salgorithms$S*.h "$(prefix)$Sinclude$Sortools$Salgorithms"
-	$(COPY) ortools$Sbase$S*.h "$(prefix)$Sinclude$Sortools$Sbase"
-	$(COPY) ortools$Sconstraint_solver$S*.h "$(prefix)$Sinclude$Sortools$Sconstraint_solver"
-	$(COPY) ortools$Sgen$Sortools$Sconstraint_solver$S*.pb.h "$(prefix)$Sinclude$Sortools$Sconstraint_solver"
-	$(COPY) ortools$Sbop$S*.h "$(prefix)$Sinclude$Sortools$Sbop"
-	$(COPY) ortools$Sgen$Sortools$Sbop$S*.pb.h "$(prefix)$Sinclude$Sortools$Sbop"
-	$(COPY) ortools$Sglop$S*.h "$(prefix)$Sinclude$Sortools$Sglop"
-	$(COPY) ortools$Sgen$Sortools$Sglop$S*.pb.h "$(prefix)$Sinclude$Sortools$Sglop"
-	$(COPY) ortools$Sgraph$S*.h "$(prefix)$Sinclude$Sortools$Sgraph"
-	$(COPY) ortools$Sgen$Sortools$Sgraph$S*.h "$(prefix)$Sinclude$Sortools$Sgraph"
-	$(COPY) ortools$Slinear_solver$S*.h "$(prefix)$Sinclude$Sortools$Slinear_solver"
-	$(COPY) ortools$Slp_data$S*.h "$(prefix)$Sinclude$Sortools$Slp_data"
-	$(COPY) ortools$Sgen$Sortools$Slinear_solver$S*.pb.h "$(prefix)$Sinclude$Sortools$Slinear_solver"
-	$(COPY) ortools$Ssat$S*.h "$(prefix)$Sinclude$Sortools$Ssat"
-	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h "$(prefix)$Sinclude$Sortools$Ssat"
-	$(COPY) ortools$Sutil$S*.h "$(prefix)$Sinclude$Sortools$Sutil"
+.PHONY: install_cc # Install C++ OR-Tools to $(DESTDIR)$(prefix)
+install_cc: install_libortools install_third_party
+
+install_libortools: ortoolslibs install_dirs
+	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
+	$(COPY) ortools$Salgorithms$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
+	$(COPY) ortools$Sbase$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbase"
+	$(COPY) ortools$Sconstraint_solver$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sconstraint_solver"
+	$(COPY) $(GEN_DIR)$Sortools$Sconstraint_solver$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sconstraint_solver"
+	$(COPY) ortools$Sbop$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbop"
+	$(COPY) $(GEN_DIR)$Sortools$Sbop$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbop"
+	$(COPY) ortools$Sglop$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sglop"
+	$(COPY) $(GEN_DIR)$Sortools$Sglop$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sglop"
+	$(COPY) ortools$Sgraph$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
+	$(COPY) $(GEN_DIR)$Sortools$Sgraph$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
+	$(COPY) ortools$Slinear_solver$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
+	$(COPY) ortools$Slp_data$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
+	$(COPY) $(GEN_DIR)$Sortools$Slinear_solver$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
+	$(COPY) ortools$Ssat$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
+	$(COPY) $(GEN_DIR)$Sortools$Ssat$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
+	$(COPY) ortools$Sutil$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
+
+install_third_party:
+ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Slib$Slibgflags* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Sbin$Sgflags_completions.sh "$(DESTDIR)$(prefix)$Sbin"
+endif
+ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Slib$Slibglog* "$(DESTDIR)$(prefix)$Slib"
+endif
+ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Slib$Slibproto* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Sbin$Sprotoc "$(DESTDIR)$(prefix)$Sbin"
+endif
+ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibCbc* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibCgl* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibClp* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibOsi* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib$SlibCoinUtils* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Sbin$Scbc "$(DESTDIR)$(prefix)$Sbin"
+	$(COPYREC) dependencies$Sinstall$Sbin$Sclp "$(DESTDIR)$(prefix)$Sbin"
+endif
 
 .PHONY: detect_cc # Show variables used to build C++ OR-Tools.
 detect_cc:
 	@echo Relevant info for the C++ build:
+	@echo PROTOC = $(PROTOC)
+	@echo GEN_DIR = $(GEN_DIR)
 	@echo CCC = $(CCC)
 	@echo CFLAGS = $(CFLAGS)
-	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
-	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
-	@echo OR_TOOLS_LD_FLAGS = $(OR_TOOLS_LD_FLAGS)
+	@echo LDFLAGS = $(LDFLAGS)
+	@echo LINK_CMD = $(LINK_CMD)
 	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
+	@echo SRC_DIR = $(SRC_DIR)
+	@echo EX_DIR = $(EX_DIR)
+	@echo OBJ_DIR = $(OBJ_DIR)
 	@echo LIB_DIR = $(LIB_DIR)
 	@echo BIN_DIR = $(BIN_DIR)
-	@echo GEN_DIR = $(GEN_DIR)
-	@echo OBJ_DIR = $(OBJ_DIR)
-	@echo SRC_DIR = $(SRC_DIR)
-	@echo EX_DIR  = $(EX_DIR)
-	@echo prefix  = $(prefix)
+	@echo prefix = $(prefix)
+	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
+	@echo OR_TOOLS_LDFLAGS = $(OR_TOOLS_LDFLAGS)
+	@echo OR_TOOLS_LIBS = $(OR_TOOLS_LIBS)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

@@ -63,7 +63,7 @@ ifeq ("$(SYSTEM)","unix")
 		endif
 		CSC = mcs
 		MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
-		LIB_SUFFIX = so
+		L = so
 	endif
 	ifeq ($(OS),Darwin) # Assume Mac Os X
 		CPP_COMPILER = clang++
@@ -74,7 +74,7 @@ ifeq ("$(SYSTEM)","unix")
 		CSC = mcs
 		MONO =	DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono64
 		NETPLATFORM = x64
-		LIB_SUFFIX = dylib
+		L = dylib
 	endif
 	O = o
 	E =
@@ -120,7 +120,7 @@ ifeq ("$(SYSTEM)","win")
 	LD_FLAGS = psapi.lib ws2_32.lib
 	LIB_PREFIX =
 	PRE_LIB =
-	LIB_SUFFIX = lib
+	L = lib
 	OR_TOOLS_LNK = lib\\ortools.lib
 	CVRPTW_LNK = lib\\cvrptw_lib.lib lib\\ortools.lib
 	DIMACS_LNK = lib\\dimacs.lib lib\\ortools.lib
@@ -140,10 +140,10 @@ ifeq ("$(SYSTEM)","win")
 	TO_NULL = 2> NUL
 endif
 
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
-CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
-DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
-FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
+OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
+CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
+DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
+FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
 
 .PHONY: all clean test
 
