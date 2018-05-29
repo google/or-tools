@@ -63,7 +63,7 @@ For Boolean variables x and y, the following are elementary Boolean constraints:
 -   not(x)
 
 More complicated constraints can be built up by combining these elementary
-constraints."
+constraints.
 
 ### Python code
 
