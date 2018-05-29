@@ -5,32 +5,33 @@
 ## Introduction
 
 The CP-SAT solver can express Boolean variables and constraints. A **Boolean
-variable** is a integer variable between 0 and 1. A **literal** is either a
-Boolean variable or its negation. Please note that this negation is different
-from the opposite operation on integer variables.
+variable** is an integer variable constrained to be either 0 or 1. A **literal**
+is either a Boolean variable or its negation: 0 negated is 1, and vice versa.
+See
+https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_and_terminology.
 
 ## Boolean variables and literals
 
-We can create a Boolean variable 'x' and a literal 'lit' equal to the logical
+We can create a Boolean variable 'x' and a literal 'not_x' equal to the logical
 negation of 'x'.
 
 ### Python code
 
 ```python
-from ortools.sat.python import cp_model
+from google3.util.operations_research.sat.python import cp_model
 
 model = cp_model.CpModel()
 
 x = model.NewBoolVar('x')
 
-lit = x.Not()
+not_x = x.Not()
 ```
 
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "util/operations_research/sat/cp_model.pb.h"
+#include "util/operations_research/sat/cp_model_utils.h"
 
 namespace operations_research {
 namespace sat {
@@ -46,7 +47,7 @@ auto new_boolean_variable = [&cp_model]() {
 };
 
 const int x = new_boolean_variable();
-const int lit = NegatedRef(x);
+const int not_x = NegatedRef(x);
 
 }  // namespace sat
 }  // namespace operations_research
@@ -54,16 +55,20 @@ const int lit = NegatedRef(x);
 
 ## Boolean constraints
 
-There are three Boolean constraints.
+For Boolean variables x and y, the following are elementary Boolean constraints:
 
--   or(literal_1, .., literal_n)
--   and(literal_1, .., literal_n)
--   xor(literal_1, .., literal_n)
+-   or(x_1, .., x_n)
+-   and(x_1, .., x_n)
+-   xor(x_1, .., x_n)
+-   not(x)
+
+More complicated constraints can be built up by combining these elementary
+constraints."
 
 ### Python code
 
 ```python
-from ortools.sat.python import cp_model
+from google3.util.operations_research.sat.python import cp_model
 
 model = cp_model.CpModel()
 
@@ -76,8 +81,8 @@ model.AddBoolOr([x, y.Not()])
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "util/operations_research/sat/cp_model.pb.h"
+#include "util/operations_research/sat/cp_model_utils.h"
 
 namespace operations_research {
 namespace sat {
@@ -110,23 +115,25 @@ add_bool_or({x, NegatedRef(y)});
 
 ## Reified constraints
 
-The CP-SAT solver supports half-reified constraints. These are the following:
+The CP-SAT solver supports *half-reified* constraints, also called
+*implications*, which are of the form:
 
-    literal implies constraint
+    x implies constraint
 
-where the constraint must hold if the literal is true.
+where the constraint must hold if *x* is true.
 
-Please note that this is not an equivalence relation. The constraint can hold
-even if the literal is false.
+Please note that this is not an equivalence relation. The constraint can still
+be true if the *x* is false.
 
-So we can write b => And(x, not y). That is if b is true, then x is true and y
-is false. Note, that you can also write (b => x) and (b => not y), which then is
-written as Or(not b, x) and Or(not b, not y).
+So we can write b => And(x, not y). That is, if b is true, then x is true and y
+is false. Note that in this particular example, there are multiple ways to
+express this constraint: you can also write (b => x) and (b => not y), which
+then is written as Or(not b, x) and Or(not b, not y).
 
 ### Python code
 
 ```python
-from ortools.sat.python import cp_model
+from google3.util.operations_research.sat.python import cp_model
 
 model = cp_model.CpModel()
 
@@ -145,8 +152,8 @@ model.AddImplication(b, y.Not())
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "util/operations_research/sat/cp_model.pb.h"
+#include "util/operations_research/sat/cp_model_utils.h"
 
 namespace operations_research {
 namespace sat {
