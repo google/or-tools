@@ -364,6 +364,79 @@ void MinimalSatPrintIntermediateSolutions() {
 }  // namespace operations_research
 ```
 
+### C\# code
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
+{
+  public VarArraySolutionPrinterWithObjective(IntVar[] variables)
+  {
+    variables_ = variables;
+  }
+
+  public override void OnSolutionCallback()
+  {
+    {
+      Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
+                                      solution_count_, WallTime()));
+      Console.WriteLine(
+          String.Format("  objective value = {0}", ObjectiveValue()));
+      foreach (IntVar v in variables_)
+      {
+        Console.WriteLine(
+            String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+      }
+      solution_count_++;
+    }
+  }
+
+  public int SolutionCount()
+  {
+    return solution_count_;
+  }
+
+  private int solution_count_;
+  private IntVar[] variables_;
+}
+
+
+public class CodeSamplesSat
+{
+  static void MinimalCpSatPrintIntermediateSolutions()
+  {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    int num_vals = 3;
+
+    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+    // Creates the constraints.
+    model.Add(x != y);
+    // Create the objective.
+    model.Maximize(x + 2 * y + 3 * z);
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    VarArraySolutionPrinterWithObjective cb =
+        new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
+    solver.SearchAllSolutions(model, cb);
+    Console.WriteLine(String.Format("Number of solutions found: {0}",
+                                    cb.SolutionCount()));
+
+  }
+
+  static void Main()
+  {
+    MinimalCpSatPrintIntermediateSolutions();
+  }
+}
+```
+
 ## Searching for all solutions in a satisfiability model
 
 In an non-optimization model, you can search for all solutions. You need to
@@ -479,4 +552,73 @@ void MinimalSatSearchForAllSolutions() {
 
 }  // namespace sat
 }  // namespace operations_research
+```
+
+### C\# code
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class VarArraySolutionPrinter : CpSolverSolutionCallback
+{
+  public VarArraySolutionPrinter(IntVar[] variables)
+  {
+    variables_ = variables;
+  }
+
+  public override void OnSolutionCallback()
+  {
+    {
+      Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
+                                      solution_count_, WallTime()));
+      foreach (IntVar v in variables_)
+      {
+        Console.WriteLine(
+            String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+      }
+      solution_count_++;
+    }
+  }
+
+  public int SolutionCount()
+  {
+    return solution_count_;
+  }
+
+  private int solution_count_;
+  private IntVar[] variables_;
+}
+
+
+public class CodeSamplesSat
+{
+  static void MinimalCpSatAllSolutions()
+  {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    int num_vals = 3;
+
+    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+    // Creates the constraints.
+    model.Add(x != y);
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    VarArraySolutionPrinter cb =
+        new VarArraySolutionPrinter(new IntVar[] {x, y, z});
+    solver.SearchAllSolutions(model, cb);
+    Console.WriteLine(String.Format("Number of solutions found: {0}",
+                                    cb.SolutionCount()));
+
+  }
+
+  static void Main()
+  {
+    MinimalCpSatAllSolutions();
+  }
+}
 ```
