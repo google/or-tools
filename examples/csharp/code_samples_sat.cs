@@ -16,7 +16,8 @@ using Google.OrTools.Sat;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
-  public VarArraySolutionPrinter(IntVar[] variables) {
+  public VarArraySolutionPrinter(IntVar[] variables)
+  {
     variables_ = variables;
   }
 
@@ -25,7 +26,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
     {
       Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
                                       solution_count_, WallTime()));
-      foreach (IntVar v in variables_) {
+      foreach (IntVar v in variables_)
+      {
         Console.WriteLine(
             String.Format("  {0} = {1}", v.ShortString(), Value(v)));
       }
@@ -45,7 +47,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
 
 public class CodeSamplesSat
 {
-  static void CodeSample() {
+  static void CodeSample()
+  {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the Boolean variable.
@@ -69,14 +72,42 @@ public class CodeSamplesSat
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.ModelSat) {
+    if (status == CpSolverStatus.ModelSat)
+    {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));
       Console.WriteLine("z = " + solver.Value(z));
     }
   }
 
+  static void MinimalCpSatWithTimeLimit()
+  {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    int num_vals = 3;
 
+    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+    // Creates the constraints.
+    model.Add(x != y);
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+
+    // Adds a time limit. Parameters are stored as strings in the solver.
+    solver.StringParameters = "max_time_in_seconds:10.0" ;
+
+    CpSolverStatus status = solver.Solve(model);
+
+    if (status == CpSolverStatus.ModelSat)
+    {
+      Console.WriteLine("x = " + solver.Value(x));
+      Console.WriteLine("y = " + solver.Value(y));
+      Console.WriteLine("z = " + solver.Value(z));
+    }
+  }
 
   static void MinimalCpSatAllSolutions()
   {
@@ -101,9 +132,11 @@ public class CodeSamplesSat
 
   }
 
-  static void Main() {
+  static void Main()
+  {
     CodeSample();
     MinimalCpSat();
+    MinimalCpSatWithTimeLimit();
     MinimalCpSatAllSolutions();
   }
 }
