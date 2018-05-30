@@ -34,7 +34,7 @@ solve status, the values for each variable in the model if solve was successful,
 and some metrics.
 
 ```cpp
-#include "ortools/sat/cp_model.proto.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 
@@ -92,10 +92,10 @@ if status == cp_model.OPTIMAL:
 ### Specifying the time limit in C++
 
 ```cpp
-#include "ortools/sat/cp_model.proto.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.proto.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -184,7 +184,7 @@ def MinimalCpSatPrintIntermediateSolutions():
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.proto.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"

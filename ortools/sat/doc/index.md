@@ -8,7 +8,7 @@ by type:
 -   [boolean logic](boolean_logic.md)
 -   [integer arithmetic](integer_arithmetic.md)
 -   [scheduling](scheduling.md)
--   [searching for a solution](solver.md)
+-   [solving a CP-SAT model](solver.md)
 
 Code samples are given in C++ and python.
 
