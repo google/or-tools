@@ -127,7 +127,8 @@ public class CodeSamplesSat
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar start_var = model.NewIntVar(0, horizon, "start");
-    IntVar duration = model.NewConstant(10);
+    // C# code supports IntVar or integer constants in intervals.
+    int duration = 10;
     IntVar end_var = model.NewIntVar(0, horizon, "end");
     IntervalVar interval =
         model.NewIntervalVar(start_var, duration, end_var, "interval");
