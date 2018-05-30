@@ -73,6 +73,46 @@ void SimpleSolve() {
 } // namespace operations_research
 ```
 
+### C\# code
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class CodeSamplesSat
+{
+  static void MinimalCpSat()
+  {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    int num_vals = 3;
+
+    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+    // Creates the constraints.
+    model.Add(x != y);
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+
+    if (status == CpSolverStatus.ModelSat)
+    {
+      Console.WriteLine("x = " + solver.Value(x));
+      Console.WriteLine("y = " + solver.Value(y));
+      Console.WriteLine("z = " + solver.Value(z));
+    }
+  }
+
+  static void Main()
+  {
+    MinimalCpSat();
+  }
+}
+```
+
 ## Changing the parameters of the solver
 
 The SatParameters protobuf encapsulate a set of parameters of a CP-SAT solver.
@@ -150,7 +190,7 @@ void SolveWithTimeLimit() {
 } // namespace operations_research
 ```
 
-### C\# code
+### Specifying the time limit in C\#
 
 Parameters must be passed as string to the solver.
 
