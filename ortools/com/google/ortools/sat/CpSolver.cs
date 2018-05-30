@@ -124,16 +124,14 @@ public class CpSolver
   {
     if (string_parameters_ != null)
     {
-      string extra_parameters =
-          " enumerate_all_solutions:true, cp_model_presolve:false";
+      string extra_parameters = " enumerate_all_solutions:true";
       response_ =
           SatHelper.SolveWithStringParametersAndSolutionCallback(
               model.Model, string_parameters_ + extra_parameters, cb);
     }
     else
     {
-      string parameters =
-          "enumerate_all_solutions:true, cp_model_presolve:false";
+      string parameters = "enumerate_all_solutions:true";
       response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(
           model.Model, parameters, cb);
     }

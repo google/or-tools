@@ -543,6 +543,14 @@ $(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DL
 techtalk_scheduling: $(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stechtalk_scheduling$(CLR_EXE_SUFFIX).exe
 
+# Code samples
+
+$(BIN_DIR)/code_samples_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/code_samples_sat.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scode_samples_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scode_samples_sat.cs
+
+code_samples_sat: $(BIN_DIR)/code_samples_sat$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)$Scode_samples_sat$(CLR_EXE_SUFFIX).exe
+
 else # This generic rule will be used if EX variable is set
 
 ifneq ($(CLR_EXE_SUFFIX),) # otherwise this rule has the same target than the one in use for cc files.
@@ -770,6 +778,7 @@ endif
 	@echo PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
 	@echo CSHARP_COMPILER = $(CSHARP_COMPILER)
 	@echo CSHARP_EXECUTABLE = "$(CSHARP_EXECUTABLE)"
+	@echo CLR_EXE_SUFFIX = "$(CLR_EXE_SUFFIX)"
 ifeq ($(SYSTEM),unix)
 	@echo MONO_COMPILER = $(MONO_COMPILER)
 	@echo MONO_EXECUTABLE = "$(MONO_EXECUTABLE)"

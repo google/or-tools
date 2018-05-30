@@ -63,3 +63,27 @@ void CodeSample() {
 }  // namespace sat
 }  // namespace operations_research
 ```
+
+## C\# code
+
+The C\# code implements the same interface as the python code, with a
+**CpModel**, and a **CpSolver** class.
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class CodeSamplesSat
+{
+  static void CodeSample() {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the Boolean variable.
+    IntVar x = model.NewBoolVar("x");
+  }
+
+  static void Main() {
+    CodeSample();
+  }
+}
+```
