@@ -73,7 +73,7 @@ void SimpleSolve() {
 } // namespace operations_research
 ```
 
-### C\# code
+### C\# solver code
 
 ```cs
 using System;
