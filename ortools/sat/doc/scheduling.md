@@ -18,8 +18,8 @@ To create an interval, we need to create three variables, for the start, the
 size, and the end of the interval. Then we create an interval constraint using
 these three variables.
 
-We give two code snippets the demonstrate how to build these objects in python
-and C++.
+We give two code snippets the demonstrate how to build these objects in python,
+C++, and C\#.
 
 ### Python code
 
