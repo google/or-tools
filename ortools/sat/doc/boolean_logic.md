@@ -134,6 +134,28 @@ add_bool_or({x, NegatedRef(y)});
 }  // namespace operations_research
 ```
 
+### C\# code
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class CodeSamplesSat
+{
+  static void BoolOrSample()
+  {
+    CpModel model = new CpModel();
+    IntVar x = model.NewBoolVar("x");
+    IntVar y = model.newBoolVar("y");
+    model.AddBoolOr(new ILiteral[] {x, y.Not()});
+  }
+
+  static void Main() {
+    BoolOrSample();
+  }
+}
+```
+
 ## Reified constraints
 
 The CP-SAT solver supports *half-reified* constraints, also called
@@ -223,4 +245,38 @@ add_bool_or({NegatedRef(b), NegatedRef(y)});
 
 }  // namespace sat
 }  // namespace operations_research
+```
+
+### C\# code
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class CodeSamplesSat
+{
+  static void ReifiedSample()
+  {
+    CpModel model = new CpModel();
+
+    IntVar x = model.NewBoolVar("x");
+    IntVar y = model.NewBoolVar("y");
+    IntVar b = model.NewBoolVar("b");
+
+    //  First version using a half-reified bool and.
+    model.AddBoolAnd(new ILiteral[] {x, y.Not()}).OnlyEnforceIf(b);
+
+    // Second version using implications.
+    model.AddImplication(b, x);
+    model.AddImplication(b, y.Not());
+
+    // Third version using bool or.
+    model.AddBoolOr(new ILiteral[] {b.Not(), x});
+    model.AddBoolOr(new ILiteral[] {b.Not(), y.Not()});
+  }
+
+  static void Main() {
+    ReifiedSample();
+  }
+}
 ```
