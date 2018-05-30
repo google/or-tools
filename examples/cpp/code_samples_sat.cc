@@ -22,6 +22,70 @@
 
 namespace operations_research {
 namespace sat {
+
+void SimpleSolve() {
+  CpModelProto cp_model;
+
+  // Trivial model with just one variable and no constraint.
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
+
+  const int x = new_variable(0, 3);
+
+  // Solving part.
+  Model model;
+  LOG(INFO) << CpModelStats(cp_model);
+  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  LOG(INFO) << CpSolverResponseStats(response);
+
+  if (response.status() == CpSolverStatus::MODEL_SAT) {
+    // Get the value of x in the solution.
+    const int64 value_x = response.solution(x);
+    LOG(INFO) << "x = " << value_x;
+  }
+}
+
+void SolveWithTimeLimit() {
+  CpModelProto cp_model;
+
+  // Trivial model with just one variable and no constraint.
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
+
+  const int x = new_variable(0, 3);
+
+  // Solving part.
+  Model model;
+
+  // Sets a time limit of 10 seconds.
+  SatParameters parameters;
+  parameters.set_max_time_in_seconds(10.0);
+  model.Add(NewSatParameters(parameters));
+
+  // Solve.
+  LOG(INFO) << CpModelStats(cp_model);
+  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  LOG(INFO) << CpSolverResponseStats(response);
+
+  if (response.status() == CpSolverStatus::MODEL_SAT) {
+    // Get the value of x in the solution.
+    const int64 value_x = response.solution(x);
+    LOG(INFO) << "x = " << value_x;
+  }
+}
+
 void MinimalSatPrintIntermediateSolutions() {
 
   CpModelProto cp_model;
@@ -116,6 +180,7 @@ void MinimalSatSearchForAllSolutions() {
 
   add_different(x, y);
 
+  // Solving part.
   Model model;
 
   // Tell the solver to enumerate all solutions.
@@ -139,6 +204,8 @@ void MinimalSatSearchForAllSolutions() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  operations_research::sat::SimpleSolve();
+  operations_research::sat::SolveWithTimeLimit();
   operations_research::sat::MinimalSatPrintIntermediateSolutions();
   operations_research::sat::MinimalSatSearchForAllSolutions();
   return EXIT_SUCCESS;

@@ -44,9 +44,19 @@ namespace sat {
 void SimpleSolve() {
   CpModelProto cp_model;
 
-  // Fill in the model with variables and constraints. Creates 'x', a reference
-  // to an integer variable.
+  // Trivial model with just one variable and no constraint.
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
 
+  const int x = new_variable(0, 3);
+
+  // Solving part.
   Model model;
   LOG(INFO) << CpModelStats(cp_model);
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
@@ -55,6 +65,7 @@ void SimpleSolve() {
   if (response.status() == CpSolverStatus::MODEL_SAT) {
     // Get the value of x in the solution.
     const int64 value_x = response.solution(x);
+    LOG(INFO) << "x = " << value_x;
   }
 }
 
@@ -103,9 +114,19 @@ namespace sat {
 void SolveWithTimeLimit() {
   CpModelProto cp_model;
 
-  // Fill in the model with variables and constraints. Creates 'x', a reference
-  // to an integer variable.
+  // Trivial model with just one variable and no constraint.
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
 
+  const int x = new_variable(0, 3);
+
+  // Solving part.
   Model model;
 
   // Sets a time limit of 10 seconds.
@@ -121,6 +142,7 @@ void SolveWithTimeLimit() {
   if (response.status() == CpSolverStatus::MODEL_SAT) {
     // Get the value of x in the solution.
     const int64 value_x = response.solution(x);
+    LOG(INFO) << "x = " << value_x;
   }
 }
 
