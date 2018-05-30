@@ -495,6 +495,12 @@ $(OBJ_DIR)/costas_array.$O: $(EX_DIR)/cpp/costas_array.cc $(SRC_DIR)/ortools/con
 $(BIN_DIR)/costas_array$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/costas_array.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/costas_array.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scostas_array$E
 
+$(OBJ_DIR)/code_samples_sat.$O: $(EX_DIR)/cpp/code_samples_sat.cc $(SAT_DEPS)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/code_samples_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Scode_samples_sat.$O
+
+$(BIN_DIR)/code_samples_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/code_samples_sat.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/code_samples_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scode_samples_sat$E
+
 $(OBJ_DIR)/cryptarithm.$O: $(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cryptarithm.cc $(OBJ_OUT)$(OBJ_DIR)$Scryptarithm.$O
 
