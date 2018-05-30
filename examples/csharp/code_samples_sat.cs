@@ -87,6 +87,13 @@ public class CodeSamplesSat
     IntVar x = model.NewBoolVar("x");
   }
 
+  static void LiteralSample()
+  {
+    CpModel model = new CpModel();
+    IntVar x = model.NewBoolVar("x");
+    ILiteral not_x = x.Not();
+  }
+
   static void MinimalCpSat()
   {
     // Creates the model.
@@ -190,6 +197,7 @@ public class CodeSamplesSat
   static void Main()
   {
     CodeSample();
+    LiteralSample();
     MinimalCpSat();
     MinimalCpSatWithTimeLimit();
     MinimalCpSatPrintIntermediateSolutions();

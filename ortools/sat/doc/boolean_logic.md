@@ -53,6 +53,27 @@ const int not_x = NegatedRef(x);
 }  // namespace operations_research
 ```
 
+### C\# code
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class CodeSamplesSat
+{
+  static void LiteralSample()
+  {
+    CpModel model = new CpModel();
+    IntVar x = model.NewBoolVar("x");
+    ILiteral not_x = x.Not();
+  }
+
+  static void Main() {
+    LiteralSample();
+  }
+}
+```
+
 ## Boolean constraints
 
 For Boolean variables x and y, the following are elementary Boolean constraints:
