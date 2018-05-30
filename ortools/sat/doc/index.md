@@ -40,15 +40,20 @@ readability.
 namespace operations_research {
 namespace sat {
 
-CpModelProto cp_model;
+void CodeSample() {
+  CpModelProto cp_model;
 
-auto new_boolean_variable = [&cp_model]() {
-  const int index = cp_model.variables_size();
-  IntegerVariableProto* const var = cp_model.add_variables();
-  var->add_domain(0);
-  var->add_domain(1);
-  return index;
-};
+  auto new_boolean_variable = [&cp_model]() {
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    return index;
+  };
 
-const int x = new_boolean_variable();
+  const int x = new_boolean_variable();
+}
+
+}  // namespace sat
+}  // namespace operations_research
 ```
