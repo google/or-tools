@@ -58,6 +58,10 @@ PYTHON_INC = -I$(PATH_TO_PYTHON_INCLUDE) -I$(PATH_TO_PYTHON_LIB) $(ADD_PYTHON_IN
 PYTHON_INC += $(shell pkg-config --cflags python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
 PYTHON_LNK += $(shell pkg-config --libs python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
 
+ifeq ("${PYTHON_LNK}","")
+PYTHON_LNK = "-lpython${UNIX_PYTHON_VERSION}"
+endif
+
 MONO_COMPILER ?= mono
 MONO_EXECUTABLE := $(shell $(WHICH) $(MONO_COMPILER))
 
