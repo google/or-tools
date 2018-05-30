@@ -122,6 +122,17 @@ public class CodeSamplesSat
     model.AddBoolOr(new ILiteral[] {b.Not(), y.Not()});
   }
 
+  static void IntervalSample()
+  {
+    CpModel model = new CpModel();
+    int horizon = 100;
+    IntVar start_var = model.NewIntVar(0, horizon, "start");
+    IntVar duration = model.NewConstant(10);
+    IntVar end_var = model.NewIntVar(0, horizon, "end");
+    IntervalVar interval =
+        model.NewIntervalVar(start_var, duration, end_var, "interval");
+  }
+
   static void MinimalCpSat()
   {
     // Creates the model.
@@ -228,6 +239,7 @@ public class CodeSamplesSat
     LiteralSample();
     BoolOrSample();
     ReifiedSample();
+    IntervalSample();
     MinimalCpSat();
     MinimalCpSatWithTimeLimit();
     MinimalCpSatPrintIntermediateSolutions();

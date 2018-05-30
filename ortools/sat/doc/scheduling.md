@@ -74,3 +74,29 @@ const int interval_var = new_interval(start_var, duration_var, end_var);
 }  // namespace sat
 }  // namespace operations_research
 ```
+
+### C\# code
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class CodeSamplesSat
+{
+  static void IntervalSample()
+  {
+    CpModel model = new CpModel();
+    int horizon = 100;
+    IntVar start_var = model.NewIntVar(0, horizon, "start");
+    IntVar duration = model.NewConstant(10);
+    IntVar end_var = model.NewIntVar(0, horizon, "end");
+    IntervalVar interval =
+        model.NewIntervalVar(start_var, duration, end_var, "interval");
+  }
+
+  static void Main()
+  {
+    IntervalSample();
+  }
+}
+```
