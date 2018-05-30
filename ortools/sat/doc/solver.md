@@ -427,7 +427,6 @@ public class CodeSamplesSat
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
                                     cb.SolutionCount()));
-
   }
 
   static void Main()
@@ -613,7 +612,6 @@ public class CodeSamplesSat
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
                                     cb.SolutionCount()));
-
   }
 
   static void Main()
