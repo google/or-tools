@@ -247,11 +247,25 @@ def add_time_window_constraints(routing, data, time_evaluator):
         time_evaluator,
         horizon, # allow waiting time
         horizon, # maximum time per vehicle
-        True, # start cumul to zero
+        False, # don't force start cumul to zero since we are giving TW to start nodes
         time)
     time_dimension = routing.GetDimensionOrDie(time)
+    # Add time window constraints for each location except depot
+    # and "copy" the slack var in the solution object (aka Assignment) to print it
     for location_idx, time_window in enumerate(data.time_windows):
-        time_dimension.CumulVar(location_idx).SetRange(time_window[0], time_window[1])
+        if location_idx == 0:
+            continue
+        index = routing.NodeToIndex(location_idx)
+        time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
+        routing.AddToAssignment(time_dimension.SlackVar(index))
+    # Add time window constraints for each vehicle start node
+    # and "copy" the slack var in the solution object (aka Assignment) to print it
+    for vehicle_id in xrange(data.num_vehicles):
+        index = routing.Start(vehicle_id)
+        time_dimension.CumulVar(index).SetRange(data.time_windows[0][0], data.time_windows[0][1])
+        routing.AddToAssignment(time_dimension.SlackVar(index))
+        # Warning: Slack var is not defined for vehicle's end node
+        #routing.AddToAssignment(time_dimension.SlackVar(self.routing.End(vehicle_id)))
 
 ###########
 # Printer #
@@ -302,7 +316,14 @@ class ConsolePrinter():
                 time_var = time_dimension.CumulVar(index)
                 time_min = self.assignment.Min(time_var)
                 time_max = self.assignment.Max(time_var)
-                plan_output += ' {0} Load({1}) Time({2},{3}) ->'.format(node_index, route_load, time_min, time_max)
+                slack_var = time_dimension.SlackVar(index)
+                slack_min = self.assignment.Min(slack_var)
+                slack_max = self.assignment.Max(slack_var)
+                plan_output += ' {0} Load({1}) Time({2},{3}) Slack({4},{5}) ->'.format(
+                    node_index,
+                    route_load,
+                    time_min, time_max,
+                    slack_min, slack_max)
                 index = self.assignment.Value(self.routing.NextVar(index))
 
             node_index = self.routing.IndexToNode(index)
@@ -314,7 +335,10 @@ class ConsolePrinter():
             time_max = self.assignment.Max(time_var)
             total_dist += route_dist
             total_time += route_time
-            plan_output += ' {0} Load({1}) Time({2},{3})\n'.format(node_index, route_load, time_min, time_max)
+            plan_output += ' {0} Load({1}) Time({2},{3})\n'.format(
+                node_index,
+                route_load,
+                time_min, time_max)
             plan_output += 'Distance of the route: {0}m\n'.format(route_dist)
             plan_output += 'Load of the route: {0}\n'.format(route_load)
             plan_output += 'Time of the route: {0}min\n'.format(route_time)
