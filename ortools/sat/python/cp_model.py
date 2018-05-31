@@ -1076,6 +1076,21 @@ class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
     """Returns the value of the objective."""
     return self.__current_solution.objective_value
 
+  def NumBooleans(self):
+    return self.__current_solution.num_booleans
+
+  def NumConflicts(self):
+    return self.__current_solution.num_conflicts
+
+  def NumBranches(self):
+    return self.__current_solution.num_branches
+
+  def WallTime(self):
+    return self.__current_solution.wall_time
+
+  def UserTime(self):
+    return self.__current_solution.user_time
+
   def NewSolution(self):
     pass
 
@@ -1145,3 +1160,6 @@ class CpSolver(object):
 
   def WallTime(self):
     return self.__solution.wall_time
+
+  def UserTime(self):
+    return self.__solution.user_time

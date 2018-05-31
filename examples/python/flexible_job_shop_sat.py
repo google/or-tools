@@ -15,7 +15,6 @@ from __future__ import print_function
 
 from collections import defaultdict
 from ortools.sat.python import cp_model
-import time
 
 
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -23,13 +22,10 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 
   def __init__(self):
     self.__solution_count = 0
-    self.__start_time = time.time()
 
   def NewSolution(self):
-    current_time = time.time()
-    objective = self.ObjectiveValue()
     print('Solution %i, time = %f s, objective = %i' %
-          (self.__solution_count, current_time - self.__start_time, objective))
+          (self.__solution_count, self.WallTime(), self.ObjectiveValue()))
     self.__solution_count += 1
 
 
