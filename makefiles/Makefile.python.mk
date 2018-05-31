@@ -524,7 +524,7 @@ MISSING_PYPI_FILES = \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/linear_solver \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/sat \
  $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/data \
- $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/util \
+ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/util
 
 $(PYPI_ARCHIVE_TEMP_DIR):
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)
@@ -653,6 +653,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/sat: $(PYSAT_LIBS) | $(PYPI_ARCHIVE_TEM
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat$S__init__.py
+	$(COPY) ortools$Ssat$Sdoc$S*.md $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(COPY) ortools$Ssat$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(COPY) $(GEN_DIR)$Sortools$Ssat$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(COPY) $(GEN_DIR)$Sortools$Ssat$S_pywrapsat.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat

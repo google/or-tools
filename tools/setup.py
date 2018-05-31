@@ -55,7 +55,7 @@ setup(
         'ortools.linear_solver' : ['_pywraplp.dll'],
         'ortools.graph' : ['_pywrapgraph.dll'],
         'ortools.algorithms' : ['_pywrapknapsack_solver.dll'],
-        'ortools.sat' : ['_pywrapsat.dll'],
+        'ortools.sat' : ['_pywrapsat.dll', '*.md'],
         DELETEWIN 'ortools' : ['libortools.DLL' DDDD]
     },
     include_package_data=True,

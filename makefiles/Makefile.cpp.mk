@@ -840,8 +840,9 @@ rcc: $(BIN_DIR)/$(basename $(notdir $(EX)))$E
 # ref: https://www.gnu.org/prep/standards/html_node/DESTDIR.html
 install_dirs:
 	-$(MKDIR) "$(DESTDIR)$(prefix)"
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sbin"
 	-$(DELREC) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
@@ -856,7 +857,7 @@ install_dirs:
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
 
 .PHONY: install_cc # Install C++ OR-Tools to $(DESTDIR)$(prefix)
-install_cc: install_libortools install_third_party
+install_cc: install_libortools install_third_party install_doc
 
 install_libortools: ortoolslibs install_dirs
 	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
@@ -878,7 +879,7 @@ install_libortools: ortoolslibs install_dirs
 	$(COPY) ortools$Sutil$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
 
-install_third_party:
+install_third_party: install_dirs
 ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude"
 	$(COPYREC) dependencies$Sinstall$Slib$Slibgflags* "$(DESTDIR)$(prefix)$Slib"
@@ -903,6 +904,14 @@ ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sbin$Scbc "$(DESTDIR)$(prefix)$Sbin"
 	$(COPYREC) dependencies$Sinstall$Sbin$Sclp "$(DESTDIR)$(prefix)$Sbin"
 endif
+
+install_doc:
+	-$(DELREC) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
+	-$(MKDIR_P) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
+#$(COPY) ortools$Ssat$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
+	$(COPY) ortools$Ssat$Sdoc$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
 
 .PHONY: detect_cc # Show variables used to build C++ OR-Tools.
 detect_cc:
