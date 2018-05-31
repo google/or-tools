@@ -829,8 +829,6 @@ class CpModel(object):
     start_index = self.GetOrMakeOptionalIndex(start, is_present)
     size_index = self.GetOrMakeIndex(size)  # Currently, not optional.
     end_index = self.GetOrMakeOptionalIndex(end, is_present)
-    self.CheckOptionalIntVarLiteral(start_index, is_present_index)
-    self.CheckOptionalIntVarLiteral(end_index, is_present_index)
     return IntervalVar(self.__model, start_index, size_index, end_index,
                        is_present_index, name)
 
@@ -949,14 +947,6 @@ class CpModel(object):
     if var.enforcement_literal:
       raise TypeError('Variable %s should not be marked as optional' %
                       ShortName(self.__model, var_index))
-
-  def CheckOptionalIntVarLiteral(self, var_index, lit_index):
-    var = self.VarIndexToVarProto(var_index)
-    if (len(var.enforcement_literal) != 1 or
-        var.enforcement_literal[0] != lit_index):
-      raise TypeError('Variable %s should be marked optional with literal %s' %
-                      (ShortName(self.__model, var_index),
-                       ShortName(self.__model, lit_index)))
 
   def _SetObjective(self, obj, minimize):
     """Sets the objective of the model."""
