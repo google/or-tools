@@ -109,7 +109,7 @@ void ExportLinks(const CpModel& model, const std::string& source, const T& proto
 // integer variable with min_value == max_value.
 bool GetValueIfConstant(const CpModel& model, const CpIntegerExpression& proto,
                         int64* const value) {
-  CHECK_NOTNULL(value);
+  CHECK(value != nullptr);
   const int expr_type = proto.type_index();
   if (model.tags(expr_type) != ModelVisitor::kIntegerVariable) {
     return false;

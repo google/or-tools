@@ -24,7 +24,7 @@
 namespace operations_research {
 
 void ParseFileByLines(const std::string& filename, std::vector<std::string>* lines) {
-  CHECK_NOTNULL(lines);
+  CHECK(lines != nullptr);
   std::string result;
   CHECK_OK(file::GetContents(filename, &result, file::Defaults()));
   *lines = absl::StrSplit(result, '\n', absl::SkipEmpty());
@@ -295,10 +295,10 @@ void ParseInstance(const std::string& data_directory, bool find_components,
                    std::vector<FapConstraint>* constraints, std::string* objective,
                    std::vector<int>* frequencies,
                    std::unordered_map<int, FapComponent>* components) {
-  CHECK_NOTNULL(variables);
-  CHECK_NOTNULL(constraints);
-  CHECK_NOTNULL(objective);
-  CHECK_NOTNULL(frequencies);
+  CHECK(variables != nullptr);
+  CHECK(constraints != nullptr);
+  CHECK(objective != nullptr);
+  CHECK(frequencies != nullptr);
 
   // Parse the data files.
   VariableParser var(data_directory);
@@ -352,7 +352,7 @@ void ParseInstance(const std::string& data_directory, bool find_components,
   *objective = cst.objective();
 
   if (find_components) {
-    CHECK_NOTNULL(components);
+    CHECK(components != nullptr);
     FindComponents(*constraints, *variables, maximum_variable_id, components);
     // Evaluate each components's constraints impacts.
     for (auto& component : *components) {
