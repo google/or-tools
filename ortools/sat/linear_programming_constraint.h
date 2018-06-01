@@ -42,11 +42,11 @@ struct LinearConstraint {
   std::string DebugString() const {
     std::string result;
     const double kInfinity = std::numeric_limits<double>::infinity();
-    if (lb != -kInfinity) StrAppend(&result, lb, " <= ");
+    if (lb != -kInfinity) absl::StrAppend(&result, lb, " <= ");
     for (int i = 0; i < vars.size(); ++i) {
-      StrAppend(&result, coeffs[i], "*[", vars[i].value(), "] ");
+      absl::StrAppend(&result, coeffs[i], "*[", vars[i].value(), "] ");
     }
-    if (ub != kInfinity) StrAppend(&result, "<= ", ub);
+    if (ub != kInfinity) absl::StrAppend(&result, "<= ", ub);
     return result;
   }
 };

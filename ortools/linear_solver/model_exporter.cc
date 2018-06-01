@@ -200,9 +200,9 @@ void LineBreaker::Append(const std::string& s) {
   line_size_ += s.size();
   if (line_size_ > max_line_size_) {
     line_size_ = s.size();
-    StrAppend(&output_, "\n ");
+    absl::StrAppend(&output_, "\n ");
   }
-  StrAppend(&output_, s);
+  absl::StrAppend(&output_, s);
 }
 
 std::string DoubleToStringWithForcedSign(double d) {
@@ -263,7 +263,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   AppendComments("\\", output);
 
   // Objective
-  StrAppend(output, proto_.maximize() ? "Maximize\n" : "Minimize\n");
+  absl::StrAppend(output, proto_.maximize() ? "Maximize\n" : "Minimize\n");
   LineBreaker obj_line_breaker(FLAGS_lp_max_line_length);
   obj_line_breaker.Append(" Obj: ");
   if (proto_.objective_offset() != 0.0) {
@@ -282,7 +282,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
     show_variable[var_index] = coeff != 0.0 || FLAGS_lp_shows_unused_variables;
   }
   // Constraints
-  StrAppend(output, obj_line_breaker.GetOutput(), "\nSubject to\n");
+  absl::StrAppend(output, obj_line_breaker.GetOutput(), "\nSubject to\n");
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     const std::string& name = exported_constraint_names_[cst_index];
@@ -306,37 +306,37 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
     const double ub = ct_proto.upper_bound();
     if (lb == ub) {
       line_breaker.Append(StrCat(" = ", DoubleToString(ub), "\n"));
-      StrAppend(output, " ", name, ": ", line_breaker.GetOutput());
+      absl::StrAppend(output, " ", name, ": ", line_breaker.GetOutput());
     } else {
       if (ub != +std::numeric_limits<double>::infinity()) {
         std::string rhs_name = name;
         if (lb != -std::numeric_limits<double>::infinity()) {
-          StrAppend(&rhs_name, "_rhs");
+          absl::StrAppend(&rhs_name, "_rhs");
         }
         StrAppend(output, " ", rhs_name, ": ", line_breaker.GetOutput());
         const std::string relation = StrCat(" <= ", DoubleToString(ub), "\n");
         // Here we have to make sure we do not add the relation to the contents
         // of line_breaker, which may be used in the subsequent clause.
-        if (!line_breaker.WillFit(relation)) StrAppend(output, "\n ");
-        StrAppend(output, relation);
+        if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
+        absl::StrAppend(output, relation);
       }
       if (lb != -std::numeric_limits<double>::infinity()) {
         std::string lhs_name = name;
         if (ub != +std::numeric_limits<double>::infinity()) {
-          StrAppend(&lhs_name, "_lhs");
+          absl::StrAppend(&lhs_name, "_lhs");
         }
         StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
         const std::string relation = StrCat(" >= ", DoubleToString(lb), "\n");
-        if (!line_breaker.WillFit(relation)) StrAppend(output, "\n ");
-        StrAppend(output, relation);
+        if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
+        absl::StrAppend(output, relation);
       }
     }
   }
 
   // Bounds
-  StrAppend(output, "Bounds\n");
+  absl::StrAppend(output, "Bounds\n");
   if (proto_.objective_offset() != 0.0) {
-    StrAppend(output, " 1 <= Constant <= 1\n");
+    absl::StrAppend(output, " 1 <= Constant <= 1\n");
   }
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
     if (!show_variable[var_index]) continue;
@@ -348,19 +348,19 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
                     exported_variable_names_[var_index].c_str(), ub);
     } else {
       if (lb != -std::numeric_limits<double>::infinity()) {
-        StrAppend(output, " ", DoubleToString(lb), " <= ");
+        absl::StrAppend(output, " ", DoubleToString(lb), " <= ");
       }
-      StrAppend(output, exported_variable_names_[var_index]);
+      absl::StrAppend(output, exported_variable_names_[var_index]);
       if (ub != std::numeric_limits<double>::infinity()) {
-        StrAppend(output, " <= ", DoubleToString(ub));
+        absl::StrAppend(output, " <= ", DoubleToString(ub));
       }
-      StrAppend(output, "\n");
+      absl::StrAppend(output, "\n");
     }
   }
 
   // Binaries
   if (num_binary_variables_ > 0) {
-    StrAppend(output, "Binaries\n");
+    absl::StrAppend(output, "Binaries\n");
     for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
       if (!show_variable[var_index]) continue;
       const MPVariableProto& var_proto = proto_.variable(var_index);
@@ -373,16 +373,16 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
 
   // Generals
   if (num_integer_variables_ > 0) {
-    StrAppend(output, "Generals\n");
+    absl::StrAppend(output, "Generals\n");
     for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
       if (!show_variable[var_index]) continue;
       const MPVariableProto& var_proto = proto_.variable(var_index);
       if (var_proto.is_integer() && !IsBoolean(var_proto)) {
-        StrAppend(output, " ", exported_variable_names_[var_index], "\n");
+        absl::StrAppend(output, " ", exported_variable_names_[var_index], "\n");
       }
     }
   }
-  StrAppend(output, "End\n");
+  absl::StrAppend(output, "End\n");
   return true;
 }
 
@@ -415,7 +415,7 @@ void MPModelProtoExporter::AppendMpsLineHeader(const std::string& id,
 void MPModelProtoExporter::AppendMpsLineHeaderWithNewLine(
     const std::string& id, const std::string& name, std::string* output) const {
   AppendMpsLineHeader(id, name, output);
-  StrAppend(output, "\n");
+  absl::StrAppend(output, "\n");
 }
 
 void MPModelProtoExporter::AppendMpsTermWithContext(const std::string& head_name,
@@ -434,13 +434,13 @@ void MPModelProtoExporter::AppendMpsBound(const std::string& bound_type,
                                           std::string* output) const {
   AppendMpsLineHeader(bound_type, "BOUND", output);
   AppendMpsPair(name, value, output);
-  StrAppend(output, "\n");
+  absl::StrAppend(output, "\n");
 }
 
 void MPModelProtoExporter::AppendNewLineIfTwoColumns(std::string* output) {
   ++current_mps_column_;
   if (current_mps_column_ == 2) {
-    StrAppend(output, "\n");
+    absl::StrAppend(output, "\n");
     current_mps_column_ = 0;
   }
 }
@@ -511,7 +511,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     }
   }
   if (!rows_section.empty()) {
-    StrAppend(output, "ROWS\n", rows_section);
+    absl::StrAppend(output, "ROWS\n", rows_section);
   }
 
   // As the information regarding a column needs to be contiguous, we create
@@ -548,7 +548,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   }
   AppendMpsColumns(/*integrality=*/false, transpose, &columns_section);
   if (!columns_section.empty()) {
-    StrAppend(output, "COLUMNS\n", columns_section);
+    absl::StrAppend(output, "COLUMNS\n", columns_section);
   }
 
   // RHS (right-hand-side) section.
@@ -567,7 +567,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   }
   AppendNewLineIfTwoColumns(&rhs_section);
   if (!rhs_section.empty()) {
-    StrAppend(output, "RHS\n", rhs_section);
+    absl::StrAppend(output, "RHS\n", rhs_section);
   }
 
   // RANGES section.
@@ -583,7 +583,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   }
   AppendNewLineIfTwoColumns(&ranges_section);
   if (!ranges_section.empty()) {
-    StrAppend(output, "RANGES\n", ranges_section);
+    absl::StrAppend(output, "RANGES\n", ranges_section);
   }
 
   // BOUNDS section.
@@ -627,10 +627,10 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     }
   }
   if (!bounds_section.empty()) {
-    StrAppend(output, "BOUNDS\n", bounds_section);
+    absl::StrAppend(output, "BOUNDS\n", bounds_section);
   }
 
-  StrAppend(output, "ENDATA\n");
+  absl::StrAppend(output, "ENDATA\n");
   return true;
 }
 

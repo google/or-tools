@@ -233,12 +233,12 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
     int end = 0;
     for (const int i : sorted_tasks) {
       const int64 cost = weights[i] * r.solution(tardiness_vars[i]);
-      StrAppend(&solution, "| #", i, " ");
+      absl::StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
-        StrAppend(&solution, "\033[1;31m(+", cost, ") \033[0m");
+        absl::StrAppend(&solution, "\033[1;31m(+", cost, ") \033[0m");
       }
-      StrAppend(&solution, "|", r.solution(tasks_end[i]));
+      absl::StrAppend(&solution, "|", r.solution(tasks_end[i]));
       CHECK_EQ(end, r.solution(tasks_start[i]));
       end += durations[i];
       CHECK_EQ(end, r.solution(tasks_end[i]));

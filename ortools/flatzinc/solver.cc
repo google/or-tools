@@ -118,7 +118,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
       if (output.display_as_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {
-        StrAppend(&result, value);
+        absl::StrAppend(&result, value);
       }
       if (i != output.flat_variables.size() - 1) {
         result.append(", ");

@@ -2505,21 +2505,21 @@ class RevPartialSequence {
   std::string DebugString() const {
     std::string result = "[";
     for (int i = 0; i < first_ranked_.Value(); ++i) {
-      StrAppend(&result, elements_[i]);
+      absl::StrAppend(&result, elements_[i]);
       if (i != first_ranked_.Value() - 1) {
         result.append("-");
       }
     }
     result.append("|");
     for (int i = first_ranked_.Value(); i <= last_ranked_.Value(); ++i) {
-      StrAppend(&result, elements_[i]);
+      absl::StrAppend(&result, elements_[i]);
       if (i != last_ranked_.Value()) {
         result.append("-");
       }
     }
     result.append("|");
     for (int i = last_ranked_.Value() + 1; i < size_; ++i) {
-      StrAppend(&result, elements_[i]);
+      absl::StrAppend(&result, elements_[i]);
       if (i != size_ - 1) {
         result.append("-");
       }
