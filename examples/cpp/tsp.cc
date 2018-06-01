@@ -147,11 +147,11 @@ void Tsp() {
       std::string route;
       for (int64 node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {
-        StrAppend(&route, routing.IndexToNode(node).value(), " (", node,
+        absl::StrAppend(&route, routing.IndexToNode(node).value(), " (", node,
                         ") -> ");
       }
       const int64 end = routing.End(route_number);
-      StrAppend(&route, routing.IndexToNode(end).value(), " (", end, ")");
+      absl::StrAppend(&route, routing.IndexToNode(end).value(), " (", end, ")");
       LOG(INFO) << route;
     } else {
       LOG(INFO) << "No solution found.";

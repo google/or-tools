@@ -196,7 +196,7 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
           integer_trail->UpperBound(var).value());
       if (new_domain != old_domains[ref]) {
         old_domains[ref] = new_domain;
-        StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
+        absl::StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
                   new_domain.first, ",", new_domain.second, "]\n");
       }
     }

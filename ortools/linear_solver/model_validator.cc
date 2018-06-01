@@ -171,13 +171,13 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
       if (constraint.var_index_size() > kMaxNumVarsInPrintedConstraint) {
         constraint_light.mutable_var_index()->Truncate(
             kMaxNumVarsInPrintedConstraint);
-        StrAppend(&suffix_str, " (var_index cropped; size=",
+        absl::StrAppend(&suffix_str, " (var_index cropped; size=",
                   constraint.var_index_size(), ").");
       }
       if (constraint.coefficient_size() > kMaxNumVarsInPrintedConstraint) {
         constraint_light.mutable_coefficient()->Truncate(
             kMaxNumVarsInPrintedConstraint);
-        StrAppend(&suffix_str, " (coefficient cropped; size=",
+        absl::StrAppend(&suffix_str, " (coefficient cropped; size=",
                   constraint.coefficient_size(), ").");
       }
       return StrCat("In constraint #", i, ": ", error, ". Constraint proto: ",
