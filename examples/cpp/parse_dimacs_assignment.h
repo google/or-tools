@@ -220,8 +220,8 @@ void DimacsAssignmentParser<GraphType>::ParseOneLine(const std::string& line) {
 template <typename GraphType>
 LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
     std::string* error_message, GraphType** graph_handle) {
-  CHECK_NOTNULL(error_message);
-  CHECK_NOTNULL(graph_handle);
+  CHECK(error_message != nullptr);
+  CHECK(graph_handle != nullptr);
 
   for (const std::string& line : FileLines(filename_)) {
     if (line.empty()) {

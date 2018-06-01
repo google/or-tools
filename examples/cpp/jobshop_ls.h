@@ -61,7 +61,7 @@ class SwapIntervals : public SequenceVarLocalSearchOperator {
   ~SwapIntervals() override {}
 
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
-    CHECK_NOTNULL(delta);
+    CHECK(delta != nullptr);
     while (true) {
       RevertChanges(true);
       if (!Increment()) {
@@ -123,7 +123,7 @@ class ShuffleIntervals : public SequenceVarLocalSearchOperator {
   ~ShuffleIntervals() override {}
 
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
-    CHECK_NOTNULL(delta);
+    CHECK(delta != nullptr);
     while (true) {
       RevertChanges(true);
       if (!Increment()) {
@@ -198,7 +198,7 @@ class SequenceLns : public SequenceVarLocalSearchOperator {
   ~SequenceLns() override {}
 
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
-    CHECK_NOTNULL(delta);
+    CHECK(delta != nullptr);
     while (true) {
       RevertChanges(true);
       if (random_.Uniform(2) == 0) {
