@@ -244,14 +244,14 @@ class BronKerboschAlgorithm {
     // Creates a human-readable representation of the current state.
     std::string DebugString() {
       std::string buffer;
-      StrAppend(&buffer, "pivot = ", pivot,
+      absl::StrAppend(&buffer, "pivot = ", pivot,
                       "\nnum_remaining_candidates = ", num_remaining_candidates,
                       "\ncandidates = [");
       for (CandidateIndex i(0); i < candidates.size(); ++i) {
         if (i > 0) buffer += ", ";
-        StrAppend(&buffer, candidates[i]);
+        absl::StrAppend(&buffer, candidates[i]);
       }
-      StrAppend(
+      absl::StrAppend(
           &buffer, "]\nfirst_candidate_index = ", first_candidate_index.value(),
           "\ncandidate_for_recursion = ", candidate_for_recursion.value());
       return buffer;
@@ -434,7 +434,7 @@ std::string BronKerboschAlgorithm<NodeIndex>::CliqueDebugString(
     const std::vector<NodeIndex>& clique) {
   std::string message = "Clique: [ ";
   for (const NodeIndex node : clique) {
-    StrAppend(&message, node, " ");
+    absl::StrAppend(&message, node, " ");
   }
   message += "]";
   return message;
