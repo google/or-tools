@@ -289,6 +289,7 @@ cvrptw_with_resources \
 cvrptw_with_stop_times_and_resources \
 dimacs_assignment \
 dobble_ls \
+flexible_jobshop \
 flow_api \
 frequency_assignment_problem \
 golomb \
