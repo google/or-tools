@@ -604,7 +604,7 @@ class RangeVar : public IntExpr {
   }
 
   std::string DebugString() const override {
-    std::string out = StrCat(min_.Value());
+    std::string out = absl::StrCat(min_.Value());
     if (!Bound()) {
       StringAppendF(&out, " .. %" GG_LL_FORMAT "d", max_.Value());
     }
@@ -2264,7 +2264,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
   CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < count; ++i) {
-    const std::string var_name = StrCat(name, i);
+    const std::string var_name = absl::StrCat(name, i);
     array->push_back(MakeFixedDurationIntervalVar(
         start_min, start_max, duration, optional, var_name));
   }
@@ -2308,7 +2308,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
   CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = StrCat(name, i);
+    const std::string var_name = absl::StrCat(name, i);
     array->push_back(
         MakeFixedDurationIntervalVar(start_variables[i], duration, var_name));
   }
@@ -2324,7 +2324,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
   CHECK_EQ(start_variables.size(), durations.size());
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = StrCat(name, i);
+    const std::string var_name = absl::StrCat(name, i);
     array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
                                                   durations[i], var_name));
   }
@@ -2338,7 +2338,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
   CHECK_EQ(start_variables.size(), durations.size());
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = StrCat(name, i);
+    const std::string var_name = absl::StrCat(name, i);
     array->push_back(MakeFixedDurationIntervalVar(start_variables[i],
                                                   durations[i], var_name));
   }
@@ -2352,7 +2352,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
   CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = StrCat(name, i);
+    const std::string var_name = absl::StrCat(name, i);
     array->push_back(MakeFixedDurationIntervalVar(
         start_variables[i], durations[i], performed_variables[i], var_name));
   }
@@ -2366,7 +2366,7 @@ void Solver::MakeFixedDurationIntervalVarArray(
   CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < start_variables.size(); ++i) {
-    const std::string var_name = StrCat(name, i);
+    const std::string var_name = absl::StrCat(name, i);
     array->push_back(MakeFixedDurationIntervalVar(
         start_variables[i], durations[i], performed_variables[i], var_name));
   }
@@ -2392,7 +2392,7 @@ void Solver::MakeIntervalVarArray(int count, int64 start_min, int64 start_max,
   CHECK(array != nullptr);
   array->clear();
   for (int i = 0; i < count; ++i) {
-    const std::string var_name = StrCat(name, i);
+    const std::string var_name = absl::StrCat(name, i);
     array->push_back(MakeIntervalVar(start_min, start_max, duration_min,
                                      duration_max, end_min, end_max, optional,
                                      var_name));

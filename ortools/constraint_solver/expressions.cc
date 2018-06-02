@@ -2651,7 +2651,7 @@ class IntConst : public IntVar {
     if (solver()->HasName(this)) {
       return PropagationBaseObject::name();
     } else {
-      return StrCat(value_);
+      return absl::StrCat(value_);
     }
   }
 
@@ -6512,7 +6512,7 @@ std::string IndexedName(const std::string& prefix, int index, int max_index) {
 #endif
   return StringPrintf("%s%0*d", prefix.c_str(), digits, index);
 #else
-  return StrCat(prefix, index);
+  return absl::StrCat(prefix, index);
 #endif
 }
 }  // namespace

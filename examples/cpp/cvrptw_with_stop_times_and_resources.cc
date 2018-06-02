@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
          ++stop_order) {
       const int order = stop * FLAGS_vrp_orders_per_stop + stop_order + 1;
       IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
-          0, kHorizon, kStopTime, true, StrCat("Order", order));
+          0, kHorizon, kStopTime, true, absl::StrCat("Order", order));
       intervals.push_back(interval);
       stop_intervals.push_back(interval);
       // Link order and interval.
@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
     // Only one order can happen at the same time at a given location.
     std::vector<int64> location_usage(stop_intervals.size(), 1);
     solver->AddConstraint(solver->MakeCumulative(
-        stop_intervals, location_usage, 1, StrCat("Client", stop)));
+        stop_intervals, location_usage, 1, absl::StrCat("Client", stop)));
   }
   // Minimizing route duration.
   for (int vehicle = 0; vehicle < routing.vehicles(); ++vehicle) {
