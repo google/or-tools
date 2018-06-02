@@ -143,7 +143,7 @@ int main(int argc, char** argv) {
           solver->MakeFixedDurationIntervalVar(
               break_data[i][0] * 3600, break_data[i][1] * 3600,
               break_data[i][2], true,
-              StrCat("Break ", i, " on vehicle ", vehicle));
+              absl::StrCat("Break ", i, " on vehicle ", vehicle));
       breaks.push_back(break_interval);
     }
     // break1 performed iff break2 performed

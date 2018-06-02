@@ -187,7 +187,7 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
     if (decision == kNoLiteralIndex) return decision;
 
     const int level = model->Get<Trail>()->CurrentDecisionLevel();
-    std::string to_display = StrCat("Diff since last call, level=", level, "\n");
+    std::string to_display = absl::StrCat("Diff since last call, level=", level, "\n");
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     for (const int ref : ref_to_display) {
       const IntegerVariable var = variable_mapping[ref];

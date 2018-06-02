@@ -305,7 +305,7 @@ class StarGraphBase {
     if (node == kNilNode) {
       return "NilNode";
     } else {
-      return StrCat(static_cast<int64>(node));
+      return absl::StrCat(static_cast<int64>(node));
     }
   }
 
@@ -313,7 +313,7 @@ class StarGraphBase {
     if (arc == kNilArc) {
       return "NilArc";
     } else {
-      return StrCat(static_cast<int64>(arc));
+      return absl::StrCat(static_cast<int64>(arc));
     }
   }
 

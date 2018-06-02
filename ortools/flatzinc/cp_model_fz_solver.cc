@@ -752,7 +752,7 @@ std::string SolutionString(
     }
   } else {
     const int bound_size = output.bounds.size();
-    std::string result = StrCat(output.name, " = array", bound_size, "d(");
+    std::string result = absl::StrCat(output.name, " = array", bound_size, "d(");
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
         absl::StrAppend(&result, output.bounds[i].min_value, "..",

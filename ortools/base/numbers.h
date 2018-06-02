@@ -28,6 +28,6 @@ bool safe_strtod(const std::string& str, double* value);
 bool safe_strto64(const std::string& str, int64* value);
 bool safe_strto32(const std::string& str, int* value);
 // Converting int to std::string.
-inline std::string SimpleItoa(int i) { return StrCat(i); }
+inline std::string SimpleItoa(int i) { return absl::StrCat(i); }
 
 #endif  // OR_TOOLS_BASE_NUMBERS_H_

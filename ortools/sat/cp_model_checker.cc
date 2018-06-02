@@ -282,7 +282,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
   if (model.has_objective()) {
     for (const int v : model.objective().vars()) {
       if (!VariableReferenceIsValid(model, v)) {
-        return StrCat("Out of bound objective variable ", v, " : ",
+        return absl::StrCat("Out of bound objective variable ", v, " : ",
                       ProtobufShortDebugString(model.objective()));
       }
     }

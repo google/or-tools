@@ -4915,7 +4915,7 @@ class BreakConstraint : public Constraint {
         dimension_(dimension),
         vehicle_(vehicle),
         break_intervals_(std::move(break_intervals)),
-        status_(solver()->MakeBoolVar(StrCat("status", vehicle))) {}
+        status_(solver()->MakeBoolVar(absl::StrCat("status", vehicle))) {}
   void Post() override {
     RoutingModel* const model = dimension_->model();
     solver()->AddConstraint(
@@ -4951,7 +4951,7 @@ class BreakConstraint : public Constraint {
               dimension_->CumulVar(current)->Min(),
               dimension_->CumulVar(next)->Max(), 0,
               dimension_->FixedTransitVar(current)->Value(), 0, kint64max,
-              false, StrCat(current, "-", i));
+              false, absl::StrCat(current, "-", i));
           transit_intervals.push_back(interval);
           vehicle_intervals.push_back(interval);
           // Order transit intervals to cut symmetries.
@@ -4987,7 +4987,7 @@ class BreakConstraint : public Constraint {
         current = next;
       }
       solver()->AddConstraint(solver()->MakeStrictDisjunctiveConstraint(
-          vehicle_intervals, StrCat("Vehicle breaks ", vehicle_)));
+          vehicle_intervals, absl::StrCat("Vehicle breaks ", vehicle_)));
     }
   }
 
