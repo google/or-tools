@@ -41,7 +41,7 @@ struct Status {
 
   std::string ToString() const {
     if (ok()) return "OK";
-    return StrCat("ERROR #", error_code_, ": '", error_message_, "'");
+    return absl::StrCat("ERROR #", error_code_, ": '", error_message_, "'");
   }
 
   std::string error_message() const { return error_message_; }

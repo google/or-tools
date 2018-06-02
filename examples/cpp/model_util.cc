@@ -144,7 +144,7 @@ void DeclareExpression(int index, const CpModel& proto,
   if (!expr.name().empty()) {
     exporter->WriteNode(label, expr.name(), "oval", kGreen1);
   } else if (GetValueIfConstant(proto, expr, &value)) {
-    exporter->WriteNode(label, StrCat(value), "oval", kYellow);
+    exporter->WriteNode(label, absl::StrCat(value), "oval", kYellow);
   } else {
     const std::string& type = proto.tags(expr.type_index());
     exporter->WriteNode(label, type, "oval", kWhite);

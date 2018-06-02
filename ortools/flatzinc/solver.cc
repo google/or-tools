@@ -912,7 +912,7 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
                              ? "**sat**"
                              : (timeout ? "**feasible**" : "**proven**")));
     const std::string obj_string =
-        (model_.objective() != nullptr && !no_solutions ? StrCat(best) : "");
+        (model_.objective() != nullptr && !no_solutions ? absl::StrCat(best) : "");
     solver_status.append(
         "%%  name, status, obj, solns, s_time, b_time, br, "
         "fails, cts, demon, delayed, mem, search\n");

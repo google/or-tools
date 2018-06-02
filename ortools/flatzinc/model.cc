@@ -378,7 +378,7 @@ std::string Domain::DebugString() const {
                              values[0], values[1]);
     }
   } else if (values.size() == 1) {
-    return StrCat(values.back());
+    return absl::StrCat(values.back());
   } else {
     return StringPrintf("[%s]", absl::StrJoin(values, ", ").c_str());
   }
@@ -793,7 +793,7 @@ std::string Annotation::DebugString() const {
                              interval_min, interval_max);
     }
     case INT_VALUE: {
-      return StrCat(interval_min);
+      return absl::StrCat(interval_min);
     }
     case INT_VAR_REF: {
       return variables.front()->name;
@@ -876,7 +876,7 @@ IntegerVariable* Model::AddVariable(const std::string& name, const Domain& domai
 // TODO(user): Create only once constant per value.
 IntegerVariable* Model::AddConstant(int64 value) {
   IntegerVariable* const var =
-      new IntegerVariable(StrCat(value), Domain::IntegerValue(value), true);
+      new IntegerVariable(absl::StrCat(value), Domain::IntegerValue(value), true);
   variables_.push_back(var);
   return var;
 }

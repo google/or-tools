@@ -599,10 +599,10 @@ class CallMethod2 : public Demon {
   }
 
   std::string DebugString() const override {
-    return StrCat(StrCat("CallMethod_", name_),
-                  StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", ParameterDebugString(param1_)),
-                  StrCat(", ", ParameterDebugString(param2_), ")"));
+    return absl::StrCat(absl::StrCat("CallMethod_", name_),
+                  absl::StrCat("(", constraint_->DebugString()),
+                  absl::StrCat(", ", ParameterDebugString(param1_)),
+                  absl::StrCat(", ", ParameterDebugString(param2_), ")"));
   }
 
  private:
@@ -640,11 +640,11 @@ class CallMethod3 : public Demon {
   }
 
   std::string DebugString() const override {
-    return StrCat(StrCat("CallMethod_", name_),
-                  StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", ParameterDebugString(param1_)),
-                  StrCat(", ", ParameterDebugString(param2_)),
-                  StrCat(", ", ParameterDebugString(param3_), ")"));
+    return absl::StrCat(absl::StrCat("CallMethod_", name_),
+                  absl::StrCat("(", constraint_->DebugString()),
+                  absl::StrCat(", ", ParameterDebugString(param1_)),
+                  absl::StrCat(", ", ParameterDebugString(param2_)),
+                  absl::StrCat(", ", ParameterDebugString(param3_), ")"));
   }
 
  private:
@@ -761,10 +761,10 @@ class DelayedCallMethod2 : public Demon {
   }
 
   std::string DebugString() const override {
-    return StrCat(StrCat("DelayedCallMethod_", name_),
-                  StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", ParameterDebugString(param1_)),
-                  StrCat(", ", ParameterDebugString(param2_), ")"));
+    return absl::StrCat(absl::StrCat("DelayedCallMethod_", name_),
+                  absl::StrCat("(", constraint_->DebugString()),
+                  absl::StrCat(", ", ParameterDebugString(param1_)),
+                  absl::StrCat(", ", ParameterDebugString(param2_), ")"));
   }
 
  private:

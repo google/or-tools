@@ -1394,7 +1394,7 @@ void LoadInverseConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
 std::string Summarize(const std::string& input) {
   if (input.size() < 105) return input;
   const int half = 50;
-  return StrCat(input.substr(0, half), " ... ",
+  return absl::StrCat(input.substr(0, half), " ... ",
                 input.substr(input.size() - half, half));
 }
 

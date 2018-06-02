@@ -66,7 +66,7 @@ std::string NameManager::MakeUniqueName(const std::string& name) {
   // Find the 'n' so that "name_n" does not already exist.
   int n = last_n_;
   while (!names_set_.insert(result).second) {
-    result = StrCat(name, "_", n);
+    result = absl::StrCat(name, "_", n);
     ++n;
   }
   // We keep the last n used to avoid a quadratic behavior in case
@@ -79,7 +79,7 @@ std::string MakeExportableName(const std::string& name, bool* found_forbidden_ch
   // Prepend with "_" all the names starting with a forbidden character.
   const std::string kForbiddenFirstChars = "$.0123456789";
   *found_forbidden_char = kForbiddenFirstChars.find(name[0]) != std::string::npos;
-  std::string exportable_name = *found_forbidden_char ? StrCat("_", name) : name;
+  std::string exportable_name = *found_forbidden_char ? absl::StrCat("_", name) : name;
 
   // Replace all the other forbidden characters with "_".
   const std::string kForbiddenChars = " +-*/<>=:\\";
@@ -100,7 +100,7 @@ std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
   const int num_items = proto.size();
   std::vector<std::string> result(num_items);
   NameManager namer;
-  const int num_digits = StrCat(num_items).size();
+  const int num_digits = absl::StrCat(num_items).size();
   int i = 0;
   for (const auto& item : proto) {
     const std::string obfuscated_name =
@@ -206,10 +206,10 @@ void LineBreaker::Append(const std::string& s) {
 }
 
 std::string DoubleToStringWithForcedSign(double d) {
-  return StrCat((d < 0 ? "" : "+"), absl::LegacyPrecision(d));
+  return absl::StrCat((d < 0 ? "" : "+"), absl::LegacyPrecision(d));
 }
 
-std::string DoubleToString(double d) { return StrCat(absl::LegacyPrecision(d)); }
+std::string DoubleToString(double d) { return absl::StrCat(absl::LegacyPrecision(d)); }
 
 }  // namespace
 
@@ -221,7 +221,7 @@ bool MPModelProtoExporter::WriteLpTerm(int var_index, double coefficient,
     return false;
   }
   if (coefficient != 0.0) {
-    *output = StrCat(DoubleToStringWithForcedSign(coefficient), " ",
+    *output = absl::StrCat(DoubleToStringWithForcedSign(coefficient), " ",
                      exported_variable_names_[var_index], " ");
   }
   return true;
@@ -267,7 +267,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   LineBreaker obj_line_breaker(FLAGS_lp_max_line_length);
   obj_line_breaker.Append(" Obj: ");
   if (proto_.objective_offset() != 0.0) {
-    obj_line_breaker.Append(StrCat(
+    obj_line_breaker.Append(absl::StrCat(
         DoubleToStringWithForcedSign(proto_.objective_offset()), " Constant "));
   }
   std::vector<bool> show_variable(proto_.variable_size(),
@@ -305,7 +305,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
     const double lb = ct_proto.lower_bound();
     const double ub = ct_proto.upper_bound();
     if (lb == ub) {
-      line_breaker.Append(StrCat(" = ", DoubleToString(ub), "\n"));
+      line_breaker.Append(absl::StrCat(" = ", DoubleToString(ub), "\n"));
       absl::StrAppend(output, " ", name, ": ", line_breaker.GetOutput());
     } else {
       if (ub != +std::numeric_limits<double>::infinity()) {
@@ -313,8 +313,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
         if (lb != -std::numeric_limits<double>::infinity()) {
           absl::StrAppend(&rhs_name, "_rhs");
         }
-        StrAppend(output, " ", rhs_name, ": ", line_breaker.GetOutput());
-        const std::string relation = StrCat(" <= ", DoubleToString(ub), "\n");
+        absl::StrAppend(output, " ", rhs_name, ": ", line_breaker.GetOutput());
+        const std::string relation = absl::StrCat(" <= ", DoubleToString(ub), "\n");
         // Here we have to make sure we do not add the relation to the contents
         // of line_breaker, which may be used in the subsequent clause.
         if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
@@ -325,8 +325,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
         if (ub != +std::numeric_limits<double>::infinity()) {
           absl::StrAppend(&lhs_name, "_lhs");
         }
-        StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
-        const std::string relation = StrCat(" >= ", DoubleToString(lb), "\n");
+        absl::StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
+        const std::string relation = absl::StrCat(" >= ", DoubleToString(lb), "\n");
         if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
         absl::StrAppend(output, relation);
       }

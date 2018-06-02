@@ -195,7 +195,7 @@ std::string MemoryUsage() {
   } else if (memory_usage > kDisplayThreshold * kKiloByte) {
     return StringPrintf("%2lf KB", memory_usage * 1.0 / kKiloByte);
   } else {
-    return StrCat(memory_usage);
+    return absl::StrCat(memory_usage);
   }
 }
 
