@@ -17,6 +17,7 @@ function checkenv() {
 		java -version
 	elif [ "${LANGUAGE}" == dotnet ]; then
 		mono --version
+    dotnet --info
 	fi
 }
 
