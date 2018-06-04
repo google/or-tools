@@ -20,8 +20,8 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 *   The **CpModel** class proposes modeling methods that creates variables, or
     add constraints. This class completely hides the underlying *CpModelProto*
     used to store the model.
-*   The **CpSolver** class encapsulates the solve API. and offers
-    helpers to access the solution found by the solve.
+*   The **CpSolver** class encapsulates the solve API. and offers helpers to
+    access the solution found by the solve.
 
 ```python
 from ortools.sat.python import cp_model
@@ -34,7 +34,8 @@ x = model.NewBoolVar('x')
 ## C++ code samples
 
 The interface to the C++ CP-SAT solver is implemented through the
-**CpModelProto** class described in *ortools/sat/cp_model.proto*.
+**CpModelProto** class described in
+*ortools/sat/cp_model.proto*.
 
 To help creating variables and constraints, we propose some inline helpers to
 improve readability.
@@ -64,7 +65,7 @@ void CodeSample() {
 }  // namespace operations_research
 ```
 
-## C\# code
+## C\# code samples
 
 The C\# code implements the same interface as the python code, with a
 **CpModel**, and a **CpSolver** class.
@@ -75,14 +76,16 @@ using Google.OrTools.Sat;
 
 public class CodeSamplesSat
 {
-  static void CodeSample() {
+  static void CodeSample()
+  {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the Boolean variable.
     IntVar x = model.NewBoolVar("x");
   }
 
-  static void Main() {
+  static void Main()
+  {
     CodeSample();
   }
 }

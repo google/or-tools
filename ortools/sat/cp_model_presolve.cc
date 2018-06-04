@@ -477,7 +477,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     if (gtl::ContainsKey(used_ref, ref)) continue;
     if (gtl::ContainsKey(used_ref, NegatedRef(ref)) ||
         ref == NegatedRef(target_ref)) {
-      target_min = std::max(target_min, 0ll);
+      target_min = std::max(target_min, int64{0});
     }
     used_ref.insert(ref);
     ct->mutable_int_max()->set_vars(new_size++, ref);
@@ -1850,7 +1850,9 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   //
   // TODO(user): expose the parameters here so we can use
   // cp_model_use_sat_presolve().
-  PresolvePureSatPart(&context);
+  if (!context.is_unsat) {
+    PresolvePureSatPart(&context);
+  }
 
   if (context.is_unsat) {
     // Set presolved_model to the simplest UNSAT problem (empty clause).

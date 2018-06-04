@@ -1,12 +1,12 @@
 # Solving a CP-SAT model
 
-https://developers.google.com/optimization/
 
 
 ## Searching for one (optimal) solution
 
-By default, search for one solution will return the first solution found if the
-model has no objective, or the optimal solution if the model has an objective.
+By default, searching for one solution will return the first solution found if
+the model has no objective, or the optimal solution if the model has an
+objective.
 
 ### Python solver code
 
@@ -22,8 +22,7 @@ x = model.NewBoolVar('x')
 # Create a solver and solve.
 solver = cp_model.CpSolver()
 status = solver.Solve(model)
-if status == cp_model.OPTIMAL:
-  print("Objective value: %i" % solver.ObjectiveValue())  # if defined.
+if status == cp_model.MODEL_SAT:
   print('x= %i' %  solver.Value(x))
 ```
 
@@ -73,7 +72,10 @@ void SimpleSolve() {
 } // namespace operations_research
 ```
 
-### C\# solver code
+### C\# code
+
+As in python, the CpSolver class encapsulates searching for a solution of a
+model.
 
 ```cs
 using System;
@@ -115,8 +117,8 @@ public class CodeSamplesSat
 
 ## Changing the parameters of the solver
 
-The SatParameters protobuf encapsulate a set of parameters of a CP-SAT solver.
-The most useful one is the time limit.
+The SatParameters protobuf encapsulates the set of parameters of a CP-SAT
+solver. The most useful one is the time limit.
 
 ### Specifying the time limit in python
 
@@ -182,7 +184,6 @@ void SolveWithTimeLimit() {
   if (response.status() == CpSolverStatus::MODEL_SAT) {
     // Get the value of x in the solution.
     const int64 value_x = response.solution(x);
-    LOG(INFO) << "x = " << value_x;
   }
 }
 
@@ -238,7 +239,7 @@ public class CodeSamplesSat
 
 ## Printing intermediate solutions
 
-In an optimization model, you can print intermediate solution. You need to
+In an optimization model, you can print intermediate solutions. You need to
 register a callback on the solver that will be called at each solution.
 
 The exact implementation depends on the target language.
@@ -277,11 +278,11 @@ def MinimalCpSatPrintIntermediateSolutions():
   x = model.NewIntVar(0, num_vals - 1, "x")
   y = model.NewIntVar(0, num_vals - 1, "y")
   z = model.NewIntVar(0, num_vals - 1, "z")
-  # Create the constraints.
+  # Creates the constraints.
   model.Add(x != y)
   model.Maximize(x + 2 * y + 3 * z)
 
-  # Create a solver and solve.
+  # Creates a solver and solve.
   solver = cp_model.CpSolver()
   solution_printer = VarArraySolutionPrinter([x, y, z])
   status = solver.SolveWithSolutionObserver(model, solution_printer)
@@ -402,7 +403,6 @@ public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-
 public class CodeSamplesSat
 {
   static void MinimalCpSatPrintIntermediateSolutions()
@@ -417,7 +417,7 @@ public class CodeSamplesSat
     IntVar z = model.NewIntVar(0, num_vals - 1, "z");
     // Creates the constraints.
     model.Add(x != y);
-    // Create the objective.
+    // Creates the objective.
     model.Maximize(x + 2 * y + 3 * z);
 
     // Creates a solver and solves the model.
@@ -444,6 +444,8 @@ register a callback on the solver that will be called at each solution.
 The exact implementation depends on the target language.
 
 ### Python code
+
+To search for all solutions, the SearchForAllSolutions method must be used.
 
 ```python
 from ortools.sat.python import cp_model
@@ -476,10 +478,10 @@ def MinimalSatSearchForAllSolutions():
   x = model.NewIntVar(0, num_vals - 1, "x")
   y = model.NewIntVar(0, num_vals - 1, "y")
   z = model.NewIntVar(0, num_vals - 1, "z")
-  # Create the constraints.
+  # Creates the constraint.
   model.Add(x != y)
 
-  # Create a solver and solve.
+  # Creates a solver and solve.
   solver = cp_model.CpSolver()
   solution_printer = VarArraySolutionPrinter([x, y, z])
   status = solver.SearchForAllSolutions(model, solution_printer)
@@ -488,6 +490,8 @@ def MinimalSatSearchForAllSolutions():
 ```
 
 ### C++ code
+
+To search for all solution, a parameter of the sat solver must be changed.
 
 ```cpp
 #include "ortools/sat/cp_model.pb.h"
@@ -554,6 +558,8 @@ void MinimalSatSearchForAllSolutions() {
 ```
 
 ### C\# code
+
+As in python, CpSolver.SearchAllSolutions() must be called.
 
 ```cs
 using System;

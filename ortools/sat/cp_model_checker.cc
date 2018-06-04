@@ -158,8 +158,8 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
     // Note that we use min/max with zero to disallow "alternative" terms and
     // be sure that we cannot have an overflow if we do the computation in a
     // different order.
-    sum_min = CapAdd(sum_min, std::min(0ll, std::min(prod1, prod2)));
-    sum_max = CapAdd(sum_max, std::max(0ll, std::max(prod1, prod2)));
+    sum_min = CapAdd(sum_min, std::min(int64{0}, std::min(prod1, prod2)));
+    sum_max = CapAdd(sum_max, std::max(int64{0}, std::max(prod1, prod2)));
     for (const int64 v : {prod1, prod2, sum_min, sum_max}) {
       if (v == kint64max || v == kint64min) {
         return "Possible integer overflow in constraint: " +
@@ -221,8 +221,8 @@ std::string ValidateObjective(const CpModelProto& model,
     // Note that we use min/max with zero to disallow "alternative" terms and
     // be sure that we cannot have an overflow if we do the computation in a
     // different order.
-    sum_min = CapAdd(sum_min, std::min(0ll, std::min(prod1, prod2)));
-    sum_max = CapAdd(sum_max, std::max(0ll, std::max(prod1, prod2)));
+    sum_min = CapAdd(sum_min, std::min(int64{0}, std::min(prod1, prod2)));
+    sum_max = CapAdd(sum_max, std::max(int64{0}, std::max(prod1, prod2)));
     for (const int64 v : {prod1, prod2, sum_min, sum_max}) {
       // When introducing the objective variable, we use a [...] domain so we
       // need to be more defensive here to make sure no overflow can happen in

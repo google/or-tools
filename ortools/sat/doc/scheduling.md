@@ -41,35 +41,37 @@ interval_var = model.NewIntervalVar(start_var, duration, end_var, 'interval')
 namespace operations_research {
 namespace sat {
 
-CpModelProto cp_model;
+void IntervalSample() {
+  CpModelProto cp_model;
 
-auto new_variable = [&cp_model](int64 lb, int64 ub) {
-  CHECK_LE(lb, ub);
-  const int index = cp_model.variables_size();
-  IntegerVariableProto* const var = cp_model.add_variables();
-  var->add_domain(lb);
-  var->add_domain(ub);
-  return index;
-};
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
 
-auto new_constant = [&cp_model, &new_variable](int64 v) {
-  return new_variable(v, v);
-};
+  auto new_constant = [&cp_model, &new_variable](int64 v) {
+    return new_variable(v, v);
+  };
 
-auto new_interval = [&cp_model](int start, int duration, int end) {
-  const int index = cp_model.constraints_size();
-  IntervalConstraintProto* const interval =
-      cp_model.add_constraints()->mutable_interval();
-  interval_proto->set_start(start);
-  interval_proto->set_size(duration);
-  interval_proto->set_end(end);
-  return index;
-};
+  auto new_interval = [&cp_model](int start, int duration, int end) {
+    const int index = cp_model.constraints_size();
+    IntervalConstraintProto* const interval =
+        cp_model.add_constraints()->mutable_interval();
+    interval_proto->set_start(start);
+    interval_proto->set_size(duration);
+    interval_proto->set_end(end);
+    return index;
+  };
 
-const int start_var = new_variable(0, horizon);
-const int duration_var = new_constant(10);
-const int end_var = new_variable(0, horizon);
-const int interval_var = new_interval(start_var, duration_var, end_var);
+  const int start_var = new_variable(0, horizon);
+  const int duration_var = new_constant(10);
+  const int end_var = new_variable(0, horizon);
+  const int interval_var = new_interval(start_var, duration_var, end_var);
+}
 
 }  // namespace sat
 }  // namespace operations_research

@@ -18,7 +18,7 @@ negation of 'x'.
 ### Python code
 
 ```python
-from google3.util.operations_research.sat.python import cp_model
+from ortools.sat.python import cp_model
 
 model = cp_model.CpModel()
 
@@ -30,24 +30,26 @@ not_x = x.Not()
 ### C++ code
 
 ```cpp
-#include "util/operations_research/sat/cp_model.pb.h"
-#include "util/operations_research/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 
 namespace operations_research {
 namespace sat {
 
-CpModelProto cp_model;
+void LiteralSample() {
+  CpModelProto cp_model;
 
-auto new_boolean_variable = [&cp_model]() {
-  const int index = cp_model.variables_size();
-  IntegerVariableProto* const var = cp_model.add_variables();
-  var->add_domain(0);
-  var->add_domain(1);
-  return index;
-};
+  auto new_boolean_variable = [&cp_model]() {
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    return index;
+  };
 
-const int x = new_boolean_variable();
-const int not_x = NegatedRef(x);
+  const int x = new_boolean_variable();
+  const int not_x = NegatedRef(x);
+}
 
 }  // namespace sat
 }  // namespace operations_research
@@ -89,7 +91,7 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 ### Python code
 
 ```python
-from google3.util.operations_research.sat.python import cp_model
+from ortools.sat.python import cp_model
 
 model = cp_model.CpModel()
 
@@ -102,34 +104,35 @@ model.AddBoolOr([x, y.Not()])
 ### C++ code
 
 ```cpp
-#include "util/operations_research/sat/cp_model.pb.h"
-#include "util/operations_research/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 
 namespace operations_research {
 namespace sat {
 
-CpModelProto cp_model;
+void BoolOrSample() {
+  CpModelProto cp_model;
 
-auto new_boolean_variable = [&cp_model]() {
-  const int index = cp_model.variables_size();
-  IntegerVariableProto* const var = cp_model.add_variables();
-  var->add_domain(0);
-  var->add_domain(1);
-  return index;
-};
+  auto new_boolean_variable = [&cp_model]() {
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    return index;
+  };
 
-auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
-  BooleanArgumentProto* const bool_or =
-      model.add_constraints()->mutable_bool_or();
-  for (const int lit : literals) {
-    mutable_bool_or->add_literals(lit);
-  }
-};
+  auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
+    BooleanArgumentProto* const bool_or =
+        model.add_constraints()->mutable_bool_or();
+    for (const int lit : literals) {
+      mutable_bool_or->add_literals(lit);
+    }
+  };
 
-const int x = new_boolean_variable();
-const int y = new_boolean_variable();
-add_bool_or({x, NegatedRef(y)});
-
+  const int x = new_boolean_variable();
+  const int y = new_boolean_variable();
+  add_bool_or({x, NegatedRef(y)});
+}
 }  // namespace sat
 }  // namespace operations_research
 ```
@@ -176,7 +179,7 @@ then is written as Or(not b, x) and Or(not b, not y).
 ### Python code
 
 ```python
-from google3.util.operations_research.sat.python import cp_model
+from ortools.sat.python import cp_model
 
 model = cp_model.CpModel()
 
@@ -199,49 +202,51 @@ model.AddBoolOt([b.Not(), y.Not()])
 ### C++ code
 
 ```cpp
-#include "util/operations_research/sat/cp_model.pb.h"
-#include "util/operations_research/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 
 namespace operations_research {
 namespace sat {
 
-CpModelProto cp_model;
+void ReifiedSample() {
+  CpModelProto cp_model;
 
-auto new_boolean_variable = [&cp_model]() {
-  const int index = cp_model.variables_size();
-  IntegerVariableProto* const var = cp_model.add_variables();
-  var->add_domain(0);
-  var->add_domain(1);
-  return index;
-};
+  auto new_boolean_variable = [&cp_model]() {
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    return index;
+  };
 
-auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
-  BooleanArgumentProto* const bool_or =
-      model.add_constraints()->mutable_bool_or();
-  for (const int lit : literals) {
-    mutable_bool_or->add_literals(lit);
-  }
-};
+  auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
+    BooleanArgumentProto* const bool_or =
+        model.add_constraints()->mutable_bool_or();
+    for (const int lit : literals) {
+      mutable_bool_or->add_literals(lit);
+    }
+  };
 
-auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
-                                        const int literal) {
-  Constraint* const ct = model.add_constraints();
-  ct->add_enforcement_literal(literal);
-  for (const int lit : literals) {
-    ct->mutable_bool_and()->add_literals(lit);
-  }
-};
+  auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
+                                          const int literal) {
+    Constraint* const ct = model.add_constraints();
+    ct->add_enforcement_literal(literal);
+    for (const int lit : literals) {
+      ct->mutable_bool_and()->add_literals(lit);
+    }
+  };
 
-const int x = new_boolean_variable();
-const int y = new_boolean_variable();
-const int b = new_boolean_variable();
+  const int x = new_boolean_variable();
+  const int y = new_boolean_variable();
+  const int b = new_boolean_variable();
 
-// First version using a half-reified bool and.
-add_reified_bool_and({x, NegatedRef(y)}, b);
+  // First version using a half-reified bool and.
+  add_reified_bool_and({x, NegatedRef(y)}, b);
 
-// Second version using implications.
-add_bool_or({NegatedRef(b), x});
-add_bool_or({NegatedRef(b), NegatedRef(y)});
+  // Second version using bool or.
+  add_bool_or({NegatedRef(b), x});
+  add_bool_or({NegatedRef(b), NegatedRef(y)});
+}
 
 }  // namespace sat
 }  // namespace operations_research

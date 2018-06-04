@@ -98,8 +98,8 @@ ClauseIndex DratChecker::AddClause(absl::Span<Literal> clause) {
   for (int i = first_literal_index + 1; i < literals_.size(); ++i) {
     CHECK(literals_[i] != literals_[i - 1].Negated());
   }
-  clauses_.push_back(Clause(first_literal_index,
-                            literals_.size() - first_literal_index));
+  clauses_.emplace_back(first_literal_index,
+                        literals_.size() - first_literal_index);
   if (!clause.empty()) {
     num_variables_ =
         std::max(num_variables_, literals_.back().Variable().value() + 1);
