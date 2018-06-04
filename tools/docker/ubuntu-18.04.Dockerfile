@@ -1,26 +1,28 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 #############
 ##  SETUP  ##
 #############
 RUN apt update \
 && apt install -y -q \
-git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
-swig lsb-release \
-python-dev python-wheel python-setuptools python-six \
-python3-dev python3-wheel python3-setuptools \
-default-jdk \
+ git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ swig lsb-release \
+ python-dev python-wheel python-setuptools python-six \
+ python3-dev python3-wheel python3-setuptools \
+ default-jdk \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Dotnet Install
-RUN apt-get update \
-&& wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb \
-&& dpkg -i packages-microsoft-prod.deb \
-&& apt-get install -qq apt-transport-https \
-&& apt-get update \
-&& apt-get install -qq dotnet-sdk-2.1 \
-&& apt-get clean \
+RUN apt-get update -qq \
+&& apt-get install -y -q gpg apt-transport-https \
+&& wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
+&& mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/ \
+&& wget -q https://packages.microsoft.com/config/ubuntu/18.04/prod.list \
+&& mv prod.list /etc/apt/sources.list.d/microsoft-prod.list \
+&& apt-get update -qq \
+&& apt-get install -y -q dotnet-sdk-2.1 \
+&& apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ## Mono Install
