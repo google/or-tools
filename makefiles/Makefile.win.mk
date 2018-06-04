@@ -52,7 +52,7 @@ WHICH = tools\which.exe
 
 # We Can't force SHELL to cmd.exe if sh.exe is in the PATH
 # cf https://www.gnu.org/software/make/manual/html_node/Choosing-the-Shell.html
-SHCHECK := $(shell where sh.exe 2>plop & $(DEL) plop)
+SHCHECK := $(shell where sh.exe 2>NUL)
 ifneq ($(SHCHECK),)
 $(error Please remove sh.exe ($(SHCHECK)) from your PATH (e.g. set PATH=%PATH:C:\Program Files\Git\bin\;=%))
 else
