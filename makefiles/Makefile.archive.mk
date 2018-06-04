@@ -105,7 +105,7 @@ cc_archive: cc
 	$(COPY) ortools$Ssat$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
-
+	$(COPY) ortools$Sgen$Sortools$Sutil$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
 ifeq ($(SYSTEM),win)
 	$(COPY) tools$Smake.exe temp$S$(INSTALL_DIR)
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | ..$S..$S..$Stools$Star.exe xvm
