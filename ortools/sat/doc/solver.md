@@ -282,7 +282,7 @@ def MinimalCpSatPrintIntermediateSolutions():
   model.Add(x != y)
   model.Maximize(x + 2 * y + 3 * z)
 
-  # Creates a solver and solve.
+  # Creates a solver and solves.
   solver = cp_model.CpSolver()
   solution_printer = VarArraySolutionPrinter([x, y, z])
   status = solver.SolveWithSolutionObserver(model, solution_printer)
