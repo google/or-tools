@@ -37,6 +37,7 @@ install_cc: create_install_dirs cc $(PATCHELF)
 	$(COPY) ortools$Ssat$S*.h $(TARGET_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h $(TARGET_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sutil$S*.h $(TARGET_DIR)$Sinclude$Sortools$Sutil
+	$(COPY) ortools$Sgen$Sortools$Sutil$S*.pb.h $(TARGET_DIR)$Sinclude$Sortools$Sutil
 ifeq ($(SYSTEM),win)
 	tools\tar.exe -cf - -C dependencies$Sinstall$Sinclude gflags | tools\tar.exe -xpf - -C $(TARGET_DIR)$Sinclude
 	tools\tar.exe -cf - -C dependencies$Sinstall$Sinclude glog | tools\tar.exe -xpf - -C $(TARGET_DIR)$Sinclude
