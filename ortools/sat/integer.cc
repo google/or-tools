@@ -100,7 +100,7 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
     AssociateToIntegerEqualValue(literals[i], var, values[i]);
   }
 
-  // Mark var and of Negation(var) as fully encoded.
+  // Mark var and Negation(var) as fully encoded.
   const int required_size = std::max(var, NegationOf(var)).value() + 1;
   if (required_size > is_fully_encoded_.size()) {
     is_fully_encoded_.resize(required_size, false);
@@ -262,7 +262,6 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
 
 void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
                                                IntegerLiteral i_lit) {
-  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
   const auto& domain = (*domains_)[i_lit.var];
   const IntegerValue min(domain.front().start);
   const IntegerValue max(domain.back().end);
@@ -334,10 +333,6 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     return;
   }
 
-  // If the literal was already assigned before beeing associated, we may
-  // not propagate properly the update to the variable domain.
-  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
-
   // Special case for the first and last value.
   if (value == domain.front().start) {
     // Note that this will recursively call AssociateToIntegerEqualValue() but
@@ -371,8 +366,6 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
 // of the optional variables is true.
 void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
                                                Literal literal) {
-  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
-
   // Resize reverse encoding.
   const int new_size = 1 + literal.Index().value();
   if (new_size > reverse_encoding_.size()) reverse_encoding_.resize(new_size);
@@ -380,6 +373,10 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
   // Associate the new literal to i_lit.
   if (!LiteralIsAssociated(i_lit)) {
     AddImplications(i_lit, literal);
+    if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
+      CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
+      newly_fixed_integer_literals_.push_back(i_lit);
+    }
     reverse_encoding_[literal.Index()].push_back(i_lit);
   } else {
     const Literal associated(GetAssociatedLiteral(i_lit));
@@ -432,6 +429,22 @@ bool IntegerTrail::Propagate(Trail* trail) {
   // This is used to map any integer literal out of the initial variable domain
   // into one that use one of the domain value.
   var_to_current_lb_interval_index_.SetLevel(level);
+
+  // This is required because when loading a model it is possible that we add
+  // (literal <-> integer literal) associations for literals that have already
+  // been propagated here. This often happens when the presolve is off
+  // and many variables are fixed.
+  //
+  // TODO(user): refactor the interaction IntegerTrail <-> IntegerEncoder so
+  // that we can just push right away such literal. Unfortunately, this is is
+  // a big chunck of work.
+  if (level == 0) {
+    for (const IntegerLiteral i_lit : encoder_->NewlyFixedIntegerLiterals()) {
+      if (IsCurrentlyIgnored(i_lit.var)) continue;
+      if (!Enqueue(i_lit, {}, {})) return false;
+    }
+    encoder_->ClearNewlyFixedIntegerLiterals();
+  }
 
   // Process all the "associated" literals and Enqueue() the corresponding
   // bounds.
@@ -545,11 +558,14 @@ std::vector<ClosedInterval> IntegerTrail::InitialVariableDomain(
 
 bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
                                        std::vector<ClosedInterval> domain) {
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+
   // TODO(user): A bit inefficient as this recreate a vector for no reason.
   const std::vector<ClosedInterval> old_domain = InitialVariableDomain(var);
-  if (old_domain == domain) return true;
-
   domain = IntersectionOfSortedDisjointIntervals(domain, old_domain);
+  domain = IntersectionOfSortedDisjointIntervals(
+      domain, {{LowerBound(var).value(), UpperBound(var).value()}});
+  if (old_domain == domain) return true;
   if (domain.empty()) return false;
 
   // TODO(user): we currently keep the domain in domains_ but also in

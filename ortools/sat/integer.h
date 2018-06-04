@@ -310,6 +310,15 @@ class IntegerEncoder {
     return reverse_encoding_[lit.Index()];
   }
 
+  // This is part of a "hack" to deal with new association involving a fixed
+  // literal. Note that these are only allowed at the decision level zero.
+  const std::vector<IntegerLiteral> NewlyFixedIntegerLiterals() const {
+    return newly_fixed_integer_literals_;
+  }
+  void ClearNewlyFixedIntegerLiterals() {
+    newly_fixed_integer_literals_.clear();
+  }
+
   // If it exists, returns a [0,1] integer variable which is equal to 1 iff the
   // given literal is true. Returns kNoIntegerVariable if such variable does not
   // exist. Note that one can create one by creating a new IntegerVariable and
@@ -377,6 +386,7 @@ class IntegerEncoder {
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
   ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
+  std::vector<IntegerLiteral> newly_fixed_integer_literals_;
 
   // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
   // if there is none.
@@ -735,7 +745,7 @@ class IntegerTrail : public SatPropagator {
   // TrailEntry in integer_trail_.
   std::vector<int> boolean_trail_index_to_integer_one_;
 
-  int64 num_enqueues_;
+  int64 num_enqueues_ = 0;
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
