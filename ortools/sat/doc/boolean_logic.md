@@ -20,11 +20,12 @@ negation of 'x'.
 ```python
 from ortools.sat.python import cp_model
 
-model = cp_model.CpModel()
-
-x = model.NewBoolVar('x')
-
-not_x = x.Not()
+def LiteralSample():
+  model = cp_model.CpModel()
+  x = model.NewBoolVar('x')
+  not_x = x.Not()
+  print(x)
+  print(not_x)
 ```
 
 ### C++ code
@@ -93,12 +94,13 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 ```python
 from ortools.sat.python import cp_model
 
-model = cp_model.CpModel()
+def BoolOrSample():
+  model = cp_model.CpModel()
 
-x = model.NewBoolVar('x')
-y = model.NewBoolVar('y')
+  x = model.NewBoolVar('x')
+  y = model.NewBoolVar('y')
 
-model.AddBoolOr([x, y.Not()])
+  model.AddBoolOr([x, y.Not()])
 ```
 
 ### C++ code
@@ -122,10 +124,10 @@ void BoolOrSample() {
   };
 
   auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
-    BooleanArgumentProto* const bool_or =
-        model.add_constraints()->mutable_bool_or();
+    BoolArgumentProto* const bool_or =
+        cp_model.add_constraints()->mutable_bool_or();
     for (const int lit : literals) {
-      mutable_bool_or->add_literals(lit);
+      bool_or->add_literals(lit);
     }
   };
 
@@ -181,22 +183,24 @@ then is written as Or(not b, x) and Or(not b, not y).
 ```python
 from ortools.sat.python import cp_model
 
-model = cp_model.CpModel()
+def ReifiedSample():
+  """Showcase creating a reified constraint."""
+  model = cp_model.CpModel()
 
-x = model.NewBoolVar('x')
-y = model.NewBoolVar('y')
-b = model.NewBoolVar('b')
+  x = model.NewBoolVar('x')
+  y = model.NewBoolVar('y')
+  b = model.NewBoolVar('b')
 
-# First version using a half-reified bool and.
-model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
+  # First version using a half-reified bool and.
+  model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
 
-# Second version using implications.
-model.AddImplication(b, x)
-model.AddImplication(b, y.Not())
+  # Second version using implications.
+  model.AddImplication(b, x)
+  model.AddImplication(b, y.Not())
 
-# Third version using bool or.
-model.AddBoolOr([b.Not(), x])
-model.AddBoolOt([b.Not(), y.Not()])
+  # Third version using bool or.
+  model.AddBoolOr([b.Not(), x])
+  model.AddBoolOr([b.Not(), y.Not()])
 ```
 
 ### C++ code
@@ -220,16 +224,16 @@ void ReifiedSample() {
   };
 
   auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
-    BooleanArgumentProto* const bool_or =
-        model.add_constraints()->mutable_bool_or();
+    BoolArgumentProto* const bool_or =
+        cp_model.add_constraints()->mutable_bool_or();
     for (const int lit : literals) {
-      mutable_bool_or->add_literals(lit);
+      bool_or->add_literals(lit);
     }
   };
 
   auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
                                           const int literal) {
-    Constraint* const ct = model.add_constraints();
+    ConstraintProto* const ct = model.add_constraints();
     ct->add_enforcement_literal(literal);
     for (const int lit : literals) {
       ct->mutable_bool_and()->add_literals(lit);

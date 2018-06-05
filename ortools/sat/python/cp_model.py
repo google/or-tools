@@ -359,6 +359,7 @@ class IntVar(IntegerExpression):
 
 
 class _NotBooleanVariable(IntegerExpression):
+  """Negation of a boolean variable."""
 
   def __init__(self, boolvar):
     self.__boolvar = boolvar
@@ -368,6 +369,9 @@ class _NotBooleanVariable(IntegerExpression):
 
   def Not(self):
     return self.__boolvar
+
+  def __str__(self):
+    return 'not(%s)' % str(self.__boolvar)
 
 
 class _Product(IntegerExpression):
@@ -873,6 +877,7 @@ class CpModel(object):
     return -index - 1
 
   def GetOrMakeIndex(self, arg):
+    """Returns the index of a variables, its negation, or a number."""
     if isinstance(arg, IntVar):
       return arg.Index()
     elif (isinstance(arg, _ProductCst) and
@@ -885,6 +890,7 @@ class CpModel(object):
       raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
 
   def GetOrMakeOptionalIndex(self, arg, is_present):
+    """Returns the index of an optional variable or constant (seen as a var)."""
     if isinstance(arg, IntVar):
       return arg.Index()
     elif (isinstance(arg, _ProductCst) and
@@ -898,6 +904,7 @@ class CpModel(object):
                       (arg, is_present))
 
   def GetOrMakeBooleanIndex(self, arg):
+    """Returns an index from a boolean expression."""
     if isinstance(arg, IntVar):
       self.AssertIsBooleanVariable(arg)
       return arg.Index()

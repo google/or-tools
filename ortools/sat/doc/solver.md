@@ -15,15 +15,26 @@ The CpSolver class encapsulates searching for a solution of a model.
 ```python
 from ortools.sat.python import cp_model
 
-model = cp_model.CpModel()
+def MinimalCpSat():
+  """Minimal CP-SAT example to showcase calling the solver."""
+  # Creates the model.
+  model = cp_model.CpModel()
+  # Creates the variables.
+  num_vals = 3
+  x = model.NewIntVar(0, num_vals - 1, 'x')
+  y = model.NewIntVar(0, num_vals - 1, 'y')
+  z = model.NewIntVar(0, num_vals - 1, 'z')
+  # Adds an all-different constraint.
+  model.Add(x != y)
 
-x = model.NewBoolVar('x')
+  # Creates a solver and solves the model.
+  solver = cp_model.CpSolver()
+  status = solver.Solve(model)
 
-# Create a solver and solve.
-solver = cp_model.CpSolver()
-status = solver.Solve(model)
-if status == cp_model.MODEL_SAT:
-  print('x= %i' %  solver.Value(x))
+  if status == cp_model.MODEL_SAT:
+    print('x = %i' % solver.Value(x))
+    print('y = %i' % solver.Value(y))
+    print('z = %i' % solver.Value(z))
 ```
 
 ### C++ solver code
@@ -125,21 +136,31 @@ solver. The most useful one is the time limit.
 ```python
 from ortools.sat.python import cp_model
 
-model = cp_model.CpModel()
+def MinimalCpSatWithTimeLimit():
+  """Minimal CP-SAT example to showcase calling the solver."""
+  # Creates the model.
+  model = cp_model.CpModel()
+  # Creates the variables.
+  num_vals = 3
+  x = model.NewIntVar(0, num_vals - 1, 'x')
+  y = model.NewIntVar(0, num_vals - 1, 'y')
+  z = model.NewIntVar(0, num_vals - 1, 'z')
+  # Adds an all-different constraint.
+  model.Add(x != y)
 
-x = model.NewBoolVar('x')
+  # Creates a solver and solves the model.
+  solver = cp_model.CpSolver()
 
-# Creates a solver and solve.
-solver = cp_model.CpSolver()
+  # Sets a time limit of 10 seconds.
+  solver.parameters.max_time_in_seconds = 10.0
 
-# Sets a time limit of 10 seconds.
-solver.parameters.max_time_in_seconds = 10.0
+  status = solver.Solve(model)
 
-# Solves the problem and uses the solution found.
-status = solver.Solve(model)
-if status == cp_model.OPTIMAL:
-  print("Objective value: %i" % solver.ObjectiveValue())  # if defined.
-  print('x= %i' %  solver.Value(x))
+  if status == cp_model.MODEL_SAT:
+    print('x = %i' % solver.Value(x))
+    print('y = %i' % solver.Value(y))
+    print('z = %i' % solver.Value(z))
+
 ```
 
 ### Specifying the time limit in C++
@@ -191,7 +212,7 @@ void SolveWithTimeLimit() {
 } // namespace operations_research
 ```
 
-### Specifying the time limit in C\#
+### Specifying the time limit in C\#.
 
 Parameters must be passed as string to the solver.
 
@@ -251,7 +272,7 @@ from ortools.sat.python import cp_model
 
 
 # You need to subclass the cp_model.CpSolverSolutionCallback class.
-class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self, variables):
@@ -271,22 +292,24 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
 
 def MinimalCpSatPrintIntermediateSolutions():
+ """Showcases printing intermediate solutions found during search."""
   # Creates the model.
   model = cp_model.CpModel()
   # Creates the variables.
   num_vals = 3
-  x = model.NewIntVar(0, num_vals - 1, "x")
-  y = model.NewIntVar(0, num_vals - 1, "y")
-  z = model.NewIntVar(0, num_vals - 1, "z")
+  x = model.NewIntVar(0, num_vals - 1, 'x')
+  y = model.NewIntVar(0, num_vals - 1, 'y')
+  z = model.NewIntVar(0, num_vals - 1, 'z')
   # Creates the constraints.
   model.Add(x != y)
   model.Maximize(x + 2 * y + 3 * z)
 
   # Creates a solver and solves.
   solver = cp_model.CpSolver()
-  solution_printer = VarArraySolutionPrinter([x, y, z])
+  solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
   status = solver.SolveWithSolutionObserver(model, solution_printer)
 
+  print('Status = %s' % solver.StatusName(status))
   print('Number of solutions found: %i' % solution_printer.SolutionCount())
 ```
 
@@ -358,7 +381,7 @@ void MinimalSatPrintIntermediateSolutions() {
     num_solutions++;
   }));
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
-  LOG(INFO) << "Number of solutions found: " << num_solutions;
+  LOG(INFO) << 'Number of solutions found: ' << num_solutions;
 }
 
 }  // namespace sat
@@ -412,9 +435,9 @@ public class CodeSamplesSat
     // Creates the variables.
     int num_vals = 3;
 
-    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
-    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
-    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+    IntVar x = model.NewIntVar(0, num_vals - 1, 'x');
+    IntVar y = model.NewIntVar(0, num_vals - 1, 'y');
+    IntVar z = model.NewIntVar(0, num_vals - 1, 'z');
     // Creates the constraints.
     model.Add(x != y);
     // Creates the objective.
@@ -425,7 +448,7 @@ public class CodeSamplesSat
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
     solver.SearchAllSolutions(model, cb);
-    Console.WriteLine(String.Format("Number of solutions found: {0}",
+    Console.WriteLine(String.Format('Number of solutions found: {0}',
                                     cb.SolutionCount()));
   }
 
@@ -485,7 +508,7 @@ def MinimalSatSearchForAllSolutions():
   solver = cp_model.CpSolver()
   solution_printer = VarArraySolutionPrinter([x, y, z])
   status = solver.SearchForAllSolutions(model, solution_printer)
-
+  print('Status = %s' % solver.StatusName(status))
   print('Number of solutions found: %i' % solution_printer.SolutionCount())
 ```
 

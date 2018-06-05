@@ -1018,6 +1018,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
       counters_.minimization_num_removed_literals += clause->Size();
       trail_->EnqueueWithUnitReason(candidate[0]);
+      FinishPropagation();
     }
     return;
   }
@@ -1026,6 +1027,11 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     counters_.minimization_num_removed_literals += clause->Size() - 2;
     AddBinaryClauseInternal(candidate[0], candidate[1]);
     clauses_propagator_.Detach(clause);
+
+    // This is needed in the corner case where this was the first binary clause
+    // of the problem so that PropagationIsDone() returns true on the newly
+    // created BinaryImplicationGraph.
+    FinishPropagation();
     return;
   }
 

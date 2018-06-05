@@ -26,9 +26,10 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 ```python
 from ortools.sat.python import cp_model
 
-model = cp_model.CpModel()
-
-x = model.NewBoolVar('x')
+def CodeSample():
+  model = cp_model.CpModel()
+  x = model.NewBoolVar('x')
+  print(x)
 ```
 
 ## C++ code samples
