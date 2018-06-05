@@ -78,7 +78,7 @@ ifeq ($(SYSTEM),unix)
 
   # Look at mono compiler.
   REAL_MCS = $(shell which mcs)
-  MINIMUM_REQUIRED_MCS_VERSION = 4.2
+  MINIMUM_REQUIRED_MCS_VERSION = 5.4
   ifneq ($(REAL_MCS),)
     ifeq ($(PLATFORM),LINUX)
       MCS_VERSION = $(shell $(REAL_MCS) --version | grep -P '\d\.\d' -o | head -1)
