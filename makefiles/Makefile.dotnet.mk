@@ -28,7 +28,7 @@ ifeq ($(SYSTEM), win)
 DOTNET_EXECUTABLE := $(shell $(WHICH) dotnet.exe 2>nul)
 else # UNIX
 ifeq ($(PLATFORM),MACOSX)
-DOTNET_EXECUTABLE := $(shell dirname ${DOTNET_INSTALL_PATH})$Sdotnet
+DOTNET_EXECUTABLE := $(PATH_TO_DOTNET_COMPILER)
 else # LINUX
 DOTNET_EXECUTABLE := $(shell $(WHICH) dotnet)
 endif
