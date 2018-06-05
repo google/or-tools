@@ -122,6 +122,29 @@ public class CodeSamplesSat
     model.AddBoolOr(new ILiteral[] {b.Not(), y.Not()});
   }
 
+  static void RabbitsAndPheasants()
+  {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    IntVar r = model.NewIntVar(0, 100, "r");
+    IntVar p = model.NewIntVar(0, 100, "p");
+    // 20 heads.
+    model.Add(r + p == 20);
+    // 56 legs.
+    model.Add(4 * r + 2 * p == 56);
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+
+    if (status == CpSolverStatus.ModelSat)
+    {
+      Console.WriteLine(solver.Value(r) + " rabbits, and " +
+                        solver.Value(p) + " pheasants");
+    }
+  }
+
   static void IntervalSample()
   {
     CpModel model = new CpModel();
@@ -236,14 +259,25 @@ public class CodeSamplesSat
 
   static void Main()
   {
+    Console.WriteLine("--- CodeSample ---");
     CodeSample();
+    Console.WriteLine("--- LiteralSample ---");
     LiteralSample();
+    Console.WriteLine("--- BoolOrSample ---");
     BoolOrSample();
+    Console.WriteLine("--- ReifiedSample ---");
     ReifiedSample();
+    Console.WriteLine("--- RabbitsAndPheasants ---");
+    RabbitsAndPheasants();
+    Console.WriteLine("--- IntervalSample ---");
     IntervalSample();
+    Console.WriteLine("--- MinimalCpSat ---");
     MinimalCpSat();
+    Console.WriteLine("--- MinimalCpSatWithTimeLimit ---");
     MinimalCpSatWithTimeLimit();
+    Console.WriteLine("--- MinimalCpSatPrintIntermediateSolutions ---");
     MinimalCpSatPrintIntermediateSolutions();
+    Console.WriteLine("--- MinimalCpSatAllSolutions ---");
     MinimalCpSatAllSolutions();
   }
 }

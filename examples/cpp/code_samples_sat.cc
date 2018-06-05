@@ -23,6 +23,187 @@
 namespace operations_research {
 namespace sat {
 
+void CodeSample() {
+  CpModelProto cp_model;
+
+  auto new_boolean_variable = [&cp_model]() {
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    return index;
+  };
+
+  const int x = new_boolean_variable();
+  LOG(INFO) << x;
+}
+
+void LiteralSample() {
+  CpModelProto cp_model;
+
+  auto new_boolean_variable = [&cp_model]() {
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    return index;
+  };
+
+  const int x = new_boolean_variable();
+  const int not_x = NegatedRef(x);
+  LOG(INFO) << "x = " << x << ", not(x) = " << not_x;
+}
+
+void BoolOrSample() {
+  CpModelProto cp_model;
+
+  auto new_boolean_variable = [&cp_model]() {
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    return index;
+  };
+
+  auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
+    BoolArgumentProto* const bool_or =
+        cp_model.add_constraints()->mutable_bool_or();
+    for (const int lit : literals) {
+      bool_or->add_literals(lit);
+    }
+  };
+
+  const int x = new_boolean_variable();
+  const int y = new_boolean_variable();
+  add_bool_or({x, NegatedRef(y)});
+}
+
+void ReifiedSample() {
+  CpModelProto cp_model;
+
+  auto new_boolean_variable = [&cp_model]() {
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(0);
+    var->add_domain(1);
+    return index;
+  };
+
+  auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
+    BoolArgumentProto* const bool_or =
+        cp_model.add_constraints()->mutable_bool_or();
+    for (const int lit : literals) {
+      bool_or->add_literals(lit);
+    }
+  };
+
+  auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
+                                          const int literal) {
+    ConstraintProto* const ct = cp_model.add_constraints();
+    ct->add_enforcement_literal(literal);
+    for (const int lit : literals) {
+      ct->mutable_bool_and()->add_literals(lit);
+    }
+  };
+
+  const int x = new_boolean_variable();
+  const int y = new_boolean_variable();
+  const int b = new_boolean_variable();
+
+  // First version using a half-reified bool and.
+  add_reified_bool_and({x, NegatedRef(y)}, b);
+
+  // Second version using bool or.
+  add_bool_or({NegatedRef(b), x});
+  add_bool_or({NegatedRef(b), NegatedRef(y)});
+}
+
+void RabbitsAndPheasants() {
+  CpModelProto cp_model;
+
+  // Trivial model with just one variable and no constraint.
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
+
+  auto add_linear_constraint = [&cp_model](const std::vector<int>& vars,
+                                           const std::vector<int64>& coeffs,
+                                           int64 lb, int64 ub) {
+    LinearConstraintProto* const lin =
+        cp_model.add_constraints()->mutable_linear();
+    for (const int v : vars) {
+      lin->add_vars(v);
+    }
+    for (const int64 c : coeffs) {
+      lin->add_coeffs(c);
+    }
+    lin->add_domain(lb);
+    lin->add_domain(ub);
+  };
+
+  // Creates variables.
+  const int r = new_variable(0, 100);
+  const int p = new_variable(0, 100);
+
+  // 20 heads.
+  add_linear_constraint({r, p}, {1, 1}, 20, 20);
+  // 56 legs.
+  add_linear_constraint({r, p}, {4, 2}, 56, 56);
+
+  // Solving part.
+  Model model;
+  LOG(INFO) << CpModelStats(cp_model);
+  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  LOG(INFO) << CpSolverResponseStats(response);
+
+  if (response.status() == CpSolverStatus::MODEL_SAT) {
+    // Get the value of x in the solution.
+    LOG(INFO) << response.solution(r) << " rabbits, and "
+              << response.solution(p) << " pheasants";
+  }
+}
+
+void IntervalSample() {
+  CpModelProto cp_model;
+  const int kHorizon = 100;
+
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
+
+  auto new_constant = [&cp_model, &new_variable](int64 v) {
+    return new_variable(v, v);
+  };
+
+  auto new_interval = [&cp_model](int start, int duration, int end) {
+    const int index = cp_model.constraints_size();
+    IntervalConstraintProto* const interval =
+        cp_model.add_constraints()->mutable_interval();
+    interval->set_start(start);
+    interval->set_size(duration);
+    interval->set_end(end);
+    return index;
+  };
+
+  const int start_var = new_variable(0, kHorizon);
+  const int duration_var = new_constant(10);
+  const int end_var = new_variable(0, kHorizon);
+  const int interval_var = new_interval(start_var, duration_var, end_var);
+  LOG(INFO) << "start_var = " << start_var
+            << ", duration_var = " << duration_var << ", end_var = " << end_var
+            << ", interval_var = " << interval_var;
+}
+
 void SimpleSolve() {
   CpModelProto cp_model;
 
@@ -82,12 +263,11 @@ void SolveWithTimeLimit() {
   if (response.status() == CpSolverStatus::MODEL_SAT) {
     // Get the value of x in the solution.
     const int64 value_x = response.solution(x);
-    LOG(INFO) << "x = " << value_x;
+    LOG(INFO) << "value_x = " << value_x;
   }
 }
 
 void MinimalSatPrintIntermediateSolutions() {
-
   CpModelProto cp_model;
 
   auto new_variable = [&cp_model](int64 lb, int64 ub) {
@@ -101,7 +281,7 @@ void MinimalSatPrintIntermediateSolutions() {
 
   auto add_different = [&cp_model](const int left_var, const int right_var) {
     LinearConstraintProto* const lin =
-    cp_model.add_constraints()->mutable_linear();
+        cp_model.add_constraints()->mutable_linear();
     lin->add_vars(left_var);
     lin->add_coeffs(1);
     lin->add_vars(right_var);
@@ -133,7 +313,6 @@ void MinimalSatPrintIntermediateSolutions() {
 
   maximize({x, y, z}, {1, 2, 3});
 
-
   Model model;
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
@@ -162,7 +341,7 @@ void MinimalSatSearchForAllSolutions() {
 
   auto add_different = [&cp_model](const int left_var, const int right_var) {
     LinearConstraintProto* const lin =
-    cp_model.add_constraints()->mutable_linear();
+        cp_model.add_constraints()->mutable_linear();
     lin->add_vars(left_var);
     lin->add_coeffs(1);
     lin->add_vars(right_var);
@@ -180,7 +359,6 @@ void MinimalSatSearchForAllSolutions() {
 
   add_different(x, y);
 
-  // Solving part.
   Model model;
 
   // Tell the solver to enumerate all solutions.
@@ -203,10 +381,27 @@ void MinimalSatSearchForAllSolutions() {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main() {
+  LOG(INFO) << "--- CodeSample ---";
+  operations_research::sat::CodeSample();
+  LOG(INFO) << "--- LiteralSample ---";
+  operations_research::sat::LiteralSample();
+  LOG(INFO) << "--- BoolOrSample ---";
+  operations_research::sat::BoolOrSample();
+  LOG(INFO) << "--- ReifiedSample ---";
+  operations_research::sat::ReifiedSample();
+  LOG(INFO) << "--- RabbitsAndPheasants ---";
+  operations_research::sat::RabbitsAndPheasants();
+  LOG(INFO) << "--- IntervalSample ---";
+  operations_research::sat::IntervalSample();
+  LOG(INFO) << "--- SimpleSolve ---";
   operations_research::sat::SimpleSolve();
+  LOG(INFO) << "--- SolveWithTimeLimit ---";
   operations_research::sat::SolveWithTimeLimit();
+  LOG(INFO) << "--- MinimalSatPrintIntermediateSolutions ---";
   operations_research::sat::MinimalSatPrintIntermediateSolutions();
+  LOG(INFO) << "--- MinimalSatSearchForAllSolutions ---";
   operations_research::sat::MinimalSatSearchForAllSolutions();
+
   return EXIT_SUCCESS;
 }
