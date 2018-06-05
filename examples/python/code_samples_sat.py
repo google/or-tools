@@ -76,8 +76,7 @@ def RabbitsAndPheasants():
   # 56 legs.
   model.Add(4 * r + 2 * p == 56)
 
-  # Solves and print out the solutions.
-  # Creates a solver and solves the model.
+  # Solves and prints out the solution.
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
