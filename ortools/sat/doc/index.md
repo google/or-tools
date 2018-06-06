@@ -7,6 +7,7 @@ by type:
 
 -   [boolean logic](boolean_logic.md)
 -   [integer arithmetic](integer_arithmetic.md)
+-   [channeling constraints](channeling.md)
 -   [scheduling](scheduling.md)
 -   [solving a CP-SAT model](solver.md)
 
@@ -70,6 +71,7 @@ void CodeSample() {
 
 The C\# code implements the same interface as the python code, with a
 **CpModel**, and a **CpSolver** class.
+
 
 ```cs
 using System;
