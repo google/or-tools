@@ -33,7 +33,7 @@
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/drat.h"
+#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
 #include "examples/cpp/opb_reader.h"
