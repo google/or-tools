@@ -15,10 +15,12 @@ Channeling is usually implemented using half-reified linear constraints.
 
 ## A bin-packing problem
 
-We have 10 bins of capacity 100, and items to pack them. We would like to
-maximize the number of bins that can accept emergency loads of size 20.
+We have 10 bins of capacity 100, and items to pack into the bins. We would like
+to maximize the number of bins that can accept one emergency load of size 20.
 
-So, we need to count the number of bins that have a load less than 80.
+So, we need to maximize the number of bins that have a load less than 80.
+Channeling is used to link the *load* and *slack* variables together in the
+following code samples.
 
 ### Python code
 
@@ -49,14 +51,14 @@ def BinpackingProblem():
       x[(i, b)] = model.NewIntVar(0, num_copies, 'x_%i_%i' % (i, b))
 
   # Load variables.
-  loads = [model.NewIntVar(0, bin_capacity, 'load_%i' % b) for b in all_bins]
+  load = [model.NewIntVar(0, bin_capacity, 'load_%i' % b) for b in all_bins]
 
   # Slack variables.
   slacks = [model.NewBoolVar('slack_%i' % b) for b in all_bins]
 
   # Links load and x.
   for b in all_bins:
-    model.Add(loads[b] == sum(x[(i, b)] * items[i][0] for i in all_items))
+    model.Add(load[b] == sum(x[(i, b)] * items[i][0] for i in all_items))
 
   # Place all items.
   for i in all_items:
@@ -65,10 +67,10 @@ def BinpackingProblem():
   # Links load and slack.
   safe_capacity = bin_capacity - slack_capacity
   for b in all_bins:
-    # slack[b] => loads[b] <= safe_capacity
-    model.Add(loads[b] <= safe_capacity).OnlyEnforceIf(slacks[b])
-    # not(slack[b]) => loads[b] > safe_capacity
-    model.Add(loads[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not())
+    # slack[b] => load[b] <= safe_capacity
+    model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b])
+    # not(slack[b]) => load[b] > safe_capacity
+    model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not())
 
   # Maximize sum of slacks.
   model.Maximize(sum(slacks))
@@ -83,6 +85,143 @@ def BinpackingProblem():
   print('  - conflicts : %i' % solver.NumConflicts())
   print('  - branches  : %i' % solver.NumBranches())
   print('  - wall time : %f s' % solver.WallTime())
+```
+
+### C++ code
+
+```c++
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
+
+namespace operations_research {
+namespace sat {
+void BinpackingProblem() {
+  // Data.
+  const int kBinCapacity = 100;
+  const int kSlackCapacity = 20;
+  const int kNumBins = 10;
+
+  const std::vector<std::vector<int>> items =
+  { {20, 12}, {15, 12}, {30, 8}, {45, 5} };
+  const int num_items = items.size();
+
+  // Model.
+  CpModelProto cp_model;
+
+  // Helpers.
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
+
+  auto add_linear_constraint = [&cp_model](const std::vector<int>& vars,
+                                           const std::vector<int64>& coeffs,
+                                           int64 lb, int64 ub) {
+    LinearConstraintProto* const lin =
+        cp_model.add_constraints()->mutable_linear();
+    for (const int v : vars) {
+      lin->add_vars(v);
+    }
+    for (const int64 c : coeffs) {
+      lin->add_coeffs(c);
+    }
+    lin->add_domain(lb);
+    lin->add_domain(ub);
+  };
+
+  auto add_reified_variable_bounds = [&cp_model](
+      int var, int64 lb, int64 ub, int lit) {
+    ConstraintProto* const ct = cp_model.add_constraints();
+    ct->add_enforcement_literal(lit);
+    LinearConstraintProto* const lin = ct->mutable_linear();
+    lin->add_vars(var);
+    lin->add_coeffs(1);
+    lin->add_domain(lb);
+    lin->add_domain(ub);
+  };
+
+  auto maximize = [&cp_model](const std::vector<int>& vars) {
+    CpObjectiveProto* const obj = cp_model.mutable_objective();
+    for (const int v : vars) {
+      obj->add_vars(v);
+      obj->add_coeffs(-1);  // Maximize.
+    }
+    obj->set_scaling_factor(-1.0);  // Maximize.
+  };
+
+  // Main variables.
+  std::vector<std::vector<int>> x(num_items);
+  for (int i = 0; i < num_items; ++i) {
+    const int num_copies = items[i][1];
+    for (int b = 0; b < kNumBins; ++b) {
+      x[i].push_back(new_variable(0, num_copies));
+    }
+  }
+
+  // Load variables.
+  std::vector<int> load(kNumBins);
+  for (int b = 0; b < kNumBins; ++b) {
+    load[b] = new_variable(0, kBinCapacity);
+  }
+
+  // Slack variables.
+  std::vector<int> slack(kNumBins);
+  for (int b = 0; b < kNumBins; ++b) {
+    slack[b] = new_variable(0, 1);
+  }
+
+  // Links load and x.
+  for (int b = 0; b < kNumBins; ++b) {
+    std::vector<int> vars;
+    std::vector<int64> coeffs;
+    vars.push_back(load[b]);
+    coeffs.push_back(-1);
+    for (int i = 0; i < num_items; ++i) {
+      vars.push_back(x[i][b]);
+      coeffs.push_back(items[i][0]);
+    }
+    add_linear_constraint(vars, coeffs, 0, 0);
+  }
+
+  // Place all items.
+  for (int i = 0; i < num_items; ++i) {
+    std::vector<int> vars;
+    std::vector<int64> coeffs;
+    for (int b = 0; b < kNumBins; ++b) {
+      vars.push_back(x[i][b]);
+      coeffs.push_back(1);
+    }
+    add_linear_constraint(vars, coeffs, items[i][1], items[i][1]);
+  }
+
+  // Links load and slack through an equivalence relation.
+  const int safe_capacity = kBinCapacity - kSlackCapacity;
+  for (int b = 0; b < kNumBins; ++b) {
+    // slack[b] => load[b] <= safe_capacity.
+    add_reified_variable_bounds(load[b], kint64min, safe_capacity, slack[b]);
+    // not(slack[b]) => load[b] > safe_capacity.
+    add_reified_variable_bounds(
+        load[b], safe_capacity + 1, kint64max, NegatedRef(slack[b]));
+  }
+
+  // Maximize sum of slacks.
+  maximize(slack);
+
+  // Solving part.
+  Model model;
+  LOG(INFO) << CpModelStats(cp_model);
+  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  LOG(INFO) << CpSolverResponseStats(response);
+}
+
+} // namespace sat
+} // namespace operations_research
 ```
 
 ### C\# code
@@ -118,10 +257,10 @@ public class CodeSamplesSat
     }
 
     // Load variables.
-    IntVar[] loads = new IntVar[num_bins];
+    IntVar[] load = new IntVar[num_bins];
     for (int b = 0; b < num_bins; ++b)
     {
-      loads[b] = model.NewIntVar(0, bin_capacity, String.Format("load_{0}", b));
+      load[b] = model.NewIntVar(0, bin_capacity, String.Format("load_{0}", b));
     }
 
     // Slack variables.
@@ -143,7 +282,7 @@ public class CodeSamplesSat
       {
         tmp[i] = x[i, b];
       }
-      model.Add(loads[b] == tmp.ScalProd(sizes));
+      model.Add(load[b] == tmp.ScalProd(sizes));
     }
 
     // Place all items.
@@ -161,10 +300,10 @@ public class CodeSamplesSat
     int safe_capacity = bin_capacity - slack_capacity;
     for (int b = 0; b < num_bins; ++b)
     {
-      //  slack[b] => loads[b] <= safe_capacity.
-      model.Add(loads[b] <= safe_capacity).OnlyEnforceIf(slacks[b]);
-      // not(slack[b]) => loads[b] > safe_capacity.
-      model.Add(loads[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not());
+      //  slack[b] => load[b] <= safe_capacity.
+      model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b]);
+      // not(slack[b]) => load[b] > safe_capacity.
+      model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not());
     }
 
     // Maximize sum of slacks.
@@ -182,7 +321,7 @@ public class CodeSamplesSat
       for (int b = 0; b < num_bins; ++b)
       {
         Console.WriteLine(String.Format("load_{0} = {1}",
-                                        b, solver.Value(loads[b])));
+                                        b, solver.Value(load[b])));
         for (int i = 0; i < num_items; ++i)
         {
           Console.WriteLine(string.Format("  item_{0}_{1} = {2}",

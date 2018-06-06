@@ -170,10 +170,10 @@ public class CodeSamplesSat
     }
 
     // Load variables.
-    IntVar[] loads = new IntVar[num_bins];
+    IntVar[] load = new IntVar[num_bins];
     for (int b = 0; b < num_bins; ++b)
     {
-      loads[b] = model.NewIntVar(0, bin_capacity, String.Format("load_{0}", b));
+      load[b] = model.NewIntVar(0, bin_capacity, String.Format("load_{0}", b));
     }
 
     // Slack variables.
@@ -195,7 +195,7 @@ public class CodeSamplesSat
       {
         tmp[i] = x[i, b];
       }
-      model.Add(loads[b] == tmp.ScalProd(sizes));
+      model.Add(load[b] == tmp.ScalProd(sizes));
     }
 
     // Place all items.
@@ -213,10 +213,10 @@ public class CodeSamplesSat
     int safe_capacity = bin_capacity - slack_capacity;
     for (int b = 0; b < num_bins; ++b)
     {
-      //  slack[b] => loads[b] <= safe_capacity.
-      model.Add(loads[b] <= safe_capacity).OnlyEnforceIf(slacks[b]);
-      // not(slack[b]) => loads[b] > safe_capacity.
-      model.Add(loads[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not());
+      //  slack[b] => load[b] <= safe_capacity.
+      model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b]);
+      // not(slack[b]) => load[b] > safe_capacity.
+      model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not());
     }
 
     // Maximize sum of slacks.
@@ -227,20 +227,26 @@ public class CodeSamplesSat
     CpSolverStatus status = solver.Solve(model);
     Console.WriteLine(String.Format("Solve status: {0}", status));
     if (status == CpSolverStatus.Optimal) {
-      Console.WriteLine(String.Format("Optimal objective value: {0}", solver.ObjectiveValue));
+      Console.WriteLine(String.Format("Optimal objective value: {0}",
+                                      solver.ObjectiveValue));
       for (int b = 0; b < num_bins; ++b)
       {
-        Console.WriteLine(String.Format("load_{0} = {1}", b, solver.Value(loads[b])));
+        Console.WriteLine(String.Format("load_{0} = {1}",
+                                        b, solver.Value(load[b])));
         for (int i = 0; i < num_items; ++i)
         {
-          Console.WriteLine(string.Format("  item_{0}_{1} = {2}", i, b, solver.Value(x[i, b])));
+          Console.WriteLine(string.Format("  item_{0}_{1} = {2}",
+                                          i, b, solver.Value(x[i, b])));
         }
       }
     }
     Console.WriteLine("Statistics");
-    Console.WriteLine(String.Format("  - conflicts : {0}", solver.NumConflicts()));
-    Console.WriteLine(String.Format("  - branches  : {0}", solver.NumBranches()));
-    Console.WriteLine(String.Format("  - wall time : {0} s", solver.WallTime()));
+    Console.WriteLine(
+        String.Format("  - conflicts : {0}", solver.NumConflicts()));
+    Console.WriteLine(
+        String.Format("  - branches  : {0}", solver.NumBranches()));
+    Console.WriteLine(
+        String.Format("  - wall time : {0} s", solver.WallTime()));
   }
 
   static void IntervalSample()
