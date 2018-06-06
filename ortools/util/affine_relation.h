@@ -66,8 +66,10 @@ class AffineRelation {
   // if it is needed.
   bool TryAdd(int x, int y, int64 coeff, int64 offset);
 
-  // Always try to make y the representative of x.
-  bool TryAddInGivenOrder(int x, int y, int64 coeff, int64 offset);
+  // Same as TryAdd() with the option to disallow the use of a given
+  // representative.
+  bool TryAdd(int x, int y, int64 coeff, int64 offset, bool allow_rep_x,
+              bool allow_rep_y);
 
   // Returns a valid relation of the form x = coeff * representative + offset.
   // Note that this can return x = x. Non-const because of path-compression.
@@ -83,6 +85,12 @@ class AffineRelation {
     }
   };
   Relation Get(int x);
+
+  // Returns the size of the class of x.
+  int ClassSize(int x) {
+    if (x >= representative_.size()) return 1;
+    return size_[Get(x).representative];
+  }
 
  private:
   void IncreaseSizeOfMemberVectors(int new_size) {
@@ -135,6 +143,11 @@ class AffineRelation {
 };
 
 inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset) {
+  return TryAdd(x, y, coeff, offset, true, true);
+}
+
+inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset,
+                                   bool allow_rep_x, bool allow_rep_y) {
   CHECK_NE(coeff, 0);
   CHECK_NE(x, y);
   CHECK_GE(x, 0);
@@ -153,9 +166,9 @@ inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset) {
   const int64 new_coeff = coeff * coeff_[y];
   const int64 new_offset = coeff * offset_[y] + offset - offset_[x];
   const bool condition1 =
-      (new_coeff % coeff_x == 0) && (new_offset % coeff_x == 0);
-  const bool condition2 =
-      (coeff_x % new_coeff == 0) && (new_offset % new_coeff == 0);
+      allow_rep_y && (new_coeff % coeff_x == 0) && (new_offset % coeff_x == 0);
+  const bool condition2 = allow_rep_x && (coeff_x % new_coeff == 0) &&
+                          (new_offset % new_coeff == 0);
   if (condition1 && (!condition2 || size_[x] <= size_[y])) {
     representative_[rep_x] = rep_y;
     size_[rep_y] += size_[rep_x];
@@ -171,35 +184,6 @@ inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset) {
   }
   ++num_relations_;
   return true;
-}
-
-// TODO(user): Find a clean way to share the code with the function above
-// once we are sure this is needed. Another option would have been to provide
-// some kind of prefered representative to this class.
-inline bool AffineRelation::TryAddInGivenOrder(int x, int y, int64 coeff,
-                                               int64 offset) {
-  CHECK_NE(coeff, 0);
-  CHECK_NE(x, y);
-  CHECK_GE(x, 0);
-  CHECK_GE(y, 0);
-  IncreaseSizeOfMemberVectors(std::max(x, y) + 1);
-  CompressPath(x);
-  CompressPath(y);
-  const int rep_x = representative_[x];
-  const int rep_y = representative_[y];
-  if (rep_x == rep_y) return false;
-  const int64 coeff_x = coeff_[x];
-  const int64 new_coeff = coeff * coeff_[y];
-  const int64 new_offset = coeff * offset_[y] + offset - offset_[x];
-  if ((new_coeff % coeff_x == 0) && (new_offset % coeff_x == 0)) {
-    representative_[rep_x] = rep_y;
-    size_[rep_y] += size_[rep_x];
-    coeff_[rep_x] = new_coeff / coeff_x;
-    offset_[rep_x] = new_offset / coeff_x;
-    ++num_relations_;
-    return true;
-  }
-  return false;
 }
 
 inline AffineRelation::Relation AffineRelation::Get(int x) {
