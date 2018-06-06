@@ -21,7 +21,7 @@ ORTOOLS_NUSPEC_FILE=$(ORTOOLS_DLL_NAME).nuspec
 CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
 CLR_ORTOOLS_DLL_NAME?=Google.$(ORTOOLS_DLL_NAME)
 BASE_CLR_ORTOOLS_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
-CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
+CLR_ORTOOLS_IMPORT_DLL_NAME:=$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)
 
 # Check for required build tools
 ifeq ($(SYSTEM), win)
@@ -42,7 +42,7 @@ ifeq ($(PLATFORM),LINUX)
 DOTNET_LIB_DIR = env LD_LIBRARY_PATH=$(LIB_DIR)
 endif
 
-CLEAN_FILES=$(CLR_PROTOBUF_DLL_NAME).* $(CLR_ORTOOLS_DLL_NAME).* Google.$(FSHARP_ORTOOLS_DLL_NAME).*
+CLEAN_FILES=$(CLR_PROTOBUF_DLL_NAME).* $(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).* $(CLR_ORTOOLS_DLL_NAME).* Google.$(FSHARP_ORTOOLS_DLL_NAME).*
 
 .PHONY: csharp_dotnet # Build C# OR-Tools
 csharp_dotnet: \
@@ -232,7 +232,7 @@ dotnet: \
 	clean_dotnet \
 	csharp_dotnet \
 	fsharp_dotnet
-BUILT_LANGUAGES +=, netstandard2.0
+BUILT_LANGUAGES +=, dotnet (netstandard2.0/net462)
 
 ifeq ($(SYSTEM),win)
 NUGET_COMPILER ?= nuget.exe
