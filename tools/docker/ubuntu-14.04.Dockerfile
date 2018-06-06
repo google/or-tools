@@ -1,5 +1,7 @@
 FROM ubuntu:14.04
 
+ENV SRC_GIT_BRANCH 6.7.x
+
 RUN apt-get update
 
 RUN apt-get -y install wget
@@ -34,7 +36,7 @@ RUN make install
 
 WORKDIR /root
 
-RUN git clone https://github.com/google/or-tools
+RUN git clone -b "$SRC_GIT_BRANCH" --single-branch https://github.com/google/or-tools
 
 WORKDIR /root/or-tools
 
