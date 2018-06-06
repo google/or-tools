@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Channeling constraints are used to link to aspects of a model.
+Channeling constraints are used to link different aspects of the same model.
 
 For instance, with a bin packing problem, one part of the model computes the
 load of each bin. Another part would like to maximize the number of bins under a
