@@ -261,6 +261,19 @@ public class CodeSamplesSat
         model.NewIntervalVar(start_var, duration, end_var, "interval");
   }
 
+  static void OptionalIntervalSample()
+  {
+    CpModel model = new CpModel();
+    int horizon = 100;
+    IntVar start_var = model.NewIntVar(0, horizon, "start");
+    // C# code supports IntVar or integer constants in intervals.
+    int duration = 10;
+    IntVar end_var = model.NewIntVar(0, horizon, "end");
+    IntVar presence_var = model.NewBoolVar("presence");
+    IntervalVar interval = model.NewOptionalIntervalVar(
+        start_var, duration, end_var, presence_var, "interval");
+  }
+  
   static void MinimalCpSat()
   {
     // Creates the model.
@@ -377,6 +390,8 @@ public class CodeSamplesSat
     BinpackingProblem();
     Console.WriteLine("--- IntervalSample ---");
     IntervalSample();
+    Console.WriteLine("--- OptionalIntervalSample ---");
+    OptionalIntervalSample();
     Console.WriteLine("--- MinimalCpSat ---");
     MinimalCpSat();
     Console.WriteLine("--- MinimalCpSatWithTimeLimit ---");

@@ -327,6 +327,48 @@ void IntervalSample() {
             << ", interval_var = " << interval_var;
 }
 
+void OptionalIntervalSample() {
+  CpModelProto cp_model;
+  const int kHorizon = 100;
+
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
+
+  auto new_constant = [&cp_model, &new_variable](int64 v) {
+    return new_variable(v, v);
+  };
+
+  auto new_optional_interval = [&cp_model](int start, int duration, int end,
+                                          int presence) {
+    const int index = cp_model.constraints_size();
+    ConstraintProto* const ct = cp_model.add_constraints();
+    ct->add_enforcement_literal(presence);
+    IntervalConstraintProto* const interval = ct->mutable_interval();
+    interval->set_start(start);
+    interval->set_size(duration);
+    interval->set_end(end);
+    return index;
+  };
+
+  const int start_var = new_variable(0, kHorizon);
+  const int duration_var = new_constant(10);
+  const int end_var = new_variable(0, kHorizon);
+  const int presence_var = new_variable(0, 1);
+  const int interval_var = new_optional_interval(start_var, duration_var,
+                                                 end_var, presence_var);
+  LOG(INFO) << "start_var = " << start_var
+            << ", duration_var = " << duration_var
+            << ", end_var = " << end_var
+            << ", presence_var = " << presence_var
+            << ", interval_var = " << interval_var;
+}
+
 void SimpleSolve() {
   CpModelProto cp_model;
 
@@ -519,6 +561,8 @@ int main() {
   operations_research::sat::BinpackingProblem();
   LOG(INFO) << "--- IntervalSample ---";
   operations_research::sat::IntervalSample();
+  LOG(INFO) << "--- OptionalIntervalSample ---";
+  operations_research::sat::OptionalIntervalSample();
   LOG(INFO) << "--- SimpleSolve ---";
   operations_research::sat::SimpleSolve();
   LOG(INFO) << "--- SolveWithTimeLimit ---";

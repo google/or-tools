@@ -131,8 +131,6 @@ def BinpackingProblem():
   # Maximize sum of slacks.
   model.Maximize(sum(slacks))
 
-  print(model)
-
   # Solves and prints out the solution.
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
@@ -154,6 +152,19 @@ def IntervalSample():
   interval_var = model.NewIntervalVar(start_var, duration, end_var, 'interval')
   print('start = %s, duration = %i, end = %s, interval = %s' %
         (start_var, duration, end_var, interval_var))
+
+
+def OptionalIntervalSample():
+  model = cp_model.CpModel()
+  horizon = 100
+  start_var = model.NewIntVar(0, horizon, 'start')
+  duration = 10  # Python cp/sat code accept integer variables or constants.
+  end_var = model.NewIntVar(0, horizon, 'end')
+  presence_var = model.NewBoolVar('presence')
+  interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var,
+                                              presence_var, 'interval')
+  print('start = %s, duration = %i, end = %s, presence = %s, interval = %s' %
+        (start_var, duration, end_var, presence_var, interval_var))
 
 
 def MinimalCpSat():
@@ -429,6 +440,8 @@ def main(_):
   BinpackingProblem()
   print('--- IntervalSample ---')
   IntervalSample()
+  print('--- OptionalIntervalSample ---')
+  OptionalIntervalSample()
   print('--- MinimalCpSat ---')
   MinimalCpSat()
   print('--- MinimalCpSatWithTimeLimit ---')
