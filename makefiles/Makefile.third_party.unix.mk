@@ -36,30 +36,48 @@ third_party: makefile_third_party build_third_party
 third_party_check:
 ifeq ($(wildcard $(UNIX_GFLAGS_DIR)/include/gflags/gflags.h),)
 	$(error Third party GFlags files was not found! did you run 'make third_party' or set UNIX_GFLAGS_DIR ?)
+else
+	$(info GFLAGS found !)
 endif
 ifeq ($(wildcard $(UNIX_GLOG_DIR)/include/glog/logging.h),)
 	$(error Third party GLog files was not found! did you run 'make third_party' or set UNIX_GLOG_DIR ?)
+else
+	$(info GLOG found !)
 endif
 ifeq ($(wildcard $(UNIX_PROTOBUF_DIR)/include/google/protobuf/descriptor.h),)
 	$(error Third party Protobuf files was not found! did you run 'make third_party' or set UNIX_PROTOBUF_DIR ?)
+else
+	$(info PROTOBUF found !)
 endif
 ifeq ($(wildcard $(PROTOC_BINARY)),)
 	$(error Cannot find $(UNIX_PROTOC_BINARY). Please verify UNIX_PROTOC_BINARY)
-endif
-ifeq ($(wildcard $(UNIX_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(UNIX_CBC_DIR)/include/coin/CbcModel.hpp),)
-	$(error Third party Cbc files was not found! did you run 'make third_party' or set UNIX_CBC_DIR ?)
-endif
-ifeq ($(wildcard $(UNIX_CGL_DIR)/include/cgl/coin/CglParam.hpp $(UNIX_CGL_DIR)/include/coin/CglParam.hpp),)
-	$(error Third party Cgl files was not found! did you run 'make third_party' or set UNIX_CGL_DIR ?)
-endif
-ifeq ($(wildcard $(UNIX_CLP_DIR)/include/clp/coin/ClpModel.hpp $(UNIX_CLP_DIR)/include/coin/ClpSimplex.hpp),)
-	$(error Third party Clp files was not found! did you run 'make third_party' or set UNIX_CLP_DIR ?)
-endif
-ifeq ($(wildcard $(UNIX_OSI_DIR)/include/osi/coin/OsiSolverInterface.hpp $(UNIX_OSI_DIR)/include/coin/OsiSolverInterface.hpp),)
-	$(error Third party Osi files was not found! did you run 'make third_party' or set UNIX_OSI_DIR ?)
+else
+	$(info PROTOC found !)
 endif
 ifeq ($(wildcard $(UNIX_COINUTILS_DIR)/include/coinutils/coin/CoinModel.hpp $(UNIX_COINUTILS_DIR)/include/coin/CoinModel.hpp),)
 	$(error Third party CoinUtils files was not found! did you run 'make third_party' or set UNIX_COINUTILS_DIR ?)
+else
+	$(info COINUTILS found !)
+endif
+ifeq ($(wildcard $(UNIX_OSI_DIR)/include/osi/coin/OsiSolverInterface.hpp $(UNIX_OSI_DIR)/include/coin/OsiSolverInterface.hpp),)
+	$(error Third party Osi files was not found! did you run 'make third_party' or set UNIX_OSI_DIR ?)
+else
+	$(info OSI found !)
+endif
+ifeq ($(wildcard $(UNIX_CLP_DIR)/include/clp/coin/ClpModel.hpp $(UNIX_CLP_DIR)/include/coin/ClpSimplex.hpp),)
+	$(error Third party Clp files was not found! did you run 'make third_party' or set UNIX_CLP_DIR ?)
+else
+	$(info CLP found !)
+endif
+ifeq ($(wildcard $(UNIX_CGL_DIR)/include/cgl/coin/CglParam.hpp $(UNIX_CGL_DIR)/include/coin/CglParam.hpp),)
+	$(error Third party Cgl files was not found! did you run 'make third_party' or set UNIX_CGL_DIR ?)
+else
+	$(info CGL found !)
+endif
+ifeq ($(wildcard $(UNIX_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(UNIX_CBC_DIR)/include/coin/CbcModel.hpp),)
+	$(error Third party Cbc files was not found! did you run 'make third_party' or set UNIX_CBC_DIR ?)
+else
+	$(info CBC found !)
 endif
 	$(info All third parties found !)
 
