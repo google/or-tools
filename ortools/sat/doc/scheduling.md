@@ -213,7 +213,7 @@ public class CodeSamplesSat
 
   static void Main()
   {
-    IntervalSample();
+    OptionalIntervalSample();
   }
 }
 ```
