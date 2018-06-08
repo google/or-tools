@@ -143,7 +143,7 @@ $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py: \
 		$(SRC_DIR)/ortools/util/python/vector.i \
 		$(SRC_DIR)/ortools/algorithms/python/knapsack_solver.i \
 		$(SRC_DIR)/ortools/algorithms/knapsack_solver.h
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc -module pywrapknapsack_solver $(SRC_DIR)/ortools/algorithms$Spython$Sknapsack_solver.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc -module pywrapknapsack_solver $(SRC_DIR)/ortools/algorithms$Spython$Sknapsack_solver.i
 
 $(GEN_DIR)/ortools/algorithms/knapsack_solver_python_wrap.cc: $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py
 
@@ -169,7 +169,7 @@ $(GEN_DIR)/ortools/graph/pywrapgraph.py: \
 		$(SRC_DIR)/ortools/graph/max_flow.h \
 		$(SRC_DIR)/ortools/graph/ebert_graph.h \
 		$(SRC_DIR)/ortools/graph/shortestpaths.h
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_python_wrap.cc -module pywrapgraph $(SRC_DIR)/ortools/graph$Spython$Sgraph.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_python_wrap.cc -module pywrapgraph $(SRC_DIR)/ortools/graph$Spython$Sgraph.i
 
 $(GEN_DIR)/ortools/graph/graph_python_wrap.cc: $(GEN_DIR)/ortools/graph/pywrapgraph.py
 
@@ -223,7 +223,7 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(GEN_DIR)/ortools/constraint_solver/model.pb.h \
 		$(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
 		$(CP_LIB_OBJS)
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/ortools/constraint_solver$Spython$Srouting.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/ortools/constraint_solver$Spython$Srouting.i
 
 # TODO(user): Support pywraprouting as well.
 
