@@ -320,7 +320,8 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
 #undef APPLY_TO_SINGULAR_FIELD
 #undef APPLY_TO_REPEATED_FIELD
 
-std::string ConstraintCaseName(ConstraintProto::ConstraintCase constraint_case) {
+std::string ConstraintCaseName(
+    ConstraintProto::ConstraintCase constraint_case) {
   switch (constraint_case) {
     case ConstraintProto::ConstraintCase::kBoolOr:
       return "kBoolOr";

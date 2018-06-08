@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // A reader for files in the MPS format.
 // see http://lpsolve.sourceforge.net/5.5/mps-format.htm
 // and http://www.ici.ro/camo/language/ml11.htm.
@@ -26,17 +25,17 @@
 #define OR_TOOLS_LP_DATA_MPS_READER_H_
 
 #include <algorithm>  // for max
+#include <string>     // for std::string
 #include <unordered_map>
-#include <string>  // for std::string
 #include <vector>  // for vector
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/macros.h"  // for DISALLOW_COPY_AND_ASSIGN, NULL
-#include "ortools/base/stringprintf.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/macros.h"    // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/base/map_util.h"  // for FindOrNull, FindWithDefault
-#include "ortools/base/hash.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 
@@ -162,7 +161,8 @@ class MPSReader {
   } BoundTypeId;
 
   // Stores a bound value of a given type, for a given column name.
-  void StoreBound(const std::string& bound_type_mnemonic, const std::string& column_name,
+  void StoreBound(const std::string& bound_type_mnemonic,
+                  const std::string& column_name,
                   const std::string& bound_value);
 
   // Stores a coefficient value for a column number and a row name.
@@ -170,7 +170,8 @@ class MPSReader {
                         const std::string& row_value);
 
   // Stores a right-hand-side value for a row name.
-  void StoreRightHandSide(const std::string& row_name, const std::string& row_value);
+  void StoreRightHandSide(const std::string& row_name,
+                          const std::string& row_value);
 
   // Stores a range constraint of value row_value for a row name.
   void StoreRange(const std::string& row_name, const std::string& row_value);

@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Utility functions on IEEE floating-point numbers.
 // Implemented on float, double, and long double.
 //
@@ -24,7 +23,7 @@
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
 #if defined(_MSC_VER)
-#pragma fenv_access (on) // NOLINT
+#pragma fenv_access(on)  // NOLINT
 #else
 #include <fenv.h>  // NOLINT
 #endif
@@ -60,7 +59,7 @@ namespace operations_research {
 
 class ScopedFloatingPointEnv {
  public:
-  ScopedFloatingPointEnv()  {
+  ScopedFloatingPointEnv() {
 #if defined(_MSC_VER)
     // saved_control_ = _controlfp(0, 0);
 #elif defined(ARCH_K8)

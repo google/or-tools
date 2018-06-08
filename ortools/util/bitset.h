@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Various utility functions on bitsets.
 
 #ifndef OR_TOOLS_UTIL_BITSET_H_
@@ -85,7 +84,8 @@ inline int LeastSignificantBitPosition64DeBruijn(uint64 n) {
       0,  1,  2,  7,  3,  13, 8,  19, 4,  25, 14, 28, 9,  52, 20, 58,
       5,  17, 26, 56, 15, 38, 29, 40, 10, 49, 53, 31, 21, 34, 59, 42,
       63, 6,  12, 18, 24, 27, 51, 57, 16, 55, 37, 39, 48, 30, 33, 41,
-      62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43, };
+      62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43,
+  };
   return kTab[((n & (~n + 1)) * kSeq) >> 58];
 }
 
@@ -142,10 +142,10 @@ inline int LeastSignificantBitPosition32Fast(uint32 n) {
 
 inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
   static const uint32 kSeq = 0x077CB531U;  // de Bruijn sequence
-  static const int kTab[32] = {
-    // initialized by 'kTab[(kSeq << i) >> 27] = i
-    0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
-    31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
+  static const int kTab[32] = {// initialized by 'kTab[(kSeq << i) >> 27] = i
+                               0,  1,  28, 2,  29, 14, 24, 3,  30, 22, 20,
+                               15, 25, 17, 4,  8,  31, 27, 13, 23, 21, 19,
+                               16, 7,  26, 12, 18, 6,  11, 5,  10, 9};
   return kTab[((n & (~n + 1)) * kSeq) >> 27];
 }
 
@@ -448,9 +448,7 @@ class Bitset64 {
   }
 
   // Sets all bits to 0.
-  void ClearAll() {
-    memset(data_.data(), 0, data_.size() * sizeof(int64));
-  }
+  void ClearAll() { memset(data_.data(), 0, data_.size() * sizeof(int64)); }
 
   // Sets the bit at position i to 0.
   void Clear(IndexType i) {

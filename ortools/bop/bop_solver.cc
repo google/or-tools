@@ -16,10 +16,10 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/stringprintf.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_ls.h"
@@ -172,8 +172,9 @@ double BopSolver::GetScaledBestBound() const {
 }
 
 double BopSolver::GetScaledGap() const {
-  return 100.0 * std::abs(problem_state_.solution().GetScaledCost() -
-                          GetScaledBestBound()) /
+  return 100.0 *
+         std::abs(problem_state_.solution().GetScaledCost() -
+                  GetScaledBestBound()) /
          std::abs(problem_state_.solution().GetScaledCost());
 }
 

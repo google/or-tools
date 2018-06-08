@@ -14,11 +14,11 @@
 #include <list>
 #include <queue>
 #include <stack>
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -29,10 +29,10 @@ namespace operations_research {
 namespace {
 
 /**
-* Creation of Mdd, from Yap & al, "An Mdd-based Generalized Arc Consistency
-* Algorithm for Positive and Negative Table Constraints and Some Global
-* Constraints"
-*/
+ * Creation of Mdd, from Yap & al, "An Mdd-based Generalized Arc Consistency
+ * Algorithm for Positive and Negative Table Constraints and Some Global
+ * Constraints"
+ */
 
 // Mdd_compression
 class Mdd {
@@ -252,7 +252,7 @@ class MddFactory {
   }
 
   Mdd* ReCount(Mdd* T) {
-    std::vector<Mdd *> *v1, *v2, *tmp;
+    std::vector<Mdd*>*v1, *v2, *tmp;
     int nb = 0;
 
     std::vector<bool> visited(getNbInstance());
@@ -283,7 +283,7 @@ class MddFactory {
   }
 
   void Draw(Mdd* T) {
-    std::vector<Mdd *> *v1, *v2, *tmp;
+    std::vector<Mdd*>*v1, *v2, *tmp;
     std::cout << "digraph G{\n";
     std::vector<bool> visited(getNbInstance());
     v1 = new std::vector<Mdd*>();
@@ -1088,15 +1088,15 @@ class MddTableVar {
   }
 
   void ComputeDeltaDomain(std::vector<int>* delta) {
-// nouvelle version, Pour Laurent, il utilise des bitset et
-// recupère donc les valeurs supprimer / modifier en parcourant
-// le plus petit ensemble des deux.
-// Ici j'ai besoin pour voir directement itérer ensuite sur les
-// Bon/Mauvais rapidement (en prenant donc le plus petit ensemble
-// des deux)
-// Idée 1)  utilisé un sparseSet pour mon domain. il permetra
-// de soit supprimer les valeurs supprimées, soit de reset
-// et de remetre les valeur postive.
+    // nouvelle version, Pour Laurent, il utilise des bitset et
+    // recupère donc les valeurs supprimer / modifier en parcourant
+    // le plus petit ensemble des deux.
+    // Ici j'ai besoin pour voir directement itérer ensuite sur les
+    // Bon/Mauvais rapidement (en prenant donc le plus petit ensemble
+    // des deux)
+    // Idée 1)  utilisé un sparseSet pour mon domain. il permetra
+    // de soit supprimer les valeurs supprimées, soit de reset
+    // et de remetre les valeur postive.
 
 #define NEWDELTA
 

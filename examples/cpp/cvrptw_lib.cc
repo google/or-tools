@@ -16,10 +16,9 @@
 #include <set>
 
 #include "ortools/base/logging.h"
+#include "ortools/base/random.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/base/random.h"
-#include "ortools/base/random.h"
 
 namespace operations_research {
 

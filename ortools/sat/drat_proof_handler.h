@@ -18,8 +18,8 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/span.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/span.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/drat_writer.h"
 #include "ortools/sat/sat_base.h"

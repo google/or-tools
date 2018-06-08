@@ -16,24 +16,24 @@
 #include <algorithm>
 #include <cstdlib>
 #include <deque>
-#include <unordered_set>
 #include <map>
 #include <memory>
 #include <numeric>
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/port.h"
-#include "ortools/base/join.h"
 #include <unordered_set>
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/port.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_objective.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -299,13 +299,13 @@ struct PresolveContext {
 // =============================================================================
 
 MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct,
-                                           PresolveContext* context) {
+                                      PresolveContext* context) {
   ct->Clear();
   return true;
 }
 
 MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
-                                                PresolveContext* context) {
+                                           PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) {
     context->SetLiteralToFalse(ct->enforcement_literal(0));
   } else {
@@ -2127,7 +2127,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   VLOG(1) << "- " << context.var_equiv_relations.NumRelations()
           << " variable equivalence relations where detected.";
   std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
-                                     context.stats_by_rule_name.end());
+                                          context.stats_by_rule_name.end());
   for (const auto& entry : sorted_rules) {
     if (entry.second == 1) {
       VLOG(1) << "- rule '" << entry.first << "' was applied 1 time.";

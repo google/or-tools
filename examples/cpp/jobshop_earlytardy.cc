@@ -36,7 +36,8 @@
 
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
+#include "examples/cpp/jobshop_earlytardy.h"
+#include "examples/cpp/jobshop_ls.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -44,12 +45,9 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/string_array.h"
-#include "examples/cpp/jobshop_earlytardy.h"
-#include "examples/cpp/jobshop_ls.h"
 
 DEFINE_string(
-    jet_file,
-    "",
+    jet_file, "",
     "Required: input file description the scheduling problem to solve, "
     "in our jet format:\n"
     "  - the first line is \"<number of jobs> <number of machines>\"\n"
@@ -107,7 +105,7 @@ class TimePlacement : public DecisionBuilder {
       }
     }
 
-      // Adds the jobs precedence constraints.
+    // Adds the jobs precedence constraints.
     for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
       for (int t = 0; t < jobs_to_tasks_[j].size() - 1; ++t) {
         IntervalVar* const first_task = jobs_to_tasks_[j][t];
@@ -146,10 +144,7 @@ class TimePlacement : public DecisionBuilder {
 
     // Creates penalty terms and objective.
     std::vector<MPVariable*> terms;
-    mp_solver_.MakeIntVarArray(jobs_to_tasks_.size(),
-                               0,
-                               infinity,
-                               "terms",
+    mp_solver_.MakeIntVarArray(jobs_to_tasks_.size(), 0, infinity, "terms",
                                &terms);
     for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
       mp_solver_.MutableObjective()->SetCoefficient(terms[j], 1.0);
@@ -192,9 +187,7 @@ class TimePlacement : public DecisionBuilder {
     return NULL;
   }
 
-  virtual std::string DebugString() const {
-    return "TimePlacement";
-  }
+  virtual std::string DebugString() const { return "TimePlacement"; }
 
  private:
   const EtJobShopData& data_;
@@ -224,17 +217,11 @@ void EtJobShop(const EtJobShopData& data) {
     for (int task_index = 0; task_index < tasks.size(); ++task_index) {
       const Task& task = tasks[task_index];
       CHECK_EQ(job_id, task.job_id);
-      const std::string name = StringPrintf("J%dM%dI%dD%d",
-                                       task.job_id,
-                                       task.machine_id,
-                                       task_index,
-                                       task.duration);
-      IntervalVar* const one_task =
-          solver.MakeFixedDurationIntervalVar(0,
-                                              horizon,
-                                              task.duration,
-                                              false,
-                                              name);
+      const std::string name =
+          StringPrintf("J%dM%dI%dD%d", task.job_id, task.machine_id, task_index,
+                       task.duration);
+      IntervalVar* const one_task = solver.MakeFixedDurationIntervalVar(
+          0, horizon, task.duration, false, name);
       jobs_to_tasks[task.job_id].push_back(one_task);
       machines_to_tasks[task.machine_id].push_back(one_task);
     }
@@ -258,10 +245,8 @@ void EtJobShop(const EtJobShopData& data) {
   for (int job_id = 0; job_id < job_count; ++job_id) {
     const Job& job = data.GetJob(job_id);
     IntervalVar* const t = jobs_to_tasks[job_id][0];
-    Constraint* const prec =
-        solver.MakeIntervalVarRelation(t,
-                                       Solver::STARTS_AFTER,
-                                       job.release_date);
+    Constraint* const prec = solver.MakeIntervalVarRelation(
+        t, Solver::STARTS_AFTER, job.release_date);
     solver.AddConstraint(prec);
   }
 
@@ -270,11 +255,10 @@ void EtJobShop(const EtJobShopData& data) {
     const Job& job = data.GetJob(job_id);
     IntervalVar* const t = jobs_to_tasks[job_id][machine_count - 1];
     IntVar* const penalty =
-        solver.MakeConvexPiecewiseExpr(t->EndExpr(),
-                                       job.early_cost,
-                                       job.due_date,
-                                       job.due_date,
-                                       job.tardy_cost)->Var();
+        solver
+            .MakeConvexPiecewiseExpr(t->EndExpr(), job.early_cost, job.due_date,
+                                     job.due_date, job.tardy_cost)
+            ->Var();
     penalties.push_back(penalty);
   }
 
@@ -307,11 +291,11 @@ void EtJobShop(const EtJobShopData& data) {
   // conveniently done by fixing the objective variable to its
   // minimum value.
   DecisionBuilder* const obj_phase =
-      FLAGS_time_placement ?
-      solver.RevAlloc(new TimePlacement(data, all_sequences, jobs_to_tasks)) :
-      solver.MakePhase(objective_var,
-                       Solver::CHOOSE_FIRST_UNBOUND,
-                       Solver::ASSIGN_MIN_VALUE);
+      FLAGS_time_placement
+          ? solver.RevAlloc(
+                new TimePlacement(data, all_sequences, jobs_to_tasks))
+          : solver.MakePhase(objective_var, Solver::CHOOSE_FIRST_UNBOUND,
+                             Solver::ASSIGN_MIN_VALUE);
 
   if (FLAGS_use_ls) {
     Assignment* const first_solution = solver.MakeAssignment();
@@ -344,16 +328,13 @@ void EtJobShop(const EtJobShopData& data) {
     operators.push_back(swap_operator);
     LOG(INFO) << "  - use shuffle operator with a max length of "
               << FLAGS_shuffle_length;
-    LocalSearchOperator* const shuffle_operator =
-        solver.RevAlloc(new ShuffleIntervals(all_sequences,
-                                             FLAGS_shuffle_length));
+    LocalSearchOperator* const shuffle_operator = solver.RevAlloc(
+        new ShuffleIntervals(all_sequences, FLAGS_shuffle_length));
     operators.push_back(shuffle_operator);
     LOG(INFO) << "  - use free sub sequences of length "
               << FLAGS_sub_sequence_length << " lns operator";
-    LocalSearchOperator* const lns_operator =
-        solver.RevAlloc(new SequenceLns(all_sequences,
-                                        FLAGS_lns_seed,
-                                        FLAGS_sub_sequence_length));
+    LocalSearchOperator* const lns_operator = solver.RevAlloc(new SequenceLns(
+        all_sequences, FLAGS_lns_seed, FLAGS_sub_sequence_length));
     operators.push_back(lns_operator);
 
     // Creates the local search decision builder.
@@ -364,9 +345,8 @@ void EtJobShop(const EtJobShopData& data) {
         solver.MakeLimit(kint64max, FLAGS_lns_limit, kint64max, kint64max);
     DecisionBuilder* const random_sequence_phase =
         solver.MakePhase(all_sequences, Solver::CHOOSE_RANDOM_RANK_FORWARD);
-    DecisionBuilder* const ls_db =
-        solver.MakeSolveOnce(solver.Compose(random_sequence_phase, obj_phase),
-                             ls_limit);
+    DecisionBuilder* const ls_db = solver.MakeSolveOnce(
+        solver.Compose(random_sequence_phase, obj_phase), ls_limit);
 
     LocalSearchPhaseParameters* const parameters =
         solver.MakeLocalSearchPhaseParameters(concat, ls_db);
@@ -381,9 +361,10 @@ void EtJobShop(const EtJobShopData& data) {
     SearchMonitor* const search_log =
         solver.MakeSearchLog(kLogFrequency, objective_monitor);
 
-    SearchLimit* const limit = FLAGS_time_limit_in_ms > 0 ?
-        solver.MakeTimeLimit(FLAGS_time_limit_in_ms) :
-        NULL;
+    SearchLimit* const limit =
+        FLAGS_time_limit_in_ms > 0
+            ? solver.MakeTimeLimit(FLAGS_time_limit_in_ms)
+            : NULL;
 
     // Search.
     solver.Solve(final_db, search_log, objective_monitor, limit);
@@ -413,7 +394,7 @@ static const char kUsage[] =
     "Usage: see flags.\nThis program runs a simple job shop optimization "
     "output besides the debug LOGs of the solver.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   FLAGS_log_prefix = false;
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -421,14 +402,10 @@ int main(int argc, char **argv) {
   if (!FLAGS_jet_file.empty()) {
     data.LoadJetFile(FLAGS_jet_file);
   } else {
-    data.GenerateRandomData(FLAGS_machine_count,
-                            FLAGS_job_count,
-                            FLAGS_max_release_date,
-                            FLAGS_max_early_cost,
-                            FLAGS_max_tardy_cost,
-                            FLAGS_max_duration,
-                            FLAGS_scale_factor,
-                            FLAGS_seed);
+    data.GenerateRandomData(FLAGS_machine_count, FLAGS_job_count,
+                            FLAGS_max_release_date, FLAGS_max_early_cost,
+                            FLAGS_max_tardy_cost, FLAGS_max_duration,
+                            FLAGS_scale_factor, FLAGS_seed);
   }
   operations_research::EtJobShop(data);
   return 0;

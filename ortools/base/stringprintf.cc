@@ -20,17 +20,18 @@
 
 #if !defined(_MSC_VER)
 #ifndef va_copy
-# ifdef __va_copy
-# define va_copy(d, s) __va_copy((d), (s))
-# else
-# define va_copy(d, s) memcpy(&(d), &(s), sizeof(va_list))
-# endif
+#ifdef __va_copy
+#define va_copy(d, s) __va_copy((d), (s))
+#else
+#define va_copy(d, s) memcpy(&(d), &(s), sizeof(va_list))
+#endif
 #endif
 #endif
 
 namespace operations_research {
 
-void StringAppendV(std::string* const dst, const char* const format, va_list ap) {
+void StringAppendV(std::string* const dst, const char* const format,
+                   va_list ap) {
   // First try with a small fixed size buffer
   char space[1024];
 

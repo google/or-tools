@@ -18,8 +18,8 @@
 #include <mach/mach_init.h>
 #include <mach/task.h>
 #elif defined(_MSC_VER)  // WINDOWS
-#include <windows.h>
 #include <psapi.h>
+#include <windows.h>
 #endif
 
 #include <cstdio>
@@ -36,7 +36,7 @@ int64 GetProcessMemoryUsage() {
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
 
   if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO,
-                                (task_info_t) & t_info, &t_info_count)) {
+                                (task_info_t)&t_info, &t_info_count)) {
     return -1;
   }
   int64 resident_memory = t_info.resident_size;
@@ -69,7 +69,7 @@ int64 GetProcessMemoryUsage() {
   }
   return memory;
 }
-#else  // Unknown, returning 0.
+#else                    // Unknown, returning 0.
 int64 GetProcessMemoryUsage() { return 0; }
 #endif
 

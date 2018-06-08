@@ -1,48 +1,37 @@
 #include <deque>
-#include <vector>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
 
 const std::vector<std::vector<int>> small = {
-  { 3, 2, -1, 3 },
-  { -1, -1, -1, 2 },
-  { 3, -1, -1, -1 },
-  { 3, -1, 3, 1 }
-};
+    {3, 2, -1, 3}, {-1, -1, -1, 2}, {3, -1, -1, -1}, {3, -1, 3, 1}};
 
 const std::vector<std::vector<int>> medium = {
-  { -1, 0, -1, 1, -1, -1, 1, -1 },
-  { -1, 3, -1, -1, 2, 3, -1, 2 },
-  { -1, -1, 0, -1, -1, -1, -1, 0 },
-  { -1, 3, -1, -1, 0, -1, -1, -1 },
-  { -1, -1, -1, 3, -1, -1, 0, -1 },
-  { 1, -1, -1, -1, -1, 3, -1, -1 },
-  { 3, -1, 1, 3, -1, -1, 3, -1 },
-  { -1, 0, -1, -1, 3, -1, 3, -1 }
-};
+    {-1, 0, -1, 1, -1, -1, 1, -1},  {-1, 3, -1, -1, 2, 3, -1, 2},
+    {-1, -1, 0, -1, -1, -1, -1, 0}, {-1, 3, -1, -1, 0, -1, -1, -1},
+    {-1, -1, -1, 3, -1, -1, 0, -1}, {1, -1, -1, -1, -1, 3, -1, -1},
+    {3, -1, 1, 3, -1, -1, 3, -1},   {-1, 0, -1, -1, 3, -1, 3, -1}};
 
 const std::vector<std::vector<int>> big = {
-  { 3, -1, -1, -1, 2, -1, 1, -1, 1, 2 },
-  { 1, -1, 0, -1, 3, -1, 2, 0, -1, -1 },
-  { -1, 3, -1, -1, -1, -1, -1, -1, 3, -1 },
-  { 2, 0, -1, 3, -1, 2, 3, -1, -1, -1 },
-  { -1, -1, -1, 1, 1, 1, -1, -1, 3, 3 },
-  { 2, 3, -1, -1, 2, 2, 3, -1, -1, -1 },
-  { -1, -1, -1, 1, 2, -1, 2, -1, 3, 3 },
-  { -1, 2, -1, -1, -1, -1, -1, -1, 2, -1 },
-  { -1, -1, 1, 1, -1, 2, -1, 1, -1, 3 },
-  { 3, 3, -1, 1, -1, 2, -1, -1, -1, 2 }
-};
+    {3, -1, -1, -1, 2, -1, 1, -1, 1, 2},
+    {1, -1, 0, -1, 3, -1, 2, 0, -1, -1},
+    {-1, 3, -1, -1, -1, -1, -1, -1, 3, -1},
+    {2, 0, -1, 3, -1, 2, 3, -1, -1, -1},
+    {-1, -1, -1, 1, 1, 1, -1, -1, 3, 3},
+    {2, 3, -1, -1, 2, 2, 3, -1, -1, -1},
+    {-1, -1, -1, 1, 2, -1, 2, -1, 3, 3},
+    {-1, 2, -1, -1, -1, -1, -1, -1, 2, -1},
+    {-1, -1, 1, 1, -1, 2, -1, 1, -1, 3},
+    {3, 3, -1, 1, -1, 2, -1, -1, -1, 2}};
 
 namespace operations_research {
 namespace {
 std::vector<IntVar*> NeighboringArcs(
-    int i, int j,
-    const std::vector<std::vector<IntVar*>>& h_arcs,
+    int i, int j, const std::vector<std::vector<IntVar*>>& h_arcs,
     const std::vector<std::vector<IntVar*>>& v_arcs) {
   std::vector<IntVar*> tmp;
   if (j > 0) {
@@ -166,9 +155,7 @@ class GridSinglePath : public Constraint {
   GridSinglePath(Solver* const solver,
                  const std::vector<std::vector<IntVar*>>& h_arcs,
                  const std::vector<std::vector<IntVar*>>& v_arcs)
-      : Constraint(solver),
-        h_arcs_(h_arcs),
-        v_arcs_(v_arcs) {}
+      : Constraint(solver), h_arcs_(h_arcs), v_arcs_(v_arcs) {}
 
   ~GridSinglePath() {}
 
@@ -251,7 +238,7 @@ class GridSinglePath : public Constraint {
     }
 
     if (visited_points.size() < possible_points.size()) {
-      for (const int point: visited_points) {
+      for (const int point : visited_points) {
         possible_points.erase(point);
       }
       // Loop on unreachable points and zero all neighboring arcs.
@@ -338,15 +325,15 @@ void SlitherLink(const std::vector<std::vector<int>>& data) {
     for (int j = 0; j < num_columns; ++j) {
       const int value = data[i][j];
       if (value != -1) {
-        std::vector<IntVar*> square = { h_arcs[i][j], h_arcs[i + 1][j],
-                                         v_arcs[j][i], v_arcs[j + 1][i] };
+        std::vector<IntVar*> square = {h_arcs[i][j], h_arcs[i + 1][j],
+                                       v_arcs[j][i], v_arcs[j + 1][i]};
         solver.AddConstraint(solver.MakeSumEquality(square, value));
       }
     }
   }
 
   // Single loop: each node has a degree 0 or 2.
-  const std::vector<int> zero_or_two = { 0, 2 };
+  const std::vector<int> zero_or_two = {0, 2};
   for (int i = 0; i < num_rows + 1; ++i) {
     for (int j = 0; j < num_columns + 1; ++j) {
       const std::vector<IntVar*> neighbors =
@@ -405,7 +392,7 @@ void SlitherLink(const std::vector<std::vector<int>>& data) {
   }
   solver.EndSearch();
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 int main() {
   std::cout << "Small problem" << std::endl;

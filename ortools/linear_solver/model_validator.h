@@ -18,17 +18,17 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
-// Returns an empty std::string iff the model is valid and not trivially infeasible.
-// Otherwise, returns a description of the first error or trivial infeasibility
-// encountered.
+// Returns an empty std::string iff the model is valid and not trivially
+// infeasible. Otherwise, returns a description of the first error or trivial
+// infeasibility encountered.
 //
 // NOTE(user): the code of this method (and the client code too!) is
 // considerably simplified by this std::string-based, simple API. If clients
 // require it, we could add a formal error status enum.
 std::string FindErrorInMPModelProto(const MPModelProto& model);
 
-// Returns an empty std::string if the solution hint given in the model is a feasible
-// solution. Otherwise, returns a description of the first reason for
+// Returns an empty std::string if the solution hint given in the model is a
+// feasible solution. Otherwise, returns a description of the first reason for
 // infeasibility.
 //
 // This function can be useful for debugging/checking that the given solution
@@ -36,7 +36,7 @@ std::string FindErrorInMPModelProto(const MPModelProto& model);
 // checked up to the given tolerance using the
 // ::operations_research::IsLowerWithinTolerance() function.
 std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
-                                          double tolerance);
+                                               double tolerance);
 
 }  // namespace operations_research
 

@@ -18,12 +18,13 @@
 #include <string>
 #include <vector>
 #include "ortools/base/file.h"
-#include "ortools/base/split.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/split.h"
 
 namespace operations_research {
 
-void ParseFileByLines(const std::string& filename, std::vector<std::string>* lines) {
+void ParseFileByLines(const std::string& filename,
+                      std::vector<std::string>* lines) {
   CHECK(lines != nullptr);
   std::string result;
   CHECK_OK(file::GetContents(filename, &result, file::Defaults()));
@@ -40,7 +41,8 @@ void VariableParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
-    std::vector<std::string> tokens = absl::StrSplit(line, ' ', absl::SkipEmpty());
+    std::vector<std::string> tokens =
+        absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -66,7 +68,8 @@ void DomainParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
-    std::vector<std::string> tokens = absl::StrSplit(line, ' ', absl::SkipEmpty());
+    std::vector<std::string> tokens =
+        absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -96,7 +99,8 @@ void ConstraintParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
-    std::vector<std::string> tokens = absl::StrSplit(line, ' ', absl::SkipEmpty());
+    std::vector<std::string> tokens =
+        absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -142,11 +146,13 @@ void ParametersParser::Parse() {
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
     if (objective) {
-      largest_token = largest_token || (line.find("largest") != std::string::npos);
+      largest_token =
+          largest_token || (line.find("largest") != std::string::npos);
       value_token = value_token || (line.find("value") != std::string::npos);
       number_token = number_token || (line.find("number") != std::string::npos);
       values_token = values_token || (line.find("values") != std::string::npos);
-      coefficient = coefficient || (line.find("coefficient") != std::string::npos);
+      coefficient =
+          coefficient || (line.find("coefficient") != std::string::npos);
     }
 
     if (coefficient) {
@@ -214,8 +220,8 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
       // also be included in the same component.
       const int component_index = in_component[variable_id1];
       CHECK(gtl::ContainsKey(*components, component_index));
-      gtl::InsertOrUpdate(&((*components)[component_index].variables), variable_id2,
-                     variable2);
+      gtl::InsertOrUpdate(&((*components)[component_index].variables),
+                          variable_id2, variable2);
       in_component[variable_id2] = component_index;
       (*components)[component_index].constraints.push_back(constraint);
     } else if (in_component[variable_id1] < 0 &&
@@ -224,8 +230,8 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
       // also be included in the same component.
       const int component_index = in_component[variable_id2];
       CHECK(gtl::ContainsKey(*components, component_index));
-      gtl::InsertOrUpdate(&((*components)[component_index].variables), variable_id1,
-                     variable1);
+      gtl::InsertOrUpdate(&((*components)[component_index].variables),
+                          variable_id1, variable1);
       in_component[variable_id1] = component_index;
       (*components)[component_index].constraints.push_back(constraint);
     } else {
@@ -241,23 +247,24 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
       if (min_component_index != max_component_index) {
         // Update the component_index of maximum indexed component's variables.
         for (const auto& variable :
-                 (*components)[max_component_index].variables) {
+             (*components)[max_component_index].variables) {
           int variable_id = variable.first;
           in_component[variable_id] = min_component_index;
         }
         // Insert all the variables of the maximum indexed component to the
         // variables of the minimum indexed component.
-        ((*components)[min_component_index]).variables.insert(
-            ((*components)[max_component_index]).variables.begin(),
-            ((*components)[max_component_index]).variables.end());
+        ((*components)[min_component_index])
+            .variables.insert(
+                ((*components)[max_component_index]).variables.begin(),
+                ((*components)[max_component_index]).variables.end());
         // Insert all the constraints of the maximum indexed component to the
         // constraints of the minimum indexed component.
-        ((*components)[min_component_index]).constraints.insert(
-            ((*components)[min_component_index]).constraints.end(),
-            ((*components)[max_component_index]).constraints.begin(),
-            ((*components)[max_component_index]).constraints.end());
-        (*components)[min_component_index]
-            .constraints.push_back(constraint);
+        ((*components)[min_component_index])
+            .constraints.insert(
+                ((*components)[min_component_index]).constraints.end(),
+                ((*components)[max_component_index]).constraints.begin(),
+                ((*components)[max_component_index]).constraints.end());
+        (*components)[min_component_index].constraints.push_back(constraint);
         // Delete the maximum indexed component from the components set.
         components->erase(max_component_index);
       } else {
@@ -272,8 +279,10 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
 int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
                              const int max_weight_cost,
                              const FapConstraint constraint) {
-  const FapVariable& variable1 = gtl::FindOrDie(variables, constraint.variable1);
-  const FapVariable& variable2 = gtl::FindOrDie(variables, constraint.variable2);
+  const FapVariable& variable1 =
+      gtl::FindOrDie(variables, constraint.variable1);
+  const FapVariable& variable2 =
+      gtl::FindOrDie(variables, constraint.variable2);
   const int degree1 = variable1.degree;
   const int degree2 = variable2.degree;
   const int max_degree = std::max(degree1, degree2);
@@ -292,8 +301,8 @@ int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
 
 void ParseInstance(const std::string& data_directory, bool find_components,
                    std::map<int, FapVariable>* variables,
-                   std::vector<FapConstraint>* constraints, std::string* objective,
-                   std::vector<int>* frequencies,
+                   std::vector<FapConstraint>* constraints,
+                   std::string* objective, std::vector<int>* frequencies,
                    std::unordered_map<int, FapComponent>* components) {
   CHECK(variables != nullptr);
   CHECK(constraints != nullptr);
@@ -315,9 +324,8 @@ void ParseInstance(const std::string& data_directory, bool find_components,
 
   ParametersParser cst(data_directory);
   cst.Parse();
-  const int maximum_weight_cost =
-      *std::max_element((cst.constraint_weights()).begin(),
-                        (cst.constraint_weights()).end());
+  const int maximum_weight_cost = *std::max_element(
+      (cst.constraint_weights()).begin(), (cst.constraint_weights()).end());
 
   // Make the variables of the instance.
   for (auto& it : *variables) {
@@ -363,8 +371,8 @@ void ParseInstance(const std::string& data_directory, bool find_components,
     }
   } else {
     for (FapConstraint& constraint : *constraints) {
-      constraint.impact = EvaluateConstraintImpact(
-          *variables, maximum_weight_cost, constraint);
+      constraint.impact =
+          EvaluateConstraintImpact(*variables, maximum_weight_cost, constraint);
     }
   }
 }

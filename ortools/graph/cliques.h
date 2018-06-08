@@ -25,14 +25,14 @@
 #define OR_TOOLS_GRAPH_CLIQUES_H_
 
 #include <functional>
-#include <unordered_set>
 #include <numeric>
+#include <unordered_set>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/join.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -82,7 +82,8 @@ enum class BronKerboschAlgorithmStatus {
 //
 // Typical usage:
 // auto graph = [](int node1, int node2) { return true; };
-// auto on_clique = [](const std::vector<int>& clique) { LOG(INFO) << "Clique!"; };
+// auto on_clique = [](const std::vector<int>& clique) { LOG(INFO) << "Clique!";
+// };
 //
 // BronKerboschAlgorithm<int> bron_kerbosch(graph, num_nodes, on_clique);
 // bron_kerbosch.Run();
@@ -387,8 +388,9 @@ void BronKerboschAlgorithm<NodeIndex>::InitializeState(State* state) {
 }
 
 template <typename NodeIndex>
-typename BronKerboschAlgorithm<NodeIndex>::CandidateIndex BronKerboschAlgorithm<
-    NodeIndex>::SelectCandidateIndexForRecursion(State* state) {
+typename BronKerboschAlgorithm<NodeIndex>::CandidateIndex
+BronKerboschAlgorithm<NodeIndex>::SelectCandidateIndexForRecursion(
+    State* state) {
   DCHECK(state != nullptr);
   CandidateIndex disconnected_node_index =
       std::max(state->first_candidate_index, state->candidate_for_recursion);

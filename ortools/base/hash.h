@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_BASE_HASH_H_
 #define OR_TOOLS_BASE_HASH_H_
 
-
 #include <array>
 #include <string>
 #include <utility>

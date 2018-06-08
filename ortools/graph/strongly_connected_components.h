@@ -23,9 +23,9 @@
 //
 // SIMPLE EXAMPLE:
 //
-// Fill a std::vector<std::vector<int>> graph; representing your graph adjacency lists.
-// That is, graph[i] contains the nodes adjacent to node #i. The nodes must be
-// integers in [0, num_nodes). Then just do:
+// Fill a std::vector<std::vector<int>> graph; representing your graph adjacency
+// lists. That is, graph[i] contains the nodes adjacent to node #i. The nodes
+// must be integers in [0, num_nodes). Then just do:
 //
 // std::vector<std::vector<int>> components;
 // FindStronglyConnectedComponents(
@@ -68,25 +68,26 @@
 // - It is really fast! and work in O(nodes + edges).
 // - Its memory usage is also bounded by O(nodes + edges) but in practice it
 //   uses less than the input graph.
-template<typename NodeIndex, typename Graph, typename SccOutput>
+template <typename NodeIndex, typename Graph, typename SccOutput>
 void FindStronglyConnectedComponents(const NodeIndex num_nodes,
-                                     const Graph& graph,
-                                     SccOutput* components);
+                                     const Graph& graph, SccOutput* components);
 
 // A simple custom output class that just counts the number of SCC. Not
 // allocating many vectors can save both space and speed if your graph is large.
 //
-// Note: If this matters, you probably don't want to use std::vector<std::vector<int>> as
-// an input either. See StaticGraph in ortools/graph/graph.h
-// for an efficient graph data structure compatible with this algorithm.
-template<typename NodeIndex>
+// Note: If this matters, you probably don't want to use
+// std::vector<std::vector<int>> as an input either. See StaticGraph in
+// ortools/graph/graph.h for an efficient graph data structure compatible with
+// this algorithm.
+template <typename NodeIndex>
 struct SccCounterOutput {
   int number_of_components = 0;
   void emplace_back(NodeIndex const* b, NodeIndex const* e) {
     ++number_of_components;
   }
   // This is just here so this class can transparently replace a code that
-  // use std::vector<std::vector<int>> as an SccOutput, and get its size with size().
+  // use std::vector<std::vector<int>> as an SccOutput, and get its size with
+  // size().
   int size() const { return number_of_components; }
 };
 
@@ -100,7 +101,7 @@ struct SccCounterOutput {
 // - For a client needing many Scc computations one after another, it could be
 //   better to wrap this in a class so we don't need to allocate the stacks at
 //   each computation.
-template<typename NodeIndex, typename Graph, typename SccOutput>
+template <typename NodeIndex, typename Graph, typename SccOutput>
 void FindStronglyConnectedComponents(const NodeIndex num_nodes,
                                      const Graph& graph,
                                      SccOutput* components) {

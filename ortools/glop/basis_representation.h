@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #ifndef OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
 #define OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
 
@@ -280,8 +279,7 @@ class BasisFactorization {
   // Qi Huangfu, J. A. Julian Hall, "Novel update techniques for the revised
   // simplex method", 28 january 2013, Technical Report ERGO-13-0001
   Status MiddleProductFormUpdate(ColIndex entering_col,
-                                 RowIndex leaving_variable_row)
-      MUST_USE_RESULT;
+                                 RowIndex leaving_variable_row) MUST_USE_RESULT;
 
   // Increases the deterministic time for a solve operation with a vector having
   // this number of non-zero entries (it can be an approximation).

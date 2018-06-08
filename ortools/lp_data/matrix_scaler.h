@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // The SparseMatrixScaler class provides tools to scale a SparseMatrix, i.e.
 // reduce the range of its coefficients and make for each column and each row
 // the maximum magnitude of its coefficients equal to 1.
@@ -63,9 +62,9 @@
 
 #include <vector>
 
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"

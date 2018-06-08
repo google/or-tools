@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #ifndef OR_TOOLS_BASE_SPAN_H_
 #define OR_TOOLS_BASE_SPAN_H_
 
@@ -303,8 +302,8 @@ class Span {
 
   // The constructor for any class supplying 'data() const' that returns either
   // const T* or a less const-qualified version of it, and 'some_integral_type
-  // size() const'. google::protobuf::RepeatedField<T>, std::string and (since C++11)
-  // std::vector<T,A> and std::array<T, N> are examples of this. See
+  // size() const'. google::protobuf::RepeatedField<T>, std::string and (since
+  // C++11) std::vector<T,A> and std::array<T, N> are examples of this. See
   // span_internal.h for details.
   template <typename V,
             typename = typename Impl::template EnableIfConvertibleFrom<V>>

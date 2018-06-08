@@ -21,8 +21,8 @@
 #include "google/protobuf/text_format.h"
 #endif
 
-#include "ortools/base/port.h"
 #include "ortools/base/join.h"
+#include "ortools/base/port.h"
 
 namespace operations_research {
 #if defined(__PORTABLE_PLATFORM__)
@@ -66,8 +66,8 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
   auto enum_value_descriptor = enum_descriptor->FindValueByNumber(enum_value);
   if (enum_value_descriptor == nullptr) {
     return absl::StrCat(
-        "Invalid enum value of: ", enum_value,
-        " for enum type: ", google::protobuf::GetEnumDescriptor<ProtoEnumType>()->name());
+        "Invalid enum value of: ", enum_value, " for enum type: ",
+        google::protobuf::GetEnumDescriptor<ProtoEnumType>()->name());
   }
   return enum_value_descriptor->name();
 }
@@ -75,7 +75,8 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
 template <typename ProtoType>
 bool ProtobufTextFormatMergeFromString(const std::string& proto_text_string,
                                        ProtoType* proto) {
-  return google::protobuf::TextFormat::MergeFromString(proto_text_string, proto);
+  return google::protobuf::TextFormat::MergeFromString(proto_text_string,
+                                                       proto);
 }
 
 #endif  // !__PORTABLE_PLATFORM__

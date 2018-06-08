@@ -192,7 +192,8 @@ bool ReadFileToString(const absl::string_view& file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(const std::string& data, const absl::string_view& file_name) {
+bool WriteStringToFile(const std::string& data,
+                       const absl::string_view& file_name) {
   return SetContents(file_name, data, file::Defaults()).ok();
 }
 

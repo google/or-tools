@@ -14,9 +14,8 @@
 #include "ortools/algorithms/sparse_permutation.h"
 
 #include <algorithm>
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
 
 namespace operations_research {
 

@@ -126,7 +126,5 @@ ConstraintStatus VariableToConstraintStatus(VariableStatus status) {
   return ConstraintStatus::FREE;
 }
 
-
-
 }  // namespace glop
 }  // namespace operations_research

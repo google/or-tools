@@ -57,7 +57,8 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 //   model->Add(NewSatParameters(parameters_as_string_or_proto))
 // before calling SolveCpModel().
 #if !defined(__PORTABLE_PLATFORM__)
-std::function<SatParameters(Model*)> NewSatParameters(const std::string& params);
+std::function<SatParameters(Model*)> NewSatParameters(
+    const std::string& params);
 #endif  // !__PORTABLE_PLATFORM__
 std::function<SatParameters(Model*)> NewSatParameters(
     const SatParameters& parameters);

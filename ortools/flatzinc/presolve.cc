@@ -17,14 +17,12 @@
 #include <set>
 #include <unordered_set>
 
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/base/stringprintf.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/string_view.h"
 #include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/strutil.h"
-#include "ortools/base/map_util.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/graph/cliques.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -173,7 +171,8 @@ void AppendIfNotInSet(T* value, std::unordered_set<T*>* s,
 
 void Presolver::ApplyRule(
     Constraint* ct, const std::string& rule_name,
-    const std::function<Presolver::RuleStatus(Constraint* ct, std::string*)>& rule) {
+    const std::function<Presolver::RuleStatus(Constraint* ct, std::string*)>&
+        rule) {
   const std::string before = HASVLOG ? ct->DebugString() : "";
   std::string log;
 
@@ -263,7 +262,8 @@ void Presolver::RemoveConstraintFromMapping(Constraint* ct) {
 // Input: bool2int(b, x)
 // Action: Replace all instances of x by b.
 // Output: inactive constraint
-Presolver::RuleStatus Presolver::PresolveBool2Int(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveBool2Int(Constraint* ct,
+                                                  std::string* log) {
   DCHECK_EQ(ct->type, "bool2int");
   if (ct->arguments[0].HasOneValue() || ct->arguments[1].HasOneValue()) {
     // Rule 1.
@@ -307,7 +307,8 @@ Presolver::RuleStatus Presolver::PresolveBool2Int(Constraint* ct, std::string* l
 // Input : int_eq(c1, c2)
 // Output: inactive constraint if c1 == c2, and do nothing if c1 != c2.
 // TODO(user): reorder rules?
-Presolver::RuleStatus Presolver::PresolveIntEq(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntEq(Constraint* ct,
+                                               std::string* log) {
   // Rule 1
   if (ct->arguments[0].IsVariable() && ct->arguments[1].HasOneValue() &&
       ct->arguments[1].Value() == 0 &&
@@ -362,7 +363,8 @@ Presolver::RuleStatus Presolver::PresolveIntEq(Constraint* ct, std::string* log)
 // Action: remove c from the domain of x.
 // Output: inactive constraint if the removal was successful
 //         (domain is not too large to remove a value).
-Presolver::RuleStatus Presolver::PresolveIntNe(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntNe(Constraint* ct,
+                                               std::string* log) {
   // Rule 1.
   if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable()) {
     IntegerVariable* const left = ct->arguments[0].Var();
@@ -576,7 +578,8 @@ Presolver::RuleStatus Presolver::Unreify(Constraint* ct, std::string* log) {
 // Action: Intersect the domain of x with the set of values.
 // Output: inactive constraint.
 // note: set_in(x1, {x2, ...}) is plain illegal so we don't bother with it.
-Presolver::RuleStatus Presolver::PresolveSetIn(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveSetIn(Constraint* ct,
+                                               std::string* log) {
   if (ct->arguments[0].IsVariable()) {
     // IntersectDomainWith() will DCHECK that the second argument is a set
     // of constant values.
@@ -590,7 +593,8 @@ Presolver::RuleStatus Presolver::PresolveSetIn(Constraint* ct, std::string* log)
 // Propagates the values of set_not_in
 // Input : set_not_in(x, [c1..c2]) or set_not_in(x, {c1, .., cn})
 // Action: Remove the values from the domain of x.
-Presolver::RuleStatus Presolver::PresolveSetNotIn(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveSetNotIn(Constraint* ct,
+                                                  std::string* log) {
   if (ct->arguments[0].IsVariable()) {
     const Argument& arg = ct->arguments[1];
     IntegerVariable* const var = ct->arguments[0].Var();
@@ -692,7 +696,8 @@ Presolver::RuleStatus Presolver::PresolveSetInReif(Constraint* ct,
 // Input : int_times(c1, c2, x)
 // Action: reduce domain of x to {c1 * c2}
 // Output: inactive constraint.
-Presolver::RuleStatus Presolver::PresolveIntTimes(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntTimes(Constraint* ct,
+                                                  std::string* log) {
   if (ct->arguments[0].HasOneValue() && ct->arguments[1].HasOneValue() &&
       ct->arguments[2].IsVariable() && !ct->presolve_propagation_done) {
     log->append("propagate constants");
@@ -733,7 +738,8 @@ Presolver::RuleStatus Presolver::PresolveIntTimes(Constraint* ct, std::string* l
 // Input : int_div(c1, c2, x) (c2 != 0)
 // Action: reduce domain of x to {c1 / c2}
 // Output: inactive constraint.
-Presolver::RuleStatus Presolver::PresolveIntDiv(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntDiv(Constraint* ct,
+                                                std::string* log) {
   if (ct->arguments[0].HasOneValue() && ct->arguments[1].HasOneValue() &&
       ct->arguments[2].IsVariable() && !ct->presolve_propagation_done &&
       ct->arguments[1].Value() != 0) {
@@ -971,7 +977,8 @@ Presolver::RuleStatus Presolver::PresolveBoolEqNeReif(Constraint* ct,
 // int_lin_ge.
 // Input : int_lin_gt(arg1, arg2, c)
 // Output: int_lin_ge(arg1, arg2, c + 1)
-Presolver::RuleStatus Presolver::PresolveIntLinGt(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntLinGt(Constraint* ct,
+                                                  std::string* log) {
   CHECK_EQ(Argument::INT_VALUE, ct->arguments[2].type);
   if (ct->arguments[2].Value() != kint64max) {
     ct->arguments[2].values[0]++;
@@ -987,7 +994,8 @@ Presolver::RuleStatus Presolver::PresolveIntLinGt(Constraint* ct, std::string* l
 // Transform int_lin_lt into int_lin_le.
 // Input : int_lin_lt(arg1, arg2, c)
 // Output: int_lin_le(arg1, arg2, c - 1)
-Presolver::RuleStatus Presolver::PresolveIntLinLt(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntLinLt(Constraint* ct,
+                                                  std::string* log) {
   CHECK_EQ(Argument::INT_VALUE, ct->arguments[2].type);
   if (ct->arguments[2].Value() != kint64min) {
     ct->arguments[2].values[0]--;
@@ -1332,7 +1340,8 @@ Presolver::RuleStatus Presolver::PresolveArrayIntElement(Constraint* ct,
 //                     c0 - ck * xk.Value())
 //
 // TODO(user): The code is broken in case of integer-overflow.
-Presolver::RuleStatus Presolver::PresolveLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveLinear(Constraint* ct,
+                                                std::string* log) {
   // Rule 2a and 2b.
   if (ct->arguments[0].values.empty() || ct->arguments[1].IsArrayOfValues()) {
     log->append("rewrite constant linear equation");
@@ -1477,7 +1486,8 @@ Presolver::RuleStatus Presolver::PresolveLinear(Constraint* ct, std::string* log
 // Regroup linear term with the same variable.
 // Input : int_lin_xxx([c1, .., cn], [x1, .., xn], c0) with xi = xj
 // Output: int_lin_xxx([c1, .., ci + cj, .., cn], [x1, .., xi, .., xn], c0)
-Presolver::RuleStatus Presolver::RegroupLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::RegroupLinear(Constraint* ct,
+                                               std::string* log) {
   if (ct->arguments[1].variables.empty()) {
     // Only constants, or size == 0.
     return NOT_CHANGED;
@@ -1552,7 +1562,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
         if (bound < var->domain.Max()) {
           absl::StrAppendFormat(log,
                                 ", intersect %s with [0..%" GG_LL_FORMAT "d]",
-                        var->DebugString().c_str(), bound);
+                                var->DebugString().c_str(), bound);
           IntersectVarWithInterval(var, 0, bound);
         }
       }
@@ -1580,7 +1590,8 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
 // Computes the bounds on the rhs.
 // Rule1: remove always true/false constraint or fix the reif Boolean.
 // Rule2: transform ne/eq to gt/ge/lt/le if rhs is at one bound of its domain.
-Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct,
+                                                std::string* log) {
   const int64 rhs = ct->arguments[2].Value();
   if (ct->arguments[1].variables.empty()) return NOT_CHANGED;
 
@@ -2227,8 +2238,9 @@ Presolver::RuleStatus Presolver::PropagateReifiedComparisons(Constraint* ct,
     reverse = true;
   }
   if (var != nullptr) {
-    if (Has01Values(var) && (id == "int_eq_reif" || id == "int_ne_reif" ||
-                             id == "bool_eq_reif" || id == "bool_ne_reif") &&
+    if (Has01Values(var) &&
+        (id == "int_eq_reif" || id == "int_ne_reif" || id == "bool_eq_reif" ||
+         id == "bool_ne_reif") &&
         (value == 0 || value == 1)) {
       // Rule 2.
       bool parity = (id == "int_eq_reif" || id == "bool_eq_reif");
@@ -2354,7 +2366,8 @@ Presolver::RuleStatus Presolver::PropagateReifiedComparisons(Constraint* ct,
 }
 
 // Stores the existence of int_eq_reif(x, y, b)
-Presolver::RuleStatus Presolver::StoreIntEqReif(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::StoreIntEqReif(Constraint* ct,
+                                                std::string* log) {
   if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable() &&
       ct->arguments[2].IsVariable()) {
     IntegerVariable* const first = ct->arguments[0].Var();
@@ -2458,7 +2471,8 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntEqNeReif(Constraint* ct,
 // Rule 3:
 // Input : bool_xor(b1, b2, t)
 // Action: bool_not(b1, b2) if t = true, bool_eq(b1, b2) if t = false.
-Presolver::RuleStatus Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveBoolXor(Constraint* ct,
+                                                 std::string* log) {
   if (ct->arguments[0].HasOneValue()) {
     // Rule 1.
     const int64 value = ct->arguments[0].Value();
@@ -2509,7 +2523,8 @@ Presolver::RuleStatus Presolver::PresolveBoolXor(Constraint* ct, std::string* lo
 // Rule 5:
 // Input : bool_not(c1, c2) (2 boolean constants)
 // Output: inactive constraint or false constraint.
-Presolver::RuleStatus Presolver::PresolveBoolNot(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveBoolNot(Constraint* ct,
+                                                 std::string* log) {
   if (ct->arguments[0].variables.empty() &&
       ct->arguments[1].variables.empty()) {
     return (ct->arguments[0].Value() != ct->arguments[1].Value())
@@ -2743,7 +2758,8 @@ Presolver::RuleStatus Presolver::SimplifyIntLinEqReif(Constraint* ct,
 //
 // Input : int_mod(x1, x2, x3)  => x3
 // Output: int_mod(x1, x2, x3) if x3 has only one value.
-Presolver::RuleStatus Presolver::PresolveIntMod(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntMod(Constraint* ct,
+                                                std::string* log) {
   if (ct->target_variable != nullptr &&
       ct->arguments[2].Var() == ct->target_variable &&
       ct->arguments[2].HasOneValue()) {
@@ -2757,7 +2773,8 @@ Presolver::RuleStatus Presolver::PresolveIntMod(Constraint* ct, std::string* log
 
 // Remove invalid tuples, remove unreached values from domain variables.
 //
-Presolver::RuleStatus Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveTableInt(Constraint* ct,
+                                                  std::string* log) {
   if (ct->arguments[0].variables.empty()) {
     return NOT_CHANGED;
   }
@@ -2807,7 +2824,8 @@ Presolver::RuleStatus Presolver::PresolveTableInt(Constraint* ct, std::string* l
   return NOT_CHANGED;
 }
 
-Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
+                                                 std::string* log) {
   const std::vector<IntegerVariable*> vars = ct->arguments[0].variables;
   if (vars.empty()) {
     // TODO(user): presolve when all variables are instantiated.
@@ -2930,7 +2948,8 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct, std::string* lo
 //
 // Input : diffn([x1, .. xn], [1, .., 1], [1, .., 1], [1, .., 1])
 // Output: all_different_int([x1, .. xn])
-Presolver::RuleStatus Presolver::PresolveDiffN(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveDiffN(Constraint* ct,
+                                               std::string* log) {
   const int size = ct->arguments[0].variables.size();
   if (size > 0 && ct->arguments[1].IsArrayOfValues() &&
       ct->arguments[2].IsArrayOfValues() &&
@@ -2957,23 +2976,23 @@ Presolver::RuleStatus Presolver::PresolveDiffN(Constraint* ct, std::string* log)
   return NOT_CHANGED;
 }
 
-#define CALL_TYPE(ct, t, method)                                 \
-  if (ct->active && ct->type == t) {                             \
+#define CALL_TYPE(ct, t, method)                                      \
+  if (ct->active && ct->type == t) {                                  \
     ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                    \
-    });                                                          \
+      return method(ct, log);                                         \
+    });                                                               \
   }
-#define CALL_PREFIX(ct, t, method)                               \
-  if (ct->active && strings::StartsWith(ct->type, t)) {          \
+#define CALL_PREFIX(ct, t, method)                                    \
+  if (ct->active && strings::StartsWith(ct->type, t)) {               \
     ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                    \
-    });                                                          \
+      return method(ct, log);                                         \
+    });                                                               \
   }
-#define CALL_SUFFIX(ct, t, method)                               \
-  if (ct->active && strings::EndsWith(ct->type, t)) {            \
+#define CALL_SUFFIX(ct, t, method)                                    \
+  if (ct->active && strings::EndsWith(ct->type, t)) {                 \
     ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                    \
-    });                                                          \
+      return method(ct, log);                                         \
+    });                                                               \
   }
 
 // Main presolve rule caller.
@@ -3356,9 +3375,10 @@ bool Presolver::Run(Model* model) {
   for (Constraint* const ct : model->constraints()) {
     if (ct->active && ct->type == "bool2int") {
       std::string log;
-      ApplyRule(ct, "PresolveBool2Int", [this](Constraint* ct, std::string* log) {
-        return PresolveBool2Int(ct, log);
-      });
+      ApplyRule(ct, "PresolveBool2Int",
+                [this](Constraint* ct, std::string* log) {
+                  return PresolveBool2Int(ct, log);
+                });
     }
   }
   if (!var_representative_map_.empty()) {

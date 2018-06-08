@@ -11,26 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "ortools/base/file.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/file.h"
-#include "ortools/base/time_support.h"
+#include "ortools/base/status.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/time_support.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/demon_profiler.pb.h"
-#include "ortools/base/status.h"
 
 namespace operations_research {
 namespace {
@@ -269,7 +268,8 @@ class DemonProfiler : public PropagationMonitor {
     if (file::Open(filename, "w", &file, file::Defaults()).ok()) {
       file::WriteString(file, model, file::Defaults()).IgnoreError();
       std::vector<Container> to_sort;
-      for (std::unordered_map<const Constraint*, ConstraintRuns*>::const_iterator it =
+      for (std::unordered_map<const Constraint*,
+                              ConstraintRuns*>::const_iterator it =
                constraint_map_.begin();
            it != constraint_map_.end(); ++it) {
         const Constraint* const ct = it->first;
@@ -423,7 +423,8 @@ class DemonProfiler : public PropagationMonitor {
   const int64 start_time_ns_;
   std::unordered_map<const Constraint*, ConstraintRuns*> constraint_map_;
   std::unordered_map<const Demon*, DemonRuns*> demon_map_;
-  std::unordered_map<const Constraint*, std::vector<DemonRuns*> > demons_per_constraint_;
+  std::unordered_map<const Constraint*, std::vector<DemonRuns*> >
+      demons_per_constraint_;
 };
 
 void Solver::ExportProfilingOverview(const std::string& filename) {

@@ -16,9 +16,9 @@
 
 #include <vector>
 
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/iterator_adaptors.h"
 
 namespace operations_research {
 

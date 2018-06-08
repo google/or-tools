@@ -72,7 +72,7 @@ bool IsSemiEulerianGraph(const Graph& graph,
 // and memory complexity is O(n + m).
 template <typename NodeIndex, typename Graph>
 std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph& graph,
-                                            NodeIndex root) {
+                                                 NodeIndex root) {
   typedef typename Graph::ArcIndex ArcIndex;
   std::vector<bool> unvisited_edges(graph.num_arcs(), true);
   std::vector<NodeIndex> tour;
@@ -114,7 +114,7 @@ std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph& graph,
 // As of 10/2015, assumes the graph is connected.
 template <typename NodeIndex, typename Graph>
 std::vector<NodeIndex> BuildEulerianTourFromNode(const Graph& graph,
-                                            NodeIndex root) {
+                                                 NodeIndex root) {
   std::vector<NodeIndex> tour;
   if (IsEulerianGraph(graph)) {
     tour = BuildEulerianPathFromNode(graph, root);

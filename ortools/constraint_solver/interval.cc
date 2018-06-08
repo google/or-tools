@@ -11,15 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -739,7 +738,8 @@ class PerformedVar : public BooleanVar {
 class FixedDurationIntervalVar : public BaseIntervalVar {
  public:
   FixedDurationIntervalVar(Solver* const s, int64 start_min, int64 start_max,
-                           int64 duration, bool optional, const std::string& name);
+                           int64 duration, bool optional,
+                           const std::string& name);
   // Unperformed interval.
   FixedDurationIntervalVar(Solver* const s, const std::string& name);
   ~FixedDurationIntervalVar() override {}
@@ -1231,10 +1231,8 @@ class StartVarPerformedIntervalVar : public IntervalVar {
 };
 
 // TODO(user): Take care of overflows.
-StartVarPerformedIntervalVar::StartVarPerformedIntervalVar(Solver* const s,
-                                                           IntVar* const var,
-                                                           int64 duration,
-                                                           const std::string& name)
+StartVarPerformedIntervalVar::StartVarPerformedIntervalVar(
+    Solver* const s, IntVar* const var, int64 duration, const std::string& name)
     : IntervalVar(s, name), start_var_(var), duration_(duration) {}
 
 int64 StartVarPerformedIntervalVar::StartMin() const {
@@ -1737,8 +1735,9 @@ std::string FixedInterval::DebugString() const {
   } else {
     out = "IntervalVar(start = ";
   }
-  StringAppendF(&out, "%" GG_LL_FORMAT "d, duration = %" GG_LL_FORMAT
-                      "d, performed = true)",
+  StringAppendF(&out,
+                "%" GG_LL_FORMAT "d, duration = %" GG_LL_FORMAT
+                "d, performed = true)",
                 start_, duration_);
   return out;
 }

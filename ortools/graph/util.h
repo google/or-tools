@@ -17,18 +17,18 @@
 #define UTIL_GRAPH_UTIL_H_
 
 #include <algorithm>
-#include <unordered_map>
-#include <unordered_set>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
+#include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/hash.h"
 
 namespace util {
 
@@ -331,7 +331,8 @@ template <class Graph>
 std::vector<int> ComputeOnePossibleReverseArcMapping(
     const Graph& graph, bool die_if_not_symmetric) {
   std::vector<int> reverse_arc(graph.num_arcs(), -1);
-  std::unordered_multimap<std::pair</*tail*/ int, /*head*/ int>, /*arc index*/ int>
+  std::unordered_multimap<std::pair</*tail*/ int, /*head*/ int>,
+                          /*arc index*/ int>
       arc_map;
   for (int arc = 0; arc < graph.num_arcs(); ++arc) {
     const int tail = graph.Tail(arc);

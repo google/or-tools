@@ -18,9 +18,9 @@
 #include <memory>
 #include <vector>
 
+#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/int_type.h"
 #include "ortools/util/sort.h"
 
 namespace operations_research {
@@ -329,9 +329,8 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
       // Compute the length of the mandatory subpart of max_task that should be
       // considered as available.
       const IntegerValue mandatory_in =
-          std::max(IntegerValue(0),
-                   std::min(end, end_min_[max_task]) -
-                       std::max(begin, start_max_[max_task]));
+          std::max(IntegerValue(0), std::min(end, end_min_[max_task]) -
+                                        std::max(begin, start_max_[max_task]));
 
       // Compute the new minimum start time of max_task.
       const IntegerValue new_start =

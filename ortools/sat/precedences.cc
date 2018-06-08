@@ -16,8 +16,8 @@
 #include <algorithm>
 #include <memory>
 
-#include "ortools/base/logging.h"
 #include "ortools/base/cleanup.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_constraints.h"
 
@@ -611,8 +611,8 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
   // These vector are reset by CleanUpMarkedArcsAndParents() so resize is ok.
   bf_can_be_skipped_.resize(num_nodes, false);
   bf_parent_arc_of_.resize(num_nodes, ArcIndex(-1));
-  const auto cleanup =
-      ::operations_research::util::MakeCleanup([this]() { CleanUpMarkedArcsAndParents(); });
+  const auto cleanup = ::operations_research::util::MakeCleanup(
+      [this]() { CleanUpMarkedArcsAndParents(); });
 
   // The queue initialization is done by InitializeBFQueueWithModifiedNodes().
   while (!bf_queue_.empty()) {

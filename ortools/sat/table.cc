@@ -14,16 +14,14 @@
 #include "ortools/sat/table.h"
 
 #include <algorithm>
-#include <unordered_map>
-#include <unordered_set>
 #include <memory>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
-#include "ortools/base/logging.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/sat_solver.h"
@@ -52,7 +50,7 @@ std::vector<std::vector<int64>> Transpose(
 
 // Converts the vector representation returned by FullDomainEncoding() to a map.
 std::unordered_map<IntegerValue, Literal> GetEncoding(IntegerVariable var,
-                                                       Model* model) {
+                                                      Model* model) {
   std::unordered_map<IntegerValue, Literal> encoding;
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   for (const auto& entry : encoder->FullDomainEncoding(var)) {
@@ -79,10 +77,10 @@ void FilterValues(IntegerVariable var, Model* model,
 // controling if the lines are possible or not. The column has the given values,
 // and the Literal of the column variable can be retrieved using the encoding
 // map.
-void ProcessOneColumn(
-    const std::vector<Literal>& line_literals,
-    const std::vector<IntegerValue>& values,
-    const std::unordered_map<IntegerValue, Literal>& encoding, Model* model) {
+void ProcessOneColumn(const std::vector<Literal>& line_literals,
+                      const std::vector<IntegerValue>& values,
+                      const std::unordered_map<IntegerValue, Literal>& encoding,
+                      Model* model) {
   CHECK_EQ(line_literals.size(), values.size());
   std::unordered_map<IntegerValue, std::vector<Literal>>
       value_to_list_of_line_literals;

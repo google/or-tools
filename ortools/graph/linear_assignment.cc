@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/graph/linear_assignment.h"
 
 #include "ortools/base/commandlineflags.h"

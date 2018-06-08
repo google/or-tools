@@ -11,12 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/graph/max_flow.h"
 
 #include <algorithm>
 
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
@@ -317,7 +315,7 @@ bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
 
 template <typename Graph>
 std::string GenericMaxFlow<Graph>::DebugString(const std::string& context,
-                                          ArcIndex arc) const {
+                                               ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
   return absl::StrFormat(

@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/glop/basis_representation.h"
 
 #include "ortools/base/stl_util.h"
@@ -449,8 +448,8 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
   d->SortNonZerosIfNeeded();
 }
 
-Fractional BasisFactorization::RightSolveSquaredNorm(const SparseColumn& a)
-    const {
+Fractional BasisFactorization::RightSolveSquaredNorm(
+    const SparseColumn& a) const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsRefactorized());
   BumpDeterministicTimeForSolve(a.num_entries().value());

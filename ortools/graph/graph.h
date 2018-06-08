@@ -169,7 +169,6 @@
 #include "ortools/base/port.h"
 #include "ortools/graph/iterators.h"
 
-
 namespace util {
 
 // Forward declaration.
@@ -299,11 +298,11 @@ class BaseGraph {
 template <typename NodeIndexType = int32, typename ArcIndexType = int32>
 class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;
+  using Base::arc_capacity_;
+  using Base::const_capacities_;
+  using Base::node_capacity_;
   using Base::num_arcs_;
   using Base::num_nodes_;
-  using Base::arc_capacity_;
-  using Base::node_capacity_;
-  using Base::const_capacities_;
 
  public:
   using Base::IsArcValid;
@@ -399,11 +398,11 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 template <typename NodeIndexType = int32, typename ArcIndexType = int32>
 class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;
+  using Base::arc_capacity_;
+  using Base::const_capacities_;
+  using Base::node_capacity_;
   using Base::num_arcs_;
   using Base::num_nodes_;
-  using Base::arc_capacity_;
-  using Base::node_capacity_;
-  using Base::const_capacities_;
 
  public:
   using Base::IsArcValid;
@@ -464,11 +463,11 @@ template <typename NodeIndexType = int32, typename ArcIndexType = int32>
 class ReverseArcListGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
+  using Base::arc_capacity_;
+  using Base::const_capacities_;
+  using Base::node_capacity_;
   using Base::num_arcs_;
   using Base::num_nodes_;
-  using Base::arc_capacity_;
-  using Base::node_capacity_;
-  using Base::const_capacities_;
 
  public:
   using Base::IsArcValid;
@@ -548,11 +547,11 @@ template <typename NodeIndexType = int32, typename ArcIndexType = int32>
 class ReverseArcStaticGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
+  using Base::arc_capacity_;
+  using Base::const_capacities_;
+  using Base::node_capacity_;
   using Base::num_arcs_;
   using Base::num_nodes_;
-  using Base::arc_capacity_;
-  using Base::node_capacity_;
-  using Base::const_capacities_;
 
  public:
   using Base::IsArcValid;
@@ -632,11 +631,11 @@ template <typename NodeIndexType = int32, typename ArcIndexType = int32>
 class ReverseArcMixedGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, true> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, true> Base;
+  using Base::arc_capacity_;
+  using Base::const_capacities_;
+  using Base::node_capacity_;
   using Base::num_arcs_;
   using Base::num_nodes_;
-  using Base::arc_capacity_;
-  using Base::node_capacity_;
-  using Base::const_capacities_;
 
  public:
   using Base::IsArcValid;
@@ -1627,8 +1626,9 @@ ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::InDegree(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-BeginEndWrapper<NodeIndexType const*> ReverseArcStaticGraph<
-    NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
+BeginEndWrapper<NodeIndexType const*>
+    ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::operator[](
+        NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -1863,8 +1863,9 @@ ArcIndexType ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::InDegree(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-BeginEndWrapper<NodeIndexType const*> ReverseArcMixedGraph<
-    NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
+BeginEndWrapper<NodeIndexType const*>
+    ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::operator[](
+        NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -2064,11 +2065,11 @@ class ReverseArcMixedGraph<
 template <typename NodeIndexType = int32, typename ArcIndexType = int32>
 class CompleteGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;
+  using Base::arc_capacity_;
+  using Base::const_capacities_;
+  using Base::node_capacity_;
   using Base::num_arcs_;
   using Base::num_nodes_;
-  using Base::arc_capacity_;
-  using Base::node_capacity_;
-  using Base::const_capacities_;
 
  public:
   // Builds a complete graph with num_nodes nodes.
@@ -2109,8 +2110,9 @@ ArcIndexType CompleteGraph<NodeIndexType, ArcIndexType>::OutDegree(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<ArcIndexType> CompleteGraph<
-    NodeIndexType, ArcIndexType>::OutgoingArcs(NodeIndexType node) const {
+IntegerRange<ArcIndexType>
+CompleteGraph<NodeIndexType, ArcIndexType>::OutgoingArcs(
+    NodeIndexType node) const {
   DCHECK_LT(node, num_nodes_);
   return IntegerRange<ArcIndexType>(
       static_cast<ArcIndexType>(num_nodes_) * node,
@@ -2140,11 +2142,11 @@ template <typename NodeIndexType = int32, typename ArcIndexType = int32>
 class CompleteBipartiteGraph
     : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;
+  using Base::arc_capacity_;
+  using Base::const_capacities_;
+  using Base::node_capacity_;
   using Base::num_arcs_;
   using Base::num_nodes_;
-  using Base::arc_capacity_;
-  using Base::node_capacity_;
-  using Base::const_capacities_;
 
  public:
   // Builds a complete bipartite graph from a set of left nodes to a set of
@@ -2210,8 +2212,9 @@ ArcIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutDegree(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<ArcIndexType> CompleteBipartiteGraph<
-    NodeIndexType, ArcIndexType>::OutgoingArcs(NodeIndexType node) const {
+IntegerRange<ArcIndexType>
+CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcs(
+    NodeIndexType node) const {
   if (node < left_nodes_) {
     return IntegerRange<ArcIndexType>(right_nodes_ * node,
                                       right_nodes_ * (node + 1));
@@ -2232,8 +2235,9 @@ CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<NodeIndexType> CompleteBipartiteGraph<
-    NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
+IntegerRange<NodeIndexType>
+    CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
+        NodeIndexType node) const {
   if (node < left_nodes_) {
     return IntegerRange<NodeIndexType>(left_nodes_, left_nodes_ + right_nodes_);
   } else {

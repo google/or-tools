@@ -59,31 +59,31 @@ void RunIntegerProgrammingExample(
 }
 
 void RunAllExamples() {
-  #if defined(USE_GLPK)
-    LOG(INFO) << "---- Integer programming example with GLPK ----";
-    RunIntegerProgrammingExample(MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
-  #endif
-  #if defined(USE_CBC)
-    LOG(INFO) << "---- Integer programming example with CBC ----";
-    RunIntegerProgrammingExample(MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-  #endif
-  #if defined(USE_SCIP)
-    LOG(INFO) << "---- Integer programming example with SCIP ----";
-    RunIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
-  #endif
-  #if defined(USE_GUROBI)
-    LOG(INFO) << "---- Integer programming example with Gurobi ----";
-    RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
-  #endif  // USE_GUROBI
-  #if defined(USE_CPLEX)
-    LOG(INFO) << "---- Integer programming example with CPLEX ----";
-    RunIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
-  #endif  // USE_CPLEX
+#if defined(USE_GLPK)
+  LOG(INFO) << "---- Integer programming example with GLPK ----";
+  RunIntegerProgrammingExample(MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
+#endif
+#if defined(USE_CBC)
+  LOG(INFO) << "---- Integer programming example with CBC ----";
+  RunIntegerProgrammingExample(MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+#endif
+#if defined(USE_SCIP)
+  LOG(INFO) << "---- Integer programming example with SCIP ----";
+  RunIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+#endif
+#if defined(USE_GUROBI)
+  LOG(INFO) << "---- Integer programming example with Gurobi ----";
+  RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
+#endif  // USE_GUROBI
+#if defined(USE_CPLEX)
+  LOG(INFO) << "---- Integer programming example with CPLEX ----";
+  RunIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
+#endif  // USE_CPLEX
 }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RunAllExamples();
   return 0;
 }

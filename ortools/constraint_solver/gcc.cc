@@ -18,16 +18,15 @@
 // Joint Conference on Artificial Intelligence (IJCAI 03), Acapulco,
 // Mexico, pages 245-250, 2003.
 
-
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/vector_map.h"
@@ -249,9 +248,9 @@ class GccConstraint : public Constraint {
   virtual void InitialPropagate() {
     // Sets the range.
     for (Index i(0); i < size_; ++i) {
-      variables_[i]
-          ->SetRange(first_domain_value_,
-                     first_domain_value_ + max_occurrences_.size() - 1);
+      variables_[i]->SetRange(
+          first_domain_value_,
+          first_domain_value_ + max_occurrences_.size() - 1);
     }
     // Removes value with max card = 0;
     std::vector<int64> to_remove;
@@ -292,11 +291,9 @@ class GccConstraint : public Constraint {
     // filterLower{Min,Max} and
     // filterUpper{Min,Max} do not check for this case.
     if ((lower_sum_.Sum(lower_sum_.MinValue(),
-                        sorted_by_min_[0]->min_value - 1) >
-         0) ||
+                        sorted_by_min_[0]->min_value - 1) > 0) ||
         (lower_sum_.Sum(sorted_by_max_[size_ - 1]->max_value + 1,
-                        lower_sum_.MaxValue()) >
-         0)) {
+                        lower_sum_.MaxValue()) > 0)) {
       solver()->Fail();
     }
 
@@ -307,8 +304,8 @@ class GccConstraint : public Constraint {
 
     if (has_changed) {
       for (Index i(0); i < size_; ++i) {
-        variables_[i]
-            ->SetRange(intervals_[i].min_value, intervals_[i].max_value);
+        variables_[i]->SetRange(intervals_[i].min_value,
+                                intervals_[i].max_value);
       }
     }
   }
@@ -719,16 +716,16 @@ Constraint* MakeGcc(Solver* const solver, const std::vector<IntVar*>& vars,
                     int64 first_domain_value,
                     const std::vector<int64>& min_occurrences,
                     const std::vector<int64>& max_occurrences) {
-  return solver->RevAlloc(new GccConstraint(
-      solver, vars, first_domain_value, min_occurrences.size(), min_occurrences,
-      max_occurrences));
+  return solver->RevAlloc(new GccConstraint(solver, vars, first_domain_value,
+                                            min_occurrences.size(),
+                                            min_occurrences, max_occurrences));
 }
 
 Constraint* MakeGcc(Solver* const solver, const std::vector<IntVar*>& vars,
                     int64 offset, const std::vector<int>& min_occurrences,
                     const std::vector<int>& max_occurrences) {
-  return solver->RevAlloc(
-      new GccConstraint(solver, vars, offset, min_occurrences.size(),
-                        min_occurrences, max_occurrences));
+  return solver->RevAlloc(new GccConstraint(solver, vars, offset,
+                                            min_occurrences.size(),
+                                            min_occurrences, max_occurrences));
 }
 }  // namespace operations_research

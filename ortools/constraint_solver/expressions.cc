@@ -11,23 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include <cmath>
-#include <unordered_map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
@@ -448,10 +447,11 @@ class DomainIntVar : public IntVar {
         if (variable_->Bound()) {
           return solver()->MakeIntConst(1);
         } else {
-          const std::string vname = variable_->HasName() ? variable_->name()
-                                                    : variable_->DebugString();
-          const std::string bname = StringPrintf("Watch<%s == %" GG_LL_FORMAT "d>",
-                                            vname.c_str(), value);
+          const std::string vname = variable_->HasName()
+                                        ? variable_->name()
+                                        : variable_->DebugString();
+          const std::string bname = StringPrintf(
+              "Watch<%s == %" GG_LL_FORMAT "d>", vname.c_str(), value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
           watchers_.UnsafeRevInsert(value, boolvar);
           if (posted_.Switched()) {
@@ -681,10 +681,11 @@ class DomainIntVar : public IntVar {
         if (variable_->Bound()) {
           return solver()->MakeIntConst(1);
         } else {
-          const std::string vname = variable_->HasName() ? variable_->name()
-                                                    : variable_->DebugString();
-          const std::string bname = StringPrintf("Watch<%s == %" GG_LL_FORMAT "d>",
-                                            vname.c_str(), value);
+          const std::string vname = variable_->HasName()
+                                        ? variable_->name()
+                                        : variable_->DebugString();
+          const std::string bname = StringPrintf(
+              "Watch<%s == %" GG_LL_FORMAT "d>", vname.c_str(), value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
           RevInsert(index, boolvar);
           if (posted_.Switched()) {
@@ -936,10 +937,11 @@ class DomainIntVar : public IntVar {
         if (variable_->Min() >= value) {
           return solver()->MakeIntConst(1);
         } else {
-          const std::string vname = variable_->HasName() ? variable_->name()
-                                                    : variable_->DebugString();
-          const std::string bname = StringPrintf("Watch<%s >= %" GG_LL_FORMAT "d>",
-                                            vname.c_str(), value);
+          const std::string vname = variable_->HasName()
+                                        ? variable_->name()
+                                        : variable_->DebugString();
+          const std::string bname = StringPrintf(
+              "Watch<%s >= %" GG_LL_FORMAT "d>", vname.c_str(), value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
           watchers_.UnsafeRevInsert(value, boolvar);
           if (posted_.Switched()) {
@@ -1176,10 +1178,11 @@ class DomainIntVar : public IntVar {
         if (variable_->Min() >= value) {
           return solver()->MakeIntConst(1);
         } else {
-          const std::string vname = variable_->HasName() ? variable_->name()
-                                                    : variable_->DebugString();
-          const std::string bname = StringPrintf("Watch<%s >= %" GG_LL_FORMAT "d>",
-                                            vname.c_str(), value);
+          const std::string vname = variable_->HasName()
+                                        ? variable_->name()
+                                        : variable_->DebugString();
+          const std::string bname = StringPrintf(
+              "Watch<%s >= %" GG_LL_FORMAT "d>", vname.c_str(), value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
           RevInsert(value - offset_, boolvar);
           if (posted_.Switched()) {
@@ -1322,7 +1325,8 @@ class DomainIntVar : public IntVar {
   };
 
   // ----- Main Class -----
-  DomainIntVar(Solver* const s, int64 vmin, int64 vmax, const std::string& name);
+  DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
+               const std::string& name);
   DomainIntVar(Solver* const s, const std::vector<int64>& sorted_values,
                const std::string& name);
   ~DomainIntVar() override;
@@ -1723,9 +1727,9 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   std::string DebugString() const override {
     std::string out;
-    SStringPrintf(&out,
-                  "SimpleBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : ",
-                  omin_, omax_);
+    SStringPrintf(
+        &out, "SimpleBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : ", omin_,
+        omax_);
     for (int i = 0; i < bsize_; ++i) {
       StringAppendF(&out, "%llx", bits_[i]);
     }
@@ -2260,8 +2264,9 @@ void DomainIntVar::SetMin(int64 m) {
   } else {
     CheckOldMin();
     const int64 new_min =
-        (bits_ == nullptr ? m : bits_->ComputeNewMin(m, min_.Value(),
-                                                     max_.Value()));
+        (bits_ == nullptr
+             ? m
+             : bits_->ComputeNewMin(m, min_.Value(), max_.Value()));
     min_.SetValue(solver(), new_min);
     if (min_.Value() > max_.Value()) {
       solver()->Fail();
@@ -2283,8 +2288,9 @@ void DomainIntVar::SetMax(int64 m) {
   } else {
     CheckOldMax();
     const int64 new_max =
-        (bits_ == nullptr ? m : bits_->ComputeNewMax(m, min_.Value(),
-                                                     max_.Value()));
+        (bits_ == nullptr
+             ? m
+             : bits_->ComputeNewMax(m, min_.Value(), max_.Value()));
     max_.SetValue(solver(), new_max);
     if (min_.Value() > max_.Value()) {
       solver()->Fail();
@@ -2313,8 +2319,9 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
       if (mi > min_.Value()) {
         CheckOldMin();
         const int64 new_min =
-            (bits_ == nullptr ? mi : bits_->ComputeNewMin(mi, min_.Value(),
-                                                          max_.Value()));
+            (bits_ == nullptr
+                 ? mi
+                 : bits_->ComputeNewMin(mi, min_.Value(), max_.Value()));
         min_.SetValue(solver(), new_min);
       }
       if (min_.Value() > ma) {
@@ -2323,8 +2330,9 @@ void DomainIntVar::SetRange(int64 mi, int64 ma) {
       if (ma < max_.Value()) {
         CheckOldMax();
         const int64 new_max =
-            (bits_ == nullptr ? ma : bits_->ComputeNewMax(ma, min_.Value(),
-                                                          max_.Value()));
+            (bits_ == nullptr
+                 ? ma
+                 : bits_->ComputeNewMax(ma, min_.Value(), max_.Value()));
         max_.SetValue(solver(), new_max);
       }
       if (min_.Value() > max_.Value()) {
@@ -4922,20 +4930,24 @@ class DivIntExpr : public BaseIntExpr {
 
   // Due to VS 2015 cl.exe limitation, it is impossible to create locals
   // (e.g. denom_min, denom_max)
-  // Once VS 2015 will be not supported please remove this comment and the associated commit.
+  // Once VS 2015 will be not supported please remove this comment and the
+  // associated commit.
   int64 Min() const override {
     if (denom_->Min() == 0 && denom_->Max() == 0) {
-      return kint64max;  // TODO(user): Check this convention.
+      return kint64max;               // TODO(user): Check this convention.
     } else if (denom_->Min() >= 0) {  // Denominator strictly positive.
       DCHECK_GT(denom_->Max(), 0);
       const int64 num_min = num_->Min();
       const int64 adjusted_denom_min = (denom_->Min() == 0) ? 1 : denom_->Min();
-      return num_min >= 0 ? num_min / denom_->Max() : num_min / adjusted_denom_min;
+      return num_min >= 0 ? num_min / denom_->Max()
+                          : num_min / adjusted_denom_min;
     } else if (denom_->Max() <= 0) {  // Denominator strictly negative.
       DCHECK_LT(denom_->Min(), 0);
       const int64 num_max = num_->Max();
-      const int64 adjusted_denom_max = (denom_->Max() == 0) ? -1 : denom_->Max();
-      return num_max >= 0 ? num_max / adjusted_denom_max : num_max / denom_->Min();
+      const int64 adjusted_denom_max =
+          (denom_->Max() == 0) ? -1 : denom_->Max();
+      return num_max >= 0 ? num_max / adjusted_denom_max
+                          : num_max / denom_->Min();
     } else {  // Denominator across 0.
       return std::min(num_->Min(), -num_->Max());
     }
@@ -4943,24 +4955,26 @@ class DivIntExpr : public BaseIntExpr {
 
   // Due to VS 2015 cl.exe limitation, it is impossible to create locals
   // (e.g. denom_min, denom_max)
-  // Once VS 2015 will be not supported please remove this comment and the associated commit.
+  // Once VS 2015 will be not supported please remove this comment and the
+  // associated commit.
   int64 Max() const override {
-     if (denom_->Min() == 0 && denom_->Max() == 0) {
-       return kint64min;  // TODO(user): Check this convention.
-     } else if (denom_->Min() >= 0) {  // Denominator strictly positive.
-       DCHECK_GT(denom_->Max(), 0);
-       const int64 num_max = num_->Max();
-       const int64 adjusted_denom_min = denom_->Min() == 0 ? 1 : denom_->Min();
-       return num_max >= 0 ? num_max / adjusted_denom_min : num_max / denom_->Max();
-     } else if (denom_->Max() <= 0) {  // Denominator strictly negative.
-       DCHECK_LT(denom_->Min(), 0);
-       const int64 num_min = num_->Min();
-       const int64 adjusted_denom_max = denom_->Max() == 0 ? -1 : denom_->Max();
-       return num_min >= 0 ? num_min / denom_->Min()
-                           : -num_min / -adjusted_denom_max;
-     } else {  // Denominator across 0.
-       return std::max(num_->Max(), -num_->Min());
-     }
+    if (denom_->Min() == 0 && denom_->Max() == 0) {
+      return kint64min;               // TODO(user): Check this convention.
+    } else if (denom_->Min() >= 0) {  // Denominator strictly positive.
+      DCHECK_GT(denom_->Max(), 0);
+      const int64 num_max = num_->Max();
+      const int64 adjusted_denom_min = denom_->Min() == 0 ? 1 : denom_->Min();
+      return num_max >= 0 ? num_max / adjusted_denom_min
+                          : num_max / denom_->Max();
+    } else if (denom_->Max() <= 0) {  // Denominator strictly negative.
+      DCHECK_LT(denom_->Min(), 0);
+      const int64 num_min = num_->Min();
+      const int64 adjusted_denom_max = denom_->Max() == 0 ? -1 : denom_->Max();
+      return num_min >= 0 ? num_min / denom_->Min()
+                          : -num_min / -adjusted_denom_max;
+    } else {  // Denominator across 0.
+      return std::max(num_->Max(), -num_->Min());
+    }
   }
 
   void AdjustDenominator() {
@@ -6477,7 +6491,8 @@ IntVar* Solver::MakeIntVar(const std::vector<int64>& values) {
   return MakeIntVar(values, "");
 }
 
-IntVar* Solver::MakeIntVar(const std::vector<int>& values, const std::string& name) {
+IntVar* Solver::MakeIntVar(const std::vector<int>& values,
+                           const std::string& name) {
   return MakeIntVar(ToInt64Vector(values), name);
 }
 
@@ -6518,7 +6533,8 @@ std::string IndexedName(const std::string& prefix, int index, int max_index) {
 }  // namespace
 
 void Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
-                             const std::string& name, std::vector<IntVar*>* vars) {
+                             const std::string& name,
+                             std::vector<IntVar*>* vars) {
   for (int i = 0; i < var_count; ++i) {
     vars->push_back(MakeIntVar(vmin, vmax, IndexedName(name, i, var_count)));
   }

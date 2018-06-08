@@ -13,18 +13,19 @@
 
 #include "ortools/util/file_util.h"
 
-#include "ortools/base/logging.h"
-#include "ortools/base/file.h"
-#include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "google/protobuf/descriptor.h"
+#include "google/protobuf/io/zero_copy_stream_impl_lite.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/file.h"
+#include "ortools/base/logging.h"
 
 namespace operations_research {
 
 using ::google::protobuf::TextFormat;
 
-bool ReadFileToProto(absl::string_view filename, google::protobuf::Message* proto) {
+bool ReadFileToProto(absl::string_view filename,
+                     google::protobuf::Message* proto) {
   std::string data;
   CHECK_OK(file::GetContents(filename, &data, file::Defaults()));
   // Note that gzipped files are currently not supported.
@@ -35,10 +36,11 @@ bool ReadFileToProto(absl::string_view filename, google::protobuf::Message* prot
   return false;
 }
 
-bool WriteProtoToFile(absl::string_view filename, const google::protobuf::Message& proto,
+bool WriteProtoToFile(absl::string_view filename,
+                      const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped) {
   // Note that gzipped files are currently not supported.
-    gzipped = false;
+  gzipped = false;
 
   std::string file_type_suffix;
   std::string output_string;

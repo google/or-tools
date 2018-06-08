@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {

@@ -18,11 +18,11 @@
 #include <functional>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/inlined_vector.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"

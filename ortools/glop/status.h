@@ -77,18 +77,18 @@ std::string GetErrorCodeString(Status::ErrorCode error_code);
 // Macro to simplify the creation of an error.
 #define GLOP_RETURN_AND_LOG_ERROR(error_code, message)                     \
   do {                                                                     \
-    const std::string error_message = message;                                  \
+    const std::string error_message = message;                             \
     LOG(ERROR) << GetErrorCodeString(error_code) << ": " << error_message; \
     return Status(error_code, error_message);                              \
   } while (false)
 
 // Macro to check that a pointer argument is not null.
-#define GLOP_RETURN_ERROR_IF_NULL(arg)                                 \
-  if (arg == nullptr) {                                                \
+#define GLOP_RETURN_ERROR_IF_NULL(arg)                                      \
+  if (arg == nullptr) {                                                     \
     const std::string variable_name = #arg;                                 \
     const std::string error_message = variable_name + " must not be null."; \
-    LOG(DFATAL) << error_message;                                      \
-    return Status(Status::ERROR_NULL, error_message);                  \
+    LOG(DFATAL) << error_message;                                           \
+    return Status(Status::ERROR_NULL, error_message);                       \
   }
 
 }  // namespace glop

@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/base/recordio.h"
 #include <zlib.h>
 #include <memory>
 #include <string>
 #include "ortools/base/logging.h"
-#include "ortools/base/recordio.h"
 
 namespace recordio {
 const int RecordWriter::kMagicNumber = 0x3ed7230a;

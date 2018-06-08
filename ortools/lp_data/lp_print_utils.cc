@@ -11,15 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/lp_data/lp_print_utils.h"
 #include <cmath>
 #include <cstdio>
 #include <limits>
 
 #include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/rational_approximation.h"
 
@@ -43,15 +42,16 @@ std::string StringifyRational(const double x, const double precision) {
 }
 
 std::string Stringify(const Fractional x, bool fraction) {
-  return fraction
-      ? StringifyRational(ToDouble(x), std::numeric_limits<double>::epsilon())
-      : Stringify(x);
+  return fraction ? StringifyRational(ToDouble(x),
+                                      std::numeric_limits<double>::epsilon())
+                  : Stringify(x);
 }
 
 // Returns a std::string that pretty-prints a monomial ax with coefficient
 // a and variable name x
-std::string StringifyMonomial(const Fractional a, const std::string& x, bool fraction) {
-  if (a == 0.0)  return "";
+std::string StringifyMonomial(const Fractional a, const std::string& x,
+                              bool fraction) {
+  if (a == 0.0) return "";
   return a > 0.0
              ? absl::StrCat(
                    " + ",

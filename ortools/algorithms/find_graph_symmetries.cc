@@ -17,18 +17,17 @@
 #include <limits>
 #include <numeric>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
-#include "ortools/base/time_support.h"
-#include "ortools/graph/iterators.h"
-#include "ortools/graph/util.h"
 #include "ortools/algorithms/dense_doubly_linked_list.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/canonical_errors.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/join.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/time_support.h"
+#include "ortools/graph/iterators.h"
+#include "ortools/graph/util.h"
 
 DEFINE_bool(minimize_permutation_support_size, false,
             "Tweak the algorithm to try and minimize the support size"
@@ -39,7 +38,6 @@ DEFINE_bool(minimize_permutation_support_size, false,
 namespace operations_research {
 
 using util::GraphIsSymmetric;
-
 
 namespace {
 // Some routines used below.
@@ -131,8 +129,9 @@ GraphSymmetryFinder::GraphSymmetryFinder(const Graph& graph, bool is_undirected)
     flattened_reverse_adj_lists_.assign(graph.num_arcs(), -1);
     for (const int node : graph.AllNodes()) {
       for (const int arc : graph.OutgoingArcs(node)) {
-        flattened_reverse_adj_lists_
-            [reverse_adj_list_index_[graph.Head(arc) + /*shift*/ 1]++] = node;
+        flattened_reverse_adj_lists_[reverse_adj_list_index_[graph.Head(arc) +
+                                                             /*shift*/ 1]++] =
+            node;
       }
     }
     // The last pass shifted reverse_adj_list_index, so it's now as we want it:
@@ -408,7 +407,7 @@ util::Status GraphSymmetryFinder::FindSymmetries(
     int num_parts_before_refinement;
 
     InvariantDiveState(int node, int num_parts)
-      : invariant_node(node), num_parts_before_refinement(num_parts) {}
+        : invariant_node(node), num_parts_before_refinement(num_parts) {}
   };
   std::vector<InvariantDiveState> invariant_dive_stack;
   // TODO(user): experiment with, and briefly describe the results of various
@@ -958,8 +957,9 @@ bool GraphSymmetryFinder::ConfirmFullMatchOrFindNextMappingDecision(
       // We found loose ends, but none that mapped to its own root. Just pick
       // any valid image.
       *next_image_node =
-          *image_partition.ElementsInPart(
-                               base_partition.PartOf(*next_base_node)).begin();
+          *image_partition
+               .ElementsInPart(base_partition.PartOf(*next_base_node))
+               .begin();
       return false;
     }
   }

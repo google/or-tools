@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include "ortools/base/random.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/base/random.h"
 
 namespace operations_research {
 namespace sat {

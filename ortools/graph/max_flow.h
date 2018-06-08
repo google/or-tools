@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // An implementation of a push-relabel algorithm for the max flow problem.
 //
 // In the following, we consider a graph G = (V,E,s,t) where V denotes the set
@@ -132,9 +131,9 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/graph/graph.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/flow_problem.pb.h"
+#include "ortools/graph/graph.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
 

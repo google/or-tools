@@ -17,11 +17,12 @@
 #include <string>
 
 #include "ortools/base/basictypes.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/random.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"
@@ -31,7 +32,6 @@
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/time_limit.h"
-#include "ortools/base/random.h"
 
 namespace operations_research {
 namespace bop {
@@ -69,7 +69,6 @@ class GuidedSatFirstSolutionGenerator : public BopOptimizerBase {
   int64 state_update_stamp_;
   std::unique_ptr<sat::SatSolver> sat_solver_;
 };
-
 
 // This class implements an optimizer that tries various random search
 // strategies, each with a really low conflict limit. It can be used to generate

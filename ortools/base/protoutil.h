@@ -14,10 +14,10 @@
 #ifndef OR_TOOLS_BASE_PROTOUTIL_H_
 #define OR_TOOLS_BASE_PROTOUTIL_H_
 
-#include "ortools/base/time_support.h"
 #include "google/protobuf/duration.pb.h"
 #include "ortools/base/status.h"
 #include "ortools/base/statusor.h"
+#include "ortools/base/time_support.h"
 
 namespace util_time {
 

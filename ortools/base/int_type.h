@@ -145,9 +145,9 @@
 #define OR_TOOLS_BASE_INT_TYPE_H_
 
 #include <stddef.h>
-#include <unordered_map>
 #include <iosfwd>
 #include <ostream>  // NOLINT
+#include <unordered_map>
 
 #include "ortools/base/macros.h"
 

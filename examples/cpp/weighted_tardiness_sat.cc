@@ -15,19 +15,18 @@
 #include <numeric>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
 #include "ortools/base/strutil.h"
+#include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
-#include "ortools/base/filelineiter.h"
 
 DEFINE_string(input, "examples/data/weighted_tardiness/wt40.txt",
               "wt data file name.");
@@ -305,7 +304,7 @@ void ParseAndSolve() {
 
 int main(int argc, char** argv) {
   base::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

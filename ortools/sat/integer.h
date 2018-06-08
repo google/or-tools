@@ -16,26 +16,26 @@
 
 #include <deque>
 #include <functional>
-#include <unordered_map>
 #include <limits>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
-#include "ortools/base/port.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/inlined_vector.h"
-#include "ortools/base/join.h"
-#include "ortools/base/span.h"
-#include "ortools/graph/iterators.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/port.h"
+#include "ortools/base/span.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -429,8 +429,7 @@ class IntegerTrail : public SatPropagator {
   // correct state before calling any of its functions.
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int literal_trail_index) final;
-  absl::Span<Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  absl::Span<Literal> Reason(const Trail& trail, int trail_index) const final;
 
   // Returns the number of created integer variables.
   //
@@ -550,18 +549,18 @@ class IntegerTrail : public SatPropagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
-  MUST_USE_RESULT bool Enqueue(
-      IntegerLiteral i_lit, absl::Span<Literal> literal_reason,
-      absl::Span<IntegerLiteral> integer_reason);
+  MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
+                               absl::Span<Literal> literal_reason,
+                               absl::Span<IntegerLiteral> integer_reason);
 
   // Same as Enqueue(), but takes an extra argument which if smaller than
   // integer_trail_.size() is interpreted as the trail index of an old Enqueue()
   // that had the same reason as this one. Note that the given Span must still
   // be valid as they are used in case of conflict.
-  MUST_USE_RESULT bool Enqueue(
-      IntegerLiteral i_lit, absl::Span<Literal> literal_reason,
-      absl::Span<IntegerLiteral> integer_reason,
-      int trail_index_with_same_reason);
+  MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
+                               absl::Span<Literal> literal_reason,
+                               absl::Span<IntegerLiteral> integer_reason,
+                               int trail_index_with_same_reason);
 
   // Enqueues the given literal on the trail.
   // See the comment of Enqueue() for the reason format.
@@ -730,8 +729,8 @@ class IntegerTrail : public SatPropagator {
   RevMap<std::unordered_map<IntegerVariable, int>>
       var_to_current_lb_interval_index_;
   std::unordered_map<IntegerVariable, int>
-      var_to_end_interval_index_;                             // const entries.
-  std::vector<ClosedInterval> all_intervals_;                 // const entries.
+      var_to_end_interval_index_;              // const entries.
+  std::vector<ClosedInterval> all_intervals_;  // const entries.
 
   // Temporary data used by MergeReasonInto().
   mutable std::vector<int> tmp_queue_;

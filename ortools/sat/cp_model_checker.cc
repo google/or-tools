@@ -14,16 +14,15 @@
 #include "ortools/sat/cp_model_checker.h"
 
 #include <algorithm>
-#include <unordered_map>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/join.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -40,7 +39,7 @@ namespace {
 // If the std::string returned by "statement" is not empty, returns it.
 #define RETURN_IF_NOT_EMPTY(statement)                \
   do {                                                \
-    const std::string error_message = statement;           \
+    const std::string error_message = statement;      \
     if (!error_message.empty()) return error_message; \
   } while (false)
 
@@ -96,7 +95,7 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
 }
 
 std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
-                                              int c) {
+                                                   int c) {
   const ConstraintProto& ct = model.constraints(c);
   IndexReferences references;
   AddReferencesUsedByConstraint(ct, &references);
@@ -142,7 +141,7 @@ std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
 }
 
 std::string ValidateLinearConstraint(const CpModelProto& model,
-                                const ConstraintProto& ct) {
+                                     const ConstraintProto& ct) {
   const LinearConstraintProto& arg = ct.linear();
   int64 sum_min = 0;
   int64 sum_max = 0;
@@ -171,7 +170,7 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
 }
 
 std::string ValidateReservoirConstraint(const CpModelProto& model,
-                                   const ConstraintProto& ct) {
+                                        const ConstraintProto& ct) {
   for (const int t : ct.reservoir().times()) {
     const IntegerVariableProto& time = model.variables(t);
     for (const int64 bound : time.domain()) {
@@ -204,7 +203,7 @@ std::string ValidateCircuitCoveringConstraint(const ConstraintProto& ct) {
 }
 
 std::string ValidateObjective(const CpModelProto& model,
-                         const CpObjectiveProto& obj) {
+                              const CpObjectiveProto& obj) {
   // TODO(user): share the code with ValidateLinearConstraint().
   if (obj.vars_size() == 1 && obj.coeffs(0) == 1) return "";
   int64 sum_min = 0;

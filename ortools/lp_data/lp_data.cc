@@ -11,19 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/lp_data/lp_data.h"
 
 #include <algorithm>
 #include <cmath>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_utils.h"
@@ -216,7 +213,8 @@ ColIndex LinearProgram::FindOrCreateVariable(const std::string& variable_id) {
   }
 }
 
-RowIndex LinearProgram::FindOrCreateConstraint(const std::string& constraint_id) {
+RowIndex LinearProgram::FindOrCreateConstraint(
+    const std::string& constraint_id) {
   const std::unordered_map<std::string, RowIndex>::iterator it =
       constraint_table_.find(constraint_id);
   if (it != constraint_table_.end()) {
@@ -596,7 +594,6 @@ std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
   }
   return output;
 }
-
 
 std::string LinearProgram::GetProblemStats() const {
   return ProblemStatFormatter(
@@ -1033,7 +1030,8 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
   variable_names_.resize(new_index, "");
 
   // Remove the id of the deleted columns and adjust the index of the other.
-  std::unordered_map<std::string, ColIndex>::iterator it = variable_table_.begin();
+  std::unordered_map<std::string, ColIndex>::iterator it =
+      variable_table_.begin();
   while (it != variable_table_.end()) {
     const ColIndex col = it->second;
     if (col >= columns_to_delete.size() || !columns_to_delete[col]) {

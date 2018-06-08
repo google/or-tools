@@ -40,12 +40,11 @@
 
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
+#include "ortools/base/mathutil.h"
+#include "ortools/base/split.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
-#include "ortools/base/file.h"
-#include "ortools/base/split.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_flags.h"
@@ -103,9 +102,10 @@ int64 Demand(const std::vector<int64>* const demands,
 }
 
 // Outputs a solution to the current model in a std::string.
-std::string VerboseOutput(const RoutingModel& routing, const Assignment& assignment,
-                     const Coordinates& coords,
-                     const std::vector<int64>& service_times) {
+std::string VerboseOutput(const RoutingModel& routing,
+                          const Assignment& assignment,
+                          const Coordinates& coords,
+                          const std::vector<int64>& service_times) {
   std::string output;
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
   const RoutingDimension& load_dimension = routing.GetDimensionOrDie("demand");
@@ -148,8 +148,10 @@ std::string VerboseOutput(const RoutingModel& routing, const Assignment& assignm
 
 namespace {
 // An inefficient but convenient method to parse a whitespace-separated list
-// of integers. Returns true iff the input std::string was entirely valid and parsed.
-bool SafeParseInt64Array(const std::string& str, std::vector<int64>* parsed_int) {
+// of integers. Returns true iff the input std::string was entirely valid and
+// parsed.
+bool SafeParseInt64Array(const std::string& str,
+                         std::vector<int64>* parsed_int) {
   static const char kWhiteSpaces[] = " \t\n\v\f\r";
   std::vector<std::string> items = absl::StrSplit(
       str, absl::delimiter::AnyOf(kWhiteSpaces), absl::SkipEmpty());
@@ -304,7 +306,7 @@ bool LoadAndSolve(const std::string& pdp_file) {
 
 int main(int argc, char** argv) {
   base::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (!operations_research::LoadAndSolve(FLAGS_pdp_file)) {
     LOG(INFO) << "Error solving " << FLAGS_pdp_file;
   }

@@ -31,8 +31,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/sat/sat_solver.h"

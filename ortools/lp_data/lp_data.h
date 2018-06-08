@@ -25,17 +25,17 @@
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
-#include <unordered_map>
-#include <unordered_set>
 #include <map>
 #include <string>  // for std::string
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>  // for vector
 
-#include "ortools/base/logging.h"  // for CHECK*
-#include "ortools/base/macros.h"   // for DISALLOW_COPY_AND_ASSIGN, NULL
+#include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/logging.h"  // for CHECK*
+#include "ortools/base/macros.h"   // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
@@ -82,7 +82,8 @@ class LinearProgram {
   // to create non-slack variables.
   ColIndex CreateNewSlackVariable(bool is_integer_slack_variable,
                                   Fractional lower_bound,
-                                  Fractional upper_bound, const std::string& name);
+                                  Fractional upper_bound,
+                                  const std::string& name);
 
   // Creates a new constraint and returns its index.
   // By default, the constraint bounds will be [0, 0].
@@ -297,9 +298,8 @@ class LinearProgram {
   // format var1 = X, var2 = Y, var3 = Z, ...
   std::string DumpSolution(const DenseRow& variable_values) const;
 
-
-  // Returns a comma-separated std::string of integers containing (in that order)
-  // num_constraints_, num_variables_in_file_, num_entries_,
+  // Returns a comma-separated std::string of integers containing (in that
+  // order) num_constraints_, num_variables_in_file_, num_entries_,
   // num_objective_non_zeros_, num_rhs_non_zeros_, num_less_than_constraints_,
   // num_greater_than_constraints_, num_equal_constraints_,
   // num_range_constraints_, num_non_negative_variables_, num_boxed_variables_,
@@ -307,8 +307,8 @@ class LinearProgram {
   // Very useful for reporting in the way used in journal articles.
   std::string GetProblemStats() const;
 
-  // Returns a std::string containing the same information as with GetProblemStats(),
-  // but in a much more human-readable form, for example:
+  // Returns a std::string containing the same information as with
+  // GetProblemStats(), but in a much more human-readable form, for example:
   //      Number of rows                               : 27
   //      Number of variables in file                  : 32
   //      Number of entries (non-zeros)                : 83
@@ -335,8 +335,8 @@ class LinearProgram {
   // moved to SparseMatrix.
   std::string GetNonZeroStats() const;
 
-  // Returns a std::string containing the same information as with GetNonZeroStats(),
-  // but in a much more human-readable form, for example:
+  // Returns a std::string containing the same information as with
+  // GetNonZeroStats(), but in a much more human-readable form, for example:
   //      Fill rate                                    : 9.61%
   //      Entries in row (Max / average / std, dev.)   : 9 / 3.07 / 1.94
   //      Entries in column (Max / average / std, dev.): 4 / 2.59 / 0.96

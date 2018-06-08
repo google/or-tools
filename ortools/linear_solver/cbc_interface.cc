@@ -13,20 +13,20 @@
 
 //
 
-#include <unordered_map>
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/port.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/port.h"
-#include "ortools/base/hash.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 #if defined(USE_CBC)
@@ -322,8 +322,12 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       osi_.loadFromCoinModel(build);
       break;
     }
-    case MODEL_SYNCHRONIZED: { break; }
-    case SOLUTION_SYNCHRONIZED: { break; }
+    case MODEL_SYNCHRONIZED: {
+      break;
+    }
+    case SOLUTION_SYNCHRONIZED: {
+      break;
+    }
   }
 
   // Changing optimization direction through OSI so that the model file
@@ -526,7 +530,6 @@ void CBCInterface::SetLpAlgorithm(int value) {
 MPSolverInterface* BuildCBCInterface(MPSolver* const solver) {
   return new CBCInterface(solver);
 }
-
 
 }  // namespace operations_research
 #endif  // #if defined(USE_CBC)

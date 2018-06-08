@@ -51,14 +51,13 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
+#include "examples/cpp/fap_model_printer.h"
+#include "examples/cpp/fap_parser.h"
+#include "examples/cpp/fap_utilities.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "examples/cpp/fap_model_printer.h"
-#include "examples/cpp/fap_parser.h"
-#include "examples/cpp/fap_utilities.h"
 
 DEFINE_string(directory, "", "Specifies the directory of the data.");
 DEFINE_string(value_evaluator, "",
@@ -854,7 +853,7 @@ void SolveProblem(const std::map<int, FapVariable>& variables,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   CHECK(!FLAGS_directory.empty()) << "Requires --directory=<directory name>";
 

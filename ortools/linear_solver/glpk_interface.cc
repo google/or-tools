@@ -17,20 +17,20 @@
 
 #include <cmath>
 #include <cstddef>
-#include <unordered_map>
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/port.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/port.h"
-#include "ortools/base/hash.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 extern "C" {
@@ -992,7 +992,6 @@ void GLPKInterface::SetLpAlgorithm(int value) {
 MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver) {
   return new GLPKInterface(solver, mip);
 }
-
 
 }  // namespace operations_research
 #endif  //  #if defined(USE_GLPK)

@@ -24,12 +24,12 @@ namespace bop {
 using operations_research::glop::ColIndex;
 using operations_research::glop::DenseRow;
 using operations_research::glop::Fractional;
+using operations_research::glop::kInfinity;
 using operations_research::glop::LinearProgram;
 using operations_research::glop::LPDecomposer;
+using operations_research::glop::RowIndex;
 using operations_research::glop::SparseColumn;
 using operations_research::glop::SparseMatrix;
-using operations_research::glop::RowIndex;
-using operations_research::glop::kInfinity;
 
 namespace {
 // TODO(user): Use an existing one or move it to util.
@@ -1020,8 +1020,9 @@ void RunOneBop(const BopParameters& parameters, int problem_index,
   const int local_num_variables = std::max(1, problem.num_variables().value());
 
   NestedTimeLimit subproblem_time_limit(
-      time_limit, std::max(time_per_variable * local_num_variables,
-                           parameters.decomposed_problem_min_time_in_seconds()),
+      time_limit,
+      std::max(time_per_variable * local_num_variables,
+               parameters.decomposed_problem_min_time_in_seconds()),
       deterministic_time_per_variable * local_num_variables);
 
   *status = InternalSolve(problem, parameters, local_initial_solution,
@@ -1066,7 +1067,6 @@ BopSolveStatus IntegralSolver::SolveWithTimeLimit(
   // happens, we will simply change the target of this pointer.
   LinearProgram const* lp = &linear_problem;
 
-
   BopSolveStatus status;
   if (lp->num_variables() >= parameters_.decomposer_num_variables_threshold()) {
     LPDecomposer decomposer;
@@ -1082,13 +1082,13 @@ BopSolveStatus IntegralSolver::SolveWithTimeLimit(
                                                Fractional(0.0));
       std::vector<Fractional> best_bounds(num_sub_problems, Fractional(0.0));
       std::vector<BopSolveStatus> statuses(num_sub_problems,
-                                      BopSolveStatus::INVALID_PROBLEM);
+                                           BopSolveStatus::INVALID_PROBLEM);
 
-        for (int i = 0; i < num_sub_problems; ++i) {
-          RunOneBop(parameters_, i, initial_solution, time_limit, &decomposer,
-                    &(variable_values[i]), &(objective_values[i]),
-                    &(best_bounds[i]), &(statuses[i]));
-        }
+      for (int i = 0; i < num_sub_problems; ++i) {
+        RunOneBop(parameters_, i, initial_solution, time_limit, &decomposer,
+                  &(variable_values[i]), &(objective_values[i]),
+                  &(best_bounds[i]), &(statuses[i]));
+      }
 
       // Aggregate results.
       status = BopSolveStatus::OPTIMAL_SOLUTION_FOUND;

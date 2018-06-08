@@ -18,13 +18,13 @@
 #include <string>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/strongly_connected_components.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/map_util.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
+#include "ortools/graph/strongly_connected_components.h"
 
 namespace operations_research {
 namespace sat {

@@ -14,7 +14,6 @@
 #include "ortools/bop/bop_ls.h"
 
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
 
@@ -88,7 +87,8 @@ BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
   // the ls? note that this is minor.
   sat_wrapper_.ExtractLearnedInfo(learned_info);
   if (assignment_iterator_->BetterSolutionHasBeenFound()) {
-    // TODO(user): simply use std::vector<bool> instead of a BopSolution internally.
+    // TODO(user): simply use std::vector<bool> instead of a BopSolution
+    // internally.
     learned_info->solution = assignment_iterator_->LastReferenceAssignment();
     return BopOptimizerBase::SOLUTION_FOUND;
   }
@@ -792,7 +792,8 @@ bool LocalSearchAssignmentIterator::NextAssignment() {
 
   // All nodes have been explored.
   if (search_nodes_.empty()) {
-    VLOG(1) << std::string(27, ' ') + "LS " << max_num_decisions_ << " finished."
+    VLOG(1) << std::string(27, ' ') + "LS " << max_num_decisions_
+            << " finished."
             << " #explored:" << num_nodes_
             << " #stored:" << transposition_table_.size()
             << " #skipped:" << num_skipped_nodes_;

@@ -15,8 +15,8 @@
 #define OR_TOOLS_BASE_STATUS_H_
 
 #include <string>
-#include "ortools/base/logging.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 
 namespace util {
 

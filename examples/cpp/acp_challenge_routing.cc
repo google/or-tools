@@ -21,8 +21,8 @@
 #include "base/hash.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/split.h"
 #include "base/map_util.h"
+#include "base/split.h"
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
 #include "constraint_solver/constraint_solver.h"
@@ -98,9 +98,7 @@ class AcpData {
         }
         break;
       }
-      default: {
-        LOG(ERROR) << "Should not be here";
-      }
+      default: { LOG(ERROR) << "Should not be here"; }
     }
   }
 
@@ -170,7 +168,7 @@ int Evaluate(const AcpData& data, const std::vector<int>& schedule) {
   int previous = -1;
   int transition_cost = 0;
   for (const int product : schedule) {
-    if (previous != -1  && product != -1 && previous != product) {
+    if (previous != -1 && product != -1 && previous != product) {
       transition_cost += data.transitions()[previous][product];
     }
     if (product != -1) {
@@ -183,7 +181,6 @@ int Evaluate(const AcpData& data, const std::vector<int>& schedule) {
 int64 OneDistance(RoutingModel::NodeIndex from, RoutingModel::NodeIndex to) {
   return 1;
 }
-
 
 class ProductMatrix {
  public:
@@ -206,7 +203,6 @@ class ProductMatrix {
 };
 
 void Solve(const std::string& filename, const std::string& solution_file) {
-
   const char* kTime = "Time";
 
   LOG(INFO) << "Load " << filename;

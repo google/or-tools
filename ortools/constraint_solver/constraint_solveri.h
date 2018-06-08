@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Collection of objects used to extend the Constraint Solver library.
 //
 // This file contains a set of objects that simplifies writing extensions
@@ -54,19 +53,19 @@
 #include <cmath>
 #include <cstddef>
 #include <functional>
-#include <unordered_map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/join.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/model.pb.h"
 #include "ortools/util/bitset.h"
@@ -88,7 +87,8 @@ class CPIntervalVariableProto;
 // and subclasses of BaseIntExpr. Variables are stateful objects that
 // provide a rich API (remove values, WhenBound...). On the other hand,
 // subclasses of BaseIntExpr represent range-only stateless objects.
-// That is, std::min(A + B) is recomputed each time as std::min(A) + std::min(B).
+// That is, std::min(A + B) is recomputed each time as std::min(A) +
+// std::min(B).
 //
 // Furthermore, sometimes, the propagation on an expression is not complete,
 // and Min(), Max() are not monotonic with respect to SetMin() and SetMax().
@@ -555,7 +555,8 @@ std::string ParameterDebugString(P* param) {
 template <class T, class P>
 class CallMethod1 : public Demon {
  public:
-  CallMethod1(T* const ct, void (T::*method)(P), const std::string& name, P param1)
+  CallMethod1(T* const ct, void (T::*method)(P), const std::string& name,
+              P param1)
       : constraint_(ct), method_(method), name_(name), param1_(param1) {}
 
   ~CallMethod1() override {}
@@ -600,9 +601,9 @@ class CallMethod2 : public Demon {
 
   std::string DebugString() const override {
     return absl::StrCat(absl::StrCat("CallMethod_", name_),
-                  absl::StrCat("(", constraint_->DebugString()),
-                  absl::StrCat(", ", ParameterDebugString(param1_)),
-                  absl::StrCat(", ", ParameterDebugString(param2_), ")"));
+                        absl::StrCat("(", constraint_->DebugString()),
+                        absl::StrCat(", ", ParameterDebugString(param1_)),
+                        absl::StrCat(", ", ParameterDebugString(param2_), ")"));
   }
 
  private:
@@ -641,10 +642,10 @@ class CallMethod3 : public Demon {
 
   std::string DebugString() const override {
     return absl::StrCat(absl::StrCat("CallMethod_", name_),
-                  absl::StrCat("(", constraint_->DebugString()),
-                  absl::StrCat(", ", ParameterDebugString(param1_)),
-                  absl::StrCat(", ", ParameterDebugString(param2_)),
-                  absl::StrCat(", ", ParameterDebugString(param3_), ")"));
+                        absl::StrCat("(", constraint_->DebugString()),
+                        absl::StrCat(", ", ParameterDebugString(param1_)),
+                        absl::StrCat(", ", ParameterDebugString(param2_)),
+                        absl::StrCat(", ", ParameterDebugString(param3_), ")"));
   }
 
  private:
@@ -698,7 +699,8 @@ class DelayedCallMethod0 : public Demon {
 
 template <class T>
 Demon* MakeDelayedConstraintDemon0(Solver* const s, T* const ct,
-                                   void (T::*method)(), const std::string& name) {
+                                   void (T::*method)(),
+                                   const std::string& name) {
   return s->RevAlloc(new DelayedCallMethod0<T>(ct, method, name));
 }
 
@@ -733,8 +735,8 @@ class DelayedCallMethod1 : public Demon {
 
 template <class T, class P>
 Demon* MakeDelayedConstraintDemon1(Solver* const s, T* const ct,
-                                   void (T::*method)(P), const std::string& name,
-                                   P param1) {
+                                   void (T::*method)(P),
+                                   const std::string& name, P param1) {
   return s->RevAlloc(new DelayedCallMethod1<T, P>(ct, method, name, param1));
 }
 
@@ -742,8 +744,8 @@ Demon* MakeDelayedConstraintDemon1(Solver* const s, T* const ct,
 template <class T, class P, class Q>
 class DelayedCallMethod2 : public Demon {
  public:
-  DelayedCallMethod2(T* const ct, void (T::*method)(P, Q), const std::string& name,
-                     P param1, Q param2)
+  DelayedCallMethod2(T* const ct, void (T::*method)(P, Q),
+                     const std::string& name, P param1, Q param2)
       : constraint_(ct),
         method_(method),
         name_(name),
@@ -762,9 +764,9 @@ class DelayedCallMethod2 : public Demon {
 
   std::string DebugString() const override {
     return absl::StrCat(absl::StrCat("DelayedCallMethod_", name_),
-                  absl::StrCat("(", constraint_->DebugString()),
-                  absl::StrCat(", ", ParameterDebugString(param1_)),
-                  absl::StrCat(", ", ParameterDebugString(param2_), ")"));
+                        absl::StrCat("(", constraint_->DebugString()),
+                        absl::StrCat(", ", ParameterDebugString(param1_)),
+                        absl::StrCat(", ", ParameterDebugString(param2_), ")"));
   }
 
  private:
@@ -777,8 +779,9 @@ class DelayedCallMethod2 : public Demon {
 
 template <class T, class P, class Q>
 Demon* MakeDelayedConstraintDemon2(Solver* const s, T* const ct,
-                                   void (T::*method)(P, Q), const std::string& name,
-                                   P param1, Q param2) {
+                                   void (T::*method)(P, Q),
+                                   const std::string& name, P param1,
+                                   Q param2) {
   return s->RevAlloc(
       new DelayedCallMethod2<T, P, Q>(ct, method, name, param1, param2));
 }
@@ -2007,14 +2010,16 @@ class ArgumentHolder {
   bool HasIntegerVariableArrayArgument(const std::string& arg_name) const;
 
   // Getters.
-  int64 FindIntegerArgumentWithDefault(const std::string& arg_name, int64 def) const;
+  int64 FindIntegerArgumentWithDefault(const std::string& arg_name,
+                                       int64 def) const;
   int64 FindIntegerArgumentOrDie(const std::string& arg_name) const;
   const std::vector<int64>& FindIntegerArrayArgumentOrDie(
       const std::string& arg_name) const;
   const IntTupleSet& FindIntegerMatrixArgumentOrDie(
       const std::string& arg_name) const;
 
-  IntExpr* FindIntegerExpressionArgumentOrDie(const std::string& arg_name) const;
+  IntExpr* FindIntegerExpressionArgumentOrDie(
+      const std::string& arg_name) const;
   const std::vector<IntVar*>& FindIntegerVariableArrayArgumentOrDie(
       const std::string& arg_name) const;
 
@@ -2026,9 +2031,12 @@ class ArgumentHolder {
   std::unordered_map<std::string, IntExpr*> integer_expression_argument_;
   std::unordered_map<std::string, IntervalVar*> interval_argument_;
   std::unordered_map<std::string, SequenceVar*> sequence_argument_;
-  std::unordered_map<std::string, std::vector<IntVar*> > integer_variable_array_argument_;
-  std::unordered_map<std::string, std::vector<IntervalVar*> > interval_array_argument_;
-  std::unordered_map<std::string, std::vector<SequenceVar*> > sequence_array_argument_;
+  std::unordered_map<std::string, std::vector<IntVar*> >
+      integer_variable_array_argument_;
+  std::unordered_map<std::string, std::vector<IntervalVar*> >
+      interval_array_argument_;
+  std::unordered_map<std::string, std::vector<SequenceVar*> >
+      sequence_array_argument_;
 };
 
 // Model Parser
@@ -2069,7 +2077,8 @@ class ModelParser : public ModelVisitor {
   void VisitIntegerExpressionArgument(const std::string& arg_name,
                                       IntExpr* const argument) override;
   void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) override;
+      const std::string& arg_name,
+      const std::vector<IntVar*>& arguments) override;
   // Visit interval argument.
   void VisitIntervalArgument(const std::string& arg_name,
                              IntervalVar* const argument) override;
@@ -2113,7 +2122,6 @@ class CpModelLoader {
   IntervalVar* IntervalVariable(int index) const;
   // Returns the number of stored interval variables.
   int NumIntervalVariables() const { return intervals_.size(); }
-
 
 #if !defined(SWIG)
   // Internal, do not use.

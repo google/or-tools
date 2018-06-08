@@ -11,12 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/graph/cliques.h"
 
 #include <algorithm>
-#include <unordered_set>
 #include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -248,7 +247,9 @@ void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
     return cache.GraphCallback(i, j);
   };
   std::function<bool(const std::vector<int>&)> cached_callback =
-      [&cache](const std::vector<int>& res) { return cache.SolutionCallback(res); };
+      [&cache](const std::vector<int>& res) {
+        return cache.SolutionCallback(res);
+      };
 
   for (int c = 0; c < node_count; ++c) {
     initial_candidates[c] = c;

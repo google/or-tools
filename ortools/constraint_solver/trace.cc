@@ -11,21 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include <cmath>
-#include <unordered_map>
 #include <stack>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -581,7 +579,9 @@ class PrintTrace : public PropagationMonitor {
     PopDelayedInfo();
   }
 
-  void PushContext(const std::string& context) override { PushDelayedInfo(context); }
+  void PushContext(const std::string& context) override {
+    PushDelayedInfo(context);
+  }
 
   void PopContext() override { PopDelayedInfo(); }
 

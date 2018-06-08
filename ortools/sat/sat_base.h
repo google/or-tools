@@ -22,14 +22,14 @@
 #include <string>
 #include <vector>
 
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/port.h"
 #include "ortools/base/span.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
 
@@ -475,7 +475,7 @@ class SatPropagator {
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
   virtual absl::Span<Literal> Reason(const Trail& trail,
-                                           int trail_index) const {
+                                     int trail_index) const {
     LOG(FATAL) << "Not implemented.";
     return {};
   }

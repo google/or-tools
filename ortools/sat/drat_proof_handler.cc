@@ -15,9 +15,9 @@
 
 #include <algorithm>
 
+#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/memory.h"
-#include "ortools/base/int_type.h"
 
 namespace operations_research {
 namespace sat {

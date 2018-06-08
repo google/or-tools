@@ -149,7 +149,8 @@ LinearExpr operator*(double lhs, LinearExpr rhs);
 // The sum is represented as a LinearExpr with offset 0.
 //
 // Must be added to model with
-// MPSolver::AddRowConstraint(const LinearRange& range[, const std::string& name]);
+// MPSolver::AddRowConstraint(const LinearRange& range[, const std::string&
+// name]);
 class LinearRange {
  public:
   LinearRange() : lower_bound_(0), upper_bound_(0) {}

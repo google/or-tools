@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/glop/initial_basis.h"
 #include <queue>
 
@@ -147,7 +146,7 @@ bool InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
   max_scaled_abs_cost_ =
       (max_scaled_abs_cost_ == 0.0) ? 1.0 : kBixbyWeight * max_scaled_abs_cost_;
   std::priority_queue<ColIndex, std::vector<ColIndex>,
-                 InitialBasis::TriangularColumnComparator>
+                      InitialBasis::TriangularColumnComparator>
       queue(residual_singleton_column.begin(), residual_singleton_column.end(),
             triangular_column_comparator_);
 
@@ -240,8 +239,7 @@ int InitialBasis::GetColumnCategory(ColIndex col) const {
     case VariableType::FIXED_VARIABLE:
       return 5;
     default:
-      LOG(DFATAL) << "Column " << col
-                  << " has no meaningful type.";
+      LOG(DFATAL) << "Column " << col << " has no meaningful type.";
       return 6;
   }
 }

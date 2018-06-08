@@ -39,13 +39,13 @@
 
 #include <vector>
 
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/base/random.h"
 #include "ortools/base/split.h"
-#include "ortools/base/filelineiter.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/strtoint.h"
 
 namespace operations_research {
 struct Task {
@@ -57,10 +57,7 @@ struct Task {
 
 struct Job {
   Job(int r, int d, int ew, int tw)
-      : release_date(r),
-        due_date(d),
-        early_cost(ew),
-        tardy_cost(tw) {}
+      : release_date(r), due_date(d), early_cost(ew), tardy_cost(tw) {}
   int release_date;
   int due_date;
   int early_cost;
@@ -70,10 +67,7 @@ struct Job {
 
 class EtJobShopData {
  public:
-  EtJobShopData()
-      : machine_count_(0),
-        job_count_(0),
-        horizon_(0) {}
+  EtJobShopData() : machine_count_(0), job_count_(0), horizon_(0) {}
 
   ~EtJobShopData() {}
 
@@ -88,23 +82,14 @@ class EtJobShopData {
     }
   }
 
-  void GenerateRandomData(int machine_count,
-                          int job_count,
-                          int max_release_date,
-                          int max_early_cost,
-                          int max_tardy_cost,
-                          int max_duration,
-                          int scale_factor,
-                          int seed) {
-    name_ = StringPrintf("EtJobshop(m%d-j%d-mrd%d-mew%d-mtw%d-md%d-sf%d-s%d)",
-                         machine_count,
-                         job_count,
-                         max_release_date,
-                         max_early_cost,
-                         max_tardy_cost,
-                         max_duration,
-                         scale_factor,
-                         seed);
+  void GenerateRandomData(int machine_count, int job_count,
+                          int max_release_date, int max_early_cost,
+                          int max_tardy_cost, int max_duration,
+                          int scale_factor, int seed) {
+    name_ =
+        StringPrintf("EtJobshop(m%d-j%d-mrd%d-mew%d-mtw%d-md%d-sf%d-s%d)",
+                     machine_count, job_count, max_release_date, max_early_cost,
+                     max_tardy_cost, max_duration, scale_factor, seed);
     LOG(INFO) << "Generating random problem " << name_;
     ACMRandom random(seed);
     machine_count_ = machine_count;
@@ -147,9 +132,7 @@ class EtJobShopData {
   int horizon() const { return horizon_; }
 
   // Returns the tasks of a job, ordered by precedence.
-  const Job& GetJob(int job_id) const {
-    return all_jobs_[job_id];
-  }
+  const Job& GetJob(int job_id) const { return all_jobs_[job_id]; }
 
  private:
   void ProcessNewJetLine(const std::string& line) {
@@ -163,8 +146,8 @@ class EtJobShopData {
       machine_count_ = atoi32(words[1]);
       CHECK_GT(machine_count_, 0);
       CHECK_GT(job_count_, 0);
-      LOG(INFO) << machine_count_ << "  - machines and "
-                << job_count_ << " jobs";
+      LOG(INFO) << machine_count_ << "  - machines and " << job_count_
+                << " jobs";
     } else if (words.size() > 2 && machine_count_ != 0) {
       const int job_id = all_jobs_.size();
       CHECK_EQ(words.size(), machine_count_ * 2 + 3);
@@ -192,4 +175,4 @@ class EtJobShopData {
   std::vector<Job> all_jobs_;
 };
 }  // namespace operations_research
-#endif // OR_TOOLS_EXAMPLES_JOBSHOP_EARLYTARDY_H_
+#endif  // OR_TOOLS_EXAMPLES_JOBSHOP_EARLYTARDY_H_

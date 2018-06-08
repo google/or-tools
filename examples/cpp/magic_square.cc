@@ -20,7 +20,6 @@
 // We do not handle odd orders with the trivial method here.
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
@@ -149,7 +148,7 @@ void MagicSquare(int grid_size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_size != 0) {
     operations_research::MagicSquare(FLAGS_size);
   } else {

@@ -15,7 +15,7 @@
 #define OR_TOOLS_BASE_MUTEX_H_
 
 #include <condition_variable>  // NOLINT
-#include <mutex>  // NOLINT
+#include <mutex>               // NOLINT
 
 #include "ortools/base/macros.h"
 

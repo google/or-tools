@@ -18,8 +18,8 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
-#include "ortools/base/time_support.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/time_support.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -98,8 +98,8 @@ ClauseIndex DratChecker::AddClause(absl::Span<Literal> clause) {
   for (int i = first_literal_index + 1; i < literals_.size(); ++i) {
     CHECK(literals_[i] != literals_[i - 1].Negated());
   }
-  clauses_.push_back(Clause(first_literal_index,
-                            literals_.size() - first_literal_index));
+  clauses_.push_back(
+      Clause(first_literal_index, literals_.size() - first_literal_index));
   if (!clause.empty()) {
     num_variables_ =
         std::max(num_variables_, literals_.back().Variable().value() + 1);
@@ -234,8 +234,8 @@ std::vector<std::vector<Literal>> DratChecker::GetClausesNeededForProof(
 }
 
 absl::Span<Literal> DratChecker::Literals(const Clause& clause) const {
-  return absl::Span<Literal>(
-      literals_.data() + clause.first_literal_index, clause.num_literals);
+  return absl::Span<Literal>(literals_.data() + clause.first_literal_index,
+                             clause.num_literals);
 }
 
 void DratChecker::Init() {
@@ -460,8 +460,7 @@ bool ContainsLiteral(absl::Span<Literal> clause, Literal literal) {
   return std::find(clause.begin(), clause.end(), literal) != clause.end();
 }
 
-bool Resolve(absl::Span<Literal> clause,
-             absl::Span<Literal> other_clause,
+bool Resolve(absl::Span<Literal> clause, absl::Span<Literal> other_clause,
              Literal complementary_literal, VariablesAssignment* assignment,
              std::vector<Literal>* resolvent) {
   DCHECK(ContainsLiteral(clause, complementary_literal));
@@ -516,7 +515,8 @@ bool AddProblemClauses(const std::string& file_path,
     }
     if (words[0] == "p") {
       if (num_clauses > 0 || words.size() != 4 || words[1] != "cnf" ||
-          !strings::safe_strto32(words[2], &num_variables) || num_variables <= 0 ||
+          !strings::safe_strto32(words[2], &num_variables) ||
+          num_variables <= 0 ||
           !strings::safe_strto32(words[3], &num_clauses) || num_clauses <= 0) {
         LOG(ERROR) << "Invalid content '" << line << "' at line " << line_number
                    << " of " << file_path;

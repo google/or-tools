@@ -16,9 +16,9 @@
 #include <string>
 #include <unordered_set>
 
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/flatzinc/flatzinc_constraints.h"
@@ -2171,8 +2171,9 @@ void ExtractIntLinNe(fz::SolverData* data, fz::Constraint* ct) {
     std::vector<int64> coeffs;
     int64 rhs = 0;
     ParseLongIntLin(data, ct, &vars, &coeffs, &rhs);
-    AddConstraint(solver, ct, solver->MakeNonEquality(
-                                  solver->MakeScalProd(vars, coeffs), rhs));
+    AddConstraint(
+        solver, ct,
+        solver->MakeNonEquality(solver->MakeScalProd(vars, coeffs), rhs));
   }
 }
 

@@ -380,8 +380,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 //
 // Important: only positive variable do appear here.
 class LinearProgrammingDispatcher
-    : public std::unordered_map<IntegerVariable,
-                                 LinearProgrammingConstraint*> {
+    : public std::unordered_map<IntegerVariable, LinearProgrammingConstraint*> {
  public:
   explicit LinearProgrammingDispatcher(Model* model) {}
 };

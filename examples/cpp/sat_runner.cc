@@ -18,17 +18,20 @@
 #include <utility>
 #include <vector>
 
+#include "examples/cpp/opb_reader.h"
+#include "examples/cpp/sat_cnf_reader.h"
+#include "google/protobuf/text_format.h"
+#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status.h"
+#include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/file.h"
-#include "google/protobuf/text_format.h"
-#include "ortools/base/join.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -36,12 +39,9 @@
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
-#include "examples/cpp/opb_reader.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
-#include "examples/cpp/sat_cnf_reader.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
@@ -49,7 +49,6 @@
 #include "ortools/util/file_util.h"
 #include "ortools/util/sigint.h"
 #include "ortools/util/time_limit.h"
-#include "ortools/base/status.h"
 
 DEFINE_string(
     input, "",
@@ -114,7 +113,6 @@ DEFINE_bool(presolve, true,
 
 DEFINE_bool(probing, false, "If true, presolve the problem using probing.");
 
-
 DEFINE_bool(use_cp_model, true,
             "Whether to interpret everything as a CpModelProto or "
             "to read by default a CpModelProto.");
@@ -139,8 +137,8 @@ double GetScaledTrivialBestBound(const LinearBooleanProblem& problem) {
   return AddOffsetAndScaleObjectiveValue(problem, best_bound);
 }
 
-void LoadBooleanProblem(const std::string& filename, LinearBooleanProblem* problem,
-                        CpModelProto* cp_model) {
+void LoadBooleanProblem(const std::string& filename,
+                        LinearBooleanProblem* problem, CpModelProto* cp_model) {
   if (strings::EndsWith(filename, ".opb") ||
       strings::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
@@ -175,7 +173,7 @@ void LoadBooleanProblem(const std::string& filename, LinearBooleanProblem* probl
 }
 
 std::string SolutionString(const LinearBooleanProblem& problem,
-                      const std::vector<bool>& assignment) {
+                           const std::vector<bool>& assignment) {
   std::string output;
   BooleanVariable limit(problem.original_num_variables());
   for (BooleanVariable index(0); index < limit; ++index) {
@@ -199,10 +197,10 @@ int Run() {
 
   // Parse the --params flag.
   if (!FLAGS_params.empty()) {
-    CHECK(google::protobuf::TextFormat::MergeFromString(FLAGS_params, &parameters))
+    CHECK(google::protobuf::TextFormat::MergeFromString(FLAGS_params,
+                                                        &parameters))
         << FLAGS_params;
   }
-
 
   // Initialize the solver.
   std::unique_ptr<SatSolver> solver(new SatSolver());

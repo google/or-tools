@@ -15,26 +15,25 @@
 
 #include <cmath>
 #include <cstddef>
-#include <unordered_map>
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/port.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/port.h"
-#include "ortools/base/map_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 extern "C" {
 #include "gurobi_c.h"
 }
-
 
 DEFINE_int32(num_gurobi_threads, 4, "Number of threads available for Gurobi.");
 
@@ -157,8 +156,8 @@ class GurobiInterface : public MPSolverInterface {
   bool ReadParameterFile(const std::string& filename) override;
   std::string ValidFileExtensionForParameterFile() const override;
 
-  MPSolver::BasisStatus TransformGRBVarBasisStatus(int gurobi_basis_status)
-      const;
+  MPSolver::BasisStatus TransformGRBVarBasisStatus(
+      int gurobi_basis_status) const;
   MPSolver::BasisStatus TransformGRBConstraintBasisStatus(
       int gurobi_basis_status, int constraint_index) const;
 
@@ -176,10 +175,10 @@ class GurobiInterface : public MPSolverInterface {
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
     : MPSolverInterface(solver), model_(nullptr), env_(nullptr), mip_(mip) {
-    if (GRBloadenv(&env_, nullptr) != 0 || env_ == nullptr) {
-      LOG(FATAL) << "Error: could not create environment: "
-                 << GRBgeterrormsg(env_);
-    }
+  if (GRBloadenv(&env_, nullptr) != 0 || env_ == nullptr) {
+    LOG(FATAL) << "Error: could not create environment: "
+               << GRBgeterrormsg(env_);
+  }
 
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
@@ -444,8 +443,7 @@ void GurobiInterface::ExtractNewVariables() {
     std::unique_ptr<double[]> lb(new double[num_new_variables]);
     std::unique_ptr<double[]> ub(new double[num_new_variables]);
     std::unique_ptr<char[]> ctype(new char[num_new_variables]);
-    std::unique_ptr<const char * []> colname(
-        new const char* [num_new_variables]);
+    std::unique_ptr<const char*[]> colname(new const char*[num_new_variables]);
 
     for (int j = 0; j < num_new_variables; ++j) {
       MPVariable* const var = solver_->variables_[last_variable_index_ + j];
@@ -782,7 +780,6 @@ std::string GurobiInterface::ValidFileExtensionForParameterFile() const {
 MPSolverInterface* BuildGurobiInterface(bool mip, MPSolver* const solver) {
   return new GurobiInterface(solver, mip);
 }
-
 
 }  // namespace operations_research
 #endif  //  #if defined(USE_GUROBI)

@@ -11,28 +11,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
-#include <unordered_map>
 #include <limits>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/file.h"
-#include "ortools/base/join.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
-#include "ortools/base/hash.h"
-#include "ortools/constraint_solver/constraint_solver.h"
 #include <fstream>
 #include <iostream>
+#include "ortools/base/file.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/xml_helper.h"
 
 namespace operations_research {
@@ -50,8 +49,8 @@ struct NaturalLess {
         ++start;
       }
 
-      // If one std::string is the substring of another, then the shorter std::string is
-      // smaller.
+      // If one std::string is the substring of another, then the shorter
+      // std::string is smaller.
       if (start == length) {
         return s1.length() < s2.length();
       }
@@ -86,7 +85,8 @@ struct NaturalLess {
   }
 };
 
-bool CompareStringsUsingNaturalLess(const std::string& s1, const std::string& s2) {
+bool CompareStringsUsingNaturalLess(const std::string& s1,
+                                    const std::string& s2) {
   return NaturalLess()(s1, s2);
 }
 
@@ -100,7 +100,6 @@ const char* kConfigXml =
     " repeat=\"all\"/>\n"
     "    <tool show=\"viz\" fileroot=\"viz\" repeat=\"all\"/>\n"
     "</configuration>";
-
 
 class TreeNode;
 
@@ -183,13 +182,16 @@ class TreeMonitor : public SearchMonitor {
   typedef std::unordered_map<std::string, IntVar const*> IntVarMap;
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
-              const std::string& filename_tree, const std::string& filename_visualizer);
+              const std::string& filename_tree,
+              const std::string& filename_visualizer);
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
-              std::string* const tree_xml, std::string* const visualization_xml);
+              std::string* const tree_xml,
+              std::string* const visualization_xml);
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
-              const std::string& filename_config, const std::string& filename_tree,
+              const std::string& filename_config,
+              const std::string& filename_tree,
               const std::string& filename_visualizer);
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
@@ -252,12 +254,7 @@ class TreeMonitor : public SearchMonitor {
 class TreeNode {
  public:
   typedef std::map<std::string, std::vector<int64>, NaturalLess> DomainMap;
-  enum TreeNodeType {
-    ROOT,
-    TRY,
-    FAIL,
-    SOLUTION
-  };
+  enum TreeNodeType { ROOT, TRY, FAIL, SOLUTION };
 
   TreeNode(TreeNode* parent, int id)
       : cycles_(1), id_(id), name_(""), node_type_(TRY), parent_(parent) {}
@@ -314,8 +311,9 @@ class TreeNode {
 
   // Adds a new child, initializes it and returns the corresponding pointer.
   bool AddChild(int id, const std::string& name,
-                std::unordered_map<std::string, int64> const& last_value, bool is_final_node,
-                TreeMonitor::IntVarMap const& vars, TreeNode** child) {
+                std::unordered_map<std::string, int64> const& last_value,
+                bool is_final_node, TreeMonitor::IntVarMap const& vars,
+                TreeNode** child) {
     CHECK(child != nullptr);
 
     if (!is_final_node) {
@@ -390,8 +388,8 @@ class TreeNode {
     if (node_type_ == FAIL) {
       visualization_writer->StartElement("failed");
       visualization_writer->AddAttribute("index", name);
-      visualization_writer->AddAttribute("value",
-                                         absl::StrCat(parent_->branch_value(0)));
+      visualization_writer->AddAttribute(
+          "value", absl::StrCat(parent_->branch_value(0)));
       visualization_writer->EndElement();  // failed
     } else if (node_type_ == TRY) {
       visualization_writer->StartElement("focus");
@@ -440,7 +438,8 @@ class TreeNode {
         const std::vector<int64>* const domain_values =
             gtl::FindOrNull(domain, name_);
         if (domain_values) {
-          tree_writer->AddAttribute("size", absl::StrCat(domain_values->size()));
+          tree_writer->AddAttribute("size",
+                                    absl::StrCat(domain_values->size()));
         } else {
           tree_writer->AddAttribute("size", "unknown");
         }
@@ -719,15 +718,15 @@ void TreeMonitor::ExitSearch() {
         LOG(INFO) << "Failed to gain write access to file: " << filename_tree_;
       }
 
-      if(!filename_config_.empty()) {
+      if (!filename_config_.empty()) {
         std::ofstream file_config_(filename_config_.c_str());
 
         if (file_config_.is_open()) {
           file_config_ << kConfigXml;
           file_config_.close();
         } else {
-          LOG(INFO) << "Failed to gain write access to file: " <<
-      filename_config_;
+          LOG(INFO) << "Failed to gain write access to file: "
+                    << filename_config_;
         }
       }
     } else {
@@ -747,8 +746,9 @@ void TreeMonitor::ExitSearch() {
 std::string TreeMonitor::StripSpecialCharacters(std::string attribute) {
   // Numbers, characters, dashes, underscored, brackets, colons, slashes,
   // periods, question marks, and parentheses are allowed
-  const char* kAllowedCharacters = "0123456789abcdefghijklmnopqrstuvwxyz"
-                                   "ABCDEFGHIJKLMNOPQRSTUVWXYZ_-[]:/.?()";
+  const char* kAllowedCharacters =
+      "0123456789abcdefghijklmnopqrstuvwxyz"
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ_-[]:/.?()";
 
   std::set<char> character_set;
 

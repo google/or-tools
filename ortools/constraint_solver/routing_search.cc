@@ -99,18 +99,18 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
               !IsVarSynced(index) || (Value(index) == index) != is_inactive;
           if (active_state_changed) {
             if (!is_inactive) {
-              ++gtl::LookupOrInsert(&disjunction_active_deltas, disjunction_index,
-                               0);
+              ++gtl::LookupOrInsert(&disjunction_active_deltas,
+                                    disjunction_index, 0);
               if (IsVarSynced(index)) {
                 --gtl::LookupOrInsert(&disjunction_inactive_deltas,
-                                 disjunction_index, 0);
+                                      disjunction_index, 0);
               }
             } else {
-              ++gtl::LookupOrInsert(&disjunction_inactive_deltas, disjunction_index,
-                               0);
+              ++gtl::LookupOrInsert(&disjunction_inactive_deltas,
+                                    disjunction_index, 0);
               if (IsVarSynced(index)) {
-                --gtl::LookupOrInsert(&disjunction_active_deltas, disjunction_index,
-                                 0);
+                --gtl::LookupOrInsert(&disjunction_active_deltas,
+                                      disjunction_index, 0);
               }
             }
           }
@@ -1058,7 +1058,8 @@ bool PathCumulFilter::FinalizeAcceptPath() {
       // Delta max end is lower than the current solution one.
       // If the path supporting the current max end has been modified, we need
       // to check all paths to find the largest max end.
-      if (!gtl::ContainsKey(delta_paths_, current_max_end_.cumul_value_support)) {
+      if (!gtl::ContainsKey(delta_paths_,
+                            current_max_end_.cumul_value_support)) {
         new_max_end = current_max_end_.cumul_value;
       } else {
         for (int i = 0; i < current_max_end_.path_values.size(); ++i) {
@@ -1090,7 +1091,8 @@ bool PathCumulFilter::FinalizeAcceptPath() {
       // Delta min start is greater than the current solution one.
       // If the path supporting the current min start has been modified, we need
       // to check all paths to find the smallest min start.
-      if (!gtl::ContainsKey(delta_paths_, current_min_start_.cumul_value_support)) {
+      if (!gtl::ContainsKey(delta_paths_,
+                            current_min_start_.cumul_value_support)) {
         new_min_start = current_min_start_.cumul_value;
       } else {
         for (int i = 0; i < current_min_start_.path_values.size(); ++i) {

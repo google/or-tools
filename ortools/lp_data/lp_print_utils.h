@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Utilities to display linear expression in a human-readable way.
 
 #ifndef OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_
@@ -30,7 +29,9 @@ namespace glop {
 // with a precision corresponding to the type of the argument.
 inline std::string Stringify(const float a) { return StringPrintf("%.7g", a); }
 
-inline std::string Stringify(const double a) { return StringPrintf("%.16g", a); }
+inline std::string Stringify(const double a) {
+  return StringPrintf("%.16g", a);
+}
 
 inline std::string Stringify(const long double a) {
   return StringPrintf("%.19Lg", a);
@@ -51,7 +52,8 @@ std::string Stringify(const Fractional x, bool fraction);
 // taking care of the sign of x, whether a is 0, 1, -1, integer. Note that the
 // absolute difference between the output fraction and "x" will never exceed
 // std::numeric_limits<T>::epsilon().
-std::string StringifyMonomial(const Fractional a, const std::string& x, bool fraction);
+std::string StringifyMonomial(const Fractional a, const std::string& x,
+                              bool fraction);
 
 }  // namespace glop
 }  // namespace operations_research

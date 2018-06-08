@@ -33,11 +33,10 @@
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/base/filelineiter.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/split.h"
+#include "ortools/base/strtoint.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/integer_expr.h"
@@ -331,7 +330,7 @@ void LoadAndSolve(const std::string& file_name) {
 
 int main(int argc, char** argv) {
   base::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

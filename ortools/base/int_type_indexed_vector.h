@@ -64,8 +64,8 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/macros.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/macros.h"
 
 // STL std::vector
 // ------------------------------------------------------------------
@@ -190,12 +190,12 @@ class ITIVector : protected std::vector<T, Alloc> {
                           const ITIVector<IntType, T, Alloc>& y) { \
     return x.get() op y.get();                                     \
   }
-ITIVECTOR_COMPARISON_OP(== );  // NOLINT
-ITIVECTOR_COMPARISON_OP(!= );  // NOLINT
-ITIVECTOR_COMPARISON_OP(< );   // NOLINT
-ITIVECTOR_COMPARISON_OP(<= );  // NOLINT
-ITIVECTOR_COMPARISON_OP(> );   // NOLINT
-ITIVECTOR_COMPARISON_OP(>= );  // NOLINT
+ITIVECTOR_COMPARISON_OP(==);  // NOLINT
+ITIVECTOR_COMPARISON_OP(!=);  // NOLINT
+ITIVECTOR_COMPARISON_OP(<);   // NOLINT
+ITIVECTOR_COMPARISON_OP(<=);  // NOLINT
+ITIVECTOR_COMPARISON_OP(>);   // NOLINT
+ITIVECTOR_COMPARISON_OP(>=);  // NOLINT
 #undef ITIVECTOR_COMPARISON_OP
 
 template <typename IntType, typename T, typename Alloc>

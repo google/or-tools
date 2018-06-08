@@ -16,8 +16,8 @@
 
 #include <string>
 #include "ortools/base/integral_types.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/mutex.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -59,7 +59,8 @@ class SearchReportingInterface {
 
   // Worker 'thread_id' notifies a new solution in a satisfaction
   // problem. 'solution_string' is the solution to display if needed.
-  virtual void OnSatSolution(int thread_id, const std::string& solution_string) = 0;
+  virtual void OnSatSolution(int thread_id,
+                             const std::string& solution_string) = 0;
 
   // Worker 'thread_id' notifies a new solution in an optimization
   // problem. 'solution_string' is the solution to display if needed.
@@ -100,7 +101,7 @@ class SearchReportingInterface {
   // Indicates if we should print all solutions.
   bool ShouldPrintAllSolutions() const { return print_all_solutions_; }
 
-// ----- Dedicated methods to create MT/Sequential specific objects -----
+  // ----- Dedicated methods to create MT/Sequential specific objects -----
 
 #if !defined(SWIG)
   // Creates the objective used by the search.
@@ -129,7 +130,8 @@ class MonoThreadReporting : public SearchReportingInterface {
 
   void Init(int thread_id, const std::string& init_string) override;
   void OnSearchStart(int thread_id, Type type) override;
-  void OnSatSolution(int thread_id, const std::string& solution_string) override;
+  void OnSatSolution(int thread_id,
+                     const std::string& solution_string) override;
   void OnOptimizeSolution(int thread_id, int64 value,
                           const std::string& solution_string) override;
   void Log(int thread_id, const std::string& message) const override;
@@ -167,7 +169,8 @@ class MultiThreadReporting : public SearchReportingInterface {
   ~MultiThreadReporting() override;
   void Init(int thread_id, const std::string& init_string) override;
   void OnSearchStart(int thread_id, Type type) override;
-  void OnSatSolution(int thread_id, const std::string& solution_string) override;
+  void OnSatSolution(int thread_id,
+                     const std::string& solution_string) override;
   void OnOptimizeSolution(int thread_id, int64 value,
                           const std::string& solution_string) override;
   void Log(int thread_id, const std::string& message) const override;

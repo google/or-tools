@@ -17,12 +17,12 @@
 // Search with Filter approach.
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/random.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/base/random.h"
 
 namespace operations_research {
 class OneVarLns : public BaseLns {
@@ -147,11 +147,7 @@ class SumFilter : public IntVarLocalSearchFilter {
   int64 sum_;
 };
 
-enum SolveType {
-  LNS,
-  LS,
-  LS_WITH_FILTER
-};
+enum SolveType { LNS, LS, LS_WITH_FILTER };
 
 void SolveProblem(SolveType solve_type) {
   Solver s("Sample");
@@ -201,7 +197,7 @@ void SolveProblem(SolveType solve_type) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::SolveProblem(operations_research::LNS);
   operations_research::SolveProblem(operations_research::LS);
   operations_research::SolveProblem(operations_research::LS_WITH_FILTER);

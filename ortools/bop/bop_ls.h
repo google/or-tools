@@ -31,12 +31,12 @@
 #include <unordered_set>
 
 #include "ortools/base/hash.h"
+#include "ortools/base/random.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_solution.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/sat_solver.h"
-#include "ortools/base/random.h"
 
 namespace operations_research {
 namespace bop {
@@ -481,7 +481,7 @@ class OneFlipConstraintRepairer {
   // on most promising variables first.
   void SortTermsOfEachConstraints(int num_variables);
 
-  ITIVector<ConstraintIndex, ITIVector<TermIndex, ConstraintTerm> >
+  ITIVector<ConstraintIndex, ITIVector<TermIndex, ConstraintTerm>>
       by_constraint_matrix_;
   const AssignmentAndConstraintFeasibilityMaintainer& maintainer_;
   const sat::VariablesAssignment& sat_assignment_;

@@ -137,24 +137,23 @@
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 
 #include <functional>
-#include <unordered_map>
-#include <unordered_set>
 #include <limits>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/proto_utils.h"
-#include "ortools/base/status.h"
-
 
 namespace operations_research {
 
@@ -173,42 +172,42 @@ class MPSolver {
   // This must remain consistent with MPModelRequest::OptimizationProblemType
   // (take particular care of the open-source version).
   enum OptimizationProblemType {
-    // Linear programming problems.
-    #ifdef USE_CLP
+// Linear programming problems.
+#ifdef USE_CLP
     CLP_LINEAR_PROGRAMMING = 0,  // Recommended default value.
-    #endif
-    #ifdef USE_GLPK
+#endif
+#ifdef USE_GLPK
     GLPK_LINEAR_PROGRAMMING = 1,
-    #endif
-    #ifdef USE_GLOP
+#endif
+#ifdef USE_GLOP
     GLOP_LINEAR_PROGRAMMING = 2,
-    #endif
-    #ifdef USE_GUROBI
+#endif
+#ifdef USE_GUROBI
     GUROBI_LINEAR_PROGRAMMING = 6,
-    #endif
-    #ifdef USE_CPLEX
+#endif
+#ifdef USE_CPLEX
     CPLEX_LINEAR_PROGRAMMING = 10,
-    #endif
+#endif
 
-    // Integer programming problems.
-    #ifdef USE_SCIP
+// Integer programming problems.
+#ifdef USE_SCIP
     SCIP_MIXED_INTEGER_PROGRAMMING = 3,  // Recommended default value.
-    #endif
-    #ifdef USE_GLPK
+#endif
+#ifdef USE_GLPK
     GLPK_MIXED_INTEGER_PROGRAMMING = 4,
-    #endif
-    #ifdef USE_CBC
+#endif
+#ifdef USE_CBC
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
-    #endif
-    #if defined(USE_GUROBI)
+#endif
+#if defined(USE_GUROBI)
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
-    #endif
-    #if defined(USE_CPLEX)
+#endif
+#if defined(USE_CPLEX)
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
-    #endif
-    #if defined(USE_BOP)
+#endif
+#if defined(USE_BOP)
     BOP_INTEGER_PROGRAMMING = 12,
-    #endif
+#endif
   };
 
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
@@ -252,7 +251,8 @@ class MPSolver {
   // The MPSolver owns the variable (i.e. the returned pointer is borrowed).
   // Variable names must be unique (it may crash otherwise). Empty variable
   // names are allowed, an automated variable name will then be assigned.
-  MPVariable* MakeVar(double lb, double ub, bool integer, const std::string& name);
+  MPVariable* MakeVar(double lb, double ub, bool integer,
+                      const std::string& name);
   // Creates a continuous variable.
   MPVariable* MakeNumVar(double lb, double ub, const std::string& name);
   // Creates an integer variable.
@@ -266,7 +266,8 @@ class MPSolver {
   // @param name the prefix of the variable names. Variables are named
   // name0, name1, ...
   void MakeVarArray(int nb, double lb, double ub, bool integer,
-                    const std::string& name_prefix, std::vector<MPVariable*>* vars);
+                    const std::string& name_prefix,
+                    std::vector<MPVariable*>* vars);
   // Creates an array of continuous variables.
   void MakeNumVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
@@ -289,7 +290,8 @@ class MPSolver {
   void SetIndexConstraints(bool enabled);
   // Look up a constraint by name, and return nullptr if it does not exist or if
   // constraints are not indexed.
-  MPConstraint* LookupConstraintOrNull(const std::string& constraint_name) const;
+  MPConstraint* LookupConstraintOrNull(
+      const std::string& constraint_name) const;
 
   // Creates a linear constraint with given bounds. Bounds can be
   // finite or +/- MPSolver::infinity(). The MPSolver class assumes
@@ -299,7 +301,8 @@ class MPSolver {
   // Creates a constraint with -infinity and +infinity bounds.
   MPConstraint* MakeRowConstraint();
   // Creates a named constraint with given bounds.
-  MPConstraint* MakeRowConstraint(double lb, double ub, const std::string& name);
+  MPConstraint* MakeRowConstraint(double lb, double ub,
+                                  const std::string& name);
   // Creates a named constraint with -infinity and +infinity bounds.
   MPConstraint* MakeRowConstraint(const std::string& name);
 
@@ -307,7 +310,8 @@ class MPSolver {
   // range.lower_bound() <= range.linear_expr() <= range.upper_bound()
   MPConstraint* MakeRowConstraint(const LinearRange& range);
   // As above, but also names the constraint.
-  MPConstraint* MakeRowConstraint(const LinearRange& range, const std::string& name);
+  MPConstraint* MakeRowConstraint(const LinearRange& range,
+                                  const std::string& name);
 
   // ----- Objective -----
   // Note that the objective is owned by the solver, and is initialized to
@@ -616,7 +620,8 @@ class MPSolver {
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  std::unique_ptr<std::unordered_map<std::string, int> > constraint_name_to_index_;
+  std::unique_ptr<std::unordered_map<std::string, int> >
+      constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
 
@@ -637,9 +642,9 @@ class MPSolver {
   // Permanent storage for SetSolverSpecificParametersAsString().
   std::string solver_specific_parameter_string_;
 
-
   MPSolverResponseStatus LoadModelFromProtoInternal(
-      const MPModelProto& input_model, bool clear_names, std::string* error_message);
+      const MPModelProto& input_model, bool clear_names,
+      std::string* error_message);
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
@@ -823,8 +828,8 @@ class MPVariable {
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
   // several models.
-  MPVariable(int index, double lb, double ub, bool integer, const std::string& name,
-             MPSolverInterface* const interface)
+  MPVariable(int index, double lb, double ub, bool integer,
+             const std::string& name, MPSolverInterface* const interface)
       : index_(index),
         lb_(lb),
         ub_(ub),
@@ -1092,7 +1097,6 @@ class MPSolverParameters {
   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
   // @}
 
-
  private:
   // @{
   // Parameter value for each parameter.
@@ -1111,7 +1115,6 @@ class MPSolverParameters {
   // solver's default value. Only parameters for which the wrapper
   // does not define a default value need such an indicator.
   bool lp_algorithm_is_default_;
-
 
   DISALLOW_COPY_AND_ASSIGN(MPSolverParameters);
 };
@@ -1375,7 +1378,8 @@ class MPSolverInterface {
   // temporary file and calls ReadParameterFile to import the parameter file
   // into the solver. Solvers that support passing the parameters directly can
   // override this method to skip the temporary file logic.
-  virtual bool SetSolverSpecificParametersAsString(const std::string& parameters);
+  virtual bool SetSolverSpecificParametersAsString(
+      const std::string& parameters);
 
   // Reads a solver-specific file of parameters and set them.
   // Returns true if there was no errors.
@@ -1390,7 +1394,6 @@ class MPSolverInterface {
   virtual void SetScalingMode(int value) = 0;
   virtual void SetLpAlgorithm(int value) = 0;
 };
-
 
 }  // namespace operations_research
 

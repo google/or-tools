@@ -11,30 +11,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Driver for reading and solving files in the MPS format and in
 // the linear_solver.proto format.
 
 #include <stdio.h>
 #include <string>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
-#include "ortools/base/file.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/status.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/strutil.h"
+#include "ortools/base/timer.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/mps_reader.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/util/proto_tools.h"
-#include "ortools/base/status.h"
 
 DEFINE_bool(mps_dump_problem, false, "Dumps problem in readable form.");
 DEFINE_bool(mps_solve, true, "Solves problem.");
@@ -50,17 +48,16 @@ DEFINE_string(params, "",
               "also specified, the --params will be merged onto "
               "them (i.e. in case of conflicts, --params wins)");
 
+using google::protobuf::TextFormat;
 using operations_research::FullProtocolMessageAsString;
 using operations_research::glop::GetProblemStatusString;
 using operations_research::glop::GlopParameters;
 using operations_research::glop::LinearProgram;
 using operations_research::glop::LPSolver;
-using operations_research::glop::MPSReader;
 using operations_research::glop::MPModelProtoToLinearProgram;
+using operations_research::glop::MPSReader;
 using operations_research::glop::ProblemStatus;
 using operations_research::glop::ToDouble;
-using google::protobuf::TextFormat;
-
 
 // Parse glop parameters from the flags --params_file and --params.
 void ReadGlopParameters(GlopParameters* parameters) {
@@ -78,18 +75,16 @@ void ReadGlopParameters(GlopParameters* parameters) {
   }
 }
 
-
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   GlopParameters parameters;
   ReadGlopParameters(&parameters);
 
-
   LinearProgram linear_program;
   std::vector<std::string> file_list;
   // Replace this with your favorite match function.
-    file_list.push_back(FLAGS_input);
+  file_list.push_back(FLAGS_input);
   for (int i = 0; i < file_list.size(); ++i) {
     const std::string& file_name = file_list[i];
     MPSReader mps_reader;
@@ -113,7 +108,6 @@ int main(int argc, char* argv[]) {
     LPSolver solver;
     solver.SetParameters(parameters);
     ProblemStatus solve_status = ProblemStatus::INIT;
-
 
     std::string status_string;
     double objective_value;

@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/ebert_graph.h"
@@ -82,7 +81,7 @@ void MaxFeasibleFlow() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::MinCostFlowOn4x4Matrix();
   operations_research::MaxFeasibleFlow();
   return 0;

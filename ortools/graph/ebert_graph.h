@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #ifndef OR_TOOLS_GRAPH_EBERT_GRAPH_H_
 #define OR_TOOLS_GRAPH_EBERT_GRAPH_H_
 
@@ -176,10 +175,10 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
 
@@ -537,7 +536,8 @@ class ForwardStaticGraph
     : public StarGraphBase<NodeIndexType, ArcIndexType,
                            ForwardStaticGraph<NodeIndexType, ArcIndexType> > {
   typedef StarGraphBase<NodeIndexType, ArcIndexType,
-                        ForwardStaticGraph<NodeIndexType, ArcIndexType> > Base;
+                        ForwardStaticGraph<NodeIndexType, ArcIndexType> >
+      Base;
   friend class StarGraphBase<NodeIndexType, ArcIndexType,
                              ForwardStaticGraph<NodeIndexType, ArcIndexType> >;
 
@@ -1188,7 +1188,8 @@ class EbertGraph
     : public EbertGraphBase<NodeIndexType, ArcIndexType,
                             EbertGraph<NodeIndexType, ArcIndexType> > {
   typedef EbertGraphBase<NodeIndexType, ArcIndexType,
-                         EbertGraph<NodeIndexType, ArcIndexType> > Base;
+                         EbertGraph<NodeIndexType, ArcIndexType> >
+      Base;
   friend class EbertGraphBase<NodeIndexType, ArcIndexType,
                               EbertGraph<NodeIndexType, ArcIndexType> >;
   friend class StarGraphBase<NodeIndexType, ArcIndexType,
@@ -1563,7 +1564,8 @@ class ForwardEbertGraph
     : public EbertGraphBase<NodeIndexType, ArcIndexType,
                             ForwardEbertGraph<NodeIndexType, ArcIndexType> > {
   typedef EbertGraphBase<NodeIndexType, ArcIndexType,
-                         ForwardEbertGraph<NodeIndexType, ArcIndexType> > Base;
+                         ForwardEbertGraph<NodeIndexType, ArcIndexType> >
+      Base;
   friend class EbertGraphBase<NodeIndexType, ArcIndexType,
                               ForwardEbertGraph<NodeIndexType, ArcIndexType> >;
   friend class StarGraphBase<NodeIndexType, ArcIndexType,

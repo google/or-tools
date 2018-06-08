@@ -15,8 +15,8 @@
 
 #include <vector>
 
-#include "ortools/base/mutex.h"
 #include "ortools/algorithms/dynamic_partition.h"
+#include "ortools/base/mutex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_utils.h"
 
@@ -27,9 +27,7 @@ namespace glop {
 // LPDecomposer
 //------------------------------------------------------------------------------
 LPDecomposer::LPDecomposer()
-    : original_problem_(nullptr),
-      clusters_(),
-      mutex_() {}
+    : original_problem_(nullptr), clusters_(), mutex_() {}
 
 void LPDecomposer::Decompose(const LinearProgram* linear_problem) {
   absl::MutexLock mutex_lock(&mutex_);

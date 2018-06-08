@@ -15,14 +15,14 @@
 
 #include "math.h"
 
+#include "google/protobuf/wrappers.pb.h"
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/split.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
-#include "google/protobuf/wrappers.pb.h"
-#include "ortools/base/split.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
-#include "ortools/base/filelineiter.h"
 
 DEFINE_int64(jssp_scaling_up_factor, 100000L,
              "Scaling factor for floating point penalties.");

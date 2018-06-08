@@ -17,10 +17,10 @@
 #include <memory>
 #include <vector>
 
+#include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/span.h"
-#include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/stats.h"
 
@@ -65,8 +65,7 @@ class SymmetryPropagator : public SatPropagator {
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
-  absl::Span<Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  absl::Span<Literal> Reason(const Trail& trail, int trail_index) const final;
 
   // Adds a new permutation to this symmetry propagator. The ownership is
   // transferred. This must be an integer permutation such that:

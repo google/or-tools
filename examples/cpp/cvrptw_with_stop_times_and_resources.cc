@@ -21,26 +21,25 @@
 
 #include <vector>
 
+#include "examples/cpp/cvrptw_lib.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/random.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_flags.h"
-#include "examples/cpp/cvrptw_lib.h"
-#include "ortools/base/random.h"
 
+using operations_research::ACMRandom;
+using operations_research::GetSeed;
 using operations_research::IntervalVar;
-using operations_research::RoutingModel;
-using operations_research::RoutingSearchParameters;
 using operations_research::LocationContainer;
 using operations_research::RandomDemand;
-using operations_research::GetSeed;
+using operations_research::RoutingModel;
+using operations_research::RoutingSearchParameters;
 using operations_research::StopServiceTimePlusTransition;
-using operations_research::ACMRandom;
 using operations_research::StringAppendF;
 using operations_research::StringPrintf;
 
@@ -54,7 +53,7 @@ const char* kTime = "Time";
 const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   CHECK_LT(0, FLAGS_vrp_stops) << "Specify an instance size greater than 0.";
   CHECK_LT(0, FLAGS_vrp_orders_per_stop)
       << "Specify an instance size greater than 0.";
@@ -138,9 +137,13 @@ int main(int argc, char** argv) {
       // An order has no service time iff it is at the same location as the
       // next order on the route.
       operations_research::IntVar* const is_null_duration =
-          solver->MakeElement([&locations, order](int64 index) {
-                  return locations.SameLocationFromIndex(order, index);
-                }, routing.NextVar(order))->Var();
+          solver
+              ->MakeElement(
+                  [&locations, order](int64 index) {
+                    return locations.SameLocationFromIndex(order, index);
+                  },
+                  routing.NextVar(order))
+              ->Var();
       solver->AddConstraint(
           solver->MakeNonEquality(interval->PerformedExpr(), is_null_duration));
       routing.AddIntervalToAssignment(interval);

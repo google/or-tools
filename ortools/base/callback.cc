@@ -16,7 +16,8 @@
 namespace operations_research {
 
 void CallbackUtils_::FailIsRepeatable(const char* name) {
-  LOG(FATAL) << "A " << name << " made with NewCallback() "
-                                "is not a repeatable callback!";
+  LOG(FATAL) << "A " << name
+             << " made with NewCallback() "
+                "is not a repeatable callback!";
 }
 }  // namespace operations_research

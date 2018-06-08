@@ -17,10 +17,10 @@
 #include <memory>
 #include <vector>
 
-#include "ortools/base/span.h"
 #include <unordered_set>
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/span.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
@@ -189,8 +189,7 @@ class DratChecker {
   // deleted clauses whose index is strictly less than 'num_clauses'. If so,
   // marks the clauses actually used in this process as needed to check to DRAT
   // proof.
-  bool HasRupProperty(ClauseIndex num_clauses,
-                      absl::Span<Literal> clause);
+  bool HasRupProperty(ClauseIndex num_clauses, absl::Span<Literal> clause);
 
   // Assigns 'literal' to true in 'assignment_' (and pushes it to 'assigned_'),
   // records its source clause 'source_clause_index' in 'assignment_source_',
@@ -306,8 +305,7 @@ bool ContainsLiteral(absl::Span<Literal> clause, Literal literal);
 // 'other_clause' must contain its negation. 'assignment' must have at least as
 // many variables as each clause, and they must all be unassigned. They are
 // still unassigned upon return.
-bool Resolve(absl::Span<Literal> clause,
-             absl::Span<Literal> other_clause,
+bool Resolve(absl::Span<Literal> clause, absl::Span<Literal> other_clause,
              Literal complementary_literal, VariablesAssignment* assignment,
              std::vector<Literal>* resolvent);
 

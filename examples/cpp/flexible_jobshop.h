@@ -36,13 +36,13 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/split.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
-#include "ortools/base/split.h"
 #include "ortools/util/string_array.h"
-#include "ortools/base/filelineiter.h"
 
 namespace operations_research {
 // A FlexibleJobShopData parses data files and stores all data internally for

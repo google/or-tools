@@ -149,13 +149,14 @@ void RestartPolicy::OnConflict(int conflict_trail_index,
 }
 
 std::string RestartPolicy::InfoString() const {
-  std::string result = StringPrintf("  num restarts: %d\n", num_restarts_) +
-                  StringPrintf("  conflict decision level avg: %f\n",
-                               dl_running_average_.GlobalAverage()) +
-                  StringPrintf("  conflict lbd avg: %f\n",
-                               lbd_running_average_.GlobalAverage()) +
-                  StringPrintf("  conflict trail size avg: %f\n",
-                               trail_size_running_average_.GlobalAverage());
+  std::string result =
+      StringPrintf("  num restarts: %d\n", num_restarts_) +
+      StringPrintf("  conflict decision level avg: %f\n",
+                   dl_running_average_.GlobalAverage()) +
+      StringPrintf("  conflict lbd avg: %f\n",
+                   lbd_running_average_.GlobalAverage()) +
+      StringPrintf("  conflict trail size avg: %f\n",
+                   trail_size_running_average_.GlobalAverage());
   return result;
 }
 

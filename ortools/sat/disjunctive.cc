@@ -15,8 +15,8 @@
 
 #include <memory>
 
-#include "ortools/base/logging.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"

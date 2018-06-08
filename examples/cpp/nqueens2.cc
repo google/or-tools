@@ -17,7 +17,6 @@
 //  unique solutions: http://www.research.att.com/~njas/sequences/A000170
 //  distinct solutions: http://www.research.att.com/~njas/sequences/A002562
 
-
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -54,7 +53,7 @@ void NQueens(int size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::NQueens(FLAGS_size);
   return 0;
 }

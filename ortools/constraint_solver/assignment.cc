@@ -11,21 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <stddef.h>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/file.h"
-#include "ortools/base/recordio.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/recordio.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
@@ -505,7 +503,7 @@ template <class Var, class Element, class Proto, class Container>
 void RealLoad(const AssignmentProto& assignment_proto,
               Container* const container,
               int (AssignmentProto::*GetSize)() const,
-              const Proto& (AssignmentProto::*GetElem)(int) const) {
+              const Proto& (AssignmentProto::*GetElem)(int)const) {
   bool fast_load = (container->Size() == (assignment_proto.*GetSize)());
   for (int i = 0; fast_load && i < (assignment_proto.*GetSize)(); ++i) {
     Element* const element = container->MutableElement(i);
@@ -848,20 +846,20 @@ void Assignment::SetSequence(const SequenceVar* const var,
                              const std::vector<int>& forward_sequence,
                              const std::vector<int>& backward_sequence,
                              const std::vector<int>& unperformed) {
-  sequence_var_container_.MutableElement(var)
-      ->SetSequence(forward_sequence, backward_sequence, unperformed);
+  sequence_var_container_.MutableElement(var)->SetSequence(
+      forward_sequence, backward_sequence, unperformed);
 }
 
 void Assignment::SetForwardSequence(const SequenceVar* const var,
                                     const std::vector<int>& forward_sequence) {
-  sequence_var_container_.MutableElement(var)
-      ->SetForwardSequence(forward_sequence);
+  sequence_var_container_.MutableElement(var)->SetForwardSequence(
+      forward_sequence);
 }
 
 void Assignment::SetBackwardSequence(
     const SequenceVar* const var, const std::vector<int>& backward_sequence) {
-  sequence_var_container_.MutableElement(var)
-      ->SetBackwardSequence(backward_sequence);
+  sequence_var_container_.MutableElement(var)->SetBackwardSequence(
+      backward_sequence);
 }
 
 void Assignment::SetUnperformed(const SequenceVar* const var,

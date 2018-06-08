@@ -11,34 +11,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include <functional>
-#include <unordered_map>
 #include <list>
 #include <memory>
 #include <queue>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "ortools/base/bitmap.h"
 #include "ortools/base/casts.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/random.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/join.h"
-#include "ortools/base/bitmap.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
-#include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/util/string_array.h"
-#include "ortools/base/random.h"
 
 DEFINE_bool(cp_use_sparse_gls_penalties, false,
             "Use sparse implementation to store Guided Local Search penalties");
@@ -128,17 +127,19 @@ bool SearchLog::AtSolution() {
     }
   }
   std::string log;
-  StringAppendF(&log, "Solution #%d (%stime = %" GG_LL_FORMAT
-                      "d ms, branches = %" GG_LL_FORMAT
-                      "d,"
-                      " failures = %" GG_LL_FORMAT "d, depth = %d",
+  StringAppendF(&log,
+                "Solution #%d (%stime = %" GG_LL_FORMAT
+                "d ms, branches = %" GG_LL_FORMAT
+                "d,"
+                " failures = %" GG_LL_FORMAT "d, depth = %d",
                 nsol_++, obj_str.c_str(), timer_->GetInMs(),
                 solver()->branches(), solver()->failures(), depth);
   if (solver()->neighbors() != 0) {
-    StringAppendF(&log, ", neighbors = %" GG_LL_FORMAT
-                        "d, filtered neighbors = %" GG_LL_FORMAT
-                        "d,"
-                        " accepted neighbors = %" GG_LL_FORMAT "d",
+    StringAppendF(&log,
+                  ", neighbors = %" GG_LL_FORMAT
+                  "d, filtered neighbors = %" GG_LL_FORMAT
+                  "d,"
+                  " accepted neighbors = %" GG_LL_FORMAT "d",
                   solver()->neighbors(), solver()->filtered_neighbors(),
                   solver()->accepted_neighbors());
   }
@@ -158,17 +159,18 @@ bool SearchLog::AtSolution() {
 void SearchLog::BeginFail() { Maintain(); }
 
 void SearchLog::NoMoreSolutions() {
-  std::string buffer = StringPrintf("Finished search tree (time = %" GG_LL_FORMAT
-                               "d ms, branches = %" GG_LL_FORMAT
-                               "d,"
-                               " failures = %" GG_LL_FORMAT "d",
-                               timer_->GetInMs(), solver()->branches(),
-                               solver()->failures());
+  std::string buffer = StringPrintf(
+      "Finished search tree (time = %" GG_LL_FORMAT
+      "d ms, branches = %" GG_LL_FORMAT
+      "d,"
+      " failures = %" GG_LL_FORMAT "d",
+      timer_->GetInMs(), solver()->branches(), solver()->failures());
   if (solver()->neighbors() != 0) {
-    StringAppendF(&buffer, ", neighbors = %" GG_LL_FORMAT
-                           "d, filtered neighbors = %" GG_LL_FORMAT
-                           "d,"
-                           " accepted neigbors = %" GG_LL_FORMAT "d",
+    StringAppendF(&buffer,
+                  ", neighbors = %" GG_LL_FORMAT
+                  "d, filtered neighbors = %" GG_LL_FORMAT
+                  "d,"
+                  " accepted neigbors = %" GG_LL_FORMAT "d",
                   solver()->neighbors(), solver()->filtered_neighbors(),
                   solver()->accepted_neighbors());
   }
@@ -190,10 +192,10 @@ void SearchLog::RefuteDecision(Decision* const decision) {
 }
 
 void SearchLog::OutputDecision() {
-  std::string buffer = StringPrintf("%" GG_LL_FORMAT "d branches, %" GG_LL_FORMAT
-                               "d ms, %" GG_LL_FORMAT "d failures",
-                               solver()->branches(), timer_->GetInMs(),
-                               solver()->failures());
+  std::string buffer = StringPrintf(
+      "%" GG_LL_FORMAT "d branches, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
+      "d failures",
+      solver()->branches(), timer_->GetInMs(), solver()->failures());
   if (min_right_depth_ != kint32max && max_depth_ != 0) {
     const int depth = solver()->SearchDepth();
     StringAppendF(&buffer, ", tree pos=%d/%d/%d minref=%d max=%d",
@@ -204,9 +206,10 @@ void SearchLog::OutputDecision() {
   }
   if (obj_ != nullptr && objective_min_ != kint64max &&
       objective_max_ != kint64min) {
-    StringAppendF(&buffer, ", objective minimum = %" GG_LL_FORMAT
-                           "d"
-                           ", objective maximum = %" GG_LL_FORMAT "d",
+    StringAppendF(&buffer,
+                  ", objective minimum = %" GG_LL_FORMAT
+                  "d"
+                  ", objective maximum = %" GG_LL_FORMAT "d",
                   objective_min_, objective_max_);
   }
   const int progress = solver()->TopProgressPercent();
@@ -244,22 +247,22 @@ void SearchLog::OutputLine(const std::string& line) {
 
 std::string SearchLog::MemoryUsage() {
   static const int64 kDisplayThreshold = 2;
-     static const int64 kKiloByte = 1024;
-     static const int64 kMegaByte = kKiloByte * kKiloByte;
-     static const int64 kGigaByte = kMegaByte * kKiloByte;
-     const int64 memory_usage = Solver::MemoryUsage();
-     if (memory_usage > kDisplayThreshold * kGigaByte) {
-     return StringPrintf("memory used = %.2lf GB",
-     memory_usage  * 1.0 / kGigaByte);
-     } else if (memory_usage > kDisplayThreshold * kMegaByte) {
-     return StringPrintf("memory used = %.2lf MB",
-     memory_usage  * 1.0 / kMegaByte);
-     } else if (memory_usage > kDisplayThreshold * kKiloByte) {
-     return StringPrintf("memory used = %2lf KB",
-     memory_usage * 1.0 / kKiloByte);
-     } else {
-     return StringPrintf("memory used = %" GG_LL_FORMAT "d", memory_usage);
-     }
+  static const int64 kKiloByte = 1024;
+  static const int64 kMegaByte = kKiloByte * kKiloByte;
+  static const int64 kGigaByte = kMegaByte * kKiloByte;
+  const int64 memory_usage = Solver::MemoryUsage();
+  if (memory_usage > kDisplayThreshold * kGigaByte) {
+    return StringPrintf("memory used = %.2lf GB",
+                        memory_usage * 1.0 / kGigaByte);
+  } else if (memory_usage > kDisplayThreshold * kMegaByte) {
+    return StringPrintf("memory used = %.2lf MB",
+                        memory_usage * 1.0 / kMegaByte);
+  } else if (memory_usage > kDisplayThreshold * kKiloByte) {
+    return StringPrintf("memory used = %2lf KB",
+                        memory_usage * 1.0 / kKiloByte);
+  } else {
+    return StringPrintf("memory used = %" GG_LL_FORMAT "d", memory_usage);
+  }
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period) {
@@ -271,14 +274,15 @@ SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var) {
   return RevAlloc(new SearchLog(this, nullptr, var, nullptr, branch_period));
 }
 
-SearchMonitor* Solver::MakeSearchLog(int branch_period,
-                                     std::function<std::string()> display_callback) {
+SearchMonitor* Solver::MakeSearchLog(
+    int branch_period, std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, nullptr,
                                 std::move(display_callback), branch_period));
 }
 
-SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var,
-                                     std::function<std::string()> display_callback) {
+SearchMonitor* Solver::MakeSearchLog(
+    int branch_period, IntVar* const var,
+    std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, var, std::move(display_callback),
                                 branch_period));
 }
@@ -289,13 +293,12 @@ SearchMonitor* Solver::MakeSearchLog(int branch_period,
       new SearchLog(this, opt_var, nullptr, nullptr, branch_period));
 }
 
-SearchMonitor* Solver::MakeSearchLog(int branch_period,
-                                     OptimizeVar* const opt_var,
-                                     std::function<std::string()> display_callback) {
+SearchMonitor* Solver::MakeSearchLog(
+    int branch_period, OptimizeVar* const opt_var,
+    std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, opt_var, nullptr,
                                 std::move(display_callback), branch_period));
 }
-
 
 // ---------- Search Trace ----------
 namespace {
@@ -1899,7 +1902,7 @@ std::string SelectValueName(Solver::IntValueStrategy val_str) {
 }
 
 std::string BuildHeuristicsName(Solver::IntVarStrategy var_str,
-                           Solver::IntValueStrategy val_str) {
+                                Solver::IntValueStrategy val_str) {
   return ChooseVariableName(var_str) + "_" + SelectValueName(val_str);
 }
 }  // namespace
@@ -1972,11 +1975,11 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
   CHECK(var_evaluator != nullptr);
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable = [var_selector](
-      Solver* solver, const std::vector<IntVar*>& vars, int first_unbound,
-      int last_unbound) {
-    return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-  };
+  Solver::VariableIndexSelector choose_variable =
+      [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
+                     int first_unbound, int last_unbound) {
+        return var_selector->Choose(solver, vars, first_unbound, last_unbound);
+      };
   Solver::VariableValueSelector select_value =
       BaseAssignVariables::MakeValueSelector(this, val_str);
   const std::string name = "ChooseCheapestVariable_" + SelectValueName(val_str);
@@ -1991,8 +1994,10 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   CheapestValueSelector* const value_selector =
       RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
-  Solver::VariableValueSelector select_value = [value_selector](
-      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  Solver::VariableValueSelector select_value =
+      [value_selector](const IntVar* var, int64 id) {
+        return value_selector->Select(var, id);
+      };
   const std::string name = ChooseVariableName(var_str) + "_SelectCheapestValue";
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
                                         select_value, name,
@@ -2006,8 +2011,10 @@ DecisionBuilder* Solver::MakePhase(
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   BestValueByComparisonSelector* const value_selector = RevAlloc(
       new BestValueByComparisonSelector(std::move(var_val1_val2_comparator)));
-  Solver::VariableValueSelector select_value = [value_selector](
-      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  Solver::VariableValueSelector select_value =
+      [value_selector](const IntVar* var, int64 id) {
+        return value_selector->Select(var, id);
+      };
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
                                         select_value, "CheapestValue",
                                         BaseAssignVariables::ASSIGN);
@@ -2018,15 +2025,17 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IndexEvaluator2 value_evaluator) {
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable = [var_selector](
-      Solver* solver, const std::vector<IntVar*>& vars, int first_unbound,
-      int last_unbound) {
-    return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-  };
+  Solver::VariableIndexSelector choose_variable =
+      [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
+                     int first_unbound, int last_unbound) {
+        return var_selector->Choose(solver, vars, first_unbound, last_unbound);
+      };
   CheapestValueSelector* value_selector =
       RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
-  Solver::VariableValueSelector select_value = [value_selector](
-      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  Solver::VariableValueSelector select_value =
+      [value_selector](const IntVar* var, int64 id) {
+        return value_selector->Select(var, id);
+      };
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
                                         select_value, "CheapestValue",
                                         BaseAssignVariables::ASSIGN);
@@ -2040,8 +2049,10 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
       std::move(value_evaluator), std::move(tie_breaker)));
-  Solver::VariableValueSelector select_value = [value_selector](
-      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  Solver::VariableValueSelector select_value =
+      [value_selector](const IntVar* var, int64 id) {
+        return value_selector->Select(var, id);
+      };
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
                                         select_value, "CheapestValue",
                                         BaseAssignVariables::ASSIGN);
@@ -2053,15 +2064,17 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IndexEvaluator1 tie_breaker) {
   CheapestVarSelector* const var_selector =
       RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
-  Solver::VariableIndexSelector choose_variable = [var_selector](
-      Solver* solver, const std::vector<IntVar*>& vars, int first_unbound,
-      int last_unbound) {
-    return var_selector->Choose(solver, vars, first_unbound, last_unbound);
-  };
+  Solver::VariableIndexSelector choose_variable =
+      [var_selector](Solver* solver, const std::vector<IntVar*>& vars,
+                     int first_unbound, int last_unbound) {
+        return var_selector->Choose(solver, vars, first_unbound, last_unbound);
+      };
   CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
       std::move(value_evaluator), std::move(tie_breaker)));
-  Solver::VariableValueSelector select_value = [value_selector](
-      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  Solver::VariableValueSelector select_value =
+      [value_selector](const IntVar* var, int64 id) {
+        return value_selector->Select(var, id);
+      };
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
                                         select_value, "CheapestValue",
                                         BaseAssignVariables::ASSIGN);
@@ -3173,12 +3186,11 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   if (d == s->balancing_decision()) {
     return;
   }
-  #if defined(_MSC_VER) || defined(__ANDROID__)
-     const int64  energy_bound = Temperature() * log(rand_.RndFloat()) /
-     log(2.0L);
-     #else
-     const int64  energy_bound = Temperature() * log2(rand_.RndFloat());
-     #endif
+#if defined(_MSC_VER) || defined(__ANDROID__)
+  const int64 energy_bound = Temperature() * log(rand_.RndFloat()) / log(2.0L);
+#else
+  const int64 energy_bound = Temperature() * log2(rand_.RndFloat());
+#endif
   if (maximize_) {
     const int64 bound =
         (current_ > kint64min) ? current_ + step_ + energy_bound : current_;
@@ -3257,7 +3269,7 @@ class GuidedLocalSearchPenaltiesTable : public GuidedLocalSearchPenalties {
   void Reset() override;
 
  private:
-  std::vector<std::vector<int64> > penalties_;
+  std::vector<std::vector<int64>> penalties_;
   bool has_values_;
 };
 
@@ -3544,7 +3556,7 @@ int64 GuidedLocalSearch::Evaluate(const Assignment* delta,
 // Penalize all the most expensive arcs (var, value) according to their utility:
 // utility(i, j) = cost(i, j) / (1 + penalty(i, j))
 bool GuidedLocalSearch::LocalOptimum() {
-  std::vector<std::pair<Arc, double> > utility(vars_.size());
+  std::vector<std::pair<Arc, double>> utility(vars_.size());
   for (int i = 0; i < vars_.size(); ++i) {
     if (!assignment_.Bound(vars_[i])) {
       // Never synced with a solution, problem infeasible.
@@ -4562,9 +4574,9 @@ class SymmetryManager : public SearchMonitor {
 
  private:
   const std::vector<SymmetryBreaker*> visitors_;
-  std::vector<SimpleRevFIFO<IntVar*> > clauses_;
-  std::vector<SimpleRevFIFO<Decision*> > decisions_;
-  std::vector<SimpleRevFIFO<bool> > directions_;
+  std::vector<SimpleRevFIFO<IntVar*>> clauses_;
+  std::vector<SimpleRevFIFO<Decision*>> decisions_;
+  std::vector<SimpleRevFIFO<bool>> directions_;
 };
 
 // ----- Symmetry Breaker -----

@@ -23,10 +23,8 @@
 
 namespace operations_research {
 
-static void WriteOrDie(const char* buffer,
-                       size_t item_size,
-                       size_t buffer_length,
-                       FILE* fp) {
+static void WriteOrDie(const char* buffer, size_t item_size,
+                       size_t buffer_length, FILE* fp) {
   size_t written = fwrite(buffer, item_size, buffer_length, fp);
   if (written != buffer_length) {
     fprintf(stderr, "Write failed.\n");
@@ -34,40 +32,31 @@ static void WriteOrDie(const char* buffer,
   }
 }
 
-
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<ForwardStarGraph>& assignment,
     const TailArrayManager<ForwardStarGraph>& tail_array_manager,
     const string& output_filename) {
   FILE* output = fopen(output_filename.c_str(), "w");
   const ForwardStarGraph& graph(assignment.Graph());
-  string output_line = StringPrintf("p asn %d %d\n",
-                                    graph.num_nodes(),
-                                    graph.num_arcs());
-  WriteOrDie(output_line.c_str(), 1, output_line.length(),
-             output);
+  string output_line =
+      StringPrintf("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
+  WriteOrDie(output_line.c_str(), 1, output_line.length(), output);
 
-  for (LinearSumAssignment<ForwardStarGraph>::BipartiteLeftNodeIterator
-           node_it(assignment);
-       node_it.Ok();
-       node_it.Next()) {
+  for (LinearSumAssignment<ForwardStarGraph>::BipartiteLeftNodeIterator node_it(
+           assignment);
+       node_it.Ok(); node_it.Next()) {
     output_line = StringPrintf("n %d\n", node_it.Index() + 1);
-    WriteOrDie(output_line.c_str(), 1, output_line.length(),
-               output);
+    WriteOrDie(output_line.c_str(), 1, output_line.length(), output);
   }
 
   tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
 
-  for (ForwardStarGraph::ArcIterator arc_it(assignment.Graph());
-       arc_it.Ok();
+  for (ForwardStarGraph::ArcIterator arc_it(assignment.Graph()); arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
-    output_line = StringPrintf("a %d %d %lld\n",
-                               graph.Tail(arc) + 1,
-                               graph.Head(arc) + 1,
-                               assignment.ArcCost(arc));
-    WriteOrDie(output_line.c_str(), 1, output_line.length(),
-               output);
+    output_line = StringPrintf("a %d %d %lld\n", graph.Tail(arc) + 1,
+                               graph.Head(arc) + 1, assignment.ArcCost(arc));
+    WriteOrDie(output_line.c_str(), 1, output_line.length(), output);
   }
 }
 

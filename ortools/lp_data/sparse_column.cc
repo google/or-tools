@@ -54,8 +54,8 @@ void RandomAccessSparseColumn::PopulateFromSparseColumn(
   }
 }
 
-void RandomAccessSparseColumn::PopulateSparseColumn(SparseColumn* sparse_column)
-    const {
+void RandomAccessSparseColumn::PopulateSparseColumn(
+    SparseColumn* sparse_column) const {
   RETURN_IF_NULL(sparse_column);
 
   sparse_column->Clear();

@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // The vehicle routing library lets one model and solve generic vehicle routing
 // problems ranging from the Traveling Salesman Problem to more complex
 // problems such as the Capacitated Vehicle Routing Problem with Time Windows.
@@ -167,12 +166,14 @@
 #include <utility>
 #include <vector>
 
+#include "ortools/base/adjustable_priority_queue-inl.h"
+#include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
@@ -180,9 +181,6 @@
 #include "ortools/graph/graph.h"
 #include "ortools/util/range_query_function.h"
 #include "ortools/util/sorted_interval_list.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
-#include "ortools/base/adjustable_priority_queue.h"
-
 
 namespace operations_research {
 
@@ -356,9 +354,9 @@ class RoutingModel {
   // Constructor taking a vector of (start node, end node) pairs for each
   // vehicle route. Used to model multiple depots.
   RoutingModel(int nodes, int vehicles,
-               const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+               const std::vector<std::pair<NodeIndex, NodeIndex>>& start_end);
   RoutingModel(int nodes, int vehicles,
-               const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end,
+               const std::vector<std::pair<NodeIndex, NodeIndex>>& start_end,
                const RoutingModelParameters& parameters);
   // Constructor taking vectors of start nodes and end nodes for each
   // vehicle route. Used to model multiple depots.
@@ -422,7 +420,8 @@ class RoutingModel {
                                      bool fix_start_cumul_to_zero,
                                      const std::string& name);
   bool AddConstantDimension(int64 value, int64 capacity,
-                            bool fix_start_cumul_to_zero, const std::string& name) {
+                            bool fix_start_cumul_to_zero,
+                            const std::string& name) {
     return AddConstantDimensionWithSlack(value, capacity, 0,
                                          fix_start_cumul_to_zero, name);
   }
@@ -434,7 +433,8 @@ class RoutingModel {
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
   bool AddVectorDimension(std::vector<int64> values, int64 capacity,
-                          bool fix_start_cumul_to_zero, const std::string& name);
+                          bool fix_start_cumul_to_zero,
+                          const std::string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'values[i][next(i)]' for node i; 'capacity' is the upper bound of
   // the cumul variables. 'name' is the name used to reference the dimension;
@@ -442,7 +442,7 @@ class RoutingModel {
   // model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddMatrixDimension(std::vector<std::vector<int64> > values,
+  bool AddMatrixDimension(std::vector<std::vector<int64>> values,
                           int64 capacity, bool fix_start_cumul_to_zero,
                           const std::string& name);
 #if !defined(SWIG)
@@ -477,7 +477,8 @@ class RoutingModel {
   bool AddDimensionDependentDimensionWithVehicleCapacity(
       NodeEvaluator2* pure_transits, VariableNodeEvaluator2* dependent_transits,
       const RoutingDimension* base_dimension, int64 slack_max,
-      int64 vehicle_capacity, bool fix_start_cumul_to_zero, const std::string& name);
+      int64 vehicle_capacity, bool fix_start_cumul_to_zero,
+      const std::string& name);
   // Creates a cached StateDependentTransit from an std::function.
   static RoutingModel::StateDependentTransit MakeStateDependentTransit(
       const std::function<int64(int64)>& f, int64 domain_start,
@@ -489,10 +490,12 @@ class RoutingModel {
   // Returns true if a dimension exists for a given dimension name.
   bool HasDimension(const std::string& dimension_name) const;
   // Returns a dimension from its name. Dies if the dimension does not exist.
-  const RoutingDimension& GetDimensionOrDie(const std::string& dimension_name) const;
+  const RoutingDimension& GetDimensionOrDie(
+      const std::string& dimension_name) const;
   // Returns a dimension from its name. Returns nullptr if the dimension does
   // not exist.
-  RoutingDimension* GetMutableDimension(const std::string& dimension_name) const;
+  RoutingDimension* GetMutableDimension(
+      const std::string& dimension_name) const;
   // Set the given dimension as "primary constrained". As of August 2013, this
   // is only used by ArcIsMoreConstrainedThanArc().
   // "dimension" must be the name of an existing dimension, or be empty, in
@@ -501,7 +504,8 @@ class RoutingModel {
     DCHECK(dimension_name.empty() || HasDimension(dimension_name));
     primary_constrained_dimension_ = dimension_name;
   }
-  // Get the primary constrained dimension, or an empty std::string if it is unset.
+  // Get the primary constrained dimension, or an empty std::string if it is
+  // unset.
   const std::string& GetPrimaryConstrainedDimension() const {
     return primary_constrained_dimension_;
   }
@@ -573,7 +577,7 @@ class RoutingModel {
   // indices: a disjunction is "perfect" when its variables do not appear in
   // any other disjunction. Each pair is sorted (lowest variable index first),
   // and the output vector is also sorted (lowest pairs first).
-  std::vector<std::pair<int, int> > GetPerfectBinaryDisjunctions() const;
+  std::vector<std::pair<int, int>> GetPerfectBinaryDisjunctions() const;
   // SPECIAL: Makes the solver ignore all the disjunctions whose active
   // variables are all trivially zero (i.e. Max() == 0), by setting their
   // max_cardinality to 0.
@@ -720,8 +724,8 @@ class RoutingModel {
   // vehicle and deactivates other nodes.
   // An assignment containing the locks can be obtained by calling
   // PreAssignment().
-  bool ApplyLocksToAllVehicles(
-      const std::vector<std::vector<NodeIndex> >& locks, bool close_routes);
+  bool ApplyLocksToAllVehicles(const std::vector<std::vector<NodeIndex>>& locks,
+                               bool close_routes);
   // Returns an assignment used to fix some of the variables of the problem.
   // In practice, this assignment locks partial routes of the problem. This
   // can be used in the context of locking the parts of the routes which have
@@ -746,7 +750,7 @@ class RoutingModel {
   // considerable amount of time, especially when using dimensions
   // with slack.
   Assignment* ReadAssignmentFromRoutes(
-      const std::vector<std::vector<NodeIndex> >& routes,
+      const std::vector<std::vector<NodeIndex>>& routes,
       bool ignore_inactive_nodes);
   // Fills an assignment from a specification of the routes of the
   // vehicles. The routes are specified as lists of nodes that appear
@@ -765,7 +769,7 @@ class RoutingModel {
   // loaded. However, such assignment still might not be a valid
   // solution to the routing problem due to more complex constraints;
   // it is advisible to call solver()->CheckSolution() afterwards.
-  bool RoutesToAssignment(const std::vector<std::vector<NodeIndex> >& routes,
+  bool RoutesToAssignment(const std::vector<std::vector<NodeIndex>>& routes,
                           bool ignore_inactive_nodes, bool close_routes,
                           Assignment* const assignment) const;
   // Converts the solution in the given assignment to routes for all vehicles.
@@ -773,7 +777,7 @@ class RoutingModel {
   // vehicles end with an end node for that vehicle).
   void AssignmentToRoutes(
       const Assignment& assignment,
-      std::vector<std::vector<NodeIndex> >* const routes) const;
+      std::vector<std::vector<NodeIndex>>* const routes) const;
   // Returns a compacted version of the given assignment, in which all vehicles
   // with id lower or equal to some N have non-empty routes, and all vehicles
   // with id greater than N have empty routes. Does not take ownership of the
@@ -922,8 +926,9 @@ class RoutingModel {
   // feasible intervals of the CumulVar for dimension "dimension_to_print"
   // at each step of the routes.
   // If "dimension_to_print" is omitted, all dimensions will be printed.
-  std::string DebugOutputAssignment(const Assignment& solution_assignment,
-                               const std::string& dimension_to_print) const;
+  std::string DebugOutputAssignment(
+      const Assignment& solution_assignment,
+      const std::string& dimension_to_print) const;
 
   // Returns the underlying constraint solver. Can be used to add extra
   // constraints and/or modify search algoithms.
@@ -984,7 +989,8 @@ class RoutingModel {
   int64 GetTransitValue(const std::string& d, int64 from, int64 to,
                         int64 vehicle) const;
 #ifndef SWIG
-  const std::vector<IntVar*>& CumulVars(const std::string& dimension_name) const;
+  const std::vector<IntVar*>& CumulVars(
+      const std::string& dimension_name) const;
 #endif
   // All the methods below are replaced by public methods with the same name
   // on the RoutingDimension class. See those.
@@ -994,11 +1000,13 @@ class RoutingModel {
   void SetCumulVarSoftUpperBound(NodeIndex, const std::string&, int64, int64);
   bool HasCumulVarSoftUpperBound(NodeIndex, const std::string&) const;
   int64 GetCumulVarSoftUpperBound(NodeIndex, const std::string&) const;
-  int64 GetCumulVarSoftUpperBoundCoefficient(NodeIndex, const std::string&) const;
+  int64 GetCumulVarSoftUpperBoundCoefficient(NodeIndex,
+                                             const std::string&) const;
   void SetStartCumulVarSoftUpperBound(int, const std::string&, int64, int64);
   bool HasStartCumulVarSoftUpperBound(int, const std::string&) const;
   int64 GetStartCumulVarSoftUpperBound(int, const std::string&) const;
-  int64 GetStartCumulVarSoftUpperBoundCoefficient(int, const std::string&) const;
+  int64 GetStartCumulVarSoftUpperBoundCoefficient(int,
+                                                  const std::string&) const;
   void SetEndCumulVarSoftUpperBound(int, const std::string&, int64, int64);
   bool HasEndCumulVarSoftUpperBound(int, const std::string&) const;
   int64 GetEndCumulVarSoftUpperBound(int, const std::string&) const;
@@ -1100,7 +1108,7 @@ class RoutingModel {
   // Internal methods.
   void Initialize();
   void SetStartEnd(
-      const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+      const std::vector<std::pair<NodeIndex, NodeIndex>>& start_end);
   void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes,
                               int64 penalty, int64 max_cardinality);
   void AddNoCycleConstraintInternal();
@@ -1269,15 +1277,15 @@ class RoutingModel {
       cached_state_dependent_callbacks_;
   // Disjunctions
   ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
-  std::vector<std::vector<DisjunctionIndex> > node_to_disjunctions_;
+  std::vector<std::vector<DisjunctionIndex>> node_to_disjunctions_;
   // Same vehicle costs
-  std::vector<ValuedNodes<int64> > same_vehicle_costs_;
+  std::vector<ValuedNodes<int64>> same_vehicle_costs_;
   // Pickup and delivery
   NodePairs pickup_delivery_pairs_;
   // Same vehicle group to which a node belongs.
   std::vector<int> same_vehicle_group_;
   // Same vehicle node groups.
-  std::vector<std::vector<int> > same_vehicle_groups_;
+  std::vector<std::vector<int>> same_vehicle_groups_;
   // Index management
   std::vector<NodeIndex> index_to_node_;
   ITIVector<NodeIndex, int> node_to_index_;
@@ -1649,7 +1657,8 @@ class RoutingDimension {
 
   class SelfBased {};
   RoutingDimension(RoutingModel* model, std::vector<int64> vehicle_capacities,
-                   const std::string& name, const RoutingDimension* base_dimension);
+                   const std::string& name,
+                   const RoutingDimension* base_dimension);
   RoutingDimension(RoutingModel* model, std::vector<int64> vehicle_capacities,
                    const std::string& name, SelfBased);
   void Initialize(
@@ -1721,14 +1730,13 @@ class RoutingDimension {
   DISALLOW_COPY_AND_ASSIGN(RoutingDimension);
 };
 
-
 #ifndef SWIG
 // Class to arrange nodes by by their distance and their angles from the
 // depot. Used in the Sweep first solution heuristic.
 class SweepArranger {
  public:
   explicit SweepArranger(const ITIVector<RoutingModel::NodeIndex,
-                                         std::pair<int64, int64> >& points);
+                                         std::pair<int64, int64>>& points);
   virtual ~SweepArranger() {}
   void ArrangeNodes(std::vector<RoutingModel::NodeIndex>* nodes);
   void SetSectors(int sectors) { sectors_ = sectors; }
@@ -1875,8 +1883,8 @@ class CheapestInsertionFilteredDecisionBuilder
   // if penalty callback is null or if the node cannot be unperformed.
   int64 GetUnperformedValue(int64 node_to_insert) const;
 
-  std::unique_ptr<ResultCallback3<int64, int64, int64, int64> > evaluator_;
-  std::unique_ptr<ResultCallback1<int64, int64> > penalty_evaluator_;
+  std::unique_ptr<ResultCallback3<int64, int64, int64, int64>> evaluator_;
+  std::unique_ptr<ResultCallback1<int64, int64>> penalty_evaluator_;
 };
 
 // Filter-based decision builder which builds a solution by inserting
@@ -2045,7 +2053,7 @@ class EvaluatorCheapestAdditionFilteredDecisionBuilder
   // Next nodes are sorted according to the current evaluator.
   void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts) override;
 
-  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+  std::unique_ptr<ResultCallback2<int64, int64, int64>> evaluator_;
 };
 
 // A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc'

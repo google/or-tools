@@ -18,15 +18,15 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/algorithms/sparse_permutation.h"
+#include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/status.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
-#include "ortools/base/status.h"
 
 namespace operations_research {
 namespace sat {
@@ -95,7 +95,8 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
 // Converts a LinearBooleanProblem to the cnf file format.
 // Note that this only works for pure SAT problems (only clauses), max-sat or
 // weighted max-sat problems. Returns an empty std::string on error.
-std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem);
+std::string LinearBooleanProblemToCnfString(
+    const LinearBooleanProblem& problem);
 
 // Store a variable assignment into the given BooleanAssignement proto.
 // Note that only the assigned variables are stored, so the assignment may be

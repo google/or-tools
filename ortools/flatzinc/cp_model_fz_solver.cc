@@ -15,12 +15,12 @@
 
 #include <unordered_map>
 
-#include "ortools/base/timer.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/split.h"
-#include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/split.h"
+#include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/sat/cp_constraints.h"
@@ -768,7 +768,8 @@ std::string SolutionString(
     }
   } else {
     const int bound_size = output.bounds.size();
-    std::string result = absl::StrCat(output.name, " = array", bound_size, "d(");
+    std::string result =
+        absl::StrCat(output.name, " = array", bound_size, "d(");
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
         absl::StrAppend(&result, output.bounds[i].min_value, "..",
@@ -891,7 +892,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // set in m.parameters.
   sat::SatParameters flag_parameters;
   CHECK(google::protobuf::TextFormat::ParseFromString(FLAGS_cp_sat_params,
-                                            &flag_parameters))
+                                                      &flag_parameters))
       << FLAGS_cp_sat_params;
   m.parameters.MergeFrom(flag_parameters);
   if (p.all_solutions && !m.proto.has_objective()) {
@@ -899,8 +900,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     m.parameters.set_enumerate_all_solutions(true);
   }
   if (!p.free_search) {
-      m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
-    }
+    m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
+  }
 
   if (p.time_limit_in_ms > 0) {
     m.parameters.set_max_time_in_seconds(p.time_limit_in_ms * 1e-3);

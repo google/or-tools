@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 //  Packing constraints
 
 #include <algorithm>
@@ -22,10 +21,9 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -260,8 +258,8 @@ void Pack::InitialPropagate() {
           StringPrintf("InitialProgateDimension(%s)",
                        dims_[dim_index]->DebugString().c_str()));
     }
-    dims_[dim_index]
-        ->InitialPropagateUnassigned(data->assigned(), data->unassigned());
+    dims_[dim_index]->InitialPropagateUnassigned(data->assigned(),
+                                                 data->unassigned());
     dims_[dim_index]->EndInitialPropagate();
     if (need_context) {
       solver()->GetPropagationMonitor()->PopContext();
@@ -293,8 +291,8 @@ void Pack::Propagate() {
           solver()->GetPropagationMonitor()->PushContext(StringPrintf(
               "ProgateDimension(%s)", dims_[dim_index]->DebugString().c_str()));
         }
-        dims_[dim_index]
-            ->Propagate(bin_index, forced_[bin_index], removed_[bin_index]);
+        dims_[dim_index]->Propagate(bin_index, forced_[bin_index],
+                                    removed_[bin_index]);
         if (need_context) {
           solver()->GetPropagationMonitor()->PopContext();
         }
@@ -487,8 +485,9 @@ void Pack::AssignAllRemainingItems() {
   int var_index = unprocessed_->GetFirstBit(bins_, 0);
   while (var_index != -1 && var_index < vars_.size()) {
     SetAssigned(var_index);
-    var_index = var_index == vars_.size() - 1 ? -1 : unprocessed_->GetFirstBit(
-                                                         bins_, var_index + 1);
+    var_index = var_index == vars_.size() - 1
+                    ? -1
+                    : unprocessed_->GetFirstBit(bins_, var_index + 1);
   }
 }
 
@@ -496,8 +495,9 @@ void Pack::UnassignAllRemainingItems() {
   int var_index = unprocessed_->GetFirstBit(bins_, 0);
   while (var_index != -1 && var_index < vars_.size()) {
     SetUnassigned(var_index);
-    var_index = var_index == vars_.size() - 1 ? -1 : unprocessed_->GetFirstBit(
-                                                         bins_, var_index + 1);
+    var_index = var_index == vars_.size() - 1
+                    ? -1
+                    : unprocessed_->GetFirstBit(bins_, var_index + 1);
   }
 }
 
@@ -894,7 +894,9 @@ class DimensionWeightedSumEqVar : public Dimension {
 
   ~DimensionWeightedSumEqVar() override {}
 
-  std::string DebugString() const override { return "DimensionWeightedSumEqVar"; }
+  std::string DebugString() const override {
+    return "DimensionWeightedSumEqVar";
+  }
 
   void Post() override {
     for (int i = 0; i < bins_count_; ++i) {

@@ -11,10 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/glop/preprocessor.h"
 
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
@@ -230,7 +228,6 @@ void ColumnDeletionHelper::RestoreDeletedColumns(
   new_primal_values.swap(solution->primal_values);
   new_variable_statuses.swap(solution->variable_statuses);
 }
-
 
 // --------------------------------------------------------
 // RowDeletionHelper
@@ -1554,7 +1551,6 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
       std::swap(r.row[DELETED], r.row[MODIFIED]);
     }
 
-
     // Save the deleted row for postsolve. Note that we remove it from the
     // transpose at the same time. This last operation is not strictly needed,
     // but it is faster to do it this way (both here and later when we will take
@@ -1615,7 +1611,6 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
   }
   return false;
 }
-
 
 void DoubletonFreeColumnPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
@@ -2159,7 +2154,6 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
           ? implied_upper_bound
           : old_upper_bound;
 
-
   if (new_upper_bound < new_lower_bound) {
     if (!IsSmallerWithinFeasibilityTolerance(new_lower_bound,
                                              new_upper_bound)) {
@@ -2269,7 +2263,6 @@ void SingletonPreprocessor::UpdateConstraintBoundsWithVariableBounds(
                           lp->constraint_lower_bounds()[e.row] + lower_delta,
                           lp->constraint_upper_bounds()[e.row] + upper_delta);
 }
-
 
 void SingletonPreprocessor::DeleteZeroCostSingletonColumn(
     const SparseMatrix& transpose, MatrixEntry e, LinearProgram* lp) {
@@ -2922,7 +2915,6 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
       continue;
     }
 
-
     // Look at the bounds of both variables and exit early if we can delegate
     // to another pre-processor; otherwise adjust the bounds of the remaining
     // variable as necessary.
@@ -2945,7 +2937,6 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
         break;
       }
 
-
       Fractional lb = r.lb[MODIFIED];
       Fractional ub = r.ub[MODIFIED];
       Fractional carried_over_lb =
@@ -2962,8 +2953,9 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
       } else {
         lb = carried_over_lb;
         r.bound_backtracking_at_lower_bound = RestoreInfo::ColChoiceAndStatus(
-            DELETED, carry_over_factor > 0 ? VariableStatus::AT_LOWER_BOUND
-                                           : VariableStatus::AT_UPPER_BOUND,
+            DELETED,
+            carry_over_factor > 0 ? VariableStatus::AT_LOWER_BOUND
+                                  : VariableStatus::AT_UPPER_BOUND,
             carry_over_factor > 0 ? r.lb[DELETED] : r.ub[DELETED]);
       }
       if (carried_over_ub >= ub) {
@@ -2973,8 +2965,9 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
       } else {
         ub = carried_over_ub;
         r.bound_backtracking_at_upper_bound = RestoreInfo::ColChoiceAndStatus(
-            DELETED, carry_over_factor > 0 ? VariableStatus::AT_UPPER_BOUND
-                                           : VariableStatus::AT_LOWER_BOUND,
+            DELETED,
+            carry_over_factor > 0 ? VariableStatus::AT_UPPER_BOUND
+                                  : VariableStatus::AT_LOWER_BOUND,
             carry_over_factor > 0 ? r.ub[DELETED] : r.lb[DELETED]);
       }
       // 3) If the new bounds are fixed (the domain is a singleton) or
@@ -3489,7 +3482,6 @@ bool ScalingPreprocessor::Run(LinearProgram* lp) {
   cost_scaling_factor_ = lp->ScaleObjective();
   bound_scaling_factor_ = lp->ScaleBounds();
 
-
   return true;
 }
 
@@ -3604,14 +3596,14 @@ void AddSlackVariablesPreprocessor::RecoverSolution(
 // --------------------------------------------------------
 bool SolowHalimPreprocessor::Run(LinearProgram* lp) {
   RETURN_VALUE_IF_NULL(lp, false);
-  if (!parameters_.use_solowhalim()){
+  if (!parameters_.use_solowhalim()) {
     return false;
   }
 
   // mip context not implemented
   // TODO : in order to manage mip context we must take care
   // of truncated offsets
-  if (in_mip_context_){
+  if (in_mip_context_) {
     return false;
   }
 
@@ -3633,20 +3625,20 @@ bool SolowHalimPreprocessor::Run(LinearProgram* lp) {
   column_transform_.resize(num_cols.value(), NOT_MODIFIED);
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional coeff = lp->objective_coefficients()[col];
-    if (coeff != 0.0){
+    if (coeff != 0.0) {
       bool coeff_opposite_direction =
-          ( (coeff < 0.0 && !lp_is_maximization_problem) ||
-            (coeff > 0.0 &&  lp_is_maximization_problem));
+          ((coeff < 0.0 && !lp_is_maximization_problem) ||
+           (coeff > 0.0 && lp_is_maximization_problem));
 
       const Fractional ub = lp->variable_upper_bounds()[col];
       const Fractional lb = lp->variable_lower_bounds()[col];
-      if (IsFinite(ub) && IsFinite(lb)){
+      if (IsFinite(ub) && IsFinite(lb)) {
         ColumnTransformType column_transform = NOT_MODIFIED;
         double shift_value = 0.0;
 
         if (coeff_opposite_direction) {
           SparseColumn* mutable_sparse_column = lp->GetMutableSparseColumn(col);
-          for (const SparseColumn::Entry e : (*mutable_sparse_column) ) {
+          for (const SparseColumn::Entry e : (*mutable_sparse_column)) {
             row_offsets[e.row()].Add(e.coefficient() * ub);
           }
           mutable_sparse_column->MultiplyByConstant(-1);
@@ -3664,7 +3656,7 @@ bool SolowHalimPreprocessor::Run(LinearProgram* lp) {
           num_shifted_cols++;
         }
 
-        if (column_transform != NOT_MODIFIED){
+        if (column_transform != NOT_MODIFIED) {
           column_transform_[col] = column_transform;
           objective_offset.Add(coeff * shift_value);
           lp->SetVariableBounds(col, 0, ub - lb);
@@ -3691,14 +3683,13 @@ void SolowHalimPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   const ColIndex num_cols = solution->variable_statuses.size();
   for (ColIndex col(0); col < num_cols; ++col) {
-
     VLOG(2) << "col = " << col << "\t" << column_transform_[col];
-    VLOG(2) << "\tinitial range : \t [" <<  variable_initial_lbs_[col]
-            << " ; " << variable_initial_ubs_[col] << "]";
-    VLOG(2) << "\tstatus : " <<  solution->variable_statuses[col]
+    VLOG(2) << "\tinitial range : \t [" << variable_initial_lbs_[col] << " ; "
+            << variable_initial_ubs_[col] << "]";
+    VLOG(2) << "\tstatus : " << solution->variable_statuses[col]
             << "\t raw value : " << solution->primal_values[col];
 
-    switch (column_transform_[col]){
+    switch (column_transform_[col]) {
       case NOT_MODIFIED:
         break;
       case SHIFTED:
@@ -3711,7 +3702,7 @@ void SolowHalimPreprocessor::RecoverSolution(ProblemSolution* solution) const {
             break;
           case VariableStatus::BASIC:
             solution->primal_values[col] =
-              variable_initial_lbs_[col] + solution->primal_values[col];
+                variable_initial_lbs_[col] + solution->primal_values[col];
             break;
           case VariableStatus::FIXED_VALUE:
             FALLTHROUGH_INTENDED;
@@ -3731,7 +3722,7 @@ void SolowHalimPreprocessor::RecoverSolution(ProblemSolution* solution) const {
             break;
           case VariableStatus::BASIC:
             solution->primal_values[col] =
-              variable_initial_ubs_[col] - solution->primal_values[col];
+                variable_initial_ubs_[col] - solution->primal_values[col];
             break;
           case VariableStatus::FIXED_VALUE:
             FALLTHROUGH_INTENDED;
@@ -3741,7 +3732,6 @@ void SolowHalimPreprocessor::RecoverSolution(ProblemSolution* solution) const {
         break;
     }
     VLOG(2) << " recover value : " << solution->primal_values[col];
-
   }
 }
 

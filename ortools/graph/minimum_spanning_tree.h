@@ -17,11 +17,11 @@
 #include <queue>
 #include <vector>
 
+#include "ortools/base/adjustable_priority_queue-inl.h"
+#include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/graph/connectivity.h"
 #include "ortools/util/vector_or_function.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
-#include "ortools/base/adjustable_priority_queue.h"
 
 namespace operations_research {
 

@@ -15,7 +15,6 @@
 // Linear programming example that shows how to use the API.
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -92,36 +91,36 @@ void RunLinearProgrammingExample(
 }
 
 void RunAllExamples() {
-  #if defined(USE_GLOP)
+#if defined(USE_GLOP)
   LOG(INFO) << "---- Linear programming example with GLOP ----";
   RunLinearProgrammingExample(MPSolver::GLOP_LINEAR_PROGRAMMING);
-  #endif  // USE_GLOP
-  #if defined(USE_GLPK)
+#endif  // USE_GLOP
+#if defined(USE_GLPK)
   LOG(INFO) << "---- Linear programming example with GLPK ----";
   RunLinearProgrammingExample(MPSolver::GLPK_LINEAR_PROGRAMMING);
-  #endif  // USE_GLPK
-  #if defined(USE_CLP)
+#endif  // USE_GLPK
+#if defined(USE_CLP)
   LOG(INFO) << "---- Linear programming example with CLP ----";
   RunLinearProgrammingExample(MPSolver::CLP_LINEAR_PROGRAMMING);
-  #endif  // USE_CLP
-  #if defined(USE_SLM)
+#endif  // USE_CLP
+#if defined(USE_SLM)
   LOG(INFO) << "---- Linear programming example with Sulum ----";
   RunLinearProgrammingExample(MPSolver::SULUM_LINEAR_PROGRAMMING);
-  #endif  // USE_SLM
-  #if defined(USE_GUROBI)
+#endif  // USE_SLM
+#if defined(USE_GUROBI)
   LOG(INFO) << "---- Linear programming example with Gurobi ----";
   RunLinearProgrammingExample(MPSolver::GUROBI_LINEAR_PROGRAMMING);
-  #endif  // USE_GUROBI
-  #if defined(USE_CPLEX)
+#endif  // USE_GUROBI
+#if defined(USE_CPLEX)
   LOG(INFO) << "---- Linear programming example with CPLEX ----";
   RunLinearProgrammingExample(MPSolver::CPLEX_LINEAR_PROGRAMMING);
-  #endif  // USE_CPLEX
+#endif  // USE_CPLEX
 }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
   base::SetFlag(&FLAGS_alsologtostderr, true);
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RunAllExamples();
   return 0;
 }

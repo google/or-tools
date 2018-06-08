@@ -11,18 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <fstream>
 #include <string>
 #include <vector>
-#include <fstream>
 
+#include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/file.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/port.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/integral_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -103,7 +103,8 @@ class BopInterface : public MPSolverInterface {
   void SetPresolveMode(int value) override;
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
-  bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string& parameters) override;
 
  private:
   void NonIncrementalChange();
@@ -379,7 +380,8 @@ void BopInterface::SetPresolveMode(int value) {
 
 bool BopInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
-  const bool ok = google::protobuf::TextFormat::MergeFromString(parameters, &parameters_);
+  const bool ok =
+      google::protobuf::TextFormat::MergeFromString(parameters, &parameters_);
   bop_solver_.SetParameters(parameters_);
   return ok;
 }
@@ -393,7 +395,6 @@ void BopInterface::NonIncrementalChange() {
 MPSolverInterface* BuildBopInterface(MPSolver* const solver) {
   return new BopInterface(solver);
 }
-
 
 }  // namespace operations_research
 #endif  //  #if defined(USE_BOP)

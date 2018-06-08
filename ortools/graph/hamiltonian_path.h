@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #ifndef OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
 #define OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
 
@@ -798,9 +797,9 @@ bool HamiltonianPathSolver<CostType, CostFunction>::IsRobust() {
   }
   // We determine if the range of the cost matrix is going to
   // make the algorithm not robust because of precision issues.
-  robust_ = min_cost >= 0 &&
-            min_cost > num_nodes_ * max_cost *
-                           std::numeric_limits<CostType>::epsilon();
+  robust_ =
+      min_cost >= 0 && min_cost > num_nodes_ * max_cost *
+                                      std::numeric_limits<CostType>::epsilon();
   robustness_checked_ = true;
   return robust_;
 }

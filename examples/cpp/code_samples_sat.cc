@@ -174,8 +174,8 @@ void BinpackingProblem() {
   const int kSlackCapacity = 20;
   const int kNumBins = 10;
 
-  const std::vector<std::vector<int>> items =
-  { {20, 12}, {15, 12}, {30, 8}, {45, 5} };
+  const std::vector<std::vector<int>> items = {
+      {20, 12}, {15, 12}, {30, 8}, {45, 5}};
   const int num_items = items.size();
 
   // Model.
@@ -206,8 +206,8 @@ void BinpackingProblem() {
     lin->add_domain(ub);
   };
 
-  auto add_reified_variable_bounds = [&cp_model](
-      int var, int64 lb, int64 ub, int lit) {
+  auto add_reified_variable_bounds = [&cp_model](int var, int64 lb, int64 ub,
+                                                 int lit) {
     ConstraintProto* const ct = cp_model.add_constraints();
     ct->add_enforcement_literal(lit);
     LinearConstraintProto* const lin = ct->mutable_linear();
@@ -277,8 +277,8 @@ void BinpackingProblem() {
     // slack[b] => load[b] <= safe_capacity.
     add_reified_variable_bounds(load[b], kint64min, safe_capacity, slack[b]);
     // not(slack[b]) => load[b] > safe_capacity.
-    add_reified_variable_bounds(
-        load[b], safe_capacity + 1, kint64max, NegatedRef(slack[b]));
+    add_reified_variable_bounds(load[b], safe_capacity + 1, kint64max,
+                                NegatedRef(slack[b]));
   }
 
   // Maximize sum of slacks.
@@ -345,7 +345,7 @@ void OptionalIntervalSample() {
   };
 
   auto new_optional_interval = [&cp_model](int start, int duration, int end,
-                                          int presence) {
+                                           int presence) {
     const int index = cp_model.constraints_size();
     ConstraintProto* const ct = cp_model.add_constraints();
     ct->add_enforcement_literal(presence);
@@ -360,11 +360,10 @@ void OptionalIntervalSample() {
   const int duration_var = new_constant(10);
   const int end_var = new_variable(0, kHorizon);
   const int presence_var = new_variable(0, 1);
-  const int interval_var = new_optional_interval(start_var, duration_var,
-                                                 end_var, presence_var);
+  const int interval_var =
+      new_optional_interval(start_var, duration_var, end_var, presence_var);
   LOG(INFO) << "start_var = " << start_var
-            << ", duration_var = " << duration_var
-            << ", end_var = " << end_var
+            << ", duration_var = " << duration_var << ", end_var = " << end_var
             << ", presence_var = " << presence_var
             << ", interval_var = " << interval_var;
 }

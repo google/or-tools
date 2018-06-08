@@ -600,8 +600,7 @@ void SparseVector<IndexType, IteratorType>::CleanUp() {
   for (int i = 0; i < num_entries_; ++i) {
     const std::pair<Index, Fractional> entry = entries[i];
     if (entry.second == 0.0) continue;
-    if (i + 1 == num_entries_ ||
-        entry.first != entries[i + 1].first) {
+    if (i + 1 == num_entries_ || entry.first != entries[i + 1].first) {
       MutableIndex(new_size) = entry.first;
       MutableCoefficient(new_size) = entry.second;
       ++new_size;

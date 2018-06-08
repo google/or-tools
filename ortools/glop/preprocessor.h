@@ -416,7 +416,6 @@ class SingletonPreprocessor : public Preprocessor {
   void UpdateConstraintBoundsWithVariableBounds(MatrixEntry e,
                                                 LinearProgram* lp);
 
-
   // A singleton column with a cost of zero can always be removed by changing
   // the corresponding constraint bounds to take into acount the bound of this
   // singleton column.
@@ -619,7 +618,6 @@ class DoubletonFreeColumnPreprocessor : public Preprocessor {
     // The deleted row as a column.
     SparseColumn deleted_row_as_column;
   };
-
 
   std::vector<RestoreInfo> restore_stack_;
   RowDeletionHelper row_deletion_helper_;

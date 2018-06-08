@@ -11,22 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include <cstddef>
 #include <functional>
-#include <unordered_map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/callback.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/model.pb.h"
@@ -119,7 +118,8 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -406,8 +406,10 @@ class ArgumentHolder {
   std::unordered_map<std::string, int> interval_argument_;
   std::unordered_map<std::string, int> sequence_argument_;
   std::unordered_map<std::string, std::vector<int64>> integer_array_argument_;
-  std::unordered_map<std::string, std::pair<int, std::vector<int64>>> integer_matrix_argument_;
-  std::unordered_map<std::string, std::vector<int>> integer_variable_array_argument_;
+  std::unordered_map<std::string, std::pair<int, std::vector<int64>>>
+      integer_matrix_argument_;
+  std::unordered_map<std::string, std::vector<int>>
+      integer_variable_array_argument_;
   std::unordered_map<std::string, std::vector<int>> interval_array_argument_;
   std::unordered_map<std::string, std::vector<int>> sequence_array_argument_;
 };
@@ -530,7 +532,8 @@ class SecondPassVisitor : public ModelVisitor {
   }
 
   void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntVar*>& arguments) override {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindExpressionIndexOrDie(arguments[i]));
@@ -2514,8 +2517,9 @@ bool Solver::LoadModelWithSearchMonitors(
     }
     if (model_proto.has_objective()) {
       const CpObjective& objective_proto = model_proto.objective();
-      IntVar* const objective_var = model_loader_->IntegerExpression(
-          objective_proto.objective_index())->Var();
+      IntVar* const objective_var =
+          model_loader_->IntegerExpression(objective_proto.objective_index())
+              ->Var();
       const bool maximize = objective_proto.maximize();
       const int64 step = objective_proto.step();
       OptimizeVar* const objective =
@@ -2533,7 +2537,8 @@ bool Solver::UpgradeModel(CpModel* const proto) {
   return true;
 }
 
-void Solver::RegisterBuilder(const std::string& tag, ConstraintBuilder builder) {
+void Solver::RegisterBuilder(const std::string& tag,
+                             ConstraintBuilder builder) {
   gtl::InsertOrDie(&constraint_builders_, tag, builder);
 }
 

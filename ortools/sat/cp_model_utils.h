@@ -19,9 +19,9 @@
 #include <string>
 #include <vector>
 
+#include <unordered_set>
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include <unordered_set>
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 

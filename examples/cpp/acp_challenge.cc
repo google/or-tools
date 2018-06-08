@@ -20,14 +20,14 @@
 #include "base/hash.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/split.h"
 #include "base/map_util.h"
+#include "base/split.h"
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/routing.h"
-#include "util/tuple_set.h"
 #include "util/filelineiter.h"
+#include "util/tuple_set.h"
 
 /* Data format
 15
@@ -129,9 +129,7 @@ class AcpData {
         }
         break;
       }
-      default: {
-        LOG(ERROR) << "Should not be here";
-      }
+      default: { LOG(ERROR) << "Should not be here"; }
     }
   }
 
@@ -172,7 +170,7 @@ class RandomIntervalLns : public BaseLns {
         rand_(seed),
         number_of_variables_(number_of_variables),
         number_of_intervals_(number_of_intervals),
-        num_product_(num_product)  {
+        num_product_(num_product) {
     CHECK_GT(number_of_variables_, 0);
     CHECK_LE(number_of_variables_, Size());
     CHECK_GT(number_of_intervals_, 0);
@@ -241,9 +239,7 @@ class RandomIntervalLns : public BaseLns {
 class Swap : public IntVarLocalSearchOperator {
  public:
   explicit Swap(const std::vector<IntVar*>& variables)
-      : IntVarLocalSearchOperator(variables),
-        index1_(0),
-        index2_(0) {}
+      : IntVarLocalSearchOperator(variables), index1_(0), index2_(0) {}
 
   virtual ~Swap() {}
 
@@ -277,9 +273,7 @@ class Swap : public IntVarLocalSearchOperator {
 class Reverse : public IntVarLocalSearchOperator {
  public:
   explicit Reverse(const std::vector<IntVar*>& variables)
-      : IntVarLocalSearchOperator(variables),
-        start_(-1),
-        len_(3) {}
+      : IntVarLocalSearchOperator(variables), start_(-1), len_(3) {}
 
   virtual ~Reverse() {}
 
@@ -296,7 +290,7 @@ class Reverse : public IntVarLocalSearchOperator {
       return false;
     }
     for (int i = 0; i < len_; ++i) {
-      SetValue(start_ + len_ - i - 1,  OldValue(start_ + i));
+      SetValue(start_ + len_ - i - 1, OldValue(start_ + i));
     }
     return true;
   }
@@ -313,10 +307,8 @@ class Reverse : public IntVarLocalSearchOperator {
 
 class NRandomSwaps : public IntVarLocalSearchOperator {
  public:
-  explicit NRandomSwaps(const std::vector<IntVar*>& variables,
-                        int num_swaps,
-                        int num_rounds,
-                        int ls_seed)
+  explicit NRandomSwaps(const std::vector<IntVar*>& variables, int num_swaps,
+                        int num_rounds, int ls_seed)
       : IntVarLocalSearchOperator(variables),
         num_swaps_(num_swaps),
         num_rounds_(num_rounds),
@@ -350,9 +342,7 @@ class NRandomSwaps : public IntVarLocalSearchOperator {
   }
 
  private:
-  virtual void OnStart() {
-    round_ = 0;
-  }
+  virtual void OnStart() { round_ = 0; }
 
   const int num_swaps_;
   const int num_rounds_;
@@ -472,9 +462,7 @@ class SmartInsert : public IntVarLocalSearchOperator {
   }
 
  private:
-  bool IsProduct(int value) {
-    return value >= 0 && value < num_items_;
-  }
+  bool IsProduct(int value) { return value >= 0 && value < num_items_; }
 
   bool Increment() {
     if (!up_) {
@@ -589,7 +577,7 @@ class Filter : public IntVarLocalSearchFilter {
     for (int i = 0; i < tmp_solution_.size(); ++i) {
       const int item = tmp_solution_[i];
       const int product = ItemToProduct(item);
-      if (previous != -1  && product != -1 && previous != product) {
+      if (previous != -1 && product != -1 && previous != product) {
         transition_cost += transitions_[previous][product];
       }
       if (product != -1) {
@@ -691,7 +679,6 @@ void Solve(const std::string& filename, const std::string& solution_file) {
     tuple[3] = i;
     tuple[4] = 0;
     transition_cost_tuples.Insert(tuple);
-
   }
   // Add initial state in case no production periods are packed at the start.
   tuple[0] = -1;
@@ -718,8 +705,8 @@ void Solve(const std::string& filename, const std::string& solution_file) {
   solver.MakeIntVarArray(data.num_periods(), -1, data.num_products() - 1,
                          "product_", &products);
   std::vector<IntVar*> items;
-  solver.MakeIntVarArray(data.num_periods(), 0, data.num_periods() - 1,
-                         "item_", &items);
+  solver.MakeIntVarArray(data.num_periods(), 0, data.num_periods() - 1, "item_",
+                         &items);
   std::vector<IntVar*> deliveries;
   std::vector<int> due_dates;
   LOG(INFO) << "  - build inventory costs";
@@ -803,27 +790,27 @@ void Solve(const std::string& filename, const std::string& solution_file) {
 
   // Create objective.
   IntVar* const objective_var =
-      solver.MakeSum(solver.MakeProd(solver.MakeSum(inventory_costs),
-                                     data.inventory_cost()),
-                     solver.MakeSum(transition_costs))->Var();
-  SearchMonitor* const  objective = FLAGS_use_tabu ?
-      solver.MakeTabuSearch(false, objective_var, 1, items, FLAGS_tabu_size,
-                            FLAGS_tabu_size, FLAGS_tabu_factor) :
-      (FLAGS_use_sa ?
-       solver.MakeSimulatedAnnealing(false, objective_var, 1,
-                                     FLAGS_sa_temperature) :
-       solver.MakeMinimize(objective_var, 1));
+      solver
+          .MakeSum(solver.MakeProd(solver.MakeSum(inventory_costs),
+                                   data.inventory_cost()),
+                   solver.MakeSum(transition_costs))
+          ->Var();
+  SearchMonitor* const objective =
+      FLAGS_use_tabu
+          ? solver.MakeTabuSearch(false, objective_var, 1, items,
+                                  FLAGS_tabu_size, FLAGS_tabu_size,
+                                  FLAGS_tabu_factor)
+          : (FLAGS_use_sa ? solver.MakeSimulatedAnnealing(
+                                false, objective_var, 1, FLAGS_sa_temperature)
+                          : solver.MakeMinimize(objective_var, 1));
   // Create search monitors.
   SearchMonitor* const log = solver.MakeSearchLog(1000000, objective_var);
 
-  DecisionBuilder* const db = solver.MakePhase(items,
-                                               Solver::CHOOSE_MIN_SIZE,
+  DecisionBuilder* const db = solver.MakePhase(items, Solver::CHOOSE_MIN_SIZE,
                                                Solver::ASSIGN_MIN_VALUE);
 
-  DecisionBuilder* const random_db =
-      solver.MakePhase(items,
-                       Solver::CHOOSE_FIRST_UNBOUND,
-                       Solver::ASSIGN_RANDOM_VALUE);
+  DecisionBuilder* const random_db = solver.MakePhase(
+      items, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_RANDOM_VALUE);
   SearchLimit* const lns_limit = solver.MakeFailuresLimit(FLAGS_lns_limit);
   DecisionBuilder* const inner_db = solver.MakeSolveOnce(random_db, lns_limit);
 
@@ -832,16 +819,11 @@ void Solve(const std::string& filename, const std::string& solution_file) {
   LocalSearchOperator* insert = solver.RevAlloc(new Insert(items, num_items));
   LocalSearchOperator* smart_insert =
       solver.RevAlloc(new SmartInsert(items, num_items));
-  LocalSearchOperator* random_swap =
-      solver.RevAlloc(new NRandomSwaps(
-          items, FLAGS_ls_swaps, FLAGS_ls_rounds, FLAGS_ls_seed));
-  LocalSearchOperator* random_lns =
-      solver.RevAlloc(new RandomIntervalLns(items,
-                                            item_to_product,
-                                            FLAGS_lns_size,
-                                            FLAGS_lns_intervals,
-                                            FLAGS_lns_seed,
-                                            FLAGS_lns_product));
+  LocalSearchOperator* random_swap = solver.RevAlloc(
+      new NRandomSwaps(items, FLAGS_ls_swaps, FLAGS_ls_rounds, FLAGS_ls_seed));
+  LocalSearchOperator* random_lns = solver.RevAlloc(new RandomIntervalLns(
+      items, item_to_product, FLAGS_lns_size, FLAGS_lns_intervals,
+      FLAGS_lns_seed, FLAGS_lns_product));
   std::vector<LocalSearchOperator*> operators;
   operators.push_back(swap);
   operators.push_back(reverse);
@@ -857,18 +839,17 @@ void Solve(const std::string& filename, const std::string& solution_file) {
 
   std::vector<LocalSearchFilter*> filters;
   if (FLAGS_use_filter) {
-    filters.push_back(solver.RevAlloc(new Filter(items, item_to_product,
-                                                 due_dates, data.transitions(),
-                                                 data.inventory_cost())));
+    filters.push_back(
+        solver.RevAlloc(new Filter(items, item_to_product, due_dates,
+                                   data.transitions(), data.inventory_cost())));
   }
 
   LocalSearchPhaseParameters* const ls_params =
       solver.MakeLocalSearchPhaseParameters(moves, inner_db, nullptr, filters);
 
-
   DecisionBuilder* ls_db = nullptr;
   if (solution.empty()) {
-    ls_db =  solver.MakeLocalSearchPhase(items, db, ls_params);
+    ls_db = solver.MakeLocalSearchPhase(items, db, ls_params);
   } else {
     vector<int> offsets(data.num_products() + 1, 0);
     for (int i = 0; i < data.num_products(); ++i) {
@@ -882,7 +863,7 @@ void Solve(const std::string& filename, const std::string& solution_file) {
       solution_assignment->Add(item);
       solution_assignment->SetRange(item, value, item_value);
     }
-    ls_db =  solver.MakeLocalSearchPhase(solution_assignment, ls_params);
+    ls_db = solver.MakeLocalSearchPhase(solution_assignment, ls_params);
   }
 
   solver.NewSearch(ls_db, objective, log);

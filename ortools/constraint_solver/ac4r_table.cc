@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -121,8 +121,7 @@ class TableVar {
          value_index++) {
       tuples_per_value_[value_index] =
           new RevIntSet<int>(column.NumTuplesContainingValueIndex(value_index),
-                             shared_positions_.get(),
-                             column.NumTuples());
+                             shared_positions_.get(), column.NumTuples());
       active_values_.Insert(solver_, value_index);
     }
   }

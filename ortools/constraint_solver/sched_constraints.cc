@@ -36,11 +36,7 @@ namespace operations_research {
 namespace {
 class TreeArrayConstraint : public Constraint {
  public:
-  enum PerformedStatus {
-    UNPERFORMED,
-    PERFORMED,
-    UNDECIDED
-  };
+  enum PerformedStatus { UNPERFORMED, PERFORMED, UNDECIDED };
 
   TreeArrayConstraint(Solver* const solver,
                       const std::vector<IntervalVar*>& vars,
@@ -70,7 +66,8 @@ class TreeArrayConstraint : public Constraint {
                         target_var_->DebugString().c_str());
   }
 
-  void AcceptInternal(const std::string& name, ModelVisitor* const visitor) const {
+  void AcceptInternal(const std::string& name,
+                      ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         vars_);

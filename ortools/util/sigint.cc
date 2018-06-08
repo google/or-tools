@@ -36,14 +36,10 @@ void SigintHandler::Register(const std::function<void()>& f) {
 
 // This method will be called by the system after the SIGINT signal.
 // The parameter is the signal received.
-void SigintHandler::ControlCHandler(int sig) {
-  handler_();
-}
+void SigintHandler::ControlCHandler(int sig) { handler_(); }
 
 // Unregister the SIGINT handler.
-SigintHandler::~SigintHandler() {
-  signal(SIGINT, SIG_DFL);
-}
+SigintHandler::~SigintHandler() { signal(SIGINT, SIG_DFL); }
 
 std::function<void()> SigintHandler::handler_;
 

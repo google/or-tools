@@ -13,12 +13,12 @@
 
 #include "ortools/data/rcpsp_parser.h"
 
-#include "ortools/base/strtoint.h"
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
 #include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/strtoint.h"
 #include "ortools/data/rcpsp.pb.h"
-#include "ortools/base/filelineiter.h"
 
 using ::absl::delimiter::AnyOf;
 

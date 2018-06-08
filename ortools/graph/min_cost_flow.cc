@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/graph/min_cost_flow.h"
 
 #include <algorithm>
@@ -19,10 +18,9 @@
 #include <limits>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/stringprintf.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/graph/graph.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/graph/graphs.h"
 #include "ortools/graph/max_flow.h"
 
@@ -245,9 +243,8 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckCostRange()
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-bool GenericMinCostFlow<
-    Graph, ArcFlowType,
-    ArcScaledCostType>::CheckRelabelPrecondition(NodeIndex node) const {
+bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
+    CheckRelabelPrecondition(NodeIndex node) const {
   // Note that the classical Relabel precondition assumes IsActive(node), i.e.,
   // the node_excess_[node] > 0. However, to implement the Push Look-Ahead
   // heuristic, we can relax this condition as explained in the section 4.3 of
@@ -264,7 +261,8 @@ bool GenericMinCostFlow<
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-std::string GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugString(
+std::string
+GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugString(
     const std::string& context, ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
@@ -288,10 +286,9 @@ std::string GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugStri
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-bool
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckFeasibility(
-    std::vector<NodeIndex>* const infeasible_supply_node,
-    std::vector<NodeIndex>* const infeasible_demand_node) {
+bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
+    CheckFeasibility(std::vector<NodeIndex>* const infeasible_supply_node,
+                     std::vector<NodeIndex>* const infeasible_demand_node) {
   SCOPED_TIME_STAT(&stats_);
   // Create a new graph, which is a copy of graph_, with the following
   // modifications:
@@ -401,8 +398,9 @@ FlowQuantity GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Flow(
 
 // We use the equations given in the comment of residual_arc_capacity_.
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity GenericMinCostFlow<
-    Graph, ArcFlowType, ArcScaledCostType>::Capacity(ArcIndex arc) const {
+FlowQuantity
+GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Capacity(
+    ArcIndex arc) const {
   if (IsArcDirect(arc)) {
     return residual_arc_capacity_[arc] + residual_arc_capacity_[Opposite(arc)];
   } else {
@@ -426,16 +424,16 @@ FlowQuantity GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Supply(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity GenericMinCostFlow<
-    Graph, ArcFlowType, ArcScaledCostType>::InitialSupply(NodeIndex node)
-    const {
+FlowQuantity
+GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::InitialSupply(
+    NodeIndex node) const {
   return initial_node_excess_[node];
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-FlowQuantity GenericMinCostFlow<
-    Graph, ArcFlowType, ArcScaledCostType>::FeasibleSupply(NodeIndex node)
-    const {
+FlowQuantity
+GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FeasibleSupply(
+    NodeIndex node) const {
   return feasible_node_excess_[node];
 }
 
@@ -446,9 +444,8 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsAdmissible(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-bool
-GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::FastIsAdmissible(
-    ArcIndex arc, CostValue tail_potential) const {
+bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
+    FastIsAdmissible(ArcIndex arc, CostValue tail_potential) const {
   DCHECK_EQ(node_potential_[Tail(arc)], tail_potential);
   return residual_arc_capacity_[arc] > 0 &&
          FastReducedCost(arc, tail_potential) < 0;
@@ -461,8 +458,9 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsActive(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-CostValue GenericMinCostFlow<
-    Graph, ArcFlowType, ArcScaledCostType>::ReducedCost(ArcIndex arc) const {
+CostValue
+GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::ReducedCost(
+    ArcIndex arc) const {
   return FastReducedCost(arc, node_potential_[Tail(arc)]);
 }
 
@@ -956,8 +954,9 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Relabel(
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
-typename Graph::ArcIndex GenericMinCostFlow<
-    Graph, ArcFlowType, ArcScaledCostType>::Opposite(ArcIndex arc) const {
+typename Graph::ArcIndex
+GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Opposite(
+    ArcIndex arc) const {
   return Graphs<Graph>::OppositeArc(*graph_, arc);
 }
 

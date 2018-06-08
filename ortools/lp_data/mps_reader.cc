@@ -11,31 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/lp_data/mps_reader.h"
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <memory>
 #include <utility>
-#include <fstream>
 
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/file.h"
-#include "ortools/base/numbers.h"  // for safe_strtod
-#include "ortools/base/split.h"
-#include "ortools/base/strutil.h"
-#include "ortools/base/map_util.h"  // for FindOrNull, gtl::FindWithDefault
-#include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/base/filelineiter.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"  // for FindOrNull, gtl::FindWithDefault
+#include "ortools/base/numbers.h"   // for safe_strtod
+#include "ortools/base/split.h"
 #include "ortools/base/status.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/strutil.h"
+#include "ortools/lp_data/lp_print_utils.h"
 
 DEFINE_bool(mps_free_form, false, "Read MPS files in free form.");
-DEFINE_bool(mps_stop_after_first_error, true,
-            "Stop after the first error.");
+DEFINE_bool(mps_stop_after_first_error, true, "Stop after the first error.");
 
 namespace operations_research {
 namespace glop {
@@ -109,7 +107,8 @@ void MPSReader::DisplaySummary() {
 
 void MPSReader::SplitLineIntoFields() {
   if (free_form_) {
-    fields_ = absl::StrSplit(line_, absl::delimiter::AnyOf(" \t"), absl::SkipEmpty());
+    fields_ =
+        absl::StrSplit(line_, absl::delimiter::AnyOf(" \t"), absl::SkipEmpty());
     CHECK_GE(kNumFields, fields_.size());
   } else {
     int length = line_.length();
@@ -176,7 +175,6 @@ bool MPSReader::LoadFileAndTryFreeFormOnFail(const std::string& file_name,
   return true;
 }
 
-
 std::string MPSReader::GetProblemName() const { return problem_name_; }
 
 bool MPSReader::IsCommentOrBlank() const {
@@ -194,8 +192,7 @@ bool MPSReader::IsCommentOrBlank() const {
 
 void MPSReader::ProcessLine(const std::string& line) {
   ++line_num_;
-  if (!parse_success_ && FLAGS_mps_stop_after_first_error)
-    return;
+  if (!parse_success_ && FLAGS_mps_stop_after_first_error) return;
   line_ = line;
   if (IsCommentOrBlank()) {
     return;  // Skip blank lines and comments.
@@ -298,8 +295,8 @@ double MPSReader::GetDoubleFromString(const std::string& param) {
   if (!strings::safe_strtod(param, &result)) {
     if (log_errors_) {
       LOG(ERROR) << "At line " << line_num_
-                 << ": Failed to convert std::string to double. String = " << param
-                 << ". (Line contents = '" << line_ << "')."
+                 << ": Failed to convert std::string to double. String = "
+                 << param << ". (Line contents = '" << line_ << "')."
                  << " free_form_ = " << free_form_;
     }
     parse_success_ = false;
@@ -310,8 +307,8 @@ double MPSReader::GetDoubleFromString(const std::string& param) {
 void MPSReader::ProcessRowsSection() {
   std::string row_type_name = fields_[0];
   std::string row_name = fields_[1];
-  MPSRowType row_type =
-      gtl::FindWithDefault(row_name_to_id_map_, row_type_name, UNKNOWN_ROW_TYPE);
+  MPSRowType row_type = gtl::FindWithDefault(row_name_to_id_map_, row_type_name,
+                                             UNKNOWN_ROW_TYPE);
   if (row_type == UNKNOWN_ROW_TYPE) {
     if (log_errors_) {
       LOG(ERROR) << "At line " << line_num_ << ": Unknown row type "
@@ -471,7 +468,8 @@ void MPSReader::StoreRightHandSide(const std::string& row_name,
   }
 }
 
-void MPSReader::StoreRange(const std::string& row_name, const std::string& range_value) {
+void MPSReader::StoreRange(const std::string& row_name,
+                           const std::string& range_value) {
   if (row_name.empty()) {
     return;
   }

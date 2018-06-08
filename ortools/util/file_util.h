@@ -17,16 +17,17 @@
 #include <limits>
 #include <vector>
 
+#include "google/protobuf/message.h"
 #include "ortools/base/file.h"
 #include "ortools/base/recordio.h"
-#include "google/protobuf/message.h"
 #include "ortools/base/string_view.h"
 
 namespace operations_research {
 
 // Reads a proto from a file. Supports the following formats: binary, text,
 // JSON, all of those optionally gzipped. Returns false on failure.
-bool ReadFileToProto(absl::string_view filename, google::protobuf::Message* proto);
+bool ReadFileToProto(absl::string_view filename,
+                     google::protobuf::Message* proto);
 
 template <typename Proto>
 Proto ReadFileToProtoOrDie(absl::string_view filename) {
@@ -42,7 +43,8 @@ enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson };
 // If 'proto_write_format' is kProtoBinary, ".bin" is appended to file_name. If
 // 'proto_write_format' is kJson, ".json" is appended to file_name. If 'gzipped'
 // is true, ".gz" is appended to file_name.
-bool WriteProtoToFile(absl::string_view filename, const google::protobuf::Message& proto,
+bool WriteProtoToFile(absl::string_view filename,
+                      const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped);
 
 namespace internal {
@@ -60,7 +62,6 @@ std::vector<Proto> ReadNumRecords(File* file, int expected_num_records) {
     protos.push_back(proto);
     ++num_read;
   }
-
 
   if (expected_num_records >= 0) {
     CHECK_EQ(num_read, expected_num_records)

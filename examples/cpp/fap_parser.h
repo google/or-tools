@@ -19,20 +19,21 @@
 #ifndef OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 #define OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 
-#include <unordered_map>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "ortools/base/logging.h"
-#include "ortools/base/strtoint.h"
-#include "ortools/base/split.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/split.h"
+#include "ortools/base/strtoint.h"
 
 namespace operations_research {
 
 // Takes a filename and a buffer and fills the lines buffer
 // with the lines of the file corresponding to the filename.
-void ParseFileByLines(const std::string& filename, std::vector<std::string>* lines);
+void ParseFileByLines(const std::string& filename,
+                      std::vector<std::string>* lines);
 
 // The FapVariable struct represents a radio link of the
 // frequency assignment problem.
@@ -244,8 +245,8 @@ int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
 // Function that parses an instance of frequency assignment problem.
 void ParseInstance(const std::string& data_directory, bool find_components,
                    std::map<int, FapVariable>* variables,
-                   std::vector<FapConstraint>* constraints, std::string* objective,
-                   std::vector<int>* frequencies,
+                   std::vector<FapConstraint>* constraints,
+                   std::string* objective, std::vector<int>* frequencies,
                    std::unordered_map<int, FapComponent>* components);
 }  // namespace operations_research
 #endif  // OR_TOOLS_EXAMPLES_FAP_PARSER_H_

@@ -11,12 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/util/stats.h"
 
 #include <cmath>
 #include "ortools/base/stringprintf.h"
-
 
 #include "ortools/base/stl_util.h"
 #include "ortools/port/sysinfo.h"
@@ -27,21 +25,18 @@ namespace operations_research {
 std::string MemoryUsage() {
   const int64 mem = operations_research::sysinfo::MemoryUsageProcess();
   static const int64 kDisplayThreshold = 2;
-    static const int64 kKiloByte = 1024;
-    static const int64 kMegaByte = kKiloByte * kKiloByte;
-    static const int64 kGigaByte = kMegaByte * kKiloByte;
-    if (mem > kDisplayThreshold * kGigaByte) {
-      return StringPrintf("%.2lf GB",
-                          mem * 1.0 / kGigaByte);
-    } else if (mem > kDisplayThreshold * kMegaByte) {
-      return StringPrintf("%.2lf MB",
-                          mem * 1.0 / kMegaByte);
-    } else if (mem > kDisplayThreshold * kKiloByte) {
-      return StringPrintf("%2lf KB",
-                          mem * 1.0 / kKiloByte);
-    } else {
-      return StringPrintf("%" GG_LL_FORMAT "d", mem);
-    }
+  static const int64 kKiloByte = 1024;
+  static const int64 kMegaByte = kKiloByte * kKiloByte;
+  static const int64 kGigaByte = kMegaByte * kKiloByte;
+  if (mem > kDisplayThreshold * kGigaByte) {
+    return StringPrintf("%.2lf GB", mem * 1.0 / kGigaByte);
+  } else if (mem > kDisplayThreshold * kMegaByte) {
+    return StringPrintf("%.2lf MB", mem * 1.0 / kMegaByte);
+  } else if (mem > kDisplayThreshold * kKiloByte) {
+    return StringPrintf("%2lf KB", mem * 1.0 / kKiloByte);
+  } else {
+    return StringPrintf("%" GG_LL_FORMAT "d", mem);
+  }
 }
 
 Stat::Stat(const std::string& name, StatsGroup* group) : name_(name) {

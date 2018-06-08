@@ -21,12 +21,12 @@
 #include <cstdio>
 #include <string>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/file.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/status.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
-#include "ortools/base/status.h"
 
 namespace operations_research {
 
