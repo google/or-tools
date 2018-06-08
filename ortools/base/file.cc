@@ -98,7 +98,7 @@ char* File::ReadLine(char* const output, uint64 max_length) {
 }
 
 int64 File::ReadToString(std::string* const output, uint64 max_length) {
-  CHECK_NOTNULL(output);
+  CHECK(output != nullptr);
   output->clear();
 
   if (max_length == 0) return 0;
