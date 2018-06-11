@@ -738,10 +738,10 @@ SCIP_RETCODE SCIPlpiStrongbranchFrac(
                            // iterations, or -1; may be NULL
 ) {
   SCOPED_TIME_STAT(lpi->stats);
-  CHECK_NOTNULL(down);
-  CHECK_NOTNULL(up);
-  CHECK_NOTNULL(downvalid);
-  CHECK_NOTNULL(upvalid);
+  CHECK(down != nullptr);
+  CHECK(up != nullptr);
+  CHECK(downvalid != nullptr);
+  CHECK(upvalid != nullptr);
 
   const ColIndex col(col_index);
   const Fractional lb = lpi->linear_program->variable_lower_bounds()[col];
@@ -1064,7 +1064,7 @@ SCIP_RETCODE SCIPlpiGetPrimalRay(SCIP_LPI* lpi,  // LP interface structure
 ) {
   SCOPED_TIME_STAT(lpi->stats);
   VLOG(1) << "calling SCIPlpiGetPrimalRay";
-  CHECK_NOTNULL(ray);
+  CHECK(ray != nullptr);
   const ColIndex num_cols = lpi->linear_program->num_variables();
   const DenseRow& primal_ray = lpi->solver->GetPrimalRay();
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -1080,7 +1080,7 @@ SCIP_RETCODE SCIPlpiGetDualfarkas(SCIP_LPI* lpi,  // LP interface structure
 ) {
   SCOPED_TIME_STAT(lpi->stats);
   VLOG(1) << "calling SCIPlpiGetDualfarkas";
-  CHECK_NOTNULL(dualfarkas);
+  CHECK(dualfarkas != nullptr);
   const RowIndex num_rows = lpi->linear_program->num_constraints();
   const DenseColumn& dual_ray = lpi->solver->GetDualRay();
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -1202,7 +1202,7 @@ SCIP_RETCODE SCIPlpiGetBasisInd(SCIP_LPI* lpi,  // LP interface structure
                                                 // basic row m gives value -1-m
 ) {
   SCOPED_TIME_STAT(lpi->stats);
-  CHECK_NOTNULL(bind);
+  CHECK(bind != nullptr);
   VLOG(1) << "calling SCIPlpiGetBasisInd";
 
   // The order is important!
@@ -1228,7 +1228,7 @@ SCIP_RETCODE SCIPlpiGetBInvRow(SCIP_LPI* lpi,    // LP interface structure
                                int* ninds        // ptr to save len(inds) or -1
 ) {
   SCOPED_TIME_STAT(lpi->stats);
-  CHECK_NOTNULL(coef);
+  CHECK(coef != nullptr);
   ScatteredRow solution;
   lpi->solver->GetBasisFactorization().LeftSolveForUnitRow(ColIndex(r),
                                                            &solution);
@@ -1321,7 +1321,7 @@ SCIP_RETCODE SCIPlpiSetState(
                                    // information)
 ) {
   SCOPED_TIME_STAT(lpi->stats);
-  CHECK_NOTNULL(lpistate);
+  CHECK(lpistate != nullptr);
   lpi->solver->LoadStateForNextSolve(*lpistate);
   return SCIP_OKAY;
 }
@@ -1340,8 +1340,8 @@ SCIP_RETCODE SCIPlpiFreeState(SCIP_LPI* lpi,       // LP interface structure
                                                         // information
 ) {
   SCOPED_TIME_STAT(lpi->stats);
-  CHECK_NOTNULL(lpistate);
-  CHECK_NOTNULL(*lpistate);
+  CHECK(lpistate != nullptr);
+  CHECK(*lpistate != nullptr);
   delete *lpistate;
   *lpistate = NULL;
   return SCIP_OKAY;

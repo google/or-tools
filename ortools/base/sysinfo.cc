@@ -18,8 +18,10 @@
 #include <mach/mach_init.h>
 #include <mach/task.h>
 #elif defined(_MSC_VER)  // WINDOWS
-#include <psapi.h>
+// clang-format off
 #include <windows.h>
+#include <psapi.h>
+// clang-format on
 #endif
 
 #include <cstdio>
