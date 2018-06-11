@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Set partition problem in Google CP Solver.
@@ -107,21 +106,19 @@ def main(n=16, num_sets=2):
     for j in range(i, num_sets):
 
       # same cardinality
-      solver.Add(solver.Sum([a[i, k] for k in range(n)])
-                 ==
-                 solver.Sum([a[j, k] for k in range(n)]))
+      solver.Add(
+          solver.Sum([a[i, k] for k in range(n)]) == solver.Sum(
+              [a[j, k] for k in range(n)]))
 
       # same sum
-      solver.Add(solver.Sum([k * a[i, k] for k in range(n)])
-                 ==
-                 solver.Sum([k * a[j, k] for k in range(n)]))
+      solver.Add(
+          solver.Sum([k * a[i, k] for k in range(n)]) == solver.Sum(
+              [k * a[j, k] for k in range(n)]))
 
       # same sum squared
-      solver.Add(solver.Sum([(k * a[i, k]) * (k * a[i, k])
-                             for k in range(n)])
-                 ==
-                 solver.Sum([(k * a[j, k]) * (k * a[j, k])
-                             for k in range(n)]))
+      solver.Add(
+          solver.Sum([(k * a[i, k]) * (k * a[i, k]) for k in range(n)]) ==
+          solver.Sum([(k * a[j, k]) * (k * a[j, k]) for k in range(n)]))
 
   # symmetry breaking for num_sets == 2
   if num_sets == 2:
@@ -130,9 +127,7 @@ def main(n=16, num_sets=2):
   #
   # search and result
   #
-  db = solver.Phase(a_flat,
-                    solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(a_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
 
@@ -145,15 +140,15 @@ def main(n=16, num_sets=2):
 
     sq = sum([(j + 1) * a_val[0, j] for j in range(n)])
     print("sums:", sq)
-    sq2 = sum([((j + 1) * a_val[0, j]) ** 2 for j in range(n)])
+    sq2 = sum([((j + 1) * a_val[0, j])**2 for j in range(n)])
     print("sums squared:", sq2)
 
     for i in range(num_sets):
       if sum([a_val[i, j] for j in range(n)]):
-        print(i + 1, ":", end=' ')
+        print(i + 1, ":", end=" ")
         for j in range(n):
           if a_val[i, j] == 1:
-            print(j + 1, end=' ')
+            print(j + 1, end=" ")
         print()
 
     print()

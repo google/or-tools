@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Global constraint regular in Google CP Solver.
@@ -183,20 +182,20 @@ def main():
   accepting_states = [n_states]
 
   # declare variables
-  reg_input = [solver.IntVar(1, input_max, 'reg_input[%i]' % i)
-               for i in range(this_len)]
+  reg_input = [
+      solver.IntVar(1, input_max, 'reg_input[%i]' % i) for i in range(this_len)
+  ]
 
   #
   # constraints
   #
-  regular(reg_input, n_states, input_max, transition_fn,
-          initial_state, accepting_states)
+  regular(reg_input, n_states, input_max, transition_fn, initial_state,
+          accepting_states)
 
   #
   # solution and search
   #
-  db = solver.Phase(reg_input,
-                    solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
+  db = solver.Phase(reg_input, solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)

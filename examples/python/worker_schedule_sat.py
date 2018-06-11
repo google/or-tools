@@ -114,13 +114,15 @@ def schedule():
   # Model the problem.
   model = cp_model.CpModel()
 
-  workers_per_shift = [model.NewIntVar(0, num_workers, 'shift[%i]' % i)
-                       for i in all_shifts]
+  workers_per_shift = [
+      model.NewIntVar(0, num_workers, 'shift[%i]' % i) for i in all_shifts
+  ]
 
   # Satisfy min requirements.
   for slot in all_slots:
-    model.Add(sum(workers_per_shift[shift] * possible_shifts[shift][slot]
-                  for shift in all_shifts) >= min_number_of_workers[slot])
+    model.Add(
+        sum(workers_per_shift[shift] * possible_shifts[shift][slot]
+            for shift in all_shifts) >= min_number_of_workers[slot])
 
   # Create the objective variable.
   objective = model.NewIntVar(0, num_workers, 'objective')

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Divisible by 9 through 1 puzzle in Google CP Solver.
@@ -101,8 +100,8 @@ def my_mod(solver, x, y, r):
 #
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(
-      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)]))
+  solver.Add(s == solver.Sum([(base**(tlen - i - 1)) * t[i]
+                              for i in range(tlen)]))
 
 
 def main(base=10):
@@ -111,7 +110,7 @@ def main(base=10):
   solver = pywrapcp.Solver("Divisible by 9 through 1")
 
   # data
-  m = base ** (base - 1) - 1
+  m = base**(base - 1) - 1
   n = base - 1
 
   digits_str = "_0123456789ABCDEFGH"
@@ -143,18 +142,15 @@ def main(base=10):
   solution.Add(x)
   solution.Add(t)
 
-  db = solver.Phase(x,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
     print("x: ", [x[i].Value() for i in range(n)])
     print("t: ", [t[i].Value() for i in range(n)])
-    print("number base 10: %i base %i: %s" % (t[0].Value(),
-                                              base,
-                                              "".join([digits_str[x[i].Value() + 1] for i in range(n)])))
+    print("number base 10: %i base %i: %s" % (t[0].Value(), base, "".join(
+        [digits_str[x[i].Value() + 1] for i in range(n)])))
     print()
     num_solutions += 1
   solver.EndSearch()
@@ -172,7 +168,8 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
     base = int(sys.argv[1])
     if base > max_base:
-      print("Sorry, max allowed base is %i. Setting base to %i..." % (max_base, default_base))
+      print("Sorry, max allowed base is %i. Setting base to %i..." %
+            (max_base, default_base))
       base = default_base
   main(base)
 

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Generic alphametic solver in Google CP Solver.
@@ -80,7 +79,7 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
   # the digits
   x = [solver.IntVar(0, base - 1, "x[%i]" % i) for i in range(n)]
   # the sums of each number (e.g. the three numbers SEND, MORE, MONEY)
-  sums = [solver.IntVar(1, 10 ** (lens[i]) - 1) for i in range(p_len)]
+  sums = [solver.IntVar(1, 10**(lens[i]) - 1) for i in range(p_len)]
 
   #
   # constraints
@@ -92,8 +91,9 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
     this_len = len(prob)
 
     # sum all the digits with proper exponents to a number
-    solver.Add(sums[ix] == solver.Sum(
-        [(base ** i) * x[lookup[prob[this_len - i - 1]]] for i in range(this_len)[::-1]]))
+    solver.Add(sums[ix] == solver.Sum([(base**i) *
+                                       x[lookup[prob[this_len - i - 1]]]
+                                       for i in range(this_len)[::-1]]))
     # leading digits must be > 0
     solver.Add(x[lookup[prob[0]]] > 0)
     ix += 1
@@ -108,9 +108,7 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
   solution.Add(x)
   solution.Add(sums)
 
-  db = solver.Phase(x,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
 
@@ -123,12 +121,12 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
     print()
     for prob in problem:
       for p in prob:
-        print(p, end=' ')
+        print(p, end=" ")
       print()
     print()
     for prob in problem:
       for p in prob:
-        print(x[lookup[p]].Value(), end=' ')
+        print(x[lookup[p]].Value(), end=" ")
       print()
 
     print("sums:", [sums[i].Value() for i in range(p_len)])
@@ -142,13 +140,9 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
 
 def test_problems(base=10):
   problems = [
-      "SEND+MORE=MONEY",
-      "SEND+MOST=MONEY",
-      "VINGT+CINQ+CINQ=TRENTE",
-      "EIN+EIN+EIN+EIN=VIER",
-      "DONALD+GERALD=ROBERT",
-      "SATURN+URANUS+NEPTUNE+PLUTO+PLANETS",
-      "WRONG+WRONG=RIGHT"
+      "SEND+MORE=MONEY", "SEND+MOST=MONEY", "VINGT+CINQ+CINQ=TRENTE",
+      "EIN+EIN+EIN+EIN=VIER", "DONALD+GERALD=ROBERT",
+      "SATURN+URANUS+NEPTUNE+PLUTO+PLANETS", "WRONG+WRONG=RIGHT"
   ]
 
   for p in problems:

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Quasigroup completion Google CP Solver.
@@ -61,13 +60,8 @@ default_n = 5
 X = 0
 # default problem
 # (This is the same as quasigroup1.txt)
-default_puzzle = [
-    [1, X, X, X, 4],
-    [X, 5, X, X, X],
-    [4, X, X, 2, X],
-    [X, 4, X, X, X],
-    [X, X, 5, X, 1]
-]
+default_puzzle = [[1, X, X, X, 4], [X, 5, X, X, X], [4, X, X, 2, X],
+                  [X, 4, X, X, X], [X, X, 5, X, 1]]
 
 
 def main(puzzle="", n=0):
@@ -122,9 +116,7 @@ def main(puzzle="", n=0):
   # This version prints out the solution directly, and
   # don't collect them as solver.FirstSolutionCollector(solution) do
   # (db: DecisionBuilder)
-  db = solver.Phase(xflat,
-                    solver.INT_VAR_SIMPLE,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(xflat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -134,7 +126,7 @@ def main(puzzle="", n=0):
     xval = [x[(i, j)].Value() for i in range(n) for j in range(n)]
     for i in range(n):
       for j in range(n):
-        print(xval[i * n + j], end=' ')
+        print(xval[i * n + j], end=" ")
       print()
     print()
   solver.EndSearch()
@@ -194,14 +186,14 @@ def read_problem(file):
 def print_board(x, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print("% 2s" % x[i, j], end=' ')
+      print("% 2s" % x[i, j], end=" ")
     print("")
 
 
 def print_game(game, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print("% 2s" % game[i][j], end=' ')
+      print("% 2s" % game[i][j], end=" ")
     print("")
 
 

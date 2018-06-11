@@ -25,19 +25,11 @@ def main():
   all_machines = range(0, machines_count)
   all_jobs = range(0, jobs_count)
 
-  durations = [[1, 3, 6, 7, 3, 6],
-               [8, 5, 10, 10, 10, 4],
-               [5, 4, 8, 9, 1, 7],
-               [5, 5, 5, 3, 8, 9],
-               [9, 3, 5, 4, 3, 1],
-               [3, 3, 9, 10, 4, 1]]
+  durations = [[1, 3, 6, 7, 3, 6], [8, 5, 10, 10, 10, 4], [5, 4, 8, 9, 1, 7],
+               [5, 5, 5, 3, 8, 9], [9, 3, 5, 4, 3, 1], [3, 3, 9, 10, 4, 1]]
 
-  machines = [[2, 0, 1, 3, 5, 4],
-              [1, 2, 4, 5, 0, 3],
-              [2, 3, 5, 0, 1, 4],
-              [1, 0, 2, 3, 4, 5],
-              [2, 1, 4, 5, 0, 3],
-              [1, 3, 5, 0, 4, 2]]
+  machines = [[2, 0, 1, 3, 5, 4], [1, 2, 4, 5, 0, 3], [2, 3, 5, 0, 1, 4],
+              [1, 0, 2, 3, 4, 5], [2, 1, 4, 5, 0, 3], [1, 3, 5, 0, 4, 2]]
 
   # Computes horizon dynamically.
   horizon = sum([sum(durations[i]) for i in all_jobs])
@@ -52,10 +44,9 @@ def main():
       duration = durations[i][j]
       end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (i, j))
       interval_var = model.NewIntervalVar(start_var, duration, end_var,
-                                         'interval_%i_%i' % (i, j))
-      all_tasks[(i, j)] = Task(start=start_var,
-                               end=end_var,
-                               interval=interval_var)
+                                          'interval_%i_%i' % (i, j))
+      all_tasks[(i, j)] = Task(
+          start=start_var, end=end_var, interval=interval_var)
 
   # Create disjuctive constraints.
   machine_to_jobs = {}
@@ -85,7 +76,8 @@ def main():
 
   # Output solution.
   if visualization.RunFromIPython():
-    starts = [[solver.Value(all_tasks[(i, j)][0]) for j in all_machines]
+    starts = [[solver.Value(all_tasks[(i, j)][0])
+               for j in all_machines]
               for i in all_jobs]
     visualization.DisplayJobshop(starts, durations, machines, 'FT06')
   else:

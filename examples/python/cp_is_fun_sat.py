@@ -10,9 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Cryptarithmetic puzzle
+"""Cryptarithmetic puzzle
 
 First attempt to solve equation CP + IS + FUN = TRUE
 where each letter represents a unique digit.
@@ -22,6 +20,7 @@ This problem has 72 different solutions in base 10.
 
 from __future__ import print_function
 from ortools.sat.python import cp_model
+
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
@@ -33,7 +32,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
   def NewSolution(self):
     self.__solution_count += 1
     for v in self.__variables:
-      print('%s=%i' % (v, self.Value(v)), end = ' ')
+      print('%s=%i' % (v, self.Value(v)), end=' ')
     print()
 
   def SolutionCount(self):
@@ -47,16 +46,16 @@ def CPIsFun():
   # Constraint programming engine
   model = cp_model.CpModel()
 
-  c = model.NewIntVar(1, 9, 'C');
-  p = model.NewIntVar(0, 9, 'P');
-  i = model.NewIntVar(1, 9, 'I');
-  s = model.NewIntVar(0, 9, 'S');
-  f = model.NewIntVar(1, 9, 'F');
-  u = model.NewIntVar(0, 9, 'U');
-  n = model.NewIntVar(0, 9, 'N');
-  t = model.NewIntVar(1, 9, 'T');
-  r = model.NewIntVar(0, 9, 'R');
-  e = model.NewIntVar(0, 9, 'E');
+  c = model.NewIntVar(1, 9, 'C')
+  p = model.NewIntVar(0, 9, 'P')
+  i = model.NewIntVar(1, 9, 'I')
+  s = model.NewIntVar(0, 9, 'S')
+  f = model.NewIntVar(1, 9, 'F')
+  u = model.NewIntVar(0, 9, 'U')
+  n = model.NewIntVar(0, 9, 'N')
+  t = model.NewIntVar(1, 9, 'T')
+  r = model.NewIntVar(0, 9, 'R')
+  e = model.NewIntVar(0, 9, 'E')
 
   # We need to group variables in a list to use the constraint AllDifferent.
   letters = [c, p, i, s, f, u, n, t, r, e]
@@ -68,8 +67,8 @@ def CPIsFun():
   model.AddAllDifferent(letters)
 
   # CP + IS + FUN = TRUE
-  model.Add(p + s + n + kBase * (c + i + u) + kBase * kBase * f ==
-            e + kBase * u + kBase * kBase * r + kBase * kBase * kBase * t)
+  model.Add(p + s + n + kBase * (c + i + u) + kBase * kBase * f == e +
+            kBase * u + kBase * kBase * r + kBase * kBase * kBase * t)
 
   solver = cp_model.CpSolver()
   status = solver.Solve(model)

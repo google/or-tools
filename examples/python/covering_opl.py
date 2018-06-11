@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Set covering problem in Google CP Solver.
@@ -77,27 +76,22 @@ def main():
 
   # Which worker is qualified for each task.
   # Note: This is 1-based and will be made 0-base below.
-  Qualified = [
-      [1, 9, 19, 22, 25, 28, 31],
-      [2, 12, 15, 19, 21, 23, 27, 29, 30, 31, 32],
-      [3, 10, 19, 24, 26, 30, 32],
-      [4, 21, 25, 28, 32],
-      [5, 11, 16, 22, 23, 27, 31],
-      [6, 20, 24, 26, 30, 32],
-      [7, 12, 17, 25, 30, 31],
-      [8, 17, 20, 22, 23],
-      [9, 13, 14, 26, 29, 30, 31],
-      [10, 21, 25, 31, 32],
-      [14, 15, 18, 23, 24, 27, 30, 32],
-      [18, 19, 22, 24, 26, 29, 31],
-      [11, 20, 25, 28, 30, 32],
-      [16, 19, 23, 31],
-      [9, 18, 26, 28, 31, 32]
-  ]
+  Qualified = [[1, 9, 19, 22, 25, 28,
+                31], [2, 12, 15, 19, 21, 23, 27, 29, 30, 31,
+                      32], [3, 10, 19, 24, 26, 30, 32], [4, 21, 25, 28, 32],
+               [5, 11, 16, 22, 23, 27, 31], [6, 20, 24, 26,
+                                             30, 32], [7, 12, 17, 25, 30,
+                                                       31], [8, 17, 20, 22, 23],
+               [9, 13, 14, 26, 29, 30,
+                31], [10, 21, 25, 31, 32], [14, 15, 18, 23, 24, 27, 30, 32], [
+                    18, 19, 22, 24, 26, 29, 31
+                ], [11, 20, 25, 28, 30, 32], [16, 19, 23,
+                                              31], [9, 18, 26, 28, 31, 32]]
 
   Cost = [
-      1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5,
-      5, 5, 6, 6, 6, 7, 8, 9]
+      1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5,
+      5, 6, 6, 6, 7, 8, 9
+  ]
 
   #
   # variables
@@ -122,9 +116,7 @@ def main():
   #
   # search and result
   #
-  db = solver.Phase(Hire,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(Hire, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db, [objective])
 
@@ -132,10 +124,10 @@ def main():
   while solver.NextSolution():
     num_solutions += 1
     print("Total cost", total_cost.Value())
-    print("We should hire these workers: ", end=' ')
+    print("We should hire these workers: ", end=" ")
     for w in Workers:
       if Hire[w].Value() == 1:
-        print(w, end=' ')
+        print(w, end=" ")
     print()
     print()
 

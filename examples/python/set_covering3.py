@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Set covering in Google CP Solver.
@@ -63,12 +62,12 @@ def main(unused_argv):
 
   # which group does a senator belong to?
   belongs = [
-      [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],   # 1 southern
-      [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],   # 2 northern
-      [0, 1, 1, 0, 0, 0, 0, 1, 1, 1],   # 3 liberals
-      [1, 0, 0, 0, 1, 1, 1, 0, 0, 0],   # 4 conservative
-      [0, 0, 1, 1, 1, 1, 1, 0, 1, 0],   # 5 democrats
-      [1, 1, 0, 0, 0, 0, 0, 1, 0, 1]    # 6 republicans
+      [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],  # 1 southern
+      [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],  # 2 northern
+      [0, 1, 1, 0, 0, 0, 0, 1, 1, 1],  # 3 liberals
+      [1, 0, 0, 0, 1, 1, 1, 0, 0, 0],  # 4 conservative
+      [0, 0, 1, 1, 1, 1, 1, 0, 1, 0],  # 5 democrats
+      [1, 1, 0, 0, 0, 0, 0, 1, 0, 1]  # 6 republicans
   ]
 
   #
@@ -87,9 +86,8 @@ def main(unused_argv):
   # one senator
   for i in range(num_groups):
     solver.Add(
-        solver.SumGreaterOrEqual([x[j] * belongs[i][j]
-                                  for j in range(num_senators)],
-                                 1))
+        solver.SumGreaterOrEqual(
+            [x[j] * belongs[i][j] for j in range(num_senators)], 1))
 
   objective = solver.Minimize(z, 1)
 
@@ -101,19 +99,18 @@ def main(unused_argv):
   solution.AddObjective(z)
 
   collector = solver.LastSolutionCollector(solution)
-  solver.Solve(solver.Phase(x,
-                            solver.INT_VAR_DEFAULT,
-                            solver.INT_VALUE_DEFAULT),
-               [collector, objective])
+  solver.Solve(
+      solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+      [collector, objective])
 
   print("z:", collector.ObjectiveValue(0))
   print("x:", [collector.Value(0, x[i]) for i in range(num_senators)])
   for j in range(num_senators):
     if collector.Value(0, x[j]) == 1:
-      print("Senator", j + 1, "belongs to these groups:", end=' ')
+      print("Senator", j + 1, "belongs to these groups:", end=" ")
       for i in range(num_groups):
         if belongs[i][j] == 1:
-          print(i + 1, end=' ')
+          print(i + 1, end=" ")
       print()
 
   print()

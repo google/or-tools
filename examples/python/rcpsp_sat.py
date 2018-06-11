@@ -22,10 +22,12 @@ import time
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--input', default = "",
-                    help = 'Input file to parse and solve.')
-parser.add_argument('--output_proto', default = "",
-                    help = 'Output file to write the cp_model proto to.')
+parser.add_argument(
+    '--input', default='', help='Input file to parse and solve.')
+parser.add_argument(
+    '--output_proto',
+    default='',
+    help='Output file to write the cp_model proto to.')
 
 
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -45,17 +47,17 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 
 def SolveRcpsp(problem, proto_file):
   # Determine problem type.
-  problem_type = ('Resource investment' if problem.is_resource_investment
-                                        else 'RCPSP')
+  problem_type = ('Resource investment'
+                  if problem.is_resource_investment else 'RCPSP')
 
   if problem.is_rcpsp_max:
     problem_type += '/Max delay'
   if problem.is_consumer_producer:
-    print ('Solving %s with %i reservoir resources and %i tasks' % (
-        problem_type, len(problem.resources), len(problem.tasks)))
+    print('Solving %s with %i reservoir resources and %i tasks' %
+          (problem_type, len(problem.resources), len(problem.tasks)))
   else:
-    print ('Solving %s with %i resources and %i tasks' % (
-        problem_type, len(problem.resources), len(problem.tasks)))
+    print('Solving %s with %i resources and %i tasks' %
+          (problem_type, len(problem.resources), len(problem.tasks)))
 
   # Create the model.
   model = cp_model.CpModel()
@@ -161,8 +163,8 @@ def SolveRcpsp(problem, proto_file):
       task_starts[t] = model.NewIntVar(0, horizon, 'start_of_task_%i' % t)
       task_ends[t] = model.NewIntVar(0, horizon, 'end_of_task_%i' % t)
       duration = model.NewIntVar(min_size, max_size, 'duration_of_task_%i' % t)
-      interval = model.NewIntervalVar(task_starts[t], duration,
-                                      task_ends[t], 'interval_%i' % t)
+      interval = model.NewIntervalVar(task_starts[t], duration, task_ends[t],
+                                      'interval_%i' % t)
 
       # Link with optional per-recipe copies.
       for r in all_recipes:
@@ -171,7 +173,6 @@ def SolveRcpsp(problem, proto_file):
         model.Add(task_ends[t] == ends_per_task[t][r]).OnlyEnforceIf(p)
         model.Add(duration == task.recipes[r].duration).OnlyEnforceIf(p)
       model.Add(sum(presences_per_task[t]) == 1)
-
 
   # Create makespan variable
   makespan = model.NewIntVar(0, horizon, 'makespan')
@@ -218,22 +219,23 @@ def SolveRcpsp(problem, proto_file):
 
     if problem.is_resource_investment:
       capacity = model.NewIntVar(0, c, 'capacity_of_%i' % r)
-      model.AddCumulative(
-          intervals_per_resource[r], demands_per_resource[r], capacity)
+      model.AddCumulative(intervals_per_resource[r], demands_per_resource[r],
+                          capacity)
       capacities.append(capacity)
       max_cost += c * resource.unit_cost
     elif resource.renewable:
       if intervals_per_resource[r]:
-        model.AddCumulative(
-            intervals_per_resource[r], demands_per_resource[r], c)
+        model.AddCumulative(intervals_per_resource[r], demands_per_resource[r],
+                            c)
     elif presences_per_resource[r]:  # Non empty non renewable resource.
       if problem.is_consumer_producer:
         model.AddReservoirConstraint(
             starts_per_resource[r], demands_per_resource[r],
             resource.min_capacity, resource.max_capacity)
       else:
-        model.Add(sum(presences_per_resource[r][i] * demands_per_resource[r][i]
-                  for i in range(len(presences_per_resource[r]))) <= c)
+        model.Add(
+            sum(presences_per_resource[r][i] * demands_per_resource[r][i]
+                for i in range(len(presences_per_resource[r]))) <= c)
 
   # Objective.
   if problem.is_resource_investment:

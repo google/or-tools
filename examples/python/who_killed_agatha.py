@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Who killed agatha? (The Dreadsbury Mansion Murder Mystery) in Google CP
@@ -83,7 +82,7 @@ def flatten_matrix(solver, m, rows, cols):
 def print_flat_matrix(m_flat, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print(m_flat[i * cols + j].Value(), end=' ')
+      print(m_flat[i * cols + j].Value(), end=" ")
     print()
   print()
 
@@ -180,8 +179,7 @@ def main(the_killers):
   solution.Add(richer_flat)
 
   # db: DecisionBuilder
-  db = solver.Phase(hates_flat + richer_flat,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(hates_flat + richer_flat, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)

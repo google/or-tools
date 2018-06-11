@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Magic square (integer programming) in Google or-tools.
@@ -112,45 +111,42 @@ def main(n=3, sol='CBC', use_output_matrix=0):
 
   # each integer must be assigned exactly to one cell
   for k in range_N:
-    solver.Add(solver.Sum([x[i, j, k]
-                           for i in range_n
-                           for j in range_n]) == 1)
+    solver.Add(solver.Sum([x[i, j, k] for i in range_n for j in range_n]) == 1)
 
   # # the sum in each row must be the magic sum
   for i in range_n:
-    solver.Add(solver.Sum([k * x[i, j, k]
-                           for j in range_n
-                           for k in range_N]) == s)
+    solver.Add(
+        solver.Sum([k * x[i, j, k] for j in range_n for k in range_N]) == s)
 
   # # the sum in each column must be the magic sum
   for j in range_n:
-    solver.Add(solver.Sum([k * x[i, j, k]
-                           for i in range_n
-                           for k in range_N]) == s)
+    solver.Add(
+        solver.Sum([k * x[i, j, k] for i in range_n for k in range_N]) == s)
 
   # # the sum in the diagonal must be the magic sum
-  solver.Add(solver.Sum([k * x[i, i, k]
-                         for i in range_n
-                         for k in range_N]) == s)
+  solver.Add(
+      solver.Sum([k * x[i, i, k] for i in range_n for k in range_N]) == s)
 
   # # the sum in the co-diagonal must be the magic sum
   if range_n[0] == 1:
     # for range_n = 1..n
-    solver.Add(solver.Sum([k * x[i, n - i + 1, k]
-                           for i in range_n
-                           for k in range_N]) == s)
+    solver.Add(
+        solver.Sum([k * x[i, n - i + 1, k]
+                    for i in range_n
+                    for k in range_N]) == s)
   else:
     # for range_n = 0..n-1
-    solver.Add(solver.Sum([k * x[i, n - i - 1, k]
-                           for i in range_n
-                           for k in range_N]) == s)
+    solver.Add(
+        solver.Sum([k * x[i, n - i - 1, k]
+                    for i in range_n
+                    for k in range_N]) == s)
 
   # for output
   if use_output_matrix == 1:
     for i in range_n:
       for j in range_n:
-        solver.Add(square[i, j] ==
-                   solver.Sum([k * x[i, j, k] for k in range_N]))
+        solver.Add(square[i, j] == solver.Sum([k * x[i, j, k]
+                                               for k in range_N]))
 
   #
   # solution and search
@@ -169,7 +165,10 @@ def main(n=3, sol='CBC', use_output_matrix=0):
   else:
     for i in range_n:
       for j in range_n:
-        print(sum([int(k * x[i, j, k].SolutionValue()) for k in range_N]), ' ', end=' ')
+        print(
+            sum([int(k * x[i, j, k].SolutionValue()) for k in range_N]),
+            ' ',
+            end=' ')
       print()
 
   print('\nx:')

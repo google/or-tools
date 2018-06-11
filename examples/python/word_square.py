@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Word square in Google CP Solver.
@@ -84,8 +83,9 @@ def main(words, word_len, num_answers=20):
       # solver.Add(A[(E[i],j)] == A[(E[j],i)])
 
       # We must use Element explicitly
-      solver.Add(solver.Element(A_flat, E[i] * word_len + j) ==
-                 solver.Element(A_flat, E[j] * word_len + i))
+      solver.Add(
+          solver.Element(A_flat, E[i] * word_len +
+                         j) == solver.Element(A_flat, E[j] * word_len + i))
 
   #
   # solution and search
@@ -94,8 +94,7 @@ def main(words, word_len, num_answers=20):
   solution.Add(E)
 
   # db: DecisionBuilder
-  db = solver.Phase(E + A_flat,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(E + A_flat, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
@@ -145,8 +144,7 @@ def read_words(word_list, word_len, limit):
     w = w.strip().lower()
     # if len(w) == word_len and not dict.has_key(w) and not re.search("[^a-zедц]",w) and count < limit:
     # Later note: The limit is not needed anymore with Mistral
-    if len(w) == word_len and w not in dict and not re.search(
-        "[^a-zедц]", w):
+    if len(w) == word_len and w not in dict and not re.search("[^a-zедц]", w):
       dict[w] = 1
       all_words.append(w)
       count += 1

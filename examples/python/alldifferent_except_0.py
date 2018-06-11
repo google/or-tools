@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   All different except 0 Google CP Solver.
@@ -66,13 +65,17 @@ def alldifferent_except_0(solver, a):
     for j in range(i):
       solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
 
+
 # more compact version:
 
 
 def alldifferent_except_0_b(solver, a):
   n = len(a)
-  [solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
-   for i in range(n) for j in range(i)]
+  [
+      solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]))
+      for i in range(n)
+      for j in range(i)
+  ]
 
 
 def main(unused_argv):
@@ -103,10 +106,9 @@ def main(unused_argv):
   solution.Add(z)
 
   collector = solver.AllSolutionCollector(solution)
-  solver.Solve(solver.Phase([x[i] for i in range(n)],
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE),
-               [collector])
+  solver.Solve(
+      solver.Phase([x[i] for i in range(n)], solver.CHOOSE_FIRST_UNBOUND,
+                   solver.ASSIGN_MIN_VALUE), [collector])
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):

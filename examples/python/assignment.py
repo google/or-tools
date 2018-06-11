@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Assignment problem in Google CP Solver.
@@ -58,18 +57,22 @@ def main(cost, rows, cols):
   #
 
   # total_cost
-  solver.Add(
-      total_cost == solver.Sum(
-          [solver.ScalProd(x_row, cost_row) for (x_row, cost_row) in zip(
-              x, cost)]))
+  solver.Add(total_cost == solver.Sum(
+      [solver.ScalProd(x_row, cost_row) for (x_row, cost_row) in zip(x, cost)]))
 
   # exacly one assignment per row, all rows must be assigned
-  [solver.Add(solver.Sum([x[row][j] for j in range(cols)]) == 1)
-   for row in range(rows)]
+  [
+      solver.Add(solver.Sum([x[row][j]
+                             for j in range(cols)]) == 1)
+      for row in range(rows)
+  ]
 
   # zero or one assignments per column
-  [solver.Add(solver.Sum([x[i][col] for i in range(rows)]) <= 1)
-   for col in range(cols)]
+  [
+      solver.Add(solver.Sum([x[i][col]
+                             for i in range(rows)]) <= 1)
+      for col in range(cols)
+  ]
 
   objective = solver.Minimize(total_cost, 1)
 
@@ -81,9 +84,7 @@ def main(cost, rows, cols):
   solution.Add(total_cost)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat,
-                    solver.INT_VAR_SIMPLE,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x_flat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db, [objective])
   num_solutions = 0
@@ -91,12 +92,12 @@ def main(cost, rows, cols):
     print("total_cost:", total_cost.Value())
     for i in range(rows):
       for j in range(cols):
-        print(x[i][j].Value(), end=' ')
+        print(x[i][j].Value(), end=" ")
       print()
     print()
 
     for i in range(rows):
-      print("Task:", i, end=' ')
+      print("Task:", i, end=" ")
       for j in range(cols):
         if x[i][j].Value() == 1:
           print(" is done by ", j)
@@ -117,10 +118,7 @@ def main(cost, rows, cols):
 #         interesting
 rows = 4
 cols = 5
-cost = [[14, 5, 8, 7, 15],
-        [2, 12, 6, 5, 3],
-        [7, 8, 3, 9, 7],
-        [2, 4, 6, 10, 1]]
+cost = [[14, 5, 8, 7, 15], [2, 12, 6, 5, 3], [7, 8, 3, 9, 7], [2, 4, 6, 10, 1]]
 
 if __name__ == "__main__":
   main(cost, rows, cols)

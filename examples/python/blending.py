@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Blending problem in Google or-tools.
@@ -72,8 +71,10 @@ def main(sol='CBC'):
   r = [solver.NumVar(0, solver.Infinity(), 'r[%i]' % i) for i in Raws]
   s = [solver.NumVar(0, solver.Infinity(), 's[%i]' % i) for i in Scraps]
   ii = [solver.IntVar(0, solver.Infinity(), 'ii[%i]' % i) for i in Ingos]
-  metal = [solver.NumVar(Low[j] * Alloy, Up[j] * Alloy, 'metal[%i]' % j)
-           for j in Metals]
+  metal = [
+      solver.NumVar(Low[j] * Alloy, Up[j] * Alloy, 'metal[%i]' % j)
+      for j in Metals
+  ]
 
   z = solver.NumVar(0, solver.Infinity(), 'z')
 
@@ -81,18 +82,16 @@ def main(sol='CBC'):
   # constraints
   #
 
-  solver.Add(z ==
-             solver.Sum([CostMetal[i] * p[i] for i in Metals]) +
+  solver.Add(z == solver.Sum([CostMetal[i] * p[i] for i in Metals]) +
              solver.Sum([CostRaw[i] * r[i] for i in Raws]) +
              solver.Sum([CostScrap[i] * s[i] for i in Scraps]) +
              solver.Sum([CostIngo[i] * ii[i] for i in Ingos]))
 
   for j in Metals:
-    solver.Add(
-        metal[j] == p[j] +
-        solver.Sum([PercRaw[j][k] * r[k] for k in Raws]) +
-        solver.Sum([PercScrap[j][k] * s[k] for k in Scraps]) +
-        solver.Sum([PercIngo[j][k] * ii[k] for k in Ingos]))
+    solver.Add(metal[j] == p[j] +
+               solver.Sum([PercRaw[j][k] * r[k] for k in Raws]) +
+               solver.Sum([PercScrap[j][k] * s[k] for k in Scraps]) +
+               solver.Sum([PercIngo[j][k] * ii[k] for k in Ingos]))
 
   solver.Add(solver.Sum(metal) == Alloy)
 

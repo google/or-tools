@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Set partition and set covering in Google CP Solver.
@@ -96,7 +95,7 @@ def main(set_partition=1):
       [0, 1, 1, 1, 0, 0, 0, 0],  # alternative 7
       [0, 0, 0, 1, 1, 0, 0, 1],  # alternative 8
       [0, 0, 1, 0, 0, 1, 0, 1],  # alternative 9
-      [1, 0, 0, 0, 0, 1, 1, 0]   # alternative 10
+      [1, 0, 0, 0, 0, 1, 1, 0]  # alternative 10
   ]
 
   #
@@ -116,14 +115,12 @@ def main(set_partition=1):
   for j in range(num_objects):
     if set_partition == 1:
       solver.Add(
-          solver.SumEquality([x[i] * a[i][j]
-                              for i in range(num_alternatives)],
+          solver.SumEquality([x[i] * a[i][j] for i in range(num_alternatives)],
                              1))
     else:
       solver.Add(
-          solver.SumGreaterOrEqual([x[i] * a[i][j]
-                                    for i in range(num_alternatives)],
-                                   1))
+          solver.SumGreaterOrEqual(
+              [x[i] * a[i][j] for i in range(num_alternatives)], 1))
 
   objective = solver.Minimize(z, 1)
 
@@ -135,14 +132,15 @@ def main(set_partition=1):
   solution.AddObjective(z)
 
   collector = solver.LastSolutionCollector(solution)
-  solver.Solve(solver.Phase([x[i] for i in range(num_alternatives)],
-                            solver.INT_VAR_DEFAULT,
-                            solver.INT_VALUE_DEFAULT),
-               [collector, objective])
+  solver.Solve(
+      solver.Phase([x[i] for i in range(num_alternatives)],
+                   solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+      [collector, objective])
 
   print("z:", collector.ObjectiveValue(0))
-  print("selected alternatives:", [i + 1 for i in range(num_alternatives)
-                                   if collector.Value(0, x[i]) == 1])
+  print(
+      "selected alternatives:",
+      [i + 1 for i in range(num_alternatives) if collector.Value(0, x[i]) == 1])
 
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())

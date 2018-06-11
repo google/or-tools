@@ -10,9 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """MaxFlow and MinCostFlow examples."""
-
 
 from __future__ import print_function
 from ortools.graph import pywrapgraph
@@ -31,11 +29,9 @@ def MaxFlow():
   if max_flow.Solve(0, 5) == max_flow.OPTIMAL:
     print('Total flow', max_flow.OptimalFlow(), '/', expected_total_flow)
     for i in range(max_flow.NumArcs()):
-      print(('From source %d to target %d: %d / %d' % (
-          max_flow.Tail(i),
-          max_flow.Head(i),
-          max_flow.Flow(i),
-          max_flow.Capacity(i))))
+      print(('From source %d to target %d: %d / %d' %
+             (max_flow.Tail(i), max_flow.Head(i), max_flow.Flow(i),
+              max_flow.Capacity(i))))
     print('Source side min-cut:', max_flow.GetSourceSideMinCut())
     print('Sink side min-cut:', max_flow.GetSinkSideMinCut())
   else:
@@ -51,16 +47,14 @@ def MinCostFlow():
   print('MinCostFlow on 4x4 matrix.')
   num_sources = 4
   num_targets = 4
-  costs = [[90, 75, 75, 80],
-           [35, 85, 55, 65],
-           [125, 95, 90, 105],
+  costs = [[90, 75, 75, 80], [35, 85, 55, 65], [125, 95, 90, 105],
            [45, 110, 95, 115]]
   expected_cost = 275
   min_cost_flow = pywrapgraph.SimpleMinCostFlow()
   for source in range(0, num_sources):
     for target in range(0, num_targets):
-      min_cost_flow.AddArcWithCapacityAndUnitCost(
-          source, num_sources + target, 1, costs[source][target])
+      min_cost_flow.AddArcWithCapacityAndUnitCost(source, num_sources + target,
+                                                  1, costs[source][target])
   for node in range(0, num_sources):
     min_cost_flow.SetNodeSupply(node, 1)
     min_cost_flow.SetNodeSupply(num_sources + node, -1)
@@ -69,10 +63,9 @@ def MinCostFlow():
     print('Total flow', min_cost_flow.OptimalCost(), '/', expected_cost)
     for i in range(0, min_cost_flow.NumArcs()):
       if min_cost_flow.Flow(i) > 0:
-        print('From source %d to target %d: cost %d' % (
-            min_cost_flow.Tail(i),
-            min_cost_flow.Head(i) - num_sources,
-            min_cost_flow.UnitCost(i)))
+        print('From source %d to target %d: cost %d' %
+              (min_cost_flow.Tail(i), min_cost_flow.Head(i) - num_sources,
+               min_cost_flow.UnitCost(i)))
   else:
     print('There was an issue with the min cost flow input.')
 

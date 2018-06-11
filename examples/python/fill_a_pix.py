@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Fill-a-Pix problem in Google CP Solver.
@@ -55,23 +54,18 @@ from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
-
 # Puzzle 1 from
 # http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/rules
 default_n = 10
 X = -1
-default_puzzle = [
-    [X, X, X, X, X, X, X, X, 0, X],
-    [X, 8, 8, X, 2, X, 0, X, X, X],
-    [5, X, 8, X, X, X, X, X, X, X],
-    [X, X, X, X, X, 2, X, X, X, 2],
-    [1, X, X, X, 4, 5, 6, X, X, X],
-    [X, 0, X, X, X, 7, 9, X, X, 6],
-    [X, X, X, 6, X, X, 9, X, X, 6],
-    [X, X, 6, 6, 8, 7, 8, 7, X, 5],
-    [X, 4, X, 6, 6, 6, X, 6, X, 4],
-    [X, X, X, X, X, X, 3, X, X, X]
-]
+default_puzzle = [[X, X, X, X, X, X, X, X, 0, X], [
+    X, 8, 8, X, 2, X, 0, X, X, X
+], [5, X, 8, X, X, X, X, X, X,
+    X], [X, X, X, X, X, 2, X, X, X,
+         2], [1, X, X, X, 4, 5, 6, X, X, X], [X, 0, X, X, X, 7, 9, X, X, 6], [
+             X, X, X, 6, X, X, 9, X, X, 6
+         ], [X, X, 6, 6, 8, 7, 8, 7, X, 5], [X, 4, X, 6, 6, 6, X, 6, X, 4],
+                  [X, X, X, X, X, X, 3, X, X, X]]
 
 
 def main(puzzle='', n=''):
@@ -121,21 +115,17 @@ def main(puzzle='', n=''):
     for j in range(n):
       if puzzle[i][j] > X:
         # this cell is the sum of all the surrounding cells
-        solver.Add(
-            puzzle[i][j] == solver.Sum([pict[i + a, j + b]
-                                        for a in S for b in S
-                                        if i + a >= 0 and
-                                        j + b >= 0 and
-                                        i + a < n and
-                                        j + b < n])
-        )
+        solver.Add(puzzle[i][j] == solver.Sum([
+            pict[i + a, j + b]
+            for a in S
+            for b in S
+            if i + a >= 0 and j + b >= 0 and i + a < n and j + b < n
+        ]))
 
   #
   # solution and search
   #
-  db = solver.Phase(pict_flat,
-                    solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(pict_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
   num_solutions = 0

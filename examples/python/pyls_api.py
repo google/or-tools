@@ -1,6 +1,7 @@
 from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
+
 class OneVarLns(pywrapcp.BaseLns):
   """One Var LNS."""
 

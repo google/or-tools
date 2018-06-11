@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Simple coloring problem using MIP in Google CP Solver.
@@ -79,26 +78,9 @@ def main(sol='CBC'):
   # http://mat.gsia.cmu.edu/COLOR/instances.html
   #
   # Note: 1-based (adjusted below)
-  E = [[1, 2],
-       [1, 4],
-       [1, 7],
-       [1, 9],
-       [2, 3],
-       [2, 6],
-       [2, 8],
-       [3, 5],
-       [3, 7],
-       [3, 10],
-       [4, 5],
-       [4, 6],
-       [4, 10],
-       [5, 8],
-       [5, 9],
-       [6, 11],
-       [7, 11],
-       [8, 11],
-       [9, 11],
-       [10, 11]]
+  E = [[1, 2], [1, 4], [1, 7], [1, 9], [2, 3], [2, 6], [2, 8], [3, 5], [3, 7],
+       [3, 10], [4, 5], [4, 6], [4, 10], [5, 8], [5, 9], [6, 11], [7, 11],
+       [8, 11], [9, 11], [10, 11]]
 
   #
   # declare variables

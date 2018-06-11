@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Nurse rostering in Google CP Solver.
@@ -99,8 +98,8 @@ def regular(x, Q, S, d, q0, F):
     solver.Add(x[i] <= S)
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+    solver.Add(a[i + 1] == solver.Element(d2_flatten, (
+        (a[i]) * S) + (x[i] - 1)))
 
 
 def main():
@@ -152,8 +151,10 @@ def main():
   x_flat = [x[i, j] for i in range(num_nurses) for j in range(num_days)]
 
   # summary of the nurses
-  nurse_stat = [solver.IntVar(0, num_days, 'nurse_stat[%i]' % i)
-                for i in range(num_nurses)]
+  nurse_stat = [
+      solver.IntVar(0, num_days, 'nurse_stat[%i]' % i)
+      for i in range(num_nurses)
+  ]
 
   # summary of the shifts per day
   day_stat = {}
@@ -168,17 +169,18 @@ def main():
   #
   for i in range(num_nurses):
     reg_input = [x[i, j] for j in range(num_days)]
-    regular(reg_input, n_states, input_max, transition_fn,
-            initial_state, accepting_states)
+    regular(reg_input, n_states, input_max, transition_fn, initial_state,
+            accepting_states)
 
   #
   # Statistics and constraints for each nurse
   #
   for i in range(num_nurses):
     # number of worked days (day or night shift)
-    b = [solver.IsEqualCstVar(x[i, j], day_shift) +
-         solver.IsEqualCstVar(x[i, j], night_shift)
-         for j in range(num_days)]
+    b = [
+        solver.IsEqualCstVar(x[i, j], day_shift) + solver.IsEqualCstVar(
+            x[i, j], night_shift) for j in range(num_days)
+    ]
     solver.Add(nurse_stat[i] == solver.Sum(b))
 
     # Each nurse must work between 7 and 10
@@ -191,8 +193,7 @@ def main():
   #
   for j in range(num_days):
     for t in shifts:
-      b = [solver.IsEqualCstVar(x[i, j], t)
-           for i in range(num_nurses)]
+      b = [solver.IsEqualCstVar(x[i, j], t) for i in range(num_nurses)]
       solver.Add(day_stat[j, t] == solver.Sum(b))
 
     #
@@ -222,8 +223,7 @@ def main():
   # solution and search
   #
   db = solver.Phase(day_stat_flat + x_flat + nurse_stat,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+                    solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
 
@@ -238,7 +238,8 @@ def main():
         d = days[x[i, j].Value() - 1]
         this_day_stat[d] += 1
         print(d, end=' ')
-      print(' day_stat:', [(d, this_day_stat[d]) for d in this_day_stat], end=' ')
+      print(
+          ' day_stat:', [(d, this_day_stat[d]) for d in this_day_stat], end=' ')
       print('total:', nurse_stat[i].Value(), 'workdays')
     print()
 

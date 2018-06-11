@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   3 jugs problem using regular constraint in Google CP Solver.
@@ -118,8 +117,8 @@ def regular(x, Q, S, d, q0, F):
     solver.Add(x[i] <= S)
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+    solver.Add(a[i + 1] == solver.Element(d2_flatten, (
+        (a[i]) * S) + (x[i] - 1)))
 
 
 def main(n):
@@ -165,19 +164,19 @@ def main(n):
   #
   states = [
       [2, 9],  # state 1
-      [3],    # state 2
+      [3],  # state 2
       [4, 9],  # state 3
-      [5],    # state 4
+      [5],  # state 4
       [6, 9],  # state 5
-      [7],    # state 6
+      [7],  # state 6
       [8, 9],  # state 7
-      [15],   # state 8
-      [10],   # state 9
-      [11],   # state 10
-      [12],   # state 11
-      [13],   # state 12
-      [14],   # state 13
-      [15]    # state 14
+      [15],  # state 8
+      [10],  # state 9
+      [11],  # state 10
+      [12],  # state 11
+      [13],  # state 12
+      [14],  # state 13
+      [15]  # state 14
   ]
 
   transition_fn = []
@@ -220,15 +219,13 @@ def main(n):
   #
   # constraints
   #
-  regular(x, n_states, input_max, transition_fn,
-          initial_state, accepting_states)
+  regular(x, n_states, input_max, transition_fn, initial_state,
+          accepting_states)
 
   #
   # solution and search
   #
-  db = solver.Phase(x,
-                    solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
 

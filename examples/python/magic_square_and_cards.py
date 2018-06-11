@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Magic squares and cards problem in Google CP Solver.
@@ -81,8 +80,7 @@ def main(n=3):
   solution.Add(counts)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(x_flat, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MAX_VALUE)
 
   solver.NewSearch(db, [objective])
@@ -92,7 +90,7 @@ def main(n=3):
     print("counts:", [counts[i].Value() for i in range(14)])
     for i in range(n):
       for j in range(n):
-        print(x[(i, j)].Value(), end=' ')
+        print(x[(i, j)].Value(), end=" ")
       print()
 
     print()

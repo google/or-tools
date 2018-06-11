@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   toNum in Google CP Solver.
@@ -33,8 +32,8 @@ from ortools.constraint_solver import pywrapcp
 
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(
-      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)]))
+  solver.Add(s == solver.Sum([(base**(tlen - i - 1)) * t[i]
+                              for i in range(tlen)]))
 
 
 def main(unused_argv):
@@ -47,7 +46,7 @@ def main(unused_argv):
 
   # declare variables
   x = [solver.IntVar(0, n - 1, "x%i" % i) for i in range(n)]
-  y = solver.IntVar(0, 10 ** n - 1, "y")
+  y = solver.IntVar(0, 10**n - 1, "y")
 
   #
   # constraints
@@ -66,10 +65,9 @@ def main(unused_argv):
   solution.Add(y)
 
   collector = solver.AllSolutionCollector(solution)
-  solver.Solve(solver.Phase([x[i] for i in range(n)],
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE),
-               [collector])
+  solver.Solve(
+      solver.Phase([x[i] for i in range(n)], solver.CHOOSE_FIRST_UNBOUND,
+                   solver.ASSIGN_MIN_VALUE), [collector])
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):

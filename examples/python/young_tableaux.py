@@ -110,8 +110,8 @@ def main(n=5):
 
   # calculate the structure (the partition)
   for i in range(n):
-      # MiniZinc/Zinc version:
-      # p[i] == sum(j in 1..n) (bool2int(x[i,j] <= n))
+    # MiniZinc/Zinc version:
+    # p[i] == sum(j in 1..n) (bool2int(x[i,j] <= n))
 
     b = [solver.IsLessOrEqualCstVar(x[(i, j)], n) for j in range(n)]
     solver.Add(p[i] == solver.Sum(b))
@@ -129,8 +129,7 @@ def main(n=5):
   solution.Add(p)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat + p,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(x_flat + p, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
@@ -142,7 +141,7 @@ def main(n=5):
       for j in range(n):
         val = x_flat[i * n + j].Value()
         if val <= n:
-          print(val, end=' ')
+          print(val, end=" ")
       if p[i].Value() > 0:
         print()
     print()
@@ -155,6 +154,7 @@ def main(n=5):
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 n = 5
 if __name__ == "__main__":

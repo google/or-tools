@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Magic squares in Google CP Solver.
@@ -72,13 +71,14 @@ def main(n=4):
   solution.Add(s)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat,
-                    # solver.INT_VAR_DEFAULT,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    # solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+  db = solver.Phase(
+      x_flat,
+      # solver.INT_VAR_DEFAULT,
+      solver.CHOOSE_FIRST_UNBOUND,
+      # solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
 
-                    # solver.ASSIGN_MIN_VALUE
-                    solver.ASSIGN_CENTER_VALUE)
+      # solver.ASSIGN_MIN_VALUE
+      solver.ASSIGN_CENTER_VALUE)
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -86,7 +86,7 @@ def main(n=4):
     print("s:", s.Value())
     for i in range(n):
       for j in range(n):
-        print("%2i" % x[(i, j)].Value(), end=' ')
+        print("%2i" % x[(i, j)].Value(), end=" ")
       print()
 
     print()
@@ -98,6 +98,7 @@ def main(n=4):
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 n = 4
 if __name__ == "__main__":

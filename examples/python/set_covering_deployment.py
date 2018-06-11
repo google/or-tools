@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Set covering deployment in Google CP Solver
@@ -52,27 +51,18 @@ def main():
   # data
   #
 
-  countries = ["Alexandria",
-               "Asia Minor",
-               "Britain",
-               "Byzantium",
-               "Gaul",
-               "Iberia",
-               "Rome",
-               "Tunis"]
+  countries = [
+      "Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia",
+      "Rome", "Tunis"
+  ]
   n = len(countries)
 
   # the incidence matrix (neighbours)
-  mat = [
-      [0, 1, 0, 1, 0, 0, 1, 1],
-      [1, 0, 0, 1, 0, 0, 0, 0],
-      [0, 0, 0, 0, 1, 1, 0, 0],
-      [1, 1, 0, 0, 0, 0, 1, 0],
-      [0, 0, 1, 0, 0, 1, 1, 0],
-      [0, 0, 1, 0, 1, 0, 1, 1],
-      [1, 0, 0, 1, 1, 1, 0, 1],
-      [1, 0, 0, 0, 0, 1, 1, 0]
-  ]
+  mat = [[0, 1, 0, 1, 0, 0, 1, 1], [1, 0, 0, 1, 0, 0, 0, 0],
+         [0, 0, 0, 0, 1, 1, 0, 0], [1, 1, 0, 0, 0, 0, 1, 0],
+         [0, 0, 1, 0, 0, 1, 1, 0], [0, 0, 1, 0, 1, 0, 1,
+                                    1], [1, 0, 0, 1, 1, 1, 0,
+                                         1], [1, 0, 0, 0, 0, 1, 1, 0]]
 
   #
   # declare variables
@@ -118,10 +108,9 @@ def main():
   solution.AddObjective(num_armies)
 
   collector = solver.LastSolutionCollector(solution)
-  solver.Solve(solver.Phase(X + Y,
-                            solver.INT_VAR_DEFAULT,
-                            solver.INT_VALUE_DEFAULT),
-               [collector, objective])
+  solver.Solve(
+      solver.Phase(X + Y, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+      [collector, objective])
 
   print("num_armies:", collector.ObjectiveValue(0))
   print("X:", [collector.Value(0, X[i]) for i in range(n)])
@@ -129,7 +118,7 @@ def main():
 
   for i in range(n):
     if collector.Value(0, X[i]) == 1:
-      print("army:", countries[i], end=' ')
+      print("army:", countries[i], end=" ")
     if collector.Value(0, Y[i]) == 1:
       print("reserv army:", countries[i], " ")
   print()

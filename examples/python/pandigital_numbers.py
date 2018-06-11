@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Pandigital numbers in Google CP Solver.
@@ -73,8 +72,8 @@ from ortools.constraint_solver import pywrapcp
 
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(
-      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)]))
+  solver.Add(s == solver.Sum([(base**(tlen - i - 1)) * t[i]
+                              for i in range(tlen)]))
 
 
 def main(base=10, start=1, len1=1, len2=4):
@@ -87,7 +86,7 @@ def main(base=10, start=1, len1=1, len2=4):
   #
   max_d = base - 1
   x_len = max_d + 1 - start
-  max_num = base ** 4 - 1
+  max_num = base**4 - 1
 
   #
   # declare variables
@@ -126,9 +125,7 @@ def main(base=10, start=1, len1=1, len2=4):
   solution.Add(num2)
   solution.Add(res)
 
-  db = solver.Phase(x,
-                    solver.INT_VAR_SIMPLE,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x, solver.INT_VAR_SIMPLE, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -149,8 +146,8 @@ def main(base=10, start=1, len1=1, len2=4):
 
 
 def print_solution(x, len1, len2, x_len):
-  print("".join([str(x[i]) for i in range(len1)]), "*", end=' ')
-  print("".join([str(x[i]) for i in range(len1, len1 + len2)]), "=", end=' ')
+  print("".join([str(x[i]) for i in range(len1)]), "*", end=" ")
+  print("".join([str(x[i]) for i in range(len1, len1 + len2)]), "=", end=" ")
   print("".join([str(x[i]) for i in range(len1 + len2, x_len)]))
 
 

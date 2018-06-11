@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Production planning problem in Google or-tools.
@@ -63,22 +62,26 @@ def main(sol='CBC'):
   #
   # declare variables
   #
-  inside = [solver.NumVar(0, 10000, 'inside[%i]' % p)
-            for p in range(num_products)]
-  outside = [solver.NumVar(0, 10000, 'outside[%i]' % p)
-             for p in range(num_products)]
+  inside = [
+      solver.NumVar(0, 10000, 'inside[%i]' % p) for p in range(num_products)
+  ]
+  outside = [
+      solver.NumVar(0, 10000, 'outside[%i]' % p) for p in range(num_products)
+  ]
 
   # to minimize
-  z = solver.Sum([inside_cost[p] * inside[p] + outside_cost[p] * outside[p]
-                  for p in range(num_products)])
+  z = solver.Sum([
+      inside_cost[p] * inside[p] + outside_cost[p] * outside[p]
+      for p in range(num_products)
+  ])
 
   #
   # constraints
   #
   for r in range(num_resources):
-    solver.Add(solver.Sum(
-        [consumption[p][r] * inside[p]
-         for p in range(num_products)]) <= capacity[r])
+    solver.Add(
+        solver.Sum([consumption[p][r] * inside[p]
+                    for p in range(num_products)]) <= capacity[r])
 
   for p in range(num_products):
     solver.Add(inside[p] + outside[p] >= demand[p])
@@ -91,8 +94,16 @@ def main(sol='CBC'):
   print('z = ', solver.Objective().Value())
 
   for p in range(num_products):
-    print(products[p], ': inside:', inside[p].SolutionValue(), '(ReducedCost:', inside[p].ReducedCost(), ')', end=' ')
-    print('outside:', outside[p].SolutionValue(), ' (ReducedCost:', outside[p].ReducedCost(), ')')
+    print(
+        products[p],
+        ': inside:',
+        inside[p].SolutionValue(),
+        '(ReducedCost:',
+        inside[p].ReducedCost(),
+        ')',
+        end=' ')
+    print('outside:', outside[p].SolutionValue(), ' (ReducedCost:',
+          outside[p].ReducedCost(), ')')
   print()
 
 

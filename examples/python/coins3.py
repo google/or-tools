@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Coin application in Google CP Solver.
@@ -82,8 +81,7 @@ def main():
   solution.Add(num_coins)
   solution.AddObjective(num_coins)
 
-  db = solver.Phase(x,
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db, [objective])

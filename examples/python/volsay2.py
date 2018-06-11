@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Volsay problem in Google or-tools.
@@ -47,8 +46,10 @@ def main(unused_argv):
   products = ['Gas', 'Chloride']
 
   # declare variables
-  production = [solver.NumVar(0, 100000, 'production[%i]' % i)
-                for i in range(num_products)]
+  production = [
+      solver.NumVar(0, 100000, 'production[%i]' % i)
+      for i in range(num_products)
+  ]
 
   #
   # constraints
@@ -71,6 +72,7 @@ def main(unused_argv):
   for i in range(num_products):
     print(products[i], '=', production[i].SolutionValue(), end=' ')
     print('ReducedCost = ', production[i].ReducedCost())
+
 
 if __name__ == '__main__':
   main('Volsay')

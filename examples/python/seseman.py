@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Seseman Convent problem in Google CP Solver.
@@ -96,8 +95,7 @@ def main(unused_argv):
 
   # total
   solver.Add(
-      solver.Sum([x[(i, j)] for i in range(n) for j in range(n)]) ==
-      total_sum)
+      solver.Sum([x[(i, j)] for i in range(n) for j in range(n)]) == total_sum)
 
   #
   # solution and search
@@ -109,10 +107,9 @@ def main(unused_argv):
   # all solutions
   collector = solver.AllSolutionCollector(solution)
   # search_log = solver.SearchLog(100, total_sum)
-  solver.Solve(solver.Phase([x[(i, j)] for i in range(n) for j in range(n)],
-                            solver.CHOOSE_PATH,
-                            solver.ASSIGN_MIN_VALUE),
-               [collector])
+  solver.Solve(
+      solver.Phase([x[(i, j)] for i in range(n) for j in range(n)],
+                   solver.CHOOSE_PATH, solver.ASSIGN_MIN_VALUE), [collector])
   #[collector, search_log])
 
   num_solutions = collector.SolutionCount()
@@ -125,7 +122,7 @@ def main(unused_argv):
     print("total_sum:", collector.Value(s, total_sum))
     for i in range(n):
       for j in range(n):
-        print(collector.Value(s, x[(i, j)]), end=' ')
+        print(collector.Value(s, x[(i, j)]), end=" ")
       print()
     print()
 

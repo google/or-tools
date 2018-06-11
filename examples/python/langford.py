@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Langford's number problem in Google CP Solver.
@@ -83,8 +82,7 @@ def main(k=8, num_sol=0):
   #
   # search and result
   #
-  db = solver.Phase(position,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(position, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
@@ -102,6 +100,7 @@ def main(k=8, num_sol=0):
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 k = 8
 num_sol = 0

@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """This is the zebra problem as invented by Lewis Caroll.
 
 There are five houses.
@@ -73,13 +72,14 @@ def main():
   parliaments = solver.IntVar(1, 5, 'parliaments')
 
   solver.Add(solver.AllDifferent([red, green, yellow, blue, ivory]))
-  solver.Add(solver.AllDifferent([englishman, spaniard, japanese,
-                                  ukrainian, norwegian]))
+  solver.Add(
+      solver.AllDifferent(
+          [englishman, spaniard, japanese, ukrainian, norwegian]))
   solver.Add(solver.AllDifferent([dog, snails, fox, zebra, horse]))
-  solver.Add(solver.AllDifferent([tea, coffee, water, milk,
-                                  fruit_juice]))
-  solver.Add(solver.AllDifferent([parliaments, kools, chesterfields,
-                                  lucky_strike, old_gold]))
+  solver.Add(solver.AllDifferent([tea, coffee, water, milk, fruit_juice]))
+  solver.Add(
+      solver.AllDifferent(
+          [parliaments, kools, chesterfields, lucky_strike, old_gold]))
 
   solver.Add(englishman == red)
   solver.Add(spaniard == dog)
@@ -96,15 +96,14 @@ def main():
   solver.Add(japanese == parliaments)
   solver.Add(abs(norwegian - blue) == 1)
 
-  all_vars = [parliaments, kools, chesterfields, lucky_strike, old_gold,
-              englishman, spaniard, japanese, ukrainian, norwegian,
-              dog, snails, fox, zebra, horse,
-              tea, coffee, water, milk, fruit_juice,
-              red, green, yellow, blue, ivory]
+  all_vars = [
+      parliaments, kools, chesterfields, lucky_strike, old_gold, englishman,
+      spaniard, japanese, ukrainian, norwegian, dog, snails, fox, zebra, horse,
+      tea, coffee, water, milk, fruit_juice, red, green, yellow, blue, ivory
+  ]
 
-  solver.NewSearch(solver.Phase(all_vars,
-                                solver.INT_VAR_DEFAULT,
-                                solver.INT_VALUE_DEFAULT))
+  solver.NewSearch(
+      solver.Phase(all_vars, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT))
   if solver.NextSolution():
     people = [englishman, spaniard, japanese, ukrainian, norwegian]
     water_drinker = [p for p in people if p.Value() == water.Value()][0]
