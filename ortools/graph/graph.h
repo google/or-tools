@@ -379,7 +379,6 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   std::vector<ArcIndexType> next_;
   std::vector<NodeIndexType> head_;
   std::vector<NodeIndexType> tail_;
-  DISALLOW_COPY_AND_ASSIGN(ListGraph);
 };
 
 // Most efficient implementation of a graph without reverse arcs:
@@ -450,7 +449,6 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   std::vector<ArcIndexType> start_;
   std::vector<NodeIndexType> head_;
   std::vector<NodeIndexType> tail_;
-  DISALLOW_COPY_AND_ASSIGN(StaticGraph);
 };
 
 // Extends the ListGraph by also storing the reverse arcs.
@@ -531,7 +529,6 @@ class ReverseArcListGraph
   std::vector<ArcIndexType> reverse_start_;
   SVector<ArcIndexType> next_;
   SVector<NodeIndexType> head_;
-  DISALLOW_COPY_AND_ASSIGN(ReverseArcListGraph);
 };
 
 // StaticGraph with reverse arc.
@@ -618,7 +615,6 @@ class ReverseArcStaticGraph
   std::vector<ArcIndexType> reverse_start_;
   SVector<NodeIndexType> head_;
   SVector<ArcIndexType> opposite_;
-  DISALLOW_COPY_AND_ASSIGN(ReverseArcStaticGraph);
 };
 
 // This graph is a mix between the ReverseArcListGraph and the
@@ -696,7 +692,6 @@ class ReverseArcMixedGraph
   std::vector<ArcIndexType> reverse_start_;
   std::vector<ArcIndexType> next_;
   SVector<NodeIndexType> head_;
-  DISALLOW_COPY_AND_ASSIGN(ReverseArcMixedGraph);
 };
 
 // Permutes the elements of array_to_permute: element #i will be moved to
@@ -765,11 +760,39 @@ class SVector {
  public:
   SVector() : base_(nullptr), size_(0), capacity_(0) {}
 
-  ~SVector() {
-    clear();
-    if (capacity_ > 0) {
-      free(base_ - capacity_);
+  ~SVector() { clear_and_dealloc(); }
+
+  // Copy constructor and assignment operator.
+  SVector(const SVector& other) : SVector() { *this = other; }
+  SVector& operator=(const SVector& other) {
+    if (capacity_ < other.size_) {
+      clear_and_dealloc();
+      // NOTE(user): Alternatively, our capacity could inherit from the other
+      // vector's capacity, which can be (much) greater than its size.
+      capacity_ = other.size_;
+      base_ = static_cast<T*>(malloc(2LL * capacity_ * sizeof(T)));
+      CHECK(base_ != nullptr);
+      base_ += capacity_;
+    } else {  // capacity_ >= other.size
+      clear();
     }
+    // Perform the actual copy of the payload.
+    size_ = other.size_;
+    for (int i = -size_; i < size_; ++i) {
+      new (base_ + i) T(other.base_[i]);
+    }
+    return *this;
+  }
+
+  // Move constructor and move assignment operator.
+  SVector(SVector&& other) : SVector() { swap(other); }
+  SVector& operator=(SVector&& other) {
+    // NOTE(user): We could just swap() and let the other's destruction take
+    // care of the clean-up, but it is probably less bug-prone to perform the
+    // destruction immediately.
+    clear_and_dealloc();
+    swap(other);
+    return *this;
   }
 
   T& operator[](int n) {
@@ -784,13 +807,13 @@ class SVector {
     return base_[n];
   }
 
-  void resize(int n, T left = T(), T right = T()) {
+  void resize(int n) {
     reserve(n);
     for (int i = -n; i < -size_; ++i) {
-      new (base_ + i) T(left);
+      new (base_ + i) T();
     }
     for (int i = size_; i < n; ++i) {
-      new (base_ + i) T(right);
+      new (base_ + i) T();
     }
     for (int i = -size_; i < -n; ++i) {
       base_[i].~T();
@@ -815,30 +838,21 @@ class SVector {
     DCHECK_GE(n, 0);
     DCHECK_LE(n, max_size());
     if (n > capacity_) {
-      int new_capacity = n;
-      size_t requested_block_size = 2LL * new_capacity * sizeof(T);
-      T* new_storage = static_cast<T*>(malloc(requested_block_size));
+      const int new_capacity = std::min(n, max_size());
+      T* new_storage = static_cast<T*>(malloc(2LL * new_capacity * sizeof(T)));
       CHECK(new_storage != nullptr);
-      size_t block_size = requested_block_size;
-      if (block_size > 0) {
-        new_capacity = static_cast<int>(std::min(
-            static_cast<size_t>(max_size()), block_size / (2 * sizeof(T))));
-      }
       T* new_base = new_storage + new_capacity;
-      for (int i = -size_; i < size_; ++i) {
-        new (new_base + i) T(base_[i]);
-      }
-      int temp = size_;
-      clear();
+      std::move(base_ - size_, base_ + size_, new_base - size_);
       if (capacity_ > 0) {
         free(base_ - capacity_);
       }
-      size_ = temp;
       base_ = new_base;
       capacity_ = new_capacity;
     }
   }
 
+  // NOTE(user): This doesn't currently support movable-only objects, but we
+  // could fix that.
   void grow(const T& left = T(), const T& right = T()) {
     if (size_ == capacity_) {
       // We have to copy the elements because they are allowed to be element of
@@ -862,6 +876,16 @@ class SVector {
 
   int max_size() const { return std::numeric_limits<int>::max(); }
 
+  void clear_and_dealloc() {
+    if (base_ == nullptr) return;
+    clear();
+    if (capacity_ > 0) {
+      free(base_ - capacity_);
+    }
+    capacity_ = 0;
+    base_ = nullptr;
+  }
+
  private:
   int NewCapacity(int delta) {
     // TODO(user): check validity.
@@ -879,7 +903,6 @@ class SVector {
   T* base_;       // Pointer to the element of index 0.
   int size_;      // Valid index are [- size_, size_).
   int capacity_;  // Reserved index are [- capacity_, capacity_).
-  DISALLOW_COPY_AND_ASSIGN(SVector);
 };
 
 // BaseGraph implementation ----------------------------------------------------
@@ -1230,7 +1253,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::ReserveArcs(ArcIndexType bound) {
 template <typename NodeIndexType, typename ArcIndexType>
 void StaticGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
   if (node < num_nodes_) return;
-  DCHECK(!const_capacities_ || node < node_capacity_);
+  DCHECK(!const_capacities_ || node < node_capacity_) << node;
   num_nodes_ = node + 1;
   start_.resize(num_nodes_, 0);
 }

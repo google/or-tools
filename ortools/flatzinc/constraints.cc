@@ -48,7 +48,7 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
                            int64 range_min, int64 range_max) {
   // TODO(user): Use sat_solver::AddLinearConstraint()
   const int64 size = variables.size();
-  range_min = std::max(0LL, range_min);
+  range_min = std::max(int64{0}, range_min);
   range_max = std::min(size, range_max);
   int true_vars = 0;
   std::vector<IntVar*> alt;
@@ -96,7 +96,7 @@ void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
                              const std::vector<IntVar*>& variables,
                              int64 range_min, int64 range_max, IntVar* target) {
   const int64 size = variables.size();
-  range_min = std::max(0LL, range_min);
+  range_min = std::max(int64{0}, range_min);
   range_max = std::min(size, range_max);
   int true_vars = 0;
   int possible_vars = 0;
@@ -380,7 +380,7 @@ void ExtractArrayIntElement(fz::SolverData* data, fz::Constraint* ct) {
   if (ct->arguments[0].type == fz::Argument::INT_VAR_REF) {
     IntExpr* const index = data->GetOrCreateExpression(ct->arguments[0]);
     const std::vector<int64>& values = ct->arguments[1].values;
-    const int64 imin = std::max(index->Min(), 1LL);
+    const int64 imin = std::max(index->Min(), int64{1});
     const int64 imax = std::min<int64>(index->Max(), values.size());
     IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
     const int64 size = imax - imin + 1;
@@ -461,7 +461,7 @@ void ExtractArrayVarIntElement(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
   IntExpr* const index = data->GetOrCreateExpression(ct->arguments[0]);
   const int64 array_size = ct->arguments[1].variables.size();
-  const int64 imin = std::max(index->Min(), 1LL);
+  const int64 imin = std::max(index->Min(), int64{1});
   const int64 imax = std::min(index->Max(), array_size);
   IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
   const std::vector<IntVar*> vars =

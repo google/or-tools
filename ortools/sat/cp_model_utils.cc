@@ -13,6 +13,8 @@
 
 #include "ortools/sat/cp_model_utils.h"
 
+#include "ortools/base/stl_util.h"
+
 namespace operations_research {
 namespace sat {
 
@@ -370,6 +372,24 @@ std::string ConstraintCaseName(
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
       return "kEmpty";
   }
+}
+
+std::vector<int> UsedVariables(const ConstraintProto& ct) {
+  IndexReferences references;
+  AddReferencesUsedByConstraint(ct, &references);
+
+  std::vector<int> used_variables;
+  for (const int var : references.variables) {
+    used_variables.push_back(PositiveRef(var));
+  }
+  for (const int lit : references.literals) {
+    used_variables.push_back(PositiveRef(lit));
+  }
+  if (HasEnforcementLiteral(ct)) {
+    used_variables.push_back(PositiveRef(ct.enforcement_literal(0)));
+  }
+  gtl::STLSortAndRemoveDuplicates(&used_variables);
+  return used_variables;
 }
 
 }  // namespace sat

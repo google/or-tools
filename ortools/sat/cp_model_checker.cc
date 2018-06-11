@@ -57,7 +57,7 @@ bool VariableReferenceIsValid(const CpModelProto& model, int reference) {
 }
 
 bool LiteralReferenceIsValid(const CpModelProto& model, int reference) {
-  if (std::max(-reference - 1, reference) >= model.variables_size()) {
+  if (std::max(NegatedRef(reference), reference) >= model.variables_size()) {
     return false;
   }
   const auto& var_proto = model.variables(PositiveRef(reference));
@@ -534,7 +534,9 @@ class ConstraintChecker {
     for (int i = 0; i < num_steps; ++i) {
       const std::pair<int64, int64> key = {current_state,
                                            Value(ct.automata().vars(i))};
-      CHECK(gtl::ContainsKey(transition_map, key));
+      if (!gtl::ContainsKey(transition_map, key)) {
+        return false;
+      }
       current_state = transition_map[key];
     }
 

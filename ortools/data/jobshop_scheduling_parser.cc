@@ -13,7 +13,7 @@
 
 #include "ortools/data/jobshop_scheduling_parser.h"
 
-#include "math.h"
+#include <cmath>
 
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/filelineiter.h"

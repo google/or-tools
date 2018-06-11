@@ -68,6 +68,9 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& function,
 // Note(user): There is no such function in the proto API as of 16/01/2017.
 std::string ConstraintCaseName(ConstraintProto::ConstraintCase constraint_case);
 
+// Returns the sorted list of variables used by a constraint.
+std::vector<int> UsedVariables(const ConstraintProto& ct);
+
 // Returns true if a proto.domain() contain the given value.
 // The domain is expected to be encoded as a sorted disjoint interval list.
 template <typename ProtoWithDomain>

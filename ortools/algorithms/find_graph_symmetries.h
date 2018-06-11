@@ -30,6 +30,7 @@
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/base/status.h"
+#include "ortools/base/time_support.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/util/stats.h"

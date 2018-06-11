@@ -48,25 +48,6 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-// Returns the sorted list of variables used by a constraint.
-std::vector<int> UsedVariables(const ConstraintProto& ct) {
-  IndexReferences references;
-  AddReferencesUsedByConstraint(ct, &references);
-
-  std::vector<int> used_variables;
-  for (const int var : references.variables) {
-    used_variables.push_back(PositiveRef(var));
-  }
-  for (const int lit : references.literals) {
-    used_variables.push_back(PositiveRef(lit));
-  }
-  if (HasEnforcementLiteral(ct)) {
-    used_variables.push_back(PositiveRef(ct.enforcement_literal(0)));
-  }
-  gtl::STLSortAndRemoveDuplicates(&used_variables);
-  return used_variables;
-}
-
 // Wrap the CpModelProto we are presolving with extra data structure like the
 // in-memory domain of each variables and the constraint variable graph.
 struct PresolveContext {

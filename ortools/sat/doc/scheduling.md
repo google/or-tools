@@ -222,7 +222,7 @@ public class CodeSamplesSat
 
 A no overlap constraints simply states that  all intervals are disjoint.
 
-## Cumulative resource
+## Cumulative constraint
 
 A cumulative constraint takes a list of intervals, and a list of demands, and a
 capacity. It enforces that at any time point, the sum of demands of tasks active
@@ -235,3 +235,7 @@ at that time point is less than a given capacity.
 ## Precedences between intervals
 
 ## Convex hull of a set of intervals
+
+## Reservoir constraint
+
+## Advanced: Optional start and end variables in intervals

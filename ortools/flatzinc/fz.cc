@@ -298,10 +298,6 @@ void Solve(const Model& model) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  // By default, we want to show how the solver progress. Note that this needs
-  // to be set before InitGoogle() which has the nice side-effect of allowing
-  // the user to override it.
-
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
   operations_research::fz::FixAndParseParameters(&argc, &argv);
