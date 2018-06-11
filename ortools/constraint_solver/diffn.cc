@@ -15,16 +15,15 @@
 #include <string>
 #include <vector>
 
+#include "ortools/base/hash.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
-
 
 namespace operations_research {
 // Diffn constraint, Non overlapping boxs.

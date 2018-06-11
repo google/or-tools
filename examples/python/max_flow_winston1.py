@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Max flow problem in Google CP Solver.
@@ -48,15 +47,7 @@ def main():
   # Note:
   # This is 1-based to be compatible with other
   # implementations.
-  arcs1 = [
-      [1, 2],
-      [1, 3],
-      [2, 3],
-      [2, 4],
-      [3, 5],
-      [4, 5],
-      [5, 1]
-  ]
+  arcs1 = [[1, 2], [1, 3], [2, 3], [2, 4], [3, 5], [4, 5], [5, 1]]
 
   # convert arcs to 0-based
   arcs = []
@@ -104,10 +95,12 @@ def main():
 
   # inflows == outflows
   for i in nodes:
-    s1 = solver.Sum([flow[arcs[k][0], arcs[k][1]]
-                     for k in range(num_arcs) if arcs[k][1] == i])
-    s2 = solver.Sum([flow[arcs[k][0], arcs[k][1]]
-                     for k in range(num_arcs) if arcs[k][0] == i])
+    s1 = solver.Sum([
+        flow[arcs[k][0], arcs[k][1]] for k in range(num_arcs) if arcs[k][1] == i
+    ])
+    s2 = solver.Sum([
+        flow[arcs[k][0], arcs[k][1]] for k in range(num_arcs) if arcs[k][0] == i
+    ])
     solver.Add(s1 == s2)
 
   # sanity: just arcs with connections can have a flow
@@ -122,9 +115,7 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(flow_flat,
-                    solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(flow_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db, [objective])
   num_solutions = 0
@@ -141,6 +132,7 @@ def main():
   print('failures:', solver.Failures())
   print('branches:', solver.Branches())
   print('WallTime:', solver.WallTime(), 'ms')
+
 
 if __name__ == '__main__':
   main()

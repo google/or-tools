@@ -94,7 +94,7 @@ do
   else
     echo
   fi
-  echo -e "\t\$(PROTOBUF_DIR)/bin/protoc --proto_path=\$(INC_DIR) \$(PROTOBUF_PROTOC_INC) --cpp_out=\$(GEN_DIR) \$(SRC_DIR)/ortools/${main_dir}/${name}.proto"
+  echo -e "\t\$(PROTOC) --proto_path=\$(INC_DIR) \$(PROTOBUF_PROTOC_INC) --cpp_out=\$(GEN_DIR) \$(SRC_DIR)/ortools/${main_dir}/${name}.proto"
   echo
   echo "\$(GEN_DIR)/ortools/${main_dir}/${name}.pb.h: \$(GEN_DIR)/ortools/${main_dir}/${name}.pb.cc \\"
   echo

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Nontransitive dice in Google CP Solver.
@@ -120,8 +119,11 @@ def main(m=3, n=6, minimize_val=0):
   solver.Add(max_val == solver.Max(dice_flat))
 
   # order of the number of each die, lowest first
-  [solver.Add(dice[(i, j)] <= dice[(i, j + 1)])
-   for i in range(m) for j in range(n - 1)]
+  [
+      solver.Add(dice[(i, j)] <= dice[(i, j + 1)])
+      for i in range(m)
+      for j in range(n - 1)
+  ]
 
   # nontransitivity
   [comp[i, 0] > comp[i, 1] for i in range(m)],
@@ -134,12 +136,18 @@ def main(m=3, n=6, minimize_val=0):
   # and now we roll...
   #  Number of wins for [A vs B, B vs A]
   for d in range(m):
-    b1 = [solver.IsGreaterVar(dice[d % m, r1], dice[(d + 1) % m, r2])
-          for r1 in range(n) for r2 in range(n)]
+    b1 = [
+        solver.IsGreaterVar(dice[d % m, r1], dice[(d + 1) % m, r2])
+        for r1 in range(n)
+        for r2 in range(n)
+    ]
     solver.Add(comp[d % m, 0] == solver.Sum(b1))
 
-    b2 = [solver.IsGreaterVar(dice[(d + 1) % m, r1], dice[d % m, r2])
-          for r1 in range(n) for r2 in range(n)]
+    b2 = [
+        solver.IsGreaterVar(dice[(d + 1) % m, r1], dice[d % m, r2])
+        for r1 in range(n)
+        for r2 in range(n)
+    ]
     solver.Add(comp[d % m, 1] == solver.Sum(b2))
 
   # objective
@@ -153,8 +161,7 @@ def main(m=3, n=6, minimize_val=0):
   #
   # solution and search
   #
-  db = solver.Phase(dice_flat + comp_flat,
-                    solver.INT_VAR_DEFAULT,
+  db = solver.Phase(dice_flat + comp_flat, solver.INT_VAR_DEFAULT,
                     solver.ASSIGN_MIN_VALUE)
 
   if minimize_val:
@@ -171,12 +178,12 @@ def main(m=3, n=6, minimize_val=0):
     print("dice:")
     for i in range(m):
       for j in range(n):
-        print(dice[(i, j)].Value(), end=' ')
+        print(dice[(i, j)].Value(), end=" ")
       print()
     print("comp:")
     for i in range(m):
       for j in range(2):
-        print(comp[(i, j)].Value(), end=' ')
+        print(comp[(i, j)].Value(), end=" ")
       print()
     print("counts:", [counts[i].Value() for i in range(n * 2 + 1)])
     print()
@@ -192,8 +199,8 @@ def main(m=3, n=6, minimize_val=0):
   print("WallTime:", solver.WallTime())
 
 
-m = 3             # number of dice
-n = 6             # number of sides of each die
+m = 3  # number of dice
+n = 6  # number of sides of each die
 minimize_val = 0  # Minimizing max value (0: no, 1: yes)
 if __name__ == "__main__":
   if len(sys.argv) > 1:

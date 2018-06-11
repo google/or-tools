@@ -686,10 +686,9 @@ public class CpModel
       S start, D duration, E end, ILiteral is_present, string name) {
     int i = is_present.GetIndex();
     return new IntervalVar(model_,
-                           GetOrCreateOptionalIndex(start, i),
-                           // Size is currently not optional.
+                           GetOrCreateIndex(start),
                            GetOrCreateIndex(duration),
-                           GetOrCreateOptionalIndex(end, i),
+                           GetOrCreateIndex(end),
                            i,
                            name);
   }

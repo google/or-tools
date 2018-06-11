@@ -18,15 +18,15 @@
 #include <set>
 #include <utility>
 
+#include "ortools/algorithms/dynamic_partition.h"
+#include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/random.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/base/stl_util.h"
-#include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/time_limit.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
-#include "ortools/base/random.h"
 
 namespace operations_research {
 namespace sat {
@@ -1058,7 +1058,8 @@ void ProbeAndFindEquivalentLiteral(
       CHECK_EQ(Literal(LiteralIndex(partition.GetRootAndCompressPath(
                    representative.Index().value()))),
                Literal(LiteralIndex(partition.GetRootAndCompressPath(
-                           representative.NegatedIndex().value()))).Negated());
+                           representative.NegatedIndex().value())))
+                   .Negated());
     }
   }
 

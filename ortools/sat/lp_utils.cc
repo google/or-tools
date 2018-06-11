@@ -20,10 +20,10 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
@@ -36,8 +36,8 @@ namespace sat {
 
 using glop::ColIndex;
 using glop::Fractional;
-using glop::RowIndex;
 using glop::kInfinity;
+using glop::RowIndex;
 
 using operations_research::MPConstraintProto;
 using operations_research::MPModelProto;
@@ -530,7 +530,8 @@ bool SolveLpAndUseIntegerVariableToStartLNS(const glop::LinearProgram& lp,
   glop::LPSolver solver;
   const glop::ProblemStatus& status = solver.Solve(lp);
   if (status != glop::ProblemStatus::OPTIMAL &&
-      status != glop::ProblemStatus::PRIMAL_FEASIBLE) return false;
+      status != glop::ProblemStatus::PRIMAL_FEASIBLE)
+    return false;
   int num_variable_fixed = 0;
   for (ColIndex col(0); col < lp.num_variables(); ++col) {
     const Fractional tolerance = 1e-5;

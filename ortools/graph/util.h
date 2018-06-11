@@ -17,18 +17,19 @@
 #define UTIL_GRAPH_UTIL_H_
 
 #include <algorithm>
-#include <unordered_map>
-#include <unordered_set>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
+#include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"
-#include "ortools/base/map_util.h"
-#include "ortools/base/hash.h"
+#include "ortools/graph/iterators.h"
 
 namespace util {
 
@@ -82,6 +83,57 @@ std::unique_ptr<Graph> RemapGraph(const Graph& graph,
 template <class Graph>
 std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& graph,
                                           const std::vector<int>& nodes);
+
+// This can be used to view a directed graph (that supports reverse arcs)
+// from graph.h as un undirected graph: operator[](node) returns a
+// pseudo-container that iterates over all nodes adjacent to "node" (from
+// outgoing or incoming arcs).
+// CAVEAT: Self-arcs (aka loops) will appear twice.
+//
+// Example:
+// ReverseArcsStaticGraph<> dgraph;
+// ...
+// UndirectedAdjacencyListsOfDirectedGraph<decltype(dgraph)> ugraph(dgraph);
+// for (int neighbor_of_node_42 : ugraph[42]) { ... }
+template <class Graph>
+class UndirectedAdjacencyListsOfDirectedGraph {
+ public:
+  explicit UndirectedAdjacencyListsOfDirectedGraph(const Graph& graph)
+      : graph_(graph) {}
+
+  typedef typename Graph::OutgoingOrOppositeIncomingArcIterator ArcIterator;
+  class AdjacencyListIterator : public ArcIterator {
+   public:
+    explicit AdjacencyListIterator(const Graph& graph, ArcIterator&& arc_it)
+        : ArcIterator(arc_it), graph_(graph) {}
+    // Overwrite operator* to return the heads of the arcs.
+    typename Graph::NodeIndex operator*() const {
+      return graph_.Head(ArcIterator::operator*());
+    }
+
+   private:
+    const Graph& graph_;
+  };
+
+  // Returns a pseudo-container of all the nodes adjacent to "node".
+  BeginEndWrapper<AdjacencyListIterator> operator[](int node) const {
+    const auto& arc_range = graph_.OutgoingOrOppositeIncomingArcs(node);
+    return {AdjacencyListIterator(graph_, arc_range.begin()),
+            AdjacencyListIterator(graph_, arc_range.end())};
+  }
+
+ private:
+  const Graph& graph_;
+};
+
+// Computes the weakly connected components of a directed graph that
+// provides the OutgoingOrOppositeIncomingArcs() API, and returns them
+// as a mapping from node to component index. See GetConnectedComponens().
+template <class Graph>
+std::vector<int> GetWeaklyConnectedComponents(const Graph& graph) {
+  return GetConnectedComponents(
+      graph.num_nodes(), UndirectedAdjacencyListsOfDirectedGraph<Graph>(graph));
+}
 
 // Returns true iff the given vector is a subset of [0..n-1], i.e.
 // all elements i are such that 0 <= i < n and no two elements are equal.
@@ -331,7 +383,8 @@ template <class Graph>
 std::vector<int> ComputeOnePossibleReverseArcMapping(
     const Graph& graph, bool die_if_not_symmetric) {
   std::vector<int> reverse_arc(graph.num_arcs(), -1);
-  std::unordered_multimap<std::pair</*tail*/ int, /*head*/ int>, /*arc index*/ int>
+  std::unordered_multimap<std::pair</*tail*/ int, /*head*/ int>,
+                          /*arc index*/ int>
       arc_map;
   for (int arc = 0; arc < graph.num_arcs(); ++arc) {
     const int tail = graph.Tail(arc);

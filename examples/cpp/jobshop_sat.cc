@@ -16,15 +16,14 @@
 #include <algorithm>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
-#include "google/protobuf/wrappers.pb.h"
 #include "google/protobuf/text_format.h"
+#include "google/protobuf/wrappers.pb.h"
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/strutil.h"
+#include "ortools/base/timer.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
 #include "ortools/data/jobshop_scheduling_parser.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -56,7 +55,8 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
   int64 max_earliest_start = 0;
   for (const Job& job : problem.jobs()) {
     if (job.has_latest_end()) {
-      max_latest_end = std::max<int64>(max_latest_end, job.latest_end().value());
+      max_latest_end =
+          std::max<int64>(max_latest_end, job.latest_end().value());
     } else {
       max_latest_end = kint64max;
     }
@@ -81,8 +81,8 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
     for (int i = 0; i < num_jobs; ++i) {
       int64 max_transition = 0;
       for (int j = 0; j < num_jobs; ++j) {
-        max_transition =
-            std::max<int64>(max_transition, matrix.transition_time(i * num_jobs + j));
+        max_transition = std::max<int64>(
+            max_transition, matrix.transition_time(i * num_jobs + j));
       }
       sum_of_transitions += max_transition;
     }
@@ -446,7 +446,7 @@ void Solve(const JsspInputProblem& problem) {
 
 int main(int argc, char** argv) {
   base::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

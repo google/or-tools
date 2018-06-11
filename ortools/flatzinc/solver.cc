@@ -16,13 +16,12 @@
 #include <string>
 #include <unordered_set>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/constraints.h"
@@ -97,7 +96,8 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
       return StringPrintf("%s = %s;", output.name.c_str(),
                           value == 1 ? "true" : "false");
     } else {
-      return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name.c_str(), value);
+      return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name.c_str(),
+                             value);
     }
   } else {
     const int bound_size = output.bounds.size();
@@ -264,7 +264,7 @@ bool Solver::Extract() {
       // variable)
       // And we clean all of them (mark as non target).
       std::vector<IntegerVariable*> required_vars(ctio->required.begin(),
-                                             ctio->required.end());
+                                                  ctio->required.end());
       for (IntegerVariable* const fz_var : required_vars) {
         FZDLOG << "  - clean " << fz_var->DebugString() << FZENDL;
         if (fz_var->defining_constraint != nullptr) {
@@ -738,10 +738,9 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
     objective_monitor_ = report->CreateObjective(
         solver_, model_.maximize(), objective_var_, 1, p.thread_id);
     SearchMonitor* const log =
-        p.logging
-            ? solver_->RevAlloc(
-                  new Log(solver_, objective_monitor_, p.log_period))
-            : nullptr;
+        p.logging ? solver_->RevAlloc(
+                        new Log(solver_, objective_monitor_, p.log_period))
+                  : nullptr;
     SearchLimit* const ctrl_c = solver_->RevAlloc(new Interrupt(solver_));
     monitors.push_back(log);
     monitors.push_back(objective_monitor_);
@@ -921,9 +920,9 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
         "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
         "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
         "d, %" GG_LL_FORMAT "d, %s, %s",
-        model_.name().c_str(), status_string.c_str(), obj_string.c_str(), num_solutions, solve_time,
-        build_time, solver_->branches(), solver_->failures(),
-        solver_->constraints(),
+        model_.name().c_str(), status_string.c_str(), obj_string.c_str(),
+        num_solutions, solve_time, build_time, solver_->branches(),
+        solver_->failures(), solver_->constraints(),
         solver_->demon_runs(operations_research::Solver::NORMAL_PRIORITY),
         solver_->demon_runs(operations_research::Solver::DELAYED_PRIORITY),
         MemoryUsage().c_str(), search_name_.c_str()));

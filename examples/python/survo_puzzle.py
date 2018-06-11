@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Survo puzzle Google CP Solver.
@@ -78,9 +77,7 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
     c = 4
     rowsums = [30, 18, 30]
     colsums = [27, 16, 10, 25]
-    game = [[0, 6, 0, 0],
-            [8, 0, 0, 0],
-            [0, 0, 3, 0]]
+    game = [[0, 6, 0, 0], [8, 0, 0, 0], [0, 0, 3, 0]]
 
   print("r:", r, "c:", c)
 
@@ -120,21 +117,19 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
   solution.Add([x[(i, j)] for i in range(r) for j in range(c)])
 
   collector = solver.AllSolutionCollector(solution)
-  solver.Solve(solver.Phase(xflat,
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE),
-               [collector])
+  solver.Solve(
+      solver.Phase(xflat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+      [collector])
 
   num_solutions = collector.SolutionCount()
   print("\nnum_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
-      xval = [collector.Value(s, x[(i, j)])
-              for i in range(r) for j in range(c)]
+      xval = [collector.Value(s, x[(i, j)]) for i in range(r) for j in range(c)]
 
       for i in range(r):
         for j in range(c):
-          print("%2i" % (xval[i * c + j]), end=' ')
+          print("%2i" % (xval[i * c + j]), end=" ")
         print()
       print()
 

@@ -11,14 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/graph/shortestpaths.h"
 
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 
 #include "ortools/base/commandlineflags.h"

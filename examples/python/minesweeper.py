@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Minesweeper in Google CP Solver.
@@ -70,16 +69,11 @@ from ortools.constraint_solver import pywrapcp
 default_r = 8
 default_c = 8
 X = -1
-default_game = [
-    [2, 3, X, 2, 2, X, 2, 1],
-    [X, X, 4, X, X, 4, X, 2],
-    [X, X, X, X, X, X, 4, X],
-    [X, 5, X, 6, X, X, X, 2],
-    [2, X, X, X, 5, 5, X, 2],
-    [1, 3, 4, X, X, X, 4, X],
-    [0, 1, X, 4, X, X, X, 3],
-    [0, 1, 2, X, 2, 3, X, 2]
-]
+default_game = [[2, 3, X, 2, 2, X, 2, 1], [X, X, 4, X, X, 4, X, 2],
+                [X, X, X, X, X, X, 4, X], [X, 5, X, 6, X, X, X, 2],
+                [2, X, X, X, 5, 5, X, 2], [1, 3, 4, X, X, X, 4,
+                                           X], [0, 1, X, 4, X, X, X,
+                                                3], [0, 1, 2, X, 2, 3, X, 2]]
 
 
 def main(game="", r="", c=""):
@@ -125,9 +119,9 @@ def main(game="", r="", c=""):
   for i in range(r):
     for j in range(c):
       if game[i][j] == X:
-        print("X", end=' ')
+        print("X", end=" ")
       else:
-        print(game[i][j], end=' ')
+        print(game[i][j], end=" ")
     print()
   print()
 
@@ -145,14 +139,12 @@ def main(game="", r="", c=""):
       if game[i][j] >= 0:
         solver.Add(mines[i, j] == 0)
         # this cell is the sum of all the surrounding cells
-        solver.Add(
-            game[i][j] == solver.Sum([mines[i + a, j + b]
-                                      for a in S for b in S
-                                      if i + a >= 0 and
-                                      j + b >= 0 and
-                                      i + a < r and
-                                      j + b < c])
-        )
+        solver.Add(game[i][j] == solver.Sum([
+            mines[i + a, j + b]
+            for a in S
+            for b in S
+            if i + a >= 0 and j + b >= 0 and i + a < r and j + b < c
+        ]))
       if game[i][j] > X:
         # This cell cannot be a mine
         solver.Add(mines[i, j] == 0)
@@ -164,20 +156,20 @@ def main(game="", r="", c=""):
   solution.Add([mines[(i, j)] for i in range(r) for j in range(c)])
 
   collector = solver.AllSolutionCollector(solution)
-  solver.Solve(solver.Phase([mines[(i, j)] for i in range(r) for j in range(c)],
-                            solver.INT_VAR_SIMPLE,
-                            solver.ASSIGN_MIN_VALUE),
-               [collector])
+  solver.Solve(
+      solver.Phase([mines[(i, j)] for i in range(r) for j in range(c)],
+                   solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE), [collector])
 
   num_solutions = collector.SolutionCount()
   print("num_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
-      minesval = [collector.Value(s, mines[(i, j)])
-                  for i in range(r) for j in range(c)]
+      minesval = [
+          collector.Value(s, mines[(i, j)]) for i in range(r) for j in range(c)
+      ]
       for i in range(r):
         for j in range(c):
-          print(minesval[i * c + j], end=' ')
+          print(minesval[i * c + j], end=" ")
         print()
       print()
 
@@ -218,14 +210,14 @@ def read_problem(file):
 def print_mines(mines, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print(mines[i, j], end=' ')
+      print(mines[i, j], end=" ")
     print("")
 
 
 def print_game(game, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print(game[i][j], end=' ')
+      print(game[i][j], end=" ")
     print("")
 
 

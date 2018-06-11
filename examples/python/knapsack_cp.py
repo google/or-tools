@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Knapsack problem in Google CP Solver.
@@ -66,9 +65,7 @@ def main(values, weights, n):
   solution.Add(z)
 
   # db: DecisionBuilder
-  db = solver.Phase(x,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE)
 
   solver.NewSearch(db, [objective])
   num_solutions = 0

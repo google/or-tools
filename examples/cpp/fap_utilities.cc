@@ -20,8 +20,8 @@
 #include <vector>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/stringprintf.h"
 
 namespace operations_research {
 
@@ -43,15 +43,13 @@ bool CheckConstraintSatisfaction(
       LOG(INFO) << "  Violation of contraint between variable " << ct.variable1
                 << " and variable " << ct.variable2 << ".";
       LOG(INFO) << "  Expected |" << var1 << " - " << var2
-                << "| (= " << absolute_difference << ") >  " << ct.value
-                << ".";
+                << "| (= " << absolute_difference << ") >  " << ct.value << ".";
       status = false;
     } else if ((ct.operation == "=") && (absolute_difference != ct.value)) {
       LOG(INFO) << "  Violation of contraint between variable " << ct.variable1
                 << " and variable " << ct.variable2 << ".";
       LOG(INFO) << "  Expected |" << var1 << " - " << var2
-                << "| (= " << absolute_difference << ") =  " << ct.value
-                << ".";
+                << "| (= " << absolute_difference << ") =  " << ct.value << ".";
       status = false;
     }
   }

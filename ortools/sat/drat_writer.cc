@@ -33,9 +33,7 @@ DratWriter::~DratWriter() {
   }
 }
 
-void DratWriter::AddClause(absl::Span<Literal> clause) {
-  WriteClause(clause);
-}
+void DratWriter::AddClause(absl::Span<Literal> clause) { WriteClause(clause); }
 
 void DratWriter::DeleteClause(absl::Span<Literal> clause) {
   buffer_ += "d ";

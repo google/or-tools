@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Sicherman Dice in Google CP Solver.
@@ -111,9 +110,7 @@ def main():
   solution.Add(x2)
 
   # db: DecisionBuilder
-  db = solver.Phase(x1 + x2,
-                    solver.INT_VAR_SIMPLE,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x1 + x2, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -126,7 +123,8 @@ def main():
   solver.EndSearch()
 
   print()
-  print("num_solutions:", num_solutions, "solver.solutions:", solver.Solutions())
+  print("num_solutions:", num_solutions, "solver.solutions:",
+        solver.Solutions())
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())

@@ -21,16 +21,16 @@
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strtoint.h"
+#include "ortools/base/span.h"
 #include "ortools/base/split.h"
 #include "ortools/base/string_view.h"
-#include "ortools/base/span.h"
+#include "ortools/base/strtoint.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/base/filelineiter.h"
 
 DEFINE_bool(wcnf_use_strong_slack, true,
             "If true, when we add a slack variable to reify a soft clause, we "
@@ -196,8 +196,8 @@ class SatCnfReader {
 
   int64 StringPieceAtoi(absl::string_view input) {
     // Hack: data() is not null terminated, but we do know that it points
-    // inside a std::string where numbers are separated by " " and since atoi64 will
-    // stop at the first invalid char, this works.
+    // inside a std::string where numbers are separated by " " and since atoi64
+    // will stop at the first invalid char, this works.
     return atoi64(input.data());  // NOLINT
   }
 

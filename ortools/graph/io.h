@@ -26,12 +26,10 @@
 #include "ortools/base/join.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
-#include "ortools/base/join.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/graph/graph.h"
 #include "ortools/base/status.h"
 #include "ortools/base/statusor.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/graph/graph.h"
 
 namespace util {
 
@@ -40,8 +38,8 @@ enum GraphToStringFormat {
   // One arc per line, eg. "3->1".
   PRINT_GRAPH_ARCS,
 
-  // One space-separated adjacency list per line, eg. "5 1 3 1".
-  // Nodes with no outgoing arc get an empty line.
+  // One space-separated adjacency list per line, eg. "3: 5 1 3 1".
+  // Nodes with no outgoing arc get an empty list.
   PRINT_GRAPH_ADJACENCY_LISTS,
 
   // Ditto, but the adjacency lists are sorted.
@@ -188,9 +186,9 @@ util::StatusOr<Graph*> ReadGraphFile(
       graph.reset(new Graph(num_nodes, num_arcs));
       continue;
     }
-    int64 node1 = -1;
-    int64 node2 = -1;
-    if (sscanf(line.c_str(), "%lld %lld", &node1, &node2) != 2 || node1 < 0 ||
+    int64_t node1 = -1;
+    int64_t node2 = -1;
+    if (sscanf(line.c_str(), "%ld %ld", &node1, &node2) != 2 || node1 < 0 ||
         node2 < 0 || node1 >= num_nodes || node2 >= num_nodes) {
       return util::Status(
           util::error::INVALID_ARGUMENT,

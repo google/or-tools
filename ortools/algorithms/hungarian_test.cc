@@ -3,11 +3,11 @@
 #include "ortools/algorithms/hungarian.h"
 
 #include <unordered_map>
+#include "gtest/gtest.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/random.h"
-#include "gtest/gtest.h"
 
 namespace operations_research {
 
@@ -67,7 +67,7 @@ TEST(LinearAssignmentTest, NullMatrix) {
 
 #define MATRIX_TEST                                                  \
   {                                                                  \
-    std::vector<std::vector<double> > cost(kMatrixHeight);                     \
+    std::vector<std::vector<double> > cost(kMatrixHeight);           \
     for (int row = 0; row < kMatrixHeight; ++row) {                  \
       cost[row].resize(kMatrixWidth);                                \
       for (int col = 0; col < kMatrixWidth; ++col) {                 \

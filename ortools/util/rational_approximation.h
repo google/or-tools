@@ -34,4 +34,3 @@ Fraction RationalApproximation(const double x, const double precision);
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_RATIONAL_APPROXIMATION_H_
-

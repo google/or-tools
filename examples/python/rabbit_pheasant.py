@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Rabbit + Pheasant puzzle.
 
 This example is the same one described in
@@ -31,7 +30,6 @@ def main():
   # Create the solver.
   solver = pywrapcp.Solver('rabbit+pheasant', parameters)
 
-
   # Create the variables.
   pheasant = solver.IntVar(0, 100, 'pheasant')
   rabbit = solver.IntVar(0, 100, 'rabbit')
@@ -41,8 +39,7 @@ def main():
   solver.Add(pheasant * 2 + rabbit * 4 == 56)
 
   # Create the search phase.
-  db = solver.Phase([rabbit, pheasant],
-                    solver.INT_VAR_DEFAULT,
+  db = solver.Phase([rabbit, pheasant], solver.INT_VAR_DEFAULT,
                     solver.INT_VALUE_DEFAULT)
 
   # And solve.
@@ -54,6 +51,7 @@ def main():
   print(rabbit)
   solver.EndSearch()
   print(solver)
+
 
 if __name__ == '__main__':
   main()

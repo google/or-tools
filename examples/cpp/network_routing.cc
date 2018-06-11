@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // This model solves a multicommodity mono-routing problem with
 // capacity constraints and a max usage cost structure.  This means
 // that given a graph with capacity on edges, and a set of demands
@@ -26,24 +25,23 @@
 
 // A random problem generator is also included.
 
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <string>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/random.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph/shortestpaths.h"
 #include "ortools/util/tuple_set.h"
-#include "ortools/base/random.h"
 
 // ----- Data Generator -----
 DEFINE_int32(clients, 0,
@@ -770,11 +768,12 @@ class NetworkRoutingSolver {
     std::vector<IntVar*> usage_costs;
     std::vector<IntVar*> comfort_costs;
     for (int arc_index = 0; arc_index < num_arcs; ++arc_index) {
-      const int capacity = capacity_[arcs_data_.Value(
-          2 * arc_index, 0)][arcs_data_.Value(2 * arc_index, 1)];
+      const int capacity = capacity_[arcs_data_.Value(2 * arc_index, 0)]
+                                    [arcs_data_.Value(2 * arc_index, 1)];
       IntVar* const usage_cost =
-          solver.MakeDiv(solver.MakeProd(vtraffic[arc_index], kOneThousand),
-                         capacity)
+          solver
+              .MakeDiv(solver.MakeProd(vtraffic[arc_index], kOneThousand),
+                       capacity)
               ->Var();
       usage_costs.push_back(usage_cost);
       IntVar* const comfort_cost = solver.MakeIsGreaterCstVar(
@@ -798,7 +797,7 @@ class NetworkRoutingSolver {
 
     // DecisionBuilder.
     Solver::IndexEvaluator2 eval_marginal_cost = [this, &usage_costs](
-        int64 var, int64 value) {
+                                                     int64 var, int64 value) {
       return EvaluateMarginalCost(usage_costs, var, value);
     };
 
@@ -916,7 +915,7 @@ class NetworkRoutingSolver {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::NetworkRoutingData data;
   operations_research::NetworkRoutingDataBuilder builder;
   builder.BuildModelFromParameters(

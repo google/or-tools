@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Magic sequence problem.
 
 This models aims at building a sequence of numbers such that the number of
@@ -19,7 +18,6 @@ It uses an aggregated formulation of the count expression called
 distribute().
 """
 from __future__ import print_function
-
 
 from ortools.constraint_solver import pywrapcp
 
@@ -35,9 +33,9 @@ def main():
   solver.Add(solver.Distribute(all_vars, all_values, all_vars))
   solver.Add(solver.Sum(all_vars) == size)
 
-  solver.NewSearch(solver.Phase(all_vars,
-                                solver.CHOOSE_FIRST_UNBOUND,
-                                solver.ASSIGN_MIN_VALUE))
+  solver.NewSearch(
+      solver.Phase(all_vars, solver.CHOOSE_FIRST_UNBOUND,
+                   solver.ASSIGN_MIN_VALUE))
   solver.NextSolution()
   print(all_vars)
   solver.EndSearch()

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Set covering in Google CP Solver.
@@ -46,14 +45,9 @@ def main(unused_argv):
   min_distance = 15
   num_cities = 6
 
-  distance = [
-      [0, 10, 20, 30, 30, 20],
-      [10, 0, 25, 35, 20, 10],
-      [20, 25, 0, 15, 30, 20],
-      [30, 35, 15, 0, 15, 25],
-      [30, 20, 30, 15, 0, 14],
-      [20, 10, 20, 25, 14, 0]
-  ]
+  distance = [[0, 10, 20, 30, 30, 20], [10, 0, 25, 35, 20, 10],
+              [20, 25, 0, 15, 30, 20], [30, 35, 15, 0, 15, 25],
+              [30, 20, 30, 15, 0, 14], [20, 10, 20, 25, 14, 0]]
 
   #
   # declare variables
@@ -82,10 +76,9 @@ def main(unused_argv):
   solution.AddObjective(z)
 
   collector = solver.LastSolutionCollector(solution)
-  solver.Solve(solver.Phase(x + [z],
-                            solver.INT_VAR_DEFAULT,
-                            solver.INT_VALUE_DEFAULT),
-               [collector, objective])
+  solver.Solve(
+      solver.Phase(x + [z], solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+      [collector, objective])
 
   print("z:", collector.ObjectiveValue(0))
   print("x:", [collector.Value(0, x[i]) for i in range(num_cities)])

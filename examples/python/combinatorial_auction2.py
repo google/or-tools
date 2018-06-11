@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Combinatorial auction in Google CP Solver.
@@ -49,11 +48,11 @@ def main():
 
   # the items for each bid
   items = [
-      [0, 1],   # A,B
-      [0, 2],   # A, C
-      [1, 3],   # B,D
+      [0, 1],  # A,B
+      [0, 2],  # A, C
+      [1, 3],  # B,D
       [1, 2, 3],  # B,C,D
-      [0]      # A
+      [0]  # A
   ]
   # collect the bids for each item
   items_t = defaultdict(list)
@@ -88,9 +87,7 @@ def main():
   solution.Add(obj)
 
   # db: DecisionBuilder
-  db = solver.Phase(X,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(X, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db, [objective])
   num_solutions = 0
@@ -107,6 +104,7 @@ def main():
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 if __name__ == "__main__":
   main()

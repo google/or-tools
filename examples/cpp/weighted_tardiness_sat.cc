@@ -15,19 +15,18 @@
 #include <numeric>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
 #include "ortools/base/strutil.h"
+#include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
-#include "ortools/base/filelineiter.h"
 
 DEFINE_string(input, "examples/data/weighted_tardiness/wt40.txt",
               "wt data file name.");
@@ -212,14 +211,30 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
-    // Note that we conpute the "real" cost here and do not use the tardiness
+    // Note that we compute the "real" cost here and do not use the tardiness
     // variables. This is because in the core based approach, the tardiness
     // variable might be fixed before the end date, and we just have a >=
     // relation.
+    auto min_value = [&r](int v) {
+      if (r.solution_size() > 0) {
+        return r.solution(v);
+      } else {
+        return r.solution_lower_bounds(v);
+      }
+    };
+    auto max_value = [&r](int v) {
+      if (r.solution_size() > 0) {
+        return r.solution(v);
+      } else {
+        return r.solution_upper_bounds(v);
+      }
+    };
+
     int64 objective = 0;
     for (int i = 0; i < num_tasks; ++i) {
-      objective += weights[i] * std::max<int64>(0ll, r.solution(tasks_end[i]) -
-                                                         due_dates[i]);
+      CHECK_EQ(min_value(tasks_end[i]), max_value(tasks_end[i]));
+      const int64 end = min_value(tasks_end[i]);
+      objective += weights[i] * std::max<int64>(0ll, end - due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
 
@@ -227,21 +242,23 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
     std::vector<int> sorted_tasks(num_tasks);
     std::iota(sorted_tasks.begin(), sorted_tasks.end(), 0);
     std::sort(sorted_tasks.begin(), sorted_tasks.end(), [&](int v1, int v2) {
-      return r.solution(tasks_start[v1]) < r.solution(tasks_start[v2]);
+      CHECK_EQ(min_value(tasks_start[v1]), max_value(tasks_start[v1]));
+      CHECK_EQ(min_value(tasks_start[v2]), max_value(tasks_start[v2]));
+      return min_value(tasks_start[v1]) < min_value(tasks_start[v2]);
     });
     std::string solution = "0";
     int end = 0;
     for (const int i : sorted_tasks) {
-      const int64 cost = weights[i] * r.solution(tardiness_vars[i]);
+      const int64 cost = weights[i] * min_value(tardiness_vars[i]);
       absl::StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
         absl::StrAppend(&solution, "\033[1;31m(+", cost, ") \033[0m");
       }
-      absl::StrAppend(&solution, "|", r.solution(tasks_end[i]));
-      CHECK_EQ(end, r.solution(tasks_start[i]));
+      absl::StrAppend(&solution, "|", min_value(tasks_end[i]));
+      CHECK_EQ(end, min_value(tasks_start[i]));
       end += durations[i];
-      CHECK_EQ(end, r.solution(tasks_end[i]));
+      CHECK_EQ(end, min_value(tasks_end[i]));
     }
     LOG(INFO) << "solution: " << solution;
   }));
@@ -287,7 +304,7 @@ void ParseAndSolve() {
 
 int main(int argc, char** argv) {
   base::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

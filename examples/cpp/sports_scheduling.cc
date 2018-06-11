@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Sports scheduling problem.
 //
 // We want to solve the problem of scheduling of team matches in a
@@ -56,7 +55,6 @@
 //
 // Usage: run this with --helpshort for a short usage manual.
 
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"

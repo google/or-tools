@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Moving furnitures (scheduling) problem in Google CP Solver.
@@ -98,9 +97,11 @@ def main():
   # declare variables
   #
   start_times = [
-      solver.IntVar(0, upper_limit, "start_times[%i]" % i) for i in range(n)]
+      solver.IntVar(0, upper_limit, "start_times[%i]" % i) for i in range(n)
+  ]
   end_times = [
-      solver.IntVar(0, upper_limit * 2, "end_times[%i]" % i) for i in range(n)]
+      solver.IntVar(0, upper_limit * 2, "end_times[%i]" % i) for i in range(n)
+  ]
   end_time = solver.IntVar(0, upper_limit * 2, "end_time")
 
   # number of needed resources, to be minimized
@@ -145,8 +146,7 @@ def main():
   solution.Add(end_time)
   solution.Add(num_resources)
 
-  db = solver.Phase(start_times,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(start_times, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   #
@@ -170,6 +170,7 @@ def main():
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 if __name__ == "__main__":
   main()

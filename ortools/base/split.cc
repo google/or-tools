@@ -27,7 +27,8 @@ namespace {
 //    to 'result'.
 //
 // Note: For multi-character delimiters, this routine will split on *ANY* of
-// the characters in the std::string, not the entire std::string as a single delimiter.
+// the characters in the std::string, not the entire std::string as a single
+// delimiter.
 // ----------------------------------------------------------------------
 template <typename ITR>
 static inline void InternalSplitStringUsingChar(const std::string& full, char c,
@@ -73,22 +74,24 @@ static inline void InternalSplitStringUsing(const std::string& full,
 
 }  // namespace
 
-std::vector<std::string> StrSplit(const std::string& full, char delim, int flags) {
+std::vector<std::string> StrSplit(const std::string& full, char delim,
+                                  int flags) {
   CHECK_EQ(absl::SkipEmpty(), flags);
   std::vector<std::string> out;
   InternalSplitStringUsingChar(full, delim, &out);
   return out;
 }
 
-std::vector<std::string> StrSplit(const std::string& full, const char* delim, int flags) {
+std::vector<std::string> StrSplit(const std::string& full, const char* delim,
+                                  int flags) {
   CHECK_EQ(absl::SkipEmpty(), flags);
   std::vector<std::string> out;
   InternalSplitStringUsing(full, delim, &out);
   return out;
 }
 
-std::vector<absl::string_view> StrSplit(const std::string& full, const char* delim,
-                                        int64 flags) {
+std::vector<absl::string_view> StrSplit(const std::string& full,
+                                        const char* delim, int64 flags) {
   CHECK_EQ(absl::SkipEmpty(), flags);
   std::vector<absl::string_view> out;
   InternalSplitStringUsing(full, delim, &out);

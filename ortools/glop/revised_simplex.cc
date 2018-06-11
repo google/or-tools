@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/glop/revised_simplex.h"
 
 #include <algorithm>
@@ -24,9 +23,8 @@
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/glop/initial_basis.h"
 #include "ortools/glop/parameters.pb.h"
@@ -2884,12 +2882,14 @@ void RevisedSimplex::DisplayErrors() const {
 
 namespace {
 
-std::string StringifyMonomialWithFlags(const Fractional a, const std::string& x) {
+std::string StringifyMonomialWithFlags(const Fractional a,
+                                       const std::string& x) {
   return StringifyMonomial(a, x, FLAGS_simplex_display_numbers_as_fractions);
 }
 
-// Returns a std::string representing the rational approximation of x or a decimal
-// approximation of x according to FLAGS_simplex_display_numbers_as_fractions.
+// Returns a std::string representing the rational approximation of x or a
+// decimal approximation of x according to
+// FLAGS_simplex_display_numbers_as_fractions.
 std::string StringifyWithFlags(const Fractional x) {
   return Stringify(x, FLAGS_simplex_display_numbers_as_fractions);
 }
@@ -2950,9 +2950,8 @@ void RevisedSimplex::DisplayVariableBounds() {
           VLOG(3) << variable_name_[col] << " = "
                   << StringifyWithFlags(lower_bound_[col]) << ";";
           break;
-        default:                           // This should never happen.
-          LOG(DFATAL) << "Column " << col
-                      << " has no meaningful status.";
+        default:  // This should never happen.
+          LOG(DFATAL) << "Column " << col << " has no meaningful status.";
           break;
       }
     }

@@ -26,13 +26,12 @@
 #include <utility>
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/random.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/base/random.h"
 
 DEFINE_int32(minsize, 0, "Minimum degree of Costas matrix.");
 DEFINE_int32(maxsize, 0, "Maximum degree of Costas matrix.");
@@ -267,7 +266,8 @@ void CostasSoft(const int dim) {
   for (int64 j = dim + 1; j <= 2 * dim; ++j) {
     // Penalize if an element occurs more than once.
     vars[index] =
-        solver.MakeSemiContinuousExpr(solver.MakeSum(matrix_count[j], -1), 0, 1)
+        solver
+            .MakeSemiContinuousExpr(solver.MakeSum(matrix_count[j], -1), 0, 1)
             ->Var();
 
     occurences.push_back(vars[index++]);
@@ -291,8 +291,9 @@ void CostasSoft(const int dim) {
 
     // Penalize occurrences of more than one
     for (int64 j = 0; j <= 2 * dim; ++j) {
-      vars[index] = solver.MakeSemiContinuousExpr(
-                              solver.MakeSum(domain_count[j], -1), 0, dim - i)
+      vars[index] = solver
+                        .MakeSemiContinuousExpr(
+                            solver.MakeSum(domain_count[j], -1), 0, dim - i)
                         ->Var();
 
       occurences.push_back(vars[index++]);
@@ -424,7 +425,7 @@ void CostasHard(const int dim) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   int min = 1;
   int max = 10;
 

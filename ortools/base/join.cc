@@ -19,7 +19,9 @@
 
 namespace absl {
 
-void StrAppend(std::string* s, const AlphaNum& a) { s->append(a.data(), a.size()); }
+void StrAppend(std::string* s, const AlphaNum& a) {
+  s->append(a.data(), a.size());
+}
 void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b) {
   s->reserve(s->size() + a.size() + b.size());
   s->append(a.data(), a.size());
@@ -106,7 +108,9 @@ void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
   StrAppend(s, g, h, i, j, k, l, m);
 }
 
-std::string StrCat(const AlphaNum& a) { return std::string(a.data(), a.size()); }
+std::string StrCat(const AlphaNum& a) {
+  return std::string(a.data(), a.size());
+}
 std::string StrCat(const AlphaNum& a, const AlphaNum& b) {
   std::string out;
   StrAppend(&out, a, b);
@@ -118,74 +122,74 @@ std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c) {
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d) {
+                   const AlphaNum& d) {
   std::string out;
   StrAppend(&out, a, b, c, d);
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e) {
+                   const AlphaNum& d, const AlphaNum& e) {
   std::string out;
   StrAppend(&out, a, b, c, d, e);
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f) {
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f) {
   std::string out;
   StrAppend(&out, a, b, c, d, e, f);
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g) {
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g) {
   std::string out;
   StrAppend(&out, a, b, c, d, e, f, g);
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h) {
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h) {
   std::string out;
   StrAppend(&out, a, b, c, d, e, f, g, h);
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i) {
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i) {
   std::string out;
   StrAppend(&out, a, b, c, d, e, f, g, h, i);
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j) {
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                   const AlphaNum& j) {
   std::string out;
   StrAppend(&out, a, b, c, d, e, f, g, h, i, j);
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k) {
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                   const AlphaNum& j, const AlphaNum& k) {
   std::string out;
   StrAppend(&out, a, b, c, d, e, f, g, h, i, j, k);
   return out;
 }
 
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l) {
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                   const AlphaNum& j, const AlphaNum& k, const AlphaNum& l) {
   std::string out;
   StrAppend(&out, a, b, c, d, e, f, g, h, i, j, k, l);
   return out;
 }
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l,
-              const AlphaNum& m) {
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                   const AlphaNum& j, const AlphaNum& k, const AlphaNum& l,
+                   const AlphaNum& m) {
   std::string out;
   StrAppend(&out, a, b, c, d, e, f, g, h, i, j, k, l, m);
   return out;

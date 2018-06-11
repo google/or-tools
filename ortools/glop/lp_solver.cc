@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/glop/lp_solver.h"
 
 #include <cmath>
@@ -310,7 +309,6 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   ComputeReducedCosts(lp);
   ComputeConstraintActivities(lp);
 
-
   // These will be set to true if the associated "infeasibility" is too large.
   //
   // The tolerance used is the parameter solution_feasibility_tolerance. To be
@@ -463,7 +461,6 @@ int LPSolver::GetNumberOfSimplexIterations() const {
   return num_revised_simplex_iterations_;
 }
 
-
 double LPSolver::DeterministicTime() const {
   return revised_simplex_ == nullptr ? 0.0
                                      : revised_simplex_->DeterministicTime();
@@ -554,7 +551,6 @@ void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution,
     solution->status = ProblemStatus::ABNORMAL;
   }
 }
-
 
 namespace {
 
@@ -756,8 +752,8 @@ void LPSolver::ComputeConstraintActivities(const LinearProgram& lp) {
   DCHECK_EQ(num_cols, primal_values_.size());
   constraint_activities_.assign(num_rows, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
-    lp.GetSparseColumn(col)
-        .AddMultipleToDenseVector(primal_values_[col], &constraint_activities_);
+    lp.GetSparseColumn(col).AddMultipleToDenseVector(primal_values_[col],
+                                                     &constraint_activities_);
   }
 }
 

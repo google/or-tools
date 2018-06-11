@@ -23,24 +23,23 @@
 
 #include <vector>
 
+#include "examples/cpp/cvrptw_lib.h"
 #include "ortools/base/callback.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/random.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_flags.h"
-#include "examples/cpp/cvrptw_lib.h"
-#include "ortools/base/random.h"
 
-using operations_research::RoutingModel;
-using operations_research::RoutingSearchParameters;
+using operations_research::ACMRandom;
+using operations_research::GetSeed;
 using operations_research::LocationContainer;
 using operations_research::RandomDemand;
+using operations_research::RoutingModel;
+using operations_research::RoutingSearchParameters;
 using operations_research::ServiceTimePlusTransition;
-using operations_research::GetSeed;
-using operations_research::ACMRandom;
 using operations_research::StringAppendF;
 using operations_research::StringPrintf;
 
@@ -53,7 +52,7 @@ const char* kTime = "Time";
 const char* kCapacity = "Capacity";
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   CHECK_LT(0, FLAGS_vrp_orders) << "Specify an instance size greater than 0.";
   CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
   // VRP of size FLAGS_vrp_size.

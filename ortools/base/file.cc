@@ -98,7 +98,7 @@ char* File::ReadLine(char* const output, uint64 max_length) {
 }
 
 int64 File::ReadToString(std::string* const output, uint64 max_length) {
-  CHECK_NOTNULL(output);
+  CHECK(output != nullptr);
   output->clear();
 
   if (max_length == 0) return 0;
@@ -192,7 +192,8 @@ bool ReadFileToString(const absl::string_view& file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(const std::string& data, const absl::string_view& file_name) {
+bool WriteStringToFile(const std::string& data,
+                       const absl::string_view& file_name) {
   return SetContents(file_name, data, file::Defaults()).ok();
 }
 

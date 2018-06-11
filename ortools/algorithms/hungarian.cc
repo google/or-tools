@@ -50,11 +50,7 @@ class HungarianOptimizer {
  private:
   typedef void (HungarianOptimizer::*Step)();
 
-  typedef enum {
-    NONE,
-    PRIME,
-    STAR
-  } Mark;
+  typedef enum { NONE, PRIME, STAR } Mark;
 
   // Convert the final cost matrix into a set of assignments of agents -> tasks.
   // Returns the assignment in the two vectors passed as argument, the same as

@@ -18,13 +18,13 @@
 #include <string>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/strongly_connected_components.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/map_util.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
+#include "ortools/graph/strongly_connected_components.h"
 
 namespace operations_research {
 namespace sat {
@@ -271,8 +271,12 @@ bool LinearProgrammingConstraint::Propagate() {
         lp_data_.SetConstraintBounds(row, cut.lb, cut.ub);
         for (int i = 0; i < cut.vars.size(); ++i) {
           const glop::ColIndex col = GetOrCreateMirrorVariable(cut.vars[i]);
+
+          // The returned coefficients correspond to variables at the CP scale,
+          // so we need to divide them by CpToLpScalingFactor() which is the
+          // same as multiplying by LpToCpScalingFactor().
           lp_data_.SetCoefficient(row, col,
-                                  cut.coeffs[i] * CpToLpScalingFactor(col));
+                                  cut.coeffs[i] * LpToCpScalingFactor(col));
         }
       }
     }

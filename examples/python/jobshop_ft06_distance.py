@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """This model implements a simple jobshop named ft06.
 
 A jobshop is a standard scheduling problem when you must sequence a
@@ -22,11 +21,11 @@ The objective is to minimize the maximum completion time of all
 jobs. This is called the makespan.
 """
 
-
 from ortools.constraint_solver import pywrapcp
 
 
 class Dist:
+
   def __init__(self):
     pass
 
@@ -43,19 +42,11 @@ def main():
   all_machines = range(0, machines_count)
   all_jobs = range(0, jobs_count)
 
-  durations = [[1, 3, 6, 7, 3, 6],
-               [8, 5, 10, 10, 10, 4],
-               [5, 4, 8, 9, 1, 7],
-               [5, 5, 5, 3, 8, 9],
-               [9, 3, 5, 4, 3, 1],
-               [3, 3, 9, 10, 4, 1]]
+  durations = [[1, 3, 6, 7, 3, 6], [8, 5, 10, 10, 10, 4], [5, 4, 8, 9, 1, 7],
+               [5, 5, 5, 3, 8, 9], [9, 3, 5, 4, 3, 1], [3, 3, 9, 10, 4, 1]]
 
-  machines = [[2, 0, 1, 3, 5, 4],
-              [1, 2, 4, 5, 0, 3],
-              [2, 3, 5, 0, 1, 4],
-              [1, 0, 2, 3, 4, 5],
-              [2, 1, 4, 5, 0, 3],
-              [1, 3, 5, 0, 4, 2]]
+  machines = [[2, 0, 1, 3, 5, 4], [1, 2, 4, 5, 0, 3], [2, 3, 5, 0, 1, 4],
+              [1, 0, 2, 3, 4, 5], [2, 1, 4, 5, 0, 3], [1, 3, 5, 0, 4, 2]]
 
   # Computes horizon dynamically.
   horizon = sum([sum(durations[i]) for i in all_jobs])
@@ -64,11 +55,8 @@ def main():
   all_tasks = {}
   for i in all_jobs:
     for j in all_machines:
-      all_tasks[(i, j)] = solver.FixedDurationIntervalVar(0,
-                                                          horizon,
-                                                          durations[i][j],
-                                                          False,
-                                                          'Job_%i_%i' % (i, j))
+      all_tasks[(i, j)] = solver.FixedDurationIntervalVar(
+          0, horizon, durations[i][j], False, 'Job_%i_%i' % (i, j))
 
   # Creates sequence variables and add disjuctive constraints.
   all_sequences = {}
@@ -90,8 +78,8 @@ def main():
     solver.Add(disj)
 
   # Makespan objective.
-  obj_var = solver.Max([all_tasks[(i, machines_count - 1)].EndExpr()
-                        for i in all_jobs])
+  obj_var = solver.Max(
+      [all_tasks[(i, machines_count - 1)].EndExpr() for i in all_jobs])
   objective = solver.Minimize(obj_var, 1)
 
   # Precedences inside a job.
@@ -100,8 +88,7 @@ def main():
       solver.Add(all_tasks[(i, j + 1)].StartsAfterEnd(all_tasks[(i, j)]))
 
   # Creates search phases.
-  vars_phase = solver.Phase([obj_var],
-                            solver.CHOOSE_FIRST_UNBOUND,
+  vars_phase = solver.Phase([obj_var], solver.CHOOSE_FIRST_UNBOUND,
                             solver.ASSIGN_MIN_VALUE)
   sequence_phase = solver.Phase([all_sequences[i] for i in all_machines],
                                 solver.SEQUENCE_DEFAULT)

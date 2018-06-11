@@ -14,16 +14,15 @@
 #include "ortools/sat/cp_model_checker.h"
 
 #include <algorithm>
-#include <unordered_map>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/join.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -40,7 +39,7 @@ namespace {
 // If the std::string returned by "statement" is not empty, returns it.
 #define RETURN_IF_NOT_EMPTY(statement)                \
   do {                                                \
-    const std::string error_message = statement;           \
+    const std::string error_message = statement;      \
     if (!error_message.empty()) return error_message; \
   } while (false)
 
@@ -58,7 +57,7 @@ bool VariableReferenceIsValid(const CpModelProto& model, int reference) {
 }
 
 bool LiteralReferenceIsValid(const CpModelProto& model, int reference) {
-  if (std::max(-reference - 1, reference) >= model.variables_size()) {
+  if (std::max(NegatedRef(reference), reference) >= model.variables_size()) {
     return false;
   }
   const auto& var_proto = model.variables(PositiveRef(reference));
@@ -96,7 +95,7 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
 }
 
 std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
-                                              int c) {
+                                                   int c) {
   const ConstraintProto& ct = model.constraints(c);
   IndexReferences references;
   AddReferencesUsedByConstraint(ct, &references);
@@ -142,7 +141,7 @@ std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
 }
 
 std::string ValidateLinearConstraint(const CpModelProto& model,
-                                const ConstraintProto& ct) {
+                                     const ConstraintProto& ct) {
   const LinearConstraintProto& arg = ct.linear();
   int64 sum_min = 0;
   int64 sum_max = 0;
@@ -158,8 +157,8 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
     // Note that we use min/max with zero to disallow "alternative" terms and
     // be sure that we cannot have an overflow if we do the computation in a
     // different order.
-    sum_min = CapAdd(sum_min, std::min(0ll, std::min(prod1, prod2)));
-    sum_max = CapAdd(sum_max, std::max(0ll, std::max(prod1, prod2)));
+    sum_min = CapAdd(sum_min, std::min(int64{0}, std::min(prod1, prod2)));
+    sum_max = CapAdd(sum_max, std::max(int64{0}, std::max(prod1, prod2)));
     for (const int64 v : {prod1, prod2, sum_min, sum_max}) {
       if (v == kint64max || v == kint64min) {
         return "Possible integer overflow in constraint: " +
@@ -171,7 +170,7 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
 }
 
 std::string ValidateReservoirConstraint(const CpModelProto& model,
-                                   const ConstraintProto& ct) {
+                                        const ConstraintProto& ct) {
   for (const int t : ct.reservoir().times()) {
     const IntegerVariableProto& time = model.variables(t);
     for (const int64 bound : time.domain()) {
@@ -204,7 +203,7 @@ std::string ValidateCircuitCoveringConstraint(const ConstraintProto& ct) {
 }
 
 std::string ValidateObjective(const CpModelProto& model,
-                         const CpObjectiveProto& obj) {
+                              const CpObjectiveProto& obj) {
   // TODO(user): share the code with ValidateLinearConstraint().
   if (obj.vars_size() == 1 && obj.coeffs(0) == 1) return "";
   int64 sum_min = 0;
@@ -221,8 +220,8 @@ std::string ValidateObjective(const CpModelProto& model,
     // Note that we use min/max with zero to disallow "alternative" terms and
     // be sure that we cannot have an overflow if we do the computation in a
     // different order.
-    sum_min = CapAdd(sum_min, std::min(0ll, std::min(prod1, prod2)));
-    sum_max = CapAdd(sum_max, std::max(0ll, std::max(prod1, prod2)));
+    sum_min = CapAdd(sum_min, std::min(int64{0}, std::min(prod1, prod2)));
+    sum_max = CapAdd(sum_max, std::max(int64{0}, std::max(prod1, prod2)));
     for (const int64 v : {prod1, prod2, sum_min, sum_max}) {
       // When introducing the objective variable, we use a [...] domain so we
       // need to be more defensive here to make sure no overflow can happen in
@@ -535,7 +534,9 @@ class ConstraintChecker {
     for (int i = 0; i < num_steps; ++i) {
       const std::pair<int64, int64> key = {current_state,
                                            Value(ct.automata().vars(i))};
-      CHECK(gtl::ContainsKey(transition_map, key));
+      if (!gtl::ContainsKey(transition_map, key)) {
+        return false;
+      }
       current_state = transition_map[key];
     }
 
@@ -691,7 +692,7 @@ class ConstraintChecker {
   bool ReservoirConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_variables = ct.reservoir().times_size();
     const int64 min_level = ct.reservoir().min_level();
-    const int64 max_level = ct.reservoir().min_level();
+    const int64 max_level = ct.reservoir().max_level();
     std::map<int64, int64> deltas;
     deltas[0] = 0;
     for (int i = 0; i < num_variables; i++) {

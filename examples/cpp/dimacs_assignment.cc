@@ -11,22 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
+#include "examples/cpp/parse_dimacs_assignment.h"
+#include "examples/cpp/print_dimacs_assignment.h"
+#include "ortools/algorithms/hungarian.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-#include "ortools/algorithms/hungarian.h"
-#include "examples/cpp/parse_dimacs_assignment.h"
-#include "examples/cpp/print_dimacs_assignment.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 
@@ -175,8 +173,8 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
 
 static const char* const kUsageTemplate = "usage: %s <filename>";
 
-using ::operations_research::ForwardStarStaticGraph;
 using ::operations_research::ForwardStarGraph;
+using ::operations_research::ForwardStarStaticGraph;
 using ::operations_research::SolveDimacsAssignment;
 using ::operations_research::StarGraph;
 using ::operations_research::StringPrintf;

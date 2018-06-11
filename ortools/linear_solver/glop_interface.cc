@@ -11,17 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-#include <unordered_map>
-#include <string>
-#include <vector>
 #include <fstream>
-
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/port.h"
+#include "ortools/base/stringprintf.h"
 
 #include "ortools/base/hash.h"
 #include "ortools/glop/lp_solver.h"
@@ -33,12 +31,9 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/time_limit.h"
 
-
 namespace operations_research {
 
-namespace {
-
-}  // Anonymous namespace
+namespace {}  // Anonymous namespace
 
 class GLOPInterface : public MPSolverInterface {
  public:
@@ -96,7 +91,8 @@ class GLOPInterface : public MPSolverInterface {
   void SetPresolveMode(int value) override;
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
-  bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string& parameters) override;
 
  private:
   void NonIncrementalChange();
@@ -345,7 +341,6 @@ void GLOPInterface::SetParameters(const MPSolverParameters& param) {
   parameters_.Clear();
   SetCommonParameters(param);
   SetScalingMode(param.GetIntegerParam(MPSolverParameters::SCALING));
-
 }
 
 void GLOPInterface::SetRelativeMipGap(double value) {
@@ -442,6 +437,5 @@ void GLOPInterface::NonIncrementalChange() {
 MPSolverInterface* BuildGLOPInterface(MPSolver* const solver) {
   return new GLOPInterface(solver);
 }
-
 
 }  // namespace operations_research

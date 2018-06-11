@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Map coloring problem in Google CP Solver.
@@ -80,10 +79,9 @@ def main():
   collector = solver.AllSolutionCollector(solution)
   # collector = solver.FirstSolutionCollector(solution)
   # search_log = solver.SearchLog(100, x[0])
-  solver.Solve(solver.Phase([color[i] for i in range(n)],
-                            solver.INT_VAR_SIMPLE,
-                            solver.ASSIGN_MIN_VALUE),
-               [collector])
+  solver.Solve(
+      solver.Phase([color[i] for i in range(n)], solver.INT_VAR_SIMPLE,
+                   solver.ASSIGN_MIN_VALUE), [collector])
 
   num_solutions = collector.SolutionCount()
   print("num_solutions: ", num_solutions)

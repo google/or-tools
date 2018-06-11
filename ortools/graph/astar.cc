@@ -11,15 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
-#include <memory>
 #include <vector>
 
+#include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/adjustable_priority_queue.h"
 
 namespace operations_research {
 namespace {
@@ -27,7 +26,8 @@ namespace {
 // Priority queue element
 class Element {
  public:
-  Element() : heap_index_(-1), distance_(0), node_(-1), distance_with_heuristic_(0) {}
+  Element()
+      : heap_index_(-1), distance_(0), node_(-1), distance_with_heuristic_(0) {}
 
   // The distance_with_heuristic is used for the comparison
   // in the priority queue
@@ -37,8 +37,9 @@ class Element {
   void SetHeapIndex(int h) { heap_index_ = h; }
   int GetHeapIndex() const { return heap_index_; }
   void set_distance(int64 distance) { distance_ = distance; }
-  void set_distance_with_heuristic(int64 distance_with_heuristic)
-    { distance_with_heuristic_ = distance_with_heuristic; }
+  void set_distance_with_heuristic(int64 distance_with_heuristic) {
+    distance_with_heuristic_ = distance_with_heuristic;
+  }
   int64 distance_with_heuristic() { return distance_with_heuristic_; }
 
   int64 distance() const { return distance_; }
@@ -57,10 +58,8 @@ class AStarSP {
  public:
   static const int64 kInfinity = kint64max / 2;
 
-  AStarSP(int node_count, int start_node,
-          std::function<int64(int, int)> graph,
-          std::function<int64(int)> heuristic,
-          int64 disconnected_distance)
+  AStarSP(int node_count, int start_node, std::function<int64(int, int)> graph,
+          std::function<int64(int)> heuristic, int64 disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
         graph_(std::move(graph)),

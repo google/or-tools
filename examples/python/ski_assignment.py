@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Ski assignment in Google CP Solver.
@@ -72,8 +71,7 @@ def main():
   #
 
   # which ski to choose for each skier
-  x = [solver.IntVar(0, num_skis - 1, 'x[%i]' % i)
-       for i in range(num_skiers)]
+  x = [solver.IntVar(0, num_skis - 1, 'x[%i]' % i) for i in range(num_skiers)]
   z = solver.IntVar(0, sum(ski_heights), 'z')
 
   #
@@ -81,8 +79,10 @@ def main():
   #
   solver.Add(solver.AllDifferent(x))
 
-  z_tmp = [abs(solver.Element(ski_heights, x[i]) - skier_heights[i])
-           for i in range(num_skiers)]
+  z_tmp = [
+      abs(solver.Element(ski_heights, x[i]) - skier_heights[i])
+      for i in range(num_skiers)
+  ]
   solver.Add(z == sum(z_tmp))
 
   # objective
@@ -91,9 +91,7 @@ def main():
   #
   # search and result
   #
-  db = solver.Phase(x,
-                    solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db, [objective])
 

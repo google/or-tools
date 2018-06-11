@@ -11,9 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "examples/cpp/global_arith.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-#include "examples/cpp/global_arith.h"
 
 namespace operations_research {
 
@@ -36,12 +36,13 @@ class SubstitutionMap {
   }
 
   void ProcessAllSubstitutions(Callback3<int, int, int64>* const hook) {
-    for (std::unordered_map<int, Offset>::const_iterator it = substitutions_.begin();
-         it != substitutions_.end();
-         ++it) {
+    for (std::unordered_map<int, Offset>::const_iterator it =
+             substitutions_.begin();
+         it != substitutions_.end(); ++it) {
       hook->Run(it->first, it->second.var_index, it->second.offset);
     }
   }
+
  private:
   std::unordered_map<int, Offset> substitutions_;
 };
@@ -57,18 +58,14 @@ struct Bounds {
     ub = std::min(ub, new_ub);
   }
 
-  void Intersect(const Bounds& other) {
-    Intersect(other.lb, other.ub);
-  }
+  void Intersect(const Bounds& other) { Intersect(other.lb, other.ub); }
 
   void Union(int64 new_lb, int64 new_ub) {
     lb = std::min(lb, new_lb);
     ub = std::max(ub, new_ub);
   }
 
-  void Union(const Bounds& other) {
-    Union(other.lb, other.ub);
-  }
+  void Union(const Bounds& other) { Union(other.lb, other.ub); }
 
   bool IsEqual(const Bounds& other) {
     return (ub == other.ub && lb == other.lb);
@@ -90,7 +87,8 @@ class BoundsStore {
       : initial_bounds_(initial_bounds) {}
 
   void SetRange(int var_index, int64 lb, int64 ub) {
-    std::unordered_map<int, Bounds>::iterator it = modified_bounds_.find(var_index);
+    std::unordered_map<int, Bounds>::iterator it =
+        modified_bounds_.find(var_index);
     if (it == modified_bounds_.end()) {
       Bounds new_bounds(lb, ub);
       const Bounds& initial = (*initial_bounds_)[var_index];
@@ -103,9 +101,7 @@ class BoundsStore {
     }
   }
 
-  void Clear() {
-    modified_bounds_.clear();
-  }
+  void Clear() { modified_bounds_.clear(); }
 
   const std::unordered_map<int, Bounds>& modified_bounds() const {
     return modified_bounds_;
@@ -114,9 +110,9 @@ class BoundsStore {
   vector<Bounds>* initial_bounds() const { return initial_bounds_; }
 
   void Apply() {
-    for (std::unordered_map<int, Bounds>::const_iterator it = modified_bounds_.begin();
-         it != modified_bounds_.end();
-         ++it) {
+    for (std::unordered_map<int, Bounds>::const_iterator it =
+             modified_bounds_.begin();
+         it != modified_bounds_.end(); ++it) {
       (*initial_bounds_)[it->first] = it->second;
     }
   }
@@ -138,6 +134,7 @@ class ArithmeticConstraint {
   virtual void Replace(int to_replace, int var, int64 offset) = 0;
   virtual bool Deduce(ArithmeticPropagator* const propagator) const = 0;
   virtual string DebugString() const = 0;
+
  private:
   const vector<int> vars_;
 };
@@ -150,22 +147,19 @@ class ArithmeticPropagator : PropagationBaseObject {
       : PropagationBaseObject(solver), demon_(demon) {}
 
   void ReduceProblem() {
-    for (int constraint_index = 0;
-         constraint_index < constraints_.size();
+    for (int constraint_index = 0; constraint_index < constraints_.size();
          ++constraint_index) {
       if (constraints_[constraint_index]->Deduce(this)) {
         protected_constraints_.insert(constraint_index);
       }
     }
-    scoped_ptr<Callback3<int, int, int64> > hook(
-        NewPermanentCallback(this,
-                             &ArithmeticPropagator::ProcessOneSubstitution));
+    scoped_ptr<Callback3<int, int, int64> > hook(NewPermanentCallback(
+        this, &ArithmeticPropagator::ProcessOneSubstitution));
     substitution_map_.ProcessAllSubstitutions(hook.get());
   }
 
   void Post() {
-    for (int constraint_index = 0;
-         constraint_index < constraints_.size();
+    for (int constraint_index = 0; constraint_index < constraints_.size();
          ++constraint_index) {
       const vector<int>& vars = constraints_[constraint_index]->vars();
       for (int var_index = 0; var_index < vars.size(); ++var_index) {
@@ -174,21 +168,15 @@ class ArithmeticPropagator : PropagationBaseObject {
     }
   }
 
-  void InitialPropagate() {
+  void InitialPropagate() {}
 
-  }
-
-  void Update(int var_index) {
-    Enqueue(demon_);
-  }
+  void Update(int var_index) { Enqueue(demon_); }
 
   void AddConstraint(ArithmeticConstraint* const ct) {
     constraints_.push_back(ct);
   }
 
-  void AddVariable(int64 lb, int64 ub) {
-    bounds_.push_back(Bounds(lb, ub));
-  }
+  void AddVariable(int64 lb, int64 ub) { bounds_.push_back(Bounds(lb, ub)); }
 
   const vector<IntVar*> vars() const { return vars_; }
 
@@ -212,8 +200,7 @@ class ArithmeticPropagator : PropagationBaseObject {
   }
 
   void ProcessOneSubstitution(int left_var, int right_var, int64 right_offset) {
-    for (int constraint_index = 0;
-         constraint_index < constraints_.size();
+    for (int constraint_index = 0; constraint_index < constraints_.size();
          ++constraint_index) {
       if (!ContainsKey(protected_constraints_, constraint_index)) {
         ArithmeticConstraint* const constraint = constraints_[constraint_index];
@@ -225,14 +212,15 @@ class ArithmeticPropagator : PropagationBaseObject {
   void PrintModel() {
     LOG(INFO) << "Vars:";
     for (int i = 0; i < bounds_.size(); ++i) {
-      LOG(INFO) << "  var<" << i << "> = [" << bounds_[i].lb
-                << " .. " << bounds_[i].ub << "]";
+      LOG(INFO) << "  var<" << i << "> = [" << bounds_[i].lb << " .. "
+                << bounds_[i].ub << "]";
     }
     LOG(INFO) << "Constraints";
     for (int i = 0; i < constraints_.size(); ++i) {
       LOG(INFO) << "  " << constraints_[i]->DebugString();
     }
   }
+
  private:
   Demon* const demon_;
   vector<IntVar*> vars_;
@@ -256,14 +244,14 @@ class RowConstraint : public ArithmeticConstraint {
     coefficients_[var_index] = coefficient;
   }
 
-  virtual bool Propagate(BoundsStore* const store) {
-    return true;
-  }
+  virtual bool Propagate(BoundsStore* const store) { return true; }
 
   virtual void Replace(int to_replace, int var, int64 offset) {
-    std::unordered_map<int, int64>::iterator find_other = coefficients_.find(to_replace);
+    std::unordered_map<int, int64>::iterator find_other =
+        coefficients_.find(to_replace);
     if (find_other != coefficients_.end()) {
-      std::unordered_map<int, int64>::iterator find_var = coefficients_.find(var);
+      std::unordered_map<int, int64>::iterator find_var =
+          coefficients_.find(var);
       const int64 other_coefficient = find_other->second;
       if (lb_ != kint64min) {
         lb_ += other_coefficient * offset;
@@ -308,16 +296,16 @@ class RowConstraint : public ArithmeticConstraint {
   virtual string DebugString() const {
     string output = "(";
     bool first = true;
-    for (std::unordered_map<int, int64>::const_iterator it = coefficients_.begin();
-         it != coefficients_.end();
-         ++it) {
+    for (std::unordered_map<int, int64>::const_iterator it =
+             coefficients_.begin();
+         it != coefficients_.end(); ++it) {
       if (it->second != 0) {
         if (first) {
           first = false;
           if (it->second == 1) {
             output += StringPrintf("var<%d>", it->first);
           } else if (it->second == -1) {
-          output += StringPrintf("-var<%d>", it->first);
+            output += StringPrintf("-var<%d>", it->first);
           } else {
             output += StringPrintf("%lld*var<%d>", it->second, it->first);
           }
@@ -343,6 +331,7 @@ class RowConstraint : public ArithmeticConstraint {
     }
     return output;
   }
+
  private:
   std::unordered_map<int, int64> coefficients_;
   int64 lb_;
@@ -357,9 +346,7 @@ class OrConstraint : public ArithmeticConstraint {
 
   virtual ~OrConstraint() {}
 
-  virtual bool Propagate(BoundsStore* const store) {
-    return true;
-  }
+  virtual bool Propagate(BoundsStore* const store) { return true; }
 
   virtual void Replace(int to_replace, int var, int64 offset) {
     left_->Replace(to_replace, var, offset);
@@ -371,10 +358,10 @@ class OrConstraint : public ArithmeticConstraint {
   }
 
   virtual string DebugString() const {
-    return StringPrintf("Or(%s, %s)",
-                        left_->DebugString().c_str(),
+    return StringPrintf("Or(%s, %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str());
   }
+
  private:
   ArithmeticConstraint* const left_;
   ArithmeticConstraint* const right_;
@@ -383,11 +370,9 @@ class OrConstraint : public ArithmeticConstraint {
 // ----- GlobalArithmeticConstraint -----
 
 GlobalArithmeticConstraint::GlobalArithmeticConstraint(Solver* const solver)
-    : Constraint(solver),
-      propagator_(NULL) {
+    : Constraint(solver), propagator_(NULL) {
   propagator_.reset(new ArithmeticPropagator(
-      solver,
-      solver->MakeDelayedConstraintInitialPropagateCallback(this)));
+      solver, solver->MakeDelayedConstraintInitialPropagateCallback(this)));
 }
 GlobalArithmeticConstraint::~GlobalArithmeticConstraint() {
   STLDeleteElements(&constraints_);
@@ -396,12 +381,9 @@ GlobalArithmeticConstraint::~GlobalArithmeticConstraint() {
 void GlobalArithmeticConstraint::Post() {
   const vector<IntVar*>& vars = propagator_->vars();
   for (int var_index = 0; var_index < vars.size(); ++var_index) {
-    Demon* const demon =
-        MakeConstraintDemon1(solver(),
-                             this,
-                             &GlobalArithmeticConstraint::Update,
-                             "Update",
-                             var_index);
+    Demon* const demon = MakeConstraintDemon1(
+        solver(), this, &GlobalArithmeticConstraint::Update, "Update",
+        var_index);
     vars[var_index]->WhenRange(demon);
   }
   LOG(INFO) << "----- Before reduction -----";
@@ -422,8 +404,7 @@ void GlobalArithmeticConstraint::Update(int var_index) {
 }
 
 ConstraintRef GlobalArithmeticConstraint::MakeScalProdGreaterOrEqualConstant(
-    const vector<IntVar*> vars,
-    const vector<int64> coefficients,
+    const vector<IntVar*> vars, const vector<int64> coefficients,
     int64 constant) {
   RowConstraint* const constraint = new RowConstraint(constant, kint64max);
   for (int index = 0; index < vars.size(); ++index) {
@@ -433,8 +414,7 @@ ConstraintRef GlobalArithmeticConstraint::MakeScalProdGreaterOrEqualConstant(
 }
 
 ConstraintRef GlobalArithmeticConstraint::MakeScalProdLessOrEqualConstant(
-    const vector<IntVar*> vars,
-    const vector<int64> coefficients,
+    const vector<IntVar*> vars, const vector<int64> coefficients,
     int64 constant) {
   RowConstraint* const constraint = new RowConstraint(kint64min, constant);
   for (int index = 0; index < vars.size(); ++index) {
@@ -444,8 +424,7 @@ ConstraintRef GlobalArithmeticConstraint::MakeScalProdLessOrEqualConstant(
 }
 
 ConstraintRef GlobalArithmeticConstraint::MakeScalProdEqualConstant(
-    const vector<IntVar*> vars,
-    const vector<int64> coefficients,
+    const vector<IntVar*> vars, const vector<int64> coefficients,
     int64 constant) {
   RowConstraint* const constraint = new RowConstraint(constant, constant);
   for (int index = 0; index < vars.size(); ++index) {
@@ -455,8 +434,7 @@ ConstraintRef GlobalArithmeticConstraint::MakeScalProdEqualConstant(
 }
 
 ConstraintRef GlobalArithmeticConstraint::MakeSumGreaterOrEqualConstant(
-    const vector<IntVar*> vars,
-    int64 constant) {
+    const vector<IntVar*> vars, int64 constant) {
   RowConstraint* const constraint = new RowConstraint(constant, kint64max);
   for (int index = 0; index < vars.size(); ++index) {
     constraint->AddTerm(VarIndex(vars[index]), 1);
@@ -483,9 +461,7 @@ ConstraintRef GlobalArithmeticConstraint::MakeSumEqualConstant(
 }
 
 ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(
-    int64 lb,
-    const vector<IntVar*> vars,
-    const vector<int64> coefficients,
+    int64 lb, const vector<IntVar*> vars, const vector<int64> coefficients,
     int64 ub) {
   RowConstraint* const constraint = new RowConstraint(lb, ub);
   for (int index = 0; index < vars.size(); ++index) {
@@ -495,34 +471,26 @@ ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(
 }
 
 ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(int64 lb,
-                                                  IntVar* const v1,
-                                                  int64 coeff1,
-                                                  int64 ub) {
+                                                            IntVar* const v1,
+                                                            int64 coeff1,
+                                                            int64 ub) {
   RowConstraint* const constraint = new RowConstraint(lb, ub);
   constraint->AddTerm(VarIndex(v1), coeff1);
   return Store(constraint);
 }
 
-ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(int64 lb,
-                                                            IntVar* const v1,
-                                                            int64 coeff1,
-                                                            IntVar* const v2,
-                                                            int64 coeff2,
-                                                            int64 ub) {
+ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(
+    int64 lb, IntVar* const v1, int64 coeff1, IntVar* const v2, int64 coeff2,
+    int64 ub) {
   RowConstraint* const constraint = new RowConstraint(lb, ub);
-    constraint->AddTerm(VarIndex(v1), coeff1);
-    constraint->AddTerm(VarIndex(v2), coeff2);
-    return Store(constraint);
+  constraint->AddTerm(VarIndex(v1), coeff1);
+  constraint->AddTerm(VarIndex(v2), coeff2);
+  return Store(constraint);
 }
 
-ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(int64 lb,
-                                                            IntVar* const v1,
-                                                            int64 coeff1,
-                                                            IntVar* const v2,
-                                                            int64 coeff2,
-                                                            IntVar* const v3,
-                                                            int64 coeff3,
-                                                            int64 ub) {
+ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(
+    int64 lb, IntVar* const v1, int64 coeff1, IntVar* const v2, int64 coeff2,
+    IntVar* const v3, int64 coeff3, int64 ub) {
   RowConstraint* const constraint = new RowConstraint(lb, ub);
   constraint->AddTerm(VarIndex(v1), coeff1);
   constraint->AddTerm(VarIndex(v2), coeff2);
@@ -530,16 +498,9 @@ ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(int64 lb,
   return Store(constraint);
 }
 
-ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(int64 lb,
-                                                            IntVar* const v1,
-                                                            int64 coeff1,
-                                                            IntVar* const v2,
-                                                            int64 coeff2,
-                                                            IntVar* const v3,
-                                                            int64 coeff3,
-                                                            IntVar* const v4,
-                                                            int64 coeff4,
-                                                            int64 ub) {
+ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(
+    int64 lb, IntVar* const v1, int64 coeff1, IntVar* const v2, int64 coeff2,
+    IntVar* const v3, int64 coeff3, IntVar* const v4, int64 coeff4, int64 ub) {
   RowConstraint* const constraint = new RowConstraint(lb, ub);
   constraint->AddTerm(VarIndex(v1), coeff1);
   constraint->AddTerm(VarIndex(v2), coeff2);
@@ -549,11 +510,9 @@ ConstraintRef GlobalArithmeticConstraint::MakeRowConstraint(int64 lb,
 }
 
 ConstraintRef GlobalArithmeticConstraint::MakeOrConstraint(
-    ConstraintRef left_ref,
-    ConstraintRef right_ref) {
-  OrConstraint* const constraint =
-      new OrConstraint(constraints_[left_ref.index()],
-                       constraints_[right_ref.index()]);
+    ConstraintRef left_ref, ConstraintRef right_ref) {
+  OrConstraint* const constraint = new OrConstraint(
+      constraints_[left_ref.index()], constraints_[right_ref.index()]);
   return Store(constraint);
 }
 

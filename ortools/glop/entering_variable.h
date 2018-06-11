@@ -61,8 +61,7 @@ class EnteringVariable {
   // IsValidPrimalEnteringCandidate() for more details) or kInvalidCol if no
   // such column exists. This latter case means that the primal algorithm has
   // terminated: the optimal has been reached.
-  Status PrimalChooseEnteringColumn(ColIndex* entering_col)
-      MUST_USE_RESULT;
+  Status PrimalChooseEnteringColumn(ColIndex* entering_col) MUST_USE_RESULT;
 
   // Dual optimization phase (i.e. phase II) ratio test.
   // Returns the index of the entering column given that we want to move along

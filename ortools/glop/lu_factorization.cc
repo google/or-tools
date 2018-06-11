@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/glop/lu_factorization.h"
 #include "ortools/lp_data/lp_utils.h"
 
@@ -441,8 +440,9 @@ double LuFactorization::GetFillInPercentage(const MatrixView& matrix) const {
 }
 
 EntryIndex LuFactorization::NumberOfEntries() const {
-  return is_identity_factorization_ ? EntryIndex(0) : lower_.num_entries() +
-                                                          upper_.num_entries();
+  return is_identity_factorization_
+             ? EntryIndex(0)
+             : lower_.num_entries() + upper_.num_entries();
 }
 
 Fractional LuFactorization::ComputeDeterminant() const {

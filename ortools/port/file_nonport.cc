@@ -22,12 +22,14 @@ namespace operations_research {
   return file::SetContents(file_name, content, file::Defaults());
 }
 
-::util::Status FileGetContents(absl::string_view file_name, std::string* output) {
+::util::Status FileGetContents(absl::string_view file_name,
+                               std::string* output) {
   return file::GetContents(file_name, output, file::Defaults());
 }
 
-bool PortableTemporaryFile(const char* directory_prefix, std::string* filename_out) {
-    return false;
+bool PortableTemporaryFile(const char* directory_prefix,
+                           std::string* filename_out) {
+  return false;
 }
 
 ::util::Status DeleteFile(absl::string_view file_name) {

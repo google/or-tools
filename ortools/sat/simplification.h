@@ -24,17 +24,17 @@
 #include <set>
 #include <vector>
 
+#include "ortools/base/adjustable_priority_queue.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/span.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/time_limit.h"
-#include "ortools/base/adjustable_priority_queue.h"
 
 namespace operations_research {
 namespace sat {

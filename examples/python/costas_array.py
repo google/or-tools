@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Costas array in Google CP Solver.
@@ -113,8 +112,8 @@ def main(n=6):
   # "All entries in a particular row of the difference
   #  triangle must be distint."
   for i in range(n - 2):
-    solver.Add(solver.AllDifferent([differences[i, j]
-                                    for j in range(n) if j > i]))
+    solver.Add(
+        solver.AllDifferent([differences[i, j] for j in range(n) if j > i]))
 
   #
   # "All the following are redundant - only here to speed up search."
@@ -129,16 +128,13 @@ def main(n=6):
   for k in range(2, n):
     for l in range(2, n):
       if k < l:
-        solver.Add(differences[k - 2, l - 1] +
-                   differences[k, l] ==
-                   differences[k - 1, l - 1] +
-                   differences[k - 1, l])
+        solver.Add(differences[k - 2, l - 1] + differences[k, l] ==
+                   differences[k - 1, l - 1] + differences[k - 1, l])
 
   #
   # search and result
   #
-  db = solver.Phase(costas + differences_flat,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(costas + differences_flat, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
@@ -150,9 +146,9 @@ def main(n=6):
       for j in range(n):
         v = differences[i, j].Value()
         if v == -n + 1:
-          print("  ", end=' ')
+          print("  ", end=" ")
         else:
-          print("%2d" % v, end=' ')
+          print("%2d" % v, end=" ")
       print()
     print()
     num_solutions += 1
@@ -164,6 +160,7 @@ def main(n=6):
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 n = 6
 if __name__ == "__main__":

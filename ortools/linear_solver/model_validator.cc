@@ -15,8 +15,8 @@
 
 #include <cmath>
 #include <limits>
-#include "ortools/base/join.h"
 #include "ortools/base/accurate_sum.h"
+#include "ortools/base/join.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
 
@@ -55,7 +55,7 @@ std::string FindErrorInMPVariable(const MPVariableProto& variable) {
 // "var_mask" is a std::vector<bool> whose size is the number of variables in
 // the model, and it will be all set to false before and after the call.
 std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
-                               std::vector<bool>* var_mask) {
+                                    std::vector<bool>* var_mask) {
   if (std::isnan(constraint.lower_bound()) ||
       std::isnan(constraint.upper_bound()) ||
       constraint.lower_bound() == kInfinity ||
@@ -108,8 +108,8 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
   return std::string();
 }
 
-std::string FindErrorInSolutionHint(const PartialVariableAssignment& solution_hint,
-                               int num_vars) {
+std::string FindErrorInSolutionHint(
+    const PartialVariableAssignment& solution_hint, int num_vars) {
   if (solution_hint.var_index_size() != solution_hint.var_value_size()) {
     return absl::StrCat("var_index_size() != var_value_size() [",
                         solution_hint.var_index_size(), " VS ",
@@ -202,7 +202,7 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
 // TODO(user): Add a general FindFeasibilityErrorInSolution() and factor out the
 // common code.
 std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
-                                          double tolerance) {
+                                               double tolerance) {
   const int num_vars = model.variable_size();
 
   // First, we validate the solution hint.

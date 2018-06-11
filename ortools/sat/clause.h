@@ -18,19 +18,19 @@
 #define OR_TOOLS_SAT_CLAUSE_H_
 
 #include <deque>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <string>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/macros.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/inlined_vector.h"
-#include "ortools/base/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/macros.h"
+#include "ortools/base/span.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -42,8 +42,8 @@ namespace operations_research {
 namespace sat {
 
 // This is how the SatSolver stores a clause. A clause is just a disjunction of
-// literals. In many places, we just use std::vector<literal> to encode one. But in
-// the critical propagation code, we use this class to remove one memory
+// literals. In many places, we just use std::vector<literal> to encode one. But
+// in the critical propagation code, we use this class to remove one memory
 // indirection.
 class SatClause {
  public:
@@ -158,8 +158,7 @@ class LiteralWatchers : public SatPropagator {
 
   // SatPropagator API.
   bool Propagate(Trail* trail) final;
-  absl::Span<Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  absl::Span<Literal> Reason(const Trail& trail, int trail_index) const final;
 
   // Returns the reason of the variable at given trail_index. This only works
   // for variable propagated by this class and is almost the same as Reason()
@@ -387,8 +386,7 @@ class BinaryImplicationGraph : public SatPropagator {
   }
 
   bool Propagate(Trail* trail) final;
-  absl::Span<Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  absl::Span<Literal> Reason(const Trail& trail, int trail_index) const final;
 
   // Resizes the data structure.
   void Resize(int num_variables);

@@ -17,7 +17,7 @@
 #include <cstdlib>  // for size_t.
 
 #if (defined(COMPILER_GCC3) || defined(OS_MACOSX)) && !defined(SWIG)
-#define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
+#define ATTRIBUTE_UNUSED __attribute__((__unused__))
 #else  // GCC
 #define ATTRIBUTE_UNUSED
 #endif  // GCC
@@ -49,10 +49,10 @@ const bool DEBUG_MODE = true;
 #endif
 
 template <typename T, size_t N>
-char(&ArraySizeHelper(T(&array)[N]))[N];
+char (&ArraySizeHelper(T (&array)[N]))[N];
 #ifndef COMPILER_MSVC
 template <typename T, size_t N>
-char(&ArraySizeHelper(const T(&array)[N]))[N];
+char (&ArraySizeHelper(const T (&array)[N]))[N];
 #endif
 #define arraysize(array) (sizeof(ArraySizeHelper(array)))
 

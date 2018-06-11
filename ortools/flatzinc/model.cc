@@ -17,13 +17,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/flatzinc/logging.h"
 
 namespace operations_research {
@@ -585,8 +582,8 @@ IntegerVariable* Argument::VarAt(int pos) const {
 
 // ----- IntegerVariable -----
 
-IntegerVariable::IntegerVariable(const std::string& name_, const Domain& domain_,
-                                 bool temporary_)
+IntegerVariable::IntegerVariable(const std::string& name_,
+                                 const Domain& domain_, bool temporary_)
     : name(name_),
       domain(domain_),
       defining_constraint(nullptr),
@@ -636,8 +633,9 @@ std::string IntegerVariable::DebugString() const {
 std::string Constraint::DebugString() const {
   const std::string strong = strong_propagation ? "strong propagation" : "";
   const std::string presolve_status_str =
-      active ? "" : (presolve_propagation_done ? "[propagated during presolve]"
-                                               : "[removed during presolve]");
+      active ? ""
+             : (presolve_propagation_done ? "[propagated during presolve]"
+                                          : "[removed during presolve]");
   const std::string target =
       target_variable != nullptr
           ? StringPrintf(" => %s", target_variable->name.c_str())
@@ -822,7 +820,8 @@ std::string SolutionOutputSpecs::Bounds::DebugString() const {
 }
 
 SolutionOutputSpecs SolutionOutputSpecs::SingleVariable(
-    const std::string& name, IntegerVariable* variable, bool display_as_boolean) {
+    const std::string& name, IntegerVariable* variable,
+    bool display_as_boolean) {
   SolutionOutputSpecs result;
   result.name = name;
   result.variable = variable;
@@ -866,8 +865,8 @@ Model::~Model() {
   gtl::STLDeleteElements(&constraints_);
 }
 
-IntegerVariable* Model::AddVariable(const std::string& name, const Domain& domain,
-                                    bool defined) {
+IntegerVariable* Model::AddVariable(const std::string& name,
+                                    const Domain& domain, bool defined) {
   IntegerVariable* const var = new IntegerVariable(name, domain, defined);
   variables_.push_back(var);
   return var;
@@ -881,8 +880,9 @@ IntegerVariable* Model::AddConstant(int64 value) {
   return var;
 }
 
-void Model::AddConstraint(const std::string& id, std::vector<Argument> arguments,
-                          bool is_domain, IntegerVariable* defines) {
+void Model::AddConstraint(const std::string& id,
+                          std::vector<Argument> arguments, bool is_domain,
+                          IntegerVariable* defines) {
   Constraint* const constraint =
       new Constraint(id, std::move(arguments), is_domain, defines);
   constraints_.push_back(constraint);
@@ -891,7 +891,8 @@ void Model::AddConstraint(const std::string& id, std::vector<Argument> arguments
   }
 }
 
-void Model::AddConstraint(const std::string& id, std::vector<Argument> arguments) {
+void Model::AddConstraint(const std::string& id,
+                          std::vector<Argument> arguments) {
   AddConstraint(id, std::move(arguments), false, nullptr);
 }
 

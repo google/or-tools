@@ -17,8 +17,8 @@
 #include <utility>
 #include <vector>
 #include "ortools/base/callback.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/integral_types.h"
 
 namespace operations_research {
 

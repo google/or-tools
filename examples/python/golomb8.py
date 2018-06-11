@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """This is the Golomb ruler problem.
 
 This model aims at maximizing radar interferences in a minimum space.
@@ -22,7 +21,6 @@ of the rule.
 """
 
 from ortools.constraint_solver import pywrapcp
-
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
@@ -42,9 +40,12 @@ def main():
   objective = solver.Minimize(marks[size - 1], 1)
 
   solver.Add(marks[0] == 0)
-  solver.Add(solver.AllDifferent([marks[j] - marks[i]
-                                  for i in range(0, size - 1)
-                                  for j in range(i + 1, size)]))
+  solver.Add(
+      solver.AllDifferent([
+          marks[j] - marks[i]
+          for i in range(0, size - 1)
+          for j in range(i + 1, size)
+      ]))
 
   solver.Add(marks[size - 1] - marks[size - 2] > marks[1] - marks[0])
   for i in range(0, size - 2):
@@ -54,10 +55,9 @@ def main():
   solution.Add(marks[size - 1])
   collector = solver.AllSolutionCollector(solution)
 
-  solver.Solve(solver.Phase(marks,
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE),
-               [objective, collector])
+  solver.Solve(
+      solver.Phase(marks, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+      [objective, collector])
   for i in range(0, collector.SolutionCount()):
     obj_value = collector.Value(i, marks[size - 1])
     time = collector.WallTime(i)

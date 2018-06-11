@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Grocery problem in Google CP Solver.
@@ -63,7 +62,7 @@ def main():
   # constraints
   #
   solver.Add(solver.Sum(item) == c)
-  solver.Add(reduce(lambda x, y: x * y, item) == c * 100 ** 3)
+  solver.Add(reduce(lambda x, y: x * y, item) == c * 100**3)
 
   # symmetry breaking
   for i in range(1, n):
@@ -72,9 +71,7 @@ def main():
   #
   # search and result
   #
-  db = solver.Phase(item,
-                    solver.INT_VAR_SIMPLE,
-                    solver.INT_VALUE_SIMPLE)
+  db = solver.Phase(item, solver.INT_VAR_SIMPLE, solver.INT_VALUE_SIMPLE)
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -90,6 +87,7 @@ def main():
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 if __name__ == "__main__":
   main()

@@ -15,24 +15,23 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <unordered_map>
 #include <limits>
 #include <numeric>
+#include <unordered_map>
 #include <utility>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/stringprintf.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/graph/io.h"
 #endif  // __PORTABLE_PLATFORM__
-#include "ortools/graph/util.h"
+#include "ortools/algorithms/find_graph_symmetries.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/hash.h"
-#include "ortools/algorithms/find_graph_symmetries.h"
+#include "ortools/graph/util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -64,7 +63,7 @@ namespace {
 // A non-empty std::string indicates an error.
 template <typename LinearTerms>
 std::string ValidateLinearTerms(const LinearTerms& terms,
-                           std::vector<bool>* variable_seen) {
+                                std::vector<bool>* variable_seen) {
   // variable_seen already has all items false and is reset before return.
   std::string err_str;
   int num_errs = 0;
@@ -104,7 +103,8 @@ std::string ValidateLinearTerms(const LinearTerms& terms,
       err_str = StringPrintf("%d validation errors:\n", num_errs) + err_str;
     } else {
       err_str = StringPrintf("%d validation errors; here are the first %d:\n",
-                             num_errs, max_num_errs) + err_str;
+                             num_errs, max_num_errs) +
+                err_str;
     }
   }
   return err_str;
@@ -136,7 +136,8 @@ util::Status ValidateBooleanProblem(const LinearBooleanProblem& problem) {
                           StringPrintf("Invalid constraint %i: ", i) + error);
     }
   }
-  const std::string error = ValidateLinearTerms(problem.objective(), &variable_seen);
+  const std::string error =
+      ValidateLinearTerms(problem.objective(), &variable_seen);
   if (!error.empty()) {
     return util::Status(util::error::INVALID_ARGUMENT,
                         StringPrintf("Invalid objective: ") + error);
@@ -383,7 +384,8 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
 // Note(user): This function makes a few assumptions about the format of the
 // given LinearBooleanProblem. All constraint coefficients must be 1 (and of the
 // form >= 1) and all objective weights must be strictly positive.
-std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem) {
+std::string LinearBooleanProblemToCnfString(
+    const LinearBooleanProblem& problem) {
   std::string output;
   const bool is_wcnf = (problem.objective().coefficients_size() > 0);
   const LinearObjective& objective = problem.objective();
@@ -460,7 +462,8 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
       // Since it is falsifying this clause that cost "weigtht", we need to take
       // its negation.
       const Literal literal(-p.first);
-      output += absl::StrFormat("%lld %s 0\n", p.second, literal.DebugString().c_str());
+      output += absl::StrFormat("%lld %s 0\n", p.second,
+                                literal.DebugString().c_str());
     }
   }
 

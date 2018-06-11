@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   n-queens problem in Google CP Solver.
@@ -60,8 +59,7 @@ def main(n=8, num_sol=0, print_sol=1):
   # search
   #
 
-  db = solver.Phase(q,
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+  db = solver.Phase(q, solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
                     solver.ASSIGN_CENTER_VALUE)
 
   solver.NewSearch(db)
@@ -73,9 +71,9 @@ def main(n=8, num_sol=0, print_sol=1):
       for i in range(n):
         for j in range(n):
           if qval[i] == j:
-            print("Q", end=' ')
+            print("Q", end=" ")
           else:
-            print("_", end=' ')
+            print("_", end=" ")
         print()
       print()
     num_solutions += 1

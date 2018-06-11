@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from __future__ import print_function
 import sys
 from ortools.sat.python import cp_model
@@ -47,7 +46,7 @@ class NursesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
 def main():
   # Data.
   num_nurses = 4
-  num_shifts = 4     # Nurse assigned to shift 0 means not working that day.
+  num_shifts = 4  # Nurse assigned to shift 0 means not working that day.
   num_days = 7
   all_nurses = range(num_nurses)
   all_shifts = range(num_shifts)
@@ -105,17 +104,17 @@ def main():
       for d in all_days:
         yesterday = (d - 1) % num_days
         tomorrow = (d + 1) % num_days
-        model.AddBoolOr([shifts[(n, yesterday, s)], shifts[(n, d, s)].Not(),
-                         shifts[(n, tomorrow, s)]])
-
+        model.AddBoolOr([
+            shifts[(n, yesterday, s)], shifts[(n, d, s)].Not(),
+            shifts[(n, tomorrow, s)]
+        ])
 
   # Creates the solver and solve.
   solver = cp_model.CpSolver()
   # Display a few solutions picked at random.
   a_few_solutions = [859, 2034, 5091, 7003]
-  solution_printer = NursesPartialSolutionPrinter(shifts, num_nurses,
-                                                  num_days, num_shifts,
-                                                  a_few_solutions)
+  solution_printer = NursesPartialSolutionPrinter(shifts, num_nurses, num_days,
+                                                  num_shifts, a_few_solutions)
   status = solver.SearchForAllSolutions(model, solution_printer)
 
   # Statistics.
@@ -127,5 +126,5 @@ def main():
   print('  - solutions found : %i' % solution_printer.SolutionCount())
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   main()

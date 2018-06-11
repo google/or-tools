@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <cstring>
 #include <string>
 #include <vector>
@@ -37,7 +36,8 @@ int64 IndexToValue(int64 index) { return index + 1; }
 
 SequenceVar::SequenceVar(Solver* const s,
                          const std::vector<IntervalVar*>& intervals,
-                         const std::vector<IntVar*>& nexts, const std::string& name)
+                         const std::vector<IntVar*>& nexts,
+                         const std::string& name)
     : PropagationBaseObject(s),
       intervals_(intervals),
       nexts_(nexts),

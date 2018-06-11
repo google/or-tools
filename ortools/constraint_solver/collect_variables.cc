@@ -11,10 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <cstddef>
-#include <unordered_set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "ortools/base/integral_types.h"

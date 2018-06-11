@@ -21,11 +21,10 @@
 #include <map>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
 DEFINE_bool(print, false, "If true, print one of the solution.");
@@ -266,7 +265,7 @@ void NQueens(int size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_size != 0) {
     operations_research::NQueens(FLAGS_size);
   } else {

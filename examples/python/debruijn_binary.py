@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   de Bruijn sequences in Google CP Solver.
@@ -51,8 +50,8 @@ from ortools.constraint_solver import pywrapcp
 
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(
-      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)]))
+  solver.Add(s == solver.Sum([(base**(tlen - i - 1)) * t[i]
+                              for i in range(tlen)]))
 
 
 def main(base=2, n=3, m=8):
@@ -99,7 +98,7 @@ def main(base=2, n=3, m=8):
     print("Checks gcc")
 
   # declare variables
-  x = [solver.IntVar(0, (base ** n) - 1, "x%i" % i) for i in range(m)]
+  x = [solver.IntVar(0, (base**n) - 1, "x%i" % i) for i in range(m)]
   binary = {}
   for i in range(m):
     for j in range(n):
@@ -154,8 +153,7 @@ def main(base=2, n=3, m=8):
   solution.Add([gcc[i] for i in range(base)])
 
   db = solver.Phase([x[i] for i in range(m)] + [bin_code[i] for i in range(m)],
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                    solver.ASSIGN_MIN_VALUE)
+                    solver.CHOOSE_MIN_SIZE_LOWEST_MAX, solver.ASSIGN_MIN_VALUE)
 
   num_solutions = 0
   solver.NewSearch(db)
@@ -185,7 +183,7 @@ def main(base=2, n=3, m=8):
 
 base = 2
 n = 3
-m = base ** n
+m = base**n
 if __name__ == "__main__":
   if len(sys.argv) > 1:
     base = int(sys.argv[1])

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Eq 20 in Google CP Solver.
@@ -94,9 +93,7 @@ def main():
   #
   # search and result
   #
-  db = solver.Phase(X,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(X, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
 

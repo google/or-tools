@@ -168,7 +168,7 @@ bool LiteralWatchers::Propagate(Trail* trail) {
 }
 
 absl::Span<Literal> LiteralWatchers::Reason(const Trail& trail,
-                                                  int trail_index) const {
+                                            int trail_index) const {
   return reasons_[trail_index]->PropagationReason();
 }
 
@@ -393,8 +393,8 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
   return true;
 }
 
-absl::Span<Literal> BinaryImplicationGraph::Reason(
-    const Trail& trail, int trail_index) const {
+absl::Span<Literal> BinaryImplicationGraph::Reason(const Trail& trail,
+                                                   int trail_index) const {
   return {&reasons_[trail_index], 1};
 }
 

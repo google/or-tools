@@ -1033,7 +1033,7 @@ bool CheckSymmetricAllDifferent(
 
 using CallMap = std::unordered_map<
     std::string, std::function<bool(const Constraint& ct,
-                               std::function<int64(IntegerVariable*)>)>>;
+                                    std::function<int64(IntegerVariable*)>)>>;
 
 CallMap CreateCallMap() {
   CallMap m;

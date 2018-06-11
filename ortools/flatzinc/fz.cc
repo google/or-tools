@@ -27,9 +27,8 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/timer.h"
 #include "ortools/base/threadpool.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/timer.h"
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/flatzinc/model.h"
@@ -299,10 +298,6 @@ void Solve(const Model& model) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  // By default, we want to show how the solver progress. Note that this needs
-  // to be set before InitGoogle() which has the nice side-effect of allowing
-  // the user to override it.
-
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
   operations_research::fz::FixAndParseParameters(&argc, &argv);

@@ -131,7 +131,7 @@ inline bool PyObjAs(PyObject* py, unsigned int* c) {
 }
 
 template <>
-inline bool PyObjAs(PyObject* py, long* c) {             // NOLINT
+inline bool PyObjAs(PyObject* py, long* c) {      // NOLINT
   long i = PyInt_AsLong(py);                      // NOLINT
   if (i == -1 && PyErr_Occurred()) return false;  // Not a Python int.
   if (c) *c = i;
@@ -140,7 +140,7 @@ inline bool PyObjAs(PyObject* py, long* c) {             // NOLINT
 
 template <>
 inline bool PyObjAs(PyObject* py, long long* c) {  // NOLINT
-  long long i;                              // NOLINT
+  long long i;                                     // NOLINT
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py)) {
     i = PyInt_AsLong(py);
@@ -158,7 +158,7 @@ inline bool PyObjAs(PyObject* py, long long* c) {  // NOLINT
 
 template <>
 inline bool PyObjAs(PyObject* py, unsigned long long* c) {  // NOLINT
-  unsigned long long i;                              // NOLINT
+  unsigned long long i;                                     // NOLINT
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py)) {
     i = PyInt_AsUnsignedLongLongMask(py);
@@ -223,7 +223,7 @@ inline int SwigPyIntOrLong_Check(PyObject* o) {
 #if PY_MAJOR_VERSION <= 2
           || PyInt_Check(o)
 #endif
-          );  // NOLINT
+  );  // NOLINT
 }
 
 inline PyObject* SwigString_FromString(const std::string& s) {
@@ -255,7 +255,7 @@ struct vector_pusher<T*> {
 template <class T>
 inline bool vector_input_helper(PyObject* seq, std::vector<T>* out,
                                 bool (*convert)(PyObject*, T* const)) {
-  PyObject* item, *it = PyObject_GetIter(seq);
+  PyObject *item, *it = PyObject_GetIter(seq);
   if (!it) return false;
   T elem;
   while ((item = PyIter_Next(it))) {
@@ -274,15 +274,15 @@ inline bool vector_input_helper(PyObject* seq, std::vector<T>* out,
 template <class T>
 inline bool vector_input_wrap_helper(PyObject* seq, std::vector<T>* out,
                                      swig_type_info* swig_Tp_type) {
-  PyObject* item, *it = PyObject_GetIter(seq);
+  PyObject *item, *it = PyObject_GetIter(seq);
   if (!it) {
     PyErr_SetString(PyExc_TypeError, "sequence expected");
     return false;
   }
   typename vector_pusher<T>::ptr elem;
   while ((item = PyIter_Next(it))) {
-    if (SWIG_ConvertPtr(item, reinterpret_cast<void**>(&elem),
-                        swig_Tp_type, 0) == -1) {
+    if (SWIG_ConvertPtr(item, reinterpret_cast<void**>(&elem), swig_Tp_type,
+                        0) == -1) {
       Py_DECREF(it);
       it = PyObject_Repr(item);
       Py_DECREF(item);

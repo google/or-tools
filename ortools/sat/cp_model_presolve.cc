@@ -16,24 +16,24 @@
 #include <algorithm>
 #include <cstdlib>
 #include <deque>
-#include <unordered_set>
 #include <map>
 #include <memory>
 #include <numeric>
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/port.h"
-#include "ortools/base/join.h"
 #include <unordered_set>
-#include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/port.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_objective.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -47,25 +47,6 @@
 namespace operations_research {
 namespace sat {
 namespace {
-
-// Returns the sorted list of variables used by a constraint.
-std::vector<int> UsedVariables(const ConstraintProto& ct) {
-  IndexReferences references;
-  AddReferencesUsedByConstraint(ct, &references);
-
-  std::vector<int> used_variables;
-  for (const int var : references.variables) {
-    used_variables.push_back(PositiveRef(var));
-  }
-  for (const int lit : references.literals) {
-    used_variables.push_back(PositiveRef(lit));
-  }
-  if (HasEnforcementLiteral(ct)) {
-    used_variables.push_back(PositiveRef(ct.enforcement_literal(0)));
-  }
-  gtl::STLSortAndRemoveDuplicates(&used_variables);
-  return used_variables;
-}
 
 // Wrap the CpModelProto we are presolving with extra data structure like the
 // in-memory domain of each variables and the constraint variable graph.
@@ -181,6 +162,8 @@ struct PresolveContext {
 
     int64 c = RefIsPositive(ref_x) == RefIsPositive(ref_y) ? coeff : -coeff;
     int64 o = RefIsPositive(ref_x) ? offset : -offset;
+    const int rep_x = affine_relations.Get(x).representative;
+    const int rep_y = affine_relations.Get(y).representative;
 
     // If a Boolean variable (one with domain [0, 1]) appear in this affine
     // equivalence class, then we want its representative to be Boolean. Note
@@ -188,26 +171,18 @@ struct PresolveContext {
     // equal to a multiple of another if std::abs(coeff) is greater than 1 and
     // if it is not fixed to zero. This is important because it allows to simply
     // use the same representative for any referenced literals.
-    const int rep_x = affine_relations.Get(x).representative;
-    const int rep_y = affine_relations.Get(y).representative;
-    bool force = false;
-    if (MinOf(rep_y) == 0 && MaxOf(rep_y) == 1) {
-      // We force the new representative to be rep_y.
-      force = true;
-    } else if (MinOf(rep_x) == 0 && MaxOf(rep_x) == 1) {
-      // We force the new representative to be rep_x.
-      force = true;
-      std::swap(x, y);
-      CHECK_EQ(std::abs(coeff), 1);  // Would be fixed to zero otherwise.
-      if (coeff == 1) o = -o;
+    bool allow_rep_x = MinOf(rep_x) == 0 && MaxOf(rep_x) == 1;
+    bool allow_rep_y = MinOf(rep_y) == 0 && MaxOf(rep_y) == 1;
+    if (!allow_rep_x && !allow_rep_y) {
+      // If none are Boolean, we can use any representative.
+      allow_rep_x = true;
+      allow_rep_y = true;
     }
 
-    // TODO(user): can we force the rep and remove the GetAffineRelation()?
-    bool added = force ? affine_relations.TryAddInGivenOrder(x, y, c, o)
-                       : affine_relations.TryAdd(x, y, c, o);
+    // TODO(user): can we force the rep and remove GetAffineRelation()?
+    bool added = affine_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
     if ((c == 1 || c == -1) && o == 0) {
-      added |= force ? var_equiv_relations.TryAddInGivenOrder(x, y, c, o)
-                     : var_equiv_relations.TryAdd(x, y, c, o);
+      added |= var_equiv_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
     }
     if (added) {
       // The domain didn't change, but this notification allows to re-process
@@ -305,13 +280,13 @@ struct PresolveContext {
 // =============================================================================
 
 MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct,
-                                           PresolveContext* context) {
+                                      PresolveContext* context) {
   ct->Clear();
   return true;
 }
 
 MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
-                                                PresolveContext* context) {
+                                           PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) {
     context->SetLiteralToFalse(ct->enforcement_literal(0));
   } else {
@@ -463,12 +438,11 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   if (ct->int_max().vars().empty()) {
     return MarkConstraintAsFalse(ct, context);
   }
-
   const int target_ref = ct->int_max().target();
-  const int target_var = PositiveRef(target_ref);
 
   // Pass 1, compute the infered min of the target, and remove duplicates.
   int64 target_min = context->MinOf(target_ref);
+  int64 target_max = kint64min;
   bool contains_target_ref = false;
   std::set<int> used_ref;
   int new_size = 0;
@@ -477,11 +451,12 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     if (gtl::ContainsKey(used_ref, ref)) continue;
     if (gtl::ContainsKey(used_ref, NegatedRef(ref)) ||
         ref == NegatedRef(target_ref)) {
-      target_min = std::max(target_min, 0ll);
+      target_min = std::max(target_min, int64{0});
     }
     used_ref.insert(ref);
     ct->mutable_int_max()->set_vars(new_size++, ref);
     target_min = std::max(target_min, context->MinOf(ref));
+    target_max = std::max(target_max, context->MaxOf(ref));
   }
   if (new_size < ct->int_max().vars_size()) {
     context->UpdateRuleStats("int_max: removed dup");
@@ -512,7 +487,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
       infered_domain = UnionOfSortedDisjointIntervals(
           infered_domain,
           IntersectionOfSortedDisjointIntervals(context->GetRefDomain(ref),
-                                                {{target_min, kint64max}}));
+                                                {{target_min, target_max}}));
     }
     domain_reduced |= context->IntersectDomainWith(target_ref, infered_domain);
   }
@@ -520,7 +495,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   // Pass 2, update the argument domains. Filter them eventually.
   new_size = 0;
   const int size = ct->int_max().vars_size();
-  const int64 target_max = context->MaxOf(target_ref);
+  target_max = context->MaxOf(target_ref);
   for (const int ref : ct->int_max().vars()) {
     if (!HasEnforcementLiteral(*ct)) {
       domain_reduced |=
@@ -541,15 +516,8 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     modified = true;
   }
 
-  // Note that we do that after the domains have been reduced.
-  // TODO(user): Even in the reified case we could do something.
-  // TODO(user): If the domains have holes, it is possible we will only detect
-  // UNSAT at postsolve time, that might be an issue.
-  if (new_size > 0 && !HasEnforcementLiteral(*ct) &&
-      context->IsUnique(target_var)) {
-    context->UpdateRuleStats("int_max: singleton target");
-    *(context->mapping_model->add_constraints()) = *ct;
-    return RemoveConstraint(ct, context);
+  if (new_size == 0) {
+    return MarkConstraintAsFalse(ct, context);
   }
   if (new_size == 1) {
     // Convert to an equality. Note that we create a new constraint otherwise it
@@ -585,11 +553,12 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   if (!RefIsPositive(target_ref)) return false;
   for (const int var : ct->int_prod().vars()) {
     if (!RefIsPositive(var)) return false;
-    if (context->MinOf(var) != 0) return false;
-    if (context->MaxOf(var) != 1) return false;
+    if (context->MinOf(var) <= 0) return false;
+    if (context->MaxOf(var) >= 1) return false;
   }
 
   // This is a bool constraint!
+  context->IntersectDomainWith(target_ref, {{0, 1}});
   context->UpdateRuleStats("int_prod: converted to reified bool_and");
   {
     ConstraintProto* new_ct = context->working_model->add_constraints();
@@ -663,10 +632,15 @@ bool ExploitEquivalenceRelations(ConstraintProto* ct,
       [&changed, context](int* ref) {
         const int var = PositiveRef(*ref);
         const AffineRelation::Relation r = context->GetAffineRelation(var);
+
+        // Tricky: if the var/representative is fixed, then we don't have a
+        // guarantee that the representative is in [0,1]. This case should be
+        // treated later in the presolve anyway.
+        if (context->IsFixed(var) || context->IsFixed(r.representative)) return;
+
         if (r.representative != var) {
           const bool is_positive = (r.offset == 0 && r.coeff == 1);
-          CHECK(is_positive || r.offset == 1 && r.coeff == -1 ||
-                context->IsFixed(var));
+          CHECK(is_positive || r.offset == 1 && r.coeff == -1);
           *ref = (is_positive == RefIsPositive(*ref))
                      ? r.representative
                      : NegatedRef(r.representative);
@@ -726,7 +700,15 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     for (const auto entry : var_to_coeff) {
       const int var = entry.first;
       const int64 coeff = entry.second;
-      if (context->IsUnique(var)) {
+
+      // Because we may have replaced the variable of this constraint by their
+      // representative, the constraint count of var may not be up to date here
+      // if var is part of an affine equivalence class.
+      //
+      // TODO(user): In some case, we could still remove var, but we also need
+      // to not keep the affine relationship around in the constraint count.
+      if (context->IsUnique(var) &&
+          context->affine_relations.ClassSize(var) == 1) {
         bool success;
         const auto term_domain = PreciseMultiplicationOfSortedDisjointIntervals(
             context->GetRefDomain(var), -coeff, &success);
@@ -1065,16 +1047,21 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     context->IntersectDomainWith(index_ref,
                                  {{0, ct->element().vars_size() - 1}});
   }
+
   std::vector<ClosedInterval> infered_domain;
-  const std::vector<ClosedInterval> target_dom =
+  const std::vector<ClosedInterval> target_domain =
       context->GetRefDomain(target_ref);
+  const std::vector<ClosedInterval> complement_of_target_domain =
+      ComplementOfSortedDisjointIntervals(context->GetRefDomain(target_ref));
+
   for (const ClosedInterval interval : context->GetRefDomain(index_ref)) {
     for (int i = interval.start; i <= interval.end; ++i) {
       CHECK_GE(i, 0);
       CHECK_LT(i, ct->element().vars_size());
       const int ref = ct->element().vars(i);
       const auto& domain = context->GetRefDomain(ref);
-      if (IntersectionOfSortedDisjointIntervals(target_dom, domain).empty()) {
+      if (IntersectionOfSortedDisjointIntervals(target_domain, domain)
+              .empty()) {
         context->IntersectDomainWith(index_ref,
                                      {{kint64min, i - 1}, {i + 1, kint64max}});
         reduced_index_domain = true;
@@ -1085,9 +1072,9 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
         } else {
           all_constants = false;
         }
-        if (IntersectionOfSortedDisjointIntervals(
-                target_dom, ComplementOfSortedDisjointIntervals(domain))
-                .empty()) {
+        if (!IntersectionOfSortedDisjointIntervals(domain,
+                                                   complement_of_target_domain)
+                 .empty()) {
           all_included_in_target_domain = false;
         }
         infered_domain = UnionOfSortedDisjointIntervals(infered_domain, domain);
@@ -1850,7 +1837,9 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   //
   // TODO(user): expose the parameters here so we can use
   // cp_model_use_sat_presolve().
-  PresolvePureSatPart(&context);
+  if (!context.is_unsat) {
+    PresolvePureSatPart(&context);
+  }
 
   if (context.is_unsat) {
     // Set presolved_model to the simplest UNSAT problem (empty clause).
@@ -2119,7 +2108,7 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   VLOG(1) << "- " << context.var_equiv_relations.NumRelations()
           << " variable equivalence relations where detected.";
   std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
-                                     context.stats_by_rule_name.end());
+                                          context.stats_by_rule_name.end());
   for (const auto& entry : sorted_rules) {
     if (entry.second == 1) {
       VLOG(1) << "- rule '" << entry.first << "' was applied 1 time.";

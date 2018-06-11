@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Solves a Linear Programing problem using the Revised Simplex algorithm
 // as described by G.B. Dantzig.
 // The general form is:
@@ -242,8 +241,8 @@ class RevisedSimplex {
   // contructor though.
   void PropagateParameters();
 
-  // Returns a std::string containing the same information as with GetSolverStats,
-  // but in a much more human-readable format. For example:
+  // Returns a std::string containing the same information as with
+  // GetSolverStats, but in a much more human-readable format. For example:
   //     Problem status                               : Optimal
   //     Solving time                                 : 1.843
   //     Number of iterations                         : 12345
@@ -260,7 +259,8 @@ class RevisedSimplex {
   // corresponding to column col.
   std::string SimpleVariableInfo(ColIndex col) const;
 
-  // Displays a short std::string with the current iteration and objective value.
+  // Displays a short std::string with the current iteration and objective
+  // value.
   void DisplayIterationInfo() const;
 
   // Displays the error bounds of the current solution.
@@ -469,9 +469,9 @@ class RevisedSimplex {
   //   along this dual edge.
   // - target_bound: the bound at which the leaving variable should go when
   //   leaving the basis.
-  Status DualChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound) MUST_USE_RESULT;
+  Status DualChooseLeavingVariableRow(RowIndex* leaving_row,
+                                      Fractional* cost_variation,
+                                      Fractional* target_bound) MUST_USE_RESULT;
 
   // Updates the prices used by DualChooseLeavingVariableRow() after a simplex
   // iteration by using direction_. The prices are stored in

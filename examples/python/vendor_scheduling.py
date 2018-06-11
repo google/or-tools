@@ -20,13 +20,12 @@ def main():
   # Last columns are :
   #   index_of_the_schedule, sum of worked hours (per work type).
   # The index is useful for branching.
-  possible_schedules = [
-      [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 8],
-      [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 4],
-      [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2, 5],
-      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
-      [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4, 3],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]]
+  possible_schedules = [[1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0,
+                         8], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1,
+                              4], [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2,
+                                   5], [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
+                        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4,
+                         3], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]]
 
   num_possible_schedules = len(possible_schedules)
   selected_schedules = []
@@ -70,8 +69,7 @@ def main():
   #
   # Search
   #
-  db = solver.Phase(selected_schedules,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(selected_schedules, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)

@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Traveling Salesman Sample.
 
    This is a sample using the routing library python wrapper to solve a
@@ -23,8 +22,6 @@
    (forbidden arcs).
 """
 
-
-
 import random
 import argparse
 from ortools.constraint_solver import pywrapcp
@@ -32,16 +29,28 @@ from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--tsp_size', default = 10, type = int,
-                     help='Size of Traveling Salesman Problem instance.')
-parser.add_argument('--tsp_use_random_matrix', default=True, type=bool,
-                     help='Use random cost matrix.')
-parser.add_argument('--tsp_random_forbidden_connections', default = 0,
-                    type = int, help='Number of random forbidden connections.')
-parser.add_argument('--tsp_random_seed', default = 0, type = int,
-                    help = 'Random seed.')
-parser.add_argument('--light_propagation', default = False,
-                    type = bool, help = 'Use light propagation')
+parser.add_argument(
+    '--tsp_size',
+    default=10,
+    type=int,
+    help='Size of Traveling Salesman Problem instance.')
+parser.add_argument(
+    '--tsp_use_random_matrix',
+    default=True,
+    type=bool,
+    help='Use random cost matrix.')
+parser.add_argument(
+    '--tsp_random_forbidden_connections',
+    default=0,
+    type=int,
+    help='Number of random forbidden connections.')
+parser.add_argument(
+    '--tsp_random_seed', default=0, type=int, help='Random seed.')
+parser.add_argument(
+    '--light_propagation',
+    default=False,
+    type=bool,
+    help='Use light propagation')
 
 # Cost/distance functions.
 
@@ -111,6 +120,8 @@ def main(args):
         forbidden_connections += 1
 
     # Solve, returns a solution if any.
+
+
 #    assignment = routing.SolveWithParameters(search_parameters)
     assignment = routing.Solve()
     if assignment:

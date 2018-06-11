@@ -16,8 +16,8 @@
 #include <algorithm>
 #include <memory>
 
-#include "ortools/base/logging.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/overload_checker.h"
 #include "ortools/sat/pb_constraint.h"

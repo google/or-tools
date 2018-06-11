@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/constraint_solver/routing.h"
 
 #include <algorithm>
@@ -22,21 +21,21 @@
 #include <memory>
 #include <unordered_set>
 
+#include "google/protobuf/text_format.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/casts.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/thorough_hash.h"
-#include "ortools/base/hash.h"
-#include "ortools/constraint_solver/routing_neighborhoods.h"
 #include "ortools/constraint_solver/model.pb.h"
-#include "ortools/base/join.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_neighborhoods.h"
 #include "ortools/graph/connectivity.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -649,7 +648,7 @@ RoutingModelParameters RoutingModel::DefaultModelParameters() {
       parameters.mutable_solver_parameters();
   *solver_parameters = Solver::DefaultSolverParameters();
   solver_parameters->set_compress_trail(
-         ConstraintSolverParameters::COMPRESS_WITH_ZLIB);
+      ConstraintSolverParameters::COMPRESS_WITH_ZLIB);
   parameters.set_reduce_vehicle_cost_model(true);
   return parameters;
 }
@@ -693,7 +692,8 @@ RoutingSearchParameters RoutingModel::DefaultSearchParameters() {
       "use_light_propagation: true "
       "fingerprint_arc_cost_evaluators: true ";
   RoutingSearchParameters parameters;
-  if (!google::protobuf::TextFormat::ParseFromString(kSearchParameters, &parameters)) {
+  if (!google::protobuf::TextFormat::ParseFromString(kSearchParameters,
+                                                     &parameters)) {
     LOG(ERROR) << "Unsupported default search parameters: "
                << kSearchParameters;
   }
@@ -807,10 +807,9 @@ bool RoutingModel::InitializeDimensionInternal(
   }
 }
 
-bool RoutingModel::AddConstantDimensionWithSlack(int64 value, int64 capacity,
-                                                 int64 slack_max,
-                                                 bool fix_start_cumul_to_zero,
-                                                 const std::string& dimension_name) {
+bool RoutingModel::AddConstantDimensionWithSlack(
+    int64 value, int64 capacity, int64 slack_max, bool fix_start_cumul_to_zero,
+    const std::string& dimension_name) {
   return AddDimension(
       ConstantEvaluator<int64>::MakeNodeEvaluatorCallback(value, solver_.get()),
       slack_max, capacity, fix_start_cumul_to_zero, dimension_name);
@@ -953,7 +952,8 @@ bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
 bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
     NodeEvaluator2* pure_transits, VariableNodeEvaluator2* dependent_transits,
     const RoutingDimension* base_dimension, int64 slack_max,
-    int64 vehicle_capacity, bool fix_start_cumul_to_zero, const std::string& name) {
+    int64 vehicle_capacity, bool fix_start_cumul_to_zero,
+    const std::string& name) {
   std::vector<NodeEvaluator2*> pure_evaluators(vehicles_, pure_transits);
   std::vector<VariableNodeEvaluator2*> transit_evaluators(vehicles_,
                                                           dependent_transits);
@@ -999,7 +999,7 @@ bool RoutingModel::HasDimension(const std::string& dimension_name) const {
 RoutingModel::DimensionIndex RoutingModel::GetDimensionIndex(
     const std::string& dimension_name) const {
   return gtl::FindWithDefault(dimension_name_to_index_, dimension_name,
-                         kNoDimension);
+                              kNoDimension);
 }
 
 const RoutingDimension& RoutingModel::GetDimensionOrDie(
@@ -1104,12 +1104,11 @@ uint64 RoutingModel::GetFingerprintOfEvaluator(
       }
     }
     const int row_num_bytes = row_size * sizeof(int64);
-    const uint64 fprint = ThoroughHash(
-        reinterpret_cast<const char*>(row.get()), row_num_bytes);
+    const uint64 fprint =
+        ThoroughHash(reinterpret_cast<const char*>(row.get()), row_num_bytes);
     // MixTwoUInt64 never returns 0.
-    evaluator_fprint = evaluator_fprint != 0
-                           ? MixTwoUInt64(evaluator_fprint, fprint)
-                           : fprint;
+    evaluator_fprint =
+        evaluator_fprint != 0 ? MixTwoUInt64(evaluator_fprint, fprint) : fprint;
   }
   return evaluator_fprint;
 }
@@ -1173,7 +1172,8 @@ void RoutingModel::ComputeCostClasses(
     // we can avoid to: we detect duplicate evaluators, for example, and if
     // there's only one evaluator callback used, we don't bother computing its
     // fingerprint.
-    if (!gtl::FindCopy(evaluator_to_fprint, uncached_evaluator, &evaluator_fprint)) {
+    if (!gtl::FindCopy(evaluator_to_fprint, uncached_evaluator,
+                       &evaluator_fprint)) {
       evaluator_fprint =
           all_evaluators_equal
               ? kAllEquivalentEvaluatorFprint
@@ -1182,8 +1182,8 @@ void RoutingModel::ComputeCostClasses(
                     parameters.fingerprint_arc_cost_evaluators());
       evaluator_to_fprint[uncached_evaluator] = evaluator_fprint;
     }
-    NodeEvaluator2** cached_evaluator =
-        &gtl::LookupOrInsert(&fprint_to_cached_evaluator, evaluator_fprint, nullptr);
+    NodeEvaluator2** cached_evaluator = &gtl::LookupOrInsert(
+        &fprint_to_cached_evaluator, evaluator_fprint, nullptr);
     if (*cached_evaluator == nullptr) {
       *cached_evaluator = NewCachedCallback(uncached_evaluator);
     }
@@ -1303,8 +1303,8 @@ void RoutingModel::ComputeVehicleClasses() {
     vehicle_class.unvisitable_nodes_fprint = ThoroughHash(
         nodes_unvisitability_bitmask.get(), nodes_unvisitability_num_bytes);
     const VehicleClassIndex num_vehicle_classes(vehicle_classes_.size());
-    const VehicleClassIndex vehicle_class_index =
-        gtl::LookupOrInsert(&vehicle_class_map, vehicle_class, num_vehicle_classes);
+    const VehicleClassIndex vehicle_class_index = gtl::LookupOrInsert(
+        &vehicle_class_map, vehicle_class, num_vehicle_classes);
     if (vehicle_class_index == num_vehicle_classes) {  // New vehicle class
       vehicle_classes_.push_back(vehicle_class);
     }
@@ -1644,7 +1644,8 @@ class RoutingModelInspector : public ModelVisitor {
     for (int node = 0; node < model_->Size(); ++node) {
       const int component =
           same_vehicle_components_.GetClassRepresentative(node);
-      if (gtl::InsertIfNotPresent(&component_indices, component, component_index)) {
+      if (gtl::InsertIfNotPresent(&component_indices, component,
+                                  component_index)) {
         ++component_index;
       }
     }
@@ -1666,12 +1667,12 @@ class RoutingModelInspector : public ModelVisitor {
   void VisitIntegerExpressionArgument(const std::string& type_name,
                                       IntExpr* const expr) override {
     gtl::FindWithDefault(expr_inspectors_, type_name,
-                    [](const IntExpr* expr) {})(expr);
+                         [](const IntExpr* expr) {})(expr);
   }
   void VisitIntegerArrayArgument(const std::string& arg_name,
                                  const std::vector<int64>& values) override {
     gtl::FindWithDefault(array_inspectors_, arg_name,
-                    [](const std::vector<int64>& int_array) {})(values);
+                         [](const std::vector<int64>& int_array) {})(values);
   }
 
  private:
@@ -1689,10 +1690,14 @@ class RoutingModelInspector : public ModelVisitor {
     expr_inspectors_[kRightArgument] = [this](const IntExpr* expr) {
       right_ = expr;
     };
-    array_inspectors_[kStartsArgument] = [this](
-        const std::vector<int64>& int_array) { starts_argument_ = int_array; };
-    array_inspectors_[kEndsArgument] = [this](
-        const std::vector<int64>& int_array) { ends_argument_ = int_array; };
+    array_inspectors_[kStartsArgument] =
+        [this](const std::vector<int64>& int_array) {
+          starts_argument_ = int_array;
+        };
+    array_inspectors_[kEndsArgument] =
+        [this](const std::vector<int64>& int_array) {
+          ends_argument_ = int_array;
+        };
     constraint_inspectors_[kNotMember] = [this]() {
       std::pair<RoutingDimension*, int> dim_index;
       if (gtl::FindCopy(cumul_to_dim_indices_, expr_, &dim_index)) {
@@ -2428,7 +2433,6 @@ class RouteConstructor {
   std::vector<int> node_to_chain_index_;
   std::vector<int> node_to_vehicle_class_index_;
 };
-
 
 void GetVehicleClasses(const RoutingModel& model,
                        std::vector<VehicleClass>* vehicle_classes) {
@@ -3807,19 +3811,21 @@ LocalSearchOperator* RoutingModel::CreateMakeInactiveOperator() {
                                               : vehicle_vars_,         \
           vehicle_start_class_callback_);
 
-#define CP_ROUTING_ADD_CALLBACK_OPERATOR(operator_type, cp_operator_type)  \
-  if (CostsAreHomogeneousAcrossVehicles()) {                               \
-    local_search_operators_[operator_type] = solver_->MakeOperator(        \
-        nexts_, [this](int64 i, int64 j,                                   \
-                       int64 k) { return GetArcCostForVehicle(i, j, k); }, \
-        Solver::cp_operator_type);                                         \
-  } else {                                                                 \
-    local_search_operators_[operator_type] =                               \
-        solver_->MakeOperator(nexts_, vehicle_vars_,                       \
-                              [this](int64 i, int64 j, int64 k) {          \
-                                return GetArcCostForVehicle(i, j, k);      \
-                              },                                           \
-                              Solver::cp_operator_type);                   \
+#define CP_ROUTING_ADD_CALLBACK_OPERATOR(operator_type, cp_operator_type) \
+  if (CostsAreHomogeneousAcrossVehicles()) {                              \
+    local_search_operators_[operator_type] =                              \
+        solver_->MakeOperator(nexts_,                                     \
+                              [this](int64 i, int64 j, int64 k) {         \
+                                return GetArcCostForVehicle(i, j, k);     \
+                              },                                          \
+                              Solver::cp_operator_type);                  \
+  } else {                                                                \
+    local_search_operators_[operator_type] =                              \
+        solver_->MakeOperator(nexts_, vehicle_vars_,                      \
+                              [this](int64 i, int64 j, int64 k) {         \
+                                return GetArcCostForVehicle(i, j, k);     \
+                              },                                          \
+                              Solver::cp_operator_type);                  \
   }
 
 void RoutingModel::CreateNeighborhoodOperators() {
@@ -4106,8 +4112,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
     first_solution_filtered_decision_builders_
         [FirstSolutionStrategy::PATH_CHEAPEST_ARC] = solver_->RevAlloc(
             new EvaluatorCheapestAdditionFilteredDecisionBuilder(
-                this, NewPermanentCallback(
-                          this, &RoutingModel::GetArcCostForFirstSolution),
+                this,
+                NewPermanentCallback(this,
+                                     &RoutingModel::GetArcCostForFirstSolution),
                 GetOrCreateFeasibilityFilters()));
     first_solution_decision_builders_
         [FirstSolutionStrategy::PATH_CHEAPEST_ARC] =
@@ -4463,7 +4470,7 @@ RoutingModel::NewCachedStateDependentCallback(
   const int size = node_to_index_.size();
   VariableNodeEvaluator2* cached_evaluator = nullptr;
   if (!gtl::FindCopy(cached_state_dependent_callbacks_, callback,
-                &cached_evaluator)) {
+                     &cached_evaluator)) {
     cached_evaluator = new StateDependentRoutingCache(callback, size);
     cached_state_dependent_callbacks_[callback] = cached_evaluator;
     owned_state_dependent_callbacks_.insert(callback);
@@ -4504,7 +4511,8 @@ int64 RoutingModel::GetCost(int64 i, int64 j, int64 v) {
 int64 RoutingModel::GetVehicleClassCost(int64 i, int64 j, int64 c) {
   return GetArcCostForClass(i, j, c);
 }
-void RoutingModel::SetDimensionTransitCost(const std::string& name, int64 coeff) {
+void RoutingModel::SetDimensionTransitCost(const std::string& name,
+                                           int64 coeff) {
   GetMutableDimension(name)->SetSpanCostCoefficientForAllVehicles(coeff);
 }
 int64 RoutingModel::GetDimensionTransitCost(const std::string& name) const {
@@ -4524,15 +4532,17 @@ int64 RoutingModel::GetTransitValue(const std::string& dimension_name,
                                     int64 from_index, int64 to_index,
                                     int64 vehicle) const {
   DimensionIndex dimension_index(-1);
-  if (gtl::FindCopy(dimension_name_to_index_, dimension_name, &dimension_index)) {
+  if (gtl::FindCopy(dimension_name_to_index_, dimension_name,
+                    &dimension_index)) {
     return dimensions_[dimension_index]->GetTransitValue(from_index, to_index,
                                                          vehicle);
   } else {
     return 0;
   }
 }
-void RoutingModel::SetCumulVarSoftUpperBound(NodeIndex node, const std::string& name,
-                                             int64 ub, int64 coeff) {
+void RoutingModel::SetCumulVarSoftUpperBound(NodeIndex node,
+                                             const std::string& name, int64 ub,
+                                             int64 coeff) {
   GetMutableDimension(name)->SetCumulVarSoftUpperBound(node, ub, coeff);
 }
 bool RoutingModel::HasCumulVarSoftUpperBound(NodeIndex node,
@@ -4554,17 +4564,17 @@ int64 RoutingModel::GetCumulVarSoftUpperBoundCoefficient(
              : 0;
 }
 void RoutingModel::SetStartCumulVarSoftUpperBound(int vehicle,
-                                                  const std::string& name, int64 ub,
-                                                  int64 coeff) {
+                                                  const std::string& name,
+                                                  int64 ub, int64 coeff) {
   GetMutableDimension(name)->SetStartCumulVarSoftUpperBound(vehicle, ub, coeff);
 }
-bool RoutingModel::HasStartCumulVarSoftUpperBound(int vehicle,
-                                                  const std::string& name) const {
+bool RoutingModel::HasStartCumulVarSoftUpperBound(
+    int vehicle, const std::string& name) const {
   return HasDimension(name) &&
          GetDimensionOrDie(name).HasStartCumulVarSoftUpperBound(vehicle);
 }
-int64 RoutingModel::GetStartCumulVarSoftUpperBound(int vehicle,
-                                                   const std::string& name) const {
+int64 RoutingModel::GetStartCumulVarSoftUpperBound(
+    int vehicle, const std::string& name) const {
   return HasDimension(name)
              ? GetDimensionOrDie(name).GetStartCumulVarSoftUpperBound(vehicle)
              : kint64max;
@@ -4576,7 +4586,8 @@ int64 RoutingModel::GetStartCumulVarSoftUpperBoundCoefficient(
                    .GetStartCumulVarSoftUpperBoundCoefficient(vehicle)
              : 0;
 }
-void RoutingModel::SetEndCumulVarSoftUpperBound(int vehicle, const std::string& name,
+void RoutingModel::SetEndCumulVarSoftUpperBound(int vehicle,
+                                                const std::string& name,
                                                 int64 ub, int64 coeff) {
   GetMutableDimension(name)->SetEndCumulVarSoftUpperBound(vehicle, ub, coeff);
 }
@@ -4585,8 +4596,8 @@ bool RoutingModel::HasEndCumulVarSoftUpperBound(int vehicle,
   return HasDimension(name) &&
          GetDimensionOrDie(name).HasEndCumulVarSoftUpperBound(vehicle);
 }
-int64 RoutingModel::GetEndCumulVarSoftUpperBound(int vehicle,
-                                                 const std::string& name) const {
+int64 RoutingModel::GetEndCumulVarSoftUpperBound(
+    int vehicle, const std::string& name) const {
   return HasDimension(name)
              ? GetDimensionOrDie(name).GetEndCumulVarSoftUpperBound(vehicle)
              : kint64max;
@@ -4915,7 +4926,7 @@ class BreakConstraint : public Constraint {
         dimension_(dimension),
         vehicle_(vehicle),
         break_intervals_(std::move(break_intervals)),
-        status_(solver()->MakeBoolVar(StrCat("status", vehicle))) {}
+        status_(solver()->MakeBoolVar(absl::StrCat("status", vehicle))) {}
   void Post() override {
     RoutingModel* const model = dimension_->model();
     solver()->AddConstraint(
@@ -4951,7 +4962,7 @@ class BreakConstraint : public Constraint {
               dimension_->CumulVar(current)->Min(),
               dimension_->CumulVar(next)->Max(), 0,
               dimension_->FixedTransitVar(current)->Value(), 0, kint64max,
-              false, StrCat(current, "-", i));
+              false, absl::StrCat(current, "-", i));
           transit_intervals.push_back(interval);
           vehicle_intervals.push_back(interval);
           // Order transit intervals to cut symmetries.
@@ -4987,7 +4998,7 @@ class BreakConstraint : public Constraint {
         current = next;
       }
       solver()->AddConstraint(solver()->MakeStrictDisjunctiveConstraint(
-          vehicle_intervals, StrCat("Vehicle breaks ", vehicle_)));
+          vehicle_intervals, absl::StrCat("Vehicle breaks ", vehicle_)));
     }
   }
 

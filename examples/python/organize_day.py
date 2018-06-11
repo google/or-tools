@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Organizing a day in Google CP Solver.
@@ -62,10 +61,7 @@ def main():
   durations = [4, 1, 2, 1]
 
   # task [i,0] must be finished before task [i,1]
-  before_tasks = [
-      [bank, shop],
-      [mail, work]
-  ]
+  before_tasks = [[bank, shop], [mail, work]]
 
   # the valid times of the day
   begin = 9
@@ -86,9 +82,7 @@ def main():
   for i in tasks:
     for j in tasks:
       if i < j:
-        no_overlap(solver,
-                   begins[i], durations[i],
-                   begins[j], durations[j])
+        no_overlap(solver, begins[i], durations[i], begins[j], durations[j])
 
   # specific constraints
   for (before, after) in before_tasks:
@@ -99,8 +93,7 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(begins + ends,
-                    solver.INT_VAR_DEFAULT,
+  db = solver.Phase(begins + ends, solver.INT_VAR_DEFAULT,
                     solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)

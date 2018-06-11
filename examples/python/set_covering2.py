@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Set covering in Google CP Solver.
@@ -50,19 +49,8 @@ def main(unused_argv):
 
   # corners of each street
   # Note: 1-based (handled below)
-  corner = [
-      [1, 2],
-      [2, 3],
-      [4, 5],
-      [7, 8],
-      [6, 7],
-      [2, 6],
-      [1, 6],
-      [4, 7],
-      [2, 4],
-      [5, 8],
-      [3, 5]
-  ]
+  corner = [[1, 2], [2, 3], [4, 5], [7, 8], [6, 7], [2, 6], [1, 6], [4, 7],
+            [2, 4], [5, 8], [3, 5]]
 
   #
   # declare variables
@@ -91,10 +79,9 @@ def main(unused_argv):
   solution.AddObjective(z)
 
   collector = solver.LastSolutionCollector(solution)
-  solver.Solve(solver.Phase(x,
-                            solver.INT_VAR_DEFAULT,
-                            solver.INT_VALUE_DEFAULT),
-               [collector, objective])
+  solver.Solve(
+      solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
+      [collector, objective])
 
   print("z:", collector.ObjectiveValue(0))
   print("x:", [collector.Value(0, x[i]) for i in range(n)])

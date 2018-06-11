@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Least diff problem in Google CP Solver.
@@ -63,11 +62,11 @@ def main(unused_argv):
 
   letters = [a, b, c, d, e, f, g, h, i, j]
 
-  digit_vector = [10000,1000,100,10,1]
-  x = solver.ScalProd(letters[0:5],digit_vector)
-  y = solver.ScalProd(letters[5:],digit_vector)
+  digit_vector = [10000, 1000, 100, 10, 1]
+  x = solver.ScalProd(letters[0:5], digit_vector)
+  y = solver.ScalProd(letters[5:], digit_vector)
   diff = x - y
-  
+
   #
   # constraints
   #
@@ -91,10 +90,9 @@ def main(unused_argv):
   search_log = solver.SearchLog(100, diff)
   # Note: I'm not sure what CHOOSE_PATH do, but it is fast:
   #       find the solution in just 4 steps
-  solver.Solve(solver.Phase(letters,
-                            solver.CHOOSE_PATH,
-                            solver.ASSIGN_MIN_VALUE),
-               [objective, search_log, collector])
+  solver.Solve(
+      solver.Phase(letters, solver.CHOOSE_PATH, solver.ASSIGN_MIN_VALUE),
+      [objective, search_log, collector])
 
   # get the first (and only) solution
 
@@ -105,12 +103,13 @@ def main(unused_argv):
   print("y:", yval)
   print("diff:", diffval)
   print(xval, "-", yval, "=", diffval)
-  print([("abcdefghij"[i], collector.Value(0, letters[i])) for i in range(10)])
+  print([("abcdefghij" [i], collector.Value(0, letters[i])) for i in range(10)])
   print()
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
   print()
+
 
 if __name__ == "__main__":
   main("cp sample")

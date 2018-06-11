@@ -14,19 +14,19 @@
 //
 
 #include <algorithm>
-#include <unordered_map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/timer.h"
-#include "ortools/base/strutil.h"
 #include "ortools/base/port.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/strutil.h"
+#include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 #if defined(USE_CLP) || defined(USE_CBC)
@@ -275,8 +275,8 @@ void CLPInterface::CreateDummyVariableForEmptyConstraints() {
   clp_->setColumnBounds(kDummyVariableIndex, 0.0, 0.0);
   clp_->setObjectiveCoefficient(kDummyVariableIndex, 0.0);
   // Workaround for peculiar signature of setColumnName. Note that we do need
-  // std::string here, and not 'std::string', which aren't the same as of 2013-12
-  // (this will change later).
+  // std::string here, and not 'std::string', which aren't the same as of
+  // 2013-12 (this will change later).
   std::string dummy = "dummy";  // We do need to create this temporary variable.
   clp_->setColumnName(kDummyVariableIndex, dummy);
 }
@@ -634,7 +634,6 @@ void CLPInterface::SetLpAlgorithm(int value) {
 MPSolverInterface* BuildCLPInterface(MPSolver* const solver) {
   return new CLPInterface(solver);
 }
-
 
 }  // namespace operations_research
 #endif  // #if defined(USE_CBC) || defined(USE_CLP)

@@ -16,7 +16,6 @@
 #include <utility>
 
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/thorough_hash.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -424,7 +423,7 @@ UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
   starts_.push_back(literals_.size());
 
   hash_ = ThoroughHash(reinterpret_cast<const char*>(cst.data()),
-                          cst.size() * sizeof(LiteralWithCoeff));
+                       cst.size() * sizeof(LiteralWithCoeff));
 }
 
 void UpperBoundedLinearConstraint::AddToConflict(
@@ -963,7 +962,7 @@ void PbConstraints::Untrail(const Trail& trail, int trail_index) {
 }
 
 absl::Span<Literal> PbConstraints::Reason(const Trail& trail,
-                                                int trail_index) const {
+                                          int trail_index) const {
   SCOPED_TIME_STAT(&stats_);
   const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];

@@ -216,8 +216,8 @@ void Markowitz::ExtractSingletonColumns(const MatrixView& basis_matrix,
   for (ColIndex col(0); col < num_cols; ++col) {
     const SparseColumn& column = basis_matrix.column(col);
     if (column.num_entries().value() == 1) {
-      singleton_entries.push_back(MatrixEntry(
-           column.GetFirstRow(), col, column.GetFirstCoefficient()));
+      singleton_entries.push_back(
+          MatrixEntry(column.GetFirstRow(), col, column.GetFirstCoefficient()));
     }
   }
 
@@ -661,8 +661,8 @@ void MatrixNonZeroPattern::RemoveDeletedColumnsFromRow(RowIndex row) {
   ref.resize(new_index);
 }
 
-ColIndex MatrixNonZeroPattern::GetFirstNonDeletedColumnFromRow(RowIndex row)
-    const {
+ColIndex MatrixNonZeroPattern::GetFirstNonDeletedColumnFromRow(
+    RowIndex row) const {
   for (const ColIndex col : RowNonZero(row)) {
     if (!IsColumnDeleted(col)) return col;
   }

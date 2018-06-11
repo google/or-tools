@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Subset sum problem in Google CP Solver.
@@ -84,9 +83,7 @@ def main(coins, total):
   solution.Add(ss)
 
   # db: DecisionBuilder
-  db = solver.Phase(x,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -102,6 +99,7 @@ def main(coins, total):
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 coins = [16, 17, 23, 24, 39, 40]
 total = 100

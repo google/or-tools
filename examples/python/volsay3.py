@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Volsay problem in Google or-tools.
@@ -50,20 +49,23 @@ def main(unused_argv):
   stock = [50, 180, 40]
 
   # declare variables
-  production = [solver.NumVar(0, 100000, 'production[%i]' % i)
-                for i in range(num_products)]
+  production = [
+      solver.NumVar(0, 100000, 'production[%i]' % i)
+      for i in range(num_products)
+  ]
 
   #
   # constraints
   #
   for c in range(len(components)):
-    solver.Add(solver.Sum([demand[p][c] * production[p]
-                           for p in range(len(products))]) <= stock[c])
+    solver.Add(
+        solver.Sum([demand[p][c] * production[p]
+                    for p in range(len(products))]) <= stock[c])
 
   # objective
   # Note: there is no support for solver.ScalProd in the LP/IP interface
-  objective = solver.Maximize(solver.Sum([production[p] * profit[p]
-                                          for p in range(num_products)]))
+  objective = solver.Maximize(
+      solver.Sum([production[p] * profit[p] for p in range(num_products)]))
 
   print('NumConstraints:', solver.NumConstraints())
   print('NumVariables:', solver.NumVariables())

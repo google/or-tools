@@ -88,7 +88,7 @@ class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
 };
 
 std::vector<int64> FunctionToVector(const std::function<int64(int64)>& f,
-                               int64 domain_start, int64 domain_end) {
+                                    int64 domain_start, int64 domain_end) {
   CHECK_LT(domain_start, domain_end);
   std::vector<int64> output(domain_end - domain_start, 0);
   for (int64 i = 0; i < domain_end - domain_start; ++i) {

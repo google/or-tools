@@ -14,8 +14,8 @@
 #ifndef OR_TOOLS_BASE_JOIN_H_
 #define OR_TOOLS_BASE_JOIN_H_
 
-#include <string>
 #include <sstream>
+#include <string>
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/integral_types.h"
@@ -27,8 +27,8 @@ namespace absl {
 const int kFastToBufferSize = 32;
 
 // Writes output to the beginning of the given buffer. Returns a pointer to the
-// end of the std::string (i.e. to the NUL char). Buffer must be at least 12 bytes.
-// Not actually fast, but maybe someday!
+// end of the std::string (i.e. to the NUL char). Buffer must be at least 12
+// bytes. Not actually fast, but maybe someday!
 template <class T>
 char* NumToBuffer(T i, char* buffer) {
   std::stringstream ss;
@@ -63,10 +63,10 @@ struct AlphaNum {
     snprintf(digits, kFastToBufferSize, "%lf", f);
     piece.set(digits);
   }
-  AlphaNum(const char* c_str) : piece(c_str) {}   // NOLINT(runtime/explicit)
+  AlphaNum(const char* c_str) : piece(c_str) {}  // NOLINT(runtime/explicit)
   AlphaNum(const absl::string_view& pc)
-      : piece(pc) {}                              // NOLINT(runtime/explicit)
-  AlphaNum(const std::string& s) : piece(s) {}         // NOLINT(runtime/explicit)
+      : piece(pc) {}                            // NOLINT(runtime/explicit)
+  AlphaNum(const std::string& s) : piece(s) {}  // NOLINT(runtime/explicit)
 
   absl::string_view::size_type size() const { return piece.size(); }
   const char* data() const { return piece.data(); }
@@ -82,37 +82,37 @@ std::string StrCat(const AlphaNum& a);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d);
+                   const AlphaNum& d);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e);
+                   const AlphaNum& d, const AlphaNum& e);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f);
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g);
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h);
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i);
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j);
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                   const AlphaNum& j);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k);
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                   const AlphaNum& j, const AlphaNum& k);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l);
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                   const AlphaNum& j, const AlphaNum& k, const AlphaNum& l);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l,
-              const AlphaNum& m);
+                   const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                   const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                   const AlphaNum& j, const AlphaNum& k, const AlphaNum& l,
+                   const AlphaNum& m);
 
 void StrAppend(std::string* s, const AlphaNum& a);
 void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b);

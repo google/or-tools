@@ -18,7 +18,6 @@
 #include <string>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/flatzinc/model.h"

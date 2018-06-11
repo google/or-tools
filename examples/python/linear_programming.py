@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Linear programming examples that show how to use the APIs."""
 from __future__ import print_function
 from ortools.linear_solver import linear_solver_pb2
@@ -102,12 +101,13 @@ def SolveAndPrint(solver, variable_list, constraint_list):
   print('Advanced usage:')
   print(('Problem solved in %d iterations' % solver.iterations()))
   for variable in variable_list:
-    print(('%s: reduced cost = %f' % (variable.name(), variable.reduced_cost())))
+    print(
+        ('%s: reduced cost = %f' % (variable.name(), variable.reduced_cost())))
   activities = solver.ComputeConstraintActivities()
   for i, constraint in enumerate(constraint_list):
     print(('constraint %d: dual value = %f\n'
-          '               activity = %f' %
-          (i, constraint.dual_value(), activities[constraint.index()])))
+           '               activity = %f' % (i, constraint.dual_value(),
+                                             activities[constraint.index()])))
 
 
 def main():

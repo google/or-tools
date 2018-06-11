@@ -26,8 +26,8 @@ using ::google::protobuf::Reflection;
 using ::google::protobuf::TextFormat;
 
 namespace {
-void WriteFullProtocolMessage(const google::protobuf::Message& message, int indent_level,
-                              std::string* out) {
+void WriteFullProtocolMessage(const google::protobuf::Message& message,
+                              int indent_level, std::string* out) {
   std::string temp_string;
   const std::string indent(indent_level * 2, ' ');
   const Descriptor* desc = message.GetDescriptor();
@@ -55,8 +55,8 @@ void WriteFullProtocolMessage(const google::protobuf::Message& message, int inde
 }
 }  // namespace
 
-std::string FullProtocolMessageAsString(const google::protobuf::Message& message,
-                                   int indent_level) {
+std::string FullProtocolMessageAsString(
+    const google::protobuf::Message& message, int indent_level) {
   std::string message_str;
   WriteFullProtocolMessage(message, indent_level, &message_str);
   return message_str;

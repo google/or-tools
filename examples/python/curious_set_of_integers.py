@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Crypto problem in Google CP Solver.
@@ -105,8 +104,7 @@ def main():
   #
   # search and result
   #
-  db = solver.Phase(x,
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)

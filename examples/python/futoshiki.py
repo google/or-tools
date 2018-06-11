@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Futoshiki problem in Google CP Solver.
@@ -90,14 +89,13 @@ def main(values, lt):
   # all < constraints are satisfied
   # Also: make 0-based
   for i in NUMQD:
-    solver.Add(field[lt[i][0] - 1, lt[i][1] - 1] <
-               field[lt[i][2] - 1, lt[i][3] - 1])
+    solver.Add(
+        field[lt[i][0] - 1, lt[i][1] - 1] < field[lt[i][2] - 1, lt[i][3] - 1])
 
   #
   # search and result
   #
-  db = solver.Phase(field_flat,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(field_flat, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
@@ -107,7 +105,7 @@ def main(values, lt):
     num_solutions += 1
     for i in RANGE:
       for j in RANGE:
-        print(field[i, j].Value(), end=' ')
+        print(field[i, j].Value(), end=" ")
       print()
     print()
 
@@ -131,29 +129,14 @@ def main(values, lt):
 # Futoshiki instance, by Andras Salamon
 # specify the numbers in the grid
 #
-values1 = [
-    [0, 0, 3, 2, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0]]
-
+values1 = [[0, 0, 3, 2, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0]]
 
 # [i1,j1, i2,j2] requires that values[i1,j1] < values[i2,j2]
 # Note: 1-based
-lt1 = [
-    [1, 2, 1, 1],
-    [1, 4, 1, 5],
-    [2, 3, 1, 3],
-    [3, 3, 2, 3],
-    [3, 4, 2, 4],
-    [2, 5, 3, 5],
-    [3, 2, 4, 2],
-    [4, 4, 4, 3],
-    [5, 2, 5, 1],
-    [5, 4, 5, 3],
-    [5, 5, 4, 5]]
-
+lt1 = [[1, 2, 1, 1], [1, 4, 1, 5], [2, 3, 1, 3], [3, 3, 2, 3], [3, 4, 2, 4],
+       [2, 5, 3, 5], [3, 2, 4, 2], [4, 4, 4, 3], [5, 2, 5, 1], [5, 4, 5, 3],
+       [5, 5, 4, 5]]
 
 #
 # Example from http://en.wikipedia.org/wiki/Futoshiki
@@ -164,23 +147,12 @@ lt1 = [
 # 3 5 2 1 4
 # 1 2 5 4 3
 #
-values2 = [
-    [0, 0, 0, 0, 0],
-    [4, 0, 0, 0, 2],
-    [0, 0, 4, 0, 0],
-    [0, 0, 0, 0, 4],
-    [0, 0, 0, 0, 0]]
+values2 = [[0, 0, 0, 0, 0], [4, 0, 0, 0, 2], [0, 0, 4, 0, 0], [0, 0, 0, 0, 4],
+           [0, 0, 0, 0, 0]]
 
 # Note: 1-based
-lt2 = [
-    [1, 2, 1, 1],
-    [1, 4, 1, 3],
-    [1, 5, 1, 4],
-    [4, 4, 4, 5],
-    [5, 1, 5, 2],
-    [5, 2, 5, 3]
-]
-
+lt2 = [[1, 2, 1, 1], [1, 4, 1, 3], [1, 5, 1, 4], [4, 4, 4, 5], [5, 1, 5, 2],
+       [5, 2, 5, 3]]
 
 if __name__ == "__main__":
   print("Problem 1")

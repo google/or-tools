@@ -19,7 +19,6 @@
 #include <unistd.h>
 #endif
 
-
 #include <cmath>
 #include <cstddef>
 #include <utility>
@@ -32,18 +31,17 @@
 
 #include "ortools/port/file.h"
 
-
+#include "ortools/base/accurate_sum.h"
+#include "ortools/base/canonical_errors.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/accurate_sum.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/fp_utils.h"
-#include "ortools/base/canonical_errors.h"
 
 DEFINE_bool(verify_solution, false,
             "Systematically verify the solution when calling Solve()"
@@ -60,7 +58,6 @@ DEFINE_bool(mpsolver_bypass_model_validation, false,
             "If set, the user-provided Model won't be verified before Solve()."
             " Invalid models will typically trigger various error responses"
             " from the underlying solvers; sometimes crashes.");
-
 
 // To compile the open-source code, the anonymous namespace should be
 // inside the operations_research namespace (This is due to the
@@ -300,13 +297,16 @@ void MPVariable::SetInteger(bool integer) {
 
 bool MPSolver::IsMIP() const { return interface_->IsMIP(); }
 
-std::string MPSolver::SolverVersion() const { return interface_->SolverVersion(); }
+std::string MPSolver::SolverVersion() const {
+  return interface_->SolverVersion();
+}
 
 void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 
 // ---- Solver-specific parameters ----
 
-bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters) {
+bool MPSolver::SetSolverSpecificParametersAsString(
+    const std::string& parameters) {
   solver_specific_parameter_string_ = parameters;
   return interface_->SetSolverSpecificParametersAsString(parameters);
 }
@@ -344,7 +344,6 @@ extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
-
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
@@ -413,7 +412,8 @@ MPSolver::OptimizationProblemType DetourProblemType(
 }
 }  // namespace
 
-MPSolver::MPSolver(const std::string& name, OptimizationProblemType problem_type)
+MPSolver::MPSolver(const std::string& name,
+                   OptimizationProblemType problem_type)
     : name_(name),
       problem_type_(problem_type),
 #if !defined(_MSC_VER)
@@ -434,29 +434,29 @@ MPSolver::~MPSolver() { Clear(); }
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_CLP
-    if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
-    #endif
-    #ifdef USE_GLPK
-    if (problem_type == GLPK_LINEAR_PROGRAMMING) return true;
-    if (problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) return true;
-    #endif
-    #ifdef USE_BOP
-    if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
-    #endif
-    #ifdef USE_GLOP
-    if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
-    #endif
-    #ifdef USE_GUROBI
-    if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
-    if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
-    #endif
-    #ifdef USE_SCIP
-    if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
-    #endif
-    #ifdef USE_CBC
-    if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
-    #endif
-    return false;
+  if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
+#endif
+#ifdef USE_GLPK
+  if (problem_type == GLPK_LINEAR_PROGRAMMING) return true;
+  if (problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) return true;
+#endif
+#ifdef USE_BOP
+  if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
+#endif
+#ifdef USE_GLOP
+  if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
+#endif
+#ifdef USE_GUROBI
+  if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
+  if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
+#endif
+#ifdef USE_SCIP
+  if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
+#endif
+#ifdef USE_CBC
+  if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
+#endif
+  return false;
 }
 
 // static
@@ -523,8 +523,8 @@ void MPSolver::SetIndexConstraints(bool enabled) {
   constraint_name_to_index_.reset(new_map);
 }
 
-MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_name)
-    const {
+MPConstraint* MPSolver::LookupConstraintOrNull(
+    const std::string& constraint_name) const {
   if (!constraint_name_to_index_) {
     return nullptr;
   }
@@ -555,7 +555,8 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
 }
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
-    const MPModelProto& input_model, bool clear_names, std::string* error_message) {
+    const MPModelProto& input_model, bool clear_names,
+    std::string* error_message) {
   CHECK(error_message != nullptr);
   const std::string error = FindErrorInMPModelProto(input_model);
   if (!error.empty()) {
@@ -567,8 +568,9 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
           << "Ignoring the model error(s) because of"
           << " --mpsolver_bypass_model_validation.";
     } else {
-      return error.find("Infeasible") == std::string::npos ? MPSOLVER_MODEL_INVALID
-                                                      : MPSOLVER_INFEASIBLE;
+      return error.find("Infeasible") == std::string::npos
+                 ? MPSOLVER_MODEL_INVALID
+                 : MPSOLVER_INFEASIBLE;
     }
   }
 
@@ -674,10 +676,10 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
   std::string error_message;
   response->set_status(solver.LoadModelFromProto(model, &error_message));
   if (response->status() != MPSOLVER_MODEL_IS_VALID) {
-    LOG(WARNING)
-        << "Loading model from protocol buffer failed, load status = "
-        << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
-        << response->status() << "); Error: " << error_message;
+    LOG(WARNING) << "Loading model from protocol buffer failed, load status = "
+                 << ProtoEnumToString<MPSolverResponseStatus>(
+                        response->status())
+                 << " (" << response->status() << "); Error: " << error_message;
 
     return;
   }
@@ -858,11 +860,13 @@ MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
   return v;
 }
 
-MPVariable* MPSolver::MakeNumVar(double lb, double ub, const std::string& name) {
+MPVariable* MPSolver::MakeNumVar(double lb, double ub,
+                                 const std::string& name) {
   return MakeVar(lb, ub, false, name);
 }
 
-MPVariable* MPSolver::MakeIntVar(double lb, double ub, const std::string& name) {
+MPVariable* MPSolver::MakeIntVar(double lb, double ub,
+                                 const std::string& name) {
   return MakeVar(lb, ub, true, name);
 }
 
@@ -886,12 +890,14 @@ void MPSolver::MakeVarArray(int nb, double lb, double ub, bool integer,
   }
 }
 
-void MPSolver::MakeNumVarArray(int nb, double lb, double ub, const std::string& name,
+void MPSolver::MakeNumVarArray(int nb, double lb, double ub,
+                               const std::string& name,
                                std::vector<MPVariable*>* vars) {
   MakeVarArray(nb, lb, ub, false, name, vars);
 }
 
-void MPSolver::MakeIntVarArray(int nb, double lb, double ub, const std::string& name,
+void MPSolver::MakeIntVarArray(int nb, double lb, double ub,
+                               const std::string& name,
                                std::vector<MPVariable*>* vars) {
   MakeVarArray(nb, lb, ub, true, name, vars);
 }
@@ -915,8 +921,7 @@ MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
   const std::string fixed_name =
       name.empty() ? StringPrintf("auto_c_%09d", constraint_index) : name;
   if (constraint_name_to_index_) {
-    gtl::InsertOrDie(&*constraint_name_to_index_, fixed_name,
-                     constraint_index);
+    gtl::InsertOrDie(&*constraint_name_to_index_, fixed_name, constraint_index);
   }
   MPConstraint* const constraint =
       new MPConstraint(constraint_index, lb, ub, fixed_name, interface_.get());
@@ -996,15 +1001,14 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
     return interface_->result_status_;
   }
 
-
   MPSolver::ResultStatus status = interface_->Solve(param);
   if (FLAGS_verify_solution) {
     if (status != MPSolver::OPTIMAL && status != MPSolver::FEASIBLE) {
       VLOG(1) << "--verify_solution enabled, but the solver did not find a"
               << " solution: skipping the verification.";
     } else if (!VerifySolution(
-                    param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE),
-                    FLAGS_log_verification_errors)) {
+                   param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE),
+                   FLAGS_log_verification_errors)) {
       status = MPSolver::ABNORMAL;
       interface_->result_status_ = status;
     }
@@ -1013,7 +1017,9 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
   return status;
 }
 
-void MPSolver::Write(const std::string& file_name) { interface_->Write(file_name); }
+void MPSolver::Write(const std::string& file_name) {
+  interface_->Write(file_name);
+}
 
 namespace {
 std::string PrettyPrintVar(const MPVariable& var) {
@@ -1112,8 +1118,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       if (value < var.lb() - tolerance) {
         ++num_errors;
         max_observed_error = std::max(max_observed_error, var.lb() - value);
-        LOG_IF(ERROR, log_errors) << "Value " << value << " too low for "
-                                  << PrettyPrintVar(var);
+        LOG_IF(ERROR, log_errors)
+            << "Value " << value << " too low for " << PrettyPrintVar(var);
       }
     }
     // Check upper bound.
@@ -1121,8 +1127,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       if (value > var.ub() + tolerance) {
         ++num_errors;
         max_observed_error = std::max(max_observed_error, value - var.ub());
-        LOG_IF(ERROR, log_errors) << "Value " << value << " too high for "
-                                  << PrettyPrintVar(var);
+        LOG_IF(ERROR, log_errors)
+            << "Value " << value << " too high for " << PrettyPrintVar(var);
       }
     }
     // Check integrality.
@@ -1131,8 +1137,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
         ++num_errors;
         max_observed_error =
             std::max(max_observed_error, fabs(value - round(value)));
-        LOG_IF(ERROR, log_errors) << "Non-integer value " << value << " for "
-                                  << PrettyPrintVar(var);
+        LOG_IF(ERROR, log_errors)
+            << "Non-integer value " << value << " for " << PrettyPrintVar(var);
       }
     }
   }
@@ -1157,8 +1163,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
     if (std::isnan(activity) || std::isnan(inaccurate_activity)) {
       ++num_errors;
       max_observed_error = infinity();
-      LOG_IF(ERROR, log_errors) << "NaN value for "
-                                << PrettyPrintConstraint(constraint);
+      LOG_IF(ERROR, log_errors)
+          << "NaN value for " << PrettyPrintConstraint(constraint);
       continue;
     }
     // Check bounds.
@@ -1204,15 +1210,14 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   }
   const double actual_objective_value = objective_sum.Value();
   if (!AreWithinAbsoluteOrRelativeTolerances(
-           objective.Value(), actual_objective_value, tolerance, tolerance)) {
+          objective.Value(), actual_objective_value, tolerance, tolerance)) {
     ++num_errors;
     max_observed_error = std::max(
         max_observed_error, fabs(actual_objective_value - objective.Value()));
-    LOG_IF(ERROR, log_errors) << "Objective value " << objective.Value()
-                              << " isn't accurate"
-                              << ", it should be " << actual_objective_value
-                              << " (delta=" << actual_objective_value -
-                                                   objective.Value() << ").";
+    LOG_IF(ERROR, log_errors)
+        << "Objective value " << objective.Value() << " isn't accurate"
+        << ", it should be " << actual_objective_value
+        << " (delta=" << actual_objective_value - objective.Value() << ").";
   } else if (!AreWithinAbsoluteOrRelativeTolerances(objective.Value(),
                                                     inaccurate_objective_value,
                                                     tolerance, tolerance)) {
@@ -1222,9 +1227,9 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
         << " sum of its terms.";
   }
   if (num_errors > 0) {
-    LOG_IF(ERROR, log_errors) << "There were " << num_errors
-                              << " errors above the tolerance (" << tolerance
-                              << "), the largest was " << max_observed_error;
+    LOG_IF(ERROR, log_errors)
+        << "There were " << num_errors << " errors above the tolerance ("
+        << tolerance << "), the largest was " << max_observed_error;
     return false;
   }
   return true;
@@ -1253,7 +1258,8 @@ bool MPSolver::OwnsVariable(const MPVariable* var) const {
   return false;
 }
 
-bool MPSolver::ExportModelAsLpFormat(bool obfuscate, std::string* model_str) const {
+bool MPSolver::ExportModelAsLpFormat(bool obfuscate,
+                                     std::string* model_str) const {
   MPModelProto proto;
   ExportModelToProto(&proto);
   MPModelProtoExporter exporter(proto);
@@ -1412,8 +1418,8 @@ void MPSolverInterface::SetMIPParameters(const MPSolverParameters& param) {
 #if defined(USE_GLOP)
   if (solver_->ProblemType() != MPSolver::GLOP_LINEAR_PROGRAMMING) {
 #endif
-    SetRelativeMipGap(param.GetDoubleParam(
-        MPSolverParameters::RELATIVE_MIP_GAP));
+    SetRelativeMipGap(
+        param.GetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP));
 #if defined(USE_GLOP)
   }
 #endif
@@ -1452,20 +1458,20 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
   if (parameters.empty()) return true;
 
   std::string extension = ValidFileExtensionForParameterFile();
-  #if defined(__linux)
-    int32 tid = static_cast<int32>(pthread_self());
-  #else  // defined(__linux__)
-    int32 tid = 123;
-  #endif  // defined(__linux__)
-  #if !defined(_MSC_VER)
-    int32 pid = static_cast<int32>(getpid());
-  #else  // _MSC_VER
-    int32 pid = 456;
-  #endif  // _MSC_VER
-    int64 now = absl::GetCurrentTimeNanos();
-    std::string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
-        tid, pid, now, extension.c_str());
-    bool no_error_so_far = true;
+#if defined(__linux)
+  int32 tid = static_cast<int32>(pthread_self());
+#else   // defined(__linux__)
+  int32 tid = 123;
+#endif  // defined(__linux__)
+#if !defined(_MSC_VER)
+  int32 pid = static_cast<int32>(getpid());
+#else   // _MSC_VER
+  int32 pid = 456;
+#endif  // _MSC_VER
+  int64 now = absl::GetCurrentTimeNanos();
+  std::string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
+                                      tid, pid, now, extension.c_str());
+  bool no_error_so_far = true;
   if (no_error_so_far) {
     no_error_so_far = FileSetContents(filename, parameters).ok();
   }
@@ -1643,12 +1649,18 @@ void MPSolverParameters::Reset() {
   ResetIntegerParam(INCREMENTALITY);
 }
 
-double MPSolverParameters::GetDoubleParam(MPSolverParameters::DoubleParam param)
-    const {
+double MPSolverParameters::GetDoubleParam(
+    MPSolverParameters::DoubleParam param) const {
   switch (param) {
-    case RELATIVE_MIP_GAP: { return relative_mip_gap_value_; }
-    case PRIMAL_TOLERANCE: { return primal_tolerance_value_; }
-    case DUAL_TOLERANCE: { return dual_tolerance_value_; }
+    case RELATIVE_MIP_GAP: {
+      return relative_mip_gap_value_;
+    }
+    case PRIMAL_TOLERANCE: {
+      return primal_tolerance_value_;
+    }
+    case DUAL_TOLERANCE: {
+      return dual_tolerance_value_;
+    }
     default: {
       LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";
       return kUnknownDoubleParamValue;
@@ -1656,22 +1668,27 @@ double MPSolverParameters::GetDoubleParam(MPSolverParameters::DoubleParam param)
   }
 }
 
-int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
-    const {
+int MPSolverParameters::GetIntegerParam(
+    MPSolverParameters::IntegerParam param) const {
   switch (param) {
-    case PRESOLVE: { return presolve_value_; }
+    case PRESOLVE: {
+      return presolve_value_;
+    }
     case LP_ALGORITHM: {
       if (lp_algorithm_is_default_) return kDefaultIntegerParamValue;
       return lp_algorithm_value_;
     }
-    case INCREMENTALITY: { return incrementality_value_; }
-    case SCALING: { return scaling_value_; }
+    case INCREMENTALITY: {
+      return incrementality_value_;
+    }
+    case SCALING: {
+      return scaling_value_;
+    }
     default: {
       LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";
       return kUnknownIntegerParamValue;
     }
   }
 }
-
 
 }  // namespace operations_research

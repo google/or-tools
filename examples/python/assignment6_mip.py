@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Assignment problem using MIP in Google or-tools.
@@ -82,14 +81,11 @@ def main(sol='CBC'):
   #
   # Optimal solution is 76
   # """
-  c = [[13, 21, 20, 12, 8, 26, 22, 11],
-       [12, 36, 25, 41, 40, 11, 4, 8],
-       [35, 32, 13, 36, 26, 21, 13, 37],
-       [34, 54, 7, 8, 12, 22, 11, 40],
-       [21, 6, 45, 18, 24, 34, 12, 48],
-       [42, 19, 39, 15, 14, 16, 28, 46],
-       [16, 34, 38, 3, 34, 40, 22, 24],
-       [26, 20, 5, 17, 45, 31, 37, 43]]
+  c = [[13, 21, 20, 12, 8, 26, 22, 11], [12, 36, 25, 41, 40, 11, 4, 8],
+       [35, 32, 13, 36, 26, 21, 13, 37], [34, 54, 7, 8, 12, 22, 11,
+                                          40], [21, 6, 45, 18, 24, 34, 12, 48],
+       [42, 19, 39, 15, 14, 16, 28, 46], [16, 34, 38, 3, 34, 40, 22,
+                                          24], [26, 20, 5, 17, 45, 31, 37, 43]]
 
   #
   # variables
@@ -106,9 +102,7 @@ def main(sol='CBC'):
       x[i, j] = solver.IntVar(0, 1, 'x[%i,%i]' % (i, j))
 
   # total cost, to be minimized
-  z = solver.Sum([c[i][j] * x[i, j]
-                  for i in I
-                  for j in J])
+  z = solver.Sum([c[i][j] * x[i, j] for i in I for j in J])
 
   #
   # constraints

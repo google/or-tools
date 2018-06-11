@@ -28,8 +28,8 @@ inline uint64 MixTwoUInt64(uint64 fp1, uint64 fp2) {
   return a + (~a >> 47);
 }
 
-// This should be better (collision-wise) than the default hash<std::string>, without
-// being much slower. It never returns 0 or 1.
+// This should be better (collision-wise) than the default hash<std::string>,
+// without being much slower. It never returns 0 or 1.
 inline uint64 ThoroughHash(const char* bytes, size_t len) {
   // Some big prime numer.
   uint64 fp = 0xa5b85c5e198ed849ULL;

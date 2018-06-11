@@ -17,23 +17,26 @@ import argparse
 from ortools.constraint_solver import pywrapcp
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', default = 'examples/data/steel_mill/steel_mill_slab.txt',
-                    help = 'path to data file')
-parser.add_argument('--time_limit', default = 20000, type = int,
-                    help = 'global time limit')
+parser.add_argument(
+    '--data',
+    default='examples/data/steel_mill/steel_mill_slab.txt',
+    help='path to data file')
+parser.add_argument(
+    '--time_limit', default=20000, type=int, help='global time limit')
 
 #----------------helper for binpacking posting----------------
 
 
 def BinPacking(solver, binvars, weights, loadvars):
-  '''post the load constraint on bins.
+  """post the load constraint on bins.
 
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
-  '''
+  """
   pack = solver.Pack(binvars, len(binvars))
   pack.AddWeightedSumEqualVarDimension(weights, loadvars)
   solver.Add(pack)
   solver.Add(solver.SumEquality(loadvars, sum(weights)))
+
 
 #------------------------------data reading-------------------
 
@@ -50,18 +53,22 @@ def ReadData(filename):
   wc = [[int(j) for j in f.readline().split()] for i in range(nb_slabs)]
   weights = [x[0] for x in wc]
   colors = [x[1] for x in wc]
-  loss = [min([x for x in capacity if x >= c]) - c
-          for c in range(max_capacity + 1)]
-  color_orders = [[o for o in range(nb_slabs) if colors[o] == c]
+  loss = [
+      min([x for x in capacity if x >= c]) - c for c in range(max_capacity + 1)
+  ]
+  color_orders = [[o
+                   for o in range(nb_slabs)
+                   if colors[o] == c]
                   for c in range(1, nb_colors + 1)]
   print('Solving steel mill with', nb_slabs, 'slabs')
   return (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders)
+
 
 #------------------dedicated search for this problem-----------
 
 
 class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
-  '''Dedicated Decision Builder for steel mill slab.
+  """Dedicated Decision Builder for steel mill slab.
 
   Search for the steel mill slab problem with Dynamic Symmetry
   Breaking during search is an adaptation (for binary tree) from the
@@ -71,7 +78,7 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
   Solving Steel Mill Slab Problems with Constraint-Based Techniques:
     CP, LNS, and CBLS,
   Schaus et. al. to appear in Constraints 2010
-  '''
+  """
 
   def __init__(self, x, nb_slabs, weights, losstab, loads):
     pywrapcp.PyDecisionBuilder.__init__(self)
@@ -97,7 +104,8 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
         #   the least increase of the loss
         loads = self.getLoads()
         l, v = min((self.__losstab[loads[i] + weight], i)
-                   for i in range(var.Min(), var.Max() + 1)
+                   for i in range(var.Min(),
+                                  var.Max() + 1)
                    if var.Contains(i) and loads[i] + weight <= self.__maxcapa)
         decision = solver.AssignVariableValue(var, v)
         return decision
@@ -113,9 +121,11 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
   def MaxBound(self):
     """ returns the max value bound to a variable, -1 if no variables bound"""
-    return max([-1] + [self.__x[o].Min()
-                       for o in range(self.__nb_slabs)
-                       if self.__x[o].Bound()])
+    return max([-1] + [
+        self.__x[o].Min()
+        for o in range(self.__nb_slabs)
+        if self.__x[o].Bound()
+    ])
 
   def NextVar(self):
     """ mindom size heuristic with tie break on the weights of orders """
@@ -138,10 +148,11 @@ def main(args):
       ReadData(args.data)
   nb_colors = len(color_orders)
   solver = pywrapcp.Solver('Steel Mill Slab')
-  x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i))
-       for i in range(nb_slabs)]
-  load_vars = [solver.IntVar(0, max_capacity - 1, 'load_vars' + str(i))
-               for i in range(nb_slabs)]
+  x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i)) for i in range(nb_slabs)]
+  load_vars = [
+      solver.IntVar(0, max_capacity - 1, 'load_vars' + str(i))
+      for i in range(nb_slabs)
+  ]
 
   #-------------------post of the constraints--------------
 
@@ -149,9 +160,12 @@ def main(args):
   BinPacking(solver, x, weights, load_vars)
   # At most two colors per slab.
   for s in range(nb_slabs):
-    solver.Add(solver.SumLessOrEqual(
-        [solver.Max([solver.IsEqualCstVar(x[c], s) for c in o])
-         for o in color_orders], 2))
+    solver.Add(
+        solver.SumLessOrEqual([
+            solver.Max([solver.IsEqualCstVar(x[c], s)
+                        for c in o])
+            for o in color_orders
+        ], 2))
 
   #----------------Objective-------------------------------
 

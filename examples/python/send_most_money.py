@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   SEND+MOST=MONEY in Google CP Solver.
@@ -72,9 +71,8 @@ def main(MONEY=0):
   solver.Add(solver.AllDifferent(x))
   solver.Add(money == m * 10000 + o * 1000 + n * 100 + e * 10 + y)
   solver.Add(money > 0)
-  solver.Add(1000 * s + 100 * e + 10 * n + d +
-             1000 * m + 100 * o + 10 * s + t ==
-             money)
+  solver.Add(1000 * s + 100 * e + 10 * n + d + 1000 * m + 100 * o + 10 * s +
+             t == money)
   solver.Add(s > 0)
   solver.Add(m > 0)
 
@@ -92,10 +90,9 @@ def main(MONEY=0):
     objective = solver.Maximize(money, 1)
     cargs.extend([objective])
 
-  solver.Solve(solver.Phase(x,
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MAX_VALUE),
-               cargs)
+  solver.Solve(
+      solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE),
+      cargs)
 
   num_solutions = collector.SolutionCount()
   money_val = 0

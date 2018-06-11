@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Traffic lights problem in Google CP Solver.
@@ -90,10 +89,7 @@ def main(base=10, start=1, len1=1, len2=4):
 
   # The allowed combinations
   allowed = []
-  allowed.extend([(r, r, g, g),
-                 (ry, r, y, r),
-                 (g, g, r, r),
-                 (y, r, ry, r)])
+  allowed.extend([(r, r, g, g), (ry, r, y, r), (g, g, r, r), (y, r, ry, r)])
 
   #
   # declare variables
@@ -112,15 +108,13 @@ def main(base=10, start=1, len1=1, len2=4):
   #
   # Search and result
   #
-  db = solver.Phase(V + P,
-                    solver.INT_VAR_SIMPLE,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(V + P, solver.INT_VAR_SIMPLE, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
     for i in range(n):
-      print("%+2s %+2s" % (lights[V[i].Value()], lights[P[i].Value()]), end=' ')
+      print("%+2s %+2s" % (lights[V[i].Value()], lights[P[i].Value()]), end=" ")
     print()
     num_solutions += 1
 

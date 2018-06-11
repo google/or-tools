@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Mr Smith in Google CP Solver.
@@ -101,9 +100,7 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(x,
-                    solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
 

@@ -19,12 +19,11 @@
 #include <string>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/file.h"
 //#include "ortools/base/options.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -204,7 +203,6 @@ void Run() {
     LOG(FATAL) << "Unsupported --dump_format: " << FLAGS_dump_format;
   }
 
-
   // Create the solver, we use the name of the model as the solver name.
   MPSolver solver(model_proto.name(), type);
   solver.EnableOutput();
@@ -247,7 +245,6 @@ void Run() {
       << MPSolverResponseStatus_Name(status) << ": " << error_message;
   printf("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
          solver.NumVariables());
-
 
   // Solve.
   MPSolverParameters param;
@@ -318,7 +315,7 @@ void Run() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, /*remove_flags=*/true);
+  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
   CHECK(!FLAGS_input.empty()) << "--input is required";
   operations_research::Run();
 }

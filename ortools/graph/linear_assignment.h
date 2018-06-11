@@ -209,7 +209,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
@@ -261,7 +260,7 @@ class LinearSumAssignment {
   // Passes ownership of the cycle handler to the caller.
   //
   operations_research::PermutationCycleHandler<typename GraphType::ArcIndex>*
-      ArcAnnotationCycleHandler();
+  ArcAnnotationCycleHandler();
 
   // Optimizes the layout of the graph for the access pattern our
   // implementation will use.
@@ -1122,8 +1121,8 @@ bool LinearSumAssignment<GraphType>::UpdateEpsilon() {
 
 // For production code that checks whether a left-side node is active.
 template <typename GraphType>
-inline bool LinearSumAssignment<GraphType>::IsActive(NodeIndex left_node)
-    const {
+inline bool LinearSumAssignment<GraphType>::IsActive(
+    NodeIndex left_node) const {
   DCHECK_LT(left_node, num_left_nodes_);
   return matched_arc_[left_node] == GraphType::kNilArc;
 }
@@ -1132,8 +1131,8 @@ inline bool LinearSumAssignment<GraphType>::IsActive(NodeIndex left_node)
 // so that method can assert that its argument is a left-side node,
 // while for debugging we need to be able to test any node.
 template <typename GraphType>
-inline bool LinearSumAssignment<GraphType>::IsActiveForDebugging(NodeIndex node)
-    const {
+inline bool LinearSumAssignment<GraphType>::IsActiveForDebugging(
+    NodeIndex node) const {
   if (node < num_left_nodes_) {
     return IsActive(node);
   } else {
@@ -1266,8 +1265,8 @@ bool LinearSumAssignment<GraphType>::Refine() {
 template <typename GraphType>
 inline typename LinearSumAssignment<GraphType>::ImplicitPriceSummary
 LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
-  DCHECK(IsActive(left_node)) << "Node " << left_node
-                              << " must be active (unmatched)!";
+  DCHECK(IsActive(left_node))
+      << "Node " << left_node << " must be active (unmatched)!";
   DCHECK_GT(epsilon_, 0);
   typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
   ArcIndex best_arc = arc_it.Index();

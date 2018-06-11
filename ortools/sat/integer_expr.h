@@ -17,10 +17,10 @@
 #include <functional>
 #include <vector>
 
+#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/int_type.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
@@ -385,8 +385,8 @@ inline std::function<void(Model*)> WeightedSumNotEqual(
 // Model-based function to create an IntegerVariable that corresponds to the
 // given weighted sum of other IntegerVariables.
 //
-// Note that this is templated so that it can seemlessly accept std::vector<int> or
-// std::vector<int64>.
+// Note that this is templated so that it can seemlessly accept std::vector<int>
+// or std::vector<int64>.
 //
 // TODO(user): invert the coefficients/vars arguments.
 template <typename VectorInt>

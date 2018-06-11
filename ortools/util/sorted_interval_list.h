@@ -39,7 +39,8 @@ struct ClosedInterval {
   }
 };
 
-// Returns a compact std::string of a vector of intervals like "[1,4][6][10,20]".
+// Returns a compact std::string of a vector of intervals like
+// "[1,4][6][10,20]".
 std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals);
 
 std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval);

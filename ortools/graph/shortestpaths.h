@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // This file contains various shortest paths utilities.
 //
 // Keywords: directed graph, cheapest path, shortest path, Dijkstra, spp.

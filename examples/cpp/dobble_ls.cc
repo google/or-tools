@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // This problem is inspired by the Dobble game (aka Spot-It in the
 // USA).  In this game, we have 57 cards, 57 symbols, and 8 symbols
 // per card.  We want to assign symbols per card such that any two
@@ -34,13 +33,12 @@
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/random.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
-#include "ortools/base/random.h"
 
 DEFINE_int32(symbols_per_card, 8, "Number of symbols per card.");
 DEFINE_int32(ls_seed, 1,
@@ -751,7 +749,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   // These constants comes directly from the dobble game.
   // There are actually 55 cards, but we can create up to 57 cards.
   const int kSymbolsPerCard = FLAGS_symbols_per_card;

@@ -11,13 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/constraint_solver/hybrid.h"
 
 #include <math.h>
 #include <functional>
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
@@ -36,17 +35,17 @@ DEFINE_bool(verbose_simplex_call, false,
 namespace operations_research {
 namespace {
 inline MPSolver::OptimizationProblemType LpSolverForCp() {
-  #if defined(USE_GUROBI)
+#if defined(USE_GUROBI)
   return MPSolver::GUROBI_LINEAR_PROGRAMMING;
-  #elif defined(USE_CLP)
+#elif defined(USE_CLP)
   return MPSolver::CLP_LINEAR_PROGRAMMING;
-  #elif defined(USE_GLPK)
+#elif defined(USE_GLPK)
   return MPSolver::CLP_LINEAR_PROGRAMMING;
-  #elif defined(USE_SULUM)
+#elif defined(USE_SULUM)
   return MPSolver::SULUM_LINEAR_PROGRAMMING;
-  #else
+#else
   LOG(FATAL) << "No suitable linear programming solver available.";
-  #endif
+#endif
 }
 
 class SimplexConnection : public SearchMonitor {
@@ -132,7 +131,9 @@ class Linearizer : public ModelParser {
   ~Linearizer() override {}
 
   // Begin/End visit element.
-  void BeginVisitModel(const std::string& solver_name) override { BeginVisit(true); }
+  void BeginVisitModel(const std::string& solver_name) override {
+    BeginVisit(true);
+  }
 
   void EndVisitModel(const std::string& solver_name) override { EndVisit(); }
 
@@ -163,7 +164,9 @@ class Linearizer : public ModelParser {
     }
     EndVisit();
   }
-  void BeginVisitExtension(const std::string& type) override { BeginVisit(true); }
+  void BeginVisitExtension(const std::string& type) override {
+    BeginVisit(true);
+  }
   void EndVisitExtension(const std::string& type) override {
     if (IS_TYPE(type, kObjectiveExtension)) {
       VisitObjective();
@@ -256,7 +259,8 @@ class Linearizer : public ModelParser {
   }
 
   void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntVar*>& arguments) override {
     if (DoVisit()) {
       Top()->SetIntegerVariableArrayArgument(arg_name, arguments);
       for (int i = 0; i < arguments.size(); ++i) {
@@ -496,7 +500,8 @@ class Linearizer : public ModelParser {
         Top()->FindIntegerArgumentOrDie(ModelVisitor::kMaximizeArgument);
     *objective_ =
         const_cast<IntExpr*>(Top()->FindIntegerExpressionArgumentOrDie(
-                                 ModelVisitor::kExpressionArgument))->Var();
+                                 ModelVisitor::kExpressionArgument))
+            ->Var();
     MPObjective* const objective = mp_solver_->MutableObjective();
     objective->SetCoefficient(Translated(*objective_), 1.0);
     objective->SetOptimizationDirection(*maximize_);

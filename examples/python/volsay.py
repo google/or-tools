@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Volsay problem in Google or-tools.
@@ -36,7 +35,7 @@ def main(unused_argv):
 
   # Using CLP
   solver = pywraplp.Solver('CoinsGridCLP',
-                            pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
+                           pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
 
   # data
 
@@ -63,7 +62,9 @@ def main(unused_argv):
   print()
   print('objective = ', solver.Objective().Value())
   print('Gas = ', Gas.SolutionValue(), 'ReducedCost =', Gas.ReducedCost())
-  print('Chloride:', Chloride.SolutionValue(), 'ReducedCost =', Chloride.ReducedCost())
+  print('Chloride:', Chloride.SolutionValue(), 'ReducedCost =',
+        Chloride.ReducedCost())
+
 
 if __name__ == '__main__':
   main('Volsay')

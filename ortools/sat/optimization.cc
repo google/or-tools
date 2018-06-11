@@ -24,19 +24,19 @@
 #include <string>
 #include <utility>
 
+#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/join.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/map_util.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #endif  // __PORTABLE_PLATFORM__
+#include "ortools/base/random.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/encoding.h"
@@ -45,8 +45,6 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/time_limit.h"
-#include "ortools/base/random.h"
-
 
 namespace operations_research {
 namespace sat {
@@ -73,7 +71,7 @@ class Logger {
 // Outputs the current objective value in the cnf output format.
 // Note that this function scale the given objective.
 std::string CnfObjectiveLine(const LinearBooleanProblem& problem,
-                        Coefficient objective) {
+                             Coefficient objective) {
   const double scaled_objective =
       AddOffsetAndScaleObjectiveValue(problem, objective);
   return absl::StrFormat("o %lld", static_cast<int64>(scaled_objective));
@@ -639,9 +637,10 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
     lower_bound += min_cost;
 
     // Print the search progress.
-    logger.Log(absl::StrFormat(
-        "c iter:%d core:%zu lb:%lld min_cost:%lld strat:%lld", iter, core.size(),
-        lower_bound.value(), min_cost.value(), stratified_lower_bound.value()));
+    logger.Log(
+        absl::StrFormat("c iter:%d core:%zu lb:%lld min_cost:%lld strat:%lld",
+                        iter, core.size(), lower_bound.value(),
+                        min_cost.value(), stratified_lower_bound.value()));
 
     // This simple line helps a lot on the packup-wpms instances!
     //
@@ -1032,8 +1031,8 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
             ? ""
             : absl::StrFormat(" gap:%lld", (upper_bound - lower_bound).value());
     logger.Log(
-        absl::StrFormat("c iter:%d [%s] lb:%lld%s assumptions:%zu depth:%d", iter,
-                        previous_core_info.c_str(),
+        absl::StrFormat("c iter:%d [%s] lb:%lld%s assumptions:%zu depth:%d",
+                        iter, previous_core_info.c_str(),
                         lower_bound.value() - offset.value() +
                             static_cast<int64>(problem.objective().offset()),
                         gap_string.c_str(), nodes.size(), max_depth));
@@ -1096,9 +1095,9 @@ namespace {
 void LogSolveInfo(SatSolver::Status result, const SatSolver& sat_solver,
                   const WallTimer& wall_timer, const UserTimer& user_timer,
                   int64 objective, int64 best_bound) {
-  printf("status: %s\n",
-         result == SatSolver::MODEL_SAT ? "OPTIMAL"
-                                        : SatStatusString(result).c_str());
+  printf("status: %s\n", result == SatSolver::MODEL_SAT
+                             ? "OPTIMAL"
+                             : SatStatusString(result).c_str());
   if (objective < kint64max) {
     printf("objective: %lld\n", objective);
   } else {
@@ -1649,9 +1648,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       max_depth = std::max(max_depth, new_depth);
       if (log_info) {
         LOG(INFO) << absl::StrFormat(
-            "core:%zu weight:[%lld,%lld] domain:[%lld,%lld] depth:%d", core.size(),
-            min_weight.value(), max_weight.value(), new_var_lb.value(),
-            new_var_ub.value(), new_depth);
+            "core:%zu weight:[%lld,%lld] domain:[%lld,%lld] depth:%d",
+            core.size(), min_weight.value(), max_weight.value(),
+            new_var_lb.value(), new_var_ub.value(), new_depth);
       }
 
       // We will "transfer" min_weight from all the variables of the core
@@ -1740,12 +1739,12 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   // This is the "generalized" hitting set problem we will solve. Each time
   // we find a core, a new constraint will be added to this problem.
   MPModelRequest request;
-  #if defined(USE_SCIP)
+#if defined(USE_SCIP)
   request.set_solver_specific_parameters("limits/gap = 0");
   request.set_solver_type(MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING);
-  #else  // USE_CBC
-    request.set_solver_type(MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING);
-  #endif  // USE_CBC or USE_SCIP
+#else   // USE_CBC
+  request.set_solver_type(MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING);
+#endif  // USE_CBC or USE_SCIP
 
   MPModelProto& hs_model = *request.mutable_model();
   const int num_variables = variables.size();
@@ -1762,12 +1761,12 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     var_proto->set_is_integer(true);
   }
 
-  // The MIP solver.
-  #if defined(USE_SCIP)
+// The MIP solver.
+#if defined(USE_SCIP)
   MPSolver solver("HS solver", MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
-  #else  // USE_CBC
-    MPSolver solver("HS solver", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-  #endif  // USE_CBC or USE_SCIP
+#else   // USE_CBC
+  MPSolver solver("HS solver", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+#endif  // USE_CBC or USE_SCIP
   MPSolutionResponse response;
 
   // This is used by the "stratified" approach. We will only consider terms with

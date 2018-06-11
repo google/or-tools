@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   A Round of Golf puzzle (Dell Logic Puzzles) in Google CP Solver.
@@ -117,15 +116,15 @@ def main():
   solver.Add(Frank != Sands)
   solver.Add(caddy != Sands)
 
-  b3_a_1 = solver.IsEqualVar(solver.Element(score, Sands) + 4,
-                             score[Frank])
-  b3_a_2 = solver.IsEqualVar(solver.Element(score, caddy),
-                             solver.Element(score, Sands) + 7)
+  b3_a_1 = solver.IsEqualVar(solver.Element(score, Sands) + 4, score[Frank])
+  b3_a_2 = solver.IsEqualVar(
+      solver.Element(score, caddy),
+      solver.Element(score, Sands) + 7)
 
-  b3_b_1 = solver.IsEqualVar(solver.Element(score, Sands) + 7,
-                             score[Frank])
-  b3_b_2 = solver.IsEqualVar(solver.Element(score, caddy),
-                             solver.Element(score, Sands) + 4)
+  b3_b_1 = solver.IsEqualVar(solver.Element(score, Sands) + 7, score[Frank])
+  b3_b_2 = solver.IsEqualVar(
+      solver.Element(score, caddy),
+      solver.Element(score, Sands) + 4)
 
   solver.Add((b3_a_1 * b3_a_2) + (b3_b_1 * b3_b_2) == 1)
 
@@ -146,8 +145,7 @@ def main():
   solution.Add(job)
   solution.Add(score)
 
-  db = solver.Phase(last_name + job + score,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(last_name + job + score, solver.CHOOSE_FIRST_UNBOUND,
                     solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
@@ -163,6 +161,7 @@ def main():
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 if __name__ == "__main__":
   main()

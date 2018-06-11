@@ -35,13 +35,12 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "ortools/base/commandlineflags.h"
+#include "examples/cpp/flexible_jobshop.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "examples/cpp/flexible_jobshop.h"
 #include "ortools/util/string_array.h"
 
 DEFINE_string(data_file, "", "A flexible shobshop problem (.fjs).");
@@ -84,8 +83,9 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
       for (int alt = 0; alt < task.machines.size(); ++alt) {
         const int machine_id = task.machines[alt];
         const int duration = task.durations[alt];
-        const std::string name = StringPrintf("J%dI%dA%dM%dD%d", task.job_id,
-                                         task_index, alt, machine_id, duration);
+        const std::string name =
+            StringPrintf("J%dI%dA%dM%dD%d", task.job_id, task_index, alt,
+                         machine_id, duration);
         IntervalVar* const interval = solver.MakeFixedDurationIntervalVar(
             0, horizon, duration, optional, name);
         jobs_to_tasks[job_id].back().intervals.push_back(interval);
@@ -218,7 +218,7 @@ static const char kUsage[] =
     "Usage: see flags.\nThis program runs a simple flexible job shop"
     " optimization output besides the debug LOGs of the solver.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {

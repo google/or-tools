@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Marathon puzzle in Google CP Solver.
@@ -62,8 +61,9 @@ def main():
   #
   n = 6
 
-  runners_str = ['Dominique', 'Ignace', 'Naren',
-                 'Olivier', 'Philippe', 'Pascal']
+  runners_str = [
+      'Dominique', 'Ignace', 'Naren', 'Olivier', 'Philippe', 'Pascal'
+  ]
 
   #
   # declare variables
@@ -107,8 +107,7 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(runners,
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+  db = solver.Phase(runners, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                     solver.ASSIGN_CENTER_VALUE)
 
   solver.NewSearch(db)

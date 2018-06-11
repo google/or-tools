@@ -19,11 +19,9 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -458,8 +456,9 @@ class Circuit : public Constraint {
       const int new_start = starts_.Value(index);
       starts_.SetValue(s, new_end, new_start);
       ends_.SetValue(s, new_start, new_end);
-      lengths_.SetValue(s, new_start, lengths_.Value(new_start) +
-                                          lengths_.Value(destination));
+      lengths_.SetValue(
+          s, new_start,
+          lengths_.Value(new_start) + lengths_.Value(destination));
       if (sub_circuit_) {
         // You are creating the only path. Nexts can no longer loop upon itself.
         nexts_[destination]->RemoveValue(destination);

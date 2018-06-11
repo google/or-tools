@@ -141,7 +141,8 @@ struct IntegerVariable {
  private:
   friend class Model;
 
-  IntegerVariable(const std::string& name_, const Domain& domain_, bool temporary_);
+  IntegerVariable(const std::string& name_, const Domain& domain_,
+                  bool temporary_);
 };
 
 // An argument is either an integer value, an integer domain, a
@@ -200,8 +201,8 @@ struct Argument {
 // A constraint has a type, some arguments, and a few tags. Typically, a
 // Constraint is on the heap, and owned by the global Model object.
 struct Constraint {
-  Constraint(const std::string& t, std::vector<Argument> args, bool strong_propag,
-             IntegerVariable* target)
+  Constraint(const std::string& t, std::vector<Argument> args,
+             bool strong_propag, IntegerVariable* target)
       : type(t),
         arguments(std::move(args)),
         target_variable(target),

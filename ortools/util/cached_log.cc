@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/util/cached_log.h"
 
 #include "ortools/base/logging.h"
@@ -24,7 +23,7 @@ CachedLog::~CachedLog() {}
 
 namespace {
 double FastLog2(int64 input) {
-  #if defined(_MSC_VER) || defined(__ANDROID__)
+#if defined(_MSC_VER) || defined(__ANDROID__)
   return log(static_cast<double>(input)) / log(2.0L);
 #else
   return log2(input);

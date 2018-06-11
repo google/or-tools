@@ -15,10 +15,9 @@
 
 #include <algorithm>
 
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
 #include "ortools/base/join.h"
 #include "ortools/base/murmur.h"
+#include "ortools/base/stringprintf.h"
 
 namespace operations_research {
 
@@ -114,8 +113,8 @@ void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
     const int old_index = index_of_[element];
     const int new_index =
         part_[part].end_index - num_distinguished_elements_in_part;
-    DCHECK_GE(new_index, old_index) << "Duplicate element given to Refine(): "
-                                    << element;
+    DCHECK_GE(new_index, old_index)
+        << "Duplicate element given to Refine(): " << element;
     // Perform the swap, keeping index_of_ up to date.
     index_of_[element] = new_index;
     index_of_[element_[new_index]] = old_index;

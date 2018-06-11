@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Graph connectivity algorithm for undirected graphs.
 // Memory consumption: O(n) where m is the number of arcs and n the number
 // of nodes.

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   3 jugs problem using MIP in Google or-tools.
@@ -54,41 +53,42 @@ def main(sol='CBC'):
   n = 15
   start = 0  # start node
   end = 14  # end node
-  M = 999   # a large number
+  M = 999  # a large number
 
-  nodes = ['8,0,0',  # start
-           '5,0,3',
-           '5,3,0',
-           '2,3,3',
-           '2,5,1',
-           '7,0,1',
-           '7,1,0',
-           '4,1,3',
-           '3,5,0',
-           '3,2,3',
-           '6,2,0',
-           '6,0,2',
-           '1,5,2',
-           '1,4,3',
-           '4,4,0'  # goal!
-          ]
+  nodes = [
+      '8,0,0',  # start
+      '5,0,3',
+      '5,3,0',
+      '2,3,3',
+      '2,5,1',
+      '7,0,1',
+      '7,1,0',
+      '4,1,3',
+      '3,5,0',
+      '3,2,3',
+      '6,2,0',
+      '6,0,2',
+      '1,5,2',
+      '1,4,3',
+      '4,4,0'  # goal!
+  ]
 
   # distance
-  d = [[M, 1, M, M, M, M, M, M, 1, M, M, M, M, M, M],
-       [M, M, 1, M, M, M, M, M, M, M, M, M, M, M, M],
-       [M, M, M, 1, M, M, M, M, 1, M, M, M, M, M, M],
-       [M, M, M, M, 1, M, M, M, M, M, M, M, M, M, M],
-       [M, M, M, M, M, 1, M, M, 1, M, M, M, M, M, M],
-       [M, M, M, M, M, M, 1, M, M, M, M, M, M, M, M],
-       [M, M, M, M, M, M, M, 1, 1, M, M, M, M, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, M, M, M, 1],
-       [M, M, M, M, M, M, M, M, M, 1, M, M, M, M, M],
-       [M, 1, M, M, M, M, M, M, M, M, 1, M, M, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, 1, M, M, M],
-       [M, 1, M, M, M, M, M, M, M, M, M, M, 1, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, M, M, 1, M],
-       [M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1],
-       [M, M, M, M, M, M, M, M, M, M, M, M, M, M, M]]
+  d = [[M, 1, M, M, M, M, M, M, 1, M, M, M, M, M,
+        M], [M, M, 1, M, M, M, M, M, M, M, M, M, M, M,
+             M], [M, M, M, 1, M, M, M, M, 1, M, M, M, M, M,
+                  M], [M, M, M, M, 1, M, M, M, M, M, M, M, M, M, M],
+       [M, M, M, M, M, 1, M, M, 1, M, M, M, M, M,
+        M], [M, M, M, M, M, M, 1, M, M, M, M, M, M, M,
+             M], [M, M, M, M, M, M, M, 1, 1, M, M, M, M, M, M],
+       [M, M, M, M, M, M, M, M, M, M, M, M, M, M,
+        1], [M, M, M, M, M, M, M, M, M, 1, M, M, M, M,
+             M], [M, 1, M, M, M, M, M, M, M, M, 1, M, M, M, M],
+       [M, M, M, M, M, M, M, M, M, M, M, 1, M, M,
+        M], [M, 1, M, M, M, M, M, M, M, M, M, M, 1, M,
+             M], [M, M, M, M, M, M, M, M, M, M, M, M, M, 1, M], [
+                 M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1
+             ], [M, M, M, M, M, M, M, M, M, M, M, M, M, M, M]]
 
   #
   # variables
@@ -106,9 +106,8 @@ def main(sol='CBC'):
   in_flow = [solver.IntVar(0, 1, 'in_flow[%i]' % i) for i in range(n)]
 
   # length of path, to be minimized
-  z = solver.Sum([d[i][j] * x[i, j]
-                  for i in range(n)
-                  for j in range(n) if d[i][j] < M])
+  z = solver.Sum(
+      [d[i][j] * x[i, j] for i in range(n) for j in range(n) if d[i][j] < M])
 
   #
   # constraints
@@ -124,15 +123,13 @@ def main(sol='CBC'):
 
   # outflow constraint
   for i in range(n):
-    solver.Add(out_flow[i] == solver.Sum([x[i, j]
-                                          for j in range(n)
-                                          if d[i][j] < M]))
+    solver.Add(
+        out_flow[i] == solver.Sum([x[i, j] for j in range(n) if d[i][j] < M]))
 
   # inflow constraint
   for j in range(n):
-    solver.Add(in_flow[j] == solver.Sum([x[i, j]
-                                         for i in range(n)
-                                         if d[i][j] < M]))
+    solver.Add(
+        in_flow[j] == solver.Sum([x[i, j] for i in range(n) if d[i][j] < M]))
 
   # inflow = outflow
   for i in range(n):

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Olympic puzzle in Google CP Solver.
@@ -97,9 +96,7 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(Vars,
-                    solver.INT_VAR_SIMPLE,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(Vars, solver.INT_VAR_SIMPLE, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
 

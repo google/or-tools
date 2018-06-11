@@ -1,7 +1,7 @@
 
 archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 
-$(INSTALL_DIR)$(ARCHIVE_EXT): $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) create_dirs cc_archive dotnet_archive java_archive data_archive $(PATCHELF)
+$(INSTALL_DIR)$(ARCHIVE_EXT): $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L create_dirs cc_archive dotnet_archive java_archive $(PATCHELF)
 ifeq ($(SYSTEM),win)
 	cd temp && ..$Stools$Szip.exe -r ..$S$(INSTALL_DIR).zip $(INSTALL_DIR)
 else
@@ -49,41 +49,51 @@ create_dirs:
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sflexible_jobshop
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sjobshop
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Smultidim_knapsack
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Scvrptw
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Spdptw
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sminesweeper
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Srogo
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
-	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sfsharp$Slib
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Snetstandard
-
-
 #credits
 	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
 	$(COPY) tools$SREADME.cc.java.csharp temp$S$(INSTALL_DIR)$SREADME
 	$(COPY) tools$SMakefile.cc temp$S$(INSTALL_DIR)$SMakefile
 
-data_archive:
+create_data_dirs:
+	-$(DELREC) temp_data
+	$(MKDIR) temp_data
+	$(MKDIR) temp_data$S$(INSTALL_DIR)
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Sflexible_jobshop
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Sjobshop
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Smultidim_knapsack
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Scvrptw
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Spdptw
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Sminesweeper
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Srogo
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
+	$(MKDIR) temp_data$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
+	$(COPY) LICENSE-2.0.txt temp_data$S$(INSTALL_DIR)
+
+data_archive: $(INSTALL_DIR)_data$(ARCHIVE_EXT)
+
+$(INSTALL_DIR)_data$(ARCHIVE_EXT): create_data_dirs
 ifeq ($(SYSTEM),win)
-	tools$Star.exe -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* --exclude *nsplib* examples\\data | tools$Star.exe xvm -C temp\\$(INSTALL_DIR)
+	tools$Star.exe -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* --exclude *nsplib* examples\\data | tools$Star.exe xvm -C temp_data\\$(INSTALL_DIR)
+	cd temp_data && ..$Stools$Szip.exe -r ..$S$(INSTALL_DIR)_data.zip $(INSTALL_DIR)
 else
-	tar -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* --exclude *nsplib* examples/data | tar xvm -C temp/$(INSTALL_DIR)
+	tar -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* --exclude *nsplib* examples/data | tar xvm -C temp_data/$(INSTALL_DIR)
+	cd temp_data && tar -c -v -z --no-same-owner -f ..$S$(INSTALL_DIR)_data.tar.gz $(INSTALL_DIR)
 endif
+	-$(DELREC) temp_data
 
 cc_archive: cc
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fap.$L temp$S$(INSTALL_DIR)$Slib
 	$(COPY) examples$Scpp$S*.cc temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) examples$Scpp$S*.h temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) ortools$Salgorithms$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Salgorithms
@@ -105,7 +115,7 @@ cc_archive: cc
 	$(COPY) ortools$Ssat$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
-
+	$(COPY) ortools$Sgen$Sortools$Sutil$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
 ifeq ($(SYSTEM),win)
 	$(COPY) tools$Smake.exe temp$S$(INSTALL_DIR)
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | ..$S..$S..$Stools$Star.exe xvm
@@ -168,8 +178,8 @@ fz_archive: cc fz
 	mkdir $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
 	$(COPY) LICENSE-2.0.txt $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
 	$(COPY) bin$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$L $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) ortools$Sflatzinc$Smznlib_cp$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
 	$(COPY) ortools$Sflatzinc$Smznlib_sat$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
 	$(COPY) examples$Sflatzinc$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples

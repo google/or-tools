@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Just forgotten puzzle (Enigma 1517) in Google CP Solver.
@@ -60,10 +59,8 @@ def main():
   rows = 4
   cols = 10
   # The four tries
-  a = [[9, 4, 6, 2, 1, 5, 7, 8, 3, 0],
-       [8, 6, 0, 4, 3, 9, 1, 2, 5, 7],
-       [1, 6, 4, 0, 2, 9, 7, 8, 5, 3],
-       [6, 8, 2, 4, 3, 1, 9, 0, 7, 5]]
+  a = [[9, 4, 6, 2, 1, 5, 7, 8, 3, 0], [8, 6, 0, 4, 3, 9, 1, 2, 5, 7],
+       [1, 6, 4, 0, 2, 9, 7, 8, 5, 3], [6, 8, 2, 4, 3, 1, 9, 0, 7, 5]]
 
   #
   # variables
@@ -82,9 +79,7 @@ def main():
   #
   # search and result
   #
-  db = solver.Phase(x,
-                    solver.INT_VAR_SIMPLE,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x, solver.INT_VAR_SIMPLE, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
 
@@ -94,7 +89,7 @@ def main():
     xval = [x[j].Value() for j in range(cols)]
     print("Account number:")
     for j in range(cols):
-      print("%i " % xval[j], end=' ')
+      print("%i " % xval[j], end=" ")
     print()
     print("\nThe four tries, where '!' represents a correct digit:")
     for i in range(rows):
@@ -102,7 +97,7 @@ def main():
         check = " "
         if a[i][j] == xval[j]:
           check = "!"
-        print("%i%s" % (a[i][j], check), end=' ')
+        print("%i%s" % (a[i][j], check), end=" ")
       print()
     print()
   print()
@@ -113,6 +108,7 @@ def main():
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 if __name__ == "__main__":
   main()

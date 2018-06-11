@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Labeled dice problem in Google CP Solver.
@@ -63,25 +62,15 @@ def main():
   m = 24
   A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, Y = (
       list(range(m)))
-  letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-             "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "Y"]
+  letters = [
+      "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+      "P", "Q", "R", "S", "T", "U", "V", "W", "Y"
+  ]
 
   num_words = 13
-  words = [
-      [B, U, O, Y],
-      [C, A, V, E],
-      [C, E, L, T],
-      [F, L, U, B],
-      [F, O, R, K],
-      [H, E, M, P],
-      [J, U, D, Y],
-      [J, U, N, K],
-      [L, I, M, N],
-      [Q, U, I, P],
-      [S, W, A, G],
-      [V, I, S, A],
-      [W, I, S, H]
-  ]
+  words = [[B, U, O, Y], [C, A, V, E], [C, E, L, T], [F, L, U, B], [F, O, R, K],
+           [H, E, M, P], [J, U, D, Y], [J, U, N, K], [L, I, M, N], [Q, U, I, P],
+           [S, W, A, G], [V, I, S, A], [W, I, S, H]]
 
   #
   # declare variables
@@ -107,9 +96,7 @@ def main():
   solution = solver.Assignment()
   solution.Add(dice)
 
-  db = solver.Phase(dice,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(dice, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   #
   # result
@@ -120,16 +107,18 @@ def main():
     num_solutions += 1
     # print "dice:", [(letters[i],dice[i].Value()) for i in range(m)]
     for d in range(n):
-      print("die %i:" % d, end=' ')
+      print("die %i:" % d, end=" ")
       for i in range(m):
         if dice[i].Value() == d:
-          print(letters[i], end=' ')
+          print(letters[i], end=" ")
       print()
 
     print("The words with the cube label:")
     for i in range(num_words):
       for j in range(n):
-        print("%s (%i)" % (letters[words[i][j]], dice[words[i][j]].Value()), end=' ')
+        print(
+            "%s (%i)" % (letters[words[i][j]], dice[words[i][j]].Value()),
+            end=" ")
       print()
 
     print()
@@ -141,6 +130,7 @@ def main():
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 if __name__ == "__main__":
   main()

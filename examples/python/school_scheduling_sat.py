@@ -91,8 +91,8 @@ class SchoolSchedulingSatSolver(object):
     for teacher in all_teachers:
       self.model.Add(
           sum([
-              self.assignment[c, s, teacher, slot]
-              for c in all_courses for s in all_subjects for slot in all_slots
+              self.assignment[c, s, teacher, slot] for c in all_courses
+              for s in all_subjects for slot in all_slots
           ]) <= self.problem.teacher_work_hours[teacher])
 
     # Teacher makes all the classes of a subject's course

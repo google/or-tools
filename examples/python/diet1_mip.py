@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Simple diet problem using MIP in Google CP Solver.
@@ -77,14 +76,10 @@ def main(sol='CBC'):
   #
   # constraints
   #
-  solver.Add(solver.Sum([x[i] * calories[i]
-                         for i in range(n)]) >= limits[0])
-  solver.Add(solver.Sum([x[i] * chocolate[i]
-                         for i in range(n)]) >= limits[1])
-  solver.Add(solver.Sum([x[i] * sugar[i]
-                         for i in range(n)]) >= limits[2])
-  solver.Add(solver.Sum([x[i] * fat[i]
-                         for i in range(n)]) >= limits[3])
+  solver.Add(solver.Sum([x[i] * calories[i] for i in range(n)]) >= limits[0])
+  solver.Add(solver.Sum([x[i] * chocolate[i] for i in range(n)]) >= limits[1])
+  solver.Add(solver.Sum([x[i] * sugar[i] for i in range(n)]) >= limits[2])
+  solver.Add(solver.Sum([x[i] * fat[i] for i in range(n)]) >= limits[3])
 
   # objective
   objective = solver.Minimize(cost)

@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "ortools/algorithms/knapsack_solver.h"
 
 #include <algorithm>
@@ -377,9 +376,10 @@ void KnapsackGenericSolver::GetLowerAndUpperBoundWhenItem(int item_id,
     *lower_bound = 0LL;
     *upper_bound = 0LL;
   } else {
-    *lower_bound = (HasOnePropagator()) ? propagators_[master_propagator_id_]
-                                              ->profit_lower_bound()
-                                        : 0LL;
+    *lower_bound =
+        (HasOnePropagator())
+            ? propagators_[master_propagator_id_]->profit_lower_bound()
+            : 0LL;
     *upper_bound = GetAggregatedProfitUpperBound();
   }
 
@@ -530,8 +530,8 @@ void KnapsackGenericSolver::UpdateBestSolution() {
 
   if (best_solution_profit_ < profit_lower_bound) {
     best_solution_profit_ = profit_lower_bound;
-    propagators_[master_propagator_id_]
-        ->CopyCurrentStateToSolution(HasOnePropagator(), &best_solution_);
+    propagators_[master_propagator_id_]->CopyCurrentStateToSolution(
+        HasOnePropagator(), &best_solution_);
   }
 }
 
@@ -567,7 +567,8 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
   DISALLOW_COPY_AND_ASSIGN(KnapsackBruteForceSolver);
 };
 
-KnapsackBruteForceSolver::KnapsackBruteForceSolver(const std::string& solver_name)
+KnapsackBruteForceSolver::KnapsackBruteForceSolver(
+    const std::string& solver_name)
     : BaseKnapsackSolver(solver_name),
       num_items_(0),
       capacity_(0LL),
@@ -1051,7 +1052,8 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
 };
 
 KnapsackMIPSolver::KnapsackMIPSolver(
-    MPSolver::OptimizationProblemType problem_type, const std::string& solver_name)
+    MPSolver::OptimizationProblemType problem_type,
+    const std::string& solver_name)
     : BaseKnapsackSolver(solver_name),
       problem_type_(problem_type),
       profits_(),
@@ -1137,18 +1139,18 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
     case KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER:
       solver_.reset(new KnapsackGenericSolver(solver_name));
       break;
-    #if defined(USE_CBC)
+#if defined(USE_CBC)
     case KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER:
       solver_.reset(new KnapsackMIPSolver(
           MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, solver_name));
       break;
-    #endif  // USE_CBC
-    #if defined(USE_SCIP)
+#endif  // USE_CBC
+#if defined(USE_SCIP)
     case KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER:
       solver_.reset(new KnapsackMIPSolver(
           MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, solver_name));
       break;
-    #endif  // USE_SCIP
+#endif  // USE_SCIP
     default:
       LOG(FATAL) << "Unknown knapsack solver type.";
   }
@@ -1334,8 +1336,9 @@ void KnapsackSolver::InitReducedProblem(
 
 int64 KnapsackSolver::Solve() {
   return additional_profit_ +
-         ((is_problem_solved_) ? 0 : solver_->Solve(time_limit_.get(),
-                                                    &is_solution_optimal_));
+         ((is_problem_solved_)
+              ? 0
+              : solver_->Solve(time_limit_.get(), &is_solution_optimal_));
 }
 
 bool KnapsackSolver::BestSolutionContains(int item_id) const {

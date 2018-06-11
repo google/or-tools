@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Game theory in Google or-tools.
@@ -46,9 +45,7 @@ def main(sol='CBC'):
   rows = 3
   cols = 3
 
-  game = [[3.0, -1.0, -3.0],
-          [-2.0, 4.0, -1.0],
-          [-5.0, -6.0, 2.0]]
+  game = [[3.0, -1.0, -3.0], [-2.0, 4.0, -1.0], [-5.0, -6.0, 2.0]]
 
   #
   # declare variables
@@ -57,8 +54,7 @@ def main(sol='CBC'):
   #
   # row player
   #
-  x1 = [solver.NumVar(0, 1, 'x1[%i]' % i)
-        for i in range(rows)]
+  x1 = [solver.NumVar(0, 1, 'x1[%i]' % i) for i in range(rows)]
 
   v = solver.NumVar(-2, 2, 'v')
 
@@ -83,8 +79,7 @@ def main(sol='CBC'):
   #
   # For column player:
   #
-  x2 = [solver.NumVar(0, 1, 'x2[%i]' % i)
-        for i in range(cols)]
+  x2 = [solver.NumVar(0, 1, 'x2[%i]' % i) for i in range(cols)]
 
   v2 = solver.NumVar(-2, 2, 'v2')
 
@@ -109,6 +104,7 @@ def main(sol='CBC'):
   print('walltime  :', solver.WallTime(), 'ms')
   print('iterations:', solver.Iterations())
   print()
+
 
 if __name__ == '__main__':
 

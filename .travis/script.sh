@@ -18,6 +18,9 @@ function checkenv() {
 	elif [ "${LANGUAGE}" == csharp ]; then
 		mono --version
 		which csharp
+	elif [ "${LANGUAGE}" == fsharp ]; then
+		mono --version
+		dotnet -h
 	fi
 }
 
@@ -50,6 +53,11 @@ if [ "${BUILDER}" == make ];then
 		fi
 	elif [ "${TRAVIS_OS_NAME}" == osx ];then
 		if [ "${DISTRO}" == native ];then
+			if [ "${LANGUAGE}" == fsharp ]; then
+				# Installer changes path but won't be picked up in current terminal session
+				# Need to explicitly add location
+				export PATH=/usr/local/share/dotnet:"${PATH}"
+			fi
 			checkenv
 			if [ "${LANGUAGE}" == cc ]; then
 				make detect

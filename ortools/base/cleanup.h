@@ -23,8 +23,7 @@ template <typename F>
 class Cleanup {
  public:
   template <typename G>
-  explicit Cleanup(G&& f)
-      : f_(std::forward<G>(f)) {}
+  explicit Cleanup(G&& f) : f_(std::forward<G>(f)) {}
   ~Cleanup() { f_(); }
 
  private:

@@ -16,8 +16,8 @@
 #include <map>
 
 #include <unordered_map>
-#include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/saturated_arithmetic.h"

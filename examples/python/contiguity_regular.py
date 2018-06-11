@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Global constraint contiguity using regularin Google CP Solver.
@@ -109,8 +108,8 @@ def regular(x, Q, S, d, q0, F):
     solver.Add(x[i] <= S)
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+    solver.Add(a[i + 1] == solver.Element(d2_flatten, (
+        (a[i]) * S) + (x[i] - 1)))
 
 
 def main():
@@ -148,14 +147,13 @@ def main():
   #
   # constraints
   #
-  regular(reg_input, n_states, input_max, transition_fn,
-          initial_state, accepting_states)
+  regular(reg_input, n_states, input_max, transition_fn, initial_state,
+          accepting_states)
 
   #
   # solution and search
   #
-  db = solver.Phase(reg_input,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(reg_input, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)

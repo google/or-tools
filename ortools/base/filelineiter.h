@@ -18,18 +18,18 @@
 // * The lines are separated by '\n' (which is removed by default) and have no
 //   size limits.
 // * Consecutive '\n' result in empty lines being produced.
-// * If not empty, the std::string after the last '\n' is produced as the last line.
+// * If not empty, the std::string after the last '\n' is produced as the last
+// line.
 // * Options are available to keep the trailing '\n' for each line, to remove
 //   carriage-return chararters ('\r'), and to remove blank lines.
 
 #ifndef OR_TOOLS_BASE_FILELINEITER_H_
 #define OR_TOOLS_BASE_FILELINEITER_H_
 
-#include "ortools/base/logging.h"
 #include "ortools/base/file.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/strutil.h"
-
 
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {
@@ -118,7 +118,6 @@ class FileLines {
  public:
   FileLines(const std::string& filename, int options) : options_(options) {
     if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) return;
-
   }
 
   explicit FileLines(const std::string& filename)

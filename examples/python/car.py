@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Car sequencing in Google CP Solver.
@@ -63,16 +62,11 @@ def main(num_sol=3):
       [0, 0, 1, 0, 0, 0]  # option 5
   ]
 
-  capacity = [
-      (1, 2),
-      (2, 3),
-      (1, 3),
-      (2, 5),
-      (1, 5)
-  ]
+  capacity = [(1, 2), (2, 3), (1, 3), (2, 5), (1, 5)]
 
-  optionDemand = [sum([demand[j] * option[i][j] for j in Cars])
-                  for i in Options]
+  optionDemand = [
+      sum([demand[j] * option[i][j] for j in Cars]) for i in Options
+  ]
 
   #
   # declare variables
@@ -111,8 +105,7 @@ def main(num_sol=3):
   #
   # search and result
   #
-  db = solver.Phase(slot + setup_flat,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(slot + setup_flat, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
@@ -121,9 +114,9 @@ def main(num_sol=3):
     print("slot:%s" % ",".join([str(slot[i].Value()) for i in Slots]))
     print("setup:")
     for o in Options:
-      print("%i/%i:" % (capacity[o][0], capacity[o][1]), end=' ')
+      print("%i/%i:" % (capacity[o][0], capacity[o][1]), end=" ")
       for s in Slots:
-        print(setup[o, s].Value(), end=' ')
+        print(setup[o, s].Value(), end=" ")
       print()
     print()
     num_solutions += 1
@@ -138,6 +131,7 @@ def main(num_sol=3):
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 num_sol = 3
 if __name__ == "__main__":

@@ -17,7 +17,6 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {

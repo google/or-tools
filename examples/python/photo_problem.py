@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Photo problem in Google CP Solver.
@@ -95,8 +94,12 @@ def main(show_all_max=0):
   solver.Add(solver.AllDifferent(positions))
 
   # calculate all the successful preferences
-  b = [solver.IsEqualCstVar(abs(positions[i] - positions[j]), 1)
-       for i in range(n) for j in range(n) if preferences[i][j] == 1]
+  b = [
+      solver.IsEqualCstVar(abs(positions[i] - positions[j]), 1)
+      for i in range(n)
+      for j in range(n)
+      if preferences[i][j] == 1
+  ]
   solver.Add(z == solver.Sum(b))
 
   #
@@ -113,8 +116,7 @@ def main(show_all_max=0):
   #
   # search and result
   #
-  db = solver.Phase(positions,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(positions, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MAX_VALUE)
 
   if show_all_max == 0:
@@ -127,8 +129,8 @@ def main(show_all_max=0):
     print("z:", z.Value())
     p = [positions[i].Value() for i in range(n)]
 
-    print(" ".join([persons[j]
-                    for i in range(n) for j in range(n) if p[j] == i]))
+    print(" ".join(
+        [persons[j] for i in range(n) for j in range(n) if p[j] == i]))
     print("Successful preferences:")
     for i in range(n):
       for j in range(n):

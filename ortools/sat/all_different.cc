@@ -14,14 +14,14 @@
 #include "ortools/sat/all_different.h"
 
 #include <algorithm>
-#include <unordered_set>
 #include <map>
 #include <memory>
+#include <unordered_set>
 
-#include "ortools/base/logging.h"
-#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
 

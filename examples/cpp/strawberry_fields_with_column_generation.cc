@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Demonstration of column generation using LP toolkit.
 //
 // Column generation is the technique of generating columns (aka
@@ -60,7 +59,6 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -443,8 +441,9 @@ class CoveringProblem {
   }
 
   std::string PrintGrid() const {
-    std::string output = StringPrintf("width = %d, height = %d, max_boxes = %d\n",
-                                 width_, height_, max_boxes_);
+    std::string output =
+        StringPrintf("width = %d, height = %d, max_boxes = %d\n", width_,
+                     height_, max_boxes_);
     for (int y = 0; y < height_; ++y) {
       StringAppendF(&output, "%s\n",
                     std::string(grid_ + width_ * y, width_).c_str());
@@ -458,7 +457,8 @@ class CoveringProblem {
   // of fractional boxes.
   std::string PrintCovering() const {
     static const double kTolerance = 1e-5;
-    std::string output = StringPrintf("cost = %lf\n", solver_->Objective().Value());
+    std::string output =
+        StringPrintf("cost = %lf\n", solver_->Objective().Value());
     std::unique_ptr<char[]> display(new char[(width_ + 1) * height_ + 1]);
     for (int y = 0; y < height_; ++y) {
       memcpy(display.get() + y * (width_ + 1), grid_ + width_ * y,
@@ -602,22 +602,22 @@ int main(int argc, char** argv) {
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";
 
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   operations_research::MPSolver::OptimizationProblemType solver_type;
   bool found = false;
-  #if defined(USE_GLOP)
+#if defined(USE_GLOP)
   if (FLAGS_colgen_solver == "glop") {
     solver_type = operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
     found = true;
   }
-  #endif  // USE_GLOP
-  #if defined(USE_CLP)
+#endif  // USE_GLOP
+#if defined(USE_CLP)
   if (FLAGS_colgen_solver == "clp") {
     solver_type = operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
     found = true;
   }
-  #endif  // USE_CLP
+#endif  // USE_CLP
   if (!found) {
     LOG(ERROR) << "Unknown solver " << FLAGS_colgen_solver;
     return 1;

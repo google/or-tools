@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Test linear sum assignment on a 4x4 matrix.
 
    Example taken from:
@@ -18,7 +17,6 @@
    modified so the optimum solution is unique.
 """
 from __future__ import print_function
-
 
 from ortools.graph import pywrapgraph
 
@@ -28,9 +26,7 @@ def RunAssignmentOn4x4Matrix():
   """
   num_sources = 4
   num_targets = 4
-  cost = [[90, 76, 75, 80],
-          [35, 85, 55, 65],
-          [125, 95, 90, 105],
+  cost = [[90, 76, 75, 80], [35, 85, 55, 65], [125, 95, 90, 105],
           [45, 110, 95, 115]]
   expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
 
@@ -44,10 +40,8 @@ def RunAssignmentOn4x4Matrix():
     print('Successful solve.')
     print('Total cost', assignment.OptimalCost(), '/', expected_cost)
     for i in range(0, assignment.NumNodes()):
-      print('Left node %d assigned to right node %d with cost %d.' % (
-          i,
-          assignment.RightMate(i),
-          assignment.AssignmentCost(i)))
+      print('Left node %d assigned to right node %d with cost %d.' %
+            (i, assignment.RightMate(i), assignment.AssignmentCost(i)))
   elif solve_status == assignment.INFEASIBLE:
     print('No perfect matching exists.')
   elif solve_status == assignment.POSSIBLE_OVERFLOW:
@@ -56,6 +50,7 @@ def RunAssignmentOn4x4Matrix():
 
 def main():
   RunAssignmentOn4x4Matrix()
+
 
 if __name__ == '__main__':
   main()

@@ -12,6 +12,10 @@ test_cc_examples: cc
 test_python_examples: python
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Shidato_table.py
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Stsp.py
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Svrp.py
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Svrpgs.py
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Scvrp.py
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Scvrptw.py
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Spyflow_example.py
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Sknapsack.py
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Sjobshop_ft06_sat.py
@@ -21,9 +25,14 @@ test_python_examples: python
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Stests$Stest_lp_api.py
 
 .PHONY: test_java_examples
-test_java_examples: java run_RabbitsPheasants run_FlowExample \
-run_Tsp run_LinearProgramming run_IntegerProgramming \
-run_Knapsack run_MultiThreadIntegerProgramming
+test_java_examples: java \
+ run_RabbitsPheasants \
+ run_FlowExample \
+ run_Tsp \
+ run_LinearProgramming \
+ run_IntegerProgramming \
+ run_Knapsack \
+ run_MultiThreadIntegerProgramming
 
 # csharp test
 .PHONY: test_csharp_examples

@@ -27,6 +27,9 @@
   <ItemGroup>
     <Compile Include="OrTools.fs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' ">
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Google.OrTools">

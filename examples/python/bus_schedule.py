@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Bus scheduling in Google CP Solver.
@@ -83,15 +82,14 @@ def main(num_buses_check=0):
     objective = solver.Minimize(num_buses, 1)
     cargs.extend([objective])
 
-  solver.Solve(solver.Phase(x,
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE),
-               cargs)
+  solver.Solve(
+      solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+      cargs)
 
   num_solutions = collector.SolutionCount()
   num_buses_check_value = 0
   for s in range(num_solutions):
-    print("x:", [collector.Value(s, x[i]) for i in range(len(x))], end=' ')
+    print("x:", [collector.Value(s, x[i]) for i in range(len(x))], end=" ")
     num_buses_check_value = collector.Value(s, num_buses)
     print(" num_buses:", num_buses_check_value)
 
@@ -103,6 +101,7 @@ def main(num_buses_check=0):
   print()
   if num_buses_check == 0:
     return num_buses_check_value
+
 
 if __name__ == "__main__":
   print("Check for minimun number of buses")

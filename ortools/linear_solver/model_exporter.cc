@@ -19,12 +19,11 @@
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/strutil.h"
-#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/strutil.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/fp_utils.h"
 
@@ -75,10 +74,12 @@ std::string NameManager::MakeUniqueName(const std::string& name) {
   return result;
 }
 
-std::string MakeExportableName(const std::string& name, bool* found_forbidden_char) {
+std::string MakeExportableName(const std::string& name,
+                               bool* found_forbidden_char) {
   // Prepend with "_" all the names starting with a forbidden character.
   const std::string kForbiddenFirstChars = "$.0123456789";
-  *found_forbidden_char = kForbiddenFirstChars.find(name[0]) != std::string::npos;
+  *found_forbidden_char =
+      kForbiddenFirstChars.find(name[0]) != std::string::npos;
   std::string exportable_name =
       *found_forbidden_char ? absl::StrCat("_", name) : name;
 
@@ -170,13 +171,13 @@ void MPModelProtoExporter::AppendComments(const std::string& separator,
 namespace {
 class LineBreaker {
  public:
-  explicit LineBreaker(int max_line_size) :
-      max_line_size_(max_line_size), line_size_(0), output_() {}
+  explicit LineBreaker(int max_line_size)
+      : max_line_size_(max_line_size), line_size_(0), output_() {}
   // Lines are broken in such a way that:
   // - Strings that are given to Append() are never split.
   // - Lines are split so that their length doesn't exceed the max length;
-  //   unless a single std::string given to Append() exceeds that length (in which
-  //   case it will be put alone on a single unsplit line).
+  //   unless a single std::string given to Append() exceeds that length (in
+  //   which case it will be put alone on a single unsplit line).
   void Append(const std::string& s);
 
   // Returns true if std::string s will fit on the current line without adding
@@ -317,7 +318,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
           absl::StrAppend(&rhs_name, "_rhs");
         }
         absl::StrAppend(output, " ", rhs_name, ": ", line_breaker.GetOutput());
-        const std::string relation = absl::StrCat(" <= ", DoubleToString(ub), "\n");
+        const std::string relation =
+            absl::StrCat(" <= ", DoubleToString(ub), "\n");
         // Here we have to make sure we do not add the relation to the contents
         // of line_breaker, which may be used in the subsequent clause.
         if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
@@ -329,7 +331,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
           absl::StrAppend(&lhs_name, "_lhs");
         }
         absl::StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
-        const std::string relation = absl::StrCat(" >= ", DoubleToString(lb), "\n");
+        const std::string relation =
+            absl::StrCat(" >= ", DoubleToString(lb), "\n");
         if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
         absl::StrAppend(output, relation);
       }
@@ -351,7 +354,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
                     exported_variable_names_[var_index].c_str(), ub);
     } else {
       absl::StrAppend(output, " ");
-      if (lb == -std::numeric_limits<double>::infinity() && ub == std::numeric_limits<double>::infinity()) {
+      if (lb == -std::numeric_limits<double>::infinity() &&
+          ub == std::numeric_limits<double>::infinity()) {
         absl::StrAppend(output, exported_variable_names_[var_index], " free");
       } else {
         if (lb != -std::numeric_limits<double>::infinity()) {
@@ -426,10 +430,9 @@ void MPModelProtoExporter::AppendMpsLineHeaderWithNewLine(
   absl::StrAppend(output, "\n");
 }
 
-void MPModelProtoExporter::AppendMpsTermWithContext(const std::string& head_name,
-                                                    const std::string& name,
-                                                    double value,
-                                                    std::string* output) {
+void MPModelProtoExporter::AppendMpsTermWithContext(
+    const std::string& head_name, const std::string& name, double value,
+    std::string* output) {
   if (current_mps_column_ == 0) {
     AppendMpsLineHeader("", head_name, output);
   }
@@ -465,8 +468,7 @@ void MPModelProtoExporter::AppendMpsColumns(
     current_mps_column_ = 0;
     if (var_proto.objective_coefficient() != 0.0) {
       AppendMpsTermWithContext(var_name, "COST",
-                               var_proto.objective_coefficient(),
-                               output);
+                               var_proto.objective_coefficient(), output);
     }
     for (const std::pair<int, double> cst_index_and_coeff :
          transpose[var_index]) {
@@ -549,10 +551,11 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   AppendMpsColumns(/*integrality=*/true, transpose, &columns_section);
   if (!columns_section.empty()) {
     const char* const kIntMarkerFormat = "  %-10s%-36s%-10s\n";
-    columns_section = StringPrintf(kIntMarkerFormat, "INTSTART",
-                                   "'MARKER'", "'INTORG'") + columns_section;
-    StringAppendF(&columns_section, kIntMarkerFormat,
-                  "INTEND", "'MARKER'", "'INTEND'");
+    columns_section =
+        StringPrintf(kIntMarkerFormat, "INTSTART", "'MARKER'", "'INTORG'") +
+        columns_section;
+    StringAppendF(&columns_section, kIntMarkerFormat, "INTEND", "'MARKER'",
+                  "'INTEND'");
   }
   AppendMpsColumns(/*integrality=*/false, transpose, &columns_section);
   if (!columns_section.empty()) {

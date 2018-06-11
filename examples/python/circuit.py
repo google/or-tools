@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Decomposition of the circuit constraint in Google CP Solver.
@@ -109,10 +108,9 @@ def main(n=5):
 
   collector = solver.AllSolutionCollector(solution)
 
-  solver.Solve(solver.Phase(x,
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE),
-               [collector])
+  solver.Solve(
+      solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
+      [collector])
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):

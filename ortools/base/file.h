@@ -14,18 +14,18 @@
 #ifndef OR_TOOLS_BASE_FILE_H_
 #define OR_TOOLS_BASE_FILE_H_
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/descriptor.h"
+#include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/string_view.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/status.h"
+#include "ortools/base/string_view.h"
 
 // This file defines some IO interfaces for compatibility with Google
 // IO specifications.
@@ -64,8 +64,8 @@ class File {
   // Each line must be no more than max_length bytes.
   char* ReadLine(char* const output, uint64 max_length);
 
-  // Reads the whole file to a std::string, with a maximum length of 'max_length'.
-  // Returns the number of bytes read.
+  // Reads the whole file to a std::string, with a maximum length of
+  // 'max_length'. Returns the number of bytes read.
   int64 ReadToString(std::string* const line, uint64 max_length);
 
   // Writes "size" bytes of buff to file, buff should be pre-allocated.
@@ -135,7 +135,8 @@ util::Status WriteString(File* file, const absl::string_view& contents,
                          int flags);
 
 bool ReadFileToString(const absl::string_view& file_name, std::string* output);
-bool WriteStringToFile(const std::string& data, const absl::string_view& file_name);
+bool WriteStringToFile(const std::string& data,
+                       const absl::string_view& file_name);
 bool ReadFileToProto(const absl::string_view& file_name,
                      google::protobuf::Message* proto);
 void ReadFileToProtoOrDie(const absl::string_view& file_name,

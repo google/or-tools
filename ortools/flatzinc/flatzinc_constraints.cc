@@ -17,7 +17,6 @@
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/util/string_array.h"
@@ -155,7 +154,8 @@ class FixedModulo : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat("(%s %% %s == %" GG_LL_FORMAT "d)",
-                           var_->DebugString().c_str(), mod_->DebugString().c_str(), residual_);
+                           var_->DebugString().c_str(),
+                           mod_->DebugString().c_str(), residual_);
   }
 
  private:
@@ -914,7 +914,8 @@ Constraint* MakeFixedModulo(Solver* const s, IntVar* const var,
 }
 
 IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
-                                      IntVar* const duration, const std::string& n) {
+                                      IntVar* const duration,
+                                      const std::string& n) {
   CHECK(start != nullptr);
   CHECK(duration != nullptr);
   return solver->RegisterIntervalVar(solver->RevAlloc(

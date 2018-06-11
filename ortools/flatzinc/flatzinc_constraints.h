@@ -58,7 +58,8 @@ Constraint* MakeFixedModulo(Solver* const s, IntVar* const var,
 // Creates a performed interval variable with the given start and duration
 // variables.
 IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
-                                      IntVar* const duration, const std::string& n);
+                                      IntVar* const duration,
+                                      const std::string& n);
 
 // Creates a n-dimensional constraints that enforces that k boxes (n dimension)
 // do not overlap in space.

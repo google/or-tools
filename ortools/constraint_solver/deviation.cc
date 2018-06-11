@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
@@ -20,8 +19,8 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/string_array.h"
 

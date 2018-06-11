@@ -20,10 +20,10 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -63,7 +63,8 @@ class TreeArrayConstraint : public CastConstraint {
                         target_var_->DebugString().c_str());
   }
 
-  void AcceptInternal(const std::string& name, ModelVisitor* const visitor) const {
+  void AcceptInternal(const std::string& name,
+                      ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -283,7 +284,9 @@ class SumConstraint : public TreeArrayConstraint {
     target_var_->SetRange(RootMin(), RootMax());
   }
 
-  std::string DebugString() const override { return DebugStringInternal("Sum"); }
+  std::string DebugString() const override {
+    return DebugStringInternal("Sum");
+  }
 
   void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kSumEqual, visitor);
@@ -593,7 +596,9 @@ class SafeSumConstraint : public TreeArrayConstraint {
     target_var_->SetRange(RootMin(), RootMax());
   }
 
-  std::string DebugString() const override { return DebugStringInternal("Sum"); }
+  std::string DebugString() const override {
+    return DebugStringInternal("Sum");
+  }
 
   void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kSumEqual, visitor);
@@ -773,7 +778,9 @@ class MinConstraint : public TreeArrayConstraint {
     MinVarChanged();
   }
 
-  std::string DebugString() const override { return DebugStringInternal("Min"); }
+  std::string DebugString() const override {
+    return DebugStringInternal("Min");
+  }
 
   void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kMinEqual, visitor);
@@ -1051,7 +1058,9 @@ class MaxConstraint : public TreeArrayConstraint {
     MaxVarChanged();
   }
 
-  std::string DebugString() const override { return DebugStringInternal("Max"); }
+  std::string DebugString() const override {
+    return DebugStringInternal("Max");
+  }
 
   void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kMaxEqual, visitor);
@@ -2486,7 +2495,8 @@ class ExprLinearizer : public ModelParser {
   }
 
   void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntVar*>& arguments) override {
     Top()->SetIntegerVariableArrayArgument(arg_name, arguments);
   }
 
@@ -3117,9 +3127,9 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
       if (AreAllPositive(coefs)) {
         if (vars.size() > 8) {
           return solver->MakeSum(
-              solver->RegisterIntExpr(
-                        solver->RevAlloc(
-                            new PositiveBooleanScalProd(solver, vars, coefs)))
+              solver
+                  ->RegisterIntExpr(solver->RevAlloc(
+                      new PositiveBooleanScalProd(solver, vars, coefs)))
                   ->Var(),
               constant);
         } else {

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Simple diet problem in Google CP Solver.
@@ -94,14 +93,13 @@ def main(unused_argv):
   # last solution since it's a minimization problem
   collector = solver.LastSolutionCollector(solution)
   search_log = solver.SearchLog(100, cost)
-  solver.Solve(solver.Phase(x + [cost],
-                            solver.INT_VAR_SIMPLE,
-                            solver.ASSIGN_MIN_VALUE),
-               [objective, search_log, collector])
+  solver.Solve(
+      solver.Phase(x + [cost], solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE),
+      [objective, search_log, collector])
 
   # get the first (and only) solution
   print("cost:", collector.ObjectiveValue(0))
-  print([("abcdefghij"[i], collector.Value(0, x[i])) for i in range(n)])
+  print([("abcdefghij" [i], collector.Value(0, x[i])) for i in range(n)])
   print()
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())

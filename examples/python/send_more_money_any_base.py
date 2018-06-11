@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   SEND+MORE=MONEY in 'any' base in Google CP Solver.
@@ -71,9 +70,9 @@ def main(base=10):
   # constraints
   #
   solver.Add(solver.AllDifferent(x))
-  solver.Add(s * base ** 3 + e * base ** 2 + n * base + d +
-             m * base ** 3 + o * base ** 2 + r * base + e ==
-             m * base ** 4 + o * base ** 3 + n * base ** 2 + e * base + y,)
+  solver.Add(
+      s * base**3 + e * base**2 + n * base + d + m * base**3 + o * base**2 +
+      r * base + e == m * base**4 + o * base**3 + n * base**2 + e * base + y,)
   solver.Add(s > 0)
   solver.Add(m > 0)
 
@@ -85,10 +84,9 @@ def main(base=10):
 
   collector = solver.AllSolutionCollector(solution)
 
-  solver.Solve(solver.Phase(x,
-                            solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MAX_VALUE),
-               [collector])
+  solver.Solve(
+      solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE),
+      [collector])
 
   num_solutions = collector.SolutionCount()
   money_val = 0

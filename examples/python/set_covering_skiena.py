@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Set covering in Google CP Solver.
@@ -86,10 +85,9 @@ def main():
     solver.Add(s >= 1)
 
   # number of used elements
-  solver.Add(tot_elements ==
-             solver.Sum([x[i] * belongs[i][j]
-                         for i in range(num_sets)
-                         for j in range(num_elements)]))
+  solver.Add(tot_elements == solver.Sum([
+      x[i] * belongs[i][j] for i in range(num_sets) for j in range(num_elements)
+  ]))
 
   # objective
   objective = solver.Minimize(z, 1)
@@ -97,9 +95,7 @@ def main():
   #
   # search and result
   #
-  db = solver.Phase(x,
-                    solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db, [objective])
 

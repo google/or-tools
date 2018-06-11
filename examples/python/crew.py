@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Crew allocation problem  in Google CP Solver.
@@ -51,51 +50,36 @@ def main(sols=1):
   #
   # data
   #
-  names = ["Tom",
-           "David",
-           "Jeremy",
-           "Ron",
-           "Joe",
-           "Bill",
-           "Fred",
-           "Bob",
-           "Mario",
-           "Ed",
-           "Carol",
-           "Janet",
-           "Tracy",
-           "Marilyn",
-           "Carolyn",
-           "Cathy",
-           "Inez",
-           "Jean",
-           "Heather",
-           "Juliet"]
+  names = [
+      "Tom", "David", "Jeremy", "Ron", "Joe", "Bill", "Fred", "Bob", "Mario",
+      "Ed", "Carol", "Janet", "Tracy", "Marilyn", "Carolyn", "Cathy", "Inez",
+      "Jean", "Heather", "Juliet"
+  ]
 
   num_persons = len(names)  # number of persons
 
   attributes = [
       #  steward, hostess, french, spanish, german
-      [1, 0, 0, 0, 1],   # Tom     = 1
-      [1, 0, 0, 0, 0],   # David   = 2
-      [1, 0, 0, 0, 1],   # Jeremy  = 3
-      [1, 0, 0, 0, 0],   # Ron     = 4
-      [1, 0, 0, 1, 0],   # Joe     = 5
-      [1, 0, 1, 1, 0],   # Bill    = 6
-      [1, 0, 0, 1, 0],   # Fred    = 7
-      [1, 0, 0, 0, 0],   # Bob     = 8
-      [1, 0, 0, 1, 1],   # Mario   = 9
-      [1, 0, 0, 0, 0],   # Ed      = 10
-      [0, 1, 0, 0, 0],   # Carol   = 11
-      [0, 1, 0, 0, 0],   # Janet   = 12
-      [0, 1, 0, 0, 0],   # Tracy   = 13
-      [0, 1, 0, 1, 1],   # Marilyn = 14
-      [0, 1, 0, 0, 0],   # Carolyn = 15
-      [0, 1, 0, 0, 0],   # Cathy   = 16
-      [0, 1, 1, 1, 1],   # Inez    = 17
-      [0, 1, 1, 0, 0],   # Jean    = 18
-      [0, 1, 0, 1, 1],   # Heather = 19
-      [0, 1, 1, 0, 0]    # Juliet  = 20
+      [1, 0, 0, 0, 1],  # Tom     = 1
+      [1, 0, 0, 0, 0],  # David   = 2
+      [1, 0, 0, 0, 1],  # Jeremy  = 3
+      [1, 0, 0, 0, 0],  # Ron     = 4
+      [1, 0, 0, 1, 0],  # Joe     = 5
+      [1, 0, 1, 1, 0],  # Bill    = 6
+      [1, 0, 0, 1, 0],  # Fred    = 7
+      [1, 0, 0, 0, 0],  # Bob     = 8
+      [1, 0, 0, 1, 1],  # Mario   = 9
+      [1, 0, 0, 0, 0],  # Ed      = 10
+      [0, 1, 0, 0, 0],  # Carol   = 11
+      [0, 1, 0, 0, 0],  # Janet   = 12
+      [0, 1, 0, 0, 0],  # Tracy   = 13
+      [0, 1, 0, 1, 1],  # Marilyn = 14
+      [0, 1, 0, 0, 0],  # Carolyn = 15
+      [0, 1, 0, 0, 0],  # Cathy   = 16
+      [0, 1, 1, 1, 1],  # Inez    = 17
+      [0, 1, 1, 0, 0],  # Jean    = 18
+      [0, 1, 0, 1, 1],  # Heather = 19
+      [0, 1, 1, 0, 0]  # Juliet  = 20
   ]
 
   # The columns are in the following order:
@@ -127,8 +111,9 @@ def main(sols=1):
   for i in range(num_flights):
     for j in range(num_persons):
       crew[(i, j)] = solver.IntVar(0, 1, "crew[%i,%i]" % (i, j))
-  crew_flat = [crew[(i, j)] for i in range(num_flights)
-               for j in range(num_persons)]
+  crew_flat = [
+      crew[(i, j)] for i in range(num_flights) for j in range(num_persons)
+  ]
 
   # number of working persons
   num_working = solver.IntVar(1, num_persons, "num_working")
@@ -138,10 +123,12 @@ def main(sols=1):
   #
 
   # number of working persons
-  solver.Add(num_working == solver.Sum(
-      [solver.IsGreaterOrEqualCstVar(solver.Sum([crew[(f, p)]
-                                                 for f in range(num_flights)]), 1)
-       for p in range(num_persons)]))
+  solver.Add(num_working == solver.Sum([
+      solver.IsGreaterOrEqualCstVar(
+          solver.Sum([crew[(f, p)]
+                      for f in range(num_flights)]), 1)
+      for p in range(num_persons)
+  ]))
 
   for f in range(num_flights):
     # size of crew
@@ -169,8 +156,7 @@ def main(sols=1):
   solution.Add(crew_flat)
   solution.Add(num_working)
 
-  db = solver.Phase(crew_flat,
-                    solver.CHOOSE_FIRST_UNBOUND,
+  db = solver.Phase(crew_flat, solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
   #
@@ -184,25 +170,25 @@ def main(sols=1):
     print("Number working:", num_working.Value())
     for i in range(num_flights):
       for j in range(num_persons):
-        print(crew[i, j].Value(), end=' ')
+        print(crew[i, j].Value(), end=" ")
       print()
     print()
 
     print("Flights:")
     for flight in range(num_flights):
-      print("Flight", flight, "persons:", end=' ')
+      print("Flight", flight, "persons:", end=" ")
       for person in range(num_persons):
         if crew[flight, person].Value() == 1:
-          print(names[person], end=' ')
+          print(names[person], end=" ")
       print()
     print()
 
     print("Crew:")
     for person in range(num_persons):
-      print("%-10s flights" % names[person], end=' ')
+      print("%-10s flights" % names[person], end=" ")
       for flight in range(num_flights):
         if crew[flight, person].Value() == 1:
-          print(flight, end=' ')
+          print(flight, end=" ")
       print()
     print()
 
@@ -215,6 +201,7 @@ def main(sols=1):
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 num_solutions_to_show = 1
 if __name__ == "__main__":

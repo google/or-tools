@@ -23,10 +23,10 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/sysinfo.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/sysinfo.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/port/sysinfo.h"
 #include "ortools/sat/util.h"
@@ -70,9 +70,7 @@ SatSolver::SatSolver(Model* model)
   SetParameters(*parameters_);
 }
 
-SatSolver::~SatSolver() {
-  IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
-}
+SatSolver::~SatSolver() { IF_STATS_ENABLED(LOG(INFO) << stats_.StatString()); }
 
 void SatSolver::SetNumVariables(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
@@ -1018,6 +1016,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
       counters_.minimization_num_removed_literals += clause->Size();
       trail_->EnqueueWithUnitReason(candidate[0]);
+      FinishPropagation();
     }
     return;
   }
@@ -1026,6 +1025,11 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     counters_.minimization_num_removed_literals += clause->Size() - 2;
     AddBinaryClauseInternal(candidate[0], candidate[1]);
     clauses_propagator_.Detach(clause);
+
+    // This is needed in the corner case where this was the first binary clause
+    // of the problem so that PropagationIsDone() returns true on the newly
+    // created BinaryImplicationGraph.
+    FinishPropagation();
     return;
   }
 
@@ -1461,7 +1465,8 @@ std::string SatSolver::RunningStatisticsString() const {
       "%6.2fs, mem:%s, fails:%" GG_LL_FORMAT
       "d, "
       "depth:%d, clauses:%lld, tmp:%lld, bin:%llu, restarts:%d, vars:%d",
-      time_in_s, MemoryUsage().c_str(), counters_.num_failures, CurrentDecisionLevel(),
+      time_in_s, MemoryUsage().c_str(), counters_.num_failures,
+      CurrentDecisionLevel(),
       clauses_propagator_.num_clauses() -
           clauses_propagator_.num_removable_clauses(),
       clauses_propagator_.num_removable_clauses(),
@@ -1683,7 +1688,6 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
   trail_->SetDecisionLevel(current_decision_level_);
   trail_->EnqueueSearchDecision(literal);
 }
-
 
 void SatSolver::Untrail(int target_trail_index) {
   SCOPED_TIME_STAT(&stats_);

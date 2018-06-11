@@ -1,5 +1,7 @@
 FROM centos:7
 
+ENV SRC_GIT_BRANCH master
+
 RUN yum -y update
 
 RUN yum -y install yum-utils
@@ -55,7 +57,7 @@ RUN make install
 
 WORKDIR /root
 
-RUN git clone https://github.com/google/or-tools
+RUN git clone -b "$SRC_GIT_BRANCH" --single-branch https://github.com/google/or-tools
 
 WORKDIR /root/or-tools
 

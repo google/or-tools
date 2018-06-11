@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Discrete tomography in Google CP Solver.
@@ -87,10 +86,16 @@ def main(row_sums="", col_sums=""):
   #
   # constraints
   #
-  [solver.Add(solver.Sum([x[i][j] for j in range(c)]) == row_sums[i])
-   for i in range(r)]
-  [solver.Add(solver.Sum([x[i][j] for i in range(r)]) == col_sums[j])
-   for j in range(c)]
+  [
+      solver.Add(solver.Sum([x[i][j]
+                             for j in range(c)]) == row_sums[i])
+      for i in range(r)
+  ]
+  [
+      solver.Add(solver.Sum([x[i][j]
+                             for i in range(r)]) == col_sums[j])
+      for j in range(c)
+  ]
 
   #
   # solution and search
@@ -99,9 +104,7 @@ def main(row_sums="", col_sums=""):
   solution.Add(x_flat)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat,
-                    solver.INT_VAR_SIMPLE,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x_flat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -118,23 +121,24 @@ def main(row_sums="", col_sums=""):
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
 
+
 #
 # Print solution
 #
 
 
 def print_solution(x, rows, cols, row_sums, col_sums):
-  print("  ", end=' ')
+  print("  ", end=" ")
   for j in range(cols):
-    print(col_sums[j], end=' ')
+    print(col_sums[j], end=" ")
   print()
   for i in range(rows):
-    print(row_sums[i], end=' ')
+    print(row_sums[i], end=" ")
     for j in range(cols):
       if x[i][j].Value() == 1:
-        print("#", end=' ')
+        print("#", end=" ")
       else:
-        print(".", end=' ')
+        print(".", end=" ")
     print("")
 
 
@@ -149,6 +153,7 @@ def read_problem(file):
   col_sums = [int(c) for c in (col_sums.rstrip()).split(",")]
 
   return [row_sums, col_sums]
+
 
 if __name__ == "__main__":
   if len(sys.argv) > 1:

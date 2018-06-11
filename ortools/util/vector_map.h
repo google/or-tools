@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Vector with map from element to index in the vector.
 
 #ifndef OR_TOOLS_UTIL_VECTOR_MAP_H_

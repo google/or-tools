@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Secret Santa problem II in Google CP Solver.
@@ -126,8 +125,9 @@ def main(singe=0):
 
   M = n + 1
 
-  persons = ['Noah', 'Ava', 'Ryan', 'Mia', 'Ella',
-             'John', 'Lily', 'Evan', 'Single']
+  persons = [
+      'Noah', 'Ava', 'Ryan', 'Mia', 'Ella', 'John', 'Lily', 'Evan', 'Single'
+  ]
 
   spouses = [
       Ava,  # Noah
@@ -138,16 +138,16 @@ def main(singe=0):
       Ella,  # John
       Evan,  # Lily
       Lily,  # Evan
-      -1    # Single has no spouse
+      -1  # Single has no spouse
   ]
 
   #
   # declare variables
   #
-  santas = [solver.IntVar(0, n - 1, 'santas[%i]' % i)
-            for i in range(n)]
-  santa_distance = [solver.IntVar(0, M, 'santa_distance[%i]' % i)
-                    for i in range(n)]
+  santas = [solver.IntVar(0, n - 1, 'santas[%i]' % i) for i in range(n)]
+  santa_distance = [
+      solver.IntVar(0, M, 'santa_distance[%i]' % i) for i in range(n)
+  ]
 
   # total of 'distance', to maximize
   z = solver.IntVar(0, n * n * n, 'z')
@@ -171,8 +171,7 @@ def main(singe=0):
 
   # optimize 'distance' to earlier rounds:
   for i in range(n):
-    solver.Add(santa_distance[i] ==
-               solver.Element(rounds[i], santas[i]))
+    solver.Add(santa_distance[i] == solver.Element(rounds[i], santas[i]))
 
   # cannot be a Secret Santa for the same person
   # two years in a row.
@@ -187,8 +186,7 @@ def main(singe=0):
   #
   # solution and search
   #
-  db = solver.Phase(santas,
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+  db = solver.Phase(santas, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                     solver.ASSIGN_CENTER_VALUE)
 
   solver.NewSearch(db, [objective])
@@ -211,6 +209,7 @@ def main(singe=0):
   print('failures:', solver.Failures())
   print('branches:', solver.Branches())
   print('WallTime:', solver.WallTime(), 'ms')
+
 
 single = 0
 if __name__ == '__main__':

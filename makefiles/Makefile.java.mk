@@ -39,16 +39,16 @@ $(OBJ_DIR)/swig/graph_java_wrap.$O: $(GEN_DIR)/ortools/graph/graph_java_wrap.cc 
 	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c $(GEN_DIR)$Sortools$Sgraph$Sgraph_java_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_java_wrap.$O
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimitProtobuf.java: $(SRC_DIR)/ortools/constraint_solver/search_limit.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
+	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.java: $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
+	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.java: $(SRC_DIR)/ortools/constraint_solver/routing_parameters.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
+	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java: $(SRC_DIR)/ortools/constraint_solver/routing_enums.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
+	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
 
 $(LIB_DIR)/protobuf.jar: dependencies/install/lib/protobuf.jar
 	$(COPY) dependencies$Sinstall$Slib$Sprotobuf.jar $(LIB_DIR)
@@ -72,7 +72,7 @@ $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT): \
 	$(OBJ_DIR)/swig/graph_java_wrap.$O \
 	$(OBJ_DIR)/swig/linear_solver_java_wrap.$O \
 	$(OR_TOOLS_LIBS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT) $(OBJ_DIR)$Sswig$Sconstraint_solver_java_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O $(OBJ_DIR)/swig/graph_java_wrap.$O $(OBJ_DIR)/swig/linear_solver_java_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT) $(OBJ_DIR)$Sswig$Sconstraint_solver_java_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O $(OBJ_DIR)/swig/graph_java_wrap.$O $(OBJ_DIR)/swig/linear_solver_java_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
 
 # Java CP Examples
 

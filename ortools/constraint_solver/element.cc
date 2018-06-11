@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <algorithm>
 #include <memory>
 #include <numeric>
@@ -20,10 +19,9 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/range_minimum_query.h"
@@ -419,23 +417,23 @@ void RangeMinimumQueryExprElement::Range(int64* mi, int64* ma) {
   *ma = max_rmq_.GetMinimumFromRange(range_min, range_max);
 }
 
-#define UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS(test) \
-  const std::vector<int64>& values = min_rmq_.array();  \
-  int64 index_min = IndexMin();                    \
-  int64 index_max = IndexMax();                    \
-  int64 value = values[index_min];                 \
-  while (index_min < index_max && (test)) {        \
-    index_min++;                                   \
-    value = values[index_min];                     \
-  }                                                \
-  if (index_min == index_max && (test)) {          \
-    solver()->Fail();                              \
-  }                                                \
-  value = values[index_max];                       \
-  while (index_max >= index_min && (test)) {       \
-    index_max--;                                   \
-    value = values[index_max];                     \
-  }                                                \
+#define UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS(test)     \
+  const std::vector<int64>& values = min_rmq_.array(); \
+  int64 index_min = IndexMin();                        \
+  int64 index_max = IndexMax();                        \
+  int64 value = values[index_min];                     \
+  while (index_min < index_max && (test)) {            \
+    index_min++;                                       \
+    value = values[index_min];                         \
+  }                                                    \
+  if (index_min == index_max && (test)) {              \
+    solver()->Fail();                                  \
+  }                                                    \
+  value = values[index_max];                           \
+  while (index_max >= index_min && (test)) {           \
+    index_max--;                                       \
+    value = values[index_max];                         \
+  }                                                    \
   index_->SetRange(index_min, index_max);
 
 void RangeMinimumQueryExprElement::SetMin(int64 m) {
@@ -1331,7 +1329,7 @@ void IntExprEvaluatorElementCt::UpdateExpr() {
 
 namespace {
 std::string StringifyEvaluatorBare(const Solver::Int64ToIntVar& evaluator,
-                              int64 range_start, int64 range_end) {
+                                   int64 range_start, int64 range_end) {
   std::string out;
   for (int64 i = range_start; i < range_end; ++i) {
     if (i != range_start) {
@@ -1344,7 +1342,7 @@ std::string StringifyEvaluatorBare(const Solver::Int64ToIntVar& evaluator,
 }
 
 std::string StringifyInt64ToIntVar(const Solver::Int64ToIntVar& evaluator,
-                              int64 range_begin, int64 range_end) {
+                                   int64 range_begin, int64 range_end) {
   std::string out;
   if (range_end - range_begin > 10) {
     out = StringPrintf(
@@ -1770,8 +1768,9 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    const std::string name = StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
-                                     JoinNamePtr(vars, ", ").c_str(), value);
+    const std::string name =
+        StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
+                     JoinNamePtr(vars, ", ").c_str(), value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(

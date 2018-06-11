@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <unordered_map>
 #include <limits>
 #include <map>
 #include <memory>
@@ -31,11 +30,10 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/text_format.h"
 #endif  // __PORTABLE_PLATFORM__
-#include "ortools/base/join.h"
-#include "ortools/base/join.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connectivity.h"
@@ -1402,7 +1400,8 @@ void LoadInverseConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   }
 }
 
-// Makes the std::string fit in one line by cutting it in the middle if necessary.
+// Makes the std::string fit in one line by cutting it in the middle if
+// necessary.
 std::string Summarize(const std::string& input) {
   if (input.size() < 105) return input;
   const int half = 50;
@@ -1456,8 +1455,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(), "\n");
   if (num_vars_per_domains.size() < 20) {
     for (const auto& entry : num_vars_per_domains) {
-      const std::string temp = absl::StrCat(" - ", entry.second, " in ",
-                                       IntervalsAsString(entry.first), "\n");
+      const std::string temp = absl::StrCat(
+          " - ", entry.second, " in ", IntervalsAsString(entry.first), "\n");
       absl::StrAppend(&result, Summarize(temp));
     }
   } else {
@@ -2210,10 +2209,12 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 
 #if !defined(__PORTABLE_PLATFORM__)
 // TODO(user): Support it on android.
-std::function<SatParameters(Model*)> NewSatParameters(const std::string& params) {
+std::function<SatParameters(Model*)> NewSatParameters(
+    const std::string& params) {
   sat::SatParameters parameters;
   if (!params.empty()) {
-    CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters)) << params;
+    CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters))
+        << params;
   }
   return NewSatParameters(parameters);
 }
@@ -2490,26 +2491,25 @@ CpSolverResponse SolveCpModelInternal(
     const CpObjectiveProto& obj = model_proto.objective();
     VLOG(1) << obj.vars_size() << " terms in the proto objective.";
     VLOG(1) << "Initial num_bool: " << model->Get<SatSolver>()->NumVariables();
-    const auto solution_observer =
-        [&model_proto, &response, &num_solutions, &obj, &m,
-         &external_solution_observer, objective_var,
-         &fill_response_statistics](const Model& sat_model) {
-          num_solutions++;
-          FillSolutionInResponse(model_proto, m, &response);
-          fill_response_statistics();
-          int64 objective_value = 0;
-          for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
-            objective_value += model_proto.objective().coeffs(i) *
-                               sat_model.Get(LowerBound(
-                                   m.Integer(model_proto.objective().vars(i))));
-          }
-          response.set_objective_value(
-              ScaleObjectiveValue(obj, objective_value));
-          external_solution_observer(response);
-          VLOG(1) << "Solution #" << num_solutions
-                  << " obj:" << response.objective_value()
-                  << " num_bool:" << sat_model.Get<SatSolver>()->NumVariables();
-        };
+    const auto solution_observer = [&model_proto, &response, &num_solutions,
+                                    &obj, &m, &external_solution_observer,
+                                    objective_var, &fill_response_statistics](
+                                       const Model& sat_model) {
+      num_solutions++;
+      FillSolutionInResponse(model_proto, m, &response);
+      fill_response_statistics();
+      int64 objective_value = 0;
+      for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
+        objective_value += model_proto.objective().coeffs(i) *
+                           sat_model.Get(LowerBound(
+                               m.Integer(model_proto.objective().vars(i))));
+      }
+      response.set_objective_value(ScaleObjectiveValue(obj, objective_value));
+      external_solution_observer(response);
+      VLOG(1) << "Solution #" << num_solutions
+              << " obj:" << response.objective_value()
+              << " num_bool:" << sat_model.Get<SatSolver>()->NumVariables();
+    };
 
     if (parameters.optimize_with_core()) {
       std::vector<IntegerVariable> linear_vars;
@@ -2833,7 +2833,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     SatParameters params = *model->GetOrCreate<SatParameters>();
     SatParameters flag_params;
     CHECK(google::protobuf::TextFormat::ParseFromString(FLAGS_cp_model_params,
-                                              &flag_params));
+                                                        &flag_params));
     params.MergeFrom(flag_params);
     model->Add(NewSatParameters(params));
     LOG(INFO) << "Parameters: " << params.ShortDebugString();
@@ -2871,14 +2871,34 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Solve without presolving ?
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
+  const int num_original_variables = model_proto.variables_size();
   if (!params.cp_model_presolve() || params.enumerate_all_solutions()) {
-    return SolveCpModelInternal(presolved_proto, true,
-                                [&](const CpSolverResponse& response) {
-                                  for (const auto& observer : observers) {
-                                    observer(response);
-                                  }
-                                },
-                                model);
+    CpSolverResponse response = SolveCpModelInternal(
+        presolved_proto, true,
+        [&](const CpSolverResponse& intermediate_response) {
+          if (observers.empty()) return;
+          // Truncate the solution in case model expansion added more variables.
+          CpSolverResponse truncated_response = intermediate_response;
+          truncated_response.mutable_solution()->Truncate(
+              num_original_variables);
+          DCHECK(SolutionIsFeasible(
+              model_proto,
+              std::vector<int64>(truncated_response.solution().begin(),
+                                 truncated_response.solution().end())));
+          for (const auto& observer : observers) {
+            observer(truncated_response);
+          }
+        },
+        model);
+    if (response.status() == CpSolverStatus::MODEL_SAT ||
+        response.status() == CpSolverStatus::OPTIMAL) {
+      // Truncate the solution in case model expansion added more variables.
+      response.mutable_solution()->Truncate(num_original_variables);
+      CHECK(SolutionIsFeasible(model_proto,
+                               std::vector<int64>(response.solution().begin(),
+                                                  response.solution().end())));
+    }
+    return response;
   }
 
   // Do the actual presolve.

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   KenKen puzzle in Google CP Solver.
@@ -126,22 +125,16 @@ def main():
   # hints
   #    [sum, [segments]]
   # Note: 1-based
-  problem = [
-      [11, [[1, 1], [2, 1]]],
-      [2, [[1, 2], [1, 3]]],
-      [20, [[1, 4], [2, 4]]],
-      [6, [[1, 5], [1, 6], [2, 6], [3, 6]]],
-      [3, [[2, 2], [2, 3]]],
-      [3, [[2, 5], [3, 5]]],
-      [240, [[3, 1], [3, 2], [4, 1], [4, 2]]],
-      [6, [[3, 3], [3, 4]]],
-      [6, [[4, 3], [5, 3]]],
-      [7, [[4, 4], [5, 4], [5, 5]]],
-      [30, [[4, 5], [4, 6]]],
-      [6, [[5, 1], [5, 2]]],
-      [9, [[5, 6], [6, 6]]],
-      [8, [[6, 1], [6, 2], [6, 3]]],
-      [2, [[6, 4], [6, 5]]]]
+  problem = [[11, [[1, 1], [2, 1]]], [2, [[1, 2], [1,
+                                                   3]]], [20, [[1, 4], [2, 4]]],
+             [6, [[1, 5], [1, 6], [2, 6],
+                  [3, 6]]], [3, [[2, 2], [2, 3]]], [3, [[2, 5], [3, 5]]], [
+                      240, [[3, 1], [3, 2], [4, 1], [4, 2]]
+                  ], [6, [[3, 3], [3, 4]]], [6, [[4, 3], [5, 3]]], [
+                      7, [[4, 4], [5, 4], [5, 5]]
+                  ], [30, [[4, 5], [4, 6]]], [6, [[5, 1], [5, 2]]],
+             [9, [[5, 6], [6, 6]]], [8, [[6, 1], [6, 2],
+                                         [6, 3]]], [2, [[6, 4], [6, 5]]]]
 
   num_p = len(problem)
 
@@ -176,9 +169,7 @@ def main():
   #
   # search and solution
   #
-  db = solver.Phase(x_flat,
-                    solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(x_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
   solver.NewSearch(db)
 
@@ -186,7 +177,7 @@ def main():
   while solver.NextSolution():
     for i in range(n):
       for j in range(n):
-        print(x[i, j].Value(), end=' ')
+        print(x[i, j].Value(), end=" ")
       print()
 
     print()

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Coins grid problem in Google CP Solver.
@@ -81,8 +80,8 @@ def main(unused_argv):
     solver.Add(solver.SumEquality([x[(j, i)] for j in range(n)], c))  # sum cols
 
   # quadratic horizonal distance var
-  objective_var = solver.Sum([x[(i, j)] * (i - j) * (i - j)
-                              for i in range(n) for j in range(n)])
+  objective_var = solver.Sum(
+      [x[(i, j)] * (i - j) * (i - j) for i in range(n) for j in range(n)])
 
   # objective
   objective = solver.Minimize(objective_var, 1)
@@ -98,10 +97,10 @@ def main(unused_argv):
   collector = solver.LastSolutionCollector(solution)
   search_log = solver.SearchLog(1000000, objective_var)
   restart = solver.ConstantRestart(300)
-  solver.Solve(solver.Phase([x[(i, j)] for i in range(n) for j in range(n)],
-                            solver.CHOOSE_RANDOM,
-                            solver.ASSIGN_MAX_VALUE),
-               [collector, search_log, objective])
+  solver.Solve(
+      solver.Phase([x[(i, j)] for i in range(n) for j in range(n)],
+                   solver.CHOOSE_RANDOM, solver.ASSIGN_MAX_VALUE),
+      [collector, search_log, objective])
 
   print "objective:", collector.ObjectiveValue(0)
   for i in range(n):

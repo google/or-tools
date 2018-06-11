@@ -11,15 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <string>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/string_array.h"
 
@@ -42,11 +41,7 @@ NoGood* NoGoodManager::MakeNoGood() { return new NoGood(); }
 
 class NoGoodTerm {
  public:
-  enum TermStatus {
-    ALWAYS_TRUE,
-    ALWAYS_FALSE,
-    UNDECIDED
-  };
+  enum TermStatus { ALWAYS_TRUE, ALWAYS_FALSE, UNDECIDED };
   NoGoodTerm() {}
   virtual ~NoGoodTerm() {}
 
@@ -121,8 +116,12 @@ bool NoGood::Apply(Solver* const solver) {
   NoGoodTerm* first_undecided = nullptr;
   for (int i = 0; i < terms_.size(); ++i) {
     switch (terms_[i]->Evaluate()) {
-      case NoGoodTerm::ALWAYS_TRUE: { break; }
-      case NoGoodTerm::ALWAYS_FALSE: { return false; }
+      case NoGoodTerm::ALWAYS_TRUE: {
+        break;
+      }
+      case NoGoodTerm::ALWAYS_FALSE: {
+        return false;
+      }
       case NoGoodTerm::UNDECIDED: {
         if (first_undecided == nullptr) {
           first_undecided = terms_[i];

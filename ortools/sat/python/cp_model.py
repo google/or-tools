@@ -359,6 +359,7 @@ class IntVar(IntegerExpression):
 
 
 class _NotBooleanVariable(IntegerExpression):
+  """Negation of a boolean variable."""
 
   def __init__(self, boolvar):
     self.__boolvar = boolvar
@@ -368,6 +369,9 @@ class _NotBooleanVariable(IntegerExpression):
 
   def Not(self):
     return self.__boolvar
+
+  def __str__(self):
+    return 'not(%s)' % str(self.__boolvar)
 
 
 class _Product(IntegerExpression):
@@ -829,8 +833,6 @@ class CpModel(object):
     start_index = self.GetOrMakeOptionalIndex(start, is_present)
     size_index = self.GetOrMakeIndex(size)  # Currently, not optional.
     end_index = self.GetOrMakeOptionalIndex(end, is_present)
-    self.CheckOptionalIntVarLiteral(start_index, is_present_index)
-    self.CheckOptionalIntVarLiteral(end_index, is_present_index)
     return IntervalVar(self.__model, start_index, size_index, end_index,
                        is_present_index, name)
 
@@ -875,6 +877,7 @@ class CpModel(object):
     return -index - 1
 
   def GetOrMakeIndex(self, arg):
+    """Returns the index of a variables, its negation, or a number."""
     if isinstance(arg, IntVar):
       return arg.Index()
     elif (isinstance(arg, _ProductCst) and
@@ -887,6 +890,7 @@ class CpModel(object):
       raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
 
   def GetOrMakeOptionalIndex(self, arg, is_present):
+    """Returns the index of an optional variable or constant (seen as a var)."""
     if isinstance(arg, IntVar):
       return arg.Index()
     elif (isinstance(arg, _ProductCst) and
@@ -900,6 +904,7 @@ class CpModel(object):
                       (arg, is_present))
 
   def GetOrMakeBooleanIndex(self, arg):
+    """Returns an index from a boolean expression."""
     if isinstance(arg, IntVar):
       self.AssertIsBooleanVariable(arg)
       return arg.Index()
@@ -949,14 +954,6 @@ class CpModel(object):
     if var.enforcement_literal:
       raise TypeError('Variable %s should not be marked as optional' %
                       ShortName(self.__model, var_index))
-
-  def CheckOptionalIntVarLiteral(self, var_index, lit_index):
-    var = self.VarIndexToVarProto(var_index)
-    if (len(var.enforcement_literal) != 1 or
-        var.enforcement_literal[0] != lit_index):
-      raise TypeError('Variable %s should be marked optional with literal %s' %
-                      (ShortName(self.__model, var_index),
-                       ShortName(self.__model, lit_index)))
 
   def _SetObjective(self, obj, minimize):
     """Sets the objective of the model."""
@@ -1086,6 +1083,21 @@ class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
     """Returns the value of the objective."""
     return self.__current_solution.objective_value
 
+  def NumBooleans(self):
+    return self.__current_solution.num_booleans
+
+  def NumConflicts(self):
+    return self.__current_solution.num_conflicts
+
+  def NumBranches(self):
+    return self.__current_solution.num_branches
+
+  def WallTime(self):
+    return self.__current_solution.wall_time
+
+  def UserTime(self):
+    return self.__current_solution.user_time
+
   def NewSolution(self):
     pass
 
@@ -1155,3 +1167,6 @@ class CpSolver(object):
 
   def WallTime(self):
     return self.__solution.wall_time
+
+  def UserTime(self):
+    return self.__solution.user_time

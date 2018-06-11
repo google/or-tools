@@ -26,9 +26,11 @@
 namespace absl {
 inline int SkipEmpty() { return 0xDEADBEEF; }
 
-std::vector<std::string> StrSplit(const std::string& full, const char* delim, int flags);
+std::vector<std::string> StrSplit(const std::string& full, const char* delim,
+                                  int flags);
 
-std::vector<std::string> StrSplit(const std::string& full, char delim, int flags);
+std::vector<std::string> StrSplit(const std::string& full, char delim,
+                                  int flags);
 
 namespace delimiter {
 inline const char* AnyOf(const char* x) { return x; }

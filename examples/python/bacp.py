@@ -17,21 +17,22 @@ from ortools.constraint_solver import pywrapcp
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--data', default = 'examples/data/bacp/bacp12.txt',
-                    help = 'path to data file')
+parser.add_argument(
+    '--data', default='examples/data/bacp/bacp12.txt', help='path to data file')
 
 #----------------helper for binpacking posting----------------
 
 
 def BinPacking(solver, binvars, weights, loadvars):
-  '''post the load constraint on bins.
+  """post the load constraint on bins.
 
   constraints forall j: loadvars[j] == sum_i (binvars[i] == j) * weights[i])
-  '''
+  """
   pack = solver.Pack(binvars, len(loadvars))
   pack.AddWeightedSumEqualVarDimension(weights, loadvars)
   solver.Add(pack)
   solver.Add(solver.SumEquality(loadvars, sum(weights)))
+
 
 #------------------------------data reading-------------------
 
@@ -55,10 +56,13 @@ def main(args):
 
   solver = pywrapcp.Solver('Balanced Academic Curriculum Problem')
 
-  x = [solver.IntVar(0, nb_periods - 1, 'x' + str(i))
-       for i in range(nb_courses)]
-  load_vars = [solver.IntVar(0, sum(credits), 'load_vars' + str(i))
-               for i in range(nb_periods)]
+  x = [
+      solver.IntVar(0, nb_periods - 1, 'x' + str(i)) for i in range(nb_courses)
+  ]
+  load_vars = [
+      solver.IntVar(0, sum(credits), 'load_vars' + str(i))
+      for i in range(nb_periods)
+  ]
 
   #-------------------post of the constraints--------------
 
@@ -75,8 +79,7 @@ def main(args):
 
   #------------start the search and optimization-----------
 
-  db = solver.Phase(x,
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                     solver.INT_VALUE_DEFAULT)
 
   search_log = solver.SearchLog(100000, objective_var)

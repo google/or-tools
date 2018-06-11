@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Set of integer tuples (fixed-size arrays, all of the same size) with
 // a basic API.
 // It supports several types of integer arrays transparently, with an
@@ -39,11 +38,11 @@
 #include <unordered_set>
 #include <vector>
 
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/hash.h"
 
 namespace operations_research {
 // ----- Main IntTupleSet class -----

@@ -24,8 +24,8 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/graph.h"
 #include "ortools/graph/eulerian_path.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/minimum_spanning_tree.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -40,9 +40,9 @@ template <typename CostType, typename ArcIndex = int64,
 class ChristofidesPathSolver {
  public:
   enum class MatchingAlgorithm {
-    #if defined(USE_CBC) || defined(USE_SCIP)
+#if defined(USE_CBC) || defined(USE_SCIP)
     MINIMUM_WEIGHT_MATCHING,
-    #endif  // defined(USE_CBC) || defined(USE_SCIP)
+#endif  // defined(USE_CBC) || defined(USE_SCIP)
     MINIMAL_WEIGHT_MATCHING,
   };
   ChristofidesPathSolver(NodeIndex num_nodes, CostFunction costs);
@@ -137,13 +137,13 @@ std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
       }
     }
   }
-  #if defined(USE_SCIP)
+#if defined(USE_SCIP)
   MPSolver mp_solver("MatchingWithSCIP",
                      MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
-  #elif defined(USE_CBC)
-    MPSolver mp_solver("MatchingWithCBC",
-                       MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-  #endif
+#elif defined(USE_CBC)
+  MPSolver mp_solver("MatchingWithCBC",
+                     MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+#endif
   std::string error;
   mp_solver.LoadModelFromProto(model, &error);
   MPSolver::ResultStatus status = mp_solver.Solve();
@@ -228,7 +228,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
   std::vector<ArcIndex> closure_arcs;
   switch (matching_) {
-    #if defined(USE_CBC) || defined(USE_SCIP)
+#if defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
       closure_arcs = ComputeMinimumWeightMatchingWithMIP(
           reduced_graph, [this, &reduced_graph,
@@ -238,7 +238,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
           });
       break;
     }
-    #endif  // defined(USE_CBC) || defined(USE_SCIP)
+#endif  // defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING: {
       // TODO(user): Cost caching was added and can gain up to 20% but
       // increases memory usage; see if we can avoid caching.

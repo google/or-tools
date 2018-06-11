@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Send + more = money.
 
 In this model, we try to solve the following cryptarythm
@@ -38,10 +37,8 @@ def main():
 
   letters = [s, e, n, d, m, o, r, y]
 
-  solver.Add(
-      1000 * s + 100 * e + 10 * n + d +
-      1000 * m + 100 * o + 10 * r + e ==
-      10000 * m + 1000 * o + 100 * n + 10 * e + y)
+  solver.Add(1000 * s + 100 * e + 10 * n + d + 1000 * m + 100 * o + 10 * r +
+             e == 10000 * m + 1000 * o + 100 * n + 10 * e + y)
 
   # pylint: disable=g-explicit-bool-comparison
   solver.Add(s != 0)
@@ -49,9 +46,8 @@ def main():
 
   solver.Add(solver.AllDifferent(letters))
 
-  solver.NewSearch(solver.Phase(letters,
-                                solver.INT_VAR_DEFAULT,
-                                solver.INT_VALUE_DEFAULT))
+  solver.NewSearch(
+      solver.Phase(letters, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT))
   solver.NextSolution()
   print(letters)
   solver.EndSearch()

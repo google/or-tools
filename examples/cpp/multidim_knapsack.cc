@@ -18,15 +18,14 @@
 #include <cstdlib>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/split.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
-#include "ortools/base/split.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/hybrid.h"
-#include "ortools/base/filelineiter.h"
 
 DEFINE_string(
     data_file, "",
@@ -300,10 +299,12 @@ void SolveKnapsack(MultiDimKnapsackData* const data) {
     SearchMonitor* const search_log = solver.MakeSearchLog(1000000, objective);
     monitors.push_back(search_log);
   }
-  DecisionBuilder* const db = solver.MakePhase(
-      assign, [data](int64 var,
-                     int64 value) { return EvaluateItem(*data, var, value); },
-      Solver::CHOOSE_STATIC_GLOBAL_BEST);
+  DecisionBuilder* const db =
+      solver.MakePhase(assign,
+                       [data](int64 var, int64 value) {
+                         return EvaluateItem(*data, var, value);
+                       },
+                       Solver::CHOOSE_STATIC_GLOBAL_BEST);
   if (FLAGS_time_limit_in_ms != 0) {
     LOG(INFO) << "adding time limit of " << FLAGS_time_limit_in_ms << " ms";
     SearchLimit* const limit = solver.MakeLimit(

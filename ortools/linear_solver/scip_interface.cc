@@ -15,21 +15,21 @@
 
 #include <stddef.h>
 #include <algorithm>
-#include <unordered_map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/port.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/port.h"
+#include "ortools/linear_solver/linear_solver.h"
 #include "scip/scip.h"
 #include "scip/scipdefplugins.h"
-#include "ortools/base/hash.h"
-#include "ortools/linear_solver/linear_solver.h"
 
 // Our own version of SCIP_CALL to do error management.
 // TODO(user): The error management could be improved, especially
@@ -363,7 +363,7 @@ void SCIPInterface::ExtractNewConstraints() {
         max_row_length = ct->coefficients_.size();
       }
     }
-    std::unique_ptr<SCIP_VAR* []> vars(new SCIP_VAR*[max_row_length]);
+    std::unique_ptr<SCIP_VAR*[]> vars(new SCIP_VAR*[max_row_length]);
     std::unique_ptr<double[]> coefs(new double[max_row_length]);
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
@@ -670,7 +670,6 @@ std::string SCIPInterface::ValidFileExtensionForParameterFile() const {
 MPSolverInterface* BuildSCIPInterface(MPSolver* const solver) {
   return new SCIPInterface(solver);
 }
-
 
 }  // namespace operations_research
 #endif  //  #if defined(USE_SCIP)

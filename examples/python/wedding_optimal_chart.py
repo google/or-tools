@@ -16,10 +16,7 @@
 from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import solver_parameters_pb2
-
-
-"""
-Finding an optimal wedding seating chart.
+"""Finding an optimal wedding seating chart.
 
 From
 Meghan L. Bellows and J. D. Luc Peterson
@@ -39,141 +36,127 @@ be solved to find the optimal arrangement of guests at tables.
 At the very least, it can provide a starting point and hopefully
 minimize stress and arguments.
 
-Adapted from https://github.com/google/or-tools/blob/master/examples/csharp/wedding_optimal_chart.cs
+Adapted from
+https://github.com/google/or-tools/blob/master/examples/csharp/wedding_optimal_chart.cs
 """
+
+
 def main():
-	# Instantiate a CP solver.
-	parameters = pywrapcp.Solver.DefaultSolverParameters()
-	solver = pywrapcp.Solver("WeddingOptimalChart", parameters)
+  # Instantiate a CP solver.
+  parameters = pywrapcp.Solver.DefaultSolverParameters()
+  solver = pywrapcp.Solver("WeddingOptimalChart", parameters)
 
-	#
-	# Data
-	#
+  #
+  # Data
+  #
 
-	# Easy problem (from the paper)
-	# n = 2  # number of tables
-	# a = 10 # maximum number of guests a table can seat
-	# b = 1  # minimum number of people each guest knows at their table
+  # Easy problem (from the paper)
+  # n = 2  # number of tables
+  # a = 10 # maximum number of guests a table can seat
+  # b = 1  # minimum number of people each guest knows at their table
 
-	# Slightly harder problem (also from the paper)
-	n = 5 # number of tables
-	a = 4 # maximum number of guests a table can seat
-	b = 1 # minimum number of people each guest knows at their table
+  # Slightly harder problem (also from the paper)
+  n = 5  # number of tables
+  a = 4  # maximum number of guests a table can seat
+  b = 1  # minimum number of people each guest knows at their table
 
-	# Connection matrix: who knows who, and how strong
-	# is the relation
-	C = [
-		[ 1,50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-		[50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-		[ 1, 1, 1,50, 1, 1, 1, 1,10, 0, 0, 0, 0, 0, 0, 0, 0],
-		[ 1, 1,50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-		[ 1, 1, 1, 1, 1,50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-		[ 1, 1, 1, 1,50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-		[ 1, 1, 1, 1, 1, 1, 1,50, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-		[ 1, 1, 1, 1, 1, 1,50, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-		[ 1, 1,10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-		[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,50, 1, 1, 1, 1, 1, 1],
-		[ 0, 0, 0, 0, 0, 0, 0, 0, 0,50, 1, 1, 1, 1, 1, 1, 1],
-		[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-		[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-		[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-		[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-		[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-		[ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
-	]
+  # Connection matrix: who knows who, and how strong
+  # is the relation
+  C = [[1, 50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+        0], [50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+             0], [1, 1, 1, 50, 1, 1, 1, 1, 10, 0, 0, 0, 0, 0, 0, 0,
+                  0], [1, 1, 50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 1, 1, 1, 1, 50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+        0], [1, 1, 1, 1, 50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+             0], [1, 1, 1, 1, 1, 1, 1, 50, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+       [1, 1, 1, 1, 1, 1, 50, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+        0], [1, 1, 10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+             0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 50, 1, 1, 1, 1, 1, 1],
+       [0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1, 1, 1, 1, 1, 1,
+        1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
+             1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1
+             ], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1
+             ], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]]
 
-		# Names of the guests. B: Bride side, G: Groom side
-	names =  [
-		"Deb (B)",
-		"John (B)",
-		"Martha (B)",
-		"Travis (B)",
-		"Allan (B)",
-		"Lois (B)",
-		"Jayne (B)",
-		"Brad (B)",
-		"Abby (B)",
-		"Mary Helen (G)",
-		"Lee (G)",
-		"Annika (G)",
-		"Carl (G)",
-		"Colin (G)",
-		"Shirley (G)",
-		"DeAnn (G)",
-		"Lori (G)"
-	]
+  # Names of the guests. B: Bride side, G: Groom side
+  names = [
+      "Deb (B)", "John (B)", "Martha (B)", "Travis (B)", "Allan (B)",
+      "Lois (B)", "Jayne (B)", "Brad (B)", "Abby (B)", "Mary Helen (G)",
+      "Lee (G)", "Annika (G)", "Carl (G)", "Colin (G)", "Shirley (G)",
+      "DeAnn (G)", "Lori (G)"
+  ]
 
-	m = len(C)
+  m = len(C)
 
-	NRANGE = range(n)
-	MRANGE = range(m)
+  NRANGE = range(n)
+  MRANGE = range(m)
 
-	#
-	# Decision variables
-	#
-	tables = [solver.IntVar(0, n-1, 'x[%i]' % i) for i in MRANGE]
+  #
+  # Decision variables
+  #
+  tables = [solver.IntVar(0, n - 1, "x[%i]" % i) for i in MRANGE]
 
-	z = solver.Sum([ C[j][k] * (tables[j] == tables[k])
-									for j in MRANGE
-									for k in MRANGE if j < k])
+  z = solver.Sum([
+      C[j][k] * (tables[j] == tables[k])
+      for j in MRANGE
+      for k in MRANGE
+      if j < k
+  ])
 
-	#
-	# Constraints
-	#
-	for i in NRANGE:
-		minGuests = [
-			(tables[j] == i) * (tables[k] == i)
-			for j in MRANGE
-			for k in MRANGE if j < k and C[j][k] > 0
-		]
-		solver.Add(solver.Sum(minGuests) >= b);
+  #
+  # Constraints
+  #
+  for i in NRANGE:
+    minGuests = [(tables[j] == i) * (tables[k] == i)
+                 for j in MRANGE
+                 for k in MRANGE
+                 if j < k and C[j][k] > 0]
+    solver.Add(solver.Sum(minGuests) >= b)
 
-		maxGuests = [tables[j] == i for j in MRANGE]
-		solver.Add(solver.Sum(maxGuests) <= a);
+    maxGuests = [tables[j] == i for j in MRANGE]
+    solver.Add(solver.Sum(maxGuests) <= a)
 
-	# Symmetry breaking
-	solver.Add(tables[0] == 0)
+  # Symmetry breaking
+  solver.Add(tables[0] == 0)
 
-	#
-	# Objective
-	#
-	objective = solver.Maximize(z, 1)
+  #
+  # Objective
+  #
+  objective = solver.Maximize(z, 1)
 
-	#
-	# Search
-	#
-	db = solver.Phase(tables,
-		solver.INT_VAR_DEFAULT,
-		solver.INT_VALUE_DEFAULT);
+  #
+  # Search
+  #
+  db = solver.Phase(tables, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 
-	solver.NewSearch(db, [objective])
+  solver.NewSearch(db, [objective])
 
-	while solver.NextSolution():
-		print("z:", z)
-		print("Table: ")
-		for j in MRANGE:
-			print(tables[j].Value(), " ");
-		print()
+  while solver.NextSolution():
+    print("z:", z)
+    print("Table: ")
+    for j in MRANGE:
+      print(tables[j].Value(), " ")
+    print()
 
-		for i in NRANGE:
-			print("Table %d: " % i);
-			for j in MRANGE:
-				if tables[j].Value() == i:
-					print(names[j] + " ")
-			print()
+    for i in NRANGE:
+      print("Table %d: " % i)
+      for j in MRANGE:
+        if tables[j].Value() == i:
+          print(names[j] + " ")
+      print()
 
-		print()
+    print()
 
-	solver.EndSearch()
+  solver.EndSearch()
 
-	print()
-	print("Solutions: %d" % solver.Solutions())
-	print("WallTime: %dms" % solver.WallTime())
-	print("Failures: %d" % solver.Failures())
-	print("Branches: %d" % solver.Branches())
+  print()
+  print("Solutions: %d" % solver.Solutions())
+  print("WallTime: %dms" % solver.WallTime())
+  print("Failures: %d" % solver.Failures())
+  print("Branches: %d" % solver.Branches())
 
 
-
-
-if __name__ == '__main__':
-	main()
+if __name__ == "__main__":
+  main()

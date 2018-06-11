@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // Common types and constants used by the Linear Programming solver.
 
 #ifndef OR_TOOLS_LP_DATA_LP_TYPES_H_
@@ -250,7 +249,7 @@ ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 template <typename IntType, typename T>
 class StrictITIVector : public ITIVector<IntType, T> {
  public:
-  typedef IntType IndexType; // g++ 4.8.1 needs this.
+  typedef IntType IndexType;  // g++ 4.8.1 needs this.
   typedef ITIVector<IntType, T> ParentType;
 // This allows for brace initialization, which is really useful in tests.
 // It is not 'explicit' by design, so one can do vector = {...};

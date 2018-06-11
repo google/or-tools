@@ -11,24 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <memory>
 
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/file.h"
 #include "ortools/base/recordio.h"
-#include "ortools/base/join.h"
+#include "ortools/base/status.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/model.pb.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/util/graph_export.h"
 #include "ortools/util/string_array.h"
-#include "ortools/base/status.h"
 
 DEFINE_string(input, "", "Input file of the problem.");
 DEFINE_string(output, "", "Output file when doing modifications.");
@@ -68,16 +66,20 @@ static const char kRed[] = "#A52A2A";
 // Creates node labels.
 std::string ExprLabel(int index) { return StringPrintf("expr_%i", index); }
 
-std::string IntervalLabel(int index) { return StringPrintf("interval_%i", index); }
+std::string IntervalLabel(int index) {
+  return StringPrintf("interval_%i", index);
+}
 
-std::string SequenceLabel(int index) { return StringPrintf("sequence_%i", index); }
+std::string SequenceLabel(int index) {
+  return StringPrintf("sequence_%i", index);
+}
 
 std::string ConstraintLabel(int index) { return StringPrintf("ct_%i", index); }
 
 // Scans argument to add links in the graph.
 template <class T>
-void ExportLinks(const CpModel& model, const std::string& source, const T& proto,
-                 GraphExporter* const exporter) {
+void ExportLinks(const CpModel& model, const std::string& source,
+                 const T& proto, GraphExporter* const exporter) {
   const std::string& arg_name = model.tags(proto.argument_index());
   if (proto.type() == CpArgument::EXPRESSION) {
     exporter->WriteLink(source, ExprLabel(proto.integer_expression_index()),
@@ -207,7 +209,8 @@ void ExportToGraphFile(const CpModel& proto, File* const file,
 
   const char kObjLabel[] = "obj";
   if (proto.has_objective()) {
-    const std::string name = proto.objective().maximize() ? "Maximize" : "Minimize";
+    const std::string name =
+        proto.objective().maximize() ? "Maximize" : "Minimize";
     exporter->WriteNode(kObjLabel, name, "diamond", kRed);
   }
 
@@ -348,10 +351,10 @@ int Run() {
                 << JoinDebugStringPtr(primary_integer_variables, ", ");
       LOG(INFO) << "Secondary integer variables = "
                 << JoinDebugStringPtr(secondary_integer_variables, ", ");
-      LOG(INFO) << "Sequence variables = " << JoinDebugStringPtr(
-                                                  sequence_variables, ", ");
-      LOG(INFO) << "Interval variables = " << JoinDebugStringPtr(
-                                                  interval_variables, ", ");
+      LOG(INFO) << "Sequence variables = "
+                << JoinDebugStringPtr(sequence_variables, ", ");
+      LOG(INFO) << "Interval variables = "
+                << JoinDebugStringPtr(interval_variables, ", ");
     }
   }
 
@@ -395,7 +398,7 @@ int Run() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Filename not specified";
   }

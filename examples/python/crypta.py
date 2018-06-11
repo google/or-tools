@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Cryptarithmetic puzzle in Google CP Solver.
@@ -74,24 +73,24 @@ def main():
   solver.Add(D >= 1)
   solver.Add(G >= 1)
 
-  solver.Add(A + 10 * E + 100 * J + 1000 * B + 10000 * B + 100000 * E + 1000000 * F +
-             E + 10 * J + 100 * E + 1000 * F + 10000 * G + 100000 * A + 1000000 * F
-             == F + 10 * E + 100 * E + 1000 * H + 10000 * I + 100000 * F + 1000000 * B + 10000000 * Sr1)
+  solver.Add(A + 10 * E + 100 * J + 1000 * B + 10000 * B + 100000 * E +
+             1000000 * F + E + 10 * J + 100 * E + 1000 * F + 10000 * G +
+             100000 * A + 1000000 * F == F + 10 * E + 100 * E + 1000 * H +
+             10000 * I + 100000 * F + 1000000 * B + 10000000 * Sr1)
 
-  solver.Add(C + 10 * F + 100 * H + 1000 * A + 10000 * I + 100000 * I + 1000000 * J +
-             F + 10 * I + 100 * B + 1000 * D + 10000 * I + 100000 * D + 1000000 * C + Sr1
-             == J + 10 * F + 100 * A + 1000 * F + 10000 * H + 100000 * D + 1000000 * D + 10000000 * Sr2)
+  solver.Add(C + 10 * F + 100 * H + 1000 * A + 10000 * I + 100000 * I +
+             1000000 * J + F + 10 * I + 100 * B + 1000 * D + 10000 * I +
+             100000 * D + 1000000 * C + Sr1 == J + 10 * F + 100 * A + 1000 * F +
+             10000 * H + 100000 * D + 1000000 * D + 10000000 * Sr2)
 
-  solver.Add(A + 10 * J + 100 * J + 1000 * I + 10000 * A + 100000 * B +
-             B + 10 * A + 100 * G + 1000 * F + 10000 * H + 100000 * D + Sr2
-             == C + 10 * A + 100 * G + 1000 * E + 10000 * J + 100000 * G)
+  solver.Add(A + 10 * J + 100 * J + 1000 * I + 10000 * A + 100000 * B + B +
+             10 * A + 100 * G + 1000 * F + 10000 * H + 100000 * D + Sr2 == C +
+             10 * A + 100 * G + 1000 * E + 10000 * J + 100000 * G)
 
   #
   # search and result
   #
-  db = solver.Phase(LD,
-                    solver.INT_VAR_SIMPLE,
-                    solver.INT_VALUE_SIMPLE)
+  db = solver.Phase(LD, solver.INT_VAR_SIMPLE, solver.INT_VALUE_SIMPLE)
 
   solver.NewSearch(db)
 

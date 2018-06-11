@@ -73,11 +73,9 @@ if [ "${BUILDER}" == make ]; then
 			elif [ "${LANGUAGE}" == java ]; then
 				brew cask install java;
 			elif [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ]; then
-				brew install mono;
-				# Installer changes path but won't be picked up in current terminal session
-				# Need to explicitly add location (see Makefile.fsharp.mk)
+				brew install mono
 				brew tap caskroom/cask
-				brew cask install dotnet-sdk;
+				brew cask install dotnet-sdk
 			fi
 		else
 			# MacOS Docker Makefile build:

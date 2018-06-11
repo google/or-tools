@@ -27,17 +27,15 @@
 
 #include <memory>
 
+#include "google/protobuf/text_format.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/join.h"
-#include "ortools/base/join.h"
+#include "ortools/base/random.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_flags.h"
-#include "ortools/base/random.h"
 
 DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(tsp_use_random_matrix, true, "Use random cost matrix.");
@@ -147,11 +145,11 @@ void Tsp() {
       std::string route;
       for (int64 node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {
-        StrAppend(&route, routing.IndexToNode(node).value(), " (", node,
+        absl::StrAppend(&route, routing.IndexToNode(node).value(), " (", node,
                         ") -> ");
       }
       const int64 end = routing.End(route_number);
-      StrAppend(&route, routing.IndexToNode(end).value(), " (", end, ")");
+      absl::StrAppend(&route, routing.IndexToNode(end).value(), " (", end, ")");
       LOG(INFO) << route;
     } else {
       LOG(INFO) << "No solution found.";
@@ -163,7 +161,7 @@ void Tsp() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::Tsp();
   return 0;
 }

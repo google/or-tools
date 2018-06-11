@@ -18,9 +18,8 @@
 #include <string>
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/mutex.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/flatzinc/logging.h"
@@ -54,8 +53,8 @@ void MonoThreadReporting::OnSatSolution(int thread_id,
   IncrementSolutions();
 }
 
-void MonoThreadReporting::OnOptimizeSolution(int thread_id, int64 value,
-                                             const std::string& solution_string) {
+void MonoThreadReporting::OnOptimizeSolution(
+    int thread_id, int64 value, const std::string& solution_string) {
   best_objective_ = value;
   if (ShouldPrintAllSolutions() || MaxNumSolutions() > 1) {
     Print(thread_id, solution_string);
@@ -65,7 +64,8 @@ void MonoThreadReporting::OnOptimizeSolution(int thread_id, int64 value,
   IncrementSolutions();
 }
 
-void MonoThreadReporting::Log(int thread_id, const std::string& final_output) const {
+void MonoThreadReporting::Log(int thread_id,
+                              const std::string& final_output) const {
   FZLOG << final_output << FZENDL;
 }
 
@@ -104,8 +104,8 @@ SilentMonoThreadReporting::SilentMonoThreadReporting(bool print_all,
 
 SilentMonoThreadReporting::~SilentMonoThreadReporting() {}
 
-void SilentMonoThreadReporting::Init(int thread_id, const std::string& init_string) {
-}
+void SilentMonoThreadReporting::Init(int thread_id,
+                                     const std::string& init_string) {}
 
 void SilentMonoThreadReporting::Log(int thread_id,
                                     const std::string& final_output) const {}
@@ -226,8 +226,8 @@ void MultiThreadReporting::OnSatSolution(int thread_id,
   IncrementSolutions();
 }
 
-void MultiThreadReporting::OnOptimizeSolution(int thread_id, int64 value,
-                                              const std::string& solution_string) {
+void MultiThreadReporting::OnOptimizeSolution(
+    int thread_id, int64 value, const std::string& solution_string) {
   absl::MutexLock lock(&mutex_);
   if (!should_finish_) {
     switch (type_) {
@@ -275,12 +275,14 @@ void MultiThreadReporting::OnOptimizeSolution(int thread_id, int64 value,
   }
 }
 
-void MultiThreadReporting::Log(int thread_id, const std::string& message) const {
+void MultiThreadReporting::Log(int thread_id,
+                               const std::string& message) const {
   absl::MutexLock lock(&mutex_);
   FZLOG << message << FZENDL;
 }
 
-void MultiThreadReporting::Print(int thread_id, const std::string& message) const {
+void MultiThreadReporting::Print(int thread_id,
+                                 const std::string& message) const {
   std::cout << message << std::endl;
 }
 bool MultiThreadReporting::ShouldFinish() const {
@@ -329,7 +331,8 @@ bool MultiThreadReporting::Interrupted() const {
   return interrupted_;
 }
 
-void MultiThreadReporting::LogNoLock(int thread_id, const std::string& message) {
+void MultiThreadReporting::LogNoLock(int thread_id,
+                                     const std::string& message) {
   FZLOG << "%%  thread " << thread_id << ": " << message << FZENDL;
 }
 

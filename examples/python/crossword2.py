@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 
   Crosswords in Google CP Solver.
@@ -120,15 +119,12 @@ def main():
   overlapping = [
       [0, 2, 1, 0],  # s
       [0, 4, 2, 0],  # s
-
       [3, 1, 1, 2],  # i
       [3, 2, 4, 0],  # k
       [3, 3, 2, 2],  # e
-
       [6, 0, 1, 3],  # l
       [6, 1, 4, 1],  # e
       [6, 2, 2, 3],  # e
-
       [7, 0, 5, 1],  # l
       [7, 2, 1, 4],  # s
       [7, 3, 4, 2],  # e
@@ -161,10 +157,9 @@ def main():
 
     # But we must use Element explicitly
     solver.Add(
-        solver.Element(
-            A_flat, E[overlapping[I][0]] * word_len + overlapping[I][1]) ==
-        solver.Element(
-            A_flat, E[overlapping[I][2]] * word_len + overlapping[I][3]))
+        solver.Element(A_flat, E[overlapping[I][0]] * word_len +
+                       overlapping[I][1]) == solver.
+        Element(A_flat, E[overlapping[I][2]] * word_len + overlapping[I][3]))
 
   #
   # solution and search
@@ -173,9 +168,7 @@ def main():
   solution.Add(E)
 
   # db: DecisionBuilder
-  db = solver.Phase(E + A_flat,
-                    solver.INT_VAR_SIMPLE,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(E + A_flat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE)
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -194,8 +187,9 @@ def main():
 
 def print_solution(A, E, alpha, n, word_len):
   for ee in range(n):
-    print("%i: (%2i)" % (ee, E[ee].Value()), end=' ')
-    print("".join(["%s" % (alpha[A[ee, ii].Value()]) for ii in range(word_len)]))
+    print("%i: (%2i)" % (ee, E[ee].Value()), end=" ")
+    print("".join(
+        ["%s" % (alpha[A[ee, ii].Value()]) for ii in range(word_len)]))
 
 
 if __name__ == "__main__":

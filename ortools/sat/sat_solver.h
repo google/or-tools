@@ -20,21 +20,21 @@
 #define OR_TOOLS_SAT_SAT_SOLVER_H_
 
 #include <functional>
-#include <unordered_map>
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "ortools/base/hash.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/timer.h"
 #include "ortools/base/span.h"
-#include "ortools/base/int_type.h"
-#include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/hash.h"
+#include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
