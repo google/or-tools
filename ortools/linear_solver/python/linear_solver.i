@@ -73,6 +73,17 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   }  // %pythoncode
 }
 
+// Catch runtime exceptions in class methods
+%extend MPSolver {
+  %exception MPSolver {
+    try {
+      $action
+    } catch ( std::runtime_error& e ) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+}
+
 %extend MPSolver {
   // Change a (bool, std::string*) outputs to a python std::string (empty if bool=false).
   std::string ExportModelAsLpFormat(bool obfuscated) {
