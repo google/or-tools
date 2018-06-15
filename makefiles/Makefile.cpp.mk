@@ -274,7 +274,7 @@ FLATZINC_DEPS = \
 	$(SAT_DEPS)
 FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
 ifeq ($(PLATFORM),MACOSX)
-FLATZINK_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+FLATZINK_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fz.$L #
 endif
 
 # Binaries
