@@ -13,13 +13,16 @@
 
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 
+#include <limits>
 #include <unordered_map>
 
 #include "google/protobuf/text_format.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/mutex.h"
 #include "ortools/base/split.h"
 #include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/logging.h"
@@ -816,6 +819,105 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
   }
 }
 
+// Returns a different parameters depending on the given worker_id.
+// This assumes that worker will get an id in [0, num_workers).
+SatParameters DiversifySearchParameters(const int worker_id,
+                                        const SatParameters& params,
+                                        const CpModelProto& cp_model) {
+  // Note: in the flatzinc setting, we know we always have a fixed search
+  //       defined.
+  // Things to try:
+  //   - Specialize for purely boolean problems
+  //   - Disable linearization_level options for non linear problems
+  //   - Fast restart in randomized search
+  //   - Different propatation levels for scheduling constraints
+  SatParameters new_params = params;
+  new_params.set_random_seed(params.random_seed() + worker_id);
+  if (cp_model.has_objective()) {
+    switch (worker_id) {
+      case 0: {  // Use default parameters and fixed search.
+        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        break;
+      }
+      case 1: {  // Use default parameters and automatic search.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_linearization_level(1);
+        break;
+      }
+      case 2: {  // Remove LP relaxation.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_linearization_level(0);
+        break;
+      }
+      case 3: {  // Reinforce LP relaxation.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_linearization_level(2);
+        break;
+      }
+      case 4: {  // Core based approach.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_optimize_with_core(true);
+        break;
+      }
+      default: {  // Randomize fixed search.
+        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        new_params.set_randomize_search(true);
+        new_params.set_search_randomization_tolerance(0);
+        break;
+      }
+    }
+  } else {
+    // The goal here is to try fixed and free search on the first two threads.
+    // Then maximize diversity on the extra threads.
+    switch (worker_id) {
+      case 0: {  // Use default parameters and fixed search.
+        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        break;
+      }
+      case 1: {  // Use default parameters and automatic search.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        break;
+      }
+      default: {  // Randomize fixed search.
+        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        new_params.set_randomize_search(true);
+        new_params.set_search_randomization_tolerance(0);
+        if (worker_id % 2 == 0) {
+          // Forces a fixed restart for half of the workers.
+          new_params.clear_restart_algorithms();
+          new_params.add_restart_algorithms(SatParameters::FIXED_RESTART);
+        }
+        break;
+      }
+    }
+  }
+
+  return new_params;
+}
+
+CpSolverResponse WorkerSearch(
+    const CpModelProto& cp_model, const SatParameters& parameters,
+    const fz::FlatzincParameters& p,
+    const std::function<void(const CpSolverResponse&)>& solution_observer,
+    int worker_id, bool* stopped) {
+  Model sat_model;
+  sat_model.Add(NewSatParameters(parameters));
+  sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(stopped);
+  sat_model.GetOrCreate<SigintHandler>()->Register(
+      [&stopped]() { *stopped = true; });
+
+  // Add solution observer.
+  if (FLAGS_use_flatzinc_format && p.all_solutions) {
+    sat_model.Add(NewFeasibleSolutionObserver(solution_observer));
+  }
+
+  // Solve.
+  const CpSolverResponse response = SolveCpModel(cp_model, &sat_model);
+
+  // Report the solution found.
+  return response;
+}
+
 }  // namespace
 
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
@@ -888,6 +990,13 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // Fill the search order.
   m.TranslateSearchAnnotations(fz_model.search_annotations());
 
+  // Print model statistics.
+  if (!FLAGS_use_flatzinc_format) {
+    LOG(INFO) << CpModelStats(m.proto);
+  } else if (p.logging) {
+    LogInFlatzincFormat(CpModelStats(m.proto));
+  }
+
   // The order is important, we want the flag parameters to overwrite anything
   // set in m.parameters.
   sat::SatParameters flag_parameters;
@@ -899,51 +1008,171 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     // Enumerate all sat solutions.
     m.parameters.set_enumerate_all_solutions(true);
   }
-  if (!p.free_search) {
+  if (p.free_search) {
+    m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+  } else {
     m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
   }
-
   if (p.time_limit_in_ms > 0) {
     m.parameters.set_max_time_in_seconds(p.time_limit_in_ms * 1e-3);
   }
+  if (p.threads > 0) {
+    m.parameters.set_num_search_workers(p.threads);
+  }
+
+  const int num_search_workers = std::max(1, p.threads);
 
   bool stopped = false;
-  Model sat_model;
-  sat_model.Add(NewSatParameters(m.parameters));
-  sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-  sat_model.GetOrCreate<SigintHandler>()->Register(
-      [&stopped]() { stopped = true; });
+  std::vector<CpSolverResponse> responses(num_search_workers);
+  int last_worker_id = -1;
+  int solution_count = 1;  // Start at 1 as in the sat solver output.
 
-  // Print model statistics.
-  if (!FLAGS_use_flatzinc_format) {
-    LOG(INFO) << CpModelStats(m.proto);
-  } else if (p.logging) {
-    LogInFlatzincFormat(CpModelStats(m.proto));
-  }
+  // Solve the problem.
+  if (!p.all_solutions && fz_model.objective() == nullptr && p.threads > 1) {
+    // SAT problem solved in parallel, without solution enumeration.
+    absl::Mutex mutex;
 
-  // Add solution observer.
-  if (FLAGS_use_flatzinc_format && p.all_solutions) {
-    int solution_count = 1;  // Start at 1 as in the sat solver output.
-    auto printer = [&fz_model, &solution_count,
-                    &m](const sat::CpSolverResponse& response) {
+    // The solution observer can only be called if p.all_solutions is true,
+    // which is not parallelized. Thus we have an empty observer.
+    const auto solution_observer = [](const CpSolverResponse& response) {};
+
+    ThreadPool pool("Parallel_FlatZinc_sat", num_search_workers);
+    pool.StartWorkers();
+    for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
+      const SatParameters local_params =
+          DiversifySearchParameters(worker_id, m.parameters, m.proto);
+      pool.Schedule([&fz_model, &m, &p, solution_observer, &stopped,
+                     local_params, worker_id, &responses, &last_worker_id,
+                     &mutex]() {
+        responses[worker_id] = WorkerSearch(
+            m.proto, local_params, p, solution_observer, worker_id, &stopped);
+        absl::MutexLock lock(&mutex);
+        if (responses[worker_id].status() == CpSolverStatus::MODEL_SAT ||
+            responses[worker_id].status() == CpSolverStatus::MODEL_UNSAT) {
+          last_worker_id = worker_id;
+          stopped = true;
+        } else if (last_worker_id == -1) {
+          // Puts a default value.
+          last_worker_id = worker_id;
+        }
+      });
+    }
+  } else if (fz_model.objective() != nullptr && p.threads > 1) {
+    // Optimization problem solved in parallel.
+    absl::Mutex mutex;
+    const bool maximize = fz_model.maximize();
+    double best_bound = maximize ? -std::numeric_limits<double>::infinity()
+                                 : std::numeric_limits<double>::infinity();
+    const auto is_improving = [&best_bound,
+                               maximize](const CpSolverResponse& r) {
+      return maximize ? r.objective_value() > best_bound
+                      : r.objective_value() < best_bound;
+    };
+
+    ThreadPool pool("Parallel_FlatZinc_sat", num_search_workers);
+    pool.StartWorkers();
+    for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
+      const auto solution_observer =
+          [&best_bound, maximize, &solution_count, worker_id, &mutex, &p,
+           &fz_model, &last_worker_id, &m,
+           &is_improving](const CpSolverResponse& r) {
+            absl::MutexLock lock(&mutex);
+            // Check is the new solution is actually improving upon the best
+            // solution found so far.
+            if (is_improving(r)) {
+              best_bound = r.objective_value();
+              last_worker_id = worker_id;
+              const std::string solution_string =
+                  SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
+                    return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+                  });
+              std::cout << "%% worker #" << worker_id << ", solution #"
+                        << solution_count++
+                        << ", objective = " << r.objective_value() << std::endl;
+              std::cout << solution_string << std::endl;
+            }
+          };
+
+      const SatParameters local_params =
+          DiversifySearchParameters(worker_id, m.parameters, m.proto);
+
+      pool.Schedule([&fz_model, &m, &p, solution_observer, &stopped,
+                     local_params, worker_id, &mutex, &responses,
+                     &last_worker_id, &best_bound, is_improving]() {
+        responses[worker_id] = WorkerSearch(
+            m.proto, local_params, p, solution_observer, worker_id, &stopped);
+
+        // Process final solution. Decide which worker has the 'best'
+        // solution. Note that the solution observer may or may not have been
+        // called.
+        absl::MutexLock lock(&mutex);
+        switch (responses[worker_id].status()) {
+          case CpSolverStatus::MODEL_SAT: {
+            if (is_improving(responses[worker_id])) {
+              last_worker_id = worker_id;
+              best_bound = responses[worker_id].objective_value();
+            }
+            break;
+          }
+          case CpSolverStatus::MODEL_UNSAT: {
+            // Overwrite any previous worker.
+            last_worker_id = worker_id;
+            // Stops all other workers.
+            stopped = true;
+            break;
+          }
+          case CpSolverStatus::OPTIMAL: {
+            // Overwrite any previous worker.
+            last_worker_id = worker_id;
+            // Stops all other workers.
+            stopped = true;
+            // Stores the best solution.
+            best_bound = responses[worker_id].objective_value();
+            break;
+          }
+          default: {
+            if (last_worker_id == -1) {
+              last_worker_id = worker_id;
+            }
+          }
+        }
+      });
+    }
+  } else {  // Sequential case.
+    auto solution_observer = [&fz_model, &solution_count,
+                              &m](const CpSolverResponse& r) {
       const std::string solution_string =
-          SolutionString(fz_model, [&response, &m](fz::IntegerVariable* v) {
-            return response.solution(m.fz_var_to_index[v]);
+          SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
+            return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
           });
-      std::cout << "%% solution #" << solution_count++ << std::endl;
+      if (fz_model.objective() == nullptr) {
+        std::cout << "%% solution #" << solution_count++ << std::endl;
+      } else {
+        std::cout << "%% solution #" << solution_count++
+                  << ", objective = " << r.objective_value() << std::endl;
+      }
       std::cout << solution_string << std::endl;
     };
-    sat_model.Add(NewFeasibleSolutionObserver(printer));
+    responses[0] =
+        WorkerSearch(m.proto, m.parameters, p, solution_observer, 0, &stopped);
+    last_worker_id = 0;
   }
 
-  // Solve.
-  const CpSolverResponse response = SolveCpModel(m.proto, &sat_model);
+  for (int i = 0; i < num_search_workers; ++i) {
+    FZLOG << "Worker " << i << ": " << responses[i].status() << FZENDL;
+  }
+
+  CHECK_NE(last_worker_id, -1);
+  if (num_search_workers > 1) {
+    FZLOG << "Final solution found by worker " << last_worker_id << FZENDL;
+  }
 
   // Check the returned solution with the fz model checker.
+  const CpSolverResponse& response = responses[last_worker_id];
   if (response.status() == CpSolverStatus::MODEL_SAT ||
       response.status() == CpSolverStatus::OPTIMAL) {
     CHECK(CheckSolution(fz_model, [&response, &m](fz::IntegerVariable* v) {
-      return response.solution(m.fz_var_to_index[v]);
+      return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
     }));
   }
 
@@ -951,10 +1180,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   if (FLAGS_use_flatzinc_format) {
     if (response.status() == CpSolverStatus::MODEL_SAT ||
         response.status() == CpSolverStatus::OPTIMAL) {
-      if (!p.all_solutions) {  // Already printed in the other case.
+      if (!p.all_solutions) {  // Already printed otherwise.
         const std::string solution_string =
             SolutionString(fz_model, [&response, &m](fz::IntegerVariable* v) {
-              return response.solution(m.fz_var_to_index[v]);
+              return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
             });
         std::cout << solution_string << std::endl;
       }

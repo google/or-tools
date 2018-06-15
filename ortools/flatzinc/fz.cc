@@ -43,7 +43,8 @@ DEFINE_bool(all_solutions, false, "Search for all solutions.");
 DEFINE_int32(num_solutions, 0,
              "Maximum number of solution to search for, 0 means unspecified.");
 DEFINE_bool(free_search, false,
-            "Ignore search annotations in the flatzinc model.");
+            "If false, the solver must follow the defined search."
+            "If true, other search are allowed.");
 DEFINE_int32(threads, 0, "Number of threads the solver will use.");
 DEFINE_bool(presolve, true, "Presolve the model to simplify it.");
 DEFINE_bool(statistics, false, "Print solver statistics after search.");
