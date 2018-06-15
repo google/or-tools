@@ -68,6 +68,7 @@ DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread.");
 DEFINE_bool(use_cp_sat, true, "Use the CP/SAT solver.");
 DEFINE_string(fz_model_name, "stdin",
               "Define problem name when reading from stdin.");
+DEFINE_string(params, "", "SatParameters as a text proto.");
 
 DECLARE_bool(fz_use_sat);
 DECLARE_bool(log_prefix);
@@ -322,7 +323,7 @@ int main(int argc, char** argv) {
 
   if (FLAGS_use_cp_sat) {
     operations_research::sat::SolveFzWithCpModelProto(
-        model, operations_research::fz::SingleThreadParameters());
+        model, operations_research::fz::SingleThreadParameters(), FLAGS_params);
   } else {
     operations_research::fz::Solve(model);
   }

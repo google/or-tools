@@ -43,13 +43,10 @@ std::string CpSolverResponseStats(const CpSolverResponse& response);
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
 // Allows to register a solution "observer" with the model with
-//   model.Add(NewFeasibleSolutionObserver([](values){...}));
-// The given function will be called on each feasible solution found during the
-// search. The values will be in one to one correspondence with the variables
-// in the model_proto.
-//
-// Hack: For the non-fully instantiated variables, the value will be the
-// propagated lower bound. Note that this will be fixed with the TODO below.
+//   model.Add(NewFeasibleSolutionObserver([](response){...}));
+// The given function will be called on each "improving" feasible solution found
+// during the search. For a non-optimization problem, if the option to find all
+// solution was set, then this will be called on each new solution.
 std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const CpSolverResponse& response)>& observer);
 

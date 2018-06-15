@@ -2873,6 +2873,8 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
                                      const CpModelProto& expanded_model,
                                      Model* model) {
   SatParameters* parameters = model->GetOrCreate<SatParameters>();
+  const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
+
   parameters->set_stop_after_first_solution(true);
   CpSolverResponse response;
   {
@@ -2882,7 +2884,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
   if (response.status() != CpSolverStatus::MODEL_SAT) {
     return response;
   }
-  LOG(INFO) << "LNS First solution: " << response.objective_value();
+  VLOG(1) << "LNS First solution: " << response.objective_value();
 
   // For now we will just alternate between our possible neighborhoods.
   //
@@ -2938,7 +2940,8 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
             PresolveAndSolve(model_proto, &local_problem, &local_model);
 
         return [&num_no_progress, &model_proto, &response, &difficulty,
-                &deterministic_time, saved_difficulty, local_response]() {
+                &deterministic_time, saved_difficulty, local_response,
+                &observers, limit]() {
           // TODO(user): This is not ideal in multithread because even though
           // the saved_difficulty will be the same for all thread, we will
           // Increase()/Decrease() the difficuty sequentially more than once.
@@ -2950,10 +2953,10 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
           }
           if (local_response.status() == CpSolverStatus::MODEL_SAT ||
               local_response.status() == CpSolverStatus::OPTIMAL) {
-            LOG(INFO) << "dtime: " << deterministic_time
-                      << " difficulty: " << saved_difficulty
-                      << " local_obj: " << local_response.objective_value()
-                      << " global_obj: " << response.objective_value();
+            VLOG(1) << "dtime: " << deterministic_time
+                    << " difficulty: " << saved_difficulty
+                    << " local_obj: " << local_response.objective_value()
+                    << " global_obj: " << response.objective_value();
 
             // If the objective are the same, we override the solution,
             // otherwise we just ignore this local solution and increment
@@ -2974,8 +2977,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
             // Update the global response.
             *(response.mutable_solution()) = local_response.solution();
             response.set_objective_value(local_response.objective_value());
-            response.set_wall_time(response.wall_time() +
-                                   local_response.wall_time());
+            response.set_wall_time(limit->GetElapsedTime());
             response.set_user_time(response.user_time() +
                                    local_response.user_time());
             response.set_deterministic_time(
@@ -2985,6 +2987,11 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
                 model_proto,
                 std::vector<int64>(local_response.solution().begin(),
                                    local_response.solution().end())));
+            if (num_no_progress == 0) {  // Improving solution.
+              for (const auto& observer : observers) {
+                observer(response);
+              }
+            }
           }
         };
       });
