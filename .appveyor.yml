@@ -54,6 +54,7 @@ build_script:
   - if "%BUILDER%"=="make" tools\make help_%LANGUAGE%
   - if "%BUILDER%"=="make" tools\make %LANGUAGE%
   - if "%BUILDER%"=="make" tools\make test_%LANGUAGE%
+  - if "%LANGUAGE%"=="all" tools\make test_fz
 
 test_script:
   - if "%BUILDER%"=="cmake" cmake --build build --config Release --target RUN_TESTS
