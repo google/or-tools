@@ -17,6 +17,8 @@
 #include <functional>
 #include <vector>
 
+#include "ortools/base/threadpool.h"
+
 namespace operations_research {
 namespace sat {
 
@@ -86,8 +88,22 @@ inline void OptimizeWithLNS(
     SolveNeighborhoodFunction generate_and_solve_function) {
   int64 seed = 0;
   while (!stop_function()) {
-    std::function<void()> update_function = generate_and_solve_function(seed++);
-    update_function();
+    std::vector<std::function<void()>> update_functions(num_threads);
+    {
+      ThreadPool pool("Parallel_LNS", num_threads);
+      pool.StartWorkers();
+      for (int i = 0; i < num_threads; ++i) {
+        pool.Schedule(
+            [&update_functions, &generate_and_solve_function, i, seed]() {
+              update_functions[i] = generate_and_solve_function(seed + i);
+            });
+      }
+    }
+
+    seed += num_threads;
+    for (int i = 0; i < num_threads; ++i) {
+      update_functions[i]();
+    }
   }
 }
 
