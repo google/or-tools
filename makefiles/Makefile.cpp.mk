@@ -23,6 +23,8 @@ endif
 cc: ortoolslibs ccexe
 .PHONY: test_cc # Test C++ OR-Tools using various examples.
 test_cc: test_cc_examples
+.PHONY: test_fz
+test_fz: test_fz_examples
 BUILT_LANGUAGES += C++
 
 MISSING_BUILD_DIRECTORIES = \
@@ -274,7 +276,7 @@ FLATZINC_DEPS = \
 	$(SAT_DEPS)
 FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
 ifeq ($(PLATFORM),MACOSX)
-FLATZINK_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+FLATZINK_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fz.$L #
 endif
 
 # Binaries

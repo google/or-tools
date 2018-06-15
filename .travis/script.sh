@@ -47,6 +47,9 @@ if [ "${BUILDER}" == make ];then
 			make third_party
 			make "${LANGUAGE}"
 			make test_"${LANGUAGE}"
+			if [ "${LANGUAGE}" == cc ]; then
+				make test_fz
+			fi
 		else
 			# Linux Docker Makefile build:
 			echo "NOT SUPPORTED"
@@ -70,6 +73,9 @@ if [ "${BUILDER}" == make ];then
 			make third_party
 			make "${LANGUAGE}"
 			make test_"${LANGUAGE}"
+			if [ "${LANGUAGE}" == cc ]; then
+				make test_fz
+			fi
 		else
 			# MacOS Docker Makefile build:
 			echo "NOT SUPPORTED"
