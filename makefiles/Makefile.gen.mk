@@ -1387,7 +1387,8 @@ $(SRC_DIR)/ortools/graph/util.h: \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/map_util.h \
     $(SRC_DIR)/ortools/graph/connected_components.h \
-    $(SRC_DIR)/ortools/graph/graph.h
+    $(SRC_DIR)/ortools/graph/graph.h \
+    $(SRC_DIR)/ortools/graph/iterators.h
 
 $(OBJ_DIR)/graph/assignment.$O: \
     $(SRC_DIR)/ortools/graph/assignment.cc \
@@ -1504,6 +1505,7 @@ $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h: \
     $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
     $(SRC_DIR)/ortools/algorithms/dynamic_permutation.h \
     $(SRC_DIR)/ortools/base/status.h \
+    $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/graph/graph.h \
     $(SRC_DIR)/ortools/graph/iterators.h \
     $(SRC_DIR)/ortools/util/stats.h \
@@ -1578,6 +1580,7 @@ SAT_DEPS = \
     $(SRC_DIR)/ortools/sat/cp_constraints.h \
     $(SRC_DIR)/ortools/sat/cp_model_checker.h \
     $(SRC_DIR)/ortools/sat/cp_model_expand.h \
+    $(SRC_DIR)/ortools/sat/cp_model_lns.h \
     $(SRC_DIR)/ortools/sat/cp_model_objective.h \
     $(SRC_DIR)/ortools/sat/cp_model_presolve.h \
     $(SRC_DIR)/ortools/sat/cp_model_search.h \
@@ -1595,6 +1598,7 @@ SAT_DEPS = \
     $(SRC_DIR)/ortools/sat/intervals.h \
     $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
     $(SRC_DIR)/ortools/sat/linear_relaxation.h \
+    $(SRC_DIR)/ortools/sat/lns.h \
     $(SRC_DIR)/ortools/sat/lp_utils.h \
     $(SRC_DIR)/ortools/sat/model.h \
     $(SRC_DIR)/ortools/sat/optimization.h \
@@ -1622,6 +1626,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/cp_constraints.$O \
     $(OBJ_DIR)/sat/cp_model_checker.$O \
     $(OBJ_DIR)/sat/cp_model_expand.$O \
+    $(OBJ_DIR)/sat/cp_model_lns.$O \
     $(OBJ_DIR)/sat/cp_model_objective.$O \
     $(OBJ_DIR)/sat/cp_model_presolve.$O \
     $(OBJ_DIR)/sat/cp_model_search.$O \
@@ -1717,6 +1722,10 @@ $(SRC_DIR)/ortools/sat/cp_model_checker.h: \
     $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
 $(SRC_DIR)/ortools/sat/cp_model_expand.h: \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h
+
+$(SRC_DIR)/ortools/sat/cp_model_lns.h: \
+    $(SRC_DIR)/ortools/base/integral_types.h \
     $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
 $(SRC_DIR)/ortools/sat/cp_model_objective.h: \
@@ -2084,6 +2093,13 @@ $(OBJ_DIR)/sat/cp_model_expand.$O: \
     $(SRC_DIR)/ortools/util/saturated_arithmetic.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_expand.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_expand.$O
 
+$(OBJ_DIR)/sat/cp_model_lns.$O: \
+    $(SRC_DIR)/ortools/sat/cp_model_lns.cc \
+    $(SRC_DIR)/ortools/sat/cp_model_lns.h \
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
+    $(SRC_DIR)/ortools/util/random_engine.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_lns.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_lns.$O
+
 $(OBJ_DIR)/sat/cp_model_objective.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_objective.cc \
     $(SRC_DIR)/ortools/sat/cp_model_objective.h \
@@ -2114,7 +2130,8 @@ $(OBJ_DIR)/sat/cp_model_presolve.$O: \
 $(OBJ_DIR)/sat/cp_model_search.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_search.cc \
     $(SRC_DIR)/ortools/sat/cp_model_search.h \
-    $(SRC_DIR)/ortools/sat/cp_model_utils.h
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
+    $(SRC_DIR)/ortools/util/random_engine.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_search.$O
 
 $(OBJ_DIR)/sat/cp_model_solver.$O: \
@@ -2135,6 +2152,7 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/sat/cp_constraints.h \
     $(SRC_DIR)/ortools/sat/cp_model_checker.h \
     $(SRC_DIR)/ortools/sat/cp_model_expand.h \
+    $(SRC_DIR)/ortools/sat/cp_model_lns.h \
     $(SRC_DIR)/ortools/sat/cp_model_presolve.h \
     $(SRC_DIR)/ortools/sat/cp_model_search.h \
     $(SRC_DIR)/ortools/sat/cp_model_solver.h \
@@ -2146,6 +2164,7 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/sat/intervals.h \
     $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
     $(SRC_DIR)/ortools/sat/linear_relaxation.h \
+    $(SRC_DIR)/ortools/sat/lns.h \
     $(SRC_DIR)/ortools/sat/optimization.h \
     $(SRC_DIR)/ortools/sat/pb_constraint.h \
     $(SRC_DIR)/ortools/sat/precedences.h \
@@ -2160,6 +2179,7 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
 
 $(OBJ_DIR)/sat/cp_model_utils.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_utils.cc \
+    $(SRC_DIR)/ortools/base/stl_util.h \
     $(SRC_DIR)/ortools/sat/cp_model_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_utils.$O
 
