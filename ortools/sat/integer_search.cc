@@ -280,12 +280,18 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
           {SatSolverRestartPolicy(model)}, model);
     }
     case SatParameters::FIXED_SEARCH: {
-      auto no_restart = []() { return false; };
       // Not all Boolean might appear in next_decision(), so once there is no
       // decision left, we fix all Booleans that are still undecided.
-      return SolveProblemWithPortfolioSearch(
-          {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
-          {no_restart}, model);
+      if (parameters.randomize_search()) {
+        return SolveProblemWithPortfolioSearch(
+            {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
+            {SatSolverRestartPolicy(model)}, model);
+      } else {
+        auto no_restart = []() { return false; };
+        return SolveProblemWithPortfolioSearch(
+            {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
+            {no_restart}, model);
+      }
     }
     case SatParameters::PORTFOLIO_SEARCH: {
       auto incomplete_portfolio = AddModelHeuristics({next_decision}, model);

@@ -18,7 +18,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 100
+// NEXT TAG: 105
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -226,7 +226,7 @@ message SatParameters {
   enum RestartAlgorithm {
     NO_RESTART = 0;
 
-    // Just follow a Luby sequence times luby_restart_period.
+    // Just follow a Luby sequence times restart_period.
     LUBY_RESTART = 1;
 
     // Moving average restart based on the decision level of conflicts.
@@ -234,6 +234,9 @@ message SatParameters {
 
     // Moving average restart based on the LBD of conflicts.
     LBD_MOVING_AVERAGE_RESTART = 3;
+
+    // Fixed period restart every restart period.
+    FIXED_RESTART = 4;
   }
 
   // The restart strategies will change each time the strategy_counter is
@@ -250,8 +253,9 @@ message SatParameters {
       [default =
            "LUBY_RESTART,LBD_MOVING_AVERAGE_RESTART,DL_MOVING_AVERAGE_RESTART"];
 
-  // Multiplier for the LUBY_RESTART algorithm.
-  optional int32 luby_restart_period = 30 [default = 50];
+  // Restart period for the FIXED_RESTART strategy. This is also the multiplier
+  // used by the LUBY_RESTART strategy.
+  optional int32 restart_period = 30 [default = 50];
 
   // Size of the window for the moving average restarts.
   optional int32 restart_running_window_size = 62 [default = 50];
@@ -560,4 +564,24 @@ message SatParameters {
 
   // For an optimization problem, stop the solver as soon as we have a solution.
   optional bool stop_after_first_solution = 98 [default = false];
+
+  // Specify the number of parallel workers to use during search.
+  // A number <= 1 means no parallelism.
+  optional int32 num_search_workers = 100 [default = 0];
+
+  // LNS parameters.
+  optional bool use_lns = 101 [default = false];
+  optional int32 lns_num_threads = 102 [default = 1];
+
+  // Randomize fixed search.
+  optional bool randomize_search = 103 [default = false];
+
+  // Search randomization will collect equivalent 'max valued' variables, and
+  // pick one randomly. For instance, if the variable strategy is CHOOSE_FIRST,
+  // all unassigned variables are equivalent. If the variable strategy is
+  // CHOOSE_LOWEST_MIN, and `lm` is the current lowest min of all unassigned
+  // variables, then the set of max valued variables will be all unassigned
+  // variables where
+  //    lm <= variable min <= lm + search_randomization_tolerance
+  optional int64 search_randomization_tolerance = 104 [default = 0];
 }

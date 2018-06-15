@@ -35,6 +35,7 @@
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/memory.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connectivity.h"
 #include "ortools/port/proto_utils.h"
@@ -43,6 +44,7 @@
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_expand.h"
+#include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -53,6 +55,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
+#include "ortools/sat/lns.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/precedences.h"
@@ -2433,7 +2436,6 @@ CpSolverResponse SolveCpModelInternal(
   // reset the solver to its initial state, but then with phase saving it
   // should still follow the same path again.
   if (model_proto.has_solution_hint()) {
-    LOG(INFO) << "Loading solution hint ... ";
     const int64 old_conflict_limit = parameters.max_number_of_conflicts();
     model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(10);
     std::vector<BooleanOrIntegerVariable> vars;
@@ -2457,9 +2459,9 @@ CpSolverResponse SolveCpModelInternal(
     status =
         SolveProblemWithPortfolioSearch(decision_policies, {no_restart}, model);
     if (status == SatSolver::Status::MODEL_SAT) {
-      LOG(INFO) << "Solution hint: success, feasible solution found.";
+      VLOG(1) << "Solution hint: success, feasible solution found.";
     } else {
-      LOG(INFO) << "Solution: failure, no feasible solution found.";
+      VLOG(1) << "Solution: failure, no feasible solution found.";
     }
     model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(
         old_conflict_limit);
@@ -2651,10 +2653,10 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
     if (!FLAGS_drat_output.empty()) {
       File* output;
       CHECK_OK(file::Open(FLAGS_drat_output, "w", &output, file::Defaults()));
-      drat_proof_handler.reset(new DratProofHandler(
-          /*in_binary_format=*/false, output, FLAGS_drat_check));
+      drat_proof_handler = absl::make_unique<DratProofHandler>(
+          /*in_binary_format=*/false, output, FLAGS_drat_check);
     } else {
-      drat_proof_handler.reset(new DratProofHandler());
+      drat_proof_handler = absl::make_unique<DratProofHandler>();
     }
     solver->SetDratProofHandler(drat_proof_handler.get());
   }
@@ -2804,6 +2806,198 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   return response;
 }
 
+// The model_proto is just used for solution checking and reconstruction of the
+// solution to the original model.
+CpSolverResponse PresolveAndSolve(const CpModelProto& model_proto,
+                                  CpModelProto* current_model, Model* model) {
+  // Solve without presolving ?
+  const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
+  const int num_original_variables = model_proto.variables_size();
+  if (!params.cp_model_presolve() || params.enumerate_all_solutions()) {
+    CpSolverResponse response = SolveCpModelInternal(
+        *current_model, true,
+        [&](const CpSolverResponse& intermediate_response) {
+          if (observers.empty()) return;
+          // Truncate the solution in case model expansion added more variables.
+          CpSolverResponse truncated_response = intermediate_response;
+          truncated_response.mutable_solution()->Truncate(
+              num_original_variables);
+          DCHECK(SolutionIsFeasible(
+              model_proto,
+              std::vector<int64>(truncated_response.solution().begin(),
+                                 truncated_response.solution().end())));
+          for (const auto& observer : observers) {
+            observer(truncated_response);
+          }
+        },
+        model);
+    if (response.status() == CpSolverStatus::MODEL_SAT ||
+        response.status() == CpSolverStatus::OPTIMAL) {
+      // Truncate the solution in case model expansion added more variables.
+      response.mutable_solution()->Truncate(num_original_variables);
+      CHECK(SolutionIsFeasible(model_proto,
+                               std::vector<int64>(response.solution().begin(),
+                                                  response.solution().end())));
+    }
+    return response;
+  }
+
+  // Do the actual presolve.
+  CpModelProto mapping_proto;
+  std::vector<int> postsolve_mapping;
+  PresolveCpModel(current_model, &mapping_proto, &postsolve_mapping);
+  VLOG(1) << CpModelStats(*current_model);
+
+  // Note that it is okay to use the initial model_proto in the postsolve even
+  // though we called PresolveCpModel() on the expanded proto. This is because
+  // PostsolveResponse() only use the proto to known the number of variables to
+  // fill in the response and to check the solution feasibility of these
+  // variables.
+  CpSolverResponse response = SolveCpModelInternal(
+      *current_model, true,
+      [&](const CpSolverResponse& response) {
+        if (observers.empty()) return;
+        CpSolverResponse copy = response;
+        PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &copy);
+        for (const auto& observer : observers) {
+          observer(copy);
+        }
+      },
+      model);
+  PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &response);
+  return response;
+}
+
+CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
+                                     const CpModelProto& expanded_model,
+                                     Model* model) {
+  SatParameters* parameters = model->GetOrCreate<SatParameters>();
+  parameters->set_stop_after_first_solution(true);
+  CpSolverResponse response;
+  {
+    CpModelProto copy = expanded_model;
+    response = PresolveAndSolve(model_proto, &copy, model);
+  }
+  if (response.status() != CpSolverStatus::MODEL_SAT) {
+    return response;
+  }
+  LOG(INFO) << "LNS First solution: " << response.objective_value();
+
+  // For now we will just alternate between our possible neighborhoods.
+  //
+  // TODO(user): work on the presolved global problem rather than just the
+  // expanded problem?
+  std::vector<std::unique_ptr<NeighborhoodGenerator>> generators;
+  generators.push_back(
+      absl::make_unique<SimpleNeighborhoodGenerator>(&expanded_model));
+  generators.push_back(
+      absl::make_unique<VariableGraphNeighborhoodGenerator>(&expanded_model));
+  generators.push_back(
+      absl::make_unique<ConstraintGraphNeighborhoodGenerator>(&expanded_model));
+
+  // The "optimal" difficulties do not have to be the same for different
+  // generators. TODO(user): move this inside the generator API?
+  std::vector<AdaptiveParameterValue> difficulties(generators.size(),
+                                                   AdaptiveParameterValue(0.5));
+
+  TimeLimit* limit = model->GetOrCreate<TimeLimit>();
+  double deterministic_time = 0.1;
+  int num_no_progress = 0;
+
+  const int num_threads = std::max(1, parameters->lns_num_threads());
+  OptimizeWithLNS(
+      num_threads,
+      [&]() {
+        // If we didn't see any progress recently, bump the time limit.
+        // TODO(user): Tune the logic and expose the parameters.
+        if (num_no_progress > 100) {
+          deterministic_time *= 1.1;
+          num_no_progress = 0;
+        }
+        return limit->LimitReached() ||
+               response.objective_value() == response.best_objective_bound();
+      },
+      [&](int64 seed) {
+        AdaptiveParameterValue& difficulty =
+            difficulties[seed % generators.size()];
+        const double saved_difficulty = difficulty.value();
+        CpModelProto local_problem =
+            generators[seed % generators.size()]->Generate(response, seed,
+                                                           saved_difficulty);
+
+        Model local_model;
+        {
+          SatParameters local_parameters;
+          local_parameters = *parameters;
+          local_parameters.set_max_deterministic_time(deterministic_time);
+          local_parameters.set_stop_after_first_solution(false);
+          local_model.Add(NewSatParameters(local_parameters));
+        }
+        const CpSolverResponse local_response =
+            PresolveAndSolve(model_proto, &local_problem, &local_model);
+
+        return [&num_no_progress, &model_proto, &response, &difficulty,
+                &deterministic_time, saved_difficulty, local_response]() {
+          // TODO(user): This is not ideal in multithread because even though
+          // the saved_difficulty will be the same for all thread, we will
+          // Increase()/Decrease() the difficuty sequentially more than once.
+          if (local_response.status() == CpSolverStatus::OPTIMAL ||
+              local_response.status() == CpSolverStatus::MODEL_UNSAT) {
+            difficulty.Increase();
+          } else {
+            difficulty.Decrease();
+          }
+          if (local_response.status() == CpSolverStatus::MODEL_SAT ||
+              local_response.status() == CpSolverStatus::OPTIMAL) {
+            LOG(INFO) << "dtime: " << deterministic_time
+                      << " difficulty: " << saved_difficulty
+                      << " local_obj: " << local_response.objective_value()
+                      << " global_obj: " << response.objective_value();
+
+            // If the objective are the same, we override the solution,
+            // otherwise we just ignore this local solution and increment
+            // num_no_progress.
+            double coeff = model_proto.objective().scaling_factor();
+            if (coeff == 0.0) coeff = 1.0;
+            if (local_response.objective_value() * coeff >=
+                response.objective_value() * coeff) {
+              if (local_response.objective_value() * coeff >
+                  response.objective_value() * coeff) {
+                return;
+              }
+              ++num_no_progress;
+            } else {
+              num_no_progress = 0;
+            }
+
+            // Update the global response.
+            *(response.mutable_solution()) = local_response.solution();
+            response.set_objective_value(local_response.objective_value());
+            response.set_wall_time(response.wall_time() +
+                                   local_response.wall_time());
+            response.set_user_time(response.user_time() +
+                                   local_response.user_time());
+            response.set_deterministic_time(
+                response.deterministic_time() +
+                local_response.deterministic_time());
+            DCHECK(SolutionIsFeasible(
+                model_proto,
+                std::vector<int64>(local_response.solution().begin(),
+                                   local_response.solution().end())));
+          }
+        };
+      });
+
+  if (response.status() == CpSolverStatus::MODEL_SAT) {
+    if (response.objective_value() == response.best_objective_bound()) {
+      response.set_status(CpSolverStatus::OPTIMAL);
+    }
+  }
+
+  return response;
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -2846,7 +3040,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // automatic.
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   if (!model_proto.has_objective() && !model_proto.has_solution_hint() &&
-      !params.enumerate_all_solutions()) {
+      !params.enumerate_all_solutions() && !params.use_lns()) {
     bool is_pure_sat = true;
     for (const IntegerVariableProto& var : model_proto.variables()) {
       if (var.domain_size() != 2 || var.domain(0) < 0 || var.domain(1) > 1) {
@@ -2867,64 +3061,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   // Starts by expanding some constraints if needed.
-  CpModelProto presolved_proto = ExpandCpModel(model_proto);
-
-  // Solve without presolving ?
-  const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
-  const int num_original_variables = model_proto.variables_size();
-  if (!params.cp_model_presolve() || params.enumerate_all_solutions()) {
-    CpSolverResponse response = SolveCpModelInternal(
-        presolved_proto, true,
-        [&](const CpSolverResponse& intermediate_response) {
-          if (observers.empty()) return;
-          // Truncate the solution in case model expansion added more variables.
-          CpSolverResponse truncated_response = intermediate_response;
-          truncated_response.mutable_solution()->Truncate(
-              num_original_variables);
-          DCHECK(SolutionIsFeasible(
-              model_proto,
-              std::vector<int64>(truncated_response.solution().begin(),
-                                 truncated_response.solution().end())));
-          for (const auto& observer : observers) {
-            observer(truncated_response);
-          }
-        },
-        model);
-    if (response.status() == CpSolverStatus::MODEL_SAT ||
-        response.status() == CpSolverStatus::OPTIMAL) {
-      // Truncate the solution in case model expansion added more variables.
-      response.mutable_solution()->Truncate(num_original_variables);
-      CHECK(SolutionIsFeasible(model_proto,
-                               std::vector<int64>(response.solution().begin(),
-                                                  response.solution().end())));
-    }
-    return response;
+  CpModelProto expanded_proto = ExpandCpModel(model_proto);
+  if (params.use_lns() && model_proto.has_objective()) {
+    return SolveCpModelWithLNS(model_proto, expanded_proto, model);
   }
-
-  // Do the actual presolve.
-  CpModelProto mapping_proto;
-  std::vector<int> postsolve_mapping;
-  PresolveCpModel(&presolved_proto, &mapping_proto, &postsolve_mapping);
-  VLOG(1) << CpModelStats(presolved_proto);
-
-  // Note that it is okay to use the initial model_proto in the postsolve even
-  // though we called PresolveCpModel() on the expanded proto. This is because
-  // PostsolveResponse() only use the proto to known the number of variables to
-  // fill in the response and to check the solution feasibility of these
-  // variables.
-  CpSolverResponse response = SolveCpModelInternal(
-      presolved_proto, true,
-      [&](const CpSolverResponse& response) {
-        if (observers.empty()) return;
-        CpSolverResponse copy = response;
-        PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &copy);
-        for (const auto& observer : observers) {
-          observer(copy);
-        }
-      },
-      model);
-  PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &response);
-  return response;
+  return PresolveAndSolve(model_proto, &expanded_proto, model);
 }
 
 }  // namespace sat

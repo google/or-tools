@@ -1,0 +1,97 @@
+// Copyright 2010-2017 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef OR_TOOLS_SAT_LNS_H_
+#define OR_TOOLS_SAT_LNS_H_
+
+#include <functional>
+#include <vector>
+
+namespace operations_research {
+namespace sat {
+
+// A simple deterministic and multithreaded LNS design.
+//
+// While !stop_function(), we call a batch of num_threads
+// generate_and_solve_function() in parallel. Each such functions should return
+// an update_global_solution() function. These update functions will only be
+// called sequentially (and in seed order) once the batch is done.
+//
+// The seed starts at zero and will be increased one by one. Each
+// generate_and_solve_function() will get a different seed.
+//
+// Only the generate_and_solve_function(int seed) need to be thread-safe.
+//
+// The two templated types should behave like:
+// - StopFunction: std::function<bool()>
+// - SolveNeighborhoodFunction: std::function<std::function<void()>(int seed)>
+template <class StopFunction, class SolveNeighborhoodFunction>
+void OptimizeWithLNS(int num_threads, StopFunction stop_function,
+                     SolveNeighborhoodFunction generate_and_solve_function);
+
+// Basic adaptive [0.0, 1.0] parameter that can be increased or decreased with a
+// step that get smaller and smaller with the number of updates.
+//
+// Note(user): The current logic work well in practice, but has no theoretical
+// foundation. So it might be possible to use better formulas depending on the
+// situation.
+class AdaptiveParameterValue {
+ public:
+  // Initial value is in [0.0, 1.0], both 0.0 and 1.0 are valid.
+  explicit AdaptiveParameterValue(double initial_value)
+      : value_(initial_value) {}
+
+  void Reset() { num_changes_ = 0; }
+
+  void Increase() {
+    const double factor = IncreaseNumChangesAndGetFactor();
+    value_ = std::min(1.0 - (1.0 - value_) / factor, value_ * factor);
+  }
+
+  void Decrease() {
+    const double factor = IncreaseNumChangesAndGetFactor();
+    value_ = std::max(value_ / factor, 1.0 - (1.0 - value_) * factor);
+  }
+
+  double value() const { return value_; }
+
+ private:
+  // We want to change the parameters more and more slowly.
+  double IncreaseNumChangesAndGetFactor() {
+    ++num_changes_;
+    return 1.0 + 1.0 / std::sqrt(num_changes_ + 1);
+  }
+
+  double value_;
+  int64 num_changes_ = 0;
+};
+
+// ============================================================================
+// Implementation.
+// ============================================================================
+
+template <class StopFunction, class SolveNeighborhoodFunction>
+inline void OptimizeWithLNS(
+    int num_threads, StopFunction stop_function,
+    SolveNeighborhoodFunction generate_and_solve_function) {
+  int64 seed = 0;
+  while (!stop_function()) {
+    std::function<void()> update_function = generate_and_solve_function(seed++);
+    update_function();
+  }
+}
+
+}  // namespace sat
+}  // namespace operations_research
+
+#endif  // OR_TOOLS_SAT_LNS_H_

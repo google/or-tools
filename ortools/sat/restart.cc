@@ -27,7 +27,7 @@ void RestartPolicy::Reset() {
   conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
 
   luby_count_ = 0;
-  conflicts_until_next_restart_ = parameters_.luby_restart_period();
+  conflicts_until_next_restart_ = parameters_.restart_period();
 
   dl_running_average_.Reset(parameters_.restart_running_window_size());
   lbd_running_average_.Reset(parameters_.restart_running_window_size());
@@ -50,6 +50,8 @@ void RestartPolicy::Reset() {
         tmp = SatParameters::DL_MOVING_AVERAGE_RESTART;
       } else if (string_value == "LBD_MOVING_AVERAGE_RESTART") {
         tmp = SatParameters::LBD_MOVING_AVERAGE_RESTART;
+      } else if (string_value == "FIXED_RESTART") {
+        tmp = SatParameters::FIXED_RESTART;
       } else {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
                      << string_value << "'.";
@@ -97,6 +99,11 @@ bool RestartPolicy::ShouldRestart() {
         should_restart = true;
       }
       break;
+    case SatParameters::FIXED_RESTART:
+      if (conflicts_until_next_restart_ == 0) {
+        should_restart = true;
+      }
+      break;
   }
   if (should_restart) {
     num_restarts_++;
@@ -113,8 +120,11 @@ bool RestartPolicy::ShouldRestart() {
     // Reset the various restart strategies.
     dl_running_average_.ClearWindow();
     lbd_running_average_.ClearWindow();
-    conflicts_until_next_restart_ =
-        parameters_.luby_restart_period() * SUniv(luby_count_ + 1);
+    conflicts_until_next_restart_ = parameters_.restart_period();
+    if (strategies_[strategy_counter_ % strategies_.size()] ==
+        SatParameters::LUBY_RESTART) {
+      conflicts_until_next_restart_ *= SUniv(luby_count_ + 1);
+    }
   }
   return should_restart;
 }
