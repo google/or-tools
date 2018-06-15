@@ -8,6 +8,11 @@ test_cc_examples: cc
 	$(BIN_DIR)$Sinteger_programming$E
 	$(BIN_DIR)$Stsp$E
 
+.PHONY: test_fz_examples
+test_fz_examples: fz
+	$(BIN_DIR)$Sfz$E $(EX_DIR)$Sflatzinc$Sgolomb.fzn
+	$(BIN_DIR)$Sfz$E $(EX_DIR)$Sflatzinc$Salpha.fzn
+
 .PHONY: test_python_examples
 test_python_examples: python
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Spython$Shidato_table.py

@@ -23,6 +23,8 @@ endif
 cc: ortoolslibs ccexe
 .PHONY: test_cc # Test C++ OR-Tools using various examples.
 test_cc: test_cc_examples
+.PHONY: test_fz
+test_fz: test_fz_examples
 BUILT_LANGUAGES += C++
 
 MISSING_BUILD_DIRECTORIES = \
