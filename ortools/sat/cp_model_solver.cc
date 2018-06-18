@@ -2922,8 +2922,8 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
       num_threads,
       [&]() {
         // Synchronize with external world.
-        auto* synchro = model->GetOrCreate<SynchronizationFunction>();
-        if (synchro->f != nullptr) {
+        auto* synchro = model->Get<SynchronizationFunction>();
+        if (synchro != nullptr && synchro->f != nullptr) {
           const CpSolverResponse candidate_response =
               synchro->f(limit->GetElapsedDeterministicTime());
           if (!candidate_response.solution().empty()) {

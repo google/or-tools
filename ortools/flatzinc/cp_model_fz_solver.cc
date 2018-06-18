@@ -1089,7 +1089,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     ThreadPool pool("Parallel_FlatZinc_sat", num_active_threads);
     pool.StartWorkers();
     for (int worker_id = 0; worker_id < num_active_threads; ++worker_id) {
-      const auto solution_schronization = [&](double deterministic_time) {
+      const auto solution_synchronization = [&](double deterministic_time) {
         absl::MutexLock lock(&mutex);
         return best_response;
       };
@@ -1124,12 +1124,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           num_search_workers - num_active_threads + 1);
 
       pool.Schedule([&fz_model, &m, &p, solution_observer,
-                     solution_schronization, &stopped, local_params, worker_id,
-                     &mutex, &responses, &last_worker_id, &best_bound,
-                     is_improving]() {
+                     solution_synchronization, &stopped, local_params,
+                     worker_id, &mutex, &responses, &last_worker_id,
+                     &best_bound, is_improving]() {
         responses[worker_id] =
             WorkerSearch(m.proto, local_params, p, solution_observer,
-                         solution_schronization, worker_id, &stopped);
+                         solution_synchronization, worker_id, &stopped);
 
         // Process final solution. Decide which worker has the 'best'
         // solution. Note that the solution observer may or may not have been
