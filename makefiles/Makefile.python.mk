@@ -131,7 +131,7 @@ ifeq ($(SYSTEM),win)
 endif
 ifeq ($(PLATFORM),LINUX)
 	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython && \
- LD_LIBRARY_PATH="$(UNIX_PROTOBUF_DIR)/lib":$(LD_LIBRARY_PATH) \
+ LD_LIBRARY_PATH="$(UNIX_PROTOBUF_DIR)/lib64":"$(UNIX_PROTOBUF_DIR)/lib":$(LD_LIBRARY_PATH) \
  PROTOC=$(PROTOC_BINARY) \
  "$(PYTHON_EXECUTABLE)" setup.py build
 endif
