@@ -2210,6 +2210,16 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
   };
 }
 
+struct SynchronizationFunction {
+  std::function<CpSolverResponse(double deterministic_time)> f;
+};
+
+void SetSynchronizationFunction(
+    std::function<CpSolverResponse(double deterministic_time)> f,
+    Model* model) {
+  model->GetOrCreate<SynchronizationFunction>()->f = std::move(f);
+}
+
 #if !defined(__PORTABLE_PLATFORM__)
 // TODO(user): Support it on android.
 std::function<SatParameters(Model*)> NewSatParameters(
@@ -2911,6 +2921,21 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
   OptimizeWithLNS(
       num_threads,
       [&]() {
+        // Synchronize with external world.
+        auto* synchro = model->GetOrCreate<SynchronizationFunction>();
+        if (synchro->f != nullptr) {
+          const CpSolverResponse candidate_response =
+              synchro->f(limit->GetElapsedDeterministicTime());
+          if (!candidate_response.solution().empty()) {
+            double coeff = model_proto.objective().scaling_factor();
+            if (coeff == 0.0) coeff = 1.0;
+            if (candidate_response.objective_value() * coeff <
+                response.objective_value() * coeff) {
+              response = candidate_response;
+            }
+          }
+        }
+
         // If we didn't see any progress recently, bump the time limit.
         // TODO(user): Tune the logic and expose the parameters.
         if (num_no_progress > 100) {

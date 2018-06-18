@@ -17,7 +17,9 @@
 #include <functional>
 #include <vector>
 
+#if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/threadpool.h"
+#endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
 namespace sat {
@@ -87,6 +89,7 @@ inline void OptimizeWithLNS(
     int num_threads, StopFunction stop_function,
     SolveNeighborhoodFunction generate_and_solve_function) {
   int64 seed = 0;
+#if !defined(__PORTABLE_PLATFORM__)
   while (!stop_function()) {
     std::vector<std::function<void()>> update_functions(num_threads);
     {
@@ -105,6 +108,12 @@ inline void OptimizeWithLNS(
       update_functions[i]();
     }
   }
+#else   // __PORTABLE_PLATFORM__
+  while (!stop_function()) {
+    std::function<void()> update_function = generate_and_solve_function(seed++);
+    update_function();
+  }
+#endif  // __PORTABLE_PLATFORM__
 }
 
 }  // namespace sat

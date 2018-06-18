@@ -898,6 +898,8 @@ CpSolverResponse WorkerSearch(
     const CpModelProto& cp_model, const SatParameters& parameters,
     const fz::FlatzincParameters& p,
     const std::function<void(const CpSolverResponse&)>& solution_observer,
+    std::function<CpSolverResponse(double determinitic_time)>
+        solution_synchronization,
     int worker_id, bool* stopped) {
   Model sat_model;
   sat_model.Add(NewSatParameters(parameters));
@@ -906,8 +908,11 @@ CpSolverResponse WorkerSearch(
       [&stopped]() { *stopped = true; });
 
   // Add solution observer.
-  if (p.all_solutions) {
+  if (solution_observer != nullptr) {
     sat_model.Add(NewFeasibleSolutionObserver(solution_observer));
+  }
+  if (solution_synchronization != nullptr) {
+    SetSynchronizationFunction(std::move(solution_synchronization), &sat_model);
   }
 
   // Solve.
@@ -1026,6 +1031,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   const int num_search_workers = std::max(1, p.threads);
 
   bool stopped = false;
+  CpSolverResponse best_response;
   std::vector<CpSolverResponse> responses(num_search_workers);
   int last_worker_id = -1;
   int solution_count = 1;  // Start at 1 as in the sat solver output.
@@ -1035,10 +1041,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     // SAT problem solved in parallel, without solution enumeration.
     absl::Mutex mutex;
 
-    // The solution observer can only be called if p.all_solutions is true,
-    // which is not parallelized. Thus we have an empty observer.
-    const auto solution_observer = [](const CpSolverResponse& response) {};
-
     FZLOG << "Starting parallel search with " << num_search_workers
           << " workers" << FZENDL;
     ThreadPool pool("Parallel_FlatZinc_sat", num_search_workers);
@@ -1046,11 +1048,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
       const SatParameters local_params =
           DiversifySearchParameters(worker_id, m.parameters, m.proto, 0);
-      pool.Schedule([&fz_model, &m, &p, solution_observer, &stopped,
-                     local_params, worker_id, &responses, &last_worker_id,
-                     &mutex]() {
-        responses[worker_id] = WorkerSearch(
-            m.proto, local_params, p, solution_observer, worker_id, &stopped);
+      pool.Schedule([&fz_model, &m, &p, &stopped, local_params, worker_id,
+                     &responses, &last_worker_id, &mutex]() {
+        responses[worker_id] = WorkerSearch(m.proto, local_params, p, nullptr,
+                                            nullptr, worker_id, &stopped);
         absl::MutexLock lock(&mutex);
         if (responses[worker_id].status() == CpSolverStatus::MODEL_SAT ||
             responses[worker_id].status() == CpSolverStatus::MODEL_UNSAT) {
@@ -1088,20 +1089,27 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     ThreadPool pool("Parallel_FlatZinc_sat", num_active_threads);
     pool.StartWorkers();
     for (int worker_id = 0; worker_id < num_active_threads; ++worker_id) {
+      const auto solution_schronization = [&](double deterministic_time) {
+        absl::MutexLock lock(&mutex);
+        return best_response;
+      };
       const auto solution_observer = [&best_bound, maximize, &solution_count,
                                       worker_id, &mutex, &p, &fz_model,
-                                      &last_worker_id, &m, &is_improving,
+                                      &last_worker_id, &m, &best_response,
+                                      &is_improving,
                                       &timer](const CpSolverResponse& r) {
         absl::MutexLock lock(&mutex);
+
         // Check is the new solution is actually improving upon the best
         // solution found so far.
         if (is_improving(r)) {
+          best_response = r;
           best_bound = r.objective_value();
           last_worker_id = worker_id;
           FZLOG << "worker #" << worker_id << ", solution #" << solution_count++
                 << ", objective = " << r.objective_value()
                 << ", time = " << timer.Get() << " s" << FZENDL;
-          if (FLAGS_use_flatzinc_format) {
+          if (FLAGS_use_flatzinc_format && p.all_solutions) {
             const std::string solution_string =
                 SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
                   return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
@@ -1115,11 +1123,13 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           worker_id, m.parameters, m.proto,
           num_search_workers - num_active_threads + 1);
 
-      pool.Schedule([&fz_model, &m, &p, solution_observer, &stopped,
-                     local_params, worker_id, &mutex, &responses,
-                     &last_worker_id, &best_bound, is_improving]() {
-        responses[worker_id] = WorkerSearch(
-            m.proto, local_params, p, solution_observer, worker_id, &stopped);
+      pool.Schedule([&fz_model, &m, &p, solution_observer,
+                     solution_schronization, &stopped, local_params, worker_id,
+                     &mutex, &responses, &last_worker_id, &best_bound,
+                     is_improving]() {
+        responses[worker_id] =
+            WorkerSearch(m.proto, local_params, p, solution_observer,
+                         solution_schronization, worker_id, &stopped);
 
         // Process final solution. Decide which worker has the 'best'
         // solution. Note that the solution observer may or may not have been
@@ -1157,7 +1167,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         }
       });
     }
-  } else {  // Sequential case.
+  } else if (p.all_solutions) {  // Sequential case with observer.
     auto solution_observer = [&fz_model, &solution_count, &m,
                               &timer](const CpSolverResponse& r) {
       if (fz_model.objective() == nullptr) {
@@ -1176,8 +1186,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         std::cout << solution_string << std::endl;
       }
     };
+    responses[0] = WorkerSearch(m.proto, m.parameters, p, solution_observer,
+                                nullptr, 0, &stopped);
+    last_worker_id = 0;
+  } else {  // Sequential case, no observer.
     responses[0] =
-        WorkerSearch(m.proto, m.parameters, p, solution_observer, 0, &stopped);
+        WorkerSearch(m.proto, m.parameters, p, nullptr, nullptr, 0, &stopped);
     last_worker_id = 0;
   }
 
