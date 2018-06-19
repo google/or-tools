@@ -52,6 +52,7 @@
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
+#include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/linear_relaxation.h"
@@ -2211,13 +2212,19 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 }
 
 struct SynchronizationFunction {
-  std::function<CpSolverResponse(double deterministic_time)> f;
+  std::function<CpSolverResponse()> f;
 };
 
-void SetSynchronizationFunction(
-    std::function<CpSolverResponse(double deterministic_time)> f,
-    Model* model) {
+void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
+                                Model* model) {
   model->GetOrCreate<SynchronizationFunction>()->f = std::move(f);
+}
+
+void SetObjectiveSynchronizationFunction(std::function<double()> f,
+                                         Model* model) {
+  ObjectiveSynchronizationHelper* helper =
+      model->GetOrCreate<ObjectiveSynchronizationHelper>();
+  helper->get_external_bound = std::move(f);
 }
 
 #if !defined(__PORTABLE_PLATFORM__)
@@ -2372,6 +2379,18 @@ CpSolverResponse SolveCpModelInternal(
       objective_var =
           GetOrCreateVariableGreaterOrEqualToSumOf(terms, m.model());
     }
+  }
+
+  if (objective_var != kNoIntegerVariable) {
+    // Fill the ObjectiveSynchronizationHelper.
+    ObjectiveSynchronizationHelper* helper =
+        model->GetOrCreate<ObjectiveSynchronizationHelper>();
+    helper->scaling_factor = model_proto.objective().scaling_factor();
+    if (helper->scaling_factor == 0.0) {
+      helper->scaling_factor = 1.0;
+    }
+    helper->offset = model_proto.objective().offset();
+    helper->objective_var = objective_var;
   }
 
   // Intersect the objective domain with the given one if any.
@@ -2924,8 +2943,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
         // Synchronize with external world.
         auto* synchro = model->Get<SynchronizationFunction>();
         if (synchro != nullptr && synchro->f != nullptr) {
-          const CpSolverResponse candidate_response =
-              synchro->f(limit->GetElapsedDeterministicTime());
+          const CpSolverResponse candidate_response = synchro->f();
           if (!candidate_response.solution().empty()) {
             double coeff = model_proto.objective().scaling_factor();
             if (coeff == 0.0) coeff = 1.0;
@@ -2960,6 +2978,11 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
           local_parameters.set_max_deterministic_time(deterministic_time);
           local_parameters.set_stop_after_first_solution(false);
           local_model.Add(NewSatParameters(local_parameters));
+        }
+        if (limit->ExternalBooleanAsLimit() != nullptr) {
+          TimeLimit* local_limit = local_model.GetOrCreate<TimeLimit>();
+          local_limit->RegisterExternalBooleanAsLimit(
+              limit->ExternalBooleanAsLimit());
         }
         const CpSolverResponse local_response =
             PresolveAndSolve(model_proto, &local_problem, &local_model);

@@ -898,9 +898,9 @@ CpSolverResponse WorkerSearch(
     const CpModelProto& cp_model, const SatParameters& parameters,
     const fz::FlatzincParameters& p,
     const std::function<void(const CpSolverResponse&)>& solution_observer,
-    std::function<CpSolverResponse(double determinitic_time)>
-        solution_synchronization,
-    int worker_id, bool* stopped) {
+    std::function<CpSolverResponse()> solution_synchronization,
+    std::function<double()> objective_synchronization, int worker_id,
+    bool* stopped) {
   Model sat_model;
   sat_model.Add(NewSatParameters(parameters));
   sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(stopped);
@@ -913,6 +913,10 @@ CpSolverResponse WorkerSearch(
   }
   if (solution_synchronization != nullptr) {
     SetSynchronizationFunction(std::move(solution_synchronization), &sat_model);
+  }
+  if (objective_synchronization != nullptr) {
+    SetObjectiveSynchronizationFunction(std::move(objective_synchronization),
+                                        &sat_model);
   }
 
   // Solve.
@@ -1031,7 +1035,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   const int num_search_workers = std::max(1, p.threads);
 
   bool stopped = false;
-  CpSolverResponse best_response;
   std::vector<CpSolverResponse> responses(num_search_workers);
   int last_worker_id = -1;
   int solution_count = 1;  // Start at 1 as in the sat solver output.
@@ -1050,8 +1053,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           DiversifySearchParameters(worker_id, m.parameters, m.proto, 0);
       pool.Schedule([&fz_model, &m, &p, &stopped, local_params, worker_id,
                      &responses, &last_worker_id, &mutex]() {
-        responses[worker_id] = WorkerSearch(m.proto, local_params, p, nullptr,
-                                            nullptr, worker_id, &stopped);
+        responses[worker_id] =
+            WorkerSearch(m.proto, local_params, p, nullptr, nullptr, nullptr,
+                         worker_id, &stopped);
         absl::MutexLock lock(&mutex);
         if (responses[worker_id].status() == CpSolverStatus::MODEL_SAT ||
             responses[worker_id].status() == CpSolverStatus::MODEL_UNSAT) {
@@ -1067,13 +1071,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     // Optimization problem solved in parallel.
     absl::Mutex mutex;
     const bool maximize = fz_model.maximize();
-    double best_bound = maximize ? -std::numeric_limits<double>::infinity()
-                                 : std::numeric_limits<double>::infinity();
-    const auto is_improving = [&best_bound,
-                               maximize](const CpSolverResponse& r) {
-      return maximize ? r.objective_value() > best_bound
-                      : r.objective_value() < best_bound;
-    };
     const int kNumHeuristics = 5;
     const int num_active_threads =
         std::min(kNumHeuristics + 1, num_search_workers);
@@ -1086,87 +1083,152 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       FZLOG << "Starting parallel search with " << num_search_workers
             << " workers" << FZENDL;
     }
-    ThreadPool pool("Parallel_FlatZinc_sat", num_active_threads);
-    pool.StartWorkers();
-    for (int worker_id = 0; worker_id < num_active_threads; ++worker_id) {
-      const auto solution_synchronization = [&](double deterministic_time) {
-        absl::MutexLock lock(&mutex);
-        return best_response;
-      };
-      const auto solution_observer = [&best_bound, maximize, &solution_count,
-                                      worker_id, &mutex, &p, &fz_model,
-                                      &last_worker_id, &m, &best_response,
-                                      &is_improving,
-                                      &timer](const CpSolverResponse& r) {
-        absl::MutexLock lock(&mutex);
+    CpSolverResponse best_response;
+    bool suspicious_termination = false;
+    {
+      ThreadPool pool("Parallel_FlatZinc_sat", num_active_threads);
+      pool.StartWorkers();
 
-        // Check is the new solution is actually improving upon the best
-        // solution found so far.
-        if (is_improving(r)) {
-          best_response = r;
-          best_bound = r.objective_value();
-          last_worker_id = worker_id;
-          FZLOG << "worker #" << worker_id << ", solution #" << solution_count++
-                << ", objective = " << r.objective_value()
-                << ", time = " << timer.Get() << " s" << FZENDL;
-          if (FLAGS_use_flatzinc_format && p.all_solutions) {
-            const std::string solution_string =
-                SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
-                  return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
-                });
-            std::cout << solution_string << std::endl;
+      for (int worker_id = 0; worker_id < num_active_threads; ++worker_id) {
+        const auto is_improving = [&best_response,
+                                   maximize](const CpSolverResponse& r) {
+          return (best_response.status() == CpSolverStatus::MODEL_SAT ||
+                  best_response.status() == CpSolverStatus::OPTIMAL)
+                     ? (maximize ? r.objective_value() >
+                                       best_response.objective_value()
+                                 : r.objective_value() <
+                                       best_response.objective_value())
+                     : true;
+        };
+
+        const auto solution_synchronization = [&mutex, &best_response]() {
+          absl::MutexLock lock(&mutex);
+          return best_response;
+        };
+
+        const auto objective_synchronization = [&mutex, &best_response]() {
+          absl::MutexLock lock(&mutex);
+          if (best_response.status() == CpSolverStatus::MODEL_SAT) {
+            return best_response.objective_value();
+          } else {
+            return std::numeric_limits<double>::infinity();
           }
-        }
-      };
+        };
 
-      const SatParameters local_params = DiversifySearchParameters(
-          worker_id, m.parameters, m.proto,
-          num_search_workers - num_active_threads + 1);
+        const auto solution_observer = [maximize, &solution_count, worker_id,
+                                        &mutex, &p, &fz_model, &last_worker_id,
+                                        &m, &best_response, is_improving,
+                                        &timer](const CpSolverResponse& r) {
+          absl::MutexLock lock(&mutex);
 
-      pool.Schedule([&fz_model, &m, &p, solution_observer,
-                     solution_synchronization, &stopped, local_params,
-                     worker_id, &mutex, &responses, &last_worker_id,
-                     &best_bound, is_improving]() {
-        responses[worker_id] =
-            WorkerSearch(m.proto, local_params, p, solution_observer,
-                         solution_synchronization, worker_id, &stopped);
-
-        // Process final solution. Decide which worker has the 'best'
-        // solution. Note that the solution observer may or may not have been
-        // called.
-        absl::MutexLock lock(&mutex);
-        switch (responses[worker_id].status()) {
-          case CpSolverStatus::MODEL_SAT: {
-            if (is_improving(responses[worker_id])) {
-              last_worker_id = worker_id;
-              best_bound = responses[worker_id].objective_value();
-            }
-            break;
-          }
-          case CpSolverStatus::MODEL_UNSAT: {
-            // Overwrite any previous worker.
+          // Check is the new solution is actually improving upon the best
+          // solution found so far.
+          if (is_improving(r)) {
+            best_response = r;
             last_worker_id = worker_id;
-            // Stops all other workers.
-            stopped = true;
-            break;
-          }
-          case CpSolverStatus::OPTIMAL: {
-            // Overwrite any previous worker.
-            last_worker_id = worker_id;
-            // Stops all other workers.
-            stopped = true;
-            // Stores the best solution.
-            best_bound = responses[worker_id].objective_value();
-            break;
-          }
-          default: {
-            if (last_worker_id == -1) {
-              last_worker_id = worker_id;
+            FZLOG << "worker #" << worker_id << ", solution #"
+                  << solution_count++ << ", objective = " << r.objective_value()
+                  << ", time = " << timer.Get() << "s" << FZENDL;
+            if (FLAGS_use_flatzinc_format && p.all_solutions) {
+              const std::string solution_string =
+                  SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
+                    return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
+                  });
+              std::cout << solution_string << std::endl;
             }
           }
-        }
-      });
+        };
+
+        const SatParameters local_params = DiversifySearchParameters(
+            worker_id, m.parameters, m.proto,
+            num_search_workers - num_active_threads + 1);
+
+        pool.Schedule([&fz_model, &m, &p, solution_observer,
+                       solution_synchronization, objective_synchronization,
+                       &stopped, local_params, worker_id, &mutex, &responses,
+                       &last_worker_id, is_improving, &best_response, maximize,
+                       &suspicious_termination]() {
+          responses[worker_id] =
+              WorkerSearch(m.proto, local_params, p, solution_observer,
+                           solution_synchronization, objective_synchronization,
+                           worker_id, &stopped);
+
+          // Process final solution. Decide which worker has the 'best'
+          // solution. Note that the solution observer may or may not have been
+          // called.
+          absl::MutexLock lock(&mutex);
+          FZVLOG << "Worker " << worker_id << " terminates with status "
+                 << responses[worker_id].status()
+                 << " and an objective value of "
+                 << responses[worker_id].objective_value() << FZENDL;
+          switch (responses[worker_id].status()) {
+            case CpSolverStatus::MODEL_SAT: {
+              if (is_improving(responses[worker_id])) {
+                last_worker_id = worker_id;
+                best_response = responses[worker_id];
+              }
+              break;
+            }
+            case CpSolverStatus::MODEL_UNSAT: {
+              if (best_response.status() != CpSolverStatus::MODEL_SAT &&
+                  best_response.status() != CpSolverStatus::OPTIMAL) {
+                // Overwrite any previous worker.
+                last_worker_id = worker_id;
+                // Stores the unsat solution.
+                best_response = responses[worker_id];
+              } else {
+                suspicious_termination = true;
+              }
+              // Stops all other workers.
+              stopped = true;
+              break;
+            }
+            case CpSolverStatus::OPTIMAL: {
+              const double previous =
+                  (best_response.status() == CpSolverStatus::MODEL_SAT ||
+                   best_response.status() == CpSolverStatus::OPTIMAL)
+                      ? best_response.objective_value()
+                      : (maximize ? kint64min : kint64max);
+              const double current = responses[worker_id].objective_value();
+              if ((maximize && current >= previous) ||
+                  (!maximize && current <= previous)) {
+                // Overwrite any previous worker.
+                last_worker_id = worker_id;
+                // Stops all other workers.
+                stopped = true;
+                // Stores the best solution.
+                best_response = responses[worker_id];
+              } else {
+                suspicious_termination = true;
+                // Stops all other workers.
+                stopped = true;
+              }
+              break;
+            }
+            default: {
+              if (last_worker_id == -1) {
+                last_worker_id = worker_id;
+              }
+            }
+          }
+        });
+      }
     }
+    // It can happen that the LNS finds the best solution, but does not prove
+    // it. Then another worker pulls in the best solution, does not improve
+    // upon it, returns UNSAT if it has not found a previous solution, or
+    // OPTIMAL with a bad objective value, and stops all other workers. In that
+    // case, if the last solution found has a MODEL_SAT status, it is indeed
+    // optimal, and should be marked as thus.
+    if (last_worker_id != -1 &&
+        responses[last_worker_id].status() == CpSolverStatus::MODEL_SAT &&
+        suspicious_termination) {
+      FZVLOG << "Fixing best known solution to optimal." << FZENDL;
+      responses[last_worker_id].set_status(CpSolverStatus::OPTIMAL);
+      responses[last_worker_id].set_best_objective_bound(
+          responses[last_worker_id].objective_value());
+    }
+    // TODO(user): If the solution is SAT, we can pull the best lower bound.
   } else if (p.all_solutions) {  // Sequential case with observer.
     auto solution_observer = [&fz_model, &solution_count, &m,
                               &timer](const CpSolverResponse& r) {
@@ -1187,11 +1249,11 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       }
     };
     responses[0] = WorkerSearch(m.proto, m.parameters, p, solution_observer,
-                                nullptr, 0, &stopped);
+                                nullptr, nullptr, 0, &stopped);
     last_worker_id = 0;
   } else {  // Sequential case, no observer.
-    responses[0] =
-        WorkerSearch(m.proto, m.parameters, p, nullptr, nullptr, 0, &stopped);
+    responses[0] = WorkerSearch(m.proto, m.parameters, p, nullptr, nullptr,
+                                nullptr, 0, &stopped);
     last_worker_id = 0;
   }
 

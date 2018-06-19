@@ -107,6 +107,19 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
 // search decision.
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 
+// Store relationship between the CpSolverResponse objective and the internal
+// IntegerVariable the solver tries to minimize.
+struct ObjectiveSynchronizationHelper {
+  double scaling_factor = 1.0;
+  double offset = 0.0;
+  IntegerVariable objective_var = kNoIntegerVariable;
+  std::function<double()> get_external_bound = nullptr;
+
+  int64 UnscaledObjective(double value) const {
+    return static_cast<int64>(std::round(value / scaling_factor - offset));
+  }
+};
+
 }  // namespace sat
 }  // namespace operations_research
 

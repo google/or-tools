@@ -244,6 +244,9 @@ class TimeLimit {
     external_boolean_as_limit_ = external_boolean_as_limit;
   }
 
+  // Returns the external boolean limit set by the previous call.
+  bool* ExternalBooleanAsLimit() const { return external_boolean_as_limit_; }
+
   // Sets new time limits. Note that this do not reset the running max nor
   // any registered external boolean or calls to RegisterSigintHandler().
   template <typename Parameters>

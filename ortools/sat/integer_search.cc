@@ -13,6 +13,8 @@
 
 #include "ortools/sat/integer_search.h"
 
+#include <cmath>
+
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_decision.h"
 
@@ -379,6 +381,34 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
         return solver->UnsatStatus();
       }
       policy_index = (policy_index + 1) % num_policies;
+    }
+
+    // Check external objective, and restart if a better one is supplied.
+    // TODO(user): Maybe do not check this at each decision.
+    const ObjectiveSynchronizationHelper* helper =
+        model->Get<ObjectiveSynchronizationHelper>();
+    if (helper != nullptr && helper->get_external_bound != nullptr &&
+        helper->objective_var != kNoIntegerVariable) {
+      const double external_bound = helper->get_external_bound();
+      if (std::isfinite(external_bound)) {
+        IntegerValue best_bound(helper->UnscaledObjective(external_bound));
+        IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+        if (best_bound <= integer_trail->UpperBound(helper->objective_var)) {
+          if (!solver->RestoreSolverToAssumptionLevel()) {
+            return solver->UnsatStatus();
+          }
+          DCHECK_EQ(solver->CurrentDecisionLevel(), 0);
+          if (!integer_trail->Enqueue(
+                  IntegerLiteral::LowerOrEqual(helper->objective_var,
+                                               best_bound - 1),
+                  {}, {})) {
+            return SatSolver::MODEL_UNSAT;
+          }
+          if (!solver->FinishPropagation()) {
+            return solver->UnsatStatus();
+          }
+        }
+      }
     }
 
     // Get next decision, try to enqueue.
