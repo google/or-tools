@@ -2980,6 +2980,17 @@ ITIVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
   return dictionary;
 }
 
+void RevisedSimplex::ComputeBasicVariablesForState(
+    const LinearProgram& linear_program, const BasisState& state) {
+  LoadStateForNextSolve(state);
+  Status status = Initialize(linear_program);
+  if (status.ok()) {
+    variable_values_.RecomputeBasicVariableValues();
+    variable_values_.ResetPrimalInfeasibilityInformation();
+    solution_objective_value_ = ComputeInitialProblemObjectiveValue();
+  }
+}
+
 void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
   if (VLOG_IS_ON(3)) {
     // This function has a complexity in O(num_non_zeros_in_matrix).

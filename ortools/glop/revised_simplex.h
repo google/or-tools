@@ -233,6 +233,11 @@ class RevisedSimplex {
   // TODO(user): Use row scales as well.
   RowMajorSparseMatrix ComputeDictionary(const DenseRow* column_scales);
 
+  // Initializes the matrix for the given 'linear_program' and 'state' and
+  // computes the variable values for basic variables using non-basic variables.
+  void ComputeBasicVariablesForState(const LinearProgram& linear_program,
+                                     const BasisState& state);
+
  private:
   // Propagates parameters_ to all the other classes that need it.
   //
