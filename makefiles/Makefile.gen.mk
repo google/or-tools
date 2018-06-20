@@ -1863,6 +1863,9 @@ $(SRC_DIR)/ortools/sat/linear_relaxation.h: \
     $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
     $(SRC_DIR)/ortools/sat/model.h
 
+$(SRC_DIR)/ortools/sat/lns.h: \
+    $(SRC_DIR)/ortools/base/threadpool.h
+
 $(SRC_DIR)/ortools/sat/lp_utils.h: \
     $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
@@ -2143,6 +2146,7 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/base/join.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/map_util.h \
+    $(SRC_DIR)/ortools/base/memory.h \
     $(SRC_DIR)/ortools/base/stl_util.h \
     $(SRC_DIR)/ortools/base/timer.h \
     $(SRC_DIR)/ortools/graph/connectivity.h \
@@ -2161,6 +2165,7 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/sat/disjunctive.h \
     $(SRC_DIR)/ortools/sat/integer_expr.h \
     $(SRC_DIR)/ortools/sat/integer.h \
+    $(SRC_DIR)/ortools/sat/integer_search.h \
     $(SRC_DIR)/ortools/sat/intervals.h \
     $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
     $(SRC_DIR)/ortools/sat/linear_relaxation.h \
