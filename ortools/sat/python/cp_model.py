@@ -1029,8 +1029,8 @@ class CpModel(object):
 
 def EvaluateIntegerExpression(expression, solution):
   """Evaluate an integer expression against a solution."""
-  if isinstance(x, numbers.Integral):
-    return x
+  if isinstance(expression, numbers.Integral):
+    return expression
   value = 0
   to_process = [(expression, 1)]
   while to_process:
