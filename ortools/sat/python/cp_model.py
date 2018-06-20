@@ -1029,6 +1029,8 @@ class CpModel(object):
 
 def EvaluateIntegerExpression(expression, solution):
   """Evaluate an integer expression against a solution."""
+  if isinstance(x, numbers.Integral):
+    return x
   value = 0
   to_process = [(expression, 1)]
   while to_process:
@@ -1048,7 +1050,9 @@ def EvaluateIntegerExpression(expression, solution):
 
 def EvaluateBooleanExpression(literal, solution):
   """Evaluate an boolean expression against a solution."""
-  if isinstance(literal, IntVar) or isinstance(literal, _NotBooleanVariable):
+  if isinstance(literal, numbers.Integral):
+    return bool(literal)
+  elif isinstance(literal, IntVar) or isinstance(literal, _NotBooleanVariable):
     index = literal.Index()
     if index >= 0:
       return bool(solution.solution[index])
