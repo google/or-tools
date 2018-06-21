@@ -43,7 +43,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 
@@ -795,9 +794,6 @@ class SatSolver {
   // "cache" to avoid inspecting many times the same reason during conflict
   // analysis.
   VariableWithSameReasonIdentifier same_reason_identifier_;
-
-  // A random number generator.
-  mutable random_engine_t random_;
 
   // Temporary vector used by AddProblemClause().
   std::vector<LiteralWithCoeff> tmp_pb_constraint_;

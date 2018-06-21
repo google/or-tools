@@ -17,7 +17,7 @@
 #include <unordered_map>
 
 #include "ortools/sat/cp_model_utils.h"
-#include "ortools/util/random_engine.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -36,12 +36,6 @@ struct Strategy {
 struct VarValue {
   IntegerVariable var;
   IntegerValue value;
-};
-
-// Thin wrapper around a random_engine. This helps store a random engine
-// inside a Model as template programming messes up compilation.
-struct SearchStrategyRandomGenerator {
-  random_engine_t rand;
 };
 
 const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
@@ -134,16 +128,9 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
         active_vars.erase(std::remove_if(active_vars.begin(), active_vars.end(),
                                          is_above_tolerance),
                           active_vars.end());
-        // TODO(user): Move this to its own method.
-        const bool seeded =
-            model->Get<SearchStrategyRandomGenerator>() != nullptr;
-        SearchStrategyRandomGenerator* const rw =
-            model->GetOrCreate<SearchStrategyRandomGenerator>();
-        if (!seeded) {
-          rw->rand.seed(parameters->random_seed());
-        }
-        const int winner = std::uniform_int_distribution<int>(
-            0, active_vars.size() - 1)(rw->rand);
+        const int winner =
+            std::uniform_int_distribution<int>(0, active_vars.size() - 1)(
+                *model->GetOrCreate<ModelRandomGenerator>());
         candidate = active_vars[winner].var;
         candidate_lb = integer_trail->LowerBound(candidate);
         candidate_ub = integer_trail->UpperBound(candidate);

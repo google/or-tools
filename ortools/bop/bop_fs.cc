@@ -212,8 +212,7 @@ BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
     sat::SatSolver* sat_propagator, MTRandom* random)
     : BopOptimizerBase(name),
       random_(random),
-      sat_propagator_(sat_propagator),
-      sat_seed_(parameters.random_seed()) {}
+      sat_propagator_(sat_propagator) {}
 
 BopRandomFirstSolutionGenerator::~BopRandomFirstSolutionGenerator() {}
 
@@ -249,14 +248,12 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
 
   bool solution_found = false;
   while (remaining_num_conflicts > 0 && !time_limit->LimitReached()) {
-    ++sat_seed_;
     sat_propagator_->Backtrack(0);
     old_num_failures = sat_propagator_->num_failures();
 
     sat::SatParameters sat_params = saved_params;
     sat::RandomizeDecisionHeuristic(random_, &sat_params);
     sat_params.set_max_number_of_conflicts(kMaxNumConflicts);
-    sat_params.set_random_seed(sat_seed_);
     sat_propagator_->SetParameters(sat_params);
     sat_propagator_->ResetDecisionHeuristic();
 

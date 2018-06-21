@@ -100,7 +100,6 @@ class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
   int random_seed_;
   MTRandom* random_;
   sat::SatSolver* sat_propagator_;
-  uint32 sat_seed_;
 };
 
 // This class computes the linear relaxation of the state problem.

@@ -17,6 +17,7 @@
 
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -85,6 +86,23 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
   Trail* trail = model->GetOrCreate<Trail>();
   SatDecisionPolicy* decision_policy = model->GetOrCreate<SatDecisionPolicy>();
   return [sat_solver, trail, decision_policy] {
+    const bool all_assigned = trail->Index() == sat_solver->NumVariables();
+    return all_assigned ? kNoLiteralIndex
+                        : decision_policy->NextBranch().Index();
+  };
+}
+
+std::function<LiteralIndex()> RandomizeOnRestartSatSolverHeuristic(
+    Model* model) {
+  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  Trail* trail = model->GetOrCreate<Trail>();
+  SatDecisionPolicy* decision_policy = model->GetOrCreate<SatDecisionPolicy>();
+  return [sat_solver, trail, decision_policy, model] {
+    if (sat_solver->CurrentDecisionLevel() == 0) {
+      RandomizeDecisionHeuristic(model->GetOrCreate<ModelRandomGenerator>(),
+                                 model->GetOrCreate<SatParameters>());
+      decision_policy->ResetDecisionHeuristic();
+    }
     const bool all_assigned = trail->Index() == sat_solver->NumVariables();
     return all_assigned ? kNoLiteralIndex
                         : decision_policy->NextBranch().Index();
@@ -270,16 +288,18 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   switch (parameters.search_branching()) {
     case SatParameters::AUTOMATIC_SEARCH: {
+      std::function<LiteralIndex()> search;
+      if (parameters.randomize_search()) {
+        search = SequentialSearch(
+            {RandomizeOnRestartSatSolverHeuristic(model), next_decision});
+      } else {
+        search = SequentialSearch({SatSolverHeuristic(model), next_decision});
+      }
       if (parameters.exploit_integer_lp_solution()) {
-        return SolveProblemWithPortfolioSearch(
-            {ExploitIntegerLpSolution(
-                SequentialSearch({SatSolverHeuristic(model), next_decision}),
-                model)},
-            {SatSolverRestartPolicy(model)}, model);
+        search = ExploitIntegerLpSolution(search, model);
       }
       return SolveProblemWithPortfolioSearch(
-          {SequentialSearch({SatSolverHeuristic(model), next_decision})},
-          {SatSolverRestartPolicy(model)}, model);
+          {search}, {SatSolverRestartPolicy(model)}, model);
     }
     case SatParameters::FIXED_SEARCH: {
       // Not all Boolean might appear in next_decision(), so once there is no
@@ -361,6 +381,13 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
   if (num_policies == 0) return SatSolver::MODEL_SAT;
   CHECK_EQ(num_policies, restart_policies.size());
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
+  const SatParameters* const params = model->Get<SatParameters>();
+  const bool use_core = params != nullptr && params->optimize_with_core();
+  const ObjectiveSynchronizationHelper* helper =
+      model->Get<ObjectiveSynchronizationHelper>();
+  const bool synchronize_objective =
+      !use_core && helper != nullptr && helper->get_external_bound != nullptr &&
+      helper->objective_var != kNoIntegerVariable;
 
   // Note that it is important to do the level-zero propagation if it wasn't
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
@@ -385,10 +412,7 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
 
     // Check external objective, and restart if a better one is supplied.
     // TODO(user): Maybe do not check this at each decision.
-    const ObjectiveSynchronizationHelper* helper =
-        model->Get<ObjectiveSynchronizationHelper>();
-    if (helper != nullptr && helper->get_external_bound != nullptr &&
-        helper->objective_var != kNoIntegerVariable) {
+    if (synchronize_objective) {
       const double external_bound = helper->get_external_bound();
       if (std::isfinite(external_bound)) {
         IntegerValue best_bound(helper->UnscaledObjective(external_bound));

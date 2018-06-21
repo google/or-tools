@@ -13,33 +13,8 @@
 
 #include "ortools/sat/util.h"
 
-#if !defined(__PORTABLE_PLATFORM__)
-#include "google/protobuf/descriptor.h"
-#endif  // __PORTABLE_PLATFORM__
-
 namespace operations_research {
 namespace sat {
-
-void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters) {
-#if !defined(__PORTABLE_PLATFORM__)
-  // Random preferred variable order.
-  const google::protobuf::EnumDescriptor* order_d =
-      SatParameters::VariableOrder_descriptor();
-  parameters->set_preferred_variable_order(
-      static_cast<SatParameters::VariableOrder>(
-          order_d->value(random->Uniform(order_d->value_count()))->number()));
-
-  // Random polarity initial value.
-  const google::protobuf::EnumDescriptor* polarity_d =
-      SatParameters::Polarity_descriptor();
-  parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
-      polarity_d->value(random->Uniform(polarity_d->value_count()))->number()));
-#endif  // __PORTABLE_PLATFORM__
-  // Other random parameters.
-  parameters->set_use_phase_saving(random->OneIn(2));
-  parameters->set_random_polarity_ratio(random->OneIn(2) ? 0.01 : 0.0);
-  parameters->set_random_branches_ratio(random->OneIn(2) ? 0.01 : 0.0);
-}
 
 int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
                                   int relevant_prefix_size,

@@ -1829,8 +1829,10 @@ $(SRC_DIR)/ortools/sat/integer.h: \
     $(SRC_DIR)/ortools/util/sorted_interval_list.h
 
 $(SRC_DIR)/ortools/sat/integer_search.h: \
+    $(SRC_DIR)/ortools/base/random.h \
     $(SRC_DIR)/ortools/sat/integer.h \
-    $(SRC_DIR)/ortools/sat/sat_solver.h
+    $(SRC_DIR)/ortools/sat/sat_solver.h \
+    $(SRC_DIR)/ortools/util/random_engine.h
 
 $(SRC_DIR)/ortools/sat/intervals.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2133,8 +2135,7 @@ $(OBJ_DIR)/sat/cp_model_presolve.$O: \
 $(OBJ_DIR)/sat/cp_model_search.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_search.cc \
     $(SRC_DIR)/ortools/sat/cp_model_search.h \
-    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
-    $(SRC_DIR)/ortools/util/random_engine.h
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_search.$O
 
 $(OBJ_DIR)/sat/cp_model_solver.$O: \
@@ -2267,7 +2268,8 @@ $(OBJ_DIR)/sat/integer_search.$O: \
     $(SRC_DIR)/ortools/sat/integer_search.cc \
     $(SRC_DIR)/ortools/sat/integer_search.h \
     $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
-    $(SRC_DIR)/ortools/sat/sat_decision.h
+    $(SRC_DIR)/ortools/sat/sat_decision.h \
+    $(SRC_DIR)/ortools/sat/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sinteger_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_search.$O
 
 $(OBJ_DIR)/sat/intervals.$O: \

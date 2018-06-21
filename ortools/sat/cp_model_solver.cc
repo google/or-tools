@@ -2243,6 +2243,10 @@ std::function<SatParameters(Model*)> NewSatParameters(
 std::function<SatParameters(Model*)> NewSatParameters(
     const sat::SatParameters& parameters) {
   return [=](Model* model) {
+    // Tricky: It is important to initialize the model parameters before any
+    // of the solver object are created, so that by default they use the given
+    // parameters.
+    *model->GetOrCreate<SatParameters>() = parameters;
     model->GetOrCreate<SatSolver>()->SetParameters(parameters);
     return parameters;
   };
@@ -2536,6 +2540,9 @@ CpSolverResponse SolveCpModelInternal(
                                m.Integer(model_proto.objective().vars(i))));
       }
       response.set_objective_value(ScaleObjectiveValue(obj, objective_value));
+      const IntegerTrail* integer_trail = sat_model.Get<IntegerTrail>();
+      response.set_best_objective_bound(ScaleObjectiveValue(
+          obj, integer_trail->LevelZeroBound(objective_var).value()));
       external_solution_observer(response);
       VLOG(1) << "Solution #" << num_solutions
               << " obj:" << response.objective_value()

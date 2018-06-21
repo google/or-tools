@@ -13,14 +13,15 @@
 
 #include "ortools/sat/sat_decision.h"
 
+#include "ortools/sat/util.h"
+
 namespace operations_research {
 namespace sat {
 
 SatDecisionPolicy::SatDecisionPolicy(Model* model)
     : parameters_(*(model->GetOrCreate<SatParameters>())),
-      trail_(model->GetOrCreate<Trail>()) {
-  random_.seed(parameters_.random_seed());
-}
+      trail_(model->GetOrCreate<Trail>()),
+      random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
 void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   const int old_num_variables = activities_.size();
@@ -47,8 +48,6 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
 }
 
 void SatDecisionPolicy::ResetDecisionHeuristic() {
-  random_.seed(parameters_.random_seed());
-
   const int num_variables = activities_.size();
   variable_activity_increment_ = 1.0;
   activities_.assign(num_variables, parameters_.initial_variables_activity());
@@ -83,7 +82,7 @@ void SatDecisionPolicy::ResetInitialPolarity(int from) {
         var_polarity_[var] = false;
         break;
       case SatParameters::POLARITY_RANDOM:
-        var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(random_);
+        var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
         break;
       case SatParameters::POLARITY_WEIGHTED_SIGN:
         var_polarity_[var] = weighted_sign_[var] > 0;
@@ -130,7 +129,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
       std::reverse(variables.begin(), variables.end());
       break;
     case SatParameters::IN_RANDOM_ORDER:
-      std::shuffle(variables.begin(), variables.end(), random_);
+      std::shuffle(variables.begin(), variables.end(), *random_);
       break;
   }
 
@@ -243,7 +242,7 @@ Literal SatDecisionPolicy::NextBranch() {
   BooleanVariable var;
   const double ratio = parameters_.random_branches_ratio();
   auto zero_to_one = [this]() {
-    return std::uniform_real_distribution<double>()(random_);
+    return std::uniform_real_distribution<double>()(*random_);
   };
   if (ratio != 0.0 && zero_to_one() < ratio) {
     while (true) {
@@ -251,7 +250,7 @@ Literal SatDecisionPolicy::NextBranch() {
       // variables are assigned.
       std::uniform_int_distribution<int> index_dist(0,
                                                     var_ordering_.Size() - 1);
-      var = var_ordering_.QueueElement(index_dist(random_)).var;
+      var = var_ordering_.QueueElement(index_dist(*random_)).var;
       if (!trail_->Assignment().VariableIsAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
       var_ordering_.Remove(var.value());
@@ -271,7 +270,7 @@ Literal SatDecisionPolicy::NextBranch() {
   // Choose its polarity (i.e. True of False).
   const double random_ratio = parameters_.random_polarity_ratio();
   if (random_ratio != 0.0 && zero_to_one() < random_ratio) {
-    return Literal(var, std::uniform_int_distribution<int>(0, 1)(random_));
+    return Literal(var, std::uniform_int_distribution<int>(0, 1)(*random_));
   }
   return Literal(var, var_use_phase_saving_[var]
                           ? trail_->Info(var).last_polarity

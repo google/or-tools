@@ -15,14 +15,32 @@
 #define OR_TOOLS_SAT_UTIL_H_
 
 #include "ortools/base/random.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/random_engine.h"
+
+#if !defined(__PORTABLE_PLATFORM__)
+#include "google/protobuf/descriptor.h"
+#endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
 namespace sat {
 
+// The model "singleton" random engine used in the solver.
+struct ModelRandomGenerator : public random_engine_t {
+  // We seed the strategy at creation only. This should be enough for our use
+  // case since the SatParameters is set first before the solver is created. We
+  // also never really need to change the seed afterwards, it is just used to
+  // diversify solves with identical parameters on different Model objects.
+  explicit ModelRandomGenerator(Model* model) : random_engine_t() {
+    seed(model->GetOrCreate<SatParameters>()->random_seed());
+  }
+};
+
 // Randomizes the decision heuristic of the given SatParameters.
-void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters);
+template <typename URBG>
+void RandomizeDecisionHeuristic(URBG* random, SatParameters* parameters);
 
 // Context: this function is not really generic, but required to be unit-tested.
 // It is used in a clause minimization algorithm when we try to detect if any of
@@ -47,6 +65,37 @@ void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters);
 int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
                                   int relevant_prefix_size,
                                   std::vector<Literal>* literals);
+
+// ============================================================================
+// Implementation.
+// ============================================================================
+
+template <typename URBG>
+inline void RandomizeDecisionHeuristic(URBG* random,
+                                       SatParameters* parameters) {
+#if !defined(__PORTABLE_PLATFORM__)
+  // Random preferred variable order.
+  const google::protobuf::EnumDescriptor* order_d =
+      SatParameters::VariableOrder_descriptor();
+  parameters->set_preferred_variable_order(
+      static_cast<SatParameters::VariableOrder>(
+          order_d->value(absl::Uniform(*random, 0, order_d->value_count()))
+              ->number()));
+
+  // Random polarity initial value.
+  const google::protobuf::EnumDescriptor* polarity_d =
+      SatParameters::Polarity_descriptor();
+  parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
+      polarity_d->value(absl::Uniform(*random, 0, polarity_d->value_count()))
+          ->number()));
+#endif  // __PORTABLE_PLATFORM__
+  // Other random parameters.
+  parameters->set_use_phase_saving(absl::Bernoulli(*random, 0.5));
+  parameters->set_random_polarity_ratio(absl::Bernoulli(*random, 0.5) ? 0.01
+                                                                      : 0.0);
+  parameters->set_random_branches_ratio(absl::Bernoulli(*random, 0.5) ? 0.01
+                                                                      : 0.0);
+}
 
 }  // namespace sat
 }  // namespace operations_research

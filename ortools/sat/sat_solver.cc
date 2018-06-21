@@ -123,9 +123,6 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   *parameters_ = parameters;
 
   pb_constraints_.SetParameters(parameters);
-
-  random_.seed(parameters.random_seed());
-
   restart_->Reset();
   time_limit_->ResetLimitFromParameters(parameters);
 }
@@ -681,7 +678,8 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                SatParameters::
                    BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION) {
       binary_implication_graph_.MinimizeConflictFirstWithTransitiveReduction(
-          *trail_, &learned_conflict_, &is_marked_, &random_);
+          *trail_, &learned_conflict_, &is_marked_,
+          model_->GetOrCreate<ModelRandomGenerator>());
     }
     DCHECK(IsConflictValid(learned_conflict_));
   }

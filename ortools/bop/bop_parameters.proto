@@ -108,7 +108,11 @@ message BopParameters {
   optional bool use_random_lns = 6 [default = true];
 
   // The seed used to initialize the random generator.
-  optional int32 random_seed = 7 [default = 0];
+  //
+  // TODO(user): Some of our client test fail depending on this value! we need
+  // to fix them and ideally randomize our behavior from on test to the next so
+  // that this doesn't happen in the future.
+  optional int32 random_seed = 7 [default = 8];
 
   // Number of variables to relax in the exhaustive Large Neighborhood Search.
   optional int32 num_relaxed_vars = 8 [default = 10];

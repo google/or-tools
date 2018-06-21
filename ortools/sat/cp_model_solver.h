@@ -62,8 +62,8 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
                                 Model* model);
 
-// wait until this function returns with the current "best" information about
-// the objective value of the current best solution.
+// Wait until this function returns with the objective value of the current
+// best solution.
 void SetObjectiveSynchronizationFunction(std::function<double()> f,
                                          Model* model);
 

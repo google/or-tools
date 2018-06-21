@@ -609,6 +609,13 @@ class IntegerTrail : public SatPropagator {
     return false;
   }
 
+  // Returns a lower bound on the given var that will always be valid.
+  IntegerValue LevelZeroBound(IntegerVariable var) const {
+    // The level zero bounds are stored at the beginning of the trail and they
+    // also serves as sentinels. Their index match the variables index.
+    return integer_trail_[var.value()].bound;
+  }
+
   // Returns true if the variable lower bound is still the one from level zero.
   bool VariableLowerBoundIsFromLevelZero(IntegerVariable var) const {
     return vars_[var].current_trail_index < vars_.size();
@@ -637,13 +644,6 @@ class IntegerTrail : public SatPropagator {
                                 absl::Span<Literal> literal_reason,
                                 absl::Span<IntegerLiteral> integer_reason,
                                 BooleanVariable* variable_with_same_reason);
-
-  // Returns a lower bound on the given var that will always be valid.
-  IntegerValue LevelZeroBound(IntegerVariable var) const {
-    // The level zero bounds are stored at the beginning of the trail and they
-    // also serves as sentinels. Their index match the variables index.
-    return integer_trail_[var.value()].bound;
-  }
 
   // Returns the lowest trail index of a TrailEntry that can be used to explain
   // the given IntegerLiteral. The literal must be currently true (CHECKed).

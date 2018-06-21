@@ -109,9 +109,7 @@ class SatDecisionPolicy {
   // Singleton model objects.
   const SatParameters& parameters_;
   Trail* trail_;
-
-  // TODO(user): make this part of the Model so it can be shared?
-  random_engine_t random_;
+  random_engine_t* random_;
 
   // Variable ordering (priority will be adjusted dynamically). queue_elements_
   // holds the elements used by var_ordering_ (it uses pointers).
