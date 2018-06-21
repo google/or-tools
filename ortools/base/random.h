@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_RANDOM_H_
 #define OR_TOOLS_BASE_RANDOM_H_
 
+#include <random>
 #include <string>
 #include "ortools/base/basictypes.h"
 
@@ -72,6 +73,17 @@ class ACMRandom {
 #else
   typedef long long difference_type;  // NOLINT
 #endif
+  typedef uint64 result_type;
+#if LANG_CXX11
+  // Since C++11, the C++ Standard requires min() and max() to be compile-time
+  // expressions, see [rand.req.urng].  That's not possible prior to C++11.
+  static constexpr result_type min() { return 0; }
+  static constexpr result_type max() { return kuint32max; }
+#else
+  static result_type min() { return 0; }
+  static result_type max() { return kuint32max; }
+#endif
+  virtual result_type operator()() { return Next(); }
   int64 operator()(int64 val_max) { return Next64() % val_max; }
 
  private:
@@ -105,5 +117,21 @@ class MTRandom : public ACMRandom {
 typedef ACMRandom RandomBase;
 
 }  // namespace operations_research
+
+namespace absl {
+template <typename URBG>
+bool Bernoulli(
+    URBG&& urbg,  // NOLINT(runtime/references)
+    double p) {
+  return std::bernoulli_distribution(p)(urbg);
+}
+
+template <typename URGB>
+int Uniform(URGB&& urgb,  // NOLINT(runtime/references)
+            int low,
+            int high_excluded) {
+  return std::uniform_int_distribution<>(low, high_excluded - 1)(urgb);
+}
+}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_RANDOM_H_
