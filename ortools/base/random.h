@@ -74,7 +74,7 @@ class ACMRandom {
   typedef long long difference_type;  // NOLINT
 #endif
   typedef uint64 result_type;
-#if LANG_CXX11
+#if defined(LANG_CXX11) || defined(__APPLE__)
   // Since C++11, the C++ Standard requires min() and max() to be compile-time
   // expressions, see [rand.req.urng].  That's not possible prior to C++11.
   static constexpr result_type min() { return 0; }
