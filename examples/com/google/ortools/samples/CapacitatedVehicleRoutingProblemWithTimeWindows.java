@@ -79,9 +79,10 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   private List<Integer> vehicleEndTime = new ArrayList();
   // Cost per unit of distance of each vehicle.
   private List<Integer> vehicleCostCoefficients = new ArrayList();
-  // Vehicle start and end indices. They have to be implemented as int[] due
+  // Vehicle start, break and end indices. They have to be implemented as int[] due
   // to the available SWIG-ed interface.
   private int vehicleStarts[];
+  private int vehicleBreaks[];
   private int vehicleEnds[];
 
   // Random number generator to produce data.
@@ -148,6 +149,12 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
                           int costCoefficientMax) {
     logger.info("Building fleet.");
     vehicleCapacity = capacity;
+    vehicleBreaks = new int[numberOfVehicles];
+    for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
+      // Create Break nodes
+      vehicleBreaks[vehicle] = locations.size();
+      locations.add(Pair.of(-1, -1)); // use sentinel value see timeCallback()
+    }
     vehicleStarts = new int[numberOfVehicles];
     vehicleEnds = new int[numberOfVehicles];
     for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
@@ -167,8 +174,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
    * Solves the current routing problem.
    */
   private void solve(final int numberOfOrders, final int numberOfVehicles) {
-    logger.info("Creating model with " + numberOfOrders + " orders and " +
-      numberOfVehicles + " vehicles.");
+    logger.info("Creating model with " + numberOfOrders + " orders, " +
+      numberOfVehicles + " vehicles and " + numberOfVehicles + " breaks.");
     // Finalizing model
     final int numberOfLocations = locations.size();
 
@@ -192,6 +199,14 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
             if (firstIndex < numberOfOrders) {
               // shipment duration
               duration += orderDurations.get(firstIndex);
+            }
+            // Deal with Break
+            if (firstLocation.first == -1 && firstLocation.second == -1) {
+              duration += 60; // 1 hour break
+            }
+            // break node is at distance/time 0 from any node
+            if ((firstLocation.first != -1 && firstLocation.second != -1) && (secondLocation.first != -1 && secondLocation.second != -1)) {
+              distance = Math.abs(firstLocation.first - secondLocation.first) + Math.abs(firstLocation.second - secondLocation.second);
             }
             return  distance + duration;
           } catch (Throwable throwed) {
@@ -226,6 +241,11 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
             try {
               Pair<Integer, Integer> firstLocation = locations.get(firstIndex);
               Pair<Integer, Integer> secondLocation = locations.get(secondIndex);
+              // break node is at distance 0 from any node
+              if ((firstLocation.first == -1 && firstLocation.second == -1) ||
+                  (secondLocation.first == -1 && secondLocation.second == -1)) {
+                return 0;
+              }
               return costCoefficient *
                   (Math.abs(firstLocation.first - secondLocation.first) +
                    Math.abs(firstLocation.second - secondLocation.second));
@@ -238,6 +258,20 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       model.setArcCostEvaluatorOfVehicle(manhattanCostCallback, vehicle);
       model.cumulVar(model.start(vehicle), "time").setMin(vehicleStartTime.get(vehicle));
       model.cumulVar(model.end(vehicle), "time").setMax(vehicleEndTime.get(vehicle));
+    }
+    // Setting up breaks
+    for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
+      //logger.info("Breaks " + vehicle + " location index: " + vehicleBreaks[vehicle] + " index: " + model.nodeToIndex(vehicleBreaks[vehicle]));
+      // Add Time window for the break
+      model.cumulVar(vehicleBreaks[vehicle], "time").setRange(12 * 60, 12 * 60);
+      // Force each vehicle to visit a break node
+      // i.e. vehicle index for the break node i == vehicle index for the Start
+      // node i
+      model.solver().addConstraint(
+          model.solver().makeEquality(
+            model.vehicleVar(vehicleBreaks[vehicle]),
+            model.vehicleVar(model.start(vehicle))
+            ));
     }
 
     // Setting up orders
@@ -275,29 +309,32 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
         String route = "Vehicle " + vehicle + ": ";
         long order = model.start(vehicle);
-        if (model.isEnd(solution.value(model.nextVar(order)))) {
-          route += "Empty";
-        } else {
+        // Empty route has a minimum of three nodes: Start => Break => End
+        long next_order = solution.value(model.nextVar(order));
+        if (model.isEnd(solution.value(model.nextVar(next_order)))) {
+          route += "/!\\Empty Route/!\\ ";
+        }
+        {
           for (;
-               !model.isEnd(order);
-               order = solution.value(model.nextVar(order))) {
+              !model.isEnd(order);
+              order = solution.value(model.nextVar(order))) {
             IntVar load = model.cumulVar(order, "capacity");
             IntVar time = model.cumulVar(order, "time");
             route += order + " Load(" + solution.value(load) + ") " +
-                "Time(" + solution.min(time) + ", " + solution.max(time) +
-                ") -> ";
-          }
+              "Time(" + solution.min(time) + ", " + solution.max(time) +
+              ") -> ";
+              }
           IntVar load = model.cumulVar(order, "capacity");
           IntVar time = model.cumulVar(order, "time");
           route += order + " Load(" + solution.value(load) + ") " +
-              "Time(" + solution.min(time) + ", " + solution.max(time) + ")";
+            "Time(" + solution.min(time) + ", " + solution.max(time) + ")";
         }
         output += route + "\n";
       }
       logger.info(output);
     } else {
       logger.info("No solution Found !");
-		}
+    }
   }
 
   public static void main(String[] args) throws Exception {
