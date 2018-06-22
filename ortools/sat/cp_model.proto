@@ -466,8 +466,10 @@ message CpSolverResponse {
   repeated int64 solution_lower_bounds = 18;
   repeated int64 solution_upper_bounds = 19;
 
-  // Only make sense for an optimization problem and if solution is non-empty.
-  // The objective value of the returned solution.
+  // Only make sense for an optimization problem. The objective value of the
+  // returned solution if it is non-empty. If there is no solution, then for a
+  // minimization problem, this will be an upper-bound of the objective of any
+  // feasible solution, and a lower-bound for a maximization problem.
   double objective_value = 3;
 
   // Only make sense for an optimization problem. A proven lower-bound on the

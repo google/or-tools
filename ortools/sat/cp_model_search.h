@@ -44,6 +44,22 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
     const std::vector<IntegerVariable>& variable_mapping,
     const std::function<LiteralIndex()>& instrumented_strategy, Model* model);
 
+// Returns a different parameters depending on the given worker_id.
+// This assumes that worker will get an id in [0, num_workers).
+// TODO(user): Find a way to know how many search heuristics there are,
+// and how many threads to pass to LNS with an optimization model.
+SatParameters DiversifySearchParameters(const SatParameters& params,
+                                        const CpModelProto& cp_model,
+                                        const int worker_id,
+                                        int num_lns_threads);
+
+// This methods update a given response with a new incoming response.
+// TODO(user): Separate in two, 1 method for maintaining the best
+// intermediate solution, and one for cumulating the search statistics in
+// a final solution.
+bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
+                               CpSolverResponse* best);
+
 }  // namespace sat
 }  // namespace operations_research
 

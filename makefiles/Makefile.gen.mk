@@ -1829,10 +1829,8 @@ $(SRC_DIR)/ortools/sat/integer.h: \
     $(SRC_DIR)/ortools/util/sorted_interval_list.h
 
 $(SRC_DIR)/ortools/sat/integer_search.h: \
-    $(SRC_DIR)/ortools/base/random.h \
     $(SRC_DIR)/ortools/sat/integer.h \
-    $(SRC_DIR)/ortools/sat/sat_solver.h \
-    $(SRC_DIR)/ortools/util/random_engine.h
+    $(SRC_DIR)/ortools/sat/sat_solver.h
 
 $(SRC_DIR)/ortools/sat/intervals.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
@@ -1966,7 +1964,6 @@ $(SRC_DIR)/ortools/sat/sat_solver.h: \
     $(SRC_DIR)/ortools/sat/sat_base.h \
     $(SRC_DIR)/ortools/sat/sat_decision.h \
     $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
-    $(SRC_DIR)/ortools/util/random_engine.h \
     $(SRC_DIR)/ortools/util/stats.h \
     $(SRC_DIR)/ortools/util/time_limit.h
 
@@ -2022,8 +2019,10 @@ $(SRC_DIR)/ortools/sat/timetable.h: \
 
 $(SRC_DIR)/ortools/sat/util.h: \
     $(SRC_DIR)/ortools/base/random.h \
+    $(SRC_DIR)/ortools/sat/model.h \
     $(SRC_DIR)/ortools/sat/sat_base.h \
-    $(GEN_DIR)/ortools/sat/sat_parameters.pb.h
+    $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+    $(SRC_DIR)/ortools/util/random_engine.h
 
 $(OBJ_DIR)/sat/all_different.$O: \
     $(SRC_DIR)/ortools/sat/all_different.cc \
@@ -2135,7 +2134,8 @@ $(OBJ_DIR)/sat/cp_model_presolve.$O: \
 $(OBJ_DIR)/sat/cp_model_search.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_search.cc \
     $(SRC_DIR)/ortools/sat/cp_model_search.h \
-    $(SRC_DIR)/ortools/sat/cp_model_utils.h
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
+    $(SRC_DIR)/ortools/sat/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_search.$O
 
 $(OBJ_DIR)/sat/cp_model_solver.$O: \
@@ -2369,7 +2369,8 @@ $(OBJ_DIR)/sat/restart.$O: \
 
 $(OBJ_DIR)/sat/sat_decision.$O: \
     $(SRC_DIR)/ortools/sat/sat_decision.cc \
-    $(SRC_DIR)/ortools/sat/sat_decision.h
+    $(SRC_DIR)/ortools/sat/sat_decision.h \
+    $(SRC_DIR)/ortools/sat/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssat_decision.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_decision.$O
 
 $(OBJ_DIR)/sat/sat_solver.$O: \
