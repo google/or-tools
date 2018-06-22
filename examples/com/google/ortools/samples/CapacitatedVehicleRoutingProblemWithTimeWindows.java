@@ -275,7 +275,9 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
         output += route + "\n";
       }
       logger.info(output);
-    }
+    } else {
+      logger.info("No solution Found !");
+		}
   }
 
   public static void main(String[] args) throws Exception {
