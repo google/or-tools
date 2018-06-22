@@ -242,7 +242,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
     // Setting up orders
     for (int order = 0; order < numberOfOrders; ++order) {
-      model.cumulVar(order, "time").setRange(
+      model.cumulVar(model.nodeToIndex(order), "time").setRange(
           orderTimeWindows.get(order).first,
           orderTimeWindows.get(order).second);
       int[] orders = {order};
@@ -275,22 +275,24 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
         String route = "Vehicle " + vehicle + ": ";
         long order = model.start(vehicle);
+        // Empty route has a minimum of two nodes: Start => End
         if (model.isEnd(solution.value(model.nextVar(order)))) {
-          route += "Empty";
-        } else {
+          route += "/!\\Empty Route/!\\ ";
+        }
+        {
           for (;
-               !model.isEnd(order);
-               order = solution.value(model.nextVar(order))) {
+              !model.isEnd(order);
+              order = solution.value(model.nextVar(order))) {
             IntVar load = model.cumulVar(order, "capacity");
             IntVar time = model.cumulVar(order, "time");
             route += order + " Load(" + solution.value(load) + ") " +
-                "Time(" + solution.min(time) + ", " + solution.max(time) +
-                ") -> ";
+              "Time(" + solution.min(time) + ", " + solution.max(time) +
+              ") -> ";
           }
           IntVar load = model.cumulVar(order, "capacity");
           IntVar time = model.cumulVar(order, "time");
           route += order + " Load(" + solution.value(load) + ") " +
-              "Time(" + solution.min(time) + ", " + solution.max(time) + ")";
+            "Time(" + solution.min(time) + ", " + solution.max(time) + ")";
         }
         output += route + "\n";
       }
