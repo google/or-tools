@@ -64,6 +64,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
   // Quantity to be picked up for each order.
   private List<Integer> orderDemands = new ArrayList();
+  // Time duration spent to deliver each order.
+  private List<Integer> orderDurations = new ArrayList();
   // Time window in which each order must be performed.
   private List<Pair<Integer, Integer>> orderTimeWindows = new ArrayList();
   // Penalty cost "paid" for dropping an order.
@@ -113,6 +115,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       locations.add(Pair.of(randomGenerator.nextInt(xMax + 1),
                             randomGenerator.nextInt(yMax + 1)));
       orderDemands.add(randomGenerator.nextInt(demandMax + 1));
+      /** @todo 1) Specify deliver duration for each shipment*/
+      orderDurations.add(2); // in minutes
       int timeWindowStart = randomGenerator.nextInt(timeWindowMax + 1);
       orderTimeWindows.add(Pair.of(timeWindowStart, timeWindowStart + timeWindowWidth));
       orderPenalties.add(randomGenerator.nextInt(penaltyMax - penaltyMin + 1) + penaltyMin);
@@ -167,21 +171,29 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
     // Setting up dimensions
     final int bigNumber = 100000;
-    NodeEvaluator2 manhattanCallback = new NodeEvaluator2(){
+    NodeEvaluator2 timeCallback = new NodeEvaluator2(){
         @Override
         public long run(int firstIndex, int secondIndex) {
           try {
             Pair<Integer, Integer> firstLocation = locations.get(firstIndex);
             Pair<Integer, Integer> secondLocation = locations.get(secondIndex);
-            return Math.abs(firstLocation.first - secondLocation.first) +
-                Math.abs(firstLocation.second - secondLocation.second);
+            Integer distance = 0;
+            Integer duration = 0;
+            distance = Math.abs(firstLocation.first - secondLocation.first) +
+                       Math.abs(firstLocation.second - secondLocation.second);
+            // Deal with Order duration shipment
+            if (firstIndex < numberOfOrders) {
+              // shipment duration
+              duration += orderDurations.get(firstIndex);
+            }
+            return  distance + duration;
           } catch (Throwable throwed) {
             logger.warning(throwed.getMessage());
             return 0;
           }
         }
       };
-    model.addDimension(manhattanCallback, bigNumber, bigNumber, false, "time");
+    model.addDimension(timeCallback, bigNumber, bigNumber, false, "time");
     NodeEvaluator2 demandCallback = new NodeEvaluator2(){
         @Override
         public long run(int firstIndex, int secondIndex) {
