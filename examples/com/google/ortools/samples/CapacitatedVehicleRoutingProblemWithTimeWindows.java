@@ -233,7 +233,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     RoutingSearchParameters parameters =
         RoutingSearchParameters.newBuilder()
         .mergeFrom(RoutingModel.defaultSearchParameters())
-        .setFirstSolutionStrategy(FirstSolutionStrategy.Value.ALL_UNPERFORMED)
+        .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
         .build();
 
     logger.info("Search");
