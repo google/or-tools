@@ -263,20 +263,20 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
       //logger.info("Breaks " + vehicle + " location index: " + vehicleBreaks[vehicle] + " index: " + model.nodeToIndex(vehicleBreaks[vehicle]));
       // Add Time window for the break
-      model.cumulVar(vehicleBreaks[vehicle], "time").setRange(12 * 60, 12 * 60);
+      model.cumulVar(model.nodeToIndex(vehicleBreaks[vehicle]), "time").setRange(12 * 60, 12 * 60);
       // Force each vehicle to visit a break node
       // i.e. vehicle index for the break node i == vehicle index for the Start
       // node i
       model.solver().addConstraint(
           model.solver().makeEquality(
-            model.vehicleVar(vehicleBreaks[vehicle]),
+            model.vehicleVar(model.nodeToIndex(vehicleBreaks[vehicle])),
             model.vehicleVar(model.start(vehicle))
             ));
     }
 
     // Setting up orders
     for (int order = 0; order < numberOfOrders; ++order) {
-      model.cumulVar(order, "time").setRange(
+      model.cumulVar(model.nodeToIndex(order), "time").setRange(
           orderTimeWindows.get(order).first,
           orderTimeWindows.get(order).second);
       int[] orders = {order};
