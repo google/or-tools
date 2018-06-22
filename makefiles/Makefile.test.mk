@@ -21,9 +21,14 @@ test_python_examples: python
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Stests$Stest_lp_api.py
 
 .PHONY: test_java_examples
-test_java_examples: java run_RabbitsPheasants run_FlowExample \
-run_Tsp run_LinearProgramming run_IntegerProgramming \
-run_Knapsack run_MultiThreadIntegerProgramming
+test_java_examples: java \
+run_RabbitsPheasants \
+run_FlowExample \
+run_Tsp \
+run_LinearProgramming \
+run_IntegerProgramming \
+run_Knapsack \
+run_MultiThreadIntegerProgramming
 
 # csharp test
 .PHONY: test_csharp_examples
