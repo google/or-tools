@@ -79,6 +79,11 @@ cache/
 tools/netstandard/CreateSigningKey/bin
 tools/netstandard/CreateSigningKey/obj
 
+**/.vs/*
+**/dotnet-test/*
+
+**/packages
+
 ortools/fsharp/**/bin
 ortools/fsharp/**/obj
 ortools/fsharp/**/packages

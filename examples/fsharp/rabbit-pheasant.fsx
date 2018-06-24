@@ -1,6 +1,10 @@
 
 #I "../../bin"
+#I "./packages/NETStandard.Library.2.0.2/build/netstandard2.0/ref"
+
 #r "Google.OrTools.dll"
+#r "Google.OrTools.FSharp.dll"
+#r "netstandard.dll"
 
 open Google.OrTools.ConstraintSolver
 
