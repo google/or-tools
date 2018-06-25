@@ -43,7 +43,7 @@ ifeq ($(PLATFORM),MACOSX)
 DOTNET_LIB_DIR = env DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR)
 endif
 ifeq ($(PLATFORM),LINUX)
-DOTNET_LIB_DIR = env LD_LIBRARY_PATH=$(LIB_DIR)
+DOTNET_LIB_DIR = env LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:$(LIB_DIR)"
 endif
 
 CLEAN_FILES=$(CLR_PROTOBUF_DLL_NAME).* $(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).* $(CLR_ORTOOLS_DLL_NAME).*
@@ -197,7 +197,7 @@ ifeq ($(PLATFORM),MACOSX)
 	$(COPY) dependencies/install/lib/libgflags.*.dylib dependencies/install/lib/libglog.*.dylib dependencies/install/lib/libprotobuf.*.dylib dependencies/install/lib/libCbcSolver.*.dylib dependencies/install/lib/libCbc.*.dylib dependencies/install/lib/libOsiCbc.*.dylib dependencies/install/lib/libCgl.*.dylib dependencies/install/lib/libClpSolver.*.dylib dependencies/install/lib/libClp.*.dylib dependencies/install/lib/libOsiClp.*.dylib dependencies/install/lib/libOsi.*.dylib dependencies/install/lib/libCoinUtils.*.dylib $(LIB_DIR)
 endif
 ifeq ($(PLATFORM),LINUX)
-	$(COPY) dependencies/install/lib/libgflags.*.so dependencies/install/lib/libglog.*.so dependencies/install/lib/libprotobuf.*.so dependencies/install/lib/libCbcSolver.*.so dependencies/install/lib/libCbc.*.so dependencies/install/lib/libOsiCbc.*.so dependencies/install/lib/libCgl.*.so dependencies/install/lib/libClpSolver.*.so dependencies/install/lib/libClp.*.so dependencies/install/lib/libOsiClp.*.so dependencies/install/lib/libOsi.*.so dependencies/install/lib/libCoinUtils.*.so $(LIB_DIR)
+	$(COPY) dependencies/install/lib/lib*so.* $(LIB_DIR)
 endif
 
 .PHONY: fsharp_dotnet # Build F# OR-Tools
