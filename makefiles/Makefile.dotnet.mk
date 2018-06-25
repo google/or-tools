@@ -245,7 +245,7 @@ dotnet: clean_dotnet test_dotnet
 	"$(DOTNET_EXECUTABLE)" publish -c Release -o "..$S..$S..$S$(DOTNET_BUILD_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_NAME)$S$(FSHARP_ORTOOLS_DLL_NAME).fsproj
 
 
-BUILT_LANGUAGES +=, dotnet (netstandard2.0)
+BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 
 ifeq ($(SYSTEM),win)
 NUGET_COMPILER ?= nuget.exe
