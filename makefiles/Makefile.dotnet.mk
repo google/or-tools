@@ -193,12 +193,6 @@ ifeq ($(SYSTEM),win)
 else
 	$(COPY) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sbin$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
 endif
-ifeq ($(PLATFORM),MACOSX)
-	$(COPY) dependencies/install/lib/libgflags.*.dylib dependencies/install/lib/libglog.*.dylib dependencies/install/lib/libprotobuf.*.dylib dependencies/install/lib/libCbcSolver.*.dylib dependencies/install/lib/libCbc.*.dylib dependencies/install/lib/libOsiCbc.*.dylib dependencies/install/lib/libCgl.*.dylib dependencies/install/lib/libClpSolver.*.dylib dependencies/install/lib/libClp.*.dylib dependencies/install/lib/libOsiClp.*.dylib dependencies/install/lib/libOsi.*.dylib dependencies/install/lib/libCoinUtils.*.dylib $(LIB_DIR)
-endif
-ifeq ($(PLATFORM),LINUX)
-	$(COPY) dependencies/install/lib/lib*so.* $(LIB_DIR)
-endif
 
 .PHONY: fsharp_dotnet # Build F# OR-Tools
 fsharp_dotnet:
