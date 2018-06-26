@@ -36,7 +36,8 @@ EXE_OUT = /Fe
 LD_OUT = /OUT:
 DYNAMIC_LD = link /DLL /LTCG /debug
 S = \\
-CPSEP =;
+CMDSEP=&
+CPSEP=;
 
 COPY = copy
 COPYREC = xcopy

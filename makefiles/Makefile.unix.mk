@@ -28,6 +28,7 @@ LD_OUT = -o # need the space.
 OBJ_OUT = -o # need the space
 EXE_OUT = -o # need the space
 S = /
+CMDSEP=;
 CPSEP = :
 
 COPY = cp

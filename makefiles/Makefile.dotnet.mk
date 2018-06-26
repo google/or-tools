@@ -207,7 +207,7 @@ endif
 clean_dotnet:
 	$(DELREC) $(GEN_DIR)
 	$(DELREC) .$S$(DOTNET_ORTOOLS_TEST_DIR)
-	$(foreach var,$(CLEAN_FILES), $(DEL) bin$S$(var);)
+	$(foreach var,$(CLEAN_FILES), $(DEL) bin$S$(var)$(CMDSEP))
 
 .PHONY: test_dotnet # Test dotnet version of OR-Tools
 test_dotnet: csharp_dotnet fsharp_dotnet
