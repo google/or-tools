@@ -26,7 +26,7 @@ portable software suite for solving combinatorial optimization problems.
 
 The suite contains:
 * A constraint programming solver;
-* A linear programming solvers;
+* A linear programming solver;
 * Wrappers around commercial and other open source solvers, including mixed
 integer solvers;
 * Bin packing and knapsack algorithms;
