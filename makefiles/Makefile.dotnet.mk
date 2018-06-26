@@ -225,7 +225,7 @@ test_dotnet: csharp_dotnet fsharp_dotnet
 	"$(DOTNET_EXECUTABLE)" build -o "..$S..$S..$S$(DOTNET_ORTOOLS_TEST_DIR)" "ortools$Sdotnet$S$(ORTOOLS_DLL_TEST)$S$(ORTOOLS_DLL_TEST).csproj"
 	"$(DOTNET_EXECUTABLE)" clean "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$S$(FSHARP_ORTOOLS_DLL_TEST).fsproj"
 	"$(DOTNET_EXECUTABLE)" build -o "..$S..$S..$S$(DOTNET_ORTOOLS_TEST_DIR)" "ortools$Sdotnet$S$(FSHARP_ORTOOLS_DLL_TEST)$S$(FSHARP_ORTOOLS_DLL_TEST).fsproj"
-	# $(COPY) $(LIB_DIR)$S*.* .$S$(DOTNET_ORTOOLS_TEST_DIR)
+# $(COPY) $(LIB_DIR)$S*.* .$S$(DOTNET_ORTOOLS_TEST_DIR)
 ifeq ($(SYSTEM),win)
 	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" ".$S$(DOTNET_ORTOOLS_TEST_DIR)$SGoogle.$(ORTOOLS_DLL_TEST).dll" ".$S$(DOTNET_ORTOOLS_TEST_DIR)$SGoogle.$(FSHARP_ORTOOLS_DLL_TEST).dll" -verbose
 else
