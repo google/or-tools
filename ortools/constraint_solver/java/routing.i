@@ -190,6 +190,8 @@ CONVERT_VECTOR_WITH_CAST(RoutingModel::NodeEvaluator2, NodeEvaluator2, NODE_EVAL
 %rename (applyLocks) ApplyLocks;
 %rename (writeAssignment) WriteAssignment;
 %rename (readAssignment) ReadAssignment;
+%rename (nodeToIndex) NodeToIndex;
+%rename (indexToNode) IndexToNode;
 %rename (start) Start;
 %rename (end) End;
 %rename (isStart) IsStart;
