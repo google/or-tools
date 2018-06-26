@@ -182,17 +182,17 @@ class SatDecisionPolicy {
 
   // Stores variable activity and the number of time each variable was "bumped".
   // The later is only used with the ERWA heuristic.
-  ITIVector<BooleanVariable, double> activities_;
-  ITIVector<BooleanVariable, double> tie_breakers_;
-  ITIVector<BooleanVariable, int64> num_bumps_;
+  gtl::ITIVector<BooleanVariable, double> activities_;
+  gtl::ITIVector<BooleanVariable, double> tie_breakers_;
+  gtl::ITIVector<BooleanVariable, int64> num_bumps_;
 
   // Used by NextBranch() to choose the polarity of the next decision. For the
   // phase saving, the last polarity is stored in trail_->Info(var).
-  ITIVector<BooleanVariable, bool> var_use_phase_saving_;
-  ITIVector<BooleanVariable, bool> var_polarity_;
+  gtl::ITIVector<BooleanVariable, bool> var_use_phase_saving_;
+  gtl::ITIVector<BooleanVariable, bool> var_polarity_;
 
   // Used in initial polarity computation.
-  ITIVector<BooleanVariable, double> weighted_sign_;
+  gtl::ITIVector<BooleanVariable, double> weighted_sign_;
 };
 
 }  // namespace sat

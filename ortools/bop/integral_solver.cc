@@ -381,7 +381,7 @@ class IntegralProblemConverter {
   // constraint.
   Fractional AddWeightedIntegralVariable(
       ColIndex col, Fractional weight,
-      ITIVector<VariableIndex, Fractional>* dense_weights);
+      gtl::ITIVector<VariableIndex, Fractional>* dense_weights);
 
   // Scales weights and adds all non-zero scaled weights and literals to t.
   // t is a constraint or the objective.
@@ -391,25 +391,25 @@ class IntegralProblemConverter {
   template <class T>
   double ScaleAndSparsifyWeights(
       double scaling_factor, int64 gcd,
-      const ITIVector<VariableIndex, Fractional>& dense_weights, T* t);
+      const gtl::ITIVector<VariableIndex, Fractional>& dense_weights, T* t);
 
   // Returns true when at least one element is non-zero.
   bool HasNonZeroWeigths(
-      const ITIVector<VariableIndex, Fractional>& dense_weights) const;
+      const gtl::ITIVector<VariableIndex, Fractional>& dense_weights) const;
 
   bool problem_is_boolean_and_has_only_integral_constraints_;
 
   // global_to_boolean_[i] represents the Boolean variable index in Bop; when
   // negative -global_to_boolean_[i] - 1 represents the index of the
   // integral variable in integral_variables_.
-  ITIVector</*global_col*/ glop::ColIndex, /*boolean_col*/ int>
+  gtl::ITIVector</*global_col*/ glop::ColIndex, /*boolean_col*/ int>
       global_to_boolean_;
   std::vector<IntegralVariable> integral_variables_;
   std::vector<ColIndex> integral_indices_;
   int num_boolean_variables_;
 
   enum VariableType { BOOLEAN, INTEGRAL, INTEGRAL_EXPRESSED_AS_BOOLEAN };
-  ITIVector<glop::ColIndex, VariableType> variable_types_;
+  gtl::ITIVector<glop::ColIndex, VariableType> variable_types_;
 };
 
 IntegralProblemConverter::IntegralProblemConverter()
@@ -583,7 +583,7 @@ void IntegralProblemConverter::ConvertAllConstraints(
   std::vector<double> coefficients;
   for (RowIndex row(0); row < linear_problem.num_constraints(); ++row) {
     Fractional offset = 0.0;
-    ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
+    gtl::ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
                                                        0.0);
     for (const SparseColumn::Entry e : transpose.column(RowToColIndex(row))) {
       // Cast in ColIndex due to the transpose.
@@ -653,7 +653,7 @@ void IntegralProblemConverter::ConvertObjective(
     LinearBooleanProblem* boolean_problem) {
   LinearObjective* objective = boolean_problem->mutable_objective();
   Fractional offset = 0.0;
-  ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
+  gtl::ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
                                                      0.0);
   // Compute the objective weights for the binary variable model.
   for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
@@ -787,7 +787,7 @@ bool IntegralProblemConverter::CreateVariableUsingConstraint(
   integral_var->Clear();
 
   const SparseMatrix& transpose = linear_problem.GetTransposeSparseMatrix();
-  ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
+  gtl::ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
                                                      0.0);
   Fractional scale = 1.0;
   int64 variable_offset = 0;
@@ -838,7 +838,7 @@ bool IntegralProblemConverter::CreateVariableUsingConstraint(
 
 Fractional IntegralProblemConverter::AddWeightedIntegralVariable(
     ColIndex col, Fractional weight,
-    ITIVector<VariableIndex, Fractional>* dense_weights) {
+    gtl::ITIVector<VariableIndex, Fractional>* dense_weights) {
   CHECK(nullptr != dense_weights);
 
   if (weight == 0.0) {
@@ -865,7 +865,7 @@ Fractional IntegralProblemConverter::AddWeightedIntegralVariable(
 template <class T>
 double IntegralProblemConverter::ScaleAndSparsifyWeights(
     double scaling_factor, int64 gcd,
-    const ITIVector<VariableIndex, Fractional>& dense_weights, T* t) {
+    const gtl::ITIVector<VariableIndex, Fractional>& dense_weights, T* t) {
   CHECK(nullptr != t);
 
   double bound_error = 0.0;
@@ -881,7 +881,7 @@ double IntegralProblemConverter::ScaleAndSparsifyWeights(
   return bound_error;
 }
 bool IntegralProblemConverter::HasNonZeroWeigths(
-    const ITIVector<VariableIndex, Fractional>& dense_weights) const {
+    const gtl::ITIVector<VariableIndex, Fractional>& dense_weights) const {
   for (const Fractional weight : dense_weights) {
     if (weight != 0.0) {
       return true;

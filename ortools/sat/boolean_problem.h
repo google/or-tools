@@ -129,7 +129,7 @@ void FindLinearBooleanProblemSymmetries(
 // of the correct size. It can also map a literal index to kTrueLiteralIndex
 // or kFalseLiteralIndex in order to fix the variable.
 void ApplyLiteralMappingToBooleanProblem(
-    const ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
     LinearBooleanProblem* problem);
 
 // A simple preprocessing step that does basic probing and removes the fixed and

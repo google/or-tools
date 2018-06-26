@@ -55,7 +55,7 @@ class DratProofHandler {
   //
   // TODO(user): This is exactly the same mecanism as in the SatPostsolver
   // class. Factor out the code.
-  void ApplyMapping(const ITIVector<BooleanVariable, BooleanVariable>& mapping);
+  void ApplyMapping(const gtl::ITIVector<BooleanVariable, BooleanVariable>& mapping);
 
   // This need to be called when new variables are created.
   void SetNumVariables(int num_variables);
@@ -101,7 +101,7 @@ class DratProofHandler {
 
   // This mapping will be applied to all clause passed to AddClause() or
   // DeleteClause() so that they are in term of the original problem.
-  ITIVector<BooleanVariable, BooleanVariable> reverse_mapping_;
+  gtl::ITIVector<BooleanVariable, BooleanVariable> reverse_mapping_;
 
   std::unique_ptr<DratChecker> drat_checker_;
   std::unique_ptr<DratWriter> drat_writer_;

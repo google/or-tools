@@ -368,9 +368,9 @@ class RoutingCache : public RoutingModel::NodeEvaluator2 {
   }
 
  private:
-  ITIVector<RoutingModel::NodeIndex, ITIVector<RoutingModel::NodeIndex, bool>>
+  gtl::ITIVector<RoutingModel::NodeIndex, gtl::ITIVector<RoutingModel::NodeIndex, bool>>
       cached_;
-  ITIVector<RoutingModel::NodeIndex, ITIVector<RoutingModel::NodeIndex, int64>>
+  gtl::ITIVector<RoutingModel::NodeIndex, gtl::ITIVector<RoutingModel::NodeIndex, int64>>
       cache_;
   RoutingModel::NodeEvaluator2* const callback_;
 };
@@ -416,9 +416,9 @@ class StateDependentRoutingCache : public RoutingModel::VariableNodeEvaluator2 {
   }
 
  private:
-  ITIVector<
+  gtl::ITIVector<
       RoutingModel::NodeIndex,
-      ITIVector<RoutingModel::NodeIndex, RoutingModel::StateDependentTransit>>
+      gtl::ITIVector<RoutingModel::NodeIndex, RoutingModel::StateDependentTransit>>
       cache_;
   RoutingModel::VariableNodeEvaluator2* const callback_;
 };
@@ -2597,7 +2597,7 @@ struct SweepNodeSortDistance {
 } SweepNodeDistanceComparator;
 
 SweepArranger::SweepArranger(
-    const ITIVector<RoutingModel::NodeIndex, std::pair<int64, int64>>& points)
+    const gtl::ITIVector<RoutingModel::NodeIndex, std::pair<int64, int64>>& points)
     : coordinates_(2 * points.size(), 0), sectors_(1) {
   for (RoutingModel::NodeIndex i(0); i < points.size(); ++i) {
     coordinates_[2 * i] = points[i].first;

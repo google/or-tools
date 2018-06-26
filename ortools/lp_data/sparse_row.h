@@ -57,7 +57,7 @@ class SparseRow : public SparseVector<ColIndex, SparseRowIterator> {
 };
 
 // A matrix stored by rows.
-typedef ITIVector<RowIndex, SparseRow> RowMajorSparseMatrix;
+typedef gtl::ITIVector<RowIndex, SparseRow> RowMajorSparseMatrix;
 
 }  // namespace glop
 }  // namespace operations_research

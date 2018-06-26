@@ -73,10 +73,10 @@ class BopSolution {
   }
 
   // For range based iteration, i.e. for (const bool value : solution) {...}.
-  ITIVector<VariableIndex, bool>::const_iterator begin() const {
+  gtl::ITIVector<VariableIndex, bool>::const_iterator begin() const {
     return values_.begin();
   }
-  ITIVector<VariableIndex, bool>::const_iterator end() const {
+  gtl::ITIVector<VariableIndex, bool>::const_iterator end() const {
     return values_.end();
   }
 
@@ -95,7 +95,7 @@ class BopSolution {
 
   const LinearBooleanProblem* problem_;
   std::string name_;
-  ITIVector<VariableIndex, bool> values_;
+  gtl::ITIVector<VariableIndex, bool> values_;
 
   // Those are mutable because they behave as const values for a given solution
   // but for performance reasons we want to be lazy on their computation,

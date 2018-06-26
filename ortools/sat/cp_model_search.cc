@@ -251,8 +251,7 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
 
 SatParameters DiversifySearchParameters(const SatParameters& params,
                                         const CpModelProto& cp_model,
-                                        const int worker_id,
-                                        int num_lns_threads) {
+                                        const int worker_id) {
   // Note: in the flatzinc setting, we know we always have a fixed search
   //       defined.
   // Things to try:
@@ -263,7 +262,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
   SatParameters new_params = params;
   new_params.set_random_seed(params.random_seed() + worker_id);
   if (cp_model.has_objective()) {
-    CHECK_LE(worker_id, 5);
     switch (worker_id) {
       case 0: {  // Use default parameters and fixed search.
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
@@ -277,7 +275,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       case 2: {  // Remove LP relaxation.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(0);
-        new_params.set_binary_search_num_conflicts(10);
         break;
       }
       case 3: {  // Reinforce LP relaxation.
@@ -290,14 +287,10 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
         new_params.set_optimize_with_core(true);
         break;
       }
-      case 5: {  // LNS
+      default: {  // LNS.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_use_lns(true);
-        new_params.set_lns_num_threads(num_lns_threads);
-        break;
-      }
-      default: {  // Fail.
-        LOG(FATAL) << "Should not be here.";
+        new_params.set_lns_num_threads(1);
       }
     }
   } else {

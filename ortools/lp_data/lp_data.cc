@@ -55,7 +55,7 @@ bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
 }
 
 template <class I, class T>
-double Average(const ITIVector<I, T>& v) {
+double Average(const gtl::ITIVector<I, T>& v) {
   const size_t size = v.size();
   DCHECK_LT(0, size);
   double sum = 0.0;
@@ -69,7 +69,7 @@ double Average(const ITIVector<I, T>& v) {
 }
 
 template <class I, class T>
-double StandardDeviation(const ITIVector<I, T>& v) {
+double StandardDeviation(const gtl::ITIVector<I, T>& v) {
   const size_t size = v.size();
   double n = 0.0;  // n is used in a calculation involving doubles.
   double sigma_square = 0.0;
@@ -86,7 +86,7 @@ double StandardDeviation(const ITIVector<I, T>& v) {
 
 // Returns 0 when the vector is empty.
 template <class I, class T>
-T GetMaxElement(const ITIVector<I, T>& v) {
+T GetMaxElement(const gtl::ITIVector<I, T>& v) {
   const size_t size = v.size();
   if (size == 0) {
     return T(0);

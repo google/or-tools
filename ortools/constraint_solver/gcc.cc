@@ -688,7 +688,7 @@ class GccConstraint : public Constraint {
     return changed;
   }
 
-  ITIVector<Index, IntVar*> variables_;
+  gtl::ITIVector<Index, IntVar*> variables_;
   const int64 size_;
   // NumericalRev<int> current_level_;
   // int last_level_;
@@ -700,7 +700,7 @@ class GccConstraint : public Constraint {
   std::vector<int64> stable_intervals_;
   std::vector<int64> potential_stable_sets_;
   std::vector<int64> new_min_;
-  ITIVector<Index, Interval> intervals_;
+  gtl::ITIVector<Index, Interval> intervals_;
   std::vector<Interval*> sorted_by_min_;
   std::vector<Interval*> sorted_by_max_;
   // bounds_[1..active_size_] hold set of min & max of the n intervals

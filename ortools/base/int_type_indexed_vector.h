@@ -67,6 +67,7 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/macros.h"
 
+namespace gtl {
 // STL std::vector
 // ------------------------------------------------------------------
 template <typename IntType, typename T, typename Alloc = std::allocator<T> >
@@ -203,5 +204,7 @@ inline void swap(ITIVector<IntType, T, Alloc>& x,
                  ITIVector<IntType, T, Alloc>& y) {
   x.swap(y);
 }
+
+}  // namespace gtl
 
 #endif  // OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_

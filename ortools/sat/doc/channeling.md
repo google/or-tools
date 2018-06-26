@@ -339,7 +339,7 @@ public class CodeSamplesSat
 
   static void Main()
   {
-    RabbitsAndPheasants();
+    BinpackingProblem();
   }
 }
 ```

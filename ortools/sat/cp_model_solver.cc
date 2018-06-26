@@ -283,8 +283,8 @@ class ModelWithMapping {
   // Recover from a IntervalVariable/BooleanVariable its associated CpModelProto
   // index. The value of -1 is used to indicate that there is no correspondence
   // (i.e. this variable is only used internally).
-  ITIVector<BooleanVariable, int> reverse_boolean_map_;
-  ITIVector<IntegerVariable, int> reverse_integer_map_;
+  gtl::ITIVector<BooleanVariable, int> reverse_boolean_map_;
+  gtl::ITIVector<IntegerVariable, int> reverse_integer_map_;
 
   // Used to return a feasible solution for the unused variables.
   std::vector<int64> lower_bounds_;
@@ -2445,7 +2445,7 @@ CpSolverResponse SolveCpModelInternal(
   if (/* DISABLES CODE */ false && is_real_solve) {
     SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
     SatPostsolver postsolver(sat_solver->NumVariables());
-    ITIVector<LiteralIndex, LiteralIndex> equiv_map;
+    gtl::ITIVector<LiteralIndex, LiteralIndex> equiv_map;
     ProbeAndFindEquivalentLiteral(sat_solver, &postsolver, nullptr, &equiv_map);
   }
 

@@ -91,21 +91,27 @@ inline void OptimizeWithLNS(
   int64 seed = 0;
 #if !defined(__PORTABLE_PLATFORM__)
   while (!stop_function()) {
-    std::vector<std::function<void()>> update_functions(num_threads);
-    {
-      ThreadPool pool("Parallel_LNS", num_threads);
-      pool.StartWorkers();
-      for (int i = 0; i < num_threads; ++i) {
-        pool.Schedule(
-            [&update_functions, &generate_and_solve_function, i, seed]() {
-              update_functions[i] = generate_and_solve_function(seed + i);
-            });
+    if (num_threads > 1) {
+      std::vector<std::function<void()>> update_functions(num_threads);
+      {
+        ThreadPool pool("Parallel_LNS", num_threads);
+        pool.StartWorkers();
+        for (int i = 0; i < num_threads; ++i) {
+          pool.Schedule(
+              [&update_functions, &generate_and_solve_function, i, seed]() {
+                update_functions[i] = generate_and_solve_function(seed + i);
+              });
+        }
       }
-    }
 
-    seed += num_threads;
-    for (int i = 0; i < num_threads; ++i) {
-      update_functions[i]();
+      seed += num_threads;
+      for (int i = 0; i < num_threads; ++i) {
+        update_functions[i]();
+      }
+    } else {
+      std::function<void()> update_function =
+          generate_and_solve_function(seed++);
+      update_function();
     }
   }
 #else   // __PORTABLE_PLATFORM__

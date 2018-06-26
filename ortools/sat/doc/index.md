@@ -9,7 +9,7 @@ by type:
 -   [integer arithmetic](integer_arithmetic.md)
 -   [channeling constraints](channeling.md)
 -   [scheduling](scheduling.md)
--   [solving a CP-SAT model](solver.md)
+-   [Using the CP-SAT solver](solver.md)
 
 Code samples are given in C++ and python. Each language have different
 requirements for the code samples.
@@ -39,8 +39,8 @@ The interface to the C++ CP-SAT solver is implemented through the
 **CpModelProto** class described in
 *ortools/sat/cp_model.proto*.
 
-To help creating variables and constraints, we propose some inline helpers to
-improve readability.
+We provide some inline helper methods to simplify variable and constraint
+creation.
 
 ```cpp
 #include "ortools/sat/cp_model.pb.h"
@@ -69,7 +69,7 @@ void CodeSample() {
 
 ## C\# code samples
 
-The C\# code implements the same interface as the python code, with a
+The C\# code implements the same interface as the Python code, with a
 **CpModel**, and a **CpSolver** class.
 
 

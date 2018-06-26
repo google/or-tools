@@ -12,22 +12,22 @@ Integer variables are discrete variables ranging over 64 bit signed integer
 values. When creating them, a domain must be given. The format of this domain is
 a flattened list of disjoint intervals.
 
--   To represent a continuous interval from 0 to 10, just pass a domain [0, 10].
+-   To represent a interval from 0 to 10, just pass a domain [0, 10].
 -   To represent a single value (5), create a domain [5, 5].
 -   From these, it is easy to represent an enumerated list of values [-5, -4,
     -3, 1, 3, 4, 5, 6] is encoded as [-5, -3, 1, 1, 3, 6].
--   to exclude a single value, use int64 min and max values as in [int64min, -1,
-    1, int64max].
+-   To exclude a single value, use int64min and int64max values as in 
+    [int64min, 4, 6, int64max].
 
 ## Linear constraints
 
-In **C++**, the only supported data structure is a linear constraints as in:
+In **C++**, the model supports linear constraints as in:
 
     sum (a_i * x_i) in domain
 
 Where domain uses the same encoding as integer variables.
 
-From this, usual modeling tricks can express general arithmetic constraints:
+From this, the usual modeling tricks can express general arithmetic constraints:
 
     x > y
 
@@ -40,10 +40,10 @@ can be rewritten as
 
 ## Rabbits and Pheasants examples
 
-Let's solve a trivial example from children logic quizzes.
+Let's solve a simple children's puzzle: the Rabbits and Pheasants problem.
 
-We see rabbits and pheasants, we see 20 heads, and 56 legs. How many rabbits and
-pheasants are there?
+WIn a field of rabbits and pheasants, there are 20 heads and 56 legs. How many
+rabbits and pheasants are there?
 
 ### Python code
 

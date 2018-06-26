@@ -82,7 +82,7 @@ struct BopConstraintTerm {
     return search_id < other.search_id;
   }
 };
-typedef ITIVector<SparseIndex, BopConstraintTerm> BopConstraintTerms;
+typedef gtl::ITIVector<SparseIndex, BopConstraintTerm> BopConstraintTerms;
 
 }  // namespace bop
 }  // namespace operations_research

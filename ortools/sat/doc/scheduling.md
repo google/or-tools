@@ -4,21 +4,20 @@
 
 ## Introduction
 
-Scheduling in Operations Research deals with tasks that times. In general,
-scheduling problems have the following features: fixed or variable durations,
-alternate ways of performing the same task, mutual exclusivity between tasks,
-and temporal relations between tasks.
+Scheduling in Operations Research involves problems of tasks, resources and
+times. In general, scheduling problems have the following features: fixed or
+variable durations, alternate ways of performing the same task, mutual
+exclusivity between tasks, and temporal relations between tasks.
 
 ## Interval variables
 
 Intervals are constraints containing three integer variables (start, size, and
 end). Creating an interval constraint will enforce that start + size == end.
 
-To create an interval, we need to create three variables, for the start, the
-size, and the end of the interval. Then we create an interval constraint using
-these three variables.
+4:15PM, Jun 20 To define an interval, we need to create three variables: start,
+size, and end.Then we create an interval constraint using these three variables.
 
-We give two code snippets the demonstrate how to build these objects in python,
+We give two code snippets the demonstrate how to build these objects in Python,
 C++, and C\#.
 
 ### Python code
@@ -127,7 +126,7 @@ def OptionalIntervalSample():
   model = cp_model.CpModel()
   horizon = 100
   start_var = model.NewIntVar(0, horizon, 'start')
-  duration = 10  # Python cp/sat code accept integer variables or constants.
+  duration = 10  # Python CP-SAT code accepts integer variables or constants.
   end_var = model.NewIntVar(0, horizon, 'end')
   presence = model.NewBoolVar('presence')
   interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var,
@@ -220,7 +219,7 @@ public class CodeSamplesSat
 
 ## NoOverlap constraint
 
-A no overlap constraints simply states that  all intervals are disjoint.
+A no overlap constraint simply states that all intervals are disjoint.
 
 ## Cumulative constraint
 

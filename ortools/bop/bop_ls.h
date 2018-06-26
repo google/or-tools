@@ -227,7 +227,7 @@ class NonOrderedSetHasher {
 
  private:
   MTRandom random_;
-  ITIVector<IntType, uint64> hashes_;
+  gtl::ITIVector<IntType, uint64> hashes_;
 };
 
 // This class is used to incrementally maintain an assignment and the
@@ -384,15 +384,15 @@ class AssignmentAndConstraintFeasibilityMaintainer {
     int64 weight;
   };
 
-  ITIVector<VariableIndex, ITIVector<EntryIndex, ConstraintEntry>>
+  gtl::ITIVector<VariableIndex, gtl::ITIVector<EntryIndex, ConstraintEntry>>
       by_variable_matrix_;
-  ITIVector<ConstraintIndex, int64> constraint_lower_bounds_;
-  ITIVector<ConstraintIndex, int64> constraint_upper_bounds_;
+  gtl::ITIVector<ConstraintIndex, int64> constraint_lower_bounds_;
+  gtl::ITIVector<ConstraintIndex, int64> constraint_upper_bounds_;
 
   BopSolution assignment_;
   BopSolution reference_;
 
-  ITIVector<ConstraintIndex, int64> constraint_values_;
+  gtl::ITIVector<ConstraintIndex, int64> constraint_values_;
   BacktrackableIntegerSet<ConstraintIndex> infeasible_constraint_set_;
 
   // This contains the list of variable flipped in assignment_.
@@ -481,7 +481,7 @@ class OneFlipConstraintRepairer {
   // on most promising variables first.
   void SortTermsOfEachConstraints(int num_variables);
 
-  ITIVector<ConstraintIndex, ITIVector<TermIndex, ConstraintTerm>>
+  gtl::ITIVector<ConstraintIndex, gtl::ITIVector<TermIndex, ConstraintTerm>>
       by_constraint_matrix_;
   const AssignmentAndConstraintFeasibilityMaintainer& maintainer_;
   const sat::VariablesAssignment& sat_assignment_;
@@ -593,7 +593,7 @@ class LocalSearchAssignmentIterator {
   SatWrapper* const sat_wrapper_;
   OneFlipConstraintRepairer repairer_;
   std::vector<SearchNode> search_nodes_;
-  ITIVector<ConstraintIndex, TermIndex> initial_term_index_;
+  gtl::ITIVector<ConstraintIndex, TermIndex> initial_term_index_;
 
   // Temporary vector used by ApplyDecision().
   std::vector<sat::Literal> tmp_propagated_literals_;

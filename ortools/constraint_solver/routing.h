@@ -314,14 +314,14 @@ class RoutingModel {
     RoutingModel::NodeIndex end;
     // Bounds of cumul variables at start and end vehicle nodes.
     // dimension_{start,end}_cumuls_{min,max}[d] is the bound for dimension d.
-    ITIVector<DimensionIndex, int64> dimension_start_cumuls_min;
-    ITIVector<DimensionIndex, int64> dimension_start_cumuls_max;
-    ITIVector<DimensionIndex, int64> dimension_end_cumuls_min;
-    ITIVector<DimensionIndex, int64> dimension_end_cumuls_max;
-    ITIVector<DimensionIndex, int64> dimension_capacities;
+    gtl::ITIVector<DimensionIndex, int64> dimension_start_cumuls_min;
+    gtl::ITIVector<DimensionIndex, int64> dimension_start_cumuls_max;
+    gtl::ITIVector<DimensionIndex, int64> dimension_end_cumuls_min;
+    gtl::ITIVector<DimensionIndex, int64> dimension_end_cumuls_max;
+    gtl::ITIVector<DimensionIndex, int64> dimension_capacities;
     // dimension_evaluators[d]->Run(from, to) is the transit value of arc
     // from->to for a dimension d.
-    ITIVector<DimensionIndex, int64> dimension_evaluator_classes;
+    gtl::ITIVector<DimensionIndex, int64> dimension_evaluator_classes;
     // Fingerprint of unvisitable non-start/end nodes.
     uint64 unvisitable_nodes_fprint;
 
@@ -1252,7 +1252,7 @@ class RoutingModel {
   RevSwitch is_bound_to_end_ct_added_;
   // Dimensions
   std::unordered_map<std::string, DimensionIndex> dimension_name_to_index_;
-  ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
+  gtl::ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
   std::string primary_constrained_dimension_;
   // Costs
   IntVar* cost_;
@@ -1260,14 +1260,14 @@ class RoutingModel {
   std::vector<int64> fixed_cost_of_vehicle_;
   std::vector<CostClassIndex> cost_class_index_of_vehicle_;
 #ifndef SWIG
-  ITIVector<CostClassIndex, CostClass> cost_classes_;
+  gtl::ITIVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
   bool cache_callbacks_;
   std::vector<CostCacheElement> cost_cache_;  // Index by source index.
   std::vector<VehicleClassIndex> vehicle_class_index_of_vehicle_;
 #ifndef SWIG
-  ITIVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
+  gtl::ITIVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
 #endif  // SWIG
   std::function<int(int64)> vehicle_start_class_callback_;
   // Cached callbacks
@@ -1276,7 +1276,7 @@ class RoutingModel {
   std::unordered_map<const VariableNodeEvaluator2*, VariableNodeEvaluator2*>
       cached_state_dependent_callbacks_;
   // Disjunctions
-  ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
+  gtl::ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
   std::vector<std::vector<DisjunctionIndex>> node_to_disjunctions_;
   // Same vehicle costs
   std::vector<ValuedNodes<int64>> same_vehicle_costs_;
@@ -1288,7 +1288,7 @@ class RoutingModel {
   std::vector<std::vector<int>> same_vehicle_groups_;
   // Index management
   std::vector<NodeIndex> index_to_node_;
-  ITIVector<NodeIndex, int> node_to_index_;
+  gtl::ITIVector<NodeIndex, int> node_to_index_;
   std::vector<int> index_to_vehicle_;
   std::vector<int64> starts_;
   std::vector<int64> ends_;
@@ -1735,14 +1735,14 @@ class RoutingDimension {
 // depot. Used in the Sweep first solution heuristic.
 class SweepArranger {
  public:
-  explicit SweepArranger(const ITIVector<RoutingModel::NodeIndex,
+  explicit SweepArranger(const gtl::ITIVector<RoutingModel::NodeIndex,
                                          std::pair<int64, int64>>& points);
   virtual ~SweepArranger() {}
   void ArrangeNodes(std::vector<RoutingModel::NodeIndex>* nodes);
   void SetSectors(int sectors) { sectors_ = sectors; }
 
  private:
-  ITIVector<RoutingModel::NodeIndex, int> coordinates_;
+  gtl::ITIVector<RoutingModel::NodeIndex, int> coordinates_;
   int sectors_;
 
   DISALLOW_COPY_AND_ASSIGN(SweepArranger);

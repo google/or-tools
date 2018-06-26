@@ -158,8 +158,8 @@ using InlinedIntegerLiteralVector = absl::InlinedVector<IntegerLiteral, 2>;
 
 // A singleton that holds the INITIAL integer variable domains.
 struct IntegerDomains
-    : public ITIVector<IntegerVariable,
-                       absl::InlinedVector<ClosedInterval, 1>> {
+    : public gtl::ITIVector<IntegerVariable,
+                            absl::InlinedVector<ClosedInterval, 1>> {
   explicit IntegerDomains(Model* model) {}
 };
 
@@ -381,16 +381,17 @@ class IntegerEncoder {
   // We keep all the literals associated to an Integer variable in a map ordered
   // by bound (so we can properly add implications between the literals
   // corresponding to the same variable).
-  ITIVector<IntegerVariable, std::map<IntegerValue, Literal>> encoding_by_var_;
+  gtl::ITIVector<IntegerVariable, std::map<IntegerValue, Literal>>
+      encoding_by_var_;
 
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
-  ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
+  gtl::ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
   std::vector<IntegerLiteral> newly_fixed_integer_literals_;
 
   // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
   // if there is none.
-  ITIVector<LiteralIndex, IntegerVariable> literal_view_;
+  gtl::ITIVector<LiteralIndex, IntegerVariable> literal_view_;
 
   // Mapping (variable == value) -> associated literal. Note that even if
   // there is more than one literal associated to the same fact, we just keep
@@ -399,7 +400,7 @@ class IntegerEncoder {
       equality_to_associated_literal_;
 
   // Variables that are fully encoded.
-  ITIVector<IntegerVariable, bool> is_fully_encoded_;
+  gtl::ITIVector<IntegerVariable, bool> is_fully_encoded_;
 
   // A literal that is always true, convenient to encode trivial domains.
   // This will be lazily created when needed.
@@ -674,13 +675,13 @@ class IntegerTrail : public SatPropagator {
     // Trail index of the last TrailEntry in the trail refering to this var.
     int current_trail_index;
   };
-  ITIVector<IntegerVariable, VarInfo> vars_;
+  gtl::ITIVector<IntegerVariable, VarInfo> vars_;
 
   // This is used by FindLowestTrailIndexThatExplainBound() to speed up
   // the lookup. It keeps a trail index for each variable that may or may not
   // point to a TrailEntry regarding this variable. The validity of the index is
   // verified before beeing used.
-  mutable ITIVector<IntegerVariable, int> var_trail_index_cache_;
+  mutable gtl::ITIVector<IntegerVariable, int> var_trail_index_cache_;
 
   // Used by GetOrCreateConstantIntegerVariable() to return already created
   // constant variables that share the same value.
@@ -714,7 +715,7 @@ class IntegerTrail : public SatPropagator {
   mutable std::vector<IntegerLiteral> bounds_reason_buffer_;
 
   // The "is_ignored" literal of the optional variables or kNoLiteralIndex.
-  ITIVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
+  gtl::ITIVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
 
   // This is only filled for variables with a domain more complex than a single
   // interval of values. All intervals are stored in a vector, and we keep
@@ -735,7 +736,7 @@ class IntegerTrail : public SatPropagator {
   // Temporary data used by MergeReasonInto().
   mutable std::vector<int> tmp_queue_;
   mutable std::vector<IntegerVariable> tmp_to_clear_;
-  mutable ITIVector<IntegerVariable, int> tmp_var_to_trail_index_in_queue_;
+  mutable gtl::ITIVector<IntegerVariable, int> tmp_var_to_trail_index_in_queue_;
   mutable SparseBitset<BooleanVariable> added_variables_;
 
   // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
@@ -889,8 +890,8 @@ class GenericLiteralWatcher : public SatPropagator {
     int id;
     int watch_index;
   };
-  ITIVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
-  ITIVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
+  gtl::ITIVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
+  gtl::ITIVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<IntegerVariable> modified_vars_;
 

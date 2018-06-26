@@ -46,14 +46,16 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
 
 // Returns a different parameters depending on the given worker_id.
 // This assumes that worker will get an id in [0, num_workers).
+//
 // TODO(user): Find a way to know how many search heuristics there are,
 // and how many threads to pass to LNS with an optimization model.
 SatParameters DiversifySearchParameters(const SatParameters& params,
                                         const CpModelProto& cp_model,
-                                        const int worker_id,
-                                        int num_lns_threads);
+                                        const int worker_id);
 
-// This methods update a given response with a new incoming response.
+// This method updates a given response with a new incoming response.
+// It returns true if the response is strictly improving upon the 'best' one.
+//
 // TODO(user): Separate in two, 1 method for maintaining the best
 // intermediate solution, and one for cumulating the search statistics in
 // a final solution.

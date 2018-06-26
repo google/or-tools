@@ -98,13 +98,13 @@ class IntervalsRepository {
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
-  ITIVector<IntervalVariable, LiteralIndex> is_present_;
+  gtl::ITIVector<IntervalVariable, LiteralIndex> is_present_;
 
   // The integer variables for each tasks.
-  ITIVector<IntervalVariable, IntegerVariable> start_vars_;
-  ITIVector<IntervalVariable, IntegerVariable> end_vars_;
-  ITIVector<IntervalVariable, IntegerVariable> size_vars_;
-  ITIVector<IntervalVariable, IntegerValue> fixed_sizes_;
+  gtl::ITIVector<IntervalVariable, IntegerVariable> start_vars_;
+  gtl::ITIVector<IntervalVariable, IntegerVariable> end_vars_;
+  gtl::ITIVector<IntervalVariable, IntegerVariable> size_vars_;
+  gtl::ITIVector<IntervalVariable, IntegerValue> fixed_sizes_;
 
   DISALLOW_COPY_AND_ASSIGN(IntervalsRepository);
 };

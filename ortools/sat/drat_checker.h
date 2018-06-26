@@ -222,7 +222,7 @@ class DratChecker {
   ClauseIndex first_infered_clause_index_;
 
   // The problem clauses, followed by the infered clauses.
-  ITIVector<ClauseIndex, Clause> clauses_;
+  gtl::ITIVector<ClauseIndex, Clause> clauses_;
 
   // A content addressable set of the non-deleted clauses in clauses_. After
   // adding a clause to clauses_, this set can be used to find if the same
@@ -249,7 +249,7 @@ class DratChecker {
   // For each variable, the index of the unit clause that caused its assignment,
   // or kNoClauseIndex if the variable is not assigned, or was assigned to
   // falsify the clause that is currently being checked.
-  ITIVector<BooleanVariable, ClauseIndex> assignment_source_;
+  gtl::ITIVector<BooleanVariable, ClauseIndex> assignment_source_;
 
   // The stack of literals that remain to be assigned to true during boolean
   // constraint propagation, with high priority (unit clauses which are already
@@ -272,7 +272,7 @@ class DratChecker {
   // satisfied (in more details: if a clause c is contained in
   // 'watched_literals_[l]' for literal l, then either c is satisfied with
   // 'assignment_', or l is unassigned or assigned to true).
-  ITIVector<LiteralIndex, std::vector<ClauseIndex>> watched_literals_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> watched_literals_;
 
   // The list of clauses with only one literal. This is needed for boolean
   // constraint propagation, in addition to watched literals, because watched

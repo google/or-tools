@@ -84,7 +84,7 @@ class Permutation {
   int ComputeSignature() const;
 
  private:
-  ITIVector<IndexType, IndexType> perm_;
+  gtl::ITIVector<IndexType, IndexType> perm_;
 
   DISALLOW_COPY_AND_ASSIGN(Permutation);
 };
@@ -148,7 +148,7 @@ void Permutation<IndexType>::PopulateRandomly() {
 template <typename IndexType>
 bool Permutation<IndexType>::Check() const {
   const size_t size = perm_.size();
-  ITIVector<IndexType, bool> visited(size, false);
+  gtl::ITIVector<IndexType, bool> visited(size, false);
   for (IndexType i(0); i < size; ++i) {
     if (perm_[i] < 0 || perm_[i] >= size) {
       return false;
@@ -166,7 +166,7 @@ bool Permutation<IndexType>::Check() const {
 template <typename IndexType>
 int Permutation<IndexType>::ComputeSignature() const {
   const size_t size = perm_.size();
-  ITIVector<IndexType, bool> visited(size);
+  gtl::ITIVector<IndexType, bool> visited(size);
   DCHECK(Check());
   int signature = 1;
   for (IndexType i(0); i < size; ++i) {

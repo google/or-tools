@@ -1307,8 +1307,8 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   const int size = num_rows.value();
   // TODO(user) : Replace SumWithNegativeInfiniteAndOneMissing and
   // SumWithPositiveInfiniteAndOneMissing with IntervalSumWithOneMissing.
-  ITIVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> lb_sums(size);
-  ITIVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> ub_sums(size);
+  gtl::ITIVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> lb_sums(size);
+  gtl::ITIVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> ub_sums(size);
 
   // Initialize the sums by adding all the bounds of the variables.
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -3389,7 +3389,7 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
   int num_bound_shifts = 0;
   const RowIndex num_rows = lp->num_constraints();
   KahanSum objective_offset;
-  ITIVector<RowIndex, KahanSum> row_offsets(num_rows.value());
+  gtl::ITIVector<RowIndex, KahanSum> row_offsets(num_rows.value());
   offsets_.assign(num_cols, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
     if (0.0 < variable_initial_lbs_[col] || 0.0 > variable_initial_ubs_[col]) {
@@ -3621,7 +3621,7 @@ bool SolowHalimPreprocessor::Run(LinearProgram* lp) {
   }
 
   KahanSum objective_offset;
-  ITIVector<RowIndex, KahanSum> row_offsets(num_rows.value());
+  gtl::ITIVector<RowIndex, KahanSum> row_offsets(num_rows.value());
   column_transform_.resize(num_cols.value(), NOT_MODIFIED);
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional coeff = lp->objective_coefficients()[col];

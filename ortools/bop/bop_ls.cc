@@ -537,7 +537,7 @@ ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
 TermIndex OneFlipConstraintRepairer::NextRepairingTerm(
     ConstraintIndex ct_index, TermIndex init_term_index,
     TermIndex start_term_index) const {
-  const ITIVector<TermIndex, ConstraintTerm>& terms =
+  const gtl::ITIVector<TermIndex, ConstraintTerm>& terms =
       by_constraint_matrix_[ct_index];
   const int64 constraint_value = maintainer_.ConstraintValue(ct_index);
   const int64 lb = maintainer_.ConstraintLowerBound(ct_index);
@@ -589,13 +589,13 @@ sat::Literal OneFlipConstraintRepairer::GetFlip(ConstraintIndex ct_index,
 }
 
 void OneFlipConstraintRepairer::SortTermsOfEachConstraints(int num_variables) {
-  ITIVector<VariableIndex, int64> objective(num_variables, 0);
+  gtl::ITIVector<VariableIndex, int64> objective(num_variables, 0);
   for (const ConstraintTerm& term :
        by_constraint_matrix_[AssignmentAndConstraintFeasibilityMaintainer::
                                  kObjectiveConstraint]) {
     objective[term.var] = std::abs(term.weight);
   }
-  for (ITIVector<TermIndex, ConstraintTerm>& terms : by_constraint_matrix_) {
+  for (gtl::ITIVector<TermIndex, ConstraintTerm>& terms : by_constraint_matrix_) {
     std::sort(terms.begin(), terms.end(),
               [&objective](const ConstraintTerm& a, const ConstraintTerm& b) {
                 return objective[a.var] > objective[b.var];

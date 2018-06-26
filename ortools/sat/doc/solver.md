@@ -24,7 +24,7 @@ def MinimalCpSat():
   x = model.NewIntVar(0, num_vals - 1, 'x')
   y = model.NewIntVar(0, num_vals - 1, 'y')
   z = model.NewIntVar(0, num_vals - 1, 'z')
-  # Adds an all-different constraint.
+  # Adds a different constraint.
   model.Add(x != y)
 
   # Creates a solver and solves the model.
@@ -73,7 +73,7 @@ void SimpleSolve() {
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::MODEL_SAT) {
-    // Get the value of x in the solution.
+    // Gets the value of x in the solution.
     const int64 value_x = response.solution(x);
     LOG(INFO) << "x = " << value_x;
   }
@@ -145,7 +145,7 @@ def MinimalCpSatWithTimeLimit():
   x = model.NewIntVar(0, num_vals - 1, 'x')
   y = model.NewIntVar(0, num_vals - 1, 'y')
   z = model.NewIntVar(0, num_vals - 1, 'z')
-  # Adds an all-different constraint.
+  # Adds a different constraint.
   model.Add(x != y)
 
   # Creates a solver and solves the model.
@@ -197,13 +197,13 @@ void SolveWithTimeLimit() {
   parameters.set_max_time_in_seconds(10.0);
   model.Add(NewSatParameters(parameters));
 
-  // Solve.
+  // Solves and print some model and solution statistics.
   LOG(INFO) << CpModelStats(cp_model);
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::MODEL_SAT) {
-    // Get the value of x in the solution.
+    // Gets the value of 'x' in the solution.
     const int64 value_x = response.solution(x);
   }
 }
@@ -232,7 +232,7 @@ public class CodeSamplesSat
     IntVar x = model.NewIntVar(0, num_vals - 1, "x");
     IntVar y = model.NewIntVar(0, num_vals - 1, "y");
     IntVar z = model.NewIntVar(0, num_vals - 1, "z");
-    // Creates the constraints.
+    // Adds a different constraint.
     model.Add(x != y);
 
     // Creates a solver and solves the model.
@@ -271,7 +271,7 @@ The exact implementation depends on the target language.
 from ortools.sat.python import cp_model
 
 
-# You need to subclass the cp_model.CpSolverSolutionCallback class.
+# Subclass the cp_model.CpSolverSolutionCallback class.
 class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
@@ -300,8 +300,9 @@ def MinimalCpSatPrintIntermediateSolutions():
   x = model.NewIntVar(0, num_vals - 1, 'x')
   y = model.NewIntVar(0, num_vals - 1, 'y')
   z = model.NewIntVar(0, num_vals - 1, 'z')
-  # Creates the constraints.
+  # Adds a different constraint.
   model.Add(x != y)
+  # Maximizes a linear combination of variables.
   model.Maximize(x + 2 * y + 3 * z)
 
   # Creates a solver and solves.
@@ -438,9 +439,11 @@ public class CodeSamplesSat
     IntVar x = model.NewIntVar(0, num_vals - 1, 'x');
     IntVar y = model.NewIntVar(0, num_vals - 1, 'y');
     IntVar z = model.NewIntVar(0, num_vals - 1, 'z');
-    // Creates the constraints.
+
+    // Adds a different constraint.
     model.Add(x != y);
-    // Creates the objective.
+
+    // Maximizes a linear combination of variables.
     model.Maximize(x + 2 * y + 3 * z);
 
     // Creates a solver and solves the model.
@@ -498,13 +501,15 @@ def MinimalSatSearchForAllSolutions():
   model = cp_model.CpModel()
   # Creates the variables.
   num_vals = 3
+
   x = model.NewIntVar(0, num_vals - 1, "x")
   y = model.NewIntVar(0, num_vals - 1, "y")
   z = model.NewIntVar(0, num_vals - 1, "z")
-  # Creates the constraint.
+
+  # Adds a different constraint.
   model.Add(x != y)
 
-  # Creates a solver and solve.
+  # Creates a solver and solves.
   solver = cp_model.CpSolver()
   solution_printer = VarArraySolutionPrinter([x, y, z])
   status = solver.SearchForAllSolutions(model, solution_printer)
@@ -631,7 +636,8 @@ public class CodeSamplesSat
     IntVar x = model.NewIntVar(0, num_vals - 1, "x");
     IntVar y = model.NewIntVar(0, num_vals - 1, "y");
     IntVar z = model.NewIntVar(0, num_vals - 1, "z");
-    // Creates the constraints.
+
+    // Adds a different constraint.
     model.Add(x != y);
 
     // Creates a solver and solves the model.

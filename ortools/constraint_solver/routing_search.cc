@@ -218,8 +218,8 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
 
   const RoutingModel& routing_model_;
 
-  ITIVector<RoutingModel::DisjunctionIndex, int> active_per_disjunction_;
-  ITIVector<RoutingModel::DisjunctionIndex, int> inactive_per_disjunction_;
+  gtl::ITIVector<RoutingModel::DisjunctionIndex, int> active_per_disjunction_;
+  gtl::ITIVector<RoutingModel::DisjunctionIndex, int> inactive_per_disjunction_;
   int64 penalty_value_;
 };
 }  // namespace

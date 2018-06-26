@@ -272,7 +272,7 @@ class BronKerboschAlgorithm {
     // clique.
     // NOTE(user): We could store the delta between the iterations; however,
     // we need to evaluate the impact this would have on the performance.
-    ITIVector<CandidateIndex, NodeIndex> candidates;
+    gtl::ITIVector<CandidateIndex, NodeIndex> candidates;
     // The index of the first actual candidate in 'candidates'. This number is
     // also the number of elements of the "not" set stored at the beginning of
     // 'candidates'.
@@ -448,7 +448,7 @@ void BronKerboschAlgorithm<NodeIndex>::PushState(NodeIndex selected) {
   DCHECK(time_limit_ != nullptr);
   DVLOG(2) << "PushState: New depth = " << states_.size() + 1
            << ", selected node = " << selected;
-  ITIVector<CandidateIndex, NodeIndex> new_candidates;
+  gtl::ITIVector<CandidateIndex, NodeIndex> new_candidates;
 
   State* const previous_state = &states_.back();
   const double deterministic_time =

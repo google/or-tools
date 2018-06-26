@@ -92,9 +92,10 @@ bool ComputeBooleanLinearExpressionCanonicalForm(
 //
 // Finally, this will return false if some integer overflow or underflow
 // occurred during the constraint simplification.
-bool ApplyLiteralMapping(const ITIVector<LiteralIndex, LiteralIndex>& mapping,
-                         std::vector<LiteralWithCoeff>* cst,
-                         Coefficient* bound_shift, Coefficient* max_value);
+bool ApplyLiteralMapping(
+    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
+    Coefficient* max_value);
 
 // From a constraint 'expr <= ub' and the result (bound_shift, max_value) of
 // calling ComputeBooleanLinearExpressionCanonicalForm() on 'expr', this returns
@@ -317,7 +318,7 @@ class MutableUpperBoundedLinearConstraint {
   // The encoding is special:
   // - If terms_[x] > 0, then the associated term is 'terms_[x] . x'
   // - If terms_[x] < 0, then the associated term is 'terms_[x] . (x - 1)'
-  ITIVector<BooleanVariable, Coefficient> terms_;
+  gtl::ITIVector<BooleanVariable, Coefficient> terms_;
 
   // The right hand side of the constraint (sum terms <= rhs_).
   Coefficient rhs_;
@@ -639,11 +640,12 @@ class PbConstraints : public SatPropagator {
   std::vector<std::unique_ptr<UpperBoundedLinearConstraint>> constraints_;
 
   // The current value of the threshold for each constraints.
-  ITIVector<ConstraintIndex, Coefficient> thresholds_;
+  gtl::ITIVector<ConstraintIndex, Coefficient> thresholds_;
 
   // For each literal, the list of all the constraints that contains it together
   // with the literal coefficient in these constraints.
-  ITIVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff>> to_update_;
+  gtl::ITIVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff>>
+      to_update_;
 
   // Bitset used to optimize the Untrail() function.
   SparseBitset<ConstraintIndex> to_untrail_;
@@ -712,7 +714,7 @@ class VariableWithSameReasonIdentifier {
 
  private:
   const Trail& trail_;
-  ITIVector<BooleanVariable, BooleanVariable> first_variable_;
+  gtl::ITIVector<BooleanVariable, BooleanVariable> first_variable_;
   SparseBitset<BooleanVariable> seen_;
 
   DISALLOW_COPY_AND_ASSIGN(VariableWithSameReasonIdentifier);

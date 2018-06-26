@@ -263,7 +263,7 @@ class LiteralWatchers : public SatPropagator {
     SatClause* clause;
     Literal blocking_literal;
   };
-  ITIVector<LiteralIndex, std::vector<Watcher>> watchers_on_false_;
+  gtl::ITIVector<LiteralIndex, std::vector<Watcher>> watchers_on_false_;
 
   // SatClause reasons by trail_index.
   std::vector<SatClause*> reasons_;
@@ -481,7 +481,7 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): We could be even more efficient since a size of int32 is enough
   // for us and we could store in common the inlined/not-inlined size.
-  ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>> implications_;
+  gtl::ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>> implications_;
   int64 num_implications_;
 
   // Some stats.

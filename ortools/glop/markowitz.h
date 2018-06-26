@@ -174,7 +174,7 @@ class MatrixNonZeroPattern {
   // non-sorted version. Investigate more.
   void MergeIntoSorted(RowIndex pivot_row, RowIndex row);
 
-  ITIVector<RowIndex, std::vector<ColIndex>> row_non_zero_;
+  gtl::ITIVector<RowIndex, std::vector<ColIndex>> row_non_zero_;
   StrictITIVector<RowIndex, int32> row_degree_;
   StrictITIVector<ColIndex, int32> col_degree_;
   DenseBooleanRow deleted_columns_;
@@ -247,7 +247,7 @@ class SparseMatrixWithReusableColumnMemory {
   // mutable_column(col) is stored in columns_[mapping_[col]].
   // The columns_ that can be reused have their index stored in free_columns_.
   const SparseColumn empty_column_;
-  ITIVector<ColIndex, int> mapping_;
+  gtl::ITIVector<ColIndex, int> mapping_;
   std::vector<int> free_columns_;
   std::vector<SparseColumn> columns_;
   DISALLOW_COPY_AND_ASSIGN(SparseMatrixWithReusableColumnMemory);

@@ -454,9 +454,9 @@ class SingletonPreprocessor : public Preprocessor {
 
   // This is used as a "cache" by MakeConstraintAnEqualityIfPossible() to avoid
   // scanning more than once each row. See the code to see how this is used.
-  ITIVector<RowIndex, bool> row_sum_is_cached_;
-  ITIVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> row_lb_sum_;
-  ITIVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> row_ub_sum_;
+  gtl::ITIVector<RowIndex, bool> row_sum_is_cached_;
+  gtl::ITIVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> row_lb_sum_;
+  gtl::ITIVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> row_ub_sum_;
 
   // The columns that are deleted by this preprocessor.
   SparseMatrix deleted_columns_;
@@ -1001,7 +1001,7 @@ class SolowHalimPreprocessor : public Preprocessor {
   } ColumnTransformType;
 
   // Contains the coordinate change information for each column
-  ITIVector<ColIndex, ColumnTransformType> column_transform_;
+  gtl::ITIVector<ColIndex, ColumnTransformType> column_transform_;
 
   // Contains the initial problem bounds.
   DenseRow variable_initial_lbs_;

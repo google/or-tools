@@ -988,7 +988,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     pool.StartWorkers();
     for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
       const SatParameters local_params =
-          DiversifySearchParameters(m.parameters, m.proto, worker_id, 0);
+          DiversifySearchParameters(m.parameters, m.proto, worker_id);
       pool.Schedule([&fz_model, &m, &p, &stopped, local_params, worker_id,
                      &best_response, &mutex]() {
         const CpSolverResponse local_response =
@@ -1008,23 +1008,13 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     // Optimization problem solved in parallel.
     absl::Mutex mutex;
     const bool maximize = fz_model.maximize();
-    const int kNumHeuristics = 5;
-    const int num_active_threads =
-        std::min(kNumHeuristics + 1, num_search_workers);
-    if (num_active_threads != num_search_workers) {
-      FZLOG << "Starting parallel search with " << num_active_threads
-            << " workers, including one with "
-            << num_search_workers - num_active_threads + 1 << " lns sub-threads"
-            << FZENDL;
-    } else {
-      FZLOG << "Starting parallel search with " << num_search_workers
-            << " workers" << FZENDL;
-    }
+    FZLOG << "Starting parallel search with " << num_search_workers
+          << " workers" << FZENDL;
     {
-      ThreadPool pool("Parallel_FlatZinc_sat", num_active_threads);
+      ThreadPool pool("Parallel_FlatZinc_sat", num_search_workers);
       pool.StartWorkers();
 
-      for (int worker_id = 0; worker_id < num_active_threads; ++worker_id) {
+      for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
         const auto solution_synchronization = [&mutex, &best_response]() {
           absl::MutexLock lock(&mutex);
           return best_response;
@@ -1066,9 +1056,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           }
         };
 
-        const SatParameters local_params = DiversifySearchParameters(
-            m.parameters, m.proto, worker_id,
-            num_search_workers - num_active_threads + 1);
+        const SatParameters local_params =
+            DiversifySearchParameters(m.parameters, m.proto, worker_id);
 
         pool.Schedule([&fz_model, &m, &p, solution_observer,
                        solution_synchronization, objective_synchronization,

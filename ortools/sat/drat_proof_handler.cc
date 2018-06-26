@@ -35,8 +35,8 @@ DratProofHandler::DratProofHandler(bool in_binary_format, File* output,
 }
 
 void DratProofHandler::ApplyMapping(
-    const ITIVector<BooleanVariable, BooleanVariable>& mapping) {
-  ITIVector<BooleanVariable, BooleanVariable> new_mapping;
+    const gtl::ITIVector<BooleanVariable, BooleanVariable>& mapping) {
+  gtl::ITIVector<BooleanVariable, BooleanVariable> new_mapping;
   for (BooleanVariable v(0); v < mapping.size(); ++v) {
     const BooleanVariable image = mapping[v];
     if (image != kNoBooleanVariable) {
