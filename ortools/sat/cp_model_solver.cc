@@ -13,6 +13,12 @@
 
 #include "ortools/sat/cp_model_solver.h"
 
+#if defined(_MSC_VER)
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 #include <algorithm>
 #include <functional>
 #include <limits>
@@ -2913,7 +2919,21 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
 
   parameters->set_stop_after_first_solution(true);
   CpSolverResponse response;
-  {
+  auto* const synchro = model->Get<SynchronizationFunction>();
+  TimeLimit* const limit = model->GetOrCreate<TimeLimit>();
+
+  if (synchro != nullptr && synchro->f != nullptr) {
+    while (!limit->LimitReached()) {
+      response = synchro->f();
+      if (response.status() != CpSolverStatus::UNKNOWN) break;
+      // Sleep for 10 ms.
+ #ifdef _WIN32
+      Sleep(10);
+ #else
+      usleep(10000000);
+ #endif
+    }
+  } else {
     CpModelProto copy = expanded_model;
     response = PresolveAndSolve(model_proto, &copy, model);
   }
@@ -2941,7 +2961,6 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
   std::vector<AdaptiveParameterValue> difficulties(generators.size(),
                                                    AdaptiveParameterValue(0.5));
 
-  TimeLimit* limit = model->GetOrCreate<TimeLimit>();
   double deterministic_time = 0.1;
   int num_no_progress = 0;
 
@@ -2950,7 +2969,6 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
       num_threads,
       [&]() {
         // Synchronize with external world.
-        auto* synchro = model->Get<SynchronizationFunction>();
         if (synchro != nullptr && synchro->f != nullptr) {
           const CpSolverResponse candidate_response = synchro->f();
           if (!candidate_response.solution().empty()) {
