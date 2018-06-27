@@ -524,7 +524,7 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
   std::vector<int> var_to_instantiate_as_integer;
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   const bool view_all_booleans_as_integers =
-      (parameters.linearization_level() > 2) ||
+      (parameters.linearization_level() >= 2) ||
       (parameters.search_branching() == SatParameters::FIXED_SEARCH &&
        model_proto.search_strategy().empty());
   if (view_all_booleans_as_integers) {
@@ -2921,18 +2921,20 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
     return response;
   }
   VLOG(1) << "LNS First solution: " << response.objective_value();
+  const bool focus_on_decision_variables =
+      parameters->lns_focus_on_decision_variables();
 
   // For now we will just alternate between our possible neighborhoods.
   //
   // TODO(user): work on the presolved global problem rather than just the
   // expanded problem?
   std::vector<std::unique_ptr<NeighborhoodGenerator>> generators;
-  generators.push_back(
-      absl::make_unique<SimpleNeighborhoodGenerator>(&expanded_model));
-  generators.push_back(
-      absl::make_unique<VariableGraphNeighborhoodGenerator>(&expanded_model));
-  generators.push_back(
-      absl::make_unique<ConstraintGraphNeighborhoodGenerator>(&expanded_model));
+  generators.push_back(absl::make_unique<SimpleNeighborhoodGenerator>(
+      &expanded_model, focus_on_decision_variables));
+  generators.push_back(absl::make_unique<VariableGraphNeighborhoodGenerator>(
+      &expanded_model, focus_on_decision_variables));
+  generators.push_back(absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
+      &expanded_model, focus_on_decision_variables));
 
   // The "optimal" difficulties do not have to be the same for different
   // generators. TODO(user): move this inside the generator API?
@@ -2944,8 +2946,6 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
   int num_no_progress = 0;
 
   const int num_threads = std::max(1, parameters->lns_num_threads());
-  const bool focus_on_decision_variables =
-      parameters->lns_focus_on_decision_variables();
   OptimizeWithLNS(
       num_threads,
       [&]() {
@@ -2978,7 +2978,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
         const double saved_difficulty = difficulty.value();
         const int selected_generator = seed % generators.size();
         CpModelProto local_problem = generators[selected_generator]->Generate(
-            response, seed, saved_difficulty, focus_on_decision_variables);
+            response, seed, saved_difficulty);
 
         Model local_model;
         {

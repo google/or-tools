@@ -435,7 +435,7 @@ void ObjectiveBasedNeighborhood::GenerateNeighborhood(
   std::vector<sat::Literal> candidates =
       ObjectiveVariablesAssignedToTheirLowCostValue(problem_state,
                                                     objective_terms_);
-  std::random_shuffle(candidates.begin(), candidates.end(), *random_);
+  std::shuffle(candidates.begin(), candidates.end(), *random_);
 
   // We will use the sat_propagator to fix some variables as long as the number
   // of propagated variables in the solver is under our target.
@@ -465,7 +465,7 @@ void ConstraintBasedNeighborhood::GenerateNeighborhood(
   const int num_constraints = problem.constraints_size();
   std::vector<int> ct_ids(num_constraints, 0);
   for (int ct_id = 0; ct_id < num_constraints; ++ct_id) ct_ids[ct_id] = ct_id;
-  std::random_shuffle(ct_ids.begin(), ct_ids.end(), *random_);
+  std::shuffle(ct_ids.begin(), ct_ids.end(), *random_);
 
   // Mark that we want to relax all the variables of these constraints as long
   // as the number of relaxed variable is lower than our difficulty target.

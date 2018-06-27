@@ -22,9 +22,9 @@
 // line.
 // * Options are available to keep the trailing '\n' for each line, to remove
 //   carriage-return chararters ('\r'), and to remove blank lines.
-
-#ifndef OR_TOOLS_BASE_FILELINEITER_H_
-#define OR_TOOLS_BASE_FILELINEITER_H_
+//
+#ifndef OR_TOOLS_UTIL_FILELINEITER_H_
+#define OR_TOOLS_UTIL_FILELINEITER_H_
 
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
@@ -136,4 +136,4 @@ class FileLines {
   const int options_;
 };
 
-#endif  // OR_TOOLS_BASE_FILELINEITER_H_
+#endif  // OR_TOOLS_UTIL_FILELINEITER_H_

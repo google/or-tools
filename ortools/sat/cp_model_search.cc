@@ -167,7 +167,12 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model) {
   // Default strategy is to instantiate the IntegerVariable in order.
-  if (cp_model_proto.search_strategy().empty()) {
+  std::function<LiteralIndex()> default_search_strategy = nullptr;
+  const SatParameters* parameters = model->GetOrCreate<SatParameters>();
+  const bool instantiate_all_variables =
+      parameters->instantiate_all_variables();
+
+  if (cp_model_proto.search_strategy().empty() || instantiate_all_variables) {
     std::vector<IntegerVariable> decisions;
     for (const IntegerVariable var : variable_mapping) {
       if (var == kNoIntegerVariable) continue;
@@ -179,7 +184,11 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
         decisions.push_back(var);
       }
     }
-    return FirstUnassignedVarAtItsMinHeuristic(decisions, model);
+    default_search_strategy =
+        FirstUnassignedVarAtItsMinHeuristic(decisions, model);
+    if (cp_model_proto.search_strategy().empty()) {
+      return default_search_strategy;
+    }
   }
 
   std::vector<Strategy> strategies;
@@ -205,8 +214,14 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
       }
     }
   }
-  return ConstructSearchStrategyInternal(var_to_coeff_offset_pair, strategies,
-                                         model);
+  if (instantiate_all_variables) {
+    return SequentialSearch({ConstructSearchStrategyInternal(
+                                 var_to_coeff_offset_pair, strategies, model),
+                             default_search_strategy});
+  } else {
+    return ConstructSearchStrategyInternal(var_to_coeff_offset_pair, strategies,
+                                           model);
+  }
 }
 
 std::function<LiteralIndex()> InstrumentSearchStrategy(

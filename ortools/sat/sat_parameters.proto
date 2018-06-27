@@ -556,6 +556,10 @@ message SatParameters {
   // change the set of feasible solutions.
   optional bool enumerate_all_solutions = 87 [default = false];
 
+  // If true, the solver will add a default integer branching strategy to the
+  // already defined search strategy.
+  optional bool instantiate_all_variables = 106 [default = true];
+
   // If true, then the precedences propagator try to detect for each variable if
   // it has a set of "optional incoming arc" for which at least one of them is
   // present. This is usually useful to have but can be slow on model with a lot

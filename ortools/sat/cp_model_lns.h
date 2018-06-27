@@ -26,7 +26,8 @@ namespace sat {
 // Base class for a CpModelProto neighborhood generator.
 class NeighborhoodGenerator {
  public:
-  explicit NeighborhoodGenerator(CpModelProto const* model);
+  explicit NeighborhoodGenerator(CpModelProto const* model,
+                                 bool focus_on_decision_variables);
   virtual ~NeighborhoodGenerator() {}
 
   // Generates a "local" subproblem for the given seed.
@@ -44,27 +45,31 @@ class NeighborhoodGenerator {
   //
   // This function should be thread-safe.
   virtual CpModelProto Generate(const CpSolverResponse& initial_solution,
-                                int64 seed, double difficulty,
-                                bool focus_on_decision_variables) const = 0;
+                                int64 seed, double difficulty) const = 0;
 
  protected:
+  // Indicates if the variable can be frozen. It happens if the variable is a
+  // decision variable, of if focus_on_decision_variables_ is false.
+  bool IsActive(int var) const;
+
   // TODO(user): for now and for convenience, we generate the
   // variable-constraint graph even if not all subclass will need it.
   const CpModelProto& model_proto_;
   std::vector<std::vector<int>> constraint_to_var_;
   std::vector<std::vector<int>> var_to_constraint_;
-  std::unordered_set<int> decision_variables_set_;
+  std::vector<bool> decision_variables_set_;
   std::vector<int> decision_variables_;
+  bool focus_on_decision_variables_;
 };
 
 // Pick a random subset of variables.
 class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
-  explicit SimpleNeighborhoodGenerator(CpModelProto const* model)
-      : NeighborhoodGenerator(model) {}
+  SimpleNeighborhoodGenerator(CpModelProto const* model,
+                              bool focus_on_decision_variables)
+      : NeighborhoodGenerator(model, focus_on_decision_variables) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty,
-                        bool focus_on_decision_variables) const final;
+                        double difficulty) const final;
 };
 
 // Pick a random subset of variables that are constructed by a BFS in the
@@ -73,11 +78,11 @@ class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
 // variable of the last "level" are selected randomly.
 class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
-  explicit VariableGraphNeighborhoodGenerator(CpModelProto const* model)
-      : NeighborhoodGenerator(model) {}
+  explicit VariableGraphNeighborhoodGenerator(CpModelProto const* model,
+                                              bool focus_on_decision_variables)
+      : NeighborhoodGenerator(model, focus_on_decision_variables) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty,
-                        bool focus_on_decision_variables) const final;
+                        double difficulty) const final;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a
@@ -86,11 +91,11 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 // constraints. The variable from the "last" constraint are selected randomly.
 class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
-  explicit ConstraintGraphNeighborhoodGenerator(CpModelProto const* model)
-      : NeighborhoodGenerator(model) {}
+  explicit ConstraintGraphNeighborhoodGenerator(
+      CpModelProto const* model, bool focus_on_decision_variables)
+      : NeighborhoodGenerator(model, focus_on_decision_variables) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty,
-                        bool focus_on_decision_variables) const final;
+                        double difficulty) const final;
 };
 
 }  // namespace sat

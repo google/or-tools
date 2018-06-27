@@ -745,20 +745,6 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
       }
     }
   }
-
-  // Always add a fallback strategy with all the variables because on quite a
-  // few instances, fixing all the variable above will not fix all variables.
-  //
-  // TODO(user): this is not ideal because it will force all Booleans to be
-  // seen as integer variable while loading the cp_model proto.
-  {
-    DecisionStrategyProto* strategy = proto.add_search_strategy();
-    for (int i = 0; i < proto.variables_size(); ++i) {
-      strategy->add_variables(i);
-    }
-    // Mark as a completion strategy.
-    strategy->set_is_completion_strategy(true);
-  }
 }
 
 // The format is fixed in the flatzinc specification.
@@ -833,8 +819,6 @@ CpSolverResponse WorkerSearch(
   Model sat_model;
   sat_model.Add(NewSatParameters(parameters));
   sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(stopped);
-  sat_model.GetOrCreate<SigintHandler>()->Register(
-      [&stopped]() { *stopped = true; });
 
   // Add solution observer.
   if (solution_observer != nullptr) {
@@ -965,6 +949,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   const int num_search_workers = std::max(1, p.threads);
 
   bool stopped = false;
+  SigintHandler handler;
+  handler.Register([&stopped]() { stopped = true; });
+
   CpSolverResponse best_response;
   if (fz_model.objective() != nullptr) {
     const double kInfinity = std::numeric_limits<double>::infinity();
