@@ -291,7 +291,7 @@ endif
 
 
 .PHONY: dotnet # Build OrTools for .NET
-dotnet: clean_dotnet test_dotnet
+dotnet: test_dotnet
 	$(SED) -i -e "s/<Version>.*<\/Version>/<Version>$(OR_TOOLS_VERSION)<\/Version>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	$(SED) -i -e "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$(OR_TOOLS_VERSION)<\/AssemblyVersion>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	$(SED) -i -e "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$(OR_TOOLS_VERSION)<\/FileVersion>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
