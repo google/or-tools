@@ -756,6 +756,8 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
     for (int i = 0; i < proto.variables_size(); ++i) {
       strategy->add_variables(i);
     }
+    // Mark as a completion strategy.
+    strategy->set_is_completion_strategy(true);
   }
 }
 

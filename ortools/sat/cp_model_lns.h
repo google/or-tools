@@ -16,6 +16,7 @@
 
 #include <vector>
 
+#include <unordered_set>
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
 
@@ -43,7 +44,8 @@ class NeighborhoodGenerator {
   //
   // This function should be thread-safe.
   virtual CpModelProto Generate(const CpSolverResponse& initial_solution,
-                                int64 seed, double difficulty) const = 0;
+                                int64 seed, double difficulty,
+                                bool focus_on_decision_variables) const = 0;
 
  protected:
   // TODO(user): for now and for convenience, we generate the
@@ -51,6 +53,8 @@ class NeighborhoodGenerator {
   const CpModelProto& model_proto_;
   std::vector<std::vector<int>> constraint_to_var_;
   std::vector<std::vector<int>> var_to_constraint_;
+  std::unordered_set<int> decision_variables_set_;
+  std::vector<int> decision_variables_;
 };
 
 // Pick a random subset of variables.
@@ -59,7 +63,8 @@ class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit SimpleNeighborhoodGenerator(CpModelProto const* model)
       : NeighborhoodGenerator(model) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+                        double difficulty,
+                        bool focus_on_decision_variables) const final;
 };
 
 // Pick a random subset of variables that are constructed by a BFS in the
@@ -71,7 +76,8 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit VariableGraphNeighborhoodGenerator(CpModelProto const* model)
       : NeighborhoodGenerator(model) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+                        double difficulty,
+                        bool focus_on_decision_variables) const final;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a
@@ -83,7 +89,8 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit ConstraintGraphNeighborhoodGenerator(CpModelProto const* model)
       : NeighborhoodGenerator(model) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+                        double difficulty,
+                        bool focus_on_decision_variables) const final;
 };
 
 }  // namespace sat

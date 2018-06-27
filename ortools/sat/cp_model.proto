@@ -369,6 +369,12 @@ message DecisionStrategyProto {
     int64 positive_coeff = 3;
   }
   repeated AffineTransformation transformations = 4;
+
+  // Indicates if the variables in that heuristics are decision variables or
+  // not. The main usage is a 'safety' completion search heuristic we add in
+  // case the variables defined in the search heuristics are not sufficient to
+  // solve a problem just by propagation when all of them have been fixed.
+  bool is_completion_strategy = 5;
 }
 
 // This message encodes a partial (or full) assignment of the variables of a

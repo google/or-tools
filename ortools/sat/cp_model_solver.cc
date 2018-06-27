@@ -2944,6 +2944,8 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
   int num_no_progress = 0;
 
   const int num_threads = std::max(1, parameters->lns_num_threads());
+  const bool focus_on_decision_variables =
+      parameters->lns_focus_on_decision_variables();
   OptimizeWithLNS(
       num_threads,
       [&]() {
@@ -2974,9 +2976,9 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
         AdaptiveParameterValue& difficulty =
             difficulties[seed % generators.size()];
         const double saved_difficulty = difficulty.value();
-        CpModelProto local_problem =
-            generators[seed % generators.size()]->Generate(response, seed,
-                                                           saved_difficulty);
+        const int selected_generator = seed % generators.size();
+        CpModelProto local_problem = generators[selected_generator]->Generate(
+            response, seed, saved_difficulty, focus_on_decision_variables);
 
         Model local_model;
         {
@@ -2996,7 +2998,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
 
         return [&num_no_progress, &model_proto, &response, &difficulty,
                 &deterministic_time, saved_difficulty, local_response,
-                &observers, limit]() {
+                &observers, limit, selected_generator]() {
           // TODO(user): This is not ideal in multithread because even though
           // the saved_difficulty will be the same for all thread, we will
           // Increase()/Decrease() the difficuty sequentially more than once.
@@ -3008,10 +3010,11 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
           }
           if (local_response.status() == CpSolverStatus::MODEL_SAT ||
               local_response.status() == CpSolverStatus::OPTIMAL) {
-            VLOG(1) << "dtime: " << deterministic_time
+            LOG(INFO) << "dtime: " << deterministic_time
                     << " difficulty: " << saved_difficulty
                     << " local_obj: " << local_response.objective_value()
-                    << " global_obj: " << response.objective_value();
+                    << " global_obj: " << response.objective_value()
+                    << " using generator: " << selected_generator;
 
             // If the objective are the same, we override the solution,
             // otherwise we just ignore this local solution and increment
