@@ -1281,5 +1281,63 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
   }
 }
 
+// A known upper bound for the infinity norm of T^{-1} is the
+// infinity norm of y where T'*y = x with:
+// - x the all 1s vector.
+// - Each entry in T' is the absolute value of the same entry in T.
+Fractional TriangularMatrix::ComputeInverseInfinityNormUpperBound() const {
+  if (first_non_identity_column_ == num_cols_) {
+    // Identity matrix
+    return 1.0;
+  }
+
+  const bool is_upper = IsUpperTriangular();
+  DenseColumn row_norm_estimate(num_rows_, 1.0);
+  const int num_cols = num_cols_.value();
+
+  for (int i = 0; i < num_cols; ++i) {
+    const ColIndex col(is_upper ? num_cols - 1 - i : i);
+    DCHECK_NE(diagonal_coefficients_[col], 0.0);
+    const Fractional coeff = row_norm_estimate[ColToRowIndex(col)] /
+                             std::abs(diagonal_coefficients_[col]);
+
+    row_norm_estimate[ColToRowIndex(col)] = coeff;
+    for (const EntryIndex i : Column(col)) {
+      row_norm_estimate[EntryRow(i)] += coeff * std::abs(EntryCoefficient(i));
+    }
+  }
+
+  return *std::max_element(row_norm_estimate.begin(), row_norm_estimate.end());
+}
+
+Fractional TriangularMatrix::ComputeInverseInfinityNorm() const {
+  const bool is_upper = IsUpperTriangular();
+
+  DenseColumn row_sum(num_rows_, 0.0);
+  DenseColumn right_hand_side;
+  for (ColIndex col(0); col < num_cols_; ++col) {
+    right_hand_side.assign(num_rows_, 0);
+    right_hand_side[ColToRowIndex(col)] = 1.0;
+
+    // Get the col-th column of the matrix inverse.
+    if (is_upper) {
+      UpperSolve(&right_hand_side);
+    } else {
+      LowerSolve(&right_hand_side);
+    }
+
+    // Compute sum_j |inverse_ij|.
+    for (RowIndex row(0); row < num_rows_; ++row) {
+      row_sum[row] += std::abs(right_hand_side[row]);
+    }
+  }
+  // Compute max_i sum_j |inverse_ij|.
+  Fractional norm = 0.0;
+  for (RowIndex row(0); row < num_rows_; ++row) {
+    norm = std::max(norm, row_sum[row]);
+  }
+
+  return norm;
+}
 }  // namespace glop
 }  // namespace operations_research

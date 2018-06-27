@@ -339,7 +339,7 @@ class CompactSparseMatrix {
   RowIndex num_rows() const { return num_rows_; }
   ColIndex num_cols() const { return num_cols_; }
 
-  // Returns wheter or not this matrix contains any non-zero entries.
+  // Returns whether or not this matrix contains any non-zero entries.
   bool IsEmpty() const {
     DCHECK_EQ(coefficients_.size(), rows_.size());
     return coefficients_.empty();
@@ -705,6 +705,12 @@ class TriangularMatrix : private CompactSparseMatrix {
                                      const RowPermutation& row_perm,
                                      RowIndexVector* lower_column_rows,
                                      RowIndexVector* upper_column_rows);
+
+  // The upper bound is computed using one of the algorithm presented in
+  // "A Survey of Condition Number Estimation for Triangular Matrices"
+  // https:epubs.siam.org/doi/pdf/10.1137/1029112/
+  Fractional ComputeInverseInfinityNormUpperBound() const;
+  Fractional ComputeInverseInfinityNorm() const;
 
  private:
   // Internal versions of some Solve() functions to avoid code duplication.
