@@ -53,7 +53,7 @@ csharp_dotnet: ortoolslibs csharportools
 
 # Assembly Info
 $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: \
-	| $(GEN_DIR)/com/google/ortools/properties
+ | $(GEN_DIR)/com/google/ortools/properties
 	@echo $(OR_TOOLS_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
 
 # csharp ortools
@@ -64,10 +64,10 @@ $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
-	$(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
-	$(SRC_DIR)/ortools/base/base.i \
-	$(SRC_DIR)/ortools/util/csharp/proto.i \
-	$(LP_DEPS)
+ $(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SRC_DIR)/ortools/util/csharp/proto.i \
+ $(LP_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc \
  -module operations_research_linear_solver \
@@ -83,12 +83,12 @@ $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O: \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O
 
 $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
-	$(SRC_DIR)/ortools/constraint_solver/csharp/routing.i \
-	$(SRC_DIR)/ortools/constraint_solver/csharp/constraint_solver.i \
-	$(SRC_DIR)/ortools/base/base.i \
-	$(SRC_DIR)/ortools/util/csharp/proto.i \
-	$(SRC_DIR)/ortools/util/csharp/functions.i \
-	$(CP_DEPS)
+ $(SRC_DIR)/ortools/constraint_solver/csharp/routing.i \
+ $(SRC_DIR)/ortools/constraint_solver/csharp/constraint_solver.i \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SRC_DIR)/ortools/util/csharp/proto.i \
+ $(SRC_DIR)/ortools/util/csharp/functions.i \
+ $(CP_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc \
  -module operations_research_constraint_solver \
@@ -141,10 +141,10 @@ $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O: \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O
 
 $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc: \
-	$(SRC_DIR)/ortools/graph/csharp/graph.i \
-	$(SRC_DIR)/ortools/base/base.i \
-	$(SRC_DIR)/ortools/util/csharp/proto.i \
-	$(GRAPH_DEPS)
+ $(SRC_DIR)/ortools/graph/csharp/graph.i \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SRC_DIR)/ortools/util/csharp/proto.i \
+ $(GRAPH_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_csharp_wrap.cc \
  -module operations_research_graph \
@@ -160,11 +160,11 @@ $(OBJ_DIR)/swig/graph_csharp_wrap.$O: \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O
 
 $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
-	$(SRC_DIR)/ortools/base/base.i \
-	$(SRC_DIR)/ortools/sat/csharp/sat.i \
-	$(SRC_DIR)/ortools/sat/swig_helper.h \
-	$(SRC_DIR)/ortools/util/csharp/proto.i \
-	$(SAT_DEPS)
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SRC_DIR)/ortools/sat/csharp/sat.i \
+ $(SRC_DIR)/ortools/sat/swig_helper.h \
+ $(SRC_DIR)/ortools/util/csharp/proto.i \
+ $(SAT_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Ssat$Ssat_csharp_wrap.cc \
  -module operations_research_sat \
@@ -208,35 +208,35 @@ endif
 
 # Main DLL
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
-	$(CLR_KEYFILE) \
-	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
-	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
-	$(OBJ_DIR)/swig/sat_csharp_wrap.$O \
-	$(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
-	$(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O \
-	$(OBJ_DIR)/swig/graph_csharp_wrap.$O \
-	$(SRC_DIR)/ortools/com/google/ortools/algorithms/IntArrayHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntVarArrayHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntArrayHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/NetDecisionBuilder.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/SolverHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/constraintsolver/ValCstPair.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/DoubleArrayHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/LinearExpr.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/LinearConstraint.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/SolverHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/linearsolver/VariableHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/sat/CpModel.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/util/NestedArrayHelper.cs \
-	$(SRC_DIR)/ortools/com/google/ortools/util/ProtoHelper.cs \
-	$(GEN_DIR)/com/google/ortools/constraintsolver/Model.g.cs\
-	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs\
-	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs\
-	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs\
-	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
-	$(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
-	$(OR_TOOLS_LIBS)
+ $(CLR_KEYFILE) \
+ $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
+ $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
+ $(OBJ_DIR)/swig/sat_csharp_wrap.$O \
+ $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
+ $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O \
+ $(OBJ_DIR)/swig/graph_csharp_wrap.$O \
+ $(SRC_DIR)/ortools/com/google/ortools/algorithms/IntArrayHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntVarArrayHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntervalVarArrayHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/constraintsolver/IntArrayHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/constraintsolver/NetDecisionBuilder.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/constraintsolver/SolverHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/constraintsolver/ValCstPair.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/linearsolver/DoubleArrayHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/linearsolver/LinearExpr.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/linearsolver/LinearConstraint.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/linearsolver/SolverHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/linearsolver/VariableHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/sat/CpModel.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/util/NestedArrayHelper.cs \
+ $(SRC_DIR)/ortools/com/google/ortools/util/ProtoHelper.cs \
+ $(GEN_DIR)/com/google/ortools/constraintsolver/Model.g.cs \
+ $(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs \
+ $(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs \
+ $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs \
+ $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs \
+ $(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
+ $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) \
  $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O \
