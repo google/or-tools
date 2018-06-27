@@ -595,7 +595,8 @@ void OneFlipConstraintRepairer::SortTermsOfEachConstraints(int num_variables) {
                                  kObjectiveConstraint]) {
     objective[term.var] = std::abs(term.weight);
   }
-  for (gtl::ITIVector<TermIndex, ConstraintTerm>& terms : by_constraint_matrix_) {
+  for (gtl::ITIVector<TermIndex, ConstraintTerm>& terms :
+       by_constraint_matrix_) {
     std::sort(terms.begin(), terms.end(),
               [&objective](const ConstraintTerm& a, const ConstraintTerm& b) {
                 return objective[a.var] > objective[b.var];

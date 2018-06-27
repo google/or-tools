@@ -170,7 +170,9 @@ class ProblemState {
   // Returns true when the variable var is fixed in the current problem state.
   // The value of the fixed variable is returned by GetVariableFixedValue(var).
   bool IsVariableFixed(VariableIndex var) const { return is_fixed_[var]; }
-  const gtl::ITIVector<VariableIndex, bool>& is_fixed() const { return is_fixed_; }
+  const gtl::ITIVector<VariableIndex, bool>& is_fixed() const {
+    return is_fixed_;
+  }
 
   // Returns the value of the fixed variable var. Should be only called on fixed
   // variables (CHECKed).

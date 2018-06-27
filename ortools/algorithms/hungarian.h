@@ -28,9 +28,7 @@
 //
 // This code is based on (read: translated from) the Java version
 // (read: translated from) the Python version at
-//   http://www.clapper.org/software/python/munkres/
-// which in turn is based on
-//   http://www.public.iastate.edu/~ddoty/HungarianAlgorithm.html.
+//   http://www.clapper.org/software/python/munkres/.
 
 #ifndef OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
 #define OR_TOOLS_ALGORITHMS_HUNGARIAN_H_

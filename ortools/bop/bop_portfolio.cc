@@ -81,7 +81,7 @@ PortfolioOptimizer::~PortfolioOptimizer() {
   }
 
   // Note that unique pointers are not used due to unsupported emplace_back
-  // in gtl::ITIVectors.
+  // in ITIVectors.
   gtl::STLDeleteElements(&optimizers_);
 }
 

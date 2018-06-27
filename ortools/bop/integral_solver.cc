@@ -583,8 +583,8 @@ void IntegralProblemConverter::ConvertAllConstraints(
   std::vector<double> coefficients;
   for (RowIndex row(0); row < linear_problem.num_constraints(); ++row) {
     Fractional offset = 0.0;
-    gtl::ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
-                                                       0.0);
+    gtl::ITIVector<VariableIndex, Fractional> dense_weights(
+        num_boolean_variables_, 0.0);
     for (const SparseColumn::Entry e : transpose.column(RowToColIndex(row))) {
       // Cast in ColIndex due to the transpose.
       offset += AddWeightedIntegralVariable(RowToColIndex(e.row()),
@@ -653,8 +653,8 @@ void IntegralProblemConverter::ConvertObjective(
     LinearBooleanProblem* boolean_problem) {
   LinearObjective* objective = boolean_problem->mutable_objective();
   Fractional offset = 0.0;
-  gtl::ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
-                                                     0.0);
+  gtl::ITIVector<VariableIndex, Fractional> dense_weights(
+      num_boolean_variables_, 0.0);
   // Compute the objective weights for the binary variable model.
   for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
     offset += AddWeightedIntegralVariable(
@@ -787,8 +787,8 @@ bool IntegralProblemConverter::CreateVariableUsingConstraint(
   integral_var->Clear();
 
   const SparseMatrix& transpose = linear_problem.GetTransposeSparseMatrix();
-  gtl::ITIVector<VariableIndex, Fractional> dense_weights(num_boolean_variables_,
-                                                     0.0);
+  gtl::ITIVector<VariableIndex, Fractional> dense_weights(
+      num_boolean_variables_, 0.0);
   Fractional scale = 1.0;
   int64 variable_offset = 0;
   for (const SparseColumn::Entry constraint_entry :
