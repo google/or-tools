@@ -3010,7 +3010,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
           }
           if (local_response.status() == CpSolverStatus::MODEL_SAT ||
               local_response.status() == CpSolverStatus::OPTIMAL) {
-            LOG(INFO) << "dtime: " << deterministic_time
+            VLOG(1) << "dtime: " << deterministic_time
                     << " difficulty: " << saved_difficulty
                     << " local_obj: " << local_response.objective_value()
                     << " global_obj: " << response.objective_value()
