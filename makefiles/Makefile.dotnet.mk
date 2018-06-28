@@ -19,6 +19,9 @@ ORTOOLS_NUSPEC_FILE=$(ORTOOLS_DLL_NAME).nuspec
 
 CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
 CLR_ORTOOLS_DLL_NAME?=Google.$(ORTOOLS_DLL_NAME)
+CLR_ORTOOLS_TEST_DLL_NAME?=Google.$(ORTOOLS_TEST_DLL_NAME)
+CLR_ORTOOLS_FSHARP_DLL_NAME?=Google.$(ORTOOLS_FSHARP_DLL_NAME)
+CLR_ORTOOLS_FSHARP_TEST_DLL_NAME?=Google.$(ORTOOLS_FSHARP_TEST_DLL_NAME)
 CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME).import
 
 # relative to the project root folder
@@ -250,7 +253,13 @@ else
 endif
 
 .PHONY: fsharp_dotnet # Build F# OR-Tools
-fsharp_dotnet:
+fsharp_dotnet: fsharportools
+
+# fsharp ortools
+fsharportools: $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL)
+
+$(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL): \
+ $(CLR_KEYFILE)
 	"$(DOTNET_EXECUTABLE)" build -c Debug ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 ifeq ($(SYSTEM),win)
 	$(COPY) ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$Sbin$Sx64$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
@@ -272,6 +281,7 @@ clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$Spackage
 	-$(DEL) $(BIN_DIR)$S$(CLR_PROTOBUF_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME).*
+	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_FSHARP_DLL_NAME).*
 	-$(DEL) $(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).*
 	-$(DELREC) .$S$(DOTNET_ORTOOLS_TEST_DIR)
 
@@ -285,16 +295,11 @@ test_dotnet: csharp_dotnet fsharp_dotnet
 	"$(DOTNET_EXECUTABLE)" build -o "..$S..$S..$S$(DOTNET_ORTOOLS_TEST_DIR)" "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
 #	$(COPY) $(LIB_DIR)$S*.* .$S$(DOTNET_ORTOOLS_TEST_DIR)
 ifeq ($(SYSTEM),win)
-	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" \
- "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" \
- ".$S$(DOTNET_ORTOOLS_TEST_DIR)$SGoogle.$(ORTOOLS_TEST_DLL_NAME).dll" \
- ".$S$(DOTNET_ORTOOLS_TEST_DIR)$SGoogle.$(ORTOOLS_FSHARP_TEST_DLL_NAME).dll" -verbose
-else
-	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" \
- "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" \
- ".$S$(DOTNET_ORTOOLS_TEST_DIR)$SGoogle.$(ORTOOLS_TEST_DLL_NAME).dll" \
- ".$S$(DOTNET_ORTOOLS_TEST_DIR)$SGoogle.$(ORTOOLS_FSHARP_TEST_DLL_NAME).dll" -verbose
 endif
+	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" \
+ "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" \
+ ".$S$(DOTNET_ORTOOLS_TEST_DIR)$S$(CLR_ORTOOLS_TEST_DLL_NAME)$(DLL)" \
+ ".$S$(DOTNET_ORTOOLS_TEST_DIR)$S$(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)$(DLL)" -verbose
 
 .PHONY: dotnet # Build OrTools for .NET
 dotnet: test_dotnet
@@ -336,6 +341,9 @@ detect_dotnet:
 	@echo CLR_PROTOBUF_DLL_NAME = $(CLR_PROTOBUF_DLL_NAME)
 	@echo CLR_ORTOOLS_IMPORT_DLL_NAME = $(CLR_ORTOOLS_IMPORT_DLL_NAME)
 	@echo CLR_ORTOOLS_DLL_NAME = $(CLR_ORTOOLS_DLL_NAME)
+	@echo CLR_ORTOOLS_FSHARP_DLL_NAME = $(CLR_ORTOOLS_FSHARP_DLL_NAME)
+	@echo CLR_ORTOOLS_TEST_DLL_NAME = $(CLR_ORTOOLS_TEST_DLL_NAME)
+	@echo CLR_ORTOOLS_FSHARP_TEST_DLL_NAME = $(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)
 	@echo DOTNET_LIB_DIR = "$(DOTNET_LIB_DIR)"
 	@echo DOTNET_EXECUTABLE = "$(DOTNET_EXECUTABLE)"
 	@echo NUGET_EXECUTABLE = "$(NUGET_EXECUTABLE)"
