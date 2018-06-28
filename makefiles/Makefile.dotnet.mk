@@ -48,15 +48,12 @@ DOTNET_LIB_DIR = LD_LIBRARY_PATH="$(LIB_DIR):$(LD_LIBRARY_PATH)"
 endif
 
 .PHONY: csharp_dotnet # Build C# OR-Tools
-csharp_dotnet: ortoolslibs csharportools
+csharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
 # Assembly Info
 $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: \
  | $(GEN_DIR)/com/google/ortools/properties
 	@echo $(OR_TOOLS_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
-
-# csharp ortools
-csharportools: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
 # Auto-generated code
 $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
@@ -288,10 +285,7 @@ else
 endif
 
 .PHONY: fsharp_dotnet # Build F# OR-Tools
-fsharp_dotnet: fsharportools
-
-# fsharp ortools
-fsharportools: $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL)
+fsharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL)
 
 $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL): \
  $(CLR_KEYFILE) \
@@ -323,9 +317,13 @@ clean_dotnet:
 	-$(DELREC) .$S$(TEMP_DOTNET_TEST_DIR)
 
 .PHONY: test_dotnet # Test dotnet version of OR-Tools
-test_dotnet: csharp_dotnet fsharp_dotnet
-	"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sdotnet$Spackages" "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
-	"$(DOTNET_EXECUTABLE)" restore --packages "ortools$Sdotnet$Spackages" "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
+test_dotnet: dotnet
+	"$(DOTNET_EXECUTABLE)" restore \
+ --packages "ortools$Sdotnet$Spackages" \
+ "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
+	"$(DOTNET_EXECUTABLE)" restore \
+ --packages "ortools$Sdotnet$Spackages" \
+ "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
 	$(MKDIR_P) .$S$(TEMP_DOTNET_TEST_DIR)
 	"$(DOTNET_EXECUTABLE)" clean "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
 	"$(DOTNET_EXECUTABLE)" build -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
@@ -340,7 +338,7 @@ endif
  ".$S$(TEMP_DOTNET_TEST_DIR)$S$(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)$(DLL)" -verbose
 
 .PHONY: dotnet # Build OrTools for .NET
-dotnet: test_dotnet
+dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
 	$(SED) -i -e "s/<Version>.*<\/Version>/<Version>$(OR_TOOLS_VERSION)<\/Version>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	$(SED) -i -e "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$(OR_TOOLS_VERSION)<\/AssemblyVersion>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	$(SED) -i -e "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$(OR_TOOLS_VERSION)<\/FileVersion>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
