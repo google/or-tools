@@ -5,23 +5,24 @@
     <AssemblyName>Google.OrTools.FSharp.Tests</AssemblyName>
     <RootNamespace>Google.OrTools.FSharp.Tests</RootNamespace>
   </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>full</DebugType>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
+
   <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
-    <PackageReference Include="xunit.runner.console" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
   </ItemGroup>
+
   <ItemGroup>
-    <Reference Include="Google.OrTools.FSharp">
-      <HintPath>..\..\..\bin\Google.OrTools.FSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="Google.OrTools">
-      <HintPath>..\..\..\bin\Google.OrTools.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\OrTools.FSharp\OrTools.FSharp.fsproj"/>
+    <ProjectReference Include="..\OrTools\OrTools.csproj"/>
   </ItemGroup>
 </Project>

@@ -39,14 +39,6 @@ DOTNET_EXECUTABLE := $(shell $(WHICH) dotnet)
 endif
 endif
 
-DOTNET_LIB_DIR :=
-ifeq ($(PLATFORM),MACOSX)
-DOTNET_LIB_DIR = DYLD_LIBRARY_PATH="$(LIB_DIR):$(DYLD_LIBRARY_PATH)"
-endif
-ifeq ($(PLATFORM),LINUX)
-DOTNET_LIB_DIR = LD_LIBRARY_PATH="$(LIB_DIR):$(LD_LIBRARY_PATH)"
-endif
-
 .PHONY: csharp_dotnet # Build C# OR-Tools
 csharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
@@ -325,17 +317,23 @@ test_dotnet: dotnet
  --packages "ortools$Sdotnet$Spackages" \
  "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
 	$(MKDIR_P) .$S$(TEMP_DOTNET_TEST_DIR)
-	"$(DOTNET_EXECUTABLE)" clean "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
-	"$(DOTNET_EXECUTABLE)" build -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
-	"$(DOTNET_EXECUTABLE)" clean "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
-	"$(DOTNET_EXECUTABLE)" build -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
-ifeq ($(SYSTEM),win)
 	$(COPY) $(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) .$S$(TEMP_DOTNET_TEST_DIR)
-endif
-	$(DOTNET_LIB_DIR) "$(DOTNET_EXECUTABLE)" \
- "ortools$Sdotnet$Spackages$Sxunit.runner.console$S2.3.1$Stools$Snetcoreapp2.0$Sxunit.console.dll" \
- ".$S$(TEMP_DOTNET_TEST_DIR)$S$(CLR_ORTOOLS_TEST_DLL_NAME)$(DLL)" \
- ".$S$(TEMP_DOTNET_TEST_DIR)$S$(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)$(DLL)" -verbose
+	"$(DOTNET_EXECUTABLE)" clean \
+ "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
+	"$(DOTNET_EXECUTABLE)" build \
+ -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
+ "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
+	"$(DOTNET_EXECUTABLE)" clean \
+ "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
+	"$(DOTNET_EXECUTABLE)" build \
+ -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
+ "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
+	"$(DOTNET_EXECUTABLE)" test \
+ -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
+ "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)"
+	"$(DOTNET_EXECUTABLE)" test \
+ -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
+ "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)"
 
 .PHONY: dotnet # Build OrTools for .NET
 dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
@@ -379,7 +377,6 @@ detect_dotnet:
 	@echo CLR_ORTOOLS_FSHARP_DLL_NAME = $(CLR_ORTOOLS_FSHARP_DLL_NAME)
 	@echo CLR_ORTOOLS_TEST_DLL_NAME = $(CLR_ORTOOLS_TEST_DLL_NAME)
 	@echo CLR_ORTOOLS_FSHARP_TEST_DLL_NAME = $(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)
-	@echo DOTNET_LIB_DIR = "$(DOTNET_LIB_DIR)"
 	@echo DOTNET_EXECUTABLE = $(DOTNET_EXECUTABLE)
 	@echo NUGET_EXECUTABLE = $(NUGET_EXECUTABLE)
 ifeq ($(SYSTEM),win)
