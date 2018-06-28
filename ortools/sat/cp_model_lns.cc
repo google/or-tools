@@ -21,6 +21,34 @@
 
 namespace operations_research {
 namespace sat {
+namespace {
+
+// Returns a CpModelProto where the variables at given position where fixed to
+// the value they take in the given response.
+CpModelProto FixGivenPosition(const CpSolverResponse& response,
+                              const std::vector<int> variables_to_fix,
+                              CpModelProto model_proto) {
+  CHECK_EQ(response.solution_size(), model_proto.variables_size());
+  for (const int var : variables_to_fix) {
+    model_proto.mutable_variables(var)->clear_domain();
+    model_proto.mutable_variables(var)->add_domain(response.solution(var));
+    model_proto.mutable_variables(var)->add_domain(response.solution(var));
+  }
+
+  // Set the current solution as a hint.
+  model_proto.clear_solution_hint();
+  for (int var = 0; var < model_proto.variables_size(); ++var) {
+    model_proto.mutable_solution_hint()->add_vars(var);
+    model_proto.mutable_solution_hint()->add_values(response.solution(var));
+  }
+
+  // TODO(user): force better objective? Note that this is already done when the
+  // hint above is sucessfully loaded (i.e. if it passes the presolve correctly)
+  // since the solver will try to find better solution than the current one.
+  return model_proto;
+}
+
+}  // namespace
 
 // Base class constructor.
 NeighborhoodGenerator::NeighborhoodGenerator(CpModelProto const* model,
@@ -59,34 +87,25 @@ bool NeighborhoodGenerator::IsActive(int var) const {
   return !focus_on_decision_variables_ || decision_variables_set_[var];
 }
 
-namespace {
-
-// Returns a CpModelProto where the variables at given position where fixed to
-// the value they take in the given response.
-CpModelProto FixGivenPosition(const CpSolverResponse& response,
-                              const std::vector<int> variables_to_fix,
-                              CpModelProto model_proto) {
-  CHECK_EQ(response.solution_size(), model_proto.variables_size());
-  for (const int var : variables_to_fix) {
-    model_proto.mutable_variables(var)->clear_domain();
-    model_proto.mutable_variables(var)->add_domain(response.solution(var));
-    model_proto.mutable_variables(var)->add_domain(response.solution(var));
+CpModelProto NeighborhoodGenerator::RelaxGivenVariables(
+    const CpSolverResponse& initial_solution,
+    const std::vector<bool>& relaxed_variables) const {
+  std::vector<int> fixed_variables;
+  if (focus_on_decision_variables_) {
+    for (const int i : decision_variables_) {
+      if (!relaxed_variables[i]) {
+        fixed_variables.push_back(i);
+      }
+    }
+  } else {
+    for (int i = 0; i < model_proto_.variables_size(); ++i) {
+      if (!relaxed_variables[i]) {
+        fixed_variables.push_back(i);
+      }
+    }
   }
-
-  // Set the current solution as a hint.
-  model_proto.clear_solution_hint();
-  for (int var = 0; var < model_proto.variables_size(); ++var) {
-    model_proto.mutable_solution_hint()->add_vars(var);
-    model_proto.mutable_solution_hint()->add_values(response.solution(var));
-  }
-
-  // TODO(user): force better objective? Note that this is already done when the
-  // hint above is sucessfully loaded (i.e. if it passes the presolve correctly)
-  // since the solver will try to find better solution than the current one.
-  return model_proto;
+  return FixGivenPosition(initial_solution, fixed_variables, model_proto_);
 }
-
-}  // namespace
 
 CpModelProto SimpleNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, int64 seed,
@@ -170,23 +189,9 @@ CpModelProto VariableGraphNeighborhoodGenerator::Generate(
 
   // Compute the complement of relaxed_variables in fixed_variables.
   // Then collect fixed variables.
-  std::vector<int> fixed_variables;
   used_variables.assign(num_model_vars, false);
   for (const int var : relaxed_variables) used_variables[var] = true;
-  if (focus_on_decision_variables_) {
-    for (const int var : decision_variables_) {
-      if (!used_variables[var]) {
-        fixed_variables.push_back(var);
-      }
-    }
-  } else {
-    for (int var = 0; var < num_model_vars; ++var) {
-      if (!used_variables[var]) {
-        fixed_variables.push_back(var);
-      }
-    }
-  }
-  return FixGivenPosition(initial_solution, fixed_variables, model_proto_);
+  return RelaxGivenVariables(initial_solution, used_variables);
 }
 
 CpModelProto ConstraintGraphNeighborhoodGenerator::Generate(
@@ -247,22 +252,7 @@ CpModelProto ConstraintGraphNeighborhoodGenerator::Generate(
       }
     }
   }
-
-  std::vector<int> fixed_variables;
-  if (focus_on_decision_variables_) {
-    for (const int i : decision_variables_) {
-      if (!visited_variables[i]) {
-        fixed_variables.push_back(i);
-      }
-    }
-  } else {
-    for (int i = 0; i < num_model_vars; ++i) {
-      if (!visited_variables[i]) {
-        fixed_variables.push_back(i);
-      }
-    }
-  }
-  return FixGivenPosition(initial_solution, fixed_variables, model_proto_);
+  return RelaxGivenVariables(initial_solution, visited_variables);
 }
 
 }  // namespace sat

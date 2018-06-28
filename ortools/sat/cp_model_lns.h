@@ -16,7 +16,6 @@
 
 #include <vector>
 
-#include <unordered_set>
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
 
@@ -51,6 +50,11 @@ class NeighborhoodGenerator {
   // Indicates if the variable can be frozen. It happens if the variable is a
   // decision variable, of if focus_on_decision_variables_ is false.
   bool IsActive(int var) const;
+
+  // Returns an LNS fragment where the given variables are relaxed.
+  CpModelProto RelaxGivenVariables(
+      const CpSolverResponse& initial_solution,
+      const std::vector<bool>& relaxed_variables) const;
 
   // TODO(user): for now and for convenience, we generate the
   // variable-constraint graph even if not all subclass will need it.

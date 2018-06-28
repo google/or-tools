@@ -168,11 +168,10 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
     IntegerVariable objective_var, Model* model) {
   // Default strategy is to instantiate the IntegerVariable in order.
   std::function<LiteralIndex()> default_search_strategy = nullptr;
-  const SatParameters* parameters = model->GetOrCreate<SatParameters>();
   const bool instantiate_all_variables =
-      parameters->instantiate_all_variables();
+      model->GetOrCreate<SatParameters>()->instantiate_all_variables();
 
-  if (cp_model_proto.search_strategy().empty() || instantiate_all_variables) {
+  if (instantiate_all_variables) {
     std::vector<IntegerVariable> decisions;
     for (const IntegerVariable var : variable_mapping) {
       if (var == kNoIntegerVariable) continue;
@@ -186,9 +185,6 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
     }
     default_search_strategy =
         FirstUnassignedVarAtItsMinHeuristic(decisions, model);
-    if (cp_model_proto.search_strategy().empty()) {
-      return default_search_strategy;
-    }
   }
 
   std::vector<Strategy> strategies;

@@ -2877,10 +2877,19 @@ CpSolverResponse PresolveAndSolve(const CpModelProto& model_proto,
     if (response.status() == CpSolverStatus::MODEL_SAT ||
         response.status() == CpSolverStatus::OPTIMAL) {
       // Truncate the solution in case model expansion added more variables.
-      response.mutable_solution()->Truncate(num_original_variables);
-      CHECK(SolutionIsFeasible(model_proto,
-                               std::vector<int64>(response.solution().begin(),
-                                                  response.solution().end())));
+      if (response.solution_size() > 0) {
+        response.mutable_solution()->Truncate(num_original_variables);
+      } else if (response.solution_lower_bounds_size() > 0) {
+        response.mutable_solution_lower_bounds()->Truncate(
+            num_original_variables);
+        response.mutable_solution_upper_bounds()->Truncate(
+            num_original_variables);
+      }
+      if (!response.solution().empty()) {
+        CHECK(SolutionIsFeasible(
+            model_proto, std::vector<int64>(response.solution().begin(),
+                                            response.solution().end())));
+      }
     }
     return response;
   }
