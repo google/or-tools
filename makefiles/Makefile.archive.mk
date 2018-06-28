@@ -212,7 +212,7 @@ else
 endif
 	cd temp$S$(INSTALL_DIR) && $(MAKE) test && cd ../.. && $(RENAME) lib2 lib && echo "archive test succeeded" || ( cd ../.. && $(RENAME) lib2 lib && echo "archive test failed" && exit 1)
 
-TEMP_FZ_TEST_DIR = temp_test_fz
+TEMP_FZ_TEST_DIR = temp_fz_test
 test_fz_archive: $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DELREC) $(TEMP_FZ_TEST_DIR)
 	$(MKDIR) $(TEMP_FZ_TEST_DIR)
