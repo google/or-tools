@@ -20,7 +20,6 @@ ORTOOLS_NUSPEC_FILE=$(ORTOOLS_DLL_NAME).nuspec
 
 CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
 CLR_ORTOOLS_DLL_NAME?=Google.$(ORTOOLS_DLL_NAME)
-BASE_CLR_ORTOOLS_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME)
 CLR_ORTOOLS_IMPORT_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME).import
 
 # relative to the project root folder
@@ -69,7 +68,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc \
  -module operations_research_linear_solver \
- -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).LinearSolver \
+ -namespace $(CLR_ORTOOLS_DLL_NAME).LinearSolver \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
  -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver \
  $(SRC_DIR)$Sortools$Slinear_solver$Scsharp$Slinear_solver.i
@@ -90,7 +89,7 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc \
  -module operations_research_constraint_solver \
- -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).ConstraintSolver \
+ -namespace $(CLR_ORTOOLS_DLL_NAME).ConstraintSolver \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
  -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Scsharp$Srouting.i
@@ -127,7 +126,7 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc: \
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc \
  -module operations_research_algorithms \
- -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Algorithms \
+ -namespace $(CLR_ORTOOLS_DLL_NAME).Algorithms \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
  -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms \
  $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
@@ -146,7 +145,7 @@ $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc: \
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_csharp_wrap.cc \
  -module operations_research_graph \
- -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Graph \
+ -namespace $(CLR_ORTOOLS_DLL_NAME).Graph \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
  -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph \
  $(SRC_DIR)$Sortools$Sgraph$Scsharp$Sgraph.i
@@ -166,7 +165,7 @@ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
  -o $(GEN_DIR)$Sortools$Ssat$Ssat_csharp_wrap.cc \
  -module operations_research_sat \
- -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Sat \
+ -namespace $(CLR_ORTOOLS_DLL_NAME).Sat \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
  -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat \
  $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
@@ -335,6 +334,8 @@ pkg_dotnet-upload: nuget_archive
 detect_dotnet:
 	@echo Relevant info for the dotnet build:
 	@echo PROTOC = $(PROTOC)
+	@echo CLR_PROTOBUF_DLL_NAME = $(CLR_PROTOBUF_DLL_NAME)
+	@echo CLR_ORTOOLS_DLL_NAME = $(CLR_ORTOOLS_DLL_NAME)
 	@echo DOTNET_LIB_DIR = "$(DOTNET_LIB_DIR)"
 	@echo DOTNET_EXECUTABLE = "$(DOTNET_EXECUTABLE)"
 	@echo MONO_EXECUTABLE = "$(MONO_EXECUTABLE)"
