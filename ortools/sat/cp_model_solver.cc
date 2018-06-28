@@ -2936,7 +2936,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
       response = synchro->f();
       if (response.status() != CpSolverStatus::UNKNOWN) break;
       // Sleep for 10 ms.
- #ifdef _WIN32
+ #ifdef __WIN32__
       Sleep(10);
  #else
       usleep(10000000);
