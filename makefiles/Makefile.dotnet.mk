@@ -294,7 +294,8 @@ fsharp_dotnet: fsharportools
 fsharportools: $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL)
 
 $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL): \
- $(CLR_KEYFILE)
+ $(CLR_KEYFILE) \
+ $(OR_TOOLS_LIBS)
 	"$(DOTNET_EXECUTABLE)" build -c Debug ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 ifeq ($(SYSTEM),win)
 	$(COPY) ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$Sbin$Sx64$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
@@ -351,7 +352,6 @@ dotnet: test_dotnet
 	$(MKDIR_P) $(TEMP_DOTNET_DIR)
 	"$(DOTNET_EXECUTABLE)" publish -c Release -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 
-
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 
 ifeq ($(SYSTEM),win)
@@ -382,8 +382,8 @@ detect_dotnet:
 	@echo CLR_ORTOOLS_TEST_DLL_NAME = $(CLR_ORTOOLS_TEST_DLL_NAME)
 	@echo CLR_ORTOOLS_FSHARP_TEST_DLL_NAME = $(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)
 	@echo DOTNET_LIB_DIR = "$(DOTNET_LIB_DIR)"
-	@echo DOTNET_EXECUTABLE = "$(DOTNET_EXECUTABLE)"
-	@echo NUGET_EXECUTABLE = "$(NUGET_EXECUTABLE)"
+	@echo DOTNET_EXECUTABLE = $(DOTNET_EXECUTABLE)
+	@echo NUGET_EXECUTABLE = $(NUGET_EXECUTABLE)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else
