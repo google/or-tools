@@ -90,6 +90,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	Threads::Threads)
 if(WIN32)
 	target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
+target_compile_definitions(${PROJECT_NAME} PUBLIC __WIN32__)
 endif()
 target_compile_definitions(${PROJECT_NAME}
 	PUBLIC	USE_BOP USE_GLOP USE_CBC USE_CLP)
