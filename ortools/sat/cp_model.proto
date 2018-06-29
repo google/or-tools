@@ -395,16 +395,12 @@ message CpModelProto {
   // search_branching parameter is set to FIXED_SEARCH. Note that this strategy
   // is also used as a heuristic when we are not in fixed search.
   //
-  // If empty, the solver will try to assign all variables to their min value in
-  // the order of their appearance in the variables field above. Otherwise, it
-  // will assign the variables in each DecisionStrategyProto according to the
-  // order defined there and only move to the next proto in this field once all
-  // variables from the previous one have been assigned.
-  //
-  // Advanced Usage: if not all variables appears, the solver will not try to
-  // assign the missing ones. Thus, at the end of the search, not all variables
-  // may be fixed and this is why the solution_lower_bounds and
-  // solution_upper_bounds fields in the CpSolverResponse are for.
+  // Advanced Usage: if not all variables appears and the parameter
+  // "instantiate_all_variables" is set to false, then the solver will not try
+  // to instantiate the variables that do not appear. Thus, at the end of the
+  // search, not all variables may be fixed and this is why we have the
+  // solution_lower_bounds and solution_upper_bounds fields in the
+  // CpSolverResponse.
   repeated DecisionStrategyProto search_strategy = 5;
 
   // Solution hint.
@@ -491,4 +487,7 @@ message CpSolverResponse {
   double wall_time = 15;
   double user_time = 16;
   double deterministic_time = 17;
+
+  // Additional tag given by the solver.
+  string solution_tag = 20;
 }

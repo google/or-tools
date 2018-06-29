@@ -51,7 +51,7 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
 // and how many threads to pass to LNS with an optimization model.
 SatParameters DiversifySearchParameters(const SatParameters& params,
                                         const CpModelProto& cp_model,
-                                        const int worker_id);
+                                        const int worker_id, std::string* name);
 
 // This method updates a given response with a new incoming response.
 // It returns true if the response is strictly improving upon the 'best' one.

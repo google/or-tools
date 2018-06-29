@@ -26,6 +26,7 @@
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/text_format.h"
@@ -2959,12 +2960,11 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
   // expanded problem?
   std::vector<std::unique_ptr<NeighborhoodGenerator>> generators;
   generators.push_back(absl::make_unique<SimpleNeighborhoodGenerator>(
-      &expanded_model, focus_on_decision_variables));
+      &expanded_model, focus_on_decision_variables, "RndLns"));
   generators.push_back(absl::make_unique<VariableGraphNeighborhoodGenerator>(
-      &expanded_model, focus_on_decision_variables,
-      parameters->lns_max_variables_per_constraint()));
+      &expanded_model, focus_on_decision_variables, "VarLns"));
   generators.push_back(absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
-      &expanded_model, focus_on_decision_variables));
+      &expanded_model, focus_on_decision_variables, "CstLns"));
 
   // The "optimal" difficulties do not have to be the same for different
   // generators. TODO(user): move this inside the generator API?
@@ -3007,6 +3007,8 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
         const int selected_generator = seed % generators.size();
         CpModelProto local_problem = generators[selected_generator]->Generate(
             response, seed, saved_difficulty);
+        const std::string generator_name =
+            generators[selected_generator]->name();
 
         Model local_model;
         {
@@ -3026,7 +3028,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
 
         return [&num_no_progress, &model_proto, &response, &difficulty,
                 &deterministic_time, saved_difficulty, local_response,
-                &observers, limit, selected_generator]() {
+                &observers, limit, generator_name]() {
           // TODO(user): This is not ideal in multithread because even though
           // the saved_difficulty will be the same for all thread, we will
           // Increase()/Decrease() the difficuty sequentially more than once.
@@ -3042,7 +3044,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
                     << " difficulty: " << saved_difficulty
                     << " local_obj: " << local_response.objective_value()
                     << " global_obj: " << response.objective_value()
-                    << " using generator: " << selected_generator;
+                    << " using generator: " << generator_name;
 
             // If the objective are the same, we override the solution,
             // otherwise we just ignore this local solution and increment
@@ -3074,6 +3076,9 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
                 std::vector<int64>(local_response.solution().begin(),
                                    local_response.solution().end())));
             if (num_no_progress == 0) {  // Improving solution.
+              const std::string tag = absl::StrFormat(
+                  "%s(d = %0.2f)", generator_name.c_str(), saved_difficulty);
+              response.set_solution_tag(tag);
               for (const auto& observer : observers) {
                 observer(response);
               }

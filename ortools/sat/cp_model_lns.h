@@ -26,7 +26,8 @@ namespace sat {
 class NeighborhoodGenerator {
  public:
   explicit NeighborhoodGenerator(CpModelProto const* model,
-                                 bool focus_on_decision_variables);
+                                 bool focus_on_decision_variables,
+                                 const std::string& name);
   virtual ~NeighborhoodGenerator() {}
 
   // Generates a "local" subproblem for the given seed.
@@ -46,34 +47,49 @@ class NeighborhoodGenerator {
   virtual CpModelProto Generate(const CpSolverResponse& initial_solution,
                                 int64 seed, double difficulty) const = 0;
 
+  // Returns a short description of the generator.
+  std::string name() const { return name_; }
+
  protected:
-  // Indicates if the variable can be frozen. It happens if the variable is a
-  // decision variable, of if focus_on_decision_variables_ is false.
+  // Indicates if the variable can be frozen. It happens if the variable is non
+  // constant, and if it is a decision variable, or if
+  // focus_on_decision_variables is false.
   bool IsActive(int var) const;
 
+  // Indicates if a variable is fixed in the model.
   bool IsConstant(int var) const;
 
-  // Returns an LNS fragment where the given variables are relaxed.
+  // Returns an LNS fragment which will relax all inactive variables and all
+  // variables in relaxed_variables.
   CpModelProto RelaxGivenVariables(
       const CpSolverResponse& initial_solution,
-      const std::vector<bool>& relaxed_variables) const;
+      const std::vector<int>& relaxed_variables) const;
 
   // TODO(user): for now and for convenience, we generate the
   // variable-constraint graph even if not all subclass will need it.
   const CpModelProto& model_proto_;
+
+  const std::string name_;
+
+  // Variable-Constraint graph.
   std::vector<std::vector<int>> constraint_to_var_;
   std::vector<std::vector<int>> var_to_constraint_;
-  std::vector<bool> decision_variables_set_;
-  std::vector<int> decision_variables_;
-  bool focus_on_decision_variables_;
+
+  // The set of active variables, that is the list of non constant variables
+  // if focus_on_decision_variables_ is false, or the list of non constant
+  // decision variables otherwise.
+  // It is stored both as a list and as a set (using a Boolean vector).
+  std::vector<bool> active_variables_set_;
+  std::vector<int> active_variables_;
 };
 
 // Pick a random subset of variables.
 class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   SimpleNeighborhoodGenerator(CpModelProto const* model,
-                              bool focus_on_decision_variables)
-      : NeighborhoodGenerator(model, focus_on_decision_variables) {}
+                              bool focus_on_decision_variables,
+                              const std::string& name)
+      : NeighborhoodGenerator(model, focus_on_decision_variables, name) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 };
@@ -86,14 +102,10 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit VariableGraphNeighborhoodGenerator(CpModelProto const* model,
                                               bool focus_on_decision_variables,
-                                              int max_variables_per_constraint)
-      : NeighborhoodGenerator(model, focus_on_decision_variables),
-        max_variables_per_constraint_(max_variables_per_constraint) {}
+                                              const std::string& name)
+      : NeighborhoodGenerator(model, focus_on_decision_variables, name) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
-
- private:
-  const int max_variables_per_constraint_;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a
@@ -103,11 +115,28 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
 class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit ConstraintGraphNeighborhoodGenerator(
-      CpModelProto const* model, bool focus_on_decision_variables)
-      : NeighborhoodGenerator(model, focus_on_decision_variables) {}
+      CpModelProto const* model, bool focus_on_decision_variables,
+      const std::string& name)
+      : NeighborhoodGenerator(model, focus_on_decision_variables, name) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 };
+
+class ObjectiveGraphNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit ObjectiveGraphNeighborhoodGenerator(CpModelProto const* model,
+                                               bool focus_on_decision_variables,
+                                               int max_variables_per_constraint,
+                                               const std::string& name)
+      : NeighborhoodGenerator(model, focus_on_decision_variables, name),
+        max_variables_per_constraint_(max_variables_per_constraint) {}
+  CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
+                        double difficulty) const final;
+
+ private:
+  const int max_variables_per_constraint_;
+};
+
 
 }  // namespace sat
 }  // namespace operations_research

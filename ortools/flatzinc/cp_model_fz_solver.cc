@@ -976,8 +976,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     ThreadPool pool("Parallel_FlatZinc_sat", num_search_workers);
     pool.StartWorkers();
     for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
-      const SatParameters local_params =
-          DiversifySearchParameters(m.parameters, m.proto, worker_id);
+      std::string worker_name;
+      const SatParameters local_params = DiversifySearchParameters(
+          m.parameters, m.proto, worker_id, &worker_name);
       pool.Schedule([&fz_model, &m, &p, &stopped, local_params, worker_id,
                      &best_response, &mutex]() {
         const CpSolverResponse local_response =
@@ -1018,22 +1019,27 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           }
         };
 
+        std::string worker_name;
+        const SatParameters local_params = DiversifySearchParameters(
+            m.parameters, m.proto, worker_id, &worker_name);
+
         const auto solution_observer = [maximize, &solution_count, worker_id,
                                         &mutex, &p, &fz_model, &m,
-                                        &best_response,
-                                        &timer](const CpSolverResponse& r) {
+                                        &best_response, &timer, worker_name](
+                                           const CpSolverResponse& r) {
           absl::MutexLock lock(&mutex);
 
           // Check is the new solution is actually improving upon the best
           // solution found so far.
           if (MergeOptimizationSolution(r, maximize, &best_response)) {
             if (p.all_solutions) {
-              FZLOG << "worker #" << worker_id << ", solution #"
-                    << solution_count++
+              const std::string tag =
+                  !r.solution_tag().empty() ? ", " + r.solution_tag() : "";
+              FZLOG << "[" << worker_name << "] solution #" << solution_count++
                     << ", objective = " << best_response.objective_value()
                     << ", objective " << (maximize ? "upper" : "lower")
                     << " bound = " << best_response.best_objective_bound()
-                    << ", time = " << timer.Get() << "s" << FZENDL;
+                    << ", time = " << timer.Get() << "s" << tag << FZENDL;
               if (FLAGS_use_flatzinc_format) {
                 const std::string solution_string =
                     SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
@@ -1045,13 +1051,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           }
         };
 
-        const SatParameters local_params =
-            DiversifySearchParameters(m.parameters, m.proto, worker_id);
-
         pool.Schedule([&fz_model, &m, &p, solution_observer,
                        solution_synchronization, objective_synchronization,
                        &stopped, local_params, worker_id, &mutex,
-                       &best_response, maximize]() {
+                       &best_response, maximize, worker_name]() {
           const CpSolverResponse local_response =
               WorkerSearch(m.proto, local_params, p, solution_observer,
                            solution_synchronization, objective_synchronization,

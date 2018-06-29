@@ -16,6 +16,7 @@
 #include <random>
 #include <unordered_map>
 
+#include "ortools/base/stringprintf.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
 
@@ -262,7 +263,8 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
 
 SatParameters DiversifySearchParameters(const SatParameters& params,
                                         const CpModelProto& cp_model,
-                                        const int worker_id) {
+                                        const int worker_id,
+                                        std::string* name) {
   // Note: in the flatzinc setting, we know we always have a fixed search
   //       defined.
   // Things to try:
@@ -276,32 +278,38 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     switch (worker_id) {
       case 0: {  // Use default parameters and fixed search.
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        *name = "fixed";
         break;
       }
       case 1: {  // Use default parameters and automatic search.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(1);
+        *name = "auto ";
         break;
       }
       case 2: {  // Remove LP relaxation.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(0);
+        *name = "no lp";
         break;
       }
       case 3: {  // Reinforce LP relaxation.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(2);
+        *name = "maxlp";
         break;
       }
       case 4: {  // Core based approach.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_optimize_with_core(true);
+        *name = "core ";
         break;
       }
       default: {  // LNS.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_use_lns(true);
         new_params.set_lns_num_threads(1);
+        *name = absl::StrFormat("lns%2i", worker_id - 5);
       }
     }
   } else {
@@ -310,16 +318,19 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     switch (worker_id) {
       case 0: {  // Use default parameters and fixed search.
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        *name = "fixed";
         break;
       }
       case 1: {  // Use default parameters and automatic search.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        *name = "auto ";
         break;
       }
       default: {  // Randomized fixed search.
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
         new_params.set_randomize_search(true);
         new_params.set_search_randomization_tolerance(worker_id - 2);
+        *name = absl::StrFormat("rnd%2i", worker_id - 2);
         break;
       }
     }
