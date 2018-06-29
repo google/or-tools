@@ -2961,7 +2961,8 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
   generators.push_back(absl::make_unique<SimpleNeighborhoodGenerator>(
       &expanded_model, focus_on_decision_variables));
   generators.push_back(absl::make_unique<VariableGraphNeighborhoodGenerator>(
-      &expanded_model, focus_on_decision_variables));
+      &expanded_model, focus_on_decision_variables,
+      parameters->lns_max_variables_per_constraint()));
   generators.push_back(absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
       &expanded_model, focus_on_decision_variables));
 

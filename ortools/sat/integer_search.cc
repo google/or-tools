@@ -125,6 +125,7 @@ std::function<LiteralIndex()> FollowHint(
         return Literal(vars[i].bool_var, value == 1).Index();
       } else {
         const IntegerVariable integer_var = vars[i].int_var;
+        if (integer_trail->IsCurrentlyIgnored(integer_var)) continue;
         const IntegerValue lb = integer_trail->LowerBound(integer_var);
         const IntegerValue ub = integer_trail->UpperBound(integer_var);
         if (lb == ub) continue;
@@ -242,7 +243,6 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
           if (value > lb && value <= ub) {
             const Literal ge = encoder->GetOrCreateAssociatedLiteral(
                 IntegerLiteral::GreaterOrEqual(positive_var, value));
-            auto domain = (*model->GetOrCreate<IntegerDomains>())[positive_var];
             CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
             last_decision_followed_lp = true;
             return ge.Index();

@@ -51,6 +51,8 @@ class NeighborhoodGenerator {
   // decision variable, of if focus_on_decision_variables_ is false.
   bool IsActive(int var) const;
 
+  bool IsConstant(int var) const;
+
   // Returns an LNS fragment where the given variables are relaxed.
   CpModelProto RelaxGivenVariables(
       const CpSolverResponse& initial_solution,
@@ -83,10 +85,15 @@ class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
 class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit VariableGraphNeighborhoodGenerator(CpModelProto const* model,
-                                              bool focus_on_decision_variables)
-      : NeighborhoodGenerator(model, focus_on_decision_variables) {}
+                                              bool focus_on_decision_variables,
+                                              int max_variables_per_constraint)
+      : NeighborhoodGenerator(model, focus_on_decision_variables),
+        max_variables_per_constraint_(max_variables_per_constraint) {}
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
+
+ private:
+  const int max_variables_per_constraint_;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a
