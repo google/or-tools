@@ -20,47 +20,29 @@
    A description of the problem can be found here:
    http://en.wikipedia.org/wiki/Vehicle_routing_problem.
 
-   Distances are in meters and time in seconds.
-
-   Manhattan average block: 750ft x 264ft -> 228m x 80m
-   src: https://nyti.ms/2GDoRIe "NY Times: Know Your distance"
-   here we use: 114m x 80m city block
+   Distances are in meters.
 """
 
 from __future__ import print_function
+from collections import namedtuple
 from six.moves import xrange
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
 
-
 ###########################
 # Problem Data Definition #
 ###########################
-class CityBlock():
-  """City block definition"""
-
-  @property
-  def width(self):
-    """Gets Block size West to East"""
-    return 228 / 2
-
-  @property
-  def height(self):
-    """Gets Block size North to South"""
-    return 80
-
+# City block declaration
+CityBlock = namedtuple('CityBlock', ['width', 'height'])
 
 class DataProblem():
   """Stores the data for the problem"""
-
   def __init__(self):
     """Initializes the data for the problem"""
-    self._num_vehicles = 4
-
     # Locations in block unit
     locations = \
             [(4, 4), # depot
-             (2, 0), (8, 0), # row 0
+             (2, 0), (8, 0), # location to visit
              (0, 1), (1, 1),
              (5, 2), (7, 2),
              (3, 3), (6, 3),
@@ -68,17 +50,18 @@ class DataProblem():
              (1, 6), (2, 6),
              (3, 7), (6, 7),
              (0, 8), (7, 8)]
-    # locations in meters using the block dimension defined
-    city_block = CityBlock()
+    # Compute locations in meters using the block dimension defined as follow
+    # Manhattan average block: 750ft x 264ft -> 228m x 80m
+    # here we use: 114m x 80m city block
+    # src: https://nyti.ms/2GDoRIe "NY Times: Know Your distance"
+    city_block = CityBlock(width=228/2, height=80)
     self._locations = [(loc[0] * city_block.width, loc[1] * city_block.height)
                        for loc in locations]
-
-    self._depot = 0
 
   @property
   def num_vehicles(self):
     """Gets number of vehicles"""
-    return self._num_vehicles
+    return 4
 
   @property
   def locations(self):
@@ -92,9 +75,8 @@ class DataProblem():
 
   @property
   def depot(self):
-    """Gets depot location index"""
-    return self._depot
-
+    """Gets depot location node index"""
+    return 0
 
 #######################
 # Problem Constraints #
@@ -103,7 +85,6 @@ def manhattan_distance(position_1, position_2):
   """Computes the Manhattan distance between two points"""
   return (
       abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
-
 
 class CreateDistanceEvaluator(object):  # pylint: disable=too-few-public-methods
   """Creates callback to return distance between points."""
@@ -142,58 +123,27 @@ def add_distance_dimension(routing, distance_evaluator):
   # /!\ It doesn't mean the standard deviation is minimized
   distance_dimension.SetGlobalSpanCostCoefficient(100)
 
-
 ###########
 # Printer #
 ###########
-class ConsolePrinter():
-  """Print solution to console"""
-
-  def __init__(self, data, routing, assignment):
-    """Initializes the printer"""
-    self._data = data
-    self._routing = routing
-    self._assignment = assignment
-
-  @property
-  def data(self):
-    """Gets problem data"""
-    return self._data
-
-  @property
-  def routing(self):
-    """Gets routing model"""
-    return self._routing
-
-  @property
-  def assignment(self):
-    """Gets routing model"""
-    return self._assignment
-
-  def print(self):
-    """Prints assignment on console"""
-    # Inspect solution.
-    total_dist = 0
-    for vehicle_id in xrange(self.data.num_vehicles):
-      index = self.routing.Start(vehicle_id)
-      plan_output = 'Route for vehicle {0}:\n'.format(vehicle_id)
-      route_dist = 0
-      while not self.routing.IsEnd(index):
-        node_index = self.routing.IndexToNode(index)
-        next_node_index = self.routing.IndexToNode(
-            self.assignment.Value(self.routing.NextVar(index)))
-        route_dist += manhattan_distance(self.data.locations[node_index],
-                                         self.data.locations[next_node_index])
-        plan_output += ' {0} -> '.format(node_index)
-        index = self.assignment.Value(self.routing.NextVar(index))
-
-      node_index = self.routing.IndexToNode(index)
-      total_dist += route_dist
-      plan_output += ' {0}\n'.format(node_index)
-      plan_output += 'Distance of the route: {0}m\n'.format(route_dist)
-      print(plan_output)
-    print('Total Distance of all routes: {0}m'.format(total_dist))
-
+def print_solution(data, routing, assignment):
+  """Prints assignment on console"""
+  print('Objective: {}'.format(assignment.ObjectiveValue()))
+  total_distance = 0
+  for vehicle_id in xrange(data.num_vehicles):
+    index = routing.Start(vehicle_id)
+    plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+    distance = 0
+    while not routing.IsEnd(index):
+      plan_output += ' {} -> '.format(routing.IndexToNode(index))
+      previous_index = index
+      index = assignment.Value(routing.NextVar(index))
+      distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
+    plan_output += ' {}\n'.format(routing.IndexToNode(index))
+    plan_output += 'Distance of the route: {}m\n'.format(distance)
+    print(plan_output)
+    total_distance += distance
+  print('Total Distance of all routes: {}m'.format(total_distance))
 
 ########
 # Main #
@@ -214,12 +164,10 @@ def main():
   # Setting first solution heuristic (cheapest addition).
   search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
   search_parameters.first_solution_strategy = (
-      routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+      routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC) # pylint: disable=no-member
   # Solve the problem.
   assignment = routing.SolveWithParameters(search_parameters)
-  printer = ConsolePrinter(data, routing, assignment)
-  printer. print()
-
+  print_solution(data, routing, assignment)
 
 if __name__ == '__main__':
   main()
