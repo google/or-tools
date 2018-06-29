@@ -23,6 +23,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <chrono>
+#include <thread>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
@@ -68,12 +70,6 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
-
-#if defined(_MSC_VER)
-#include <windows.h>
-#else
-#include <unistd.h>
-#endif
 
 DEFINE_string(cp_model_dump_file, "",
               "DEBUG ONLY. When this is set to a non-empty file name, "
@@ -2936,12 +2932,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
     while (!limit->LimitReached()) {
       response = synchro->f();
       if (response.status() != CpSolverStatus::UNKNOWN) break;
-      // Sleep for 10 ms.
- #ifdef __WIN32__
-      Sleep(10);
- #else
-      usleep(10000000);
- #endif
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
   } else {
     CpModelProto copy = expanded_model;
