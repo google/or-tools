@@ -39,16 +39,19 @@ DOTNET_EXECUTABLE := $(shell $(WHICH) dotnet)
 endif
 endif
 
+$(GEN_DIR)/com/google/ortools/properties:
+	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Sproperties
+
 .PHONY: csharp_dotnet # Build C# OR-Tools
 csharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
 # Assembly Info
 $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: \
  | $(GEN_DIR)/com/google/ortools/properties
-	@echo $(OR_TOOLS_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
+	@echo $(OR_TOOLS_VERSION) > $(GEN_PATH)$Scom$Sgoogle$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
 
 # Auto-generated code
-$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
+$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL) | $(BIN_DIR)
 	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
@@ -56,19 +59,21 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/util/csharp/proto.i \
  $(GLOP_DEPS) \
- $(LP_DEPS)
+ $(LP_DEPS) \
+ | $(GEN_DIR)/ortools/linear_solver $(GEN_DIR)/com/google/ortools/linearsolver
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
- -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc \
+ -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc \
  -module operations_research_linear_solver \
  -namespace $(CLR_ORTOOLS_DLL_NAME).LinearSolver \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
- -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver \
+ -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver \
  $(SRC_DIR)$Sortools$Slinear_solver$Scsharp$Slinear_solver.i
 
 $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O: \
- $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc
+ $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc \
+ | $(OBJ_DIR)/swig
 	$(CCC) $(CFLAGS) \
- -c $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc \
+ -c $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O
 
 $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
@@ -77,75 +82,81 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/util/csharp/proto.i \
  $(SRC_DIR)/ortools/util/csharp/functions.i \
- $(CP_DEPS)
+ $(CP_DEPS) \
+ | $(GEN_DIR)/ortools/constraint_solver $(GEN_DIR)/com/google/ortools/constraintsolver
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
- -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc \
+ -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc \
  -module operations_research_constraint_solver \
  -namespace $(CLR_ORTOOLS_DLL_NAME).ConstraintSolver \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
- -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver \
+ -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Scsharp$Srouting.i
 	$(SED) -i -e 's/CSharp_new_Solver/CSharp_new_CpSolver/g' \
- $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
- $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
+ $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_delete_Solver/CSharp_delete_CpSolver/g' \
- $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
- $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
+ $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_Solver/CSharp_CpSolver/g' \
- $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
- $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
+ $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_new_Constraint/CSharp_new_CpConstraint/g' \
- $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
- $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
+ $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_delete_Constraint/CSharp_delete_CpConstraint/g' \
- $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
- $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
+ $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_Constraint/CSharp_CpConstraint/g' \
- $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
- $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
+ $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*cs \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
 
 $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O: \
- $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc
+ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc \
+ | $(OBJ_DIR)/swig
 	$(CCC) $(CFLAGS) \
- -c $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc \
+ -c $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O
 
 $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/algorithms/csharp/knapsack_solver.i \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/util/csharp/proto.i \
- $(SRC_DIR)/ortools/algorithms/knapsack_solver.h
+ $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
+ | $(GEN_DIR)/ortools/algorithms $(GEN_DIR)/com/google/ortools/algorithms
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
- -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc \
+ -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc \
  -module operations_research_algorithms \
  -namespace $(CLR_ORTOOLS_DLL_NAME).Algorithms \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
- -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms \
+ -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms \
  $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
 
 $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O: \
- $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc
+ $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc \
+ | $(OBJ_DIR)/swig
 	$(CCC) $(CFLAGS) \
- -c $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc \
+ -c $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O
 
 $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/graph/csharp/graph.i \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/util/csharp/proto.i \
- $(GRAPH_DEPS)
+ $(GRAPH_DEPS) \
+ | $(GEN_DIR)/ortools/graph $(GEN_DIR)/com/google/ortools/graph
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
- -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_csharp_wrap.cc \
+ -o $(GEN_PATH)$Sortools$Sgraph$Sgraph_csharp_wrap.cc \
  -module operations_research_graph \
  -namespace $(CLR_ORTOOLS_DLL_NAME).Graph \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
- -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph \
+ -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph \
  $(SRC_DIR)$Sortools$Sgraph$Scsharp$Sgraph.i
 
 $(OBJ_DIR)/swig/graph_csharp_wrap.$O: \
- $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc
+ $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc \
+ | $(OBJ_DIR)/swig
 	$(CCC) $(CFLAGS) \
- -c $(GEN_DIR)$Sortools$Sgraph$Sgraph_csharp_wrap.cc \
+ -c $(GEN_PATH)$Sortools$Sgraph$Sgraph_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O
 
 $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
@@ -153,79 +164,81 @@ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/sat/csharp/sat.i \
  $(SRC_DIR)/ortools/sat/swig_helper.h \
  $(SRC_DIR)/ortools/util/csharp/proto.i \
- $(SAT_DEPS)
+ $(SAT_DEPS) \
+ | $(GEN_DIR)/ortools/sat $(GEN_DIR)/com/google/ortools/sat
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
- -o $(GEN_DIR)$Sortools$Ssat$Ssat_csharp_wrap.cc \
+ -o $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc \
  -module operations_research_sat \
  -namespace $(CLR_ORTOOLS_DLL_NAME).Sat \
  -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
- -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat \
+ -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat \
  $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
 
 $(OBJ_DIR)/swig/sat_csharp_wrap.$O: \
- $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc
+ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc \
+ | $(OBJ_DIR)/swig
 	$(CCC) $(CFLAGS) \
- -c $(GEN_DIR)$Sortools$Ssat$Ssat_csharp_wrap.cc \
+ -c $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O
 
 # Protobufs
 $(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs: \
- $(SRC_DIR)/ortools/constraint_solver/search_limit.proto | \
- $(GEN_DIR)/com/google/ortools/constraintsolver
+ $(SRC_DIR)/ortools/constraint_solver/search_limit.proto \
+ | $(GEN_DIR)/com/google/ortools/constraintsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) \
- --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver \
+ --csharp_out=$(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  --csharp_opt=file_extension=.g.cs \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs: \
- $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto | \
- $(GEN_DIR)/com/google/ortools/constraintsolver
+ $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto \
+ | $(GEN_DIR)/com/google/ortools/constraintsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) \
- --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver \
+ --csharp_out=$(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  --csharp_opt=file_extension=.g.cs \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/Model.g.cs: \
- $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto | \
- $(GEN_DIR)/com/google/ortools/constraintsolver
+ $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto \
+ | $(GEN_DIR)/com/google/ortools/constraintsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) \
- --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver \
+ --csharp_out=$(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  --csharp_opt=file_extension=.g.cs \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Smodel.proto
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs: \
- $(SRC_DIR)/ortools/constraint_solver/routing_parameters.proto | \
- $(GEN_DIR)/com/google/ortools/constraintsolver
+ $(SRC_DIR)/ortools/constraint_solver/routing_parameters.proto \
+ | $(GEN_DIR)/com/google/ortools/constraintsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) \
- --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver \
+ --csharp_out=$(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  --csharp_opt=file_extension=.g.cs \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs: \
- $(SRC_DIR)/ortools/constraint_solver/routing_enums.proto | \
- $(GEN_DIR)/com/google/ortools/constraintsolver
+ $(SRC_DIR)/ortools/constraint_solver/routing_enums.proto \
+ | $(GEN_DIR)/com/google/ortools/constraintsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) \
- --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver \
+ --csharp_out=$(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  --csharp_opt=file_extension=.g.cs \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
 
 $(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs: \
- $(SRC_DIR)/ortools/sat/cp_model.proto | \
- $(GEN_DIR)/com/google/ortools/sat
+ $(SRC_DIR)/ortools/sat/cp_model.proto \
+ | $(GEN_DIR)/com/google/ortools/sat
 	$(PROTOC) --proto_path=$(SRC_DIR) \
- --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat \
+ --csharp_out=$(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat \
  --csharp_opt=file_extension=.g.cs \
  $(SRC_DIR)$Sortools$Ssat$Scp_model.proto
 
 $(GEN_DIR)/com/google/ortools/sat/SatParameters.g.cs: \
- $(SRC_DIR)/ortools/sat/sat_parameters.proto | \
- $(GEN_DIR)/com/google/ortools/sat
+ $(SRC_DIR)/ortools/sat/sat_parameters.proto \
+ | $(GEN_DIR)/com/google/ortools/sat
 	$(PROTOC) --proto_path=$(SRC_DIR) \
- --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Ssat \
+ --csharp_out=$(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat \
  --csharp_opt=file_extension=.g.cs \
  $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
 
-$(CLR_KEYFILE):
+$(CLR_KEYFILE): | $(BIN_DIR)
 ifdef CLR_KEYFILE
 	sn -k $(CLR_KEYFILE)
 endif
@@ -260,7 +273,14 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
  $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs \
  $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs \
  $(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
- $(OR_TOOLS_LIBS)
+ $(OR_TOOLS_LIBS) \
+ | \
+ $(GEN_DIR)/com/google/ortools/algorithms \
+ $(GEN_DIR)/com/google/ortools/constraintsolver \
+ $(GEN_DIR)/com/google/ortools/graph \
+ $(GEN_DIR)/com/google/ortools/linearsolver \
+ $(GEN_DIR)/com/google/ortools/sat \
+ $(BIN_DIR)
 	$(DYNAMIC_LD) \
  $(LD_OUT)$(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O \
@@ -281,8 +301,8 @@ endif
 fsharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL)
 
 $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL): \
- $(CLR_KEYFILE) \
- $(OR_TOOLS_LIBS)
+ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) \
+ | $(BIN_DIR)
 	"$(DOTNET_EXECUTABLE)" build -c Debug ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 ifeq ($(SYSTEM),win)
 	$(COPY) ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$Sbin$Sx64$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
@@ -292,7 +312,7 @@ endif
 
 .PHONY: clean_dotnet # Clean files
 clean_dotnet:
-	-$(DELREC) $(GEN_DIR)
+	-$(DELREC) $(GEN_PATH)
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sobj
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$Sbin
@@ -302,6 +322,7 @@ clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$Sobj
 	-$(DELREC) ortools$Sdotnet$Spackage
+	-$(DEL) $(OBJ_DIR)$Sswig$S*_csharp_wrap.$O
 	-$(DEL) $(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_PROTOBUF_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME).*
@@ -348,6 +369,7 @@ dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
 	"$(DOTNET_EXECUTABLE)" build -c Release -o $(BIN_DIR) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" build -c Release -o $(BIN_DIR) ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 	$(MKDIR_P) $(TEMP_DOTNET_DIR)
+	"$(DOTNET_EXECUTABLE)" publish -c Release -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" publish -c Release -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)

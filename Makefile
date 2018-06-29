@@ -34,6 +34,15 @@ else
   endif
 endif
 
+# Delete all implicit rules to speed up makefile
+.SUFFIXES:
+# Remove some rules from gmake that .SUFFIXES does not remove.
+SUFFIXES =
+
+# Keep all intermediate files
+# ToDo: try to remove it later
+.SECONDARY:
+
 # Read version.
 include $(OR_ROOT)Version.txt
 
