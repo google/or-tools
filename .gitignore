@@ -25,7 +25,11 @@ bin/
 ortools/gen/
 objs/
 temp/
+temp_fz/
+temp_fz_test/
 temp-python*
+temp_dotnet/
+temp_dotnet_test/
 lib/
 install/
 examples/csharp/solution/*.csproj
@@ -79,6 +83,16 @@ cache/
 tools/netstandard/CreateSigningKey/bin
 tools/netstandard/CreateSigningKey/obj
 
+**/.vs/*
+**/dotnet-test/*
+
+**/packages
+
 ortools/fsharp/**/bin
 ortools/fsharp/**/obj
 ortools/fsharp/**/packages
+
+ortools/dotnet/**/bin
+ortools/dotnet/**/obj
+ortools/dotnet/**/packages
+*.userprefs

@@ -15,12 +15,9 @@ function checkenv() {
 		python3.6 -m pip --version
 	elif [ "${LANGUAGE}" == java ]; then
 		java -version
-	elif [ "${LANGUAGE}" == csharp ]; then
+	elif [ "${LANGUAGE}" == dotnet ]; then
 		mono --version
-		which csharp
-	elif [ "${LANGUAGE}" == fsharp ]; then
-		mono --version
-		dotnet -h
+    dotnet --info
 	fi
 }
 
@@ -40,7 +37,7 @@ if [ "${BUILDER}" == make ];then
 				make detect UNIX_PYTHON_VER=3.6
 			elif [ "${LANGUAGE}" == java ]; then
 				make detect JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-			elif [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ] ; then
+			elif [ "${LANGUAGE}" == dotnet ] ; then
 				make detect
 			fi
 			cat Makefile.local
@@ -56,7 +53,7 @@ if [ "${BUILDER}" == make ];then
 		fi
 	elif [ "${TRAVIS_OS_NAME}" == osx ];then
 		if [ "${DISTRO}" == native ];then
-			if [ "${LANGUAGE}" == fsharp ]; then
+			if [ "${LANGUAGE}" == dotnet ]; then
 				# Installer changes path but won't be picked up in current terminal session
 				# Need to explicitly add location
 				export PATH=/usr/local/share/dotnet:"${PATH}"
@@ -66,7 +63,7 @@ if [ "${BUILDER}" == make ];then
 				make detect
 			elif [ "${LANGUAGE}" == python ]; then
 				make detect UNIX_PYTHON_VER=3.6
-			elif [ "${LANGUAGE}" == java ] || [ "${LANGUAGE}" == csharp ] || [ "${LANGUAGE}" == fsharp ]; then
+			elif [ "${LANGUAGE}" == java ] || [ "${LANGUAGE}" == dotnet ] ; then
 				make detect
 			fi
 			cat Makefile.local

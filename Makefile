@@ -55,8 +55,9 @@ include $(OR_ROOT)makefiles/Makefile.third_party.$(SYSTEM).mk
 include $(OR_ROOT)makefiles/Makefile.cpp.mk
 include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
-include $(OR_ROOT)makefiles/Makefile.csharp.mk
-include $(OR_ROOT)makefiles/Makefile.fsharp.mk
+include $(OR_ROOT)makefiles/Makefile.dotnet.mk
+# include $(OR_ROOT)makefiles/Makefile.csharp.mk
+# include $(OR_ROOT)makefiles/Makefile.fsharp.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
 include $(OR_ROOT)makefiles/Makefile.install.mk
 
@@ -81,21 +82,21 @@ else
 endif
 
 .PHONY: help_all
-help_all: help_usage help_third_party help_cc help_python help_java help_csharp help_fsharp
+help_all: help_usage help_third_party help_cc help_python help_java help_dotnet
 
 .PHONY: build_all
-build_all: cc python java csharp fsharp
+build_all: cc python java dotnet
 	@echo Or-tools have been built for $(BUILT_LANGUAGES)
 
 .PHONY: test_all
-test_all: test_cc test_python test_java test_csharp test_fsharp
+test_all: test_cc test_python test_java test_dotnet
 	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
 
 .PHONY: clean_all
-clean_all: clean_cc clean_python clean_java clean_csharp clean_compat clean_fsharp
+clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat
 	@echo Or-tools have been cleaned for $(BUILT_LANGUAGES)
 
 .PHONY: detect_all
-detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_csharp detect_fsharp
+detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_dotnet
 
 print-%  : ; @echo $* = $($*)
