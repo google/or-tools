@@ -1034,14 +1034,24 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           // solution found so far.
           if (MergeOptimizationSolution(r, maximize, &best_response)) {
             if (p.all_solutions) {
+              if (maximize) {
               FZLOG << absl::StrFormat(
-                           "#%-5i %-7s %8.2fs  obj = %0.0f  %s = %0.0f  %s",
+                           "#%-5i %-7s %8.2fs  [%0.0f, %0.0f]  %s",
                            solution_count++, worker_name.c_str(), timer.Get(),
                            best_response.objective_value(),
-                           maximize ? "ub" : "lb",
                            best_response.best_objective_bound(),
                            r.solution_info().c_str())
                     << FZENDL;
+              } else {
+              FZLOG << absl::StrFormat(
+                           "#%-5i %-7s %8.2fs  [%0.0f, %0.0f]  %s",
+                           solution_count++, worker_name.c_str(), timer.Get(),
+                           best_response.best_objective_bound(),
+                           best_response.objective_value(),
+                           r.solution_info().c_str())
+                    << FZENDL;
+              }
+
               if (FLAGS_use_flatzinc_format) {
                 const std::string solution_string =
                     SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
@@ -1092,13 +1102,23 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
             "#%-5i %8.2fs  %s",
             solution_count++, timer.Get(), r.solution_info().c_str()) << FZENDL;
       } else {
-        FZLOG << absl::StrFormat(
-            "#%-5i %8.2fs  obj = %0.0f  %s = %0.0f  %s",
-            solution_count++, timer.Get(),
-            r.objective_value(),
-            maximize ? "ub" : "lb",
-            r.best_objective_bound(),
-            r.solution_info().c_str()) << FZENDL;
+        if (maximize) {
+          FZLOG << absl::StrFormat(
+              "#%-5i %8.2fs  [%0.0f, %0.0f]  %s",
+              solution_count++, timer.Get(),
+              r.objective_value(),
+              r.best_objective_bound(),
+              r.solution_info().c_str())
+                << FZENDL;
+        } else {
+          FZLOG << absl::StrFormat(
+              "#%-5i %8.2fs  [%0.0f, %0.0f]  %s",
+              solution_count++, timer.Get(),
+              r.best_objective_bound(),
+              r.objective_value(),
+              r.solution_info().c_str())
+                << FZENDL;
+        }
       }
       if (FLAGS_use_flatzinc_format) {
         const std::string solution_string =
