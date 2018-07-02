@@ -488,6 +488,6 @@ message CpSolverResponse {
   double user_time = 16;
   double deterministic_time = 17;
 
-  // Additional tag given by the solver.
-  string solution_tag = 20;
+  // Additional information about how the solution was found.
+  string solution_info = 20;
 }

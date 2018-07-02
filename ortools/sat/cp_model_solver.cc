@@ -23,8 +23,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
-#include <chrono>
-#include <thread>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
@@ -40,6 +38,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/memory.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/time_support.h"
 #include "ortools/graph/connectivity.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/all_different.h"
@@ -2932,7 +2931,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
     while (!limit->LimitReached()) {
       response = synchro->f();
       if (response.status() != CpSolverStatus::UNKNOWN) break;
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      absl::SleepFor(absl::Milliseconds(50));
     }
   } else {
     CpModelProto copy = expanded_model;
@@ -2949,13 +2948,15 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
   //
   // TODO(user): work on the presolved global problem rather than just the
   // expanded problem?
+  NeighborhoodGeneratorHelper helper(&expanded_model,
+                                     focus_on_decision_variables);
   std::vector<std::unique_ptr<NeighborhoodGenerator>> generators;
-  generators.push_back(absl::make_unique<SimpleNeighborhoodGenerator>(
-      &expanded_model, focus_on_decision_variables, "RndLns"));
+  generators.push_back(
+      absl::make_unique<SimpleNeighborhoodGenerator>(&helper, "rns_lns"));
   generators.push_back(absl::make_unique<VariableGraphNeighborhoodGenerator>(
-      &expanded_model, focus_on_decision_variables, "VarLns"));
+      &helper, "var_lns"));
   generators.push_back(absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
-      &expanded_model, focus_on_decision_variables, "CstLns"));
+      &helper, "cts_lns"));
 
   // The "optimal" difficulties do not have to be the same for different
   // generators. TODO(user): move this inside the generator API?
@@ -2998,8 +2999,9 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
         const int selected_generator = seed % generators.size();
         CpModelProto local_problem = generators[selected_generator]->Generate(
             response, seed, saved_difficulty);
-        const std::string generator_name =
-            generators[selected_generator]->name();
+        const std::string solution_info = absl::StrFormat(
+            "%s(d=%0.2f s=%i t=%0.2f)", generators[selected_generator]->name(),
+            saved_difficulty, seed, deterministic_time);
 
         Model local_model;
         {
@@ -3019,7 +3021,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
 
         return [&num_no_progress, &model_proto, &response, &difficulty,
                 &deterministic_time, saved_difficulty, local_response,
-                &observers, limit, generator_name]() {
+                &observers, limit, solution_info]() {
           // TODO(user): This is not ideal in multithread because even though
           // the saved_difficulty will be the same for all thread, we will
           // Increase()/Decrease() the difficuty sequentially more than once.
@@ -3031,11 +3033,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
           }
           if (local_response.status() == CpSolverStatus::MODEL_SAT ||
               local_response.status() == CpSolverStatus::OPTIMAL) {
-            VLOG(1) << "dtime: " << deterministic_time
-                    << " difficulty: " << saved_difficulty
-                    << " local_obj: " << local_response.objective_value()
-                    << " global_obj: " << response.objective_value()
-                    << " using generator: " << generator_name;
+            VLOG(1) << solution_info;
 
             // If the objective are the same, we override the solution,
             // otherwise we just ignore this local solution and increment
@@ -3067,9 +3065,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
                 std::vector<int64>(local_response.solution().begin(),
                                    local_response.solution().end())));
             if (num_no_progress == 0) {  // Improving solution.
-              const std::string tag = absl::StrFormat(
-                  "%s(d = %0.2f)", generator_name.c_str(), saved_difficulty);
-              response.set_solution_tag(tag);
+              response.set_solution_info(solution_info);
               for (const auto& observer : observers) {
                 observer(response);
               }

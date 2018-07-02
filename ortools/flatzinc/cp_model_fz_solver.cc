@@ -23,6 +23,7 @@
 #include "ortools/base/mutex.h"
 #include "ortools/base/split.h"
 #include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
@@ -1033,13 +1034,14 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           // solution found so far.
           if (MergeOptimizationSolution(r, maximize, &best_response)) {
             if (p.all_solutions) {
-              const std::string tag =
-                  !r.solution_tag().empty() ? ", " + r.solution_tag() : "";
-              FZLOG << "[" << worker_name << "] solution #" << solution_count++
-                    << ", objective = " << best_response.objective_value()
-                    << ", objective " << (maximize ? "upper" : "lower")
-                    << " bound = " << best_response.best_objective_bound()
-                    << ", time = " << timer.Get() << "s" << tag << FZENDL;
+              FZLOG << absl::StrFormat(
+                           "#%-5i %-7s %8.2fs  obj = %0.0f  %s = %0.0f  %s",
+                           solution_count++, worker_name.c_str(), timer.Get(),
+                           best_response.objective_value(),
+                           maximize ? "ub" : "lb",
+                           best_response.best_objective_bound(),
+                           r.solution_info().c_str())
+                    << FZENDL;
               if (FLAGS_use_flatzinc_format) {
                 const std::string solution_string =
                     SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
@@ -1086,14 +1088,17 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     auto solution_observer = [&fz_model, &solution_count, &m, maximize,
                               &timer](const CpSolverResponse& r) {
       if (fz_model.objective() == nullptr) {
-        FZLOG << "solution #" << solution_count++ << ", time = " << timer.Get()
-              << " s" << FZENDL;
+        FZLOG << absl::StrFormat(
+            "#%-5i %8.2fs  %s",
+            solution_count++, timer.Get(), r.solution_info().c_str()) << FZENDL;
       } else {
-        FZLOG << "solution #" << solution_count++
-              << ", objective = " << r.objective_value() << ", objective "
-              << (maximize ? "upper" : "lower")
-              << " bound = " << r.best_objective_bound()
-              << ", time = " << timer.Get() << " s" << FZENDL;
+        FZLOG << absl::StrFormat(
+            "#%-5i %8.2fs  obj = %0.0f  %s = %0.0f  %s",
+            solution_count++, timer.Get(),
+            r.objective_value(),
+            maximize ? "ub" : "lb",
+            r.best_objective_bound(),
+            r.solution_info().c_str()) << FZENDL;
       }
       if (FLAGS_use_flatzinc_format) {
         const std::string solution_string =

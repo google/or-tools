@@ -21,7 +21,9 @@
 #if defined(__APPLE__) && defined(__GNUC__)
 #include <mach/mach_time.h>
 #endif
+#include <chrono>  // NOLINT
 #include <ctime>
+#include <thread>  // NOLINT
 
 namespace absl {
 
@@ -47,6 +49,12 @@ int64 GetCurrentTimeNanos() {
   clock_gettime(CLOCK_REALTIME, &current);
   return current.tv_sec * kSecondInNanoSeconds + current.tv_nsec;
 #endif
+}
+
+void SleepFor(Duration duration) {
+  const int duration_in_ms = static_cast<int>(duration * 1000.0);
+  std::this_thread::sleep_for(
+      std::chrono::milliseconds(duration_in_ms));  // NOLINT
 }
 
 }  // namespace absl

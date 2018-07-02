@@ -284,32 +284,32 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       case 1: {  // Use default parameters and automatic search.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(1);
-        *name = "auto ";
+        *name = "auto";
         break;
       }
       case 2: {  // Remove LP relaxation.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(0);
-        *name = "no lp";
+        *name = "no_lp";
         break;
       }
       case 3: {  // Reinforce LP relaxation.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(2);
-        *name = "maxlp";
+        *name = "max_lp";
         break;
       }
       case 4: {  // Core based approach.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_optimize_with_core(true);
-        *name = "core ";
+        *name = "core";
         break;
       }
       default: {  // LNS.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_use_lns(true);
         new_params.set_lns_num_threads(1);
-        *name = absl::StrFormat("lns%2i", worker_id - 5);
+        *name = absl::StrFormat("lns_%i", worker_id - 5);
       }
     }
   } else {
@@ -323,14 +323,14 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       }
       case 1: {  // Use default parameters and automatic search.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        *name = "auto ";
+        *name = "auto";
         break;
       }
       default: {  // Randomized fixed search.
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
         new_params.set_randomize_search(true);
         new_params.set_search_randomization_tolerance(worker_id - 2);
-        *name = absl::StrFormat("rnd%2i", worker_id - 2);
+        *name = absl::StrFormat("rnd_%i", worker_id - 2);
         break;
       }
     }
