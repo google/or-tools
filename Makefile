@@ -94,6 +94,10 @@ test_all: test_cc test_python test_java test_dotnet
 
 .PHONY: clean_all
 clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat
+	-$(DELREC) $(BIN_DIR)
+	-$(DELREC) $(LIB_DIR)
+	-$(DELREC) $(OBJ_DIR)
+	-$(DELREC) $(GEN_DIR)
 	@echo Or-tools have been cleaned for $(BUILT_LANGUAGES)
 
 .PHONY: detect_all
