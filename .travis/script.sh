@@ -11,8 +11,13 @@ function checkenv() {
 		swig -version
 	fi
 	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" == python ];then
-		python3.6 --version
-		python3.6 -m pip --version
+	  if [ "${TRAVIS_OS_NAME}" == linux ];then
+		  python3.6 --version
+		  python3.6 -m pip --version
+		else
+		  python3.7 --version
+		  python3.7 -m pip --version
+		fi
 	elif [ "${LANGUAGE}" == java ]; then
 		java -version
 	elif [ "${LANGUAGE}" == dotnet ]; then
@@ -62,7 +67,7 @@ if [ "${BUILDER}" == make ];then
 			if [ "${LANGUAGE}" == cc ]; then
 				make detect
 			elif [ "${LANGUAGE}" == python ]; then
-				make detect UNIX_PYTHON_VER=3.6
+				make detect UNIX_PYTHON_VER=3.7
 			elif [ "${LANGUAGE}" == java ] || [ "${LANGUAGE}" == dotnet ] ; then
 				make detect
 			fi
