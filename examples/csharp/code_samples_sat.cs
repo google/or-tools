@@ -138,7 +138,7 @@ public class CodeSamplesSat
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.ModelSat)
+    if (status == CpSolverStatus.Feasible)
     {
       Console.WriteLine(solver.Value(r) + " rabbits, and " +
                         solver.Value(p) + " pheasants");
@@ -291,7 +291,7 @@ public class CodeSamplesSat
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.ModelSat)
+    if (status == CpSolverStatus.Feasible)
     {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));
@@ -320,7 +320,7 @@ public class CodeSamplesSat
 
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.ModelSat)
+    if (status == CpSolverStatus.Feasible)
     {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));

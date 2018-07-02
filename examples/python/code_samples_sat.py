@@ -80,7 +80,7 @@ def RabbitsAndPheasants():
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  if status == cp_model.MODEL_SAT:
+  if status == cp_model.FEASIBLE:
     print('%i rabbits and %i pheasants' % (solver.Value(r), solver.Value(p)))
 
 
@@ -183,7 +183,7 @@ def MinimalCpSat():
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  if status == cp_model.MODEL_SAT:
+  if status == cp_model.FEASIBLE:
     print('x = %i' % solver.Value(x))
     print('y = %i' % solver.Value(y))
     print('z = %i' % solver.Value(z))
@@ -209,7 +209,7 @@ def MinimalCpSatWithTimeLimit():
 
   status = solver.Solve(model)
 
-  if status == cp_model.MODEL_SAT:
+  if status == cp_model.FEASIBLE:
     print('x = %i' % solver.Value(x))
     print('y = %i' % solver.Value(y))
     print('z = %i' % solver.Value(z))

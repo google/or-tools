@@ -116,7 +116,7 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     learned_info->lower_bound = lower_bound_.value() - offset_.value();
 
     // This is possible because we over-constrain the objective.
-    if (sat_status == sat::SatSolver::MODEL_UNSAT) {
+    if (sat_status == sat::SatSolver::INFEASIBLE) {
       return problem_state.solution().IsFeasible()
                  ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
                  : BopOptimizerBase::INFEASIBLE;
@@ -126,7 +126,7 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     if (sat_status == sat::SatSolver::LIMIT_REACHED || conflict_limit < 0) {
       return BopOptimizerBase::CONTINUE;
     }
-    if (sat_status == sat::SatSolver::MODEL_SAT) {
+    if (sat_status == sat::SatSolver::FEASIBLE) {
       stratified_lower_bound_ =
           MaxNodeWeightSmallerThan(nodes_, stratified_lower_bound_);
 

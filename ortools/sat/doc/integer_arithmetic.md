@@ -67,7 +67,7 @@ def RabbitsAndPheasants():
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  if status == cp_model.MODEL_SAT:
+  if status == cp_model.FEASIBLE:
     print('%i rabbits and %i pheasants' % (solver.Value(r), solver.Value(p)))
 ```
 
@@ -125,7 +125,7 @@ void RabbitsAndPheasants() {
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::MODEL_SAT) {
+  if (response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
     LOG(INFO) << response.solution(r) << " rabbits, and "
               << response.solution(p) << " pheasants";
@@ -160,7 +160,7 @@ public class CodeSamplesSat
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.ModelSat)
+    if (status == CpSolverStatus.Feasible)
     {
       Console.WriteLine(solver.Value(r) + " rabbits, and " +
                         solver.Value(p) + " pheasants");

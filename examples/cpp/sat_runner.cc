@@ -240,8 +240,8 @@ int Run() {
 
     // The SAT competition requires a particular exit code and since we don't
     // really use it for any other purpose, we comply.
-    if (response.status() == CpSolverStatus::MODEL_SAT) return 10;
-    if (response.status() == CpSolverStatus::MODEL_UNSAT) return 20;
+    if (response.status() == CpSolverStatus::FEASIBLE) return 10;
+    if (response.status() == CpSolverStatus::INFEASIBLE) return 20;
     return 0;
   }
 
@@ -341,12 +341,12 @@ int Run() {
       std::unique_ptr<TimeLimit> time_limit =
           TimeLimit::FromParameters(parameters);
       result = SolveWithPresolve(&solver, time_limit.get(), &solution, nullptr);
-      if (result == SatSolver::MODEL_SAT) {
+      if (result == SatSolver::FEASIBLE) {
         CHECK(IsAssignmentValid(problem, solution));
       }
     } else {
       result = solver->Solve();
-      if (result == SatSolver::MODEL_SAT) {
+      if (result == SatSolver::FEASIBLE) {
         ExtractAssignment(problem, *solver, &solution);
         CHECK(IsAssignmentValid(problem, solution));
       }
@@ -354,7 +354,7 @@ int Run() {
   }
 
   // Print the solution status.
-  if (result == SatSolver::MODEL_SAT) {
+  if (result == SatSolver::FEASIBLE) {
     if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_core_enc) {
       printf("s OPTIMUM FOUND\n");
       CHECK(!solution.empty());
@@ -377,7 +377,7 @@ int Run() {
     }
     if (!FLAGS_output.empty()) {
       CHECK(!FLAGS_reduce_memory_usage) << "incompatible";
-      if (result == SatSolver::MODEL_SAT) {
+      if (result == SatSolver::FEASIBLE) {
         StoreAssignment(solver->Assignment(), problem.mutable_assignment());
       }
       if (strings::EndsWith(FLAGS_output, ".txt")) {
@@ -387,7 +387,7 @@ int Run() {
       }
     }
   }
-  if (result == SatSolver::MODEL_UNSAT) {
+  if (result == SatSolver::INFEASIBLE) {
     printf("s UNSATISFIABLE\n");
   }
 
@@ -416,8 +416,8 @@ int Run() {
 
   // The SAT competition requires a particular exit code and since we don't
   // really use it for any other purpose, we comply.
-  if (result == SatSolver::MODEL_SAT) return 10;
-  if (result == SatSolver::MODEL_UNSAT) return 20;
+  if (result == SatSolver::FEASIBLE) return 10;
+  if (result == SatSolver::INFEASIBLE) return 20;
   return 0;
 }
 

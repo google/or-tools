@@ -1150,7 +1150,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
       const SatSolver::Status result =
           (*solver)->SolveWithTimeLimit(time_limit);
       if (result != SatSolver::LIMIT_REACHED) {
-        if (result == SatSolver::MODEL_SAT) {
+        if (result == SatSolver::FEASIBLE) {
           VLOG(1) << "Problem solved by trivial heuristic!";
           solution->clear();
           for (int i = 0; i < (*solver)->NumVariables(); ++i) {
@@ -1166,7 +1166,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
       (*solver)->RestoreSolverToAssumptionLevel();
       if ((*solver)->IsModelUnsat()) {
         VLOG(1) << "UNSAT during random decision heuritics.";
-        return SatSolver::MODEL_UNSAT;
+        return SatSolver::INFEASIBLE;
       }
 
       RandomizeDecisionHeuristic(&random, &new_params);
@@ -1193,7 +1193,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
                                   drat_proof_handler, &equiv_map);
     if ((*solver)->IsModelUnsat()) {
       VLOG(1) << "UNSAT during probing.";
-      return SatSolver::MODEL_UNSAT;
+      return SatSolver::INFEASIBLE;
     }
 
     // The rest of the presolve only work on pure SAT problem.
@@ -1223,7 +1223,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
 
       // This is just here to reset the SatSolver::Solve() satistics.
       (*solver).reset(new SatSolver());
-      return SatSolver::MODEL_UNSAT;
+      return SatSolver::INFEASIBLE;
     }
 
     postsolver.ApplyMapping(presolver.VariableMapping());
@@ -1243,7 +1243,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
 
   // Solve.
   const SatSolver::Status result = (*solver)->SolveWithTimeLimit(time_limit);
-  if (result == SatSolver::MODEL_SAT) {
+  if (result == SatSolver::FEASIBLE) {
     *solution = postsolver.ExtractAndPostsolveSolution(**solver);
   }
   return result;

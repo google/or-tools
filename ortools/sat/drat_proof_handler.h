@@ -55,7 +55,8 @@ class DratProofHandler {
   //
   // TODO(user): This is exactly the same mecanism as in the SatPostsolver
   // class. Factor out the code.
-  void ApplyMapping(const gtl::ITIVector<BooleanVariable, BooleanVariable>& mapping);
+  void ApplyMapping(
+      const gtl::ITIVector<BooleanVariable, BooleanVariable>& mapping);
 
   // This need to be called when new variables are created.
   void SetNumVariables(int num_variables);

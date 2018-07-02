@@ -161,7 +161,7 @@ void RabbitsAndPheasants() {
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::MODEL_SAT) {
+  if (response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
     LOG(INFO) << response.solution(r) << " rabbits, and "
               << response.solution(p) << " pheasants";
@@ -389,7 +389,7 @@ void SimpleSolve() {
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::MODEL_SAT) {
+  if (response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
     const int64 value_x = response.solution(x);
     LOG(INFO) << "x = " << value_x;
@@ -424,7 +424,7 @@ void SolveWithTimeLimit() {
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::MODEL_SAT) {
+  if (response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
     const int64 value_x = response.solution(x);
     LOG(INFO) << "value_x = " << value_x;

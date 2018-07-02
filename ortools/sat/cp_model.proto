@@ -419,8 +419,8 @@ message CpModelProto {
 
 // The status returned by a solver trying to solve a CpModelProto.
 enum CpSolverStatus {
-  // The status of the model is still unknown. A search limit as been reached
-  // before any of the status below could be decided.
+  // The status of the model is still unknown. A search limit has been reached
+  // before any of the statuses below could be determined.
   UNKNOWN = 0;
 
   // The given CpModelProto didn't pass the validation step. You can get a
@@ -429,10 +429,10 @@ enum CpSolverStatus {
 
   // A feasible solution as been found. For an optimization problem, we still
   // don't know if it is the optimal one though.
-  MODEL_SAT = 2;
+  FEASIBLE = 2;
 
-  // The problem as been proven to be UNSAT. No feasible solution exists.
-  MODEL_UNSAT = 3;
+  // The problem has been proven infeasible.
+  INFEASIBLE = 3;
 
   // An optimal feasible solution has been found.
   OPTIMAL = 4;

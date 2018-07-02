@@ -41,8 +41,8 @@ INT32_MAX = 2147483647
 # Cp Solver status (exported to avoid importing cp_model_cp2).
 UNKNOWN = cp_model_pb2.UNKNOWN
 MODEL_INVALID = cp_model_pb2.MODEL_INVALID
-MODEL_SAT = cp_model_pb2.MODEL_SAT
-MODEL_UNSAT = cp_model_pb2.MODEL_UNSAT
+FEASIBLE = cp_model_pb2.FEASIBLE
+INFEASIBLE = cp_model_pb2.INFEASIBLE
 OPTIMAL = cp_model_pb2.OPTIMAL
 
 # Variable selection strategy

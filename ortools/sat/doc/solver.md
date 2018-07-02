@@ -31,7 +31,7 @@ def MinimalCpSat():
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  if status == cp_model.MODEL_SAT:
+  if status == cp_model.FEASIBLE:
     print('x = %i' % solver.Value(x))
     print('y = %i' % solver.Value(y))
     print('z = %i' % solver.Value(z))
@@ -72,7 +72,7 @@ void SimpleSolve() {
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::MODEL_SAT) {
+  if (response.status() == CpSolverStatus::FEASIBLE) {
     // Gets the value of x in the solution.
     const int64 value_x = response.solution(x);
     LOG(INFO) << "x = " << value_x;
@@ -111,7 +111,7 @@ public class CodeSamplesSat
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.ModelSat)
+    if (status == CpSolverStatus.Feasible)
     {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));
@@ -156,7 +156,7 @@ def MinimalCpSatWithTimeLimit():
 
   status = solver.Solve(model)
 
-  if status == cp_model.MODEL_SAT:
+  if status == cp_model.FEASIBLE:
     print('x = %i' % solver.Value(x))
     print('y = %i' % solver.Value(y))
     print('z = %i' % solver.Value(z))
@@ -202,7 +202,7 @@ void SolveWithTimeLimit() {
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::MODEL_SAT) {
+  if (response.status() == CpSolverStatus::FEASIBLE) {
     // Gets the value of 'x' in the solution.
     const int64 value_x = response.solution(x);
   }
@@ -243,7 +243,7 @@ public class CodeSamplesSat
 
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.ModelSat)
+    if (status == CpSolverStatus.Feasible)
     {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));

@@ -183,7 +183,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
   time_limit->AdvanceDeterministicTime(sat_solver_->deterministic_time() -
                                        initial_deterministic_time);
 
-  if (sat_status == sat::SatSolver::MODEL_UNSAT) {
+  if (sat_status == sat::SatSolver::INFEASIBLE) {
     if (policy_ != Policy::kNotGuided) abort_ = true;
     if (problem_state.upper_bound() != kint64max) {
       // As the solution in the state problem is feasible, it is proved optimal.
@@ -195,7 +195,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
   }
 
   ExtractLearnedInfoFromSatSolver(sat_solver_.get(), learned_info);
-  if (sat_status == sat::SatSolver::MODEL_SAT) {
+  if (sat_status == sat::SatSolver::FEASIBLE) {
     SatAssignmentToBopSolution(sat_solver_->Assignment(),
                                &learned_info->solution);
     return SolutionStatus(learned_info->solution, problem_state.lower_bound());
@@ -287,14 +287,14 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
 
     const sat::SatSolver::Status sat_status =
         sat_propagator_->SolveWithTimeLimit(time_limit);
-    if (sat_status == sat::SatSolver::MODEL_SAT) {
+    if (sat_status == sat::SatSolver::FEASIBLE) {
       objective_need_to_be_overconstrained = true;
       solution_found = true;
       SatAssignmentToBopSolution(sat_propagator_->Assignment(),
                                  &learned_info->solution);
       CHECK_LT(learned_info->solution.GetCost(), best_cost);
       best_cost = learned_info->solution.GetCost();
-    } else if (sat_status == sat::SatSolver::MODEL_UNSAT) {
+    } else if (sat_status == sat::SatSolver::INFEASIBLE) {
       // The solution is proved optimal (if any).
       learned_info->lower_bound = best_cost;
       return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE

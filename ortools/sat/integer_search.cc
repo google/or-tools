@@ -378,7 +378,7 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     std::vector<std::function<LiteralIndex()>> decision_policies,
     std::vector<std::function<bool()>> restart_policies, Model* model) {
   const int num_policies = decision_policies.size();
-  if (num_policies == 0) return SatSolver::MODEL_SAT;
+  if (num_policies == 0) return SatSolver::FEASIBLE;
   CHECK_EQ(num_policies, restart_policies.size());
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
   const SatParameters* const params = model->Get<SatParameters>();
@@ -426,7 +426,7 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
                   IntegerLiteral::LowerOrEqual(helper->objective_var,
                                                best_bound - 1),
                   {}, {})) {
-            return SatSolver::MODEL_UNSAT;
+            return SatSolver::INFEASIBLE;
           }
           if (!solver->FinishPropagation()) {
             return solver->UnsatStatus();
@@ -437,7 +437,7 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
 
     // Get next decision, try to enqueue.
     const LiteralIndex decision = decision_policies[policy_index]();
-    if (decision == kNoLiteralIndex) return SatSolver::MODEL_SAT;
+    if (decision == kNoLiteralIndex) return SatSolver::FEASIBLE;
 
     // TODO(user): on some problems, this function can be quite long. Expand
     // so that we can check the time limit at each step?

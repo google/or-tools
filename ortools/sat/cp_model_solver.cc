@@ -1624,7 +1624,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto,
                             const ModelWithMapping& m,
                             CpSolverResponse* response) {
   const std::vector<int64> solution = m.ExtractFullAssignment();
-  response->set_status(CpSolverStatus::MODEL_SAT);
+  response->set_status(CpSolverStatus::FEASIBLE);
   response->clear_solution();
   response->clear_solution_lower_bounds();
   response->clear_solution_upper_bounds();
@@ -2493,7 +2493,7 @@ CpSolverResponse SolveCpModelInternal(
     auto no_restart = []() { return false; };
     status =
         SolveProblemWithPortfolioSearch(decision_policies, {no_restart}, model);
-    if (status == SatSolver::Status::MODEL_SAT) {
+    if (status == SatSolver::Status::FEASIBLE) {
       VLOG(1) << "Solution hint: success, feasible solution found.";
     } else {
       VLOG(1) << "Solution: failure, no feasible solution found.";
@@ -2506,7 +2506,7 @@ CpSolverResponse SolveCpModelInternal(
     while (true) {
       status = SolveIntegerProblemWithLazyEncoding(
           /*assumptions=*/{}, next_decision, model);
-      if (status != SatSolver::Status::MODEL_SAT) break;
+      if (status != SatSolver::Status::FEASIBLE) break;
 
       // TODO(user): add all solutions to the response? or their count?
       ++num_solutions;
@@ -2518,10 +2518,10 @@ CpSolverResponse SolveCpModelInternal(
       model->Add(ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
     }
     if (num_solutions > 0) {
-      if (status == SatSolver::Status::MODEL_UNSAT) {
+      if (status == SatSolver::Status::INFEASIBLE) {
         response.set_all_solutions_were_found(true);
       }
-      status = SatSolver::Status::MODEL_SAT;
+      status = SatSolver::Status::FEASIBLE;
     }
   } else {
     // Optimization problem.
@@ -2572,8 +2572,8 @@ CpSolverResponse SolveCpModelInternal(
       status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           /*log_info=*/false, objective_var, next_decision, solution_observer,
           model);
-      if (num_solutions > 0 && status == SatSolver::MODEL_UNSAT) {
-        status = SatSolver::MODEL_SAT;
+      if (num_solutions > 0 && status == SatSolver::INFEASIBLE) {
+        status = SatSolver::FEASIBLE;
       }
     }
 
@@ -2585,7 +2585,7 @@ CpSolverResponse SolveCpModelInternal(
       }
       response.set_best_objective_bound(
           ScaleObjectiveValue(obj, model->Get(LowerBound(objective_var))));
-    } else if (status == SatSolver::MODEL_SAT) {
+    } else if (status == SatSolver::FEASIBLE) {
       // Optimal!
       response.set_best_objective_bound(response.objective_value());
     }
@@ -2594,18 +2594,18 @@ CpSolverResponse SolveCpModelInternal(
   // Fill response.
   switch (status) {
     case SatSolver::LIMIT_REACHED: {
-      response.set_status(num_solutions != 0 ? CpSolverStatus::MODEL_SAT
+      response.set_status(num_solutions != 0 ? CpSolverStatus::FEASIBLE
                                              : CpSolverStatus::UNKNOWN);
       break;
     }
-    case SatSolver::MODEL_SAT: {
+    case SatSolver::FEASIBLE: {
       response.set_status(model_proto.has_objective()
                               ? CpSolverStatus::OPTIMAL
-                              : CpSolverStatus::MODEL_SAT);
+                              : CpSolverStatus::FEASIBLE);
       break;
     }
-    case SatSolver::MODEL_UNSAT: {
-      response.set_status(CpSolverStatus::MODEL_UNSAT);
+    case SatSolver::INFEASIBLE: {
+      response.set_status(CpSolverStatus::INFEASIBLE);
       break;
     }
     default:
@@ -2622,7 +2622,7 @@ void PostsolveResponse(const CpModelProto& model_proto,
                        CpModelProto mapping_proto,
                        const std::vector<int>& postsolve_mapping,
                        CpSolverResponse* response) {
-  if (response->status() != CpSolverStatus::MODEL_SAT &&
+  if (response->status() != CpSolverStatus::FEASIBLE &&
       response->status() != CpSolverStatus::OPTIMAL) {
     return;
   }
@@ -2653,7 +2653,7 @@ void PostsolveResponse(const CpModelProto& model_proto,
   }
   const CpSolverResponse postsolve_response = SolveCpModelInternal(
       mapping_proto, false, [](const CpSolverResponse&) {}, &postsolve_model);
-  CHECK_EQ(postsolve_response.status(), CpSolverStatus::MODEL_SAT);
+  CHECK_EQ(postsolve_response.status(), CpSolverStatus::FEASIBLE);
 
   // We only copy the solution from the postsolve_response to the response.
   response->clear_solution();
@@ -2767,7 +2767,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
     std::vector<bool> solution;
     status = SolveWithPresolve(&solver, model->GetOrCreate<TimeLimit>(),
                                &solution, drat_proof_handler.get());
-    if (status == SatSolver::MODEL_SAT) {
+    if (status == SatSolver::FEASIBLE) {
       response.clear_solution();
       for (int ref = 0; ref < num_variables; ++ref) {
         response.add_solution(solution[ref]);
@@ -2775,7 +2775,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
     }
   } else {
     status = solver->SolveWithTimeLimit(model->GetOrCreate<TimeLimit>());
-    if (status == SatSolver::MODEL_SAT) {
+    if (status == SatSolver::FEASIBLE) {
       response.clear_solution();
       for (int ref = 0; ref < num_variables; ++ref) {
         response.add_solution(
@@ -2789,15 +2789,15 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
       response.set_status(CpSolverStatus::UNKNOWN);
       break;
     }
-    case SatSolver::MODEL_SAT: {
+    case SatSolver::FEASIBLE: {
       CHECK(SolutionIsFeasible(model_proto,
                                std::vector<int64>(response.solution().begin(),
                                                   response.solution().end())));
-      response.set_status(CpSolverStatus::MODEL_SAT);
+      response.set_status(CpSolverStatus::FEASIBLE);
       break;
     }
-    case SatSolver::MODEL_UNSAT: {
-      response.set_status(CpSolverStatus::MODEL_UNSAT);
+    case SatSolver::INFEASIBLE: {
+      response.set_status(CpSolverStatus::INFEASIBLE);
       break;
     }
     default:
@@ -2813,7 +2813,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   response.set_deterministic_time(
       model->Get<TimeLimit>()->GetElapsedDeterministicTime());
 
-  if (status == SatSolver::MODEL_UNSAT && drat_proof_handler != nullptr) {
+  if (status == SatSolver::INFEASIBLE && drat_proof_handler != nullptr) {
     wall_timer.Restart();
     user_timer.Restart();
     DratChecker::Status drat_status =
@@ -2870,7 +2870,7 @@ CpSolverResponse PresolveAndSolve(const CpModelProto& model_proto,
           }
         },
         model);
-    if (response.status() == CpSolverStatus::MODEL_SAT ||
+    if (response.status() == CpSolverStatus::FEASIBLE ||
         response.status() == CpSolverStatus::OPTIMAL) {
       // Truncate the solution in case model expansion added more variables.
       if (response.solution_size() > 0) {
@@ -2937,7 +2937,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
     CpModelProto copy = expanded_model;
     response = PresolveAndSolve(model_proto, &copy, model);
   }
-  if (response.status() != CpSolverStatus::MODEL_SAT) {
+  if (response.status() != CpSolverStatus::FEASIBLE) {
     return response;
   }
   VLOG(1) << "LNS First solution: " << response.objective_value();
@@ -2952,7 +2952,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
                                      focus_on_decision_variables);
   std::vector<std::unique_ptr<NeighborhoodGenerator>> generators;
   generators.push_back(
-      absl::make_unique<SimpleNeighborhoodGenerator>(&helper, "rns_lns"));
+      absl::make_unique<SimpleNeighborhoodGenerator>(&helper, "rnd_lns"));
   generators.push_back(absl::make_unique<VariableGraphNeighborhoodGenerator>(
       &helper, "var_lns"));
   generators.push_back(absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
@@ -3026,12 +3026,12 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
           // the saved_difficulty will be the same for all thread, we will
           // Increase()/Decrease() the difficuty sequentially more than once.
           if (local_response.status() == CpSolverStatus::OPTIMAL ||
-              local_response.status() == CpSolverStatus::MODEL_UNSAT) {
+              local_response.status() == CpSolverStatus::INFEASIBLE) {
             difficulty.Increase();
           } else {
             difficulty.Decrease();
           }
-          if (local_response.status() == CpSolverStatus::MODEL_SAT ||
+          if (local_response.status() == CpSolverStatus::FEASIBLE ||
               local_response.status() == CpSolverStatus::OPTIMAL) {
             VLOG(1) << solution_info;
 
@@ -3074,7 +3074,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
         };
       });
 
-  if (response.status() == CpSolverStatus::MODEL_SAT) {
+  if (response.status() == CpSolverStatus::FEASIBLE) {
     if (response.objective_value() == response.best_objective_bound()) {
       response.set_status(CpSolverStatus::OPTIMAL);
     }

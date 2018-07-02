@@ -1013,7 +1013,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
 
         const auto objective_synchronization = [&mutex, &best_response]() {
           absl::MutexLock lock(&mutex);
-          if (best_response.status() == CpSolverStatus::MODEL_SAT) {
+          if (best_response.status() == CpSolverStatus::FEASIBLE) {
             return best_response.objective_value();
           } else {
             return std::numeric_limits<double>::infinity();
@@ -1035,21 +1035,21 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           if (MergeOptimizationSolution(r, maximize, &best_response)) {
             if (p.all_solutions) {
               if (maximize) {
-              FZLOG << absl::StrFormat(
-                           "#%-5i %-7s %8.2fs  [%0.0f, %0.0f]  %s",
-                           solution_count++, worker_name.c_str(), timer.Get(),
-                           best_response.objective_value(),
-                           best_response.best_objective_bound(),
-                           r.solution_info().c_str())
-                    << FZENDL;
+                FZLOG << absl::StrFormat(
+                    "#%-5i %-7s %8.2fs  [%0.0f, %0.0f]  %s",
+                    solution_count++, worker_name.c_str(), timer.Get(),
+                    best_response.objective_value(),
+                    best_response.best_objective_bound(),
+                    r.solution_info().c_str())
+                      << FZENDL;
               } else {
-              FZLOG << absl::StrFormat(
-                           "#%-5i %-7s %8.2fs  [%0.0f, %0.0f]  %s",
-                           solution_count++, worker_name.c_str(), timer.Get(),
-                           best_response.best_objective_bound(),
-                           best_response.objective_value(),
-                           r.solution_info().c_str())
-                    << FZENDL;
+                FZLOG << absl::StrFormat(
+                    "#%-5i %-7s %8.2fs  [%0.0f, %0.0f]  %s",
+                    solution_count++, worker_name.c_str(), timer.Get(),
+                    best_response.best_objective_bound(),
+                    best_response.objective_value(),
+                    r.solution_info().c_str())
+                      << FZENDL;
               }
 
               if (FLAGS_use_flatzinc_format) {
@@ -1085,7 +1085,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
                  << local_response.objective_value() << FZENDL;
           MergeOptimizationSolution(local_response, maximize, &best_response);
           if (best_response.status() == CpSolverStatus::OPTIMAL ||
-              best_response.status() == CpSolverStatus::MODEL_UNSAT) {
+              best_response.status() == CpSolverStatus::INFEASIBLE) {
             stopped = true;
           }
         });
@@ -1136,16 +1136,16 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
 
   // Check the returned solution with the fz model checker.
-  if (best_response.status() == CpSolverStatus::MODEL_SAT ||
+  if (best_response.status() == CpSolverStatus::FEASIBLE ||
       best_response.status() == CpSolverStatus::OPTIMAL) {
     CHECK(CheckSolution(fz_model, [&best_response, &m](fz::IntegerVariable* v) {
       return best_response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
     }));
   }
 
-  // Output the solution if the flatzinc official format.
+  // Output the solution in the flatzinc official format.
   if (FLAGS_use_flatzinc_format) {
-    if (best_response.status() == CpSolverStatus::MODEL_SAT ||
+    if (best_response.status() == CpSolverStatus::FEASIBLE ||
         best_response.status() == CpSolverStatus::OPTIMAL) {
       if (!p.all_solutions) {  // Already printed otherwise.
         const std::string solution_string = SolutionString(
@@ -1159,7 +1159,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           best_response.all_solutions_were_found()) {
         std::cout << "==========" << std::endl;
       }
-    } else if (best_response.status() == CpSolverStatus::MODEL_UNSAT) {
+    } else if (best_response.status() == CpSolverStatus::INFEASIBLE) {
       std::cout << "=====UNSATISFIABLE=====" << std::endl;
     } else {
       std::cout << "%% TIMEOUT" << std::endl;

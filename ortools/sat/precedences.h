@@ -217,7 +217,8 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // consecutive like in StaticGraph should have a big performance impact.
   //
   // TODO(user): We do not need to store ArcInfo.tail_var here.
-  gtl::ITIVector<IntegerVariable, absl::InlinedVector<ArcIndex, 6>> impacted_arcs_;
+  gtl::ITIVector<IntegerVariable, absl::InlinedVector<ArcIndex, 6>>
+      impacted_arcs_;
   gtl::ITIVector<ArcIndex, ArcInfo> arcs_;
 
   // This is similar to impacted_arcs_/arcs_ but it is only used to propagate

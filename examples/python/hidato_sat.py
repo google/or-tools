@@ -153,7 +153,7 @@ def SolveHidato(puzzle, index):
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  if status == cp_model.MODEL_SAT:
+  if status == cp_model.FEASIBLE:
     if visualization.RunFromIPython():
       output = visualization.SvgWrapper(10, r, 40.0)
       for i in range(len(positions)):

@@ -344,7 +344,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
                                CpSolverResponse* best) {
   switch (response.status()) {
-    case CpSolverStatus::MODEL_SAT: {
+    case CpSolverStatus::FEASIBLE: {
       const bool is_improving =
           maximize ? response.objective_value() > best->objective_value()
                    : response.objective_value() < best->objective_value();
@@ -365,9 +365,9 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
       best->set_best_objective_bound(new_best_objective_bound);
       return false;
     }
-    case CpSolverStatus::MODEL_UNSAT: {
+    case CpSolverStatus::INFEASIBLE: {
       if (best->status() == CpSolverStatus::UNKNOWN ||
-          best->status() == CpSolverStatus::MODEL_UNSAT) {
+          best->status() == CpSolverStatus::INFEASIBLE) {
         // Stores the unsat solution.
         *best = response;
         return true;
@@ -377,7 +377,7 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
         // does not improve upon it, returns UNSAT if it has not found a
         // previous solution, or OPTIMAL with a bad objective value, and
         // stops all other workers. In that case, if the last solution
-        // found has a MODEL_SAT status, it is indeed optimal, and
+        // found has a FEASIBLE status, it is indeed optimal, and
         // should be marked as thus.
         best->set_status(CpSolverStatus::OPTIMAL);
         best->set_best_objective_bound(best->objective_value());
@@ -395,7 +395,7 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
         *best = response;
         return true;
       } else {
-        // We are in the same case as the MODEL_UNSAT above.  Solution
+        // We are in the same case as the INFEASIBLE above.  Solution
         // synchronization has forced the solver to exit with a sub-optimal
         // solution, believing it was optimal.
         best->set_status(CpSolverStatus::OPTIMAL);

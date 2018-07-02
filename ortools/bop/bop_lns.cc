@@ -145,7 +145,7 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
 
   sat_solver_->SetParameters(sat_params);
   const sat::SatSolver::Status sat_status = sat_solver_->Solve();
-  if (sat_status == sat::SatSolver::MODEL_SAT) {
+  if (sat_status == sat::SatSolver::FEASIBLE) {
     SatAssignmentToBopSolution(sat_solver_->Assignment(),
                                &learned_info->solution);
     return BopOptimizerBase::SOLUTION_FOUND;
@@ -299,7 +299,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
           sat_propagator_->CurrentDecisionLevel());
 
       const sat::SatSolver::Status status = sat_propagator_->Solve();
-      if (status == sat::SatSolver::MODEL_SAT) {
+      if (status == sat::SatSolver::FEASIBLE) {
         adaptive_difficulty_.IncreaseParameter();
         SatAssignmentToBopSolution(sat_propagator_->Assignment(),
                                    &learned_info->solution);
@@ -386,7 +386,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     // Solve the local problem.
     const sat::SatSolver::Status status = sat_solver.Solve();
     time_limit->AdvanceDeterministicTime(sat_solver.deterministic_time());
-    if (status == sat::SatSolver::MODEL_SAT) {
+    if (status == sat::SatSolver::FEASIBLE) {
       // We found a solution! abort now.
       SatAssignmentToBopSolution(sat_solver.Assignment(),
                                  &learned_info->solution);
