@@ -3000,7 +3000,7 @@ CpSolverResponse SolveCpModelWithLNS(const CpModelProto& model_proto,
         CpModelProto local_problem = generators[selected_generator]->Generate(
             response, seed, saved_difficulty);
         const std::string solution_info = absl::StrFormat(
-            "%s(d=%0.2f s=%i t=%0.2f)", generators[selected_generator]->name(),
+            "%s(d=%0.2f s=%i t=%0.2f)", generators[selected_generator]->name().c_str(),
             saved_difficulty, seed, deterministic_time);
 
         Model local_model;
