@@ -3104,23 +3104,29 @@ CpSolverResponse SolveCpModelParallel(
         [maximize, &num_solutions, worker_id, worker_name, &mutex,
          &best_response, &observer, &timer,
          &first_solution_found_or_search_finished](const CpSolverResponse& r) {
-          absl::MutexLock lock(&mutex);
+          bool should_notify = false;
+          {
+            absl::MutexLock lock(&mutex);
 
-          // Check is the new solution is actually improving upon the best
-          // solution found so far.
-          if (MergeOptimizationSolution(r, maximize, &best_response)) {
-            if (!first_solution_found_or_search_finished.HasBeenNotified()) {
-              first_solution_found_or_search_finished.Notify();
+            // Check is the new solution is actually improving upon the best
+            // solution found so far.
+            if (MergeOptimizationSolution(r, maximize, &best_response)) {
+              if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+                should_notify = true;
+              }
+              VLOG(1) << absl::StrFormat(
+                  "#%-5i %-6s %8.2fs  obj:[%0.0f,%0.0f] %s", num_solutions++,
+                  worker_name.c_str(), timer.Get(),
+                  maximize ? best_response.objective_value()
+                  : best_response.best_objective_bound(),
+                  maximize ? best_response.best_objective_bound()
+                  : best_response.objective_value(),
+                  r.solution_info().c_str());
+              observer(best_response);
             }
-            VLOG(1) << absl::StrFormat(
-                "#%-5i %-6s %8.2fs  obj:[%0.0f,%0.0f] %s", num_solutions++,
-                worker_name.c_str(), timer.Get(),
-                maximize ? best_response.objective_value()
-                         : best_response.best_objective_bound(),
-                maximize ? best_response.best_objective_bound()
-                         : best_response.objective_value(),
-                r.solution_info().c_str());
-            observer(best_response);
+          }
+          if (should_notify) {
+            first_solution_found_or_search_finished.Notify();
           }
         };
 
@@ -3151,18 +3157,20 @@ CpSolverResponse SolveCpModelParallel(
       // Process final solution. Decide which worker has the 'best'
       // solution. Note that the solution observer may or may not have been
       // called.
-      absl::MutexLock lock(&mutex);
-      VLOG(1) << "Worker '" << worker_name << "' terminates with status "
-              << ProtoEnumToString<CpSolverStatus>(thread_response.status())
-              << " and an objective value of "
-              << thread_response.objective_value();
+      {
+        absl::MutexLock lock(&mutex);
+        VLOG(1) << "Worker '" << worker_name << "' terminates with status "
+                << ProtoEnumToString<CpSolverStatus>(thread_response.status())
+                << " and an objective value of "
+                << thread_response.objective_value();
 
-      MergeOptimizationSolution(thread_response, maximize, &best_response);
+        MergeOptimizationSolution(thread_response, maximize, &best_response);
 
-      // TODO(user): For now we assume that each worker only terminate when
-      // the time limit is reached or when the problem is solved, so we just
-      // abort all other threads and return.
-      *stopped = true;
+        // TODO(user): For now we assume that each worker only terminate when
+        // the time limit is reached or when the problem is solved, so we just
+        // abort all other threads and return.
+        *stopped = true;
+      }
       if (!first_solution_found_or_search_finished.HasBeenNotified()) {
         first_solution_found_or_search_finished.Notify();
       }
