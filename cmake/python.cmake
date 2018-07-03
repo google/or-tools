@@ -39,7 +39,7 @@ endforeach()
 add_custom_target(Py${PROJECT_NAME}_proto DEPENDS ${PROTO_PYS} ortools::ortools)
 
 # Setup Python
-set(Python_ADDITIONAL_VERSIONS "3.6;3.5;2.7" CACHE STRING "Python to use for binding")
+set(Python_ADDITIONAL_VERSIONS "3.7;3.6;3.5;2.7" CACHE STRING "Python to use for binding")
 find_package(PythonInterp REQUIRED)
 # Force PythonLibs to find the same version than the python interpreter.
 set(Python_ADDITIONAL_VERSIONS "${PYTHON_VERSION_STRING}")

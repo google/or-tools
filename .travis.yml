@@ -26,18 +26,22 @@ matrix:
       env: BUILDER=make DISTRO=native LANGUAGE=dotnet
 
     - os: osx
+      osx_image: xode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=cc
     - os: osx
+      osx_image: xode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=python
     - os: osx
+      osx_image: xode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=java
     - os: osx
+      osx_image: xode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=dotnet
@@ -54,10 +58,12 @@ matrix:
       env: BUILDER=cmake DISTRO=native
 
     - os: osx
+      osx_image: xode9.4
       language: cpp
       compiler: gcc
       env: BUILDER=cmake DISTRO=native
     - os: osx
+      osx_image: xode9.4
       language: cpp
       compiler: clang
       env: BUILDER=cmake DISTRO=native
