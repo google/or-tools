@@ -695,7 +695,10 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   // Test for singleton variable. Not that we need to do that after the
   // canonicalization of the constraint in case a variable was appearing more
   // than once.
-  if (!was_affine) {
+  //
+  // TODO(user): This trigger a bug in some rare case (run on radiation.fzn).
+  // Investigate and fix.
+  if (/* DISABLES CODE */ (false) && !was_affine) {
     std::vector<int> var_to_erase;
     for (const auto entry : var_to_coeff) {
       const int var = entry.first;

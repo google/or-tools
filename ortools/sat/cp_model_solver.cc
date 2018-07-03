@@ -3045,15 +3045,15 @@ CpSolverResponse SolveCpModelParallel(
   auto fix_walltime = ::operations_research::util::MakeCleanup(
       [&timer, &best_response]() { best_response.set_wall_time(timer.Get()); });
 
+  // In the LNS threads, we wait for this notification before starting work.
+  absl::Notification first_solution_found_or_search_finished;
+
   absl::Mutex mutex;
   const int num_search_workers = params.num_search_workers();
   VLOG(1) << "Starting parallel search with " << num_search_workers
           << " workers.";
   ThreadPool pool("Parallel_search", num_search_workers);
   pool.StartWorkers();
-
-  // In the LNS threads, we wait for this notification before starting work.
-  absl::Notification first_solution_found_or_search_finished;
 
   if (!model_proto.has_objective()) {
     for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
@@ -3293,6 +3293,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           observer(copy);
         }
       };
+
+#if defined(__PORTABLE_PLATFORM__)
+  model->GetOrCreate<SatParameters>()->set_num_search_workers(1);
+#endif  // __PORTABLE_PLATFORM__
 
   CpSolverResponse response;
   if (params.num_search_workers() > 1) {
