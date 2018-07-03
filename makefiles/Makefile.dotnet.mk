@@ -306,6 +306,7 @@ clean_dotnet:
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_FSHARP_DLL_NAME).*
 	-$(DEL) $(CLR_KEYFILE)
+	-$(DELREC) .$S$(TEMP_DOTNET_DIR)
 	-$(DELREC) .$S$(TEMP_DOTNET_TEST_DIR)
 
 .PHONY: test_dotnet # Test dotnet version of OR-Tools
