@@ -302,6 +302,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       case 4: {  // Core based approach.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_optimize_with_core(true);
+        new_params.set_linearization_level(0);
         *name = "core";
         break;
       }
