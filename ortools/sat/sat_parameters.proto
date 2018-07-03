@@ -571,6 +571,9 @@ message SatParameters {
 
   // Specify the number of parallel workers to use during search.
   // A number <= 1 means no parallelism.
+  //
+  // WARNING: For now the code is non-deterministic. There is plans to make it
+  // deterministic (or provide an options) soon.
   optional int32 num_search_workers = 100 [default = 0];
 
   // LNS parameters.

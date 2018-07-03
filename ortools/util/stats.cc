@@ -17,6 +17,7 @@
 #include "ortools/base/stringprintf.h"
 
 #include "ortools/base/stl_util.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/port/sysinfo.h"
 #include "ortools/port/utf8.h"
 
@@ -204,7 +205,7 @@ void TimeDistribution::AddTimeInCycles(double cycles) {
 }
 
 std::string TimeDistribution::ValueAsString() const {
-  return StringPrintf(
+  return absl::StrFormat(
       "%8llu [%8s, %8s] %8s %8s %8s\n", num_, PrintCyclesAsTime(min_).c_str(),
       PrintCyclesAsTime(max_).c_str(), PrintCyclesAsTime(Average()).c_str(),
       PrintCyclesAsTime(StdDeviation()).c_str(),
@@ -217,16 +218,16 @@ void RatioDistribution::Add(double value) {
 }
 
 std::string RatioDistribution::ValueAsString() const {
-  return StringPrintf("%8llu [%7.2lf%%, %7.2lf%%] %7.2lf%% %7.2lf%%\n", num_,
-                      100.0 * min_, 100.0 * max_, 100.0 * Average(),
-                      100.0 * StdDeviation());
+  return absl::StrFormat("%8llu [%7.2lf%%, %7.2lf%%] %7.2lf%% %7.2lf%%\n", num_,
+                         100.0 * min_, 100.0 * max_, 100.0 * Average(),
+                         100.0 * StdDeviation());
 }
 
 void DoubleDistribution::Add(double value) { AddToDistribution(value); }
 
 std::string DoubleDistribution::ValueAsString() const {
-  return StringPrintf("%8llu [%8.1e, %8.1e] %8.1e %8.1e\n", num_, min_, max_,
-                      Average(), StdDeviation());
+  return absl::StrFormat("%8llu [%8.1e, %8.1e] %8.1e %8.1e\n", num_, min_, max_,
+                         Average(), StdDeviation());
 }
 
 void IntegerDistribution::Add(int64 value) {
@@ -234,8 +235,8 @@ void IntegerDistribution::Add(int64 value) {
 }
 
 std::string IntegerDistribution::ValueAsString() const {
-  return StringPrintf("%8llu [%8.lf, %8.lf] %8.2lf %8.2lf %8.lf\n", num_, min_,
-                      max_, Average(), StdDeviation(), sum_);
+  return absl::StrFormat("%8llu [%8.lf, %8.lf] %8.2lf %8.2lf %8.lf\n", num_, min_,
+                         max_, Average(), StdDeviation(), sum_);
 }
 
 #ifdef HAS_PERF_SUBSYSTEM

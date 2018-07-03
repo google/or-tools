@@ -47,15 +47,6 @@ inline double ToDoubleSeconds(Duration x) { return x; }
 inline int64 ToInt64Milliseconds(Duration x) { return x * 1e3; }
 inline Duration ZeroDuration() { return Duration(0); }
 
-// SleepFor()
-//
-// Sleeps for the specified duration, expressed as an `absl::Duration`.
-//
-// Notes:
-// * Signal interruptions will not reduce the sleep duration.
-// * Returns immediately when passed a nonpositive duration.
-void SleepFor(absl::Duration duration);
-
 }  // namespace absl
 
 // Temporary support for the legacy "base::" namespace

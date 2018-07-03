@@ -29,6 +29,7 @@ BASE_DEPS = \
     $(SRC_DIR)/ortools/base/memory.h \
     $(SRC_DIR)/ortools/base/murmur.h \
     $(SRC_DIR)/ortools/base/mutex.h \
+    $(SRC_DIR)/ortools/base/notification.h \
     $(SRC_DIR)/ortools/base/numbers.h \
     $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/protoutil.h \
@@ -63,6 +64,7 @@ BASE_LIB_OBJS = \
     $(OBJ_DIR)/base/file.$O \
     $(OBJ_DIR)/base/join.$O \
     $(OBJ_DIR)/base/mutex.$O \
+    $(OBJ_DIR)/base/notification.$O \
     $(OBJ_DIR)/base/numbers.$O \
     $(OBJ_DIR)/base/random.$O \
     $(OBJ_DIR)/base/recordio.$O \
@@ -238,6 +240,11 @@ $(OBJ_DIR)/base/mutex.$O: \
     $(SRC_DIR)/ortools/base/mutex.cc \
     $(SRC_DIR)/ortools/base/mutex.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Smutex.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Smutex.$O
+
+$(OBJ_DIR)/base/notification.$O: \
+    $(SRC_DIR)/ortools/base/notification.cc \
+    $(SRC_DIR)/ortools/base/notification.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Snotification.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Snotification.$O
 
 $(OBJ_DIR)/base/numbers.$O: \
     $(SRC_DIR)/ortools/base/numbers.cc \
@@ -789,6 +796,7 @@ $(SRC_DIR)/ortools/lp_data/mps_reader.h: \
     $(SRC_DIR)/ortools/lp_data/lp_types.h
 
 $(SRC_DIR)/ortools/lp_data/permutation.h: \
+    $(SRC_DIR)/ortools/base/random.h \
     $(SRC_DIR)/ortools/lp_data/lp_types.h \
     $(SRC_DIR)/ortools/util/return_macros.h
 
@@ -2133,6 +2141,7 @@ $(OBJ_DIR)/sat/cp_model_presolve.$O: \
 
 $(OBJ_DIR)/sat/cp_model_search.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_search.cc \
+    $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/sat/cp_model_search.h \
     $(SRC_DIR)/ortools/sat/cp_model_utils.h \
     $(SRC_DIR)/ortools/sat/util.h
@@ -2140,6 +2149,7 @@ $(OBJ_DIR)/sat/cp_model_search.$O: \
 
 $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_solver.cc \
+    $(SRC_DIR)/ortools/base/cleanup.h \
     $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/int_type.h \
     $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -2148,7 +2158,9 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/map_util.h \
     $(SRC_DIR)/ortools/base/memory.h \
+    $(SRC_DIR)/ortools/base/notification.h \
     $(SRC_DIR)/ortools/base/stl_util.h \
+    $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/base/timer.h \
     $(SRC_DIR)/ortools/graph/connectivity.h \
     $(SRC_DIR)/ortools/port/proto_utils.h \

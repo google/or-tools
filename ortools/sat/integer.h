@@ -654,7 +654,7 @@ class IntegerTrail : public SatPropagator {
   // Helper function to return the "dependencies" of a bound assignment.
   // All the TrailEntry at these indices are part of the reason for this
   // assignment.
-  util::BeginEndWrapper<std::vector<IntegerLiteral>::const_iterator>
+  ::util::BeginEndWrapper<std::vector<IntegerLiteral>::const_iterator>
   Dependencies(int trail_index) const;
 
   // Helper function to append the Literal part of the reason for this bound

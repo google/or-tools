@@ -158,7 +158,7 @@ class MatrixNonZeroPattern {
   // Returns the set of non-zeros of the given row (unsorted).
   // Call RemoveDeletedColumnsFromRow(row) to clean the row first.
   // This is only valid for the row indices still in the residual matrix.
-  const std::vector<ColIndex>& RowNonZero(RowIndex row) const {
+  const absl::InlinedVector<ColIndex, 6>& RowNonZero(RowIndex row) const {
     return row_non_zero_[row];
   }
 
@@ -174,7 +174,14 @@ class MatrixNonZeroPattern {
   // non-sorted version. Investigate more.
   void MergeIntoSorted(RowIndex pivot_row, RowIndex row);
 
-  gtl::ITIVector<RowIndex, std::vector<ColIndex>> row_non_zero_;
+  // Using InlinedVector helps because we usually have many rows with just a few
+  // non-zeros. Note that on a 64 bits computer we get exactly 6 inlined int32
+  // elements without extra space, and the size of the inlined vector is 4 times
+  // 64 bits.
+  //
+  // TODO(user): We could be even more efficient since a size of int32 is enough
+  // for us and we could store in common the inlined/not-inlined size.
+  gtl::ITIVector<RowIndex, absl::InlinedVector<ColIndex, 6>> row_non_zero_;
   StrictITIVector<RowIndex, int32> row_degree_;
   StrictITIVector<ColIndex, int32> col_degree_;
   DenseBooleanRow deleted_columns_;

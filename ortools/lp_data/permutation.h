@@ -143,7 +143,7 @@ void Permutation<IndexType>::PopulateFromIdentity() {
 template <typename IndexType>
 void Permutation<IndexType>::PopulateRandomly() {
   PopulateFromIdentity();
-  std::random_shuffle(perm_.begin(), perm_.end());
+  std::shuffle(perm_.begin(), perm_.end());
 }
 
 template <typename IndexType>

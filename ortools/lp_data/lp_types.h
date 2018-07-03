@@ -241,10 +241,10 @@ inline std::ostream& operator<<(std::ostream& os, ConstraintStatus status) {
 // Returns the ConstraintStatus corresponding to a given VariableStatus.
 ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 
-// Wrapper around an gtl::ITIVector to allow (and enforce) creation/resize/assign
+// Wrapper around an ITIVector to allow (and enforce) creation/resize/assign
 // to use the index type for the size.
 //
-// TODO(user): This should probably move into gtl::ITIVector, but note that this
+// TODO(user): This should probably move into ITIVector, but note that this
 // version is more strict and does not allow any other size types.
 template <typename IntType, typename T>
 class StrictITIVector : public gtl::ITIVector<IntType, T> {

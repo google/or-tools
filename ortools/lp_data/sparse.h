@@ -350,8 +350,8 @@ class CompactSparseMatrix {
   //   const RowIndex row = compact_matrix_.EntryRow(i);
   //   const Fractional coefficient = compact_matrix_.EntryCoefficient(i);
   // }
-  util::IntegerRange<EntryIndex> Column(ColIndex col) const {
-    return util::IntegerRange<EntryIndex>(starts_[col], starts_[col + 1]);
+  ::util::IntegerRange<EntryIndex> Column(ColIndex col) const {
+    return ::util::IntegerRange<EntryIndex>(starts_[col], starts_[col + 1]);
   }
   Fractional EntryCoefficient(EntryIndex i) const { return coefficients_[i]; }
   RowIndex EntryRow(EntryIndex i) const { return rows_[i]; }
