@@ -218,10 +218,14 @@ PROTOBUF_PROTOC_INC = $(PROTOBUF_INC)
 # libprotobuf.a goes in a different subdirectory depending on the distribution
 # and architecture, eg. "lib/" or "lib64/" for Fedora and Centos,
 # "lib/x86_64-linux-gnu/" for Ubuntu (all on 64 bits), etc. So we wildcard it.
-STATIC_PROTOBUF_LNK = $(wildcard $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a \
-                          $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
-_PROTOBUF_LIB_DIR = $(wildcard $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L \
-                          $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.$L)
+STATIC_PROTOBUF_LNK = $(wildcard \
+ $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a \
+ $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a@ \
+ $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
+_PROTOBUF_LIB_DIR = $(wildcard \
+ $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L \
+ $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L@ \
+ $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.$L)
 DYNAMIC_PROTOBUF_LNK = -L$(dir $(_PROTOBUF_LIB_DIR)) -lprotobuf
 
 ifeq ($(UNIX_PROTOBUF_DIR), $(OR_TOOLS_TOP)/dependencies/install)

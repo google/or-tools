@@ -6,6 +6,7 @@ LIB_PREFIX = lib
 SRC_DIR = $(OR_ROOT).
 EX_DIR  = $(OR_ROOT)examples
 GEN_DIR = $(OR_ROOT)ortools/gen
+GEN_PATH = $(subst /,$S,$(GEN_DIR))
 OBJ_DIR = $(OR_ROOT)objs
 LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
@@ -149,7 +150,8 @@ ifeq ($(PLATFORM),LINUX)
   JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
   JNI_LIB_EXT = so
 
-  SWIG_LIB_SUFFIX = so
+  SWIG_PYTHON_LIB_SUFFIX = so
+  SWIG_DOTNET_LIB_SUFFIX = so
   LINK_CMD = $(DYNAMIC_LD)
   PRE_LIB = -L$(OR_ROOT_FULL)/lib -l
   #PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
@@ -206,7 +208,8 @@ ifeq ($(PLATFORM),MACOSX)
   JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
   JNI_LIB_EXT = jnilib
 
-  SWIG_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
+  SWIG_PYTHON_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
+  SWIG_DOTNET_LIB_SUFFIX = dll# To overcome a bug in Mac OS X loader.
   LINK_CMD = clang++ -dynamiclib \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \

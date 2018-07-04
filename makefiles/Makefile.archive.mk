@@ -146,7 +146,7 @@ endif
 netstandard_archive: NET_STANDARD_EXAMPLES = $(wildcard examples/csharp/*.cs)
 netstandard_archive: netstandard_example_archive
 	$(COPY) bin$S$(NETSTANDARD_ORTOOLS_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin$S
-	$(COPY) bin$S$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sbin$S
+	$(COPY) bin$S$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sbin$S
 	$(COPY) bin$S$(NETSTANDARD_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg temp$S$(INSTALL_DIR)$Sbin$S
 	$(COPY) tools$SREADME.netstandard temp$S$(INSTALL_DIR)$Sexamples$Snetstandard
 

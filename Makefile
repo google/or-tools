@@ -34,6 +34,15 @@ else
   endif
 endif
 
+# Delete all implicit rules to speed up makefile
+.SUFFIXES:
+# Remove some rules from gmake that .SUFFIXES does not remove.
+SUFFIXES =
+
+# Keep all intermediate files
+# ToDo: try to remove it later
+.SECONDARY:
+
 # Read version.
 include $(OR_ROOT)Version.txt
 
@@ -94,6 +103,10 @@ test_all: test_cc test_python test_java test_dotnet
 
 .PHONY: clean_all
 clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat
+	-$(DELREC) $(BIN_DIR)
+	-$(DELREC) $(LIB_DIR)
+	-$(DELREC) $(OBJ_DIR)
+	-$(DELREC) $(GEN_PATH)
 	@echo Or-tools have been cleaned for $(BUILT_LANGUAGES)
 
 .PHONY: detect_all
