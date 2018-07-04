@@ -1232,7 +1232,9 @@ void LoadElementConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   }
 
   DetectEquivalencesInElementConstraint(ct, m);
-  if (target_is_AC || num_AC_variables >= num_vars - 1) {
+  const SatParameters& params = *m->model()->GetOrCreate<SatParameters>();
+  if (params.boolean_encoding_level() > 0 &&
+      (target_is_AC || num_AC_variables >= num_vars - 1)) {
     LoadElementConstraintAC(ct, m);
   } else {
     LoadElementConstraintBounds(ct, m);
@@ -2846,7 +2848,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
 CpSolverResponse SolveCpModelWithLNS(
     const CpModelProto& model_proto,
     const std::function<void(const CpSolverResponse&)>& observer,
-    Model* model) {
+    int num_workers, int worker_id, Model* model) {
   SatParameters* parameters = model->GetOrCreate<SatParameters>();
   parameters->set_stop_after_first_solution(true);
   CpSolverResponse response;
@@ -2915,7 +2917,7 @@ CpSolverResponse SolveCpModelWithLNS(
         const double saved_difficulty = difficulty.value();
         const int selected_generator = seed % generators.size();
         CpModelProto local_problem = generators[selected_generator]->Generate(
-            response, seed, saved_difficulty);
+            response, num_workers * seed + worker_id, saved_difficulty);
         const std::string solution_info = absl::StrFormat(
             "%s(d=%0.2f s=%i t=%0.2f)", generators[selected_generator]->name().c_str(),
             saved_difficulty, seed, deterministic_time);
@@ -3017,6 +3019,7 @@ CpSolverResponse SolveCpModelParallel(
   timer.Start();
 
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  const int random_seed = params.random_seed();
   CHECK(!params.enumerate_all_solutions());
 
   // This is a bit hacky. If the provided TimeLimit as a "`" Boolean, we
@@ -3046,9 +3049,11 @@ CpSolverResponse SolveCpModelParallel(
       [&timer, &best_response]() { best_response.set_wall_time(timer.Get()); });
 
   absl::Mutex mutex;
-  const int num_search_workers = params.num_search_workers();
+
   // In the LNS threads, we wait for this notification before starting work.
   absl::Notification first_solution_found_or_search_finished;
+
+  const int num_search_workers = params.num_search_workers();
   VLOG(1) << "Starting parallel search with " << num_search_workers
           << " workers.";
   ThreadPool pool("Parallel_search", num_search_workers);
@@ -3117,9 +3122,9 @@ CpSolverResponse SolveCpModelParallel(
                   "#%-5i %-6s %8.2fs  obj:[%0.0f,%0.0f] %s", num_solutions++,
                   worker_name.c_str(), timer.Get(),
                   maximize ? best_response.objective_value()
-                  : best_response.best_objective_bound(),
+                           : best_response.best_objective_bound(),
                   maximize ? best_response.best_objective_bound()
-                  : best_response.objective_value(),
+                           : best_response.objective_value(),
                   r.solution_info().c_str());
               observer(best_response);
             }
@@ -3131,7 +3136,7 @@ CpSolverResponse SolveCpModelParallel(
 
     pool.Schedule([&model_proto, solution_observer, solution_synchronization,
                    objective_synchronization, stopped, local_params, worker_id,
-                   &mutex, &best_response,
+                   &mutex, &best_response, num_search_workers, random_seed,
                    &first_solution_found_or_search_finished, maximize,
                    worker_name]() {
       Model local_model;
@@ -3146,8 +3151,11 @@ CpSolverResponse SolveCpModelParallel(
       CpSolverResponse thread_response;
       if (local_params.use_lns()) {
         first_solution_found_or_search_finished.WaitForNotification();
-        thread_response =
-            SolveCpModelWithLNS(model_proto, solution_observer, &local_model);
+        // TODO(user, lperron): Provide a better diversification for different
+        // seeds.
+        thread_response = SolveCpModelWithLNS(
+            model_proto, solution_observer, num_search_workers,
+            worker_id + random_seed, &local_model);
       } else {
         thread_response = SolveCpModelInternal(model_proto, true,
                                                solution_observer, &local_model);
@@ -3300,6 +3308,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #endif  // __PORTABLE_PLATFORM__
   } else if (params.use_lns() && new_model.has_objective() &&
              !params.enumerate_all_solutions()) {
+    // TODO(user, lperron): Provide a better diversification for different
+    // seeds.
+    const int random_seed = model->GetOrCreate<SatParameters>()->random_seed();
     int num_solutions = 1;
     response =
         SolveCpModelWithLNS(new_model,
@@ -3310,7 +3321,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                       << " obj:" << response.objective_value()
                                       << " " << response.solution_info();
                             },
-                            model);
+                            1, random_seed, model);
   } else {
     int num_solutions = 1;
     response = SolveCpModelInternal(

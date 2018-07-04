@@ -632,15 +632,15 @@ bool ExploitEquivalenceRelations(ConstraintProto* ct,
       [&changed, context](int* ref) {
         const int var = PositiveRef(*ref);
         const AffineRelation::Relation r = context->GetAffineRelation(var);
+        if (r.representative == var) return;
 
-        // Tricky: if the var/representative is fixed, then we don't have a
-        // guarantee that the representative is in [0,1]. This case should be
-        // treated later in the presolve anyway.
-        if (context->IsFixed(var) || context->IsFixed(r.representative)) return;
-
-        if (r.representative != var) {
-          const bool is_positive = (r.offset == 0 && r.coeff == 1);
-          CHECK(is_positive || r.offset == 1 && r.coeff == -1);
+        // Tricky: We might not have propagated the domain of the variables yet,
+        // so we may have weird offset/coeff pair that will force one variable
+        // to be fixed. This will be dealt with later, so we just handle the
+        // two proper full mapping between [0, 1] variables here.
+        const bool is_positive = (r.offset == 0 && r.coeff == 1);
+        const bool is_negative = (r.offset == 1 && r.coeff == -1);
+        if (is_positive || is_negative) {
           *ref = (is_positive == RefIsPositive(*ref))
                      ? r.representative
                      : NegatedRef(r.representative);

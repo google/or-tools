@@ -317,21 +317,27 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     // The goal here is to try fixed and free search on the first two threads.
     // Then maximize diversity on the extra threads.
     switch (worker_id) {
-      case 0: {  // Use default parameters and fixed search.
+      case 0: {
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
         *name = "fixed";
         break;
       }
-      case 1: {  // Use default parameters and automatic search.
+      case 1: {
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         *name = "auto";
+        break;
+      }
+      case 2: {
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_boolean_encoding_level(0);
+        *name = "less encoding";
         break;
       }
       default: {  // Randomized fixed search.
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
         new_params.set_randomize_search(true);
-        new_params.set_search_randomization_tolerance(worker_id - 2);
-        *name = absl::StrFormat("rnd_%i", worker_id - 2);
+        new_params.set_search_randomization_tolerance(worker_id - 3);
+        *name = absl::StrFormat("rnd_%i", worker_id - 3);
         break;
       }
     }
