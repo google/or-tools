@@ -4,11 +4,11 @@ declare -r libname="${1}"
 declare -r main_dir="${2}"
 
 # List all files on ortools/"${main_dir}"
-all_cc=( $(ls ortools/"${main_dir}"/*.cc | grep -v test.cc | sort -u) )
-all_h=( $(ls ortools/"${main_dir}"/*.h | sort -u) )
+all_cc=( $(ls ortools/"${main_dir}"/*.cc | grep -v test.cc | LC_COLLATE=C sort -u) )
+all_h=( $(ls ortools/"${main_dir}"/*.h | LC_COLLATE=C sort -u) )
 declare -a all_proto
 if ls ortools/"${main_dir}"/*proto >& /dev/null; then
-  all_proto+=( $(ls ortools/"${main_dir}"/*.proto | sort -u) )
+  all_proto+=( $(ls ortools/"${main_dir}"/*.proto | LC_COLLATE=C sort -u) )
 fi
 
 # Arguments: a list of dependencies.
@@ -42,7 +42,7 @@ function print_paths {
 #         by their "import" for proto files).
 function get_dependencies {
    grep -e "^\(#include\|import\) \"ortools/" $* \
-     | cut -d '"' -f 2 | sort -u
+     | cut -d '"' -f 2 | LC_COLLATE=C sort -u
 }
 
 # Generate XXX_DEPS macro
