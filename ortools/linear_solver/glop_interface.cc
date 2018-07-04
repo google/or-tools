@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <atomic>
 #include <fstream>
 #include <string>
 #include <unordered_map>
@@ -102,7 +103,7 @@ class GLOPInterface : public MPSolverInterface {
   std::vector<MPSolver::BasisStatus> column_status_;
   std::vector<MPSolver::BasisStatus> row_status_;
   glop::GlopParameters parameters_;
-  bool interrupt_solver_;
+  std::atomic<bool> interrupt_solver_;
 };
 
 GLOPInterface::GLOPInterface(MPSolver* const solver)

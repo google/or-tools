@@ -13,6 +13,7 @@
 
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 
+#include <atomic>
 #include <cmath>
 #include <limits>
 #include <unordered_map>
@@ -923,7 +924,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       << sat_params;
   m.parameters.MergeFrom(flag_parameters);
 
-  bool stopped = false;
+  std::atomic<bool> stopped(false);
   SigintHandler handler;
   handler.Register([&stopped]() { stopped = true; });
 

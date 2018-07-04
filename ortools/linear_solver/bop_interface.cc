@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <atomic>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -115,7 +116,7 @@ class BopInterface : public MPSolverInterface {
   std::vector<MPSolver::BasisStatus> row_status_;
   bop::BopParameters parameters_;
   double best_objective_bound_;
-  bool interrupt_solver_;
+  std::atomic<bool> interrupt_solver_;
 };
 
 BopInterface::BopInterface(MPSolver* const solver)

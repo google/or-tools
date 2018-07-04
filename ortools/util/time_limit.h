@@ -15,6 +15,7 @@
 #define OR_TOOLS_UTIL_TIME_LIMIT_H_
 
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <limits>
 #include <memory>
@@ -240,12 +241,15 @@ class TimeLimit {
   // the check of the limit.
   //
   // Note that ResetLimitFromParameters() will set this Boolean to false.
-  void RegisterExternalBooleanAsLimit(bool* external_boolean_as_limit) {
+  void RegisterExternalBooleanAsLimit(
+      std::atomic<bool>* external_boolean_as_limit) {
     external_boolean_as_limit_ = external_boolean_as_limit;
   }
 
   // Returns the current external Boolean limit.
-  bool* ExternalBooleanAsLimit() const { return external_boolean_as_limit_; }
+  std::atomic<bool>* ExternalBooleanAsLimit() const {
+    return external_boolean_as_limit_;
+  }
 
   // Sets new time limits. Note that this do not reset the running max nor
   // any registered external boolean or calls to RegisterSigintHandler().
@@ -277,7 +281,7 @@ class TimeLimit {
   double deterministic_limit_;
   double elapsed_deterministic_time_;
 
-  bool* external_boolean_as_limit_;
+  std::atomic<bool>* external_boolean_as_limit_;
 
 #ifdef HAS_PERF_SUBSYSTEM
   // PMU counter to help count the instructions.
@@ -412,7 +416,8 @@ inline double TimeLimit::ReadInstructionCounter() {
 }
 
 inline bool TimeLimit::LimitReached() {
-  if (external_boolean_as_limit_ != nullptr && *external_boolean_as_limit_) {
+  if (external_boolean_as_limit_ != nullptr &&
+      external_boolean_as_limit_->load()) {
     return true;
   }
 

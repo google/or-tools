@@ -3019,10 +3019,10 @@ CpSolverResponse SolveCpModelParallel(
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   CHECK(!params.enumerate_all_solutions());
 
-  // This is a bit hacky. If the provided TimeLimit as a "stopped" Boolean, we
+  // This is a bit hacky. If the provided TimeLimit as a "`" Boolean, we
   // use this one instead.
-  bool stopped_boolean = false;
-  bool* stopped = &stopped_boolean;
+  std::atomic<bool> stopped_boolean(false);
+  std::atomic<bool>* stopped = &stopped_boolean;
   if (model->GetOrCreate<TimeLimit>()->ExternalBooleanAsLimit() != nullptr) {
     stopped = model->GetOrCreate<TimeLimit>()->ExternalBooleanAsLimit();
   }
@@ -3045,11 +3045,10 @@ CpSolverResponse SolveCpModelParallel(
   auto fix_walltime = ::operations_research::util::MakeCleanup(
       [&timer, &best_response]() { best_response.set_wall_time(timer.Get()); });
 
-  // In the LNS threads, we wait for this notification before starting work.
-  absl::Notification first_solution_found_or_search_finished;
-
   absl::Mutex mutex;
   const int num_search_workers = params.num_search_workers();
+  // In the LNS threads, we wait for this notification before starting work.
+  absl::Notification first_solution_found_or_search_finished;
   VLOG(1) << "Starting parallel search with " << num_search_workers
           << " workers.";
   ThreadPool pool("Parallel_search", num_search_workers);
@@ -3293,10 +3292,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           observer(copy);
         }
       };
-
-#if defined(__PORTABLE_PLATFORM__)
-  model->GetOrCreate<SatParameters>()->set_num_search_workers(1);
-#endif  // __PORTABLE_PLATFORM__
 
   CpSolverResponse response;
   if (params.num_search_workers() > 1) {

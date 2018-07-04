@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -219,7 +220,7 @@ int Run() {
   // completely replaced by the more general CpModelProto.
   if (!cp_model.variables().empty()) {
     problem.Clear();  // We no longer need it, release memory.
-    bool stopped = false;
+    std::atomic<bool> stopped(false);
     Model model;
     model.Add(NewSatParameters(parameters));
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
