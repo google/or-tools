@@ -65,7 +65,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
  -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc \
  -module operations_research_linear_solver \
  -namespace $(CLR_ORTOOLS_DLL_NAME).LinearSolver \
- -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
+ -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver \
  $(SRC_DIR)$Sortools$Slinear_solver$Scsharp$Slinear_solver.i
 
@@ -88,7 +88,7 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
  -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc \
  -module operations_research_constraint_solver \
  -namespace $(CLR_ORTOOLS_DLL_NAME).ConstraintSolver \
- -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
+ -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Scsharp$Srouting.i
 	$(SED) -i -e 's/CSharp_new_Solver/CSharp_new_CpSolver/g' \
@@ -127,7 +127,7 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc: \
  -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc \
  -module operations_research_algorithms \
  -namespace $(CLR_ORTOOLS_DLL_NAME).Algorithms \
- -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
+ -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms \
  $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
 
@@ -148,7 +148,7 @@ $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc: \
  -o $(GEN_PATH)$Sortools$Sgraph$Sgraph_csharp_wrap.cc \
  -module operations_research_graph \
  -namespace $(CLR_ORTOOLS_DLL_NAME).Graph \
- -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
+ -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph \
  $(SRC_DIR)$Sortools$Sgraph$Scsharp$Sgraph.i
 
@@ -170,7 +170,7 @@ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
  -o $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc \
  -module operations_research_sat \
  -namespace $(CLR_ORTOOLS_DLL_NAME).Sat \
- -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" \
+ -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat \
  $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
 
@@ -282,7 +282,7 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
  $(GEN_DIR)/com/google/ortools/sat \
  $(BIN_DIR)
 	$(DYNAMIC_LD) \
- $(LD_OUT)$(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) \
+ $(LD_OUT)$(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O \
@@ -340,7 +340,7 @@ test_dotnet: dotnet
  --packages "ortools$Sdotnet$Spackages" \
  "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
 	$(MKDIR_P) .$S$(TEMP_DOTNET_TEST_DIR)
-	$(COPY) $(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) .$S$(TEMP_DOTNET_TEST_DIR)
+	$(COPY) $(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) .$S$(TEMP_DOTNET_TEST_DIR)
 	"$(DOTNET_EXECUTABLE)" clean \
  "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
 	"$(DOTNET_EXECUTABLE)" build \
@@ -395,14 +395,15 @@ pkg_dotnet-upload: nuget_archive
 detect_dotnet:
 	@echo Relevant info for the dotnet build:
 	@echo PROTOC = $(PROTOC)
+	@echo DOTNET_EXECUTABLE = $(DOTNET_EXECUTABLE)
+	@echo NUGET_EXECUTABLE = $(NUGET_EXECUTABLE)
+	@echo SWIG_PYTHON_LIB_SUFFIX = $(SWIG_PYTHON_LIB_SUFFIX)
 	@echo CLR_PROTOBUF_DLL_NAME = $(CLR_PROTOBUF_DLL_NAME)
 	@echo CLR_ORTOOLS_IMPORT_DLL_NAME = $(CLR_ORTOOLS_IMPORT_DLL_NAME)
 	@echo CLR_ORTOOLS_DLL_NAME = $(CLR_ORTOOLS_DLL_NAME)
 	@echo CLR_ORTOOLS_FSHARP_DLL_NAME = $(CLR_ORTOOLS_FSHARP_DLL_NAME)
 	@echo CLR_ORTOOLS_TEST_DLL_NAME = $(CLR_ORTOOLS_TEST_DLL_NAME)
 	@echo CLR_ORTOOLS_FSHARP_TEST_DLL_NAME = $(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)
-	@echo DOTNET_EXECUTABLE = $(DOTNET_EXECUTABLE)
-	@echo NUGET_EXECUTABLE = $(NUGET_EXECUTABLE)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

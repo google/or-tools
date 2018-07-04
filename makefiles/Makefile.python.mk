@@ -117,7 +117,7 @@ clean_python:
 	-$(DELREC) ortools$Sutil$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_pywrap*
-	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_PYTHON_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
 
@@ -152,9 +152,9 @@ $(GEN_DIR)/ortools/__init__.py: | $(GEN_DIR)/ortools
 ##  Python Wrappers  ##
 #######################
 # pywrapknapsack_solver
-PYALGORITHMS_LIBS = $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX)
+PYALGORITHMS_LIBS = $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX)
 ifeq ($(PLATFORM),MACOSX)
-PYALGORITHMS_LDFLAGS = -install_name @rpath/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) #
+PYALGORITHMS_LDFLAGS = -install_name @rpath/_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX) #
 endif
 pyalgorithms: $(PYALGORITHMS_LIBS)
 
@@ -183,22 +183,22 @@ $(OBJ_DIR)/swig/knapsack_solver_python_wrap.$O: \
 $(PYALGORITHMS_LIBS): $(OBJ_DIR)/swig/knapsack_solver_python_wrap.$O $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) \
  $(PYALGORITHMS_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) \
+ $(LD_OUT)$(LIB_DIR)$S_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Sknapsack_solver_python_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(SYS_LNK) \
  $(PYTHON_LNK) \
  $(PYTHON_LDFLAGS)
 ifeq ($(SYSTEM),win)
-	copy $(LIB_DIR)$S_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(GEN_PATH)\\ortools\\algorithms\\_pywrapknapsack_solver.pyd
+	copy $(LIB_DIR)$S_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\algorithms\\_pywrapknapsack_solver.pyd
 else
 	cp $(PYALGORITHMS_LIBS) $(GEN_PATH)/ortools/algorithms
 endif
 
 # pywrapgraph
-PYGRAPH_LIBS = $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX)
+PYGRAPH_LIBS = $(LIB_DIR)/_pywrapgraph.$(SWIG_PYTHON_LIB_SUFFIX)
 ifeq ($(PLATFORM),MACOSX)
-PYGRAPH_LDFLAGS = -install_name @rpath/_pywrapgraph.$(SWIG_LIB_SUFFIX) #
+PYGRAPH_LDFLAGS = -install_name @rpath/_pywrapgraph.$(SWIG_PYTHON_LIB_SUFFIX) #
 endif
 pygraph: $(PYGRAPH_LIBS)
 
@@ -230,22 +230,22 @@ $(OBJ_DIR)/swig/graph_python_wrap.$O: \
 $(PYGRAPH_LIBS): $(OBJ_DIR)/swig/graph_python_wrap.$O $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) \
  $(PYGRAPH_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S_pywrapgraph.$(SWIG_LIB_SUFFIX) \
+ $(LD_OUT)$(LIB_DIR)$S_pywrapgraph.$(SWIG_PYTHON_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Sgraph_python_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(SYS_LNK) \
  $(PYTHON_LNK) \
  $(PYTHON_LDFLAGS)
 ifeq ($(SYSTEM),win)
-	copy $(LIB_DIR)$S_pywrapgraph.$(SWIG_LIB_SUFFIX) $(GEN_PATH)\\ortools\\graph\\_pywrapgraph.pyd
+	copy $(LIB_DIR)$S_pywrapgraph.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\graph\\_pywrapgraph.pyd
 else
 	cp $(PYGRAPH_LIBS) $(GEN_PATH)/ortools/graph
 endif
 
 # pywrapcp
-PYCP_LIBS = $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX)
+PYCP_LIBS = $(LIB_DIR)/_pywrapcp.$(SWIG_PYTHON_LIB_SUFFIX)
 ifeq ($(PLATFORM),MACOSX)
-PYCP_LDFLAGS = -install_name @rpath/_pywrapcp.$(SWIG_LIB_SUFFIX) #
+PYCP_LDFLAGS = -install_name @rpath/_pywrapcp.$(SWIG_PYTHON_LIB_SUFFIX) #
 endif
 pycp: $(PYCP_LIBS)
 
@@ -325,22 +325,22 @@ $(OBJ_DIR)/swig/constraint_solver_python_wrap.$O: \
 $(PYCP_LIBS): $(OBJ_DIR)/swig/constraint_solver_python_wrap.$O $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) \
  $(PYCP_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S_pywrapcp.$(SWIG_LIB_SUFFIX) \
+ $(LD_OUT)$(LIB_DIR)$S_pywrapcp.$(SWIG_PYTHON_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Sconstraint_solver_python_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(SYS_LNK) \
  $(PYTHON_LNK) \
  $(PYTHON_LDFLAGS)
 ifeq ($(SYSTEM),win)
-	copy $(LIB_DIR)$S_pywrapcp.$(SWIG_LIB_SUFFIX) $(GEN_PATH)\\ortools\\constraint_solver\\_pywrapcp.pyd
+	copy $(LIB_DIR)$S_pywrapcp.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\constraint_solver\\_pywrapcp.pyd
 else
 	cp $(PYCP_LIBS) $(GEN_PATH)/ortools/constraint_solver
 endif
 
 # pywraplp
-PYLP_LIBS = $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX)
+PYLP_LIBS = $(LIB_DIR)/_pywraplp.$(SWIG_PYTHON_LIB_SUFFIX)
 ifeq ($(PLATFORM),MACOSX)
-PYLP_LDFLAGS = -install_name @rpath/_pywraplp.$(SWIG_LIB_SUFFIX) #
+PYLP_LDFLAGS = -install_name @rpath/_pywraplp.$(SWIG_PYTHON_LIB_SUFFIX) #
 endif
 pylp: $(PYLP_LIBS)
 
@@ -384,22 +384,22 @@ $(OBJ_DIR)/swig/linear_solver_python_wrap.$O: \
 $(PYLP_LIBS): $(OBJ_DIR)/swig/linear_solver_python_wrap.$O $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) \
  $(PYLP_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S_pywraplp.$(SWIG_LIB_SUFFIX) \
+ $(LD_OUT)$(LIB_DIR)$S_pywraplp.$(SWIG_PYTHON_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Slinear_solver_python_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(SYS_LNK) \
  $(PYTHON_LNK) \
  $(PYTHON_LDFLAGS)
 ifeq ($(SYSTEM),win)
-	copy $(LIB_DIR)$S_pywraplp.$(SWIG_LIB_SUFFIX) $(GEN_PATH)\\ortools\\linear_solver\\_pywraplp.pyd
+	copy $(LIB_DIR)$S_pywraplp.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\linear_solver\\_pywraplp.pyd
 else
 	cp $(PYLP_LIBS) $(GEN_PATH)/ortools/linear_solver
 endif
 
 # pywrapsat
-PYSAT_LIBS = $(LIB_DIR)/_pywrapsat.$(SWIG_LIB_SUFFIX)
+PYSAT_LIBS = $(LIB_DIR)/_pywrapsat.$(SWIG_PYTHON_LIB_SUFFIX)
 ifeq ($(PLATFORM),MACOSX)
-PYSAT_LDFLAGS = -install_name @rpath/_pywrapsat.$(SWIG_LIB_SUFFIX) #
+PYSAT_LDFLAGS = -install_name @rpath/_pywrapsat.$(SWIG_PYTHON_LIB_SUFFIX) #
 endif
 pysat: $(PYSAT_LIBS)
 
@@ -442,22 +442,22 @@ $(OBJ_DIR)/swig/sat_python_wrap.$O: \
 $(PYSAT_LIBS): $(OBJ_DIR)/swig/sat_python_wrap.$O $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) \
  $(PYSAT_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S_pywrapsat.$(SWIG_LIB_SUFFIX) \
+ $(LD_OUT)$(LIB_DIR)$S_pywrapsat.$(SWIG_PYTHON_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Ssat_python_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(SYS_LNK) \
  $(PYTHON_LNK) \
  $(PYTHON_LDFLAGS)
 ifeq ($(SYSTEM),win)
-	copy $(LIB_DIR)$S_pywrapsat.$(SWIG_LIB_SUFFIX) $(GEN_PATH)\\ortools\\sat\\_pywrapsat.pyd
+	copy $(LIB_DIR)$S_pywrapsat.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\sat\\_pywrapsat.pyd
 else
 	cp $(PYSAT_LIBS) $(GEN_PATH)/ortools/sat
 endif
 
 # pywraprcpsp
-PYDATA_LIBS = $(LIB_DIR)/_pywraprcpsp.$(SWIG_LIB_SUFFIX)
+PYDATA_LIBS = $(LIB_DIR)/_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX)
 ifeq ($(PLATFORM),MACOSX)
-PYRCPSP_LDFLAGS = -install_name @rpath/_pywraprcpsp.$(SWIG_LIB_SUFFIX) #
+PYRCPSP_LDFLAGS = -install_name @rpath/_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX) #
 endif
 pyrcpsp: $(PYDATA_LIBS)
 
@@ -493,14 +493,14 @@ $(OBJ_DIR)/swig/rcpsp_python_wrap.$O: \
 $(PYDATA_LIBS): $(OBJ_DIR)/swig/rcpsp_python_wrap.$O $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) \
  $(PYRCPSP_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S_pywraprcpsp.$(SWIG_LIB_SUFFIX) \
+ $(LD_OUT)$(LIB_DIR)$S_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Srcpsp_python_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(SYS_LNK) \
  $(PYTHON_LNK) \
  $(PYTHON_LDFLAGS)
 ifeq ($(SYSTEM),win)
-	copy $(LIB_DIR)$S_pywraprcpsp.$(SWIG_LIB_SUFFIX) $(GEN_PATH)\\ortools\\data\\_pywraprcpsp.pyd
+	copy $(LIB_DIR)$S_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\data\\_pywraprcpsp.pyd
 else
 	cp $(PYDATA_LIBS) $(GEN_PATH)/ortools/data
 endif
@@ -752,6 +752,7 @@ endif
 	@echo SWIG_BINARY = $(SWIG_BINARY)
 	@echo SWIG_INC = $(SWIG_INC)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
+	@echo SWIG_PYTHON_LIB_SUFFIX = $(SWIG_PYTHON_LIB_SUFFIX)
 	@echo SET_PYTHONPATH = "$(SET_PYTHONPATH)"
 ifeq ($(SYSTEM),win)
 	@echo off & echo(

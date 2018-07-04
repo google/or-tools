@@ -52,12 +52,12 @@ clean_csharp: clean_dotnet_generated
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.pdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.netmodule
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.lib
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.pdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.netmodule
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)
 	-$(DEL) $(addsuffix $(CLR_EXE_SUFFIX).exe, $(addprefix $(BIN_DIR)$S, $(CSHARP_EXAMPLES)))
 	-$(DEL) $(addsuffix $(CLR_EXE_SUFFIX).exe, $(addprefix $(BIN_DIR)$S, $(CSHARP_TESTS)))
 	-$(DEL) examples$Scsharp$SCsharp_examples.sln
@@ -70,7 +70,7 @@ clean_netstandard: clean_dotnet_generated
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.pdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.dll
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)
 
 clean_dotnet_generated:
 	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*csharp_wrap*
@@ -257,7 +257,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/base/base.i \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(LP_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research_linear_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).LinearSolver -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)$Sortools$Slinear_solver$Scsharp$Slinear_solver.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research_linear_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).LinearSolver -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)$Sortools$Slinear_solver$Scsharp$Slinear_solver.i
 
 $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O: $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)/ortools/linear_solver/linear_solver_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O
@@ -269,7 +269,7 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(SRC_DIR)/ortools/util/csharp/functions.i \
 	$(CP_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research_constraint_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).ConstraintSolver -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)$Sortools$Sconstraint_solver$Scsharp$Srouting.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research_constraint_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).ConstraintSolver -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)$Sortools$Sconstraint_solver$Scsharp$Srouting.i
 	$(SED) -i -e 's/CSharp_new_Solver/CSharp_new_CpSolver/g' $(GEN_PATH)/com/google/ortools/constraintsolver/*cs $(GEN_PATH)/ortools/constraint_solver/constraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_delete_Solver/CSharp_delete_CpSolver/g' $(GEN_PATH)/com/google/ortools/constraintsolver/*cs $(GEN_PATH)/ortools/constraint_solver/constraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_Solver/CSharp_CpSolver/g' $(GEN_PATH)/com/google/ortools/constraintsolver/*cs $(GEN_PATH)/ortools/constraint_solver/constraint_solver_csharp_wrap.*
@@ -286,7 +286,7 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/base/base.i \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(SRC_DIR)/ortools/algorithms/knapsack_solver.h
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc -module operations_research_algorithms -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Algorithms -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc -module operations_research_algorithms -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Algorithms -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
 
 $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O: $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)/ortools/algorithms/knapsack_solver_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O
@@ -296,7 +296,7 @@ $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/base/base.i \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(GRAPH_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Sgraph$Sgraph_csharp_wrap.cc -module operations_research_graph -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Graph -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph $(SRC_DIR)$Sortools$Sgraph$Scsharp$Sgraph.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Sgraph$Sgraph_csharp_wrap.cc -module operations_research_graph -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Graph -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph $(SRC_DIR)$Sortools$Sgraph$Scsharp$Sgraph.i
 
 $(OBJ_DIR)/swig/graph_csharp_wrap.$O: $(GEN_DIR)/ortools/graph/graph_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sgraph$Sgraph_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O
@@ -307,7 +307,7 @@ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/sat/swig_helper.h \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(SAT_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc -module operations_research_sat -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Sat -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc -module operations_research_sat -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Sat -dllimport "$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
 
 $(OBJ_DIR)/swig/sat_csharp_wrap.$O: $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)/ortools/sat/sat_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O
@@ -384,18 +384,18 @@ ifeq ($(SYSTEM),win)
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LD_OUT)$(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
 else
 	"$(CSHARP_EXECUTABLE)" /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)/ortools/com/google/ortools/util/*.cs $(GEN_PATH)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/ortools/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/ortools/com/google/ortools/sat/*.cs $(GEN_PATH)/com/google/ortools/sat/*.cs $(GEN_PATH)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/ortools/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/ortools/com/google/ortools/algorithms/*.cs $(GEN_PATH)/com/google/ortools/algorithms/*.cs $(GEN_PATH)/com/google/ortools/graph/*.cs $(GEN_PATH)/com/google/ortools/properties/*.cs
-	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
+	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
 endif
 
 $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL): \
-	$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_LIB_SUFFIX) \
+	$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_DOTNET_LIB_SUFFIX) \
 	netstandard_create_obj_dir \
 	$(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs
 	$(PATH_TO_DOTNET_EXE) restore $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj
 	$(PATH_TO_DOTNET_EXE) build $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -f netstandard2.0 -o:$(realpath $(BIN_DIR))$S
-	$(PATH_TO_DOTNET_EXE) pack $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -o:$(realpath $(BIN_DIR))$S /p:PackageVersion=$(OR_TOOLS_VERSION)\;TargetRid=$(NETSTANDARD_RUNTIME_IDENTIFIER)\;NativeDllName=$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX)
+	$(PATH_TO_DOTNET_EXE) pack $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -o:$(realpath $(BIN_DIR))$S /p:PackageVersion=$(OR_TOOLS_VERSION)\;TargetRid=$(NETSTANDARD_RUNTIME_IDENTIFIER)\;NativeDllName=$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)
 
-$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_LIB_SUFFIX): \
+$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_DOTNET_LIB_SUFFIX): \
 	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
 	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/sat_csharp_wrap.$O \
@@ -423,7 +423,7 @@ $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_LIB_SUFFIX): \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
 	$(GEN_DIR)/com/google/ortools/sat/CpModel.g.cs \
 	$(OR_TOOLS_LIBS)
-	$(DYNAMIC_LD) $(LD_OUT)$(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
+	$(DYNAMIC_LD) $(LD_OUT)$(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
 
 netstandard_create_obj_dir:
 	$(MKDIR_P) $(NETSTANDARD_OBJ_DIR)
@@ -595,7 +595,7 @@ $(GEN_DIR)/ortools/flatzinc/flatzinc_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(SRC_DIR)/ortools/flatzinc/csharp/flatzinc.i \
 	$(FLATZINC_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -nodefaultctor -csharp -o $(GEN_PATH)$Sortools$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace $(CLR_ORTOOLS_FZ_DLL_NAME) -dllimport "$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)$Sortools$Sflatzinc$Scsharp$Sflatzinc.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -nodefaultctor -csharp -o $(GEN_PATH)$Sortools$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace $(CLR_ORTOOLS_FZ_DLL_NAME) -dllimport "$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)$Sortools$Sflatzinc$Scsharp$Sflatzinc.i
 
 $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: \
 	$(GEN_DIR)/ortools/flatzinc/flatzinc_csharp_wrap.cc
@@ -611,7 +611,7 @@ ifeq ($(SYSTEM),win)
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LD_OUT)$(BIN_DIR)$S$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS)
 else # ifeq ($(SYSTEM),win)
 	"$(CSHARP_EXECUTABLE)" /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(GEN_PATH)/com/google/ortools/flatzinc/*.cs $(GEN_PATH)/com/google/ortools/flatzinc/properties/*cs
-	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS)
+	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS)
 endif # ifeq ($(SYSTEM),win)
 
 $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe: \
