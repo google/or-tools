@@ -113,7 +113,7 @@ We also provide experimental CMake support.<br>Please check the
 The best way to learn how to use OR-Tools is to follow the tutorials in our
 developer guide:
 
-https://developers.google.com/optimization/introduction/using
+https://developers.google.com/optimization/introduction/get-started
 
 If you want to learn from code examples, take a look at the examples in the
 [examples](examples) directory.
