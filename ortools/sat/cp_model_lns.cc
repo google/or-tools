@@ -42,9 +42,10 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
   if (focus_on_decision_variables) {
     for (const auto& search_strategy : model_proto_.search_strategy()) {
       for (const int var : search_strategy.variables()) {
-        if (!active_variables_set_[var] && !IsConstant(var)) {
-          active_variables_set_[var] = true;
-          active_variables_.push_back(var);
+        const int pos_var = PositiveRef(var);
+        if (!active_variables_set_[pos_var] && !IsConstant(pos_var)) {
+          active_variables_set_[pos_var] = true;
+          active_variables_.push_back(pos_var);
         }
       }
     }
