@@ -381,12 +381,11 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
   if (num_policies == 0) return SatSolver::FEASIBLE;
   CHECK_EQ(num_policies, restart_policies.size());
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
-  const SatParameters* const params = model->Get<SatParameters>();
-  const bool use_core = params != nullptr && params->optimize_with_core();
   const ObjectiveSynchronizationHelper* helper =
       model->Get<ObjectiveSynchronizationHelper>();
   const bool synchronize_objective =
-      !use_core && helper != nullptr && helper->get_external_bound != nullptr &&
+      solver->AssumptionLevel() == 0 && helper != nullptr &&
+      helper->get_external_bound != nullptr &&
       helper->objective_var != kNoIntegerVariable;
 
   // Note that it is important to do the level-zero propagation if it wasn't

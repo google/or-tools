@@ -1351,6 +1351,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
           coefficients[i] * IntegerValue(model->Get(LowerBound(variables[i])));
     }
 
+    // The situation is tricky when best_objective is an externally provided
+    // bound, but we don't have any solution lower or equal to this bound yet.
+    if (objective > best_objective) return true;
     if (objective >= best_objective && num_solutions > 0) return true;
 
     ++num_solutions;

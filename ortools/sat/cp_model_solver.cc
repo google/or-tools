@@ -1448,7 +1448,13 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   std::string result;
-  absl::StrAppend(&result, "Model '", model_proto.name(), "':\n");
+  if (model_proto.has_objective()) {
+    absl::StrAppend(&result, "Optimization model '", model_proto.name(),
+                    "':\n");
+  } else {
+    absl::StrAppend(&result, "Satisfaction model '", model_proto.name(),
+                    "':\n");
+  }
 
   for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
     absl::StrAppend(
