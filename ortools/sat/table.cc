@@ -395,7 +395,13 @@ std::function<void(Model*)> TransitionConstraint(
                                            : IntegerValue(transition[2]));
       }
 
+      // Exactly one tuple literal is true.
+      model->Add(ExactlyOneConstraint(tuple_literals));
+
       // Fully instantiate vars[time].
+      // Tricky: because we started adding constraints that can propagate, the
+      // possible values returned by encoding might not contains all the value
+      // computed in transition_values.
       {
         std::vector<IntegerValue> s = transition_values;
         gtl::STLSortAndRemoveDuplicates(&s);
@@ -418,9 +424,7 @@ std::function<void(Model*)> TransitionConstraint(
         }
       }
 
-      // For each possible out states, create one Boolean variable. Note that
-      // enforcing the exactly one constraint on them result in a better
-      // propagation.
+      // For each possible out states, create one Boolean variable.
       {
         std::vector<IntegerValue> s = out_states;
         gtl::STLSortAndRemoveDuplicates(&s);
@@ -437,18 +441,17 @@ std::function<void(Model*)> TransitionConstraint(
             out_encoding[state] = l;
             state_literals.push_back(l);
           }
-          model->Add(ExactlyOneConstraint(state_literals));
         }
       }
 
       // Now we link everything together.
-      if (in_encoding.size() > 1) {
+      if (!in_encoding.empty()) {
         ProcessOneColumn(tuple_literals, in_states, in_encoding, model);
       }
-      if (encoding.size() > 1) {
+      if (!encoding.empty()) {
         ProcessOneColumn(tuple_literals, transition_values, encoding, model);
       }
-      if (out_encoding.size() > 1) {
+      if (!out_encoding.empty()) {
         ProcessOneColumn(tuple_literals, out_states, out_encoding, model);
       }
       in_encoding = out_encoding;
