@@ -41,6 +41,7 @@ MKDIR = mkdir
 MKDIR_P = mkdir -p
 RENAME = mv
 SED = sed
+TAR = tar
 TOUCH = touch
 WHICH = which
 

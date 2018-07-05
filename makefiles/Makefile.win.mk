@@ -44,14 +44,18 @@ CPSEP=;
 COPY = copy
 COPYREC = xcopy
 DEL = del
-DELREC = tools\rm.exe -rf
-GREP = tools\grep.exe
+DELREC = tools\win\rm.exe -rf
+GREP = tools\win\grep.exe
 MKDIR = md
-MKDIR_P = tools\mkdir.exe -p
+MKDIR_P = tools\win\mkdir.exe -p
 RENAME = rename
-SED = tools\sed.exe
-TOUCH = tools\touch.exe
-WHICH = tools\which.exe
+SED = tools\win\sed.exe
+TAR = tools\win\tar.exe
+TOUCH = tools\win\touch.exe
+UNZIP = tools\win\unzip.exe
+ZIP = tools\win\zip.exe
+WGET = tools\win\wget.exe
+WHICH = tools\win\which.exe
 
 # We Can't force SHELL to cmd.exe if sh.exe is in the PATH
 # cf https://www.gnu.org/software/make/manual/html_node/Choosing-the-Shell.html

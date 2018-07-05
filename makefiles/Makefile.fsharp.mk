@@ -3,10 +3,10 @@
 help_fsharp:
 	@echo Use one of the following F# targets:
 ifeq ($(SYSTEM),win)
-	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 	@echo off & echo(
 else
-	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.fsharp.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
 	@echo
 endif
 

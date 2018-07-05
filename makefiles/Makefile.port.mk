@@ -160,7 +160,7 @@ ifeq ($(SYSTEM),win)
   # OS Specific
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)
-  OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
+  OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\win\\sed.exe -e "s/\\/\\\\/g" | tools\\win\\sed.exe -e "s/ //g")
   CODEPORT = OpSys-Windows
 
   # Compiler specific
@@ -202,7 +202,7 @@ ifeq ($(SYSTEM),win)
 
   #Detect csc
   ifeq ($(PATH_TO_CSHARP_COMPILER),)
-    DETECTED_CSC_BINARY := $(shell tools\\which.exe csc 2>nul)
+    DETECTED_CSC_BINARY := $(shell tools\\win\\which.exe csc 2>nul)
     ifeq ($(DETECTED_CSC_BINARY),)
       SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the csharp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
     else
@@ -214,7 +214,7 @@ ifeq ($(SYSTEM),win)
 
   #Detect dotnet
   ifeq ($(PATH_TO_DOTNET_COMPILER),)
-    DETECTED_DOTNET_BINARY := $(shell tools\\which.exe dotnet 2>nul)
+    DETECTED_DOTNET_BINARY := $(shell tools\\win\\which.exe dotnet 2>nul)
     ifeq ($(DETECTED_DOTNET_BINARY),)
       SELECTED_DOTNET_BINARY = PATH_TO_DOTNET_COMPILER =\# dotnet was not found. Set this variable to the path of dotnet to build the fsharp files. (ex: PATH_TO_DOTNET_COMPILER = C:\Program Files\dotnet\dotnet.exe)
     else

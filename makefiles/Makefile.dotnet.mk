@@ -3,10 +3,10 @@
 help_dotnet:
 	@echo Use one of the following dotnet targets:
 ifeq ($(SYSTEM),win)
-	@tools\grep.exe "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.dotnet.mk | tools\sed.exe "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
+	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.dotnet.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/"
 	@echo off & echo(
 else
-	@grep "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.dotnet.mk | sed "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
+	@$(GREP) "^.PHONY: .* #" $(CURDIR)/makefiles/Makefile.dotnet.mk | $(SED) "s/\.PHONY: \(.*\) # \(.*\)/\1\t\2/" | expand -t20
 	@echo
 endif
 

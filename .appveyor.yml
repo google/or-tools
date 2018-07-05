@@ -35,26 +35,26 @@ before_build:
   - if "%VS%"=="2017" call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
   - if "%VS%"=="2015" call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
   - if "%VS%"=="2015" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
-  - tools\which csc.exe
-  - tools\which fsc.exe
-  - tools\which dotnet.exe
+  - tools\win\which.exe csc.exe
+  - tools\win\which.exe fsc.exe
+  - tools\win\which.exe dotnet.exe
   - cmake --version
   - set PATH=C:\Python36-x64;%PATH%
-  - tools\which python.exe
+  - tools\win\which.exe python.exe
   - python -V
   - python -m pip install virtualenv wheel six
 #  - set PATH="C:\Program Files\Java\jdk1.8.0\bin";%PATH%
   - if "%BUILDER%"=="cmake" cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release -G "%CMAKE_GENERATOR%"
   - if "%BUILDER%"=="make" del "C:\Program Files\Git\usr\bin\sh.exe"
-  - if "%BUILDER%"=="make" tools\make detect
+  - if "%BUILDER%"=="make" tools\make.exe detect
 
 build_script:
   - if "%BUILDER%"=="cmake" cmake --build build --config Release --target ALL_BUILD -- %MSBUILD_FLAGS%
-  - if "%BUILDER%"=="make" tools\make third_party
-  - if "%BUILDER%"=="make" tools\make help_%LANGUAGE%
-  - if "%BUILDER%"=="make" tools\make %LANGUAGE%
-  - if "%BUILDER%"=="make" tools\make test_%LANGUAGE%
-  - if "%LANGUAGE%"=="all" tools\make test_fz
+  - if "%BUILDER%"=="make" tools\make.exe third_party
+  - if "%BUILDER%"=="make" tools\make.exe help_%LANGUAGE%
+  - if "%BUILDER%"=="make" tools\make.exe %LANGUAGE%
+  - if "%BUILDER%"=="make" tools\make.exe test_%LANGUAGE%
+  - if "%LANGUAGE%"=="all" tools\make.exe test_fz
 
 test_script:
   - if "%BUILDER%"=="cmake" cmake --build build --config Release --target RUN_TESTS
