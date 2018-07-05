@@ -282,7 +282,7 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
  $(GEN_DIR)/com/google/ortools/sat \
  $(BIN_DIR)
 	$(DYNAMIC_LD) \
- $(LD_OUT)$(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) \
+ $(LD_OUT)$(BIN_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) \
  $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O \
@@ -323,7 +323,7 @@ clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$Sobj
 	-$(DELREC) ortools$Sdotnet$Spackage
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_csharp_wrap.$O
-	-$(DEL) $(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).*
+	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_PROTOBUF_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_FSHARP_DLL_NAME).*
@@ -340,7 +340,7 @@ test_dotnet: dotnet
  --packages "ortools$Sdotnet$Spackages" \
  "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
 	$(MKDIR_P) .$S$(TEMP_DOTNET_TEST_DIR)
-	$(COPY) $(LIB_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) .$S$(TEMP_DOTNET_TEST_DIR)
+	$(COPY) $(BIN_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) .$S$(TEMP_DOTNET_TEST_DIR)
 	"$(DOTNET_EXECUTABLE)" clean \
  "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
 	"$(DOTNET_EXECUTABLE)" build \
