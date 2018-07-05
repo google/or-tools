@@ -91,7 +91,7 @@ else
 endif
 
 .PHONY: help_all
-help_all: help_usage help_third_party help_cc help_python help_java help_dotnet
+help_all: help_usage help_third_party help_cc help_python help_java help_dotnet help_archive
 
 .PHONY: build_all
 build_all: cc python java dotnet
@@ -102,7 +102,7 @@ test_all: test_cc test_python test_java test_dotnet
 	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
 
 .PHONY: clean_all
-clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat
+clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat clean_archive
 	-$(DELREC) $(BIN_DIR)
 	-$(DELREC) $(LIB_DIR)
 	-$(DELREC) $(OBJ_DIR)
@@ -110,6 +110,6 @@ clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat
 	@echo Or-tools have been cleaned for $(BUILT_LANGUAGES)
 
 .PHONY: detect_all
-detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_dotnet
+detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_dotnet detect_archive
 
 print-%  : ; @echo $* = $($*)

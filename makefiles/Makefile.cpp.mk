@@ -827,6 +827,7 @@ install_dirs:
 .PHONY: install_cc # Install C++ OR-Tools to $(DESTDIR)$(prefix)
 install_cc: install_libortools install_third_party install_doc
 
+.PHONY: install_libortools
 install_libortools: ortoolslibs install_dirs
 	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
 	$(COPY) ortools$Salgorithms$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
@@ -849,6 +850,7 @@ install_libortools: ortoolslibs install_dirs
 	$(COPY) $(GEN_PATH)$Sortools$Sutil$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
 
+.PHONY: install_third_party
 install_third_party: install_dirs
 ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude"

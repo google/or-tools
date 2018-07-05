@@ -31,6 +31,7 @@ temp_fz_test/
 temp-python*
 temp_dotnet/
 temp_dotnet_test/
+temp_archive/
 lib/
 install/
 examples/csharp/solution/*.csproj
