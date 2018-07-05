@@ -176,6 +176,7 @@ ortoolslibs: third_party_check $(OR_TOOLS_LIBS)
 
 # Specific libraries for examples, and flatzinc.
 CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
+CVRPTW_PATH = $(subst /,$S,$(CVRPTW_LIBS))
 CVRPTW_DEPS = \
 	$(EX_DIR)/cpp/cvrptw_lib.h \
 	$(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
@@ -186,6 +187,7 @@ endif
 cvrptwlibs: $(CVRPTW_LIBS)
 
 DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
+DIMACS_PATH = $(subst /,$S,$(DIMACS_LIBS))
 DIMACS_DEPS = \
 	$(EX_DIR)/cpp/parse_dimacs_assignment.h \
 	$(EX_DIR)/cpp/print_dimacs_assignment.h \
@@ -197,6 +199,7 @@ endif
 dimacslibs: $(DIMACS_LIBS)
 
 FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
+FAP_PATH = $(subst /,$S,$(FAP_LIBS))
 FAP_DEPS = \
 	$(EX_DIR)/cpp/fap_model_printer.h \
 	$(EX_DIR)/cpp/fap_parser.h \
