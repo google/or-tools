@@ -14,7 +14,7 @@ To reference a particular folder on linux, you can explicitly set the **DYLD_LIB
 
 ## CSharp/FSharp project examples
 
-By default all the examples are compiled in a console applicaiton with the startup object being the **Classname.Main** so that when compiled the entrypoint will be known.
+By default all the examples are compiled in a console application with the startup object being the **Classname.Main** so that when compiled the entrypoint will be known.
 
 ## NetFx/FSharp compiler examples
 
