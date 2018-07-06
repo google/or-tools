@@ -820,6 +820,7 @@ install_dirs:
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sport"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
 
@@ -839,8 +840,9 @@ install_libortools: ortoolslibs install_dirs
 	$(COPY) ortools$Sgraph$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
 	$(COPY) $(GEN_PATH)$Sortools$Sgraph$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
 	$(COPY) ortools$Slinear_solver$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
-	$(COPY) ortools$Slp_data$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
 	$(COPY) $(GEN_PATH)$Sortools$Slinear_solver$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
+	$(COPY) ortools$Slp_data$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
+	$(COPY) ortools$Sport$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sport"
 	$(COPY) ortools$Ssat$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
 	$(COPY) $(GEN_PATH)$Sortools$Ssat$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
 	$(COPY) ortools$Sutil$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
