@@ -213,6 +213,7 @@ endif
 faplibs: $(FAP_LIBS)
 
 FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$L
+FLATZINC_PATH = $(subst /,$S,$(FLATZINC_LIBS))
 FLATZINC_DEPS = \
 	$(SRC_DIR)/ortools/flatzinc/checker.h \
 	$(SRC_DIR)/ortools/flatzinc/constraints.h \
