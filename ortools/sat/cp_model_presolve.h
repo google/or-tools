@@ -44,6 +44,9 @@ namespace sat {
 // inside the model. We can add a IntegerVariableProto::initial_index;
 void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping);
+void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
+                     CpModelProto* mapping_model,
+                     std::vector<int>* postsolve_mapping);
 
 // Replaces all the instance of a variable i (and the literals referring to it)
 // by mapping[i]. The definition of variables i is also moved to its new index.

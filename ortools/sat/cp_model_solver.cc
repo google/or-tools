@@ -1468,8 +1468,13 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         "\n");
   }
 
-  absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(), "\n");
-  if (num_vars_per_domains.size() < 20) {
+  const std::string objective_string =
+      model_proto.has_objective()
+          ? StrCat(" (", model_proto.objective().vars_size(), " in objective)")
+          : "";
+  absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
+                  objective_string, "\n");
+  if (num_vars_per_domains.size() < 50) {
     for (const auto& entry : num_vars_per_domains) {
       const std::string temp = absl::StrCat(
           " - ", entry.second, " in ", IntervalsAsString(entry.first), "\n");
@@ -3265,7 +3270,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // Do the actual presolve.
     CpModelProto mapping_proto;
     std::vector<int> postsolve_mapping;
-    PresolveCpModel(&new_model, &mapping_proto, &postsolve_mapping);
+    PresolveCpModel(VLOG_IS_ON(1), &new_model, &mapping_proto,
+                    &postsolve_mapping);
     VLOG(1) << CpModelStats(new_model);
     postprocess_solution = [&model_proto, mapping_proto,
                             postsolve_mapping](CpSolverResponse* response) {
@@ -3330,14 +3336,20 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                             1, random_seed, model);
   } else {
     int num_solutions = 1;
+    const bool has_objective = new_model.has_objective();
     response = SolveCpModelInternal(
         new_model, /*is_real_solve=*/true,
-        [&num_solutions, &model,
+        [&num_solutions, &model, has_objective,
          &observer_function](const CpSolverResponse& response) {
           observer_function(response);
-          VLOG(1) << "Solution #" << num_solutions++
-                  << " obj:" << response.objective_value()
-                  << " num_bool:" << model->Get<SatSolver>()->NumVariables();
+          if (has_objective) {
+            VLOG(1) << "Solution #" << num_solutions++
+                    << " obj:" << response.objective_value()
+                    << " num_bool:" << model->Get<SatSolver>()->NumVariables();
+          } else {
+            VLOG(1) << "Solution #" << num_solutions++
+                    << " num_bool:" << model->Get<SatSolver>()->NumVariables();
+          }
         },
         model);
   }

@@ -236,8 +236,12 @@ bool LinearProgrammingConstraint::Propagate() {
   simplex_.SetParameters(parameters);
   simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
   const auto status = simplex_.Solve(lp_data_, time_limit_);
-  CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "
-                     << status.error_message();
+  if (!status.ok()) {
+    LOG(WARNING) << "The LP solver encountered an error: "
+                 << status.error_message();
+    simplex_.ClearStateForNextSolve();
+    return true;
+  }
 
   // Add cuts and resolve.
   // TODO(user): for the cuts, we scale back and forth, is this really needed?

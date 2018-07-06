@@ -1630,6 +1630,12 @@ void PresolvePureSatPart(PresolveContext* context) {
 // Public API.
 // =============================================================================
 
+void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
+                     std::vector<int>* postsolve_mapping) {
+  return PresolveCpModel(VLOG_IS_ON(1), presolved_model, mapping_model,
+                         postsolve_mapping);
+}
+
 // The presolve works as follow:
 //
 // First stage:
@@ -1645,7 +1651,8 @@ void PresolvePureSatPart(PresolveContext* context) {
 // - All the variables domain will be copied to the mapping_model.
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
-void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
+void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
+                     CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping) {
   PresolveContext context;
   context.working_model = presolved_model;
@@ -2105,19 +2112,21 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
   ApplyVariableMapping(mapping, presolved_model);
 
   // Stats and checks.
-  VLOG(1) << "- " << context.affine_relations.NumRelations()
-          << " affine relations where detected. " << num_affine_relations
-          << " where kept.";
-  VLOG(1) << "- " << context.var_equiv_relations.NumRelations()
-          << " variable equivalence relations where detected.";
-  std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
-                                          context.stats_by_rule_name.end());
-  for (const auto& entry : sorted_rules) {
-    if (entry.second == 1) {
-      VLOG(1) << "- rule '" << entry.first << "' was applied 1 time.";
-    } else {
-      VLOG(1) << "- rule '" << entry.first << "' was applied " << entry.second
-              << " times.";
+  if (log_info) {
+    LOG(INFO) << "- " << context.affine_relations.NumRelations()
+              << " affine relations where detected. " << num_affine_relations
+              << " where kept.";
+    LOG(INFO) << "- " << context.var_equiv_relations.NumRelations()
+              << " variable equivalence relations where detected.";
+    std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
+                                            context.stats_by_rule_name.end());
+    for (const auto& entry : sorted_rules) {
+      if (entry.second == 1) {
+        LOG(INFO) << "- rule '" << entry.first << "' was applied 1 time.";
+      } else {
+        LOG(INFO) << "- rule '" << entry.first << "' was applied "
+                  << entry.second << " times.";
+      }
     }
   }
   CHECK_EQ("", ValidateCpModel(*presolved_model));
