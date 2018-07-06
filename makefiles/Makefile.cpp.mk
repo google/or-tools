@@ -806,7 +806,7 @@ rcc: $(BIN_DIR)/$(basename $(notdir $(EX)))$E
 # ref: https://www.gnu.org/prep/standards/html_node/Directory-Variables.html#index-prefix
 # ref: https://www.gnu.org/prep/standards/html_node/DESTDIR.html
 install_dirs:
-	-$(MKDIR) "$(DESTDIR)$(prefix)"
+	-$(MKDIR_P) "$(DESTDIR)$(prefix)"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sbin"
@@ -874,7 +874,6 @@ ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 endif
 
 install_doc:
-	-$(DELREC) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
 	-$(MKDIR_P) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
