@@ -7,7 +7,10 @@ SRC_DIR = $(OR_ROOT).
 EX_DIR  = $(OR_ROOT)examples
 GEN_DIR = $(OR_ROOT)ortools/gen
 GEN_PATH = $(subst /,$S,$(GEN_DIR))
+JAVA_EX_DIR  = $(OR_ROOT)examples/java
+JAVA_EX_PATH = $(subst /,$S,$(JAVA_EX_DIR))
 OBJ_DIR = $(OR_ROOT)objs
+CLASS_DIR = $(OR_ROOT)classes
 LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
 INC_DIR = $(OR_ROOT).
@@ -155,7 +158,6 @@ ifeq ($(PLATFORM),LINUX)
   SWIG_DOTNET_LIB_SUFFIX = so
   LINK_CMD = $(DYNAMIC_LD)
   PRE_LIB = -L$(OR_ROOT_FULL)/lib -l
-  #PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
   POST_LIB =
   LINK_FLAGS = \
  -Wl,-rpath,"\$$ORIGIN" \

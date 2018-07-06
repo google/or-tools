@@ -24,7 +24,8 @@ or-tools*.zip
 bin/
 ortools/gen/
 objs/
-temp/
+classes/
+temp_test/
 temp_fz/
 temp_fz_test/
 temp-python*

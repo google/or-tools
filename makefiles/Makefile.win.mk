@@ -16,13 +16,16 @@ STATIC_LIB_SUFFIX = lib
 LINK_CMD = lib
 STATIC_LINK_CMD = lib
 
-LIB_DIR = $(OR_ROOT)lib
-BIN_DIR = $(OR_ROOT)bin
-GEN_DIR = $(OR_ROOT)ortools/gen
-GEN_PATH = $(subst /,$S,$(GEN_DIR))
-OBJ_DIR = $(OR_ROOT)objs
 SRC_DIR = $(OR_ROOT).
 EX_DIR  = $(OR_ROOT)examples
+GEN_DIR = $(OR_ROOT)ortools/gen
+GEN_PATH = $(subst /,$S,$(GEN_DIR))
+JAVA_EX_DIR  = $(OR_ROOT)examples/java
+JAVA_EX_PATH = $(subst /,$S,$(JAVA_EX_DIR))
+OBJ_DIR = $(OR_ROOT)objs
+CLASS_DIR = $(OR_ROOT)classes
+LIB_DIR = $(OR_ROOT)lib
+BIN_DIR = $(OR_ROOT)bin
 INC_DIR = $(OR_ROOT).
 
 O=obj
