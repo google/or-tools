@@ -65,8 +65,6 @@ include $(OR_ROOT)makefiles/Makefile.cpp.mk
 include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.dotnet.mk
-# include $(OR_ROOT)makefiles/Makefile.csharp.mk
-# include $(OR_ROOT)makefiles/Makefile.fsharp.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
 include $(OR_ROOT)makefiles/Makefile.install.mk
 

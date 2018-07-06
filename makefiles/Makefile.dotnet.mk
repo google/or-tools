@@ -368,9 +368,6 @@ dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
 	$(SED) -i -e "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$(OR_TOOLS_VERSION)<\/FileVersion>/" ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 	"$(DOTNET_EXECUTABLE)" build -c Release -o $(BIN_DIR) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_EXECUTABLE)" build -c Release -o $(BIN_DIR) ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
-	$(MKDIR_P) $(TEMP_DOTNET_DIR)
-	"$(DOTNET_EXECUTABLE)" publish -c Release -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
-	"$(DOTNET_EXECUTABLE)" publish -c Release -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 
@@ -385,7 +382,12 @@ NUGET_SRC = https://www.nuget.org/api/v2/package
 
 .PHONY: pkg_dotnet # Build Nuget Package
 pkg_dotnet:
-	$(warning Not Implemented)
+	$(MKDIR_P) $(TEMP_DOTNET_DIR)
+	"$(DOTNET_EXECUTABLE)" publish -c Release --no-dependencies --no-restore -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	"$(DOTNET_EXECUTABLE)" publish -c Release --no-dependencies --no-restore -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
+	$(SED) -i -e "s/MMMM/$(CLR_ORTOOLS_DLL_NAME)/" ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+	$(NUGET_EXECUTABLE) pack ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
 
 .PHONY: pkg_dotnet-upload # Upload Nuget Package
 pkg_dotnet-upload: nuget_archive
