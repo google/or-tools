@@ -10,12 +10,12 @@ Wherever you have ortools installed, be sure to reference the `Google.OrTools.dl
 To reference a particular folder on linux, you can either: explicitly set the **LD_LIBRARY_PATH**; or create a new configuration file with the path of the library folder in `/etc/ld.so.conf.d/` and then run `sudo ldconfig`. The former will set the path on a system level so that you don't have to use the environment.
 
 ### MacOS
-To reference a particular folder on linux, you can explicitly set the **DYLD_FALLBACK_LIBRARY_PATH**
+To reference a particular folder on linux, you can explicitly set the **DYLD_LIBRARY_PATH**
 
-## CSharp
+## CSharp/FSharp project examples
 
 By default all the examples are compiled in a console applicaiton with the startup object being the **Classname.Main** so that when compiled the entrypoint will be known.
 
-## FSharp
+## NetFx/FSharp compiler examples
 
-TBD
+Should you have another **netfx** you can compile individual file examples. Please see readme in the individual folders for the target language.
