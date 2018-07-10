@@ -1,6 +1,6 @@
 # Examples of using or-tools in FSharp
 
-Examples from the or-tools library utilizing F#
+This file describes how to use the or-tools .NET binary archive in F# 
 
 ## SolverOptions and lpSolve
 This function and parameter object are a wrapper around the standard or-tools functions. It is designed
