@@ -30,7 +30,7 @@ The suite contains:
 * Wrappers around commercial and other open source solvers, including mixed
 integer solvers;
 * Bin packing and knapsack algorithms;
-* Algorithms for the Traveling Salesman Problem and Vehicule Routing Problem;
+* Algorithms for the Traveling Salesman Problem and Vehicle Routing Problem;
 * Graph algorithms (shortest paths, min cost flow, max flow, linear sum
 assignment).
 
