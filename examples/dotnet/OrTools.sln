@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp", "csharp\csharp.csproj", "{0899C5EB-2AD1-49C1-9AB3-735E5B81BF56}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp", "csharp\a_puzzle.csproj", "{0899C5EB-2AD1-49C1-9AB3-735E5B81BF56}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "fsharp", "fsharp\fsharp.fsproj", "{B0E80F2F-BDB3-4688-8E27-5678173DC28C}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "fsharp", "fsharp\Program.fsproj", "{B0E80F2F-BDB3-4688-8E27-5678173DC28C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

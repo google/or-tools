@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>netcoreapp2.0</TargetFramework>
+		<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+	</PropertyGroup>
+
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<DebugType>full</DebugType>
+		<Optimize>true</Optimize>
+		<GenerateTailCalls>true</GenerateTailCalls>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="a_puzzle.cs" />
+		<Reference Include="Google.OrTools">
+      <HintPath>..\..\..\bin\Google.OrTools.dll</HintPath>
+    </Reference>
+	</ItemGroup>
+</Project>

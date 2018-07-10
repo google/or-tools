@@ -98,4 +98,4 @@ let main =
     printfn "---- Linear programming example with %A ----" LinearProgramming.CLP
     solver LinearProgramming.CLP
 
-    0
+    exit 0
