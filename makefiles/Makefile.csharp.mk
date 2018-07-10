@@ -46,7 +46,7 @@ endif
 
 .PHONY: clean_csharp # Clean C# output from previous build.
 clean_csharp: clean_dotnet_generated
-	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*$(DLL)
+	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*$D
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.lib
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.pdb
@@ -64,7 +64,7 @@ clean_csharp: clean_dotnet_generated
 	-$(DEL) examples$Scsharp$Ssolution$S*.csproj
 
 clean_netstandard: clean_dotnet_generated
-	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*$(DLL)
+	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*$D
 	-$(DEL) $(BIN_DIR)$S$(NETSTANDARD_ORTOOLS_DLL_NAME)*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.lib
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(NETSTANDARD_ORTOOLS_DLL_NAME)*.pdb
@@ -223,7 +223,7 @@ endif
 
 # csharportools
 
-csharportools: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
+csharportools: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
 
 # setup path for dotnet sdk
 CANONIC_PATH_TO_DOTNET_SDK = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DOTNET_INSTALL_PATH))))
@@ -238,7 +238,7 @@ netstandard: clean_dotnet_generated netstandardortools
 BUILT_LANGUAGES +=, .NETSTANDARD
 endif
 
-netstandardortools: ortoolslibs $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
+netstandardortools: ortoolslibs $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
 
 $(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
 	netstandard_keyfile \
@@ -249,8 +249,8 @@ ifdef CLR_KEYFILE
 	@echo [assembly: AssemblyKeyFile("$(notdir $(CLR_KEYFILE))")] >> $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
 endif
 
-$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
-	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)
+$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D: tools/$(CLR_PROTOBUF_DLL_NAME)$D
+	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$D $(BIN_DIR)
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
@@ -348,10 +348,10 @@ ifdef CLR_KEYFILE
 	$(PATH_TO_DOTNET_EXE) run --project tools$Snetstandard$SCreateSigningKey$SCreateSigningKey.csproj $(CLR_KEYFILE)
 endif
 
-$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
+$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D: \
 	$(GEN_DIR)/dotnet/ortools/properties/AssemblyInfo.cs \
 	$(CLR_KEYFILE) \
-	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
+	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D \
 	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/sat_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
@@ -380,14 +380,14 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
 	$(GEN_DIR)/dotnet/ortools/sat/CpModel.pb.cs \
 	$(OR_TOOLS_LIBS)
 ifeq ($(SYSTEM),win)
-	"$(CSHARP_EXECUTABLE)" /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).netmodule /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(GEN_PATH)\\dotnet\\ortools\\linearsolver\\*.cs $(GEN_PATH)\\dotnet\\ortools\\sat\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\linearsolver\\*.cs $(GEN_PATH)\\dotnet\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\constraintsolver\\*.cs $(GEN_PATH)\\dotnet\\ortools\\algorithms\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\algorithms\\*.cs $(GEN_PATH)\\dotnet\\ortools\\graph\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\sat\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\util\\*.cs $(GEN_PATH)\\dotnet\\ortools\\properties\\*.cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LD_OUT)$(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
+	"$(CSHARP_EXECUTABLE)" /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).netmodule /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$D /warn:0 /nologo /debug $(GEN_PATH)\\dotnet\\ortools\\linearsolver\\*.cs $(GEN_PATH)\\dotnet\\ortools\\sat\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\linearsolver\\*.cs $(GEN_PATH)\\dotnet\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\constraintsolver\\*.cs $(GEN_PATH)\\dotnet\\ortools\\algorithms\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\algorithms\\*.cs $(GEN_PATH)\\dotnet\\ortools\\graph\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\sat\\*.cs $(SRC_DIR)\\ortools\\dotnet\\ortools\\util\\*.cs $(GEN_PATH)\\dotnet\\ortools\\properties\\*.cs
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LD_OUT)$(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)$D $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
 else
-	"$(CSHARP_EXECUTABLE)" /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)/ortools/dotnet/ortools/util/*.cs $(GEN_PATH)/dotnet/ortools/linearsolver/*.cs $(SRC_DIR)/ortools/dotnet/ortools/linearsolver/*.cs $(SRC_DIR)/ortools/dotnet/ortools/sat/*.cs $(GEN_PATH)/dotnet/ortools/sat/*.cs $(GEN_PATH)/dotnet/ortools/constraintsolver/*.cs $(SRC_DIR)/ortools/dotnet/ortools/constraintsolver/*.cs $(SRC_DIR)/ortools/dotnet/ortools/algorithms/*.cs $(GEN_PATH)/dotnet/ortools/algorithms/*.cs $(GEN_PATH)/dotnet/ortools/graph/*.cs $(GEN_PATH)/dotnet/ortools/properties/*.cs
+	"$(CSHARP_EXECUTABLE)" /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$D /warn:0 /nologo /debug $(SRC_DIR)/ortools/dotnet/ortools/util/*.cs $(GEN_PATH)/dotnet/ortools/linearsolver/*.cs $(SRC_DIR)/ortools/dotnet/ortools/linearsolver/*.cs $(SRC_DIR)/ortools/dotnet/ortools/sat/*.cs $(GEN_PATH)/dotnet/ortools/sat/*.cs $(GEN_PATH)/dotnet/ortools/constraintsolver/*.cs $(SRC_DIR)/ortools/dotnet/ortools/constraintsolver/*.cs $(SRC_DIR)/ortools/dotnet/ortools/algorithms/*.cs $(GEN_PATH)/dotnet/ortools/algorithms/*.cs $(GEN_PATH)/dotnet/ortools/graph/*.cs $(GEN_PATH)/dotnet/ortools/properties/*.cs
 	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/sat_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS)
 endif
 
-$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL): \
+$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$D: \
 	$(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_DOTNET_LIB_SUFFIX) \
 	netstandard_create_obj_dir \
 	$(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs
@@ -396,7 +396,7 @@ $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$(DLL): \
 	$(PATH_TO_DOTNET_EXE) pack $(NETSTANDARD_OBJ_DIR)$SOrTools.NetCore.csproj -o:$(realpath $(BIN_DIR))$S /p:PackageVersion=$(OR_TOOLS_VERSION)\;TargetRid=$(NETSTANDARD_RUNTIME_IDENTIFIER)\;NativeDllName=$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX)
 
 $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_IMPORT_DLL_NAME)$(SWIG_DOTNET_LIB_SUFFIX): \
-	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
+	$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D \
 	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/sat_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
@@ -441,120 +441,120 @@ netstandard_create_obj_dir:
 
 ifeq ($(EX),) # Those rules will be used if EX variable is not set
 
-$(BIN_DIR)/cslinearprogramming$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/cslinearprogramming.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scslinearprogramming$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scslinearprogramming.cs
+$(BIN_DIR)/cslinearprogramming$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/cslinearprogramming.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scslinearprogramming$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scslinearprogramming.cs
 
-$(BIN_DIR)/csintegerprogramming$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/csintegerprogramming.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsintegerprogramming$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsintegerprogramming.cs
+$(BIN_DIR)/csintegerprogramming$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/csintegerprogramming.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsintegerprogramming$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scsintegerprogramming.cs
 
 # csharp linear solver tests
 
-$(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/testlp.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /r:$(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Stestlp.cs
+$(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/tests/testlp.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /r:$(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)$Stests$Stestlp.cs
 
 testlp: $(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe
 
 # csharp cp examples
 
-$(BIN_DIR)/csrabbitspheasants$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/csrabbitspheasants.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsrabbitspheasants$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsrabbitspheasants.cs
+$(BIN_DIR)/csrabbitspheasants$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/csrabbitspheasants.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsrabbitspheasants$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scsrabbitspheasants.cs
 
-$(BIN_DIR)/send_more_money$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/send_more_money.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Ssend_more_money$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Ssend_more_money.cs
+$(BIN_DIR)/send_more_money$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/send_more_money.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Ssend_more_money$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Ssend_more_money.cs
 
-$(BIN_DIR)/furniture_moving_intervals$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/furniture_moving_intervals.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sfurniture_moving_intervals$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Sfurniture_moving_intervals.cs
+$(BIN_DIR)/furniture_moving_intervals$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/furniture_moving_intervals.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sfurniture_moving_intervals$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Sfurniture_moving_intervals.cs
 
-$(BIN_DIR)/organize_day_intervals$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/organize_day_intervals.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sorganize_day_intervals$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Sorganize_day_intervals.cs
+$(BIN_DIR)/organize_day_intervals$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/organize_day_intervals.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sorganize_day_intervals$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Sorganize_day_intervals.cs
 
-$(BIN_DIR)/cstsp$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/cstsp.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scstsp$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scstsp.cs
+$(BIN_DIR)/cstsp$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/cstsp.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scstsp$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scstsp.cs
 
-$(BIN_DIR)/cscvrptw$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/cscvrptw.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scscvrptw$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scscvrptw.cs
+$(BIN_DIR)/cscvrptw$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/cscvrptw.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scscvrptw$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scscvrptw.cs
 
-$(BIN_DIR)/csls_api$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/csls_api.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsls_api$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsls_api.cs
+$(BIN_DIR)/csls_api$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/csls_api.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsls_api$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scsls_api.cs
 
 # csharp constraint solver tests
 
-$(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/testcp.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Stestcp.cs
+$(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/tests/testcp.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Stests$Stestcp.cs
 
 testcp: $(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe
 
-$(BIN_DIR)/testsat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/testsat.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stestsat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Stestsat.cs
+$(BIN_DIR)/testsat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/tests/testsat.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stestsat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Stests$Stestsat.cs
 
 testsat: $(BIN_DIR)/testsat$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stestsat$(CLR_EXE_SUFFIX).exe
 
-$(BIN_DIR)/test_sat_model$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/test_sat_model.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Stest_sat_model.cs
+$(BIN_DIR)/test_sat_model$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/tests/test_sat_model.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Stests$Stest_sat_model.cs
 
 test_sat_model: $(BIN_DIR)/test_sat_model$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe
 
-$(BIN_DIR)/issue18$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/issue18.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sissue18$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Sissue18.cs
+$(BIN_DIR)/issue18$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/tests/issue18.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sissue18$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Stests$Sissue18.cs
 
 issue18: $(BIN_DIR)/issue18$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Sissue18$(CLR_EXE_SUFFIX).exe
 
-$(BIN_DIR)/issue22$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/issue22.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sissue22$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Sissue22.cs
+$(BIN_DIR)/issue22$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/tests/issue22.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sissue22$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Stests$Sissue22.cs
 
 issue22: $(BIN_DIR)/issue22$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Sissue22$(CLR_EXE_SUFFIX).exe
 
-$(BIN_DIR)/issue33$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/issue33.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sissue33$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Sissue33.cs
+$(BIN_DIR)/issue33$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/tests/issue33.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sissue33$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Stests$Sissue33.cs
 
 issue33: $(BIN_DIR)/issue33$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Sissue33$(CLR_EXE_SUFFIX).exe
 
-$(BIN_DIR)/jobshop_bug$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/tests/jobshop_bug.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sjobshop_bug$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Stests$Sjobshop_bug.cs
+$(BIN_DIR)/jobshop_bug$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/tests/jobshop_bug.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sjobshop_bug$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Stests$Sjobshop_bug.cs
 
 jobshop_bug: $(BIN_DIR)/jobshop_bug$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Sjobshop_bug$(CLR_EXE_SUFFIX).exe
 
 # csharp algorithm examples
 
-$(BIN_DIR)/csknapsack$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/csknapsack.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsknapsack$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsknapsack.cs
+$(BIN_DIR)/csknapsack$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/csknapsack.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsknapsack$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scsknapsack.cs
 
 # csharp graph examples
 
-$(BIN_DIR)/csflow$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/csflow.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsflow$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsflow.cs
+$(BIN_DIR)/csflow$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/csflow.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsflow$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scsflow.cs
 
 # csharp sat examples
 
-$(BIN_DIR)/jobshop_ft06_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/jobshop_ft06_sat.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sjobshop_ft06_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Sjobshop_ft06_sat.cs
+$(BIN_DIR)/jobshop_ft06_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/jobshop_ft06_sat.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sjobshop_ft06_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Sjobshop_ft06_sat.cs
 
-$(BIN_DIR)/gate_scheduling_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/gate_scheduling_sat.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sgate_scheduling_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Sgate_scheduling_sat.cs
+$(BIN_DIR)/gate_scheduling_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/gate_scheduling_sat.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Sgate_scheduling_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Sgate_scheduling_sat.cs
 
-$(BIN_DIR)/nurses_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/nurses_sat.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Snurses_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Snurses_sat.cs
+$(BIN_DIR)/nurses_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/nurses_sat.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Snurses_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Snurses_sat.cs
 
 # Examples using multiple libraries.
 
-$(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/techtalk_scheduling.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stechtalk_scheduling$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Stechtalk_scheduling.cs
+$(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/techtalk_scheduling.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Stechtalk_scheduling$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Stechtalk_scheduling.cs
 
 techtalk_scheduling: $(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Stechtalk_scheduling$(CLR_EXE_SUFFIX).exe
 
 # Code samples
 
-$(BIN_DIR)/code_samples_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX_DIR)/csharp/code_samples_sat.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scode_samples_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scode_samples_sat.cs
+$(BIN_DIR)/code_samples_sat$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX_DIR)/csharp/code_samples_sat.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scode_samples_sat$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX_DIR)$Scsharp$Scode_samples_sat.cs
 
 code_samples_sat: $(BIN_DIR)/code_samples_sat$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scode_samples_sat$(CLR_EXE_SUFFIX).exe
@@ -562,8 +562,8 @@ code_samples_sat: $(BIN_DIR)/code_samples_sat$(CLR_EXE_SUFFIX).exe
 else # This generic rule will be used if EX variable is set
 
 ifneq ($(CLR_EXE_SUFFIX),) # otherwise this rule has the same target than the one in use for cc files.
-$(BIN_DIR)/$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(EX)
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /debug /out:$(BIN_DIR)$S$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$(DLL) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(EX)
+$(BIN_DIR)/$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(EX)
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /debug /out:$(BIN_DIR)$S$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_DLL_NAME)$D /r:$(CLR_PROTOBUF_DLL_NAME)$D $(EX)
 endif # ifneq ($(CLR_EXE_SUFFIX),)
 
 csc: $(BIN_DIR)/$(basename $(notdir $(EX)))$(CLR_EXE_SUFFIX).exe
@@ -595,7 +595,7 @@ endif # ifeq ($(SYSTEM),win)
 endif # ifdef CLR_KEYFILE
 
 csharpfz: \
-	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$D \
 	$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe
 
 $(GEN_DIR)/ortools/flatzinc/flatzinc_csharp_wrap.cc: \
@@ -609,23 +609,23 @@ $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: \
 	$(GEN_DIR)/ortools/flatzinc/flatzinc_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)/ortools/flatzinc/flatzinc_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O
 
-$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL): \
+$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$D: \
 	$(GEN_DIR)/dotnet/ortools/flatzinc/properties/CommonAssemblyInfo.cs \
 	$(GEN_DIR)/dotnet/ortools/flatzinc/properties/AssemblyInfo.cs \
 	$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O \
 	$(OR_TOOLS_LIBS) $(FLATZINC_LIBS)
 ifeq ($(SYSTEM),win)
 	"$(CSHARP_EXECUTABLE)" /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).netmodule /warn:0 /nologo /debug $(GEN_PATH)\\dotnet\\ortools\\flatzinc\\*.cs $(GEN_PATH)\\dotnet\\ortools\\flatzinc\\properties\\*cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LD_OUT)$(BIN_DIR)$S$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS)
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LD_OUT)$(BIN_DIR)$S$(CLR_ORTOOLS_FZ_DLL_NAME)$D $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS)
 else # ifeq ($(SYSTEM),win)
-	"$(CSHARP_EXECUTABLE)" /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(GEN_PATH)/dotnet/ortools/flatzinc/*.cs $(GEN_PATH)/dotnet/ortools/flatzinc/properties/*cs
+	"$(CSHARP_EXECUTABLE)" /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$D /warn:0 /nologo /debug $(GEN_PATH)/dotnet/ortools/flatzinc/*.cs $(GEN_PATH)/dotnet/ortools/flatzinc/properties/*cs
 	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS)
 endif # ifeq ($(SYSTEM),win)
 
 $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe: \
-	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$D \
 	$(EX_DIR)/csharp/csfz.cs
-	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsfz.cs
+	"$(CSHARP_EXECUTABLE)" $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_FZ_DLL_NAME)$D $(EX_DIR)$Scsharp$Scsfz.cs
 
 rcsfz: $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX).exe $(ARGS)
@@ -651,7 +651,7 @@ ifeq ($(SYSTEM),win)
 endif # ($(SYSTEM),win)
 
 csharp_nuget_stage: \
-	$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL)
+	$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D
 ifeq ($(SYSTEM),win)
 	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
 	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\solution\Properties
@@ -663,7 +663,7 @@ ifeq ($(SYSTEM),win)
 	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\data\quasigroup_completion
 	$(COPY) LICENSE-2.0.txt $(ORTOOLS_NUGET_DIR)
 	$(COPY) tools\README.dotnet $(ORTOOLS_NUGET_DIR)\README
-	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$D $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
 	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$(PDB) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
 	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$(L) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
 	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$(EXP) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
@@ -708,13 +708,13 @@ ifeq ($(SYSTEM),win)
 endif # ($(SYSTEM),win)
 
 csharpfz_nuget_stage: \
-	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL)
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$D
 ifeq ($(SYSTEM),win)
 	$(MKDIR_P) $(FZ_NUGET_DIR)\$(BIN_DIR)
 	$(MKDIR_P) $(FZ_NUGET_DIR)\examples
 	$(COPY) LICENSE-2.0.txt $(FZ_NUGET_DIR)
 	$(COPY) tools\README.dotnet $(FZ_NUGET_DIR)\README
-	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$D $(FZ_NUGET_DIR)\$(BIN_DIR)
 	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(PDB) $(FZ_NUGET_DIR)\$(BIN_DIR)
 	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(L) $(FZ_NUGET_DIR)\$(BIN_DIR)
 	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(EXP) $(FZ_NUGET_DIR)\$(BIN_DIR)

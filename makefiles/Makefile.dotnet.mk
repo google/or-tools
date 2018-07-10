@@ -48,7 +48,7 @@ endif
 # Main target
 
 .PHONY: csharp_dotnet # Build C# OR-Tools
-csharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
+csharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
 
 # Assembly Info
 $(GEN_DIR)/ortools/properties:
@@ -59,8 +59,8 @@ $(GEN_DIR)/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: \
 	@echo $(OR_TOOLS_VERSION) > $(GEN_PATH)$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
 
 # Auto-generated code
-$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL) | $(BIN_DIR)
-	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(BIN_DIR)
+$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D: tools/$(CLR_PROTOBUF_DLL_NAME)$D | $(BIN_DIR)
+	$(COPY) tools$S$(CLR_PROTOBUF_DLL_NAME)$D $(BIN_DIR)
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
@@ -252,10 +252,10 @@ ifdef CLR_KEYFILE
 endif
 
 # Main DLL
-$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
+$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D: \
  $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_DLL_NAME)/$(ORTOOLS_DLL_NAME).csproj \
  $(OR_TOOLS_LIBS) \
- $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL) \
+ $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D \
  $(CLR_KEYFILE) \
  $(SRC_DIR)/ortools/dotnet/OrTools/algorithms/IntArrayHelper.cs \
  $(SRC_DIR)/ortools/dotnet/OrTools/constraint_solver/IntVarArrayHelper.cs \
@@ -301,11 +301,11 @@ else
 endif
 
 .PHONY: fsharp_dotnet # Build F# OR-Tools
-fsharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL)
+fsharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$D
 
-$(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$(DLL): \
+$(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$D: \
  $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_FSHARP_DLL_NAME)/$(ORTOOLS_FSHARP_DLL_NAME).fsproj \
- $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) \
+ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D \
  | $(BIN_DIR)
 	"$(DOTNET_BIN)" build -c Debug ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 ifeq ($(SYSTEM),win)

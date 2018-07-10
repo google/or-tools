@@ -25,7 +25,7 @@ L = so
 else # MACOS
 L = dylib
 endif
-DLL=.dll
+D=.dll
 PDB=.pdb
 EXP=.exp
 ARCHIVE_EXT = .tar.gz
