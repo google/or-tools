@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_LNS_H_
 #define OR_TOOLS_SAT_LNS_H_
 
+#include <cmath>
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -77,7 +79,7 @@ class AdaptiveParameterValue {
   }
 
   double value_;
-  int64 num_changes_ = 0;
+  int64_t num_changes_ = 0;
 };
 
 // ============================================================================
@@ -88,7 +90,7 @@ template <class StopFunction, class SolveNeighborhoodFunction>
 inline void OptimizeWithLNS(
     int num_threads, StopFunction stop_function,
     SolveNeighborhoodFunction generate_and_solve_function) {
-  int64 seed = 0;
+  int64_t seed = 0;
 #if !defined(__PORTABLE_PLATFORM__)
   while (!stop_function()) {
     if (num_threads > 1) {

@@ -187,6 +187,8 @@ CpModelProto ConstraintGraphNeighborhoodGenerator::Generate(
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
+  const int num_constraints = helper_.ConstraintToVar().size();
+  if (num_constraints == 0) return helper_.ModelProto();
   if (target_size == num_active_vars) return helper_.ModelProto();
   CHECK_GT(target_size, 0);
 
@@ -195,13 +197,12 @@ CpModelProto ConstraintGraphNeighborhoodGenerator::Generate(
 
   std::vector<bool> visited_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
-  std::vector<bool> added_constraints(helper_.ConstraintToVar().size(), false);
+  std::vector<bool> added_constraints(num_constraints, false);
   std::vector<int> next_constraints;
 
   // Start by a random constraint.
   {
-    std::uniform_int_distribution<int> random_start(
-        0, helper_.ConstraintToVar().size() - 1);
+    std::uniform_int_distribution<int> random_start(0, num_constraints - 1);
     next_constraints.push_back(random_start(random));
     added_constraints[next_constraints.back()] = true;
   }
@@ -221,7 +222,7 @@ CpModelProto ConstraintGraphNeighborhoodGenerator::Generate(
 
     // Add all the variable of this constraint and increase the set of next
     // possible constraints.
-    CHECK_LT(contraint_index, helper_.ConstraintToVar().size());
+    CHECK_LT(contraint_index, num_constraints);
     random_variables = helper_.ConstraintToVar()[contraint_index];
     std::shuffle(random_variables.begin(), random_variables.end(), random);
     for (const int var : random_variables) {
