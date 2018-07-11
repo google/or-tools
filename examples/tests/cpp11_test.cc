@@ -1,8 +1,9 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
-#include "base/hash.h"
+#include "ortools/base/hash.h"
 
 namespace operations_research {
 struct Foo {
@@ -46,7 +47,7 @@ void test_auto() {
     std::cout << vec << std::endl;
   }
 
-  hash_map<std::string, int> my_map;
+	std::unordered_map<std::string, int> my_map;
   my_map["toto"] = 2;
   for (auto mm : my_map) {
     std::cout << mm.first << " -> " << mm.second << std::endl;

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
 
@@ -110,13 +110,13 @@ class ForbiddenIntervalTestMultipleReductionsOnMax : public DecisionBuilder {
 
 class ForbiddenIntervalTest {
  public:
-  void SetUp(std::vector<int64>& starts, std::vector<int64> ends) {
+  void SetUp(std::vector<int64>& starts, std::vector<int64>& ends) {
     solver_.reset(new Solver("ForbiddenIntervalTest"));
     var_ = solver_->MakeIntVar(0, 1000, "var");
-    solver_->AddConstraint(
-        solver_->MakeForbiddenIntervalCt(var_,
-                                         std::move(starts),
-                                         std::move(ends)));
+    CHECK_EQ(starts.size(), ends.size());
+    for(std::size_t i=0; i < starts.size(); ++i) {
+      var_->RemoveInterval(starts[i], ends[i]);
+    }
   }
 
   std::unique_ptr<Solver> solver_;

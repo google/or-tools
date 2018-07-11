@@ -7,6 +7,16 @@ test_cc_examples: cc
 	$(BIN_DIR)$Slinear_programming$E
 	$(BIN_DIR)$Sinteger_programming$E
 	$(BIN_DIR)$Stsp$E
+	$(BIN_DIR)$Sac4r_table_test$E
+	$(BIN_DIR)$Sboolean_test$E
+	$(BIN_DIR)$Sbug_fz1$E
+	$(BIN_DIR)$Scpp11_test$E
+	$(BIN_DIR)$Sforbidden_intervals_test$E
+	$(BIN_DIR)$Sgcc_test$E
+#	$(BIN_DIR)$Sissue173$E
+	$(BIN_DIR)$Sissue57$E
+	$(BIN_DIR)$Smin_max_test$E
+	$(BIN_DIR)$Svisitor_test$E
 
 .PHONY: test_fz_examples
 test_fz_examples: fz

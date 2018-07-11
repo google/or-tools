@@ -293,7 +293,9 @@ min_max_test \
 visitor_test
 
 .PHONY: ccexe
-ccexe: $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_EXAMPLES)))
+ccexe: \
+ $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_EXAMPLES))) \
+ $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_TESTS)))
 
 # CVRPTW common library
 CVRPTW_OBJS = $(OBJ_DIR)/cvrptw_lib.$O
