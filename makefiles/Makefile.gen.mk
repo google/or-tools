@@ -1007,6 +1007,7 @@ $(OBJ_DIR)/lp_data/mps_reader.$O: \
  $(SRC_DIR)/ortools/base/status.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/base/strutil.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
  $(SRC_DIR)/ortools/lp_data/lp_print_utils.h \
  $(SRC_DIR)/ortools/lp_data/lp_types.h \
