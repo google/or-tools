@@ -365,9 +365,11 @@ test_dotnet: dotnet
  -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
  "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
 	"$(DOTNET_BIN)" test \
+ --no-build -v n \
  -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
  "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)"
 	"$(DOTNET_BIN)" test \
+ --no-build -v n \
  -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
  "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)"
 
