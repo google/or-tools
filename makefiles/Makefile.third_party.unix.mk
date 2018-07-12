@@ -635,7 +635,6 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION)>> Makefile.local
 	@echo PATH_TO_CSHARP_COMPILER = $(DETECTED_MCS_BINARY)>> Makefile.local
 	@echo PATH_TO_DOTNET_COMPILER = $(DETECTED_DOTNET_BINARY)>> Makefile.local
-	@echo CLR_KEYFILE = bin/or-tools.snk>> Makefile.local
 	@echo >> Makefile.local
 	@echo "## OPTIONAL DEPENDENCIES ##" >> Makefile.local
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local

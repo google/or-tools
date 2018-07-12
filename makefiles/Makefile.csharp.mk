@@ -241,7 +241,7 @@ endif
 netstandardortools: ortoolslibs $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
 
 $(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
-	netstandard_keyfile \
+	$(CLR_KEYFILE) \
 	$(GEN_DIR)/dotnet/ortools/properties/CommonAssemblyInfo.cs
 	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(NETSTANDARD_OBJ_DIR)$SAssemblyInfo.cs
 ifdef CLR_KEYFILE
@@ -337,16 +337,8 @@ $(GEN_DIR)/dotnet/ortools/sat/SatParameters.pb.cs: $(SRC_DIR)/ortools/sat/sat_pa
 	$(PROTOC) --proto_path=$(SRC_DIR) --csharp_out=$(GEN_PATH)$Sdotnet$Sortools$Ssat --csharp_opt=file_extension=.pb.cs $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
 
 # Main DLL
-
 $(CLR_KEYFILE): | $(BIN_DIR)
-ifdef CLR_KEYFILE
-	sn -k $(CLR_KEYFILE)
-endif
-
-netstandard_keyfile:
-ifdef CLR_KEYFILE
-	$(PATH_TO_DOTNET_EXE) run --project tools$Snetstandard$SCreateSigningKey$SCreateSigningKey.csproj $(CLR_KEYFILE)
-endif
+	$(PATH_TO_DOTNET_EXE) run --project tools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $(CLR_KEYFILE)
 
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D: \
 	$(GEN_DIR)/dotnet/ortools/properties/AssemblyInfo.cs \

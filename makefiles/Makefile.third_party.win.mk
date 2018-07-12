@@ -329,7 +329,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo #   i.e.: path\\scip-4.0.0 >> Makefile.local
 	@echo # See instructions here: >> Makefile.local
 	@echo #   http://or-tools.blogspot.com/2017/03/changing-way-we-link-with-scip.html >> Makefile.local
-	@echo CLR_KEYFILE = bin\\or-tools.snk >> Makefile.local
 	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME, WINDOWS_GFLAGS_DIR, >> Makefile.local
