@@ -32,7 +32,7 @@ function installdotnetsdk(){
 		# Install dotnet sdk 2.1
 		sudo apt-get install apt-transport-https &&
 		sudo apt-get update -qq &&
-		sudo apt-get install -yqq dotnet-sdk-2.1.105
+		sudo apt-get install -yqq dotnet-sdk-2.1
 }
 
 ################
