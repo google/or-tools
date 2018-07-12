@@ -30,7 +30,7 @@ public class QuasigroupCompletion {
   /*
    * default problem
    *
-   * Example from Ruben Martins and Inès Lynce
+   * Example from Ruben Martins and Ines Lynce
    * Breaking Local Symmetries in Quasigroup Completion Problems, page 3
    * The solution is unique:
    *
@@ -54,7 +54,6 @@ public class QuasigroupCompletion {
 
 
   /**
-   *
    * Solves the Quasigroup Completion problem.
    * See http://www.hakank.org/google_or_tools/quasigroup_completion.py
    */
@@ -156,7 +155,6 @@ public class QuasigroupCompletion {
   }
 
   /**
-   *
    * Reads a Quasigroup completion file.
    * File format:
    *  # a comment which is ignored
