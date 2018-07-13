@@ -1,5 +1,5 @@
 # Let's discover something about where we run
-ifeq ($(OS), Windows_NT)
+ifeq ($(OS),Windows_NT)
 SYSTEM = win
 else
 SYSTEM = unix
@@ -97,13 +97,13 @@ endif # SYSTEM == unix
 
 # Windows specific part.
 ifeq ($(SYSTEM),win)
-  ifeq ("$(Platform)", "X64")
+  ifeq ("$(Platform)","X64")
     PLATFORM = Win64
   endif
-  ifeq ("$(Platform)", "x64")
+  ifeq ("$(Platform)","x64")
     PLATFORM = Win64
   endif
-  ifeq ("$(PLATFORM)", "Win64")
+  ifeq ("$(PLATFORM)","Win64")
     PORT = VisualStudio$(VISUAL_STUDIO)-64b
     NETPLATFORM = x64
   else
