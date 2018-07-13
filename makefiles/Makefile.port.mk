@@ -87,7 +87,7 @@ endif # ($(SYSTEM),unix)
 # Windows specific part.
 ifeq ($(SYSTEM),win)
   # Detect 32/64bit
-  ifeq ("$(Platform)", "X64")  # Visual Studio 2015/2017 64 bit
+  ifeq ("$(Platform)","X64")  # Visual Studio 2015/2017 64 bit
     PLATFORM = WIN64
     PTRLENGTH = 64
     CMAKE_SUFFIX = Win64
@@ -95,7 +95,7 @@ ifeq ($(SYSTEM),win)
     GLPK_PLATFORM = w64
     NETPLATFORM = x64
   else
-     ifeq ("$(Platform)", "x64")  # Visual studio 2013 64 bit
+     ifeq ("$(Platform)","x64")  # Visual studio 2013 64 bit
       PLATFORM = WIN64
       PTRLENGTH = 64
       CMAKE_SUFFIX = Win64
@@ -113,17 +113,17 @@ ifeq ($(SYSTEM),win)
   endif
 
   # Detect visual studio version
-  ifeq ("$(VisualStudioVersion)", "12.0")
+  ifeq ("$(VisualStudioVersion)","12.0")
     VISUAL_STUDIO_YEAR = 2013
     VISUAL_STUDIO_MAJOR = 12
     VS_RELEASE = v120
   else
-    ifeq ("$(VisualStudioVersion)", "14.0")
+    ifeq ("$(VisualStudioVersion)","14.0")
       VISUAL_STUDIO_YEAR = 2015
       VISUAL_STUDIO_MAJOR = 14
       VS_RELEASE = v140
     else
-      ifeq ("$(VisualStudioVersion)", "15.0")
+      ifeq ("$(VisualStudioVersion)","15.0")
         VISUAL_STUDIO_YEAR = 2017
         VISUAL_STUDIO_MAJOR = 15
         VS_RELEASE = v141
