@@ -1748,6 +1748,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/cp_model_presolve.h \
  $(SRC_DIR)/ortools/sat/cp_model_search.h \
  $(SRC_DIR)/ortools/sat/cp_model_solver.h \
+ $(SRC_DIR)/ortools/sat/cp_model_symmetries.h \
  $(SRC_DIR)/ortools/sat/cp_model_utils.h \
  $(SRC_DIR)/ortools/sat/cumulative.h \
  $(SRC_DIR)/ortools/sat/disjunctive.h \
@@ -1797,6 +1798,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/cp_model_presolve.$O \
  $(OBJ_DIR)/sat/cp_model_search.$O \
  $(OBJ_DIR)/sat/cp_model_solver.$O \
+ $(OBJ_DIR)/sat/cp_model_symmetries.$O \
  $(OBJ_DIR)/sat/cp_model_utils.$O \
  $(OBJ_DIR)/sat/cumulative.$O \
  $(OBJ_DIR)/sat/disjunctive.$O \
@@ -1852,6 +1854,8 @@ $(SRC_DIR)/ortools/sat/cp_model_presolve.h: ;
 $(SRC_DIR)/ortools/sat/cp_model_search.h: ;
 
 $(SRC_DIR)/ortools/sat/cp_model_solver.h: ;
+
+$(SRC_DIR)/ortools/sat/cp_model_symmetries.h: ;
 
 $(SRC_DIR)/ortools/sat/cp_model_utils.h: ;
 
@@ -2199,6 +2203,23 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
  $(GEN_DIR)/ortools/sat/cp_model.pb.h \
  $(GEN_DIR)/ortools/sat/sat_parameters.pb.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_solver.$O
+
+$(SRC_DIR)/ortools/sat/cp_model_symmetries.cc: ;
+
+$(OBJ_DIR)/sat/cp_model_symmetries.$O: \
+ $(SRC_DIR)/ortools/sat/cp_model_symmetries.cc \
+ $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h \
+ $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/memory.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(SRC_DIR)/ortools/sat/cp_model_symmetries.h \
+ $(SRC_DIR)/ortools/sat/cp_model_utils.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_symmetries.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_symmetries.$O
 
 $(SRC_DIR)/ortools/sat/cp_model_utils.cc: ;
 
