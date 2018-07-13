@@ -28,7 +28,6 @@ CLR_KEYFILE_PATH = $(subst /,$S,$(CLR_KEYFILE))
 
 # relative to the project root folder
 TEMP_DOTNET_TEST_DIR=temp_dotnet_test
-TEMP_DOTNET_DIR=temp_dotnet
 
 # Check for required build tools
 ifeq ($(SYSTEM), win)
@@ -252,6 +251,11 @@ $(CLR_KEYFILE): | $(BIN_DIR)
 	"$(DOTNET_BIN)" run --project tools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(CLR_KEYFILE_PATH)
 
 # Main DLL
+.PHONY: dotnet # Build OrTools for .NET
+dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
+
+BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
+
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D: \
  $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_DLL_NAME)/$(ORTOOLS_DLL_NAME).csproj \
  $(OR_TOOLS_LIBS) \
@@ -300,6 +304,15 @@ else
 	$(COPY) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sbin$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
 endif
 
+$(SRC_DIR)/ortools/dotnet/$(ORTOOLS_DLL_NAME)/$(ORTOOLS_DLL_NAME).csproj: \
+ $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_DLL_NAME)/$(ORTOOLS_DLL_NAME).csproj.in
+	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
+ ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj.in \
+ >ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+
+##############
+##  FSHARP  ##
+##############
 .PHONY: fsharp_dotnet # Build F# OR-Tools
 fsharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$D
 
@@ -313,6 +326,12 @@ ifeq ($(SYSTEM),win)
 else
 	$(COPY) ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$Sbin$SDebug$Snetstandard2.0$S*.* $(BIN_DIR)
 endif
+
+$(SRC_DIR)/ortools/dotnet/$(ORTOOLS_FSHARP_DLL_NAME)/$(ORTOOLS_FSHARP_DLL_NAME).fsproj: \
+ $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_FSHARP_DLL_NAME)/$(ORTOOLS_FSHARP_DLL_NAME).fsproj.in
+	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
+ ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj.in \
+ >ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 
 .PHONY: clean_dotnet # Clean files
 clean_dotnet:
@@ -375,28 +394,32 @@ test_dotnet: dotnet
  -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
  "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)"
 
-.PHONY: dotnet # Build OrTools for .NET
-dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
-	$(SED) -i -e "s/<Version>.*<\/Version>/<Version>$(OR_TOOLS_VERSION)<\/Version>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
-	$(SED) -i -e "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$(OR_TOOLS_VERSION)<\/AssemblyVersion>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
-	$(SED) -i -e "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$(OR_TOOLS_VERSION)<\/FileVersion>/" ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
-	$(SED) -i -e "s/<Version>.*<\/Version>/<Version>$(OR_TOOLS_VERSION)<\/Version>/" ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
-	$(SED) -i -e "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$(OR_TOOLS_VERSION)<\/AssemblyVersion>/" ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
-	$(SED) -i -e "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$(OR_TOOLS_VERSION)<\/FileVersion>/" ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
-	"$(DOTNET_BIN)" build -c Release -o $(BIN_DIR) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
-	"$(DOTNET_BIN)" build -c Release -o $(BIN_DIR) ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
+#####################
+##  Nuget artifact ##
+#####################
+TEMP_DOTNET_DIR=temp_dotnet
+
+$(TEMP_DOTNET_DIR):
 	$(MKDIR_P) $(TEMP_DOTNET_DIR)
-	"$(DOTNET_BIN)" publish -c Release -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
-	"$(DOTNET_BIN)" publish -c Release -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" -f netstandard2.0 ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 
-BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
+.PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
+nuget_archive: dotnet $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_NUSPEC_FILE).in | $(TEMP_DOTNET_DIR)
+	"$(DOTNET_BIN)" publish -c Release --no-dependencies --no-restore -f netstandard2.0 \
+ -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
+ ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
+	"$(DOTNET_BIN)" publish -c Release --no-dependencies --no-restore -f netstandard2.0 \
+ -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
+ ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
+	$(SED) -e "s/MMMM/$(CLR_ORTOOLS_DLL_NAME)/" \
+ ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE).in \
+ >ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" \
+ ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+	"$(NUGET_BIN)" pack ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
 
-.PHONY: pkg_dotnet # Build Nuget Package
-pkg_dotnet:
-	$(warning Not Implemented)
-
-.PHONY: pkg_dotnet-upload # Upload Nuget Package
-pkg_dotnet-upload: nuget_archive
+.PHONY: nuget_upload # Upload Nuget Package
+nuget_upload: nuget_archive
+	@echo Uploading Nuget package for "netstandard2".
 	$(warning Not Implemented)
 
 .PHONY: detect_dotnet # Show variables used to build dotnet OR-Tools.
@@ -405,7 +428,6 @@ detect_dotnet:
 	@echo PROTOC = $(PROTOC)
 	@echo DOTNET_BIN = $(DOTNET_BIN)
 	@echo CLR_KEYFILE = $(CLR_KEYFILE)
-	@echo NUGET_BIN = $(NUGET_BIN)
 	@echo SWIG_PYTHON_LIB_SUFFIX = $(SWIG_PYTHON_LIB_SUFFIX)
 	@echo CLR_PROTOBUF_DLL_NAME = $(CLR_PROTOBUF_DLL_NAME)
 	@echo CLR_ORTOOLS_IMPORT_DLL_NAME = $(CLR_ORTOOLS_IMPORT_DLL_NAME)
@@ -413,6 +435,8 @@ detect_dotnet:
 	@echo CLR_ORTOOLS_FSHARP_DLL_NAME = $(CLR_ORTOOLS_FSHARP_DLL_NAME)
 	@echo CLR_ORTOOLS_TEST_DLL_NAME = $(CLR_ORTOOLS_TEST_DLL_NAME)
 	@echo CLR_ORTOOLS_FSHARP_TEST_DLL_NAME = $(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)
+	@echo NUGET_BIN = $(NUGET_BIN)
+	@echo ORTOOLS_NUSPEC_FILE = $(ORTOOLS_NUSPEC_FILE)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

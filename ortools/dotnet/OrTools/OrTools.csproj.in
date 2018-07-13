@@ -13,9 +13,9 @@
 
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 
-    <Version>6.7.5238</Version>
-    <AssemblyVersion>6.7.5238</AssemblyVersion>
-    <FileVersion>6.7.5238</FileVersion>
+    <Version>@PROJECT_VERSION@</Version>
+    <AssemblyVersion>@PROJECT_VERSION@</AssemblyVersion>
+    <FileVersion>@PROJECT_VERSION@</FileVersion>
 
     <RootNamespace>Google.OrTools</RootNamespace>
 

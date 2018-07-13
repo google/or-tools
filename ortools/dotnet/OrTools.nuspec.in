@@ -9,8 +9,14 @@
     <description>.NET wrapper for the Operations Research Tools project</description>
     <copyright>Copyright 2018 Google, Inc</copyright>
     <tags>Operations Research Math Linear Constraint Programming C# F# .NETStandard</tags>
+    <references>
+      <reference file="Google.OrTools.dll" />
+      <reference file="Google.OrTools.FSharp.dll" />
+    </references>
   </metadata>
   <files>
+    <file src="../../examples/dotnet/**" target="examples" exclude="**/obj/**;**/bin/**"/>
+    <file src="../../bin/Google.Protobuf.dll" target="lib/netstandard2.0"/>	+    <file src="../../temp_dotnet/**" target="lib"/>
     <file src="../../lib/*.*" target="lib/netstandard2.0"/>
     <file src="../../bin/Google.Protobuf.dll" target="lib/netstandard2.0"/>
     <file src="OrTools/bin/Release/netstandard2.0/*.*" target="lib/netstandard2.0"/>
