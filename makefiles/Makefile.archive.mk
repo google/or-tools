@@ -83,28 +83,29 @@ ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 -o "..$S..$S..$Stemp_archive$S$(INSTALL_DIR)$Sbin" \
 ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 	$(COPY) $(BIN_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sbin
-	$(COPY) $(BIN_DIR)$S$(CLR_PROTOBUF_DLL_NAME)$(DLL) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sbin
+	$(COPY) $(BIN_DIR)$S$(CLR_PROTOBUF_DLL_NAME)$D $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sbin
 	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
 	$(COPYREC) $(DOTNET_EX_PATH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
 
 $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
+	-$(DELREC) $(TEMP_FZ_DIR)$S*
 	$(MAKE) install_cc prefix=$(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
 	$(COPY) $(FLATZINC_PATH) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) $(BIN_DIR)$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$S$(FZ_EXE)
 	$(COPY) $(BIN_DIR)$Sparser_main$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sparser-or-tools$E
-	$(MKDIR) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare
+	$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare
 	$(MKDIR) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
 	$(COPY) ortools$Sflatzinc$Smznlib_cp$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
 	$(MKDIR) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
 	$(COPY) ortools$Sflatzinc$Smznlib_sat$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
-	$(MKDIR) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
+	$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
 	$(COPY) examples$Sflatzinc$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_FZ_DIR) && ..$S$(ZIP) -r ..$S$(FZ_INSTALL_DIR)$(ARCHIVE_EXT) $(FZ_INSTALL_DIR)
 else
 	$(TAR) -C $(TEMP_FZ_DIR) --no-same-owner -czvf $(FZ_INSTALL_DIR)$(ARCHIVE_EXT) $(FZ_INSTALL_DIR)
 endif
-	-$(DELREC) $(TEMP_FZ_DIR)
+#	-$(DELREC) $(TEMP_FZ_DIR)
 
 $(TEMP_FZ_DIR):
 	$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)

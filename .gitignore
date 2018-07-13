@@ -32,6 +32,7 @@ temp-python*
 temp_dotnet/
 temp_dotnet_test/
 temp_archive/
+temp_fz_archive/
 lib/
 install/
 examples/csharp/solution/*.csproj
@@ -82,9 +83,6 @@ cache/
 **/.vscode/*
 .DS_Store
 
-tools/netstandard/CreateSigningKey/bin
-tools/netstandard/CreateSigningKey/obj
-
 **/.vs/*
 **/dotnet-test/*
 
@@ -100,4 +98,8 @@ examples/dotnet/**/obj
 ortools/dotnet/**/bin
 ortools/dotnet/**/obj
 ortools/dotnet/**/packages
+
+tools/dotnet/CreateSigningKey/bin
+tools/dotnet/CreateSigningKey/obj
+
 *.userprefs

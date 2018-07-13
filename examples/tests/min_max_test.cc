@@ -11,13 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "base/hash.h"
-#include "base/map-util.h"
-#include "base/stl_util.h"
-#include "base/random.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "constraint_solver/constraint_solver.h"
-#include "util/string_array.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/random.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/util/string_array.h"
 
 namespace operations_research {
 
@@ -29,7 +29,7 @@ class NullDemon : public Demon {
 
 class MinArrayCtTestSetToMin : public DecisionBuilder {
  public:
-  MinArrayCtTestSetToMin(IntExpr* const min, const vector<IntVar*>& vars)
+  MinArrayCtTestSetToMin(IntExpr* const min, const std::vector<IntVar*>& vars)
       : min_(min), vars_(vars) {}
   virtual ~MinArrayCtTestSetToMin() {}
 
@@ -42,12 +42,12 @@ class MinArrayCtTestSetToMin : public DecisionBuilder {
 
  private:
   IntExpr* const min_;
-  const vector<IntVar*>& vars_;
+  const std::vector<IntVar*>& vars_;
 };
 
 class MinArrayCtTestSetToMax : public DecisionBuilder {
  public:
-  MinArrayCtTestSetToMax(IntExpr* const min, const vector<IntVar*>& vars)
+  MinArrayCtTestSetToMax(IntExpr* const min, const std::vector<IntVar*>& vars)
       : min_(min), vars_(vars) {}
   virtual ~MinArrayCtTestSetToMax() {}
 
@@ -60,12 +60,12 @@ class MinArrayCtTestSetToMax : public DecisionBuilder {
 
  private:
   IntExpr* const min_;
-  const vector<IntVar*>& vars_;
+  const std::vector<IntVar*>& vars_;
 };
 
 class MinArrayCtTestSetOneVar : public DecisionBuilder {
  public:
-  MinArrayCtTestSetOneVar(IntExpr* const min, const vector<IntVar*>& vars)
+  MinArrayCtTestSetOneVar(IntExpr* const min, const std::vector<IntVar*>& vars)
       : min_(min), vars_(vars) {}
   virtual ~MinArrayCtTestSetOneVar() {}
 
@@ -78,7 +78,7 @@ class MinArrayCtTestSetOneVar : public DecisionBuilder {
 
  private:
   IntExpr* const min_;
-  const vector<IntVar*>& vars_;
+  const std::vector<IntVar*>& vars_;
 };
 
 class MinArrayCtTest {
@@ -93,17 +93,17 @@ class MinArrayCtTest {
     min_ = solver_->MakeMin(vars_)->Var();
   }
 
-  scoped_ptr<Solver> solver_;
-  vector<IntVar*> vars_;
+  std::unique_ptr<Solver> solver_;
+  std::vector<IntVar*> vars_;
   IntExpr* min_;
 
   void TestAlternateCtor() {
     SetUp();
-    scoped_array<IntVar*> vars(new IntVar*[4]);
+    std::vector<IntVar*> vars;
     for (int i = 0; i < 4; ++i) {
-      vars[i] = solver_->MakeIntVar(i, 2 * i);
+      vars.push_back(solver_->MakeIntVar(i, 2 * i));
     }
-    IntExpr* emin = solver_->MakeMin(vars.get(), 4);
+    IntExpr* emin = solver_->MakeMin(vars);
     CHECK(!emin->DebugString().empty());
   }
 
@@ -136,7 +136,7 @@ class MinArrayCtTest {
 
   void TestBigMinVector() {
     SetUp();
-    vector<IntVar*> vars;
+    std::vector<IntVar*> vars;
     for (int i = 0; i < 1001; ++i) {
       vars.push_back(solver_->MakeIntVar(i, 3000 - i, StringPrintf("x%d", i)));
     }
@@ -147,21 +147,22 @@ class MinArrayCtTest {
 
   void TestBigMinArray() {
     SetUp();
-    scoped_array<IntVar*> vars(new IntVar*[1001]);
+    std::vector<IntVar*> vars;
+    vars.reserve(1001);
     for (int i = 0; i < 1001; ++i) {
-      vars[i] = solver_->MakeIntVar(i, 3000 - i, StringPrintf("x%d", i));
+      vars.push_back(solver_->MakeIntVar(i, 3000 - i, StringPrintf("x%d", i)));
     }
-    IntExpr* expr = solver_->MakeMin(vars.get(), 1001);
+    IntExpr* expr = solver_->MakeMin(vars);
     CHECK_EQ(2000, expr->Max());
     CHECK_EQ(0, expr->Min());
   }
 
   void TestSmallMinVector() {
     SetUp();
-    vector<IntVar*> vars;
+    std::vector<IntVar*> vars;
     IntExpr* expr = solver_->MakeMin(vars);
-    CHECK_EQ(0, expr->Min());
-    CHECK_EQ(0, expr->Max());
+    CHECK_EQ(kint64max, expr->Min());
+    CHECK_EQ(kint64max, expr->Max());
     vars.push_back(solver_->MakeIntVar(1, 10, "x0"));
     expr = solver_->MakeMin(vars);
     CHECK_EQ(1, expr->Min());
@@ -178,20 +179,21 @@ class MinArrayCtTest {
 
   void TestSmallMinArray() {
     SetUp();
-    scoped_array<IntVar*> vars(new IntVar*[3]);
-    for (int i = 0; i < 3; ++i) {
-      vars[i] = solver_->MakeIntVar(i + 1, 10 - i, StringPrintf("x%d", i));
-    }
-    IntExpr* expr = solver_->MakeMin(vars.get(), 0);
-    CHECK_EQ(0, expr->Min());
-    CHECK_EQ(0, expr->Max());
-    expr = solver_->MakeMin(vars.get(), 1);
+    std::vector<IntVar*> vars;
+    vars.reserve(3);
+    IntExpr* expr = solver_->MakeMin(vars);
+    CHECK_EQ(kint64max, expr->Min());
+    CHECK_EQ(kint64max, expr->Max());
+    vars.push_back(solver_->MakeIntVar(1, 10, StringPrintf("x%d", 0)));
+    expr = solver_->MakeMin(vars);
     CHECK_EQ(1, expr->Min());
     CHECK_EQ(10, expr->Max());
-    expr = solver_->MakeMin(vars.get(), 2);
+    vars.push_back(solver_->MakeIntVar(1, 9, StringPrintf("x%d", 1)));
+    expr = solver_->MakeMin(vars);
     CHECK_EQ(1, expr->Min());
     CHECK_EQ(9, expr->Max());
-    expr = solver_->MakeMin(vars.get(), 3);
+    vars.push_back(solver_->MakeIntVar(1, 8, StringPrintf("x%d", 2)));
+    expr = solver_->MakeMin(vars);
     CHECK_EQ(1, expr->Min());
     CHECK_EQ(8, expr->Max());
   }
@@ -201,7 +203,7 @@ class MinArrayCtTest {
 
 class MaxArrayCtTestSetToMin : public DecisionBuilder {
  public:
-  MaxArrayCtTestSetToMin(IntExpr* const max, const vector<IntVar*>& vars)
+  MaxArrayCtTestSetToMin(IntExpr* const max, const std::vector<IntVar*>& vars)
       : max_(max), vars_(vars) {}
   virtual ~MaxArrayCtTestSetToMin() {}
 
@@ -214,12 +216,12 @@ class MaxArrayCtTestSetToMin : public DecisionBuilder {
 
  private:
   IntExpr* const max_;
-  const vector<IntVar*>& vars_;
+  const std::vector<IntVar*>& vars_;
 };
 
 class MaxArrayCtTestSetToMax : public DecisionBuilder {
  public:
-  MaxArrayCtTestSetToMax(IntExpr* const max, const vector<IntVar*>& vars)
+  MaxArrayCtTestSetToMax(IntExpr* const max, const std::vector<IntVar*>& vars)
       : max_(max), vars_(vars) {}
   virtual ~MaxArrayCtTestSetToMax() {}
 
@@ -232,12 +234,12 @@ class MaxArrayCtTestSetToMax : public DecisionBuilder {
 
  private:
   IntExpr* const max_;
-  const vector<IntVar*>& vars_;
+  const std::vector<IntVar*>& vars_;
 };
 
 class MaxArrayCtTestSetOneVar : public DecisionBuilder {
  public:
-  MaxArrayCtTestSetOneVar(IntExpr* const max, const vector<IntVar*>& vars)
+  MaxArrayCtTestSetOneVar(IntExpr* const max, const std::vector<IntVar*>& vars)
       : max_(max), vars_(vars) {}
   virtual ~MaxArrayCtTestSetOneVar() {}
 
@@ -250,7 +252,7 @@ class MaxArrayCtTestSetOneVar : public DecisionBuilder {
 
  private:
   IntExpr* const max_;
-  const vector<IntVar*>& vars_;
+  const std::vector<IntVar*>& vars_;
 };
 
 class MaxArrayCtTest {
@@ -264,17 +266,17 @@ class MaxArrayCtTest {
     max_ = solver_->MakeMax(vars_)->Var();
   }
 
-  scoped_ptr<Solver> solver_;
-  vector<IntVar*> vars_;
+  std::unique_ptr<Solver> solver_;
+  std::vector<IntVar*> vars_;
   IntExpr* max_;
 
   void TestAlternateCtor() {
     SetUp();
-    scoped_array<IntVar*> vars(new IntVar*[4]);
+    std::vector<IntVar*> vars;
     for (int i = 0; i < 4; ++i) {
-      vars[i] = solver_->MakeIntVar(i, 2 * i);
+      vars.push_back(solver_->MakeIntVar(i, 2 * i));
     }
-    IntExpr* emax = solver_->MakeMax(vars.get(), 4);
+    IntExpr* emax = solver_->MakeMax(vars);
     CHECK(!emax->DebugString().empty());
   }
 
@@ -307,7 +309,8 @@ class MaxArrayCtTest {
 
   void TestBigMaxVector() {
     SetUp();
-    vector<IntVar*> vars;
+    std::vector<IntVar*> vars;
+    vars.reserve(1001);
     for (int i = 0; i < 1001; ++i) {
       vars.push_back(solver_->MakeIntVar(i, 3000 - i, StringPrintf("x%d", i)));
     }
@@ -318,21 +321,21 @@ class MaxArrayCtTest {
 
   void TestBigMaxArray() {
     SetUp();
-    scoped_array<IntVar*> vars(new IntVar*[1001]);
+    std::vector<IntVar*> vars;
     for (int i = 0; i < 1001; ++i) {
-      vars[i] = solver_->MakeIntVar(i, 3000 - i, StringPrintf("x%d", i));
+      vars.push_back(solver_->MakeIntVar(i, 3000 - i, StringPrintf("x%d", i)));
     }
-    IntExpr* expr = solver_->MakeMax(vars.get(), 1001);
+    IntExpr* expr = solver_->MakeMax(vars);
     CHECK_EQ(3000, expr->Max());
     CHECK_EQ(1000, expr->Min());
   }
 
   void TestSmallMaxVector() {
     SetUp();
-    vector<IntVar*> vars;
+    std::vector<IntVar*> vars;
     IntExpr* expr = solver_->MakeMax(vars);
-    CHECK_EQ(0, expr->Min());
-    CHECK_EQ(0, expr->Max());
+    CHECK_EQ(kint64min, expr->Min());
+    CHECK_EQ(kint64min, expr->Max());
     vars.push_back(solver_->MakeIntVar(1, 10, "x0"));
     expr = solver_->MakeMax(vars);
     CHECK_EQ(1, expr->Min());
@@ -349,20 +352,20 @@ class MaxArrayCtTest {
 
   void TestSmallMaxArray() {
     SetUp();
-    scoped_array<IntVar*> vars(new IntVar*[3]);
-    for (int i = 0; i < 3; ++i) {
-      vars[i] = solver_->MakeIntVar(i + 1, 10 - i, StringPrintf("x%d", i));
-    }
-    IntExpr* expr = solver_->MakeMax(vars.get(), 0);
-    CHECK_EQ(0, expr->Min());
-    CHECK_EQ(0, expr->Max());
-    expr = solver_->MakeMax(vars.get(), 1);
+    std::vector<IntVar*> vars;
+    IntExpr* expr = solver_->MakeMax(vars);
+    CHECK_EQ(kint64min, expr->Min());
+    CHECK_EQ(kint64min, expr->Max());
+    vars.push_back(solver_->MakeIntVar(1, 10, StringPrintf("x%d", 0)));
+    expr = solver_->MakeMax(vars);
     CHECK_EQ(1, expr->Min());
     CHECK_EQ(10, expr->Max());
-    expr = solver_->MakeMax(vars.get(), 2);
+    vars.push_back(solver_->MakeIntVar(2, 10, StringPrintf("x%d", 1)));
+    expr = solver_->MakeMax(vars);
     CHECK_EQ(2, expr->Min());
     CHECK_EQ(10, expr->Max());
-    expr = solver_->MakeMax(vars.get(), 3);
+    vars.push_back(solver_->MakeIntVar(3, 10, StringPrintf("x%d", 2)));
+    expr = solver_->MakeMax(vars);
     CHECK_EQ(3, expr->Min());
     CHECK_EQ(10, expr->Max());
   }

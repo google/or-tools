@@ -162,7 +162,9 @@ dependencies/archives/gflags-$(GFLAGS_TAG).zip:
 	$(WGET) --quiet -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
 	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
 
-
+################
+##  Protobuf  ##
+################
 # Install protocol buffers.
 install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
 
@@ -192,6 +194,9 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 	$(WGET) --quiet -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
 	$(UNZIP) -q -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
 
+############
+##  GLOG  ##
+############
 install_glog: dependencies/install/include/glog/logging.h
 
 dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt install_gflags
@@ -329,7 +334,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo #   i.e.: path\\scip-4.0.0 >> Makefile.local
 	@echo # See instructions here: >> Makefile.local
 	@echo #   http://or-tools.blogspot.com/2017/03/changing-way-we-link-with-scip.html >> Makefile.local
-	@echo CLR_KEYFILE = bin\\or-tools.snk >> Makefile.local
 	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME, WINDOWS_GFLAGS_DIR, >> Makefile.local

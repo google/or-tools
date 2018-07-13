@@ -12,80 +12,26 @@
 // limitations under the License.
 
 
-#include "base/hash.h"
-#include "base/map-util.h"
-#include "base/stl_util.h"
-#include "base/random.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/model.pb.h"
-#include "util/string_array.h"
-#include "core/Solver.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/random.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/model.pb.h"
+#include "ortools/util/string_array.h"
+#include "ortools/flatzinc/sat_constraint.h"
 
 namespace operations_research {
-class SatPropagator;
-bool AddBoolEq(SatPropagator* const sat,
-               IntExpr* const left,
-               IntExpr* const right);
-
-bool AddBoolLe(SatPropagator* const sat,
-               IntExpr* const left,
-               IntExpr* const right);
-
-bool AddBoolNot(SatPropagator* const sat,
-                IntExpr* const left,
-                IntExpr* const right);
-
-bool AddBoolAndArrayEqVar(SatPropagator* const sat,
-                          const std::vector<IntVar*>& vars,
-                          IntExpr* const target);
-
-bool AddBoolOrArrayEqVar(SatPropagator* const sat,
-                         const std::vector<IntVar*>& vars,
-                         IntExpr* const target);
-
-bool AddBoolAndEqVar(SatPropagator* const sat,
-                     IntExpr* const left,
-                     IntExpr* const right,
-                     IntExpr* const target);
-
-bool AddBoolIsNEqVar(SatPropagator* const sat,
-                     IntExpr* const left,
-                     IntExpr* const right,
-                     IntExpr* const target);
-
-bool AddBoolOrEqVar(SatPropagator* const sat,
-                    IntExpr* const left,
-                    IntExpr* const right,
-                    IntExpr* const target);
-
-bool AddBoolIsEqVar(SatPropagator* const sat,
-                    IntExpr* const left,
-                    IntExpr* const right,
-                    IntExpr* const target);
-
-bool AddBoolIsLeVar(SatPropagator* const sat,
-                    IntExpr* const left,
-                    IntExpr* const right,
-                    IntExpr* const target);
-
-bool AddBoolOrArrayEqualTrue(SatPropagator* const sat,
-                             const std::vector<IntVar*>& vars);
-
-bool AddBoolAndArrayEqualFalse(SatPropagator* const sat,
-                               const std::vector<IntVar*>& vars);
-
-SatPropagator* MakeSatPropagator(Solver* const solver, bool backjump);
-
 void TestConversions() {
-  LOG(INFO) << "lbool(false) -> " << toInt(Minisat::lbool(false));
-  LOG(INFO) << "lbool(true) -> " << toInt(Minisat::lbool(true));
+ //LOG(INFO) << "lbool(false) -> " << toInt(Minisat::lbool(false));
+ //LOG(INFO) << "lbool(true) -> " << toInt(Minisat::lbool(true));
 }
 
 void TestBoolLe(int rotation) {
   LOG(INFO) << "TestBoolLe(" << rotation << ")";
   Solver solver("TestBoolLe");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -109,7 +55,7 @@ void TestBoolLe(int rotation) {
 void TestBoolEq(int rotation) {
   LOG(INFO) << "TestBoolEq(" << rotation << ")";
   Solver solver("TestBoolEq");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -133,7 +79,7 @@ void TestBoolEq(int rotation) {
 void TestBoolNot(int rotation) {
   LOG(INFO) << "TestBoolNot(" << rotation << ")";
   Solver solver("TestBoolNot");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -157,7 +103,7 @@ void TestBoolNot(int rotation) {
 void TestBoolAndEq(int rotation) {
   LOG(INFO) << "TestBoolAndEq(" << rotation << ")";
   Solver solver("TestBoolAndEq");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -184,7 +130,7 @@ void TestBoolAndEq(int rotation) {
 void TestBoolOrEq(int rotation) {
   LOG(INFO) << "TestBoolOrEq(" << rotation << ")";
   Solver solver("TestBoolOrEq");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -210,7 +156,7 @@ void TestBoolOrEq(int rotation) {
 void TestBoolArrayAndEq(int rotation) {
   LOG(INFO) << "TestBoolArrayAndEq(" << rotation << ")";
   Solver solver("TestBoolArrayAndEq");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -243,7 +189,7 @@ void TestBoolArrayAndEq(int rotation) {
 void TestBoolArrayOrEq(int rotation) {
   LOG(INFO) << "TestBoolArrayOrEq(" << rotation << ")";
   Solver solver("TestBoolArrayOrdEq");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -276,7 +222,7 @@ void TestBoolArrayOrEq(int rotation) {
 void TestBoolIsEq(int rotation) {
   LOG(INFO) << "TestBoolIsEq(" << rotation << ")";
   Solver solver("TestBoolIsEq");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -302,7 +248,7 @@ void TestBoolIsEq(int rotation) {
 void TestBoolIsNEq(int rotation) {
   LOG(INFO) << "TestBoolIsNEq(" << rotation << ")";
   Solver solver("TestBoolIsNEq");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -328,7 +274,7 @@ void TestBoolIsNEq(int rotation) {
 void TestBoolIsLe(int rotation) {
   LOG(INFO) << "TestBoolIsLe(" << rotation << ")";
   Solver solver("TestBoolIsLe");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -354,7 +300,7 @@ void TestBoolIsLe(int rotation) {
 void TestBoolArrayAndEqFalse(int rotation) {
   LOG(INFO) << "TestBoolArrayAndEqFalse(" << rotation << ")";
   Solver solver("TestBoolArrayAndEqFalse");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -385,7 +331,7 @@ void TestBoolArrayAndEqFalse(int rotation) {
 void TestBoolArrayOrEqTrue(int rotation) {
   LOG(INFO) << "TestBoolArrayOrEqTrue(" << rotation << ")";
   Solver solver("TestBoolArrayOrdEqTrue");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");
@@ -416,7 +362,7 @@ void TestBoolArrayOrEqTrue(int rotation) {
 void TestInconsistent() {
   LOG(INFO) << "TestInconsistent";
   Solver solver("TestInconsistent");
-  SatPropagator* const sat = MakeSatPropagator(&solver, true);
+  SatPropagator* const sat = MakeSatPropagator(&solver);
   solver.AddConstraint(reinterpret_cast<Constraint*>(sat));
   IntVar* const x = solver.MakeBoolVar("x");
   IntVar* const y = solver.MakeBoolVar("y");

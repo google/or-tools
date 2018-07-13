@@ -12,14 +12,14 @@
 // limitations under the License.
 
 
-#include "base/hash.h"
-#include "base/map-util.h"
-#include "base/stl_util.h"
-#include "base/random.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/model.pb.h"
-#include "util/string_array.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/random.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/model.pb.h"
+#include "ortools/util/string_array.h"
 
 namespace operations_research {
 void TestVisitSumEqual() {
@@ -36,7 +36,7 @@ void TestVisitSumEqual() {
 
   //Contrainte ct1 : un item appartient qu'à un seul bin
   for (int i = 0; i < total_items; ++i) {
-    vector<IntVar*> item_column(total_bins);
+    std::vector<IntVar*> item_column(total_bins);
     for(int j = 0; j < total_bins; ++j) {
       item_column[j] = vars[j + i * total_bins];
     }
@@ -56,7 +56,7 @@ void TestVisitSumEqual() {
 }
 
 
-void RunExport(CPModelProto* const model) {
+void RunExport(CpModel* const model) {
   const int total_items = 3;
   const int total_bins = 2;
 
@@ -107,18 +107,17 @@ void RunExport(CPModelProto* const model) {
   IntVar* const numNotEmptyBins =
       solver.MakeSum(bin_used)->VarWithName("objective");
 
-  OptimizeVar* const minimizeNumBins = solver.MakeMinimize(numNotEmptyBins, 1);
-
+	OptimizeVar* const minimizeNumBins = solver.MakeMinimize(numNotEmptyBins, 1);
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(minimizeNumBins);
 
   //Export the model
-  solver.ExportModel(monitors, model);
+  *model = solver.ExportModelWithSearchMonitors(monitors);
 }
 
 void TestExport() {
   LOG(INFO) << "----- Test Export -----";
-  CPModelProto model;
+  CpModel model;
   RunExport(&model);
   CHECK(model.has_objective());
 }
@@ -131,11 +130,11 @@ bool sortIntVar(const IntVar* x, const IntVar* y) {
 
 void TestImport() {
   LOG(INFO) << "----- Test Import -----";
-  CPModelProto model;
+  CpModel model;
   RunExport(&model);
   Solver solver("BinPacking");
   std::vector<SearchMonitor*> monitors;
-  solver.LoadModel(model, &monitors);
+  solver.LoadModelWithSearchMonitors(model, &monitors);
 
   std::vector<IntVar*> primary_integer_variables;
   std::vector<IntVar*> secondary_integer_variables;

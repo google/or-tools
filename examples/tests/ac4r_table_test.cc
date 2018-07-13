@@ -11,20 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-#include "base/hash.h"
-#include "base/map-util.h"
-#include "base/stl_util.h"
-#include "base/random.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "constraint_solver/constraint_solver.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/random.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_int32(arity, 3, "Arity of tuples");
 DEFINE_int32(upper, 10, "Upper bound of variables, lower is always 0");
 DEFINE_int32(tuples, 1000, "Number of tuples");
 DEFINE_int32(bucket, 64, "Size of buckets");
 DEFINE_bool(ac4, false, "Use AC4 Table only");
-DECLARE_bool(cp_use_ac4r_table);
 
 namespace operations_research {
 extern Constraint* BuildAc4TableConstraint(Solver* const solver,
@@ -48,7 +46,6 @@ void RandomFillTable(int num_tuples,
 }
 
 void TestTable(int arity, int num_tuples, int upper, bool use_ac4r_table) {
-  FLAGS_cp_use_ac4r_table = use_ac4r_table;
   if (use_ac4r_table) {
     LOG(INFO) <<  "Creation of a AC4-Regin tuple Table with :";
   } else {

@@ -31,6 +31,7 @@
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/strutil.h"
 #include "ortools/lp_data/lp_print_utils.h"
+#include "ortools/glop/parameters.pb.h"
 
 DEFINE_bool(mps_free_form, false, "Read MPS files in free form.");
 DEFINE_bool(mps_stop_after_first_error, true, "Stop after the first error.");

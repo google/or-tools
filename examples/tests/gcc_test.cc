@@ -11,13 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "base/hash.h"
-#include "base/map-util.h"
-#include "base/stl_util.h"
-#include "base/random.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "constraint_solver/constraint_solver.h"
-#include "util/string_array.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/random.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/util/string_array.h"
 
 DEFINE_int32(vars, 3, "Number of variables");
 DEFINE_int32(values, 5, "Number of values");
@@ -70,8 +70,18 @@ int64 TestGcc(int num_vars,
   LOG(INFO) << "  - num values = " << num_values;
   LOG(INFO) << "  - slack = " << slack;
   LOG(INFO) << "  - seed = " << seed;
-  LOG(INFO) << "  - min_cards = [" << IntVectorToString(card_min, " ") << "]";
-  LOG(INFO) << "  - max_cards = [" << IntVectorToString(card_max, " ") << "]";
+  {
+    std::string tmp;
+    for (const auto& it : card_min)
+      tmp += ' ' + it;
+    LOG(INFO) << "  - card_min = [" << tmp << "]";
+  }
+  {
+    std::string tmp;
+    for (const auto& it : card_max)
+      tmp += ' ' + it;
+    LOG(INFO) << "  - card_max = [" << tmp << "]";
+  }
 
   Solver solver("TestGcc");
   std::vector<IntVar*> vars;
