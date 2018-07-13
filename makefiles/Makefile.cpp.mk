@@ -494,6 +494,7 @@ install_dirs:
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sport"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
+	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sdata"
 
 .PHONY: install_cc # Install C++ OR-Tools to $(DESTDIR)$(prefix)
 install_cc: install_libortools install_third_party install_doc
@@ -519,6 +520,8 @@ install_libortools: ortoolslibs install_dirs
 	$(COPY) $(GEN_PATH)$Sortools$Ssat$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
 	$(COPY) ortools$Sutil$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
 	$(COPY) $(GEN_PATH)$Sortools$Sutil$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
+	$(COPY) ortools$Sdata$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sdata"
+	$(COPY) $(GEN_PATH)$Sortools$Sdata$S*.pb.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sdata"
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L "$(DESTDIR)$(prefix)$Slib"
 
 .PHONY: install_third_party
