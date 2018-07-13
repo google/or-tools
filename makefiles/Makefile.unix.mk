@@ -164,11 +164,13 @@ ifeq ($(PLATFORM),LINUX)
   LINK_FLAGS = \
  -Wl,-rpath,"\$$ORIGIN" \
  -Wl,-rpath,"\$$ORIGIN/../lib" \
+ -Wl,-rpath,"\$$ORIGIN/../dependencies/install/lib64" \
  -Wl,-rpath,"\$$ORIGIN/../dependencies/install/lib"
   PYTHON_LDFLAGS = \
  -Wl,-rpath,"\$$ORIGIN" \
  -Wl,-rpath,"\$$ORIGIN/../../ortools" \
  -Wl,-rpath,"\$$ORIGIN/../../../../lib" \
+ -Wl,-rpath,"\$$ORIGIN/../../../../dependencies/install/lib64" \
  -Wl,-rpath,"\$$ORIGIN/../../../../dependencies/install/lib"
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
