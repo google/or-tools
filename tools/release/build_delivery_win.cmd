@@ -10,11 +10,13 @@ which.exe cmake || exit 1
 which.exe cmake | tee.exe build.log
 REM python
 which.exe C:\python27-64\python.exe || exit 1
-which.exe C:\python27-64\python.exe | tee.exe -a build.log
+echo C:\python27-64\python.exe: FOUND | tee.exe -a build.log
 which.exe C:\python35-64\python.exe || exit 1
-which.exe C:\python35-64\python.exe | tee.exe -a build.log
+echo C:\python35-64\python.exe: FOUND | tee.exe -a build.log
 which.exe C:\python36-64\python.exe || exit 1
-which.exe C:\python36-64\python.exe | tee.exe -a build.log
+echo C:\python36-64\python.exe: FOUND | tee.exe -a build.log
+which.exe C:\python37-64\python.exe || exit 1
+echo C:\python37-64\python.exe: FOUND | tee.exe -a build.log
 REM java
 which.exe java || exit 1
 which.exe java | tee.exe -a build.log
@@ -101,7 +103,15 @@ echo make test_python3.6: DONE | tee.exe -a build.log
 make.exe pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
 echo make pypi_archive3.6: DONE | tee.exe -a build.log
 
+REM Rebuilding for Python 3.7...
+make.exe clean_python WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
+make.exe python WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
+echo make python3.7: DONE | tee.exe -a build.log
+make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
+echo make test_python3.7: DONE | tee.exe -a build.log
+make.exe pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
+echo make pypi_archive3.7: DONE | tee.exe -a build.log
 
 REM Creating .NET artifacts
-make.exe nuget_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe nuget_archive WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
 echo make nuget_archive: DONE | tee.exe -a build.log
