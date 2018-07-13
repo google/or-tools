@@ -32,7 +32,7 @@ std::size_t DratChecker::ClauseHash::operator()(
     const ClauseIndex clause_index) const {
   size_t hash = 0;
   for (Literal literal : checker->Literals(checker->clauses_[clause_index])) {
-    hash = Hash64NumWithSeed(hash, literal.Index().value());
+    hash = util_hash::Hash(literal.Index().value(), hash);
   }
   return hash;
 }
