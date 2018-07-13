@@ -481,6 +481,8 @@ install_dirs:
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Slib"
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sbin"
+
+install_ortools_dirs: install_dirs
 	-$(DELREC) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
@@ -500,7 +502,7 @@ install_dirs:
 install_cc: install_libortools install_third_party install_doc
 
 .PHONY: install_libortools
-install_libortools: ortoolslibs install_dirs
+install_libortools: ortoolslibs install_ortools_dirs
 	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
 	$(COPY) ortools$Salgorithms$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
 	$(COPY) ortools$Sbase$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbase"
