@@ -327,8 +327,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	-$(DEL) Makefile.local
 	@echo $(SELECTED_PATH_TO_JDK)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
-	@echo $(SELECTED_CSC_BINARY)>> Makefile.local
-	@echo $(SELECTED_DOTNET_BINARY)>> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_SCIP_DIR to point to a compiled version of SCIP to use it >> Makefile.local
 	@echo #   i.e.: path\\scip-4.0.0 >> Makefile.local

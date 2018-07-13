@@ -30,14 +30,11 @@ CLR_KEYFILE_PATH = $(subst /,$S,$(CLR_KEYFILE))
 TEMP_DOTNET_TEST_DIR=temp_dotnet_test
 
 # Check for required build tools
-ifeq ($(SYSTEM), win)
-DOTNET_BIN := $(shell $(WHICH) dotnet.exe 2>nul)
+DOTNET = dotnet
+ifeq ($(SYSTEM),win)
+DOTNET_BIN := $(shell $(WHICH) $(DOTNET) 2> NUL)
 else # UNIX
-ifeq ($(PLATFORM),MACOSX)
-DOTNET_BIN := $(PATH_TO_DOTNET_COMPILER)
-else # LINUX
-DOTNET_BIN := $(shell $(WHICH) dotnet)
-endif
+DOTNET_BIN := $(shell command -v $(DOTNET) 2> /dev/null)
 endif
 NUGET_BIN = $(DOTNET_BIN) nuget
 

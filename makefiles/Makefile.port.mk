@@ -82,29 +82,6 @@ ifeq ($(SYSTEM),unix)
     endif
     MAC_MIN_VERSION = 10.9
   endif # ($(OS),Darwin)
-
-  # Look at mono compiler.
-  REAL_MCS = $(shell which mcs)
-  MINIMUM_REQUIRED_MCS_VERSION = 5.4
-  ifneq ($(REAL_MCS),)
-    ifeq ($(PLATFORM),LINUX)
-      MCS_VERSION = $(shell $(REAL_MCS) --version | grep -P '\d\.\d' -o | head -1)
-    else # Mac OS X
-      MCS_VERSION = $(shell $(REAL_MCS) --Version | grep -E '\d\.\d' -o | head -1)
-    endif
-    ifneq ("$(MINIMUM_REQUIRED_MCS_VERSION)", "$(word 1,$(sort $(MINIMUM_REQUIRED_MCS_VERSION) $(MCS_VERSION)))")
-      DETECTED_MCS_BINARY := \\\# The detected mcs version is $(MCS_VERSION) \
-      while the minimum required version is $(MINIMUM_REQUIRED_MCS_VERSION).
-    else
-      DETECTED_MCS_BINARY := $(REAL_MCS)
-    endif
-  endif
-
-  # Look at dotnet compiler.
-  REAL_DOTNET = $(shell which dotnet)
-  ifneq ($(REAL_DOTNET),)
-    DETECTED_DOTNET_BINARY := $(REAL_DOTNET)
-  endif
 endif # ($(SYSTEM),unix)
 
 # Windows specific part.
@@ -155,15 +132,6 @@ ifeq ($(SYSTEM),win)
       endif
     endif
   endif
-
-  # Detect the .net core sdk folder
-  DOTNET_INSTALL_PATH = $(ProgramW6432)\dotnet
-  ifneq ($(wildcard $(DOTNET_INSTALL_PATH)\dotnet.exe),)
-    DOTNET_INSTALL_PATH = \# DOTNET install path not found
-  endif
-
-  # Set common windows variables
-
   # OS Specific
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)
@@ -205,30 +173,6 @@ ifeq ($(SYSTEM),win)
   endif
   ifneq ($(WINDOWS_PATH_TO_PYTHON),)
     WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
-  endif
-
-  #Detect csc
-  ifeq ($(PATH_TO_CSHARP_COMPILER),)
-    DETECTED_CSC_BINARY := $(shell tools\\win\\which.exe csc 2>nul)
-    ifeq ($(DETECTED_CSC_BINARY),)
-      SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the csharp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
-    else
-      SELECTED_CSC_BINARY =\#PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
-    endif
-  else
-    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
-  endif
-
-  #Detect dotnet
-  ifeq ($(PATH_TO_DOTNET_COMPILER),)
-    DETECTED_DOTNET_BINARY := $(shell tools\\win\\which.exe dotnet 2>nul)
-    ifeq ($(DETECTED_DOTNET_BINARY),)
-      SELECTED_DOTNET_BINARY = PATH_TO_DOTNET_COMPILER =\# dotnet was not found. Set this variable to the path of dotnet to build the fsharp files. (ex: PATH_TO_DOTNET_COMPILER = C:\Program Files\dotnet\dotnet.exe)
-    else
-      SELECTED_DOTNET_BINARY =\#PATH_TO_DOTNET_COMPILER = $(DETECTED_DOTNET_BINARY)
-    endif
-  else
-    SELECTED_DOTNET_BINARY = PATH_TO_DOTNET_COMPILER = $(PATH_TO_DOTNET_COMPILER)
   endif
 endif # ($(SYSTEM),win)
 
