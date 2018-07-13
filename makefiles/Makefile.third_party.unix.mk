@@ -222,11 +222,11 @@ STATIC_PROTOBUF_LNK = $(wildcard \
  $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a \
  $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a@ \
  $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
-_PROTOBUF_LIB_DIR = $(wildcard \
+_PROTOBUF_LIB_DIR = $(dir $(wildcard \
  $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L \
  $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L@ \
- $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.$L)
-DYNAMIC_PROTOBUF_LNK = -L$(dir $(_PROTOBUF_LIB_DIR)) -lprotobuf
+ $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.$L))
+DYNAMIC_PROTOBUF_LNK = -L$(_PROTOBUF_LIB_DIR) -lprotobuf
 
 ifeq ($(UNIX_PROTOBUF_DIR), $(OR_TOOLS_TOP)/dependencies/install)
 DEPENDENCIES_LNK += $(DYNAMIC_PROTOBUF_LNK)
