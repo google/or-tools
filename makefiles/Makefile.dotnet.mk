@@ -47,9 +47,10 @@ HAS_DOTNET =
 endif
 
 # Main target
+.PHONY: dotnet # Build OrTools for .NET
+dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
 
-.PHONY: csharp_dotnet # Build C# OR-Tools
-csharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
+BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 
 # Assembly Info
 $(GEN_DIR)/ortools/properties:
@@ -58,6 +59,9 @@ $(GEN_DIR)/ortools/properties:
 $(GEN_DIR)/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: \
  | $(GEN_DIR)/ortools/properties
 	@echo $(OR_TOOLS_VERSION) > $(GEN_PATH)$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
+
+.PHONY: csharp_dotnet # Build C# OR-Tools
+csharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
 
 # Auto-generated code
 $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D: tools/dotnet/$(CLR_PROTOBUF_DLL_NAME)$D | $(BIN_DIR)
@@ -249,12 +253,6 @@ $(GEN_DIR)/ortools/sat/SatParameters.pb.cs: \
 
 $(CLR_KEYFILE): | $(BIN_DIR)
 	"$(DOTNET_BIN)" run --project tools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(CLR_KEYFILE_PATH)
-
-# Main DLL
-.PHONY: dotnet # Build OrTools for .NET
-dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
-
-BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D: \
  $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_DLL_NAME)/$(ORTOOLS_DLL_NAME).csproj \
