@@ -61,6 +61,11 @@ public class IntervalVar
     return model_.Constraints[index_].ToString();
   }
 
+  public string Name()
+  {
+    return model_.Constraints[index_].Name;
+  }
+
   private CpModelProto model_;
   private int index_;
   private IntervalConstraintProto interval_;

@@ -349,6 +349,9 @@ class IntVar(IntegerExpression):
   def __repr__(self):
     return '%s(%s)' % (self.__var.name, DisplayBounds(self.__var.domain))
 
+  def name(self):
+    return self.__var.name
+
   def Not(self):
     for bound in self.__var.domain:
       if bound < 0 or bound > 1:
@@ -478,6 +481,9 @@ class IntervalVar(object):
           self.__ct.name, ShortName(self.__model, interval.start),
           ShortName(self.__model, interval.size),
           ShortName(self.__model, interval.end))
+
+    def name(self):
+      return self.__ct.name
 
 
 class CpModel(object):

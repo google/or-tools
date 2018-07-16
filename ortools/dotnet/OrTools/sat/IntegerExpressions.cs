@@ -447,6 +447,11 @@ public class IntVar : IntegerExpression, ILiteral
     }
   }
 
+  public string Name()
+  {
+    return var_.Name;
+  }
+
   public ILiteral Not()
   {
     foreach (long b in var_.Domain)
