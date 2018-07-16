@@ -93,9 +93,16 @@ run_WhoKilledAgatha \
 run_Xkcd \
 run_YoungTableaux
 
+.PHONY: test_donet_examples
+test_dotnet_examples: dotnet
+	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle$D
+	"$(DOTNET_BIN)" $(BIN_DIR)$Stsp$D
+	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram$D
+
 # csharp test
 .PHONY: test_csharp_examples
 test_csharp_examples: csharp
+	$(warning C# netfx not working)
 	$(MONO) $(BIN_DIR)$Scslinearprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsintegerprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsrabbitspheasants$(CLR_EXE_SUFFIX).exe

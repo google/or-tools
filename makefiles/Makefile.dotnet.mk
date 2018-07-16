@@ -27,7 +27,7 @@ CLR_KEYFILE = $(BIN_DIR)/or-tools.snk
 CLR_KEYFILE_PATH = $(subst /,$S,$(CLR_KEYFILE))
 
 # relative to the project root folder
-TEMP_DOTNET_TEST_DIR=temp_dotnet_test
+TEMP_DOTNET_TEST_DIR = temp_dotnet_test
 
 # Check for required build tools
 DOTNET = dotnet
@@ -43,11 +43,52 @@ ifndef DOTNET_BIN
 HAS_DOTNET =
 endif
 
+DOTNET_ORTOOLS_LIBS = $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$D
+
+DOTNET_EXAMPLES = \
+$(BIN_DIR)/a_puzzle$D \
+$(BIN_DIR)/tsp$D \
+$(BIN_DIR)/Program$D
+
 # Main target
 .PHONY: dotnet # Build OrTools for .NET
-dotnet: ortoolslibs csharp_dotnet fsharp_dotnet
-
+.PHONY: test_dotnet # Test dotnet version of OR-Tools
+ifndef HAS_DOTNET
+dotnet:
+	@echo DOTNET_BIN = $(DOTNET_BIN)
+	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system path.)
+test_dotnet: dotnet
+else
+dotnet: ortoolslibs $(DOTNET_ORTOOLS_LIBS) $(DOTNET_EXAMPLES)
+test_dotnet: test_dotnet_examples
+	"$(DOTNET_BIN)" restore \
+ --packages "ortools$Sdotnet$Spackages" \
+ "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
+	"$(DOTNET_BIN)" restore \
+ --packages "ortools$Sdotnet$Spackages" \
+ "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
+	$(MKDIR_P) .$S$(TEMP_DOTNET_TEST_DIR)
+	$(COPY) $(BIN_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) .$S$(TEMP_DOTNET_TEST_DIR)
+	"$(DOTNET_BIN)" clean \
+ "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
+	"$(DOTNET_BIN)" build \
+ -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
+ "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
+	"$(DOTNET_BIN)" clean \
+ "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
+	"$(DOTNET_BIN)" build \
+ -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
+ "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
+	"$(DOTNET_BIN)" test \
+ --no-build -v n \
+ -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
+ "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)"
+	"$(DOTNET_BIN)" test \
+ --no-build -v n \
+ -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
+ "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)"
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
+endif
 
 # Assembly Info
 $(GEN_DIR)/ortools/properties:
@@ -328,6 +369,39 @@ $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_FSHARP_DLL_NAME)/$(ORTOOLS_FSHARP_DLL_NAME).
  ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj.in \
  >ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 
+#####################
+##  .NET Examples  ##
+#####################
+ifeq ($(EX),) # Those rules will be used if EX variable is not set
+.PHONY: rdotnet cdotnet
+rdotnet cdotnet:
+	@echo No .Net file was provided, the $@ target must be used like so: \
+ make $@ EX=examples/dotnet/csharp/example.csproj
+else # This generic rule will be used if EX variable is set
+EX_NAME = $(basename $(notdir $(EX)))
+
+.PHONY: cdotnet
+cdotnet: $(BIN_DIR)/$(EX_NAME)$D
+
+.PHONY: rdotnet
+rdotnet: $(BIN_DIR)/$(EX_NAME)$D
+	@echo running $<
+	"$(DOTNET_BIN)" $(BIN_DIR)$S$(EX_NAME)$D
+endif # ifeq ($(EX),)
+
+$(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/csharp/%.csproj $(DOTNET_EX_DIR)/csharp/%.cs \
+ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D | $(BIN_DIR)
+	"$(DOTNET_BIN)" build -o "..$S..$S..$S$(BIN_DIR)" \
+ $(DOTNET_EX_PATH)$Scsharp$S$*.csproj
+
+$(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/fsharp/%.fsproj $(DOTNET_EX_DIR)/fsharp/%.fs \
+ $(BIN_DIR)/$(CLR_ORTOOLS_FSHARP_DLL_NAME)$D  | $(BIN_DIR)
+	"$(DOTNET_BIN)" build -o "..$S..$S..$S$(BIN_DIR)" \
+ $(DOTNET_EX_PATH)$Sfsharp$S$*.fsproj
+
+################
+##  Cleaning  ##
+################
 .PHONY: clean_dotnet # Clean files
 clean_dotnet:
 	-$(DELREC) tools$Sdotnet$SCreateSigningKey$Sbin
@@ -360,38 +434,9 @@ clean_dotnet:
 	-$(DELREC) $(TEMP_DOTNET_DIR)
 	-$(DELREC) $(TEMP_DOTNET_TEST_DIR)
 
-.PHONY: test_dotnet # Test dotnet version of OR-Tools
-test_dotnet: dotnet
-	"$(DOTNET_BIN)" restore \
- --packages "ortools$Sdotnet$Spackages" \
- "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
-	"$(DOTNET_BIN)" restore \
- --packages "ortools$Sdotnet$Spackages" \
- "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
-	$(MKDIR_P) .$S$(TEMP_DOTNET_TEST_DIR)
-	$(COPY) $(BIN_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) .$S$(TEMP_DOTNET_TEST_DIR)
-	"$(DOTNET_BIN)" clean \
- "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
-	"$(DOTNET_BIN)" build \
- -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
- "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)$S$(ORTOOLS_TEST_DLL_NAME).csproj"
-	"$(DOTNET_BIN)" clean \
- "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
-	"$(DOTNET_BIN)" build \
- -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
- "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$S$(ORTOOLS_FSHARP_TEST_DLL_NAME).fsproj"
-	"$(DOTNET_BIN)" test \
- --no-build -v n \
- -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
- "ortools$Sdotnet$S$(ORTOOLS_TEST_DLL_NAME)"
-	"$(DOTNET_BIN)" test \
- --no-build -v n \
- -o "..$S..$S..$S$(TEMP_DOTNET_TEST_DIR)" \
- "ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)"
-
-#####################
-##  Nuget artifact ##
-#####################
+######################
+##  Nuget artifact  ##
+######################
 TEMP_DOTNET_DIR=temp_dotnet
 
 $(TEMP_DOTNET_DIR):
@@ -417,6 +462,9 @@ nuget_upload: nuget_archive
 	@echo Uploading Nuget package for "netstandard2".
 	$(warning Not Implemented)
 
+#############
+##  DEBUG  ##
+#############
 .PHONY: detect_dotnet # Show variables used to build dotnet OR-Tools.
 detect_dotnet:
 	@echo Relevant info for the dotnet build:
@@ -430,6 +478,7 @@ detect_dotnet:
 	@echo CLR_ORTOOLS_FSHARP_DLL_NAME = $(CLR_ORTOOLS_FSHARP_DLL_NAME)
 	@echo CLR_ORTOOLS_TEST_DLL_NAME = $(CLR_ORTOOLS_TEST_DLL_NAME)
 	@echo CLR_ORTOOLS_FSHARP_TEST_DLL_NAME = $(CLR_ORTOOLS_FSHARP_TEST_DLL_NAME)
+	@echo DOTNET_ORTOOLS_LIBS = $(DOTNET_ORTOOLS_LIBS)
 	@echo NUGET_BIN = $(NUGET_BIN)
 	@echo ORTOOLS_NUSPEC_FILE = $(ORTOOLS_NUSPEC_FILE)
 ifeq ($(SYSTEM),win)

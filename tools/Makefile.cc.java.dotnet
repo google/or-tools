@@ -72,6 +72,7 @@ ifeq ($(SYSTEM),unix)
   OBJ_OUT = -o #
   EXE_OUT = -o #
   O = .o
+  D = .dll
   E =
 # Java
 ifneq ($(JAVA_HOME),)
@@ -129,6 +130,7 @@ ifeq ($(SYSTEM),win)
   EXE_OUT = /Fe
   O = .obj
   L = .lib
+  D = .dll
   E = .exe
 # Java
   JAVAC_BIN := $(shell $(WHICH) javac 2> NUL)
@@ -445,8 +447,8 @@ endif
 ##  DOTNET  ##
 ##############
 DLL = \
-$(BIN_DIR)/a_puzzle.dll \
-$(BIN_DIR)/Program.dll
+$(BIN_DIR)/a_puzzle$D \
+$(BIN_DIR)/Program$D
 
 ifndef DOTNET_BIN
 NUGET_BIN =
@@ -456,9 +458,9 @@ else
 NUGET_BIN = $(DOTNET_BIN) nuget
 dotnet: $(DLL)
 
-test_dotnet: detect_dotnet $(BIN_DIR)/a_puzzle.dll $(BIN_DIR)/Program.dll
-	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle.dll
-	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram.dll
+test_dotnet: detect_dotnet $(BIN_DIR)/a_puzzle$D $(BIN_DIR)/Program$D
+	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle$D
+	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram$D
 
 # .NET generic compilation command.
 .PHONY: cdotnet rdotnet
@@ -469,19 +471,21 @@ cdotnet rdotnet:
 else # ifeq ($(EX),)
 EX_NAME = $(basename $(notdir $(EX)))
 
-cdotnet: $(BIN_DIR)/$(EX_NAME).dll
+cdotnet: $(BIN_DIR)/$(EX_NAME)$D
 
-rdotnet: $(BIN_DIR)/$(EX_NAME).dll
+rdotnet: $(BIN_DIR)/$(EX_NAME)$D
 	@echo running $<
-	"$(DOTNET_BIN)" $(BIN_DIR)$S$(EX_NAME).dll
+	"$(DOTNET_BIN)" $(BIN_DIR)$S$(EX_NAME)$D
 endif # ifeq ($(EX),)
 endif # ifndef DOTNET_BIN
 
-$(BIN_DIR)/%.dll: $(DOTNET_EX_DIR)/csharp/%.cs
+$(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/csharp/%.csproj $(DOTNET_EX_DIR)/csharp/%.cs \
+ | $(BIN_DIR)
 	"$(DOTNET_BIN)" build -o "..$S..$S..$S$(BIN_DIR)" \
  $(DOTNET_EX_PATH)$Scsharp$S$*.csproj
 
-$(BIN_DIR)/%.dll: $(DOTNET_EX_DIR)/fsharp/%.fs
+$(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/fsharp/%.fsproj $(DOTNET_EX_DIR)/fsharp/%.fs \
+ | $(BIN_DIR)
 	"$(DOTNET_BIN)" build -o "..$S..$S..$S$(BIN_DIR)" \
  $(DOTNET_EX_PATH)$Sfsharp$S$*.fsproj
 

@@ -18,14 +18,14 @@ BIN_DIR = $(OR_ROOT)bin
 INC_DIR = $(OR_ROOT).
 DEP_BIN_DIR = $(OR_ROOT)dependencies/install/bin
 
-O = o
+O =o
 E =
 ifeq ($(PLATFORM),LINUX)
 L = so
 else # MACOS
 L = dylib
 endif
-D=.dll
+D =.dll
 PDB=.pdb
 EXP=.exp
 ARCHIVE_EXT = .tar.gz
