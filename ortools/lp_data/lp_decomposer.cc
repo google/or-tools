@@ -17,6 +17,7 @@
 
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/mutex.h"
+#include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_utils.h"
 

@@ -897,6 +897,7 @@ $(OBJ_DIR)/lp_data/lp_decomposer.$O: \
  $(SRC_DIR)/ortools/lp_data/lp_decomposer.cc \
  $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
  $(SRC_DIR)/ortools/base/mutex.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
  $(SRC_DIR)/ortools/lp_data/lp_decomposer.h \
  $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -979,6 +980,7 @@ $(SRC_DIR)/ortools/lp_data/model_reader.cc: ;
 $(OBJ_DIR)/lp_data/model_reader.$O: \
  $(SRC_DIR)/ortools/lp_data/model_reader.cc \
  $(SRC_DIR)/ortools/base/file.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
  $(SRC_DIR)/ortools/lp_data/model_reader.h \
@@ -1019,6 +1021,7 @@ $(SRC_DIR)/ortools/lp_data/proto_utils.cc: ;
 
 $(OBJ_DIR)/lp_data/proto_utils.$O: \
  $(SRC_DIR)/ortools/lp_data/proto_utils.cc \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
  $(SRC_DIR)/ortools/lp_data/proto_utils.h \
