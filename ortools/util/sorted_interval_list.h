@@ -33,8 +33,10 @@ struct ClosedInterval {
   bool operator==(const ClosedInterval& other) const {
     return start == other.start && end == other.end;
   }
+  // Because we mainly manipulate vector of disjoint intervals, we only need to
+  // sort by the start. We do not care about the order in which interval with
+  // the same start appear since they will always be merged into one interval.
   bool operator<(const ClosedInterval& other) const {
-    if (start == other.start) return end < other.end;
     return start < other.start;
   }
 };
