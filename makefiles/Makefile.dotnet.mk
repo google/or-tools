@@ -248,7 +248,7 @@ $(GEN_DIR)/ortools/sat/SatParameters.pb.cs: \
  --csharp_opt=file_extension=.pb.cs \
  $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
 
-$(CLR_KEYFILE): | $(BIN_DIR)
+$(CLR_KEYFILE): $(SRC_DIR)/tools/dotnet/CreateSigningKey/CreateSigningKey.csproj | $(BIN_DIR)
 	"$(DOTNET_BIN)" run --project tools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(CLR_KEYFILE_PATH)
 
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D: \
