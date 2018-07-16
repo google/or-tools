@@ -141,3 +141,17 @@ manylinux1-pypi: export manylinux1-image
 
 manylinux1-bash: export manylinux1-image
 	docker run --rm -it --init or-tools-manylinux1-image:latest /bin/bash
+
+# Minizinc challenge image
+
+minizinc-challenge-image:
+	docker build -f minizinc-challenge.Dockerfile -t or-tools-minizinc-challenge-image .
+
+minizinc-challenge-image-no-cache:
+	docker build --no-cache -f minizinc-challenge.Dockerfile -t or-tools-minizinc-challenge-image .
+
+minizinc-challenge-test: minizinc-challenge-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-minizinc-challenge-image:latest /bin/bash -c "git pull; make clean; make cc -j 5; make fz; make test_cc;"
+
+minizinc-challenge-bash: export minizinc-challenge-image
+	docker run -it or-tools-minizinc-challenge-image:latest /bin/bash
