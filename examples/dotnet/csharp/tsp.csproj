@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-		<OutputType>Exe</OutputType>
-		<LangVersion>7.2</LangVersion>
+    <OutputType>Exe</OutputType>
+    <LangVersion>7.2</LangVersion>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
