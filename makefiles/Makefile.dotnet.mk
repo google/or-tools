@@ -36,7 +36,7 @@ DOTNET_BIN := $(shell $(WHICH) $(DOTNET) 2> NUL)
 else # UNIX
 DOTNET_BIN := $(shell command -v $(DOTNET) 2> /dev/null)
 endif
-NUGET_BIN = $(DOTNET_BIN) nuget
+NUGET_BIN = "$(DOTNET_BIN)" nuget
 
 HAS_DOTNET = true
 ifndef DOTNET_BIN
@@ -431,6 +431,7 @@ clean_dotnet:
 	-$(DEL) $(BIN_DIR)$S$(CLR_PROTOBUF_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_FSHARP_DLL_NAME).*
+	-$(DEL) $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_NUSPEC_FILE)
 	-$(DELREC) $(TEMP_DOTNET_DIR)
 	-$(DELREC) $(TEMP_DOTNET_TEST_DIR)
 
@@ -442,20 +443,24 @@ TEMP_DOTNET_DIR=temp_dotnet
 $(TEMP_DOTNET_DIR):
 	$(MKDIR_P) $(TEMP_DOTNET_DIR)
 
+$(SRC_DIR)/ortools/dotnet/$(ORTOOLS_NUSPEC_FILE): $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_NUSPEC_FILE).in
+	$(SED) -e "s/@PROJECT_DLL_NAME@/$(CLR_ORTOOLS_DLL_NAME)/" \
+ ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE).in \
+ >ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+	$(SED) -i -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
+ ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
-nuget_archive: dotnet $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_NUSPEC_FILE).in | $(TEMP_DOTNET_DIR)
+nuget_archive: dotnet $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_NUSPEC_FILE) | $(TEMP_DOTNET_DIR)
 	"$(DOTNET_BIN)" publish -c Release --no-dependencies --no-restore -f netstandard2.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	"$(DOTNET_BIN)" publish -c Release --no-dependencies --no-restore -f netstandard2.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
-	$(SED) -e "s/MMMM/$(CLR_ORTOOLS_DLL_NAME)/" \
- ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE).in \
- >ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
-	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" \
- ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
-	"$(NUGET_BIN)" pack ortools$Sdotnet$S$(ORTOOLS_NUSPEC_FILE)
+	"$(DOTNET_BIN)" pack -c Release \
+ -o "..$S..$S..$S$(BIN_DIR)" \
+ ortools$Sdotnet
 
 .PHONY: nuget_upload # Upload Nuget Package
 nuget_upload: nuget_archive
