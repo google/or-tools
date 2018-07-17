@@ -43,15 +43,10 @@ echo "make java: DONE" | tee -a build.log
 make test_java -l 4 UNIX_PYTHON_VER=2.7
 echo "make test_java: DONE" | tee -a build.log
 
-make csharp -l 4 UNIX_PYTHON_VER=2.7
-echo "make csharp: DONE" | tee -a build.log
-make test_csharp -l 4 UNIX_PYTHON_VER=2.7
-echo "make test_csharp: DONE" | tee -a build.log
-
-make fsharp -l 4 UNIX_PYTHON_VER=2.7
-echo "make fsharp: DONE" | tee -a build.log
-make test_fsharp -l 4 UNIX_PYTHON_VER=2.7
-echo "make test_fsharp: DONE" | tee -a build.log
+make dotnet -l 4 UNIX_PYTHON_VER=2.7
+echo "make dotnet: DONE" | tee -a build.log
+make test_dotnet -l 4 UNIX_PYTHON_VER=2.7
+echo "make test_dotnet: DONE" | tee -a build.log
 
 make fz -l 4 UNIX_PYTHON_VER=2.7
 echo "make fz: DONE" | tee -a build.log
