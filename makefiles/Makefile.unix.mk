@@ -25,6 +25,7 @@ L = so
 else # MACOS
 L = dylib
 endif
+J =.jar
 D =.dll
 PDB=.pdb
 EXP=.exp

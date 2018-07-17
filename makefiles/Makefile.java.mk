@@ -10,63 +10,63 @@ else
 	@echo
 endif
 
-JAVA_OR_TOOLS_LIBS= $(LIB_DIR)/com.google.ortools.jar $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
+JAVA_OR_TOOLS_LIBS= $(LIB_DIR)/com.google.ortools$J $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
 JAVAFLAGS = -Djava.library.path=$(LIB_DIR)
 
 JAR = \
-$(LIB_DIR)/AllDifferentExcept0.jar \
-$(LIB_DIR)/AllInterval.jar \
-$(LIB_DIR)/CapacitatedVehicleRoutingProblemWithTimeWindows.jar \
-$(LIB_DIR)/Circuit.jar \
-$(LIB_DIR)/CoinsGrid.jar \
-$(LIB_DIR)/CoinsGridMIP.jar \
-$(LIB_DIR)/ColoringMIP.jar \
-$(LIB_DIR)/CoveringOpl.jar \
-$(LIB_DIR)/Crossword.jar \
-$(LIB_DIR)/DeBruijn.jar \
-$(LIB_DIR)/Diet.jar \
-$(LIB_DIR)/DietMIP.jar \
-$(LIB_DIR)/DivisibleBy9Through1.jar \
-$(LIB_DIR)/FlowExample.jar \
-$(LIB_DIR)/GolombRuler.jar \
-$(LIB_DIR)/IntegerProgramming.jar \
-$(LIB_DIR)/Issue173.jar \
-$(LIB_DIR)/Knapsack.jar \
-$(LIB_DIR)/KnapsackMIP.jar \
-$(LIB_DIR)/LeastDiff.jar \
-$(LIB_DIR)/LinearAssignmentAPI.jar \
-$(LIB_DIR)/LinearProgramming.jar \
-$(LIB_DIR)/LsApi.jar \
-$(LIB_DIR)/MagicSquare.jar \
-$(LIB_DIR)/Map2.jar \
-$(LIB_DIR)/Map.jar \
-$(LIB_DIR)/Minesweeper.jar \
-$(LIB_DIR)/MultiThreadTest.jar \
-$(LIB_DIR)/NQueens2.jar \
-$(LIB_DIR)/NQueens.jar \
-$(LIB_DIR)/Partition.jar \
-$(LIB_DIR)/QuasigroupCompletion.jar \
-$(LIB_DIR)/RabbitsPheasants.jar \
-$(LIB_DIR)/SendMoreMoney2.jar \
-$(LIB_DIR)/SendMoreMoney.jar \
-$(LIB_DIR)/SendMostMoney.jar \
-$(LIB_DIR)/Seseman.jar \
-$(LIB_DIR)/SetCovering2.jar \
-$(LIB_DIR)/SetCovering3.jar \
-$(LIB_DIR)/SetCovering4.jar \
-$(LIB_DIR)/SetCoveringDeployment.jar \
-$(LIB_DIR)/SetCovering.jar \
-$(LIB_DIR)/SimpleRoutingTest.jar \
-$(LIB_DIR)/StableMarriage.jar \
-$(LIB_DIR)/StiglerMIP.jar \
-$(LIB_DIR)/Strimko2.jar \
-$(LIB_DIR)/Sudoku.jar \
-$(LIB_DIR)/SurvoPuzzle.jar \
-$(LIB_DIR)/ToNum.jar \
-$(LIB_DIR)/Tsp.jar \
-$(LIB_DIR)/WhoKilledAgatha.jar \
-$(LIB_DIR)/Xkcd.jar \
-$(LIB_DIR)/YoungTableaux.jar
+$(LIB_DIR)/AllDifferentExcept0$J \
+$(LIB_DIR)/AllInterval$J \
+$(LIB_DIR)/CapacitatedVehicleRoutingProblemWithTimeWindows$J \
+$(LIB_DIR)/Circuit$J \
+$(LIB_DIR)/CoinsGrid$J \
+$(LIB_DIR)/CoinsGridMIP$J \
+$(LIB_DIR)/ColoringMIP$J \
+$(LIB_DIR)/CoveringOpl$J \
+$(LIB_DIR)/Crossword$J \
+$(LIB_DIR)/DeBruijn$J \
+$(LIB_DIR)/Diet$J \
+$(LIB_DIR)/DietMIP$J \
+$(LIB_DIR)/DivisibleBy9Through1$J \
+$(LIB_DIR)/FlowExample$J \
+$(LIB_DIR)/GolombRuler$J \
+$(LIB_DIR)/IntegerProgramming$J \
+$(LIB_DIR)/Issue173$J \
+$(LIB_DIR)/Knapsack$J \
+$(LIB_DIR)/KnapsackMIP$J \
+$(LIB_DIR)/LeastDiff$J \
+$(LIB_DIR)/LinearAssignmentAPI$J \
+$(LIB_DIR)/LinearProgramming$J \
+$(LIB_DIR)/LsApi$J \
+$(LIB_DIR)/MagicSquare$J \
+$(LIB_DIR)/Map2$J \
+$(LIB_DIR)/Map$J \
+$(LIB_DIR)/Minesweeper$J \
+$(LIB_DIR)/MultiThreadTest$J \
+$(LIB_DIR)/NQueens2$J \
+$(LIB_DIR)/NQueens$J \
+$(LIB_DIR)/Partition$J \
+$(LIB_DIR)/QuasigroupCompletion$J \
+$(LIB_DIR)/RabbitsPheasants$J \
+$(LIB_DIR)/SendMoreMoney2$J \
+$(LIB_DIR)/SendMoreMoney$J \
+$(LIB_DIR)/SendMostMoney$J \
+$(LIB_DIR)/Seseman$J \
+$(LIB_DIR)/SetCovering2$J \
+$(LIB_DIR)/SetCovering3$J \
+$(LIB_DIR)/SetCovering4$J \
+$(LIB_DIR)/SetCoveringDeployment$J \
+$(LIB_DIR)/SetCovering$J \
+$(LIB_DIR)/SimpleRoutingTest$J \
+$(LIB_DIR)/StableMarriage$J \
+$(LIB_DIR)/StiglerMIP$J \
+$(LIB_DIR)/Strimko2$J \
+$(LIB_DIR)/Sudoku$J \
+$(LIB_DIR)/SurvoPuzzle$J \
+$(LIB_DIR)/ToNum$J \
+$(LIB_DIR)/Tsp$J \
+$(LIB_DIR)/WhoKilledAgatha$J \
+$(LIB_DIR)/Xkcd$J \
+$(LIB_DIR)/YoungTableaux$J
 
 HAS_JAVA = true
 ifndef JAVAC_BIN
@@ -84,10 +84,10 @@ endif
 .PHONY: test_java # Test Java OR-Tools using various examples.
 ifndef HAS_JAVA
 java:
-	@echo JAVA_HOME = ${JAVA_HOME}
-	@echo JAVAC_BIN = ${JAVAC_BIN}
-	@echo JAR_BIN = ${JAR_BIN}
-	@echo JAVA_BIN = ${JAVA_BIN}
+	@echo JAVA_HOME = $(JAVA_HOME)
+	@echo JAVAC_BIN = $(JAVAC_BIN)
+	@echo JAR_BIN = $(JAR_BIN)
+	@echo JAVA_BIN = $(JAVA_BIN)
 	$(warning Cannot find 'java' command which is needed for build. Please make sure it is installed and in system path. Check Makefile.local for more information.)
 test_java: java
 else
@@ -248,8 +248,8 @@ $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT): \
 ifeq ($(EX),) # Those rules will be used if EX variable is not set
 .PHONY: rjava cjava
 rjava cjava:
-	@echo No java file was provided, the rjava target must be used like so: \
- make rjava EX=examples/java/example.java
+	@echo No java file was provided, the $@ target must be used like so: \
+ make $@ EX=examples/java/example.java
 else # This generic rule will be used if EX variable is set
 EX_NAME = $(basename $(notdir $(EX)))
 
@@ -257,7 +257,7 @@ EX_NAME = $(basename $(notdir $(EX)))
 cjava: $(CLASS_DIR)/$(EX_NAME)
 
 .PHONY: rjava
-rjava: $(LIB_DIR)/$(EX_NAME).jar
+rjava: $(LIB_DIR)/$(EX_NAME)$J
 	@echo running $<
 	$(MAKE) run_$(EX_NAME)
 endif # ifeq ($(EX),)
@@ -269,15 +269,18 @@ $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(JAVA_EX_PATH)$S$*.java
 
-$(LIB_DIR)/%.jar: $(CLASS_DIR)/% | $(LIB_DIR)
+$(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	-$(DEL) $(LIB_DIR)$S$*.jar
 	$(JAR_BIN) cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
 
-run_%: $(LIB_DIR)/%.jar
+run_%: $(LIB_DIR)/%$J
 	$(JAVA_BIN) -Xss2048k $(JAVAFLAGS) \
  -cp $(LIB_DIR)$S$*.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $* $(ARGS)
 
+################
+##  Cleaning  ##
+################
 .PHONY: clean_java # Clean Java output from previous build.
 clean_java:
 	-$(DELREC) $(GEN_PATH)$Scom
@@ -292,6 +295,9 @@ clean_java:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
 	-$(DEL) $(LIB_DIR)$S*.jar
 
+#############
+##  DEBUG  ##
+#############
 .PHONY: detect_java # Show variables used to build Java OR-Tools.
 detect_java:
 	@echo Relevant info for the Java build:
