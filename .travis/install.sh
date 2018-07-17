@@ -50,7 +50,7 @@ if [ "${BUILDER}" == make ]; then
 				pyenv global system 3.6;
 				python3.6 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == dotnet ]; then
-				installmono
+				#installmono
 				sudo apt-get -yqq install fsharp
 				installdotnetsdk
 			fi
@@ -72,7 +72,7 @@ if [ "${BUILDER}" == make ]; then
 			elif [ "${LANGUAGE}" == java ]; then
 				brew cask install java;
 			elif [ "${LANGUAGE}" == dotnet ]; then
-				brew install mono;
+				#brew install mono;
 				# Installer changes path but won't be picked up in current terminal session
 				# Need to explicitly add location (see Makefile.fsharp.mk)
 				brew tap caskroom/cask
