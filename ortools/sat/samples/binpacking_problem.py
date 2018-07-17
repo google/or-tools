@@ -24,10 +24,10 @@ def BinpackingProblem():
   # Data.
   bin_capacity = 100
   slack_capacity = 20
-  num_bins = 10
+  num_bins = 5
   all_bins = range(num_bins)
 
-  items = [(20, 12), (15, 12), (30, 8), (45, 5)]
+  items = [(20, 6), (15, 6), (30, 4), (45, 3)]
   num_items = len(items)
   all_items = range(num_items)
 
