@@ -77,12 +77,37 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
   ComputeUnitRowLeftInverse(leaving_row);
   SCOPED_TIME_STAT(&stats_);
 
-  if (parameters_.use_transposed_matrix() &&
-      !unit_row_left_inverse_.non_zeros.empty()) {
+  if (parameters_.use_transposed_matrix()) {
     // Number of entries that ComputeUpdatesRowWise() will need to look at.
     EntryIndex num_row_wise_entries(0);
-    for (const ColIndex col : unit_row_left_inverse_.non_zeros) {
-      num_row_wise_entries += transposed_matrix_.ColumnNumEntries(col);
+
+    // Because we are about to do an expensive matrix-vector product, we make
+    // sure we drop small entries in the vector for the row-wise algorithm. We
+    // also computes its non-zeros to simplify the code below.
+    //
+    // TODO(user): So far we didn't generalize the use of drop tolerances
+    // everywhere in the solver, so we make sure to not modify
+    // unit_row_left_inverse_ that is also used elsewhere. However, because of
+    // that, we will not get the exact same result depending on the algortihm
+    // used below because the ComputeUpdatesColumnWise() will still use these
+    // small entries (no complexity changes).
+    const Fractional drop_tolerance = parameters_.drop_tolerance();
+    unit_row_left_inverse_filtered_non_zeros_.clear();
+    if (unit_row_left_inverse_.non_zeros.empty()) {
+      const ColIndex size = unit_row_left_inverse_.values.size();
+      for (ColIndex col(0); col < size; ++col) {
+        if (std::abs(unit_row_left_inverse_.values[col]) > drop_tolerance) {
+          unit_row_left_inverse_filtered_non_zeros_.push_back(col);
+          num_row_wise_entries += transposed_matrix_.ColumnNumEntries(col);
+        }
+      }
+    } else {
+      for (const ColIndex col : unit_row_left_inverse_.non_zeros) {
+        if (std::abs(unit_row_left_inverse_.values[col]) > drop_tolerance) {
+          unit_row_left_inverse_filtered_non_zeros_.push_back(col);
+          num_row_wise_entries += transposed_matrix_.ColumnNumEntries(col);
+        }
+      }
     }
 
     // Number of entries that ComputeUpdatesColumnWise() will need to look at.
@@ -92,9 +117,9 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
     // Note that the thresholds were chosen (more or less) from the result of
     // the microbenchmark tests of this file in September 2013.
     // TODO(user): automate the computation of these constants at run-time?
-    const double lhs = static_cast<double>(num_row_wise_entries.value());
-    if (lhs < 0.5 * static_cast<double>(num_col_wise_entries.value())) {
-      if (lhs < 1.1 * static_cast<double>(matrix_.num_cols().value())) {
+    const double row_wise = static_cast<double>(num_row_wise_entries.value());
+    if (row_wise < 0.5 * static_cast<double>(num_col_wise_entries.value())) {
+      if (row_wise < 1.1 * static_cast<double>(matrix_.num_cols().value())) {
         ComputeUpdatesRowWiseHypersparse();
         num_operations_ += num_row_wise_entries.value();
       } else {
@@ -121,7 +146,7 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
 void UpdateRow::ComputeUpdateRowForBenchmark(const DenseRow& lhs,
                                              const std::string& algorithm) {
   unit_row_left_inverse_.values = lhs;
-  ComputeNonZeros(lhs, &unit_row_left_inverse_.non_zeros);
+  ComputeNonZeros(lhs, &unit_row_left_inverse_filtered_non_zeros_);
   if (algorithm == "column") {
     ComputeUpdatesColumnWise();
   } else if (algorithm == "row") {
@@ -150,7 +175,7 @@ void UpdateRow::ComputeUpdatesRowWise() {
   SCOPED_TIME_STAT(&stats_);
   const ColIndex num_cols = matrix_.num_cols();
   coefficient_.AssignToZero(num_cols);
-  for (ColIndex col : unit_row_left_inverse_.non_zeros) {
+  for (ColIndex col : unit_row_left_inverse_filtered_non_zeros_) {
     const Fractional multiplier = unit_row_left_inverse_[col];
     for (const EntryIndex i : transposed_matrix_.Column(col)) {
       const ColIndex pos = RowToColIndex(transposed_matrix_.EntryRow(i));
@@ -174,7 +199,7 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
   const ColIndex num_cols = matrix_.num_cols();
   non_zero_position_set_.ClearAndResize(num_cols);
   coefficient_.resize(num_cols, 0.0);
-  for (ColIndex col : unit_row_left_inverse_.non_zeros) {
+  for (ColIndex col : unit_row_left_inverse_filtered_non_zeros_) {
     const Fractional multiplier = unit_row_left_inverse_[col];
     for (const EntryIndex i : transposed_matrix_.Column(col)) {
       const ColIndex pos = RowToColIndex(transposed_matrix_.EntryRow(i));
