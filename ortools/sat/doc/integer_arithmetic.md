@@ -16,8 +16,8 @@ a flattened list of disjoint intervals.
 -   To represent a single value (5), create a domain [5, 5].
 -   From these, it is easy to represent an enumerated list of values [-5, -4,
     -3, 1, 3, 4, 5, 6] is encoded as [-5, -3, 1, 1, 3, 6].
--   To exclude a single value, use int64min and int64max values as in 
-    [int64min, 4, 6, int64max].
+-   To exclude a single value, use int64min and int64max values as in [int64min,
+    4, 6, int64max].
 
 ## Linear constraints
 
@@ -47,8 +47,15 @@ rabbits and pheasants are there?
 
 ### Python code
 
-```python
+```
+"""Rabbits and Pheasants quizz."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from ortools.sat.python import cp_model
+
 
 def RabbitsAndPheasants():
   """Solves the rabbits + pheasants problem."""
@@ -62,20 +69,23 @@ def RabbitsAndPheasants():
   # 56 legs.
   model.Add(4 * r + 2 * p == 56)
 
-  # Solves and print out the solutions.
-  # Creates a solver and solves the model.
+  # Solves and prints out the solution.
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
   if status == cp_model.FEASIBLE:
     print('%i rabbits and %i pheasants' % (solver.Value(r), solver.Value(p)))
+
+
+RabbitsAndPheasants()
 ```
 
 ### C++ code
 
-```cpp
+```
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -132,8 +142,14 @@ void RabbitsAndPheasants() {
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
+
+int main() {
+  operations_research::sat::RabbitsAndPheasants();
+
+  return EXIT_SUCCESS;
+}
 ```
 
 ### C\# code

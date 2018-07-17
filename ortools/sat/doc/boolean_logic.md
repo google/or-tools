@@ -17,8 +17,15 @@ negation of 'x'.
 
 ### Python code
 
-```python
+```
+"""Code sample to demonstrate Boolean variable and literals."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from ortools.sat.python import cp_model
+
 
 def LiteralSample():
   model = cp_model.CpModel()
@@ -26,13 +33,19 @@ def LiteralSample():
   not_x = x.Not()
   print(x)
   print(not_x)
+
+
+LiteralSample()
 ```
 
 ### C++ code
 
-```cpp
+```
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -50,10 +63,17 @@ void LiteralSample() {
 
   const int x = new_boolean_variable();
   const int not_x = NegatedRef(x);
+  LOG(INFO) << "x = " << x << ", not(x) = " << not_x;
 }
 
 }  // namespace sat
 }  // namespace operations_research
+
+int main() {
+  operations_research::sat::LiteralSample();
+
+  return EXIT_SUCCESS;
+}
 ```
 
 ### C\# code
@@ -91,8 +111,15 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 
 ### Python code
 
-```python
+```
+"""Code sample to demonstrates a simple Boolean constraint."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from ortools.sat.python import cp_model
+
 
 def BoolOrSample():
   model = cp_model.CpModel()
@@ -101,13 +128,19 @@ def BoolOrSample():
   y = model.NewBoolVar('y')
 
   model.AddBoolOr([x, y.Not()])
+
+
+BoolOrSample()
 ```
 
 ### C++ code
 
-```cpp
+```
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -135,8 +168,15 @@ void BoolOrSample() {
   const int y = new_boolean_variable();
   add_bool_or({x, NegatedRef(y)});
 }
+
 }  // namespace sat
 }  // namespace operations_research
+
+int main() {
+  operations_research::sat::BoolOrSample();
+
+  return EXIT_SUCCESS;
+}
 ```
 
 ### C\# code
@@ -180,8 +220,15 @@ then is written as Or(not b, x) and Or(not b, not y).
 
 ### Python code
 
-```python
+```
+"""Simple model with a reified constraint."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from ortools.sat.python import cp_model
+
 
 def ReifiedSample():
   """Showcase creating a reified constraint."""
@@ -201,13 +248,19 @@ def ReifiedSample():
   # Third version using bool or.
   model.AddBoolOr([b.Not(), x])
   model.AddBoolOr([b.Not(), y.Not()])
+
+
+ReifiedSample()
 ```
 
 ### C++ code
 
-```cpp
+```
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -233,7 +286,7 @@ void ReifiedSample() {
 
   auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
                                           const int literal) {
-    ConstraintProto* const ct = model.add_constraints();
+    ConstraintProto* const ct = cp_model.add_constraints();
     ct->add_enforcement_literal(literal);
     for (const int lit : literals) {
       ct->mutable_bool_and()->add_literals(lit);
@@ -254,6 +307,12 @@ void ReifiedSample() {
 
 }  // namespace sat
 }  // namespace operations_research
+
+int main() {
+  operations_research::sat::ReifiedSample();
+
+  return EXIT_SUCCESS;
+}
 ```
 
 ### C\# code

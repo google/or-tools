@@ -24,7 +24,13 @@ following code samples.
 
 ### Python code
 
-```python
+```
+"""Solves a binpacking problem."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from ortools.sat.python import cp_model
 
 
@@ -64,12 +70,12 @@ def BinpackingProblem():
   for i in all_items:
     model.Add(sum(x[(i, b)] for b in all_bins) == items[i][1])
 
-  # Links load and slack.
+  # Links load and slack through an equivalence relation.
   safe_capacity = bin_capacity - slack_capacity
   for b in all_bins:
-    # slack[b] => load[b] <= safe_capacity
+    # slack[b] => load[b] <= safe_capacity.
     model.Add(load[b] <= safe_capacity).OnlyEnforceIf(slacks[b])
-    # not(slack[b]) => load[b] > safe_capacity
+    # not(slack[b]) => load[b] > safe_capacity.
     model.Add(load[b] > safe_capacity).OnlyEnforceIf(slacks[b].Not())
 
   # Maximize sum of slacks.
@@ -85,26 +91,31 @@ def BinpackingProblem():
   print('  - conflicts : %i' % solver.NumConflicts())
   print('  - branches  : %i' % solver.NumBranches())
   print('  - wall time : %f s' % solver.WallTime())
+
+
+BinpackingProblem()
 ```
 
 ### C++ code
 
-```c++
+```
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
+
 void BinpackingProblem() {
   // Data.
   const int kBinCapacity = 100;
   const int kSlackCapacity = 20;
   const int kNumBins = 10;
 
-  const std::vector<std::vector<int>> items =
-  { {20, 12}, {15, 12}, {30, 8}, {45, 5} };
+  const std::vector<std::vector<int>> items = {
+      {20, 12}, {15, 12}, {30, 8}, {45, 5}};
   const int num_items = items.size();
 
   // Model.
@@ -135,8 +146,8 @@ void BinpackingProblem() {
     lin->add_domain(ub);
   };
 
-  auto add_reified_variable_bounds = [&cp_model](
-      int var, int64 lb, int64 ub, int lit) {
+  auto add_reified_variable_bounds = [&cp_model](int var, int64 lb, int64 ub,
+                                                 int lit) {
     ConstraintProto* const ct = cp_model.add_constraints();
     ct->add_enforcement_literal(lit);
     LinearConstraintProto* const lin = ct->mutable_linear();
@@ -206,8 +217,8 @@ void BinpackingProblem() {
     // slack[b] => load[b] <= safe_capacity.
     add_reified_variable_bounds(load[b], kint64min, safe_capacity, slack[b]);
     // not(slack[b]) => load[b] > safe_capacity.
-    add_reified_variable_bounds(
-        load[b], safe_capacity + 1, kint64max, NegatedRef(slack[b]));
+    add_reified_variable_bounds(load[b], safe_capacity + 1, kint64max,
+                                NegatedRef(slack[b]));
   }
 
   // Maximize sum of slacks.
@@ -220,8 +231,14 @@ void BinpackingProblem() {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
+
+int main() {
+  operations_research::sat::BinpackingProblem();
+
+  return EXIT_SUCCESS;
+}
 ```
 
 ### C\# code
