@@ -17,7 +17,7 @@ negation of 'x'.
 
 ### Python code
 
-```
+```python
 """Code sample to demonstrate Boolean variable and literals."""
 
 from __future__ import absolute_import
@@ -40,12 +40,11 @@ LiteralSample()
 
 ### C++ code
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -111,7 +110,7 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 
 ### Python code
 
-```
+```python
 """Code sample to demonstrates a simple Boolean constraint."""
 
 from __future__ import absolute_import
@@ -135,12 +134,11 @@ BoolOrSample()
 
 ### C++ code
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -220,7 +218,7 @@ then is written as Or(not b, x) and Or(not b, not y).
 
 ### Python code
 
-```
+```python
 """Simple model with a reified constraint."""
 
 from __future__ import absolute_import
@@ -255,12 +253,11 @@ ReifiedSample()
 
 ### C++ code
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {

@@ -24,7 +24,7 @@ The Python interface to the CP-SAT solver is implemented using two classes.
 *   The **CpSolver** class encapsulates the solve API. and offers helpers to
     access the solution found by the solve.
 
-```
+```python
 """Creates a single Boolean variable."""
 
 from __future__ import absolute_import
@@ -52,12 +52,11 @@ The interface to the C++ CP-SAT solver is implemented through the
 We provide some inline helper methods to simplify variable and constraint
 creation.
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {

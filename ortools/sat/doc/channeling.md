@@ -24,7 +24,7 @@ following code samples.
 
 ### Python code
 
-```
+```python
 """Solves a binpacking problem."""
 
 from __future__ import absolute_import
@@ -39,10 +39,10 @@ def BinpackingProblem():
   # Data.
   bin_capacity = 100
   slack_capacity = 20
-  num_bins = 10
+  num_bins = 5
   all_bins = range(num_bins)
 
-  items = [(20, 12), (15, 12), (30, 8), (45, 5)]
+  items = [(20, 6), (15, 6), (30, 4), (45, 3)]
   num_items = len(items)
   all_items = range(num_items)
 
@@ -98,12 +98,11 @@ BinpackingProblem()
 
 ### C++ code
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -112,10 +111,10 @@ void BinpackingProblem() {
   // Data.
   const int kBinCapacity = 100;
   const int kSlackCapacity = 20;
-  const int kNumBins = 10;
+  const int kNumBins = 5;
 
   const std::vector<std::vector<int>> items = {
-      {20, 12}, {15, 12}, {30, 8}, {45, 5}};
+      {20, 6}, {15, 6}, {30, 4}, {45, 3}};
   const int num_items = items.size();
 
   // Model.

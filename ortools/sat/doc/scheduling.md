@@ -22,7 +22,7 @@ C++, and C\#.
 
 ### Python code
 
-```
+```python
 """Code sample to demonstrates how to build an interval."""
 
 from __future__ import absolute_import
@@ -48,12 +48,11 @@ IntervalSample()
 
 ### C++ code
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -71,9 +70,7 @@ void IntervalSample() {
     return index;
   };
 
-  auto new_constant = [&cp_model, &new_variable](int64 v) {
-    return new_variable(v, v);
-  };
+  auto new_constant = [&new_variable](int64 v) { return new_variable(v, v); };
 
   auto new_interval = [&cp_model](int start, int duration, int end) {
     const int index = cp_model.constraints_size();
@@ -139,7 +136,7 @@ understand these presence literals, and correctly ignore inactive intervals.
 
 ### Python code
 
-```
+```python
 """Code sample to demonstrates how to build an optional interval."""
 
 from __future__ import absolute_import
@@ -167,12 +164,11 @@ OptionalIntervalSample()
 
 ### C++ code
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -190,9 +186,7 @@ void OptionalIntervalSample() {
     return index;
   };
 
-  auto new_constant = [&cp_model, &new_variable](int64 v) {
-    return new_variable(v, v);
-  };
+  auto new_constant = [&new_variable](int64 v) { return new_variable(v, v); };
 
   auto new_optional_interval = [&cp_model](int start, int duration, int end,
                                            int presence) {

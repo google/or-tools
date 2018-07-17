@@ -12,7 +12,7 @@ objective.
 
 The CpSolver class encapsulates searching for a solution of a model.
 
-```
+```python
 """Simple solve."""
 
 from __future__ import absolute_import
@@ -53,12 +53,11 @@ Calling SolveCpModel() will return a CpSolverResponse protobuf that contains the
 solve status, the values for each variable in the model if solve was successful,
 and some metrics.
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -151,7 +150,7 @@ solver. The most useful one is the time limit.
 
 ### Specifying the time limit in python
 
-```
+```python
 """Solves a problem with a time limit."""
 
 from __future__ import absolute_import
@@ -192,7 +191,7 @@ MinimalCpSatWithTimeLimit()
 
 ### Specifying the time limit in C++
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -302,7 +301,7 @@ The exact implementation depends on the target language.
 
 ### Python code
 
-```
+```python
 """Solves an optimization problem and displays all intermediate solutions."""
 
 from __future__ import absolute_import
@@ -359,12 +358,11 @@ MinimalCpSatPrintIntermediateSolutions()
 
 ### C++ code
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -523,7 +521,7 @@ The exact implementation depends on the target language.
 
 To search for all solutions, the SearchForAllSolutions method must be used.
 
-```
+```python
 """Code sample that solves a model and displays all solutions."""
 
 from __future__ import absolute_import
@@ -577,7 +575,7 @@ MinimalSatSearchForAllSolutions()
 
 To search for all solution, a parameter of the sat solver must be changed.
 
-```
+```cpp
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
