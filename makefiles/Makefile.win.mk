@@ -33,6 +33,7 @@ INC_DIR = $(OR_ROOT).
 O=obj
 E=.exe
 L=lib
+J=.jar
 D=.dll
 PDB=.pdb
 EXP=.exp

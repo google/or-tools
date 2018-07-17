@@ -72,6 +72,8 @@ ifeq ($(SYSTEM),unix)
   OBJ_OUT = -o #
   EXE_OUT = -o #
   O = .o
+  J = .jar
+  D = .dll
   E =
 # Java
 ifneq ($(JAVA_HOME),)
@@ -129,6 +131,8 @@ ifeq ($(SYSTEM),win)
   EXE_OUT = /Fe
   O = .obj
   L = .lib
+  J = .jar
+  D = .dll
   E = .exe
 # Java
   JAVAC_BIN := $(shell $(WHICH) javac 2> NUL)
@@ -302,59 +306,59 @@ endif
 ##  JAVA  ##
 ############
 JAR = \
-$(LIB_DIR)/AllDifferentExcept0.jar \
-$(LIB_DIR)/AllInterval.jar \
-$(LIB_DIR)/CapacitatedVehicleRoutingProblemWithTimeWindows.jar \
-$(LIB_DIR)/Circuit.jar \
-$(LIB_DIR)/CoinsGrid.jar \
-$(LIB_DIR)/CoinsGridMIP.jar \
-$(LIB_DIR)/ColoringMIP.jar \
-$(LIB_DIR)/CoveringOpl.jar \
-$(LIB_DIR)/Crossword.jar \
-$(LIB_DIR)/DeBruijn.jar \
-$(LIB_DIR)/Diet.jar \
-$(LIB_DIR)/DietMIP.jar \
-$(LIB_DIR)/DivisibleBy9Through1.jar \
-$(LIB_DIR)/FlowExample.jar \
-$(LIB_DIR)/GolombRuler.jar \
-$(LIB_DIR)/IntegerProgramming.jar \
-$(LIB_DIR)/Issue173.jar \
-$(LIB_DIR)/Knapsack.jar \
-$(LIB_DIR)/KnapsackMIP.jar \
-$(LIB_DIR)/LeastDiff.jar \
-$(LIB_DIR)/LinearAssignmentAPI.jar \
-$(LIB_DIR)/LinearProgramming.jar \
-$(LIB_DIR)/LsApi.jar \
-$(LIB_DIR)/MagicSquare.jar \
-$(LIB_DIR)/Map2.jar \
-$(LIB_DIR)/Map.jar \
-$(LIB_DIR)/Minesweeper.jar \
-$(LIB_DIR)/MultiThreadTest.jar \
-$(LIB_DIR)/NQueens2.jar \
-$(LIB_DIR)/NQueens.jar \
-$(LIB_DIR)/Partition.jar \
-$(LIB_DIR)/QuasigroupCompletion.jar \
-$(LIB_DIR)/RabbitsPheasants.jar \
-$(LIB_DIR)/SendMoreMoney2.jar \
-$(LIB_DIR)/SendMoreMoney.jar \
-$(LIB_DIR)/SendMostMoney.jar \
-$(LIB_DIR)/Seseman.jar \
-$(LIB_DIR)/SetCovering2.jar \
-$(LIB_DIR)/SetCovering3.jar \
-$(LIB_DIR)/SetCovering4.jar \
-$(LIB_DIR)/SetCoveringDeployment.jar \
-$(LIB_DIR)/SetCovering.jar \
-$(LIB_DIR)/SimpleRoutingTest.jar \
-$(LIB_DIR)/StableMarriage.jar \
-$(LIB_DIR)/StiglerMIP.jar \
-$(LIB_DIR)/Strimko2.jar \
-$(LIB_DIR)/Sudoku.jar \
-$(LIB_DIR)/SurvoPuzzle.jar \
-$(LIB_DIR)/ToNum.jar \
-$(LIB_DIR)/Tsp.jar \
-$(LIB_DIR)/WhoKilledAgatha.jar \
-$(LIB_DIR)/Xkcd.jar \
-$(LIB_DIR)/YoungTableaux.jar
+$(LIB_DIR)/AllDifferentExcept0$J \
+$(LIB_DIR)/AllInterval$J \
+$(LIB_DIR)/CapacitatedVehicleRoutingProblemWithTimeWindows$J \
+$(LIB_DIR)/Circuit$J \
+$(LIB_DIR)/CoinsGrid$J \
+$(LIB_DIR)/CoinsGridMIP$J \
+$(LIB_DIR)/ColoringMIP$J \
+$(LIB_DIR)/CoveringOpl$J \
+$(LIB_DIR)/Crossword$J \
+$(LIB_DIR)/DeBruijn$J \
+$(LIB_DIR)/Diet$J \
+$(LIB_DIR)/DietMIP$J \
+$(LIB_DIR)/DivisibleBy9Through1$J \
+$(LIB_DIR)/FlowExample$J \
+$(LIB_DIR)/GolombRuler$J \
+$(LIB_DIR)/IntegerProgramming$J \
+$(LIB_DIR)/Issue173$J \
+$(LIB_DIR)/Knapsack$J \
+$(LIB_DIR)/KnapsackMIP$J \
+$(LIB_DIR)/LeastDiff$J \
+$(LIB_DIR)/LinearAssignmentAPI$J \
+$(LIB_DIR)/LinearProgramming$J \
+$(LIB_DIR)/LsApi$J \
+$(LIB_DIR)/MagicSquare$J \
+$(LIB_DIR)/Map2$J \
+$(LIB_DIR)/Map$J \
+$(LIB_DIR)/Minesweeper$J \
+$(LIB_DIR)/MultiThreadTest$J \
+$(LIB_DIR)/NQueens2$J \
+$(LIB_DIR)/NQueens$J \
+$(LIB_DIR)/Partition$J \
+$(LIB_DIR)/QuasigroupCompletion$J \
+$(LIB_DIR)/RabbitsPheasants$J \
+$(LIB_DIR)/SendMoreMoney2$J \
+$(LIB_DIR)/SendMoreMoney$J \
+$(LIB_DIR)/SendMostMoney$J \
+$(LIB_DIR)/Seseman$J \
+$(LIB_DIR)/SetCovering2$J \
+$(LIB_DIR)/SetCovering3$J \
+$(LIB_DIR)/SetCovering4$J \
+$(LIB_DIR)/SetCoveringDeployment$J \
+$(LIB_DIR)/SetCovering$J \
+$(LIB_DIR)/SimpleRoutingTest$J \
+$(LIB_DIR)/StableMarriage$J \
+$(LIB_DIR)/StiglerMIP$J \
+$(LIB_DIR)/Strimko2$J \
+$(LIB_DIR)/Sudoku$J \
+$(LIB_DIR)/SurvoPuzzle$J \
+$(LIB_DIR)/ToNum$J \
+$(LIB_DIR)/Tsp$J \
+$(LIB_DIR)/WhoKilledAgatha$J \
+$(LIB_DIR)/Xkcd$J \
+$(LIB_DIR)/YoungTableaux$J
 
 HAS_JAVA = true
 ifndef JAVAC_BIN
@@ -374,26 +378,26 @@ else
 java: $(JAR)
 
 test_java: detect_java \
- $(LIB_DIR)/LinearProgramming.jar \
- $(LIB_DIR)/IntegerProgramming.jar \
- $(LIB_DIR)/StiglerMIP.jar \
- $(LIB_DIR)/Sudoku.jar \
- $(LIB_DIR)/NQueens.jar \
- $(LIB_DIR)/Tsp.jar
+ $(LIB_DIR)/LinearProgramming$J \
+ $(LIB_DIR)/IntegerProgramming$J \
+ $(LIB_DIR)/StiglerMIP$J \
+ $(LIB_DIR)/Sudoku$J \
+ $(LIB_DIR)/NQueens$J \
+ $(LIB_DIR)/Tsp$J
 	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$SLinearProgramming.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ -cp $(LIB_DIR)$SLinearProgramming$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
  LinearProgramming
 	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$SIntegerProgramming.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ -cp $(LIB_DIR)$SIntegerProgramming$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
  IntegerProgramming
 	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$SStiglerMIP.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ -cp $(LIB_DIR)$SStiglerMIP$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
  StiglerMIP
 	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$SSudoku.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ -cp $(LIB_DIR)$SSudoku$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
  Sudoku
 	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$STsp.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ -cp $(LIB_DIR)$STsp$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
  Tsp
 
 # Java generic compilation command.
@@ -407,10 +411,10 @@ EX_NAME = $(basename $(notdir $(EX)))
 
 cjava: $(CLASS_DIR)/$(EX_NAME)
 
-rjava: $(LIB_DIR)/$(EX_NAME).jar
+rjava: $(LIB_DIR)/$(EX_NAME)$J
 	@echo running $<
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$(EX_NAME).jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ -cp $(LIB_DIR)$S$(EX_NAME)$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
  $(EX_NAME) $(ARGS)
 endif # ifeq ($(EX),)
 endif # ifndef HAS_JAVA
@@ -421,11 +425,11 @@ $(CLASS_DIR):
 $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java | $(CLASS_DIR)
 	$(MKDIR) $(CLASS_DIR)$S$*
 	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ -cp $(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
  $(JAVA_EX_PATH)$S$*.java
 
-$(LIB_DIR)/%.jar: $(CLASS_DIR)/% | $(LIB_DIR)
-	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
+$(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
+	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*$J -C $(CLASS_DIR)$S$* .
 
 .PHONY: detect_java
 detect_java:
@@ -445,8 +449,8 @@ endif
 ##  DOTNET  ##
 ##############
 DLL = \
-$(BIN_DIR)/a_puzzle.dll \
-$(BIN_DIR)/Program.dll
+$(BIN_DIR)/a_puzzle$D \
+$(BIN_DIR)/Program$D
 
 ifndef DOTNET_BIN
 NUGET_BIN =
@@ -456,9 +460,9 @@ else
 NUGET_BIN = $(DOTNET_BIN) nuget
 dotnet: $(DLL)
 
-test_dotnet: detect_dotnet $(BIN_DIR)/a_puzzle.dll $(BIN_DIR)/Program.dll
-	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle.dll
-	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram.dll
+test_dotnet: detect_dotnet $(BIN_DIR)/a_puzzle$D $(BIN_DIR)/Program$D
+	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle$D
+	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram$D
 
 # .NET generic compilation command.
 .PHONY: cdotnet rdotnet
@@ -469,19 +473,21 @@ cdotnet rdotnet:
 else # ifeq ($(EX),)
 EX_NAME = $(basename $(notdir $(EX)))
 
-cdotnet: $(BIN_DIR)/$(EX_NAME).dll
+cdotnet: $(BIN_DIR)/$(EX_NAME)$D
 
-rdotnet: $(BIN_DIR)/$(EX_NAME).dll
+rdotnet: $(BIN_DIR)/$(EX_NAME)$D
 	@echo running $<
-	"$(DOTNET_BIN)" $(BIN_DIR)$S$(EX_NAME).dll
+	"$(DOTNET_BIN)" $(BIN_DIR)$S$(EX_NAME)$D
 endif # ifeq ($(EX),)
 endif # ifndef DOTNET_BIN
 
-$(BIN_DIR)/%.dll: $(DOTNET_EX_DIR)/csharp/%.cs
+$(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/csharp/%.csproj $(DOTNET_EX_DIR)/csharp/%.cs \
+ | $(BIN_DIR)
 	"$(DOTNET_BIN)" build -o "..$S..$S..$S$(BIN_DIR)" \
  $(DOTNET_EX_PATH)$Scsharp$S$*.csproj
 
-$(BIN_DIR)/%.dll: $(DOTNET_EX_DIR)/fsharp/%.fs
+$(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/fsharp/%.fsproj $(DOTNET_EX_DIR)/fsharp/%.fs \
+ | $(BIN_DIR)
 	"$(DOTNET_BIN)" build -o "..$S..$S..$S$(BIN_DIR)" \
  $(DOTNET_EX_PATH)$Sfsharp$S$*.fsproj
 

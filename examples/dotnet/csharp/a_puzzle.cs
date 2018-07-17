@@ -180,8 +180,8 @@ public class APuzzle
 
       for(int i = 0; i < problem1.GetLength(0); i++) {
         solver.Add( (from j in Enumerable.Range(0, 4)
-                     select all[problem1[i,j]]
-                     ).ToArray().Sum() == problem1[i,4] );
+              select all[problem1[i,j]]
+              ).ToArray().Sum() == problem1[i,4] );
       }
 
       solver.Add(all[2]+all[5]+all[8]+all[1] == x);
@@ -217,8 +217,8 @@ public class APuzzle
 
       for(int i = 0; i < problem2.GetLength(0); i++) {
         solver.Add( (from j in Enumerable.Range(0, 4)
-                     select all[problem2[i,j]]
-                     ).ToArray().Sum() == problem2[i,4] );
+              select all[problem2[i,j]]
+              ).ToArray().Sum() == problem2[i,4] );
       }
 
 
@@ -231,8 +231,8 @@ public class APuzzle
     // Search
     //
     DecisionBuilder db = solver.MakePhase(all,
-                                          Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+        Solver.INT_VAR_DEFAULT,
+        Solver.INT_VALUE_DEFAULT);
 
 
     solver.NewSearch(db);

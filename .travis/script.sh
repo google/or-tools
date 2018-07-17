@@ -21,7 +21,7 @@ function checkenv() {
 	elif [ "${LANGUAGE}" == java ]; then
 		java -version
 	elif [ "${LANGUAGE}" == dotnet ]; then
-		mono --version
+		#mono --version
     dotnet --info
 	fi
 }
