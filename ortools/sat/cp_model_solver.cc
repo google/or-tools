@@ -3157,7 +3157,11 @@ CpSolverResponse SolveCpModelParallel(
             }
           }
           if (should_notify) {
-            first_solution_found_or_search_finished.Notify();
+            absl::MutexLock lock(&mutex);
+            // Re-check if we should notify.
+            if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+              first_solution_found_or_search_finished.Notify();
+            }
           }
         };
 
@@ -3205,8 +3209,13 @@ CpSolverResponse SolveCpModelParallel(
         // abort all other threads and return.
         *stopped = true;
       }
+      // Fast test.
       if (!first_solution_found_or_search_finished.HasBeenNotified()) {
-        first_solution_found_or_search_finished.Notify();
+        absl::MutexLock lock(&mutex);
+        // Re-check for notification under the mutex.
+        if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+          first_solution_found_or_search_finished.Notify();
+        }
       }
     });
   }

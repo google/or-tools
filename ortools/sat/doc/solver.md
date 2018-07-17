@@ -111,7 +111,7 @@ using Google.OrTools.Sat;
 
 public class CodeSamplesSat
 {
-  static void MinimalCpSat()
+  static void SimpleSolve()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -138,7 +138,7 @@ public class CodeSamplesSat
 
   static void Main()
   {
-    MinimalCpSat();
+    SimpleSolve();
   }
 }
 ```
