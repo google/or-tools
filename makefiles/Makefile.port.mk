@@ -3,7 +3,7 @@ SPACE := $(empty) $(empty)
 BACKSLASH_SPACE := $(empty)\ $(empty)
 
 # Let's discover something about where we run
-ifeq ($(OS),Window_NT)
+ifeq ($(OS),Windows_NT)
 OS = Windows
 endif
 ifeq ($(OS),Windows)
