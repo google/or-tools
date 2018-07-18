@@ -174,7 +174,7 @@ endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
   CCC = clang++ -fPIC -std=c++11  $(MAC_VERSION) -stdlib=libc++
-  DYNAMIC_LD = clang++ -dynamiclib \
+  DYNAMIC_LD = clang++ -dynamiclib -undefined dynamic_lookup \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
  -current_version $(OR_TOOLS_SHORT_VERSION) \
