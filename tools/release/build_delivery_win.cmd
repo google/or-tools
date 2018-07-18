@@ -23,8 +23,6 @@ which.exe java | tee.exe -a build.log
 REM .Net
 which.exe dotnet || exit 1
 which.exe dotnet | tee.exe -a build.log
-which.exe nuget || exit 1
-which.exe nuget | tee.exe -a build.log
 
 REM Build Third Party
 make.exe clean_third_party || exit 1
