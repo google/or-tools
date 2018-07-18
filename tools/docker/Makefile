@@ -2,6 +2,7 @@
 .PHONY: help
 help:
 	@echo "Tools to generate various deliveries for linux distros"
+	@echo "use NOCACHE=1 to \"docker build --no-cache\""
 	@echo "<distro>: debian-9, centos-7, ubuntu-14.04, ubuntu-16.04, ubuntu-17.10, ubuntu-18.04, all"
 	@echo "<language>: cc, java, dotnet, all"
 	@echo
@@ -40,9 +41,11 @@ OR_TOOLS_PATCH := $(shell git rev-list --count HEAD)
 OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(OR_TOOLS_PATCH)
 $(info version: $(OR_TOOLS_VERSION))
 DOCKER_RUN_CMD := docker run --rm -it --init
-#DOCKER_BUILD_CMD := docker build --no-cache
+ifdef NOCACHE
+DOCKER_BUILD_CMD := docker build --no-cache
+else
 DOCKER_BUILD_CMD := docker build
-
+endif
 #################
 ###  DELIVERY  ##
 #################
@@ -50,7 +53,7 @@ DOCKER_BUILD_CMD := docker build
 delivery: python archives
 
 .PHONY: test_delivery
-test_delivery: test_python test_archives
+test_delivery: test_archives
 
 ###############
 ###  PYTHON  ##
@@ -59,28 +62,27 @@ test_delivery: test_python test_archives
 .PHONY: python
 python: manylinux1-pypi
 
-# manylinux1 images
-manylinux1-image: | export
-	docker build \
- -f manylinux1.Dockerfile \
- --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
- -t or-tools_manylinux1 .
+export/python/build-manylinux1.sh: build-manylinux1.sh | export/python
+	cp $< $@
 
-manylinux1-image-no-cache: | export
-	docker build --no-cache \
- -f manylinux1.Dockerfile \
+export/python/docker.tar: manylinux1.Dockerfile export/python/build-manylinux1.sh | export/python
+	-docker image rm -f or-tools:python 2>/dev/null
+	$(DOCKER_BUILD_CMD) \
+ -f $< \
  --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
- -t or-tools_manylinux1 .
+ -t or-tools:python export/python
+	docker save or-tools:python -o $@
 
-manylinux1-pypi: manylinux1-images
-	docker run -v `pwd`/export:/export or-tools_manylinux1:latest /bin/bash -c \
+manylinux1-pypi: export/python/docker.tar
+	docker load -i $<
+	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools:python /bin/bash -c \
 		"/root/build/build-manylinux1.sh /root/src /root/build /export"
 
-manylinux1-bash: manylinux1-image
-	$(DOCKER_RUN_CMD) or-tools_manylinux1:latest /bin/bash
+bash_python: export/python/docker.tar
+	$(DOCKER_RUN_CMD) or-tools:python /bin/bash
 
-.PHONY: test_python
-test_python: manylinux1-test
+export/python: | export
+	-mkdir $@
 
 #################
 ###  ARCHIVES  ##
