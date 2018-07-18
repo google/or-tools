@@ -72,9 +72,6 @@ ifeq ("${PYTHON_LNK}","")
 PYTHON_LNK = "-lpython${UNIX_PYTHON_VERSION}"
 endif
 
-MONO_COMPILER ?= mono
-MONO_EXECUTABLE := $(shell $(WHICH) $(MONO_COMPILER))
-
 # This is needed to find GLPK include files.
 ifdef UNIX_GLPK_DIR
   GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
@@ -107,7 +104,6 @@ ifeq ($(PLATFORM),LINUX)
   CCC = g++ -fPIC -std=c++11 -fwrapv
   DYNAMIC_LD = g++ -shared
   DYNAMIC_LDFLAGS = -Wl,-rpath,\"\\\$$\$$ORIGIN\"
-  MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   # This is needed to find libz.a
   ZLIB_LNK = -lz
@@ -184,7 +180,6 @@ ifeq ($(PLATFORM),MACOSX)
  -current_version $(OR_TOOLS_SHORT_VERSION) \
  -compatibility_version $(OR_TOOLS_SHORT_VERSION)
   DYNAMIC_LDFLAGS = -Wl,-rpath,\"@loader_path\"
-  MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(MONO_EXECUTABLE)
 
   ZLIB_LNK = -lz
   ifdef UNIX_GLPK_DIR

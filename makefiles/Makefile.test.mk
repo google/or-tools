@@ -95,8 +95,10 @@ run_YoungTableaux
 
 .PHONY: test_donet_examples
 test_dotnet_examples: dotnet
+# C# tests
 	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle$D
 	"$(DOTNET_BIN)" $(BIN_DIR)$Stsp$D
+# F# tests
 	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram$D
 
 # csharp test
@@ -123,4 +125,4 @@ test_csharp_examples: csharp
 
 .PHONY: test_fsharp_examples
 test_fsharp_examples: fsharp
-	$(warning F# tests unimplemented)
+	$(warning F# netfx tests unimplemented)
