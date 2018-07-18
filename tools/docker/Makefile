@@ -70,6 +70,7 @@ export/python/docker.tar: manylinux1.Dockerfile export/python/build-manylinux1.s
 	$(DOCKER_BUILD_CMD) \
  -f $< \
  --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
+ --build-arg SRC_GIT_SHA1=$(OR_TOOLS_SHA1) \
  -t or-tools:python export/python
 	docker save or-tools:python -o $@
 
