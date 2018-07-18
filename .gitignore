@@ -21,6 +21,7 @@ or-tools*.zip
 *.ass
 *.swp
 
+build.log
 bin/
 ortools/gen/
 objs/
