@@ -145,6 +145,7 @@ fi
 
 # For each python platform provided by manylinux, build, export and test
 # artifacts.
+BASE_PKG_CONFIG="${PKG_CONFIG_PATH}"
 for PYROOT in /opt/python/*
 do
     PYTAG=$(basename "$PYROOT")
@@ -165,6 +166,8 @@ do
     source "${BUILD_ROOT}/${PYTAG}/bin/activate"
     pip install -U pip setuptools wheel six  # six is needed by make test_python
     # Build artifact
+    export PKG_CONFIG_PATH="${PYROOT}/lib/pkgconfig:${BASE_PKG_CONFIG}"
+    echo "PKG_CONFIG_PATH: ${PKG_CONFIG_PATH}"
     export_manylinux_wheel "$SRC_ROOT" "$EXPORT_ROOT"
     # Ensure everything is clean (don't clean third_party anyway,
     # it has been built once)
