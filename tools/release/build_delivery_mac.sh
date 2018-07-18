@@ -4,6 +4,7 @@ set -e
 
 # Check all prerequisite
 # cc
+which clang | xargs echo "clang: " | tee build.log
 which cmake | xargs echo "cmake: " | tee build.log
 which make | xargs echo "make: " | tee -a build.log
 which swig | xargs echo "swig: " | tee -a build.log
@@ -15,10 +16,7 @@ which java | xargs echo "java: " | tee -a build.log
 which javac | xargs echo "javac: " | tee -a build.log
 which jar | xargs echo "jar: " | tee -a build.log
 # C#
-which mcs | xargs echo "mcs: " | tee -a build.log
-which mono | xargs echo "mono: " | tee -a build.log
-# F#
-which fsharpc | xargs echo "fsharpc: " | tee -a build.log
+which dotnet | xargs echo "dotnet: " | tee -a build.log
 
 # Build Third Party
 make clean_third_party
