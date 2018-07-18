@@ -5,7 +5,7 @@ set -e
 # Check all prerequisite
 # cc
 which clang | xargs echo "clang: " | tee build.log
-which cmake | xargs echo "cmake: " | tee build.log
+which cmake | xargs echo "cmake: " | tee -a build.log
 which make | xargs echo "make: " | tee -a build.log
 which swig | xargs echo "swig: " | tee -a build.log
 # python
