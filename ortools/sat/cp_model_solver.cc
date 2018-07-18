@@ -3155,11 +3155,9 @@ CpSolverResponse SolveCpModelParallel(
                   r.solution_info().c_str());
               observer(best_response);
             }
-          }
-          if (should_notify) {
-            absl::MutexLock lock(&mutex);
-            // Re-check if we should notify.
-            if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+            // You need to notify after all observers have been called.
+            if (should_notify) {
+              CHECK(!first_solution_found_or_search_finished.HasBeenNotified());
               first_solution_found_or_search_finished.Notify();
             }
           }
@@ -3208,11 +3206,6 @@ CpSolverResponse SolveCpModelParallel(
         // the time limit is reached or when the problem is solved, so we just
         // abort all other threads and return.
         *stopped = true;
-      }
-      // Fast test.
-      if (!first_solution_found_or_search_finished.HasBeenNotified()) {
-        absl::MutexLock lock(&mutex);
-        // Re-check for notification under the mutex.
         if (!first_solution_found_or_search_finished.HasBeenNotified()) {
           first_solution_found_or_search_finished.Notify();
         }
