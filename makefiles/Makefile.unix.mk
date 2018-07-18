@@ -59,13 +59,14 @@ endif
 # This is needed to find python.h
 PYTHON_VERSION = $(UNIX_PYTHON_VER)
 MAJOR_PYTHON_VERSION = $(shell python$(UNIX_PYTHON_VER) -c "from sys import version_info as v; print (str(v[0]))")
+MINOR_PYTHON_VERSION = $(shell python$(UNIX_PYTHON_VER) -c "from sys import version_info as v; print (str(v[1]))")
 
 PATH_TO_PYTHON_LIB = $(shell python$(UNIX_PYTHON_VER) -c 'import sysconfig; print (sysconfig.get_paths()["stdlib"])')
 PATH_TO_PYTHON_INCLUDE = $(shell python$(UNIX_PYTHON_VER) -c 'import sysconfig; print (sysconfig.get_paths()["platinclude"])')
 PYTHON_INC = -I$(PATH_TO_PYTHON_INCLUDE) -I$(PATH_TO_PYTHON_LIB) $(ADD_PYTHON_INC)
 
 PYTHON_INC += $(shell pkg-config --cflags python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
-PYTHON_LNK += $(shell pkg-config --libs python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
+PYTHON_LNK += $(shell pkg-config --libs   python$(MAJOR_PYTHON_VERSION) 2> /dev/null)
 
 ifeq ("${PYTHON_LNK}","")
 PYTHON_LNK = "-lpython${UNIX_PYTHON_VERSION}"
