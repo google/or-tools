@@ -262,6 +262,10 @@ class LinearProgram {
     return objective_scaling_factor_;
   }
 
+  // Checks if each variable respects its bounds, nothing else.
+  bool SolutionIsWithinVariableBounds(const DenseRow& solution,
+                                      Fractional absolute_tolerance) const;
+
   // Tests if the solution is LP-feasible within the given tolerance,
   // i.e., satisfies all linear constraints within the absolute tolerance level.
   // The solution does not need to satisfy the integer constraints.
@@ -277,6 +281,10 @@ class LinearProgram {
   // Tests if the solution is both LP-feasible and integer within the tolerance.
   bool SolutionIsMIPFeasible(const DenseRow& solution,
                              Fractional absolute_tolerance) const;
+
+  // Fills the value of the slack from the other variable values.
+  // This requires that the slack have been added.
+  void ComputeSlackVariableValues(DenseRow* solution) const;
 
   // Functions to translate the sum(solution * objective_coefficients()) to
   // the real objective of the problem and back. Note that these can also

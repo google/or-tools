@@ -123,6 +123,21 @@ Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
   return sum.Value();
 }
 
+// Computes a scalar product for entries with index not greater than max_index.
+template <class DenseRowOrColumn>
+Fractional PartialScalarProduct(const DenseRowOrColumn& u,
+                                const SparseColumn& v, int max_index) {
+  Fractional sum(0.0);
+  for (const SparseColumn::Entry e : v) {
+    if (e.row().value() >= max_index) {
+      return sum;
+    }
+    sum += u[typename DenseRowOrColumn::IndexType(e.row().value())] *
+           e.coefficient();
+  }
+  return sum;
+}
+
 // Returns the norm^2 (sum of the square of the entries) of the given column.
 // The precise version uses KahanSum and are about two times slower.
 Fractional SquaredNorm(const SparseColumn& v);

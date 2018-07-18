@@ -441,8 +441,8 @@ std::string LinearProgram::GetObjectiveStatsString() const {
   }
 }
 
-bool LinearProgram::SolutionIsLPFeasible(const DenseRow& solution,
-                                         Fractional absolute_tolerance) const {
+bool LinearProgram::SolutionIsWithinVariableBounds(
+    const DenseRow& solution, Fractional absolute_tolerance) const {
   DCHECK_EQ(solution.size(), num_variables());
   if (solution.size() != num_variables()) return false;
   const ColIndex num_cols = num_variables();
@@ -453,6 +453,14 @@ bool LinearProgram::SolutionIsLPFeasible(const DenseRow& solution,
     if (lb_error > absolute_tolerance || ub_error > absolute_tolerance) {
       return false;
     }
+  }
+  return true;
+}
+
+bool LinearProgram::SolutionIsLPFeasible(const DenseRow& solution,
+                                         Fractional absolute_tolerance) const {
+  if (!SolutionIsWithinVariableBounds(solution, absolute_tolerance)) {
+    return false;
   }
   const SparseMatrix& transpose = GetTransposeSparseMatrix();
   const RowIndex num_rows = num_constraints();
@@ -485,6 +493,21 @@ bool LinearProgram::SolutionIsMIPFeasible(const DenseRow& solution,
                                           Fractional absolute_tolerance) const {
   return SolutionIsLPFeasible(solution, absolute_tolerance) &&
          SolutionIsInteger(solution, absolute_tolerance);
+}
+
+void LinearProgram::ComputeSlackVariableValues(DenseRow* solution) const {
+  CHECK(solution != nullptr);
+  const ColIndex num_cols = GetFirstSlackVariable();
+  const SparseMatrix& transpose = GetTransposeSparseMatrix();
+  const RowIndex num_rows = num_constraints();
+  CHECK_EQ(solution->size(), num_variables());
+  for (RowIndex row = RowIndex(0); row < num_rows; ++row) {
+    const Fractional sum = PartialScalarProduct(
+        *solution, transpose.column(RowToColIndex(row)), num_cols.value());
+    const ColIndex slack_variable = GetSlackVariable(row);
+    CHECK_NE(slack_variable, kInvalidCol);
+    (*solution)[slack_variable] = -sum;
+  }
 }
 
 Fractional LinearProgram::ApplyObjectiveScalingAndOffset(

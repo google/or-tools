@@ -456,38 +456,33 @@ void CompactSparseMatrix::PopulateFromTranspose(
   num_rows_ = ColToRowIndex(input.num_cols());
 
   // Fill the starts_ vector by computing the number of entries of each rows and
-  // then doing a cummulative sum.
-  starts_.assign(num_cols_ + 1, EntryIndex(0));
-  for (ColIndex col(0); col < input.num_cols(); ++col) {
-    for (const EntryIndex i : input.Column(col)) {
-      const ColIndex transposed_col = RowToColIndex(input.EntryRow(i));
-      ++starts_[transposed_col + 1];
-    }
+  // then doing a cummulative sum. After this step starts_[col + 1] will be the
+  // actual start of the column col when we are done.
+  starts_.assign(num_cols_ + 2, EntryIndex(0));
+  for (const RowIndex row : input.rows_) {
+    ++starts_[RowToColIndex(row) + 2];
   }
-  for (ColIndex col(1); col < starts_.size(); ++col) {
+  for (ColIndex col(2); col < starts_.size(); ++col) {
     starts_[col] += starts_[col - 1];
   }
   coefficients_.resize(starts_.back(), 0.0);
   rows_.resize(starts_.back(), kInvalidRow);
+  starts_.pop_back();
 
-  // Use starts_ to fill the matrix. Note that starts_ is modified.
+  // Use starts_ to fill the matrix. Note that starts_ is modified so that at
+  // the end it has its final values.
   for (ColIndex col(0); col < input.num_cols(); ++col) {
     const RowIndex transposed_row = ColToRowIndex(col);
     for (const EntryIndex i : input.Column(col)) {
       const ColIndex transposed_col = RowToColIndex(input.EntryRow(i));
-      const EntryIndex index = starts_[transposed_col];
-      ++starts_[transposed_col];
+      const EntryIndex index = starts_[transposed_col + 1]++;
       coefficients_[index] = input.EntryCoefficient(i);
       rows_[index] = transposed_row;
     }
   }
 
-  // Restore starts_ to its correct value.
-  for (ColIndex col(starts_.size() - 1); col > 0; col--) {
-    starts_[col] = starts_[col - 1];
-  }
+  DCHECK_EQ(starts_.front(), 0);
   DCHECK_EQ(starts_.back(), rows_.size());
-  starts_[ColIndex(0)] = 0;
 }
 
 void TriangularMatrix::PopulateFromTranspose(const TriangularMatrix& input) {

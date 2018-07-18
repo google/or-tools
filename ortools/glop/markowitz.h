@@ -105,9 +105,12 @@ class MatrixNonZeroPattern {
 
   // Resets the pattern to the one of the given matrix but only for the
   // rows/columns whose given permutation is kInvalidRow or kInvalidCol.
+  // This also fills the singleton columns/rows with the corresponding entries.
   void InitializeFromMatrixSubset(const MatrixView& basis_matrix,
                                   const RowPermutation& row_perm,
-                                  const ColumnPermutation& col_perm);
+                                  const ColumnPermutation& col_perm,
+                                  std::vector<ColIndex>* singleton_columns,
+                                  std::vector<RowIndex>* singleton_rows);
 
   // Adds a non-zero entry to the matrix. There should be no duplicates.
   void AddEntry(RowIndex row, ColIndex col);
@@ -319,12 +322,6 @@ class Markowitz {
     RatioDistribution degree_two_pivot_columns;
   };
   Stats stats_;
-
-  // Initializes residual_matrix_non_zero_, singleton_column_ and
-  // singleton_row_.
-  void InitializeResidualMatrix(const MatrixView& basis_matrix,
-                                const RowPermutation& row_perm,
-                                const ColumnPermutation& col_perm);
 
   // Fast track for singleton columns of the matrix. Fills a part of the row and
   // column permutation that move these columns in order to form an identity

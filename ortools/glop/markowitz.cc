@@ -53,7 +53,8 @@ Status Markowitz::ComputeRowAndColumnPermutation(const MatrixView& basis_matrix,
 
   // Initialize residual_matrix_non_zero_ with the submatrix left after we
   // removed the singleton and residual singleton columns.
-  InitializeResidualMatrix(basis_matrix, *row_perm, *col_perm);
+  residual_matrix_non_zero_.InitializeFromMatrixSubset(
+      basis_matrix, *row_perm, *col_perm, &singleton_column_, &singleton_row_);
 
   // Perform Gaussian elimination.
   const int end_index = std::min(num_rows.value(), num_cols.value());
@@ -165,33 +166,6 @@ void Markowitz::Clear() {
   is_col_by_degree_initialized_ = false;
 }
 
-void Markowitz::InitializeResidualMatrix(const MatrixView& basis_matrix,
-                                         const RowPermutation& row_perm,
-                                         const ColumnPermutation& col_perm) {
-  SCOPED_TIME_STAT(&stats_);
-  residual_matrix_non_zero_.InitializeFromMatrixSubset(basis_matrix, row_perm,
-                                                       col_perm);
-
-  // Initialize singleton_column_.
-  singleton_column_.clear();
-  const ColIndex num_cols = basis_matrix.num_cols();
-  for (ColIndex col(0); col < num_cols; ++col) {
-    if (!residual_matrix_non_zero_.IsColumnDeleted(col) &&
-        residual_matrix_non_zero_.ColDegree(col) == 1) {
-      singleton_column_.push_back(col);
-    }
-  }
-
-  // Initialize singleton_row_.
-  singleton_row_.clear();
-  const RowIndex num_rows = basis_matrix.num_rows();
-  for (RowIndex row(0); row < num_rows; ++row) {
-    if (residual_matrix_non_zero_.RowDegree(row) == 1) {
-      singleton_row_.push_back(row);
-    }
-  }
-}
-
 namespace {
 struct MatrixEntry {
   RowIndex row;
@@ -224,7 +198,7 @@ void Markowitz::ExtractSingletonColumns(const MatrixView& basis_matrix,
   // Sorting the entries by row indices allows the row_permutation to be closer
   // to identity which seems like a good idea.
   std::sort(singleton_entries.begin(), singleton_entries.end());
-  for (MatrixEntry e : singleton_entries) {
+  for (const MatrixEntry e : singleton_entries) {
     if ((*row_perm)[e.row] == kInvalidRow) {
       (*col_perm)[e.col] = ColIndex(*index);
       (*row_perm)[e.row] = RowIndex(*index);
@@ -248,7 +222,7 @@ void Markowitz::ExtractResidualSingletonColumns(const MatrixView& basis_matrix,
     const SparseColumn& column = basis_matrix.column(col);
     int residual_degree = 0;
     RowIndex row;
-    for (SparseColumn::Entry e : column) {
+    for (const SparseColumn::Entry e : column) {
       if ((*row_perm)[e.row()] == kInvalidRow) {
         ++residual_degree;
         if (residual_degree > 1) break;
@@ -259,7 +233,7 @@ void Markowitz::ExtractResidualSingletonColumns(const MatrixView& basis_matrix,
       (*col_perm)[col] = ColIndex(*index);
       (*row_perm)[row] = RowIndex(*index);
       lower_.AddDiagonalOnlyColumn(1.0);
-      upper_.AddTriangularColumn(basis_matrix.column(col), row);
+      upper_.AddTriangularColumn(column, row);
       ++(*index);
     }
   }
@@ -574,12 +548,15 @@ void MatrixNonZeroPattern::Reset(RowIndex num_rows, ColIndex num_cols) {
 
 void MatrixNonZeroPattern::InitializeFromMatrixSubset(
     const MatrixView& basis_matrix, const RowPermutation& row_perm,
-    const ColumnPermutation& col_perm) {
+    const ColumnPermutation& col_perm, std::vector<ColIndex>* singleton_columns,
+    std::vector<RowIndex>* singleton_rows) {
   const ColIndex num_cols = basis_matrix.num_cols();
   const RowIndex num_rows = basis_matrix.num_rows();
 
   // Reset the matrix and initialize the vectors to the correct sizes.
   Reset(num_rows, num_cols);
+  singleton_columns->clear();
+  singleton_rows->clear();
 
   // Compute the number of entries in each row.
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -597,6 +574,7 @@ void MatrixNonZeroPattern::InitializeFromMatrixSubset(
   for (RowIndex row(0); row < num_rows; ++row) {
     if (row_perm[row] == kInvalidRow) {
       row_non_zero_[row].reserve(row_degree_[row]);
+      if (row_degree_[row] == 1) singleton_rows->push_back(row);
     } else {
       // This is needed because in the row degree computation above, we do not
       // test for row_perm[row] == kInvalidRow because it is a bit faster.
@@ -616,6 +594,7 @@ void MatrixNonZeroPattern::InitializeFromMatrixSubset(
       }
     }
     col_degree_[col] = col_degree;
+    if (col_degree == 1) singleton_columns->push_back(col);
   }
 }
 
