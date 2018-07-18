@@ -43,7 +43,7 @@
 static inline int PyString_AsStringAndSize(PyObject* obj, char** buf,
                                            Py_ssize_t* psize) {
   if (PyUnicode_Check(obj)) {
-    *buf = const_cast<char *>(PyUnicode_AsUTF8AndSize(obj, psize));
+    *buf = PyUnicode_AsUTF8AndSize(obj, psize);
     return *buf == NULL ? -1 : 0;
   } else if (PyBytes_Check(obj)) {
     return PyBytes_AsStringAndSize(obj, buf, psize);
@@ -85,7 +85,7 @@ inline bool PyObjAs(PyObject* pystr, std::string* cstr) {
   Py_ssize_t len;
 #if PY_VERSION_HEX >= 0x03030000
   if (PyUnicode_Check(pystr)) {
-    buf = const_cast<char *>(PyUnicode_AsUTF8AndSize(pystr, &len));
+    buf = PyUnicode_AsUTF8AndSize(pystr, &len);
     if (!buf) return false;
   } else  // NOLINT
 #endif

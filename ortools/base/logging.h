@@ -25,5 +25,6 @@
 #include "ortools/base/macros.h"
 
 #define QCHECK CHECK
+#define ABSL_DIE_IF_NULL CHECK_NOTNULL
 
 #endif  // OR_TOOLS_BASE_LOGGING_H_
