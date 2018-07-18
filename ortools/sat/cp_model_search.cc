@@ -360,8 +360,6 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
       const double new_best_objective_bound =
           maximize ? std::min(previous_best_bound, current_best_bound)
                    : std::max(previous_best_bound, current_best_bound);
-      const bool better_objective_bound =
-          new_best_objective_bound != previous_best_bound;
       // TODO(user): return OPTIMAL if objective is tight.
       if (is_improving) {
         // Overwrite solution and fix best_objective_bound.
@@ -369,10 +367,13 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
         best->set_best_objective_bound(new_best_objective_bound);
         return true;
       }
-      // The new solution can have a worse objective value, but a better
-      // best_objective_bound.
-      best->set_best_objective_bound(new_best_objective_bound);
-      return better_objective_bound;
+      if (new_best_objective_bound != previous_best_bound) {
+        // The new solution has a worse objective value, but a better
+        // best_objective_bound.
+        best->set_best_objective_bound(new_best_objective_bound);
+        return true;
+      }
+      return false;
     }
     case CpSolverStatus::INFEASIBLE: {
       if (best->status() == CpSolverStatus::UNKNOWN ||
