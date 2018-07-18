@@ -43,7 +43,7 @@ $(INSTALL_DIR)$(ARCHIVE_EXT): archive_cc archive_java archive_dotnet
 	$(COPY) tools$SMakefile.cc.java.dotnet $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SMakefile
 ifeq ($(SYSTEM),win)
 	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools$Swin
-	$(COPY) $(MAKE) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools
+	$(COPY) tools$Smake.exe $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools
 	$(COPY) $(WHICH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools$Swin
 	cd $(TEMP_ARCHIVE_DIR) && ..$S$(ZIP) -r ..$S$(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
 else

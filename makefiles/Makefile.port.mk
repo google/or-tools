@@ -4,6 +4,9 @@ BACKSLASH_SPACE := $(empty)\ $(empty)
 
 # Let's discover something about where we run
 ifeq ($(OS),Windows_NT)
+OS = Windows
+endif
+ifeq ($(OS),Windows)
   SYSTEM = win
 else
   SYSTEM = unix
