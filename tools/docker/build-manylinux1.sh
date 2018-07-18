@@ -59,7 +59,7 @@ function export_manylinux_wheel {
     make -B install_python_modules  # regenerates Makefile.local
     make python
     make test_python
-    make pypi_archive_dir
+    make pypi_archive
     # Build and repair wheels
     cd temp-python*/ortools
     python setup.py bdist_wheel
