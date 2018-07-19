@@ -3135,29 +3135,23 @@ CpSolverResponse SolveCpModelParallel(
         [maximize, &num_solutions, worker_id, worker_name, &mutex,
          &best_response, &observer, &timer,
          &first_solution_found_or_search_finished](const CpSolverResponse& r) {
-          bool should_notify = false;
-          {
-            absl::MutexLock lock(&mutex);
+          absl::MutexLock lock(&mutex);
 
-            // Check is the new solution is actually improving upon the best
-            // solution found so far.
-            if (MergeOptimizationSolution(r, maximize, &best_response)) {
-              if (!first_solution_found_or_search_finished.HasBeenNotified()) {
-                should_notify = true;
-              }
-              VLOG(1) << absl::StrFormat(
-                  "#%-5i %-6s %8.2fs  obj:[%0.0f,%0.0f] %s", num_solutions++,
-                  worker_name.c_str(), timer.Get(),
-                  maximize ? best_response.objective_value()
-                           : best_response.best_objective_bound(),
-                  maximize ? best_response.best_objective_bound()
-                           : best_response.objective_value(),
-                  r.solution_info().c_str());
-              observer(best_response);
-            }
-            // You need to notify after all observers have been called.
-            if (should_notify) {
-              CHECK(!first_solution_found_or_search_finished.HasBeenNotified());
+          // Check is the new solution is actually improving upon the best
+          // solution found so far.
+          if (MergeOptimizationSolution(r, maximize, &best_response)) {
+            VLOG(1) << absl::StrFormat(
+                "#%-5i %-6s %8.2fs  obj:[%0.0f,%0.0f] %s", num_solutions++,
+                worker_name, timer.Get(),
+                maximize ? best_response.objective_value()
+                         : best_response.best_objective_bound(),
+                maximize ? best_response.best_objective_bound()
+                         : best_response.objective_value(),
+                r.solution_info());
+            observer(best_response);
+            // We have potentially displayed the improving solution, and updated
+            // the best_response. We can awaken sleeping LNS threads.
+            if (!first_solution_found_or_search_finished.HasBeenNotified()) {
               first_solution_found_or_search_finished.Notify();
             }
           }
