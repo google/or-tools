@@ -3142,12 +3142,12 @@ CpSolverResponse SolveCpModelParallel(
           if (MergeOptimizationSolution(r, maximize, &best_response)) {
             VLOG(1) << absl::StrFormat(
                 "#%-5i %-6s %8.2fs  obj:[%0.0f,%0.0f] %s", num_solutions++,
-                worker_name, timer.Get(),
+                worker_name.c_str(), timer.Get(),
                 maximize ? best_response.objective_value()
                          : best_response.best_objective_bound(),
                 maximize ? best_response.best_objective_bound()
                          : best_response.objective_value(),
-                r.solution_info());
+                r.solution_info().c_str());
             observer(best_response);
             // We have potentially displayed the improving solution, and updated
             // the best_response. We can awaken sleeping LNS threads.
