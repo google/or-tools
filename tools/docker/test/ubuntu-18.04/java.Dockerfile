@@ -1,8 +1,8 @@
 FROM ubuntu:18.04
 
-RUN apt update \
-&& apt install -y -q which build-essential zlib1g-dev default-jdk \
-&& apt clean \
+RUN apt-get update \
+&& apt-get install -y -q build-essential zlib1g-dev default-jdk \
+&& apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #ENV TZ=America/Los_Angeles

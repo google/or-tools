@@ -1,17 +1,17 @@
 FROM ubuntu:17.10
 
-RUN apt update \
-&& apt install -y -q which build-essential zlib1g-dev \
-&& apt clean \
+RUN apt-get update \
+&& apt install -y -q build-essential zlib1g-dev \
+&& apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Dotnet install
 RUN apt-get update \
+&& apt-get install -y -q wget apt-transport-https \
 && wget -q https://packages.microsoft.com/config/ubuntu/17.10/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
-&& apt-get install -qq apt-transport-https \
 && apt-get update \
-&& apt-get install -qq dotnet-sdk-2.1 \
+&& apt-get install -y -q dotnet-sdk-2.1 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

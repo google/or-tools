@@ -2,8 +2,8 @@ FROM centos:7
 LABEL maintainer="corentinl@google.com"
 
 RUN yum -y update \
-&& yum -y groupinstall which 'Development Tools' zlib-devel \
- java-1.8.0-openjdk  java-1.8.0-openjdk-devel \
+&& yum -y groupinstall 'Development Tools' which zlib-devel \
+ java-1.8.0-openjdk java-1.8.0-openjdk-devel \
 && yum clean all \
 && rm -rf /var/cache/yum
 

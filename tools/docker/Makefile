@@ -366,18 +366,16 @@ test_ubuntu-18.04_cc: export/ubuntu-18.04/test_cc.log
 test_ubuntu-18.04_java: export/ubuntu-18.04/test_java.log
 test_ubuntu-18.04_dotnet: export/ubuntu-18.04/test_dotnet.log
 
+# tee capture status so we enable pipefail to get the return of `docker run` instead.
 export/%/test_cc.log: export/%/docker_cc.tar
 	docker load -i $<
-	$(DOCKER_RUN_CMD) or-tools_$*:cc /bin/sh -c "cd or-tools_*_v* && make test_cc" | tee $@
-	rm $@
+	$(DOCKER_RUN_CMD) or-tools_$*:cc /bin/sh -c "cd or-tools_*_v* && make test_cc"
 export/%/test_java.log: export/%/docker_java.tar
 	docker load -i $<
-	$(DOCKER_RUN_CMD) or-tools_$*:java /bin/sh -c "cd or-tools_*_v* && make test_java" | tee $@
-	rm $@
+	$(DOCKER_RUN_CMD) or-tools_$*:java /bin/sh -c "cd or-tools_*_v* && make test_java"
 export/%/test_dotnet.log: export/%/docker_dotnet.tar
 	docker load -i $<
-	$(DOCKER_RUN_CMD) or-tools_$*:dotnet /bin/sh -c "cd or-tools_*_v* && make test_dotnet" | tee $@
-	rm $@
+	$(DOCKER_RUN_CMD) or-tools_$*:dotnet /bin/sh -c "cd or-tools_*_v* && make test_dotnet"
 
 #############
 ##  CLEAN  ##

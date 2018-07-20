@@ -1,7 +1,7 @@
 FROM ubuntu:14.04
 
 RUN apt update \
-&& apt install -y -q which build-essential zlib1g-dev default-jdk \
+&& apt install -y -q build-essential zlib1g-dev default-jdk \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

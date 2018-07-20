@@ -1,7 +1,7 @@
 FROM ubuntu:17.10
 
-RUN apt update \
-&& apt install -y -q which build-essential zlib1g-dev default-jdk \
+RUN apt-get update \
+&& apt-get install -y -q build-essential zlib1g-dev default-jdk \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

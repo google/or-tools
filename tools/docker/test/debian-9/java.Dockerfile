@@ -2,8 +2,8 @@ FROM debian:9
 LABEL maintainer="corentinl@google.com"
 
 RUN apt-get update \
-&& apt-get install -y -q which build-essential zlib1g-dev default-jdk \
-&& apt clean \
+&& apt-get install -y -q build-essential zlib1g-dev default-jdk \
+&& apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #ENV TZ=America/Los_Angeles

@@ -2,8 +2,7 @@ FROM centos:7
 LABEL maintainer="corentinl@google.com"
 
 RUN yum -y update \
-&& yum -y groupinstall 'Development Tools' \
-&& yum -y install which zlib-devel \
+&& yum -y groupinstall 'Development Tools' which zlib-devel \
 && yum clean all \
 && rm -rf /var/cache/yum
 
