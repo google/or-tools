@@ -55,7 +55,6 @@ function export_manylinux_wheel {
     # We need to force this target, otherwise the protobuf stub will be missing
     # (for the makefile, it exists even if previously generated for another
     # platform)
-    git pull
     make -B install_python_modules  # regenerates Makefile.local
     make python
     make test_python

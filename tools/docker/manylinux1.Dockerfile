@@ -70,6 +70,7 @@ RUN git clone -b "$SRC_GIT_BRANCH" --single-branch "$SRC_GIT_URL" "$SRC_ROOT"
 
 WORKDIR "$SRC_ROOT"
 RUN make third_party
+RUN make cc
 
 ENV EXPORT_ROOT /export
 # The build of Python 2.6.x bindings is known to be broken.
