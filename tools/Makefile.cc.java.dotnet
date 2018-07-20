@@ -228,6 +228,7 @@ $(BIN_DIR)/weighted_tardiness_sat$E
 ifndef CXX_BIN
 cc test_cc ccc rcc:
 	@echo the $(CXX) command was not found in your PATH
+	exit 127
 else
 cc: $(EXE)
 
@@ -242,6 +243,7 @@ ifeq ($(EX),)
 ccc rcc:
 	@echo No C++ file was provided, the $@ target must be used like so: \
 	make $@ EX=examples/cpp/example.cc
+	exit 2
 else # ifeq ($(EX),)
 EX_NAME = $(basename $(notdir $(EX)))
 
@@ -374,6 +376,7 @@ endif
 ifndef HAS_JAVA
 java test_java rjava cjava:
 	@echo the java, javac or jar command was not found in your PATH
+	exit 127
 else
 java: $(JAR)
 
@@ -406,6 +409,7 @@ ifeq ($(EX),)
 rjava cjava:
 	@echo No Java file was provided, the $@ target must be used like so: \
 	make $@ EX=examples/java/example.java
+	exit 2
 else # ifeq ($(EX),)
 EX_NAME = $(basename $(notdir $(EX)))
 
@@ -456,6 +460,7 @@ ifndef DOTNET_BIN
 NUGET_BIN =
 dotnet test_dotnet cdotnet rdotnet:
 	@echo the $(DOTNET) command was not found in your PATH
+	exit 127
 else
 NUGET_BIN = $(DOTNET_BIN) nuget
 dotnet: $(DLL)
@@ -470,6 +475,7 @@ ifeq ($(EX),)
 cdotnet rdotnet:
 	@echo No CSharp file was provided, the $@ target must be used like so: \
 	make $@ EX=example/dotnet/example.cs
+	exit 2
 else # ifeq ($(EX),)
 EX_NAME = $(basename $(notdir $(EX)))
 
