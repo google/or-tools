@@ -167,6 +167,7 @@ dependencies/install/lib/libglog.$L: dependencies/install/lib/libgflags.$L depen
     -DBUILD_SHARED_LIBS=ON \
     -DBUILD_TESTING=OFF \
     -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,\$$ORIGIN" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
   $(CMAKE) --build build_cmake -- -j 4 && \
   $(CMAKE) --build build_cmake --target install
