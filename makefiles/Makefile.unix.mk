@@ -167,6 +167,7 @@ ifeq ($(PLATFORM),LINUX)
   PYTHON_LDFLAGS = \
  -Wl,-rpath,'$$ORIGIN' \
  -Wl,-rpath,'$$ORIGIN/../../ortools' \
+ -Wl,-rpath,'$$ORIGIN/../../ortools/.libs' \
  -Wl,-rpath,'$$ORIGIN/../../../../lib' \
  -Wl,-rpath,'$$ORIGIN/../../../../dependencies/install/lib64' \
  -Wl,-rpath,'$$ORIGIN/../../../../dependencies/install/lib'
@@ -229,6 +230,7 @@ ifeq ($(PLATFORM),MACOSX)
   PYTHON_LDFLAGS = \
  -Wl,-rpath,@loader_path \
  -Wl,-rpath,@loader_path/../../ortools \
+ -Wl,-rpath,@loader_path/../../ortools/.libs \
  -Wl,-rpath,@loader_path/../../../../lib \
  -Wl,-rpath,@loader_path/../../../../dependencies/install/lib
 endif # ifeq ($(PLATFORM),MACOSX)

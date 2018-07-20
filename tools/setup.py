@@ -56,7 +56,7 @@ setup(
         'ortools.graph' : ['_pywrapgraph.dll'],
         'ortools.algorithms' : ['_pywrapknapsack_solver.dll'],
         'ortools.sat' : ['_pywrapsat.dll', '*.md'],
-        DELETEWIN 'ortools' : ['libortools.DLL' DDDD]
+        DELETEWIN 'ortools' : ['.libs/*' DDDD]
     },
     include_package_data=True,
     license='Apache 2.0',
