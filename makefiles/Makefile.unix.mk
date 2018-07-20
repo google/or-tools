@@ -160,16 +160,16 @@ ifeq ($(PLATFORM),LINUX)
   PRE_LIB = -L$(OR_ROOT_FULL)/lib -l
   POST_LIB =
   LINK_FLAGS = \
- -Wl,-rpath,"\$$ORIGIN" \
- -Wl,-rpath,"\$$ORIGIN/../lib" \
- -Wl,-rpath,"\$$ORIGIN/../dependencies/install/lib64" \
- -Wl,-rpath,"\$$ORIGIN/../dependencies/install/lib"
+ -Wl,-rpath,'$$ORIGIN' \
+ -Wl,-rpath,'$$ORIGIN/../lib' \
+ -Wl,-rpath,'$$ORIGIN/../dependencies/install/lib64' \
+ -Wl,-rpath,'$$ORIGIN/../dependencies/install/lib'
   PYTHON_LDFLAGS = \
- -Wl,-rpath,"\$$ORIGIN" \
- -Wl,-rpath,"\$$ORIGIN/../../ortools" \
- -Wl,-rpath,"\$$ORIGIN/../../../../lib" \
- -Wl,-rpath,"\$$ORIGIN/../../../../dependencies/install/lib64" \
- -Wl,-rpath,"\$$ORIGIN/../../../../dependencies/install/lib"
+ -Wl,-rpath,'$$ORIGIN' \
+ -Wl,-rpath,'$$ORIGIN/../../ortools' \
+ -Wl,-rpath,'$$ORIGIN/../../../../lib' \
+ -Wl,-rpath,'$$ORIGIN/../../../../dependencies/install/lib64' \
+ -Wl,-rpath,'$$ORIGIN/../../../../dependencies/install/lib'
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
