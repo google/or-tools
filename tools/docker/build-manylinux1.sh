@@ -72,6 +72,7 @@ function test_installed {
     #   $@ the test files to be tested
     local testfiles=("${@}")
     cd "$(mktemp -d)" # ensure we are not importing something from $PWD
+    python --version
     for testfile in "${testfiles[@]}"
     do
         python "$testfile"
@@ -185,6 +186,7 @@ do
     pip install -U pip setuptools wheel six
     # Install wheel and run tests
     pip install --no-cache-dir "$WHEEL_FILE"
+    pip show ortools
     test_installed "${TESTS[@]}"
     # Restore environment
     deactivate
