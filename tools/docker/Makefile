@@ -65,7 +65,7 @@ python: manylinux1-pypi
 export/python/build-manylinux1.sh: build-manylinux1.sh | export/python
 	cp $< $@
 
-export/python/docker.tar: manylinux1.Dockerfile export/python/build-manylinux1.sh | export/python
+export/python/docker.tar: manylinux1.Dockerfile export/python/build-manylinux1.sh ../../makefiles | export/python
 	-docker image rm -f or-tools:python 2>/dev/null
 	$(DOCKER_BUILD_CMD) \
  -f $< \
