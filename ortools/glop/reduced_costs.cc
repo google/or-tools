@@ -101,8 +101,9 @@ bool ReducedCosts::TestEnteringReducedCostPrecision(
     stats_.reduced_costs_accuracy.Add(estimated_reduced_costs_accuracy / scale);
     if (std::abs(estimated_reduced_costs_accuracy) / scale >
         parameters_.recompute_reduced_costs_threshold()) {
-      VLOG(1) << "Recomputing reduced costs: " << precise_reduced_cost << " vs "
-              << old_reduced_cost;
+      VLOG(1) << "Recomputing reduced costs, value = " << precise_reduced_cost
+              << " error = "
+              << std::abs(precise_reduced_cost - old_reduced_cost);
       MakeReducedCostsPrecise();
     }
   }

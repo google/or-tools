@@ -413,14 +413,7 @@ class RevisedSimplex {
   void ComputeDirection(ColIndex col);
 
   // Computes a - B.d in error_ and return the maximum std::abs() of its coeffs.
-  // TODO(user): Use this to trigger a refactorization of B? Or to track the
-  // error created by calls to SkipVariableForRatioTest()?
   Fractional ComputeDirectionError(ColIndex col);
-
-  // Marks the corresponding basic variable so that it will not take part in the
-  // ratio test and will never be chosen as a leaving variable. This is used
-  // to avoid degenerate pivots.
-  void SkipVariableForRatioTest(RowIndex row);
 
   // Computes the ratio of the basic variable corresponding to 'row'. A target
   // bound (upper or lower) is choosen depending on the sign of the entering
@@ -672,11 +665,6 @@ class RevisedSimplex {
   ScatteredColumn direction_;
   Fractional direction_infinity_norm_;
 
-  // Subpart of direction_ that was ignored during the ratio test. This is only
-  // used for degenerate problem. See SkipVariableForRatioTest() for more
-  // details.
-  SparseColumn direction_ignored_position_;
-
   // Used to compute the error 'b - A.x' or 'a - B.d'.
   DenseColumn error_;
 
@@ -814,8 +802,8 @@ class RevisedSimplexDictionary {
   RevisedSimplexDictionary(const DenseRow* col_scales,
                            RevisedSimplex* revised_simplex)
       : dictionary_(
-            CHECK_NOTNULL(revised_simplex)->ComputeDictionary(col_scales)),
-        basis_vars_(CHECK_NOTNULL(revised_simplex)->GetBasisVector()) {}
+            ABSL_DIE_IF_NULL(revised_simplex)->ComputeDictionary(col_scales)),
+        basis_vars_(ABSL_DIE_IF_NULL(revised_simplex)->GetBasisVector()) {}
 
   ConstIterator begin() const { return dictionary_.begin(); }
   ConstIterator end() const { return dictionary_.end(); }
