@@ -2201,8 +2201,21 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
                                       target_bound);
   }
   UpdateBasis(entering_col, leaving_row, leaving_variable_status);
-  GLOP_RETURN_IF_ERROR(
-      basis_factorization_.Update(entering_col, leaving_row, direction_));
+
+  const Fractional pivot_from_direction = direction_[leaving_row];
+  const Fractional pivot_from_update_row =
+      update_row_.GetCoefficient(entering_col);
+  const Fractional diff =
+      std::abs(pivot_from_update_row - pivot_from_direction);
+  if (diff > parameters_.refactorization_threshold() *
+                 (1 + std::abs(pivot_from_direction))) {
+    VLOG(1) << "Refactorizing: imprecise pivot " << pivot_from_direction
+            << " diff = " << diff;
+    GLOP_RETURN_IF_ERROR(basis_factorization_.ForceRefactorization());
+  } else {
+    GLOP_RETURN_IF_ERROR(
+        basis_factorization_.Update(entering_col, leaving_row, direction_));
+  }
   if (basis_factorization_.IsRefactorized()) {
     PermuteBasis();
   }
@@ -2409,8 +2422,7 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       // practice. Note that the final returned solution will have the property
       // that all non-basic variables are at their exact bound, so it is nice
       // that we do not report ProblemStatus::PRIMAL_FEASIBLE if a solution with
-      // this property
-      // cannot be found.
+      // this property cannot be found.
       step = ComputeStepToMoveBasicVariableToBound(leaving_row, target_bound);
     }
 

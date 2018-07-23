@@ -124,8 +124,8 @@ class UpdateRow {
   DenseRow coefficient_;
 
   // Boolean used to avoid recomputing many times the same thing.
-  bool compute_unit_row_left_inverse_;
   bool compute_update_row_;
+  RowIndex update_row_computed_for_;
 
   // Statistics about this class.
   struct Stats : public StatsGroup {

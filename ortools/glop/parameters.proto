@@ -101,11 +101,13 @@ message GlopParameters {
   // the second paper from Ping-Qi Pan cited in primal_pricing.h
   optional bool use_nested_pricing = 5 [default = true];
 
-  // We estimate the factorization accuracy of B using the solution of the
-  // LeftSolve() that we need to compute during the pricing step. If our
-  // accuracy tests fall below this threshold, launch a refactorization.
-  // TODO(user): implement this.
-  optional double refactorization_threshold = 6 [default = 1e-8];
+  // We estimate the factorization accuracy of B during each pivot by using
+  // the fact that we can compute the pivot coefficient in two ways:
+  // - From direction[leaving_row].
+  // - From update_row[entering_column].
+  // If the two values have a relative difference above this threshold, we
+  // trigger a refactorization.
+  optional double refactorization_threshold = 6 [default = 1e-9];
 
   // We estimate the accuracy of the iteratively computed reduced costs. If
   // it falls below this threshold, we reinitialize them from scratch. Note

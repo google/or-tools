@@ -72,8 +72,9 @@ void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
 }
 
 void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
-  if (!compute_update_row_) return;
+  if (!compute_update_row_ && update_row_computed_for_ == leaving_row) return;
   compute_update_row_ = false;
+  update_row_computed_for_ = leaving_row;
   ComputeUnitRowLeftInverse(leaving_row);
   SCOPED_TIME_STAT(&stats_);
 
