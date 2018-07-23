@@ -1,8 +1,8 @@
 FROM ubuntu:14.04
 
-RUN apt update \
-&& apt install -y -q build-essential zlib1g-dev \
-&& apt clean \
+RUN apt-get update \
+&& apt-get install -y -q build-essential zlib1g-dev \
+&& apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Dotnet install

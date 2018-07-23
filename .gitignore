@@ -34,6 +34,7 @@ temp_dotnet/
 temp_dotnet_test/
 temp_archive/
 temp_fz_archive/
+temp/ortools_examples
 lib/
 install/
 examples/csharp/solution/*.csproj
