@@ -4,7 +4,7 @@ ENV SRC_GIT_BRANCH master
 
 RUN apt-get update
 
-RUN apt-get -y install git wget autoconf libtool zlib1g-dev gawk g++ curl cmake subversion make mono-complete swig lsb-release python-dev default-jdk twine python-setuptools python-six python3-setuptools python3-dev python-wheel python3-wheel
+RUN apt-get -y install pkg-config git wget autoconf libtool zlib1g-dev gawk g++ curl cmake make lsb-release python-dev gfortran
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -15,6 +15,10 @@ RUN git clone -b "$SRC_GIT_BRANCH" --single-branch https://github.com/google/or-
 
 WORKDIR /root/or-tools
 
-RUN make third_party
+RUN make -j 8 third_party
 
-RUN make cc fz
+RUN make -j 8 cc fz
+
+RUN ln -s /root/or-tools/bin/fz /entry_data/fzn-exec
+
+RUN cp /root/or-tools/ortools/flatzinc/mznlib_sat/*mzn /entry_data/mzn-lib

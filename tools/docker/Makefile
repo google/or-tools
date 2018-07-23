@@ -424,14 +424,22 @@ images-no-cache: \
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
+MZN_TAG=or-tools-minizinc-challenge:2018v2
+
 minizinc-challenge-image:
-	docker build -f minizinc-challenge.Dockerfile -t or-tools-minizinc-challenge-image .
+	docker build -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
 
 minizinc-challenge-image-no-cache:
-	docker build --no-cache -f minizinc-challenge.Dockerfile -t or-tools-minizinc-challenge-image .
+	docker build --no-cache -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
 
-minizinc-challenge-test: minizinc-challenge-image
-	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-minizinc-challenge-image:latest /bin/bash -c "git pull; make clean; make cc -j 5; make fz; make test_cc;"
+minizinc-challenge-test:
+	docker run $(MZN_TAG) solver /minizinc/test.mzn /minizinc/2.dzn
+	docker run $(MZN_TAG) solver --free-search /minizinc/test.mzn /minizinc/2.dzn
+	docker run $(MZN_TAG) solver -p 2 /minizinc/test.mzn /minizinc/2.dzn
 
-minizinc-challenge-bash: export minizinc-challenge-image
-	docker run -it or-tools-minizinc-challenge-image:latest /bin/bash
+minizinc-challenge-bash:
+	docker run -it $(MZN_TAG) /bin/bash
+
+minizinc-challenge-export:
+	docker tag $(MZN_TAG) laurentperron/$(MZN_TAG)
+	docker push laurentperron/$(MZN_TAG)
