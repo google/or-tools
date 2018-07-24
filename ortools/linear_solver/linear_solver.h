@@ -141,15 +141,19 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "ortools/base/commandlineflags.h"
+
+#include <unordered_map>
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/port.h"
 #include "ortools/base/status.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/strutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_expr.h"
@@ -225,7 +229,7 @@ class MPSolver {
 
   bool IsMIP() const;
 
-  std::string Name() const {
+  const std::string& Name() const {
     return name_;  // Set at construction.
   }
 
@@ -244,14 +248,17 @@ class MPSolver {
   // Returns the array of variables handled by the MPSolver.
   // (They are listed in the order in which they were created.)
   const std::vector<MPVariable*>& variables() const { return variables_; }
-  // Look up a variable by name, and return NULL if it does not exist.
+  // Looks up a variable by name, and returns nullptr if it does not exist.
+  // The first call has a O(n) complexity, as the variable name index is lazily
+  // created upon first use. Will crash if variable names are not unique.
   MPVariable* LookupVariableOrNull(const std::string& var_name) const;
 
   // Creates a variable with the given bounds, integrality requirement
   // and name. Bounds can be finite or +/- MPSolver::infinity().
   // The MPSolver owns the variable (i.e. the returned pointer is borrowed).
-  // Variable names must be unique (it may crash otherwise). Empty variable
-  // names are allowed, an automated variable name will then be assigned.
+  // Variable names are optional. If you give an empty name, name() will
+  // auto-generate one for you upon request.
+
   MPVariable* MakeVar(double lb, double ub, bool integer,
                       const std::string& name);
   // Creates a continuous variable.
@@ -286,11 +293,10 @@ class MPSolver {
   // (They are listed in the order in which they were created.)
   const std::vector<MPConstraint*>& constraints() const { return constraints_; }
 
-  // Sets whether constraints should be indexed. Setting to false makes adding
-  // constraints faster and uses less memory.
-  void SetIndexConstraints(bool enabled);
-  // Look up a constraint by name, and return nullptr if it does not exist or if
-  // constraints are not indexed.
+  // Looks up a constraint by name, and returns nullptr if it does not exist.
+  // The first call has a O(n) complexity, as the constraint name index is
+  // lazily created upon first use. Will crash if constraint names are not
+  // unique.
   MPConstraint* LookupConstraintOrNull(
       const std::string& constraint_name) const;
 
@@ -613,6 +619,12 @@ class MPSolver {
   // Returns true if the model has at least 1 integer variable.
   bool HasIntegerVariables() const;
 
+  // Generates the map from variable names to their indices.
+  void GenerateVariableNameIndex() const;
+
+  // Generates the map from constraint names to their indices.
+  void GenerateConstraintNameIndex() const;
+
   // The name of the linear programming problem.
   const std::string name_;
 
@@ -625,14 +637,15 @@ class MPSolver {
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
-  std::unordered_map<std::string, int> variable_name_to_index_;
+  mutable std::unique_ptr<std::unordered_map<std::string, int> >
+      variable_name_to_index_;
   // Whether variables have been extracted to the underlying interface.
   std::vector<bool> variable_is_extracted_;
 
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  std::unique_ptr<std::unordered_map<std::string, int> >
+  mutable std::unique_ptr<std::unordered_map<std::string, int> >
       constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
@@ -686,11 +699,6 @@ class MPObjective {
   void SetOffset(double value);
   // Gets the constant term in the objective.
   double offset() const { return offset_; }
-
-  // Adds a constant term to the objective.
-  // Note: please use the less ambiguous SetOffset() if possible!
-  // TODO(user): remove this.
-  void AddOffset(double value) { SetOffset(offset() + value); }
 
   // Resets the current objective to take the value of linear_expr, and sets
   // the objective direction to maximize if "is_maximize", otherwise minimizes.
@@ -831,7 +839,7 @@ class MPVariable {
         lb_(lb),
         ub_(ub),
         integer_(integer),
-        name_(name),
+        name_(name.empty() ? absl::StrFormat("auto_v_%09d", index) : name),
         solution_value_(0.0),
         reduced_cost_(0.0),
         interface_(interface) {}
@@ -932,7 +940,7 @@ class MPConstraint {
         index_(index),
         lb_(lb),
         ub_(ub),
-        name_(name),
+        name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
         is_lazy_(false),
         dual_value_(0.0),
         interface_(interface) {}

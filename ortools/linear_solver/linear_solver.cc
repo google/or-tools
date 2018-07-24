@@ -26,16 +26,15 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 
 #include "ortools/port/file.h"
 
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/canonical_errors.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/mutex.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -59,10 +58,6 @@ DEFINE_bool(mpsolver_bypass_model_validation, false,
             " Invalid models will typically trigger various error responses"
             " from the underlying solvers; sometimes crashes.");
 
-// To compile the open-source code, the anonymous namespace should be
-// inside the operations_research namespace (This is due to the
-// open-sourced version of StringPrintf which is defined inside the
-// operations_research namespace in open_source/base).
 namespace operations_research {
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
@@ -414,13 +409,11 @@ MPSolver::OptimizationProblemType DetourProblemType(
 MPSolver::MPSolver(const std::string& name,
                    OptimizationProblemType problem_type)
     : name_(name),
-      problem_type_(problem_type),
-#if !defined(_MSC_VER)
-      variable_name_to_index_(1),
-#endif
+      problem_type_(DetourProblemType(problem_type)),
       time_limit_(0.0) {
-  SetIndexConstraints(true);
   timer_.Restart();
+  constraint_name_to_index_.reset(nullptr);
+  variable_name_to_index_.reset(nullptr);
   interface_.reset(BuildSolverInterface(this));
   if (FLAGS_linear_solver_enable_verbose_output) {
     EnableOutput();
@@ -502,31 +495,18 @@ bool MPSolver::ParseSolverType(const std::string& solver,
 }
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
+  if (!variable_name_to_index_) GenerateVariableNameIndex();
+
   std::unordered_map<std::string, int>::const_iterator it =
-      variable_name_to_index_.find(var_name);
-  if (it == variable_name_to_index_.end()) return nullptr;
+      variable_name_to_index_->find(var_name);
+  if (it == variable_name_to_index_->end()) return nullptr;
   return variables_[it->second];
-}
-
-void MPSolver::SetIndexConstraints(bool enabled) {
-  auto* const new_map = enabled ?
-#ifdef _MSC_VER
-
-                                new std::unordered_map<std::string, int>()
-                                :
-#else   // _MSC_VER
-                                new std::unordered_map<std::string, int>(1)
-                                :
-#endif  // _MSC_VER
-                                nullptr;
-  constraint_name_to_index_.reset(new_map);
 }
 
 MPConstraint* MPSolver::LookupConstraintOrNull(
     const std::string& constraint_name) const {
-  if (!constraint_name_to_index_) {
-    return nullptr;
-  }
+  if (!constraint_name_to_index_) GenerateConstraintNameIndex();
+
   const auto it = constraint_name_to_index_->find(constraint_name);
   if (it == constraint_name_to_index_->end()) return nullptr;
   return constraints_[it->second];
@@ -546,6 +526,10 @@ MPSolverResponseStatus MPSolver::LoadModelFromProto(
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
     const MPModelProto& input_model, std::string* error_message) {
+  // Force variable and constraint name indexing (which CHECKs name uniqueness).
+  GenerateVariableNameIndex();
+  GenerateConstraintNameIndex();
+
   return LoadModelFromProtoInternal(input_model, /*clear_names=*/false,
                                     error_message);
 }
@@ -825,7 +809,9 @@ void MPSolver::Clear() {
   gtl::STLDeleteElements(&variables_);
   gtl::STLDeleteElements(&constraints_);
   variables_.clear();
-  variable_name_to_index_.clear();
+  if (variable_name_to_index_) {
+    variable_name_to_index_->clear();
+  }
   variable_is_extracted_.clear();
   constraints_.clear();
   if (constraint_name_to_index_) {
@@ -849,11 +835,11 @@ void MPSolver::SetStartingLpBasis(
 MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
                               const std::string& name) {
   const int var_index = NumVariables();
-  const std::string fixed_name =
-      name.empty() ? StringPrintf("auto_v_%09d", var_index) : name;
-  gtl::InsertOrDie(&variable_name_to_index_, fixed_name, var_index);
   MPVariable* v =
-      new MPVariable(var_index, lb, ub, integer, fixed_name, interface_.get());
+      new MPVariable(var_index, lb, ub, integer, name, interface_.get());
+  if (variable_name_to_index_) {
+    gtl::InsertOrDie(&*variable_name_to_index_, v->name(), var_index);
+  }
   variables_.push_back(v);
   variable_is_extracted_.push_back(false);
   interface_->AddVariable(v);
@@ -884,7 +870,8 @@ void MPSolver::MakeVarArray(int nb, double lb, double ub, bool integer,
     if (name.empty()) {
       vars->push_back(MakeVar(lb, ub, integer, name));
     } else {
-      std::string vname = StringPrintf("%s%0*d", name.c_str(), num_digits, i);
+      std::string vname =
+          absl::StrFormat("%s%0*d", name.c_str(), num_digits, i);
       vars->push_back(MakeVar(lb, ub, integer, vname));
     }
   }
@@ -918,13 +905,12 @@ MPConstraint* MPSolver::MakeRowConstraint() {
 MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
                                           const std::string& name) {
   const int constraint_index = NumConstraints();
-  const std::string fixed_name =
-      name.empty() ? StringPrintf("auto_c_%09d", constraint_index) : name;
-  if (constraint_name_to_index_) {
-    gtl::InsertOrDie(&*constraint_name_to_index_, fixed_name, constraint_index);
-  }
   MPConstraint* const constraint =
-      new MPConstraint(constraint_index, lb, ub, fixed_name, interface_.get());
+      new MPConstraint(constraint_index, lb, ub, name, interface_.get());
+  if (constraint_name_to_index_) {
+    gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
+                     constraint_index);
+  }
   constraints_.push_back(constraint);
   constraint_is_extracted_.push_back(false);
   interface_->AddRowConstraint(constraint);
@@ -1036,21 +1022,22 @@ std::string PrettyPrintVar(const MPVariable& var) {
     if (lb > ub) {
       return prefix + "∅";
     } else if (lb == ub) {
-      return absl::StrFormat("%s{ %lld }", prefix.c_str(), lb);
+      return absl::StrFormat("%s{ %d }", prefix, lb);
     } else {
-      return absl::StrFormat("%s{ %lld, %lld }", prefix.c_str(), lb, ub);
+      return absl::StrFormat("%s{ %d, %d }", prefix, lb, ub);
     }
   }
   // Special case: single (non-infinite) real value.
   if (var.lb() == var.ub()) {
-    return StringPrintf("%s{ %f }", prefix.c_str(), var.lb());
+    return absl::StrFormat("%s{ %f }", prefix.c_str(), var.lb());
   }
   return prefix + (var.integer() ? "Integer" : "Real") + " in " +
-         (var.lb() <= -MPSolver::infinity() ? std::string("]-∞")
-                                            : StringPrintf("[%f", var.lb())) +
+         (var.lb() <= -MPSolver::infinity()
+              ? std::string("]-∞")
+              : absl::StrFormat("[%f", var.lb())) +
          ", " +
          (var.ub() >= MPSolver::infinity() ? std::string("+∞[")
-                                           : StringPrintf("%f]", var.ub()));
+                                           : absl::StrFormat("%f]", var.ub()));
 }
 
 std::string PrettyPrintConstraint(const MPConstraint& constraint) {
@@ -1067,17 +1054,17 @@ std::string PrettyPrintConstraint(const MPConstraint& constraint) {
   prefix += "<linear expr>";
   // Equality.
   if (constraint.lb() == constraint.ub()) {
-    return StringPrintf("%s = %f", prefix.c_str(), constraint.lb());
+    return absl::StrFormat("%s = %f", prefix.c_str(), constraint.lb());
   }
   // Inequalities.
   if (constraint.lb() <= -MPSolver::infinity()) {
-    return StringPrintf("%s ≤ %f", prefix.c_str(), constraint.ub());
+    return absl::StrFormat("%s ≤ %f", prefix.c_str(), constraint.ub());
   }
   if (constraint.ub() >= MPSolver::infinity()) {
-    return StringPrintf("%s ≥ %f", prefix.c_str(), constraint.lb());
+    return absl::StrFormat("%s ≥ %f", prefix.c_str(), constraint.lb());
   }
-  return StringPrintf("%s ∈ [%f, %f]", prefix.c_str(), constraint.lb(),
-                      constraint.ub());
+  return absl::StrFormat("%s ∈ [%f, %f]", prefix.c_str(), constraint.lb(),
+                         constraint.ub());
 }
 }  // namespace
 
@@ -1274,6 +1261,24 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
   return exporter.ExportModelAsMpsFormat(fixed_format, obfuscate, model_str);
 }
 
+void MPSolver::GenerateVariableNameIndex() const {
+  if (variable_name_to_index_) return;
+  variable_name_to_index_.reset(new std::unordered_map<std::string, int>(1));
+  for (const MPVariable* const var : variables_) {
+    gtl::InsertOrDie(&*variable_name_to_index_, var->name(), var->index());
+  }
+}
+
+void MPSolver::GenerateConstraintNameIndex() const {
+  if (constraint_name_to_index_) return;
+  constraint_name_to_index_.reset(new std::unordered_map<std::string, int>(1));
+  for (const MPConstraint* const cst : constraints_) {
+    gtl::InsertOrDie(&*constraint_name_to_index_, cst->name(), cst->index());
+  }
+}
+
+bool MPSolver::NextSolution() { return interface_->NextSolution(); }
+
 // ---------- MPSolverInterface ----------
 
 const int MPSolverInterface::kDummyVariableIndex = 0;
@@ -1469,8 +1474,9 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
   int32 pid = 456;
 #endif  // _MSC_VER
   int64 now = absl::GetCurrentTimeNanos();
-  std::string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
-                                      tid, pid, now, extension.c_str());
+  std::string filename =
+      absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx%s", tid, pid, now,
+                      extension.c_str());
   bool no_error_so_far = true;
   if (no_error_so_far) {
     no_error_so_far = FileSetContents(filename, parameters).ok();

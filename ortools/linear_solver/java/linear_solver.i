@@ -25,7 +25,7 @@
 //
 // TODO(user): unit test all the APIs that are currently marked with 'no test'.
 
-%include ortools/base/base.i
+%include "ortools/base/base.i"
 
 %include "enums.swg"  // For native Java enum support.
 
@@ -133,6 +133,7 @@ import java.lang.reflect.*;
 %unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::BOP_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::SAT_INTEGER_PROGRAMMING;
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
@@ -235,7 +236,6 @@ import java.lang.reflect.*;
 %rename (setOptimizationDirection) operations_research::MPObjective::SetOptimizationDirection;
 %rename (clear) operations_research::MPObjective::Clear;  // no test
 %rename (setOffset) operations_research::MPObjective::SetOffset;
-%rename (addOffset) operations_research::MPObjective::AddOffset;  // no test
 
 // MPObjective: reader API.
 %rename (value) operations_research::MPObjective::Value;
@@ -247,6 +247,7 @@ import java.lang.reflect.*;
 
 // MPSolverParameters API. For expert users only.
 // TODO(user): unit test all of it.
+
 %unignore operations_research::MPSolverParameters;  // no test
 %unignore operations_research::MPSolverParameters::MPSolverParameters;  // no test
 
@@ -292,10 +293,6 @@ import java.lang.reflect.*;
 %unignore operations_research::MPSolverParameters::ScalingValues;  // no test
 %unignore operations_research::MPSolverParameters::SCALING_OFF;  // no test
 %unignore operations_research::MPSolverParameters::SCALING_ON;  // no test
-
-// We want to ignore the CoeffMap class; but since it inherits from some
-// std::unordered_map<>, swig complains about an undefined base class. Silence it.
-%warnfilter(401) CoeffMap;
 
 %include "ortools/linear_solver/linear_solver.h"
 

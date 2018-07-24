@@ -17,11 +17,11 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <stdexcept>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
@@ -191,7 +191,6 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
     LOG(DFATAL) << "Error: could not create environment: " << err_msg;
     throw std::runtime_error(std::to_string(ret) + ", " + err_msg);
   }
-
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj

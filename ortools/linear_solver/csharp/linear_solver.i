@@ -192,7 +192,6 @@ class MPSolutionResponse;
 %unignore operations_research::MPObjective::SetOptimizationDirection;
 %unignore operations_research::MPObjective::Clear;
 %unignore operations_research::MPObjective::SetOffset;
-%unignore operations_research::MPObjective::AddOffset;
 
 // MPObjective: reader API.
 %unignore operations_research::MPObjective::Value;
@@ -210,10 +209,6 @@ class MPSolutionResponse;
 %unignore operations_research::MPSolverParameters::GetDoubleParam;
 %unignore operations_research::MPSolverParameters::SetDoubleParam;
 %unignore operations_research::MPSolverParameters::kDefaultPrimalTolerance;
-
-// We want to ignore the CoeffMap class; but since it inherits from some
-// std::unordered_map<>, swig complains about an undefined base class. Silence it.
-%warnfilter(401) CoeffMap;
 
 %include "ortools/linear_solver/linear_solver.h"
 

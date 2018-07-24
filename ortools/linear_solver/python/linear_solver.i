@@ -73,17 +73,6 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   }  // %pythoncode
 }
 
-// Catch runtime exceptions in class methods
-%extend MPSolver {
-  %exception MPSolver {
-    try {
-      $action
-    } catch ( std::runtime_error& e ) {
-      SWIG_exception(SWIG_RuntimeError, e.what());
-    }
-  }
-}
-
 %extend MPSolver {
   // Change a (bool, std::string*) outputs to a python std::string (empty if bool=false).
   std::string ExportModelAsLpFormat(bool obfuscated) {
@@ -129,10 +118,10 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     objective.Clear()
     objective.SetMinimization()
     if isinstance(expr, numbers.Number):
-        objective.AddOffset(expr)
+        objective.SetOffset(expr)
     else:
         coeffs = expr.GetCoeffs()
-        objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
+        objective.SetOffset(coeffs.pop(OFFSET_KEY, 0.0))
         for v, c, in list(coeffs.items()):
           objective.SetCoefficient(v, float(c))
 
@@ -141,16 +130,25 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     objective.Clear()
     objective.SetMaximization()
     if isinstance(expr, numbers.Number):
-        objective.AddOffset(expr)
+        objective.SetOffset(expr)
     else:
         coeffs = expr.GetCoeffs()
-        objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
+        objective.SetOffset(coeffs.pop(OFFSET_KEY, 0.0))
         for v, c, in list(coeffs.items()):
           objective.SetCoefficient(v, float(c))
   }  // %pythoncode
 }
 
 %extend MPSolver {
+// Catch runtime exceptions in class methods
+%exception MPSolver {
+    try {
+      $action
+    } catch ( std::runtime_error& e ) {
+      SWIG_exception(SWIG_RuntimeError, e.what());
+    }
+  }
+
   static double Infinity() { return operations_research::MPSolver::infinity(); }
   void SetTimeLimit(int64 x) { $self->set_time_limit(x); }
   int64 WallTime() const { return $self->wall_time(); }
@@ -201,6 +199,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::BOP_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::SAT_INTEGER_PROGRAMMING;
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
@@ -222,6 +221,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %rename (BoolVar) operations_research::MPSolver::MakeBoolVar;  // No unit test
 %rename (IntVar) operations_research::MPSolver::MakeIntVar;
 %rename (NumVar) operations_research::MPSolver::MakeNumVar;
+%rename (Var) operations_research::MPSolver::MakeVar;
 // We intentionally don't expose MakeRowConstraint(LinearExpr), because this
 // "natural language" API is specific to C++: other languages may add their own
 // syntactic sugar on top of MPSolver instead of this.
@@ -249,6 +249,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     operations_research::MPSolver::LookupConstraintOrNull;
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
+%unignore operations_research::MPSolver::NextSolution;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %unignore operations_research::MPSolver::ComputeConstraintActivities;
@@ -330,6 +331,9 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolverParameters::SCALING;
 %unignore operations_research::MPSolverParameters::GetIntegerParam;
 %unignore operations_research::MPSolverParameters::SetIntegerParam;
+%unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;
+%unignore operations_research::MPSolverParameters::kDefaultPrimalTolerance;
+// TODO(user): unit test kDefaultPrimalTolerance.
 
 // Expose the MPSolverParameters::PresolveValues enum.
 %unignore operations_research::MPSolverParameters::PresolveValues;
@@ -353,10 +357,6 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolverParameters::ScalingValues;
 %unignore operations_research::MPSolverParameters::SCALING_OFF;
 %unignore operations_research::MPSolverParameters::SCALING_ON;
-
-// We want to ignore the CoeffMap class; but since it inherits from some
-// std::unordered_map<>, swig complains about an undefined base class. Silence it.
-%warnfilter(401) CoeffMap;
 
 %include "ortools/linear_solver/linear_solver.h"
 

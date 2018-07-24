@@ -3319,15 +3319,17 @@ $(OBJ_DIR)/linear_solver/linear_solver.$O: \
  $(SRC_DIR)/ortools/base/accurate_sum.h \
  $(SRC_DIR)/ortools/base/canonical_errors.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
- $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
  $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
  $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/mutex.h \
  $(SRC_DIR)/ortools/base/port.h \
  $(SRC_DIR)/ortools/base/status.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/base/strutil.h \
  $(SRC_DIR)/ortools/base/timer.h \
  $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
