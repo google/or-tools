@@ -52,8 +52,12 @@ echo "make fz: DONE" | tee -a build.log
 rm -rf temp ./*.tar.gz
 make archive UNIX_PYTHON_VER=3
 echo "make archive: DONE" | tee -a build.log
+make test_archive UNIX_PYTHON_VER=3
+echo "make test_archive: DONE" | tee -a build.log
 make fz_archive UNIX_PYTHON_VER=3
 echo "make fz_archive: DONE" | tee -a build.log
+make test_fz_archive UNIX_PYTHON_VER=3
+echo "make test_fz_archive: DONE" | tee -a build.log
 make python_examples_archive UNIX_PYTHON_VER=3
 echo "make python_examples_archive: DONE" | tee -a build.log
 
