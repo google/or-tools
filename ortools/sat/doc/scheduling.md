@@ -256,6 +256,9 @@ A no overlap constraint simply states that all intervals are disjoint.
 It is build with a list of interval variables. Fixed intervals are useful to
 exclude part of the timeline.
 
+In the following examples. We want to schedule 3 tasks on 3 weeks excluding
+weekends, mimizing the last day of work.
+
 ### Python code
 
 ```python
