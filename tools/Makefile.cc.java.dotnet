@@ -430,7 +430,7 @@ $(CLASS_DIR):
 	$(MKDIR) $(CLASS_DIR)
 
 $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java | $(CLASS_DIR)
-	$(MKDIR) $(CLASS_DIR)$S$*
+	-$(MKDIR) $(CLASS_DIR)$S$*
 	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
  $(JAVA_EX_PATH)$S$*.java
