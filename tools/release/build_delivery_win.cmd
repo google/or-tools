@@ -58,8 +58,12 @@ REM Create Archive
 rm.exe -rf temp *.zip || exit 1
 make.exe archive WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
 echo make archive: DONE | tee.exe -a build.log
+make.exe test_archive WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
+echo make test_archive: DONE | tee.exe -a build.log
 make.exe fz_archive WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
 echo make fz_archive: DONE | tee.exe -a build.log
+make.exe test_fz_archive WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
+echo make test_fz_archive: DONE | tee.exe -a build.log
 make.exe python_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
 echo make python_examples_archive: DONE | tee.exe -a build.log
 
