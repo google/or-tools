@@ -19,6 +19,7 @@ public class CodeSamplesSat
   static void NoOverlapSample()
   {
     CpModel model = new CpModel();
+    // Three weeks.
     int horizon = 21;
 
     // Task 0, duration 2.
@@ -42,7 +43,7 @@ public class CodeSamplesSat
     IntervalVar task_2 =
         model.NewIntervalVar(start_2, duration_2, end_2, "task_2");
 
-    // Week ends.
+    // Weekends.
     IntervalVar weekend_0 = model.NewIntervalVar(5, 2, 7, "weekend_0");
     IntervalVar weekend_1 = model.NewIntervalVar(12, 2, 14, "weekend_1");
     IntervalVar weekend_2 = model.NewIntervalVar(19, 2, 21, "weekend_2");

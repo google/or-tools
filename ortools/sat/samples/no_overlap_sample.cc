@@ -123,7 +123,6 @@ void NoOverlapSample() {
   }
 }
 
-
 }  // namespace sat
 }  // namespace operations_research
 
