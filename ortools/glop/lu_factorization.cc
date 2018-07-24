@@ -512,6 +512,11 @@ Fractional LuFactorization::ComputeInfinityNormConditionNumber(
   return matrix.ComputeInfinityNorm() * ComputeInverseInfinityNorm();
 }
 
+Fractional LuFactorization::ComputeInverseInfinityNormUpperBound() const {
+  return lower_.ComputeInverseInfinityNormUpperBound() *
+         upper_.ComputeInverseInfinityNormUpperBound();
+}
+
 namespace {
 // Returns the density of the sparse column 'b' w.r.t. the given permutation.
 double ComputeDensity(const SparseColumn& b, const RowPermutation& row_perm) {

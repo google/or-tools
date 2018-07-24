@@ -62,8 +62,8 @@ class InitialBasis {
   //
   // Returns false if an error occurred during the algorithm (numerically
   // instable basis).
-  bool CompleteTriangularPrimalBasis(ColIndex num_cols, RowToColMapping* basis);
-  bool CompleteTriangularDualBasis(ColIndex num_cols, RowToColMapping* basis);
+  void CompleteTriangularPrimalBasis(ColIndex num_cols, RowToColMapping* basis);
+  void CompleteTriangularDualBasis(ColIndex num_cols, RowToColMapping* basis);
 
   // Visible for testing. Computes a list of candidate column indices out of the
   // fist num_candidate_columns of A and sorts them using the
@@ -74,7 +74,7 @@ class InitialBasis {
  private:
   // Internal implementation of the Primal/Dual CompleteTriangularBasis().
   template <bool only_allow_zero_cost_column>
-  bool CompleteTriangularBasis(ColIndex num_cols, RowToColMapping* basis);
+  void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping* basis);
 
   // Returns an integer representing the order (the lower the better)
   // between column categories (known as C2, C3 or C4 in the paper).

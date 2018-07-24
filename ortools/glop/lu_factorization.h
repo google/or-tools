@@ -175,6 +175,7 @@ class LuFactorization {
   // TODO(user): separate this from LuFactorization.
   Fractional ComputeOneNormConditionNumber(const MatrixView& matrix) const;
   Fractional ComputeInfinityNormConditionNumber(const MatrixView& matrix) const;
+  Fractional ComputeInverseInfinityNormUpperBound() const;
 
   // Sets the current parameters.
   void SetParameters(const GlopParameters& parameters) {

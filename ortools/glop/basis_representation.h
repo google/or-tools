@@ -239,6 +239,7 @@ class BasisFactorization {
   // A condition number greater than 1E7 will lead to precision problems.
   Fractional ComputeOneNormConditionNumber() const;
   Fractional ComputeInfinityNormConditionNumber() const;
+  Fractional ComputeInfinityNormConditionNumberUpperBound() const;
 
   // Computes the 1-norm of B.
   // The 1-norm |A| is defined as max_j sum_i |a_ij|

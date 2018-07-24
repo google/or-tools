@@ -552,6 +552,14 @@ Fractional BasisFactorization::ComputeInfinityNormConditionNumber() const {
   return ComputeInfinityNorm() * ComputeInverseInfinityNorm();
 }
 
+Fractional BasisFactorization::ComputeInfinityNormConditionNumberUpperBound()
+    const {
+  if (IsIdentityBasis()) return 1.0;
+  BumpDeterministicTimeForSolve(matrix_.num_rows().value());
+  return ComputeInfinityNorm() *
+         lu_factorization_.ComputeInverseInfinityNormUpperBound();
+}
+
 double BasisFactorization::DeterministicTime() const {
   return deterministic_time_;
 }

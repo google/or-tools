@@ -998,10 +998,7 @@ Status RevisedSimplex::CreateInitialBasis() {
       InitialBasis initial_basis(matrix_with_slack_, objective_, lower_bound_,
                                  upper_bound_, variables_info_.GetTypeRow());
 
-      if (parameters_.use_dual_simplex()) {
-        // This dual version only uses zero-cost columns to complete the basis.
-        initial_basis.CompleteTriangularDualBasis(num_cols_, &basis);
-      } else if (parameters_.initial_basis() == GlopParameters::BIXBY) {
+      if (parameters_.initial_basis() == GlopParameters::BIXBY) {
         if (parameters_.use_scaling()) {
           initial_basis.CompleteBixbyBasis(first_slack_col_, &basis);
         } else {
@@ -1009,15 +1006,31 @@ Status RevisedSimplex::CreateInitialBasis() {
                   << "to be scaled. Skipping Bixby's algorithm.";
         }
       } else if (parameters_.initial_basis() == GlopParameters::TRIANGULAR) {
+        const RowToColMapping basis_copy = basis;
+
         // Note the use of num_cols_ here because this algorithm
         // benefits from treating fixed slack columns like any other column.
-        RowToColMapping basis_copy = basis;
-        if (!initial_basis.CompleteTriangularPrimalBasis(num_cols_, &basis)) {
-          VLOG(1) << "Reverting to Bixby's initial basis algorithm.";
+        if (parameters_.use_dual_simplex()) {
+          // This dual version only uses zero-cost columns to complete the
+          // basis.
+          initial_basis.CompleteTriangularDualBasis(num_cols_, &basis);
+        } else {
+          initial_basis.CompleteTriangularPrimalBasis(num_cols_, &basis);
+        }
+        const Status status = InitializeFirstBasis(basis);
+
+        // Check that the upper bound on the condition number of LU is below
+        // 1e50. We have chosen an arbitrarily high threshold, because the
+        // purpose of this code is to just revert to the "safe" basis on large
+        // problematic problem when we observed an "infinity" condition number
+        // (on cond11.mps).
+        if (status.ok() &&
+            basis_factorization_
+                    .ComputeInfinityNormConditionNumberUpperBound() < 1e50) {
+          return status;
+        } else {
+          VLOG(1) << "Reverting to all slack basis.";
           basis = basis_copy;
-          if (parameters_.use_scaling()) {
-            initial_basis.CompleteBixbyBasis(first_slack_col_, &basis);
-          }
         }
       } else {
         VLOG(1) << "Unsupported initial_basis parameters: "
@@ -1040,6 +1053,7 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
     }
     variables_info_.Update(basis_[row], VariableStatus::BASIC);
   }
+
   GLOP_RETURN_IF_ERROR(basis_factorization_.Initialize());
   PermuteBasis();
   DCHECK(BasisIsConsistent());
