@@ -67,7 +67,12 @@ archive_java: java | $(TEMP_ARCHIVE_DIR)
 	$(COPY) $(LIB_DIR)$Sprotobuf.jar $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Slib
 	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
+ifeq ($(SYSTEM),win)
+	-$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	$(COPYREC) $(JAVA_EX_PATH) "$(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava" /E
+else
 	$(COPYREC) $(JAVA_EX_PATH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
+endif
 
 .PHONY: archive_dotnet # Add .Net OR-Tools to archive.
 archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)
@@ -85,7 +90,12 @@ ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
 	$(COPY) $(BIN_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sbin
 	$(COPY) $(BIN_DIR)$S$(CLR_PROTOBUF_DLL_NAME)$D $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sbin
 	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
+ifeq ($(SYSTEM),win)
+	-$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	$(COPYREC) $(DOTNET_EX_PATH) "$(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet" /E
+else
 	$(COPYREC) $(DOTNET_EX_PATH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
+endif
 
 $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S*
