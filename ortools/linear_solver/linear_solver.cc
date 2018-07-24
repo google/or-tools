@@ -1022,9 +1022,9 @@ std::string PrettyPrintVar(const MPVariable& var) {
     if (lb > ub) {
       return prefix + "∅";
     } else if (lb == ub) {
-      return absl::StrFormat("%s{ %d }", prefix, lb);
+      return absl::StrFormat("%s{ %lld }", prefix.c_str(), lb);
     } else {
-      return absl::StrFormat("%s{ %d, %d }", prefix, lb, ub);
+      return absl::StrFormat("%s{ %lld, %lld }", prefix.c_str(), lb, ub);
     }
   }
   // Special case: single (non-infinite) real value.
