@@ -3324,6 +3324,7 @@ $(OBJ_DIR)/linear_solver/linear_solver.$O: \
  $(SRC_DIR)/ortools/base/join.h \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/port.h \
  $(SRC_DIR)/ortools/base/status.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
