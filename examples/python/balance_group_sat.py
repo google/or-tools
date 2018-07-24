@@ -15,8 +15,8 @@ from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
-num_groups = 10
-num_values = 100
+num_groups = 11
+num_values = 121
 
 
 model = cp_model.CpModel()
@@ -28,12 +28,13 @@ for i in range(num_values):
 
 e = model.NewIntVar(0, 5, 'epsilon')
 
-values = [i + 1 for i in range(num_values)]
+values = [i + 1 + 3 * (i > 99) for i in range(num_values)]
 sum_of_values = sum(values)
 average_value = sum_of_values / num_groups
 
 for j in range(num_groups):
-    model.Add(sum(boo_x_i_j[(i, j)] for i in range(num_values)) == num_values / num_groups)
+    model.Add(sum(boo_x_i_j[(i, j)]
+                  for i in range(num_values)) == num_values / num_groups)
 
 for i in range(num_values):
     model.Add(sum(boo_x_i_j[(i, j)] for j in range(num_groups)) == 1)
