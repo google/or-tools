@@ -566,7 +566,7 @@ ifeq ($(WINDOWS_GLOG_DIR),$(OR_ROOT_FULL)\\dependencies\\install)
 endif
 ifeq ($(WINDOWS_PROTOBUF_DIR),$(OR_ROOT_FULL)\\dependencies\\install)
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude$Sgoogle /E"
 endif
 ifeq ($(WINDOWS_CBC_DIR),$(OR_ROOT_FULL)\\dependencies\\install)
 	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Scoin"
