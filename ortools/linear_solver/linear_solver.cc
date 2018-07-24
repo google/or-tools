@@ -75,7 +75,7 @@ void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (var == nullptr) return;
   if (coeff == 0.0) {
-    CoeffMap::iterator it = coefficients_.find(var);
+    auto it = coefficients_.find(var);
     // If setting a coefficient to 0 when this coefficient did not
     // exist or was already 0, do nothing: skip
     // interface_->SetCoefficient() and do not store a coefficient in
@@ -90,8 +90,7 @@ void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
     }
     return;
   }
-  std::pair<CoeffMap::iterator, bool> insertion_result =
-      coefficients_.insert(std::make_pair(var, coeff));
+  auto insertion_result = coefficients_.insert(std::make_pair(var, coeff));
   const double old_value =
       insertion_result.second ? 0.0 : insertion_result.first->second;
   insertion_result.first->second = coeff;
@@ -135,7 +134,7 @@ MPSolver::BasisStatus MPConstraint::basis_status() const {
 
 bool MPConstraint::ContainsNewVariables() {
   const int last_variable_index = interface_->last_variable_index();
-  for (CoeffEntry entry : coefficients_) {
+  for (const auto& entry : coefficients_) {
     const int variable_index = entry.first->index();
     if (variable_index >= last_variable_index ||
         !interface_->variable_is_extracted(variable_index)) {
@@ -157,7 +156,7 @@ void MPObjective::SetCoefficient(const MPVariable* const var, double coeff) {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
   if (var == nullptr) return;
   if (coeff == 0.0) {
-    CoeffMap::iterator it = coefficients_.find(var);
+    auto it = coefficients_.find(var);
     // See the discussion on MPConstraint::SetCoefficient() for 0 coefficients,
     // the same reasoning applies here.
     if (it == coefficients_.end() || it->second == 0.0) return;
@@ -541,9 +540,6 @@ MPSolverResponseStatus MPSolver::LoadModelFromProto(
   // duplicate names in the proto (they're not considered as 'ids'),
   // unlike the MPSolver C++ API which crashes if there are duplicate names.
   // Clearing the names makes the MPSolver generate unique names.
-  //
-  // TODO(user): This limits the number of variables and constraints to 10^9:
-  // we should fix that.
   return LoadModelFromProtoInternal(input_model, /*clear_names=*/true,
                                     error_message);
 }
@@ -659,6 +655,10 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
       for (int j = 0; j < constraints_.size(); ++j) {
         response->add_dual_value(constraints_[j]->dual_value());
       }
+      // Reduced cost have no meaning in MIP.
+      for (int i = 0; i < variables_.size(); ++i) {
+        response->add_reduced_cost(variables_[i]->reduced_cost());
+      }
     }
   }
 }
@@ -738,7 +738,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     // Vector linear_term will contain pairs (variable index, coeff), that will
     // be sorted by variable index.
     std::vector<std::pair<int, double> > linear_term;
-    for (CoeffEntry entry : constraint->coefficients_) {
+    for (const auto& entry : constraint->coefficients_) {
       const MPVariable* const var = entry.first;
       const int var_index = gtl::FindWithDefault(var_to_index, var, -1);
       DCHECK_NE(-1, var_index);
@@ -1088,7 +1088,7 @@ std::vector<double> MPSolver::ComputeConstraintActivities() const {
   for (int i = 0; i < constraints_.size(); ++i) {
     const MPConstraint& constraint = *constraints_[i];
     AccurateSum<double> sum;
-    for (CoeffEntry entry : constraint.coefficients_) {
+    for (const auto& entry : constraint.coefficients_) {
       sum.Add(entry.first->solution_value() * entry.second);
     }
     activities[i] = sum.Value();
@@ -1156,7 +1156,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
     const double activity = activities[i];
     // Re-compute the activity with a inaccurate summing algorithm.
     double inaccurate_activity = 0.0;
-    for (CoeffEntry entry : constraint.coefficients_) {
+    for (const auto& entry : constraint.coefficients_) {
       inaccurate_activity += entry.first->solution_value() * entry.second;
     }
     // Catch NaNs.
@@ -1203,7 +1203,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   AccurateSum<double> objective_sum;
   objective_sum.Add(objective.offset());
   double inaccurate_objective_value = objective.offset();
-  for (CoeffEntry entry : objective.coefficients_) {
+  for (const auto& entry : objective.coefficients_) {
     const double term = entry.first->solution_value() * entry.second;
     objective_sum.Add(term);
     inaccurate_objective_value += term;

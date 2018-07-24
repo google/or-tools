@@ -304,7 +304,7 @@ void GLOPInterface::ExtractNewConstraints() {
     DCHECK_EQ(new_row, row);
     linear_program_.SetConstraintBounds(row, lb, ub);
 
-    for (CoeffEntry entry : ct->coefficients_) {
+    for (const auto& entry : ct->coefficients_) {
       const int var_index = entry.first->index();
       DCHECK(variable_is_extracted(var_index));
       const glop::ColIndex col(var_index);
@@ -316,7 +316,7 @@ void GLOPInterface::ExtractNewConstraints() {
 
 void GLOPInterface::ExtractObjective() {
   linear_program_.SetObjectiveOffset(solver_->Objective().offset());
-  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+  for (const auto& entry : solver_->objective_->coefficients_) {
     const int var_index = entry.first->index();
     const glop::ColIndex col(var_index);
     const double coeff = entry.second;

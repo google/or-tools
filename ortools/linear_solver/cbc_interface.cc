@@ -306,7 +306,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
         MPConstraint* const ct = solver_->constraints_[i];
         const int size = ct->coefficients_.size();
         int j = 0;
-        for (CoeffEntry entry : ct->coefficients_) {
+        for (const auto& entry : ct->coefficients_) {
           const int index = MPSolverVarIndexToCbcVarIndex(entry.first->index());
           indices[j] = index;
           coefs[j] = entry.second;

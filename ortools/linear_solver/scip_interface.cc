@@ -264,7 +264,7 @@ void SCIPInterface::ClearConstraint(MPConstraint* constraint) {
   const int constraint_index = constraint->index();
   // Constraint may not have been extracted yet.
   if (!constraint_is_extracted(constraint_index)) return;
-  for (CoeffEntry entry : constraint->coefficients_) {
+  for (const auto& entry : constraint->coefficients_) {
     const int var_index = entry.first->index();
     const double old_coef_value = entry.second;
     DCHECK(variable_is_extracted(var_index));
@@ -292,7 +292,7 @@ void SCIPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Clear linear terms
-  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+  for (const auto& entry : solver_->objective_->coefficients_) {
     const int var_index = entry.first->index();
     // Variable may have not been extracted yet.
     if (!variable_is_extracted(var_index)) {
@@ -334,7 +334,7 @@ void SCIPInterface::ExtractNewVariables() {
     // Add new variables to existing constraints.
     for (int i = 0; i < last_constraint_index_; i++) {
       MPConstraint* const ct = solver_->constraints_[i];
-      for (CoeffEntry entry : ct->coefficients_) {
+      for (const auto& entry : ct->coefficients_) {
         const int var_index = entry.first->index();
         DCHECK(variable_is_extracted(var_index));
         if (var_index >= last_variable_index_) {
@@ -371,7 +371,7 @@ void SCIPInterface::ExtractNewConstraints() {
       DCHECK(constraint_is_extracted(i));
       const int size = ct->coefficients_.size();
       int j = 0;
-      for (CoeffEntry entry : ct->coefficients_) {
+      for (const auto& entry : ct->coefficients_) {
         const int var_index = entry.first->index();
         DCHECK(variable_is_extracted(var_index));
         vars[j] = scip_variables_[var_index];
@@ -406,7 +406,7 @@ void SCIPInterface::ExtractObjective() {
   ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
   // Linear objective: set objective coefficients for all variables (some might
   // have been modified).
-  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+  for (const auto& entry : solver_->objective_->coefficients_) {
     const int var_index = entry.first->index();
     const double obj_coef = entry.second;
     ORTOOLS_SCIP_CALL(

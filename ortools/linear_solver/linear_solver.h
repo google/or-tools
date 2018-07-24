@@ -325,9 +325,6 @@ class MPSolver {
   // homonymous enum values of MPSolutionResponse::Status
   // (see ./linear_solver.proto) is guaranteed by ./enum_consistency_test.cc,
   // you may rely on it.
-  // TODO(user): Figure out once and for all what the status of
-  // underlying solvers exactly mean, especially for feasible and
-  // infeasible.
   enum ResultStatus {
     OPTIMAL,        // optimal.
     FEASIBLE,       // feasible, or stopped by limit.
@@ -572,6 +569,20 @@ class MPSolver {
   // is ill conditioned.
   double ComputeExactConditionNumber() const;
 
+  // Some solvers (MIP only, not LP) can produce multiple solutions to the
+  // problem. Returns true when another solution is available, and updates the
+  // MPVariable* objects to make the new solution queryable. Call only after
+  // calling solve.
+  //
+  // The optimality properties of the additional solutions found, and whether
+  // or not the solver computes them ahead of time or when NextSolution() is
+  // called is solver specific.
+  //
+  // As of July 17, 2018, only Gurobi supports NextSolution(), see
+  // linear_solver_underlying_gurobi_test for an example of how to configure
+  // Gurobi for this purpose. The other solvers return false unconditionally.
+  MUST_USE_RESULT bool NextSolution();
+
   friend class GLPKInterface;
   friend class CLPInterface;
   friend class CBCInterface;
@@ -654,21 +665,6 @@ inline std::ostream& operator<<(std::ostream& os,
   return os << ProtoEnumToString<MPSolverResponseStatus>(
              static_cast<MPSolverResponseStatus>(status));
 }
-
-// The data structure used to store the coefficients of the contraints and of
-// the objective. Also define a type to facilitate iteration over them with:
-//  for (CoeffEntry entry : coefficients_) { ... }
-class CoeffMap : public std::unordered_map<const MPVariable*, double> {
- public:
-  explicit CoeffMap(int num_buckets)
-#if !defined(_MSC_VER)  // Visual C++ doesn't support this constructor
-      : std::unordered_map<const MPVariable*, double>(num_buckets)
-#endif  // _MSC_VER
-  {
-  }
-};
-
-typedef std::pair<const MPVariable*, double> CoeffEntry;
 
 // A class to express a linear objective.
 class MPObjective {
@@ -760,7 +756,7 @@ class MPObjective {
   MPSolverInterface* const interface_;
 
   // Mapping var -> coefficient.
-  CoeffMap coefficients_;
+  std::unordered_map<const MPVariable*, double> coefficients_;
   // Constant term.
   double offset_;
 
@@ -948,7 +944,7 @@ class MPConstraint {
   bool ContainsNewVariables();
 
   // Mapping var -> coefficient.
-  CoeffMap coefficients_;
+  std::unordered_map<const MPVariable*, double> coefficients_;
 
   const int index_;  // See index().
 
@@ -1302,6 +1298,9 @@ class MPSolverInterface {
   }
 
   virtual bool InterruptSolve() { return false; }
+
+  // See MPSolver::NextSolution() for contract.
+  virtual bool NextSolution() { return false; }
 
   friend class MPSolver;
 

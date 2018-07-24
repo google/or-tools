@@ -376,4 +376,12 @@ message MPSolutionResponse {
   // it is actually a linear program).
   // These are set iff 'status' is OPTIMAL or FEASIBLE.
   repeated double dual_value = 4 [packed = true];
+
+  // [Advanced usage.]
+  // Values of the reduced cost of the variables in the same order as the
+  // MPModelProto::variable. This is a dense representation.
+  // These are not set if the problem was solved with a MIP solver (even if it
+  // is actually a linear program).
+  // These are set iff 'status' is OPTIMAL or FEASIBLE.
+  repeated double reduced_cost = 6 [packed = true];
 }

@@ -217,7 +217,7 @@ void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
   InvalidateSolutionSynchronization();
   // Constraint may not have been extracted yet.
   if (!constraint_is_extracted(constraint->index())) return;
-  for (CoeffEntry entry : constraint->coefficients_) {
+  for (const auto& entry : constraint->coefficients_) {
     DCHECK(variable_is_extracted(entry.first->index()));
     clp_->modifyCoefficient(constraint->index(),
                             MPSolverVarIndexToClpVarIndex(entry.first->index()),
@@ -249,7 +249,7 @@ void CLPInterface::SetObjectiveOffset(double offset) {
 void CLPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   // Clear linear terms
-  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+  for (const auto& entry : solver_->objective_->coefficients_) {
     const int mpsolver_var_index = entry.first->index();
     // Variable may have not been extracted yet.
     if (!variable_is_extracted(mpsolver_var_index)) {
@@ -323,7 +323,7 @@ void CLPInterface::ExtractNewVariables() {
       for (int i = 0; i < last_constraint_index_; i++) {
         MPConstraint* const ct = solver_->constraints_[i];
         const int ct_index = ct->index();
-        for (CoeffEntry entry : ct->coefficients_) {
+        for (const auto& entry : ct->coefficients_) {
           const int mpsolver_var_index = entry.first->index();
           DCHECK(variable_is_extracted(mpsolver_var_index));
           if (mpsolver_var_index >= last_variable_index_) {
@@ -368,7 +368,7 @@ void CLPInterface::ExtractNewConstraints() {
         size = 1;
       }
       int j = 0;
-      for (CoeffEntry entry : ct->coefficients_) {
+      for (const auto& entry : ct->coefficients_) {
         const int mpsolver_var_index = entry.first->index();
         DCHECK(variable_is_extracted(mpsolver_var_index));
         indices[j] = MPSolverVarIndexToClpVarIndex(mpsolver_var_index);
@@ -392,7 +392,7 @@ void CLPInterface::ExtractNewConstraints() {
 void CLPInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
-  for (CoeffEntry entry : solver_->objective_->coefficients_) {
+  for (const auto& entry : solver_->objective_->coefficients_) {
     clp_->setObjectiveCoefficient(
         MPSolverVarIndexToClpVarIndex(entry.first->index()), entry.second);
   }
