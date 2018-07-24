@@ -557,19 +557,19 @@ ifeq ($(WINDOWS_ZLIB_DIR),$(OR_ROOT_FULL)\\dependencies\\install)
 	$(COPY) dependencies$Sinstall$Sinclude$Szconf.h "$(DESTDIR)$(prefix)$Sinclude"
 endif
 ifeq ($(WINDOWS_GFLAGS_DIR),$(OR_ROOT_FULL)\\dependencies\\install)
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
 endif
 ifeq ($(WINDOWS_GLOG_DIR),$(OR_ROOT_FULL)\\dependencies\\install)
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sglog"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sglog"
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude$Sglog"
 endif
 ifeq ($(WINDOWS_PROTOBUF_DIR),$(OR_ROOT_FULL)\\dependencies\\install)
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude$Sgoogle /E"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude$Sgoogle" /E
 endif
 ifeq ($(WINDOWS_CBC_DIR),$(OR_ROOT_FULL)\\dependencies\\install)
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Scoin"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Scoin"
 	$(COPYREC) dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude$Scoin"
 endif
 
