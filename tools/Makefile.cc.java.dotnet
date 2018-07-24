@@ -1,5 +1,8 @@
 # Let's discover something about where we run
 ifeq ($(OS),Windows_NT)
+OS = Windows
+endif
+ifeq ($(OS),Windows)
 SYSTEM = win
 else
 SYSTEM = unix
@@ -99,6 +102,7 @@ endif # SYSTEM == unix
 
 # Windows specific part.
 ifeq ($(SYSTEM),win)
+  WHICH = tools\\win\\which.exe
   ifeq ("$(Platform)","X64")
     PLATFORM = Win64
   endif
@@ -148,7 +152,6 @@ ifeq ($(SYSTEM),win)
   DEL = del
   DEL_REC = rd /S /Q
   MKDIR = md
-  WHICH = tools$Swin$Swhich.exe
 endif # SYSTEM == win
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools$L
