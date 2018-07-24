@@ -588,7 +588,7 @@ class MPSolver {
   // As of July 17, 2018, only Gurobi supports NextSolution(), see
   // linear_solver_underlying_gurobi_test for an example of how to configure
   // Gurobi for this purpose. The other solvers return false unconditionally.
-  MUST_USE_RESULT bool NextSolution();
+  bool NextSolution();
 
   friend class GLPKInterface;
   friend class CLPInterface;
