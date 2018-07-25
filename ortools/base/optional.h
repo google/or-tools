@@ -23,6 +23,7 @@ class optional {
   optional& operator=(const T& t) {
     has_ = true;
     data_ = t;
+    return *this;
   }
   const T& data() const { return data_; }
   constexpr const T& operator*() const & { return reference(); }

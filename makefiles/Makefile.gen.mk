@@ -31,6 +31,7 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/mutex.h \
  $(SRC_DIR)/ortools/base/notification.h \
  $(SRC_DIR)/ortools/base/numbers.h \
+ $(SRC_DIR)/ortools/base/optional.h \
  $(SRC_DIR)/ortools/base/port.h \
  $(SRC_DIR)/ortools/base/protoutil.h \
  $(SRC_DIR)/ortools/base/ptr_util.h \
@@ -139,6 +140,8 @@ $(SRC_DIR)/ortools/base/mutex.h: ;
 $(SRC_DIR)/ortools/base/notification.h: ;
 
 $(SRC_DIR)/ortools/base/numbers.h: ;
+
+$(SRC_DIR)/ortools/base/optional.h: ;
 
 $(SRC_DIR)/ortools/base/port.h: ;
 
@@ -3325,6 +3328,7 @@ $(OBJ_DIR)/linear_solver/linear_solver.$O: \
  $(SRC_DIR)/ortools/base/macros.h \
  $(SRC_DIR)/ortools/base/map_util.h \
  $(SRC_DIR)/ortools/base/mutex.h \
+ $(SRC_DIR)/ortools/base/optional.h \
  $(SRC_DIR)/ortools/base/port.h \
  $(SRC_DIR)/ortools/base/status.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
