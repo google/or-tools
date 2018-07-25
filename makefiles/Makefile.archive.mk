@@ -161,32 +161,34 @@ TEMP_TEST_DIR = temp_test
 test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DELREC) $(TEMP_TEST_DIR)
 	$(MKDIR) $(TEMP_TEST_DIR)
-#this is to make sure the archive tests don't use the root libraries
-	$(RENAME) lib lib2
 ifeq ($(SYSTEM),win)
 	$(UNZIP) $< -d $(TEMP_TEST_DIR)
+	cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) && $(MAKE) all
 else
+#this is to make sure the archive tests don't use the root libraries
+	$(RENAME) lib lib2
 	$(TAR) -xvf $< -C $(TEMP_TEST_DIR)
-endif
 	( cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) && $(MAKE) all ) && \
 $(RENAME) lib2 lib && echo "archive test succeeded" || \
 ( $(RENAME) lib2 lib && echo "archive test failed" && exit 1)
+endif
 
 TEMP_FZ_TEST_DIR = temp_fz_test
 .PHONY: test_fz_archive
 test_fz_archive: $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DELREC) $(TEMP_FZ_TEST_DIR)
 	$(MKDIR) $(TEMP_FZ_TEST_DIR)
-#this is to make sure the archive tests don't use the root libraries
-	$(RENAME) lib lib2
 ifeq ($(SYSTEM),win)
 	$(UNZIP) $< -d $(TEMP_FZ_TEST_DIR)
+	cd $(TEMP_FZ_TEST_DIR)$S$(FZ_INSTALL_DIR) && .$Sbin$S$(FZ_EXE) examples$Scircuit_test.fzn
 else
+#this is to make sure the archive tests don't use the root libraries
+	$(RENAME) lib lib2
 	$(TAR) -xvf $< -C $(TEMP_FZ_TEST_DIR)
-endif
 	( cd $(TEMP_FZ_TEST_DIR)$S$(FZ_INSTALL_DIR) && .$Sbin$S$(FZ_EXE) examples$Scircuit_test.fzn ) && \
 $(RENAME) lib2 lib && echo "fz archive test succeeded" || \
 ( $(RENAME) lib2 lib && echo "fz archive test failed" && exit 1)
+endif
 
 .PHONY: detect_archive # Show variables used to build archive OR-Tools.
 detect_archive:
