@@ -89,9 +89,9 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
 Status EnteringVariable::DualChooseEnteringColumn(
     const UpdateRow& update_row, Fractional cost_variation,
     std::vector<ColIndex>* bound_flip_candidates, ColIndex* entering_col,
-    Fractional* pivot, Fractional* step) {
+    Fractional* step) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
-  GLOP_RETURN_ERROR_IF_NULL(pivot);
+  GLOP_RETURN_ERROR_IF_NULL(step);
   const DenseRow& update_coefficient = update_row.GetCoefficients();
   const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
@@ -241,7 +241,6 @@ Status EnteringVariable::DualChooseEnteringColumn(
   }
 
   if (*entering_col == kInvalidCol) return Status::OK();
-  *pivot = update_coefficient[*entering_col];
 
   // If the step is 0.0, we make sure the reduced cost is 0.0 so
   // UpdateReducedCosts() will not take a step that goes in the wrong way (a few
@@ -266,9 +265,9 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
 Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     const UpdateRow& update_row, Fractional cost_variation,
-    ColIndex* entering_col, Fractional* pivot, Fractional* step) {
+    ColIndex* entering_col, Fractional* step) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
-  GLOP_RETURN_ERROR_IF_NULL(pivot);
+  GLOP_RETURN_ERROR_IF_NULL(step);
   const DenseRow& update_coefficient = update_row.GetCoefficients();
   const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
@@ -365,8 +364,6 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     std::pop_heap(breakpoints_.begin(), breakpoints_.end());
     breakpoints_.pop_back();
   }
-  *pivot =
-      (*entering_col == kInvalidCol) ? 0.0 : update_coefficient[*entering_col];
   return Status::OK();
 }
 

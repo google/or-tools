@@ -2553,7 +2553,6 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
 
   // Entering variable.
   ColIndex entering_col;
-  Fractional entering_coeff;
   Fractional ratio;
 
   while (true) {
@@ -2670,11 +2669,11 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     update_row_.ComputeUpdateRow(leaving_row);
     if (feasibility_phase_) {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualPhaseIChooseEnteringColumn(
-          update_row_, cost_variation, &entering_col, &entering_coeff, &ratio));
+          update_row_, cost_variation, &entering_col, &ratio));
     } else {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualChooseEnteringColumn(
           update_row_, cost_variation, &bound_flip_candidates, &entering_col,
-          &entering_coeff, &ratio));
+          &ratio));
     }
 
     // No entering_col: Unbounded problem / Infeasible problem.
@@ -2708,6 +2707,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     }
 
     // If the coefficient is too small, we recompute the reduced costs.
+    const Fractional entering_coeff = update_row_.GetCoefficient(entering_col);
     if (std::abs(entering_coeff) < parameters_.dual_small_pivot_threshold() &&
         !reduced_costs_.AreReducedCostsPrecise()) {
       VLOG(1) << "Trying not to pivot by " << entering_coeff;
