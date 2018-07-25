@@ -412,8 +412,6 @@ MPSolver::MPSolver(const std::string& name,
       problem_type_(DetourProblemType(problem_type)),
       time_limit_(0.0) {
   timer_.Restart();
-  constraint_name_to_index_.reset(nullptr);
-  variable_name_to_index_.reset(nullptr);
   interface_.reset(BuildSolverInterface(this));
   if (FLAGS_linear_solver_enable_verbose_output) {
     EnableOutput();
@@ -1263,7 +1261,7 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
 
 void MPSolver::GenerateVariableNameIndex() const {
   if (variable_name_to_index_) return;
-  variable_name_to_index_.reset(new std::unordered_map<std::string, int>(1));
+  variable_name_to_index_ = std::unordered_map<std::string, int>();
   for (const MPVariable* const var : variables_) {
     gtl::InsertOrDie(&*variable_name_to_index_, var->name(), var->index());
   }
@@ -1271,7 +1269,7 @@ void MPSolver::GenerateVariableNameIndex() const {
 
 void MPSolver::GenerateConstraintNameIndex() const {
   if (constraint_name_to_index_) return;
-  constraint_name_to_index_.reset(new std::unordered_map<std::string, int>(1));
+  constraint_name_to_index_ = std::unordered_map<std::string, int>();
   for (const MPConstraint* const cst : constraints_) {
     gtl::InsertOrDie(&*constraint_name_to_index_, cst->name(), cst->index());
   }

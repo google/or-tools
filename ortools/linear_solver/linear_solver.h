@@ -150,6 +150,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/optional.h"
 #include "ortools/base/port.h"
 #include "ortools/base/status.h"
 #include "ortools/base/stringprintf.h"
@@ -637,7 +638,7 @@ class MPSolver {
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
-  mutable std::unique_ptr<std::unordered_map<std::string, int> >
+  mutable absl::optional<std::unordered_map<std::string, int> >
       variable_name_to_index_;
   // Whether variables have been extracted to the underlying interface.
   std::vector<bool> variable_is_extracted_;
@@ -645,7 +646,7 @@ class MPSolver {
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  mutable std::unique_ptr<std::unordered_map<std::string, int> >
+  mutable absl::optional<std::unordered_map<std::string, int> >
       constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
