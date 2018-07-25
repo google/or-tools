@@ -22,7 +22,7 @@ archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 fz_archive: $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
 
 .PHONY: data_archive # Create OR-Tools archive for data examples.
-data_archive: $(INSTALL_DIR)_data$(ARCHIVE_EXT)
+data_archive: $(DATA_INSTALL_DIR)$(ARCHIVE_EXT)
 
 .PHONY: clean_archive # Clean Archive output from previous build.
 clean_archive:
@@ -33,7 +33,7 @@ clean_archive:
 	-$(DELREC) $(TEMP_FZ_TEST_DIR)
 	-$(DEL) $(INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DEL) $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
-	-$(DEL) $(INSTALL_DIR)_data$(ARCHIVE_EXT)
+	-$(DEL) $(DATA_INSTALL_DIR)$(ARCHIVE_EXT)
 
 $(TEMP_ARCHIVE_DIR):
 	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)
@@ -120,38 +120,38 @@ endif
 $(TEMP_FZ_DIR):
 	$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
 
-$(INSTALL_DIR)_data$(ARCHIVE_EXT):
+$(DATA_INSTALL_DIR)$(ARCHIVE_EXT):
 	-$(DELREC) $(TEMP_DATA_DIR)
 	$(MKDIR) $(TEMP_DATA_DIR)
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Sflexible_jobshop
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Sjobshop
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Smultidim_knapsack
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Scvrptw
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Spdptw
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Sminesweeper
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Srogo
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
-	$(MKDIR) $(TEMP_DATA_DIR)$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Sflexible_jobshop
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Sjobshop
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Smultidim_knapsack
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Scvrptw
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Spdptw
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Sminesweeper
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Srogo
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
+	$(MKDIR) $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 #credits
-	$(COPY) LICENSE-2.0.txt $(TEMP_DATA_DIR)$S$(INSTALL_DIR)
+	$(COPY) LICENSE-2.0.txt $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)
 	$(TAR) -c -v \
 --exclude *svn* \
 --exclude *roadef* \
 --exclude *vector_packing* \
 --exclude *nsplib* \
-examples$Sdata | $(TAR) -xvm -C $(TEMP_DATA_DIR)$S$(INSTALL_DIR)
+examples$Sdata | $(TAR) -xvm -C $(TEMP_DATA_DIR)$S$(DATA_INSTALL_DIR)
 ifeq ($(SYSTEM),win)
-	cd $(TEMP_DATA_DIR) && ..$S$(ZIP) -r ..$S$(INSTALL_DIR)_data$(ARCHIVE_EXT) $(INSTALL_DIR)
+	cd $(TEMP_DATA_DIR) && ..$S$(ZIP) -r ..$S$(DATA_INSTALL_DIR)$(ARCHIVE_EXT) $(DATA_INSTALL_DIR)
 else
-	$(TAR) -C $(TEMP_DATA_DIR) --no-same-owner -czvf $(INSTALL_DIR)_data$(ARCHIVE_EXT) $(INSTALL_DIR)
+	$(TAR) -C $(TEMP_DATA_DIR) --no-same-owner -czvf $(DATA_INSTALL_DIR)$(ARCHIVE_EXT) $(DATA_INSTALL_DIR)
 endif
-	-$(DELREC) $(TEMP_DATA_DIR)
+#	-$(DELREC) $(TEMP_DATA_DIR)
 
 ###############
 ##  TESTING  ##

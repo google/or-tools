@@ -191,6 +191,7 @@ OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION)
 OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
 INSTALL_DIR = or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
 FZ_INSTALL_DIR = or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
+DATA_INSTALL_DIR = or-tools_data_v$(OR_TOOLS_VERSION)
 
 .PHONY: detect_port # Show variables used to build OR-Tools.
 detect_port:
