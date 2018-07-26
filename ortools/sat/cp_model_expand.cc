@@ -265,7 +265,26 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
     lin->add_domain(0);
     lin->add_domain(0);
   } else {
-    LOG(FATAL) << "mod with non constant modulo is not implemented";
+    // Create prod_var = div_var * mod.
+    const int prod_var = helper->AddIntVar(var_lb / mod_ub * mod_lb,
+                                           var_ub / mod_lb * mod_ub);
+    IntegerArgumentProto* const int_prod =
+        helper->expanded_proto.add_constraints()->mutable_int_prod();
+    int_prod->set_target(prod_var);
+    int_prod->add_vars(div_var);
+    int_prod->add_vars(int_mod.vars(1));
+
+    // var - prod_var = target.
+    LinearConstraintProto* const lin =
+        helper->expanded_proto.add_constraints()->mutable_linear();
+    lin->add_vars(int_mod.vars(0));
+    lin->add_coeffs(1);
+    lin->add_vars(prod_var);
+    lin->add_coeffs(-1);
+    lin->add_vars(int_mod.target());
+    lin->add_coeffs(-1);
+    lin->add_domain(0);
+    lin->add_domain(0);
   }
 
   ct->Clear();
