@@ -424,7 +424,7 @@ images-no-cache: \
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
-MZN_TAG=or-tools-minizinc-challenge:2018v2
+MZN_TAG=or-tools-minizinc-challenge:2018v3
 
 minizinc-challenge-image:
 	docker build -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
