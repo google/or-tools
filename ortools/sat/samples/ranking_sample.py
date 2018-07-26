@@ -66,6 +66,8 @@ def RankingSample():
         model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec)
 
   # Treat optional intervals.
+  # The following loops will enforce that for any two intervals,
+  #    i precedes j or j precedes i or at least one is not performed.
   for i in range(num_tasks - 1):
     for j in range(i + 1, num_tasks):
       tmp_array = [precedences[(i, j)], precedences[(j, i)]]
@@ -109,7 +111,11 @@ def RankingSample():
     print('Makespan: %i' % solver.Value(makespan))
     for t in all_tasks:
       if solver.Value(presences[t]):
-        print('Task %i starts at %i' % (t, solver.Value(starts[t])))
+        print('Task %i starts at %i with rank %i' % (
+            t, solver.Value(starts[t]), solver.Value(ranks[t])))
+      else:
+        print('Task %i in not performed and ranked at %i' % (
+            t, solver.Value(ranks[t])))
   else:
     print('Solver exited with nonoptimal status: %i' % status)
 
