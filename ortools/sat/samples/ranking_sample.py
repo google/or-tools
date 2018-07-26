@@ -54,7 +54,7 @@ def RankingSample():
   # Add NoOverlap constraint.
   model.AddNoOverlap(intervals)
 
-  # Create precedence variables.
+  # Create precedence variables between pairs of intervals.
   precedences = {}
   for i in all_tasks:
     for j in all_tasks:
@@ -66,21 +66,25 @@ def RankingSample():
         model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec)
 
   # Treat optional intervals.
-  # The following loops will enforce that for any two intervals,
-  #    i precedes j or j precedes i or at least one is not performed.
   for i in range(num_tasks - 1):
     for j in range(i + 1, num_tasks):
       tmp_array = [precedences[(i, j)], precedences[(j, i)]]
       if presences[i] != True:
           tmp_array.append(presences[i].Not())
+          # Make sure that if i is not performed, all precedences are false.
           model.AddImplication(presences[i].Not(), precedences[(i, j)].Not())
           model.AddImplication(presences[i].Not(), precedences[(j, i)].Not())
       if presences[j] != True:
           tmp_array.append(presences[j].Not())
+          # Make sure that if j is not performed, all precedences are false.
           model.AddImplication(presences[j].Not(), precedences[(i, j)].Not())
           model.AddImplication(presences[j].Not(), precedences[(j, i)].Not())
+      # The following loops will enforce that for any two intervals:
+      #    i precedes j or j precedes i or at least one interval is not
+      #        performed.
       model.AddBoolOr(tmp_array)
-      # Redundant constraint
+      # Redundant constraint: it propagates early that at most one precedence
+      # is true.
       model.AddImplication(precedences[(i, j)], precedences[(j, i)].Not())
       model.AddImplication(precedences[(j, i)], precedences[(i, j)].Not())
 
@@ -106,7 +110,7 @@ def RankingSample():
   status = solver.Solve(model)
 
   if status == cp_model.OPTIMAL:
-    # Print out makespan and the start times for all tasks.
+    # Print out makespan and the start times and ranks for all tasks.
     print('Optimal cost: %i' % solver.ObjectiveValue())
     print('Makespan: %i' % solver.Value(makespan))
     for t in all_tasks:
