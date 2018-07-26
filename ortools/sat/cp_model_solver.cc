@@ -3292,8 +3292,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Starts by expanding some constraints if needed.
   CpModelProto new_model = ExpandCpModel(model_proto);
 
-  LOG(INFO) << new_model.DebugString();
-
   // Presolve?
   std::function<void(CpSolverResponse * response)> postprocess_solution;
   if (params.cp_model_presolve() && !params.enumerate_all_solutions()) {
