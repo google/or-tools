@@ -55,6 +55,13 @@ struct ExpansionHelper {
     return expanded_proto.variables_size() - 1;
   }
 
+  int AddIntVar(int64 lb, int64 ub) {
+    IntegerVariableProto* const var = expanded_proto.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return expanded_proto.variables_size() - 1;
+  }
+
   int VariableIsOptional(int index) const {
     return expanded_proto.variables(index).enforcement_literal_size() > 0;
   }
@@ -219,6 +226,53 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
   helper->statistics["kReservoir"]++;
 }
 
+void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
+  const IntegerArgumentProto& int_mod = ct->int_mod();
+  const IntegerVariableProto& var =
+      helper->expanded_proto.variables(int_mod.vars(0));
+  const IntegerVariableProto& mod_var =
+      helper->expanded_proto.variables(int_mod.vars(1));
+
+  const int64 mod_lb = mod_var.domain(0);
+  CHECK_GE(mod_lb, 1);
+  const int64 mod_ub = mod_var.domain(mod_var.domain_size() - 1);
+
+  const int64 var_lb = var.domain(0);
+  const int64 var_ub = var.domain(var.domain_size() - 1);
+
+  // Enlarge domains.
+  const int div_var = helper->AddIntVar(var_lb / mod_ub, var_ub / mod_lb);
+
+  // div = var / mod.
+  IntegerArgumentProto* const div_proto =
+      helper->expanded_proto.add_constraints()->mutable_int_div();
+  div_proto->set_target(div_var);
+  div_proto->add_vars(int_mod.vars(0));
+  div_proto->add_vars(int_mod.vars(1));
+
+  // Checks if mod is constant.
+  if (mod_lb == mod_ub) {
+    const int64 mod = mod_var.domain(0);
+    // var - div_var * mod = target.
+    LinearConstraintProto* const lin =
+        helper->expanded_proto.add_constraints()->mutable_linear();
+    lin->add_vars(int_mod.vars(0));
+    lin->add_coeffs(1);
+    lin->add_vars(div_var);
+    lin->add_coeffs(-mod);
+    lin->add_vars(int_mod.target());
+    lin->add_coeffs(-1);
+    lin->add_domain(0);
+    lin->add_domain(0);
+  } else {
+    LOG(FATAL) << "mod with non constant modulo is not implemented";
+  }
+
+  ct->Clear();
+  helper->statistics["kIntMod"]++;
+}
+
+
 }  // namespace
 
 CpModelProto ExpandCpModel(const CpModelProto& initial_model) {
@@ -230,6 +284,9 @@ CpModelProto ExpandCpModel(const CpModelProto& initial_model) {
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kReservoir:
         ExpandReservoir(ct, &helper);
+        break;
+      case ConstraintProto::ConstraintCase::kIntMod:
+        ExpandIntMod(ct, &helper);
         break;
       default:
         break;

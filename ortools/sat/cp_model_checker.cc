@@ -373,6 +373,12 @@ class ConstraintChecker {
            Value(ct.int_div().vars(0)) / Value(ct.int_div().vars(1));
   }
 
+
+  bool IntModConstraintIsFeasible(const ConstraintProto& ct) {
+    return Value(ct.int_mod().target()) ==
+           Value(ct.int_mod().vars(0)) % Value(ct.int_mod().vars(1));
+  }
+
   bool IntMinConstraintIsFeasible(const ConstraintProto& ct) {
     const int64 min = Value(ct.int_min().target());
     int64 actual_min = kint64max;
@@ -758,6 +764,9 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kIntDiv:
         is_feasible = checker.IntDivConstraintIsFeasible(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kIntMod:
+        is_feasible = checker.IntModConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kIntMin:
         is_feasible = checker.IntMinConstraintIsFeasible(ct);

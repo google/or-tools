@@ -1792,6 +1792,22 @@ void TryToLinearizeConstraint(
       lc.AddTerm(m->Integer(target), -1.0);
       linear_constraints->push_back(lc.Build());
     }
+  } else if (ct.constraint_case() ==
+             ConstraintProto::ConstraintCase::kIntProd) {
+    if (HasEnforcementLiteral(ct)) return;
+    const int target = ct.int_prod().target();
+    const int size = ct.int_prod().vars_size();
+
+    // We just linearize x = y^2 by x >= y which is far from ideal but at
+    // least pushes x when y moves away from zero. Note that if y is negative,
+    // we should probably also add x >= -y, but then this do not happen in
+    // our test set.
+    if (size == 2 && ct.int_prod().vars(0) == ct.int_prod().vars(1)) {
+      LinearConstraintBuilder lc(m->model(), -kInfinity, 0.0);
+      lc.AddTerm(m->Integer(ct.int_prod().vars(0)), 1.0);
+      lc.AddTerm(m->Integer(target), -1.0);
+      linear_constraints->push_back(lc.Build());
+    }
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
     // Note that we ignore the holes in the domain.
     //
@@ -3275,6 +3291,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Starts by expanding some constraints if needed.
   CpModelProto new_model = ExpandCpModel(model_proto);
+
+  LOG(INFO) << new_model.DebugString();
 
   // Presolve?
   std::function<void(CpSolverResponse * response)> postprocess_solution;
