@@ -1339,7 +1339,7 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
     const int ref = proto.literals(i);
     const int tail = proto.tails(i);
     const int head = proto.heads(i);
-    num_nodes = std::max(tail, head) + 1;
+    num_nodes = std::max(num_nodes, std::max(tail, head) + 1);
     if (context->LiteralIsFalse(ref)) continue;
     if (std::max(tail, head) >= incoming_arcs.size()) {
       incoming_arcs.resize(std::max(tail, head) + 1);
