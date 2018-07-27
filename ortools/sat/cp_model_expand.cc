@@ -48,19 +48,14 @@ struct ExpansionHelper {
     imply->mutable_linear()->add_domain(ub);
   }
 
-  int AddBoolVar() {
-    IntegerVariableProto* const var = expanded_proto.add_variables();
-    var->add_domain(0);
-    var->add_domain(1);
-    return expanded_proto.variables_size() - 1;
-  }
-
   int AddIntVar(int64 lb, int64 ub) {
     IntegerVariableProto* const var = expanded_proto.add_variables();
     var->add_domain(lb);
     var->add_domain(ub);
     return expanded_proto.variables_size() - 1;
   }
+
+  int AddBoolVar() { return AddIntVar(0, 1); }
 
   int VariableIsOptional(int index) const {
     return expanded_proto.variables(index).enforcement_literal_size() > 0;

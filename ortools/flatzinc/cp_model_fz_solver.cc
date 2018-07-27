@@ -304,11 +304,6 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     arg->set_target(LookupVar(fz_ct.arguments[2]));
     arg->add_vars(LookupVar(fz_ct.arguments[0]));
     arg->add_vars(LookupVar(fz_ct.arguments[1]));
-  } else if (fz_ct.type == "int_mod") {
-    auto* arg = ct->mutable_int_mod();
-    arg->set_target(LookupVar(fz_ct.arguments[2]));
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
   } else if (fz_ct.type == "int_abs") {
     auto* arg = ct->mutable_int_max();
     arg->set_target(LookupVar(fz_ct.arguments[1]));
@@ -328,6 +323,11 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     arg->add_vars(LookupVar(fz_ct.arguments[0]));
     arg->add_vars(LookupVar(fz_ct.arguments[1]));
     arg->set_target(LookupVar(fz_ct.arguments[2]));
+  } else if (fz_ct.type == "int_mod") {
+    auto* arg = ct->mutable_int_mod();
+    arg->set_target(LookupVar(fz_ct.arguments[2]));
+    arg->add_vars(LookupVar(fz_ct.arguments[0]));
+    arg->add_vars(LookupVar(fz_ct.arguments[1]));
   } else if (fz_ct.type == "array_int_element" ||
              fz_ct.type == "array_bool_element" ||
              fz_ct.type == "array_var_int_element" ||

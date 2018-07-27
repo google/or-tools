@@ -143,6 +143,8 @@ struct hash<std::array<T, N>> {
 };
 }  // namespace std
 
+#endif  // SWIG
+
 namespace util_hash {
 
 inline uint64 Hash(uint64 num, uint64 c) {
@@ -151,8 +153,6 @@ inline uint64 Hash(uint64 num, uint64 c) {
   return c;
 }
 
-}  // namespace hash
-
-#endif  // SWIG
+}  // namespace util_hash
 
 #endif  // OR_TOOLS_BASE_HASH_H_

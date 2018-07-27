@@ -373,7 +373,6 @@ class ConstraintChecker {
            Value(ct.int_div().vars(0)) / Value(ct.int_div().vars(1));
   }
 
-
   bool IntModConstraintIsFeasible(const ConstraintProto& ct) {
     return Value(ct.int_mod().target()) ==
            Value(ct.int_mod().vars(0)) % Value(ct.int_mod().vars(1));

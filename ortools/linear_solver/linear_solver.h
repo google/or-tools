@@ -330,7 +330,7 @@ class MPSolver {
   // ----- Solve -----
 
   // The status of solving the problem. The straightforward translation to
-  // homonymous enum values of MPSolutionResponse::Status
+  // homonymous enum values of MPSolverResponseStatus
   // (see ./linear_solver.proto) is guaranteed by ./enum_consistency_test.cc,
   // you may rely on it.
   enum ResultStatus {

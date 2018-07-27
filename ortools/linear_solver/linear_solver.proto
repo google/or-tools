@@ -276,7 +276,7 @@ message MPModelRequest {
 //
 // bool InCategory(MPSolverResponseStatus status, MPSolverResponseStatus cat) {
 //   if (cat == MPSOLVER_OPTIMAL) return status == MPSOLVER_OPTIMAL;
-//   while (status > cat) status <<= 4;
+//   while (status > cat) status >>= 4;
 //   return status == cat;
 // }
 enum MPSolverResponseStatus {

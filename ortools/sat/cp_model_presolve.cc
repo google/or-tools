@@ -122,7 +122,14 @@ struct PresolveContext {
   void SetLiteralToFalse(int lit) {
     const int var = PositiveRef(lit);
     const int64 value = RefIsPositive(lit) ? 0ll : 1ll;
-    IntersectDomainWith(var, {{value, value}});
+    if (IsFixed(var)) {
+      const int64 fixed_value = MinOf(var);
+      if (value != fixed_value) {
+        is_unsat = true;
+      }
+    } else {
+      IntersectDomainWith(var, {{value, value}});
+    }
   }
 
   void SetLiteralToTrue(int lit) { return SetLiteralToFalse(NegatedRef(lit)); }
