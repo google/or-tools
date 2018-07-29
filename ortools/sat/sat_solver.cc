@@ -2428,7 +2428,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   int num_deleted_clauses = entries.size() - num_kept_clauses;
 
   // Tricky: Because the order of the clauses_info iteration is NOT
-  // deterministic (pointer keys), we also keep all the clauses wich have the
+  // deterministic (pointer keys), we also keep all the clauses which have the
   // same LBD and activity as the last one so the behavior is deterministic.
   while (num_deleted_clauses > 0) {
     const ClauseInfo& a = entries[num_deleted_clauses].second;
