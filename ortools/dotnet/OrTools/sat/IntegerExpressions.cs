@@ -301,6 +301,7 @@ public class SumArray : IntegerExpression
 
   public SumArray(IntegerExpression a, long b)
   {
+    expressions_ = new List<IntegerExpression>();
     expressions_.Add(a);
     constant_ = b;
   }
