@@ -527,8 +527,19 @@ at that time point is less than a given capacity.
 
 ## Ranking tasks in a disjunctive resource
 
-To rank intervals in a NoOverlap constraint, we will count the
-number of performed intervals that precede each interval.
+To rank intervals in a NoOverlap constraint, we will count the number of
+performed intervals that precede each interval.
+
+This is slightly complicated if some interval variables are optional. To
+implement it, we will create a matrix of `precedences` boolean variables.
+`precedences[i]][j]` is set to true if and only if interval `i` is performed,
+interval `j` is performed, and if the start of `i` is before the start of `j`.
+
+Furthermore, `precedences[i][i]` is set to be equal to `presences[i]`. This way,
+we can define the rank of an interval `i` as `sum over j(precedences[j][i]) -
+1`. If the interval is not performed, the rank computed as -1, if the interval
+is performed, its presence variable negates the -1, and the formula counts the
+number of other intervals that precedes it.
 
 ### Python code
 
@@ -584,7 +595,7 @@ def RankTasks(model, starts, presences, ranks):
         # Makes sure that if j is not performed, all precedences are false.
         model.AddImplication(presences[j].Not(), precedences[(i, j)].Not())
         model.AddImplication(presences[j].Not(), precedences[(j, i)].Not())
-      # The following loops will enforce that for any two intervals:
+      # The following bool_or will enforce that for any two intervals:
       #    i precedes j or j precedes i or at least one interval is not
       #        performed.
       model.AddBoolOr(tmp_array)
@@ -632,16 +643,16 @@ def RankingSample():
     # Ranks = -1 if and only if the tasks is not performed.
     ranks.append(model.NewIntVar(-1, num_tasks - 1, 'rank_%i' % t))
 
-  # AddsNoOverlap constraint.
+  # Adds NoOverlap constraint.
   model.AddNoOverlap(intervals)
 
-  # Add ranking constraint.
+  # Adds ranking constraint.
   RankTasks(model, starts, presences, ranks)
 
   # Adds a constraint on ranks.
   model.Add(ranks[0] < ranks[1])
 
-  # Creates makespan variable
+  # Creates makespan variable.
   makespan = model.NewIntVar(0, horizon, 'makespan')
   for t in all_tasks:
     if presences[t] == 1:
@@ -652,7 +663,7 @@ def RankingSample():
   # Minimizes makespan - fixed gain per tasks performed.
   # As the fixed cost is less that the duration of the last interval,
   # the solver will not perform the last interval.
-  model.Minimize(makespan - 3 * sum(presences[t] for t in all_tasks))
+  model.Minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
 
   # Solves the model model.
   solver = cp_model.CpSolver()
@@ -674,6 +685,409 @@ def RankingSample():
 
 
 RankingSample()
+```
+
+### C++ code
+
+```cpp
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
+
+namespace operations_research {
+namespace sat {
+
+void RankingSample() {
+  CpModelProto cp_model;
+  const int kHorizon = 100;
+  const int kNumTasks = 4;
+
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
+
+  auto new_constant = [&new_variable](int64 v) { return new_variable(v, v); };
+
+  auto is_fixed_to_true = [&cp_model](int v) {
+    return cp_model.variables(v).domain(0) == cp_model.variables(v).domain(1) &&
+           cp_model.variables(v).domain_size() == 2;
+  };
+
+  auto new_optional_interval = [&cp_model, &is_fixed_to_true](
+                                   int start, int duration, int end,
+                                   int presence) {
+    const int index = cp_model.constraints_size();
+    ConstraintProto* const ct = cp_model.add_constraints();
+    if (!is_fixed_to_true(presence)) {
+      ct->add_enforcement_literal(presence);
+    }
+    IntervalConstraintProto* const interval = ct->mutable_interval();
+    interval->set_start(start);
+    interval->set_size(duration);
+    interval->set_end(end);
+    return index;
+  };
+
+  auto add_no_overlap = [&cp_model](const std::vector<int>& intervals) {
+    NoOverlapConstraintProto* const no_overlap =
+        cp_model.add_constraints()->mutable_no_overlap();
+    for (const int i : intervals) {
+      no_overlap->add_intervals(i);
+    }
+  };
+
+  auto add_strict_precedence = [&cp_model](int before, int after) {
+    LinearConstraintProto* const lin =
+        cp_model.add_constraints()->mutable_linear();
+    lin->add_vars(after);
+    lin->add_coeffs(1L);
+    lin->add_vars(before);
+    lin->add_coeffs(-1L);
+    lin->add_domain(1);
+    lin->add_domain(kint64max);
+  };
+
+  auto add_conditional_precedence_with_delay = [&cp_model, &is_fixed_to_true](
+                                                   int before, int after,
+                                                   int literal, int64 delay) {
+    ConstraintProto* const ct = cp_model.add_constraints();
+    if (!is_fixed_to_true(literal)) {
+      ct->add_enforcement_literal(literal);
+    }
+    LinearConstraintProto* const lin = ct->mutable_linear();
+    lin->add_vars(after);
+    lin->add_coeffs(1L);
+    lin->add_vars(before);
+    lin->add_coeffs(-1L);
+    lin->add_domain(delay);
+    lin->add_domain(kint64max);
+  };
+
+  auto add_conditional_precedence = [&add_conditional_precedence_with_delay](
+                                        int before, int after, int literal) {
+    add_conditional_precedence_with_delay(before, after, literal, 0);
+  };
+
+  auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
+    BoolArgumentProto* const bool_or =
+        cp_model.add_constraints()->mutable_bool_or();
+    for (const int lit : literals) {
+      bool_or->add_literals(lit);
+    }
+  };
+
+  auto add_implication = [&cp_model](int a, int b) {
+    ConstraintProto* const ct = cp_model.add_constraints();
+    ct->add_enforcement_literal(a);
+    ct->mutable_bool_and()->add_literals(b);
+  };
+
+  auto add_task_ranking =
+      [&cp_model, &new_variable, &add_conditional_precedence, &is_fixed_to_true,
+       &add_implication, &add_bool_or](const std::vector<int>& starts,
+                                       const std::vector<int>& presences,
+                                       const std::vector<int>& ranks) {
+        const int num_tasks = starts.size();
+
+        // Creates precedence variables between pairs of intervals.
+        std::vector<std::vector<int>> precedences(num_tasks);
+        for (int i = 0; i < num_tasks; ++i) {
+          precedences[i].resize(num_tasks);
+          for (int j = 0; j < num_tasks; ++j) {
+            if (i == j) {
+              precedences[i][i] = presences[i];
+            } else {
+              const int prec = new_variable(0, 1);
+              precedences[i][j] = prec;
+              add_conditional_precedence(starts[i], starts[j], prec);
+            }
+          }
+        }
+
+        // Treats optional intervals.
+        for (int i = 0; i < num_tasks - 1; ++i) {
+          for (int j = i + 1; j < num_tasks; ++j) {
+            std::vector<int> tmp_array = {precedences[i][j], precedences[j][i]};
+            if (!is_fixed_to_true(presences[i])) {
+              tmp_array.push_back(NegatedRef(presences[i]));
+              // Makes sure that if i is not performed, all precedences are
+              // false.
+              add_implication(NegatedRef(presences[i]),
+                              NegatedRef(precedences[i][j]));
+              add_implication(NegatedRef(presences[i]),
+                              NegatedRef(precedences[j][i]));
+            }
+            if (!is_fixed_to_true(presences[j])) {
+              tmp_array.push_back(NegatedRef(presences[j]));
+              // Makes sure that if j is not performed, all precedences are
+              // false.
+              add_implication(NegatedRef(presences[j]),
+                              NegatedRef(precedences[i][j]));
+              add_implication(NegatedRef(presences[i]),
+                              NegatedRef(precedences[j][i]));
+            }
+            //  The following bool_or will enforce that for any two intervals:
+            //    i precedes j or j precedes i or at least one interval is not
+            //        performed.
+            add_bool_or(tmp_array);
+            // Redundant constraint: it propagates early that at most one
+            // precedence
+            // is true.
+            add_implication(precedences[i][j], NegatedRef(precedences[j][i]));
+            add_implication(precedences[j][i], NegatedRef(precedences[i][j]));
+          }
+        }
+        // Links precedences and ranks.
+        for (int i = 0; i < num_tasks; ++i) {
+          LinearConstraintProto* const lin =
+              cp_model.add_constraints()->mutable_linear();
+          lin->add_vars(ranks[i]);
+          lin->add_coeffs(1);
+          for (int j = 0; j < num_tasks; ++j) {
+            lin->add_vars(precedences[j][i]);
+            lin->add_coeffs(-1);
+          }
+          lin->add_domain(-1);
+          lin->add_domain(-1);
+        }
+      };
+
+  std::vector<int> starts;
+  std::vector<int> ends;
+  std::vector<int> intervals;
+  std::vector<int> presences;
+  std::vector<int> ranks;
+
+  for (int t = 0; t < kNumTasks; ++t) {
+    const int start = new_variable(0, kHorizon);
+    const int duration = new_constant(t + 1);
+    const int end = new_variable(0, kHorizon);
+    const int presence =
+        t < kNumTasks / 2 ? new_constant(1) : new_variable(0, 1);
+    const int interval = new_optional_interval(start, duration, end, presence);
+    const int rank = new_variable(-1, kNumTasks - 1);
+    starts.push_back(start);
+    ends.push_back(end);
+    intervals.push_back(interval);
+    presences.push_back(presence);
+    ranks.push_back(rank);
+  }
+
+  // Adds NoOverlap constraint.
+  add_no_overlap(intervals);
+
+  // Ranks tasks.
+  add_task_ranking(starts, presences, ranks);
+
+  // Adds a constraint on ranks.
+  add_strict_precedence(ranks[0], ranks[1]);
+
+  // Creates makespan variables.
+  const int makespan = new_variable(0, kHorizon);
+  for (int t = 0; t < kNumTasks; ++t) {
+    add_conditional_precedence(ends[t], makespan, presences[t]);
+  }
+
+  // Create objective: minimize 2 * makespan - 3 * sum of presences.
+  CpObjectiveProto* const obj = cp_model.mutable_objective();
+  obj->add_vars(makespan);
+  obj->add_coeffs(2);
+  for (int t = 0; t < kNumTasks; ++t) {
+    obj->add_vars(presences[t]);
+    obj->add_coeffs(-7);
+  }
+
+  // Solving part.
+  Model model;
+  LOG(INFO) << CpModelStats(cp_model);
+  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  LOG(INFO) << CpSolverResponseStats(response);
+
+  if (response.status() == CpSolverStatus::OPTIMAL) {
+    LOG(INFO) << "Optimal cost: " << response.objective_value();
+    LOG(INFO) << "Makespan: " << response.solution(makespan);
+    for (int t = 0; t < kNumTasks; ++t) {
+      if (response.solution(presences[t])) {
+        LOG(INFO) << "Tasks " << t << " starts at "
+                  << response.solution(starts[t]) << " with rank "
+                  << response.solution(ranks[t]);
+      } else {
+        LOG(INFO) << "Tasks " << t << " is not performed and ranked at "
+                  << response.solution(ranks[t]);
+      }
+    }
+  }
+}
+
+}  // namespace sat
+}  // namespace operations_research
+
+int main() {
+  operations_research::sat::RankingSample();
+
+  return EXIT_SUCCESS;
+}
+```
+
+### C\# code
+
+```cs
+using System;
+using System.Collections.Generic;
+using Google.OrTools.Sat;
+
+public class CodeSamplesSat
+{
+  static void RankTasks(CpModel model,
+                        IntVar[] starts,
+                        ILiteral[] presences,
+                        IntVar[] ranks) {
+    int num_tasks = starts.Length;
+
+    // Creates precedence variables between pairs of intervals.
+    ILiteral[,] precedences = new ILiteral[num_tasks, num_tasks];
+    for (int i = 0; i < num_tasks; ++i) {
+      for (int j = 0; j < num_tasks; ++j) {
+        if (i == j) {
+          precedences[i, i] = presences[i];
+        } else {
+          IntVar prec = model.NewBoolVar(String.Format("{0} before {1}", i, j));
+          precedences[i, j] = prec;
+          model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec);
+        }
+      }
+    }
+
+    // Treats optional intervals.
+    for (int i = 0; i < num_tasks - 1; ++i) {
+      for (int j = i + 1; j < num_tasks; ++j) {
+        List<ILiteral> tmp_array = new List<ILiteral>();
+        tmp_array.Add(precedences[i, j]);
+        tmp_array.Add(precedences[j, i]);
+        tmp_array.Add(presences[i].Not());
+        // Makes sure that if i is not performed, all precedences are false.
+        model.AddImplication(presences[i].Not(), precedences[i, j].Not());
+        model.AddImplication(presences[i].Not(), precedences[j, i].Not());
+        tmp_array.Add(presences[j].Not());
+        // Makes sure that if j is not performed, all precedences are false.
+        model.AddImplication(presences[j].Not(), precedences[i, j].Not());
+        model.AddImplication(presences[j].Not(), precedences[j, i].Not());
+        // The following bool_or will enforce that for any two intervals:
+        //    i precedes j or j precedes i or at least one interval is not
+        //        performed.
+        model.AddBoolOr(tmp_array.ToArray());
+        // Redundant constraint: it propagates early that at most one precedence
+        // is true.
+        model.AddImplication(precedences[i, j], precedences[j, i].Not());
+        model.AddImplication(precedences[j, i], precedences[i, j].Not());
+      }
+    }
+
+    // Links precedences and ranks.
+    for (int i = 0; i < num_tasks; ++i) {
+      IntVar[] tmp_array = new IntVar[num_tasks];
+      for (int j = 0; j < num_tasks; ++j) {
+        tmp_array[j] = (IntVar)precedences[j, i];
+      }
+      model.Add(ranks[i] == tmp_array.Sum() - 1);
+    }
+  }
+
+  static void RankingSample()
+  {
+    CpModel model = new CpModel();
+    // Three weeks.
+    int horizon = 100;
+    int num_tasks = 4;
+
+    IntVar[] starts = new IntVar[num_tasks];
+    IntVar[] ends = new IntVar[num_tasks];
+    IntervalVar[] intervals = new IntervalVar[num_tasks];
+    ILiteral[] presences = new ILiteral[num_tasks];
+    IntVar[] ranks = new IntVar[num_tasks];
+
+    IntVar true_var = model.NewConstant(1);
+
+    // Creates intervals, half of them are optional.
+    for (int t = 0; t < num_tasks; ++t) {
+      starts[t] = model.NewIntVar(0, horizon, String.Format("start_{0}", t));
+      int duration = t + 1;
+      ends[t] = model.NewIntVar(0, horizon, String.Format("end_{0}", t));
+      if (t < num_tasks / 2) {
+        intervals[t] = model.NewIntervalVar(starts[t], duration, ends[t],
+                                            String.Format("interval_{0}", t));
+        presences[t] = true_var;
+      } else {
+        presences[t] = model.NewBoolVar(String.Format("presence_{0}", t));
+        intervals[t] = model.NewOptionalIntervalVar(
+            starts[t], duration, ends[t], presences[t],
+            String.Format("o_interval_{0}", t));
+      }
+
+      // Ranks = -1 if and only if the tasks is not performed.
+      ranks[t] =
+          model.NewIntVar(-1, num_tasks - 1, String.Format("rank_{0}", t));
+    }
+
+    // Adds NoOverlap constraint.
+    model.AddNoOverlap(intervals);
+
+    // Adds ranking constraint.
+    RankTasks(model, starts, presences, ranks);
+
+    // Adds a constraint on ranks.
+    model.Add(ranks[0] < ranks[1]);
+
+    // Creates makespan variable.
+    IntVar makespan = model.NewIntVar(0, horizon, "makespan");
+    for (int t = 0; t < num_tasks; ++t) {
+      model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t]);
+    }
+    // Minimizes makespan - fixed gain per tasks performed.
+    // As the fixed cost is less that the duration of the last interval,
+    // the solver will not perform the last interval.
+    IntVar[] presences_as_int_vars = new IntVar[num_tasks];
+    for (int t = 0; t < num_tasks; ++t) {
+      presences_as_int_vars[t] = (IntVar)presences[t];
+    }
+    model.Minimize(2 * makespan - 7 * presences_as_int_vars.Sum());
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+
+    if (status == CpSolverStatus.Optimal) {
+      Console.WriteLine(String.Format("Optimal cost: {0}",
+                                      solver.ObjectiveValue));
+      Console.WriteLine(String.Format("Makespan: {0}", solver.Value(makespan)));
+      for (int t = 0; t < num_tasks; ++t) {
+        if (solver.BooleanValue(presences[t])) {
+          Console.WriteLine(String.Format(
+              "Task {0} starts at {1} with rank {2}",
+              t, solver.Value(starts[t]), solver.Value(ranks[t])));
+        } else {
+          Console.WriteLine(String.Format(
+              "Task {0} in not performed and ranked at {1}", t,
+              solver.Value(ranks[t])));
+        }
+      }
+    } else {
+      Console.WriteLine(
+          String.Format("Solver exited with nonoptimal status: {0}", status));
+    }
+  }
+
+  static void Main()
+  {
+    RankingSample();
+  }
+}
 ```
 
 ## Transitions in a disjunctive resource

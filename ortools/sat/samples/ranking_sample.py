@@ -61,7 +61,7 @@ def RankTasks(model, starts, presences, ranks):
         # Makes sure that if j is not performed, all precedences are false.
         model.AddImplication(presences[j].Not(), precedences[(i, j)].Not())
         model.AddImplication(presences[j].Not(), precedences[(j, i)].Not())
-      # The following loops will enforce that for any two intervals:
+      # The following bool_or will enforce that for any two intervals:
       #    i precedes j or j precedes i or at least one interval is not
       #        performed.
       model.AddBoolOr(tmp_array)
@@ -109,16 +109,16 @@ def RankingSample():
     # Ranks = -1 if and only if the tasks is not performed.
     ranks.append(model.NewIntVar(-1, num_tasks - 1, 'rank_%i' % t))
 
-  # AddsNoOverlap constraint.
+  # Adds NoOverlap constraint.
   model.AddNoOverlap(intervals)
 
-  # Add ranking constraint.
+  # Adds ranking constraint.
   RankTasks(model, starts, presences, ranks)
 
   # Adds a constraint on ranks.
   model.Add(ranks[0] < ranks[1])
 
-  # Creates makespan variable
+  # Creates makespan variable.
   makespan = model.NewIntVar(0, horizon, 'makespan')
   for t in all_tasks:
     if presences[t] == 1:
@@ -129,7 +129,7 @@ def RankingSample():
   # Minimizes makespan - fixed gain per tasks performed.
   # As the fixed cost is less that the duration of the last interval,
   # the solver will not perform the last interval.
-  model.Minimize(makespan - 3 * sum(presences[t] for t in all_tasks))
+  model.Minimize(2 * makespan - 7 * sum(presences[t] for t in all_tasks))
 
   # Solves the model model.
   solver = cp_model.CpSolver()
