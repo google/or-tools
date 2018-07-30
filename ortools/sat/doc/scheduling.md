@@ -539,7 +539,7 @@ Furthermore, `precedences[i][i]` is set to be equal to `presences[i]`. This way,
 we can define the rank of an interval `i` as `sum over j(precedences[j][i]) -
 1`. If the interval is not performed, the rank computed as -1, if the interval
 is performed, its presence variable negates the -1, and the formula counts the
-number of other intervals that precedes it.
+number of other intervals that precede it.
 
 ### Python code
 
@@ -556,8 +556,8 @@ from ortools.sat.python import cp_model
 def RankTasks(model, starts, presences, ranks):
   """This method adds constraints and variables to links tasks and ranks.
 
-  This method assumes that all starts are disjoint, that is all tasks have a
-  strictly positive duration, and they appear in the same NoOverlap
+  This method assumes that all starts are disjoint, meaning that all tasks have
+  a strictly positive duration, and they appear in the same NoOverlap
   constraint.
 
   Args:
@@ -837,8 +837,7 @@ void RankingSample() {
             //        performed.
             add_bool_or(tmp_array);
             // Redundant constraint: it propagates early that at most one
-            // precedence
-            // is true.
+            // precedence is true.
             add_implication(precedences[i][j], NegatedRef(precedences[j][i]));
             add_implication(precedences[j][i], NegatedRef(precedences[i][j]));
           }
@@ -894,7 +893,8 @@ void RankingSample() {
     add_conditional_precedence(ends[t], makespan, presences[t]);
   }
 
-  // Create objective: minimize 2 * makespan - 3 * sum of presences.
+  // Create objective: minimize 2 * makespan - 7 * sum of presences.
+  // That is you gain 7 by interval performed, but you pay 2 by day of delays.
   CpObjectiveProto* const obj = cp_model.mutable_objective();
   obj->add_vars(makespan);
   obj->add_coeffs(2);
@@ -914,11 +914,11 @@ void RankingSample() {
     LOG(INFO) << "Makespan: " << response.solution(makespan);
     for (int t = 0; t < kNumTasks; ++t) {
       if (response.solution(presences[t])) {
-        LOG(INFO) << "Tasks " << t << " starts at "
+        LOG(INFO) << "task " << t << " starts at "
                   << response.solution(starts[t]) << " with rank "
                   << response.solution(ranks[t]);
       } else {
-        LOG(INFO) << "Tasks " << t << " is not performed and ranked at "
+        LOG(INFO) << "task " << t << " is not performed and ranked at "
                   << response.solution(ranks[t]);
       }
     }

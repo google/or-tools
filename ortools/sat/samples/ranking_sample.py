@@ -22,8 +22,8 @@ from ortools.sat.python import cp_model
 def RankTasks(model, starts, presences, ranks):
   """This method adds constraints and variables to links tasks and ranks.
 
-  This method assumes that all starts are disjoint, that is all tasks have a
-  strictly positive duration, and they appear in the same NoOverlap
+  This method assumes that all starts are disjoint, meaning that all tasks have
+  a strictly positive duration, and they appear in the same NoOverlap
   constraint.
 
   Args:
