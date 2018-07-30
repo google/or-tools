@@ -223,19 +223,20 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
 
 void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
   const IntegerArgumentProto& int_mod = ct->int_mod();
-  const IntegerVariableProto& var =
+  const IntegerVariableProto& var_proto =
       helper->expanded_proto.variables(int_mod.vars(0));
-  const IntegerVariableProto& mod_var =
+  const IntegerVariableProto& mod_proto =
       helper->expanded_proto.variables(int_mod.vars(1));
+  const int target_var = int_mod.target();
 
-  const int64 mod_lb = mod_var.domain(0);
+  const int64 mod_lb = mod_proto.domain(0);
   CHECK_GE(mod_lb, 1);
-  const int64 mod_ub = mod_var.domain(mod_var.domain_size() - 1);
+  const int64 mod_ub = mod_proto.domain(mod_proto.domain_size() - 1);
 
-  const int64 var_lb = var.domain(0);
-  const int64 var_ub = var.domain(var.domain_size() - 1);
+  const int64 var_lb = var_proto.domain(0);
+  const int64 var_ub = var_proto.domain(var_proto.domain_size() - 1);
 
-  // Enlarge domains.
+  // Compute domains of var / mod_proto.
   const int div_var = helper->AddIntVar(var_lb / mod_ub, var_ub / mod_lb);
 
   // div = var / mod.
@@ -247,7 +248,7 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
 
   // Checks if mod is constant.
   if (mod_lb == mod_ub) {
-    const int64 mod = mod_var.domain(0);
+    const int64 mod = mod_proto.domain(0);
     // var - div_var * mod = target.
     LinearConstraintProto* const lin =
         helper->expanded_proto.add_constraints()->mutable_linear();
@@ -255,19 +256,20 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
     lin->add_coeffs(1);
     lin->add_vars(div_var);
     lin->add_coeffs(-mod);
-    lin->add_vars(int_mod.target());
+    lin->add_vars(target_var);
     lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
   } else {
     // Create prod_var = div_var * mod.
-    const int prod_var = helper->AddIntVar(var_lb / mod_ub * mod_lb,
-                                           var_ub / mod_lb * mod_ub);
+    const int mod_var = int_mod.vars(1);
+    const int prod_var =
+        helper->AddIntVar(var_lb * mod_lb / mod_ub, var_ub * mod_ub / mod_lb);
     IntegerArgumentProto* const int_prod =
         helper->expanded_proto.add_constraints()->mutable_int_prod();
     int_prod->set_target(prod_var);
     int_prod->add_vars(div_var);
-    int_prod->add_vars(int_mod.vars(1));
+    int_prod->add_vars(mod_var);
 
     // var - prod_var = target.
     LinearConstraintProto* const lin =
@@ -276,7 +278,7 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
     lin->add_coeffs(1);
     lin->add_vars(prod_var);
     lin->add_coeffs(-1);
-    lin->add_vars(int_mod.target());
+    lin->add_vars(target_var);
     lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
@@ -285,7 +287,6 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
   ct->Clear();
   helper->statistics["kIntMod"]++;
 }
-
 
 }  // namespace
 
