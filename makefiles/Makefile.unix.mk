@@ -139,12 +139,12 @@ ifeq ($(PLATFORM),LINUX)
   ifdef UNIX_CPLEX_DIR
     ifeq ($(PTRLENGTH),64)
       CPLEX_LNK = \
- $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic/libcplex.a \
- -lm -lpthread
+ -L$(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic -lcplex \
+ -lm -lpthread -ldl
     else
       CPLEX_LNK = \
- $(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic/libcplex.a \
- -lm -lpthread
+ -L$(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic -lcplex \
+ -lm -lpthread -ldl
     endif
   endif
   SYS_LNK = -lrt -lpthread

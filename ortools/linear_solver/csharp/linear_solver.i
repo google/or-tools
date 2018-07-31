@@ -76,8 +76,8 @@ class MPSolutionResponse;
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
-%unignore operations_research::MPSolver::SULUM_LINEAR_PROGRAMMING;
-%unignore operations_research::MPSolver::SULUM_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 
 // Expose the MPSolver::ResultStatus enum.
 %unignore operations_research::MPSolver::ResultStatus;

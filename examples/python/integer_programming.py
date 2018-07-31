@@ -97,6 +97,14 @@ def RunAllIntegerExampleNaturalLanguageAPI():
     Announce('SCIP', 'natural language API')
     RunIntegerExampleNaturalLanguageAPI(
         pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'GUROBI_MIXED_INTEGER_PROGRAMMING'):
+    Announce('GUROBI', 'natural language API')
+    RunIntegerExampleNaturalLanguageAPI(
+        pywraplp.Solver.GUROBI_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'CPLEX_MIXED_INTEGER_PROGRAMMING'):
+    Announce('CPLEX', 'natural language API')
+    RunIntegerExampleNaturalLanguageAPI(
+        pywraplp.Solver.CPLEX_MIXED_INTEGER_PROGRAMMING)
 
 
 def RunAllIntegerExampleCppStyleAPI():
@@ -109,6 +117,14 @@ def RunAllIntegerExampleCppStyleAPI():
   if hasattr(pywraplp.Solver, 'SCIP_MIXED_INTEGER_PROGRAMMING'):
     Announce('SCIP', 'C++ style API')
     RunIntegerExampleCppStyleAPI(pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'GUROBI_MIXED_INTEGER_PROGRAMMING'):
+    Announce('GUROBI', 'C++ style API')
+    RunIntegerExampleCppStyleAPI(
+      pywraplp.Solver.GOROBI_MIXED_INTEGER_PROGRAMMING)
+  if hasattr(pywraplp.Solver, 'CPLEX_MIXED_INTEGER_PROGRAMMING'):
+    Announce('CPLEX', 'C++ style API')
+    RunIntegerExampleCppStyleAPI(
+      pywraplp.Solver.CPLEX_MIXED_INTEGER_PROGRAMMING)
 
 
 def main():
