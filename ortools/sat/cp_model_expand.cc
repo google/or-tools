@@ -30,6 +30,7 @@ struct ExpansionHelper {
   CpModelProto expanded_proto;
   std::unordered_map<std::pair<int, int>, int> precedence_cache;
   std::map<std::string, int> statistics;
+  static const int kAlwaysTrue = kint32min;
 
   // a => b.
   void AddImplication(int a, int b) {
@@ -57,35 +58,33 @@ struct ExpansionHelper {
 
   int AddBoolVar() { return AddIntVar(0, 1); }
 
-  int VariableIsOptional(int index) const {
-    return expanded_proto.variables(index).enforcement_literal_size() > 0;
+  void AddBoolOr(const std::vector<int>& literals) {
+    BoolArgumentProto* const bool_or =
+        expanded_proto.add_constraints()->mutable_bool_or();
+    for (const int lit : literals) {
+      bool_or->add_literals(lit);
+    }
   }
 
-  int VariableEnforcementLiteral(int index) const {
-    DCHECK(VariableIsOptional(index));
-    return expanded_proto.variables(index).enforcement_literal(0);
-  }
-
-  // lesseq_0 <=> (x <= 0 && x performed).
-  void AddReifiedLesssOrEqualThanZero(int lesseq_0, int x) {
+  // lesseq_0 <=> (x <= 0 && lit is true).
+  void AddReifiedLessOrEqualThanZero(int lesseq_0, int x, int lit) {
     AddImplyInDomain(lesseq_0, x, kint64min, 0);
-    AddImplyInDomain(NegatedRef(lesseq_0), x, 1, kint64max);
-    if (VariableIsOptional(x)) {
-      AddImplication(lesseq_0, VariableEnforcementLiteral(x));
+    if (lit == kAlwaysTrue) {
+      AddImplyInDomain(NegatedRef(lesseq_0), x, 1, kint64max);
+    } else {
+      // conjunction <=> lit && not(lesseq_0).
+      const int conjunction = AddBoolVar();
+      AddImplication(conjunction, lit);
+      AddImplication(conjunction, NegatedRef(lesseq_0));
+      AddBoolOr({NegatedRef(lit), lesseq_0, conjunction});
+
+      AddImplyInDomain(conjunction, x, 1, kint64max);
     }
   }
 
-  // x_lesseq_y <=> (x <= y && x enforced && y enforced).
-  void AddReifiedPrecedence(int x_lesseq_y, int x, int y) {
-    // x_lesseq_y => x enforced && y enforced
-    if (VariableIsOptional(x)) {
-      AddImplication(x_lesseq_y, VariableEnforcementLiteral(x));
-    }
-    if (VariableIsOptional(y)) {
-      AddImplication(x_lesseq_y, VariableEnforcementLiteral(y));
-    }
-
-    // x_lesseq_y => (x <= y)
+  // x_lesseq_y <=> (x <= y && l_x is true && l_y is true).
+  void AddReifiedPrecedence(int x_lesseq_y, int x, int y, int l_x, int l_y) {
+    // x_lesseq_y => (x <= y) && l_x is true && l_y is true.
     ConstraintProto* const lesseq = expanded_proto.add_constraints();
     lesseq->add_enforcement_literal(x_lesseq_y);
     lesseq->mutable_linear()->add_vars(x);
@@ -94,16 +93,41 @@ struct ExpansionHelper {
     lesseq->mutable_linear()->add_coeffs(1);
     lesseq->mutable_linear()->add_domain(0);
     lesseq->mutable_linear()->add_domain(kint64max);
+    if (l_x != kAlwaysTrue) {
+      AddImplication(x_lesseq_y, l_x);
+    }
+    if (l_y != kAlwaysTrue) {
+      AddImplication(x_lesseq_y, l_y);
+    }
 
-    // Not(x_lesseq_y) => (x > y)
+    // Not(x_lesseq_y) && l_x && l_y => (x > y)
     ConstraintProto* const greater = expanded_proto.add_constraints();
-    greater->add_enforcement_literal(NegatedRef(x_lesseq_y));
     greater->mutable_linear()->add_vars(x);
     greater->mutable_linear()->add_vars(y);
     greater->mutable_linear()->add_coeffs(-1);
     greater->mutable_linear()->add_coeffs(1);
     greater->mutable_linear()->add_domain(kint64min);
     greater->mutable_linear()->add_domain(-1);
+    // Manages enforcement literal.
+    if (l_x == kAlwaysTrue && l_y == kAlwaysTrue) {
+      greater->add_enforcement_literal(NegatedRef(x_lesseq_y));
+    } else {
+      // conjunction <=> l_x && l_y && not(x_lesseq_y).
+      const int conjunction = AddBoolVar();
+      std::vector<int> literals = {conjunction, x_lesseq_y};
+      AddImplication(conjunction, NegatedRef(x_lesseq_y));
+      if (l_x != kAlwaysTrue) {
+        AddImplication(conjunction, l_x);
+        literals.push_back(NegatedRef(l_x));
+      }
+      if (l_y != kAlwaysTrue) {
+        AddImplication(conjunction, l_y);
+        literals.push_back(NegatedRef(l_y));
+      }
+      AddBoolOr(literals);
+
+      greater->add_enforcement_literal(conjunction);
+    }
   }
 };
 
@@ -111,6 +135,19 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
   const ReservoirConstraintProto& reservoir = ct->reservoir();
   const int num_variables = reservoir.times_size();
   CpModelProto& expanded_proto = helper->expanded_proto;
+
+  auto is_optional = [&expanded_proto, &reservoir](int index) {
+    if (reservoir.actives_size() == 0) return false;
+    const int literal = reservoir.actives(index);
+    const int ref = PositiveRef(literal);
+    const IntegerVariableProto& var_proto = expanded_proto.variables(ref);
+    return var_proto.domain_size() != 2 ||
+           var_proto.domain(0) != var_proto.domain(1);
+  };
+  auto active = [&reservoir, &helper](int index) {
+    if (reservoir.actives_size() == 0) return helper->kAlwaysTrue;
+    return reservoir.actives(index);
+  };
 
   int num_positives = 0;
   int num_negatives = 0;
@@ -136,21 +173,21 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
         helper->precedence_cache[p] = i_lesseq_j;
         const int j_lesseq_i = helper->AddBoolVar();
         helper->precedence_cache[rev_p] = j_lesseq_i;
-        helper->AddReifiedPrecedence(i_lesseq_j, time_i, time_j);
-        helper->AddReifiedPrecedence(j_lesseq_i, time_j, time_i);
+        helper->AddReifiedPrecedence(i_lesseq_j, time_i, time_j, active(i),
+                                     active(j));
+        helper->AddReifiedPrecedence(j_lesseq_i, time_j, time_i, active(j),
+                                     active(i));
 
         // Consistency. This is redundant but should improves performance.
         auto* const bool_or =
             expanded_proto.add_constraints()->mutable_bool_or();
         bool_or->add_literals(i_lesseq_j);
         bool_or->add_literals(j_lesseq_i);
-        if (helper->VariableIsOptional(time_i)) {
-          bool_or->add_literals(
-              NegatedRef(helper->VariableEnforcementLiteral(time_i)));
+        if (is_optional(i)) {
+          bool_or->add_literals(NegatedRef(reservoir.actives(i)));
         }
-        if (helper->VariableIsOptional(time_j)) {
-          bool_or->add_literals(
-              NegatedRef(helper->VariableEnforcementLiteral(time_j)));
+        if (is_optional(j)) {
+          bool_or->add_literals(NegatedRef(reservoir.actives(j)));
         }
       }
     }
@@ -176,9 +213,8 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
           CapSub(reservoir.min_level(), demand_i));
       level->mutable_linear()->add_domain(
           CapSub(reservoir.max_level(), demand_i));
-      if (helper->VariableIsOptional(time_i)) {
-        level->add_enforcement_literal(
-            helper->VariableEnforcementLiteral(time_i));
+      if (is_optional(i)) {
+        level->add_enforcement_literal(reservoir.actives(i));
       }
     }
   } else {
@@ -187,11 +223,10 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
     int64 fixed_demand = 0;
     auto* const sum = expanded_proto.add_constraints()->mutable_linear();
     for (int i = 0; i < num_variables; ++i) {
-      const int time = reservoir.times(i);
       const int64 demand = reservoir.demands(i);
       if (demand == 0) continue;
-      if (helper->VariableIsOptional(time)) {
-        sum->add_vars(helper->VariableEnforcementLiteral(time));
+      if (is_optional(i)) {
+        sum->add_vars(reservoir.actives(i));
         sum->add_coeffs(demand);
       } else {
         fixed_demand += demand;
@@ -209,7 +244,7 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
     for (int i = 0; i < num_variables; ++i) {
       const int time_i = reservoir.times(i);
       const int lesseq_0 = helper->AddBoolVar();
-      helper->AddReifiedLesssOrEqualThanZero(lesseq_0, time_i);
+      helper->AddReifiedLessOrEqualThanZero(lesseq_0, time_i, active(i));
       initial_ct->add_vars(lesseq_0);
       initial_ct->add_coeffs(reservoir.demands(i));
     }

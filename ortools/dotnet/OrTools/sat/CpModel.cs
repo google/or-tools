@@ -490,9 +490,9 @@ public class CpModel
     return ct;
   }
 
-  public Constraint AddReservoirConstraint(IEnumerable<IntVar> times,
-                                           IEnumerable<long> demands,
-                                           long min_level, long max_level)
+  public Constraint AddReservoirConstraint<I>(IEnumerable<IntVar> times,
+                                              IEnumerable<I> demands,
+                                              long min_level, long max_level)
   {
     Constraint ct = new Constraint(model_);
     ReservoirConstraintProto res = new ReservoirConstraintProto();
@@ -500,18 +500,19 @@ public class CpModel
     {
       res.Times.Add(var.Index);
     }
-    foreach (long d in demands)
+    foreach (I d in demands)
     {
-      res.Demands.Add(d);
+      res.Demands.Add(Convert.ToInt64(d));
     }
 
     ct.Proto.Reservoir = res;
     return ct;
   }
 
-  public Constraint AddReservoirConstraint(IEnumerable<IntVar> times,
-                                           IEnumerable<int> demands,
-                                           long min_level, long max_level)
+  public Constraint AddReservoirConstraint<I>(IEnumerable<IntVar> times,
+                                              IEnumerable<I> demands,
+                                              IEnumerable<IntVar> actives,
+                                              long min_level, long max_level)
   {
     Constraint ct = new Constraint(model_);
     ReservoirConstraintProto res = new ReservoirConstraintProto();
@@ -519,9 +520,13 @@ public class CpModel
     {
       res.Times.Add(var.Index);
     }
-    foreach (int d in demands)
+    foreach (I d in demands)
     {
-      res.Demands.Add(d);
+      res.Demands.Add(Convert.ToInt64(d));
+    }
+    foreach (IntVar var in actives)
+    {
+      res.Actives.Add(var.Index);
     }
 
     ct.Proto.Reservoir = res;

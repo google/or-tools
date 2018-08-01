@@ -437,7 +437,11 @@ class Constraint(object):
     self.__constraint = constraints.add()
 
   def OnlyEnforceIf(self, boolvar):
-    self.__constraint.enforcement_literal.append(boolvar.Index())
+    if isinstance(boolvar, numbers.Integral) and boolvar == 1:
+      # Always true. Do nothing.
+      pass
+    else:
+      self.__constraint.enforcement_literal.append(boolvar.Index())
 
   def Index(self):
     return self.__index
@@ -721,6 +725,18 @@ class CpModel(object):
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
     model_ct.reservoir.demands.extend(demands)
+    model_ct.reservoir.min_level = min_level
+    model_ct.reservoir.max_level = max_level
+    return ct
+
+  def AddReservoirConstraintWithActive(self, times, demands, actives, min_level,
+                                       max_level):
+    """Adds Reservoir(times, demands, actives, min_level, max_level)."""
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
+    model_ct.reservoir.demands.extend(demands)
+    model_ct.reservoir.actives.extend(actives)
     model_ct.reservoir.min_level = min_level
     model_ct.reservoir.max_level = max_level
     return ct
