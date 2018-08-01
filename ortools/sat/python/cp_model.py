@@ -799,7 +799,7 @@ class CpModel(object):
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.int_min.vars.extend([self.GetOrMakeIndex(x) for x in variables])
-    model_ct.int_min.target = target.Index()
+    model_ct.int_min.target = self.GetOrMakeIndex(target)
     return ct
 
   def AddMaxEquality(self, target, args):
@@ -807,7 +807,7 @@ class CpModel(object):
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.int_max.vars.extend([self.GetOrMakeIndex(x) for x in args])
-    model_ct.int_max.target = target.Index()
+    model_ct.int_max.target = self.GetOrMakeIndex(target)
     return ct
 
   def AddDivisionEquality(self, target, num, denom):
@@ -817,7 +817,7 @@ class CpModel(object):
     model_ct.int_div.vars.extend(
         [self.GetOrMakeIndex(num),
          self.GetOrMakeIndex(denom)])
-    model_ct.int_div.target = target.Index()
+    model_ct.int_div.target = self.GetOrMakeIndex(target)
     return ct
 
   def AddModuloEquality(self, target, var, mod):
@@ -827,7 +827,7 @@ class CpModel(object):
     model_ct.int_mod.vars.extend(
         [self.GetOrMakeIndex(var),
          self.GetOrMakeIndex(mod)])
-    model_ct.int_mod.target = target.Index()
+    model_ct.int_mod.target = self.GetOrMakeIndex(target)
     return ct
 
   def AddProdEquality(self, target, args):
@@ -835,7 +835,7 @@ class CpModel(object):
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.int_prod.vars.extend([self.GetOrMakeIndex(x) for x in args])
-    model_ct.int_prod.target = target.Index()
+    model_ct.int_prod.target = self.GetOrMakeIndex(target)
     return ct
 
   # Scheduling support

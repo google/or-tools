@@ -274,27 +274,36 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
   // Compute domains of var / mod_proto.
   const int div_var = helper->AddIntVar(var_lb / mod_ub, var_ub / mod_lb);
 
+  auto add_enforcement_literal_if_needed = [&]() {
+    if (ct->enforcement_literal_size() == 0) return;
+    const int literal = ct->enforcement_literal(0);
+    ConstraintProto* const last = helper->expanded_proto.mutable_constraints(
+        helper->expanded_proto.constraints_size() - 1);
+    last->add_enforcement_literal(literal);
+  };
+
   // div = var / mod.
   IntegerArgumentProto* const div_proto =
       helper->expanded_proto.add_constraints()->mutable_int_div();
   div_proto->set_target(div_var);
   div_proto->add_vars(int_mod.vars(0));
   div_proto->add_vars(int_mod.vars(1));
+  add_enforcement_literal_if_needed();
 
   // Checks if mod is constant.
   if (mod_lb == mod_ub) {
-    const int64 mod = mod_proto.domain(0);
     // var - div_var * mod = target.
     LinearConstraintProto* const lin =
         helper->expanded_proto.add_constraints()->mutable_linear();
     lin->add_vars(int_mod.vars(0));
     lin->add_coeffs(1);
     lin->add_vars(div_var);
-    lin->add_coeffs(-mod);
+    lin->add_coeffs(-mod_lb);
     lin->add_vars(target_var);
     lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
+    add_enforcement_literal_if_needed();
   } else {
     // Create prod_var = div_var * mod.
     const int mod_var = int_mod.vars(1);
@@ -305,6 +314,7 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
     int_prod->set_target(prod_var);
     int_prod->add_vars(div_var);
     int_prod->add_vars(mod_var);
+    add_enforcement_literal_if_needed();
 
     // var - prod_var = target.
     LinearConstraintProto* const lin =
@@ -317,6 +327,7 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
     lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
+    add_enforcement_literal_if_needed();
   }
 
   ct->Clear();

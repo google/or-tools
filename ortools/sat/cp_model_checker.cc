@@ -178,6 +178,9 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
 
 std::string ValidateReservoirConstraint(const CpModelProto& model,
                                         const ConstraintProto& ct) {
+  if (ct.enforcement_literal_size() > 0) {
+    return "Reservoir does not support enforcement literals.";
+  }
   for (const int t : ct.reservoir().times()) {
     const IntegerVariableProto& time = model.variables(t);
     for (const int64 bound : time.domain()) {
