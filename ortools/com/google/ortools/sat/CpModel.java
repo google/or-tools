@@ -14,6 +14,8 @@
 package com.google.ortools.sat;
 
 import com.google.ortools.sat.CpModelProto;
+import com.google.ortools.sat.Constraint;
+import com.google.ortools.sat.IntVar;
 
 public class CpModel {
   public CpModel() {
@@ -32,12 +34,35 @@ public class CpModel {
 
   // Boolean Constraints.
 
-  public void addBoolOr(ILiteral[] literals) {
+  public Constraint addBoolOr(ILiteral[] literals) {
     Constraint ct = new Constraint(builder_);
     BoolArgumentProto.Builder bool_or = ct.builder().getBoolOrBuilder();
     for (ILiteral lit : literals) {
       bool_or.addLiterals(lit.getIndex());
     }
+    return ct;
+  }
+
+  public Constraint addBoolAnd(ILiteral[] literals) {
+    Constraint ct = new Constraint(builder_);
+    BoolArgumentProto.Builder bool_or = ct.builder().getBoolAndBuilder();
+    for (ILiteral lit : literals) {
+      bool_or.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  public Constraint addBoolXor(ILiteral[] literals) {
+    Constraint ct = new Constraint(builder_);
+    BoolArgumentProto.Builder bool_or = ct.builder().getBoolXorBuilder();
+    for (ILiteral lit : literals) {
+      bool_or.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  public Constraint addImplication(ILiteral a, ILiteral b) {
+    return addBoolOr(new ILiteral[] {a.not(), b});
   }
 
   // Getters.
