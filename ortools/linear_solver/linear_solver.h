@@ -696,6 +696,12 @@ class MPObjective {
   // is 0 if the variable does not appear in the objective).
   double GetCoefficient(const MPVariable* const var) const;
 
+  // Returns a map from variables to their coefficients in the objective. If a
+  // variable is not present in the map, then its coefficient is zero.
+  const std::unordered_map<const MPVariable*, double>& terms() const {
+    return coefficients_;
+  }
+
   // Sets the constant term in the objective.
   void SetOffset(double value);
   // Gets the constant term in the objective.
@@ -877,6 +883,12 @@ class MPConstraint {
   // Gets the coefficient of a given variable on the constraint (which
   // is 0 if the variable does not appear in the constraint).
   double GetCoefficient(const MPVariable* const var) const;
+
+  // Returns a map from variables to their coefficients in the constraint. If a
+  // variable is not present in the map, then its coefficient is zero.
+  const std::unordered_map<const MPVariable*, double>& terms() const {
+    return coefficients_;
+  }
 
   // Returns the lower bound.
   double lb() const { return lb_; }
