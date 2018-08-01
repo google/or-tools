@@ -85,6 +85,35 @@ int main() {
 }
 ```
 
+## Java code samples
+
+The java code implements the same interface as the Python code, with a
+**CpModel**, and a **CpSolver** class.
+
+
+```java
+import com.google.ortools.sat.*;
+
+public class CodeSample {
+
+  static {
+    System.loadLibrary("jniortools");
+  }
+
+  public static void CodeSample() {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the Boolean variable.
+    IntVar x = model.newBoolVar("x");
+    System.out.println(x);
+  }
+
+  public static void main(String[] args) throws Exception {
+    CodeSample();
+  }
+}
+```
+
 ## C\# code samples
 
 The C\# code implements the same interface as the Python code, with a
