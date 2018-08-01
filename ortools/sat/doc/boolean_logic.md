@@ -202,6 +202,31 @@ int main() {
 }
 ```
 
+### Java code
+
+```java
+import com.google.ortools.sat.*;
+
+public class BoolOrSample {
+
+  static {
+    System.loadLibrary("jniortools");
+  }
+
+  static void BoolOrSample()
+  {
+    CpModel model = new CpModel();
+    IntVar x = model.newBoolVar("x");
+    IntVar y = model.newBoolVar("y");
+    model.addBoolOr(new ILiteral[] {x, y.not()});
+  }
+
+  public static void main(String[] args) throws Exception {
+    BoolOrSample();
+  }
+}
+```
+
 ### C\# code
 
 ```cs
