@@ -75,6 +75,31 @@ int main() {
 }
 ```
 
+### Java code
+
+```java
+import com.google.ortools.sat.*;
+
+public class LiteralSample {
+
+  static {
+    System.loadLibrary("jniortools");
+  }
+
+  static void LiteralSample()
+  {
+    CpModel model = new CpModel();
+    IntVar x = model.newBoolVar("x");
+    ILiteral not_x = x.not();
+    System.out.println(not_x.shortString());
+  }
+
+  public static void main(String[] args) throws Exception {
+    LiteralSample();
+  }
+}
+```
+
 ### C\# code
 
 ```cs
