@@ -173,6 +173,13 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_java_wrap.cc: \
  | $(GEN_DIR)/ortools/linear_solver $(GEN_DIR)/com/google/ortools/linearsolver
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_java_wrap.cc -package com.google.ortools.linearsolver -module operations_research_linear_solver -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)$Sortools$Slinear_solver$Sjava$Slinear_solver.i
 
+$(GEN_DIR)/ortools/sat/sat_java_wrap.cc: \
+ $(SRC_DIR)/ortools/sat/java/sat.i \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SAT_DEPS) \
+ | $(GEN_DIR)/ortools/sat $(GEN_DIR)/com/google/ortools/sat
+	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java -o $(GEN_PATH)$Sortools$Ssat$Ssat_java_wrap.cc -package com.google.ortools.sat -module operations_research_sat -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat $(SRC_DIR)$Sortools$Ssat$Sjava$Ssat.i
+
 $(OBJ_DIR)/swig/linear_solver_java_wrap.$O: \
  $(GEN_DIR)/ortools/linear_solver/linear_solver_java_wrap.cc \
  $(LP_DEPS) \
@@ -184,6 +191,12 @@ $(OBJ_DIR)/swig/graph_java_wrap.$O: \
  $(GRAPH_DEPS) \
  | $(OBJ_DIR)/swig
 	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c $(GEN_PATH)$Sortools$Sgraph$Sgraph_java_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_java_wrap.$O
+
+$(OBJ_DIR)/swig/sat_java_wrap.$O: \
+ $(GEN_DIR)/ortools/sat/sat_java_wrap.cc \
+ $(SAT_DEPS) \
+ | $(OBJ_DIR)/swig
+	$(CCC) $(JNIFLAGS) $(JAVA_INC) -c $(GEN_PATH)$Sortools$Ssat$Ssat_java_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_java_wrap.$O
 
 $(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimitProtobuf.java: \
  $(SRC_DIR)/ortools/constraint_solver/search_limit.proto \
@@ -205,6 +218,16 @@ $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java: \
  | $(GEN_DIR)/com/google/ortools/constraintsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH) $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
 
+$(GEN_DIR)/com/google/ortools/sat/CpModel.java: \
+ $(SRC_DIR)/ortools/sat/cp_model.proto \
+ | $(GEN_DIR)/com/google/ortools/sat
+	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH) $(SRC_DIR)$Sortools$Ssat$Scp_model.proto
+
+$(GEN_DIR)/com/google/ortools/sat/SatParameters.java: \
+ $(SRC_DIR)/ortools/sat/sat_parameters.proto \
+ | $(GEN_DIR)/com/google/ortools/sat
+	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH) $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
+
 $(LIB_DIR)/protobuf.jar: dependencies/install/lib/protobuf.jar | $(LIB_DIR)
 	$(COPY) dependencies$Sinstall$Slib$Sprotobuf.jar $(LIB_DIR)
 
@@ -217,12 +240,16 @@ $(LIB_DIR)/com.google.ortools.jar: \
  $(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.java \
  $(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimitProtobuf.java \
  $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.java \
- $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java | \
+ $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java \
+ $(GEN_DIR)/com/google/ortools/sat/SatParameters.java \
+ $(GEN_DIR)/com/google/ortools/sat/CpModel.java | \
  $(CLASS_DIR)/com/google/ortools
 	$(JAVAC_BIN) -d $(CLASS_DIR) \
  -cp $(LIB_DIR)$Sprotobuf.jar \
  $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java \
+ $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Ssat$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java \
+ $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
@@ -233,12 +260,14 @@ $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT): \
  $(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O \
  $(OBJ_DIR)/swig/graph_java_wrap.$O \
  $(OBJ_DIR)/swig/linear_solver_java_wrap.$O \
+ $(OBJ_DIR)/swig/sat_java_wrap.$O \
  $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT) \
  $(OBJ_DIR)$Sswig$Sconstraint_solver_java_wrap.$O \
  $(OBJ_DIR)$Sswig$Sknapsack_solver_java_wrap.$O \
  $(OBJ_DIR)$Sswig$Sgraph_java_wrap.$O \
  $(OBJ_DIR)$Sswig$Slinear_solver_java_wrap.$O \
+ $(OBJ_DIR)$Sswig$Ssat_java_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(OR_TOOLS_LDFLAGS)
 
@@ -291,6 +320,7 @@ clean_java:
 	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*java_wrap*
 	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*java_wrap*
 	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*java_wrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*java_wrap*
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_java_wrap.$O
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
 	-$(DEL) $(LIB_DIR)$S*.jar
