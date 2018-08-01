@@ -26,7 +26,7 @@ class optional {
     return *this;
   }
   const T& data() const { return data_; }
-  constexpr const T& operator*() const & { return reference(); }
+  constexpr const T& operator*() const& { return reference(); }
   T& operator*() & {
     assert(this->has_);
     return reference();
