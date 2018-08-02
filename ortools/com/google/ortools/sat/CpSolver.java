@@ -19,6 +19,7 @@ import com.google.ortools.sat.CpSolverResponse;
 import com.google.ortools.sat.Constraint;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.SatParameters;
+import com.google.ortools.sat.SatHelper;
 
 public class CpSolver {
   public CpSolver() {
