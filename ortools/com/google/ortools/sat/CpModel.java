@@ -65,9 +65,38 @@ public class CpModel {
     return addBoolOr(new ILiteral[] {a.not(), b});
   }
 
+  // Linear constraints.
+
+  public Constraint addLinearSum(IntVar[] vars, long lb, long ub) {
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    for (IntVar var : vars) {
+      lin.addVars(var.getIndex());
+      lin.addCoeffs(1);
+    }
+    lin.addDomain(lb);
+    lin.addDomain(ub);
+    return ct;
+  }
+
+  public Constraint addScalProd(IntVar[] vars, long[] coeffs, long lb,
+                                long ub) {
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    for (IntVar var : vars) {
+      lin.addVars(var.getIndex());
+    }
+    for (long c : coeffs) {
+      lin.addCoeffs(c);
+    }
+    lin.addDomain(lb);
+    lin.addDomain(ub);
+    return ct;
+  }
+
   // Getters.
 
-  public CpModelProto Model() { return builder_.build(); }
+  public CpModelProto model() { return builder_.build(); }
   public int Negated(int index) { return -index - 1; }
 
   private CpModelProto.Builder builder_;

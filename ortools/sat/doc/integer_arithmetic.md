@@ -151,6 +151,45 @@ int main() {
 }
 ```
 
+### Java code
+
+```java
+import com.google.ortools.sat.*;
+
+public class RabbitsAndPheasants {
+
+  static {
+    System.loadLibrary("jniortools");
+  }
+
+  static void RabbitsAndPheasants() {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    IntVar r = model.newIntVar(0, 100, "r");
+    IntVar p = model.newIntVar(0, 100, "p");
+    // 20 heads.
+    model.addLinearSum(new IntVar[] {r, p}, 20, 20);
+    // 56 legs.
+    model.addScalProd(new IntVar[] {r, p}, new long[] {4, 2}, 56, 56);
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.solve(model);
+
+    if (status == CpSolverStatus.FEASIBLE)
+    {
+      System.out.println(solver.value(r) + " rabbits, and " +
+                         solver.value(p) + " pheasants");
+    }
+  }
+
+  public static void main(String[] args) throws Exception {
+    RabbitsAndPheasants();
+  }
+}
+```
+
 ### C\# code
 
 ```cs
