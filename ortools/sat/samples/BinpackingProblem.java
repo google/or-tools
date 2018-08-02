@@ -18,6 +18,7 @@ public class BinpackingProblem {
   static {
     System.loadLibrary("jniortools");
   }
+
   static void BinpackingProblem() {
     // Data.
     int bin_capacity = 100;

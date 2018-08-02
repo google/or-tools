@@ -100,6 +100,51 @@ int main() {
 }
 ```
 
+### Java code
+
+As in python, the CpSolver class encapsulates searching for a solution of a
+model.
+
+```java
+import com.google.ortools.sat.*;
+
+public class SimpleSolve {
+
+  static {
+    System.loadLibrary("jniortools");
+  }
+
+  static void SimpleSolve() {
+    // Creates the model.
+    CpModel model = new CpModel();
+    // Creates the variables.
+    int num_vals = 3;
+
+    IntVar x = model.newIntVar(0, num_vals - 1, "x");
+    IntVar y = model.newIntVar(0, num_vals - 1, "y");
+    IntVar z = model.newIntVar(0, num_vals - 1, "z");
+    // Creates the constraints.
+    model.addDifferent(x, y);
+
+    // Creates a solver and solves the model.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.solve(model);
+
+    if (status == CpSolverStatus.FEASIBLE)
+    {
+      System.out.println("x = " + solver.value(x));
+      System.out.println("y = " + solver.value(y));
+      System.out.println("z = " + solver.value(z));
+    }
+
+  }
+
+  public static void main(String[] args) throws Exception {
+    SimpleSolve();
+  }
+}
+```
+
 ### C\# code
 
 As in python, the CpSolver class encapsulates searching for a solution of a

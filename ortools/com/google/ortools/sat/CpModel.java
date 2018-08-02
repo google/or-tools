@@ -80,6 +80,23 @@ public class CpModel {
     return ct;
   }
 
+  public Constraint addLinearSumWithBounds(IntVar[] vars, long[] bounds) {
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    for (IntVar var : vars) {
+      lin.addVars(var.getIndex());
+      lin.addCoeffs(1);
+    }
+    for (long b : bounds) {
+      lin.addDomain(b);
+    }
+    return ct;
+  }
+
+  public Constraint addLinearSumWithBounds(IntVar[] vars, int[] bounds) {
+    return addLinearSumWithBounds(vars, toLongArray(bounds));
+  }
+
   public Constraint addLinearSumEqual(IntVar[] vars, long v) {
     return addLinearSum(vars, v, v);
   }
@@ -111,6 +128,23 @@ public class CpModel {
     lin.addDomain(ub);
     return ct;
   }
+
+  public Constraint addScalProdWithBounds(IntVar[] vars, long[] coeffs,
+                                          long[] bounds){
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    for (IntVar var : vars) {
+      lin.addVars(var.getIndex());
+    }
+    for (long c : coeffs) {
+      lin.addCoeffs(c);
+    }
+    for (long b : bounds) {
+      lin.addDomain(b);
+    }
+    return ct;
+  }
+
 
   public Constraint addScalProd(IntVar[] vars, int[] coeffs, long lb, long ub) {
     return addScalProd(vars, toLongArray(coeffs), lb, ub);
@@ -160,6 +194,63 @@ public class CpModel {
     lin.addVars(var.getIndex());
     lin.addCoeffs(1);
     lin.addDomain(value);
+    lin.addDomain(java.lang.Long.MAX_VALUE);
+    return ct;
+  }
+
+  public Constraint addEquality(IntVar var, long value) {
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    lin.addVars(var.getIndex());
+    lin.addCoeffs(1);
+    lin.addDomain(value);
+    lin.addDomain(value);
+    return ct;
+  }
+
+  public Constraint addEquality(IntVar a, IntVar b) {
+    return addEqualityWithOffset(a, b, 0);
+  }
+
+  // a + offset == b
+  public Constraint addEqualityWithOffset(IntVar a, IntVar b, long offset) {
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    lin.addVars(a.getIndex());
+    lin.addCoeffs(-1);
+    lin.addVars(b.getIndex());
+    lin.addCoeffs(1);
+    lin.addDomain(offset);
+    lin.addDomain(offset);
+    return ct;
+  }
+
+  public Constraint addDifferent(IntVar var, long value) {
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    lin.addVars(var.getIndex());
+    lin.addCoeffs(1);
+    lin.addDomain(java.lang.Long.MIN_VALUE);
+    lin.addDomain(value - 1);
+    lin.addDomain(value + 1);
+    lin.addDomain(java.lang.Long.MAX_VALUE);
+    return ct;
+  }
+
+  public Constraint addDifferent(IntVar a, IntVar b) {
+    return addDifferentWithOffset(a, b, 0);
+  }
+
+  public Constraint addDifferentWithOffset(IntVar a, IntVar b, long offset) {
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    lin.addVars(a.getIndex());
+    lin.addCoeffs(1);
+    lin.addVars(b.getIndex());
+    lin.addCoeffs(-1);
+    lin.addDomain(java.lang.Long.MIN_VALUE);
+    lin.addDomain(offset - 1);
+    lin.addDomain(offset + 1);
     lin.addDomain(java.lang.Long.MAX_VALUE);
     return ct;
   }
