@@ -93,8 +93,6 @@ public class CodeSamplesSat
     // Maximize sum of slacks.
     model.Maximize(slacks.Sum());
 
-    Console.WriteLine(model.Model);
-
     // Solves and prints out the solution.
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
