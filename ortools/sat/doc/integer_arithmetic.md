@@ -169,9 +169,9 @@ public class RabbitsAndPheasants {
     IntVar r = model.newIntVar(0, 100, "r");
     IntVar p = model.newIntVar(0, 100, "p");
     // 20 heads.
-    model.addLinearSum(new IntVar[] {r, p}, 20, 20);
+    model.addLinearSumEqual(new IntVar[] {r, p}, 20);
     // 56 legs.
-    model.addScalProd(new IntVar[] {r, p}, new long[] {4, 2}, 56, 56);
+    model.addScalProdEqual(new IntVar[] {r, p}, new long[] {4, 2}, 56);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

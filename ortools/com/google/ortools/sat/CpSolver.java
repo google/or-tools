@@ -68,6 +68,11 @@ public class CpSolver {
     return response_.getWallTime();
   }
 
+  // parameters.
+  public SatParameters.Builder getParameters() {
+    return parameters_;
+  }
+
   private CpModelProto model_;
   private CpSolverResponse response_;
   private SatParameters.Builder parameters_;
