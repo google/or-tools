@@ -68,11 +68,7 @@ public class SolveWithIntermediateSolutions {
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
     CpSolverStatus status = solver.solveWithSolutionCallback(model, cb);
 
-    if (status == CpSolverStatus.FEASIBLE) {
-      System.out.println("x = " + solver.value(x));
-      System.out.println("y = " + solver.value(y));
-      System.out.println("z = " + solver.value(z));
-    }
+    System.out.println(cb.solutionCount() + " solutions found.");
   }
 
   public static void main(String[] args) throws Exception {
