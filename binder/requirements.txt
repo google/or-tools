@@ -1,2 +1,4 @@
 ortools
 matplotlib
+plotly
+svgwrite
