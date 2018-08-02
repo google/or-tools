@@ -94,6 +94,20 @@ public class CpModel {
     return ct;
   }
 
+  public Constraint addScalProd(IntVar[] vars, int[] coeffs, long lb, long ub) {
+    Constraint ct = new Constraint(builder_);
+    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    for (IntVar var : vars) {
+      lin.addVars(var.getIndex());
+    }
+    for (int c : coeffs) {
+      lin.addCoeffs(c);
+    }
+    lin.addDomain(lb);
+    lin.addDomain(ub);
+    return ct;
+  }
+
   // Getters.
 
   public CpModelProto model() { return builder_.build(); }
