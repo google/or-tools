@@ -29,8 +29,20 @@ public class CpModel {
     return new IntVar(builder_, lb, ub, name);
   }
 
+  public IntVar newEnumeratedIntVar(long[] bounds, String name) {
+    return new IntVar(builder_, bounds, name);
+  }
+
+  public IntVar newEnumeratedIntVar(int[] bounds, String name) {
+    return new IntVar(builder_, toLongArray(bounds), name);
+  }
+
   public IntVar newBoolVar(String name) {
     return new IntVar(builder_, 0, 1, name);
+  }
+
+  public IntVar newConstant(long value) {
+    return newIntVar(value, value, "" + value);  // bounds and name.
   }
 
   // Boolean Constraints.
@@ -273,6 +285,40 @@ public class CpModel {
     return addLessOrEqualWithOffset(before, after, 0);
   }
 
+  // Scheduling support.
+  public IntervalVar newIntervalVar(IntVar start, IntVar duration, IntVar end,
+                                    String name) {
+    return new IntervalVar(
+        builder_, start.getIndex(), duration.getIndex(), end.getIndex(), name);
+  }
+
+  public IntervalVar newIntervalVar(IntVar start, IntVar duration, long end,
+                                    String name) {
+    return new IntervalVar(
+        builder_, start.getIndex(), duration.getIndex(), indexFromConstant(end),
+        name);
+  }
+
+  public IntervalVar newIntervalVar(IntVar start, long duration, IntVar end,
+                                    String name) {
+    return new IntervalVar(
+        builder_, start.getIndex(), indexFromConstant(duration), end.getIndex(),
+        name);
+  }
+
+  public IntervalVar newIntervalVar(long start, IntVar duration, IntVar end,
+                                    String name) {
+    return new IntervalVar(
+        builder_, indexFromConstant(start), duration.getIndex(), end.getIndex(),
+        name);
+  }
+
+  public IntervalVar newFixedInterval(long start, long duration, String name) {
+    return new IntervalVar(
+        builder_, indexFromConstant(start), indexFromConstant(duration),
+        indexFromConstant(start + duration), name);
+  }
+
   // Objective.
 
   public void minimize(IntVar var) {
@@ -342,6 +388,14 @@ public class CpModel {
       result[i] = values[i];
     }
     return result;
+  }
+
+  int indexFromConstant(long constant) {
+    int index = builder_.getVariablesCount();
+    IntegerVariableProto.Builder cst = builder_.addVariablesBuilder();
+    cst.addDomain(constant);
+    cst.addDomain(constant);
+    return index;
   }
 
   // Getters.

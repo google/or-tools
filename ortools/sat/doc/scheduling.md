@@ -101,6 +101,36 @@ int main() {
 }
 ```
 
+### Java code
+
+```java
+import com.google.ortools.sat.*;
+
+public class IntervalSample {
+
+  static {
+    System.loadLibrary("jniortools");
+  }
+
+  public static void IntervalSample() {
+    CpModel model = new CpModel();
+    int horizon = 100;
+    IntVar start_var = model.newIntVar(0, horizon, "start");
+    // Java code supports IntVar or integer constants in intervals.
+    int duration = 10;
+    IntVar end_var = model.newIntVar(0, horizon, "end");
+    IntervalVar interval =
+        model.newIntervalVar(start_var, duration, end_var, "interval");
+
+    System.out.println(interval);
+  }
+
+  public static void main(String[] args) throws Exception {
+    IntervalSample();
+  }
+}
+```
+
 ### C\# code
 
 ```cs

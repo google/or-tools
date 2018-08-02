@@ -30,6 +30,17 @@ public class IntVar implements ILiteral{
     this.negation_ = null;
   }
 
+  public IntVar(CpModelProto.Builder builder, long[] bounds, String name) {
+    this.builder_ = builder;
+    this.index_ = builder_.getVariablesCount();
+    this.var_ = builder_.addVariablesBuilder();
+    this.var_.setName(name);
+    for (long b : bounds) {
+      this.var_.addDomain(b);
+    }
+    this.negation_ = null;
+  }
+
   @Override
   public String toString() {
     return var_.toString();
