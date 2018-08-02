@@ -237,6 +237,7 @@ $(LIB_DIR)/com.google.ortools.jar: \
  $(GEN_DIR)/ortools/algorithms/knapsack_solver_java_wrap.cc \
  $(GEN_DIR)/ortools/graph/graph_java_wrap.cc \
  $(GEN_DIR)/ortools/linear_solver/linear_solver_java_wrap.cc \
+ $(GEN_DIR)/ortools/sat/sat_java_wrap.cc \
  $(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.java \
  $(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimitProtobuf.java \
  $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.java \
