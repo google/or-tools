@@ -319,6 +319,45 @@ public class CpModel {
         indexFromConstant(start + duration), name);
   }
 
+  public IntervalVar newOptionalIntervalVar(IntVar start, IntVar duration,
+                                            IntVar end, ILiteral presence,
+                                            String name) {
+    return new IntervalVar(
+        builder_, start.getIndex(), duration.getIndex(), end.getIndex(),
+        presence.getIndex(), name);
+  }
+
+  public IntervalVar newOptionalIntervalVar(IntVar start, IntVar duration,
+                                            long end, ILiteral presence,
+                                            String name) {
+    return new IntervalVar(
+        builder_, start.getIndex(), duration.getIndex(), indexFromConstant(end),
+        presence.getIndex(), name);
+  }
+
+  public IntervalVar newOptionalIntervalVar(IntVar start, long duration,
+                                            IntVar end, ILiteral presence,
+                                            String name) {
+    return new IntervalVar(
+        builder_, start.getIndex(), indexFromConstant(duration), end.getIndex(),
+        presence.getIndex(), name);
+  }
+
+  public IntervalVar newOptionalIntervalVar(long start, IntVar duration,
+                                            IntVar end, ILiteral presence,
+                                            String name) {
+    return new IntervalVar(
+        builder_, indexFromConstant(start), duration.getIndex(), end.getIndex(),
+        presence.getIndex(), name);
+  }
+
+  public IntervalVar newOptionalFixedInterval(long start, long duration,
+                                              ILiteral presence, String name) {
+    return new IntervalVar(
+        builder_, indexFromConstant(start), indexFromConstant(duration),
+        indexFromConstant(start + duration), presence.getIndex(), name);
+  }
+
   // Objective.
 
   public void minimize(IntVar var) {

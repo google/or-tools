@@ -50,11 +50,7 @@ public class IntervalVar{
 
   @Override
   public String toString() {
-    if (getName().isEmpty()) {
-      return "Interval(" + var_.toString() + ")";
-    } else {
-      return getName() + "(" + var_.toString() + ")";
-    }
+    return builder_.getConstraints(index_).toString();
   }
 
   public int getIndex() {
