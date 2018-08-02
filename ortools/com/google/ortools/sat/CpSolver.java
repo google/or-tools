@@ -32,6 +32,22 @@ public class CpSolver {
     return response_.getStatus();
   }
 
+  public CpSolverStatus solveWithSolutionCallback(CpModel model,
+                                                  SolutionCallback cb) {
+    response_ = SatHelper.SolveWithParametersAndSolutionCallback(
+        model.model(), parameters_.build(), cb);
+    return response_.getStatus();
+  }
+
+  public CpSolverStatus searchAllSolutions(CpModel model,
+                                           SolutionCallback cb) {
+    parameters_.setEnumerateAllSolutions(true);
+    response_ = SatHelper.SolveWithParametersAndSolutionCallback(
+        model.model(), parameters_.build(), cb);
+    parameters_.setEnumerateAllSolutions(true);
+    return response_.getStatus();
+  }
+
   public double objectiveValue() {
     return response_.getObjectiveValue();
   }

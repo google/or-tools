@@ -275,13 +275,63 @@ public class CpModel {
 
   // Objective.
 
-  public void MaximizeSum(IntVar[] vars) {
+  public void minimize(IntVar var) {
+    CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
+    obj.addVars(var.getIndex());
+    obj.addCoeffs(1);
+  }
+
+  public void minimizeSum(IntVar[] vars) {
+    CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
+    for (IntVar var : vars) {
+      obj.addVars(var.getIndex());
+      obj.addCoeffs(1);
+    }
+  }
+
+  public void minimizeScalProd(IntVar[] vars, long[] coeffs) {
+    CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
+    for (IntVar var : vars) {
+      obj.addVars(var.getIndex());
+    }
+    for (long c : coeffs) {
+      obj.addCoeffs(c);
+    }
+  }
+
+  public void minimizeScalProd(IntVar[] vars, int[] coeffs) {
+    minimizeScalProd(vars, toLongArray(coeffs));
+  }
+
+  public void maximize(IntVar var) {
+    CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
+    obj.addVars(Negated(var.getIndex()));
+    obj.addCoeffs(1);
+    obj.setScalingFactor(-1.0);
+  }
+
+  public void maximizeSum(IntVar[] vars) {
     CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
     for (IntVar var : vars) {
       obj.addVars(Negated(var.getIndex()));
       obj.addCoeffs(1);
     }
     obj.setScalingFactor(-1.0);
+  }
+
+  public void maximizeScalProd(IntVar[] vars, long[] coeffs) {
+    CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
+    for (IntVar var : vars) {
+      obj.addVars(Negated(var.getIndex()));
+    }
+    for (long c : coeffs) {
+      obj.addCoeffs(c);
+    }
+    obj.setScalingFactor(-1.0);
+  }
+
+  public void maximizeScalProd(IntVar[] vars, int[] coeffs) {
+    maximizeScalProd(vars, toLongArray(coeffs));
   }
 
   // Helpers

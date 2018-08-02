@@ -53,17 +53,17 @@ PROTO2_RETURN(
 %feature("director") operations_research::sat::SolutionCallback;
 
 %unignore operations_research::sat::SolutionCallback;
-%unignore operations_research::sat::SolutionCallback::NumBinaryPropagations;
-%unignore operations_research::sat::SolutionCallback::NumBooleans;
-%unignore operations_research::sat::SolutionCallback::NumBranches;
-%unignore operations_research::sat::SolutionCallback::NumConflicts;
-%unignore operations_research::sat::SolutionCallback::NumIntegerPropagations;
-%unignore operations_research::sat::SolutionCallback::ObjectiveValue;
-%unignore operations_research::sat::SolutionCallback::OnSolutionCallback;
-%unignore operations_research::sat::SolutionCallback::SolutionBooleanValue;
-%unignore operations_research::sat::SolutionCallback::SolutionIntegerValue;
-%unignore operations_research::sat::SolutionCallback::UserTime;
-%unignore operations_research::sat::SolutionCallback::WallTime;
+%rename (numBinaryPropagations) operations_research::sat::SolutionCallback::NumBinaryPropagations;
+%rename (numBooleans) operations_research::sat::SolutionCallback::NumBooleans;
+%rename (numBranches) operations_research::sat::SolutionCallback::NumBranches;
+%rename (numConflicts) operations_research::sat::SolutionCallback::NumConflicts;
+%rename (numIntegerPropagations) operations_research::sat::SolutionCallback::NumIntegerPropagations;
+%rename (objectiveValue) operations_research::sat::SolutionCallback::ObjectiveValue;
+%rename (onSolutionCallback) operations_research::sat::SolutionCallback::OnSolutionCallback;
+%rename (solutionBooleanValue) operations_research::sat::SolutionCallback::SolutionBooleanValue;
+%rename (solutionIntegerValue) operations_research::sat::SolutionCallback::SolutionIntegerValue;
+%rename (userTime) operations_research::sat::SolutionCallback::UserTime;
+%rename (wallTime) operations_research::sat::SolutionCallback::WallTime;
 
 %include "ortools/sat/swig_helper.h"
 

@@ -69,7 +69,7 @@ public class CodeSamplesSat
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
-    solver.SearchAllSolutions(model, cb);
+    solver.SolveWithSolutionCallback(model, cb);
     Console.WriteLine(String.Format('Number of solutions found: {0}',
                                     cb.SolutionCount()));
   }
