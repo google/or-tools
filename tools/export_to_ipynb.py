@@ -12,6 +12,7 @@ nbook = v4.upgrade(nbook)  # Upgrade v3 to v4
 
 all_blocks = ast.parse(text).body
 line_start = [c.lineno-1 for c in all_blocks]
+line_start[0] = 0
 lines = text.split('\n')
 
 for c_block, s, e in zip(all_blocks, line_start, line_start[1:]+[len(lines)]):
