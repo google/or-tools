@@ -285,6 +285,52 @@ public class CpModel {
     return addLessOrEqualWithOffset(before, after, 0);
   }
 
+  // Integer constraints.
+
+  public Constraint addAllDifferent(IntVar[] vars) {
+    Constraint ct = new Constraint(builder_);
+    AllDifferentConstraintProto.Builder all_diff =
+        ct.builder().getAllDiffBuilder();
+    for (IntVar var : vars) {
+      all_diff.addVars(var.getIndex());
+    }
+    return ct;
+  }
+
+  // addElement + variations
+  // addCircuit
+  // addAllowedAssignments
+  // addForbiddenAssignments
+  // addAutomata
+  // addInverse
+  // addReservoirConstraint
+  // addMapDomain
+
+
+  public Constraint addMinEquality(IntVar target, IntVar[] vars) {
+    Constraint ct = new Constraint(builder_);
+    IntegerArgumentProto.Builder int_min = ct.builder().getIntMinBuilder();
+    int_min.setTarget(target.getIndex());
+    for (IntVar var : vars) {
+      int_min.addVars(var.getIndex());
+    }
+    return ct;
+  }
+
+  public Constraint addMaxEquality(IntVar target, IntVar[] vars) {
+    Constraint ct = new Constraint(builder_);
+    IntegerArgumentProto.Builder int_max = ct.builder().getIntMaxBuilder();
+    int_max.setTarget(target.getIndex());
+    for (IntVar var : vars) {
+      int_max.addVars(var.getIndex());
+    }
+    return ct;
+  }
+
+  // addDivisionEquality
+  // addModuloEquality
+  // addProdEquality
+
   // Scheduling support.
   public IntervalVar newIntervalVar(IntVar start, IntVar duration, IntVar end,
                                     String name) {
@@ -356,6 +402,106 @@ public class CpModel {
     return new IntervalVar(
         builder_, indexFromConstant(start), indexFromConstant(duration),
         indexFromConstant(start + duration), presence.getIndex(), name);
+  }
+
+  public Constraint addNoOverlap(IntervalVar[] vars) {
+    Constraint ct = new Constraint(builder_);
+    NoOverlapConstraintProto.Builder no_overlap =
+        ct.builder().getNoOverlapBuilder();
+    for (IntervalVar var : vars) {
+      no_overlap.addIntervals(var.getIndex());
+    }
+    return ct;
+  }
+
+  public Constraint addNoOverlap2D(IntervalVar[] x_intervals,
+                                   IntervalVar[] y_intervals) {
+    Constraint ct = new Constraint(builder_);
+    NoOverlap2DConstraintProto.Builder no_overlap_2d =
+        ct.builder().getNoOverlap2DBuilder();
+    for (IntervalVar x : x_intervals) {
+      no_overlap_2d.addXIntervals(x.getIndex());
+    }
+    for (IntervalVar y : y_intervals) {
+      no_overlap_2d.addXIntervals(y.getIndex());
+    }
+    return ct;
+  }
+
+  public Constraint addCumulative(IntervalVar[] intervals,
+                                  IntVar[] demands,
+                                  IntVar capacity) {
+    Constraint ct = new Constraint(builder_);
+    CumulativeConstraintProto.Builder cumul =
+        ct.builder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (IntVar var : demands) {
+      cumul.addDemands(var.getIndex());
+    }
+    cumul.setCapacity(capacity.getIndex());
+    return ct;
+  }
+
+  public Constraint addCumulative(IntervalVar[] intervals,
+                                  long[] demands,
+                                  IntVar capacity) {
+    Constraint ct = new Constraint(builder_);
+    CumulativeConstraintProto.Builder cumul =
+        ct.builder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (long d : demands) {
+      cumul.addDemands(indexFromConstant(d));
+    }
+    cumul.setCapacity(capacity.getIndex());
+    return ct;
+  }
+
+  public Constraint addCumulative(IntervalVar[] intervals,
+                                  int[] demands,
+                                  IntVar capacity) {
+    return addCumulative(intervals, toLongArray(demands), capacity);
+  }
+
+  public Constraint addCumulative(IntervalVar[] intervals,
+                                  IntVar[] demands,
+                                  long capacity) {
+    Constraint ct = new Constraint(builder_);
+    CumulativeConstraintProto.Builder cumul =
+        ct.builder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (IntVar var : demands) {
+      cumul.addDemands(var.getIndex());
+    }
+    cumul.setCapacity(indexFromConstant(capacity));
+    return ct;
+  }
+
+  public Constraint addCumulative(IntervalVar[] intervals,
+                                  long[] demands,
+                                  long capacity) {
+    Constraint ct = new Constraint(builder_);
+    CumulativeConstraintProto.Builder cumul =
+        ct.builder().getCumulativeBuilder();
+    for (IntervalVar interval : intervals) {
+      cumul.addIntervals(interval.getIndex());
+    }
+    for (long d : demands) {
+      cumul.addDemands(indexFromConstant(d));
+    }
+    cumul.setCapacity(indexFromConstant(capacity));
+    return ct;
+  }
+
+  public Constraint addCumulative(IntervalVar[] intervals,
+                                  int[] demands,
+                                  long capacity) {
+    return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
   // Objective.
