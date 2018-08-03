@@ -13,9 +13,10 @@
 
 package com.google.ortools.sat;
 
+import com.google.ortools.sat.ConstraintProto;
 import com.google.ortools.sat.CpModelProto;
-import com.google.ortools.sat.ILiteral;
 
+/** Wrapper around a ConstraintProto. */
 public class Constraint {
   public Constraint(CpModelProto.Builder builder) {
     this.index_ = builder.getConstraintsCount();

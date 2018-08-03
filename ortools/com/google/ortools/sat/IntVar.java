@@ -13,13 +13,11 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpModelProto;
-import com.google.ortools.sat.ILiteral;
 import com.google.ortools.sat.IntegerVariableProto;
-import com.google.ortools.sat.NotBooleanVariable;
 
-public class IntVar implements ILiteral{
+/** An integer variable. */
+public class IntVar implements ILiteral {
   public IntVar(CpModelProto.Builder builder, long lb, long ub, String name) {
     this.builder_ = builder;
     this.index_ = builder_.getVariablesCount();

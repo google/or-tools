@@ -11,23 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.ILiteral;
+import com.google.ortools.sat.IntVar;
 
 public class BoolOrSample {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  static void BoolOrSample()
-  {
+  public static void main(String[] args) throws Exception {
     CpModel model = new CpModel();
     IntVar x = model.newBoolVar("x");
     IntVar y = model.newBoolVar("y");
     model.addBoolOr(new ILiteral[] {x, y.not()});
-  }
-
-  public static void main(String[] args) throws Exception {
-    BoolOrSample();
   }
 }

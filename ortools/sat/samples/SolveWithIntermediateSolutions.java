@@ -11,7 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.IntVar;
 
 class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
   public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
@@ -20,42 +24,35 @@ class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
 
   @Override
   public void onSolutionCallback() {
-    System.out.println(String.format("Solution #%d: time = %.02f s",
-                                     solution_count_, wallTime()));
-    System.out.println(
-        String.format("  objective value = %d", objectiveValue()));
+    System.out.println(String.format("Solution #%d: time = %.02f s", solutionCount_, wallTime()));
+    System.out.println(String.format("  objective value = %d", objectiveValue()));
     for (IntVar v : variables_) {
-      System.out.println(
-          String.format("  %s = %d", v.shortString(), value(v)));
+      System.out.println(String.format("  %s = %d", v.shortString(), value(v)));
     }
-    solution_count_++;
+    solutionCount_++;
   }
 
-  public int solutionCount()
-  {
-    return solution_count_;
+  public int solutionCount() {
+    return solutionCount_;
   }
 
-  private int solution_count_;
+  private int solutionCount_;
   private IntVar[] variables_;
 }
 
-
 public class SolveWithIntermediateSolutions {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  static void SolveWithIntermediateSolutions() {
+  public static void main(String[] args) throws Exception {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
-    int num_vals = 3;
+    int numVals = 3;
 
-    IntVar x = model.newIntVar(0, num_vals - 1, "x");
-    IntVar y = model.newIntVar(0, num_vals - 1, "y");
-    IntVar z = model.newIntVar(0, num_vals - 1, "z");
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    IntVar z = model.newIntVar(0, numVals - 1, "z");
     // Creates the constraints.
     model.addDifferent(x, y);
 
@@ -69,9 +66,5 @@ public class SolveWithIntermediateSolutions {
     CpSolverStatus status = solver.solveWithSolutionCallback(model, cb);
 
     System.out.println(cb.solutionCount() + " solutions found.");
-  }
-
-  public static void main(String[] args) throws Exception {
-    SolveWithIntermediateSolutions();
   }
 }

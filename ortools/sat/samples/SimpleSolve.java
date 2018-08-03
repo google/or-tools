@@ -11,23 +11,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.IntVar;
 
 public class SimpleSolve {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  static void SimpleSolve() {
+  public static void main(String[] args) throws Exception {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
-    int num_vals = 3;
+    int numVals = 3;
 
-    IntVar x = model.newIntVar(0, num_vals - 1, "x");
-    IntVar y = model.newIntVar(0, num_vals - 1, "y");
-    IntVar z = model.newIntVar(0, num_vals - 1, "z");
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    IntVar z = model.newIntVar(0, numVals - 1, "z");
     // Creates the constraints.
     model.addDifferent(x, y);
 
@@ -35,16 +36,10 @@ public class SimpleSolve {
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.solve(model);
 
-    if (status == CpSolverStatus.FEASIBLE)
-    {
+    if (status == CpSolverStatus.FEASIBLE) {
       System.out.println("x = " + solver.value(x));
       System.out.println("y = " + solver.value(y));
       System.out.println("z = " + solver.value(z));
     }
-
-  }
-
-  public static void main(String[] args) throws Exception {
-    SimpleSolve();
   }
 }

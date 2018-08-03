@@ -14,36 +14,31 @@
 package com.google.ortools.sat;
 
 import com.google.ortools.sat.CpModelProto;
-import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolverResponse;
-import com.google.ortools.sat.Constraint;
-import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.SatParameters;
-import com.google.ortools.sat.SatHelper;
 
+/** Wrapper around the SAT solver. */
 public class CpSolver {
   public CpSolver() {
     this.parameters_ = SatParameters.newBuilder();
   }
 
   public CpSolverStatus solve(CpModel model) {
-    response_ = SatHelper.SolveWithParameters(model.model(),
-                                              parameters_.build());
+    response_ = SatHelper.SolveWithParameters(model.model(), parameters_.build());
     return response_.getStatus();
   }
 
-  public CpSolverStatus solveWithSolutionCallback(CpModel model,
-                                                  SolutionCallback cb) {
-    response_ = SatHelper.SolveWithParametersAndSolutionCallback(
-        model.model(), parameters_.build(), cb);
+  public CpSolverStatus solveWithSolutionCallback(CpModel model, SolutionCallback cb) {
+    response_ =
+        SatHelper.SolveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
     return response_.getStatus();
   }
 
-  public CpSolverStatus searchAllSolutions(CpModel model,
-                                           SolutionCallback cb) {
+  public CpSolverStatus searchAllSolutions(CpModel model, SolutionCallback cb) {
     parameters_.setEnumerateAllSolutions(true);
-    response_ = SatHelper.SolveWithParametersAndSolutionCallback(
-        model.model(), parameters_.build(), cb);
+    response_ =
+        SatHelper.SolveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
     parameters_.setEnumerateAllSolutions(true);
     return response_.getStatus();
   }
@@ -69,18 +64,15 @@ public class CpSolver {
     }
   }
 
-  public long numBranches()
-  {
+  public long numBranches() {
     return response_.getNumBranches();
   }
 
-  public long numConflicts()
-  {
+  public long numConflicts() {
     return response_.getNumConflicts();
   }
 
-  public double wallTime()
-  {
+  public double wallTime() {
     return response_.getWallTime();
   }
 

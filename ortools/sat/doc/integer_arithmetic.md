@@ -154,15 +154,16 @@ int main() {
 ### Java code
 
 ```java
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.IntVar;
 
 public class RabbitsAndPheasants {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  static void RabbitsAndPheasants() {
+  public static void main(String[] args) throws Exception {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
@@ -177,15 +178,9 @@ public class RabbitsAndPheasants {
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.solve(model);
 
-    if (status == CpSolverStatus.FEASIBLE)
-    {
-      System.out.println(solver.value(r) + " rabbits, and " +
-                         solver.value(p) + " pheasants");
+    if (status == CpSolverStatus.FEASIBLE) {
+      System.out.println(solver.value(r) + " rabbits, and " + solver.value(p) + " pheasants");
     }
-  }
-
-  public static void main(String[] args) throws Exception {
-    RabbitsAndPheasants();
   }
 }
 ```

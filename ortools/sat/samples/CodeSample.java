@@ -11,23 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.IntVar;
 
 public class CodeSample {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  public static void CodeSample() {
+  public static void main(String[] args) throws Exception {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the Boolean variable.
     IntVar x = model.newBoolVar("x");
     System.out.println(x);
-  }
-
-  public static void main(String[] args) throws Exception {
-    CodeSample();
   }
 }

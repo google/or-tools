@@ -13,39 +13,40 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.ConstraintProto;
 import com.google.ortools.sat.CpModelProto;
-import com.google.ortools.sat.ILiteral;
-import com.google.ortools.sat.IntegerVariableProto;
-import com.google.ortools.sat.NotBooleanVariable;
+import com.google.ortools.sat.IntervalConstraintProto;
 
-public class IntervalVar{
-  public IntervalVar(CpModelProto.Builder builder,
-                     int start_index, int size_index, int end_index,
-                     String name) {
+/** An interval variable. */
+public class IntervalVar {
+  public IntervalVar(
+      CpModelProto.Builder builder, int startIndex, int sizeIndex, int endIndex, String name) {
     this.builder_ = builder;
     this.index_ = builder_.getConstraintsCount();
     ConstraintProto.Builder ct = builder_.addConstraintsBuilder();
     ct.setName(name);
     this.var_ = ct.getIntervalBuilder();
-    this.var_.setStart(start_index);
-    this.var_.setSize(size_index);
-    this.var_.setEnd(end_index);
+    this.var_.setStart(startIndex);
+    this.var_.setSize(sizeIndex);
+    this.var_.setEnd(endIndex);
   }
 
-
-  public IntervalVar(CpModelProto.Builder builder,
-                     int start_index, int size_index, int end_index,
-                     int is_present_index, String name) {
+  public IntervalVar(
+      CpModelProto.Builder builder,
+      int startIndex,
+      int sizeIndex,
+      int endIndex,
+      int isPresentIndex,
+      String name) {
     this.builder_ = builder;
     this.index_ = builder_.getConstraintsCount();
     ConstraintProto.Builder ct = builder_.addConstraintsBuilder();
     ct.setName(name);
-    ct.addEnforcementLiteral(is_present_index);
+    ct.addEnforcementLiteral(isPresentIndex);
     this.var_ = ct.getIntervalBuilder();
-    this.var_.setStart(start_index);
-    this.var_.setSize(size_index);
-    this.var_.setEnd(end_index);
+    this.var_.setStart(startIndex);
+    this.var_.setSize(sizeIndex);
+    this.var_.setEnd(endIndex);
   }
 
   @Override

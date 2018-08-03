@@ -42,6 +42,18 @@ struct ClosedInterval {
   }
 };
 
+// Custom exact comparators.
+class ExactDomainComparator {
+ public:
+  bool operator()(const ClosedInterval& i1, const ClosedInterval& i2) const;
+};
+
+class ExactVectorOfDomainComparator {
+ public:
+  bool operator()(const std::vector<ClosedInterval>& d1,
+                  const std::vector<ClosedInterval>& d2) const;
+};
+
 // Returns a compact std::string of a vector of intervals like
 // "[1,4][6][10,20]".
 std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals);

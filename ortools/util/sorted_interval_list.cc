@@ -26,6 +26,26 @@ std::string ClosedInterval::DebugString() const {
   return absl::StrFormat("[%" GG_LL_FORMAT "d,%" GG_LL_FORMAT "d]", start, end);
 }
 
+bool ExactDomainComparator::operator()(const ClosedInterval& i1,
+                                       const ClosedInterval& i2) const {
+  return i1.start < i2.start || (i1.start == i2.start && i1.end < i2.end);
+}
+
+bool ExactVectorOfDomainComparator::operator()(
+    const std::vector<ClosedInterval>& d1,
+    const std::vector<ClosedInterval>& d2) const {
+  const int common_size = std::min(d1.size(), d2.size());
+  for (int i = 0; i < common_size; ++i) {
+    const ClosedInterval& i1 = d1[i];
+    const ClosedInterval& i2 = d2[i];
+    if (i1.start < i2.start) return true;
+    if (i1.start > i2.start) return false;
+    if (i1.end < i2.end) return true;
+    if (i1.end > i2.end) return false;
+  }
+  return d1.size() < d2.size();
+}
+
 std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals) {
   std::string result;
   for (ClosedInterval interval : intervals) {

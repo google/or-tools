@@ -13,10 +13,7 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.ILiteral;
-import com.google.ortools.sat.IntVar;
-import com.google.ortools.sat.SolutionCallback;
-
+/** Parent class to create a callback called at each solution. */
 public class CpSolverSolutionCallback extends SolutionCallback {
   public long value(IntVar var) {
     int index = var.getIndex();

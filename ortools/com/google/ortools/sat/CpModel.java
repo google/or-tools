@@ -13,11 +13,18 @@
 
 package com.google.ortools.sat;
 
+import com.google.ortools.sat.AllDifferentConstraintProto;
+import com.google.ortools.sat.BoolArgumentProto;
 import com.google.ortools.sat.CpModelProto;
-import com.google.ortools.sat.Constraint;
-import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.CpObjectiveProto;
+import com.google.ortools.sat.CumulativeConstraintProto;
+import com.google.ortools.sat.IntegerArgumentProto;
+import com.google.ortools.sat.IntegerVariableProto;
+import com.google.ortools.sat.LinearConstraintProto;
+import com.google.ortools.sat.NoOverlap2DConstraintProto;
+import com.google.ortools.sat.NoOverlapConstraintProto;
 
+/** Main modeling class. */
 public class CpModel {
   public CpModel() {
     builder_ = CpModelProto.newBuilder();
@@ -42,34 +49,34 @@ public class CpModel {
   }
 
   public IntVar newConstant(long value) {
-    return newIntVar(value, value, "" + value);  // bounds and name.
+    return newIntVar(value, value, "" + value); // bounds and name.
   }
 
   // Boolean Constraints.
 
   public Constraint addBoolOr(ILiteral[] literals) {
     Constraint ct = new Constraint(builder_);
-    BoolArgumentProto.Builder bool_or = ct.builder().getBoolOrBuilder();
+    BoolArgumentProto.Builder boolOr = ct.builder().getBoolOrBuilder();
     for (ILiteral lit : literals) {
-      bool_or.addLiterals(lit.getIndex());
+      boolOr.addLiterals(lit.getIndex());
     }
     return ct;
   }
 
   public Constraint addBoolAnd(ILiteral[] literals) {
     Constraint ct = new Constraint(builder_);
-    BoolArgumentProto.Builder bool_or = ct.builder().getBoolAndBuilder();
+    BoolArgumentProto.Builder boolOr = ct.builder().getBoolAndBuilder();
     for (ILiteral lit : literals) {
-      bool_or.addLiterals(lit.getIndex());
+      boolOr.addLiterals(lit.getIndex());
     }
     return ct;
   }
 
   public Constraint addBoolXor(ILiteral[] literals) {
     Constraint ct = new Constraint(builder_);
-    BoolArgumentProto.Builder bool_or = ct.builder().getBoolXorBuilder();
+    BoolArgumentProto.Builder boolOr = ct.builder().getBoolXorBuilder();
     for (ILiteral lit : literals) {
-      bool_or.addLiterals(lit.getIndex());
+      boolOr.addLiterals(lit.getIndex());
     }
     return ct;
   }
@@ -126,8 +133,7 @@ public class CpModel {
     return addScalProd(newVars, coeffs, 0, 0);
   }
 
-  public Constraint addScalProd(IntVar[] vars, long[] coeffs, long lb,
-                                long ub) {
+  public Constraint addScalProd(IntVar[] vars, long[] coeffs, long lb, long ub) {
     Constraint ct = new Constraint(builder_);
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
     for (IntVar var : vars) {
@@ -141,8 +147,7 @@ public class CpModel {
     return ct;
   }
 
-  public Constraint addScalProdWithBounds(IntVar[] vars, long[] coeffs,
-                                          long[] bounds){
+  public Constraint addScalProdWithBounds(IntVar[] vars, long[] coeffs, long[] bounds) {
     Constraint ct = new Constraint(builder_);
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
     for (IntVar var : vars) {
@@ -157,7 +162,6 @@ public class CpModel {
     return ct;
   }
 
-
   public Constraint addScalProd(IntVar[] vars, int[] coeffs, long lb, long ub) {
     return addScalProd(vars, toLongArray(coeffs), lb, ub);
   }
@@ -170,8 +174,7 @@ public class CpModel {
     return addScalProdEqual(vars, toLongArray(coeffs), value);
   }
 
-  public Constraint addScalProdEqual(IntVar[] vars, long[] coeffs,
-                                     IntVar target) {
+  public Constraint addScalProdEqual(IntVar[] vars, long[] coeffs, IntVar target) {
     int size = vars.length;
     IntVar[] newVars = new IntVar[size + 1];
     long[] newCoeffs = new long[size + 1];
@@ -184,11 +187,9 @@ public class CpModel {
     return addScalProd(newVars, newCoeffs, 0, 0);
   }
 
-  public Constraint addScalProdEqual(IntVar[] vars, int[] coeffs,
-                                     IntVar target) {
+  public Constraint addScalProdEqual(IntVar[] vars, int[] coeffs, IntVar target) {
     return addScalProdEqual(vars, toLongArray(coeffs), target);
   }
-
 
   public Constraint addLessOrEqual(IntVar var, long value) {
     Constraint ct = new Constraint(builder_);
@@ -268,8 +269,7 @@ public class CpModel {
   }
 
   // before + offset <= after.
-  public Constraint addLessOrEqualWithOffset(IntVar before, IntVar after,
-                                             long offset) {
+  public Constraint addLessOrEqualWithOffset(IntVar before, IntVar after, long offset) {
     Constraint ct = new Constraint(builder_);
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
     lin.addVars(before.getIndex());
@@ -289,10 +289,9 @@ public class CpModel {
 
   public Constraint addAllDifferent(IntVar[] vars) {
     Constraint ct = new Constraint(builder_);
-    AllDifferentConstraintProto.Builder all_diff =
-        ct.builder().getAllDiffBuilder();
+    AllDifferentConstraintProto.Builder allDiff = ct.builder().getAllDiffBuilder();
     for (IntVar var : vars) {
-      all_diff.addVars(var.getIndex());
+      allDiff.addVars(var.getIndex());
     }
     return ct;
   }
@@ -306,23 +305,22 @@ public class CpModel {
   // addReservoirConstraint
   // addMapDomain
 
-
   public Constraint addMinEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(builder_);
-    IntegerArgumentProto.Builder int_min = ct.builder().getIntMinBuilder();
-    int_min.setTarget(target.getIndex());
+    IntegerArgumentProto.Builder intMin = ct.builder().getIntMinBuilder();
+    intMin.setTarget(target.getIndex());
     for (IntVar var : vars) {
-      int_min.addVars(var.getIndex());
+      intMin.addVars(var.getIndex());
     }
     return ct;
   }
 
   public Constraint addMaxEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(builder_);
-    IntegerArgumentProto.Builder int_max = ct.builder().getIntMaxBuilder();
-    int_max.setTarget(target.getIndex());
+    IntegerArgumentProto.Builder intMax = ct.builder().getIntMaxBuilder();
+    intMax.setTarget(target.getIndex());
     for (IntVar var : vars) {
-      int_max.addVars(var.getIndex());
+      intMax.addVars(var.getIndex());
     }
     return ct;
   }
@@ -332,108 +330,108 @@ public class CpModel {
   // addProdEquality
 
   // Scheduling support.
-  public IntervalVar newIntervalVar(IntVar start, IntVar duration, IntVar end,
-                                    String name) {
-    return new IntervalVar(
-        builder_, start.getIndex(), duration.getIndex(), end.getIndex(), name);
+  public IntervalVar newIntervalVar(IntVar start, IntVar duration, IntVar end, String name) {
+    return new IntervalVar(builder_, start.getIndex(), duration.getIndex(), end.getIndex(), name);
   }
 
-  public IntervalVar newIntervalVar(IntVar start, IntVar duration, long end,
-                                    String name) {
+  public IntervalVar newIntervalVar(IntVar start, IntVar duration, long end, String name) {
     return new IntervalVar(
-        builder_, start.getIndex(), duration.getIndex(), indexFromConstant(end),
-        name);
+        builder_, start.getIndex(), duration.getIndex(), indexFromConstant(end), name);
   }
 
-  public IntervalVar newIntervalVar(IntVar start, long duration, IntVar end,
-                                    String name) {
+  public IntervalVar newIntervalVar(IntVar start, long duration, IntVar end, String name) {
     return new IntervalVar(
-        builder_, start.getIndex(), indexFromConstant(duration), end.getIndex(),
-        name);
+        builder_, start.getIndex(), indexFromConstant(duration), end.getIndex(), name);
   }
 
-  public IntervalVar newIntervalVar(long start, IntVar duration, IntVar end,
-                                    String name) {
+  public IntervalVar newIntervalVar(long start, IntVar duration, IntVar end, String name) {
     return new IntervalVar(
-        builder_, indexFromConstant(start), duration.getIndex(), end.getIndex(),
-        name);
+        builder_, indexFromConstant(start), duration.getIndex(), end.getIndex(), name);
   }
 
   public IntervalVar newFixedInterval(long start, long duration, String name) {
     return new IntervalVar(
-        builder_, indexFromConstant(start), indexFromConstant(duration),
-        indexFromConstant(start + duration), name);
+        builder_,
+        indexFromConstant(start),
+        indexFromConstant(duration),
+        indexFromConstant(start + duration),
+        name);
   }
 
-  public IntervalVar newOptionalIntervalVar(IntVar start, IntVar duration,
-                                            IntVar end, ILiteral presence,
-                                            String name) {
+  public IntervalVar newOptionalIntervalVar(
+      IntVar start, IntVar duration, IntVar end, ILiteral presence, String name) {
     return new IntervalVar(
-        builder_, start.getIndex(), duration.getIndex(), end.getIndex(),
-        presence.getIndex(), name);
+        builder_, start.getIndex(), duration.getIndex(), end.getIndex(), presence.getIndex(), name);
   }
 
-  public IntervalVar newOptionalIntervalVar(IntVar start, IntVar duration,
-                                            long end, ILiteral presence,
-                                            String name) {
+  public IntervalVar newOptionalIntervalVar(
+      IntVar start, IntVar duration, long end, ILiteral presence, String name) {
     return new IntervalVar(
-        builder_, start.getIndex(), duration.getIndex(), indexFromConstant(end),
-        presence.getIndex(), name);
+        builder_,
+        start.getIndex(),
+        duration.getIndex(),
+        indexFromConstant(end),
+        presence.getIndex(),
+        name);
   }
 
-  public IntervalVar newOptionalIntervalVar(IntVar start, long duration,
-                                            IntVar end, ILiteral presence,
-                                            String name) {
+  public IntervalVar newOptionalIntervalVar(
+      IntVar start, long duration, IntVar end, ILiteral presence, String name) {
     return new IntervalVar(
-        builder_, start.getIndex(), indexFromConstant(duration), end.getIndex(),
-        presence.getIndex(), name);
+        builder_,
+        start.getIndex(),
+        indexFromConstant(duration),
+        end.getIndex(),
+        presence.getIndex(),
+        name);
   }
 
-  public IntervalVar newOptionalIntervalVar(long start, IntVar duration,
-                                            IntVar end, ILiteral presence,
-                                            String name) {
+  public IntervalVar newOptionalIntervalVar(
+      long start, IntVar duration, IntVar end, ILiteral presence, String name) {
     return new IntervalVar(
-        builder_, indexFromConstant(start), duration.getIndex(), end.getIndex(),
-        presence.getIndex(), name);
+        builder_,
+        indexFromConstant(start),
+        duration.getIndex(),
+        end.getIndex(),
+        presence.getIndex(),
+        name);
   }
 
-  public IntervalVar newOptionalFixedInterval(long start, long duration,
-                                              ILiteral presence, String name) {
+  public IntervalVar newOptionalFixedInterval(
+      long start, long duration, ILiteral presence, String name) {
     return new IntervalVar(
-        builder_, indexFromConstant(start), indexFromConstant(duration),
-        indexFromConstant(start + duration), presence.getIndex(), name);
+        builder_,
+        indexFromConstant(start),
+        indexFromConstant(duration),
+        indexFromConstant(start + duration),
+        presence.getIndex(),
+        name);
   }
 
   public Constraint addNoOverlap(IntervalVar[] vars) {
     Constraint ct = new Constraint(builder_);
-    NoOverlapConstraintProto.Builder no_overlap =
-        ct.builder().getNoOverlapBuilder();
+    NoOverlapConstraintProto.Builder noOverlap = ct.builder().getNoOverlapBuilder();
     for (IntervalVar var : vars) {
-      no_overlap.addIntervals(var.getIndex());
+      noOverlap.addIntervals(var.getIndex());
     }
     return ct;
   }
 
-  public Constraint addNoOverlap2D(IntervalVar[] x_intervals,
-                                   IntervalVar[] y_intervals) {
+  public Constraint addNoOverlap2D(IntervalVar[] xIntervals, IntervalVar[] yIntervals) {
     Constraint ct = new Constraint(builder_);
-    NoOverlap2DConstraintProto.Builder no_overlap_2d =
-        ct.builder().getNoOverlap2DBuilder();
-    for (IntervalVar x : x_intervals) {
-      no_overlap_2d.addXIntervals(x.getIndex());
+    NoOverlap2DConstraintProto.Builder noOverlap2d = ct.builder().getNoOverlap2DBuilder();
+    for (IntervalVar x : xIntervals) {
+      noOverlap2d.addXIntervals(x.getIndex());
     }
-    for (IntervalVar y : y_intervals) {
-      no_overlap_2d.addXIntervals(y.getIndex());
+    for (IntervalVar y : yIntervals) {
+      noOverlap2d.addXIntervals(y.getIndex());
     }
     return ct;
   }
 
-  public Constraint addCumulative(IntervalVar[] intervals,
-                                  IntVar[] demands,
-                                  IntVar capacity) {
+  public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, IntVar capacity) {
     Constraint ct = new Constraint(builder_);
-    CumulativeConstraintProto.Builder cumul =
-        ct.builder().getCumulativeBuilder();
+    CumulativeConstraintProto.Builder cumul = ct.builder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
@@ -444,12 +442,9 @@ public class CpModel {
     return ct;
   }
 
-  public Constraint addCumulative(IntervalVar[] intervals,
-                                  long[] demands,
-                                  IntVar capacity) {
+  public Constraint addCumulative(IntervalVar[] intervals, long[] demands, IntVar capacity) {
     Constraint ct = new Constraint(builder_);
-    CumulativeConstraintProto.Builder cumul =
-        ct.builder().getCumulativeBuilder();
+    CumulativeConstraintProto.Builder cumul = ct.builder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
@@ -460,18 +455,13 @@ public class CpModel {
     return ct;
   }
 
-  public Constraint addCumulative(IntervalVar[] intervals,
-                                  int[] demands,
-                                  IntVar capacity) {
+  public Constraint addCumulative(IntervalVar[] intervals, int[] demands, IntVar capacity) {
     return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
-  public Constraint addCumulative(IntervalVar[] intervals,
-                                  IntVar[] demands,
-                                  long capacity) {
+  public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, long capacity) {
     Constraint ct = new Constraint(builder_);
-    CumulativeConstraintProto.Builder cumul =
-        ct.builder().getCumulativeBuilder();
+    CumulativeConstraintProto.Builder cumul = ct.builder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
@@ -482,12 +472,9 @@ public class CpModel {
     return ct;
   }
 
-  public Constraint addCumulative(IntervalVar[] intervals,
-                                  long[] demands,
-                                  long capacity) {
+  public Constraint addCumulative(IntervalVar[] intervals, long[] demands, long capacity) {
     Constraint ct = new Constraint(builder_);
-    CumulativeConstraintProto.Builder cumul =
-        ct.builder().getCumulativeBuilder();
+    CumulativeConstraintProto.Builder cumul = ct.builder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
@@ -498,9 +485,7 @@ public class CpModel {
     return ct;
   }
 
-  public Constraint addCumulative(IntervalVar[] intervals,
-                                  int[] demands,
-                                  long capacity) {
+  public Constraint addCumulative(IntervalVar[] intervals, int[] demands, long capacity) {
     return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
@@ -536,7 +521,7 @@ public class CpModel {
 
   public void maximize(IntVar var) {
     CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
-    obj.addVars(Negated(var.getIndex()));
+    obj.addVars(negated(var.getIndex()));
     obj.addCoeffs(1);
     obj.setScalingFactor(-1.0);
   }
@@ -544,7 +529,7 @@ public class CpModel {
   public void maximizeSum(IntVar[] vars) {
     CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
     for (IntVar var : vars) {
-      obj.addVars(Negated(var.getIndex()));
+      obj.addVars(negated(var.getIndex()));
       obj.addCoeffs(1);
     }
     obj.setScalingFactor(-1.0);
@@ -553,7 +538,7 @@ public class CpModel {
   public void maximizeScalProd(IntVar[] vars, long[] coeffs) {
     CpObjectiveProto.Builder obj = builder_.getObjectiveBuilder();
     for (IntVar var : vars) {
-      obj.addVars(Negated(var.getIndex()));
+      obj.addVars(negated(var.getIndex()));
     }
     for (long c : coeffs) {
       obj.addCoeffs(c);
@@ -585,8 +570,13 @@ public class CpModel {
 
   // Getters.
 
-  public CpModelProto model() { return builder_.build(); }
-  public int Negated(int index) { return -index - 1; }
+  public CpModelProto model() {
+    return builder_.build();
+  }
+
+  public int negated(int index) {
+    return -index - 1;
+  }
 
   private CpModelProto.Builder builder_;
 }

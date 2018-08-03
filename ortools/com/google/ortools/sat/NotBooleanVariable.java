@@ -13,10 +13,8 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.ILiteral;
-import com.google.ortools.sat.IntVar;
 
-
+/** The negation of a boolean variable. */
 public class NotBooleanVariable implements ILiteral {
   public NotBooleanVariable(IntVar boolvar) {
     boolvar_ = boolvar;

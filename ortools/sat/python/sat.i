@@ -107,3 +107,4 @@ void CallSolutionCallback(PyObject* cb,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
+

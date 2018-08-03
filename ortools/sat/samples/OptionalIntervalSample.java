@@ -11,29 +11,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.ILiteral;
+import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.IntervalVar;
 
 public class OptionalIntervalSample {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
-
-  public static void OptionalIntervalSample() {
-    CpModel model = new CpModel();
-    int horizon = 100;
-    IntVar start_var = model.newIntVar(0, horizon, "start");
-    // Java code supports IntVar or integer constants in intervals.
-    int duration = 10;
-    IntVar end_var = model.newIntVar(0, horizon, "end");
-    ILiteral presence = model.newBoolVar("presence");
-    IntervalVar interval = model.newOptionalIntervalVar(
-        start_var, duration, end_var, presence, "interval");
-
-    System.out.println(interval);
-  }
+  static { System.loadLibrary("jniortools"); }
 
   public static void main(String[] args) throws Exception {
-    OptionalIntervalSample();
+    CpModel model = new CpModel();
+    int horizon = 100;
+    IntVar startVar = model.newIntVar(0, horizon, "start");
+    // Java code supports IntVar or integer constants in intervals.
+    int duration = 10;
+    IntVar endVar = model.newIntVar(0, horizon, "end");
+    ILiteral presence = model.newBoolVar("presence");
+    IntervalVar interval =
+        model.newOptionalIntervalVar(startVar, duration, endVar, presence, "interval");
+
+    System.out.println(interval);
   }
 }

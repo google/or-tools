@@ -106,23 +106,24 @@ As in python, the CpSolver class encapsulates searching for a solution of a
 model.
 
 ```java
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.IntVar;
 
 public class SimpleSolve {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  static void SimpleSolve() {
+  public static void main(String[] args) throws Exception {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
-    int num_vals = 3;
+    int numVals = 3;
 
-    IntVar x = model.newIntVar(0, num_vals - 1, "x");
-    IntVar y = model.newIntVar(0, num_vals - 1, "y");
-    IntVar z = model.newIntVar(0, num_vals - 1, "z");
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    IntVar z = model.newIntVar(0, numVals - 1, "z");
     // Creates the constraints.
     model.addDifferent(x, y);
 
@@ -130,17 +131,11 @@ public class SimpleSolve {
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.solve(model);
 
-    if (status == CpSolverStatus.FEASIBLE)
-    {
+    if (status == CpSolverStatus.FEASIBLE) {
       System.out.println("x = " + solver.value(x));
       System.out.println("y = " + solver.value(y));
       System.out.println("z = " + solver.value(z));
     }
-
-  }
-
-  public static void main(String[] args) throws Exception {
-    SimpleSolve();
   }
 }
 ```
@@ -294,23 +289,24 @@ int main() {
 ### Specifying the time limit in Java
 
 ```java
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.IntVar;
 
 public class SolveWithTimeLimit {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  static void SolveWithTimeLimit() {
+  public static void main(String[] args) throws Exception {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
-    int num_vals = 3;
+    int numVals = 3;
 
-    IntVar x = model.newIntVar(0, num_vals - 1, "x");
-    IntVar y = model.newIntVar(0, num_vals - 1, "y");
-    IntVar z = model.newIntVar(0, num_vals - 1, "z");
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    IntVar z = model.newIntVar(0, numVals - 1, "z");
     // Creates the constraints.
     model.addDifferent(x, y);
 
@@ -319,17 +315,11 @@ public class SolveWithTimeLimit {
     solver.getParameters().setMaxTimeInSeconds(10.0);
     CpSolverStatus status = solver.solve(model);
 
-    if (status == CpSolverStatus.FEASIBLE)
-    {
+    if (status == CpSolverStatus.FEASIBLE) {
       System.out.println("x = " + solver.value(x));
       System.out.println("y = " + solver.value(y));
       System.out.println("z = " + solver.value(z));
     }
-
-  }
-
-  public static void main(String[] args) throws Exception {
-    SolveWithTimeLimit();
   }
 }
 ```
@@ -528,7 +518,11 @@ int main() {
 ### Java code
 
 ```java
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.IntVar;
 
 class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
   public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
@@ -537,42 +531,35 @@ class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
 
   @Override
   public void onSolutionCallback() {
-    System.out.println(String.format("Solution #%d: time = %.02f s",
-                                     solution_count_, wallTime()));
-    System.out.println(
-        String.format("  objective value = %d", objectiveValue()));
+    System.out.println(String.format("Solution #%d: time = %.02f s", solutionCount_, wallTime()));
+    System.out.println(String.format("  objective value = %d", objectiveValue()));
     for (IntVar v : variables_) {
-      System.out.println(
-          String.format("  %s = %d", v.shortString(), value(v)));
+      System.out.println(String.format("  %s = %d", v.shortString(), value(v)));
     }
-    solution_count_++;
+    solutionCount_++;
   }
 
-  public int solutionCount()
-  {
-    return solution_count_;
+  public int solutionCount() {
+    return solutionCount_;
   }
 
-  private int solution_count_;
+  private int solutionCount_;
   private IntVar[] variables_;
 }
 
-
 public class SolveWithIntermediateSolutions {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  static void SolveWithIntermediateSolutions() {
+  public static void main(String[] args) throws Exception {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
-    int num_vals = 3;
+    int numVals = 3;
 
-    IntVar x = model.newIntVar(0, num_vals - 1, "x");
-    IntVar y = model.newIntVar(0, num_vals - 1, "y");
-    IntVar z = model.newIntVar(0, num_vals - 1, "z");
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    IntVar z = model.newIntVar(0, numVals - 1, "z");
     // Creates the constraints.
     model.addDifferent(x, y);
 
@@ -586,10 +573,6 @@ public class SolveWithIntermediateSolutions {
     CpSolverStatus status = solver.solveWithSolutionCallback(model, cb);
 
     System.out.println(cb.solutionCount() + " solutions found.");
-  }
-
-  public static void main(String[] args) throws Exception {
-    SolveWithIntermediateSolutions();
   }
 }
 ```
@@ -806,7 +789,11 @@ int main() {
 ### Java code
 
 ```java
-import com.google.ortools.sat.*;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.IntVar;
 
 class VarArraySolutionPrinter extends CpSolverSolutionCallback {
   public VarArraySolutionPrinter(IntVar[] variables) {
@@ -815,54 +802,43 @@ class VarArraySolutionPrinter extends CpSolverSolutionCallback {
 
   @Override
   public void onSolutionCallback() {
-    System.out.println(String.format("Solution #%d: time = %.02f s",
-                                     solution_count_, wallTime()));
+    System.out.println(String.format("Solution #%d: time = %.02f s", solutionCount_, wallTime()));
     for (IntVar v : variables_) {
-      System.out.println(
-          String.format("  %s = %d", v.shortString(), value(v)));
+      System.out.println(String.format("  %s = %d", v.shortString(), value(v)));
     }
-    solution_count_++;
+    solutionCount_++;
   }
 
-  public int solutionCount()
-  {
-    return solution_count_;
+  public int solutionCount() {
+    return solutionCount_;
   }
 
-  private int solution_count_;
+  private int solutionCount_;
   private IntVar[] variables_;
 }
 
-
 public class SolveAllSolutions {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
-  static void SolveAllSolutions() {
+  public static void main(String[] args) throws Exception {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
-    int num_vals = 3;
+    int numVals = 3;
 
-    IntVar x = model.newIntVar(0, num_vals - 1, "x");
-    IntVar y = model.newIntVar(0, num_vals - 1, "y");
-    IntVar z = model.newIntVar(0, num_vals - 1, "z");
+    IntVar x = model.newIntVar(0, numVals - 1, "x");
+    IntVar y = model.newIntVar(0, numVals - 1, "y");
+    IntVar z = model.newIntVar(0, numVals - 1, "z");
     // Creates the constraints.
     model.addDifferent(x, y);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, y, z});
+    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] {x, y, z});
     CpSolverStatus status = solver.searchAllSolutions(model, cb);
 
     System.out.println(cb.solutionCount() + " solutions found.");
-  }
-
-  public static void main(String[] args) throws Exception {
-    SolveAllSolutions();
   }
 }
 ```
