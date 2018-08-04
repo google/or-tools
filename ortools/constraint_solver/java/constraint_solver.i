@@ -113,6 +113,7 @@ import com.google.ortools.constraintsolver.SearchLimitParameters;
 
 %feature("director") operations_research::DecisionBuilder;
 %feature("director") operations_research::Decision;
+%feature("director") operations_research::DecisionVisitor;
 %feature("director") operations_research::SearchMonitor;
 %feature("director") operations_research::SymmetryBreaker;
 
