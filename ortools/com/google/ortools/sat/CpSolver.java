@@ -25,20 +25,20 @@ public class CpSolver {
   }
 
   public CpSolverStatus solve(CpModel model) {
-    response_ = SatHelper.SolveWithParameters(model.model(), parameters_.build());
+    response_ = SatHelper.solveWithParameters(model.model(), parameters_.build());
     return response_.getStatus();
   }
 
   public CpSolverStatus solveWithSolutionCallback(CpModel model, SolutionCallback cb) {
     response_ =
-        SatHelper.SolveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
+        SatHelper.solveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
     return response_.getStatus();
   }
 
   public CpSolverStatus searchAllSolutions(CpModel model, SolutionCallback cb) {
     parameters_.setEnumerateAllSolutions(true);
     response_ =
-        SatHelper.SolveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
+        SatHelper.solveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
     parameters_.setEnumerateAllSolutions(true);
     return response_.getStatus();
   }

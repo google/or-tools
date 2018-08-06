@@ -11,9 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i file exposes the sat cp_model API.
-
 %include "ortools/base/base.i"
+
 %include "ortools/util/java/proto.i"
 
 %{
@@ -40,16 +39,14 @@ PROTO2_RETURN(
 
 %unignore operations_research;
 %unignore operations_research::sat;
+
+// Wrap the relevant part of the SatHelper.
 %unignore operations_research::sat::SatHelper;
-%unignore operations_research::sat::SatHelper::Solve;
-%unignore operations_research::sat::SatHelper::SolveWithParameters;
-// We use the director version of the API.
-%unignore operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
+%rename (solve) operations_research::sat::SatHelper::Solve;
+%rename (solveWithParameters) operations_research::sat::SatHelper::SolveWithParameters;
+%rename (solveWithParametersAndSolutionCallback) operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
 
-// --------- Include the swig helpers file to create the director classes ------
-// We cannot use %ignoreall/%unignoreall as this is not compatible with nested
-// swig files.
-
+// We use directors for the solution callback.
 %feature("director") operations_research::sat::SolutionCallback;
 
 %unignore operations_research::sat::SolutionCallback;
