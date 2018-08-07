@@ -117,18 +117,6 @@ class SatHelper {
   }
 
   static operations_research::sat::CpSolverResponse
-  SolveWithParametersAndSolutionCallback(
-      const operations_research::sat::CpModelProto& model_proto,
-      const operations_research::sat::SatParameters& parameters,
-      SolutionCallback* callback) {
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    model.Add(NewFeasibleSolutionObserver(
-        [callback](const CpSolverResponse& r) { return callback->Run(r); }));
-    return SolveCpModel(model_proto, &model);
-  }
-
-  static operations_research::sat::CpSolverResponse
   SolveWithStringParametersAndSolutionObserver(
       const operations_research::sat::CpModelProto& model_proto,
       const std::string& parameters,
@@ -138,6 +126,18 @@ class SatHelper {
     Model model;
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(observer));
+    return SolveCpModel(model_proto, &model);
+  }
+
+  static operations_research::sat::CpSolverResponse
+  SolveWithParametersAndSolutionCallback(
+      const operations_research::sat::CpModelProto& model_proto,
+      const operations_research::sat::SatParameters& parameters,
+      SolutionCallback* callback) {
+    Model model;
+    model.Add(NewSatParameters(parameters));
+    model.Add(NewFeasibleSolutionObserver(
+        [callback](const CpSolverResponse& r) { return callback->Run(r); }));
     return SolveCpModel(model_proto, &model);
   }
 
