@@ -16,7 +16,6 @@ syntax = "proto2";
 option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
 
-
 package operations_research.sat;
 
 // Contains the definitions for all the sat algorithm parameters and their
