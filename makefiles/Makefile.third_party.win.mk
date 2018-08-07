@@ -155,7 +155,9 @@ dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip:
 
 ZLIB_INC = /I"$(WINDOWS_ZLIB_PATH)\\include"
 ZLIB_SWIG = -I"$(WINDOWS_ZLIB_DIR)/include"
+
 ZLIB_LNK = "$(WINDOWS_ZLIB_PATH)\\lib\\$(WINDOWS_ZLIB_NAME)"
+DEPENDENCIES_LNK += $(ZLIB_LNK)
 
 ##############
 ##  GFLAGS  ##
