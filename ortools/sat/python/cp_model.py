@@ -10,9 +10,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Propose a natural linear API on top of cp_model_pb2 python proto.
+"""Propose a natural language on top of cp_model_pb2 python proto.
 
-This file implements a easy to use API on top of the cp_model_pb2 API
+This file implements a easy-to-use API on top of the cp_model_pb2 protobuf
 defined in ../ .
 """
 
@@ -84,6 +84,7 @@ def AssertIsBoolean(x):
 
 
 def CapInt64(v):
+  """Restrict v within [INT_MIN..INT_MAX] range."""
   if v > INT_MAX:
     return INT_MAX
   if v < INT_MIN:
@@ -349,7 +350,7 @@ class IntVar(IntegerExpression):
   def __repr__(self):
     return '%s(%s)' % (self.__var.name, DisplayBounds(self.__var.domain))
 
-  def name(self):
+  def Name(self):
     return self.__var.name
 
   def Not(self):
@@ -486,8 +487,8 @@ class IntervalVar(object):
           ShortName(self.__model, interval.size),
           ShortName(self.__model, interval.end))
 
-    def name(self):
-      return self.__ct.name
+  def Name(self):
+    return self.__ct.name
 
 
 class CpModel(object):
@@ -585,7 +586,16 @@ class CpModel(object):
       raise TypeError('Not supported: CpModel.Add(' + str(ct) + ')')
 
   def AddAllDifferent(self, variables):
-    """Adds AllDifferent(variables)."""
+    """Adds AllDifferent(variables).
+
+    This constraint forces all variables to have different values.
+
+    Args:
+      variables: a list of integer variables.
+
+    Returns:
+      An instance of the Constraint class.
+    """
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.all_diff.vars.extend([self.GetOrMakeIndex(x) for x in variables])
@@ -609,6 +619,11 @@ class CpModel(object):
 
     Adds a circuit constraints from a sparse list of arcs that encode the graph.
 
+    A circuit is a unique Hamiltonian path in a subgraph of the total
+    graph. In case a node 'i' is not in the path, then there must be a
+    loop arc 'i -> i' associated with a true literal. Otherwise
+    this constraint will fail.
+
     Args:
       arcs: a list of arcs. An arc is a tuple
             (source_node, destination_node, literal).
@@ -617,7 +632,7 @@ class CpModel(object):
             0 and the number of nodes - 1.
 
     Returns:
-      The constraint proto.
+      An instance of the Constraint class.
 
     Raises:
       ValueError: If the list of arc is empty.
@@ -635,8 +650,30 @@ class CpModel(object):
       model_ct.circuit.literals.append(lit)
     return ct
 
-  def AddAllowedAssignments(self, variables, tuples):
-    """Adds AllowedAssignments(variables, [tuples])."""
+  def AddAllowedAssignments(self, variables, tuples_list):
+    """Adds AllowedAssignments(variables, tuples_list).
+
+    An AllowedAssignments constraint is a constraint on an array of variables
+    that forces, when all variables are fixed to a single value, that the
+    corresponding list of values is equal to one of the tuple of the
+    tuple_list.
+
+    Args:
+      variables: A list of variables.
+
+      tuples_list: A list of admissible tuples. Each tuple must have the same
+                   length as the variables, and the ith value of a tuple
+                   corresponds to the ith variable.
+
+    Returns:
+      An instance of the Constraint class.
+
+    Raises:
+      TypeError: If a tuple does not have the same size as the list of
+          variables.
+      ValueError: If the array of variables is empty.
+    """
+
     if not variables:
       raise ValueError('AddAllowedAssignments expects a non empty variables '
                        'array')
@@ -645,27 +682,68 @@ class CpModel(object):
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.table.vars.extend([self.GetOrMakeIndex(x) for x in variables])
     arity = len(variables)
-    for t in tuples:
+    for t in tuples_list:
       if len(t) != arity:
         raise TypeError('Tuple ' + str(t) + ' has the wrong arity')
       for v in t:
         AssertIsInt64(v)
       model_ct.table.values.extend(t)
 
-  def AddForbiddenAssignments(self, variables, tuples):
-    """Adds AddForbiddenAssignments(variables, [tuples])."""
+  def AddForbiddenAssignments(self, variables, tuples_list):
+    """Adds AddForbiddenAssignments(variables, [tuples_list]).
+
+    A ForbiddenAssignments constraint is a constraint on an array of variables
+    where the list of impossible combinations is provided in the tuples list.
+
+    Args:
+      variables: A list of variables.
+
+      tuples_list: A list of forbidden tuples. Each tuple must have the same
+                   length as the variables, and the ith value of a tuple
+                   corresponds to the ith variable.
+
+    Returns:
+      An instance of the Constraint class.
+
+    Raises:
+      TypeError: If a tuple does not have the same size as the list of
+                 variables.
+      ValueError: If the array of variables is empty.
+    """
 
     if not variables:
       raise ValueError('AddForbiddenAssignments expects a non empty variables '
                        'array')
 
     index = len(self.__model.constraints)
-    self.AddAllowedAssignments(variables, tuples)
+    self.AddAllowedAssignments(variables, tuples_list)
     self.__model.constraints[index].table.negated = True
 
-  def AddAutomata(self, transition_variables, starting_state, final_states,
-                  transition_triples):
-    """Adds an automata constraint.
+  def AddAutomaton(self, transition_variables, starting_state, final_states,
+                   transition_triples):
+    """Adds an automaton constraint.
+
+    An automaton constraint takes a list of variables (of size n), an initial
+    state, a set of final states, and a set of transitions. A transition is a
+    triplet ('tail', 'transition', 'head'), where 'tail' and 'head' are states,
+    and 'transition' is the label of an arc from 'head' to 'tail',
+    corresponding to the value of one variable in the list of variables.
+
+    This automata will be unrolled into a flow with n + 1 phases. Each phase
+    contains the possible states of the automaton. The first state contains the
+    initial state. The last phase contains the final states.
+
+    Between two consecutive phases i and i + 1, the automaton creates a set of
+    arcs. For each transition (tail, transition, head), it will add an arc from
+    the state 'tail' of phase i and the state 'head' of phase i + 1. This arc
+    labeled by the value 'transition' of the variables 'variables[i]'. That is,
+    this arc can only be selected if 'variables[i]' is assigned the value
+    'transition'.
+
+    A feasible solution of this constraint is an assignment of variables such
+    that, starting from the initial state in phase 0, there is a path labeled by
+    the values of the variables that ends in one of the final states in the
+    final phase.
 
     Args:
       transition_variables: A non empty list of variables whose values
@@ -675,6 +753,9 @@ class CpModel(object):
       transition_triples: A list of transition for the automata, in the
         following format (current_state, variable_value, next_state).
 
+
+    Returns:
+      An instance of the Constraint class.
 
     Raises:
       ValueError: if transition_variables, final_states, or transition_triples
@@ -710,7 +791,28 @@ class CpModel(object):
       model_ct.automata.transition_head.append(t[2])
 
   def AddInverse(self, variables, inverse_variables):
-    """Adds Inverse(variables, inverse_variables)."""
+    """Adds Inverse(variables, inverse_variables).
+
+    An inverse constraint enforces that if 'variables[i]' is assigned a value
+    'j', then inverse_variables[j] is assigned a value 'i'. And vice versa.
+
+    Args:
+      variables: an array of integer variables.
+      inverse_variables: an array of integer variables.
+
+    Returns:
+      An instance of the Constraint class.
+
+    Raises:
+      TypeError: if variables and inverse_variables have different length, or
+          if they are empty.
+    """
+
+    if not variables or not inverse_variables:
+      raise TypeError('The Inverse constraint does not accept empty arrays')
+    if len(variables) != len(inverse_variables):
+      raise TypeError('In the inverse constraint, the two array variables and'
+                      ' inverse_variables must have the same length.')
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.inverse.f_direct.extend(
@@ -720,7 +822,40 @@ class CpModel(object):
     return ct
 
   def AddReservoirConstraint(self, times, demands, min_level, max_level):
-    """Adds Reservoir(times, demands, min_level, max_level)."""
+    """Adds Reservoir(times, demands, min_level, max_level).
+
+    Maintains a reservoir level within bounds. The water level starts at 0, and
+    at any time >= 0, it must be between min_level and max_level. Furthermore,
+    this constraints expect all times variables to be >= 0.
+    If the variable times[i] is assigned a value t, then the current level
+    changes by demands[i] (which is constant) at the time t.
+
+    Note that level min can be > 0, or level max can be < 0. It just forces
+    some demands to be executed at time 0 to make sure that we are within those
+    bounds with the executed demands. Therefore, at any time t >= 0:
+        sum(demands[i] if times[i] <= t) in [min_level, max_level]
+
+    Args:
+      times: A list of positive integer variables which specify the time of the
+        filling or emptying the reservoir.
+      demands: A list of integer values that specifies the amount of the
+        emptying or feeling.
+      min_level: At any time >= 0, the level of the reservoir must be greater of
+        equal than the min level.
+      max_level: At any time >= 0, the level of the reservoir must be less or
+        equal than the max level.
+
+    Returns:
+      An instance of the Constraint class.
+
+    Raises:
+      ValueError: if max_level < min_level.
+    """
+
+    if max_level < min_level:
+      return ValueError(
+          'Reservoir constraint must have a max_level >= min_level')
+
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
@@ -731,7 +866,45 @@ class CpModel(object):
 
   def AddReservoirConstraintWithActive(self, times, demands, actives, min_level,
                                        max_level):
-    """Adds Reservoir(times, demands, actives, min_level, max_level)."""
+    """Adds Reservoir(times, demands, actives, min_level, max_level).
+
+    Maintain a reservoir level within bounds. The water level starts at 0, and
+    at
+    any time >= 0, it must be within min_level, and max_level. Furthermore, this
+    constraints expect all times variables to be >= 0.
+    If the actives[i] is true, and if times[i] is assigned a value t, then the
+    level of the reservoir changes by demands[i] (which is constant) at time t.
+
+    Note that level_min can be > 0, or level_max can be < 0. It just forces
+    some demands to be executed at time 0 to make sure that we are within those
+    bounds with the executed demands. Therefore, at any time t >= 0:
+        sum(demands[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+    The array of boolean variables 'actives', if defined, indicates which
+    actions are actually performed.
+
+    Args:
+      times: A list of positive integer variables which specify the time of the
+        filling or emptying the reservoir.
+      demands: A list of integer values that specifies the amount of the
+        emptying or feeling.
+      actives: a list of boolean variables. They indicates if the
+        emptying/refilling events actually take place.
+      min_level: At any time >= 0, the level of the reservoir must be greater of
+        equal than the min level.
+      max_level: At any time >= 0, the level of the reservoir must be less or
+        equal than the max level.
+
+    Returns:
+      An instance of the Constraint class.
+
+    Raises:
+      ValueError: if max_level < min_level.
+    """
+
+    if max_level < min_level:
+      return ValueError(
+          'Reservoir constraint must have a max_level >= min_level')
+
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
@@ -811,7 +984,7 @@ class CpModel(object):
     return ct
 
   def AddDivisionEquality(self, target, num, denom):
-    """Creates target == num // denom."""
+    """Adds target == num // denom."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.int_div.vars.extend(
@@ -821,7 +994,7 @@ class CpModel(object):
     return ct
 
   def AddModuloEquality(self, target, var, mod):
-    """Creates target = var % mod."""
+    """Adds target = var % mod."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.int_mod.vars.extend(
@@ -831,7 +1004,7 @@ class CpModel(object):
     return ct
 
   def AddProdEquality(self, target, args):
-    """Creates target == PROD(args)."""
+    """Adds target == PROD(args)."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.int_prod.vars.extend([self.GetOrMakeIndex(x) for x in args])
@@ -841,6 +1014,26 @@ class CpModel(object):
   # Scheduling support
 
   def NewIntervalVar(self, start, size, end, name):
+    """Creates an interval variables from start, size, and end.
+
+    An interval variable is a constraint, that is itself used in other
+    constraints like NoOverlap.
+
+    Internally, it ensures that start + size == end.
+
+    Args:
+      start: The start of the interval. It can be an integer value, or an
+             integer variable.
+      size: The size of the interval. It can be an integer value, or an
+            integer variable.
+      end: The end of the interval. It can be an integer value, or an
+           integer variable.
+      name: The name of the interval variable.
+
+    Returns:
+      An IntervalVar object.
+    """
+
     start_index = self.GetOrMakeIndex(start)
     size_index = self.GetOrMakeIndex(size)
     end_index = self.GetOrMakeIndex(end)
@@ -851,6 +1044,28 @@ class CpModel(object):
                        name)
 
   def NewOptionalIntervalVar(self, start, size, end, is_present, name):
+    """Creates an optional interval var from start, size, end. and is_present.
+
+    An optional interval variable is a constraint, that is itself used in other
+    constraints like NoOverlap. This constraint is protected by an is_present
+    literal that indicates if it is active or not.
+
+    Internally, it ensures that is_present implies start + size == end.
+
+    Args:
+      start: The start of the interval. It can be an integer value, or an
+             integer variable.
+      size: The size of the interval. It can be an integer value, or an
+            integer variable.
+      end: The end of the interval. It can be an integer value, or an
+           integer variable.
+      is_present: A literal that indicates if the interval is active or not.
+                  A inactive interval is simply ignored by all constraints.
+      name: The name of the interval variable.
+
+    Returns:
+      An IntervalVar object.
+    """
     is_present_index = self.GetOrMakeBooleanIndex(is_present)
     start_index = self.GetOrMakeOptionalIndex(start, is_present)
     size_index = self.GetOrMakeIndex(size)  # Currently, not optional.
@@ -859,7 +1074,17 @@ class CpModel(object):
                        is_present_index, name)
 
   def AddNoOverlap(self, interval_vars):
-    """Adds NoOverlap(interval_vars)."""
+    """Adds NoOverlap(interval_vars).
+
+    A NoOverlap constraint ensures that all present intervals do not overlap
+    in time.
+
+    Args:
+      interval_vars: The list of interval variables to constrain.
+
+    Returns:
+      An instance of the Constraint class.
+    """
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.no_overlap.intervals.extend(
@@ -867,7 +1092,19 @@ class CpModel(object):
     return ct
 
   def AddNoOverlap2D(self, x_intervals, y_intervals):
-    """Adds NoOverlap2D(x_intervals, y_intervals)."""
+    """Adds NoOverlap2D(x_intervals, y_intervals).
+
+    A NoOverlap2D constraint ensures that all present rectangles do not overlap
+    on a plan. Each rectangle is aligned with the X and Y axis, and is defined
+    by two intervals which represent its projection onto the X and Y axis.
+
+    Args:
+      x_intervals: The X coordinates of the rectangles.
+      y_intervals: The Y coordinates of the rectangles.
+
+    Returns:
+      An instance of the Constraint class.
+    """
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.no_overlap_2d.x_intervals.extend(
@@ -877,7 +1114,24 @@ class CpModel(object):
     return ct
 
   def AddCumulative(self, intervals, demands, capacity):
-    """Adds Cumulative(intervals, demands, capacity)."""
+    """Adds Cumulative(intervals, demands, capacity).
+
+    This constraint enforces that:
+      for all t:
+        sum(demands[i]
+            if (start(intervals[t]) <= t < end(intervals[t])) and
+            (t is present)) <= capacity
+
+    Args:
+      intervals: The list of intervals.
+      demands: The list of demands for each interval. Each demand must be >= 0.
+          Each demand can be an integer value, or an integer variable.
+      capacity: The maximum capacity of the cumulative constraint. It must be a
+                positive integer value or variable.
+
+    Returns:
+      An instance of the Constraint class.
+    """
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.cumulative.intervals.extend(
@@ -1150,7 +1404,18 @@ class CpSolver(object):
     return self.__solution.status
 
   def SearchForAllSolutions(self, model, callback):
-    """Search for all solutions of a satisfiability problem."""
+    """Search for all solutions of a satisfiability problem.
+
+    This method searches for all feasible solution of a given model.
+    Then it feeds the solution to the callback.
+
+    Args:
+      model: The model to solve.
+      callback: The callback that will be called at each solution.
+
+    Returns:
+      The status of the solve (FEASIBLE, INFEASIBLE...).
+    """
     if model.HasObjective():
       raise TypeError('Search for all solutions is only defined on '
                       'satisfiability problems')
@@ -1165,21 +1430,23 @@ class CpSolver(object):
     return self.__solution.status
 
   def Value(self, expression):
-    """Returns the value of an integer expression."""
+    """Returns the value of an integer expression after solve."""
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
     return EvaluateIntegerExpression(expression, self.__solution)
 
   def BooleanValue(self, literal):
+    """Returns the boolean value of an integer expression after solve."""
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
     return EvaluateBooleanExpression(literal, self.__solution)
 
   def ObjectiveValue(self):
-    """Returns the objective value found after solve."""
+    """Returns the value of objective after solve."""
     return self.__solution.objective_value
 
   def StatusName(self, status):
+    """Returns the name of the status returned by Solve()."""
     return cp_model_pb2.CpSolverStatus.Name(status)
 
   def NumBooleans(self):
