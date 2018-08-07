@@ -345,12 +345,10 @@ CBC_INC = /I"$(WINDOWS_CBC_PATH)\\include" /I"$(WINDOWS_CBC_PATH)\\include\\coin
 CBC_SWIG = -I"$(WINDOWS_CBC_DIR)/include" -I"$(WINDOWS_CBC_DIR)/include/coin" -DUSE_CBC
 DYNAMIC_CBC_LNK = \
  "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbcSolver.lib" \
- "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbc.lib" \
- "$(WINDOWS_CBC_PATH)\\lib\\coin\\libOsiCbc.lib"
+ "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbc.lib"
 STATIC_CBC_LNK = \
  "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbcSolver.lib" \
- "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbc.lib" \
- "$(WINDOWS_CBC_PATH)\\lib\\coin\\libOsiCbc.lib"
+ "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbc.lib"
 CBC_LNK = $(STATIC_CBC_LNK)
 
 # Agregate all previous coin packages
