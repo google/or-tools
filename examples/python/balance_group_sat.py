@@ -11,62 +11,152 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# We are trying to group items in equal sized groups.
+# Each item has a color and a value. We want the sum of values of each group to
+# be as close to the average as possible.
+# Furthermore, if one color is an a group, at most k items with this color must
+# be in that group.
+
 from __future__ import print_function
+from __future__ import division
+
 
 from ortools.sat.python import cp_model
 
-num_groups = 11
-num_values = 121
+# Data.
 
+num_groups = 10
+num_items = 100
+num_colors = 3
+min_items_of_same_color_per_group = 4
+
+all_groups = range(num_groups)
+all_items = range(num_items)
+all_colors = range(num_colors)
+
+# Values for each items.
+values = [1 + i + (i * i // 200) for i in all_items]
+# Color for each item (simple modulo).
+colors = [i % num_colors for i in all_items]
+
+sum_of_values = sum(values)
+average_sum_per_group = sum_of_values // num_groups
+
+num_items_per_group = num_items // num_groups
+
+# Collect all items in a given color.
+items_per_color = {}
+for c in all_colors:
+    items_per_color[c] = []
+    for i in all_items:
+        if colors[i] == c:
+            items_per_color[c].append(i)
+
+print('Model has %i items, %i groups, and %i colors' %
+      (num_items, num_groups, num_colors))
+print('  average sum per group = %i' % average_sum_per_group)
+
+# Model.
 
 model = cp_model.CpModel()
 
-boo_x_i_j = {}
-for i in range(num_values):
-    for j in range(num_groups):
-        boo_x_i_j[(i, j)] = model.NewBoolVar('x%d belongs to group %d' % (i, j))
+item_in_group = {}
+for i in all_items:
+    for g in all_groups:
+        item_in_group[(i, g)] = model.NewBoolVar('item %d in group %d' % (i, g))
 
-e = model.NewIntVar(0, 5, 'epsilon')
+e = model.NewIntVar(0, 550, 'epsilon')
 
-values = [i + 1 + 3 * (i > 99) for i in range(num_values)]
-sum_of_values = sum(values)
-average_value = sum_of_values / num_groups
 
-for j in range(num_groups):
-    model.Add(sum(boo_x_i_j[(i, j)]
-                  for i in range(num_values)) == num_values / num_groups)
+# Each group must have the same size.
+for g in all_groups:
+    model.Add(sum(item_in_group[(i, g)]
+                  for i in all_items) == num_items_per_group)
 
-for i in range(num_values):
-    model.Add(sum(boo_x_i_j[(i, j)] for j in range(num_groups)) == 1)
+# One item must belong to exactly one group.
+for i in all_items:
+    model.Add(sum(item_in_group[(i, g)] for g in all_groups) == 1)
 
-for j in range(num_groups):
-    model.Add(sum(boo_x_i_j[(i, j)] * values[i] for i in range(num_values)) -
-              average_value <= e)
-    model.Add(sum(boo_x_i_j[(i, j)] * values[i] for i in range(num_values)) -
-              average_value >= -e)
+# Constrain the sum of values in one group around the average sum per group.
+for g in all_groups:
+    model.Add(sum(item_in_group[(i, g)] * values[i] for i in all_items) <=
+              average_sum_per_group + e)
+    model.Add(sum(item_in_group[(i, g)] * values[i] for i in all_items) >=
+              average_sum_per_group - e)
 
+# color_in_group variables.
+color_in_group = {}
+for g in all_groups:
+    for c in all_colors:
+        color_in_group[(c, g)] = model.NewBoolVar(
+            'color %d is in group %d' % (c, g))
+
+# Item is in a group implies its color is in that group.
+for i in all_items:
+    for g in all_groups:
+        model.AddImplication(item_in_group[(i, g)],
+                             color_in_group[(colors[i], g)])
+
+# If a color is in a group, it must contains at least
+# min_items_of_same_color_per_group items from that color.
+for c in all_colors:
+    for g in all_groups:
+        literal = color_in_group[(c, g)]
+        model.Add(sum(item_in_group[(i, g)] for i in items_per_color[c]) >=
+                  min_items_of_same_color_per_group).OnlyEnforceIf(literal)
+
+# Compute the maximum number of colors in a group.
+max_color = num_items_per_group // min_items_of_same_color_per_group
+# Redundant contraint: The problem does not solve in reasonable time without it.
+if max_color < num_colors:
+    for g in all_groups:
+        model.Add(sum(color_in_group[(c, g)] for c in all_colors) <= max_color)
+
+# Minimize epsilon
 model.Minimize(e)
+
+# Create a solution printer.
+class SolutionPrinter(cp_model.CpSolverSolutionCallback):
+  """Print intermediate solutions."""
+
+  def __init__(self):
+    self.__solution_count = 0
+
+  def NewSolution(self):
+    print('Solution %i' % self.__solution_count)
+    self.__solution_count += 1
+
+    print('  objective value = %i' % self.ObjectiveValue())
+    groups = {}
+    for g in all_groups:
+        groups[g] = []
+        for i in all_items:
+            if self.BooleanValue(item_in_group[(i, g)]):
+                groups[g].append(i)
+
+    for g in all_groups:
+        group = groups[g]
+        print ('group %i: sum = %0.2f [' % (
+            g, sum(values[i] for i in group)), end='')
+        for item in groups[g]:
+            value = values[item]
+            color = colors[item]
+            print(' (%i, %i, %i)' % (item, value, color), end='')
+        print(']')
+
+  def SolutionCount(self):
+    return self.__solution_count
 
 
 solver = cp_model.CpSolver()
-status = solver.Solve(model)
-print('Optimal epsilon: %i' % solver.ObjectiveValue())
-print('Statistics')
-print('  - conflicts : %i' % solver.NumConflicts())
-print('  - branches  : %i' % solver.NumBranches())
-print('  - wall time : %f s' % solver.WallTime())
+solution_printer = SolutionPrinter()
+status = solver.SolveWithSolutionObserver(model, solution_printer)
 
-groups = {}
-for j in range(num_groups):
-    groups[j] = []
-for i in range(num_values):
-    for j in range(num_groups):
-        if solver.Value(boo_x_i_j[(i, j)]):
-            groups[j].append(values[i])
-
-for j in range(num_groups):
-    print ('group %i: average = %0.2f [' % (
-        j, 1.0 * sum(groups[j]) / len(groups[j])), end='')
-    for v in groups[j]:
-        print(' %i' % v, end='')
-    print(' ]')
+if status == cp_model.OPTIMAL:
+    print('Optimal epsilon: %i' % solver.ObjectiveValue())
+    print('Statistics')
+    print('  - conflicts : %i' % solver.NumConflicts())
+    print('  - branches  : %i' % solver.NumBranches())
+    print('  - wall time : %f s' % solver.WallTime())
+else:
+    print('No solution found')
