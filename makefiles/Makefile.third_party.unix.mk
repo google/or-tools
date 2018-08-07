@@ -147,13 +147,9 @@ GFLAGS_SWIG = $(GFLAGS_INC)
 STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
 DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 
-ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-DEPENDENCIES_LNK += $(DYNAMIC_GFLAGS_LNK)
-OR_TOOLS_LNK += $(DYNAMIC_GFLAGS_LNK)
-else
-DEPENDENCIES_LNK += $(DYNAMIC_GFLAGS_LNK)
-OR_TOOLS_LNK += $(DYNAMIC_GFLAGS_LNK)
-endif
+GFLAGS_LNK = $(DYNAMIC_GFLAGS_LNK)
+DEPENDENCIES_LNK += $(GFLAGS_LNK)
+OR_TOOLS_LNK += $(GFLAGS_LNK)
 
 ############
 ##  GLOG  ##
@@ -182,13 +178,9 @@ GLOG_SWIG = $(GLOG_INC)
 STATIC_GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
 DYNAMIC_GLOG_LNK = -L$(UNIX_GLOG_DIR)/lib -lglog
 
-ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-DEPENDENCIES_LNK += $(DYNAMIC_GLOG_LNK)
-OR_TOOLS_LNK += $(DYNAMIC_GLOG_LNK)
-else
-DEPENDENCIES_LNK += $(DYNAMIC_GLOG_LNK)
-OR_TOOLS_LNK += $(DYNAMIC_GLOG_LNK)
-endif
+GLOG_LNK = $(DYNAMIC_GLOG_LNK)
+DEPENDENCIES_LNK += $(GLOG_LNK)
+OR_TOOLS_LNK += $(GLOG_LNK)
 
 ################
 ##  Protobuf  ##
@@ -232,13 +224,10 @@ _PROTOBUF_LIB_DIR = $(dir $(wildcard \
  $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.$L))
 DYNAMIC_PROTOBUF_LNK = -L$(_PROTOBUF_LIB_DIR) -lprotobuf
 
-ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-DEPENDENCIES_LNK += $(DYNAMIC_PROTOBUF_LNK)
-OR_TOOLS_LNK += $(DYNAMIC_PROTOBUF_LNK)
-else
-DEPENDENCIES_LNK += $(DYNAMIC_PROTOBUF_LNK)
-OR_TOOLS_LNK += $(DYNAMIC_PROTOBUF_LNK)
-endif
+PROTOBUF_LNK = $(DYNAMIC_PROTOBUF_LNK)
+DEPENDENCIES_LNK += $(PROTOBUF_LNK)
+OR_TOOLS_LNK += $(PROTOBUF_LNK)
+
 # Define Protoc
 ifeq ($(PLATFORM),LINUX)
  PROTOC = \
@@ -345,6 +334,7 @@ STATIC_CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a \
           $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a \
           $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a
 DYNAMIC_CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lOsiCbc
+CBC_LNK = $(DYNAMIC_CBC_LNK)
 
 ###################
 ##  COIN-OR-CGL  ##
@@ -387,6 +377,7 @@ ifneq ($(wildcard $(UNIX_CGL_DIR)/lib/coin),)
 endif
 STATIC_CGL_LNK = $(UNIX_CGL_DIR)/lib$(UNIX_CGL_COIN)/libCgl.a
 DYNAMIC_CGL_LNK = -L$(UNIX_CGL_DIR)/lib$(UNIX_CGL_COIN) -lCgl
+CGL_LNK = $(DYNAMIC_CGL_LNK)
 
 ###################
 ##  COIN-OR-CLP  ##
@@ -455,6 +446,7 @@ STATIC_CLP_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CLP_COIN)/libClpSolver.a \
           $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a \
           $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a
 DYNAMIC_CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClpSolver -lClp -lOsiClp
+CLP_LNK = $(DYNAMIC_CLP_LNK)
 
 ###################
 ##  COIN-OR-OSI  ##
@@ -506,6 +498,7 @@ ifneq ($(wildcard $(UNIX_OSI_DIR)/lib/coin),)
 endif
 STATIC_OSI_LNK = $(UNIX_OSI_DIR)/lib$(UNIX_OSI_COIN)/libOsi.a
 DYNAMIC_OSI_LNK = -L$(UNIX_OSI_DIR)/lib$(UNIX_OSI_COIN) -lOsi
+OSI_LNK = $(DYNAMIC_OSI_LNK)
 
 #########################
 ##  COIN-OR-COINUTILS  ##
@@ -549,6 +542,7 @@ ifneq ($(wildcard $(UNIX_COINUTILS_DIR)/lib/coin),)
 endif
 STATIC_COINUTILS_LNK = $(UNIX_COINUTILS_DIR)/lib$(UNIX_COINUTILS_COIN)/libCoinUtils.a
 DYNAMIC_COINUTILS_LNK = -L$(UNIX_COINUTILS_DIR)/lib$(UNIX_COINUTILS_COIN) -lCoinUtils
+COINUTILS_LNK = $(DYNAMIC_COINUTILS_LNK)
 
 ############
 ##  COIN  ##
@@ -566,26 +560,15 @@ COIN_SWIG = \
   $(CLP_SWIG) \
   $(CGL_SWIG) \
   $(CBC_SWIG)
-STATIC_COIN_LNK = \
-  $(STATIC_CBC_LNK) \
-  $(STATIC_CGL_LNK) \
-  $(STATIC_CLP_LNK) \
-  $(STATIC_OSI_LNK) \
-  $(STATIC_COINUTILS_LNK)
-DYNAMIC_COIN_LNK = \
-  $(DYNAMIC_CBC_LNK) \
-  $(DYNAMIC_CGL_LNK) \
-  $(DYNAMIC_CLP_LNK) \
-  $(DYNAMIC_OSI_LNK) \
-  $(DYNAMIC_COINUTILS_LNK)
+COIN_LNK = \
+  $(CBC_LNK) \
+  $(CGL_LNK) \
+  $(CLP_LNK) \
+  $(OSI_LNK) \
+  $(COINUTILS_LNK)
 
-ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-DEPENDENCIES_LNK += $(DYNAMIC_COIN_LNK)
-OR_TOOLS_LNK += $(DYNAMIC_COIN_LNK)
-else
-DEPENDENCIES_LNK += $(DYNAMIC_COIN_LNK)
-OR_TOOLS_LNK += $(DYNAMIC_COIN_LNK)
-endif
+DEPENDENCIES_LNK += $(COIN_LNK)
+OR_TOOLS_LNK += $(COIN_LNK)
 
 ############
 ##  SWIG  ##
