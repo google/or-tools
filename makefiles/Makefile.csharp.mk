@@ -749,6 +749,9 @@ examples/csharp/solution/%.csproj: examples/csharp/%.cs tools/template.csproj
 
 ALL_CSPROJ= $(patsubst examples/csharp/%.cs, examples/csharp/solution/%.csproj, $(wildcard examples/csharp/*.cs))
 
+ifeq ($(SYSTEM),win)
+COMMA := ,
+endif
 examples/csharp/Csharp_examples.sln: tools/template.sln $(ALL_CSPROJ)
 	-$(DEL) examples$Scsharp$SCsharp_examples.sln
 	$(COPY) tools$Stemplate.sln examples$Scsharp$SCsharp_examples.sln
