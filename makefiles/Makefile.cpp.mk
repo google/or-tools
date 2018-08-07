@@ -344,7 +344,7 @@ $(OBJ_DIR)/cvrp%.$O: $(EX_DIR)/cpp/cvrp%.cc $(CVRPTW_DEPS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Scvrp$*.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrp$*.$O
 
 $(BIN_DIR)/cvrp%$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrp%.$O | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrp$*.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp$*$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrp$*.$O $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp$*$E
 
 # Generic CPP rules
 $(OBJ_DIR)/%.$O: $(EX_DIR)/cpp/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS)| $(OBJ_DIR)
