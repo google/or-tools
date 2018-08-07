@@ -1268,6 +1268,19 @@ bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
   return false;
 }
 
+bool PresolveNoOverlap(ConstraintProto* ct, PresolveContext* context) {
+  const NoOverlapConstraintProto& proto = ct->no_overlap();
+  if (proto.intervals_size() == 1) {
+    context->UpdateRuleStats("no_overlap: only one interval");
+    return RemoveConstraint(ct, context);
+  }
+  if (proto.intervals().empty()) {
+    context->UpdateRuleStats("no_overlap: no intervals");
+    return RemoveConstraint(ct, context);
+  }
+  return false;
+}
+
 bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
   const CumulativeConstraintProto& proto = ct->cumulative();
@@ -1775,6 +1788,9 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
           break;
         case ConstraintProto::ConstraintCase::kAllDiff:
           changed |= PresolveAllDiff(ct, &context);
+          break;
+        case ConstraintProto::ConstraintCase::kNoOverlap:
+          changed |= PresolveNoOverlap(ct, &context);
           break;
         case ConstraintProto::ConstraintCase::kCumulative:
           changed |= PresolveCumulative(ct, &context);
