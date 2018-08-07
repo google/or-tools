@@ -147,7 +147,7 @@ GFLAGS_SWIG = $(GFLAGS_INC)
 STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
 DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 
-ifeq ($(UNIX_GFLAGS_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 DEPENDENCIES_LNK += $(DYNAMIC_GFLAGS_LNK)
 OR_TOOLS_LNK += $(DYNAMIC_GFLAGS_LNK)
 else
@@ -182,7 +182,7 @@ GLOG_SWIG = $(GLOG_INC)
 STATIC_GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
 DYNAMIC_GLOG_LNK = -L$(UNIX_GLOG_DIR)/lib -lglog
 
-ifeq ($(UNIX_GLOG_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 DEPENDENCIES_LNK += $(DYNAMIC_GLOG_LNK)
 OR_TOOLS_LNK += $(DYNAMIC_GLOG_LNK)
 else
@@ -232,7 +232,7 @@ _PROTOBUF_LIB_DIR = $(dir $(wildcard \
  $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.$L))
 DYNAMIC_PROTOBUF_LNK = -L$(_PROTOBUF_LIB_DIR) -lprotobuf
 
-ifeq ($(UNIX_PROTOBUF_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 DEPENDENCIES_LNK += $(DYNAMIC_PROTOBUF_LNK)
 OR_TOOLS_LNK += $(DYNAMIC_PROTOBUF_LNK)
 else
@@ -579,7 +579,7 @@ DYNAMIC_COIN_LNK = \
   $(DYNAMIC_OSI_LNK) \
   $(DYNAMIC_COINUTILS_LNK)
 
-ifeq ($(UNIX_CBC_DIR), $(OR_TOOLS_TOP)/dependencies/install)
+ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 DEPENDENCIES_LNK += $(DYNAMIC_COIN_LNK)
 OR_TOOLS_LNK += $(DYNAMIC_COIN_LNK)
 else
