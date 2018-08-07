@@ -1437,8 +1437,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 
   int num_constants = 0;
   std::set<int64> constant_values;
-  std::map<std::vector<ClosedInterval>, int,
-           ExactVectorOfDomainComparator> num_vars_per_domains;
+  std::map<std::vector<ClosedInterval>, int, ExactVectorOfDomainComparator>
+      num_vars_per_domains;
   for (const IntegerVariableProto& var : model_proto.variables()) {
     if (var.domain_size() == 2 && var.domain(0) == var.domain(1)) {
       ++num_constants;
@@ -1471,7 +1471,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 
   const std::string objective_string =
       model_proto.has_objective()
-          ? StrCat(" (", model_proto.objective().vars_size(), " in objective)")
+          ? absl::StrCat(" (", model_proto.objective().vars_size(),
+                         " in objective)")
           : "";
   absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
                   objective_string, "\n");
