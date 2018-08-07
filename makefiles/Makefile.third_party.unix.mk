@@ -143,6 +143,7 @@ dependencies/sources/gflags-$(GFLAGS_TAG): | dependencies/sources
 	git clone --quiet -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
 
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
+GFLAGS_SWIG = $(GFLAGS_INC)
 STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
 DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 
@@ -177,6 +178,7 @@ dependencies/sources/glog-$(GLOG_TAG): | dependencies/sources
 	git clone --quiet -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
 
 GLOG_INC = -I$(UNIX_GLOG_DIR)/include
+GLOG_SWIG = $(GLOG_INC)
 STATIC_GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
 DYNAMIC_GLOG_LNK = -L$(UNIX_GLOG_DIR)/lib -lglog
 
@@ -215,6 +217,7 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf.patch | dependen
 
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
+PROTOBUF_SWIG = $(PROTOBUF_INC)
 PROTOBUF_PROTOC_INC = $(PROTOBUF_INC)
 # libprotobuf.a goes in a different subdirectory depending on the distribution
 # and architecture, eg. "lib/" or "lib64/" for Fedora and Centos,
