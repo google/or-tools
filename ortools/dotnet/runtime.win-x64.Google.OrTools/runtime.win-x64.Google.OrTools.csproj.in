@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <AssemblyName>Google.OrTools</AssemblyName>
+
+    <!-- Nuget Properties-->
+    <PackageId>runtime.win-x64.Google.OrTools</PackageId>
+    <Version>@PROJECT_VERSION@</Version>
+    <Authors>Google LLC</Authors>
+    <Description>.NET native wrapper for the Operations Research Tools project</Description>
+    <Copyright>Copyright 2018 Google LLC</Copyright>
+    <PackageLicenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</PackageLicenseUrl>
+    <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
+    <PackageTags>native;math;LinearSolver;ConstraintSolver;ConstraintProgramming</PackageTags>
+    <PackageOutputPath>../../../packages</PackageOutputPath>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+    <UseSharedCompilation>false</UseSharedCompilation>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <BuildOutputTargetFolder>runtimes/$(RuntimeIdentifier)/lib</BuildOutputTargetFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../gen/ortools/algorithms/*.cs">
+      <Link>algorithms/%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="../../algorithms/csharp/*.cs">
+      <Link>algorithms/%(Filename)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="../../gen/ortools/graph/*.cs">
+      <Link>graph/%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="../../graph/csharp/*.cs">
+      <Link>graph/%(Filename)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="../../gen/ortools/linear_solver/*.cs">
+      <Link>linear_solver/%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="../../linear_solver/csharp/*.cs">
+      <Link>linear_solver/%(Filename)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="../../gen/ortools/constraint_solver/*.cs">
+      <Link>constraint_solver/%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="../../constraint_solver/csharp/*.cs">
+      <Link>constraint_solver/%(Filename)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="../../gen/ortools/sat/*.cs">
+      <Link>sat/%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="../../sat/csharp/*.cs">
+      <Link>sat/%(Filename)%(Extension)</Link>
+    </Compile>
+
+    <Compile Include="../../util/csharp/*.cs">
+      <Link>util/%(Filename)%(Extension)</Link>
+    </Compile>
+
+    <!-- Native library must be in native directory... -->
+    <!-- On windows libortools is built as static -->
+    <Content Include="../../../lib/runtime.win-x64.Google.OrTools.dll">
+      <PackagePath>runtimes/win-x64/native/%(Filename)%(Extension)</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.5.1" />
+  </ItemGroup>
+</Project>

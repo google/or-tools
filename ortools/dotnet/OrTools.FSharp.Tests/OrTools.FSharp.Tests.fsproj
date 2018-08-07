@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+		<IsPackable>false</IsPackable>
     <AssemblyName>Google.OrTools.FSharp.Tests</AssemblyName>
     <RootNamespace>Google.OrTools.FSharp.Tests</RootNamespace>
   </PropertyGroup>

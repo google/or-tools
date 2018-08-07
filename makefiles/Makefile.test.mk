@@ -254,12 +254,10 @@ test_java_examples: java
 	$(MAKE) rjava_YoungTableaux
 
 .PHONY: test_donet_examples
-test_dotnet_examples: dotnet
-# C# tests
-	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle$D
-	"$(DOTNET_BIN)" $(BIN_DIR)$Stsp$D
-# F# tests
-	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram$D
+test_dotnet_examples: dotnet \
+rdotnet_a_puzzle \
+rdotnet_tsp \
+#rdotnet_Program
 
 # csharp test
 .PHONY: test_csharp_examples

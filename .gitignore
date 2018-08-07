@@ -97,7 +97,8 @@ ortools/fsharp/**/packages
 examples/dotnet/**/bin
 examples/dotnet/**/obj
 
-ortools/dotnet/OrTools/*.csproj
+ortools/dotnet/*/*.csproj
+ortools/dotnet/*/runtime.json
 ortools/dotnet/OrTools.FSharp/*.fsproj
 ortools/dotnet/*.nuspec
 ortools/dotnet/**/bin
