@@ -409,13 +409,14 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) dependencies\archives\v*.zip
 	-$(DEL) dependencies\archives\win_flex_bison*.zip
 	-$(DELREC) dependencies\archives
-	-$(DELREC) dependencies\sources\Cbc-*
-	-$(DELREC) dependencies\sources\gflags*
-	-$(DELREC) dependencies\sources\glpk*
-	-$(DELREC) dependencies\sources\google*
-	-$(DELREC) dependencies\sources\protobuf*
-	-$(DELREC) dependencies\sources\sparsehash*
 	-$(DELREC) dependencies\sources\zlib*
+	-$(DELREC) dependencies\sources\gflags*
+	-$(DELREC) dependencies\sources\glog*
+	-$(DELREC) dependencies\sources\protobuf*
+	-$(DELREC) dependencies\sources\Cbc-*
+	-$(DELREC) dependencies\sources\google*
+	-$(DELREC) dependencies\sources\glpk*
+	-$(DELREC) dependencies\sources\sparsehash*
 	-$(DELREC) dependencies\install
 
 # Create Makefile.local
