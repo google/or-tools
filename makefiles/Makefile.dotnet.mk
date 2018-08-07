@@ -418,6 +418,9 @@ clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_FSHARP_TEST_DLL_NAME)$Sobj
 	-$(DELREC) ortools$Sdotnet$Spackages
+	-$(DELREC) $(EX_PATH)$Sdotnet$Scsharp$Sbin
+	-$(DELREC) $(EX_PATH)$Sdotnet$Scsharp$Sobj
+	-$(DELREC) $(EX_PATH)$Sdotnet$Sfsharp$Sobj
 	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.cs
 	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*csharp_wrap*
 	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.cs

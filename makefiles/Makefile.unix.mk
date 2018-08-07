@@ -5,6 +5,7 @@
 LIB_PREFIX = lib
 SRC_DIR = $(OR_ROOT).
 EX_DIR  = $(OR_ROOT)examples
+EX_PATH = $(subst /,$S,$(EX_DIR))
 GEN_DIR = $(OR_ROOT)ortools/gen
 GEN_PATH = $(subst /,$S,$(GEN_DIR))
 JAVA_EX_DIR  = $(OR_ROOT)examples/java
