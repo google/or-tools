@@ -14,15 +14,20 @@
 package com.google.ortools.sat;
 
 import com.google.ortools.sat.AllDifferentConstraintProto;
+import com.google.ortools.sat.AutomataConstraintProto;
 import com.google.ortools.sat.BoolArgumentProto;
+import com.google.ortools.sat.CircuitConstraintProto;
 import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.CpObjectiveProto;
 import com.google.ortools.sat.CumulativeConstraintProto;
+import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.IntegerVariableProto;
+import com.google.ortools.sat.InverseConstraintProto;
 import com.google.ortools.sat.LinearConstraintProto;
 import com.google.ortools.sat.NoOverlap2DConstraintProto;
 import com.google.ortools.sat.NoOverlapConstraintProto;
+import com.google.ortools.sat.TableConstraintProto;
 
 /**
  * Main modeling class.
@@ -30,6 +35,26 @@ import com.google.ortools.sat.NoOverlapConstraintProto;
  * <p>It proposes a factory to create all modeling objects understood by the SAT solver.
  */
 public class CpModel {
+
+  static class CpModelException extends Exception {
+    public CpModelException(String methodName, String msg) {
+      // Call constructor of parent Exception
+      super("CpModel." + methodName + ": " + msg);
+    }
+  }
+
+  static class MismatchedArrayLengths extends CpModelException {
+    public MismatchedArrayLengths(String methodName, String array1Name, String array2Name) {
+      super(methodName, array1Name + " and " + array2Name + " have mismatched lengths");
+    }
+  }
+
+  static class WrongLength extends CpModelException {
+    public WrongLength(String methodName, String msg) {
+      super(methodName, msg);
+    }
+  }
+
   public CpModel() {
     builder_ = CpModelProto.newBuilder();
   }
@@ -109,14 +134,14 @@ public class CpModel {
     return ct;
   }
 
-  /** Adds a => b. */
+  /** Adds a =&gt; b. */
   public Constraint addImplication(ILiteral a, ILiteral b) {
     return addBoolOr(new ILiteral[] {a.not(), b});
   }
 
   // Linear constraints.
 
-  /** Adds lb <= sum(vars) <= ub. */
+  /** Adds lb &lt;= sum(vars) &lt;= ub. */
   public Constraint addLinearSum(IntVar[] vars, long lb, long ub) {
     Constraint ct = new Constraint(builder_);
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
@@ -173,7 +198,7 @@ public class CpModel {
     return addScalProd(newVars, coeffs, 0, 0);
   }
 
-  /** Adds lb <= sum(vars[i] * coeffs[i]) <= ub. */
+  /** Adds lb &lt;= sum(vars[i] * coeffs[i]) &lt;= ub. */
   public Constraint addScalProd(IntVar[] vars, long[] coeffs, long lb, long ub) {
     Constraint ct = new Constraint(builder_);
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
@@ -188,7 +213,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Adds lb <= sum(vars[i] * coeffs[i]) <= ub. */
+  /** Adds lb &lt;= sum(vars[i] * coeffs[i]) &lt;= ub. */
   public Constraint addScalProd(IntVar[] vars, int[] coeffs, long lb, long ub) {
     return addScalProd(vars, toLongArray(coeffs), lb, ub);
   }
@@ -241,7 +266,7 @@ public class CpModel {
     return addScalProdEqual(vars, toLongArray(coeffs), target);
   }
 
-  /** Adds var <= value. */
+  /** Adds var &lt;= value. */
   public Constraint addLessOrEqual(IntVar var, long value) {
     Constraint ct = new Constraint(builder_);
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
@@ -252,7 +277,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Adds var >= value. */
+  /** Adds var &gt;= value. */
   public Constraint addGreaterOrEqual(IntVar var, long value) {
     Constraint ct = new Constraint(builder_);
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
@@ -298,10 +323,14 @@ public class CpModel {
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
     lin.addVars(var.getIndex());
     lin.addCoeffs(1);
-    lin.addDomain(java.lang.Long.MIN_VALUE);
-    lin.addDomain(value - 1);
-    lin.addDomain(value + 1);
-    lin.addDomain(java.lang.Long.MAX_VALUE);
+    if (value > java.lang.Long.MIN_VALUE) {
+      lin.addDomain(java.lang.Long.MIN_VALUE);
+      lin.addDomain(value - 1);
+    }
+    if (value < java.lang.Long.MAX_VALUE) {
+      lin.addDomain(value + 1);
+      lin.addDomain(java.lang.Long.MAX_VALUE);
+    }
     return ct;
   }
 
@@ -318,14 +347,18 @@ public class CpModel {
     lin.addCoeffs(-1);
     lin.addVars(b.getIndex());
     lin.addCoeffs(1);
-    lin.addDomain(java.lang.Long.MIN_VALUE);
-    lin.addDomain(offset - 1);
-    lin.addDomain(offset + 1);
-    lin.addDomain(java.lang.Long.MAX_VALUE);
+    if (offset > java.lang.Long.MIN_VALUE) {
+      lin.addDomain(java.lang.Long.MIN_VALUE);
+      lin.addDomain(offset - 1);
+    }
+    if (offset < java.lang.Long.MAX_VALUE) {
+      lin.addDomain(offset + 1);
+      lin.addDomain(java.lang.Long.MAX_VALUE);
+    }
     return ct;
   }
 
-  /** before + offset <= after. */
+  /** before + offset &lt;= after. */
   public Constraint addLessOrEqualWithOffset(IntVar before, IntVar after, long offset) {
     Constraint ct = new Constraint(builder_);
     LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
@@ -338,7 +371,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Adds before <= after. */
+  /** Adds before &lt;= after. */
   public Constraint addLessOrEqual(IntVar before, IntVar after) {
     return addLessOrEqualWithOffset(before, after, 0);
   }
@@ -353,23 +386,272 @@ public class CpModel {
    * @param variables a list of integer variables.
    * @return an instance of the Constraint class.
    */
-  public Constraint addAllDifferent(IntVar[] vars) {
+  public Constraint addAllDifferent(IntVar[] variables) {
     Constraint ct = new Constraint(builder_);
     AllDifferentConstraintProto.Builder allDiff = ct.builder().getAllDiffBuilder();
-    for (IntVar var : vars) {
+    for (IntVar var : variables) {
       allDiff.addVars(var.getIndex());
     }
     return ct;
   }
 
-  // addElement + variations
-  // addCircuit
-  // addAllowedAssignments
-  // addForbiddenAssignments
-  // addAutomata
-  // addInverse
+  /** Adds the element constraint: variables[index] == target. */
+  public Constraint addElement(IntVar index, IntVar[] variables, IntVar target) {
+    Constraint ct = new Constraint(builder_);
+    ElementConstraintProto.Builder element = ct.builder().getElementBuilder();
+    element.setIndex(index.getIndex());
+    for (IntVar var : variables) {
+      element.addVars(var.getIndex());
+    }
+    element.setTarget(target.getIndex());
+    return ct;
+  }
+
+  /** Adds the element constraint: values[index] == target. */
+  public Constraint addElement(IntVar index, long[] values, IntVar target) {
+    Constraint ct = new Constraint(builder_);
+    ElementConstraintProto.Builder element = ct.builder().getElementBuilder();
+    element.setIndex(index.getIndex());
+    for (long v : values) {
+      element.addVars(indexFromConstant(v));
+    }
+    element.setTarget(target.getIndex());
+    return ct;
+  }
+
+  /** Adds the element constraint: values[index] == target. */
+  public Constraint addElement(IntVar index, int[] values, IntVar target) {
+    Constraint ct = new Constraint(builder_);
+    ElementConstraintProto.Builder element = ct.builder().getElementBuilder();
+    element.setIndex(index.getIndex());
+    for (long v : values) {
+      element.addVars(indexFromConstant(v));
+    }
+    element.setTarget(target.getIndex());
+    return ct;
+  }
+
+  /**
+   * Adds Circuit(tails, heads, literals).
+   *
+   * <p>Adds a circuit constraints from a sparse list of arcs that encode the graph.
+   *
+   * <p>A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node 'i'
+   * is not in the path, then there must be a loop arc 'i -&gt; i' associated with a true literal.
+   * Otherwise this constraint will fail.
+   *
+   * @param tails the tails of all arcs.
+   * @param heads the heads of all arcs.
+   * @param literals the literals that control whether an arc is selected or not.
+   * @return an instance of the Constraint class.
+   * @throws MismatchedArrayLengths if the arrays have different sizes.
+   */
+  public Constraint addCircuit(int[] tails, int[] heads, ILiteral[] literals)
+      throws MismatchedArrayLengths {
+    if (tails.length != heads.length) {
+      throw new MismatchedArrayLengths("addCircuit", "tails", "heads");
+    }
+    if (tails.length != literals.length) {
+      throw new MismatchedArrayLengths("addCircuit", "tails", "literals");
+    }
+
+    Constraint ct = new Constraint(builder_);
+    CircuitConstraintProto.Builder circuit = ct.builder().getCircuitBuilder();
+    for (int t : tails) {
+      circuit.addTails(t);
+    }
+    for (int h : heads) {
+      circuit.addHeads(h);
+    }
+    for (ILiteral lit : literals) {
+      circuit.addLiterals(lit.getIndex());
+    }
+    return ct;
+  }
+
+  /**
+   * Adds AllowedAssignments(variables, tuples_list).
+   *
+   * <p>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
+   * all variables are fixed to a single value, that the corresponding list of values is equal to
+   * one of the tuple of the tuple_list.
+   *
+   * @param variables a list of variables.
+   * @param tuplesList a list of admissible tuples. Each tuple must have the same length as the
+   *     variables, and the ith value of a tuple corresponds to the ith variable.
+   * @return an instance of the Constraint class.
+   * @throws WrongLength if one tuple does not have the same length as the variables.
+   */
+  public Constraint addAllowedAssignments(IntVar[] variables, long[][] tuplesList)
+      throws WrongLength {
+    Constraint ct = new Constraint(builder_);
+    TableConstraintProto.Builder table = ct.builder().getTableBuilder();
+    for (IntVar var : variables) {
+      table.addVars(var.getIndex());
+    }
+    int numVars = variables.length;
+    for (int t = 0; t < tuplesList.length; ++t) {
+      if (tuplesList[t].length != numVars) {
+        throw new WrongLength(
+            "addAllowedAssignments",
+            "tuple " + t + " does not have the same length as the variables");
+      }
+      for (int i = 0; i < tuplesList[t].length; ++i) {
+        table.addValues(tuplesList[t][i]);
+      }
+    }
+    return ct;
+  }
+
+  /**
+   * Adds AllowedAssignments(variables, tuples_list).
+   *
+   * @see #addAllowedAssignments(IntVar[], long[][]) addAllowedAssignments
+   */
+  public Constraint addAllowedAssignments(IntVar[] variables, int[][] tuplesList)
+      throws WrongLength {
+    Constraint ct = new Constraint(builder_);
+    TableConstraintProto.Builder table = ct.builder().getTableBuilder();
+    for (IntVar var : variables) {
+      table.addVars(var.getIndex());
+    }
+    int numVars = variables.length;
+    for (int t = 0; t < tuplesList.length; ++t) {
+      if (tuplesList[t].length != numVars) {
+        throw new WrongLength(
+            "addAllowedAssignments",
+            "tuple " + t + " does not have the same length as the variables");
+      }
+      for (int i = 0; i < tuplesList[t].length; ++i) {
+        table.addValues(tuplesList[t][i]);
+      }
+    }
+    return ct;
+  }
+
+  /**
+   * Adds ForbiddenAssignments(variables, tuples_list).
+   *
+   * <p>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
+   * impossible combinations is provided in the tuples list.
+   *
+   * @param variables a list of variables.
+   * @param tuplesList a list of forbidden tuples. Each tuple must have the same length as the
+   *     variables, and the ith value of a tuple corresponds to the ith variable.
+   * @return an instance of the Constraint class.
+   * @throws WrongLength if one tuple does not have the same length as the variables.
+   */
+  public Constraint addForbiddenAssignments(IntVar[] variables, long[][] tuplesList)
+      throws WrongLength {
+    Constraint ct = addAllowedAssignments(variables, tuplesList);
+    // Reverse the flag.
+    ct.builder().getTableBuilder().setNegated(true);
+    return ct;
+  }
+
+  /**
+   * Adds ForbiddenAssignments(variables, tuples_list).
+   *
+   * @see #addForbiddenAssignments(IntVar[], long[][]) addForbiddenAssignments
+   */
+  public Constraint addForbiddenAssignments(IntVar[] variables, int[][] tuplesList)
+      throws WrongLength {
+    Constraint ct = addAllowedAssignments(variables, tuplesList);
+    // Reverse the flag.
+    ct.builder().getTableBuilder().setNegated(true);
+    return ct;
+  }
+
+  /**
+   * Adds an automaton constraint.
+   *
+   * <p>An automaton constraint takes a list of variables (of size n), an initial state, a set of
+   * final states, and a set of transitions. A transition is a triplet ('tail', 'transition',
+   * 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an arc from
+   * 'head' to 'tail', corresponding to the value of one variable in the list of variables.
+   *
+   * <p>This automata will be unrolled into a flow with n + 1 phases. Each phase contains the
+   * possible states of the automaton. The first state contains the initial state. The last phase
+   * contains the final states.
+   *
+   * <p>Between two consecutive phases i and i + 1, the automaton creates a set of arcs. For each
+   * transition (tail, label, head), it will add an arc from the state 'tail' of phase i and the
+   * state 'head' of phase i + 1. This arc labeled by the value 'label' of the variables
+   * 'variables[i]'. That is, this arc can only be selected if 'variables[i]' is assigned the value
+   * 'label'.
+   *
+   * <p>A feasible solution of this constraint is an assignment of variables such that, starting
+   * from the initial state in phase 0, there is a path labeled by the values of the variables that
+   * ends in one of the final states in the final phase.
+   *
+   * @param transitionVariables a non empty list of variables whose values correspond to the labels
+   *     of the arcs traversed by the automata.
+   * @param startingState the initial state of the automata.
+   * @param finalStates a non empty list of admissible final states.
+   * @param transitions a list of transition for the automata, in the following format
+   *     (current_state, variable_value, next_state).
+   * @return an instance of the Constraint class.
+   * @throws WrongLength if one transition does not have a length of 3.
+   */
+  public Constraint addAutomaton(
+      IntVar[] transitionVariables, long startingState, long[] finalStates, long[][] transitions)
+      throws WrongLength {
+    Constraint ct = new Constraint(builder_);
+    AutomataConstraintProto.Builder automaton = ct.builder().getAutomataBuilder();
+    for (IntVar var : transitionVariables) {
+      automaton.addVars(var.getIndex());
+    }
+    automaton.setStartingState(startingState);
+    for (long c : finalStates) {
+      automaton.addFinalStates(c);
+    }
+    for (long[] t : transitions) {
+      if (t.length != 3) {
+        throw new WrongLength("addAutomaton", "transition does not have length 3");
+      }
+      automaton.addTransitionTail(t[0]);
+      automaton.addTransitionLabel(t[1]);
+      automaton.addTransitionHead(t[2]);
+    }
+    return ct;
+  }
+
+  /**
+   * Adds Inverse(variables, inverse_variables).
+   *
+   * <p>An inverse constraint enforces that if 'variables[i]' is assigned a value 'j', then
+   * inverse_variables[j] is assigned a value 'i'. And vice versa.
+   *
+   * @param variables an array of integer variables.
+   * @param inverseVariables an array of integer variables.
+   * @return an instance of the Constraint class.
+   * @throws MismatchedArrayLengths if variables and inverse_variables have different length
+   */
+  public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables)
+      throws MismatchedArrayLengths {
+    if (variables.length != inverseVariables.length) {
+      throw new MismatchedArrayLengths("addCircuit", "tails", "heads");
+    }
+    Constraint ct = new Constraint(builder_);
+    InverseConstraintProto.Builder inverse = ct.builder().getInverseBuilder();
+    for (IntVar var : variables) {
+      inverse.addFDirect(var.getIndex());
+    }
+    for (IntVar var : inverseVariables) {
+      inverse.addFInverse(var.getIndex());
+    }
+    return ct;
+  }
+
   // addReservoirConstraint
-  // addMapDomain
+
+  /** Adds var == i + offset &lt;=&gt; booleans[i] == true for all i in [0, booleans.length). */
+  public void addMapDomain(IntVar var, ILiteral[] booleans, long offset) {
+    for (int i = 0; i < booleans.length; ++i) {
+      addEquality(var, offset + i).onlyEnforceIf(booleans[i]);
+      addDifferent(var, offset + i).onlyEnforceIf(booleans[i].not());
+    }
+  }
 
   /** Adds target == Min(vars). */
   public Constraint addMinEquality(IntVar target, IntVar[] vars) {
@@ -403,7 +685,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Adds target == var / mod. */
+  /** Adds target == var % mod. */
   public Constraint addModuloEquality(IntVar target, IntVar var, IntVar mod) {
     Constraint ct = new Constraint(builder_);
     IntegerArgumentProto.Builder intMod = ct.builder().getIntModBuilder();
@@ -413,7 +695,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Adds target == var / mod. */
+  /** Adds target == var % mod. */
   public Constraint addModuloEquality(IntVar target, IntVar var, long mod) {
     Constraint ct = new Constraint(builder_);
     IntegerArgumentProto.Builder intMod = ct.builder().getIntModBuilder();
@@ -450,47 +732,47 @@ public class CpModel {
    * @param name the name of the interval variable.
    * @return An IntervalVar object.
    */
-  public IntervalVar newIntervalVar(IntVar start, IntVar duration, IntVar end, String name) {
-    return new IntervalVar(builder_, start.getIndex(), duration.getIndex(), end.getIndex(), name);
+  public IntervalVar newIntervalVar(IntVar start, IntVar size, IntVar end, String name) {
+    return new IntervalVar(builder_, start.getIndex(), size.getIndex(), end.getIndex(), name);
   }
 
   /**
    * Creates an interval variables with a fixed end.
    *
-   * @see CpModel#newIntervalVar(IntVar, IntVar, IntVar, String)
+   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
    */
-  public IntervalVar newIntervalVar(IntVar start, IntVar duration, long end, String name) {
+  public IntervalVar newIntervalVar(IntVar start, IntVar size, long end, String name) {
     return new IntervalVar(
-        builder_, start.getIndex(), duration.getIndex(), indexFromConstant(end), name);
+        builder_, start.getIndex(), size.getIndex(), indexFromConstant(end), name);
   }
 
   /**
-   * Creates an interval variables with a fixed duration.
+   * Creates an interval variables with a fixed size.
    *
-   * @see CpModel#newIntervalVar(IntVar, IntVar, IntVar, String)
+   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
    */
-  public IntervalVar newIntervalVar(IntVar start, long duration, IntVar end, String name) {
+  public IntervalVar newIntervalVar(IntVar start, long size, IntVar end, String name) {
     return new IntervalVar(
-        builder_, start.getIndex(), indexFromConstant(duration), end.getIndex(), name);
+        builder_, start.getIndex(), indexFromConstant(size), end.getIndex(), name);
   }
 
   /**
    * Creates an interval variables with a fixed start.
    *
-   * @see CpModel#newIntervalVar(IntVar, IntVar, IntVar, String)
+   * @see #newIntervalVar(IntVar, IntVar, IntVar, String) newIntervalVar
    */
-  public IntervalVar newIntervalVar(long start, IntVar duration, IntVar end, String name) {
+  public IntervalVar newIntervalVar(long start, IntVar size, IntVar end, String name) {
     return new IntervalVar(
-        builder_, indexFromConstant(start), duration.getIndex(), end.getIndex(), name);
+        builder_, indexFromConstant(start), size.getIndex(), end.getIndex(), name);
   }
 
-  /** Creates a fixed interval from its start and its duration. */
-  public IntervalVar newFixedInterval(long start, long duration, String name) {
+  /** Creates a fixed interval from its start and its size. */
+  public IntervalVar newFixedInterval(long start, long size, String name) {
     return new IntervalVar(
         builder_,
         indexFromConstant(start),
-        indexFromConstant(duration),
-        indexFromConstant(start + duration),
+        indexFromConstant(size),
+        indexFromConstant(start + size),
         name);
   }
 
@@ -506,74 +788,74 @@ public class CpModel {
    * @param start the start of the interval. It can be an integer value, or an integer variable.
    * @param size the size of the interval. It can be an integer value, or an integer variable.
    * @param end the end of the interval. It can be an integer value, or an integer variable.
-   * @param is_present a literal that indicates if the interval is active or not. A inactive
-   *     interval is simply ignored by all constraints.
+   * @param isPresent a literal that indicates if the interval is active or not. A inactive interval
+   *     is simply ignored by all constraints.
    * @param name The name of the interval variable.
    * @return an IntervalVar object.
    */
   public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar duration, IntVar end, ILiteral presence, String name) {
+      IntVar start, IntVar size, IntVar end, ILiteral isPresent, String name) {
     return new IntervalVar(
-        builder_, start.getIndex(), duration.getIndex(), end.getIndex(), presence.getIndex(), name);
+        builder_, start.getIndex(), size.getIndex(), end.getIndex(), isPresent.getIndex(), name);
   }
 
   /**
    * Creates an optional interval with a fixed end.
    *
-   * @see CpModel#newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String)
+   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String) newOptionalIntervalVar
    */
   public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar duration, long end, ILiteral presence, String name) {
+      IntVar start, IntVar size, long end, ILiteral isPresent, String name) {
     return new IntervalVar(
         builder_,
         start.getIndex(),
-        duration.getIndex(),
+        size.getIndex(),
         indexFromConstant(end),
-        presence.getIndex(),
+        isPresent.getIndex(),
         name);
   }
 
   /**
-   * Creates an optional interval with a fixed duration.
+   * Creates an optional interval with a fixed size.
    *
-   * @see CpModel#newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String)
+   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String) newOptionalIntervalVar
    */
   public IntervalVar newOptionalIntervalVar(
-      IntVar start, long duration, IntVar end, ILiteral presence, String name) {
+      IntVar start, long size, IntVar end, ILiteral isPresent, String name) {
     return new IntervalVar(
         builder_,
         start.getIndex(),
-        indexFromConstant(duration),
+        indexFromConstant(size),
         end.getIndex(),
-        presence.getIndex(),
+        isPresent.getIndex(),
         name);
   }
 
   /** Creates an optional interval with a fixed start. */
   public IntervalVar newOptionalIntervalVar(
-      long start, IntVar duration, IntVar end, ILiteral presence, String name) {
+      long start, IntVar size, IntVar end, ILiteral isPresent, String name) {
     return new IntervalVar(
         builder_,
         indexFromConstant(start),
-        duration.getIndex(),
+        size.getIndex(),
         end.getIndex(),
-        presence.getIndex(),
+        isPresent.getIndex(),
         name);
   }
 
   /**
-   * Creates an optional fixed interval from start and duration.
+   * Creates an optional fixed interval from start and size.
    *
-   * @see CpModel#newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String)
+   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String) newOptionalIntervalVar
    */
   public IntervalVar newOptionalFixedInterval(
-      long start, long duration, ILiteral presence, String name) {
+      long start, long size, ILiteral isPresent, String name) {
     return new IntervalVar(
         builder_,
         indexFromConstant(start),
-        indexFromConstant(duration),
-        indexFromConstant(start + duration),
-        presence.getIndex(),
+        indexFromConstant(size),
+        indexFromConstant(start + size),
+        isPresent.getIndex(),
         name);
   }
 
@@ -620,8 +902,8 @@ public class CpModel {
   /**
    * Adds Cumulative(intervals, demands, capacity).
    *
-   * <p>This constraint enforces that: for all t: sum(demands[i] if (start(intervals[t]) <= t <
-   * end(intervals[t])) and (t is present)) <= capacity
+   * <p>This constraint enforces that: for all t: sum(demands[i] if (start(intervals[t]) &lt;= t
+   * &lt; end(intervals[t])) and (t is present)) &lt;= capacity
    *
    * @param intervals the list of intervals.
    * @param demands the list of demands for each interval. Each demand must be a positive integer
@@ -646,7 +928,7 @@ public class CpModel {
   /**
    * Adds Cumulative(intervals, demands, capacity). with fixed demands.
    *
-   * @see CpModel.AddCumulative(IntervalVar[], IntVar[], IntVar).
+   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
   public Constraint addCumulative(IntervalVar[] intervals, long[] demands, IntVar capacity) {
     Constraint ct = new Constraint(builder_);
@@ -664,7 +946,7 @@ public class CpModel {
   /**
    * Adds Cumulative(intervals, demands, capacity). with fixed demands.
    *
-   * @see CpModel.AddCumulative(IntervalVar[], IntVar[], IntVar).
+   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
   public Constraint addCumulative(IntervalVar[] intervals, int[] demands, IntVar capacity) {
     return addCumulative(intervals, toLongArray(demands), capacity);
@@ -673,7 +955,7 @@ public class CpModel {
   /**
    * Adds Cumulative(intervals, demands, capacity). with fixed capacity.
    *
-   * @see CpModel.AddCumulative(IntervalVar[], IntVar[], IntVar).
+   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
   public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, long capacity) {
     Constraint ct = new Constraint(builder_);
@@ -691,7 +973,7 @@ public class CpModel {
   /**
    * Adds Cumulative(intervals, demands, capacity). with fixed demands and fixed capacity.
    *
-   * @see CpModel.AddCumulative(IntervalVar[], IntVar[], IntVar).
+   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
   public Constraint addCumulative(IntervalVar[] intervals, long[] demands, long capacity) {
     Constraint ct = new Constraint(builder_);
@@ -709,13 +991,11 @@ public class CpModel {
   /**
    * Adds Cumulative(intervals, demands, capacity). with fixed demands and fixed capacity.
    *
-   * @see CpModel.AddCumulative(IntervalVar[], IntVar[], IntVar).
+   * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
   public Constraint addCumulative(IntervalVar[] intervals, int[] demands, long capacity) {
     return addCumulative(intervals, toLongArray(demands), capacity);
   }
-
-  // AddsReservoir
 
   // Objective.
 

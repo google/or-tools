@@ -749,7 +749,7 @@ class CpModel(object):
       transition_variables: A non empty list of variables whose values
         correspond to the labels of the arcs traversed by the automata.
       starting_state: The initial state of the automata.
-      final_states: a non empty list of admissible final states.
+      final_states: A non empty list of admissible final states.
       transition_triples: A list of transition for the automata, in the
         following format (current_state, variable_value, next_state).
 
@@ -797,8 +797,8 @@ class CpModel(object):
     'j', then inverse_variables[j] is assigned a value 'i'. And vice versa.
 
     Args:
-      variables: an array of integer variables.
-      inverse_variables: an array of integer variables.
+      variables: An array of integer variables.
+      inverse_variables: An array of integer variables.
 
     Returns:
       An instance of the Constraint class.
@@ -915,7 +915,7 @@ class CpModel(object):
     return ct
 
   def AddMapDomain(self, var, bool_var_array, offset=0):
-    """Creates var == i + offset <=> bool_var_array[i] == true for all i."""
+    """Adds var == i + offset <=> bool_var_array[i] == true for all i."""
 
     for i, bool_var in enumerate(bool_var_array):
       b_index = bool_var.Index()

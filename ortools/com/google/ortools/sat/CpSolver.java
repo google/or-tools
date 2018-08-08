@@ -35,7 +35,7 @@ public class CpSolver {
   }
 
   /** Solves a problem and pass each solution found to the callback. */
-  public CpSolverStatus solveWithSolutionCallback(CpModel model, SolutionCallback cb) {
+  public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
     response_ =
         SatHelper.solveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
     return response_.getStatus();
@@ -46,9 +46,9 @@ public class CpSolver {
    * This method searches for all feasible solution of a given model.
    * Then it feeds the solution to the callback.
    * @param model the model to solve.
-   * @param callback the callback that will be called at each solution.
+   * @param cb the callback that will be called at each solution.
    * @return the status of the solve (FEASIBLE, INFEASIBLE...). */
-  public CpSolverStatus searchAllSolutions(CpModel model, SolutionCallback cb) {
+  public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
     parameters_.setEnumerateAllSolutions(true);
     response_ =
         SatHelper.solveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
