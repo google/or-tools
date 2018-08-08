@@ -18,7 +18,7 @@ import com.google.ortools.sat.IntegerVariableProto;
 
 /** An integer variable. */
 public class IntVar implements ILiteral {
-  public IntVar(CpModelProto.Builder builder, long lb, long ub, String name) {
+  IntVar(CpModelProto.Builder builder, long lb, long ub, String name) {
     this.builder_ = builder;
     this.index_ = builder_.getVariablesCount();
     this.var_ = builder_.addVariablesBuilder();
@@ -28,7 +28,7 @@ public class IntVar implements ILiteral {
     this.negation_ = null;
   }
 
-  public IntVar(CpModelProto.Builder builder, long[] bounds, String name) {
+  IntVar(CpModelProto.Builder builder, long[] bounds, String name) {
     this.builder_ = builder;
     this.index_ = builder_.getVariablesCount();
     this.var_ = builder_.addVariablesBuilder();
@@ -44,14 +44,17 @@ public class IntVar implements ILiteral {
     return var_.toString();
   }
 
+  /** Internal, return the index of the variable in the underlying CpModelProto. */
   public int getIndex() {
     return index_;
   }
 
+  /** Returns the name of the variable given upon creation. */
   public String getName() {
     return var_.getName();
   }
 
+  // Returns a short string describing the variable.
   public String shortString() {
     if (var_.getName().isEmpty()) {
       return toString();
@@ -60,6 +63,7 @@ public class IntVar implements ILiteral {
     }
   }
 
+  /** Returns the negation of a boolean variable. */
   public ILiteral not() {
     if (negation_ == null) {
       negation_ = new NotBooleanVariable(this);

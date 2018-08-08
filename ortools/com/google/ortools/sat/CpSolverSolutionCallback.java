@@ -13,14 +13,33 @@
 
 package com.google.ortools.sat;
 
-/** Parent class to create a callback called at each solution. */
+/** Parent class to create a callback called at each solution.
+ *
+ * From the parent class, it inherits the methods:
+ * long numBooleans() to query the number of boolean variables created.
+ * long numBranches() to query the number of branches explored so far.
+ * long numConflicts() to query the number of conflicts created so far.
+ * long numBinaryPropagations() to query the number of boolean propagations in the SAT solver so
+ *     far.
+ * long numIntegerPropagations() to query the number of integer propagations in the SAT solver so
+ *     far.
+ * double wallTime() to query wall time passed in the search so far.
+ * double userTime() to query the user time passed in the search so far.
+ * long objectiveValue() to get the best objective value found so far.
+ * */
 public class CpSolverSolutionCallback extends SolutionCallback {
+  /** Returns the value of the variable in the current solution. */
   public long value(IntVar var) {
     int index = var.getIndex();
     return solutionIntegerValue(index);
   }
 
+  /** Returns the Boolean value of the literal in the current solution. */
   public Boolean booleanValue(ILiteral literal) {
     return solutionBooleanValue(literal.getIndex());
   }
+
+  /** Callback method to override. It will be called at each new solution. */
+  @Override
+  public void onSolutionCallback() { }
 }

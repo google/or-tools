@@ -14,20 +14,27 @@
 package com.google.ortools.sat;
 
 
-/** The negation of a boolean variable. */
+/** The negation of a boolean variable.
+ * This class should not be used directly, ILiteral must be used instead.*/
 public class NotBooleanVariable implements ILiteral {
   public NotBooleanVariable(IntVar boolvar) {
     boolvar_ = boolvar;
   }
 
+  /** Internal: return the index in the literal in the underlying CpModelProto. */
+  @Override
   public int getIndex() {
     return -boolvar_.getIndex() - 1;
   }
 
+  /** Returns the negation of this literal. */
+  @Override
   public ILiteral not() {
     return boolvar_;
   }
 
+  /** Returns a short string describing this literal. */
+  @Override
   public String shortString() {
     return "not(" + boolvar_.shortString() + ")";
   }

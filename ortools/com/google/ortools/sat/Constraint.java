@@ -16,18 +16,23 @@ package com.google.ortools.sat;
 import com.google.ortools.sat.ConstraintProto;
 import com.google.ortools.sat.CpModelProto;
 
-/** Wrapper around a ConstraintProto. */
+/** Wrapper around a ConstraintProto.
+ *
+ * Constraint create by the CpModel class are automatically added to the model.
+ * One need this class to adds an enforcement literal to a constraint.
+ * */
 public class Constraint {
   public Constraint(CpModelProto.Builder builder) {
     this.index_ = builder.getConstraintsCount();
     this.constraint_ = builder.addConstraintsBuilder();
   }
 
+  /** Adds a literal to the constraint. */
   public void onlyEnforceIf(ILiteral lit) {
     constraint_.addEnforcementLiteral(lit.getIndex());
   }
 
-  public int getIndex() {
+  int getIndex() {
     return index_;
   }
 
