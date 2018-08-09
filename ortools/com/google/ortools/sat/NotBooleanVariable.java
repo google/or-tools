@@ -36,8 +36,8 @@ public class NotBooleanVariable implements ILiteral {
 
   /** Returns a short string describing this literal. */
   @Override
-  public String shortString() {
-    return "not(" + boolvar_.shortString() + ")";
+  public String getShortString() {
+    return "not(" + boolvar_.getShortString() + ")";
   }
 
   private IntVar boolvar_;

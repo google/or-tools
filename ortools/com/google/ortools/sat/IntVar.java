@@ -55,7 +55,7 @@ public class IntVar implements ILiteral {
   }
 
   /** Returns a short string describing the variable. */
-  public String shortString() {
+  public String getShortString() {
     if (var_.getName().isEmpty()) {
       return toString();
     } else {

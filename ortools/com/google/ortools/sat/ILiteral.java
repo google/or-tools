@@ -21,5 +21,5 @@ public interface ILiteral {
   public ILiteral not();
 
   /** Returns a short string to describe the literal. */
-  public String shortString();
+  public String getShortString();
 }
