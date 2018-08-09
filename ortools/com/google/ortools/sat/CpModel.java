@@ -1041,7 +1041,7 @@ public class CpModel {
   }
 
   /**
-   * Adds (@code Cumulative(intervals, demands, capacity)}. with fixed demands and fixed capacity.
+   * Adds {@code Cumulative(intervals, demands, capacity)}. with fixed demands and fixed capacity.
    *
    * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
