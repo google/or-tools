@@ -17,9 +17,9 @@ package com.google.ortools.sat;
 public interface ILiteral {
   int getIndex();
 
-  // Returns the Boolean negation of the current literal.
+  /** Returns the Boolean negation of the current literal. */
   public ILiteral not();
 
-  // Returns a short string to describe the literal.
+  /** Returns a short string to describe the literal. */
   public String shortString();
 }
