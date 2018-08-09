@@ -100,7 +100,7 @@ public class CpModel {
 
   /** Creates a constant variable. */
   public IntVar newConstant(long value) {
-    return newIntVar(value, value, "" + value); // bounds and name.
+    return newIntVar(value, value, ""); // bounds and name.
   }
 
   // Boolean Constraints.

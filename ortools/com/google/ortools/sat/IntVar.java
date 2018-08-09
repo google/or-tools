@@ -57,10 +57,30 @@ public class IntVar implements ILiteral {
   /** Returns a short string describing the variable. */
   public String getShortString() {
     if (var_.getName().isEmpty()) {
-      return toString();
+      if (var_.getDomainCount() == 2 && var_.getDomain(0) == var_.getDomain(1)) {
+        return String.format("%d", var_.getDomain(0));
+      } else {
+        return String.format("var_%d(%s)", getIndex(), displayBounds());
+      }
     } else {
-      return var_.getName();
+      return String.format("%s(%s)", getName(), displayBounds());
     }
+  }
+
+  /** Return the domain as a string without the enclosing []. */
+  public String displayBounds() {
+    String out = "";
+    for (int i = 0; i < var_.getDomainCount(); i += 2) {
+      if (i != 0) {
+        out += ", ";
+      }
+      if (var_.getDomain(i) == var_.getDomain(i + 1)) {
+         out += String.format("%d", var_.getDomain(i));
+      } else {
+        out += String.format("%d..%d", var_.getDomain(i), var_.getDomain(i + 1));
+      }
+    }
+    return out;
   }
 
   /** Returns the negation of a boolean variable. */
