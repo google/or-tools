@@ -18,10 +18,12 @@ import com.google.ortools.sat.CpSolverResponse;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.SatParameters;
 
-/** Wrapper around the SAT solver.
+/**
+ * Wrapper around the SAT solver.
  *
- * This class proposes different solve() methods, as well as accessors to get the values of
- * variables in the best solution, as well as general statistics of the search.*/
+ * <p>This class proposes different solve() methods, as well as accessors to get the values of
+ * variables in the best solution, as well as general statistics of the search.
+ */
 public class CpSolver {
   /** Main constructionof the CpSolver class. */
   public CpSolver() {
@@ -41,13 +43,16 @@ public class CpSolver {
     return response_.getStatus();
   }
 
-  /** Search for all solutions of a satisfiability problem.
+  /**
+   * Search for all solutions of a satisfiability problem.
    *
-   * This method searches for all feasible solution of a given model.
-   * Then it feeds the solution to the callback.
+   * <p>This method searches for all feasible solution of a given model. Then it feeds the solution
+   * to the callback.
+   *
    * @param model the model to solve.
    * @param cb the callback that will be called at each solution.
-   * @return the status of the solve (FEASIBLE, INFEASIBLE...). */
+   * @return the status of the solve (FEASIBLE, INFEASIBLE...).
+   */
   public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
     parameters_.setEnumerateAllSolutions(true);
     response_ =

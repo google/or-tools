@@ -13,20 +13,29 @@
 
 package com.google.ortools.sat;
 
-/** Parent class to create a callback called at each solution.
+/**
+ * Parent class to create a callback called at each solution.
  *
- * From the parent class, it inherits the methods:
- * long numBooleans() to query the number of boolean variables created.
- * long numBranches() to query the number of branches explored so far.
- * long numConflicts() to query the number of conflicts created so far.
- * long numBinaryPropagations() to query the number of boolean propagations in the SAT solver so
- *     far.
- * long numIntegerPropagations() to query the number of integer propagations in the SAT solver so
- *     far.
- * double wallTime() to query wall time passed in the search so far.
- * double userTime() to query the user time passed in the search so far.
- * long objectiveValue() to get the best objective value found so far.
- * */
+ * <p>From the parent class, it inherits the methods:
+ *
+ * <p>{@code long numBooleans()} to query the number of boolean variables created.
+ *
+ * <p>{@code long numBranches()} to query the number of branches explored so far.
+ *
+ * <p>{@code long numConflicts()} to query the number of conflicts created so far.
+ *
+ * <p>{@code long numBinaryPropagations()} to query the number of boolean propagations in the SAT
+ * solver so far.
+ *
+ * <p>{@code long numIntegerPropagations()} to query the number of integer propagations in the SAT
+ * solver so far.
+ *
+ * <p>{@code double wallTime()} to query wall time passed in the search so far.
+ *
+ * <p>{@code double userTime()} to query the user time passed in the search so far.
+ *
+ * <p>{@code long objectiveValue()} to get the best objective value found so far.
+ */
 public class CpSolverSolutionCallback extends SolutionCallback {
   /** Returns the value of the variable in the current solution. */
   public long value(IntVar var) {
@@ -41,5 +50,5 @@ public class CpSolverSolutionCallback extends SolutionCallback {
 
   /** Callback method to override. It will be called at each new solution. */
   @Override
-  public void onSolutionCallback() { }
+  public void onSolutionCallback() {}
 }

@@ -27,6 +27,7 @@ import com.google.ortools.sat.InverseConstraintProto;
 import com.google.ortools.sat.LinearConstraintProto;
 import com.google.ortools.sat.NoOverlap2DConstraintProto;
 import com.google.ortools.sat.NoOverlapConstraintProto;
+import com.google.ortools.sat.ReservoirConstraintProto;
 import com.google.ortools.sat.TableConstraintProto;
 
 /**
@@ -470,11 +471,11 @@ public class CpModel {
   }
 
   /**
-   * Adds AllowedAssignments(variables, tuples_list).
+   * Adds AllowedAssignments(variables, tuplesList).
    *
    * <p>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
    * all variables are fixed to a single value, that the corresponding list of values is equal to
-   * one of the tuple of the tuple_list.
+   * one of the tuple of the tupleList.
    *
    * @param variables a list of variables.
    * @param tuplesList a list of admissible tuples. Each tuple must have the same length as the
@@ -504,7 +505,7 @@ public class CpModel {
   }
 
   /**
-   * Adds AllowedAssignments(variables, tuples_list).
+   * Adds AllowedAssignments(variables, tuplesList).
    *
    * @see #addAllowedAssignments(IntVar[], long[][]) addAllowedAssignments
    */
@@ -530,7 +531,7 @@ public class CpModel {
   }
 
   /**
-   * Adds ForbiddenAssignments(variables, tuples_list).
+   * Adds ForbiddenAssignments(variables, tuplesList).
    *
    * <p>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
    * impossible combinations is provided in the tuples list.
@@ -550,7 +551,7 @@ public class CpModel {
   }
 
   /**
-   * Adds ForbiddenAssignments(variables, tuples_list).
+   * Adds ForbiddenAssignments(variables, tuplesList).
    *
    * @see #addForbiddenAssignments(IntVar[], long[][]) addForbiddenAssignments
    */
@@ -589,7 +590,7 @@ public class CpModel {
    * @param startingState the initial state of the automata.
    * @param finalStates a non empty list of admissible final states.
    * @param transitions a list of transition for the automata, in the following format
-   *     (current_state, variable_value, next_state).
+   *     (currentState, variableValue, nextState).
    * @return an instance of the Constraint class.
    * @throws WrongLength if one transition does not have a length of 3.
    */
@@ -617,20 +618,20 @@ public class CpModel {
   }
 
   /**
-   * Adds Inverse(variables, inverse_variables).
+   * Adds Inverse(variables, inverseVariables).
    *
    * <p>An inverse constraint enforces that if 'variables[i]' is assigned a value 'j', then
-   * inverse_variables[j] is assigned a value 'i'. And vice versa.
+   * inverseVariables[j] is assigned a value 'i'. And vice versa.
    *
    * @param variables an array of integer variables.
    * @param inverseVariables an array of integer variables.
    * @return an instance of the Constraint class.
-   * @throws MismatchedArrayLengths if variables and inverse_variables have different length
+   * @throws MismatchedArrayLengths if variables and inverseVariables have different length.
    */
   public Constraint addInverse(IntVar[] variables, IntVar[] inverseVariables)
       throws MismatchedArrayLengths {
     if (variables.length != inverseVariables.length) {
-      throw new MismatchedArrayLengths("addCircuit", "tails", "heads");
+      throw new MismatchedArrayLengths("addInverse", "variables", "inverseVariables");
     }
     Constraint ct = new Constraint(builder_);
     InverseConstraintProto.Builder inverse = ct.builder().getInverseBuilder();
@@ -643,7 +644,56 @@ public class CpModel {
     return ct;
   }
 
-  // addReservoirConstraint
+  /**
+   * Adds Reservoir(times, demands, minLevel, maxLevel).
+   *
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any time
+   * &gt;= 0, it must be between minLevel and maxLevel. Furthermore, this constraints expect all
+   * times variables to be &gt;= 0. If the variable times[i] is assigned a value t, then the current
+   * level changes by demands[i] (which is constant) at the time t.
+   *
+   * <p>Note that level min can be &gt; 0, or level max can be &lt; 0. It just forces some demands
+   * to be executed at time 0 to make sure that we are within those bounds with the executed
+   * demands. Therefore, at any time t &gt;= 0: {@code sum(demands[i] if times[i] &lt;= t) in
+   * [minLevel, maxLevel]}
+   *
+   * @param times a list of positive integer variables which specify the time of the filling or
+   *     emptying the reservoir.
+   * @param demands a list of integer values that specifies the amount of the emptying or feeling.
+   * @param minLevel at any time &gt;= 0, the level of the reservoir must be greater of equal than
+   *     the min level.
+   * @param maxLevel at any time &gt;= 0, the level of the reservoir must be less or equal than the
+   *     max level.
+   * @return an instance of the Constraint class.
+   * @throws MismatchedArrayLengths if times and demands have different length.
+   */
+  public Constraint addReservoirConstraint(
+      IntVar[] times, long[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+    if (times.length != demands.length) {
+      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
+    }
+    Constraint ct = new Constraint(builder_);
+    ReservoirConstraintProto.Builder reservoir = ct.builder().getReservoirBuilder();
+    for (IntVar var : times) {
+      reservoir.addTimes(var.getIndex());
+    }
+    for (long d : demands) {
+      reservoir.addDemands(d);
+    }
+    reservoir.setMinLevel(minLevel);
+    reservoir.setMaxLevel(maxLevel);
+    return ct;
+  }
+
+  /**
+   * Adds Reservoir(times, demands, minLevel, maxLevel).
+   *
+   * @see #addReservoirConstraint(IntVar[], long[], long, long) Reservoir
+   */
+  public Constraint addReservoirConstraint(
+      IntVar[] times, int[] demands, long minLevel, long maxLevel) throws MismatchedArrayLengths {
+    return addReservoirConstraint(times, toLongArray(demands), minLevel, maxLevel);
+  }
 
   /** Adds var == i + offset &lt;=&gt; booleans[i] == true for all i in [0, booleans.length). */
   public void addMapDomain(IntVar var, ILiteral[] booleans, long offset) {
