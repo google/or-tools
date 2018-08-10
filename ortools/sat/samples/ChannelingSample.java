@@ -18,22 +18,6 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
-class VarArraySolutionPrinter extends CpSolverSolutionCallback {
-  public VarArraySolutionPrinter(IntVar[] variables) {
-    variables_ = variables;
-  }
-
-  @Override
-  public void onSolutionCallback() {
-    for (IntVar v : variables_) {
-      System.out.print(String.format("%s=%d ", v.getName(), value(v)));
-    }
-    System.out.println();
-  }
-
-  private IntVar[] variables_;
-}
-
 public class ChannelingSample {
 
   static { System.loadLibrary("jniortools"); }
@@ -48,7 +32,7 @@ public class ChannelingSample {
 
     IntVar b = model.newBoolVar("b");
 
-    // Implement b == (x >= 5).
+    // Implements b == (x >= 5).
     model.addGreaterOrEqual(x, 5).onlyEnforceIf(b);
     model.addLessOrEqual(x, 4).onlyEnforceIf(b.not());
 
@@ -57,19 +41,34 @@ public class ChannelingSample {
     // not(b) implies y == 0.
     model.addEquality(y, 0).onlyEnforceIf(b.not());
 
-    // Search for x values in increasing order.
+    // Searches for x values in increasing order.
     model.addDecisionStrategy(
         new IntVar[] {x},
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
-    // Create a solver and solve with a fixed search.
+    // Creates a solver and solve with a fixed search.
     CpSolver solver = new CpSolver();
 
-    // Force solver to follow the decision strategy exactly.
+    // Forces solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
 
-    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] {x, y, b});
-    solver.searchAllSolutions(model, cb);
+    // And solves the problem with the printer callback.
+    solver.searchAllSolutions(model, new CpSolverSolutionCallback() {
+        public CpSolverSolutionCallback init(IntVar[] variables) {
+          variables_ = variables;
+          return this;
+        }
+
+        @Override
+        public void onSolutionCallback() {
+          for (IntVar v : variables_) {
+            System.out.print(String.format("%s=%d ", v.getName(), value(v)));
+          }
+          System.out.println();
+        }
+
+        private IntVar[] variables_;
+      }.init(new IntVar[] {x, y, b}));
   }
 }
