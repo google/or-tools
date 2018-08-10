@@ -20,6 +20,7 @@ import com.google.ortools.sat.CircuitConstraintProto;
 import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.CpObjectiveProto;
 import com.google.ortools.sat.CumulativeConstraintProto;
+import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.IntegerVariableProto;
@@ -1116,6 +1117,21 @@ public class CpModel {
   /** Adds a maximization objective of a scalar product of variables. */
   public void maximizeScalProd(IntVar[] vars, int[] coeffs) {
     maximizeScalProd(vars, toLongArray(coeffs));
+  }
+
+  // DecisionStrategy
+
+  /** Adds {@code DecisionStrategy(variables, varStr, domStr)}. */
+  public void addDecisionStrategy(
+      IntVar[] variables,
+      DecisionStrategyProto.VariableSelectionStrategy varStr,
+      DecisionStrategyProto.DomainReductionStrategy domStr) {
+    DecisionStrategyProto.Builder ds = builder_.addSearchStrategyBuilder();
+    for (IntVar var : variables) {
+      ds.addVariables(var.getIndex());
+    }
+    ds.setVariableSelectionStrategy(varStr);
+    ds.setDomainReductionStrategy(domStr);
   }
 
   // Helpers

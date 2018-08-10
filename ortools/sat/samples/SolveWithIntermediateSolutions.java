@@ -27,7 +27,7 @@ class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
     System.out.println(String.format("Solution #%d: time = %.02f s", solutionCount_, wallTime()));
     System.out.println(String.format("  objective value = %d", objectiveValue()));
     for (IntVar v : variables_) {
-      System.out.println(String.format("  %s = %d", v.shortString(), value(v)));
+      System.out.println(String.format("  %s = %d", v.getName(), value(v)));
     }
     solutionCount_++;
   }

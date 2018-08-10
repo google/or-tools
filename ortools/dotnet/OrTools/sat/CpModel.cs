@@ -762,6 +762,21 @@ public class CpModel
     return model_.Objective == null;
   }
 
+  // Search Decision.
+
+  public void AddDecisionStrategy(IEnumerable<IntVar> vars,
+                                  DecisionStrategyProto.Types.VariableSelectionStrategy var_str,
+                                  DecisionStrategyProto.Types.DomainReductionStrategy dom_str) {
+    DecisionStrategyProto ds = new DecisionStrategyProto();
+    foreach (IntVar var in vars)
+    {
+      ds.Variables.Add(var.Index);
+    }
+    ds.VariableSelectionStrategy = var_str;
+    ds.DomainReductionStrategy = dom_str;
+    model_.SearchStrategy.Add(ds);
+  }
+
   // Internal methods.
 
   void SetObjective(IntegerExpression obj, bool minimize)

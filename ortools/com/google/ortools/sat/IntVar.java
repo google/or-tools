@@ -75,7 +75,7 @@ public class IntVar implements ILiteral {
         out += ", ";
       }
       if (var_.getDomain(i) == var_.getDomain(i + 1)) {
-         out += String.format("%d", var_.getDomain(i));
+        out += String.format("%d", var_.getDomain(i));
       } else {
         out += String.format("%d..%d", var_.getDomain(i), var_.getDomain(i + 1));
       }
