@@ -135,6 +135,7 @@ dependencies/install/include/coin: | dependencies/install/include
 ##  GFLAGS  ##
 ##############
 # This uses gflags cmake-based build.
+.PHONY: build_gflags
 build_gflags: dependencies/install/lib/libgflags.$L
 
 dependencies/install/lib/libgflags.$L: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
@@ -166,6 +167,7 @@ OR_TOOLS_LNK += $(GFLAGS_LNK)
 ##  GLOG  ##
 ############
 # This uses glog cmake-based build.
+.PHONY: build_glog
 build_glog: dependencies/install/lib/libglog.$L
 
 dependencies/install/lib/libglog.$L: dependencies/install/lib/libgflags.$L dependencies/sources/glog-$(GLOG_TAG) | dependencies/install
@@ -197,6 +199,7 @@ OR_TOOLS_LNK += $(GLOG_LNK)
 ##  Protobuf  ##
 ################
 # This uses Protobuf cmake-based build.
+.PHONY: build_protobuf
 build_protobuf: dependencies/install/lib/libprotobuf.$L
 
 dependencies/install/lib/libprotobuf.$L: dependencies/install/lib/libglog.$L dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
@@ -280,10 +283,11 @@ $(PATCHELF_SRCDIR): | dependencies/sources
 ###################
 ##  COIN-OR-CBC  ##
 ###################
+.PHONY: build_cbc
 build_cbc: dependencies/install/lib/libCbc.$L
 
 CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
-dependencies/install/lib/libCbc.$L: dependencies/install/lib/libCgl.$L $(CBC_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCbc.$L: build_cgl $(CBC_SRCDIR) $(PATCHELF)
 	cd $(CBC_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -350,10 +354,11 @@ CBC_LNK = $(DYNAMIC_CBC_LNK)
 ###################
 ##  COIN-OR-CGL  ##
 ###################
+.PHONY: build_cgl
 build_cgl: dependencies/install/lib/libCgl.$L
 
 CGL_SRCDIR = dependencies/sources/Cgl-$(CGL_TAG)
-dependencies/install/lib/libCgl.$L: dependencies/install/lib/libClp.$L $(CGL_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCgl.$L: build_clp $(CGL_SRCDIR) $(PATCHELF)
 	cd $(CGL_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -393,10 +398,11 @@ CGL_LNK = $(DYNAMIC_CGL_LNK)
 ###################
 ##  COIN-OR-CLP  ##
 ###################
+.PHONY: build_clp
 build_clp: dependencies/install/lib/libClp.$L
 
 CLP_SRCDIR = dependencies/sources/Clp-$(CLP_TAG)
-dependencies/install/lib/libClp.$L: dependencies/install/lib/libOsi.$L $(CLP_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libClp.$L: build_osi $(CLP_SRCDIR) $(PATCHELF)
 	cd $(CLP_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -462,10 +468,11 @@ CLP_LNK = $(DYNAMIC_CLP_LNK)
 ###################
 ##  COIN-OR-OSI  ##
 ###################
+.PHONY: build_osi
 build_osi: dependencies/install/lib/libOsi.$L
 
 OSI_SRCDIR = dependencies/sources/Osi-$(OSI_TAG)
-dependencies/install/lib/libOsi.$L: dependencies/install/lib/libCoinUtils.$L $(OSI_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libOsi.$L: build_coinutils $(OSI_SRCDIR) $(PATCHELF)
 	cd $(OSI_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -514,6 +521,7 @@ OSI_LNK = $(DYNAMIC_OSI_LNK)
 #########################
 ##  COIN-OR-COINUTILS  ##
 #########################
+.PHONY: build_coinutils
 build_coinutils: dependencies/install/lib/libCoinUtils.$L
 
 COINUTILS_SRCDIR = dependencies/sources/CoinUtils-$(COINUTILS_TAG)
