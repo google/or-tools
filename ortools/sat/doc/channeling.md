@@ -13,6 +13,322 @@ set of Boolean variables that indicate if one bin load is under the threshold.
 
 Channeling is usually implemented using half-reified linear constraints.
 
+## Implementing an If-Then-Else expression
+
+We want to implement `y == x < 5 ? 0 : 10 - x`. This will be done with an
+intermediate boolean variable `b` and some half-reified constraints.
+
+The following code produces the following output:
+
+```
+x=0 y=0 b=0
+x=1 y=0 b=0
+x=2 y=0 b=0
+x=3 y=0 b=0
+x=4 y=0 b=0
+x=5 y=5 b=1
+x=6 y=4 b=1
+x=7 y=3 b=1
+x=8 y=2 b=1
+x=9 y=1 b=1
+x=10 y=0 b=1
+```
+
+### Python code
+
+```python
+"""Link integer constraints together."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from ortools.sat.python import cp_model
+
+
+class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+  """Print intermediate solutions."""
+
+  def __init__(self, variables):
+    self.__variables = variables
+    self.__solution_count = 0
+
+  def NewSolution(self):
+    self.__solution_count += 1
+    for v in self.__variables:
+      print('%s=%i' % (v, self.Value(v)), end=' ')
+    print()
+
+  def SolutionCount(self):
+    return self.__solution_count
+
+
+def ChannelingSample():
+  """Demonstrates how to link integer constraints together."""
+
+  # Model.
+  model = cp_model.CpModel()
+
+  # Variables.
+  x = model.NewIntVar(0, 10, 'x')
+  y = model.NewIntVar(0, 10, 'y')
+
+  b = model.NewBoolVar('b')
+
+  # Implement b == (x >= 5).
+  model.Add(x >= 5).OnlyEnforceIf(b)
+  model.Add(x < 5).OnlyEnforceIf(b.Not())
+
+  # b implies (y == 10 - x).
+  model.Add(y == 10 - x).OnlyEnforceIf(b)
+  # not(b) implies y == 0.
+  model.Add(y == 0).OnlyEnforceIf(b.Not())
+
+  # Search for x values in increasing order.
+  model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
+                            cp_model.SELECT_MIN_VALUE)
+
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
+
+  # Force solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+
+  # Searches and prints out all solutions.
+  solution_printer = VarArraySolutionPrinter([x, y, b])
+  solver.SearchForAllSolutions(model, solution_printer)
+
+
+ChannelingSample()
+```
+
+### C++ code
+
+```cpp
+#include "ortools/sat/cp_model.proto.h"
+#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.proto.h"
+
+namespace operations_research {
+namespace sat {
+
+void ChannelingSample() {
+  // Model.
+  CpModelProto cp_model;
+
+  // Helpers.
+  auto new_variable = [&cp_model](int64 lb, int64 ub) {
+    CHECK_LE(lb, ub);
+    const int index = cp_model.variables_size();
+    IntegerVariableProto* const var = cp_model.add_variables();
+    var->add_domain(lb);
+    var->add_domain(ub);
+    return index;
+  };
+
+  // literal => (lb <= sum(vars) <= ub).
+  auto add_half_reified_sum = [&cp_model](const std::vector<int>& vars,
+                                          int64 lb, int64 ub, int literal) {
+    ConstraintProto* const ct = cp_model.add_constraints();
+    ct->add_enforcement_literal(literal);
+    LinearConstraintProto* const lin = ct->mutable_linear();
+    for (const int v : vars) {
+      lin->add_vars(v);
+      lin->add_coeffs(1);
+    }
+    lin->add_domain(lb);
+    lin->add_domain(ub);
+  };
+
+  // Main variables.
+  const int x = new_variable(0, 10);
+  const int y = new_variable(0, 10);
+  const int b = new_variable(0, 1);
+
+  // Implements b == (x >= 5).
+  add_half_reified_sum({x}, 5, kint64max, b);
+  add_half_reified_sum({x}, kint64min, 4, NegatedRef(b));
+
+  // b implies (y == 10 - x).
+  add_half_reified_sum({x, y}, 10, 10, b);
+  // not(b) implies y == 0.
+  add_half_reified_sum({y}, 0, 0, NegatedRef(b));
+
+  // Search for x values in increasing order.
+  DecisionStrategyProto* const strategy = cp_model.add_search_strategy();
+  strategy->add_variables(x);
+  strategy->set_variable_selection_strategy(
+      DecisionStrategyProto::CHOOSE_FIRST);
+  strategy->set_domain_reduction_strategy(
+      DecisionStrategyProto::SELECT_MIN_VALUE);
+
+  // Solving part.
+  Model model;
+
+  SatParameters parameters;
+  parameters.set_search_branching(SatParameters::FIXED_SEARCH);
+  parameters.set_enumerate_all_solutions(true);
+  model.Add(NewSatParameters(parameters));
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
+    LOG(INFO) << "x=" << r.solution(x) << " y=" << r.solution(y)
+              << " b=" << r.solution(b);
+  }));
+  SolveCpModel(cp_model, &model);
+}
+
+}  // namespace sat
+}  // namespace operations_research
+
+int main() {
+  operations_research::sat::ChannelingSample();
+
+  return EXIT_SUCCESS;
+}
+
+```
+
+### Java code
+
+```java
+import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.SatParameters;
+import com.google.ortools.sat.CpModel;
+import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.IntVar;
+
+public class ChannelingSample {
+
+  static { System.loadLibrary("jniortools"); }
+
+  public static void main(String[] args) throws Exception {
+    // Model.
+    CpModel model = new CpModel();
+
+    // Variables.
+    IntVar x = model.newIntVar(0, 10, "x");
+    IntVar y = model.newIntVar(0, 10, "y");
+
+    IntVar b = model.newBoolVar("b");
+
+    // Implements b == (x >= 5).
+    model.addGreaterOrEqual(x, 5).onlyEnforceIf(b);
+    model.addLessOrEqual(x, 4).onlyEnforceIf(b.not());
+
+    // b implies (y == 10 - x).
+    model.addLinearSumEqual(new IntVar[] {x, y}, 10).onlyEnforceIf(b);
+    // not(b) implies y == 0.
+    model.addEquality(y, 0).onlyEnforceIf(b.not());
+
+    // Searches for x values in increasing order.
+    model.addDecisionStrategy(
+        new IntVar[] {x},
+        DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
+        DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
+
+    // Creates a solver and solve with a fixed search.
+    CpSolver solver = new CpSolver();
+
+    // Forces solver to follow the decision strategy exactly.
+    solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+
+    // And solves the problem with the printer callback.
+    solver.searchAllSolutions(model, new CpSolverSolutionCallback() {
+        public CpSolverSolutionCallback init(IntVar[] variables) {
+          variables_ = variables;
+          return this;
+        }
+
+        @Override
+        public void onSolutionCallback() {
+          for (IntVar v : variables_) {
+            System.out.print(String.format("%s=%d ", v.getName(), value(v)));
+          }
+          System.out.println();
+        }
+
+        private IntVar[] variables_;
+      }.init(new IntVar[] {x, y, b}));
+  }
+}
+```
+
+### C\# code
+
+```cs
+using System;
+using Google.OrTools.Sat;
+
+public class VarArraySolutionPrinter : CpSolverSolutionCallback
+{
+  public VarArraySolutionPrinter(IntVar[] variables)
+  {
+    variables_ = variables;
+  }
+
+  public override void OnSolutionCallback()
+  {
+    {
+      foreach (IntVar v in variables_)
+      {
+        Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
+      }
+      Console.WriteLine();
+    }
+  }
+
+  private IntVar[] variables_;
+}
+
+public class CodeSamplesSat
+{
+  static void ChannelingSample()
+  {
+    // Model.
+    CpModel model = new CpModel();
+
+    // Variables.
+    IntVar x = model.NewIntVar(0, 10, "x");
+    IntVar y = model.NewIntVar(0, 10, "y");
+
+    IntVar b = model.NewBoolVar("b");
+
+    // Implement b == (x >= 5).
+    model.Add(x >= 5).OnlyEnforceIf(b);
+    model.Add(x < 5).OnlyEnforceIf(b.Not());
+
+    // b implies (y == 10 - x).
+    model.Add(y == 10 - x).OnlyEnforceIf(b);
+    // not(b) implies y == 0.
+    model.Add(y == 0).OnlyEnforceIf(b.Not());
+
+    // Search for x values in increasing order.
+    model.AddDecisionStrategy(
+        new IntVar[] {x},
+        DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+        DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+
+    // Create a solver and solve with a fixed search.
+    CpSolver solver = new CpSolver();
+
+    // Force solver to follow the decision strategy exactly.
+    solver.StringParameters = "search_branching:FIXED_SEARCH";
+
+    VarArraySolutionPrinter cb =
+        new VarArraySolutionPrinter(new IntVar[] {x, y, b});
+    solver.SearchAllSolutions(model, cb);
+  }
+
+  static void Main()
+  {
+    ChannelingSample();
+  }
+}
+
+```
+
 ## A bin-packing problem
 
 We have 10 bins of capacity 100, and items to pack into the bins. We would like

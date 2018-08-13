@@ -60,6 +60,12 @@ SELECT_MAX_VALUE = cp_model_pb2.DecisionStrategyProto.SELECT_MAX_VALUE
 SELECT_LOWER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_LOWER_HALF
 SELECT_UPPER_HALF = cp_model_pb2.DecisionStrategyProto.SELECT_UPPER_HALF
 
+# Search branching
+AUTOMATIC_SEARCH = sat_parameters_pb2.SatParameters.AUTOMATIC_SEARCH
+FIXED_SEARCH = sat_parameters_pb2.SatParameters.FIXED_SEARCH
+PORTFOLIO_SEARCH = sat_parameters_pb2.SatParameters.PORTFOLIO_SEARCH
+LP_SEARCH = sat_parameters_pb2.SatParameters.LP_SEARCH
+
 
 def AssertIsInt64(x):
   """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
