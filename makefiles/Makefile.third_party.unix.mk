@@ -272,7 +272,7 @@ endif
 PATCHELF_SRCDIR = dependencies/sources/patchelf-$(PATCHELF_TAG)
 dependencies/install/bin/patchelf: $(PATCHELF_SRCDIR) | dependencies/install/bin
 	cd $(PATCHELF_SRCDIR) && ./configure \
-    --prefix=$(OR_ROOT_FULL)/dependencies/install
+    --prefix="$(OR_ROOT_FULL)/dependencies/install"
 	make -C $(PATCHELF_SRCDIR)
 	make install -C $(PATCHELF_SRCDIR)
 
