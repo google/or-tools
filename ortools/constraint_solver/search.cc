@@ -887,7 +887,7 @@ int64 ChooseHighestMax(Solver* solver, const std::vector<IntVar*>& vars,
   for (int64 i = first_unbound; i <= last_unbound; ++i) {
     IntVar* const var = vars[i];
     if (!var->Bound()) {
-      if (var->Max() < best_max) {
+      if (var->Max() > best_max) {
         best_max = var->Max();
         best_index = i;
       }

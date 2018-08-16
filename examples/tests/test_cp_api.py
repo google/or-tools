@@ -331,6 +331,19 @@ def test_custom_decision():
   print(str(db))
   solver.Solve(db)
 
+def test_search_alldiff():
+  solver = pywrapcp.Solver('test_search_alldiff')
+  in_pos=[solver.IntVar(0,7, "%i" %i) for i in range(8)]
+  solver.Add(solver.AllDifferent(in_pos))
+  aux_phase=solver.Phase(in_pos, solver.CHOOSE_LOWEST_MIN,
+                         solver.ASSIGN_MAX_VALUE)
+  collector=solver.FirstSolutionCollector()
+  for i in range(8):
+    collector.Add(in_pos[i])
+  solver.Solve(aux_phase, [collector])
+  for i in range(8):
+    print(collector.Value(0, in_pos[i]))
+
 
 def main():
   test_member()
@@ -350,6 +363,7 @@ def main():
   test_cumulative_api()
   test_custom_decision_builder()
   test_custom_decision()
+  test_search_alldiff()
 
 
 if __name__ == '__main__':
