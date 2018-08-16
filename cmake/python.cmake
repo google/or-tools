@@ -114,7 +114,7 @@ add_custom_command(OUTPUT setup.py dist ${PROJECT_NAME}.egg-info
 	COMMAND ${CMAKE_COMMAND} -E echo "  cmdclass={'install': InstallPlatlib}," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "  packages=find_packages()," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "  package_data={" >> setup.py
-	COMMAND ${CMAKE_COMMAND} -E echo "  'ortools':[$<$<NOT:$<PLATFORM_ID:Windows>>:'../$<TARGET_SONAME_FILE_NAME:ortools>'>]," >> setup.py
+	COMMAND ${CMAKE_COMMAND} -E echo "  'ortools':[$<$<NOT:$<PLATFORM_ID:Windows>>:'.libs/*', '../$<TARGET_SONAME_FILE_NAME:ortools>'>]," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.constraint_solver':['$<TARGET_FILE_NAME:_pywrapcp>']," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.linear_solver':['$<TARGET_FILE_NAME:_pywraplp>']," >> setup.py
 	COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.sat':['$<TARGET_FILE_NAME:_pywrapsat>']," >> setup.py

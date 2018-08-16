@@ -236,7 +236,6 @@ public class APuzzle
 
 
     solver.NewSearch(db);
-    int c = 0;
     while (solver.NextSolution()) {
       Console.Write("x: {0}  x0..x9: ", x.Value());
       for(int i = 0; i < n; i++) {

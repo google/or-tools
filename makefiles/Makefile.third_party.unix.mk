@@ -37,49 +37,60 @@ third_party_check:
 ifeq ($(wildcard $(UNIX_GFLAGS_DIR)/include/gflags/gflags.h),)
 	$(error Third party GFlags files was not found! did you run 'make third_party' or set UNIX_GFLAGS_DIR ?)
 else
-	$(info GFLAGS found !)
+	$(info GFLAGS: found)
 endif
 ifeq ($(wildcard $(UNIX_GLOG_DIR)/include/glog/logging.h),)
 	$(error Third party GLog files was not found! did you run 'make third_party' or set UNIX_GLOG_DIR ?)
 else
-	$(info GLOG found !)
+	$(info GLOG: found)
 endif
 ifeq ($(wildcard $(UNIX_PROTOBUF_DIR)/include/google/protobuf/descriptor.h),)
 	$(error Third party Protobuf files was not found! did you run 'make third_party' or set UNIX_PROTOBUF_DIR ?)
 else
-	$(info PROTOBUF found !)
+	$(info PROTOBUF: found)
 endif
 ifeq ($(wildcard $(PROTOC_BINARY)),)
 	$(error Cannot find $(UNIX_PROTOC_BINARY). Please verify UNIX_PROTOC_BINARY)
 else
-	$(info PROTOC found !)
+	$(info PROTOC: found)
 endif
 ifeq ($(wildcard $(UNIX_COINUTILS_DIR)/include/coinutils/coin/CoinModel.hpp $(UNIX_COINUTILS_DIR)/include/coin/CoinModel.hpp),)
 	$(error Third party CoinUtils files was not found! did you run 'make third_party' or set UNIX_COINUTILS_DIR ?)
 else
-	$(info COINUTILS found !)
+	$(info COINUTILS: found)
 endif
 ifeq ($(wildcard $(UNIX_OSI_DIR)/include/osi/coin/OsiSolverInterface.hpp $(UNIX_OSI_DIR)/include/coin/OsiSolverInterface.hpp),)
 	$(error Third party Osi files was not found! did you run 'make third_party' or set UNIX_OSI_DIR ?)
 else
-	$(info OSI found !)
+	$(info OSI: found)
 endif
 ifeq ($(wildcard $(UNIX_CLP_DIR)/include/clp/coin/ClpModel.hpp $(UNIX_CLP_DIR)/include/coin/ClpSimplex.hpp),)
 	$(error Third party Clp files was not found! did you run 'make third_party' or set UNIX_CLP_DIR ?)
 else
-	$(info CLP found !)
+	$(info CLP: found)
 endif
 ifeq ($(wildcard $(UNIX_CGL_DIR)/include/cgl/coin/CglParam.hpp $(UNIX_CGL_DIR)/include/coin/CglParam.hpp),)
 	$(error Third party Cgl files was not found! did you run 'make third_party' or set UNIX_CGL_DIR ?)
 else
-	$(info CGL found !)
+	$(info CGL: found)
 endif
 ifeq ($(wildcard $(UNIX_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(UNIX_CBC_DIR)/include/coin/CbcModel.hpp),)
 	$(error Third party Cbc files was not found! did you run 'make third_party' or set UNIX_CBC_DIR ?)
 else
-	$(info CBC found !)
+	$(info CBC: found)
 endif
-	$(info All third parties found !)
+ifndef UNIX_CPLEX_DIR
+	$(info CPLEX: not found)
+endif
+ifndef UNIX_GLPK_DIR
+	$(info GLPK: not found)
+endif
+ifndef UNIX_GUROBI_DIR
+	$(info GUROBI: not found)
+endif
+ifndef UNIX_SCIP_DIR
+	$(info SCIP: not found)
+endif
 
 .PHONY: build_third_party
 build_third_party: \
@@ -124,6 +135,7 @@ dependencies/install/include/coin: | dependencies/install/include
 ##  GFLAGS  ##
 ##############
 # This uses gflags cmake-based build.
+.PHONY: build_gflags
 build_gflags: dependencies/install/lib/libgflags.$L
 
 dependencies/install/lib/libgflags.$L: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
@@ -155,6 +167,7 @@ OR_TOOLS_LNK += $(GFLAGS_LNK)
 ##  GLOG  ##
 ############
 # This uses glog cmake-based build.
+.PHONY: build_glog
 build_glog: dependencies/install/lib/libglog.$L
 
 dependencies/install/lib/libglog.$L: dependencies/install/lib/libgflags.$L dependencies/sources/glog-$(GLOG_TAG) | dependencies/install
@@ -186,6 +199,7 @@ OR_TOOLS_LNK += $(GLOG_LNK)
 ##  Protobuf  ##
 ################
 # This uses Protobuf cmake-based build.
+.PHONY: build_protobuf
 build_protobuf: dependencies/install/lib/libprotobuf.$L
 
 dependencies/install/lib/libprotobuf.$L: dependencies/install/lib/libglog.$L dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
@@ -205,7 +219,7 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf.patch | dependen
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
 	git clone --quiet -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
-    git apply $(OR_TOOLS_TOP)/patches/protobuf.patch
+    git apply "$(OR_TOOLS_TOP)/patches/protobuf.patch"
 
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
@@ -258,7 +272,7 @@ endif
 PATCHELF_SRCDIR = dependencies/sources/patchelf-$(PATCHELF_TAG)
 dependencies/install/bin/patchelf: $(PATCHELF_SRCDIR) | dependencies/install/bin
 	cd $(PATCHELF_SRCDIR) && ./configure \
-    --prefix=$(OR_ROOT_FULL)/dependencies/install
+    --prefix="$(OR_ROOT_FULL)/dependencies/install"
 	make -C $(PATCHELF_SRCDIR)
 	make install -C $(PATCHELF_SRCDIR)
 
@@ -269,10 +283,11 @@ $(PATCHELF_SRCDIR): | dependencies/sources
 ###################
 ##  COIN-OR-CBC  ##
 ###################
+.PHONY: build_cbc
 build_cbc: dependencies/install/lib/libCbc.$L
 
 CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
-dependencies/install/lib/libCbc.$L: dependencies/install/lib/libCgl.$L $(CBC_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCbc.$L: build_cgl $(CBC_SRCDIR) $(PATCHELF)
 	cd $(CBC_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -339,10 +354,11 @@ CBC_LNK = $(DYNAMIC_CBC_LNK)
 ###################
 ##  COIN-OR-CGL  ##
 ###################
+.PHONY: build_cgl
 build_cgl: dependencies/install/lib/libCgl.$L
 
 CGL_SRCDIR = dependencies/sources/Cgl-$(CGL_TAG)
-dependencies/install/lib/libCgl.$L: dependencies/install/lib/libClp.$L $(CGL_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCgl.$L: build_clp $(CGL_SRCDIR) $(PATCHELF)
 	cd $(CGL_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -382,10 +398,11 @@ CGL_LNK = $(DYNAMIC_CGL_LNK)
 ###################
 ##  COIN-OR-CLP  ##
 ###################
+.PHONY: build_clp
 build_clp: dependencies/install/lib/libClp.$L
 
 CLP_SRCDIR = dependencies/sources/Clp-$(CLP_TAG)
-dependencies/install/lib/libClp.$L: dependencies/install/lib/libOsi.$L $(CLP_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libClp.$L: build_osi $(CLP_SRCDIR) $(PATCHELF)
 	cd $(CLP_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -451,10 +468,11 @@ CLP_LNK = $(DYNAMIC_CLP_LNK)
 ###################
 ##  COIN-OR-OSI  ##
 ###################
+.PHONY: build_osi
 build_osi: dependencies/install/lib/libOsi.$L
 
 OSI_SRCDIR = dependencies/sources/Osi-$(OSI_TAG)
-dependencies/install/lib/libOsi.$L: dependencies/install/lib/libCoinUtils.$L $(OSI_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libOsi.$L: build_coinutils $(OSI_SRCDIR) $(PATCHELF)
 	cd $(OSI_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -503,6 +521,7 @@ OSI_LNK = $(DYNAMIC_OSI_LNK)
 #########################
 ##  COIN-OR-COINUTILS  ##
 #########################
+.PHONY: build_coinutils
 build_coinutils: dependencies/install/lib/libCoinUtils.$L
 
 COINUTILS_SRCDIR = dependencies/sources/CoinUtils-$(COINUTILS_TAG)
