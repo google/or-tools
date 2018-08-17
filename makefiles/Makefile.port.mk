@@ -70,7 +70,7 @@ ifeq ($(SYSTEM),unix)
     endif
     JAVA_HOME ?= $(firstword $(wildcard $(CANDIDATE_JDK_ROOTS)))
   endif # ($(OS),Linux)
-  ifeq ($(OS),Darwin) # Assume Mac Os X
+  ifeq ($(OS),Darwin) # Assume Mac OS X
     PLATFORM = MACOSX
     OS_VERSION = $(shell sw_vers -productVersion)
     PORT = MacOsX-$(OS_VERSION)
