@@ -36,19 +36,20 @@ PYTHON3_CFLAGS := -DPY3
 endif
 endif
 
+# Main target
 .PHONY: python # Build Python OR-Tools.
 .PHONY: test_python # Test Python OR-Tools using various examples.
 ifneq ($(PYTHON_EXECUTABLE),)
 python: \
-	ortoolslibs \
-	install_python_modules \
-	pyinit \
-	pyalgorithms \
-	pygraph \
-	pycp \
-	pylp \
-	pysat \
-	pyrcpsp
+ ortoolslibs \
+ install_python_modules \
+ pyinit \
+ pyalgorithms \
+ pygraph \
+ pycp \
+ pylp \
+ pysat \
+ pyrcpsp
 
 test_python: test_python_examples
 
