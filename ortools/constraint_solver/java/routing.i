@@ -163,6 +163,18 @@ CONVERT_VECTOR_WITH_CAST(RoutingModel::NodeEvaluator2, NodeEvaluator2, NODE_EVAL
   }
 }
 
+// support breaks
+CONVERT_VECTOR(IntervalVar, IntervalVar);
+%ignore operations_research::RoutingDimension::SetBreakIntervalsOfVehicle(
+    std::vector<IntervalVar*> values,
+    int64 vehicle);
+%extend operations_research::RoutingDimension {
+  void setBreakIntervalsOfVehicle(const std::vector<IntervalVar*>& values,
+                          int64 vehicle) {
+    $self->SetBreakIntervalsOfVehicle(values, vehicle);
+  }
+}
+
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
 %ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 %ignore operations_research::RoutingModel::RoutingModel(
