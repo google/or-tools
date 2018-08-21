@@ -102,8 +102,8 @@ $(GEN_DIR)/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: \
 csharp_dotnet: $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
 
 # Auto-generated code
-$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D: tools/dotnet/$(CLR_PROTOBUF_DLL_NAME)$D | $(BIN_DIR)
-	$(COPY) tools$Sdotnet$S$(CLR_PROTOBUF_DLL_NAME)$D $(BIN_DIR)
+$(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D: ortools/dotnet/$(CLR_PROTOBUF_DLL_NAME)$D | $(BIN_DIR)
+	$(COPY) ortools$Sdotnet$S$(CLR_PROTOBUF_DLL_NAME)$D $(BIN_DIR)
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
@@ -289,8 +289,8 @@ $(GEN_DIR)/ortools/sat/SatParameters.pb.cs: \
  --csharp_opt=file_extension=.pb.cs \
  $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
 
-$(CLR_KEYFILE): $(SRC_DIR)/tools/dotnet/CreateSigningKey/CreateSigningKey.csproj | $(BIN_DIR)
-	"$(DOTNET_BIN)" run --project tools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(CLR_KEYFILE_PATH)
+$(CLR_KEYFILE): $(SRC_DIR)/ortools/dotnet/CreateSigningKey/CreateSigningKey.csproj | $(BIN_DIR)
+	"$(DOTNET_BIN)" run --project ortools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(CLR_KEYFILE_PATH)
 
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$D: \
  $(SRC_DIR)/ortools/dotnet/$(ORTOOLS_DLL_NAME)/$(ORTOOLS_DLL_NAME).csproj \
@@ -404,8 +404,8 @@ $(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/fsharp/%.fsproj $(DOTNET_EX_DIR)/fsharp/%.fs \
 ################
 .PHONY: clean_dotnet # Clean files
 clean_dotnet:
-	-$(DELREC) tools$Sdotnet$SCreateSigningKey$Sbin
-	-$(DELREC) tools$Sdotnet$SCreateSigningKey$Sobj
+	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sbin
+	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sobj
 	-$(DEL) $(CLR_KEYFILE_PATH)
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
 	-$(DELREC) ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$Sbin
