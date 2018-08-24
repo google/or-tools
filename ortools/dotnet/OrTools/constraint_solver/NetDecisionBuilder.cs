@@ -36,7 +36,7 @@ public class NetDecisionBuilder : DecisionBuilder
     {
       return Next(solver);
     }
-    catch (ApplicationException e)
+    catch (ApplicationException /*e*/)
     {
       // TODO(user): Catch only fail exceptions.
       return solver.MakeFailDecision();
@@ -71,7 +71,7 @@ public class NetDecision : Decision
     {
       Apply(solver);
     }
-    catch (ApplicationException e)
+    catch (ApplicationException /*e*/)
     {
       // TODO(user): Catch only fail exceptions.
       solver.ShouldFail();
@@ -91,7 +91,7 @@ public class NetDecision : Decision
     {
       Refute(solver);
     }
-    catch (ApplicationException e)
+    catch (ApplicationException /*e*/)
     {
       // TODO(user): Catch only fail exceptions.
       solver.ShouldFail();
@@ -116,7 +116,7 @@ public class NetDemon : Demon
     {
       Run(solver);
     }
-    catch (ApplicationException e)
+    catch (ApplicationException /*e*/)
     {
       // TODO(user): Check that this is indeed a fail. Try implementing
       // custom exceptions (hard).
@@ -141,7 +141,7 @@ public class NetConstraint : Constraint {
   public override void InitialPropagateWrapper() {
     try {
       InitialPropagate();
-    } catch (ApplicationException e) {
+    } catch (ApplicationException /*e*/) {
       solver().ShouldFail();
     }
   }

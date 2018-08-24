@@ -87,7 +87,7 @@
     CSharpProtoType proto = new CSharpProtoType();
     proto.MergeFrom(input);
     return proto;
-  } catch (Google.Protobuf.InvalidProtocolBufferException e) {
+  } catch (Google.Protobuf.InvalidProtocolBufferException /*e*/) {
     throw new SystemException(
         "Unable to parse CSharpProtoType protocol message.");
   }
