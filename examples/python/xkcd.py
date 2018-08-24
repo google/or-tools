@@ -88,7 +88,7 @@ def main():
   print("num_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
-      print("z:", collector.Value(s, z))
+      print("z:", collector.Value(s, z) / 100.0)
       xval = [collector.Value(s, x[i]) for i in range(num_prices)]
       print("x:", xval)
       for i in range(num_prices):
