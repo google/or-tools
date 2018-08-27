@@ -14,6 +14,7 @@ DOTNET_EX_DIR  = $(OR_ROOT)examples/dotnet
 DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
 OBJ_DIR = $(OR_ROOT)objs
 CLASS_DIR = $(OR_ROOT)classes
+PACKAGE_DIR = $(OR_ROOT)packages
 LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
 INC_DIR = $(OR_ROOT).
