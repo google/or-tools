@@ -64,6 +64,7 @@ $(LIB_DIR)/Sudoku$J \
 $(LIB_DIR)/SurvoPuzzle$J \
 $(LIB_DIR)/ToNum$J \
 $(LIB_DIR)/Tsp$J \
+$(LIB_DIR)/Vrp$J \
 $(LIB_DIR)/WhoKilledAgatha$J \
 $(LIB_DIR)/Xkcd$J \
 $(LIB_DIR)/YoungTableaux$J
