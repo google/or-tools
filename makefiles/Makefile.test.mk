@@ -89,6 +89,7 @@ run_Sudoku \
 run_SurvoPuzzle \
 run_ToNum \
 run_Tsp \
+run_Vrp \
 run_WhoKilledAgatha \
 run_Xkcd \
 run_YoungTableaux
