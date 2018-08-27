@@ -27,3 +27,6 @@ predicate int_pow( var int: x, var int: y, var int: r ) =
     } in
       r == x2y[ x, y ]
   endif;
+
+% Include set redefinitions.
+include "nosets.mzn";
