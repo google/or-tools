@@ -254,33 +254,125 @@ test_java_examples: java
 	$(MAKE) rjava_YoungTableaux
 
 .PHONY: test_donet_examples
-test_dotnet_examples: dotnet \
-rdotnet_a_puzzle \
-rdotnet_tsp \
-#rdotnet_Program
-
-# csharp test
-.PHONY: test_csharp_examples
-test_csharp_examples: csharp
-	$(warning C# netfx not working)
-	$(MONO) $(BIN_DIR)$Scslinearprogramming$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Scsintegerprogramming$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Scsrabbitspheasants$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Scsflow$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Scsknapsack$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Sfurniture_moving_intervals$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Sorganize_day_intervals$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Sfurniture_moving_intervals$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Stechtalk_scheduling$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Snurses_sat$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Sjobshop_ft06_sat$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Scsls_api$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Scstsp$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Scscvrptw$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Stestcp$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Stestlp$(CLR_EXE_SUFFIX).exe
-	$(MONO) $(BIN_DIR)$Stest_sat_model$(CLR_EXE_SUFFIX).exe
-
-.PHONY: test_fsharp_examples
-test_fsharp_examples: fsharp
-	$(warning F# netfx tests unimplemented)
+test_dotnet_examples: dotnet
+	$(MAKE) rdotnet_3_jugs_regular # csharp examples
+	$(MAKE) rdotnet_alldifferent_except_0
+	$(MAKE) rdotnet_all_interval
+	$(MAKE) rdotnet_a_puzzle
+	$(MAKE) rdotnet_a_round_of_golf
+	$(MAKE) rdotnet_assignment
+	$(MAKE) rdotnet_broken_weights
+	$(MAKE) rdotnet_bus_schedule
+	$(MAKE) rdotnet_circuit2
+	$(MAKE) rdotnet_circuit
+	$(MAKE) rdotnet_coins3
+	$(MAKE) rdotnet_coins_grid ARGS="5 2"
+	$(MAKE) rdotnet_combinatorial_auction2
+	$(MAKE) rdotnet_contiguity_regular
+	$(MAKE) rdotnet_contiguity_transition
+	$(MAKE) rdotnet_costas_array
+	$(MAKE) rdotnet_covering_opl
+	$(MAKE) rdotnet_crew
+	$(MAKE) rdotnet_crossword
+	$(MAKE) rdotnet_crypta
+	$(MAKE) rdotnet_crypto
+	$(MAKE) rdotnet_cscvrptw
+	$(MAKE) rdotnet_csflow
+	$(MAKE) rdotnet_csintegerprogramming
+	$(MAKE) rdotnet_csjobshop
+	$(MAKE) rdotnet_csknapsack
+	$(MAKE) rdotnet_cslinearprogramming
+	$(MAKE) rdotnet_csls_api
+	$(MAKE) rdotnet_csrabbitspheasants
+	$(MAKE) rdotnet_cstsp
+	$(MAKE) rdotnet_curious_set_of_integers
+	$(MAKE) rdotnet_debruijn
+	$(MAKE) rdotnet_diet
+	$(MAKE) rdotnet_discrete_tomography
+	$(MAKE) rdotnet_divisible_by_9_through_1
+	$(MAKE) rdotnet_dudeney
+	$(MAKE) rdotnet_einav_puzzle2
+	$(MAKE) rdotnet_eq10
+	$(MAKE) rdotnet_eq20
+	$(MAKE) rdotnet_fill_a_pix
+	$(MAKE) rdotnet_furniture_moving
+	$(MAKE) rdotnet_furniture_moving_intervals
+	$(MAKE) rdotnet_futoshiki
+	$(MAKE) rdotnet_gate_scheduling_sat
+	$(MAKE) rdotnet_golomb_ruler
+	$(MAKE) rdotnet_grocery
+	$(MAKE) rdotnet_hidato_table
+	$(MAKE) rdotnet_jobshop_ft06_sat
+	$(MAKE) rdotnet_just_forgotten
+	$(MAKE) rdotnet_kakuro
+	$(MAKE) rdotnet_kenken2
+	$(MAKE) rdotnet_killer_sudoku
+	$(MAKE) rdotnet_labeled_dice
+	$(MAKE) rdotnet_langford
+	$(MAKE) rdotnet_least_diff
+	$(MAKE) rdotnet_lectures
+	$(MAKE) rdotnet_magic_sequence
+	$(MAKE) rdotnet_magic_square_and_cards
+	$(MAKE) rdotnet_magic_square
+	$(MAKE) rdotnet_map2
+	$(MAKE) rdotnet_map
+	$(MAKE) rdotnet_marathon2
+	$(MAKE) rdotnet_max_flow_taha
+	$(MAKE) rdotnet_max_flow_winston1
+	$(MAKE) rdotnet_minesweeper
+	$(MAKE) rdotnet_mr_smith
+#	$(MAKE) rdotnet_nontransitive_dice # too long
+	$(MAKE) rdotnet_nqueens
+	$(MAKE) rdotnet_nurse_rostering_regular
+	$(MAKE) rdotnet_nurse_rostering_transition
+	$(MAKE) rdotnet_nurses_sat
+	$(MAKE) rdotnet_olympic
+	$(MAKE) rdotnet_organize_day
+	$(MAKE) rdotnet_organize_day_intervals
+	$(MAKE) rdotnet_pandigital_numbers
+#	$(MAKE) rdotnet_partition # too long
+	$(MAKE) rdotnet_perfect_square_sequence
+	$(MAKE) rdotnet_photo_problem
+	$(MAKE) rdotnet_place_number_puzzle
+	$(MAKE) rdotnet_p_median
+	$(MAKE) rdotnet_post_office_problem2
+	$(MAKE) rdotnet_quasigroup_completion
+	$(MAKE) rdotnet_regex
+	$(MAKE) rdotnet_rogo2
+	$(MAKE) rdotnet_scheduling_speakers
+	$(MAKE) rdotnet_secret_santa2
+#	$(MAKE) rdotnet_secret_santa # too long
+	$(MAKE) rdotnet_send_more_money2
+	$(MAKE) rdotnet_send_more_money
+	$(MAKE) rdotnet_send_most_money
+	$(MAKE) rdotnet_seseman
+	$(MAKE) rdotnet_set_covering2
+	$(MAKE) rdotnet_set_covering3
+	$(MAKE) rdotnet_set_covering4
+	$(MAKE) rdotnet_set_covering
+	$(MAKE) rdotnet_set_covering_deployment
+	$(MAKE) rdotnet_set_covering_skiena
+	$(MAKE) rdotnet_set_partition
+	$(MAKE) rdotnet_sicherman_dice
+	$(MAKE) rdotnet_ski_assignment
+	$(MAKE) rdotnet_slow_scheduling
+	$(MAKE) rdotnet_stable_marriage
+	$(MAKE) rdotnet_strimko2
+	$(MAKE) rdotnet_subset_sum
+	$(MAKE) rdotnet_sudoku
+	$(MAKE) rdotnet_survo_puzzle
+	$(MAKE) rdotnet_TaskScheduling
+	$(MAKE) rdotnet_techtalk_scheduling
+	$(MAKE) rdotnet_to_num
+	$(MAKE) rdotnet_traffic_lights
+	$(MAKE) rdotnet_tsp
+	$(MAKE) rdotnet_volsay
+	$(MAKE) rdotnet_volsay2
+	$(MAKE) rdotnet_volsay3
+	$(MAKE) rdotnet_wedding_optimal_chart
+	$(MAKE) rdotnet_who_killed_agatha
+	$(MAKE) rdotnet_word_square
+	$(MAKE) rdotnet_xkcd
+	$(MAKE) rdotnet_young_tableaux
+	$(MAKE) rdotnet_zebra
+	$(MAKE) rdotnet_Program # fsharp examples
