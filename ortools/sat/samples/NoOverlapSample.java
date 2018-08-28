@@ -17,6 +17,10 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 
+/**
+ * We want to schedule 3 tasks on 3 weeks excluding weekends, making the final day as early as
+ * possible.
+ */
 public class NoOverlapSample {
 
   static { System.loadLibrary("jniortools"); }
@@ -49,7 +53,9 @@ public class NoOverlapSample {
     IntervalVar weekend1 = model.newFixedInterval(12, 2, "weekend1");
     IntervalVar weekend2 = model.newFixedInterval(19, 2, "weekend2");
 
-    // No Overlap constraint.
+    // No Overlap constraint. This constraint enforces that no two intervals can overlap.
+    // In this example, as we use 3 fixed intervals that span over weekends, this constraint makes
+    // sure that all tasks are executed on weekdays.
     model.addNoOverlap(new IntervalVar[] {task0, task1, task2, weekend0, weekend1, weekend2});
 
     // Makespan objective.

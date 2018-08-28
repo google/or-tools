@@ -571,11 +571,11 @@ class IntegerTrail : public SatPropagator {
   // Returns the reason (as set of Literal currently false) for a given integer
   // literal. Note that the bound must be less restrictive than the current
   // bound (checked).
-  std::vector<Literal> ReasonFor(IntegerLiteral bound) const;
+  std::vector<Literal> ReasonFor(IntegerLiteral literal) const;
 
   // Appends the reason for the given integer literals to the output and call
   // STLSortAndRemoveDuplicates() on it.
-  void MergeReasonInto(absl::Span<IntegerLiteral> bounds,
+  void MergeReasonInto(absl::Span<IntegerLiteral> literals,
                        std::vector<Literal>* output) const;
 
   // Returns the number of enqueues that changed a variable bounds. We don't
@@ -649,7 +649,7 @@ class IntegerTrail : public SatPropagator {
   // Returns the lowest trail index of a TrailEntry that can be used to explain
   // the given IntegerLiteral. The literal must be currently true (CHECKed).
   // Returns -1 if the explanation is trivial.
-  int FindLowestTrailIndexThatExplainBound(IntegerLiteral bound) const;
+  int FindLowestTrailIndexThatExplainBound(IntegerLiteral i_lit) const;
 
   // Helper function to return the "dependencies" of a bound assignment.
   // All the TrailEntry at these indices are part of the reason for this
@@ -843,8 +843,8 @@ class GenericLiteralWatcher : public SatPropagator {
   // Doing this will cause IncrementalPropagate() to be called (see the
   // documentation of this interface for more detail).
   void WatchLiteral(Literal l, int id, int watch_index = -1);
-  void WatchLowerBound(IntegerVariable i, int id, int watch_index = -1);
-  void WatchUpperBound(IntegerVariable i, int id, int watch_index = -1);
+  void WatchLowerBound(IntegerVariable var, int id, int watch_index = -1);
+  void WatchUpperBound(IntegerVariable var, int id, int watch_index = -1);
   void WatchIntegerVariable(IntegerVariable i, int id, int watch_index = -1);
 
   // No-op overload for "constant" IntegerVariable that are sometimes templated

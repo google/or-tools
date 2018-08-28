@@ -69,11 +69,13 @@ void LiteralWatchers::Resize(int num_variables) {
 
 // Note that this is the only place where we add Watcher so the DCHECK
 // guarantees that there are no duplicates.
-void LiteralWatchers::AttachOnFalse(Literal a, Literal b, SatClause* clause) {
+void LiteralWatchers::AttachOnFalse(Literal literal, Literal blocking_literal,
+                                    SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(is_clean_);
-  DCHECK(!WatcherListContains(watchers_on_false_[a.Index()], *clause));
-  watchers_on_false_[a.Index()].push_back(Watcher(clause, b));
+  DCHECK(!WatcherListContains(watchers_on_false_[literal.Index()], *clause));
+  watchers_on_false_[literal.Index()].push_back(
+      Watcher(clause, blocking_literal));
 }
 
 bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {

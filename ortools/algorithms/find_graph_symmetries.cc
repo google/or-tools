@@ -24,6 +24,7 @@
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/join.h"
+#include "ortools/base/memory.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/time_support.h"
 #include "ortools/graph/iterators.h"
@@ -355,7 +356,7 @@ util::Status GraphSymmetryFinder::FindSymmetries(
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
     std::vector<int>* factorized_automorphism_group_size) {
   // Initialization.
-  time_limit_.reset(new TimeLimit(time_limit_seconds));
+  time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds);
   IF_STATS_ENABLED(stats_.initialization_time.StartTimer());
   generators->clear();
   factorized_automorphism_group_size->clear();
@@ -1011,7 +1012,7 @@ bool GraphSymmetryFinder::ConfirmFullMatchOrFindNextMappingDecision(
 }
 
 std::string GraphSymmetryFinder::SearchState::DebugString() const {
-  return StringPrintf(
+  return absl::StrFormat(
       "SearchState{ base_node=%d, first_image_node=%d,"
       " remaining_pruned_image_nodes=[%s],"
       " num_parts_before_trying_to_map_base_node=%d }",

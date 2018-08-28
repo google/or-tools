@@ -27,14 +27,16 @@ namespace glop {
 
 // Returns a std::string representing a floating-point number in decimal,
 // with a precision corresponding to the type of the argument.
-inline std::string Stringify(const float a) { return StringPrintf("%.7g", a); }
+inline std::string Stringify(const float a) {
+  return absl::StrFormat("%.7g", a);
+}
 
 inline std::string Stringify(const double a) {
-  return StringPrintf("%.16g", a);
+  return absl::StrFormat("%.16g", a);
 }
 
 inline std::string Stringify(const long double a) {
-  return StringPrintf("%.19Lg", a);
+  return absl::StrFormat("%.19g", a);
 }
 
 // Returns a std::string "num/den" representing the rational approximation of x.

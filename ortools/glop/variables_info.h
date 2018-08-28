@@ -66,10 +66,10 @@ class VariablesInfo {
 
   // Changes whether or not a non-basic boxed variable is 'relevant' and will be
   // returned as such by GetIsRelevantBitRow().
-  void MakeBoxedVariableRelevant(bool are_boxed_variables_relevant);
+  void MakeBoxedVariableRelevant(bool value);
 
-  // This is used in UpdateRow to decide wheter to compute it using the row-wise
-  // or column-wise representation.
+  // This is used in UpdateRow to decide whether to compute it using the
+  // row-wise or column-wise representation.
   EntryIndex GetNumEntriesInRelevantColumns() const;
 
   // Returns the distance between the upper and lower bound of the given column.

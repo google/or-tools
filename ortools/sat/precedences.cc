@@ -142,15 +142,17 @@ void PrecedencesPropagator::ComputePrecedences(
       const ArcInfo& arc = arcs_[arc_index];
       if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
 
-      IntegerValue min_offset = arc.offset;
+      IntegerValue offset = arc.offset;
       if (arc.offset_var != kNoIntegerVariable) {
-        min_offset += integer_trail_->LowerBound(arc.offset_var);
+        offset += integer_trail_->LowerBound(arc.offset_var);
       }
 
-      // We don't handle offsets and just care about "is before or at", so we
-      // skip negative offsets and just treat a positive one as zero. Because of
-      // this, we may miss some propagation opportunities.
-      if (min_offset < 0) continue;
+      // TODO(user): it seems better to ignore negative min offset as we will
+      // often have relation of the form interval_start >= interval_end -
+      // offset, and such relation are usually not useful. Revisit this in case
+      // we see problems where we can propagate more without this test.
+      if (offset < 0) continue;
+
       if (var_to_degree_[arc.head_var] == 0) {
         tmp_sorted_vars_.push_back(
             {arc.head_var, integer_trail_->LowerBound(arc.head_var)});
@@ -163,7 +165,8 @@ void PrecedencesPropagator::ComputePrecedences(
       }
       var_to_last_index_[arc.head_var] = index;
       var_to_degree_[arc.head_var]++;
-      tmp_precedences_.push_back({index, arc.head_var, arc.presence_literals});
+      tmp_precedences_.push_back(
+          {index, arc.head_var, arc_index.value(), offset});
     }
   }
 
@@ -182,11 +185,17 @@ void PrecedencesPropagator::ComputePrecedences(
   int start = 0;
   for (const SortedVar pair : tmp_sorted_vars_) {
     const int degree = var_to_degree_[pair.var];
-    var_to_degree_[pair.var] = start;
-    start += degree;
+    if (degree > 1) {
+      var_to_degree_[pair.var] = start;
+      start += degree;
+    } else {
+      // Optimization: we remove degree one relations.
+      var_to_degree_[pair.var] = -1;
+    }
   }
   output->resize(start);
   for (const IntegerPrecedences& precedence : tmp_precedences_) {
+    if (var_to_degree_[precedence.var] < 0) continue;
     (*output)[var_to_degree_[precedence.var]++] = precedence;
   }
 
@@ -194,6 +203,21 @@ void PrecedencesPropagator::ComputePrecedences(
   // var_to_last_index_.
   for (const SortedVar pair : tmp_sorted_vars_) {
     var_to_degree_[pair.var] = 0;
+  }
+}
+
+void PrecedencesPropagator::AddPrecedenceReason(
+    int arc_index, IntegerValue min_offset,
+    std::vector<Literal>* literal_reason,
+    std::vector<IntegerLiteral>* integer_reason) const {
+  const ArcInfo& arc = arcs_[ArcIndex(arc_index)];
+  for (const Literal l : arc.presence_literals) {
+    literal_reason->push_back(l.Negated());
+  }
+  if (arc.offset_var != kNoIntegerVariable) {
+    // Reason for ArcOffset(arc) to be >= min_offset.
+    integer_reason->push_back(IntegerLiteral::GreaterOrEqual(
+        arc.offset_var, min_offset - arc.offset));
   }
 }
 

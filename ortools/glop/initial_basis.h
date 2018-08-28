@@ -65,21 +65,33 @@ class InitialBasis {
   void CompleteTriangularPrimalBasis(ColIndex num_cols, RowToColMapping* basis);
   void CompleteTriangularDualBasis(ColIndex num_cols, RowToColMapping* basis);
 
+  // Use Maros's LTSF crash from the book "Computational Techniques of the
+  // Simplex Method". Unlike the other crashes this does not use the initial
+  // content of the basis parameter.
+  void GetPrimalMarosBasis(ColIndex num_cols, RowToColMapping* basis);
+  void GetDualMarosBasis(ColIndex num_cols, RowToColMapping* basis);
+
   // Visible for testing. Computes a list of candidate column indices out of the
   // fist num_candidate_columns of A and sorts them using the
   // bixby_column_comparator_. This also fills max_scaled_abs_cost_.
-  void ComputeCandidates(ColIndex num_candidate_columns,
-                         std::vector<ColIndex>* candidates);
+  void ComputeCandidates(ColIndex num_cols, std::vector<ColIndex>* candidates);
 
  private:
   // Internal implementation of the Primal/Dual CompleteTriangularBasis().
   template <bool only_allow_zero_cost_column>
   void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping* basis);
 
+  template <bool only_allow_zero_cost_column>
+  void GetMarosBasis(ColIndex num_cols, RowToColMapping* basis);
+
   // Returns an integer representing the order (the lower the better)
   // between column categories (known as C2, C3 or C4 in the paper).
   // Also returns a greater index for fixed columns.
   int GetColumnCategory(ColIndex col) const;
+
+  // Row and column priorities for Maros crash.
+  int GetMarosPriority(RowIndex row) const;
+  int GetMarosPriority(ColIndex col) const;
 
   // Returns the penalty (the lower the better) of a column. This is 'q_j' for a
   // column 'j' in the paper.

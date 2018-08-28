@@ -23,9 +23,9 @@ public class IntervalSample {
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar startVar = model.newIntVar(0, horizon, "start");
+    IntVar endVar = model.newIntVar(0, horizon, "end");
     // Java code supports IntVar or integer constants in intervals.
     int duration = 10;
-    IntVar endVar = model.newIntVar(0, horizon, "end");
     IntervalVar interval = model.newIntervalVar(startVar, duration, endVar, "interval");
 
     System.out.println(interval);

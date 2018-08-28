@@ -305,10 +305,6 @@ bool MPSolver::SetSolverSpecificParametersAsString(
   return interface_->SetSolverSpecificParametersAsString(parameters);
 }
 
-void MPSolver::SetHint(const PartialVariableAssignment& hint) {
-  interface_->SetHint(hint);
-}
-
 // ----- Solver -----
 
 #if defined(USE_CLP) || defined(USE_CBC)
@@ -736,8 +732,18 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
       constraint_proto->add_coefficient(var_and_coeff.second);
     }
   }
+
   output_model->set_maximize(Objective().maximization());
   output_model->set_objective_offset(Objective().offset());
+
+  if (!solution_hint_.empty()) {
+    PartialVariableAssignment* const hint =
+        output_model->mutable_solution_hint();
+    for (const auto& var_value_pair : solution_hint_) {
+      hint->add_var_index(var_value_pair.first->index());
+      hint->add_var_value(var_value_pair.second);
+    }
+  }
 }
 
 util::Status MPSolver::LoadSolutionFromProto(
@@ -1257,6 +1263,14 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
   ExportModelToProto(&proto);
   MPModelProtoExporter exporter(proto);
   return exporter.ExportModelAsMpsFormat(fixed_format, obfuscate, model_str);
+}
+
+void MPSolver::SetHint(std::vector<std::pair<MPVariable*, double> > hint) {
+  for (const auto& var_value_pair : hint) {
+    CHECK(OwnsVariable(var_value_pair.first))
+        << "hint variable does not belong to this solver";
+  }
+  solution_hint_ = std::move(hint);
 }
 
 void MPSolver::GenerateVariableNameIndex() const {

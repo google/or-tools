@@ -13,7 +13,7 @@
 
 package com.google.ortools.sat;
 
-/** Interface to descrive a boolean variable or its negation. */
+/** Interface to describe a boolean variable or its negation. */
 public interface ILiteral {
   int getIndex();
 

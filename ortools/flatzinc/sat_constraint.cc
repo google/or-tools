@@ -165,7 +165,7 @@ class SatPropagator : public Constraint {
   sat::SatSolver* sat() { return &sat_; }
 
   std::string DebugString() const override {
-    return StringPrintf("SatConstraint(%d variables)", sat_.NumVariables());
+    return absl::StrFormat("SatConstraint(%d variables)", sat_.NumVariables());
   }
 
   void Accept(ModelVisitor* visitor) const override {

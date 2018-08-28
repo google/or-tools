@@ -132,14 +132,14 @@ class IntTupleSet {
     int index;
     IntTupleSet::Data* data;
     IndexData(int i, IntTupleSet::Data* const d) : index(i), data(d) {}
-    static bool Compare(const IndexData& tuple1, const IndexData& tuple2);
+    static bool Compare(const IndexData& a, const IndexData& b);
   };
 
   struct IndexValue {
     int index;
     int64 value;
     IndexValue(int i, int64 v) : index(i), value(v) {}
-    static bool Compare(const IndexValue& tuple1, const IndexValue& tuple2);
+    static bool Compare(const IndexValue& a, const IndexValue& b);
   };
 
   mutable Data* data_;

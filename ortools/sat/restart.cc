@@ -15,6 +15,7 @@
 #include "ortools/base/stringprintf.h"
 
 #include "ortools/base/split.h"
+#include "ortools/base/stringprintf.h"
 
 namespace operations_research {
 namespace sat {
@@ -112,8 +113,8 @@ bool RestartPolicy::ShouldRestart() {
     if (conflicts_until_next_strategy_change_ == 0) {
       strategy_counter_++;
       strategy_change_conflicts_ +=
-          parameters_.strategy_change_increase_ratio() *
-          strategy_change_conflicts_;
+          static_cast<int>(parameters_.strategy_change_increase_ratio() *
+                           strategy_change_conflicts_);
       conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
     }
 
@@ -160,13 +161,13 @@ void RestartPolicy::OnConflict(int conflict_trail_index,
 
 std::string RestartPolicy::InfoString() const {
   std::string result =
-      StringPrintf("  num restarts: %d\n", num_restarts_) +
-      StringPrintf("  conflict decision level avg: %f\n",
-                   dl_running_average_.GlobalAverage()) +
-      StringPrintf("  conflict lbd avg: %f\n",
-                   lbd_running_average_.GlobalAverage()) +
-      StringPrintf("  conflict trail size avg: %f\n",
-                   trail_size_running_average_.GlobalAverage());
+      absl::StrFormat("  num restarts: %d\n", num_restarts_) +
+      absl::StrFormat("  conflict decision level avg: %f\n",
+                      dl_running_average_.GlobalAverage()) +
+      absl::StrFormat("  conflict lbd avg: %f\n",
+                      lbd_running_average_.GlobalAverage()) +
+      absl::StrFormat("  conflict trail size avg: %f\n",
+                      trail_size_running_average_.GlobalAverage());
   return result;
 }
 

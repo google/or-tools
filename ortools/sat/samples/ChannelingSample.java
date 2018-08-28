@@ -47,28 +47,30 @@ public class ChannelingSample {
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
-    // Creates a solver and solve with a fixed search.
+    // Creates the solver.
     CpSolver solver = new CpSolver();
 
-    // Forces solver to follow the decision strategy exactly.
+    // Forces the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
 
-    // And solves the problem with the printer callback.
-    solver.searchAllSolutions(model, new CpSolverSolutionCallback() {
-        public CpSolverSolutionCallback init(IntVar[] variables) {
-          variables_ = variables;
-          return this;
-        }
-
-        @Override
-        public void onSolutionCallback() {
-          for (IntVar v : variables_) {
-            System.out.print(String.format("%s=%d ", v.getName(), value(v)));
+    // Solves the problem with the printer callback.
+    solver.searchAllSolutions(
+        model,
+        new CpSolverSolutionCallback() {
+          public CpSolverSolutionCallback init(IntVar[] variables) {
+            variableArray = variables;
+            return this;
           }
-          System.out.println();
-        }
 
-        private IntVar[] variables_;
-      }.init(new IntVar[] {x, y, b}));
+          @Override
+          public void onSolutionCallback() {
+            for (IntVar v : variableArray) {
+              System.out.printf("%s=%d ", v.getName(), value(v));
+            }
+            System.out.println();
+          }
+
+          private IntVar[] variableArray;
+        }.init(new IntVar[] {x, y, b}));
   }
 }

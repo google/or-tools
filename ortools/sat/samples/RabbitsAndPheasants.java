@@ -16,6 +16,10 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
+/**
+ * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many rabbits and
+ * pheasants are there?
+ */
 public class RabbitsAndPheasants {
 
   static { System.loadLibrary("jniortools"); }

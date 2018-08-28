@@ -109,8 +109,8 @@ class GurobiInterface : public MPSolverInterface {
   std::string SolverVersion() const override {
     int major, minor, technical;
     GRBversion(&major, &minor, &technical);
-    return StringPrintf("Gurobi library version %d.%d.%d\n", major, minor,
-                        technical);
+    return absl::StrFormat("Gurobi library version %d.%d.%d\n", major, minor,
+                           technical);
   }
 
   bool InterruptSolve() override {
@@ -165,10 +165,7 @@ class GurobiInterface : public MPSolverInterface {
   MPSolver::BasisStatus TransformGRBConstraintBasisStatus(
       int gurobi_basis_status, int constraint_index) const;
 
-  void CheckedGurobiCall(int err) const {
-    CHECK_EQ(0, err) << "Fatal error with code " << err << ", due to "
-                     << GRBgeterrormsg(env_);
-  }
+  void CheckedGurobiCall(int err) const;
 
   int SolutionCount() const;
 
@@ -656,7 +653,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
   // Sync solver.
   CheckedGurobiCall(GRBupdatemodel(model_));
-  VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Model built in %.3f seconds.", timer.Get());
 
   // Set solution hints if any.
   for (const std::pair<MPVariable*, double>& p : solver_->solution_hint_) {
@@ -687,14 +684,14 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   if (status) {
     VLOG(1) << "Failed to optimize MIP." << GRBgeterrormsg(env_);
   } else {
-    VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
+    VLOG(1) << absl::StrFormat("Solved in %.3f seconds.", timer.Get());
   }
 
   // Get the status.
   int optimization_status = 0;
   CheckedGurobiCall(
       GRBgetintattr(model_, GRB_INT_ATTR_STATUS, &optimization_status));
-  VLOG(1) << StringPrintf("Solution status %d.\n", optimization_status);
+  VLOG(1) << absl::StrFormat("Solution status %d.\n", optimization_status);
   const int solution_count = SolutionCount();
 
   switch (optimization_status) {

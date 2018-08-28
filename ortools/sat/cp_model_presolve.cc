@@ -1351,6 +1351,8 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
   CircuitConstraintProto& proto = *ct->mutable_circuit();
 
+  // Convert the flat structure to a graph, note that we includes all the arcs
+  // here (even if they are at false).
   std::vector<std::vector<int>> incoming_arcs;
   std::vector<std::vector<int>> outgoing_arcs;
   const int num_arcs = proto.literals_size();
@@ -1360,7 +1362,6 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
     const int tail = proto.tails(i);
     const int head = proto.heads(i);
     num_nodes = std::max(num_nodes, std::max(tail, head) + 1);
-    if (context->LiteralIsFalse(ref)) continue;
     if (std::max(tail, head) >= incoming_arcs.size()) {
       incoming_arcs.resize(std::max(tail, head) + 1);
       outgoing_arcs.resize(std::max(tail, head) + 1);
@@ -1404,15 +1405,12 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Remove false arcs.
-  //
-  // TODO(user): all the outgoing/incoming arc of a node should not be all false
-  // at the same time. Report unsat in this case. Note however that this part is
-  // not well defined since if a node have no incoming/outgoing arcs in the
-  // initial proto, it will just be ignored.
   int new_size = 0;
   int num_true = 0;
   int circuit_start = -1;
   std::vector<int> next(num_nodes, -1);
+  std::vector<int> new_in_degree(num_nodes, 0);
+  std::vector<int> new_out_degree(num_nodes, 0);
   for (int i = 0; i < num_arcs; ++i) {
     const int ref = proto.literals(i);
     if (context->LiteralIsFalse(ref)) continue;
@@ -1427,10 +1425,28 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
       }
       ++num_true;
     }
+    ++new_out_degree[proto.tails(i)];
+    ++new_in_degree[proto.heads(i)];
     proto.set_tails(new_size, proto.tails(i));
     proto.set_heads(new_size, proto.heads(i));
     proto.set_literals(new_size, proto.literals(i));
     ++new_size;
+  }
+
+  // Detect infeasibility due to a node having no more incoming or outgoing arc.
+  // This is a bit tricky because for now the meaning of the constraint says
+  // that all nodes that appear in at least one of the arcs must be in the
+  // circuit or have a self-arc. So if any such node ends up with an incoming or
+  // outgoing degree of zero once we remove false arcs then the constraint is
+  // infeasible!
+  for (int i = 0; i < num_nodes; ++i) {
+    // Skip initially ignored node.
+    if (incoming_arcs[i].empty() && outgoing_arcs[i].empty()) continue;
+
+    if (new_in_degree[i] == 0 || new_out_degree[i] == 0) {
+      context->is_unsat = true;
+      return true;
+    }
   }
 
   // Test if a subcircuit is already present.
@@ -1990,7 +2006,7 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
           const int var = PositiveRef(ref);
           if (var == objective_var) continue;
 
-          int coeff = -ct.linear().coeffs(i) * factor;
+          int64 coeff = -ct.linear().coeffs(i) * factor;
           if (!RefIsPositive(ref)) coeff = -coeff;
           if (!gtl::ContainsKey(objective_map, var)) {
             context.var_to_constraints[var].insert(-1);

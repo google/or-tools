@@ -21,18 +21,18 @@ public class SolveWithTimeLimit {
   static { System.loadLibrary("jniortools"); }
 
   public static void main(String[] args) throws Exception {
-    // Creates the model.
+    // Create the model.
     CpModel model = new CpModel();
-    // Creates the variables.
+    // Create the variables.
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
-    // Creates the constraints.
+    // Create the constraint.
     model.addDifferent(x, y);
 
-    // Creates a solver and solves the model.
+    // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
     solver.getParameters().setMaxTimeInSeconds(10.0);
     CpSolverStatus status = solver.solve(model);

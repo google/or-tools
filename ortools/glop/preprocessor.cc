@@ -28,7 +28,7 @@ using ::util::Reverse;
 namespace {
 // Returns an interval as an human readable std::string for debugging.
 std::string IntervalString(Fractional lb, Fractional ub) {
-  return StringPrintf("[%g, %g]", lb, ub);
+  return absl::StrFormat("[%g, %g]", lb, ub);
 }
 
 #if defined(_MSC_VER)
@@ -145,8 +145,8 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
     VLOG(1) << absl::StrFormat(
-        "%s(%fs): %d(%d) rows, %d(%d) columns, %lld(%lld) entries.",
-        name.c_str(), preprocess_time, lp->num_constraints().value(),
+        "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name.c_str(),
+        preprocess_time, lp->num_constraints().value(),
         (lp->num_constraints() - initial_num_rows_).value(),
         lp->num_variables().value(),
         (lp->num_variables() - initial_num_cols_).value(),
@@ -2859,6 +2859,14 @@ void SingletonColumnSignPreprocessor::RecoverSolution(
 bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, false);
+
+  // This is needed at postsolve.
+  //
+  // TODO(user): Get rid of the FIXED status instead to avoid spending
+  // time/memory for no good reason here.
+  saved_row_lower_bounds_ = lp->constraint_lower_bounds();
+  saved_row_upper_bounds_ = lp->constraint_upper_bounds();
+
   // Note that we don't update the transpose during this preprocessor run.
   const SparseMatrix& original_transpose = lp->GetTransposeSparseMatrix();
 
@@ -3094,6 +3102,32 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
         r.objective_coefficient[col_choice] -
         PreciseScalarProduct(solution->dual_values, r.column[col_choice]);
     solution->dual_values[r.row] = current_reduced_cost / r.coeff[col_choice];
+  }
+
+  // Fix potential bad ConstraintStatus::FIXED_VALUE statuses.
+  FixConstraintWithFixedStatuses(saved_row_lower_bounds_,
+                                 saved_row_upper_bounds_, solution);
+}
+
+void FixConstraintWithFixedStatuses(const DenseColumn& row_lower_bounds,
+                                    const DenseColumn& row_upper_bounds,
+                                    ProblemSolution* solution) {
+  const RowIndex num_rows = solution->constraint_statuses.size();
+  DCHECK_EQ(row_lower_bounds.size(), num_rows);
+  DCHECK_EQ(row_upper_bounds.size(), num_rows);
+  for (RowIndex row(0); row < num_rows; ++row) {
+    if (solution->constraint_statuses[row] != ConstraintStatus::FIXED_VALUE) {
+      continue;
+    }
+    if (row_lower_bounds[row] == row_upper_bounds[row]) continue;
+
+    // We need to fix the status and we just need to make sure that the bound we
+    // choose satisfies the LP optimality conditions.
+    if (solution->dual_values[row] > 0) {
+      solution->constraint_statuses[row] = ConstraintStatus::AT_LOWER_BOUND;
+    } else {
+      solution->constraint_statuses[row] = ConstraintStatus::AT_UPPER_BOUND;
+    }
   }
 }
 

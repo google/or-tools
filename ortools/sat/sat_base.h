@@ -91,7 +91,9 @@ class Literal {
 
   Literal Negated() const { return Literal(NegatedIndex()); }
 
-  std::string DebugString() const { return StringPrintf("%+d", SignedValue()); }
+  std::string DebugString() const {
+    return absl::StrFormat("%+d", SignedValue());
+  }
   bool operator==(Literal other) const { return index_ == other.index_; }
   bool operator!=(Literal other) const { return index_ != other.index_; }
 
@@ -200,8 +202,8 @@ struct AssignmentInfo {
   int32 trail_index;
 
   std::string DebugString() const {
-    return StringPrintf("level:%d type:%d trail_index:%d", level, type,
-                        trail_index);
+    return absl::StrFormat("level:%d type:%d trail_index:%d", level, type,
+                           trail_index);
   }
 };
 COMPILE_ASSERT(sizeof(AssignmentInfo) == 8,

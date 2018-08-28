@@ -111,11 +111,11 @@ void RemoveNearZeroEntries(Fractional threshold, DenseColumn* column) {
 }
 
 Fractional RestrictedInfinityNorm(const SparseColumn& column,
-                                  const DenseBooleanColumn& row_to_consider,
+                                  const DenseBooleanColumn& rows_to_consider,
                                   RowIndex* row_index) {
   Fractional infinity_norm = 0.0;
   for (const SparseColumn::Entry e : column) {
-    if (row_to_consider[e.row()] && fabs(e.coefficient()) > infinity_norm) {
+    if (rows_to_consider[e.row()] && fabs(e.coefficient()) > infinity_norm) {
       infinity_norm = fabs(e.coefficient());
       *row_index = e.row();
     }

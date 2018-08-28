@@ -52,20 +52,20 @@ class DotSyntax : public GraphSyntax {
   std::string Node(const std::string& name, const std::string& label,
                    const std::string& shape,
                    const std::string& color) override {
-    return StringPrintf("%s [shape=%s label=\"%s\" color=%s]\n", name.c_str(),
+    return absl::StrFormat("%s [shape=%s label=\"%s\" color=%s]\n", name.c_str(),
                         shape.c_str(), label.c_str(), color.c_str());
   }
 
   // Adds one link in the generated graph.
   std::string Link(const std::string& source, const std::string& destination,
                    const std::string& label) override {
-    return StringPrintf("%s -> %s [label=%s]\n", source.c_str(),
+    return absl::StrFormat("%s -> %s [label=%s]\n", source.c_str(),
                         destination.c_str(), label.c_str());
   }
 
   // File header.
   std::string Header(const std::string& name) override {
-    return StringPrintf("graph %s {\n", name.c_str());
+    return absl::StrFormat("graph %s {\n", name.c_str());
   }
 
   // File footer.
@@ -79,7 +79,7 @@ class GmlSyntax : public GraphSyntax {
   std::string Node(const std::string& name, const std::string& label,
                    const std::string& shape,
                    const std::string& color) override {
-    return StringPrintf(
+    return absl::StrFormat(
         "  node [\n"
         "    name \"%s\"\n"
         "    label \"%s\"\n"
@@ -94,7 +94,7 @@ class GmlSyntax : public GraphSyntax {
   // Adds one link in the generated graph.
   std::string Link(const std::string& source, const std::string& destination,
                    const std::string& label) override {
-    return StringPrintf(
+    return absl::StrFormat(
         "  edge [\n"
         "    label \"%s\"\n"
         "    source \"%s\"\n"
@@ -105,7 +105,7 @@ class GmlSyntax : public GraphSyntax {
 
   // File header.
   std::string Header(const std::string& name) override {
-    return StringPrintf(
+    return absl::StrFormat(
         "graph [\n"
         "  name \"%s\"\n",
         name.c_str());

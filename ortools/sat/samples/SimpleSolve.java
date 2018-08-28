@@ -16,23 +16,24 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
+/** Solve a simple problem with three variables and one different constraint. */
 public class SimpleSolve {
 
   static { System.loadLibrary("jniortools"); }
 
   public static void main(String[] args) throws Exception {
-    // Creates the model.
+    // Create the model.
     CpModel model = new CpModel();
-    // Creates the variables.
+    // Create the variables.
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
-    // Creates the constraints.
+    // Create the constraints.
     model.addDifferent(x, y);
 
-    // Creates a solver and solves the model.
+    // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.solve(model);
 

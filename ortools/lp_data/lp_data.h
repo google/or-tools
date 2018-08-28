@@ -414,7 +414,7 @@ class LinearProgram {
   // compute the solution of a maximization problem given as an argument.
   //
   // TODO(user): Do not interpret as a minimization problem?
-  void PopulateFromDual(const LinearProgram& linear_program,
+  void PopulateFromDual(const LinearProgram& dual,
                         RowToColMapping* duplicated_rows);
 
   // Populates the calling object with the given LinearProgram.

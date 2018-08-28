@@ -183,7 +183,7 @@ void DynamicPartition::UndoRefineUntilNumPartsEqual(int original_num_parts) {
 
 std::string DynamicPartition::DebugString(DebugStringSorting sorting) const {
   if (sorting != SORT_LEXICOGRAPHICALLY && sorting != SORT_BY_PART) {
-    return StringPrintf("Unsupported sorting: %d", sorting);
+    return absl::StrFormat("Unsupported sorting: %d", sorting);
   }
   std::vector<std::vector<int>> parts;
   for (int i = 0; i < NumParts(); ++i) {

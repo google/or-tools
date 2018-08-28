@@ -400,7 +400,7 @@ std::string SparseMatrix::Dump() const {
   for (RowIndex row(0); row < num_rows_; ++row) {
     result.append("{ ");
     for (ColIndex col(0); col < num_cols; ++col) {
-      StringAppendF(&result, "%g ", ToDouble(LookUpValue(row, col)));
+      absl::StrAppendFormat(&result, "%g ", ToDouble(LookUpValue(row, col)));
     }
     result.append("}\n");
   }

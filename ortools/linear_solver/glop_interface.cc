@@ -251,7 +251,7 @@ int64 GLOPInterface::nodes() const {
 }
 
 double GLOPInterface::best_objective_bound() const {
-  LOG(DFATAL) << "Best objective bound only available for discrete problems";
+  // TODO(user): report a better bound when we can.
   return trivial_worst_objective_bound();
 }
 

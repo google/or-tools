@@ -135,7 +135,7 @@ class SymmetryPropagator : public SatPropagator {
   // Returns false if there is a non-symmetric literal in this trail with its
   // image not already assigned to true by the solver.
   bool Enqueue(const Trail& trail, Literal literal, Literal image,
-               std::vector<AssignedLiteralInfo>* permutation_trail);
+               std::vector<AssignedLiteralInfo>* p_trail);
 
   // The identity permutation over all the literals.
   // This is temporary modified to encode a sparse permutation and then always

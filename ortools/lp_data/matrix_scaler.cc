@@ -64,7 +64,7 @@ std::string SparseMatrixScaler::DebugInformationString() const {
   Fractional min_magnitude;
   matrix_->ComputeMinAndMaxMagnitudes(&min_magnitude, &max_magnitude);
   const Fractional dynamic_range = max_magnitude / min_magnitude;
-  std::string output = StringPrintf(
+  std::string output = absl::StrFormat(
       "Min magnitude = %g, max magnitude = %g\n"
       "Dynamic range = %g\n"
       "Variance = %g\n"

@@ -164,8 +164,7 @@ class RevisedSimplex {
   // and try to use the previously computed solution as a warm-start. To disable
   // this behavior or give explicit warm-start data, use one of the State*()
   // functions below.
-  Status Solve(const LinearProgram& linear_program,
-               TimeLimit* time_limit) MUST_USE_RESULT;
+  Status Solve(const LinearProgram& lp, TimeLimit* time_limit) MUST_USE_RESULT;
 
   // Do not use the current solution as a warm-start for the next Solve(). The
   // next Solve() will behave as if the class just got created.
@@ -416,7 +415,7 @@ class RevisedSimplex {
   Fractional ComputeDirectionError(ColIndex col);
 
   // Computes the ratio of the basic variable corresponding to 'row'. A target
-  // bound (upper or lower) is choosen depending on the sign of the entering
+  // bound (upper or lower) is chosen depending on the sign of the entering
   // reduced cost and the sign of the direction 'd_[row]'. The ratio is such
   // that adding 'ratio * d_[row]' to the variable value changes it to its
   // target bound.

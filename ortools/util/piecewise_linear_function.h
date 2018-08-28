@@ -232,11 +232,11 @@ class PiecewiseLinearFunction {
   // Adds the function to the existing one. The domain of the resulting
   // function is the intersection of the two domains. The overflows and
   // the underflows are sticky.
-  void Add(const PiecewiseLinearFunction& function);
+  void Add(const PiecewiseLinearFunction& other);
   // Subtracts the function to the existing one. The domain of the
   // resulting function is the intersection of the two domains. The
   // overflows and the underflows are sticky.
-  void Subtract(const PiecewiseLinearFunction& function);
+  void Subtract(const PiecewiseLinearFunction& other);
   // Decomposes the piecewise linear function in a set of convex piecewise
   // linear functions. The objects in the vector are owned by the client code.
   std::vector<PiecewiseLinearFunction*> DecomposeToConvexFunctions() const;

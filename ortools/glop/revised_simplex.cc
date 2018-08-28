@@ -465,11 +465,11 @@ void RevisedSimplex::SetVariableNames() {
   variable_name_.resize(num_cols_, "");
   for (ColIndex col(0); col < first_slack_col_; ++col) {
     const ColIndex var_index = col + 1;
-    variable_name_[col] = StringPrintf("x%d", ColToIntIndex(var_index));
+    variable_name_[col] = absl::StrFormat("x%d", ColToIntIndex(var_index));
   }
   for (ColIndex col(first_slack_col_); col < num_cols_; ++col) {
     const ColIndex var_index = col - first_slack_col_ + 1;
-    variable_name_[col] = StringPrintf("s%d", ColToIntIndex(var_index));
+    variable_name_[col] = absl::StrFormat("s%d", ColToIntIndex(var_index));
   }
 }
 
@@ -909,7 +909,7 @@ void RevisedSimplex::InitializeVariableStatusesForWarmStart(
   }
 }
 
-// This implementation starts with an initial matrix B equal to the the identity
+// This implementation starts with an initial matrix B equal to the identity
 // matrix (modulo a column permutation). For that it uses either the slack
 // variables or the singleton columns present in the problem. Afterwards, the
 // fixed slacks in the basis are exchanged with normal columns of A if possible
@@ -939,6 +939,7 @@ Status RevisedSimplex::CreateInitialBasis() {
   // If possible, for the primal simplex we replace some slack variables with
   // some singleton columns present in the problem.
   if (!parameters_.use_dual_simplex() &&
+      parameters_.initial_basis() != GlopParameters::MAROS &&
       parameters_.exploit_singleton_column_in_initial_basis()) {
     // For UseSingletonColumnInInitialBasis() to work better, we change
     // the value of the boxed singleton column with a non-zero cost to the best
@@ -980,7 +981,28 @@ Status RevisedSimplex::CreateInitialBasis() {
   }
 
   // Use an advanced initial basis to remove the fixed variables from the basis.
-  if (parameters_.initial_basis() != GlopParameters::NONE) {
+  if (parameters_.initial_basis() == GlopParameters::NONE) {
+    return InitializeFirstBasis(basis);
+  }
+  if (parameters_.initial_basis() == GlopParameters::MAROS) {
+    InitialBasis initial_basis(matrix_with_slack_, objective_, lower_bound_,
+                               upper_bound_, variables_info_.GetTypeRow());
+    if (parameters_.use_dual_simplex()) {
+      // This dual version only uses zero-cost columns to complete the
+      // basis.
+      initial_basis.GetDualMarosBasis(num_cols_, &basis);
+    } else {
+      initial_basis.GetPrimalMarosBasis(num_cols_, &basis);
+    }
+    int number_changed = 0;
+    for (RowIndex row(0); row < num_rows_; ++row) {
+      if (basis[row] != SlackColIndex(row)) {
+        number_changed++;
+      }
+    }
+    VLOG(1) << "Number of Maros basis changes: " << number_changed;
+  } else if (parameters_.initial_basis() == GlopParameters::BIXBY ||
+             parameters_.initial_basis() == GlopParameters::TRIANGULAR) {
     // First unassign the fixed variables from basis.
     int num_fixed_variables = 0;
     for (RowIndex row(0); row < basis.size(); ++row) {
@@ -991,7 +1013,11 @@ Status RevisedSimplex::CreateInitialBasis() {
       }
     }
 
-    if (num_fixed_variables > 0) {
+    if (num_fixed_variables == 0) {
+      VLOG(1) << "Crash is set to " << parameters_.initial_basis()
+              << " but there is no equality rows to remove from initial all "
+                 "slack basis.";
+    } else {
       // Then complete the basis with an advanced initial basis algorithm.
       VLOG(1) << "Trying to remove " << num_fixed_variables
               << " fixed variables from the initial basis.";
@@ -1017,6 +1043,7 @@ Status RevisedSimplex::CreateInitialBasis() {
         } else {
           initial_basis.CompleteTriangularPrimalBasis(num_cols_, &basis);
         }
+
         const Status status = InitializeFirstBasis(basis);
 
         // Check that the upper bound on the condition number of LU is below
@@ -1032,12 +1059,13 @@ Status RevisedSimplex::CreateInitialBasis() {
           VLOG(1) << "Reverting to all slack basis.";
           basis = basis_copy;
         }
-      } else {
-        VLOG(1) << "Unsupported initial_basis parameters: "
-                << parameters_.initial_basis();
       }
     }
+  } else {
+    LOG(WARNING) << "Unsupported initial_basis parameters: "
+                 << parameters_.initial_basis();
   }
+
   return InitializeFirstBasis(basis);
 }
 
@@ -2869,7 +2897,7 @@ void RevisedSimplex::DisplayIterationInfo() const {
                    : variable_values_.ComputeSumOfPrimalInfeasibilities());
     VLOG(1) << (feasibility_phase_ ? "Feasibility" : "Optimization")
             << " phase, iteration # " << iter
-            << ", objective = " << StringPrintf("%.15E", objective);
+            << ", objective = " << absl::StrFormat("%.15E", objective);
   }
 }
 
@@ -2906,7 +2934,7 @@ std::string RevisedSimplex::SimpleVariableInfo(ColIndex col) const {
   std::string output;
   VariableType variable_type = variables_info_.GetTypeRow()[col];
   VariableStatus variable_status = variables_info_.GetStatusRow()[col];
-  StringAppendF(&output, "%d (%s) = %s, %s, %s, [%s,%s]", col.value(),
+  absl::StrAppendFormat(&output, "%d (%s) = %s, %s, %s, [%s,%s]", col.value(),
                 variable_name_[col].c_str(),
                 StringifyWithFlags(variable_values_.Get(col)).c_str(),
                 GetVariableStatusString(variable_status).c_str(),

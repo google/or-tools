@@ -394,7 +394,7 @@ class IntegralProblemConverter {
       const gtl::ITIVector<VariableIndex, Fractional>& dense_weights, T* t);
 
   // Returns true when at least one element is non-zero.
-  bool HasNonZeroWeigths(
+  bool HasNonZeroWeights(
       const gtl::ITIVector<VariableIndex, Fractional>& dense_weights) const;
 
   bool problem_is_boolean_and_has_only_integral_constraints_;
@@ -558,7 +558,7 @@ void IntegralProblemConverter::ConvertAllVariables(
       num_boolean_variables_ += integral_var.GetNumberOfBooleanVariables();
       const std::string var_name = linear_problem.GetVariableName(col);
       for (int i = 0; i < integral_var.bits().size(); ++i) {
-        boolean_problem->add_var_names(var_name + StringPrintf("_%d", i));
+        boolean_problem->add_var_names(var_name + absl::StrFormat("_%d", i));
       }
     }
     integral_variables_.push_back(integral_var);
@@ -590,7 +590,7 @@ void IntegralProblemConverter::ConvertAllConstraints(
       offset += AddWeightedIntegralVariable(RowToColIndex(e.row()),
                                             e.coefficient(), &dense_weights);
     }
-    if (!HasNonZeroWeigths(dense_weights)) {
+    if (!HasNonZeroWeights(dense_weights)) {
       continue;
     }
 
@@ -880,7 +880,7 @@ double IntegralProblemConverter::ScaleAndSparsifyWeights(
 
   return bound_error;
 }
-bool IntegralProblemConverter::HasNonZeroWeigths(
+bool IntegralProblemConverter::HasNonZeroWeights(
     const gtl::ITIVector<VariableIndex, Fractional>& dense_weights) const {
   for (const Fractional weight : dense_weights) {
     if (weight != 0.0) {
@@ -1045,18 +1045,18 @@ BopSolveStatus IntegralSolver::SolveWithTimeLimit(
 
 BopSolveStatus IntegralSolver::Solve(
     const LinearProgram& linear_problem,
-    const DenseRow& user_provided_intial_solution) {
+    const DenseRow& user_provided_initial_solution) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
-  return SolveWithTimeLimit(linear_problem, user_provided_intial_solution,
+  return SolveWithTimeLimit(linear_problem, user_provided_initial_solution,
                             time_limit.get());
 }
 
 BopSolveStatus IntegralSolver::SolveWithTimeLimit(
     const LinearProgram& linear_problem,
-    const DenseRow& user_provided_intial_solution, TimeLimit* time_limit) {
+    const DenseRow& user_provided_initial_solution, TimeLimit* time_limit) {
   // We make a copy so that we can clear it if the presolve is active.
-  DenseRow initial_solution = user_provided_intial_solution;
+  DenseRow initial_solution = user_provided_initial_solution;
   if (initial_solution.size() > 0) {
     CHECK_EQ(initial_solution.size(), linear_problem.num_variables())
         << "The initial solution should have the same number of variables as "

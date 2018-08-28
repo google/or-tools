@@ -88,7 +88,7 @@ int main() {
 ## Java code samples
 
 The Java code implements the same interface as the Python code, with a
-**CpModel**, and a **CpSolver** class.
+**CpModel** and a **CpSolver** class.
 
 ```java
 import com.google.ortools.sat.CpModel;
@@ -111,7 +111,7 @@ public class CodeSample {
 ## C\# code samples
 
 The C\# code implements the same interface as the Python code, with a
-**CpModel**, and a **CpSolver** class.
+**CpModel** and a **CpSolver** class.
 
 
 ```cs

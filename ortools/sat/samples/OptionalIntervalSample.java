@@ -24,9 +24,9 @@ public class OptionalIntervalSample {
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar startVar = model.newIntVar(0, horizon, "start");
+    IntVar endVar = model.newIntVar(0, horizon, "end");
     // Java code supports IntVar or integer constants in intervals.
     int duration = 10;
-    IntVar endVar = model.newIntVar(0, horizon, "end");
     ILiteral presence = model.newBoolVar("presence");
     IntervalVar interval =
         model.newOptionalIntervalVar(startVar, duration, endVar, presence, "interval");

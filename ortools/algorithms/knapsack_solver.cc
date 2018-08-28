@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "ortools/base/memory.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/bitset.h"
@@ -1128,27 +1129,28 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
       time_limit_seconds_(std::numeric_limits<double>::infinity()) {
   switch (solver_type) {
     case KNAPSACK_BRUTE_FORCE_SOLVER:
-      solver_.reset(new KnapsackBruteForceSolver(solver_name));
+      solver_ = absl::make_unique<KnapsackBruteForceSolver>(solver_name);
       break;
     case KNAPSACK_64ITEMS_SOLVER:
-      solver_.reset(new Knapsack64ItemsSolver(solver_name));
+      solver_ = absl::make_unique<Knapsack64ItemsSolver>(solver_name);
       break;
     case KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER:
-      solver_.reset(new KnapsackDynamicProgrammingSolver(solver_name));
+      solver_ =
+          absl::make_unique<KnapsackDynamicProgrammingSolver>(solver_name);
       break;
     case KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER:
-      solver_.reset(new KnapsackGenericSolver(solver_name));
+      solver_ = absl::make_unique<KnapsackGenericSolver>(solver_name);
       break;
 #if defined(USE_CBC)
     case KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER:
-      solver_.reset(new KnapsackMIPSolver(
-          MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, solver_name));
+      solver_ = absl::make_unique<KnapsackMIPSolver>(
+          MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, solver_name);
       break;
 #endif  // USE_CBC
 #if defined(USE_SCIP)
     case KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER:
-      solver_.reset(new KnapsackMIPSolver(
-          MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, solver_name));
+      solver_ = absl::make_unique<KnapsackMIPSolver>(
+          MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, solver_name);
       break;
 #endif  // USE_SCIP
     default:
@@ -1161,7 +1163,7 @@ KnapsackSolver::~KnapsackSolver() {}
 void KnapsackSolver::Init(const std::vector<int64>& profits,
                           const std::vector<std::vector<int64>>& weights,
                           const std::vector<int64>& capacities) {
-  time_limit_.reset(new TimeLimit(time_limit_seconds_));
+  time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
   is_solution_optimal_ = false;
   additional_profit_ = 0LL;
   is_problem_solved_ = false;

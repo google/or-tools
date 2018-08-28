@@ -11,60 +11,59 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
-class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
-  public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
-    variables_ = variables;
-  }
-
-  @Override
-  public void onSolutionCallback() {
-    System.out.println(String.format("Solution #%d: time = %.02f s", solutionCount_, wallTime()));
-    System.out.println(String.format("  objective value = %d", objectiveValue()));
-    for (IntVar v : variables_) {
-      System.out.println(String.format("  %s = %d", v.getName(), value(v)));
-    }
-    solutionCount_++;
-  }
-
-  public int solutionCount() {
-    return solutionCount_;
-  }
-
-  private int solutionCount_;
-  private IntVar[] variables_;
-}
-
 public class SolveWithIntermediateSolutions {
 
   static { System.loadLibrary("jniortools"); }
 
+  static class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
+    public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
+      variableArray = variables;
+    }
+
+    @Override
+    public void onSolutionCallback() {
+      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount, wallTime());
+      System.out.printf("  objective value = %d%n", objectiveValue());
+      for (IntVar v : variableArray) {
+        System.out.printf("  %s = %d%n", v.getName(), value(v));
+      }
+      solutionCount++;
+    }
+
+    public int getSolutionCount() {
+      return solutionCount;
+    }
+
+    private int solutionCount;
+    private final IntVar[] variableArray;
+  }
+
   public static void main(String[] args) throws Exception {
-    // Creates the model.
+    // Create the model.
     CpModel model = new CpModel();
-    // Creates the variables.
+    // Create the variables.
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
-    // Creates the constraints.
+    // Create the constraint.
     model.addDifferent(x, y);
 
-    // Maximizes a linear combination of variables.
+    // Maximize a linear combination of variables.
     model.maximizeScalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3});
 
-    // Creates a solver and solves the model.
+    // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
-    CpSolverStatus status = solver.solveWithSolutionCallback(model, cb);
+    solver.solveWithSolutionCallback(model, cb);
 
-    System.out.println(cb.solutionCount() + " solutions found.");
+    System.out.println(cb.getSolutionCount() + " solutions found.");
   }
 }

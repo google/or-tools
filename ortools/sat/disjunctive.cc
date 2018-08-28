@@ -52,37 +52,47 @@ std::function<void(Model*)> Disjunctive(
     GenericLiteralWatcher* watcher =
         model->GetOrCreate<GenericLiteralWatcher>();
 
-    // We decided to create the propagators in this particular order, but it
-    // shouldn't matter much because of the different priorities used.
-    {
-      // Only one direction is needed by this one.
-      DisjunctiveOverloadChecker* overload_checker =
-          new DisjunctiveOverloadChecker(true, helper);
-      const int id = overload_checker->RegisterWith(watcher);
-      watcher->SetPropagatorPriority(id, 1);
-      model->TakeOwnership(overload_checker);
+    if (vars.size() == 2) {
+      DisjunctiveWithTwoItems* propagator = new DisjunctiveWithTwoItems(helper);
+      propagator->RegisterWith(watcher);
+      model->TakeOwnership(propagator);
+    } else {
+      // We decided to create the propagators in this particular order, but it
+      // shouldn't matter much because of the different priorities used.
+      {
+        // Only one direction is needed by this one.
+        DisjunctiveOverloadChecker* overload_checker =
+            new DisjunctiveOverloadChecker(true, helper);
+        const int id = overload_checker->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 1);
+        model->TakeOwnership(overload_checker);
+      }
+      for (const bool time_direction : {true, false}) {
+        DisjunctiveDetectablePrecedences* detectable_precedences =
+            new DisjunctiveDetectablePrecedences(time_direction, helper);
+        const int id = detectable_precedences->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 2);
+        model->TakeOwnership(detectable_precedences);
+      }
+      for (const bool time_direction : {true, false}) {
+        DisjunctiveNotLast* not_last =
+            new DisjunctiveNotLast(time_direction, helper);
+        const int id = not_last->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 3);
+        model->TakeOwnership(not_last);
+      }
+      for (const bool time_direction : {true, false}) {
+        DisjunctiveEdgeFinding* edge_finding =
+            new DisjunctiveEdgeFinding(time_direction, helper);
+        const int id = edge_finding->RegisterWith(watcher);
+        watcher->SetPropagatorPriority(id, 4);
+        model->TakeOwnership(edge_finding);
+      }
     }
-    for (const bool time_direction : {true, false}) {
-      DisjunctiveDetectablePrecedences* detectable_precedences =
-          new DisjunctiveDetectablePrecedences(time_direction, helper);
-      const int id = detectable_precedences->RegisterWith(watcher);
-      watcher->SetPropagatorPriority(id, 2);
-      model->TakeOwnership(detectable_precedences);
-    }
-    for (const bool time_direction : {true, false}) {
-      DisjunctiveNotLast* not_last =
-          new DisjunctiveNotLast(time_direction, helper);
-      const int id = not_last->RegisterWith(watcher);
-      watcher->SetPropagatorPriority(id, 3);
-      model->TakeOwnership(not_last);
-    }
-    for (const bool time_direction : {true, false}) {
-      DisjunctiveEdgeFinding* edge_finding =
-          new DisjunctiveEdgeFinding(time_direction, helper);
-      const int id = edge_finding->RegisterWith(watcher);
-      watcher->SetPropagatorPriority(id, 4);
-      model->TakeOwnership(edge_finding);
-    }
+
+    // Note that we keep this one even when there is just two intervals. This is
+    // because it might push a variable that is after both of the intervals
+    // using the fact that they are in disjunction.
     if (model->GetOrCreate<SatParameters>()
             ->use_precedences_in_disjunctive_constraint()) {
       for (const bool time_direction : {true, false}) {
@@ -184,6 +194,71 @@ IntegerValue TaskSet::ComputeEndMin(int task_to_ignore,
     }
   }
   return end_min;
+}
+
+bool DisjunctiveWithTwoItems::Propagate() {
+  DCHECK_EQ(helper_->NumTasks(), 2);
+
+  // We can't propagate anything if one of the interval is absent for sure.
+  if (helper_->IsAbsent(0) || helper_->IsAbsent(1)) return true;
+
+  // Note that this propagation also take care of the "overload checker" part.
+  // It also propagates as much as possible, even in the presence of task with
+  // variable durations.
+  //
+  // TODO(user): For optional interval whose presense in unknown and without
+  // optional variable, the end-min may not be propagated to at least (start_min
+  // + duration_min). Consider that into the computation so we may decide the
+  // interval forced absence? Same for the start-max.
+  int task_before = 0;
+  int task_after = 1;
+  if (helper_->StartMax(0) < helper_->EndMin(1)) {
+    // Task 0 must be before task 1.
+  } else if (helper_->StartMax(1) < helper_->EndMin(0)) {
+    // Task 1 must be before task 0.
+    std::swap(task_before, task_after);
+  } else {
+    return true;
+  }
+
+  if (helper_->IsPresent(task_before) &&
+      helper_->StartMin(task_after) < helper_->EndMin(task_before)) {
+    // Reason for precedences if both present.
+    helper_->ClearReason();
+    helper_->AddStartMaxReason(task_before, helper_->EndMin(task_after) - 1);
+    helper_->AddEndMinReason(task_after, helper_->EndMin(task_after));
+
+    // Reason for the bound push.
+    helper_->AddPresenceReason(task_before);
+    helper_->AddEndMinReason(task_before, helper_->EndMin(task_before));
+    if (!helper_->IncreaseStartMin(task_after, helper_->EndMin(task_before))) {
+      return false;
+    }
+  }
+
+  if (helper_->IsPresent(task_after) &&
+      helper_->EndMax(task_before) > helper_->StartMax(task_after)) {
+    // Reason for precedences if both present.
+    helper_->ClearReason();
+    helper_->AddStartMaxReason(task_before, helper_->EndMin(task_after) - 1);
+    helper_->AddEndMinReason(task_after, helper_->EndMin(task_after));
+
+    // Reason for the bound push.
+    helper_->AddPresenceReason(task_after);
+    helper_->AddStartMaxReason(task_after, helper_->StartMax(task_after));
+    if (!helper_->DecreaseEndMax(task_before, helper_->StartMax(task_after))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+int DisjunctiveWithTwoItems::RegisterWith(GenericLiteralWatcher* watcher) {
+  // This propagator reach the fix point in one pass.
+  const int id = watcher->Register(this);
+  helper_->WatchAllTasks(id, watcher);
+  return id;
 }
 
 // TODO(user): Improve the Overload Checker using delayed insertion.
@@ -403,28 +478,38 @@ bool DisjunctivePrecedences::Propagate() {
                                    task_is_currently_present_, &before_);
 
   // We don't care about the initial content of this vector.
-  reason_for_being_before_.resize(num_tasks, absl::InlinedVector<Literal, 6>());
+  task_to_arc_index_.resize(num_tasks);
   int critical_index;
   const int size = before_.size();
   for (int i = 0; i < size;) {
     const IntegerVariable var = before_[i].var;
     DCHECK_NE(var, kNoIntegerVariable);
     task_set_.Clear();
+    const int initial_i = i;
+    IntegerValue min_offset = before_[i].offset;
     for (; i < size && before_[i].var == var; ++i) {
       const int task = before_[i].index;
-      reason_for_being_before_[task] = before_[i].reason;
+      min_offset = std::min(min_offset, before_[i].offset);
       task_set_.AddUnsortedEntry(
           {task, helper_->StartMin(task), helper_->DurationMin(task)});
     }
-    if (task_set_.SortedTasks().size() < 2) continue;
+    DCHECK_GE(task_set_.SortedTasks().size(), 2);
     if (integer_trail_->IsCurrentlyIgnored(var)) continue;
     task_set_.Sort();
 
-    const IntegerValue end_min =
-        task_set_.ComputeEndMin(/*task_to_ignore=*/-1, &critical_index);
-    if (end_min > integer_trail_->LowerBound(var)) {
+    // TODO(user): Only use the min_offset of the critical task? Or maybe do a
+    // more general computation to find by how much we can push var?
+    const IntegerValue new_lb =
+        task_set_.ComputeEndMin(/*task_to_ignore=*/-1, &critical_index) +
+        min_offset;
+    if (new_lb > integer_trail_->LowerBound(var)) {
       const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
       helper_->ClearReason();
+
+      // Fill task_to_arc_index_ since we need it for the reason.
+      for (int j = initial_i; j < i; ++j) {
+        task_to_arc_index_[before_[j].index] = before_[j].arc_index;
+      }
 
       const IntegerValue window_start = sorted_tasks[critical_index].start_min;
       for (int i = critical_index; i < sorted_tasks.size(); ++i) {
@@ -434,15 +519,15 @@ bool DisjunctivePrecedences::Propagate() {
         helper_->AddPresenceReason(ct);
         helper_->AddDurationMinReason(ct);
         helper_->AddStartMinReason(ct, window_start);
-        for (const Literal l : reason_for_being_before_[ct]) {
-          helper_->MutableLiteralReason()->push_back(l.Negated());
-        }
+        precedences_->AddPrecedenceReason(task_to_arc_index_[ct], min_offset,
+                                          helper_->MutableLiteralReason(),
+                                          helper_->MutableIntegerReason());
       }
 
       // TODO(user): If var is actually a start-min of an interval, we
       // could push the end-min and check the interval consistency right away.
       if (!helper_->PushIntegerLiteral(
-              IntegerLiteral::GreaterOrEqual(var, end_min))) {
+              IntegerLiteral::GreaterOrEqual(var, new_lb))) {
         return false;
       }
     }

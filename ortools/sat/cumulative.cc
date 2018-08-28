@@ -33,7 +33,7 @@ namespace sat {
 
 std::function<void(Model*)> Cumulative(
     const std::vector<IntervalVariable>& vars,
-    const std::vector<IntegerVariable>& demands,
+    const std::vector<IntegerVariable>& demand_vars,
     const IntegerVariable& capacity) {
   return [=](Model* model) {
     if (vars.empty()) return;
@@ -45,16 +45,16 @@ std::function<void(Model*)> Cumulative(
     // for each task. Also ensure that no task consumes more resource than what
     // is available. This is useful because the subsequent propagators do not
     // filter the capacity variable very well.
-    for (int i = 0; i < demands.size(); ++i) {
+    for (int i = 0; i < demand_vars.size(); ++i) {
       if (intervals->MaxSize(vars[i]) == 0) continue;
 
       if (intervals->MinSize(vars[i]) > 0) {
-        if (demands[i] == capacity) continue;
+        if (demand_vars[i] == capacity) continue;
         if (intervals->IsOptional(vars[i])) {
           model->Add(ConditionalLowerOrEqual(
-              demands[i], capacity, intervals->IsPresentLiteral(vars[i])));
+              demand_vars[i], capacity, intervals->IsPresentLiteral(vars[i])));
         } else {
-          model->Add(LowerOrEqual(demands[i], capacity));
+          model->Add(LowerOrEqual(demand_vars[i], capacity));
         }
         continue;
       }
@@ -69,10 +69,11 @@ std::function<void(Model*)> Cumulative(
             Literal(model->Add(NewBooleanVariable()), true);
         model->Add(ReifiedBoolAnd(
             {size_condition, intervals->IsPresentLiteral(vars[i])}, condition));
-        model->Add(ConditionalLowerOrEqual(demands[i], capacity, condition));
+        model->Add(
+            ConditionalLowerOrEqual(demand_vars[i], capacity, condition));
       } else {
         model->Add(
-            ConditionalLowerOrEqual(demands[i], capacity, size_condition));
+            ConditionalLowerOrEqual(demand_vars[i], capacity, size_condition));
       }
     }
 
@@ -93,7 +94,7 @@ std::function<void(Model*)> Cumulative(
       std::vector<IntervalVariable> in_disjunction;
       for (int i = 0; i < vars.size(); ++i) {
         if (intervals->MinSize(vars[i]) > 0 &&
-            2 * model->Get(LowerBound(demands[i])) >
+            2 * model->Get(LowerBound(demand_vars[i])) >
                 model->Get(UpperBound(capacity))) {
           in_disjunction.push_back(vars[i]);
         }
@@ -130,7 +131,7 @@ std::function<void(Model*)> Cumulative(
     // increases the minimum of the start variables, decrease the maximum of the
     // end variables, and increase the minimum of the capacity variable.
     TimeTablingPerTask* time_tabling =
-        new TimeTablingPerTask(demands, capacity, integer_trail, helper);
+        new TimeTablingPerTask(demand_vars, capacity, integer_trail, helper);
     time_tabling->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(time_tabling);
 
@@ -138,7 +139,7 @@ std::function<void(Model*)> Cumulative(
     // It increases the minimum of the capacity variable.
     if (parameters.use_overload_checker_in_cumulative_constraint()) {
       OverloadChecker* overload_checker = new OverloadChecker(
-          vars, demands, capacity, trail, integer_trail, intervals);
+          vars, demand_vars, capacity, trail, integer_trail, intervals);
       overload_checker->RegisterWith(
           model->GetOrCreate<GenericLiteralWatcher>());
       model->TakeOwnership(overload_checker);
@@ -149,7 +150,7 @@ std::function<void(Model*)> Cumulative(
     // maximum of the end variables,
     if (parameters.use_timetable_edge_finding_in_cumulative_constraint()) {
       TimeTableEdgeFinding* time_table_edge_finding = new TimeTableEdgeFinding(
-          vars, demands, capacity, trail, integer_trail, intervals);
+          vars, demand_vars, capacity, trail, integer_trail, intervals);
       time_table_edge_finding->RegisterWith(
           model->GetOrCreate<GenericLiteralWatcher>());
       model->TakeOwnership(time_table_edge_finding);

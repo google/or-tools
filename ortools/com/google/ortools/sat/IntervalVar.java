@@ -21,14 +21,14 @@ import com.google.ortools.sat.IntervalConstraintProto;
 public class IntervalVar {
   IntervalVar(
       CpModelProto.Builder builder, int startIndex, int sizeIndex, int endIndex, String name) {
-    this.builder_ = builder;
-    this.index_ = builder_.getConstraintsCount();
-    ConstraintProto.Builder ct = builder_.addConstraintsBuilder();
+    this.modelBuilder = builder;
+    this.constraintIndex = modelBuilder.getConstraintsCount();
+    ConstraintProto.Builder ct = modelBuilder.addConstraintsBuilder();
     ct.setName(name);
-    this.var_ = ct.getIntervalBuilder();
-    this.var_.setStart(startIndex);
-    this.var_.setSize(sizeIndex);
-    this.var_.setEnd(endIndex);
+    this.intervalBuilder = ct.getIntervalBuilder();
+    this.intervalBuilder.setStart(startIndex);
+    this.intervalBuilder.setSize(sizeIndex);
+    this.intervalBuilder.setEnd(endIndex);
   }
 
   IntervalVar(
@@ -38,32 +38,32 @@ public class IntervalVar {
       int endIndex,
       int isPresentIndex,
       String name) {
-    this.builder_ = builder;
-    this.index_ = builder_.getConstraintsCount();
-    ConstraintProto.Builder ct = builder_.addConstraintsBuilder();
+    this.modelBuilder = builder;
+    this.constraintIndex = modelBuilder.getConstraintsCount();
+    ConstraintProto.Builder ct = modelBuilder.addConstraintsBuilder();
     ct.setName(name);
     ct.addEnforcementLiteral(isPresentIndex);
-    this.var_ = ct.getIntervalBuilder();
-    this.var_.setStart(startIndex);
-    this.var_.setSize(sizeIndex);
-    this.var_.setEnd(endIndex);
+    this.intervalBuilder = ct.getIntervalBuilder();
+    this.intervalBuilder.setStart(startIndex);
+    this.intervalBuilder.setSize(sizeIndex);
+    this.intervalBuilder.setEnd(endIndex);
   }
 
   @Override
   public String toString() {
-    return builder_.getConstraints(index_).toString();
+    return modelBuilder.getConstraints(constraintIndex).toString();
   }
 
   int getIndex() {
-    return index_;
+    return constraintIndex;
   }
 
   /** Returns the name passed in the constructor. */
   public String getName() {
-    return builder_.getConstraints(index_).getName();
+    return modelBuilder.getConstraints(constraintIndex).getName();
   }
 
-  private CpModelProto.Builder builder_;
-  private int index_;
-  private IntervalConstraintProto.Builder var_;
+  private final CpModelProto.Builder modelBuilder;
+  private final int constraintIndex;
+  private final IntervalConstraintProto.Builder intervalBuilder;
 }

@@ -51,7 +51,7 @@ class IntegerSumLE : public PropagatorInterface {
   // another IntegerSumLE constraint on the negated variables.
   IntegerSumLE(LiteralIndex reified_literal,
                const std::vector<IntegerVariable>& vars,
-               const std::vector<IntegerValue>& coefficients,
+               const std::vector<IntegerValue>& coeffs,
                IntegerValue upper_bound, Model* model);
 
   // We propagate:
@@ -385,7 +385,7 @@ inline std::function<void(Model*)> WeightedSumNotEqual(
 // Model-based function to create an IntegerVariable that corresponds to the
 // given weighted sum of other IntegerVariables.
 //
-// Note that this is templated so that it can seemlessly accept std::vector<int>
+// Note that this is templated so that it can seamlessly accept std::vector<int>
 // or std::vector<int64>.
 //
 // TODO(user): invert the coefficients/vars arguments.

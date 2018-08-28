@@ -257,7 +257,7 @@ std::string CplexInterface::SolverVersion() const {
   version -= mod * 100;
   int const fix = version;
 
-  return StringPrintf("CPLEX library version %d.%02d.%02d.%02d", major, release,
+  return absl::StrFormat("CPLEX library version %d.%02d.%02d.%02d", major, release,
                       mod, fix);
 }
 
@@ -1125,7 +1125,7 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
   // solve.
   if (!supportIncrementalExtraction && sync_status_ == MUST_RELOAD) Reset();
   ExtractModel();
-  VLOG(1) << StringPrintf("Model build in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
 
   // Set log level.
   CHECK_STATUS(
@@ -1159,15 +1159,15 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
   (void)CPXXsetintparam(mEnv, CPX_PARAM_SCRIND, CPX_OFF);
 
   if (status) {
-    VLOG(1) << StringPrintf("Failed to optimize MIP. Error %d", status);
+    VLOG(1) << absl::StrFormat("Failed to optimize MIP. Error %d", status);
     // NOTE: We do not return immediately since there may be information
     //       to grab (for example an incumbent)
   } else {
-    VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
+    VLOG(1) << absl::StrFormat("Solved in %.3f seconds.", timer.Get());
   }
 
   int const cpxstat = CPXXgetstat(mEnv, mLp);
-  VLOG(1) << StringPrintf("CPLEX solution status %d.", cpxstat);
+  VLOG(1) << absl::StrFormat("CPLEX solution status %d.", cpxstat);
 
   // Figure out what solution we have.
   int solnmethod, solntype, pfeas, dfeas;
@@ -1231,8 +1231,8 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
         } else
           var->set_reduced_cost(CPX_NAN);
         VLOG(3) << var->name() << ":"
-                << (value ? StringPrintf("  value = %f", x[i]) : "")
-                << (dual ? StringPrintf("  reduced cost = %f", dj[i]) : "");
+                << (value ? absl::StrFormat("  value = %f", x[i]) : "")
+                << (dual ? absl::StrFormat("  reduced cost = %f", dj[i]) : "");
       }
     }
 
@@ -1248,7 +1248,7 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
         } else
           ct->set_dual_value(CPX_NAN);
         VLOG(4) << "row " << ct->index() << ":"
-                << (dual ? StringPrintf("  dual = %f", pi[i]) : "");
+                << (dual ? absl::StrFormat("  dual = %f", pi[i]) : "");
       }
     }
   }

@@ -179,7 +179,7 @@ class ThetaLambdaTree {
   int GetEventFromLeaf(int leaf) const;
 
   // Propagates the change of leaf energies and envelopes towards the root.
-  void RefreshNode(int leaf);
+  void RefreshNode(int node);
 
   // Finds the maximum leaf under node such that
   // initial_envelope(leaf) + sum_{leaf' >= leaf} energy_min(leaf')

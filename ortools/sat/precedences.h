@@ -86,38 +86,32 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // Generic function that cover all of the above case and more.
   void AddPrecedenceWithAllOptions(IntegerVariable i1, IntegerVariable i2,
                                    IntegerValue offset,
-                                   IntegerVariable offset_var, LiteralIndex l);
+                                   IntegerVariable offset_var, LiteralIndex r);
 
-  // Finds all the IntegerVariable that are "after" one of the IntegerVariable
-  // in vars. Returns a vector of these precedences relation sorted by
-  // IntegerPrecedences.var so that it is efficient to find all the
+  // Finds all the IntegerVariable that are "after" at least two of the
+  // IntegerVariable in vars. Returns a vector of these precedences relation
+  // sorted by IntegerPrecedences.var so that it is efficient to find all the
   // IntegerVariable "before" another one.
   //
   // Note that we only consider direct precedences here. Given our usage, it may
   // be better to compute the full reachability in the precedence graph, but in
-  // pratice that may be too slow. On a good note, because we have all the
-  // potential precedences between tasks in disjunctions, on a single machine,
-  // both notion should be the same since we automatically work on the
-  // transitive closure.
+  // pratice that may be too slow.
   //
   // Note that the IntegerVariable in the vector are also returned in
   // topological order for a more efficient propagation in
-  // DisjunctiveConstraint::PrecedencesPass() where this is used.
+  // DisjunctivePrecedences::Propagate() where this is used.
   struct IntegerPrecedences {
-    int index;            // in vars.
+    int index;            // position in vars.
     IntegerVariable var;  // An IntegerVariable that is >= to vars[index].
-
-    // The reason for it to be >=.
-    absl::InlinedVector<Literal, 6> reason;
-
-    // Only needed for testing.
-    bool operator==(const IntegerPrecedences& o) const {
-      return index == o.index && var == o.var && reason == o.reason;
-    }
+    int arc_index;        // Used by AddPrecedenceReason().
+    IntegerValue offset;  // we have: input_vars[index] + offset <= var
   };
   void ComputePrecedences(const std::vector<IntegerVariable>& vars,
                           const std::vector<bool>& to_consider,
                           std::vector<IntegerPrecedences>* output);
+  void AddPrecedenceReason(int arc_index, IntegerValue min_offset,
+                           std::vector<Literal>* literal_reason,
+                           std::vector<IntegerLiteral>* integer_reason) const;
 
   // Advanced usage. To be called once all the constraints have been added to
   // the model. This will loop over all "node" in this class, and if one of its
@@ -157,7 +151,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // on their negation.
   void AdjustSizeFor(IntegerVariable i);
   void AddArc(IntegerVariable tail, IntegerVariable head, IntegerValue offset,
-              IntegerVariable offset_var, LiteralIndex l);
+              IntegerVariable offset_var, LiteralIndex presence_literal_index);
 
   // Enqueue a new lower bound for the variable arc.head_lb that was deduced
   // from the current value of arc.tail_lb and the offset of this arc.
@@ -258,7 +252,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   std::vector<IntegerLiteral> integer_reason_;
 
   // Temp vectors for the Bellman-Ford algorithm. The graph in which this
-  // algorithm works is in one to one correspondance with the IntegerVariable in
+  // algorithm works is in one to one correspondence with the IntegerVariable in
   // impacted_arcs_.
   std::deque<int> bf_queue_;
   std::vector<bool> bf_in_queue_;

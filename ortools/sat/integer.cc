@@ -19,7 +19,6 @@
 
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -160,7 +159,8 @@ IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
 // Note that by not inserting the literal in "order" we can in the worst case
 // use twice as much implication (2 by literals) instead of only one between
 // consecutive literals.
-void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
+void IntegerEncoder::AddImplications(IntegerLiteral i_lit,
+                                     Literal associated_lit) {
   if (i_lit.var >= encoding_by_var_.size()) {
     encoding_by_var_.resize(i_lit.var.value() + 1);
   }
@@ -172,27 +172,29 @@ void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
   if (add_implications_) {
     auto after_it = map_ref.lower_bound(i_lit.bound);
     if (after_it != map_ref.end()) {
-      // Literal(after) => literal
+      // Literal(after) => associated_lit
       if (sat_solver_->CurrentDecisionLevel() == 0) {
-        sat_solver_->AddBinaryClause(after_it->second.Negated(), literal);
+        sat_solver_->AddBinaryClause(after_it->second.Negated(),
+                                     associated_lit);
       } else {
         sat_solver_->AddBinaryClauseDuringSearch(after_it->second.Negated(),
-                                                 literal);
+                                                 associated_lit);
       }
     }
     if (after_it != map_ref.begin()) {
-      // literal => Literal(before)
+      // associated_lit => Literal(before)
       if (sat_solver_->CurrentDecisionLevel() == 0) {
-        sat_solver_->AddBinaryClause(literal.Negated(), (--after_it)->second);
+        sat_solver_->AddBinaryClause(associated_lit.Negated(),
+                                     (--after_it)->second);
       } else {
-        sat_solver_->AddBinaryClauseDuringSearch(literal.Negated(),
+        sat_solver_->AddBinaryClauseDuringSearch(associated_lit.Negated(),
                                                  (--after_it)->second);
       }
     }
   }
 
   // Add the new entry.
-  map_ref[i_lit.bound] = literal;
+  map_ref[i_lit.bound] = associated_lit;
 }
 
 void IntegerEncoder::AddAllImplicationsBetweenAssociatedLiterals() {

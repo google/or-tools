@@ -456,17 +456,17 @@ class OneFlipConstraintRepairer {
   // Note that if init_term_index == start_term_index, then all the terms will
   // be explored. Both TermIndex arguments can take values in [-1, constraint
   // size).
-  TermIndex NextRepairingTerm(ConstraintIndex constraint,
+  TermIndex NextRepairingTerm(ConstraintIndex ct_index,
                               TermIndex init_term_index,
                               TermIndex start_term_index) const;
 
   // Returns true if the constraint is infeasible and if flipping the variable
   // at the given index will repair it.
-  bool RepairIsValid(ConstraintIndex constraint, TermIndex term_index) const;
+  bool RepairIsValid(ConstraintIndex ct_index, TermIndex term_index) const;
 
   // Returns the literal formed by the variable at the given constraint term and
   // assigned to the opposite value of this variable in the current assignment.
-  sat::Literal GetFlip(ConstraintIndex constraint, TermIndex term_index) const;
+  sat::Literal GetFlip(ConstraintIndex ct_index, TermIndex term_index) const;
 
   // Local structure to represent the sparse matrix by constraint used for fast
   // lookups.

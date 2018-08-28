@@ -1200,7 +1200,7 @@ Presolver::RuleStatus Presolver::CreateLinearTarget(Constraint* ct,
         ct->arguments[1].variables[var_index]->defining_constraint == nullptr &&
         !ct->arguments[1].variables[var_index]->domain.HasOneValue()) {
       // Rule 1.
-      StringAppendF(log, "mark variable index %i as target", var_index);
+      absl::StrAppendFormat(log, "mark variable index %i as target", var_index);
       IntegerVariable* const var = ct->arguments[1].variables[var_index];
       var->defining_constraint = ct;
       ct->target_variable = var;
@@ -1302,8 +1302,8 @@ Presolver::RuleStatus Presolver::PresolveArrayIntElement(Constraint* ct,
     }
     const std::string after = ct->arguments[2].Var()->DebugString();
     if (before != after) {
-      log->append(StringPrintf(", reduce target variable from %s to %s",
-                               before.c_str(), after.c_str()));
+      log->append(absl::StrFormat(", reduce target variable from %s to %s",
+                                  before.c_str(), after.c_str()));
       ct->presolve_propagation_done = true;
       return CONSTRAINT_REWRITTEN;
     }
@@ -2015,9 +2015,8 @@ Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
                 to_keep)) {
           MarkChangedVariable(ct->arguments[0].Var());
         }
-        log->append(
-            StringPrintf("reduce index domain to %s",
-                         ct->arguments[0].Var()->DebugString().c_str()));
+        log->append(absl::StrFormat("reduce index domain to %s",
+                                    ct->arguments[0].Var()->DebugString().c_str()));
       }
     }
   }
@@ -2151,8 +2150,8 @@ Presolver::RuleStatus Presolver::PresolveSimplifyExprElement(Constraint* ct,
       if (ct->arguments[0].Var()->domain.IntersectWithListOfIntegers(to_keep)) {
         MarkChangedVariable(ct->arguments[0].Var());
       }
-      log->append(StringPrintf("reduce index domain to %s",
-                               ct->arguments[0].Var()->DebugString().c_str()));
+      log->append(absl::StrFormat("reduce index domain to %s",
+                                  ct->arguments[0].Var()->DebugString().c_str()));
     }
   }
 
@@ -2220,7 +2219,8 @@ Presolver::RuleStatus Presolver::PropagateReifiedComparisons(Constraint* ct,
       state = (a >= b);
     }
     if (state != 2) {
-      StringAppendF(log, "assign boolvar to %s", state == 0 ? "false" : "true");
+      absl::StrAppendFormat(log, "assign boolvar to %s",
+                            state == 0 ? "false" : "true");
       IntersectVarWithSingleton(ct->arguments[2].Var(), state);
       return CONSTRAINT_ALWAYS_TRUE;
     }
@@ -2309,8 +2309,8 @@ Presolver::RuleStatus Presolver::PropagateReifiedComparisons(Constraint* ct,
         }
       }
       if (state != 2) {
-        StringAppendF(log, "assign boolvar to %s",
-                      state == 0 ? "false" : "true");
+        absl::StrAppendFormat(log, "assign boolvar to %s",
+                              state == 0 ? "false" : "true");
         IntersectVarWithSingleton(ct->arguments[2].Var(), state);
         return CONSTRAINT_ALWAYS_TRUE;
       }
@@ -2357,7 +2357,8 @@ Presolver::RuleStatus Presolver::PropagateReifiedComparisons(Constraint* ct,
       }
     }
     if (state != 2) {
-      StringAppendF(log, "assign boolvar to %s", state == 0 ? "false" : "true");
+      absl::StrAppendFormat(log, "assign boolvar to %s",
+                            state == 0 ? "false" : "true");
       IntersectVarWithSingleton(ct->arguments[2].Var(), state);
       return CONSTRAINT_ALWAYS_TRUE;
     }
@@ -2816,7 +2817,7 @@ Presolver::RuleStatus Presolver::PresolveTableInt(Constraint* ct,
   }
   // Removed invalid tuples.
   if (ignored_tuples > 0) {
-    log->append(StringPrintf("removed %i tuples", ignored_tuples));
+    log->append(absl::StrFormat("removed %i tuples", ignored_tuples));
     ct->arguments[1].values.swap(new_tuples);
     return CONSTRAINT_REWRITTEN;
   }
@@ -2936,8 +2937,9 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
       domain.IntersectWithListOfIntegers(to_keep);
       MarkChangedVariable(vars[time]);
       if (HASVLOG) {
-        StringAppendF(log, "reduce domain of variable %d from %s to %s; ", time,
-                      before.c_str(), vars[time]->DebugString().c_str());
+        absl::StrAppendFormat(log,
+                              "reduce domain of variable %d from %s to %s; ",
+                              time, before.c_str(), vars[time]->DebugString().c_str());
       }
     }
   }
@@ -3215,11 +3217,11 @@ CliqueResponse StoreClique(const std::vector<int>& vec, std::vector<int>* out) {
 void PrintGraph(const std::vector<std::vector<bool>>& neighbors,
                 int num_variables) {
   for (int i = 0; i < num_variables; ++i) {
-    std::string out = StringPrintf("%i : [", i);
+    std::string out = absl::StrFormat("%i : [", i);
     bool found_one = false;
     for (int j = 0; j < num_variables; ++j) {
       if (neighbors[i][j]) {
-        StringAppendF(&out, "%s %i", found_one ? "," : "", j);
+        absl::StrAppendFormat(&out, "%s %i", found_one ? "," : "", j);
         found_one = true;
       }
     }

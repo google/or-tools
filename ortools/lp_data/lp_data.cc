@@ -351,13 +351,13 @@ bool LinearProgram::IsCleanedUp() const {
 
 std::string LinearProgram::GetVariableName(ColIndex col) const {
   return col >= variable_names_.size() || variable_names_[col].empty()
-             ? StringPrintf("c%d", col.value())
+             ? absl::StrFormat("c%d", col.value())
              : variable_names_[col];
 }
 
 std::string LinearProgram::GetConstraintName(RowIndex row) const {
   return row >= constraint_names_.size() || constraint_names_[row].empty()
-             ? StringPrintf("r%d", row.value())
+             ? absl::StrFormat("r%d", row.value())
              : constraint_names_[row];
 }
 
@@ -1181,8 +1181,8 @@ Fractional LinearProgram::ScaleBounds() {
   return bound_scaling_factor;
 }
 
-void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {
-  if (row_to_delete.empty()) return;
+void LinearProgram::DeleteRows(const DenseBooleanColumn& rows_to_delete) {
+  if (rows_to_delete.empty()) return;
 
   // Deal with row-indexed data and construct the row mapping that will need to
   // be applied to every column entry.
@@ -1190,7 +1190,7 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {
   RowPermutation permutation(num_rows);
   RowIndex new_index(0);
   for (RowIndex row(0); row < num_rows; ++row) {
-    if (row >= row_to_delete.size() || !row_to_delete[row]) {
+    if (row >= rows_to_delete.size() || !rows_to_delete[row]) {
       constraint_lower_bounds_[new_index] = constraint_lower_bounds_[row];
       constraint_upper_bounds_[new_index] = constraint_upper_bounds_[row];
       constraint_names_[new_index].swap(constraint_names_[row]);
@@ -1224,7 +1224,7 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {
   // Eventually update transpose_matrix_.
   if (transpose_matrix_is_consistent_) {
     transpose_matrix_.DeleteColumns(
-        reinterpret_cast<const DenseBooleanRow&>(row_to_delete));
+        reinterpret_cast<const DenseBooleanRow&>(rows_to_delete));
   }
 }
 
@@ -1334,7 +1334,7 @@ std::string LinearProgram::ProblemStatFormatter(const char* format) const {
   const int num_non_binary_variables = NonBinaryVariablesList().size();
   const int num_continuous_variables =
       ColToIntIndex(num_variables()) - num_integer_variables;
-  return StringPrintf(
+  return absl::StrFormat(
       format, RowToIntIndex(num_constraints()), ColToIntIndex(num_variables()),
       matrix_.num_entries().value(), num_objective_non_zeros, num_rhs_non_zeros,
       num_less_than_constraints, num_greater_than_constraints,
@@ -1367,7 +1367,7 @@ std::string LinearProgram::NonZeroStatFormatter(const char* format) const {
   const double fill_rate = 100.0 * static_cast<double>(num_entries.value()) /
                            static_cast<double>(height * width);
 
-  return StringPrintf(
+  return absl::StrFormat(
       format, fill_rate, GetMaxElement(num_entries_in_row).value(),
       Average(num_entries_in_row), StandardDeviation(num_entries_in_row),
       GetMaxElement(num_entries_in_column).value(),
@@ -1455,13 +1455,13 @@ bool LinearProgram::BoundsOfIntegerConstraintsAreInteger(
 std::string ProblemSolution::DebugString() const {
   std::string s = "Problem status: " + GetProblemStatusString(status);
   for (ColIndex col(0); col < primal_values.size(); ++col) {
-    StringAppendF(&s, "\n  Var #%d: %s %g", col.value(),
+    absl::StrAppendFormat(&s, "\n  Var #%d: %s %g", col.value(),
                   GetVariableStatusString(variable_statuses[col]).c_str(),
                   primal_values[col]);
   }
   s += "\n------------------------------";
   for (RowIndex row(0); row < dual_values.size(); ++row) {
-    StringAppendF(&s, "\n  Constraint #%d: %s %g", row.value(),
+    absl::StrAppendFormat(&s, "\n  Constraint #%d: %s %g", row.value(),
                   GetConstraintStatusString(constraint_statuses[row]).c_str(),
                   dual_values[row]);
   }

@@ -79,8 +79,9 @@ Status Markowitz::ComputeRowAndColumnPermutation(const MatrixView& basis_matrix,
     if (pivot_row == kInvalidRow || pivot_col == kInvalidCol ||
         std::abs(pivot_coefficient) <= singularity_threshold) {
       GLOP_RETURN_AND_LOG_ERROR(
-          Status::ERROR_LU, StringPrintf("The matrix is singular! pivot = %E",
-                                         pivot_coefficient));
+          Status::ERROR_LU,
+          absl::StrFormat("The matrix is singular! pivot = %E",
+                          pivot_coefficient));
     }
     DCHECK_EQ((*row_perm)[pivot_row], kInvalidRow);
     DCHECK_EQ((*col_perm)[pivot_col], kInvalidCol);

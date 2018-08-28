@@ -16,7 +16,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
-public class BinpackingProblem {
+public class BinPackingProblem {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -92,11 +92,11 @@ public class BinpackingProblem {
     CpSolverStatus status = solver.solve(model);
     System.out.println("Solve status: " + status);
     if (status == CpSolverStatus.OPTIMAL) {
-      System.out.println(String.format("Optimal objective value: %f", solver.objectiveValue()));
+      System.out.printf("Optimal objective value: %f%n", solver.objectiveValue());
       for (int b = 0; b < numBins; ++b) {
-        System.out.println(String.format("load_%d = %d", b, solver.value(load[b])));
+        System.out.printf("load_%d = %d%n", b, solver.value(load[b]));
         for (int i = 0; i < numItems; ++i) {
-          System.out.println(String.format("  item_%d_%d = %d", i, b, solver.value(x[i][b])));
+          System.out.printf("  item_%d_%d = %d%n", i, b, solver.value(x[i][b]));
         }
       }
     }

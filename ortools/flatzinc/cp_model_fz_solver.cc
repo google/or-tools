@@ -229,10 +229,10 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   } else if (fz_ct.type == "bool_ne" || fz_ct.type == "bool_not" ||
              fz_ct.type == "int_ne") {
     FillAMinusBInDomain({kint64min, -1, 1, kint64max}, fz_ct, ct);
-  } else if (fz_ct.type == "int_lin_eq") {
+  } else if (fz_ct.type == "int_lin_eq" || fz_ct.type == "bool_lin_eq") {
     const int64 rhs = fz_ct.arguments[2].values[0];
     FillLinearConstraintWithGivenDomain({rhs, rhs}, fz_ct, ct);
-  } else if (fz_ct.type == "int_lin_le") {
+  } else if (fz_ct.type == "int_lin_le" || fz_ct.type == "bool_lin_le") {
     const int64 rhs = fz_ct.arguments[2].values[0];
     FillLinearConstraintWithGivenDomain({kint64min, rhs}, fz_ct, ct);
   } else if (fz_ct.type == "int_lin_lt") {

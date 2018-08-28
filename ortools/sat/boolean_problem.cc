@@ -47,10 +47,10 @@ namespace sat {
 using util::RemapGraph;
 
 void ExtractAssignment(const LinearBooleanProblem& problem,
-                       const SatSolver& solver, std::vector<bool>* assignemnt) {
-  assignemnt->clear();
+                       const SatSolver& solver, std::vector<bool>* assignment) {
+  assignment->clear();
   for (int i = 0; i < problem.num_variables(); ++i) {
-    assignemnt->push_back(
+    assignment->push_back(
         solver.Assignment().LiteralIsTrue(Literal(BooleanVariable(i), true)));
   }
 }
@@ -71,24 +71,24 @@ std::string ValidateLinearTerms(const LinearTerms& terms,
   for (int i = 0; i < terms.literals_size(); ++i) {
     if (terms.literals(i) == 0) {
       if (++num_errs <= max_num_errs) {
-        err_str += StringPrintf("Zero literal at position %d\n", i);
+        err_str += absl::StrFormat("Zero literal at position %d\n", i);
       }
     }
     if (terms.coefficients(i) == 0) {
       if (++num_errs <= max_num_errs) {
-        err_str += StringPrintf("Literal %d has a zero coefficient\n",
-                                terms.literals(i));
+        err_str += absl::StrFormat("Literal %d has a zero coefficient\n",
+                                   terms.literals(i));
       }
     }
     const int var = Literal(terms.literals(i)).Variable().value();
     if (var >= variable_seen->size()) {
       if (++num_errs <= max_num_errs) {
-        err_str += StringPrintf("Out of bound variable %d\n", var);
+        err_str += absl::StrFormat("Out of bound variable %d\n", var);
       }
     }
     if ((*variable_seen)[var]) {
       if (++num_errs <= max_num_errs) {
-        err_str += StringPrintf("Duplicated variable %d\n", var);
+        err_str += absl::StrFormat("Duplicated variable %d\n", var);
       }
     }
     (*variable_seen)[var] = true;
@@ -100,11 +100,12 @@ std::string ValidateLinearTerms(const LinearTerms& terms,
   }
   if (num_errs) {
     if (num_errs <= max_num_errs) {
-      err_str = StringPrintf("%d validation errors:\n", num_errs) + err_str;
+      err_str = absl::StrFormat("%d validation errors:\n", num_errs) + err_str;
     } else {
-      err_str = StringPrintf("%d validation errors; here are the first %d:\n",
-                             num_errs, max_num_errs) +
-                err_str;
+      err_str =
+          absl::StrFormat("%d validation errors; here are the first %d:\n",
+                          num_errs, max_num_errs) +
+          err_str;
     }
   }
   return err_str;
@@ -132,15 +133,16 @@ util::Status ValidateBooleanProblem(const LinearBooleanProblem& problem) {
     const LinearBooleanConstraint& constraint = problem.constraints(i);
     const std::string error = ValidateLinearTerms(constraint, &variable_seen);
     if (!error.empty()) {
-      return util::Status(util::error::INVALID_ARGUMENT,
-                          StringPrintf("Invalid constraint %i: ", i) + error);
+      return util::Status(
+          util::error::INVALID_ARGUMENT,
+          absl::StrFormat("Invalid constraint %i: ", i) + error);
     }
   }
   const std::string error =
       ValidateLinearTerms(problem.objective(), &variable_seen);
   if (!error.empty()) {
     return util::Status(util::error::INVALID_ARGUMENT,
-                        StringPrintf("Invalid objective: ") + error);
+                        absl::StrFormat("Invalid objective: ") + error);
   }
   return util::Status::OK;
 }
@@ -432,8 +434,8 @@ std::string LinearBooleanProblemToCnfString(
                                                non_slack_objective.size()),
                               hard_weight);
   } else {
-    output += StringPrintf("p cnf %d %d\n", problem.num_variables(),
-                           problem.constraints_size());
+    output += absl::StrFormat("p cnf %d %d\n", problem.num_variables(),
+                              problem.constraints_size());
   }
 
   std::string constraint_output;

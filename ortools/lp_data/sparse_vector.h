@@ -134,7 +134,7 @@ class SparseVector {
   void ClearAndRelease();
 
   // Reserve the underlying storage for the given number of entries.
-  void Reserve(EntryIndex size);
+  void Reserve(EntryIndex new_capacity);
 
   // Returns true if the vector is empty.
   bool IsEmpty() const;
@@ -250,7 +250,7 @@ class SparseVector {
   // Same as AddMultipleToSparseVectorAndDeleteCommonIndex() but instead of
   // deleting the common index, leave it unchanged.
   void AddMultipleToSparseVectorAndIgnoreCommonIndex(
-      Fractional multiplier, Index ignored_common_index,
+      Fractional multiplier, Index removed_common_index,
       SparseVector* accumulator_vector) const;
 
   // Applies the index permutation to all entries: index = index_perm[index];
@@ -1042,7 +1042,8 @@ std::string SparseVector<IndexType, IteratorType>::DebugString() const {
   std::string s;
   for (const EntryIndex i : AllEntryIndices()) {
     if (i != 0) s += ", ";
-    StringAppendF(&s, "[%d]=%g", GetIndex(i).value(), GetCoefficient(i));
+    absl::StrAppendFormat(&s, "[%d]=%g", GetIndex(i).value(),
+                          GetCoefficient(i));
   }
   return s;
 }

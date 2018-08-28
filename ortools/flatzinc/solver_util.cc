@@ -189,11 +189,11 @@ std::string MemoryUsage() {
   static const int64 kGigaByte = kMegaByte * kKiloByte;
   const int64 memory_usage = operations_research::Solver::MemoryUsage();
   if (memory_usage > kDisplayThreshold * kGigaByte) {
-    return StringPrintf("%.2lf GB", memory_usage * 1.0 / kGigaByte);
+    return absl::StrFormat("%.2f GB", memory_usage * 1.0 / kGigaByte);
   } else if (memory_usage > kDisplayThreshold * kMegaByte) {
-    return StringPrintf("%.2lf MB", memory_usage * 1.0 / kMegaByte);
+    return absl::StrFormat("%.2f MB", memory_usage * 1.0 / kMegaByte);
   } else if (memory_usage > kDisplayThreshold * kKiloByte) {
-    return StringPrintf("%2lf KB", memory_usage * 1.0 / kKiloByte);
+    return absl::StrFormat("%2f KB", memory_usage * 1.0 / kKiloByte);
   } else {
     return absl::StrCat(memory_usage);
   }

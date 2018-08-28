@@ -141,9 +141,9 @@ Fractional PartialScalarProduct(const DenseRowOrColumn& u,
 // Returns the norm^2 (sum of the square of the entries) of the given column.
 // The precise version uses KahanSum and are about two times slower.
 Fractional SquaredNorm(const SparseColumn& v);
-Fractional SquaredNorm(const DenseColumn& v);
+Fractional SquaredNorm(const DenseColumn& column);
 Fractional PreciseSquaredNorm(const SparseColumn& v);
-Fractional PreciseSquaredNorm(const DenseColumn& v);
+Fractional PreciseSquaredNorm(const DenseColumn& column);
 Fractional PreciseSquaredNorm(const ScatteredColumn& v);
 
 // Returns the maximum of the |coefficients| of 'v'.

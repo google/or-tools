@@ -30,13 +30,13 @@ std::string MemoryUsage() {
   static const int64 kMegaByte = kKiloByte * kKiloByte;
   static const int64 kGigaByte = kMegaByte * kKiloByte;
   if (mem > kDisplayThreshold * kGigaByte) {
-    return StringPrintf("%.2lf GB", mem * 1.0 / kGigaByte);
+    return absl::StrFormat("%.2lf GB", mem * 1.0 / kGigaByte);
   } else if (mem > kDisplayThreshold * kMegaByte) {
-    return StringPrintf("%.2lf MB", mem * 1.0 / kMegaByte);
+    return absl::StrFormat("%.2lf MB", mem * 1.0 / kMegaByte);
   } else if (mem > kDisplayThreshold * kKiloByte) {
-    return StringPrintf("%2lf KB", mem * 1.0 / kKiloByte);
+    return absl::StrFormat("%2lf KB", mem * 1.0 / kKiloByte);
   } else {
-    return StringPrintf("%" GG_LL_FORMAT "d", mem);
+    return absl::StrFormat("%" GG_LL_FORMAT "d", mem);
   }
 }
 
@@ -185,12 +185,12 @@ std::string TimeDistribution::PrintCyclesAsTime(double cycles) {
   // This epsilon is just to avoid displaying 1000.00ms instead of 1.00s.
   double eps1 = 1 + 1e-3;
   double sec = CyclesToSeconds(cycles);
-  if (sec * eps1 >= 3600.0) return StringPrintf("%.2fh", sec / 3600.0);
-  if (sec * eps1 >= 60.0) return StringPrintf("%.2fm", sec / 60.0);
-  if (sec * eps1 >= 1.0) return StringPrintf("%.2fs", sec);
-  if (sec * eps1 >= 1e-3) return StringPrintf("%.2fms", sec * 1e3);
-  if (sec * eps1 >= 1e-6) return StringPrintf("%.2fus", sec * 1e6);
-  return StringPrintf("%.2fns", sec * 1e9);
+  if (sec * eps1 >= 3600.0) return absl::StrFormat("%.2fh", sec / 3600.0);
+  if (sec * eps1 >= 60.0) return absl::StrFormat("%.2fm", sec / 60.0);
+  if (sec * eps1 >= 1.0) return absl::StrFormat("%.2fs", sec);
+  if (sec * eps1 >= 1e-3) return absl::StrFormat("%.2fms", sec * 1e3);
+  if (sec * eps1 >= 1e-6) return absl::StrFormat("%.2fus", sec * 1e6);
+  return absl::StrFormat("%.2fns", sec * 1e9);
 }
 
 void TimeDistribution::AddTimeInSec(double seconds) {

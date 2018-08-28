@@ -335,7 +335,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   osi_.setObjSense(maximize_ ? -1 : 1);
 
   sync_status_ = MODEL_SYNCHRONIZED;
-  VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Model built in %.3f seconds.", timer.Get());
 
   ResetBestObjectiveBound();
 
@@ -382,7 +382,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   CHECK_NE(kBadReturnStatus, return_status);  // Should never happen according
                                               // to the CBC source
 
-  VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Solved in %.3f seconds.", timer.Get());
 
   // Check the status: optimal, infeasible, etc.
   int tmp_status = model.status();

@@ -20,6 +20,10 @@ import com.google.ortools.sat.IntervalVar;
 import java.util.ArrayList;
 import java.util.List;
 
+// This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
+// integer variables and enforces the following constraint:
+//   - rank[i] == -1 iff interval[i] is not active.
+//   - rank[i] == number of active intervals that precede interval[i].
 public class RankingSample {
 
   static { System.loadLibrary("jniortools"); }
@@ -36,15 +40,16 @@ public class RankingSample {
         } else {
           IntVar prec = model.newBoolVar(String.format("%d before %d", i, j));
           precedences[i][j] = prec;
+          // Ensure that task i precedes task j if prec is true.
           model.addLessOrEqualWithOffset(starts[i], starts[j], 1).onlyEnforceIf(prec);
         }
       }
     }
 
-    // Treats optional intervals.
+    // Create optional intervals.
     for (int i = 0; i < numTasks - 1; ++i) {
       for (int j = i + 1; j < numTasks; ++j) {
-        List<ILiteral> list = new ArrayList<ILiteral>();
+        List<ILiteral> list = new ArrayList<>();
         list.add(precedences[i][j]);
         list.add(precedences[j][i]);
         list.add(presences[i].not());
@@ -55,12 +60,13 @@ public class RankingSample {
         // Makes sure that if j is not performed, all precedences are false.
         model.addImplication(presences[j].not(), precedences[i][j].not());
         model.addImplication(presences[j].not(), precedences[j][i].not());
-        // The following bool_or will enforce that for any two intervals:
+        // The following boolOr will enforce that for any two intervals:
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.
-        model.addBoolOr(list.toArray(new ILiteral[list.size()]));
-        // Redundant constraint: it propagates early that at most one precedence
-        // is true.
+        model.addBoolOr(list.toArray(new ILiteral[0]));
+        // For efficiency, we add a redundant constraint declaring that only one of i precedes j and
+        // j precedes i are true. This will speed up the solve because the reason of this
+        // propagation is shorter that using interval bounds is true.
         model.addImplication(precedences[i][j], precedences[j][i].not());
         model.addImplication(precedences[j][i], precedences[i][j].not());
       }
@@ -83,7 +89,6 @@ public class RankingSample {
 
   public static void main(String[] args) throws Exception {
     CpModel model = new CpModel();
-    // Three weeks.
     int horizon = 100;
     int numTasks = 4;
 
@@ -110,7 +115,7 @@ public class RankingSample {
                 starts[t], duration, ends[t], presences[t], "o_interval_" + t);
       }
 
-      // Ranks = -1 if and only if the tasks is not performed.
+      // The rank will be -1 iff the task is not performed.
       ranks[t] = model.newIntVar(-1, numTasks - 1, "rank_" + t);
     }
 
@@ -128,9 +133,13 @@ public class RankingSample {
     for (int t = 0; t < numTasks; ++t) {
       model.addLessOrEqual(ends[t], makespan).onlyEnforceIf(presences[t]);
     }
-    // Minimizes makespan - fixed gain per tasks performed.
-    // As the fixed cost is less that the duration of the last interval,
-    // the solver will not perform the last interval.
+    // The objective function is a mix of a fixed gain per task performed, and a fixed cost for each
+    // additional day of activity.
+    // The solver will balance both cost and gain and minimize makespan * per-day-penalty - number
+    // of tasks performed * per-task-gain.
+    //
+    // On this problem, as the fixed cost is less that the duration of the last interval, the solver
+    // will not perform the last interval.
     IntVar[] objectiveVars = new IntVar[numTasks + 1];
     int[] objectiveCoefs = new int[numTasks + 1];
     for (int t = 0; t < numTasks; ++t) {
@@ -150,14 +159,12 @@ public class RankingSample {
       System.out.println("Makespan: " + solver.value(makespan));
       for (int t = 0; t < numTasks; ++t) {
         if (solver.booleanValue(presences[t])) {
-          System.out.println(
-              String.format(
-                  "Task %d starts at %d with rank %d",
-                  t, solver.value(starts[t]), solver.value(ranks[t])));
+          System.out.printf(
+              "Task %d starts at %d with rank %d%n",
+              t, solver.value(starts[t]), solver.value(ranks[t]));
         } else {
-          System.out.println(
-              String.format(
-                  "Task %d in not performed and ranked at %d", t, solver.value(ranks[t])));
+          System.out.printf(
+              "Task %d in not performed and ranked at %d%n", t, solver.value(ranks[t]));
         }
       }
     } else {

@@ -473,10 +473,21 @@ class MPSolver {
     return solver_specific_parameter_string_;
   }
 
-  // Advanced usage: starting hint. This instructs the solver to first pin some
-  // variables to particular values and use that to quickly get an upper bound
-  // on the solution quality. Currently, only GLIP supports this.
-  void SetHint(const PartialVariableAssignment& hint);
+  // Set an hint for solution.
+  //
+  // If a feasible or almost-feasible solution to the problem is already known,
+  // it may be helpful to pass it to the solver so that it can be used. A solver
+  // that supports this feature will try to use this information to create its
+  // initial feasible solution.
+  //
+  // Note that it may not always be faster to give a hint like this to the
+  // solver. There is also no guarantee that the solver will use this hint or
+  // try to return a solution "close" to this assignment in case of multiple
+  // optimal solutions.
+  //
+  // As of 2018-08, this is only used by SCIP, BOP, Gurobi, with various
+  // behaviors, and ignored by other solvers. Contact or-core-team@ for details.
+  void SetHint(std::vector<std::pair<MPVariable*, double> > hint);
 
   // Advanced usage: possible basis status values for a variable and the
   // slack variable of a linear constraint.
@@ -658,6 +669,9 @@ class MPSolver {
   // exploited as a starting hint by a solver.
   //
   // Note(user): as of 05/05/2015, we can't use >> because of some SWIG errors.
+  //
+  // TODO(user): replace by two vectors, a std::vector<bool> to indicate if a
+  // hint is provided and a std::vector<double> for the hint value.
   std::vector<std::pair<MPVariable*, double> > solution_hint_;
 
   // Time limit in milliseconds (0 = no limit).
@@ -709,7 +723,7 @@ class MPObjective {
 
   // Resets the current objective to take the value of linear_expr, and sets
   // the objective direction to maximize if "is_maximize", otherwise minimizes.
-  void OptimizeLinearExpr(const LinearExpr& linear_expr, bool is_maximize);
+  void OptimizeLinearExpr(const LinearExpr& linear_expr, bool is_maximization);
   void MaximizeLinearExpr(const LinearExpr& linear_expr) {
     OptimizeLinearExpr(linear_expr, true);
   }
@@ -1312,10 +1326,6 @@ class MPSolverInterface {
   virtual void SetStartingLpBasis(
       const std::vector<MPSolver::BasisStatus>& variable_statuses,
       const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
-    LOG(FATAL) << "Not supported by this solver.";
-  }
-
-  virtual void SetHint(const PartialVariableAssignment& hint) {
     LOG(FATAL) << "Not supported by this solver.";
   }
 

@@ -19,6 +19,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/memory.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/glop/lp_solver.h"
@@ -92,7 +93,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
 
   // Create the sat_solver if not already done.
   if (!sat_solver_) {
-    sat_solver_.reset(new sat::SatSolver());
+    sat_solver_ = absl::make_unique<sat::SatSolver>();
 
     // Add in symmetries.
     if (problem_state.GetParameters()
@@ -398,10 +399,10 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
       const ColIndex col_b(clause.b.Variable().value());
       lp_model_.SetConstraintName(
           constraint_index,
-          StringPrintf((clause.a.IsPositive() ? "%s" : "not(%s)"),
+          absl::StrFormat((clause.a.IsPositive() ? "%s" : "not(%s)"),
                        lp_model_.GetVariableName(col_a).c_str()) +
               " or " +
-              StringPrintf((clause.b.IsPositive() ? "%s" : "not(%s)"),
+              absl::StrFormat((clause.b.IsPositive() ? "%s" : "not(%s)"),
                            lp_model_.GetVariableName(col_b).c_str()));
       lp_model_.SetCoefficient(constraint_index, col_a, coefficient_a);
       lp_model_.SetCoefficient(constraint_index, col_b, coefficient_b);
@@ -440,7 +441,7 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
 
   const glop::ProblemStatus lp_status = Solve(false, time_limit);
   VLOG(1) << "                          LP: "
-          << StringPrintf("%.6f", lp_solver_.GetObjectiveValue())
+          << absl::StrFormat("%.6f", lp_solver_.GetObjectiveValue())
           << "   status: " << GetProblemStatusString(lp_status);
 
   if (lp_status == glop::ProblemStatus::OPTIMAL ||
@@ -466,7 +467,7 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
       lower_bound =
           ComputeLowerBoundUsingStrongBranching(learned_info, time_limit);
       VLOG(1) << "                          LP: "
-              << StringPrintf("%.6f", lower_bound)
+              << absl::StrFormat("%.6f", lower_bound)
               << "   using strong branching.";
     }
 

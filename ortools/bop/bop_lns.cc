@@ -20,6 +20,7 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/memory.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/glop/lp_solver.h"
@@ -70,13 +71,13 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
   state_update_stamp_ = problem_state.update_stamp();
 
   // Load the current problem to the solver.
-  sat_solver_.reset(new sat::SatSolver());
+  sat_solver_ = absl::make_unique<sat::SatSolver>();
   const BopOptimizerBase::Status status =
       LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
   if (status != BopOptimizerBase::CONTINUE) return status;
 
   // Add the constraint that forces the solver to look for a solution
-  // at a distance <= num_relaxed_vars from the curent one. Note that not all
+  // at a distance <= num_relaxed_vars from the current one. Note that not all
   // the terms appear in this constraint.
   //
   // TODO(user): if the current solution didn't change, there is no need to

@@ -524,7 +524,7 @@ class SatSolver {
   //
   // Returns the LBD of the clause.
   int AddLearnedClauseAndEnqueueUnitPropagation(
-      const std::vector<Literal>& literals, bool must_be_kept);
+      const std::vector<Literal>& literals, bool is_redundant);
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.

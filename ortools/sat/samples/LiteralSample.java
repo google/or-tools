@@ -23,6 +23,6 @@ public class LiteralSample {
     CpModel model = new CpModel();
     IntVar x = model.newBoolVar("x");
     ILiteral notX = x.not();
-    System.out.println(notX.shortString());
+    System.out.println(notX.getShortString());
   }
 }

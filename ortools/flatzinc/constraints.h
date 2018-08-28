@@ -23,7 +23,7 @@
 namespace operations_research {
 namespace fz {
 
-void ExtractConstraint(SolverData* data, Constraint* constraint);
+void ExtractConstraint(SolverData* data, Constraint* ct);
 
 }  // namespace fz
 }  // namespace operations_research

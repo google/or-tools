@@ -90,9 +90,9 @@ class SCIPInterface : public MPSolverInterface {
   void ExtractObjective() override;
 
   std::string SolverVersion() const override {
-    return StringPrintf("SCIP %d.%d.%d [LP solver: %s]", SCIPmajorVersion(),
-                        SCIPminorVersion(), SCIPtechVersion(),
-                        SCIPlpiGetSolverName());
+    return absl::StrFormat("SCIP %d.%d.%d [LP solver: %s]", SCIPmajorVersion(),
+                           SCIPminorVersion(), SCIPtechVersion(),
+                           SCIPlpiGetSolverName());
   }
 
   bool InterruptSolve() override {
@@ -440,7 +440,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   }
 
   ExtractModel();
-  VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Model built in %.3f seconds.", timer.Get());
 
   // Time limit.
   if (solver_->time_limit() != 0) {
@@ -516,7 +516,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     result_status_ = MPSolver::ABNORMAL;
     return result_status_;
   }
-  VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Solved in %.3f seconds.", timer.Get());
 
   // Get the results.
   SCIP_SOL* const solution = SCIPgetBestSol(scip_);

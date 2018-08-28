@@ -152,7 +152,7 @@ class LPSolver {
   // Resizes all the solution vectors to the given sizes.
   // This is used in case of error to make sure all the getter functions will
   // not crash when given row/col inside the initial linear program dimension.
-  void ResizeSolution(RowIndex row, ColIndex col);
+  void ResizeSolution(RowIndex num_rows, ColIndex num_cols);
 
   // Make sure the primal and dual values are within their bounds in order to
   // have a strong guarantee on the optimal solution. See

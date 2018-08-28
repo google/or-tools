@@ -232,10 +232,10 @@ class TimeDistribution : public DistributionStat {
   static double CyclesToSeconds(double num_cycles);
 
   // Adds a time in seconds to this distribution.
-  void AddTimeInSec(double value);
+  void AddTimeInSec(double seconds);
 
   // Adds a time in CPU cycles to this distribution.
-  void AddTimeInCycles(double value);
+  void AddTimeInCycles(double cycles);
 
   // Starts the timer in preparation of a StopTimerAndAddElapsedTime().
   inline void StartTimer() { timer_.Restart(); }

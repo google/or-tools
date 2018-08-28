@@ -1369,16 +1369,15 @@ int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
 }
 
 template <typename LiteralList>
-int SatSolver::ComputeLbd(const LiteralList& conflict) {
+int SatSolver::ComputeLbd(const LiteralList& literals) {
   SCOPED_TIME_STAT(&stats_);
   const int limit =
       parameters_->count_assumption_levels_in_lbd() ? 0 : assumption_level_;
 
-  // We know that the first literal of the conflict is always of the highest
-  // level.
+  // We know that the first literal is always of the highest level.
   is_level_marked_.ClearAndResize(
-      SatDecisionLevel(DecisionLevel(conflict.begin()->Variable()) + 1));
-  for (const Literal literal : conflict) {
+      SatDecisionLevel(DecisionLevel(literals.begin()->Variable()) + 1));
+  for (const Literal literal : literals) {
     const SatDecisionLevel level(DecisionLevel(literal.Variable()));
     DCHECK_GE(level, 0);
     if (level > limit && !is_level_marked_[level]) {
@@ -1390,9 +1389,9 @@ int SatSolver::ComputeLbd(const LiteralList& conflict) {
 
 std::string SatSolver::StatusString(Status status) const {
   const double time_in_s = timer_.Get();
-  return StringPrintf("\n  status: %s\n", SatStatusString(status).c_str()) +
-         StringPrintf("  time: %fs\n", time_in_s) +
-         StringPrintf("  memory: %s\n", MemoryUsage().c_str()) +
+  return absl::StrFormat("\n  status: %s\n", SatStatusString(status).c_str()) +
+         absl::StrFormat("  time: %fs\n", time_in_s) +
+         absl::StrFormat("  memory: %s\n", MemoryUsage().c_str()) +
          absl::StrFormat(
              "  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
              counters_.num_failures,
@@ -1454,7 +1453,7 @@ std::string SatSolver::StatusString(Status status) const {
          absl::StrFormat("  pb num inspected constraint literals: %d\n",
                          pb_constraints_.num_inspected_constraint_literals()) +
          restart_->InfoString() +
-         StringPrintf("  deterministic time: %f\n", deterministic_time());
+         absl::StrFormat("  deterministic time: %f\n", deterministic_time());
 }
 
 std::string SatSolver::RunningStatisticsString() const {
@@ -1709,7 +1708,7 @@ std::string SatSolver::DebugString(const SatClause& clause) const {
             : (trail_->Assignment().LiteralIsFalse(literal) ? "false"
                                                             : "undef");
     result.append(
-        StringPrintf("%s(%s)", literal.DebugString().c_str(), value.c_str()));
+        absl::StrFormat("%s(%s)", literal.DebugString().c_str(), value.c_str()));
   }
   return result;
 }
@@ -2428,7 +2427,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   int num_deleted_clauses = entries.size() - num_kept_clauses;
 
   // Tricky: Because the order of the clauses_info iteration is NOT
-  // deterministic (pointer keys), we also keep all the clauses which have the
+  // deterministic (pointer keys), we also keep all the clauses wich have the
   // same LBD and activity as the last one so the behavior is deterministic.
   while (num_deleted_clauses > 0) {
     const ClauseInfo& a = entries[num_deleted_clauses].second;

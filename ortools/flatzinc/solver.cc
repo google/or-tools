@@ -93,8 +93,8 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
   if (output.variable != nullptr) {
     const int64 value = SolutionValue(output.variable);
     if (output.display_as_boolean) {
-      return StringPrintf("%s = %s;", output.name.c_str(),
-                          value == 1 ? "true" : "false");
+      return absl::StrFormat("%s = %s;", output.name.c_str(),
+                             value == 1 ? "true" : "false");
     } else {
       return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name.c_str(),
                              value);
@@ -102,7 +102,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
   } else {
     const int bound_size = output.bounds.size();
     std::string result =
-        StringPrintf("%s = array%dd(", output.name.c_str(), bound_size);
+        absl::StrFormat("%s = array%dd(", output.name.c_str(), bound_size);
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
         result.append(absl::StrFormat(
@@ -116,7 +116,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
     for (int i = 0; i < output.flat_variables.size(); ++i) {
       const int64 value = SolutionValue(output.flat_variables[i]);
       if (output.display_as_boolean) {
-        result.append(StringPrintf(value ? "true" : "false"));
+        result.append(absl::StrFormat(value ? "true" : "false"));
       } else {
         absl::StrAppend(&result, value);
       }
@@ -166,8 +166,8 @@ struct ConstraintsWithRequiredVariables {
   }
 
   std::string DebugString() const {
-    return StringPrintf("Ctio(%s, %d, deps_size = %lu)", ct->type.c_str(),
-                        index, required.size());
+    return absl::StrFormat("Ctio(%s, %d, deps_size = %lu)", ct->type.c_str(),
+                           index, required.size());
   }
 };
 
@@ -714,7 +714,7 @@ void Solver::ReportInconsistentModel(const Model& model, FlatzincParameters p,
     std::string solver_status =
         "%%  name, status, obj, solns, s_time, b_time, br, "
         "fails, cts, demon, delayed, mem, search\n";
-    StringAppendF(
+    absl::StrAppendFormat(
         &solver_status,
         "%%%%  csv: %s, **unsat**, , 0, 0 ms, 0 ms, 0, 0, 0, 0, 0, %s, free",
         model.name().c_str(), MemoryUsage().c_str());
@@ -865,9 +865,9 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
     solver_status.append(absl::StrFormat(
         "%%%%  solve time:           %" GG_LL_FORMAT "d ms\n", solve_time));
     solver_status.append(
-        StringPrintf("%%%%  solutions:            %d\n", num_solutions));
-    solver_status.append(StringPrintf("%%%%  constraints:          %d\n",
-                                      solver_->constraints()));
+        absl::StrFormat("%%%%  solutions:            %d\n", num_solutions));
+    solver_status.append(absl::StrFormat("%%%%  constraints:          %d\n",
+                                         solver_->constraints()));
     solver_status.append(absl::StrFormat(
         "%%%%  normal propagations:  %" GG_LL_FORMAT "d\n",
         solver_->demon_runs(operations_research::Solver::NORMAL_PRIORITY)));
@@ -880,8 +880,8 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
     solver_status.append(
         absl::StrFormat("%%%%  failures:             %" GG_LL_FORMAT "d\n",
                         solver_->failures()));
-    solver_status.append(StringPrintf("%%%%  memory:               %s\n",
-                                      MemoryUsage().c_str()));
+    solver_status.append(
+        absl::StrFormat("%%%%  memory:               %s\n", MemoryUsage().c_str()));
     const int64 best = report->BestSolution();
     if (model_.objective() != nullptr) {
       if (!model_.maximize() && num_solutions > 0) {
@@ -899,8 +899,8 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
       const std::string default_search_stats =
           DefaultPhaseStatString(default_phase_);
       if (!default_search_stats.empty()) {
-        solver_status.append(StringPrintf("%%%%  free search stats:    %s\n",
-                                          default_search_stats.c_str()));
+        solver_status.append(absl::StrFormat("%%%%  free search stats:    %s\n",
+                                             default_search_stats.c_str()));
       }
     }
 

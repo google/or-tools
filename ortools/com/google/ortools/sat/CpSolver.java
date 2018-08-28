@@ -13,7 +13,6 @@
 
 package com.google.ortools.sat;
 
-import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.CpSolverResponse;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.SatParameters;
@@ -25,93 +24,94 @@ import com.google.ortools.sat.SatParameters;
  * variables in the best solution, as well as general statistics of the search.
  */
 public class CpSolver {
-  /** Main constructionof the CpSolver class. */
+  /** Main construction of the CpSolver class. */
   public CpSolver() {
-    this.parameters_ = SatParameters.newBuilder();
+    this.solveParameters = SatParameters.newBuilder();
   }
 
   /** Solves the given module, and returns the solve status. */
   public CpSolverStatus solve(CpModel model) {
-    response_ = SatHelper.solveWithParameters(model.model(), parameters_.build());
-    return response_.getStatus();
+    solveResponse = SatHelper.solveWithParameters(model.model(), solveParameters.build());
+    return solveResponse.getStatus();
   }
 
-  /** Solves a problem and pass each solution found to the callback. */
+  /** Solves a problem and passes each solution found to the callback. */
   public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
-    response_ =
-        SatHelper.solveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
-    return response_.getStatus();
+    solveResponse =
+        SatHelper.solveWithParametersAndSolutionCallback(
+            model.model(), solveParameters.build(), cb);
+    return solveResponse.getStatus();
   }
 
   /**
-   * Search for all solutions of a satisfiability problem.
+   * Searches for all solutions of a satisfiability problem.
    *
-   * <p>This method searches for all feasible solution of a given model. Then it feeds the solution
-   * to the callback.
+   * <p>This method searches for all feasible solutions of a given model. Then it feeds the
+   * solutions to the callback.
    *
-   * @param model the model to solve.
-   * @param cb the callback that will be called at each solution.
-   * @return the status of the solve (FEASIBLE, INFEASIBLE...).
+   * @param model the model to solve
+   * @param cb the callback that will be called at each solution
+   * @return the status of the solve (FEASIBLE, INFEASIBLE...)
    */
   public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
-    parameters_.setEnumerateAllSolutions(true);
-    response_ =
-        SatHelper.solveWithParametersAndSolutionCallback(model.model(), parameters_.build(), cb);
-    parameters_.setEnumerateAllSolutions(true);
-    return response_.getStatus();
+    solveParameters.setEnumerateAllSolutions(true);
+    solveResponse =
+        SatHelper.solveWithParametersAndSolutionCallback(
+            model.model(), solveParameters.build(), cb);
+    solveParameters.setEnumerateAllSolutions(true);
+    return solveResponse.getStatus();
   }
 
-  /** The best objective value found during search. */
+  /** Returns the best objective value found during search. */
   public double objectiveValue() {
-    return response_.getObjectiveValue();
+    return solveResponse.getObjectiveValue();
   }
 
-  /** The value of a variable in the last solution found. */
+  /** Returns the value of a variable in the last solution found. */
   public long value(IntVar var) {
-    return response_.getSolution(var.getIndex());
+    return solveResponse.getSolution(var.getIndex());
   }
 
-  /** The Boolean value of a literal in the last solution found. */
+  /** Returns the Boolean value of a literal in the last solution found. */
   public Boolean booleanValue(ILiteral var) {
     int index = var.getIndex();
     if (index >= 0) {
-      return response_.getSolution(index) != 0;
+      return solveResponse.getSolution(index) != 0;
     } else {
-      return response_.getSolution(-index - 1) == 0;
+      return solveResponse.getSolution(-index - 1) == 0;
     }
   }
 
-  /** The internal response protobuf that is returned internally by the SAT solver. */
+  /** Returns the internal response protobuf that is returned internally by the SAT solver. */
   public CpSolverResponse response() {
-    return response_;
+    return solveResponse;
   }
 
-  /** The number of branches explored during search. */
+  /** Returns the number of branches explored during search. */
   public long numBranches() {
-    return response_.getNumBranches();
+    return solveResponse.getNumBranches();
   }
 
-  /** The number of conflicts created during search. */
+  /** Returns the number of conflicts created during search. */
   public long numConflicts() {
-    return response_.getNumConflicts();
+    return solveResponse.getNumConflicts();
   }
 
-  /** The wall time of the search. */
+  /** Returns the wall time of the search. */
   public double wallTime() {
-    return response_.getWallTime();
+    return solveResponse.getWallTime();
   }
 
-  /** The user time of the search. */
+  /** Returns the user time of the search. */
   public double userTime() {
-    return response_.getUserTime();
+    return solveResponse.getUserTime();
   }
 
   /** Returns the builder of the parameters of the SAT solver for modification. */
   public SatParameters.Builder getParameters() {
-    return parameters_;
+    return solveParameters;
   }
 
-  private CpModelProto model_;
-  private CpSolverResponse response_;
-  private SatParameters.Builder parameters_;
+  private CpSolverResponse solveResponse;
+  private final SatParameters.Builder solveParameters;
 }

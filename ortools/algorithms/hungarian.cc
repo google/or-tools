@@ -39,23 +39,21 @@ class HungarianOptimizer {
 
   // Find an assignment which maximizes the total cost.
   // Returns the assignment in the two vectors passed as argument.
-  // agent[i] is assigned to task[i].
-  void Maximize(std::vector<int>* agent, std::vector<int>* task);
+  // preimage[i] is assigned to image[i].
+  void Maximize(std::vector<int>* preimage, std::vector<int>* image);
 
-  // Find an assignment which minimizes the total cost.
-  // Returns the assignment in the two vectors passed as argument.
-  // agent[i] is assigned to task[i].
-  void Minimize(std::vector<int>* agent, std::vector<int>* task);
+  // Like Maximize(), but minimizing the cost instead.
+  void Minimize(std::vector<int>* preimage, std::vector<int>* image);
 
  private:
   typedef void (HungarianOptimizer::*Step)();
 
   typedef enum { NONE, PRIME, STAR } Mark;
 
-  // Convert the final cost matrix into a set of assignments of agents -> tasks.
+  // Convert the final cost matrix into a set of assignments of preimage->image.
   // Returns the assignment in the two vectors passed as argument, the same as
   // Minimize and Maximize
-  void FindAssignments(std::vector<int>* agent, std::vector<int>* task);
+  void FindAssignments(std::vector<int>* preimage, std::vector<int>* image);
 
   // Is the cell (row, col) starred?
   bool IsStarred(int row, int col) const { return marks_[row][col] == STAR; }

@@ -28,6 +28,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/memory.h"
 #include "ortools/base/port.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
@@ -161,7 +162,7 @@ class GLPKInterface : public MPSolverInterface {
   void ExtractObjective() override;
 
   std::string SolverVersion() const override {
-    return StringPrintf("GLPK %s", glp_version());
+    return absl::StrFormat("GLPK %s", glp_version());
   }
 
   void* underlying_solver() override { return reinterpret_cast<void*>(lp_); }
@@ -218,7 +219,7 @@ GLPKInterface::GLPKInterface(MPSolver* const solver, bool mip)
   lp_ = glp_create_prob();
   glp_set_prob_name(lp_, solver_->name_.c_str());
   glp_set_obj_dir(lp_, GLP_MIN);
-  mip_callback_info_.reset(new GLPKInformation(maximize_));
+  mip_callback_info_ = absl::make_unique<GLPKInformation>(maximize_);
 }
 
 // Frees the LP memory allocations.
@@ -454,7 +455,7 @@ void GLPKInterface::ExtractNewConstraints() {
       set_constraint_as_extracted(i, true);
       if (ct->name().empty()) {
         glp_set_row_name(lp_, MPSolverIndexToGlpkIndex(i),
-                         StringPrintf("ct_%i", i).c_str());
+                         absl::StrFormat("ct_%i", i).c_str());
       } else {
         glp_set_row_name(lp_, MPSolverIndexToGlpkIndex(i), ct->name().c_str());
       }
@@ -534,7 +535,7 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   }
 
   ExtractModel();
-  VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Model built in %.3f seconds.", timer.Get());
 
   // Configure parameters at every solve, even when the model has not
   // been changed, in case some of the parameters such as the time
@@ -562,8 +563,8 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
       return result_status_;
     }
   }
-  VLOG(1) << StringPrintf("GLPK Status: %i (time spent: %.3f seconds).",
-                          solver_status, timer.Get());
+  VLOG(1) << absl::StrFormat("GLPK Status: %i (time spent: %.3f seconds).",
+                             solver_status, timer.Get());
 
   // Get the results.
   if (mip_) {

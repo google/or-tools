@@ -19,26 +19,26 @@ package com.google.ortools.sat;
  */
 public class NotBooleanVariable implements ILiteral {
   public NotBooleanVariable(IntVar boolvar) {
-    boolvar_ = boolvar;
+    boolVar = boolvar;
   }
 
-  /** Internal: return the index in the literal in the underlying CpModelProto. */
+  /** Internal: returns the index in the literal in the underlying CpModelProto. */
   @Override
   public int getIndex() {
-    return -boolvar_.getIndex() - 1;
+    return -boolVar.getIndex() - 1;
   }
 
   /** Returns the negation of this literal. */
   @Override
   public ILiteral not() {
-    return boolvar_;
+    return boolVar;
   }
 
   /** Returns a short string describing this literal. */
   @Override
   public String getShortString() {
-    return "not(" + boolvar_.getShortString() + ")";
+    return "not(" + boolVar.getShortString() + ")";
   }
 
-  private IntVar boolvar_;
+  private final IntVar boolVar;
 }

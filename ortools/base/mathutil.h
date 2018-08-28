@@ -113,6 +113,11 @@ class MathUtil {
     }
     return x;
   }
+
+  template <typename T>
+  static T IPow(T base, int exp) {
+    return pow(base, exp);
+  }
 };
 }  // namespace operations_research
 

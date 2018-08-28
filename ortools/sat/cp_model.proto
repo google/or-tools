@@ -131,12 +131,12 @@ message NoOverlap2DConstraintProto {
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
 }
 
-// The sum of the demands * durations of the intervals at each interval point
-// cannot exceed a capacity. Note that intervals are interpreted as [start, end)
-// and as such intervals like [2,3) and [3,4) do not overlap for the point of
-// view of this constraint.
+// The sum of the demands of the intervals at each interval point
+// cannot exceed a capacity. Note that intervals are interpreted as
+// [start, end) and as such intervals like [2,3) and [3,4) do not
+// overlap for the point of view of this constraint.
 //
-// Note: this enforce that all start <= end.
+// Note: this enforces that all start <= end.
 message CumulativeConstraintProto {
   int32 capacity = 1;
   repeated int32 intervals = 2;
@@ -186,8 +186,8 @@ message CircuitConstraintProto {
 // - #incoming arcs == 1 except for node 0.
 // - #outgoing arcs == 1 except for node 0.
 // - for node zero, #incoming arcs == #outgoing arcs.
-// - There is no duplicate arcs.
-// - Self-arc are allowed except for node 0.
+// - There are no duplicate arcs.
+// - Self-arcs are allowed except for node 0.
 // - There is no cycle in this graph, except through node 0.
 //
 // TODO(user): It is probably possible to generalize this constraint to a
@@ -268,29 +268,71 @@ message ConstraintProto {
 
   // The actual constraint with its arguments.
   oneof constraint {
-    BoolArgumentProto bool_or = 3;   // OR(literals) is true.
-    BoolArgumentProto bool_and = 4;  // AND(literals) is true.
 
-    // XOR(literals) is true.  For more than two literals, note that
-    // (a_1 XOR a_2 XOR ... XOR a_n) is equivalent to an odd number the a_i
-    // being true.
+    // The bool_or constraint forces at least one literal to be true.
+    BoolArgumentProto bool_or = 3;
+
+    // The bool_and constraint forces all of the literals to be true.
+    BoolArgumentProto bool_and = 4;
+
+    // The bool_xor constraint forces an odd number of the literals to be true.
     BoolArgumentProto bool_xor = 5;
 
-    IntegerArgumentProto int_div = 7;    // target = vars[0] / vars[1]
-    IntegerArgumentProto int_mod = 8;    // target = vars[0] % vars[1]
-    IntegerArgumentProto int_max = 9;    // target = MAX(vars)
-    IntegerArgumentProto int_min = 10;   // target = MIN(vars)
-    IntegerArgumentProto int_prod = 11;  // target = PROD(vars)
+    // The int_div constraint forces the target to equal vars[0] / vars[1].
+    IntegerArgumentProto int_div = 7;
 
+    // The int_mod constraint forces the target to equal vars[0] % vars[1].
+    IntegerArgumentProto int_mod = 8;
+
+    // The int_max constraint forces the target to equal the maximum of all
+    // variables.
+    IntegerArgumentProto int_max = 9;
+
+    // The int_min constraint forces the target to equal the minimum of all
+    // variables.
+    IntegerArgumentProto int_min = 10;
+
+    // The int_min constraint forces the target to equal the product of all
+    // variables.
+    IntegerArgumentProto int_prod = 11;
+
+    // The linear constraint enforces a linear inequality among the variables,
+    // such as 0 <= x + 2y <= 10.
     LinearConstraintProto linear = 12;
+
+    // The all_diff constraint forces all variables to take different values.
     AllDifferentConstraintProto all_diff = 13;
+
+    // The element constraint forces the variable with the given index
+    // to be equal to the target.
     ElementConstraintProto element = 14;
+
+    // The circuit constraint takes a graph and forces the arcs present
+    // (with arc presence indicated by a literal) to form a unique cycle.
     CircuitConstraintProto circuit = 15;
+
+    // The routes constraint implements the vehicle routing problem.
     RoutesConstraintProto routes = 23;
+
+    // The circuit_covering constraint is similar to the circuit constraint,
+    // but allows multiple non-overlapping cycles instead of just one.
     CircuitCoveringConstraintProto circuit_covering = 25;
+
+    // The table constraint enforces what values a tuple of variables may
+    // take.
     TableConstraintProto table = 16;
+
+    // The automata constraint forces a sequence of variables to be accepted
+    // by an automaton.
     AutomataConstraintProto automata = 17;
+
+    // The inverse constraint forces two arrays to be inverses of each other:
+    // the values of one are the indices of the other, and vice versa.
     InverseConstraintProto inverse = 18;
+
+    // The reservoir constraint forces the sum of a set of active demands
+    // to always be between a specified minimum and maximum value during
+    // specific times.
     ReservoirConstraintProto reservoir = 24;
 
     // Constraints on intervals.
@@ -300,10 +342,23 @@ message ConstraintProto {
     // enforcement_literal set to false are ignored by these constraints.
     //
     // TODO(user): Explain what happen for intervals of size zero. Some
-    // constraints ignore them, other do take them into account.
+    // constraints ignore them; others do take them into account.
+
+    // The interval constraint takes a start, end, and size, and forces
+    // start + size == end.
     IntervalConstraintProto interval = 19;
+
+    // The no_overlap constraint prevents a set of intervals from
+    // overlapping; in scheduling, this is called a disjunctive
+    // constraint.
     NoOverlapConstraintProto no_overlap = 20;
+
+    // The no_overlap_2d constraint prevents a set of boxes from overlapping.
     NoOverlap2DConstraintProto no_overlap_2d = 21;
+
+    // The cumulative constraint ensures that for any integer point, the sum
+    // of the demands of the intervals containing that point does not exceed
+    // the capacity.
     CumulativeConstraintProto cumulative = 22;
   }
 }

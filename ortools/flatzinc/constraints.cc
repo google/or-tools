@@ -1404,7 +1404,7 @@ void ExtractIntEqReif(fz::SolverData* data, fz::Constraint* ct) {
       IntExpr* const left = data->GetOrCreateExpression(ct->arguments[0]);
       IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1]);
       IntVar* tmp_var = nullptr;
-      bool tmp_neg = 0;
+      bool tmp_neg = false;
       bool success = false;
       if (FLAGS_fz_use_sat && solver->IsBooleanVar(left, &tmp_var, &tmp_neg) &&
           solver->IsBooleanVar(right, &tmp_var, &tmp_neg)) {
@@ -2386,7 +2386,7 @@ void ExtractIntNeReif(fz::SolverData* data, fz::Constraint* ct) {
     } else {
       IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1]);
       IntVar* tmp_var = nullptr;
-      bool tmp_neg = 0;
+      bool tmp_neg = false;
       bool success = false;
       if (FLAGS_fz_use_sat && solver->IsBooleanVar(left, &tmp_var, &tmp_neg) &&
           solver->IsBooleanVar(right, &tmp_var, &tmp_neg)) {

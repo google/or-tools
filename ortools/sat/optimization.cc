@@ -340,9 +340,9 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
   }
 
   // Print the number of variable with a non-zero cost.
-  logger.Log(StringPrintf("c #weights:%zu #vars:%d #constraints:%d",
-                          assumptions.size(), problem.num_variables(),
-                          problem.constraints_size()));
+  logger.Log(absl::StrFormat("c #weights:%u #vars:%d #constraints:%d",
+                             assumptions.size(), problem.num_variables(),
+                             problem.constraints_size()));
 
   // Starts the algorithm. Each loop will solve the problem under the given
   // assumptions, and if unsat, will relax exactly one of the objective
@@ -371,7 +371,7 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
     solver->Backtrack(0);
 
     // Print the search progress.
-    logger.Log(StringPrintf("c iter:%d core:%zu", iter, core.size()));
+    logger.Log(absl::StrFormat("c iter:%d core:%zu", iter, core.size()));
 
     // Special case for a singleton core.
     if (core.size() == 1) {
@@ -531,7 +531,7 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
       *std::max_element(costs.begin(), costs.end());
 
   // Print the number of variables with a non-zero cost.
-  logger.Log(StringPrintf("c #weights:%zu #vars:%d #constraints:%d",
+  logger.Log(absl::StrFormat("c #weights:%zu #vars:%d #constraints:%d",
                           assumptions.size(), problem.num_variables(),
                           problem.constraints_size()));
 
@@ -939,7 +939,7 @@ SatSolver::Status SolveWithCardinalityEncoding(
   }
 
   // Print the number of variables with a non-zero cost.
-  logger.Log(StringPrintf("c #weights:%zu #vars:%d #constraints:%d",
+  logger.Log(absl::StrFormat("c #weights:%zu #vars:%d #constraints:%d",
                           nodes.size(), problem.num_variables(),
                           problem.constraints_size()));
 
@@ -947,7 +947,7 @@ SatSolver::Status SolveWithCardinalityEncoding(
   solver->Backtrack(0);
   EncodingNode* root =
       MergeAllNodesWithDeque(upper_bound, nodes, solver, &repository);
-  logger.Log(StringPrintf("c encoding depth:%d", root->depth()));
+  logger.Log(absl::StrFormat("c encoding depth:%d", root->depth()));
 
   while (true) {
     if (objective != kCoefficientMax) {
@@ -1003,7 +1003,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
   }
 
   // Print the number of variables with a non-zero cost.
-  logger.Log(StringPrintf("c #weights:%zu #vars:%d #constraints:%d",
+  logger.Log(absl::StrFormat("c #weights:%zu #vars:%d #constraints:%d",
                           nodes.size(), problem.num_variables(),
                           problem.constraints_size()));
 

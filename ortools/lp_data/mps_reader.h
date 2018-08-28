@@ -68,7 +68,7 @@ class MPSReader {
   bool LoadFile(const std::string& file_name, LinearProgram* data);
 
   // Loads instance from a file, specifying if free or fixed format is used.
-  bool LoadFileWithMode(const std::string& source, bool free_form,
+  bool LoadFileWithMode(const std::string& file_name, bool free_form,
                         LinearProgram* data);
 
   // Same as load file, but try free form mps on fail.
@@ -174,7 +174,7 @@ class MPSReader {
                           const std::string& row_value);
 
   // Stores a range constraint of value row_value for a row name.
-  void StoreRange(const std::string& row_name, const std::string& row_value);
+  void StoreRange(const std::string& row_name, const std::string& range_value);
 
   // Boolean set to true if the reader expects a free-form MPS file.
   bool free_form_;

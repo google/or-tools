@@ -99,7 +99,7 @@ class PortfolioOptimizer : public BopOptimizerBase {
 class OptimizerSelector {
  public:
   // Note that the list of optimizers is only used to get the names for
-  // debug purposes, the ownership of the optimizers is not transfered.
+  // debug purposes, the ownership of the optimizers is not transferred.
   explicit OptimizerSelector(
       const gtl::ITIVector<OptimizerIndex, BopOptimizerBase*>& optimizers);
 
@@ -145,7 +145,7 @@ class OptimizerSelector {
   // TODO(user): Maybe we should simply have the notion of selectability here
   // and let the client handle the logic to decide what optimizer are selectable
   // or not.
-  void SetOptimizerRunnability(OptimizerIndex optimizer_index, bool runable);
+  void SetOptimizerRunnability(OptimizerIndex optimizer_index, bool runnable);
 
   // Returns statistics about the given optimizer.
   std::string PrintStats(OptimizerIndex optimizer_index) const;

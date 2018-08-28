@@ -42,7 +42,7 @@ void DratWriter::DeleteClause(absl::Span<Literal> clause) {
 
 void DratWriter::WriteClause(absl::Span<Literal> clause) {
   for (const Literal literal : clause) {
-    StringAppendF(&buffer_, "%d ", literal.SignedValue());
+    absl::StrAppendFormat(&buffer_, "%d ", literal.SignedValue());
   }
   buffer_ += "0\n";
   if (buffer_.size() > 10000) {

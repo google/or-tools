@@ -134,7 +134,7 @@ class MonoThreadReporting : public SearchReportingInterface {
                      const std::string& solution_string) override;
   void OnOptimizeSolution(int thread_id, int64 value,
                           const std::string& solution_string) override;
-  void Log(int thread_id, const std::string& message) const override;
+  void Log(int thread_id, const std::string& final_output) const override;
   void Print(int thread_id, const std::string& final_output) const override;
   bool ShouldFinish() const override;
   void OnSearchEnd(int thread_id, bool interrupted) override;
@@ -174,12 +174,12 @@ class MultiThreadReporting : public SearchReportingInterface {
   void OnOptimizeSolution(int thread_id, int64 value,
                           const std::string& solution_string) override;
   void Log(int thread_id, const std::string& message) const override;
-  void Print(int thread_id, const std::string& final_out) const override;
+  void Print(int thread_id, const std::string& message) const override;
   bool ShouldFinish() const override;
   void OnSearchEnd(int thread_id, bool interrupted) override;
   int64 BestSolution() const override;
   OptimizeVar* CreateObjective(Solver* s, bool maximize, IntVar* var,
-                               int64 step, int w) const override;
+                               int64 step, int thread_id) const override;
   SearchLimit* CreateLimit(Solver* s, int thread_id) const override;
   bool Interrupted() const override;
 

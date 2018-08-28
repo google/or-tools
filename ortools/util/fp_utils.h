@@ -179,7 +179,7 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 // Given an array of doubles, this computes a positive scaling factor such that
 // the scaled doubles can then be rounded to integers with little or no loss of
 // precision, and so that the L1 norm of these integers is <= max_sum. More
-// precisely, the following formulas will hold:
+// precisely, the following formulas will hold (x[i] is input[i], for brevity):
 // - For all i, |round(factor * x[i]) / factor  - x[i]| <= error * |x[i]|
 // - The sum over i of |round(factor * x[i])| <= max_sum.
 //
@@ -199,7 +199,7 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 //
 // TODO(user): incorporate the gcd computation here? The issue is that I am
 // not sure if I just do factor /= gcd that round(x * factor) will be the same.
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
+void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
                                     int64 max_absolute_sum,
                                     double* scaling_factor,
                                     double* max_relative_coeff_error);
@@ -213,7 +213,7 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
 // difference between the exact scaled sum and the rounded one. One needs to
 // divide this by scaling_factor to have the maximum absolute error on the
 // original sum.
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
+void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
                                     const std::vector<double>& lb,
                                     const std::vector<double>& ub,
                                     int64 max_absolute_sum,

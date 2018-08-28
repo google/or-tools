@@ -79,6 +79,11 @@ message GlopParameters {
     // GLPK uses by default. Both algorithm produce a triangular initial basis,
     // however the heuristics used are not exactly the same.
     TRIANGULAR = 2;
+
+    // Use a version of Maros's triangular feasibility crash
+    // https://books.google.fr/books?isbn=1461502578
+    // Chapter 9.8.2.1
+    MAROS = 3;
   }
 
 

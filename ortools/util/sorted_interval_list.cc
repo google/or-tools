@@ -310,8 +310,8 @@ SortedDisjointIntervalList::SortedDisjointIntervalList(
 }
 
 SortedDisjointIntervalList::SortedDisjointIntervalList(
-    const std::vector<ClosedInterval>& vector_representation) {
-  for (ClosedInterval interval : vector_representation) {
+    const std::vector<ClosedInterval>& intervals) {
+  for (ClosedInterval interval : intervals) {
     InsertInterval(interval.start, interval.end);
   }
 }

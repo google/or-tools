@@ -40,13 +40,32 @@ void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model) {
     return;
   }
 
+  // Compute trivial bounds on the objective, this is needed otherwise the
+  // overflow checker might not be happy with the new constraint we are about
+  // to create. Note that the model validator should make sure that there is no
+  // overflow in the computation below.
+  int64 min_obj = 0;
+  int64 max_obj = 0;
+  for (int i = 0; i < cp_model->objective().vars_size(); ++i) {
+    const int ref = cp_model->objective().vars(i);
+    const int var = PositiveRef(ref);
+    const int64 coeff =
+        cp_model->objective().coeffs(i) * (RefIsPositive(ref) ? 1 : -1);
+    const int64 value1 = cp_model->variables(var).domain(0) * coeff;
+    const int64 value2 = cp_model->variables(var).domain(
+                             cp_model->variables(var).domain_size() - 1) *
+                         coeff;
+    min_obj += std::min(value1, value2);
+    max_obj += std::max(value1, value2);
+  }
+
   // Create the new objective var.
   const int obj_ref = cp_model->variables_size();
   {
     IntegerVariableProto* obj = cp_model->add_variables();
     if (cp_model->objective().domain().empty()) {
-      obj->add_domain(kint64min);
-      obj->add_domain(kint64max);
+      obj->add_domain(min_obj);
+      obj->add_domain(max_obj);
     } else {
       *(obj->mutable_domain()) = cp_model->objective().domain();
       cp_model->mutable_objective()->clear_domain();

@@ -19,6 +19,7 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.tab.hh"
@@ -64,7 +65,7 @@ bool AllDomainsHaveOneValue(const std::vector<Domain>& domains) {
 int64 ConvertAsIntegerOrDie(double d) {
   const double rounded = std::round(d);
   const int64 i = static_cast<int64>(rounded);
-  CHECK_NEAR(d, i, 1e-9);
+  CHECK_LE(std::abs(static_cast<double>(i) - rounded), 1e-9);
   return i;
 }
 

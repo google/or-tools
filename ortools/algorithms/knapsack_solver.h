@@ -66,6 +66,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/memory.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -149,7 +150,7 @@ class KnapsackSolver {
   // obtained might not be optimal if the limit is reached.
   void set_time_limit(double time_limit_seconds) {
     time_limit_seconds_ = time_limit_seconds;
-    time_limit_.reset(new TimeLimit(time_limit_seconds_));
+    time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
   }
 
  private:

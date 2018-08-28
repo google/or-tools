@@ -623,7 +623,7 @@ class CpModel(object):
   def AddCircuit(self, arcs):
     """Adds Circuit(arcs).
 
-    Adds a circuit constraints from a sparse list of arcs that encode the graph.
+    Adds a circuit constraint from a sparse list of arcs that encode the graph.
 
     A circuit is a unique Hamiltonian path in a subgraph of the total
     graph. In case a node 'i' is not in the path, then there must be a
@@ -1020,7 +1020,7 @@ class CpModel(object):
   # Scheduling support
 
   def NewIntervalVar(self, start, size, end, name):
-    """Creates an interval variables from start, size, and end.
+    """Creates an interval variable from start, size, and end.
 
     An interval variable is a constraint, that is itself used in other
     constraints like NoOverlap.

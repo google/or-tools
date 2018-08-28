@@ -106,8 +106,8 @@ class BooleanSumOdd : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("BooleanSumOdd([%s])",
-                        JoinDebugStringPtr(vars_, ", ").c_str());
+    return absl::StrFormat("BooleanSumOdd([%s])",
+                           JoinDebugStringPtr(vars_, ", ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -202,7 +202,7 @@ class VariableParity : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("VarParity(%s, %d)", var_->DebugString().c_str(), odd_);
+    return absl::StrFormat("VarParity(%s, %d)", var_->DebugString().c_str(), odd_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -465,7 +465,7 @@ class BooleanSumInRange : public Constraint {
 
 class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
  public:
-  StartVarDurationVarPerformedIntervalVar(Solver* const s, IntVar* const start,
+  StartVarDurationVarPerformedIntervalVar(Solver* const s, IntVar* const var,
                                           IntVar* const duration,
                                           const std::string& name);
   ~StartVarDurationVarPerformedIntervalVar() override {}
@@ -623,9 +623,9 @@ std::string StartVarDurationVarPerformedIntervalVar::DebugString() const {
   } else {
     out = "IntervalVar(start = ";
   }
-  StringAppendF(&out, "%s, duration = %s, performed = true)",
-                start_->DebugString().c_str(),
-                duration_->DebugString().c_str());
+  absl::StrAppendFormat(&out, "%s, duration = %s, performed = true)",
+                        start_->DebugString().c_str(),
+                        duration_->DebugString().c_str());
   return out;
 }
 

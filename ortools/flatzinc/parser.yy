@@ -295,7 +295,7 @@ variable_or_constant_declaration:
   std::vector<IntegerVariable*> vars(num_vars, nullptr);
 
   for (int i = 0; i < num_vars; ++i) {
-    const std::string var_name = StringPrintf("%s[%d]", identifier.c_str(), i + 1);
+    const std::string var_name = absl::StrFormat("%s[%d]", identifier.c_str(), i + 1);
     if (assignments == nullptr) {
       vars[i] = model->AddVariable(var_name, domain, introduced);
     } else if (assignments->variables[i] == nullptr) {

@@ -27,6 +27,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/memory.h"
 #include "ortools/base/port.h"
 #include "ortools/base/time_support.h"
 #include "ortools/base/timer.h"
@@ -123,18 +124,18 @@ class TimeLimit {
   // Creates a time limit object that uses infinite time for wall time,
   // deterministic time and instruction count limit.
   static std::unique_ptr<TimeLimit> Infinite() {
-    return std::unique_ptr<TimeLimit>(
-        new TimeLimit(std::numeric_limits<double>::infinity(),
-                      std::numeric_limits<double>::infinity(),
-                      std::numeric_limits<double>::infinity()));
+    return absl::make_unique<TimeLimit>(
+        std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::infinity(),
+        std::numeric_limits<double>::infinity());
   }
 
   // Creates a time limit object that puts limit only on the deterministic time.
   static std::unique_ptr<TimeLimit> FromDeterministicTime(
       double deterministic_limit) {
-    return std::unique_ptr<TimeLimit>(new TimeLimit(
+    return absl::make_unique<TimeLimit>(
         std::numeric_limits<double>::infinity(), deterministic_limit,
-        std::numeric_limits<double>::infinity()));
+        std::numeric_limits<double>::infinity());
   }
 
   // Creates a time limit object initialized from an object that provides
@@ -145,9 +146,9 @@ class TimeLimit {
   template <typename Parameters>
   static std::unique_ptr<TimeLimit> FromParameters(
       const Parameters& parameters) {
-    return std::unique_ptr<TimeLimit>(new TimeLimit(
+    return absl::make_unique<TimeLimit>(
         parameters.max_time_in_seconds(), parameters.max_deterministic_time(),
-        std::numeric_limits<double>::infinity()));
+        std::numeric_limits<double>::infinity());
   }
 
   // Sets the instruction limit. We need this method since the static
@@ -342,9 +343,9 @@ class NestedTimeLimit {
   template <typename Parameters>
   static std::unique_ptr<NestedTimeLimit> FromBaseTimeLimitAndParameters(
       TimeLimit* time_limit, const Parameters& parameters) {
-    return std::unique_ptr<NestedTimeLimit>(
-        new NestedTimeLimit(time_limit, parameters.max_time_in_seconds(),
-                            parameters.max_deterministic_time()));
+    return absl::make_unique<NestedTimeLimit>(
+        time_limit, parameters.max_time_in_seconds(),
+        parameters.max_deterministic_time());
   }
 
   // Returns a time limit object that represents the combination of the overall

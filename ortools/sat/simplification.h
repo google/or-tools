@@ -280,8 +280,8 @@ class SatPresolver {
   // Literal priority queue for BVA. The literals are ordered by descending
   // number of occurrences in clauses.
   void InitializeBvaPriorityQueue();
-  void UpdateBvaPriorityQueue(LiteralIndex var);
-  void AddToBvaPriorityQueue(LiteralIndex var);
+  void UpdateBvaPriorityQueue(LiteralIndex lit);
+  void AddToBvaPriorityQueue(LiteralIndex lit);
   struct BvaPqElement {
     BvaPqElement() : heap_index(-1), literal(-1), weight(0.0) {}
 
