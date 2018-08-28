@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-
   Coins grid problem in Google CP Solver.
-
 
   Problem from
   Tony Hurlimann: "A coin puzzle - SVOR-contest 2007"
@@ -53,17 +51,17 @@
   http://www.hakank.org/google_or_tools/
 """
 
+import sys
 from ortools.constraint_solver import pywrapcp
 
-
-def main(unused_argv):
+def main(n=31, c=14):
   # Create the solver.
   solver = pywrapcp.Solver("Coins grid")
-
   # data
-  n = 31  # the grid size
-  c = 14  # number of coins per row/column
-  # (6, 4)
+
+  print "n: ", n
+  print "c: ", c
+
   # declare variables
   x = {}
   for i in range(n):
@@ -113,6 +111,13 @@ def main(unused_argv):
   print "branches:", solver.Branches()
   print "WallTime:", solver.WallTime()
 
-
 if __name__ == "__main__":
-  main("coin grids")
+  # data
+  n = 31  # the grid size
+  c = 14  # number of coins per row/column
+  if len(sys.argv) > 1:
+    n = int(sys.argv[1])
+  if len(sys.argv) > 2:
+    c = int(sys.argv[2])
+
+  main(n, c)

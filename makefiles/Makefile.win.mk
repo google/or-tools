@@ -25,6 +25,9 @@ LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
 EX_DIR  = $(OR_ROOT)examples
 EX_PATH = $(subst /,$S,$(EX_DIR))
+# Python relevant directory
+PYTHON_EX_DIR  = $(OR_ROOT)examples/python
+PYTHON_EX_PATH = $(subst /,$S,$(PYTHON_EX_DIR))
 # Java relevant directory
 CLASS_DIR = $(OR_ROOT)classes
 JAVA_EX_DIR  = $(OR_ROOT)examples/java
