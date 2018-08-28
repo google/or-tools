@@ -290,7 +290,7 @@ cjava: $(CLASS_DIR)/$(EX_NAME)
 .PHONY: rjava
 rjava: $(LIB_DIR)/$(EX_NAME)$J
 	@echo running $<
-	$(MAKE) run_$(EX_NAME)
+	$(MAKE) rjava_$(EX_NAME)
 endif # ifeq ($(EX),)
 
 $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
@@ -311,7 +311,7 @@ $(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	-$(DEL) $(LIB_DIR)$S$*.jar
 	$(JAR_BIN) cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
 
-run_%: $(LIB_DIR)/%$J
+rjava_%: $(LIB_DIR)/%$J
 	$(JAVA_BIN) -Xss2048k $(JAVAFLAGS) \
  -cp $(LIB_DIR)$S$*.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $* $(ARGS)

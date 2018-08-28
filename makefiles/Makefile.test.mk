@@ -40,59 +40,59 @@ test_python_examples: python
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Stests$Stest_lp_api.py
 
 .PHONY: test_java_examples
-test_java_examples: java \
-run_AllDifferentExcept0 \
-run_AllInterval \
-run_CapacitatedVehicleRoutingProblemWithTimeWindows \
-run_Circuit \
-run_CoinsGridMIP \
-run_ColoringMIP \
-run_CoveringOpl \
-run_Crossword \
-run_DeBruijn \
-run_Diet \
-run_DietMIP \
-run_DivisibleBy9Through1 \
-run_FlowExample \
-run_GolombRuler \
-run_IntegerProgramming \
-run_Knapsack \
-run_KnapsackMIP \
-run_LeastDiff \
-run_LinearAssignmentAPI \
-run_LinearProgramming \
-run_LsApi \
-run_MagicSquare \
-run_Map2 \
-run_Map \
-run_Minesweeper \
-run_MultiThreadTest \
-run_NQueens2 \
-run_NQueens \
-run_Partition \
-run_QuasigroupCompletion \
-run_RabbitsPheasants \
-run_SendMoreMoney2 \
-run_SendMoreMoney \
-run_SendMostMoney \
-run_Seseman \
-run_SetCovering2 \
-run_SetCovering3 \
-run_SetCovering4 \
-run_SetCoveringDeployment \
-run_SetCovering \
-run_SimpleRoutingTest \
-run_StableMarriage \
-run_StiglerMIP \
-run_Strimko2 \
-run_Sudoku \
-run_SurvoPuzzle \
-run_ToNum \
-run_Tsp \
-run_Vrp \
-run_WhoKilledAgatha \
-run_Xkcd \
-run_YoungTableaux
+test_java_examples: java
+	$(MAKE) rjava_AllDifferentExcept0
+	$(MAKE) rjava_AllInterval
+	$(MAKE) rjava_CapacitatedVehicleRoutingProblemWithTimeWindows
+	$(MAKE) rjava_Circuit
+	$(MAKE) rjava_CoinsGridMIP
+	$(MAKE) rjava_ColoringMIP
+	$(MAKE) rjava_CoveringOpl
+	$(MAKE) rjava_Crossword
+	$(MAKE) rjava_DeBruijn
+	$(MAKE) rjava_Diet
+	$(MAKE) rjava_DietMIP
+	$(MAKE) rjava_DivisibleBy9Through1
+	$(MAKE) rjava_FlowExample
+	$(MAKE) rjava_GolombRuler
+	$(MAKE) rjava_IntegerProgramming
+	$(MAKE) rjava_Knapsack
+	$(MAKE) rjava_KnapsackMIP
+	$(MAKE) rjava_LeastDiff
+	$(MAKE) rjava_LinearAssignmentAPI
+	$(MAKE) rjava_LinearProgramming
+	$(MAKE) rjava_LsApi
+	$(MAKE) rjava_MagicSquare
+	$(MAKE) rjava_Map2
+	$(MAKE) rjava_Map
+	$(MAKE) rjava_Minesweeper
+	$(MAKE) rjava_MultiThreadTest
+	$(MAKE) rjava_NQueens2
+	$(MAKE) rjava_NQueens
+	$(MAKE) rjava_Partition
+	$(MAKE) rjava_QuasigroupCompletion
+	$(MAKE) rjava_RabbitsPheasants
+	$(MAKE) rjava_SendMoreMoney2
+	$(MAKE) rjava_SendMoreMoney
+	$(MAKE) rjava_SendMostMoney
+	$(MAKE) rjava_Seseman
+	$(MAKE) rjava_SetCovering2
+	$(MAKE) rjava_SetCovering3
+	$(MAKE) rjava_SetCovering4
+	$(MAKE) rjava_SetCoveringDeployment
+	$(MAKE) rjava_SetCovering
+	$(MAKE) rjava_SimpleRoutingTest
+	$(MAKE) rjava_StableMarriage
+	$(MAKE) rjava_StiglerMIP
+	$(MAKE) rjava_Strimko2
+	$(MAKE) rjava_Sudoku
+	$(MAKE) rjava_SurvoPuzzle
+	$(MAKE) rjava_ToNum
+	$(MAKE) rjava_Tsp
+	$(MAKE) rjava_Vrp
+	$(MAKE) rjava_WhoKilledAgatha
+	$(MAKE) rjava_Xkcd
+	$(MAKE) rjava_YoungTableaux
 
 .PHONY: test_donet_examples
 test_dotnet_examples: dotnet
