@@ -555,6 +555,64 @@ bool PresolveIntMin(ConstraintProto* ct, PresolveContext* context) {
 
 bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
+  if (ct->int_prod().vars_size() == 2) {
+    const int a = ct->int_prod().vars(0);
+    const int b = ct->int_prod().vars(1);
+    const int p = ct->int_prod().target();
+    if ((context->MinOf(a) == 0 && context->MaxOf(a) == 0) ||
+        (context->MinOf(b) == 0 && context->MaxOf(b) == 0)) {
+      // force p to be 0.
+      ConstraintProto* new_ct = context->working_model->add_constraints();
+      new_ct->mutable_linear()->add_vars(p);
+      new_ct->mutable_linear()->add_coeffs(1);
+      new_ct->mutable_linear()->add_domain(0);
+      new_ct->mutable_linear()->add_domain(0);
+      context->UpdateRuleStats("int_prod: force target to zero.");
+      return RemoveConstraint(ct, context);
+    }
+    if (context->MinOf(a) == 0 && context->MaxOf(a) == 1 &&
+        context->MinOf(b) != context->MaxOf(b)) {
+      ConstraintProto* one = context->working_model->add_constraints();
+      one->add_enforcement_literal(a);
+      one->mutable_linear()->add_vars(b);
+      one->mutable_linear()->add_coeffs(1);
+      one->mutable_linear()->add_vars(p);
+      one->mutable_linear()->add_coeffs(-1);
+      one->mutable_linear()->add_domain(0);
+      one->mutable_linear()->add_domain(0);
+
+      ConstraintProto* zero = context->working_model->add_constraints();
+      zero->add_enforcement_literal(NegatedRef(a));
+      zero->mutable_linear()->add_vars(p);
+      zero->mutable_linear()->add_coeffs(1);
+      zero->mutable_linear()->add_domain(0);
+      zero->mutable_linear()->add_domain(0);
+
+      context->UpdateRuleStats("int_prod: expand product by boolean.");
+      return RemoveConstraint(ct, context);
+    } else if (context->MinOf(b) == 0 && context->MaxOf(b) == 1 &&
+        context->MinOf(a) != context->MaxOf(a)) {
+      ConstraintProto* one = context->working_model->add_constraints();
+      one->add_enforcement_literal(b);
+      one->mutable_linear()->add_vars(a);
+      one->mutable_linear()->add_coeffs(1);
+      one->mutable_linear()->add_vars(p);
+      one->mutable_linear()->add_coeffs(-1);
+      one->mutable_linear()->add_domain(0);
+      one->mutable_linear()->add_domain(0);
+
+      ConstraintProto* zero = context->working_model->add_constraints();
+      zero->add_enforcement_literal(NegatedRef(b));
+      zero->mutable_linear()->add_vars(p);
+      zero->mutable_linear()->add_coeffs(1);
+      zero->mutable_linear()->add_domain(0);
+      zero->mutable_linear()->add_domain(0);
+
+      context->UpdateRuleStats("int_prod: expand product by boolean.");
+      return RemoveConstraint(ct, context);
+    }
+  }
+
   // For now, we only presolve the case where all variable are Booleans.
   const int target_ref = ct->int_prod().target();
   if (!RefIsPositive(target_ref)) return false;

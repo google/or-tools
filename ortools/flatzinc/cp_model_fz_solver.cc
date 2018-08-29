@@ -229,9 +229,26 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   } else if (fz_ct.type == "bool_ne" || fz_ct.type == "bool_not" ||
              fz_ct.type == "int_ne") {
     FillAMinusBInDomain({kint64min, -1, 1, kint64max}, fz_ct, ct);
-  } else if (fz_ct.type == "int_lin_eq" || fz_ct.type == "bool_lin_eq") {
+  } else if (fz_ct.type == "int_lin_eq") {
     const int64 rhs = fz_ct.arguments[2].values[0];
     FillLinearConstraintWithGivenDomain({rhs, rhs}, fz_ct, ct);
+  } else if (fz_ct.type == "bool_lin_eq") {
+    auto* arg = ct->mutable_linear();
+    std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
+    for (int i = 0; i < vars.size(); ++i) {
+      arg->add_vars(vars[i]);
+      arg->add_coeffs(fz_ct.arguments[0].values[i]);
+    }
+    if (fz_ct.arguments[2].IsVariable()) {
+      arg->add_vars(LookupVar(fz_ct.arguments[2]));
+      arg->add_coeffs(-1);
+      arg->add_domain(0);
+      arg->add_domain(0);
+    } else {
+      const int64 v = fz_ct.arguments[2].Value();
+      arg->add_domain(v);
+      arg->add_domain(v);
+    }
   } else if (fz_ct.type == "int_lin_le" || fz_ct.type == "bool_lin_le") {
     const int64 rhs = fz_ct.arguments[2].values[0];
     FillLinearConstraintWithGivenDomain({kint64min, rhs}, fz_ct, ct);

@@ -526,7 +526,11 @@ inline std::function<void(Model*)> ProductConstraint(IntegerVariable a,
           model, new PositiveProductPropagator(NegationOf(a), NegationOf(b), p,
                                                integer_trail));
     } else {
-      LOG(FATAL) << "Not supported";
+      LOG(FATAL) << absl::StrFormat(
+          "Product not supported [%lld..%lld] * [%lld..%lld] == [%lld..%lld]",
+          model->Get(LowerBound(a)), model->Get(UpperBound(a)),
+          model->Get(LowerBound(b)), model->Get(UpperBound(b)),
+          model->Get(LowerBound(p)), model->Get(UpperBound(p)));
     }
   };
 }
