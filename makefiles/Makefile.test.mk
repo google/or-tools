@@ -108,7 +108,8 @@ test_python_examples: python
 	$(MAKE) rpy_magic_sequence_distribute
 	$(MAKE) rpy_magic_square_and_cards
 	$(MAKE) rpy_magic_square_mip
-	$(MAKE) rpy_magic_square # warning: take 21s
+# warning: magic_square take 21s
+	$(MAKE) rpy_magic_square
 	$(MAKE) rpy_map
 	$(MAKE) rpy_marathon2
 	$(MAKE) rpy_max_flow_taha
@@ -126,7 +127,8 @@ test_python_examples: python
 	$(MAKE) rpy_nqueens_sat
 	$(MAKE) rpy_nurse_rostering
 	$(MAKE) rpy_nurses_cp
-	$(MAKE) rpy_nurses_sat # warning: take 18s
+# warning: nurse_sat take 18s
+	$(MAKE) rpy_nurses_sat
 	$(MAKE) rpy_olympic
 	$(MAKE) rpy_organize_day
 	$(MAKE) rpy_pandigital_numbers
