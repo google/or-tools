@@ -13,7 +13,7 @@ test_cc_examples: cc
 	$(BIN_DIR)$Scpp11_test$E
 	$(BIN_DIR)$Sforbidden_intervals_test$E
 	$(BIN_DIR)$Sgcc_test$E
-#	$(BIN_DIR)$Sissue173$E
+#	$(BIN_DIR)$Sissue173$E # error: too long
 	$(BIN_DIR)$Sissue57$E
 	$(BIN_DIR)$Smin_max_test$E
 	$(BIN_DIR)$Svisitor_test$E
