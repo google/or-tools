@@ -79,7 +79,7 @@ from ortools.constraint_solver import pywrapcp
 
 def calc(cc, x, res):
 
-  solver = x.values()[0].solver()
+  solver = list(x.values())[0].solver()
 
   # sum the numbers
   cage = [x[i[0] - 1, i[1] - 1] for i in cc]
@@ -174,19 +174,19 @@ def main():
   while solver.NextSolution():
     for i in range(n):
       for j in range(n):
-        print x[i, j].Value(),
-      print
+        print(x[i, j].Value(), end=' ')
+      print()
 
-    print
+    print()
     num_solutions += 1
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 if __name__ == "__main__":

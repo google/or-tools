@@ -30,7 +30,7 @@ test_python_examples: python
 	$(MAKE) rpy_alldifferent_except_0
 	$(MAKE) rpy_all_interval
 	$(MAKE) rpy_alphametic
-#	$(MAKE) rpy_appointments # error: py3 failure
+	$(MAKE) rpy_appointments
 	$(MAKE) rpy_a_round_of_golf
 	$(MAKE) rpy_assignment6_mip
 	$(MAKE) rpy_assignment
@@ -50,7 +50,7 @@ test_python_examples: python
 	$(MAKE) rpy_code_samples_sat
 	$(MAKE) rpy_coins3
 #	$(MAKE) rpy_coins_grid_mip # error: py3 failure
-#	$(MAKE) rpy_coins_grid ARGS="5 2" # error: py3 failure
+	$(MAKE) rpy_coins_grid ARGS="5 2"
 	$(MAKE) rpy_coloring_ip
 	$(MAKE) rpy_combinatorial_auction2
 	$(MAKE) rpy_contiguity_regular
@@ -94,7 +94,7 @@ test_python_examples: python
 	$(MAKE) rpy_just_forgotten
 	$(MAKE) rpy_kakuro
 	$(MAKE) rpy_kenken2
-#	$(MAKE) rpy_killer_sudoku # error: py3 failure
+	$(MAKE) rpy_killer_sudoku
 	$(MAKE) rpy_knapsack_cp
 	$(MAKE) rpy_knapsack_mip
 	$(MAKE) rpy_knapsack
@@ -138,7 +138,7 @@ test_python_examples: python
 	$(MAKE) rpy_post_office_problem2
 	$(MAKE) rpy_production
 	$(MAKE) rpy_pyflow_example
-#	$(MAKE) rpy_pyls_api # error: fail on travis-ci with python3
+	$(MAKE) rpy_pyls_api
 	$(MAKE) rpy_quasigroup_completion
 	$(MAKE) rpy_rabbit_pheasant
 	$(MAKE) rpy_rcpsp_sat

@@ -89,12 +89,12 @@ def main(unused_argv):
   for i in range(n):
     for j in range(n):
       # int representation
-      print int(x[(i, j)].SolutionValue()),
-    print
-  print
+      print(int(x[(i, j)].SolutionValue()), end=' ')
+    print()
+  print()
 
-  print
-  print 'walltime  :', solver.WallTime(), 'ms'
+  print()
+  print('walltime  :', solver.WallTime(), 'ms')
   # print 'iterations:', solver.Iterations()
 
 

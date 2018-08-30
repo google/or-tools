@@ -12,6 +12,8 @@
 # limitations under the License.
 
 from __future__ import print_function
+from __future__ import division
+
 import argparse
 from ortools.constraint_solver import pywrapcp
 from ortools.linear_solver import pywraplp
@@ -42,7 +44,7 @@ def find_combinations(durations, load_min, load_max, commute_time):
   """
   solver = pywrapcp.Solver('FindCombinations')
   variables = [
-      solver.IntVar(0, load_max / (i + commute_time)) for i in durations
+      solver.IntVar(0, load_max // (i + commute_time)) for i in durations
   ]
   lengths = [i + commute_time for i in durations]
   solver.Add(solver.ScalProd(variables, lengths) >= load_min)

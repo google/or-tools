@@ -59,8 +59,8 @@ def main(n=31, c=14):
   solver = pywrapcp.Solver("Coins grid")
   # data
 
-  print "n: ", n
-  print "c: ", c
+  print("n: ", n)
+  print("c: ", c)
 
   # declare variables
   x = {}
@@ -100,16 +100,16 @@ def main(n=31, c=14):
                    solver.CHOOSE_RANDOM, solver.ASSIGN_MAX_VALUE),
       [collector, search_log, objective])
 
-  print "objective:", collector.ObjectiveValue(0)
+  print("objective:", collector.ObjectiveValue(0))
   for i in range(n):
     for j in range(n):
-      print collector.Value(0, x[(i, j)]),
-    print
-  print
+      print(collector.Value(0, x[(i, j)]), end=' ')
+    print()
+  print()
 
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 if __name__ == "__main__":
   # data
