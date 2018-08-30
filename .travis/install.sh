@@ -70,7 +70,7 @@ if [ "${BUILDER}" == make ]; then
 				brew install swig;
 			fi
 			if [ "${LANGUAGE}" == python2 ]; then
-				brew upgrade python@2;
+				brew outdated | grep -q python@2 && brew upgrade python@2;
 				python2 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == python3 ]; then
 				brew upgrade python;

@@ -52,9 +52,14 @@ if [ "${BUILDER}" == make ];then
 			fi
 			cat Makefile.local
 			make third_party
-			make "${LANGUAGE}"
-			make test_"${LANGUAGE}"
-			if [ "${LANGUAGE}" == cc ]; then
+      if [ "${LANGUAGE}" == python2 ] || [ "${LANGUAGE}"  == python3 ]; then
+        make python
+        make test_python
+      else
+        make "${LANGUAGE}"
+        make test_"${LANGUAGE}"
+      fi
+      if [ "${LANGUAGE}" == cc ]; then
 				make test_fz
 			fi
 		else
@@ -80,8 +85,13 @@ if [ "${BUILDER}" == make ];then
 			fi
 			cat Makefile.local
 			make third_party
-			make "${LANGUAGE}"
-			make test_"${LANGUAGE}"
+      if [ "${LANGUAGE}" == python2 ] || [ "${LANGUAGE}"  == python3 ]; then
+        make python
+        make test_python
+      else
+        make "${LANGUAGE}"
+        make test_"${LANGUAGE}"
+      fi
 			if [ "${LANGUAGE}" == cc ]; then
 				make test_fz
 			fi
