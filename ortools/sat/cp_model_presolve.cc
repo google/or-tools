@@ -555,24 +555,40 @@ bool PresolveIntMin(ConstraintProto* ct, PresolveContext* context) {
 
 bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
+
   if (ct->int_prod().vars_size() == 2) {
     const int a = ct->int_prod().vars(0);
     const int b = ct->int_prod().vars(1);
     const int p = ct->int_prod().target();
-    if ((context->MinOf(a) == 0 && context->MaxOf(a) == 0) ||
-        (context->MinOf(b) == 0 && context->MaxOf(b) == 0)) {
-      // force p to be 0.
-      ConstraintProto* new_ct = context->working_model->add_constraints();
-      new_ct->mutable_linear()->add_vars(p);
-      new_ct->mutable_linear()->add_coeffs(1);
-      new_ct->mutable_linear()->add_domain(0);
-      new_ct->mutable_linear()->add_domain(0);
-      context->UpdateRuleStats("int_prod: force target to zero.");
+    const bool a_is_boolean = context->MinOf(a) == 0 && context->MaxOf(a) == 1;
+    const bool b_is_boolean = context->MinOf(b) == 0 && context->MaxOf(b) == 1;
+
+    if (context->MinOf(a) == context->MaxOf(a)) {
+      ConstraintProto* const lin = context->working_model->add_constraints();
+      lin->mutable_linear()->add_vars(b);
+      lin->mutable_linear()->add_coeffs(context->MinOf(a));
+      lin->mutable_linear()->add_vars(p);
+      lin->mutable_linear()->add_coeffs(-1);
+      lin->mutable_linear()->add_domain(0);
+      lin->mutable_linear()->add_domain(0);
+
+      context->UpdateRuleStats("int_prod: linearize product by constant.");
+      return RemoveConstraint(ct, context);
+    } else if (context->MinOf(b) == context->MaxOf(b)) {
+      ConstraintProto* const lin = context->working_model->add_constraints();
+      lin->mutable_linear()->add_vars(a);
+      lin->mutable_linear()->add_coeffs(context->MinOf(b));
+      lin->mutable_linear()->add_vars(p);
+      lin->mutable_linear()->add_coeffs(-1);
+      lin->mutable_linear()->add_domain(0);
+      lin->mutable_linear()->add_domain(0);
+
+      context->UpdateRuleStats("int_prod: linearize product by constant.");
       return RemoveConstraint(ct, context);
     }
-    if (context->MinOf(a) == 0 && context->MaxOf(a) == 1 &&
-        context->MinOf(b) != context->MaxOf(b)) {
-      ConstraintProto* one = context->working_model->add_constraints();
+
+    if (a_is_boolean && !b_is_boolean) {
+      ConstraintProto* const one = context->working_model->add_constraints();
       one->add_enforcement_literal(a);
       one->mutable_linear()->add_vars(b);
       one->mutable_linear()->add_coeffs(1);
@@ -581,7 +597,7 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
       one->mutable_linear()->add_domain(0);
       one->mutable_linear()->add_domain(0);
 
-      ConstraintProto* zero = context->working_model->add_constraints();
+      ConstraintProto* const zero = context->working_model->add_constraints();
       zero->add_enforcement_literal(NegatedRef(a));
       zero->mutable_linear()->add_vars(p);
       zero->mutable_linear()->add_coeffs(1);
@@ -590,9 +606,8 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
 
       context->UpdateRuleStats("int_prod: expand product by boolean.");
       return RemoveConstraint(ct, context);
-    } else if (context->MinOf(b) == 0 && context->MaxOf(b) == 1 &&
-        context->MinOf(a) != context->MaxOf(a)) {
-      ConstraintProto* one = context->working_model->add_constraints();
+    } else if (b_is_boolean && !a_is_boolean) {
+      ConstraintProto* const one = context->working_model->add_constraints();
       one->add_enforcement_literal(b);
       one->mutable_linear()->add_vars(a);
       one->mutable_linear()->add_coeffs(1);
@@ -601,7 +616,7 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
       one->mutable_linear()->add_domain(0);
       one->mutable_linear()->add_domain(0);
 
-      ConstraintProto* zero = context->working_model->add_constraints();
+      ConstraintProto* const zero = context->working_model->add_constraints();
       zero->add_enforcement_literal(NegatedRef(b));
       zero->mutable_linear()->add_vars(p);
       zero->mutable_linear()->add_coeffs(1);
