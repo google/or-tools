@@ -14,13 +14,11 @@
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
-{
-  static void BoolOrSample()
-  {
+public class CodeSamplesSat {
+  static void BoolOrSample() {
     CpModel model = new CpModel();
     IntVar x = model.NewBoolVar("x");
-    IntVar y = model.newBoolVar("y");
+    IntVar y = model.NewBoolVar("y");
     model.AddBoolOr(new ILiteral[] {x, y.Not()});
   }
 

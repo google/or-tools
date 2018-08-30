@@ -1,18 +1,250 @@
-# Google OrTools
+# Introduction
+This is the documentation page for the .NETStandard2.0 wrapper of OR-Tools.
+
+## Table of Content
+* [Pre-requisites](#pre-requisites)
+* [Directory Layout](#directory-layout)
+* [Build](#build)
+  * [Build Process](#build-process)
+  * [Local Google.OrTools Package](#local-googlerortools-package)
+    * [Building a runtime Google.OrTools Package](#building-local-runtime-googleortools-package)
+    * [Building a Local Google.OrTools Package](#building-local-googleortools-package)
+  * [Complete Google.OrTools Package](#complete-googleortools-package)
+    * [Building all runtime Google.OrTools Package](#building-all-runtime-googleortools-package)
+    * [Building a Complete Google.OrTools Package](#building-complete-googleortools-package)
+* [Examples](#examples)
+* [Appendices](#appendices)
+  * [Ressources](#ressources)
+  * [Issues](#issues)
+* [Misc](#misc)
 
 ## Pre-requisites
-- dotnet core 2.1
-- .NET framework (mono, net46x)
-- nuget
+The library is compiled against `netstandard2.0`, so you'll only need: 
+- .Net Core SDK >= 2.1.302
 
-## Build
-The library is compiled against `netstandard2.0`. 
+# Directory Layout
+* [`runtime.linux-x64.Google.OrTools`](runtime.linux-x64.Google.OrTools) Contains the
+.Net Standard 2.0 native project for the rid linux-x64.
+* [`runtime.osx-x64.Google.OrTools`](runtime.osx-x64.Google.OrTools) Contains the
+.Net Standard 2.0 native project for the rid osx-x64.
+* [`runtime.win-x64.Google.OrTools`](runtime.win-x64.Google.OrTools) Contains the
+.Net Standard 2.0 native project for the rid win-x64.
+* [`Google.OrTools`](Google.OrTools) Is the .Net Standard 2.0 meta-package which
+should depends on all previous available packages and contains the Reference Assembly.
 
-Either use the makefile or you can build in Visual Studio. The workflow is typically
-`make test_fsharp` which will build both C# and F# libraries in debug mode. The output will be placed in `<OR_ROOT>/dotnet-test` folder. All tests will be run based on this folder. When you are ready to package the application `make dotnet` will change the version and install a release version in `bin` and in `build`.
+# Build
+Either use the Makefile based build or you can build in Visual Studio.
+The workflow is typically  `make dotnet` which will build both C# and F# libraries package in debug mode.
+The output will be placed in `<OR_ROOT>/packages` folder. All tests will be run based on this folder.
+When you are ready to package the application `make dotnet_release` will compile in release mode and
+will replace package in `<OR_ROOT>/packages`.
 
-## Examples
+## Build Process
+To Create a native dependent package we will split it in two parts:
+- A bunch of `runtime.{rid}.Google.OrTools.nupkg` packages for each 
+[Runtime Identifier (RId)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) targeted.
+- A meta-package `Google.OrTools.nupkg` depending on each runtime packages.
 
-The Test projects show an example of building the application with `netcoreapp2.0`. 
+note: [`Microsoft.NetCore.App` packages](https://www.nuget.org/packages?q=Microsoft.NETCore.App)
+follow this layout.
 
-The F# example folder shows how to compile against the typical .NET Framework installed on machine. Before compiling be sure to run `nuget install -o ./packages` in the example folder. 
+We have two use case scenario:
+
+1. Locally, be able to build a Google.OrTools package which **only** target the local `OS Platform`,
+i.e. building for only one 
+[Runtime Identifier (RID)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).  
+note: This is usefull since the C++ build is a complex process for Windows, Linux and MacOS.  
+i.e. We don't support cross-compilation for the native library generation.
+
+2. Be able to create a complete cross-platform (ed. platform as multiple rid) Google.OrTools package.  
+i.e. First you generate each native Nuget package (`runtime.{rid}.Google.OrTools.nupkg`)
+on each native architecture, then copy paste these artifacts on one native machine
+to generate the meta-package `Google.OrTools`.
+
+## Local Google.OrTools Package
+Let's start with scenario 1: Create a *Local* `Google.OrTools` package targeting **one** 
+[Runtime Identifier (RID)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).  
+We would like to build a `Google.OrTools.nupkg` package which only depends on one
+`runtime.{rid}.Google.OrTools.nupkg` in order to work locally.  
+
+The pipeline for `linux-x64` should be as follow:  
+note: The pipeline will be similar for `osx-x64` and `win-x64` architecture, don't hesitate to look at the CI log.
+![Local Pipeline](doc/local_pipeline.svg)
+![Legend](doc/legend.svg)
+
+### Building local runtime Google.OrTools Package
+disclaimer: We won't cover the C++ ortools library build.
+So first let's create the local `runtime.{rid}.Google.OrTools.nupkg` nuget package.
+
+Here some dev-note concerning this `runtime.{rid}.Google.OrTools.csproj`.
+- `AssemblyName` must be `Google.OrTools.dll` i.e. all {rid} projects **must**
+  generate an assembly with the **same** name (i.e. no {rid} in the name).
+  On the other hand package identifier will contain the {rid}...
+  ```xml
+  <RuntimeIdentifier>{rid}</RuntimeIdentifier>
+  <AssemblyName>Google.OrTools</AssemblyName>
+  <PackageId>runtime.{rid}.Google.OrTools</PackageId>
+  ```
+- Once you specify a `RuntimeIdentifier` then `dotnet build` or `dotnet build -r {rid}` 
+will behave identically (save you from typing it).
+  - note: not the case if you use `RuntimeIdentifiers` (notice the 's')
+- It is [recommended](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
+to add the tag `native` to the 
+[nuget package tags](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj#packagetags)
+  ```xml
+  <PackageTags>native</PackageTags>
+  ```
+- Specify the output target folder for having the assembly output in `runtimes/{rid}/lib/netstandard2.0` in the nupkg
+  ```xml
+  <BuildOutputTargetFolder>runtimes/$(RuntimeIdentifier)/lib</BuildOutputTargetFolder>
+  ```
+  note: Every files with an extension different from `.dll` will be filter out by nuget.  
+  note: dotnet/cli automatically add the `$(TargetFramework)` (i.e. `netstandard2.0`) to the output path.
+- Add the native shared library to the nuget package in the repository `runtimes/{rib}/native`. e.g. for linux-x64:
+  ```xml
+  <Content Include="*.so">
+    <PackagePath>runtimes/linux-x64/native/%(Filename)%(Extension)</PackagePath>
+    <Pack>true</Pack>
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </Content>
+  ```
+- Generate the runtime package to a defined directory (i.e. so later in meta Google.OrTools package we will be able to locate it)
+  ```xml
+  <PackageOutputPath>{...}/packages</PackageOutputPath>
+  ```
+- Generate the Reference Assembly (but don't include it to this runtime nupkg !, see below for explanation) using:
+  ```xml
+  <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
+  ```
+
+Then you can generate the package using:
+```bash
+dotnet pack src/runtime.{rid}.Google.OrTools
+```
+note: this will automatically trigger the `dotnet build`.
+
+If everything good the package (located where your `PackageOutputPath` was defined) should have this layout:
+```
+{...}/packages/runtime.{rid}.Google.OrTools.nupkg:
+\- runtime.{rid}.Google.OrTools.nuspec
+\- runtimes
+   \- {rid}
+      \- lib
+         \- netstandard2.0
+            \- Google.OrTools.dll
+      \- native
+         \- *.so / *.dylib / *.dll
+... 
+```
+note: `{rid}` could be `linux-x64`
+
+tips: since nuget package are zip archive you can use `unzip -l <package>.nupkg` to study their layout.
+
+### Building local Google.OrTools Package
+So now, let's create the local `Google.OrTools.nupkg` nuget package which will depend on our previous runtime package.
+
+Here some dev-note concerning this `Google.OrTools.csproj`.
+- This package is a meta-package so we don't want to ship an empty assembly file:
+  ```xml
+  <IncludeBuildOutput>false</IncludeBuildOutput>
+  ```
+- Add the previous package directory:
+  ```xml
+  <RestoreSources>{...}/packages;$(RestoreSources)</RestoreSources>
+  ```
+- Add dependency (i.e. `PackageReference`) on each runtime package(s) availabe:
+  ```xml
+  <ItemGroup Condition="Exists('{...}/packages/runtime.linux-x64.Google.OrTools.1.0.0.nupkg')">
+    <PackageReference Include="runtime.linux-x64.Google.OrTools" Version="1.0.0" />
+  </ItemGroup>
+  ```
+  Thanks to the `RestoreSource` we can work locally with our just builded package
+  without the need to upload it on [nuget.org](https://www.nuget.org/).
+- To expose the .Net Surface API the `Google.OrTools.csproj` must contains a least one 
+[Reference Assembly](https://docs.microsoft.com/en-us/nuget/reference/nuspec#explicit-assembly-references) of the previously rumtime package.
+  ```xml
+  <Content Include="../runtime.{rid}.Google.OrTools/bin/$(Configuration)/$(TargetFramework)/{rid}/ref/*.dll">
+    <PackagePath>ref/$(TargetFramework)/%(Filename)%(Extension)</PackagePath>
+    <Pack>true</Pack>
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </Content>
+  ```
+
+Then you can generate the package using:
+```bash
+dotnet pack src/Google.OrTools
+```
+
+If everything good the package (located where your `PackageOutputPath` was defined) should have this layout:
+```
+{...}/packages/Google.OrTools.nupkg:
+\- Google.OrTools.nuspec
+\- ref
+   \- netstandard2.0
+      \- Google.OrTools.dll
+... 
+```
+
+## Complete Google.OrTools Package
+Let's start with scenario 2: Create a *Complete* `Google.OrTools.nupkg` package targeting multiple
+[Runtime Identifier (RID)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).  
+We would like to build a `Google.OrTools.nupkg` package which depends on several `runtime.{rid}.Google.OrTools.nupkg`.  
+
+The pipeline should be as follow:  
+note: This pipeline should be run on any architecture,
+provided you have generated the three architecture dependent `runtime.{rid}.Google.OrTools.nupkg` nuget packages.
+![Full Pipeline](doc/full_pipeline.svg)
+![Legend](doc/legend.svg)
+
+### Building All runtime Google.OrTools Package 
+Like in the previous scenario, on each targeted OS Platform you can build the coresponding
+`runtime.{rid}.Google.OrTools.nupkg` package.
+
+Simply run on each platform
+```bash
+dotnet build src/runtime.{rid}.Google.OrTools
+dotnet pack src/runtime.{rid}.Google.OrTools
+```
+note: replace `{rid}` by the Runtime Identifier associated to the current OS platform.
+
+Then on one machine used, you copy all other packages in the `{...}/packages` so
+when building `Google.OrTools.csproj` we can have access to all package...
+
+### Building Complete Google.OrTools Package 
+This is the same step than in the previous scenario, since we "see" all runtime
+packages in `{...}/packages`, the project will depends on each of them.
+
+Once copied all runtime package locally, simply run:
+```bash
+dotnet build src/Google.OrTools
+dotnet pack src/Google.OrTools
+```
+
+# Examples
+The Test projects show examples of building applications with `netcoreapp2.0`. 
+
+The F# example folder shows how to compile against the typical .NET Framework installed on machine.
+
+# Appendices
+Few links on the subject...
+
+## Ressources
+- [.NET Core RID Catalog](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
+- [Creating native packages](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
+- [Blog on Nuget Rid Graph](https://natemcmaster.com/blog/2016/05/19/nuget3-rid-graph/)
+
+- [Common MSBuild project properties](https://docs.microsoft.com/en-us/visualstudio/msbuild/common-msbuild-project-properties?view=vs-2017)
+- [MSBuild well-known item metadata](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-well-known-item-metadata?view=vs-2017)
+- [Additions to the csproj format for .NET Core](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj)
+
+## Issues
+Some issue related to this process
+- [Nuget needs to support dependencies specific to target runtime #1660](https://github.com/NuGet/Home/issues/1660)
+- [Improve documentation on creating native packages #238](https://github.com/NuGet/docs.microsoft.com-nuget/issues/238)
+
+# Misc
+Image has been generated using [plantuml](http://plantuml.com/):
+```bash
+plantuml -Tpng doc/{file}.dot
+```
+So you can find the dot source files in [doc](doc).

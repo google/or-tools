@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+		<TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+		<IsPackable>false</IsPackable>
     <AssemblyName>Google.OrTools.Tests</AssemblyName>
     <RootNamespace>Google.OrTools.Tests</RootNamespace>
   </PropertyGroup>
