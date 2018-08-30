@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Code sample that solves a model and displays all solutions."""
+"""Code sample that solves a model and displays a small number of solutions."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -42,7 +42,7 @@ class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
 
 
 def StopAfterNSolutions():
-  """Showcases calling the solver to search for all solutions."""
+  """Showcases calling the solver to search for small number of solutions."""
   # Creates the model.
   model = cp_model.CpModel()
   # Creates the variables.

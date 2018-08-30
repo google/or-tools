@@ -14,8 +14,9 @@
 using System;
 using Google.OrTools.Sat;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback {
-  public VarArraySolutionPrinter(IntVar[] variables, int solution_limit) {
+public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback {
+  public VarArraySolutionPrinterWithLimit(IntVar[] variables,
+                                          int solution_limit) {
     variables_ = variables;
     solution_limit_ = solution_limit;
   }
@@ -61,8 +62,8 @@ public class CodeSamplesSat {
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb =
-      new VarArraySolutionPrinter(new IntVar[] {x, y, z}, 5);
+    VarArraySolutionPrinterWithLimit cb =
+      new VarArraySolutionPrinterWithLimit(new IntVar[] {x, y, z}, 5);
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
           cb.SolutionCount()));
