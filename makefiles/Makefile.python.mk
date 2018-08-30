@@ -36,19 +36,20 @@ PYTHON3_CFLAGS := -DPY3
 endif
 endif
 
+# Main target
 .PHONY: python # Build Python OR-Tools.
 .PHONY: test_python # Test Python OR-Tools using various examples.
 ifneq ($(PYTHON_EXECUTABLE),)
 python: \
-	ortoolslibs \
-	install_python_modules \
-	pyinit \
-	pyalgorithms \
-	pygraph \
-	pycp \
-	pylp \
-	pysat \
-	pyrcpsp
+ ortoolslibs \
+ install_python_modules \
+ pyinit \
+ pyalgorithms \
+ pygraph \
+ pycp \
+ pylp \
+ pysat \
+ pyrcpsp
 
 test_python: test_python_examples
 
@@ -505,9 +506,27 @@ else
 	cp $(PYDATA_LIBS) $(GEN_PATH)/ortools/data
 endif
 
-# Run a single example
-rpy: $(PYLP_LIBS) $(PYCP_LIBS) $(PYGRAPH_LIBS) $(PYALGORITHMS_LIBS) $(PYSAT_LIBS) $(PYDATA_LIBS) $(EX)
+#######################
+##  Python Examples  ##
+#######################
+ifeq ($(EX),) # Those rules will be used if EX variable is not set
+.PHONY: rpy
+rpy:
+	@echo No python file was provided, the $@ target must be used like so: \
+ make $@ EX=examples/python/example.py
+else # This generic rule will be used if EX variable is set
+
+.PHONY: rpy
+rpy: $(EX) \
+ $(PYLP_LIBS) $(PYCP_LIBS) $(PYGRAPH_LIBS) $(PYALGORITHMS_LIBS) $(PYSAT_LIBS) $(PYDATA_LIBS)
+	@echo running $<
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX) $(ARGS)
+endif # ifeq ($(EX),)
+
+# Run a single example
+rpy_%: $(PYTHON_EX_DIR)/%.py \
+ $(PYLP_LIBS) $(PYCP_LIBS) $(PYGRAPH_LIBS) $(PYALGORITHMS_LIBS) $(PYSAT_LIBS) $(PYDATA_LIBS)
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(PYTHON_EX_PATH)$S$*.py $(ARGS)
 
 .PHONY: python_examples_archive # Build stand-alone Python examples archive file for redistribution.
 python_examples_archive:

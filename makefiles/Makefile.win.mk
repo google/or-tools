@@ -15,29 +15,35 @@ STATIC_POST_LIB = .lib
 STATIC_LIB_SUFFIX = lib
 LINK_CMD = lib
 STATIC_LINK_CMD = lib
-
+# C++ relevant directory
+INC_DIR = $(OR_ROOT).
 SRC_DIR = $(OR_ROOT).
-EX_DIR  = $(OR_ROOT)examples
-EX_PATH = $(subst /,$S,$(EX_DIR))
 GEN_DIR = $(OR_ROOT)ortools/gen
 GEN_PATH = $(subst /,$S,$(GEN_DIR))
-JAVA_EX_DIR  = $(OR_ROOT)examples/java
-JAVA_EX_PATH = $(subst /,$S,$(JAVA_EX_DIR))
-DOTNET_EX_DIR  = $(OR_ROOT)examples/dotnet
-DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
 OBJ_DIR = $(OR_ROOT)objs
-CLASS_DIR = $(OR_ROOT)classes
 LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
-INC_DIR = $(OR_ROOT).
+EX_DIR  = $(OR_ROOT)examples
+EX_PATH = $(subst /,$S,$(EX_DIR))
+# Python relevant directory
+PYTHON_EX_DIR  = $(OR_ROOT)examples/python
+PYTHON_EX_PATH = $(subst /,$S,$(PYTHON_EX_DIR))
+# Java relevant directory
+CLASS_DIR = $(OR_ROOT)classes
+JAVA_EX_DIR  = $(OR_ROOT)examples/java
+JAVA_EX_PATH = $(subst /,$S,$(JAVA_EX_DIR))
+# .Net relevant directory
+PACKAGE_DIR = $(OR_ROOT)packages
+DOTNET_EX_DIR  = $(OR_ROOT)examples/dotnet
+DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
 
-O=obj
-E=.exe
-L=lib
-J=.jar
-D=.dll
-PDB=.pdb
-EXP=.exp
+O = obj
+L = lib
+E = .exe
+J = .jar
+D = .dll
+PDB = .pdb
+EXP = .exp
 ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
 OBJ_OUT = /Fo
@@ -45,8 +51,8 @@ EXE_OUT = /Fe
 LD_OUT = /OUT:
 DYNAMIC_LD = link /DLL /LTCG /debug
 S = \\
-CMDSEP=&
-CPSEP=;
+CMDSEP = &
+CPSEP = ;
 
 COPY = copy
 COPYREC = xcopy

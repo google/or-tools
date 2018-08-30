@@ -351,7 +351,7 @@ def main(sol="CBC"):
 
 
 if __name__ == "__main__":
-  sol = "GLPK"
+  sol = "CBC"
 
   if len(sys.argv) > 1:
     sol = sys.argv[1]

@@ -186,7 +186,7 @@ def main(n=3, sol='CBC', use_output_matrix=0):
 
 if __name__ == '__main__':
   n = 3
-  sol = 'GLPK'
+  sol = 'CBC'
   use_output_matrix = 0
   if len(sys.argv) > 1:
     n = int(sys.argv[1])
