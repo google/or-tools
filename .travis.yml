@@ -13,7 +13,12 @@ matrix:
       dist: trusty
       language: cpp
       compiler: gcc
-      env: BUILDER=make DISTRO=native LANGUAGE=python
+      env: BUILDER=make DISTRO=native LANGUAGE=python2
+    - os: linux
+      dist: trusty
+      language: cpp
+      compiler: gcc
+      env: BUILDER=make DISTRO=native LANGUAGE=python3
     - os: linux
       dist: trusty
       language: cpp
@@ -34,7 +39,12 @@ matrix:
       osx_image: xode9.4
       language: cpp
       compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=python
+      env: BUILDER=make DISTRO=native LANGUAGE=python2
+    - os: osx
+      osx_image: xode9.4
+      language: cpp
+      compiler: clang
+      env: BUILDER=make DISTRO=native LANGUAGE=python3
     - os: osx
       osx_image: xode9.4
       language: cpp

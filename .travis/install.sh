@@ -46,7 +46,10 @@ if [ "${BUILDER}" == make ]; then
 			if [ "${LANGUAGE}" != cc ]; then
 				installswig
 			fi
-			if [ "${LANGUAGE}" == python ]; then
+			if [ "${LANGUAGE}" == python2 ]; then
+				pyenv global system 2.7;
+				python2.7 -m pip install -q virtualenv wheel six;
+			elif [ "${LANGUAGE}" == python3 ]; then
 				pyenv global system 3.6;
 				python3.6 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == dotnet ]; then
@@ -66,7 +69,10 @@ if [ "${BUILDER}" == make ]; then
 			if [ "${LANGUAGE}" != cc ]; then
 				brew install swig;
 			fi
-			if [ "${LANGUAGE}" == python ]; then
+			if [ "${LANGUAGE}" == python2 ]; then
+				brew outdated | grep -q python@2 && brew upgrade python@2;
+				python2 -m pip install -q virtualenv wheel six;
+			elif [ "${LANGUAGE}" == python3 ]; then
 				brew upgrade python;
 				python3 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == java ]; then

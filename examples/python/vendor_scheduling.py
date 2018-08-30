@@ -1,15 +1,13 @@
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
-
 def main():
-
   # Create the solver.
   solver = pywrapcp.Solver('Vendors scheduling')
 
   #
   # data
   #
-
   num_vendors = 9
   num_hours = 10
   num_work_types = 1
@@ -95,7 +93,6 @@ def main():
   print('failures:', solver.Failures())
   print('branches:', solver.Branches())
   print('WallTime:', solver.WallTime(), 'ms')
-
 
 if __name__ == '__main__':
   main()
