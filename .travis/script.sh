@@ -10,7 +10,7 @@ function checkenv() {
 	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" != cc ]; then
 		swig -version
 	fi
-	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" == python ];then
+	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" == python3 ];then
 	  if [ "${TRAVIS_OS_NAME}" == linux ];then
 		  python3.6 --version
 		  python3.6 -m pip --version
@@ -18,6 +18,9 @@ function checkenv() {
 		  python3.7 --version
 		  python3.7 -m pip --version
 		fi
+	elif [ "${LANGUAGE}" == python2 ]; then
+		python2.7 --version
+		python2.7 -m pip --version
 	elif [ "${LANGUAGE}" == java ]; then
 		java -version
 	elif [ "${LANGUAGE}" == dotnet ]; then
@@ -38,7 +41,9 @@ if [ "${BUILDER}" == make ];then
 			checkenv
 			if [ "${LANGUAGE}" == cc ]; then
 				make detect
-			elif [ "${LANGUAGE}" == python ]; then
+			elif [ "${LANGUAGE}" == python2 ]; then
+				make detect UNIX_PYTHON_VER=2.7
+			elif [ "${LANGUAGE}" == python3 ]; then
 				make detect UNIX_PYTHON_VER=3.6
 			elif [ "${LANGUAGE}" == java ]; then
 				make detect JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
@@ -66,7 +71,9 @@ if [ "${BUILDER}" == make ];then
 			checkenv
 			if [ "${LANGUAGE}" == cc ]; then
 				make detect
-			elif [ "${LANGUAGE}" == python ]; then
+			elif [ "${LANGUAGE}" == python2 ]; then
+				make detect UNIX_PYTHON_VER=2.7
+			elif [ "${LANGUAGE}" == python3 ]; then
 				make detect UNIX_PYTHON_VER=3.7
 			elif [ "${LANGUAGE}" == java ] || [ "${LANGUAGE}" == dotnet ] ; then
 				make detect
