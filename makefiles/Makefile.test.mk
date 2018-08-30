@@ -255,7 +255,8 @@ test_java_examples: java
 
 .PHONY: test_donet_examples
 test_dotnet_examples: dotnet
-	$(MAKE) rdotnet_3_jugs_regular # csharp examples
+# csharp examples
+	$(MAKE) rdotnet_3_jugs_regular
 	$(MAKE) rdotnet_alldifferent_except_0
 	$(MAKE) rdotnet_all_interval
 	$(MAKE) rdotnet_a_puzzle
@@ -375,7 +376,8 @@ test_dotnet_examples: dotnet
 	$(MAKE) rdotnet_xkcd
 	$(MAKE) rdotnet_young_tableaux
 	$(MAKE) rdotnet_zebra
-	$(MAKE) rdotnet_Program # fsharp examples
+# fsharp examples
+	$(MAKE) rdotnet_Program
 
 .PHONY: test_donet_samples
 test_dotnet_samples: dotnet

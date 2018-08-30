@@ -2,9 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
-		<IsPackable>false</IsPackable>
     <AssemblyName>Google.OrTools.FSharp.Tests</AssemblyName>
-    <RootNamespace>Google.OrTools.FSharp.Tests</RootNamespace>
+
+    <IsPackable>false</IsPackable>
+    <RestoreSources>../../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -17,13 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OrTools.FSharp\OrTools.FSharp.fsproj"/>
-    <ProjectReference Include="..\OrTools\OrTools.csproj"/>
+    <PackageReference Include="Google.OrTools" Version="@PROJECT_VERSION@" />
   </ItemGroup>
 </Project>
