@@ -71,6 +71,7 @@ PROTO2_RETURN(
 %unignore operations_research::sat::SolutionCallback::OnSolutionCallback;
 %unignore operations_research::sat::SolutionCallback::SolutionBooleanValue;
 %unignore operations_research::sat::SolutionCallback::SolutionIntegerValue;
+%unignore operations_research::sat::SolutionCallback::StopSearch;
 %unignore operations_research::sat::SolutionCallback::UserTime;
 %unignore operations_research::sat::SolutionCallback::WallTime;
 

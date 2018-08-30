@@ -14,10 +14,13 @@
 #ifndef OR_TOOLS_SAT_SWIG_HELPER_H_
 #define OR_TOOLS_SAT_SWIG_HELPER_H_
 
+#include <atomic>
+
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -67,8 +70,13 @@ class SolutionCallback {
                       : response_.solution(-index - 1) == 0;
   }
 
+  void StopSearch() { stopped_ = true; }
+
+  std::atomic<bool>* stopped() { return &stopped_; }
+
  private:
   CpSolverResponse response_;
+  std::atomic<bool> stopped_;
 };
 
 class SatHelper {
@@ -138,6 +146,9 @@ class SatHelper {
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(
         [callback](const CpSolverResponse& r) { return callback->Run(r); }));
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+        callback->stopped());
+
     return SolveCpModel(model_proto, &model);
   }
 
@@ -149,6 +160,8 @@ class SatHelper {
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(
         [callback](const CpSolverResponse& r) { return callback->Run(r); }));
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+        callback->stopped());
     return SolveCpModel(model_proto, &model);
   }
 };

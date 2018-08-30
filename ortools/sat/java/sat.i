@@ -59,6 +59,7 @@ PROTO2_RETURN(
 %rename (onSolutionCallback) operations_research::sat::SolutionCallback::OnSolutionCallback;
 %rename (solutionBooleanValue) operations_research::sat::SolutionCallback::SolutionBooleanValue;
 %rename (solutionIntegerValue) operations_research::sat::SolutionCallback::SolutionIntegerValue;
+%rename (stopSearch) operations_research::sat::SolutionCallback::StopSearch;
 %rename (userTime) operations_research::sat::SolutionCallback::UserTime;
 %rename (wallTime) operations_research::sat::SolutionCallback::WallTime;
 
