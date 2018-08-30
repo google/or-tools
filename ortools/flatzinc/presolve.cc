@@ -1381,24 +1381,12 @@ Presolver::RuleStatus Presolver::PresolveLinear(Constraint* ct,
       ct->arguments.resize(1);
       ct->arguments.push_back(Argument::IntegerValue(scalprod == rhs));
       return CONSTRAINT_REWRITTEN;
-    } else if (ct->type == "int_lin_ge") {
-      if (scalprod >= rhs) {
-        return CONSTRAINT_ALWAYS_TRUE;
-      } else {
-        return CONSTRAINT_ALWAYS_FALSE;
-      }
     } else if (ct->type == "int_lin_ge_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(Argument::IntegerValue(scalprod >= rhs));
       return CONSTRAINT_REWRITTEN;
-    } else if (ct->type == "int_lin_le") {
-      if (scalprod <= rhs) {
-        return CONSTRAINT_ALWAYS_TRUE;
-      } else {
-        return CONSTRAINT_ALWAYS_FALSE;
-      }
     } else if (ct->type == "int_lin_le_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
