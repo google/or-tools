@@ -49,7 +49,7 @@ test_python_examples: python
 	$(MAKE) rpy_circuit
 	$(MAKE) rpy_code_samples_sat
 	$(MAKE) rpy_coins3
-#	$(MAKE) rpy_coins_grid_mip # error: py3 failure
+	$(MAKE) rpy_coins_grid_mip
 	$(MAKE) rpy_coins_grid ARGS="5 2"
 	$(MAKE) rpy_coloring_ip
 	$(MAKE) rpy_combinatorial_auction2
@@ -63,7 +63,7 @@ test_python_examples: python
 	$(MAKE) rpy_crypto
 	$(MAKE) rpy_curious_set_of_integers
 	$(MAKE) rpy_cvrp
-#	$(MAKE) rpy_cvrptw_plot # error: py3 failure
+#	$(MAKE) rpy_cvrptw_plot # error: py3 failure, missing numpy.
 	$(MAKE) rpy_cvrptw
 	$(MAKE) rpy_debruijn_binary
 	$(MAKE) rpy_diet1_b
@@ -169,7 +169,7 @@ test_python_examples: python
 	$(MAKE) rpy_ski_assignment
 	$(MAKE) rpy_slitherlink
 	$(MAKE) rpy_stable_marriage
-#	$(MAKE) rpy_steel_lns # error: fails on travis-ci with python3
+	$(MAKE) rpy_steel_lns
 	$(MAKE) rpy_steel_mill_slab_sat
 	$(MAKE) rpy_steel
 	$(MAKE) rpy_stigler
@@ -181,7 +181,7 @@ test_python_examples: python
 	$(MAKE) rpy_traffic_lights
 	$(MAKE) rpy_transit_time
 	$(MAKE) rpy_tsp
-#	$(MAKE) rpy_vendor_scheduling # py3 failure
+	$(MAKE) rpy_vendor_scheduling
 	$(MAKE) rpy_volsay2
 	$(MAKE) rpy_volsay3
 	$(MAKE) rpy_volsay
