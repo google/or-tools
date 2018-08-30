@@ -42,7 +42,7 @@ dotnet: \
  csharp_dotnet \
  fsharp_dotnet
 
-test_dotnet: test_dotnet_examples
+test_dotnet: test_dotnet_examples test_donet_samples
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 endif
 
@@ -404,6 +404,9 @@ rdotnet_%: $(DOTNET_EX_DIR)/%.csproj
 rdotnet_%: $(DOTNET_EX_DIR)/%.fsproj
 	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
+rdotnet_%: ortools/sat/samples/%.csproj
+	"$(DOTNET_BIN)" run --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
+
 ################
 ##  Cleaning  ##
 ################
@@ -441,6 +444,8 @@ clean_dotnet:
 	-$(DELREC) $(EX_PATH)$Sdotnet$Scsharp$Sobj
 	-$(DELREC) $(EX_PATH)$Sdotnet$Sfsharp$Sbin
 	-$(DELREC) $(EX_PATH)$Sdotnet$Sfsharp$Sobj
+	-$(DELREC) ortools$Ssat$Ssamples$Sbin
+	-$(DELREC) ortools$Ssat$Ssamples$Sobj
 	-$(DELREC) $(TEMP_DOTNET_DIR)
 	-$(DELREC) $(TEMP_DOTNET_TEST_DIR)
 	-@"$(DOTNET_BIN)" nuget locals all --clear

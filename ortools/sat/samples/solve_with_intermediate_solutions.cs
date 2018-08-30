@@ -14,31 +14,24 @@
 using System;
 using Google.OrTools.Sat;
 
-public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinterWithObjective(IntVar[] variables)
-  {
+public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback {
+  public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
     variables_ = variables;
   }
 
-  public override void OnSolutionCallback()
-  {
-    {
-      Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
-                                      solution_count_, WallTime()));
+  public override void OnSolutionCallback() {
+    Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
+          solution_count_, WallTime()));
+    Console.WriteLine(
+        String.Format("  objective value = {0}", ObjectiveValue()));
+    foreach (IntVar v in variables_) {
       Console.WriteLine(
-          String.Format("  objective value = {0}", ObjectiveValue()));
-      foreach (IntVar v in variables_)
-      {
-        Console.WriteLine(
-            String.Format("  {0} = {1}", v.ShortString(), Value(v)));
-      }
-      solution_count_++;
+          String.Format("  {0} = {1}", v.ShortString(), Value(v)));
     }
+    solution_count_++;
   }
 
-  public int SolutionCount()
-  {
+  public int SolutionCount() {
     return solution_count_;
   }
 
@@ -46,18 +39,16 @@ public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class CodeSamplesSat
-{
-  static void MinimalCpSatPrintIntermediateSolutions()
-  {
+public class CodeSamplesSat {
+  static void MinimalCpSatPrintIntermediateSolutions() {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
     int num_vals = 3;
 
-    IntVar x = model.NewIntVar(0, num_vals - 1, 'x');
-    IntVar y = model.NewIntVar(0, num_vals - 1, 'y');
-    IntVar z = model.NewIntVar(0, num_vals - 1, 'z');
+    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
 
     // Adds a different constraint.
     model.Add(x != y);
@@ -68,14 +59,13 @@ public class CodeSamplesSat
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
-        new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
+      new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
     solver.SolveWithSolutionCallback(model, cb);
-    Console.WriteLine(String.Format('Number of solutions found: {0}',
-                                    cb.SolutionCount()));
+    Console.WriteLine(String.Format("Number of solutions found: {0}",
+          cb.SolutionCount()));
   }
 
-  static void Main()
-  {
+  static void Main() {
     MinimalCpSatPrintIntermediateSolutions();
   }
 }

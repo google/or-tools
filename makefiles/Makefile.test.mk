@@ -376,3 +376,22 @@ test_dotnet_examples: dotnet
 	$(MAKE) rdotnet_young_tableaux
 	$(MAKE) rdotnet_zebra
 	$(MAKE) rdotnet_Program # fsharp examples
+
+.PHONY: test_donet_samples
+test_dotnet_samples: dotnet
+	$(MAKE) rdotnet_binpacking_problem
+	$(MAKE) rdotnet_bool_or_sample
+	$(MAKE) rdotnet_channeling_sample
+	$(MAKE) rdotnet_code_sample
+	$(MAKE) rdotnet_interval_sample
+	$(MAKE) rdotnet_literal_sample
+	$(MAKE) rdotnet_no_overlap_sample
+	$(MAKE) rdotnet_optional_interval_sample
+	$(MAKE) rdotnet_rabbits_and_pheasants
+	$(MAKE) rdotnet_ranking_sample
+	$(MAKE) rdotnet_reified_sample
+	$(MAKE) rdotnet_simple_solve
+	$(MAKE) rdotnet_solve_all_solutions
+	$(MAKE) rdotnet_solve_with_intermediate_solutions
+	$(MAKE) rdotnet_solve_with_time_limit
+	$(MAKE) rdotnet_stop_after_n_solutions
