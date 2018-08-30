@@ -29,7 +29,6 @@ namespace sat {
 // See http://www.swig.org/Doc3.0/SWIGDocumentation.html#CSharp_directors.
 class SolutionCallback {
  public:
-  SolutionCallback() {}
   virtual ~SolutionCallback() {}
 
   virtual void OnSolutionCallback() = 0;

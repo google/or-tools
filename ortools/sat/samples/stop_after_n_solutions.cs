@@ -32,8 +32,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback {
       Console.WriteLine(
           String.Format("Stopping search after {0} solutions",
             solution_limit_));
+      StopSearch();
     }
-    StopSearch();
   }
 
   public int SolutionCount() {
