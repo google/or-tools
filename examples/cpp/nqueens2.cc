@@ -24,11 +24,12 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_int32(
-    size, 88,
+    size, 0,
     "Size of the problem. If equal to 0, will test several increasing sizes.");
 
 namespace operations_research {
 void NQueens(int size) {
+  printf("========= size: %d\n", size);
   CHECK_GE(size, 1);
   Solver s("nqueens");
 
@@ -40,20 +41,35 @@ void NQueens(int size) {
   for (int i = 0; i < size - 1; ++i) {
     for (int j = i + 1; j < size; ++j) {
       s.AddConstraint(s.MakeNonEquality(queens[i], queens[j]));
-      s.AddConstraint(s.MakeNonEquality(s.MakeSum(queens[i], i), queens[j]));
-      s.AddConstraint(s.MakeNonEquality(s.MakeSum(queens[i], -i), queens[j]));
+      s.AddConstraint(
+          s.MakeNonEquality(s.MakeSum(queens[i], i), s.MakeSum(queens[j], j)));
+      s.AddConstraint(s.MakeNonEquality(
+          s.MakeSum(queens[i], -i), s.MakeSum(queens[j], -j)));
     }
   }
   std::vector<SearchMonitor*> monitors;
   DecisionBuilder* const db = s.MakePhase(queens, Solver::CHOOSE_FIRST_UNBOUND,
                                           Solver::ASSIGN_MIN_VALUE);
-  monitors.push_back(s.MakeSearchLog(1000000));
-  s.Solve(db, monitors);  // go!
+  s.NewSearch(db, monitors);
+  int num_solutions = 0;
+  while (s.NextSolution()) {
+    num_solutions++;
+  }
+  s.EndSearch();
+  printf("========= number of solutions:%d\n", num_solutions);
+  printf("          number of failures: %lld\n", s.failures());
+  printf("          time: %lld ms\n", s.wall_time());
 }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::NQueens(FLAGS_size);
+  if (FLAGS_size != 0) {
+    operations_research::NQueens(FLAGS_size);
+  } else {
+    for (int n = 1; n < 12; ++n) {
+      operations_research::NQueens(n);
+    }
+  }
   return 0;
 }
