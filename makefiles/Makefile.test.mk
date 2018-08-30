@@ -190,7 +190,7 @@ test_python_examples: python
 	$(MAKE) rpy_wedding_optimal_chart
 	$(MAKE) rpy_wedding_optimal_chart_sat
 	$(MAKE) rpy_who_killed_agatha
-	$(MAKE) rpy_word_square
+#	$(MAKE) rpy_word_square # Not working on window since it rely on /usr/share/dict/words
 	$(MAKE) rpy_worker_schedule_sat
 	$(MAKE) rpy_xkcd
 	$(MAKE) rpy_young_tableaux
