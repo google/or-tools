@@ -1354,7 +1354,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     if isinstance(lit, numbers.Integral):
       return bool(lit)
     elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
-      index = literal.Index()
+      index = lit.Index()
       return self.SolutionBooleanValue(index)
     else:
       raise TypeError('Cannot interpret %s as a boolean expression.' % literal)
