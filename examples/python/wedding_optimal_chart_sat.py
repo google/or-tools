@@ -45,6 +45,7 @@ class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self, seats, names, num_tables, num_guests):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__solution_count = 0
     self.__start_time = time.time()
     self.__seats = seats
@@ -52,7 +53,7 @@ class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
     self.__num_tables = num_tables
     self.__num_guests = num_guests
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     current_time = time.time()
     objective = self.ObjectiveValue()
     print("Solution %i, time = %f s, objective = %i" %

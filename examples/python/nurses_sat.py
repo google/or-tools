@@ -20,6 +20,7 @@ class NursesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self, shifts, num_nurses, num_days, num_shifts, sols):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__shifts = shifts
     self.__num_nurses = num_nurses
     self.__num_days = num_days
@@ -27,7 +28,7 @@ class NursesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
     self.__solutions = set(sols)
     self.__solution_count = 0
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     self.__solution_count += 1
     if self.__solution_count in self.__solutions:
       print('Solution #%i' % self.__solution_count)

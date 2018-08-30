@@ -1344,48 +1344,40 @@ def EvaluateBooleanExpression(literal, solution):
     raise TypeError('Cannot interpret %s as a boolean expression.' % literal)
 
 
-class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
+class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
   """Nicer solution callback that uses the CpSolver class."""
 
   def __init__(self):
-    self.__current_solution = None
+    pywrapsat.SolutionCallback.__init__(self)
 
-  def Wrap(self, solution_proto):
-    self.__current_solution = solution_proto
-    self.NewSolution()
-
-  def BooleanValue(self, literal):
-    if not self.__current_solution:
-      raise RuntimeError('Solve() has not be called.')
-    return EvaluateBooleanExpression(literal, self.__current_solution)
+  def BooleanValue(self, lit):
+    if isinstance(lit, numbers.Integral):
+      return bool(lit)
+    elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
+      index = literal.Index()
+      return self.SolutionBooleanValue(index)
+    else:
+      raise TypeError('Cannot interpret %s as a boolean expression.' % literal)
 
   def Value(self, expression):
     """Returns the value of an integer expression."""
-    if not self.__current_solution:
-      raise RuntimeError('Solve() has not be called.')
-    return EvaluateIntegerExpression(expression, self.__current_solution)
-
-  def ObjectiveValue(self):
-    """Returns the value of the objective."""
-    return self.__current_solution.objective_value
-
-  def NumBooleans(self):
-    return self.__current_solution.num_booleans
-
-  def NumConflicts(self):
-    return self.__current_solution.num_conflicts
-
-  def NumBranches(self):
-    return self.__current_solution.num_branches
-
-  def WallTime(self):
-    return self.__current_solution.wall_time
-
-  def UserTime(self):
-    return self.__current_solution.user_time
-
-  def NewSolution(self):
-    pass
+    if isinstance(expression, numbers.Integral):
+      return expression
+    value = 0
+    to_process = [(expression, 1)]
+    while to_process:
+      expr, coef = to_process.pop()
+      if isinstance(expr, _ProductCst):
+        to_process.append((expr.Expression(), coef * expr.Coefficient()))
+      elif isinstance(expr, _SumArray):
+        for e in expr.Array():
+          to_process.append((e, coef))
+          value += expr.Constant() * coef
+      elif isinstance(expr, IntVar):
+        value += coef * self.SolutionIntegerValue(expr.Index())
+      elif isinstance(expr, _NotBooleanVariable):
+        raise TypeError('Cannot interpret literals in a integer expression.')
+    return value
 
 
 class CpSolver(object):
@@ -1405,7 +1397,7 @@ class CpSolver(object):
   def SolveWithSolutionObserver(self, model, callback):
     """Solves a problem and pass each solution found to the callback."""
     self.__solution = (
-        pywrapsat.SatHelper.SolveWithParametersAndSolutionObserver(
+        pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
             model.ModelProto(), self.parameters, callback))
     return self.__solution.status
 
@@ -1429,7 +1421,7 @@ class CpSolver(object):
     enumerate_all = self.parameters.enumerate_all_solutions
     self.parameters.enumerate_all_solutions = True
     self.__solution = (
-        pywrapsat.SatHelper.SolveWithParametersAndSolutionObserver(
+        pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
             model.ModelProto(), self.parameters, callback))
     # Restore parameters.
     self.parameters.enumerate_all_solutions = enumerate_all

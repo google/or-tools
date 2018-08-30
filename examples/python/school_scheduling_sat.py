@@ -132,7 +132,10 @@ class SchoolSchedulingSatSolver(object):
 
 class SchoolSchedulingSatSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
-  def NewSolution(self):
+  def __init__(self):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+
+  def OnSolutionCallback(self):
     print('Found Solution!')
 
 

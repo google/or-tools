@@ -394,10 +394,11 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self, variables):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__variables = variables
     self.__solution_count = 0
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     print('Solution %i' % self.__solution_count)
     print('  objective value = %i' % self.ObjectiveValue())
     for v in self.__variables:
@@ -674,10 +675,11 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self, variables):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__variables = variables
     self.__solution_count = 0
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     self.__solution_count += 1
     for v in self.__variables:
       print('%s=%i' % (v, self.Value(v)), end=' ')

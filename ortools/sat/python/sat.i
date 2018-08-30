@@ -25,26 +25,8 @@
 #include "ortools/sat/swig_helper.h"
 %}
 
-%pythoncode {
-import sys
-from ortools.sat import cp_model_pb2
+%module(directors="1") operations_research_sat
 
-class PySolutionCallback(object):
-
-  def WrapAux(self, proto_str):
-    try:
-      response = cp_model_pb2.CpSolverResponse()
-      if sys.version_info[0] < 3:
-        status = response.MergeFromString(proto_str)
-      else:
-        status = response.MergeFromString(bytes(proto_str))
-      self.Wrap(response)
-    except:
-      print("Unexpected error: %s" % sys.exc_info()[0])
-
-  def Wrap(self, proto):
-    pass
-}  // %pythoncode
 
 PY_PROTO_TYPEMAP(ortools.sat.cp_model_pb2,
                  CpModelProto,
@@ -59,42 +41,6 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
                  operations_research::sat::SatParameters);
 
 
-// Wrap std::function<void(const operations_research::sat::CpSolverResponse&)>
-
-%{
-void CallSolutionCallback(PyObject* cb,
-                          const operations_research::sat::CpSolverResponse& r) {
-  std::string encoded_protobuf;
-  r.SerializeToString(&encoded_protobuf);
-#if defined(PY3)
-  PyObject* const python_encoded_protobuf =
-      PyBytes_FromStringAndSize(encoded_protobuf.c_str(),
-                                encoded_protobuf.size());
-#else  // PY3
-  PyObject* const python_encoded_protobuf =
-      PyString_FromStringAndSize(encoded_protobuf.c_str(),
-                                 encoded_protobuf.size());
-#endif  // PY3
-  PyObject* result =
-      PyObject_CallMethod(cb, "WrapAux", "(O)", python_encoded_protobuf);
-  Py_XDECREF(python_encoded_protobuf);
-  Py_XDECREF(result);
-}
-%}
-
-%typecheck(SWIG_TYPECHECK_POINTER) std::function<void(
-    const operations_research::sat::CpSolverResponse& response)> {
-  $1 = true;
-}
-
-%typemap(in) std::function<void(
-    const operations_research::sat::CpSolverResponse& response)> {
-  SharedPyPtr input($input);
-  $1 = [input](const operations_research::sat::CpSolverResponse& r) {
-    return CallSolutionCallback(input.get(), r);
-  };
-}
-
 %ignoreall
 
 %unignore operations_research;
@@ -102,9 +48,36 @@ void CallSolutionCallback(PyObject* cb,
 %unignore operations_research::sat::SatHelper;
 %unignore operations_research::sat::SatHelper::Solve;
 %unignore operations_research::sat::SatHelper::SolveWithParameters;
-%unignore operations_research::sat::SatHelper::SolveWithParametersAndSolutionObserver;
+%unignore operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
+
+%feature("director") operations_research::sat::SolutionCallback;
+%unignore operations_research::sat::SolutionCallback;
+%unignore operations_research::sat::SolutionCallback::SolutionCallback;
+%unignore operations_research::sat::SolutionCallback::~SolutionCallback;
+%unignore operations_research::sat::SolutionCallback::NumBinaryPropagations;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumBinaryPropagations;
+%unignore operations_research::sat::SolutionCallback::NumBooleans;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumBooleans;
+%unignore operations_research::sat::SolutionCallback::NumBranches;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumBooleans;
+%unignore operations_research::sat::SolutionCallback::NumConflicts;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumConflicts;
+%unignore operations_research::sat::SolutionCallback::NumIntegerPropagations;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumIntegerPropagations;
+%unignore operations_research::sat::SolutionCallback::ObjectiveValue;
+%feature("nodirector") operations_research::sat::SolutionCallback::ObjectiveValue;
+%unignore operations_research::sat::SolutionCallback::OnSolutionCallback;
+%unignore operations_research::sat::SolutionCallback::SolutionBooleanValue;
+%feature("nodirector") operations_research::sat::SolutionCallback::SolutionBooleanValue;
+%unignore operations_research::sat::SolutionCallback::SolutionIntegerValue;
+%feature("nodirector") operations_research::sat::SolutionCallback::SolutionIntegerValue;
+%unignore operations_research::sat::SolutionCallback::StopSearch;
+%feature("nodirector") operations_research::sat::SolutionCallback::StopSearch;
+%unignore operations_research::sat::SolutionCallback::UserTime;
+%feature("nodirector") operations_research::sat::SolutionCallback::UserTime;
+%unignore operations_research::sat::SolutionCallback::WallTime;
+%feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
 
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
-

@@ -120,9 +120,10 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__solution_count = 0
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     print('Solution %i' % self.__solution_count)
     self.__solution_count += 1
 

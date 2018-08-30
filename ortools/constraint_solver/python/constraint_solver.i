@@ -2018,7 +2018,7 @@ namespace operations_research {
 // - MakeNextNeighbor()
 %unignore IntVarLocalSearchOperator;
 %feature("director") IntVarLocalSearchOperator;
-  %feature("nodirector") IntVarLocalSearchOperator::Start;
+%feature("nodirector") IntVarLocalSearchOperator::Start;
 %unignore IntVarLocalSearchOperator::IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::~IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::Size;

@@ -258,6 +258,7 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self, orders, assign, load, loss):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__orders = orders
     self.__assign = assign
     self.__load = load
@@ -267,7 +268,7 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
     self.__all_slabs = range(len(assign[0]))
     self.__start_time = time.time()
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     current_time = time.time()
     objective = sum(self.Value(l) for l in self.__loss)
     print('Solution %i, time = %f s, objective = %i' %
@@ -290,10 +291,11 @@ class SolutionPrinterWithObjective(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__solution_count = 0
     self.__start_time = time.time()
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     current_time = time.time()
     print('Solution %i, time = %f s, objective = %i' %
           (self.__solution_count, current_time - self.__start_time,
@@ -442,10 +444,11 @@ class AllSolutionsCollector(cp_model.CpSolverSolutionCallback):
   """Collect all solutions callback."""
 
   def __init__(self, variables):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__solutions = []
     self.__variables = variables
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     solution = [self.Value(v) for v in self.__variables]
     self.__solutions.append(tuple(solution))
 

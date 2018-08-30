@@ -21,6 +21,7 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
   def __init__(self, queens):
+    cp_model.CpSolverSolutionCallback.__init__(self)
     self.__queens = queens
     self.__solution_count = 0
     self.__start_time = time.time()
@@ -28,7 +29,7 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
   def SolutionCount(self):
     return self.__solution_count
 
-  def NewSolution(self):
+  def OnSolutionCallback(self):
     current_time = time.time()
     print('Solution %i, time = %f s' % (self.__solution_count,
                                         current_time - self.__start_time))
