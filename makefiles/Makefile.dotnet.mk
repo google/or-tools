@@ -28,8 +28,8 @@ endif
 TEMP_DOTNET_DIR=temp_dotnet
 
 # Main target
-.PHONY: dotnet # Build OrTools for .NET
-.PHONY: test_dotnet # Test dotnet version of OR-Tools
+.PHONY: dotnet # Build all .NET OrTools packages
+.PHONY: test_dotnet # Run all test_dotnet_* targets
 ifndef HAS_DOTNET
 dotnet:
 	@echo DOTNET_BIN = $(DOTNET_BIN)
@@ -362,7 +362,7 @@ ortools/dotnet/$(OR_TOOLS_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_TESTS_ASSEMBLY_NAME).c
  ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj.in \
  > ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj
 
-.PHONY: test_dotnet_csharp
+.PHONY: test_dotnet_csharp # Run C# OrTools Tests
 test_dotnet_csharp: $(DOTNET_ORTOOLS_NUPKG) \
  ortools/dotnet/$(OR_TOOLS_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj
 	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)
@@ -393,11 +393,180 @@ ortools/dotnet/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_TESTS_AS
  ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj.in \
  > ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj
 
-.PHONY: test_dotnet_fsharp
+.PHONY: test_dotnet_fsharp # Run F# OrTools Tests
 test_dotnet_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
  ortools/dotnet/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj
 	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
 	"$(DOTNET_BIN)" test ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
+
+#############################
+##  .NET Examples/Samples  ##
+#############################
+.PHONY: test_donet_examples # Build and Run all .Net Examples (located in examples/dotnet)
+test_dotnet_examples: $(DOTNET_ORTOOLS_NUPKG)
+# csharp examples
+	$(MAKE) rdotnet_3_jugs_regular
+	$(MAKE) rdotnet_alldifferent_except_0
+	$(MAKE) rdotnet_all_interval
+	$(MAKE) rdotnet_a_puzzle
+	$(MAKE) rdotnet_a_round_of_golf
+	$(MAKE) rdotnet_assignment
+	$(MAKE) rdotnet_broken_weights
+	$(MAKE) rdotnet_bus_schedule
+	$(MAKE) rdotnet_circuit2
+	$(MAKE) rdotnet_circuit
+	$(MAKE) rdotnet_coins3
+	$(MAKE) rdotnet_coins_grid ARGS="5 2"
+	$(MAKE) rdotnet_combinatorial_auction2
+	$(MAKE) rdotnet_contiguity_regular
+	$(MAKE) rdotnet_contiguity_transition
+	$(MAKE) rdotnet_costas_array
+	$(MAKE) rdotnet_covering_opl
+	$(MAKE) rdotnet_crew
+	$(MAKE) rdotnet_crossword
+	$(MAKE) rdotnet_crypta
+	$(MAKE) rdotnet_crypto
+	$(MAKE) rdotnet_cscvrptw
+	$(MAKE) rdotnet_csflow
+	$(MAKE) rdotnet_csintegerprogramming
+	$(MAKE) rdotnet_csjobshop
+	$(MAKE) rdotnet_csknapsack
+	$(MAKE) rdotnet_cslinearprogramming
+	$(MAKE) rdotnet_csls_api
+	$(MAKE) rdotnet_csrabbitspheasants
+	$(MAKE) rdotnet_cstsp
+	$(MAKE) rdotnet_curious_set_of_integers
+	$(MAKE) rdotnet_debruijn
+	$(MAKE) rdotnet_diet
+	$(MAKE) rdotnet_discrete_tomography
+	$(MAKE) rdotnet_divisible_by_9_through_1
+	$(MAKE) rdotnet_dudeney
+	$(MAKE) rdotnet_einav_puzzle2
+	$(MAKE) rdotnet_eq10
+	$(MAKE) rdotnet_eq20
+	$(MAKE) rdotnet_fill_a_pix
+	$(MAKE) rdotnet_furniture_moving
+	$(MAKE) rdotnet_furniture_moving_intervals
+	$(MAKE) rdotnet_futoshiki
+	$(MAKE) rdotnet_gate_scheduling_sat
+	$(MAKE) rdotnet_golomb_ruler
+	$(MAKE) rdotnet_grocery
+	$(MAKE) rdotnet_hidato_table
+	$(MAKE) rdotnet_jobshop_ft06_sat
+	$(MAKE) rdotnet_just_forgotten
+	$(MAKE) rdotnet_kakuro
+	$(MAKE) rdotnet_kenken2
+	$(MAKE) rdotnet_killer_sudoku
+	$(MAKE) rdotnet_labeled_dice
+	$(MAKE) rdotnet_langford
+	$(MAKE) rdotnet_least_diff
+	$(MAKE) rdotnet_lectures
+	$(MAKE) rdotnet_magic_sequence
+	$(MAKE) rdotnet_magic_square_and_cards
+	$(MAKE) rdotnet_magic_square
+	$(MAKE) rdotnet_map2
+	$(MAKE) rdotnet_map
+	$(MAKE) rdotnet_marathon2
+	$(MAKE) rdotnet_max_flow_taha
+	$(MAKE) rdotnet_max_flow_winston1
+	$(MAKE) rdotnet_minesweeper
+	$(MAKE) rdotnet_mr_smith
+#	$(MAKE) rdotnet_nontransitive_dice # too long
+	$(MAKE) rdotnet_nqueens
+	$(MAKE) rdotnet_nurse_rostering_regular
+	$(MAKE) rdotnet_nurse_rostering_transition
+	$(MAKE) rdotnet_nurses_sat
+	$(MAKE) rdotnet_olympic
+	$(MAKE) rdotnet_organize_day
+	$(MAKE) rdotnet_organize_day_intervals
+	$(MAKE) rdotnet_pandigital_numbers
+#	$(MAKE) rdotnet_partition # too long
+	$(MAKE) rdotnet_perfect_square_sequence
+	$(MAKE) rdotnet_photo_problem
+	$(MAKE) rdotnet_place_number_puzzle
+	$(MAKE) rdotnet_p_median
+	$(MAKE) rdotnet_post_office_problem2
+	$(MAKE) rdotnet_quasigroup_completion
+	$(MAKE) rdotnet_regex
+	$(MAKE) rdotnet_rogo2
+	$(MAKE) rdotnet_scheduling_speakers
+	$(MAKE) rdotnet_secret_santa2
+#	$(MAKE) rdotnet_secret_santa # too long
+	$(MAKE) rdotnet_send_more_money2
+	$(MAKE) rdotnet_send_more_money
+	$(MAKE) rdotnet_send_most_money
+	$(MAKE) rdotnet_seseman
+	$(MAKE) rdotnet_set_covering2
+	$(MAKE) rdotnet_set_covering3
+	$(MAKE) rdotnet_set_covering4
+	$(MAKE) rdotnet_set_covering
+	$(MAKE) rdotnet_set_covering_deployment
+	$(MAKE) rdotnet_set_covering_skiena
+	$(MAKE) rdotnet_set_partition
+	$(MAKE) rdotnet_sicherman_dice
+	$(MAKE) rdotnet_ski_assignment
+	$(MAKE) rdotnet_slow_scheduling
+	$(MAKE) rdotnet_stable_marriage
+	$(MAKE) rdotnet_strimko2
+	$(MAKE) rdotnet_subset_sum
+	$(MAKE) rdotnet_sudoku
+	$(MAKE) rdotnet_survo_puzzle
+	$(MAKE) rdotnet_TaskScheduling
+	$(MAKE) rdotnet_techtalk_scheduling
+	$(MAKE) rdotnet_to_num
+	$(MAKE) rdotnet_traffic_lights
+	$(MAKE) rdotnet_tsp
+	$(MAKE) rdotnet_volsay
+	$(MAKE) rdotnet_volsay2
+	$(MAKE) rdotnet_volsay3
+	$(MAKE) rdotnet_wedding_optimal_chart
+	$(MAKE) rdotnet_who_killed_agatha
+	$(MAKE) rdotnet_word_square
+	$(MAKE) rdotnet_xkcd
+	$(MAKE) rdotnet_young_tableaux
+	$(MAKE) rdotnet_zebra
+# fsharp examples
+	$(MAKE) rdotnet_Program
+
+.PHONY: test_donet_samples # Build and Run all .Net Samples (located in ortools/*/samples)
+test_dotnet_samples: $(DOTNET_ORTOOLS_NUPKG)
+	$(MAKE) rdotnet_binpacking_problem
+	$(MAKE) rdotnet_bool_or_sample
+	$(MAKE) rdotnet_channeling_sample
+	$(MAKE) rdotnet_code_sample
+	$(MAKE) rdotnet_interval_sample
+	$(MAKE) rdotnet_literal_sample
+	$(MAKE) rdotnet_no_overlap_sample
+	$(MAKE) rdotnet_optional_interval_sample
+	$(MAKE) rdotnet_rabbits_and_pheasants
+	$(MAKE) rdotnet_ranking_sample
+	$(MAKE) rdotnet_reified_sample
+	$(MAKE) rdotnet_simple_solve
+	$(MAKE) rdotnet_solve_all_solutions
+	$(MAKE) rdotnet_solve_with_intermediate_solutions
+	$(MAKE) rdotnet_solve_with_time_limit
+	$(MAKE) rdotnet_stop_after_n_solutions
+
+rdotnet_%: \
+ $(DOTNET_EX_DIR)/%.cs \
+ $(DOTNET_EX_DIR)/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG)
+	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
+	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
+
+rdotnet_%: \
+ $(DOTNET_EX_DIR)/%.fs \
+ $(DOTNET_EX_DIR)/%.fsproj \
+ $(DOTNET_ORTOOLS_FSHARP_NUPKG)
+	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
+	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
+
+rdotnet_%: \
+ ortools/sat/samples/%.cs \
+ ortools/sat/samples/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG)
+	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
+	"$(DOTNET_BIN)" run --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
 
 #####################
 ##  .NET Examples  ##
@@ -436,18 +605,6 @@ $(TEMP_DOTNET_DIR)/%$D: \
 	"$(DOTNET_BIN)" build \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  $(DOTNET_EX_PATH)$Sfsharp$S$*.fsproj
-
-rdotnet_%: $(DOTNET_EX_DIR)/%.csproj $(DOTNET_ORTOOLS_NUPKG)
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
-
-rdotnet_%: $(DOTNET_EX_DIR)/%.fsproj $(DOTNET_ORTOOLS_FSHARP_NUPKG)
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
-
-rdotnet_%: ortools/sat/samples/%.csproj $(DOTNET_ORTOOLS_NUPKG)
-	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
 
 ################
 ##  Cleaning  ##
@@ -501,7 +658,6 @@ clean_dotnet:
 ######################
 ##  Nuget artifact  ##
 ######################
-
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
 nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
 	"$(DOTNET_BIN)" publish -c Release --no-dependencies --no-restore -f netstandard2.0 \
@@ -534,8 +690,10 @@ detect_dotnet:
 	@echo DOTNET_ORTOOLS_NATIVE_NUPKG = $(DOTNET_ORTOOLS_NATIVE_NUPKG)
 	@echo OR_TOOLS_ASSEMBLY_NAME = $(OR_TOOLS_ASSEMBLY_NAME)
 	@echo DOTNET_ORTOOLS_NUPKG = $(DOTNET_ORTOOLS_NUPKG)
+	@echo OR_TOOLS_TESTS_ASSEMBLY_NAME = $(OR_TOOLS_TESTS_ASSEMBLY_NAME)
 	@echo OR_TOOLS_FSHARP_ASSEMBLY_NAME = $(OR_TOOLS_FSHARP_ASSEMBLY_NAME)
 	@echo DOTNET_ORTOOLS_FSHARP_NUPKG = $(DOTNET_ORTOOLS_FSHARP_NUPKG)
+	@echo OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME = $(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else
