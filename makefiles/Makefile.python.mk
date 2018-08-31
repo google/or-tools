@@ -51,7 +51,9 @@ python: \
  pysat \
  pyrcpsp
 
-test_python: test_python_examples
+test_python: \
+ test_python_samples \
+ test_python_examples
 
 BUILT_LANGUAGES +=, Python$(PYTHON_VERSION)
 else
@@ -61,66 +63,6 @@ python:
 
 test_python: python
 endif
-
-.PHONY: clean_python # Clean Python output from previous build.
-clean_python:
-	-$(DEL) $(GEN_PATH)$Sortools$S__init__.py
-	-$(DEL) ortools$S*.pyc
-	-$(DELREC) ortools$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Salgorithms$S__pycache__
-	-$(DEL) ortools$Salgorithms$S*.pyc
-	-$(DELREC) ortools$Salgorithms$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sgraph$S__pycache__
-	-$(DEL) ortools$Sgraph$S*.pyc
-	-$(DELREC) ortools$Sgraph$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sconstraint_solver$S__pycache__
-	-$(DEL) ortools$Sconstraint_solver$S*.pyc
-	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Slinear_solver$S__pycache__
-	-$(DEL) ortools$Slinear_solver$S*.pyc
-	-$(DELREC) ortools$Slinear_solver$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Ssat$S__pycache__
-	-$(DEL) ortools$Ssat$S*.pyc
-	-$(DELREC) ortools$Ssat$S__pycache__
-	-$(DEL) ortools$Ssat$Spython$S*.pyc
-	-$(DELREC) ortools$Ssat$Spython$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sdata$S__pycache__
-	-$(DEL) ortools$Sdata$S*.pyc
-	-$(DELREC) ortools$Sdata$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sutil$S__pycache__
-	-$(DEL) ortools$Sutil$S*.pyc
-	-$(DELREC) ortools$Sutil$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_pywrap*
-	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_PYTHON_LIB_SUFFIX)
-	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
-	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
 
 .PHONY: install_python_modules
 install_python_modules: dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/google/protobuf/descriptor_pb2.py
@@ -506,6 +448,223 @@ else
 	cp $(PYDATA_LIBS) $(GEN_PATH)/ortools/data
 endif
 
+###############################
+##  Python Examples/Samples  ##
+###############################
+.PHONY: test_python_examples # Run all Python Examples (located in examples/python)
+test_python_examples: python
+	$(MAKE) rpy_3_jugs_mip
+	$(MAKE) rpy_3_jugs_regular
+	$(MAKE) rpy_alldifferent_except_0
+	$(MAKE) rpy_all_interval
+	$(MAKE) rpy_alphametic
+	$(MAKE) rpy_appointments
+	$(MAKE) rpy_a_round_of_golf
+	$(MAKE) rpy_assignment6_mip
+	$(MAKE) rpy_assignment
+	$(MAKE) rpy_assignment_sat
+	$(MAKE) rpy_assignment_with_constraints
+	$(MAKE) rpy_assignment_with_constraints_sat
+	$(MAKE) rpy_bacp
+	$(MAKE) rpy_balance_group_sat
+	$(MAKE) rpy_blending
+	$(MAKE) rpy_broken_weights
+	$(MAKE) rpy_bus_schedule
+	$(MAKE) rpy_car
+	$(MAKE) rpy_check_dependencies
+	$(MAKE) rpy_chemical_balance_lp
+	$(MAKE) rpy_chemical_balance_sat
+	$(MAKE) rpy_circuit
+	$(MAKE) rpy_code_samples_sat
+	$(MAKE) rpy_coins3
+	$(MAKE) rpy_coins_grid_mip
+	$(MAKE) rpy_coins_grid ARGS="5 2"
+	$(MAKE) rpy_coloring_ip
+	$(MAKE) rpy_combinatorial_auction2
+	$(MAKE) rpy_contiguity_regular
+	$(MAKE) rpy_costas_array
+	$(MAKE) rpy_covering_opl
+	$(MAKE) rpy_cp_is_fun_sat
+	$(MAKE) rpy_crew
+	$(MAKE) rpy_crossword2
+	$(MAKE) rpy_crypta
+	$(MAKE) rpy_crypto
+	$(MAKE) rpy_curious_set_of_integers
+	$(MAKE) rpy_cvrp
+#	$(MAKE) rpy_cvrptw_plot # error: py3 failure, missing numpy.
+	$(MAKE) rpy_cvrptw
+	$(MAKE) rpy_debruijn_binary
+	$(MAKE) rpy_diet1_b
+	$(MAKE) rpy_diet1_mip
+	$(MAKE) rpy_diet1
+	$(MAKE) rpy_discrete_tomography
+	$(MAKE) rpy_divisible_by_9_through_1
+	$(MAKE) rpy_dudeney
+	$(MAKE) rpy_einav_puzzle2
+	$(MAKE) rpy_einav_puzzle
+	$(MAKE) rpy_eq10
+	$(MAKE) rpy_eq20
+	$(MAKE) rpy_fill_a_pix
+	$(MAKE) rpy_flexible_job_shop_sat
+	$(MAKE) rpy_furniture_moving
+	$(MAKE) rpy_futoshiki
+	$(MAKE) rpy_game_theory_taha
+	$(MAKE) rpy_gate_scheduling_sat
+	$(MAKE) rpy_golomb8
+	$(MAKE) rpy_grocery
+	$(MAKE) rpy_hidato ARGS="3 3"
+	$(MAKE) rpy_hidato_sat
+	$(MAKE) rpy_hidato_table
+	$(MAKE) rpy_integer_programming
+	$(MAKE) rpy_jobshop_ft06_distance
+	$(MAKE) rpy_jobshop_ft06
+	$(MAKE) rpy_jobshop_ft06_sat
+	$(MAKE) rpy_just_forgotten
+	$(MAKE) rpy_kakuro
+	$(MAKE) rpy_kenken2
+	$(MAKE) rpy_killer_sudoku
+	$(MAKE) rpy_knapsack_cp
+	$(MAKE) rpy_knapsack_mip
+	$(MAKE) rpy_knapsack
+	$(MAKE) rpy_labeled_dice
+	$(MAKE) rpy_langford
+	$(MAKE) rpy_least_diff
+	$(MAKE) rpy_least_square
+	$(MAKE) rpy_lectures
+	$(MAKE) rpy_linear_assignment_api
+	$(MAKE) rpy_linear_programming
+	$(MAKE) rpy_magic_sequence_distribute
+	$(MAKE) rpy_magic_square_and_cards
+	$(MAKE) rpy_magic_square_mip
+# warning: magic_square take 21s
+	$(MAKE) rpy_magic_square
+	$(MAKE) rpy_map
+	$(MAKE) rpy_marathon2
+	$(MAKE) rpy_max_flow_taha
+	$(MAKE) rpy_max_flow_winston1
+	$(MAKE) rpy_minesweeper
+	$(MAKE) rpy_mr_smith
+	$(MAKE) rpy_nonogram_default_search
+	$(MAKE) rpy_nonogram_regular
+	$(MAKE) rpy_nonogram_table2
+	$(MAKE) rpy_nonogram_table
+#	$(MAKE) rpy_nontransitive_dice # error: too long
+	$(MAKE) rpy_nqueens2
+	$(MAKE) rpy_nqueens3
+	$(MAKE) rpy_nqueens
+	$(MAKE) rpy_nqueens_sat
+	$(MAKE) rpy_nurse_rostering
+	$(MAKE) rpy_nurses_cp
+# warning: nurse_sat take 18s
+	$(MAKE) rpy_nurses_sat
+	$(MAKE) rpy_olympic
+	$(MAKE) rpy_organize_day
+	$(MAKE) rpy_pandigital_numbers
+	$(MAKE) rpy_photo_problem
+	$(MAKE) rpy_place_number_puzzle
+	$(MAKE) rpy_p_median
+	$(MAKE) rpy_post_office_problem2
+	$(MAKE) rpy_production
+	$(MAKE) rpy_pyflow_example
+	$(MAKE) rpy_pyls_api
+	$(MAKE) rpy_quasigroup_completion
+	$(MAKE) rpy_rabbit_pheasant
+	$(MAKE) rpy_rcpsp_sat
+	$(MAKE) rpy_regular
+	$(MAKE) rpy_regular_table2
+	$(MAKE) rpy_regular_table
+	$(MAKE) rpy_rogo2
+	$(MAKE) rpy_rostering_with_travel
+	$(MAKE) rpy_safe_cracking
+	$(MAKE) rpy_scheduling_speakers
+#	$(MAKE) rpy_school_scheduling_sat # error: too long
+	$(MAKE) rpy_secret_santa2
+#	$(MAKE) rpy_secret_santa # error: too long
+	$(MAKE) rpy_send_more_money_any_base
+	$(MAKE) rpy_sendmore
+	$(MAKE) rpy_send_most_money
+	$(MAKE) rpy_seseman_b
+	$(MAKE) rpy_seseman
+	$(MAKE) rpy_set_covering2
+	$(MAKE) rpy_set_covering3
+	$(MAKE) rpy_set_covering4
+	$(MAKE) rpy_set_covering_deployment
+	$(MAKE) rpy_set_covering
+	$(MAKE) rpy_set_covering_skiena
+	$(MAKE) rpy_set_partition
+	$(MAKE) rpy_sicherman_dice
+	$(MAKE) rpy_simple_meeting
+	$(MAKE) rpy_ski_assignment
+	$(MAKE) rpy_slitherlink
+	$(MAKE) rpy_stable_marriage
+	$(MAKE) rpy_steel_lns
+	$(MAKE) rpy_steel_mill_slab_sat
+	$(MAKE) rpy_steel
+	$(MAKE) rpy_stigler
+	$(MAKE) rpy_strimko2
+	$(MAKE) rpy_subset_sum
+	$(MAKE) rpy_sudoku
+	$(MAKE) rpy_survo_puzzle
+	$(MAKE) rpy_toNum
+	$(MAKE) rpy_traffic_lights
+	$(MAKE) rpy_transit_time
+	$(MAKE) rpy_tsp
+	$(MAKE) rpy_vendor_scheduling
+	$(MAKE) rpy_volsay2
+	$(MAKE) rpy_volsay3
+	$(MAKE) rpy_volsay
+	$(MAKE) rpy_vrpgs
+	$(MAKE) rpy_vrp
+	$(MAKE) rpy_wedding_optimal_chart
+	$(MAKE) rpy_wedding_optimal_chart_sat
+	$(MAKE) rpy_who_killed_agatha
+#	$(MAKE) rpy_word_square # Not working on window since it rely on /usr/share/dict/words
+	$(MAKE) rpy_worker_schedule_sat
+	$(MAKE) rpy_xkcd
+	$(MAKE) rpy_young_tableaux
+	$(MAKE) rpy_zebra
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Stests$Stest_cp_api.py
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Stests$Stest_lp_api.py
+
+.PHONY: test_python_samples # Run all Python Samples (located in ortools/*/python)
+test_python_samples: python
+	$(MAKE) rpy_binpacking_problem
+	$(MAKE) rpy_bool_or_sample
+	$(MAKE) rpy_channeling_sample
+	$(MAKE) rpy_code_sample
+	$(MAKE) rpy_interval_sample
+	$(MAKE) rpy_literal_sample
+	$(MAKE) rpy_no_overlap_sample
+	$(MAKE) rpy_optional_interval_sample
+	$(MAKE) rpy_rabbits_and_pheasants
+	$(MAKE) rpy_ranking_sample
+	$(MAKE) rpy_reified_sample
+	$(MAKE) rpy_simple_solve
+	$(MAKE) rpy_solve_all_solutions
+	$(MAKE) rpy_solve_with_intermediate_solutions
+	$(MAKE) rpy_solve_with_time_limit
+	$(MAKE) rpy_stop_after_n_solutions
+
+rpy_%: \
+ $(PYTHON_EX_DIR)/%.py \
+ $(PYLP_LIBS) \
+ $(PYCP_LIBS) \
+ $(PYGRAPH_LIBS) \
+ $(PYALGORITHMS_LIBS) \
+ $(PYSAT_LIBS) \
+ $(PYDATA_LIBS)
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(PYTHON_EX_PATH)$S$*.py $(ARGS)
+
+rpy_%: \
+ ortools/sat/samples/%.py \
+ $(PYLP_LIBS) \
+ $(PYCP_LIBS) \
+ $(PYGRAPH_LIBS) \
+ $(PYALGORITHMS_LIBS) \
+ $(PYSAT_LIBS) \
+ $(PYDATA_LIBS)
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Ssat$Ssamples$S$*.py $(ARGS)
+
 #######################
 ##  Python Examples  ##
 #######################
@@ -523,32 +682,68 @@ rpy: $(EX) \
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX) $(ARGS)
 endif # ifeq ($(EX),)
 
-# Run a single example
-rpy_%: $(PYTHON_EX_DIR)/%.py \
- $(PYLP_LIBS) $(PYCP_LIBS) $(PYGRAPH_LIBS) $(PYALGORITHMS_LIBS) $(PYSAT_LIBS) $(PYDATA_LIBS)
-	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(PYTHON_EX_PATH)$S$*.py $(ARGS)
-
-.PHONY: python_examples_archive # Build stand-alone Python examples archive file for redistribution.
-python_examples_archive:
-	-$(DELREC) temp
-	$(MKDIR) temp
-	$(MKDIR) temp$Sortools_examples
-	$(MKDIR) temp$Sortools_examples$Sexamples
-	$(MKDIR) temp$Sortools_examples$Sexamples$Spython
-	$(MKDIR) temp$Sortools_examples$Sexamples$Snotebook
-	$(MKDIR) temp$Sortools_examples$Sexamples$Sdata
-	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples$Spython
-	$(COPY) examples$Snotebook$S*.ipynb temp$Sortools_examples$Sexamples$Snotebook
-	$(COPY) examples$Snotebook$S*.md temp$Sortools_examples$Sexamples$Snotebook
-	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
-	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
-ifeq ($(SYSTEM),win)
-	cd temp\ortools_examples && ..\..\$(TAR) -C ..\.. -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* examples\data | ..\..\$(TAR) xvm
-	cd temp && ..\$(ZIP) -r ..\or-tools_python_examples_v$(OR_TOOLS_VERSION).zip ortools_examples
-else
-	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* examples/data | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../or-tools_python_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz ortools_examples
-endif
+################
+##  Cleaning  ##
+################
+.PHONY: clean_python # Clean Python output from previous build.
+clean_python:
+	-$(DEL) $(GEN_PATH)$Sortools$S__init__.py
+	-$(DEL) ortools$S*.pyc
+	-$(DELREC) ortools$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Salgorithms$S__pycache__
+	-$(DEL) ortools$Salgorithms$S*.pyc
+	-$(DELREC) ortools$Salgorithms$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sgraph$S__pycache__
+	-$(DEL) ortools$Sgraph$S*.pyc
+	-$(DELREC) ortools$Sgraph$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sconstraint_solver$S__pycache__
+	-$(DEL) ortools$Sconstraint_solver$S*.pyc
+	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Slinear_solver$S__pycache__
+	-$(DEL) ortools$Slinear_solver$S*.pyc
+	-$(DELREC) ortools$Slinear_solver$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Ssat$S__pycache__
+	-$(DEL) ortools$Ssat$S*.pyc
+	-$(DELREC) ortools$Ssat$S__pycache__
+	-$(DEL) ortools$Ssat$Spython$S*.pyc
+	-$(DELREC) ortools$Ssat$Spython$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sdata$S__pycache__
+	-$(DEL) ortools$Sdata$S*.pyc
+	-$(DELREC) ortools$Sdata$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sutil$S__pycache__
+	-$(DEL) ortools$Sutil$S*.pyc
+	-$(DELREC) ortools$Sutil$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_pywrap*
+	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_PYTHON_LIB_SUFFIX)
+	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
+	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
 
 #####################
 ##  Pypi artifact  ##
@@ -764,6 +959,31 @@ pypi_upload: pypi_archive # Upload Wheel package to Pypi.org
 	@echo Uploading Pypi module for "$(PYTHON_EXECUTABLE)".
 	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && twine upload dist/*
 
+.PHONY: python_examples_archive # Build stand-alone Python examples archive file for redistribution.
+python_examples_archive:
+	-$(DELREC) temp
+	$(MKDIR) temp
+	$(MKDIR) temp$Sortools_examples
+	$(MKDIR) temp$Sortools_examples$Sexamples
+	$(MKDIR) temp$Sortools_examples$Sexamples$Spython
+	$(MKDIR) temp$Sortools_examples$Sexamples$Snotebook
+	$(MKDIR) temp$Sortools_examples$Sexamples$Sdata
+	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples$Spython
+	$(COPY) examples$Snotebook$S*.ipynb temp$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$S*.md temp$Sortools_examples$Sexamples$Snotebook
+	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
+	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
+ifeq ($(SYSTEM),win)
+	cd temp\ortools_examples && ..\..\$(TAR) -C ..\.. -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* examples\data | ..\..\$(TAR) xvm
+	cd temp && ..\$(ZIP) -r ..\or-tools_python_examples_v$(OR_TOOLS_VERSION).zip ortools_examples
+else
+	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* --exclude *vector_packing* examples/data | tar xvm
+	cd temp && tar -c -v -z --no-same-owner -f ../or-tools_python_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz ortools_examples
+endif
+
+#############
+##  DEBUG  ##
+#############
 .PHONY: detect_python # Show variables used to build Python OR-Tools.
 detect_python:
 	@echo Relevant info for the Python build:
