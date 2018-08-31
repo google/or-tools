@@ -18,14 +18,36 @@ else
   prefix ?= /usr/local
 endif
 
+HAS_CCC = true
+ifndef CCC
+HAS_CCC =
+endif
+
 # Main target
 .PHONY: cc # Build C++ OR-Tools and C++ Examples.
-cc: ortoolslibs ccexe
 .PHONY: test_cc # Test C++ OR-Tools using various examples.
-test_cc: test_cc_examples
 .PHONY: test_fz # Test Flatzinc OR-Tools using various examples.
-test_fz: test_fz_examples
+ifndef HAS_CCC
+cc:
+	@echo CCC = $(CCC)
+	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system path.)
+
+test_cc: cc
+test_fz: cc
+else
+cc: ortoolslibs ccexe
+
+test_cc: \
+ test_cc_samples \
+ test_cc_examples
+test_fz: \
+ test_fz_examples
 BUILT_LANGUAGES += C++
+endif
+
+# All libraries and dependecies
+OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
+OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
 
 $(GEN_DIR):
 	$(MKDIR_P) $(GEN_PATH)
@@ -114,77 +136,26 @@ $(OBJ_DIR)/util: | $(OBJ_DIR)
 $(OBJ_DIR)/swig: | $(OBJ_DIR)
 	$(MKDIR_P) $(OBJ_DIR)$Sswig
 
-.PHONY: clean_cc # Clean C++ output from previous build.
-clean_cc:
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
-	-$(DEL) $(OBJ_DIR)$S*.$O
-	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sdata$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
-	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
-	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
-	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
-	-$(DEL) $(BIN_DIR)$Sfz$E
-	-$(DEL) $(BIN_DIR)$Sparser_main$E
-	-$(DEL) $(BIN_DIR)$Ssat_runner$E
-	-$(DEL) $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(CC_EXAMPLES)))
-	-$(DEL) $(GEN_PATH)$Sortools$Sbop$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.tab.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.yy.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$Sparser.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sglop$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pb.*
-	-$(DEL) $(BIN_DIR)$S*.exp
-	-$(DEL) $(BIN_DIR)$S*.lib
-	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
-	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
-
-.PHONY: clean_compat
-clean_compat:
-	-$(DELREC) $(OR_ROOT)constraint_solver
-	-$(DELREC) $(OR_ROOT)linear_solver
-	-$(DELREC) $(OR_ROOT)algorithms
-	-$(DELREC) $(OR_ROOT)graph
-	-$(DELREC) $(OR_ROOT)gen
-
-# All libraries and dependecies
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
-OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
+###############
+##  CPP LIB  ##
+###############
 ortoolslibs: third_party_check $(OR_TOOLS_LIBS)
-
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 # OR Tools unique library.
 $(OR_TOOLS_LIBS): \
-    $(BASE_LIB_OBJS) \
-    $(PORT_LIB_OBJS) \
-    $(UTIL_LIB_OBJS) \
-    $(DATA_LIB_OBJS) \
-    $(LP_DATA_LIB_OBJS) \
-    $(GLOP_LIB_OBJS) \
-    $(GRAPH_LIB_OBJS) \
-    $(ALGORITHMS_LIB_OBJS) \
-    $(SAT_LIB_OBJS) \
-    $(BOP_LIB_OBJS) \
-    $(LP_LIB_OBJS) \
-    $(CP_LIB_OBJS) | $(LIB_DIR)
+ $(BASE_LIB_OBJS) \
+ $(PORT_LIB_OBJS) \
+ $(UTIL_LIB_OBJS) \
+ $(DATA_LIB_OBJS) \
+ $(LP_DATA_LIB_OBJS) \
+ $(GLOP_LIB_OBJS) \
+ $(GRAPH_LIB_OBJS) \
+ $(ALGORITHMS_LIB_OBJS) \
+ $(SAT_LIB_OBJS) \
+ $(BOP_LIB_OBJS) \
+ $(LP_LIB_OBJS) \
+ $(CP_LIB_OBJS) | $(LIB_DIR)
 	$(LINK_CMD) \
  $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L \
  $(BASE_LIB_OBJS) \
@@ -346,16 +317,6 @@ $(OBJ_DIR)/cvrp%.$O: $(EX_DIR)/cpp/cvrp%.cc $(CVRPTW_DEPS) | $(OBJ_DIR)
 $(BIN_DIR)/cvrp%$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrp%.$O | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrp$*.$O $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp$*$E
 
-# Generic CPP rules
-$(OBJ_DIR)/%.$O: $(EX_DIR)/cpp/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS)| $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
-
-$(OBJ_DIR)/%.$O: $(EX_DIR)/tests/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
-
-$(BIN_DIR)/%$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/%.$O | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
-
 # Dimacs Assignment Problem
 $(OBJ_DIR)/dimacs_assignment.$O: $(EX_DIR)/cpp/dimacs_assignment.cc $(DIMACS_DEPS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sdimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
@@ -462,14 +423,142 @@ $(OBJ_DIR)/sat_runner.$O: \
  $(SAT_DEPS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
 
-# compile and run C++ examples
+############################
+##  CPP Examples/Samples  ##
+############################
+.PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
+test_cc_examples: cc
+	$(MAKE) rcc_golomb$E ARGS="--size=5"
+	$(MAKE) rcc_cvrptw$E
+	$(MAKE) rcc_flow_api$E
+	$(MAKE) rcc_linear_programming$E
+	$(MAKE) rcc_integer_programming$E
+	$(MAKE) rcc_tsp$E
+	$(MAKE) rcc_ac4r_table_test$E
+	$(MAKE) rcc_boolean_test$E
+	$(MAKE) rcc_bug_fz1$E
+	$(MAKE) rcc_cpp11_test$E
+	$(MAKE) rcc_forbidden_intervals_test$E
+	$(MAKE) rcc_gcc_test$E
+#	$(MAKE) rcc_issue173$E # error: too long
+	$(MAKE) rcc_issue57$E
+	$(MAKE) rcc_min_max_test$E
+	$(MAKE) rcc_visitor_test$E
+
+.PHONY: test_cc_samples # Build and Run all C++ Samples (located in ortools/*/samples)
+test_cc_samples: cc
+	$(MAKE) rcc_binpacking_problem
+	$(MAKE) rcc_bool_or_sample
+	$(MAKE) rcc_channeling_sample
+	$(MAKE) rcc_code_sample
+	$(MAKE) rcc_interval_sample
+	$(MAKE) rcc_literal_sample
+	$(MAKE) rcc_no_overlap_sample
+	$(MAKE) rcc_optional_interval_sample
+	$(MAKE) rcc_rabbits_and_pheasants
+	$(MAKE) rcc_ranking_sample
+	$(MAKE) rcc_reified_sample
+	$(MAKE) rcc_simple_solve
+	$(MAKE) rcc_solve_all_solutions
+	$(MAKE) rcc_solve_with_intermediate_solutions
+	$(MAKE) rcc_solve_with_time_limit
+	$(MAKE) rcc_stop_after_n_solutions
+
+# Generic CPP rules
+$(OBJ_DIR)/%.$O: $(EX_DIR)/tests/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+$(OBJ_DIR)/%.$O: $(EX_DIR)/cpp/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS)| $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+$(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+$(BIN_DIR)/%$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/%.$O | $(BIN_DIR)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
+
+rcc_%: $(BIN_DIR)/%$E
+	$(BIN_DIR)$S$*$E $(ARGS)
+
+.PHONY: test_fz_examples # Build and Run few Flatzinc Samples (located in examples/flatzinc)
+test_fz_examples: fz
+	$(MAKE) rfz_golomb
+	$(MAKE) rfz_alpha
+
+rfz_%: fz $(EX_DIR)$Sflatzinc$S%.fzn
+	$(BIN_DIR)$Sfz$E $(EX_DIR)$Sflatzinc$S$*.fzn
+####################
+##  C++ Examples  ##
+####################
+ifeq ($(EX),) # Those rules will be used if EX variable is not set
+.PHONY: rcc ccc
+rcc ccc:
+	@echo No C++ file was provided, the $@ target must be used like so: \
+ make $@ EX=examples/cpp/example.cc
+else # This generic rule will be used if EX variable is set
+EX_NAME = $(basename $(notdir $(EX)))
+
 .PHONY: ccc
-ccc: $(BIN_DIR)/$(basename $(notdir $(EX)))$E
+ccc: $(BIN_DIR)/$(EX_NAME)$E
 
 .PHONY: rcc
-rcc: $(BIN_DIR)/$(basename $(notdir $(EX)))$E
-	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
-	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
+rcc: $(BIN_DIR)/$(EX_NAME)$E
+	@echo running $<
+	$(BIN_DIR)$S$(EX_NAME)$E $(ARGS)
+endif # ifeq ($(EX),)
+
+################
+##  Cleaning  ##
+################
+.PHONY: clean_cc # Clean C++ output from previous build.
+clean_cc:
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
+	-$(DEL) $(OBJ_DIR)$S*.$O
+	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sdata$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
+	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
+	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
+	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
+	-$(DEL) $(BIN_DIR)$Sfz$E
+	-$(DEL) $(BIN_DIR)$Sparser_main$E
+	-$(DEL) $(BIN_DIR)$Ssat_runner$E
+	-$(DEL) $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(CC_EXAMPLES)))
+	-$(DEL) $(GEN_PATH)$Sortools$Sbop$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.tab.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.yy.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$Sparser.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sglop$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pb.*
+	-$(DEL) $(BIN_DIR)$S*.exp
+	-$(DEL) $(BIN_DIR)$S*.lib
+	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
+	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
+
+.PHONY: clean_compat
+clean_compat:
+	-$(DELREC) $(OR_ROOT)constraint_solver
+	-$(DELREC) $(OR_ROOT)linear_solver
+	-$(DELREC) $(OR_ROOT)algorithms
+	-$(DELREC) $(OR_ROOT)graph
+	-$(DELREC) $(OR_ROOT)gen
 
 ###############
 ##  INSTALL  ##
@@ -580,6 +669,9 @@ install_doc:
 #$(COPY) ortools$Ssat$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
 	$(COPY) ortools$Ssat$Sdoc$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
 
+#############
+##  DEBUG  ##
+#############
 .PHONY: detect_cc # Show variables used to build C++ OR-Tools.
 detect_cc:
 	@echo Relevant info for the C++ build:
