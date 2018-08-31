@@ -45,12 +45,10 @@ def SolveRosteringWithTravel():
       job_performed.append(performed_on_m)
 
       # Create an optional copy of interval to be executed on a machine
-      location0 = model.NewOptionalIntVar(
-          jobs[i][3], jobs[i][3], performed_on_m, 'location_%i_on_m%i' % (i, m))
-      start0 = model.NewOptionalIntVar(jobs[i][1], horizon, performed_on_m,
-                                       'start_%i_on_m%i' % (i, m))
-      end0 = model.NewOptionalIntVar(0, jobs[i][2], performed_on_m,
-                                     'end_%i_on_m%i' % (i, m))
+      location0 = model.NewIntVar(
+        jobs[i][3], jobs[i][3], 'location_%i_on_m%i' % (i, m))
+      start0 = model.NewIntVar(jobs[i][1], horizon, 'start_%i_on_m%i' % (i, m))
+      end0 = model.NewIntVar(0, jobs[i][2], 'end_%i_on_m%i' % (i, m))
       interval0 = model.NewOptionalIntervalVar(
           start0, duration, end0, performed_on_m, 'interval_%i_on_m%i' % (i, m))
       optional_intervals[m].append(interval0)
@@ -59,10 +57,8 @@ def SolveRosteringWithTravel():
       model.Add(start0 == start).OnlyEnforceIf(performed_on_m)
       # Adding travel constraint
       travel = model.NewBoolVar('is_travel_%i_on_m%i' % (i, m))
-      startT = model.NewOptionalIntVar(0, horizon, travel,
-                                       'start_%i_on_m%i' % (i, m))
-      endT = model.NewOptionalIntVar(0, horizon, travel,
-                                     'end_%i_on_m%i' % (i, m))
+      startT = model.NewIntVar(0, horizon, 'start_%i_on_m%i' % (i, m))
+      endT = model.NewIntVar(0, horizon, 'end_%i_on_m%i' % (i, m))
       intervalT = model.NewOptionalIntervalVar(
           startT, travel_time, endT, travel,
           'travel_interval_%i_on_m%i' % (i, m))

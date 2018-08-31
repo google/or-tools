@@ -336,16 +336,14 @@ class _SumArray(IntegerExpression):
 class IntVar(IntegerExpression):
   """Represents a IntegerExpression containing only a single variable."""
 
-  def __init__(self, model, bounds, name, is_present_index=None):
-    """See CpModel.NewIntVar and .NewOptionalIntVar below."""
+  def __init__(self, model, bounds, name):
+    """See CpModel.NewIntVar below."""
     self.__model = model
     self.__index = len(model.variables)
     self.__var = model.variables.add()
     self.__var.domain.extend(bounds)
     self.__var.name = name
     self.__negation = None
-    if is_present_index is not None:
-      self.__var.enforcement_literal.append(is_present_index)
 
   def Index(self):
     return self.__index
@@ -525,16 +523,6 @@ class CpModel(object):
     array [1, 3, 5, 5, 7, 8].
     """
     return IntVar(self.__model, bounds, name)
-
-  def NewOptionalIntVar(self, lb, ub, is_present, name):
-    """Creates an optional integer variable."""
-    is_present_index = self.GetOrMakeBooleanIndex(is_present)
-    return IntVar(self.__model, [lb, ub], name, is_present_index)
-
-  def NewOptionalEnumeratedIntVar(self, bounds, is_present, name):
-    """Creates an optional enumerated integer variable."""
-    is_present_index = self.GetOrMakeBooleanIndex(is_present)
-    return IntVar(self.__model, bounds, name, is_present_index)
 
   def NewBoolVar(self, name):
     """Creates a 0-1 variable with the given name."""
@@ -1043,9 +1031,6 @@ class CpModel(object):
     start_index = self.GetOrMakeIndex(start)
     size_index = self.GetOrMakeIndex(size)
     end_index = self.GetOrMakeIndex(end)
-    self.AssertIntVarIsNotOptional(start_index)
-    self.AssertIntVarIsNotOptional(size_index)
-    self.AssertIntVarIsNotOptional(end_index)
     return IntervalVar(self.__model, start_index, size_index, end_index, None,
                        name)
 
@@ -1073,9 +1058,9 @@ class CpModel(object):
       An IntervalVar object.
     """
     is_present_index = self.GetOrMakeBooleanIndex(is_present)
-    start_index = self.GetOrMakeOptionalIndex(start, is_present)
-    size_index = self.GetOrMakeIndex(size)  # Currently, not optional.
-    end_index = self.GetOrMakeOptionalIndex(end, is_present)
+    start_index = self.GetOrMakeIndex(start)
+    size_index = self.GetOrMakeIndex(size)
+    end_index = self.GetOrMakeIndex(end)
     return IntervalVar(self.__model, start_index, size_index, end_index,
                        is_present_index, name)
 
@@ -1171,20 +1156,6 @@ class CpModel(object):
     else:
       raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
 
-  def GetOrMakeOptionalIndex(self, arg, is_present):
-    """Returns the index of an optional variable or constant (seen as a var)."""
-    if isinstance(arg, IntVar):
-      return arg.Index()
-    elif (isinstance(arg, _ProductCst) and
-          isinstance(arg.Expression(), IntVar) and arg.Coefficient() == -1):
-      return -arg.Expression().Index() - 1
-    elif isinstance(arg, numbers.Integral):
-      AssertIsInt64(arg)
-      return self.GetOrMakeOptionalIndexFromConstant(arg, is_present)
-    else:
-      raise TypeError('NotSupported: model.GetOrMakeOptionalIndex(%s, %s)' %
-                      (arg, is_present))
-
   def GetOrMakeBooleanIndex(self, arg):
     """Returns an index from a boolean expression."""
     if isinstance(arg, IntVar):
@@ -1214,28 +1185,11 @@ class CpModel(object):
     self.__constant_map[value] = index
     return index
 
-  def GetOrMakeOptionalIndexFromConstant(self, value, is_present):
-    self.AssertIsBooleanVariable(is_present)
-    if (is_present, value) in self.__optional_constant_map:
-      return self.__optional_constant_map[(is_present, value)]
-    index = len(self.__model.variables)
-    var = self.__model.variables.add()
-    var.domain.extend([value, value])
-    var.enforcement_literal.append(self.GetOrMakeBooleanIndex(is_present))
-    self.__optional_constant_map[(is_present, value)] = index
-    return index
-
   def VarIndexToVarProto(self, var_index):
     if var_index > 0:
       return self.__model.variables[var_index]
     else:
       return self.__model.variables[-var_index - 1]
-
-  def AssertIntVarIsNotOptional(self, var_index):
-    var = self.VarIndexToVarProto(var_index)
-    if var.enforcement_literal:
-      raise TypeError('Variable %s should not be marked as optional' %
-                      ShortName(self.__model, var_index))
 
   def _SetObjective(self, obj, minimize):
     """Sets the objective of the model."""

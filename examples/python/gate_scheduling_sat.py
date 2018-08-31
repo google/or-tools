@@ -60,19 +60,15 @@ def main():
     performed.append(performed_on_m0)
 
     # Create an optional copy of interval to be executed on machine 0.
-    start0 = model.NewOptionalIntVar(0, horizon, performed_on_m0,
-                                     'start_%i_on_m0' % i)
-    end0 = model.NewOptionalIntVar(0, horizon, performed_on_m0,
-                                   'end_%i_on_m0' % i)
+    start0 = model.NewIntVar(0, horizon, 'start_%i_on_m0' % i)
+    end0 = model.NewIntVar(0, horizon,  'end_%i_on_m0' % i)
     interval0 = model.NewOptionalIntervalVar(
         start0, duration, end0, performed_on_m0, 'interval_%i_on_m0' % i)
     intervals0.append(interval0)
 
     # Create an optional copy of interval to be executed on machine 1.
-    start1 = model.NewOptionalIntVar(0, horizon, performed_on_m0.Not(),
-                                     'start_%i_on_m1' % i)
-    end1 = model.NewOptionalIntVar(0, horizon, performed_on_m0.Not(),
-                                   'end_%i_on_m1' % i)
+    start1 = model.NewIntVar(0, horizon, 'start_%i_on_m1' % i)
+    end1 = model.NewIntVar(0, horizon, 'end_%i_on_m1' % i)
     interval1 = model.NewOptionalIntervalVar(start1, duration, end1,
                                              performed_on_m0.Not(),
                                              'interval_%i_on_m1' % i)

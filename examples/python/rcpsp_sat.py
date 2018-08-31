@@ -136,10 +136,8 @@ def SolveRcpsp(problem, proto_file):
       for r in all_recipes:
         recipe = task.recipes[r]
         is_present = model.NewBoolVar('is_present_%i_r%i' % (t, r))
-        start = model.NewOptionalIntVar(0, horizon, is_present,
-                                        'start_%i_r%i' % (t, r))
-        end = model.NewOptionalIntVar(0, horizon, is_present,
-                                      'end_%i_r%i' % (t, r))
+        start = model.NewIntVar(0, horizon, 'start_%i_r%i' % (t, r))
+        end = model.NewIntVar(0, horizon, 'end_%i_r%i' % (t, r))
         interval = model.NewOptionalIntervalVar(
             start, recipe.duration, end, is_present, 'interval_%i_r%i' % (t, r))
 
