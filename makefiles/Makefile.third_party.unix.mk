@@ -649,11 +649,11 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo "# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_SCIP_DIR to point to a compiled version of SCIP to use it ">> Makefile.local
-	@echo "#   e.g. UNIX_SCIP_DIR = <path>/scipoptsuite-4.0.1/scip" >> Makefile.local
+	@echo "#   e.g. UNIX_SCIP_DIR = <path>/scipoptsuite-6.0.0/scip" >> Makefile.local
 	@echo "#   On Mac OS X, compile scip with: " >> Makefile.local
-	@echo "#     make GMP=false READLINE=false TPI=tny" >> Makefile.local
+	@echo "#     make GMP=false READLINE=false TPI=tny ZIMPL=false" >> Makefile.local
 	@echo "#   On Linux, compile scip with: " >> Makefile.local
-	@echo "#     make GMP=false READLINE=false TPI=tny USRCFLAGS=-fPIC USRCXXFLAGS=-fPIC USRCPPFLAGS=-fPIC" >> Makefile.local
+	@echo "#     make GMP=false READLINE=false ZIMPL=false TPI=tny USRCFLAGS=-fPIC USRCXXFLAGS=-fPIC USRCPPFLAGS=-fPIC" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "## REQUIRED DEPENDENCIES ##" >> Makefile.local
 	@echo "# By default they will be automatically built -> nothing to define" >> Makefile.local
