@@ -1,6 +1,4 @@
-﻿
-
-// Copyright 2010-2017 Google
+﻿// Copyright 2010-2017 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,10 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 open System
-open Google.OrTools.LinearSolver
 open Google.OrTools.FSharp
+open Google.OrTools.LinearSolver
 
 let solver solverType =
   let svr = Solver.CreateSolver("IntegerProgramming", solverType.ToString())
@@ -59,10 +56,10 @@ let solver solverType =
   // Check that the problem has an optimal solution.
   match resultStatus with
   | status when status <> Solver.OPTIMAL ->
-      printfn "The problem does not have an optimal solution!"
-      exit 0
+    printfn "The problem does not have an optimal solution!"
+    exit 0
   | _ ->
-      printfn "Problem solved in %i milliseconds" (svr.WallTime())
+    printfn "Problem solved in %i milliseconds" (svr.WallTime())
 
   // The objective value of the solution.
   printfn "Optimal objective value = %f" (svr.Objective().Value())
@@ -86,16 +83,14 @@ let solver solverType =
   printfn "c2: dual value = %f" (c2.DualValue())
   printfn "    activity = %f" (activities.[c2.Index()])
 
-
 [<EntryPoint>]
 let main =
-    printfn "---- Linear programming example with %A  ----" LinearProgramming.GLOP
-    solver LinearProgramming.GLOP
+  printfn "---- Linear programming example with %A  ----" LinearProgramming.GLOP
+  solver LinearProgramming.GLOP
 
-    // printfn "---- Linear programming example with %A ----" LinearProgramming.GLPK
-    // solver LinearProgramming.GLPK
+  // printfn "---- Linear programming example with %A ----" LinearProgramming.GLPK
+  // solver LinearProgramming.GLPK
 
-    printfn "---- Linear programming example with %A ----" LinearProgramming.CLP
-    solver LinearProgramming.CLP
-
-    exit 0
+  printfn "---- Linear programming example with %A ----" LinearProgramming.CLP
+  solver LinearProgramming.CLP
+  exit 0
