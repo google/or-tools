@@ -2162,7 +2162,7 @@ class RoutingLocalSearchFilter : public IntVarLocalSearchFilter {
   RoutingLocalSearchFilter(const std::vector<IntVar*>& nexts,
                            std::function<void(int64)> objective_callback);
   ~RoutingLocalSearchFilter() override {}
-  virtual void InjectObjectiveValue(int64 objective_value);
+  void InjectObjectiveValue(int64 objective_value) override;
 
  protected:
   bool CanPropagateObjectiveValue() const {
