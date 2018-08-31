@@ -42,7 +42,11 @@ dotnet: \
  dotnet_csharp \
  dotnet_fsharp
 
-test_dotnet: test_donet_samples test_dotnet_examples
+test_dotnet: \
+ test_dotnet_csharp \
+ test_dotnet_fsharp \
+ test_donet_samples \
+ test_dotnet_examples
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 endif
 
@@ -433,13 +437,16 @@ $(TEMP_DOTNET_DIR)/%$D: \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  $(DOTNET_EX_PATH)$Sfsharp$S$*.fsproj
 
-rdotnet_%: $(DOTNET_EX_DIR)/%.csproj
+rdotnet_%: $(DOTNET_EX_DIR)/%.csproj $(DOTNET_ORTOOLS_NUPKG)
+	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
 	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
 
-rdotnet_%: $(DOTNET_EX_DIR)/%.fsproj
+rdotnet_%: $(DOTNET_EX_DIR)/%.fsproj $(DOTNET_ORTOOLS_FSHARP_NUPKG)
+	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
 	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
-rdotnet_%: ortools/sat/samples/%.csproj
+rdotnet_%: ortools/sat/samples/%.csproj $(DOTNET_ORTOOLS_NUPKG)
+	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
 	"$(DOTNET_BIN)" run --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
 
 ################
