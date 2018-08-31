@@ -49,19 +49,6 @@ public class CpModel
     return new IntVar(model_, bounds, name);
   }
 
-  public IntVar NewOptionalIntVar(
-      long lb, long ub, ILiteral is_present, string name)
-  {
-    long[] bounds = { lb, ub };
-    return new IntVar(model_, bounds, is_present.GetIndex(), name);
-  }
-
-  public IntVar NewOptionalEnumeratedIntVar(
-      IEnumerable<long> bounds, ILiteral is_present, string name)
-  {
-    return new IntVar(model_, bounds, is_present.GetIndex(), name);
-  }
-
   // Constants (named or not).
 
   // TODO: Cache constant.
@@ -75,13 +62,6 @@ public class CpModel
   {
     long[] bounds = { value, value };
     return new IntVar(model_, bounds, name);
-  }
-
-  public IntVar NewOptionalConstant(
-      long value, ILiteral is_present, string name)
-  {
-    long[] bounds = { value, value };
-    return new IntVar(model_, bounds, is_present.GetIndex(), name);
   }
 
   public IntVar NewBoolVar(string name)

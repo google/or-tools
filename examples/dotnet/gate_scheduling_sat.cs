@@ -85,21 +85,20 @@ public class GateSchedulingSat
       performed.Add(performed_on_m0);
 
       // Create an optional copy of interval to be executed on machine 0.
-      IntVar start0 = model.NewOptionalIntVar(
-          0, horizon, performed_on_m0, String.Format("start_{0}_on_m0",  i));
-      IntVar end0 = model.NewOptionalIntVar(
-          0, horizon, performed_on_m0, String.Format("end_{0}_on_m0",  i));
+      IntVar start0 = model.NewIntVar(
+          0, horizon, String.Format("start_{0}_on_m0",  i));
+      IntVar end0 = model.NewIntVar(
+          0, horizon, String.Format("end_{0}_on_m0",  i));
       IntervalVar interval0 = model.NewOptionalIntervalVar(
           start0, duration, end0, performed_on_m0,
           String.Format("interval_{0}_on_m0",  i));
       intervals0.Add(interval0);
 
       // Create an optional copy of interval to be executed on machine 1.
-      IntVar start1 = model.NewOptionalIntVar(
-          0, horizon, performed_on_m0.Not(),
-          String.Format("start_{0}_on_m1", i));
-      IntVar end1 = model.NewOptionalIntVar(0, horizon, performed_on_m0.Not(),
-                                            String.Format("end_{0}_on_m1",  i));
+      IntVar start1 = model.NewIntVar(
+          0, horizon, String.Format("start_{0}_on_m1", i));
+      IntVar end1 = model.NewIntVar(
+          0, horizon, String.Format("end_{0}_on_m1",  i));
       IntervalVar interval1 = model.NewOptionalIntervalVar(
         start1, duration, end1, performed_on_m0.Not(),
         String.Format("interval_{0}_on_m1",  i));
