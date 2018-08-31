@@ -1,7 +1,7 @@
 ﻿namespace Google.OrTools.FSharp
 
-module Program = 
+module Program =
     [<EntryPoint>]
-    let main _ = 
+    let main _ =
       printfn "Google.OrTools.FSharp Tests"
       0
