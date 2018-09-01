@@ -80,7 +80,7 @@ class FlexibleJobShopData {
 
   ~FlexibleJobShopData() {}
 
-  // Parses a file in .fjp format and loads the model. Note that the format is
+  // Parses a file in .fjs format and loads the model. Note that the format is
   // only partially checked: bad inputs might cause undefined behavior.
   void Load(const std::string& filename) {
     size_t found = filename.find_last_of("/\\");
