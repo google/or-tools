@@ -30,7 +30,6 @@ Operations Research libraries. </summary>
   - Routing examples:
     - tsp.cc    Travelling Salesman Problem.
     - cvrptw.cc Capacitated Vehicle Routing Problem with Time Windows.
-    - carptw.cc Capacitated Vehicle Arc-Routing Problem with Time Windows.
     - pdptw.cc  Pickup and Delivery Problem with Time Windows.
 
   - Graph examples:
