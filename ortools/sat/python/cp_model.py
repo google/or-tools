@@ -218,6 +218,8 @@ class IntegerExpression(object):
     return _ProductCst(self, -1)
 
   def __eq__(self, arg):
+    if arg is None:
+      return False
     if isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
       return BoundIntegerExpression(self, [arg, arg])
@@ -257,6 +259,8 @@ class IntegerExpression(object):
       return BoundIntegerExpression(self - arg, [1, INT_MAX])
 
   def __ne__(self, arg):
+    if arg is None:
+      return True
     if isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
       if arg == INT_MAX:
