@@ -212,11 +212,13 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
   // Special cases.
   CHECK_GE(vars.size(), 1);
   if (vars.size() == 1) {
-    CHECK_NE(coefficients[0], 0);
-    if (coefficients[0] > 0) {
-      return LowerOrEqual(vars[0], upper_bound / coefficients[0]);
+    const int64 c = coefficients[0];
+    CHECK_NE(c, 0);
+    if (c > 0) {
+      return LowerOrEqual(vars[0], upper_bound / c);
     } else {
-      return GreaterOrEqual(vars[0], upper_bound / coefficients[0]);
+      const int64 ceil_c = (upper_bound + c + 1) / c;
+      return GreaterOrEqual(vars[0], ceil_c);
     }
   }
   if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&

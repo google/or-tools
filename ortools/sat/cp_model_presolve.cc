@@ -852,15 +852,20 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     rhs = AdditionOfSortedDisjointIntervals(
         rhs, {{-sum_of_fixed_terms, -sum_of_fixed_terms}});
   }
-  if (gcd > 1) {
-    rhs = InverseMultiplicationOfSortedDisjointIntervals(rhs, gcd);
-  }
   ct->mutable_linear()->clear_vars();
   ct->mutable_linear()->clear_coeffs();
   for (const auto entry : var_to_coeff) {
     CHECK(RefIsPositive(entry.first));
     ct->mutable_linear()->add_vars(entry.first);
     ct->mutable_linear()->add_coeffs(entry.second / gcd);
+  }
+  if (gcd > 1) {
+    rhs = InverseMultiplicationOfSortedDisjointIntervals(rhs, gcd);
+    ct->mutable_linear()->clear_domain();
+    for (const auto& i : rhs) {
+      ct->mutable_linear()->add_domain(i.start);
+      ct->mutable_linear()->add_domain(i.end);
+    }
   }
 
   // Empty constraint?
