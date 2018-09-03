@@ -428,22 +428,22 @@ $(OBJ_DIR)/sat_runner.$O: \
 ############################
 .PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
 test_cc_examples: cc
-	$(MAKE) rcc_golomb$E ARGS="--size=5"
-	$(MAKE) rcc_cvrptw$E
-	$(MAKE) rcc_flow_api$E
-	$(MAKE) rcc_linear_programming$E
-	$(MAKE) rcc_integer_programming$E
-	$(MAKE) rcc_tsp$E
-	$(MAKE) rcc_ac4r_table_test$E
-	$(MAKE) rcc_boolean_test$E
-	$(MAKE) rcc_bug_fz1$E
-	$(MAKE) rcc_cpp11_test$E
-	$(MAKE) rcc_forbidden_intervals_test$E
-	$(MAKE) rcc_gcc_test$E
-#	$(MAKE) rcc_issue173$E # error: too long
-	$(MAKE) rcc_issue57$E
-	$(MAKE) rcc_min_max_test$E
-	$(MAKE) rcc_visitor_test$E
+	$(MAKE) rcc_golomb ARGS="--size=5"
+	$(MAKE) rcc_cvrptw
+	$(MAKE) rcc_flow_api
+	$(MAKE) rcc_linear_programming
+	$(MAKE) rcc_integer_programming
+	$(MAKE) rcc_tsp
+	$(MAKE) rcc_ac4r_table_test
+	$(MAKE) rcc_boolean_test
+	$(MAKE) rcc_bug_fz1
+	$(MAKE) rcc_cpp11_test
+	$(MAKE) rcc_forbidden_intervals_test
+	$(MAKE) rcc_gcc_test
+#	$(MAKE) rcc_issue173 # error: too long
+	$(MAKE) rcc_issue57
+	$(MAKE) rcc_min_max_test
+	$(MAKE) rcc_visitor_test
 
 .PHONY: test_cc_samples # Build and Run all C++ Samples (located in ortools/*/samples)
 test_cc_samples: cc
