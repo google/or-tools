@@ -234,7 +234,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     FillLinearConstraintWithGivenDomain({rhs, rhs}, fz_ct, ct);
   } else if (fz_ct.type == "bool_lin_eq") {
     auto* arg = ct->mutable_linear();
-    std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
+    const std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
     for (int i = 0; i < vars.size(); ++i) {
       arg->add_vars(vars[i]);
       arg->add_coeffs(fz_ct.arguments[0].values[i]);

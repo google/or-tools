@@ -334,6 +334,53 @@ void ExpandIntMod(ConstraintProto* ct, ExpansionHelper* helper) {
   helper->statistics["kIntMod"]++;
 }
 
+void ExpandIntProdWithBoolean(int bool_ref, int int_ref, int product_ref,
+                              ExpansionHelper* helper) {
+  ConstraintProto* const one = helper->expanded_proto.add_constraints();
+  one->add_enforcement_literal(bool_ref);
+  one->mutable_linear()->add_vars(int_ref);
+  one->mutable_linear()->add_coeffs(1);
+  one->mutable_linear()->add_vars(product_ref);
+  one->mutable_linear()->add_coeffs(-1);
+  one->mutable_linear()->add_domain(0);
+  one->mutable_linear()->add_domain(0);
+
+  ConstraintProto* const zero = helper->expanded_proto.add_constraints();
+  zero->add_enforcement_literal(NegatedRef(bool_ref));
+  zero->mutable_linear()->add_vars(product_ref);
+  zero->mutable_linear()->add_coeffs(1);
+  zero->mutable_linear()->add_domain(0);
+  zero->mutable_linear()->add_domain(0);
+}
+
+void ExpandIntProd(ConstraintProto* ct, ExpansionHelper* helper) {
+  const IntegerArgumentProto& int_prod = ct->int_prod();
+  if (int_prod.vars_size() != 2) return;
+  const int a = int_prod.vars(0);
+  const int b = int_prod.vars(1);
+  const IntegerVariableProto& a_proto =
+      helper->expanded_proto.variables(PositiveRef(a));
+  const IntegerVariableProto& b_proto =
+      helper->expanded_proto.variables(PositiveRef(b));
+  const int p = int_prod.target();
+  const bool a_is_boolean = RefIsPositive(a) && a_proto.domain_size() == 2 &&
+                            a_proto.domain(0) == 0 && a_proto.domain(1) == 1;
+  const bool b_is_boolean = RefIsPositive(b) && b_proto.domain_size() == 2 &&
+                            b_proto.domain(0) == 0 && b_proto.domain(1) == 1;
+
+  // We expand if exactly one of {a, b} is Boolean. If both are Boolean, it
+  // will be presolved into a better version.
+  if (a_is_boolean && !b_is_boolean) {
+    ExpandIntProdWithBoolean(a, b, p, helper);
+    ct->Clear();
+    helper->statistics["kIntProd"]++;
+  } else if (b_is_boolean && !a_is_boolean) {
+    ExpandIntProdWithBoolean(b, a, p, helper);
+    ct->Clear();
+    helper->statistics["kIntProd"]++;
+  }
+}
+
 }  // namespace
 
 CpModelProto ExpandCpModel(const CpModelProto& initial_model) {
@@ -348,6 +395,9 @@ CpModelProto ExpandCpModel(const CpModelProto& initial_model) {
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
         ExpandIntMod(ct, &helper);
+        break;
+      case ConstraintProto::ConstraintCase::kIntProd:
+        ExpandIntProd(ct, &helper);
         break;
       default:
         break;

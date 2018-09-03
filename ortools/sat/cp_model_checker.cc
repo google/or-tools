@@ -358,13 +358,6 @@ class ConstraintChecker {
     for (int i = 0; i < num_variables; ++i) {
       sum += Value(ct.linear().vars(i)) * ct.linear().coeffs(i);
     }
-    if (!DomainInProtoContains(ct.linear(), sum)) {
-      for (int i = 0; i < num_variables; ++i) {
-        const int var = ct.linear().vars(i);
-        LOG(INFO) << "var#" << var << " = " << Value(var);
-      }
-      LOG(INFO) << ct.DebugString();
-    }
     return DomainInProtoContains(ct.linear(), sum);
   }
 

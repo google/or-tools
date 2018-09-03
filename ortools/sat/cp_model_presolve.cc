@@ -200,6 +200,24 @@ struct PresolveContext {
     }
   }
 
+  // Because we always replace equivalent literals before preprocessing a
+  // constraint, we should never run into a case where one of the literal is
+  // fixed but the other is not updated. So this can be called without the need
+  // to keep around the constraints that detected this relation.
+  void AddBooleanEqualityRelation(int ref_a, int ref_b) {
+    if (ref_a == ref_b) return;
+    if (ref_a == NegatedRef(ref_b)) {
+      is_unsat = true;
+      return;
+    }
+    if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
+      affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), 1, 0);
+      var_equiv_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), 1, 0);
+    } else {
+      affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), -1, 1);
+    }
+  }
+
   // This makes sure that the affine relation only uses one of the
   // representative from the var_equiv_relations.
   AffineRelation::Relation GetAffineRelation(int var) {
@@ -557,13 +575,12 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
 
   if (ct->int_prod().vars_size() == 2) {
-    const int a = ct->int_prod().vars(0);
-    const int b = ct->int_prod().vars(1);
+    int a = ct->int_prod().vars(0);
+    int b = ct->int_prod().vars(1);
     const int p = ct->int_prod().target();
-    const bool a_is_boolean = context->MinOf(a) == 0 && context->MaxOf(a) == 1;
-    const bool b_is_boolean = context->MinOf(b) == 0 && context->MaxOf(b) == 1;
 
-    if (context->MinOf(a) == context->MaxOf(a)) {
+    if (context->IsFixed(b)) std::swap(a, b);
+    if (context->IsFixed(a)) {
       ConstraintProto* const lin = context->working_model->add_constraints();
       lin->mutable_linear()->add_vars(b);
       lin->mutable_linear()->add_coeffs(context->MinOf(a));
@@ -573,57 +590,6 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
       lin->mutable_linear()->add_domain(0);
 
       context->UpdateRuleStats("int_prod: linearize product by constant.");
-      return RemoveConstraint(ct, context);
-    } else if (context->MinOf(b) == context->MaxOf(b)) {
-      ConstraintProto* const lin = context->working_model->add_constraints();
-      lin->mutable_linear()->add_vars(a);
-      lin->mutable_linear()->add_coeffs(context->MinOf(b));
-      lin->mutable_linear()->add_vars(p);
-      lin->mutable_linear()->add_coeffs(-1);
-      lin->mutable_linear()->add_domain(0);
-      lin->mutable_linear()->add_domain(0);
-
-      context->UpdateRuleStats("int_prod: linearize product by constant.");
-      return RemoveConstraint(ct, context);
-    }
-
-    if (a_is_boolean && !b_is_boolean) {
-      ConstraintProto* const one = context->working_model->add_constraints();
-      one->add_enforcement_literal(a);
-      one->mutable_linear()->add_vars(b);
-      one->mutable_linear()->add_coeffs(1);
-      one->mutable_linear()->add_vars(p);
-      one->mutable_linear()->add_coeffs(-1);
-      one->mutable_linear()->add_domain(0);
-      one->mutable_linear()->add_domain(0);
-
-      ConstraintProto* const zero = context->working_model->add_constraints();
-      zero->add_enforcement_literal(NegatedRef(a));
-      zero->mutable_linear()->add_vars(p);
-      zero->mutable_linear()->add_coeffs(1);
-      zero->mutable_linear()->add_domain(0);
-      zero->mutable_linear()->add_domain(0);
-
-      context->UpdateRuleStats("int_prod: expand product by boolean.");
-      return RemoveConstraint(ct, context);
-    } else if (b_is_boolean && !a_is_boolean) {
-      ConstraintProto* const one = context->working_model->add_constraints();
-      one->add_enforcement_literal(b);
-      one->mutable_linear()->add_vars(a);
-      one->mutable_linear()->add_coeffs(1);
-      one->mutable_linear()->add_vars(p);
-      one->mutable_linear()->add_coeffs(-1);
-      one->mutable_linear()->add_domain(0);
-      one->mutable_linear()->add_domain(0);
-
-      ConstraintProto* const zero = context->working_model->add_constraints();
-      zero->add_enforcement_literal(NegatedRef(b));
-      zero->mutable_linear()->add_vars(p);
-      zero->mutable_linear()->add_coeffs(1);
-      zero->mutable_linear()->add_domain(0);
-      zero->mutable_linear()->add_domain(0);
-
-      context->UpdateRuleStats("int_prod: expand product by boolean.");
       return RemoveConstraint(ct, context);
     }
   }
@@ -852,20 +818,15 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     rhs = AdditionOfSortedDisjointIntervals(
         rhs, {{-sum_of_fixed_terms, -sum_of_fixed_terms}});
   }
+  if (gcd > 1) {
+    rhs = InverseMultiplicationOfSortedDisjointIntervals(rhs, gcd);
+  }
   ct->mutable_linear()->clear_vars();
   ct->mutable_linear()->clear_coeffs();
   for (const auto entry : var_to_coeff) {
     CHECK(RefIsPositive(entry.first));
     ct->mutable_linear()->add_vars(entry.first);
     ct->mutable_linear()->add_coeffs(entry.second / gcd);
-  }
-  if (gcd > 1) {
-    rhs = InverseMultiplicationOfSortedDisjointIntervals(rhs, gcd);
-    ct->mutable_linear()->clear_domain();
-    for (const auto& i : rhs) {
-      ct->mutable_linear()->add_domain(i.start);
-      ct->mutable_linear()->add_domain(i.end);
-    }
   }
 
   // Empty constraint?
@@ -1509,6 +1470,46 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
     proto.set_heads(new_size, proto.heads(i));
     proto.set_literals(new_size, proto.literals(i));
     ++new_size;
+  }
+
+  // Look for in/out-degree of two, this will imply that one of the indicator
+  // Boolean is equal to the negation of the other.
+  for (int i = 0; i < num_nodes; ++i) {
+    if (new_in_degree[i] == 2) {
+      std::vector<int> literals;
+      for (const int ref : incoming_arcs[i]) {
+        if (context->LiteralIsFalse(ref)) continue;
+        if (context->LiteralIsTrue(ref)) {
+          literals.clear();
+          break;
+        }
+        literals.push_back(ref);
+      }
+      if (literals.size() == 2) {
+        if (PositiveRef(literals[0]) != PositiveRef(literals[1])) {
+          context->UpdateRuleStats("circuit: degree 2");
+        }
+        context->AddBooleanEqualityRelation(literals[0],
+                                            NegatedRef(literals[1]));
+      }
+    }
+    if (new_out_degree[i] == 2) {
+      std::vector<int> literals;
+      for (const int ref : outgoing_arcs[i]) {
+        if (context->LiteralIsFalse(ref)) continue;
+        if (context->LiteralIsTrue(ref)) {
+          literals.clear();
+          break;
+        }
+      }
+      if (literals.size() == 2) {
+        if (PositiveRef(literals[0]) != PositiveRef(literals[1])) {
+          context->UpdateRuleStats("circuit: degree 2");
+        }
+        context->AddBooleanEqualityRelation(literals[0],
+                                            NegatedRef(literals[1]));
+      }
+    }
   }
 
   // Detect infeasibility due to a node having no more incoming or outgoing arc.
