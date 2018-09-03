@@ -650,6 +650,7 @@ $(OBJ_DIR)/util/time_limit.$O: \
  $(SRC_DIR)/ortools/base/join.h \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/port.h \
  $(SRC_DIR)/ortools/base/time_support.h \
  $(SRC_DIR)/ortools/base/timer.h \
@@ -900,7 +901,6 @@ $(OBJ_DIR)/lp_data/lp_decomposer.$O: \
  $(SRC_DIR)/ortools/lp_data/lp_decomposer.cc \
  $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
  $(SRC_DIR)/ortools/base/mutex.h \
- $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
  $(SRC_DIR)/ortools/lp_data/lp_decomposer.h \
  $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -983,7 +983,6 @@ $(SRC_DIR)/ortools/lp_data/model_reader.cc: ;
 $(OBJ_DIR)/lp_data/model_reader.$O: \
  $(SRC_DIR)/ortools/lp_data/model_reader.cc \
  $(SRC_DIR)/ortools/base/file.h \
- $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
  $(SRC_DIR)/ortools/lp_data/model_reader.h \
@@ -1007,12 +1006,12 @@ $(OBJ_DIR)/lp_data/mps_reader.$O: \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/macros.h \
  $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/match.h \
  $(SRC_DIR)/ortools/base/numbers.h \
  $(SRC_DIR)/ortools/base/split.h \
  $(SRC_DIR)/ortools/base/status.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/base/strutil.h \
- $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
  $(SRC_DIR)/ortools/lp_data/lp_print_utils.h \
  $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -1024,7 +1023,6 @@ $(SRC_DIR)/ortools/lp_data/proto_utils.cc: ;
 
 $(OBJ_DIR)/lp_data/proto_utils.$O: \
  $(SRC_DIR)/ortools/lp_data/proto_utils.cc \
- $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
  $(SRC_DIR)/ortools/lp_data/proto_utils.h \
@@ -1201,6 +1199,7 @@ $(OBJ_DIR)/glop/lp_solver.$O: \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/base/strutil.h \
  $(SRC_DIR)/ortools/base/timer.h \
@@ -1697,6 +1696,7 @@ $(OBJ_DIR)/algorithms/find_graph_symmetries.$O: \
  $(SRC_DIR)/ortools/base/canonical_errors.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/status.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/base/time_support.h \
@@ -1725,6 +1725,7 @@ $(OBJ_DIR)/algorithms/knapsack_solver.$O: \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
  $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
  $(SRC_DIR)/ortools/util/bitset.h \
@@ -2384,7 +2385,6 @@ $(OBJ_DIR)/sat/integer.$O: \
  $(SRC_DIR)/ortools/sat/integer.h \
  $(SRC_DIR)/ortools/sat/model.h \
  $(SRC_DIR)/ortools/sat/sat_base.h \
- $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
  $(SRC_DIR)/ortools/sat/sat_solver.h \
  $(SRC_DIR)/ortools/util/bitset.h \
  $(SRC_DIR)/ortools/util/rev.h \
@@ -2705,6 +2705,7 @@ $(OBJ_DIR)/sat/simplification.$O: \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/random.h \
  $(SRC_DIR)/ortools/base/span.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
@@ -2945,6 +2946,7 @@ $(OBJ_DIR)/bop/bop_fs.$O: \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/random.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
@@ -2979,6 +2981,7 @@ $(OBJ_DIR)/bop/bop_lns.$O: \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/random.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
@@ -3005,6 +3008,7 @@ $(SRC_DIR)/ortools/bop/bop_ls.cc: ;
 $(OBJ_DIR)/bop/bop_ls.$O: \
  $(SRC_DIR)/ortools/bop/bop_ls.cc \
  $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/random.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/bop/bop_base.h \
@@ -3022,6 +3026,7 @@ $(SRC_DIR)/ortools/bop/bop_portfolio.cc: ;
 
 $(OBJ_DIR)/bop/bop_portfolio.$O: \
  $(SRC_DIR)/ortools/bop/bop_portfolio.cc \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/bop/bop_base.h \
@@ -3225,6 +3230,7 @@ $(OBJ_DIR)/linear_solver/clp_interface.$O: \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/port.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/base/strutil.h \
@@ -3283,6 +3289,7 @@ $(OBJ_DIR)/linear_solver/glpk_interface.$O: \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/port.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/base/timer.h \
