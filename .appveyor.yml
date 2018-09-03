@@ -10,12 +10,27 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     VS: 2017
     BUILDER: make
-    LANGUAGE: all
+    LANGUAGE: cc
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    VS: 2017
+    BUILDER: make
+    LANGUAGE: python
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    VS: 2017
+    BUILDER: make
+    LANGUAGE: java
+
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    VS: 2017
+    BUILDER: make
+    LANGUAGE: dotnet
 
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     VS: 2015
     BUILDER: make
-    LANGUAGE: all
+    LANGUAGE: cc
 # CMake
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
     VS: 2017
@@ -54,7 +69,7 @@ build_script:
   - if "%BUILDER%"=="make" tools\make.exe help_%LANGUAGE%
   - if "%BUILDER%"=="make" tools\make.exe %LANGUAGE%
   - if "%BUILDER%"=="make" tools\make.exe test_%LANGUAGE%
-  - if "%LANGUAGE%"=="all" tools\make.exe test_fz
+  - if "%LANGUAGE%"=="cc" tools\make.exe test_fz
 
 test_script:
   - if "%BUILDER%"=="cmake" cmake --build build --config Release --target RUN_TESTS
