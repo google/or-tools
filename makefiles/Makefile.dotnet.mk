@@ -38,7 +38,6 @@ dotnet:
 test_dotnet: dotnet
 else
 dotnet: \
- ortoolslibs \
  dotnet_csharp \
  dotnet_fsharp
 
