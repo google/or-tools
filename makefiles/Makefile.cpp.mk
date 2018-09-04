@@ -35,9 +35,10 @@ cc:
 test_cc: cc
 test_fz: cc
 else
-cc: ortoolslibs ccexe
+cc: ortoolslibs
 
 test_cc: \
+ ccexe \
  test_cc_samples \
  test_cc_examples
 test_fz: \
