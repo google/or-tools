@@ -110,6 +110,12 @@ ifndef WINDOWS_GUROBI_DIR
 endif
 ifndef WINDOWS_SCIP_DIR
 	@echo SCIP: not found
+else
+  ifeq ($(wildcard $(WINDOWS_SCIP_DIR)/include/scip/scip.h),)
+	$(error Third party SCIP files was not found! please check the path given to WINDOWS_SCIP_DIR)
+  else
+	@echo SCIP: found
+  endif
 endif
 	$(TOUCH) dependencies\check.log
 
