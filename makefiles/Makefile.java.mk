@@ -14,62 +14,6 @@ JAVA_OR_TOOLS_LIBS= $(LIB_DIR)/com.google.ortools$J
 JAVA_OR_TOOLS_NATIVE_LIBS := $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
 JAVAFLAGS = -Djava.library.path=$(LIB_DIR)
 
-JAR = \
-$(LIB_DIR)/AllDifferentExcept0$J \
-$(LIB_DIR)/AllInterval$J \
-$(LIB_DIR)/CapacitatedVehicleRoutingProblemWithTimeWindows$J \
-$(LIB_DIR)/Circuit$J \
-$(LIB_DIR)/CoinsGrid$J \
-$(LIB_DIR)/CoinsGridMIP$J \
-$(LIB_DIR)/ColoringMIP$J \
-$(LIB_DIR)/CoveringOpl$J \
-$(LIB_DIR)/Crossword$J \
-$(LIB_DIR)/DeBruijn$J \
-$(LIB_DIR)/Diet$J \
-$(LIB_DIR)/DietMIP$J \
-$(LIB_DIR)/DivisibleBy9Through1$J \
-$(LIB_DIR)/FlowExample$J \
-$(LIB_DIR)/GolombRuler$J \
-$(LIB_DIR)/IntegerProgramming$J \
-$(LIB_DIR)/Issue173$J \
-$(LIB_DIR)/Knapsack$J \
-$(LIB_DIR)/KnapsackMIP$J \
-$(LIB_DIR)/LeastDiff$J \
-$(LIB_DIR)/LinearAssignmentAPI$J \
-$(LIB_DIR)/LinearProgramming$J \
-$(LIB_DIR)/LsApi$J \
-$(LIB_DIR)/MagicSquare$J \
-$(LIB_DIR)/Map2$J \
-$(LIB_DIR)/Map$J \
-$(LIB_DIR)/Minesweeper$J \
-$(LIB_DIR)/MultiThreadTest$J \
-$(LIB_DIR)/NQueens2$J \
-$(LIB_DIR)/NQueens$J \
-$(LIB_DIR)/Partition$J \
-$(LIB_DIR)/QuasigroupCompletion$J \
-$(LIB_DIR)/RabbitsPheasants$J \
-$(LIB_DIR)/SendMoreMoney2$J \
-$(LIB_DIR)/SendMoreMoney$J \
-$(LIB_DIR)/SendMostMoney$J \
-$(LIB_DIR)/Seseman$J \
-$(LIB_DIR)/SetCovering2$J \
-$(LIB_DIR)/SetCovering3$J \
-$(LIB_DIR)/SetCovering4$J \
-$(LIB_DIR)/SetCoveringDeployment$J \
-$(LIB_DIR)/SetCovering$J \
-$(LIB_DIR)/SimpleRoutingTest$J \
-$(LIB_DIR)/StableMarriage$J \
-$(LIB_DIR)/StiglerMIP$J \
-$(LIB_DIR)/Strimko2$J \
-$(LIB_DIR)/Sudoku$J \
-$(LIB_DIR)/SurvoPuzzle$J \
-$(LIB_DIR)/ToNum$J \
-$(LIB_DIR)/Tsp$J \
-$(LIB_DIR)/Vrp$J \
-$(LIB_DIR)/WhoKilledAgatha$J \
-$(LIB_DIR)/Xkcd$J \
-$(LIB_DIR)/YoungTableaux$J
-
 HAS_JAVA = true
 ifndef JAVAC_BIN
 HAS_JAVA =
