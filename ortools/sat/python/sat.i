@@ -67,6 +67,8 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SolutionCallback::ObjectiveValue;
 %feature("nodirector") operations_research::sat::SolutionCallback::ObjectiveValue;
 %unignore operations_research::sat::SolutionCallback::OnSolutionCallback;
+%unignore operations_research::sat::SolutionCallback::Response;
+%feature("nodirector") operations_research::sat::SolutionCallback::Response;
 %unignore operations_research::sat::SolutionCallback::SolutionBooleanValue;
 %feature("nodirector") operations_research::sat::SolutionCallback::SolutionBooleanValue;
 %unignore operations_research::sat::SolutionCallback::SolutionIntegerValue;

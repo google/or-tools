@@ -369,6 +369,7 @@ void ModelWithMapping::ExtractEncoding(const CpModelProto& model_proto) {
     const sat::Literal enforcement_literal = Literal(ct.enforcement_literal(0));
     const int ref = ct.linear().vars(0);
     const int var = PositiveRef(ref);
+    const auto domain = ReadDomain(model_proto.variables(var));
     const auto rhs = InverseMultiplicationOfSortedDisjointIntervals(
         ReadDomain(ct.linear()),
         ct.linear().coeffs(0) * (RefIsPositive(ref) ? 1 : -1));
@@ -376,11 +377,13 @@ void ModelWithMapping::ExtractEncoding(const CpModelProto& model_proto) {
     // Detect enforcement_literal => (var >= value or var <= value).
     if (rhs.size() == 1) {
       // We relax by 1 because we may take the negation of the rhs above.
-      if (rhs[0].end >= kint64max - 1) {
+      if (rhs[0].end >= domain.back().end &&
+          rhs[0].start > domain.front().start) {
         inequalities.push_back({&ct, enforcement_literal,
                                 IntegerLiteral::GreaterOrEqual(
                                     Integer(var), IntegerValue(rhs[0].start))});
-      } else if (rhs[0].start <= kint64min + 1) {
+      } else if (rhs[0].start <= domain.front().start &&
+                 rhs[0].end < domain.back().end) {
         inequalities.push_back({&ct, enforcement_literal,
                                 IntegerLiteral::LowerOrEqual(
                                     Integer(var), IntegerValue(rhs[0].end))});
@@ -392,7 +395,6 @@ void ModelWithMapping::ExtractEncoding(const CpModelProto& model_proto) {
     // Note that for domain with 2 values like [0, 1], we will detect both == 0
     // and != 1. Similarly, for a domain in [min, max], we should both detect
     // (== min) and (<= min), and both detect (== max) and (>= max).
-    const auto domain = ReadDomain(model_proto.variables(var));
     {
       const auto inter = IntersectionOfSortedDisjointIntervals(domain, rhs);
       if (inter.size() == 1 && inter[0].start == inter[0].end) {
@@ -1436,10 +1438,12 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   int num_constants = 0;
+  int num_optionals = 0;
   std::set<int64> constant_values;
   std::map<std::vector<ClosedInterval>, int, ExactVectorOfDomainComparator>
       num_vars_per_domains;
   for (const IntegerVariableProto& var : model_proto.variables()) {
+    if (!var.enforcement_literal().empty()) ++num_optionals;
     if (var.domain_size() == 2 && var.domain(0) == var.domain(1)) {
       ++num_constants;
       constant_values.insert(var.domain(0));
@@ -1474,8 +1478,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
           ? absl::StrCat(" (", model_proto.objective().vars_size(),
                          " in objective)")
           : "";
+  const std::string optional_string =
+      num_optionals == 0 ? "" : absl::StrCat(" (", num_optionals, " optional)");
   absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
-                  objective_string, "\n");
+                  objective_string, optional_string, "\n");
   if (num_vars_per_domains.size() < 50) {
     for (const auto& entry : num_vars_per_domains) {
       const std::string temp = absl::StrCat(

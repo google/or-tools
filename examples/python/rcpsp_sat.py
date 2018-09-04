@@ -255,7 +255,7 @@ def SolveRcpsp(problem, proto_file):
   # Solve model.
   solver = cp_model.CpSolver()
   solution_printer = SolutionPrinter()
-  status = solver.SolveWithSolutionObserver(model, solution_printer)
+  status = solver.SolveWithSolutionCallback(model, solution_printer)
   print('Solve status: %s' % solver.StatusName(status))
   print('Optimal objective value: %i' % solver.ObjectiveValue())
   print('Statistics')

@@ -151,7 +151,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 
 solver = cp_model.CpSolver()
 solution_printer = SolutionPrinter()
-status = solver.SolveWithSolutionObserver(model, solution_printer)
+status = solver.SolveWithSolutionCallback(model, solution_printer)
 
 if status == cp_model.OPTIMAL:
     print('Optimal epsilon: %i' % solver.ObjectiveValue())

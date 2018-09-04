@@ -196,7 +196,7 @@ def SolveWithDiscreteModel():
   ### Solve model.
   solver = cp_model.CpSolver()
   solution_printer = WeddingChartPrinter(seats, names, num_tables, num_guests)
-  status = solver.SolveWithSolutionObserver(model, solution_printer)
+  status = solver.SolveWithSolutionCallback(model, solution_printer)
 
   print("Statistics")
   print("  - conflicts    : %i" % solver.NumConflicts())

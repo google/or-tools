@@ -1309,16 +1309,20 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     pywrapsat.SolutionCallback.__init__(self)
 
   def BooleanValue(self, lit):
+    if not self.Response().solution:
+      raise RuntimeError('Solve() has not be called.')
     if isinstance(lit, numbers.Integral):
       return bool(lit)
     elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
       index = lit.Index()
       return self.SolutionBooleanValue(index)
     else:
-      raise TypeError('Cannot interpret %s as a boolean expression.' % literal)
+      raise TypeError('Cannot interpret %s as a boolean expression.' % lit)
 
   def Value(self, expression):
     """Returns the value of an integer expression."""
+    if not self.Response().solution:
+      raise RuntimeError('Solve() has not be called.')
     if isinstance(expression, numbers.Integral):
       return expression
     value = 0
@@ -1352,7 +1356,7 @@ class CpSolver(object):
         model.ModelProto(), self.parameters)
     return self.__solution.status
 
-  def SolveWithSolutionObserver(self, model, callback):
+  def SolveWithSolutionCallback(self, model, callback):
     """Solves a problem and pass each solution found to the callback."""
     self.__solution = (
         pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(

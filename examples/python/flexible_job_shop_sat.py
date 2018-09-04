@@ -145,7 +145,7 @@ model.Minimize(makespan)
 # Solve model.
 solver = cp_model.CpSolver()
 solution_printer = SolutionPrinter()
-status = solver.SolveWithSolutionObserver(model, solution_printer)
+status = solver.SolveWithSolutionCallback(model, solution_printer)
 
 # Print final solution.
 for job_id in all_jobs:

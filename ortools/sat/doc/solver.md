@@ -426,7 +426,7 @@ def MinimalCpSatPrintIntermediateSolutions():
   # Creates a solver and solves.
   solver = cp_model.CpSolver()
   solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
-  status = solver.SolveWithSolutionObserver(model, solution_printer)
+  status = solver.SolveWithSolutionCallback(model, solution_printer)
 
   print('Status = %s' % solver.StatusName(status))
   print('Number of solutions found: %i' % solution_printer.SolutionCount())

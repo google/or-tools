@@ -617,7 +617,7 @@ def SteelMillSlabWithValidSlabs(problem, break_symmetries, output_proto):
   ### Solve model.
   solver = cp_model.CpSolver()
   solution_printer = SteelMillSlabSolutionPrinter(orders, assign, loads, losses)
-  status = solver.SolveWithSolutionObserver(model, solution_printer)
+  status = solver.SolveWithSolutionCallback(model, solution_printer)
 
   ### Output the solution.
   if status == cp_model.OPTIMAL:
@@ -689,7 +689,7 @@ def SteelMillSlabWithColumnGeneration(problem, output_proto):
   ### Solve model.
   solver = cp_model.CpSolver()
   solution_printer = SolutionPrinterWithObjective()
-  status = solver.SolveWithSolutionObserver(model, solution_printer)
+  status = solver.SolveWithSolutionCallback(model, solution_printer)
 
   ### Output the solution.
   if status == cp_model.OPTIMAL:
