@@ -23,7 +23,6 @@ endif
 .PHONY: test_csharp # Test C# OR-Tools using various examples.
 ifneq ($(CSHARP_EXECUTABLE),)
 csharp: \
-	ortoolslibs \
 	csharpsolution \
 	csharportools \
 	csharpexe
@@ -230,7 +229,7 @@ netstandard: clean_dotnet_generated netstandardortools
 BUILT_LANGUAGES +=, .NETSTANDARD
 endif
 
-netstandardortools: ortoolslibs $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
+netstandardortools: $(BIN_DIR)/$(NETSTANDARD_ORTOOLS_DLL_NAME)$D $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$D
 
 $(NETSTANDARD_OBJ_DIR)/AssemblyInfo.cs: \
 	$(CLR_KEYFILE) \

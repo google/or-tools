@@ -18,6 +18,10 @@ else
   prefix ?= /usr/local
 endif
 
+# All libraries and dependecies
+OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
+OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
+
 HAS_CCC = true
 ifndef CCC
 HAS_CCC =
@@ -35,19 +39,16 @@ cc:
 test_cc: cc
 test_fz: cc
 else
-cc: ortoolslibs ccexe
+cc: $(OR_TOOLS_LIBS)
 
 test_cc: \
+ ccexe \
  test_cc_samples \
  test_cc_examples
 test_fz: \
  test_fz_examples
 BUILT_LANGUAGES += C++
 endif
-
-# All libraries and dependecies
-OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
-OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
 
 $(GEN_DIR):
 	$(MKDIR_P) $(GEN_PATH)
@@ -139,11 +140,11 @@ $(OBJ_DIR)/swig: | $(OBJ_DIR)
 ###############
 ##  CPP LIB  ##
 ###############
-ortoolslibs: third_party_check $(OR_TOOLS_LIBS)
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 # OR Tools unique library.
 $(OR_TOOLS_LIBS): \
+ third_party_check \
  $(BASE_LIB_OBJS) \
  $(PORT_LIB_OBJS) \
  $(UTIL_LIB_OBJS) \
@@ -591,7 +592,7 @@ install_ortools_dirs: install_dirs
 install_cc: install_libortools install_third_party install_doc
 
 .PHONY: install_libortools
-install_libortools: ortoolslibs install_ortools_dirs
+install_libortools: $(OR_TOOLS_LIBS) install_ortools_dirs
 	$(COPY) LICENSE-2.0.txt "$(DESTDIR)$(prefix)"
 	$(COPY) ortools$Salgorithms$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
 	$(COPY) ortools$Sbase$S*.h "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbase"

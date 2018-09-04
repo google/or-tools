@@ -41,7 +41,6 @@ endif
 .PHONY: test_python # Test Python OR-Tools using various examples.
 ifneq ($(PYTHON_EXECUTABLE),)
 python: \
- ortoolslibs \
  install_python_modules \
  pyinit \
  pyalgorithms \
