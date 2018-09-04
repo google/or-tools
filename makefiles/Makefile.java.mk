@@ -93,7 +93,7 @@ java:
 	$(warning Cannot find 'java' command which is needed for build. Please make sure it is installed and in system path. Check Makefile.local for more information.)
 test_java: java
 else
-java: ortoolslibs $(JAVA_OR_TOOLS_LIBS) $(JAR)
+java: $(JAVA_OR_TOOLS_LIBS)
 test_java: \
  test_java_samples \
  test_java_examples
@@ -241,12 +241,12 @@ $(OBJ_DIR)/swig/sat_java_wrap.$O: \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_java_wrap.$O
 
 $(JAVA_OR_TOOLS_NATIVE_LIBS): \
+ $(OR_TOOLS_LIBS) \
  $(OBJ_DIR)/swig/constraint_solver_java_wrap.$O \
  $(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O \
  $(OBJ_DIR)/swig/graph_java_wrap.$O \
  $(OBJ_DIR)/swig/linear_solver_java_wrap.$O \
- $(OBJ_DIR)/swig/sat_java_wrap.$O \
- $(OR_TOOLS_LIBS)
+ $(OBJ_DIR)/swig/sat_java_wrap.$O
 	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT) \
  $(OBJ_DIR)$Sswig$Sconstraint_solver_java_wrap.$O \
  $(OBJ_DIR)$Sswig$Sknapsack_solver_java_wrap.$O \
