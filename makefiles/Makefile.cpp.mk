@@ -144,7 +144,7 @@ include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 # OR Tools unique library.
 $(OR_TOOLS_LIBS): \
- third_party_check \
+ dependencies/check.log \
  $(BASE_LIB_OBJS) \
  $(PORT_LIB_OBJS) \
  $(UTIL_LIB_OBJS) \

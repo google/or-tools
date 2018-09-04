@@ -7,7 +7,7 @@ dependencies/archives/
 
 dependencies/install/
 dependencies/sources/
-
+dependencies/check.log
 
 or-tools*.tar.gz
 or-tools*.zip

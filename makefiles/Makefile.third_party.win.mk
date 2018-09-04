@@ -48,10 +48,12 @@ TSVNCACHE_EXE = TSVNCache.exe
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
-third_party: makefile_third_party build_third_party
+third_party: build_third_party
 
-.PHONY: third_party_check # Check if "make third_party" have been run or not
-third_party_check:
+.PHONY: third_party_check # Check if third parties are all found
+third_party_check: dependencies/check.log
+
+dependencies/check.log: Makefile.local
 ifeq ($(wildcard $(WINDOWS_ZLIB_DIR)/include/zlib.h),)
 	$(error Third party ZLIB files was not found! did you run 'make third_party' or set WINDOWS_ZLIB_DIR ?)
 else
@@ -109,9 +111,11 @@ endif
 ifndef WINDOWS_SCIP_DIR
 	@echo SCIP: not found
 endif
+	$(TOUCH) dependencies\check.log
 
 .PHONY: build_third_party
 build_third_party: \
+ Makefile.local \
  archives_directory \
  install_deps_directories \
  install_zlib \
@@ -158,6 +162,26 @@ dependencies/install/include: dependencies/install
 
 dependencies/install/include/coin: dependencies/install/include
 	$(MKDIR_P) dependencies$Sinstall$Sinclude$Scoin
+
+######################
+##  Makefile.local  ##
+######################
+# Make sure that local file lands correctly across platforms
+Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
+	-$(DEL) Makefile.local
+	@echo $(SELECTED_PATH_TO_JDK)>> Makefile.local
+	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_SCIP_DIR to point to a compiled version of SCIP to use it >> Makefile.local
+	@echo #   e.g.: WINDOWS_SCIP_DIR = "relative_path/to/scip-4.0.0" >> Makefile.local
+	@echo # See instructions here: >> Makefile.local
+	@echo #   http://or-tools.blogspot.com/2017/03/changing-way-we-link-with-scip.html >> Makefile.local
+	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME, WINDOWS_GFLAGS_DIR, >> Makefile.local
+	@echo # WINDOWS_GLOG_DIR, WINDOWS_PROTOBUF_DIR, WINDOWS_SWIG_BINARY, >> Makefile.local
+	@echo # WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
+	@echo #   e.g.: WINDOWS_GFLAGS_DIR = "relative_path/to/gflags/dir" >> Makefile.local
 
 ############
 ##  ZLIB  ##
@@ -431,6 +455,7 @@ remove_readonly_svn_attribs: kill_tortoisesvn_cache
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) Makefile.local
+	-$(DEL) dependencies\check.log
 	-$(DEL) dependencies\archives\swigwin*.zip
 	-$(DEL) dependencies\archives\Cbc*
 	-$(DEL) dependencies\archives\gflags*.zip
@@ -448,27 +473,6 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DELREC) dependencies\sources\glpk*
 	-$(DELREC) dependencies\sources\sparsehash*
 	-$(DELREC) dependencies\install
-
-# Create Makefile.local
-.PHONY: makefile_third_party
-makefile_third_party: Makefile.local
-
-# Make sure that local file lands correctly across platforms
-Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
-	-$(DEL) Makefile.local
-	@echo $(SELECTED_PATH_TO_JDK)>> Makefile.local
-	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define WINDOWS_SCIP_DIR to point to a compiled version of SCIP to use it >> Makefile.local
-	@echo #   e.g.: WINDOWS_SCIP_DIR = "relative_path/to/scip-4.0.0" >> Makefile.local
-	@echo # See instructions here: >> Makefile.local
-	@echo #   http://or-tools.blogspot.com/2017/03/changing-way-we-link-with-scip.html >> Makefile.local
-	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME, WINDOWS_GFLAGS_DIR, >> Makefile.local
-	@echo # WINDOWS_GLOG_DIR, WINDOWS_PROTOBUF_DIR, WINDOWS_SWIG_BINARY, >> Makefile.local
-	@echo # WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
-	@echo #   e.g.: WINDOWS_GFLAGS_DIR = "relative_path/to/gflags/dir" >> Makefile.local
 
 .PHONY: detect_third_party # Show variables used to find third party
 detect_third_party:
