@@ -173,6 +173,10 @@ $(OR_TOOLS_LIBS): \
  $(CP_LIB_OBJS) \
  $(DEPENDENCIES_LNK) \
  $(LDFLAGS)
+ifdef WINDOWS_SCIP_DIR
+	$(COPY) $(WINDOWS_SCIP_DIR)$Sbin$Sscip.dll $(BIN_DIR)
+endif
+
 
 # Specific libraries for examples, and flatzinc.
 CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
@@ -571,6 +575,9 @@ clean_cc:
 	-$(DEL) $(BIN_DIR)$S*.lib
 	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
 	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
+ifdef WINDOWS_SCIP_DIR
+	-$(DEL) $(BIN_DIR)$Sscip.dll
+endif
 
 .PHONY: clean_compat
 clean_compat:

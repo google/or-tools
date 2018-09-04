@@ -111,10 +111,12 @@ STATIC_GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
 endif
 # This is needed to find SCIP include files and libraries.
 ifdef WINDOWS_SCIP_DIR
-  SCIP_INC = /I$(WINDOWS_SCIP_DIR)\\include /DUSE_SCIP
-  SCIP_SWIG = -I$(WINDOWS_SCIP_DIR)/include -DUSE_SCIP
-  STATIC_SCIP_LNK = $(WINDOWS_SCIP_DIR)\\libscipopt.lib
-  DYNAMIC_SCIP_LNK = $(WINDOWS_SCIP_DIR)\\libscipopt.lib
+  SCIP_INC = /I"$(WINDOWS_SCIP_DIR)\\include" /DUSE_SCIP
+  SCIP_SWIG = -I"$(WINDOWS_SCIP_DIR)/include" -DUSE_SCIP
+  STATIC_SCIP_LNK = \
+ "$(WINDOWS_SCIP_DIR)\\lib\\scip.lib" \
+ "$(WINDOWS_SCIP_DIR)\\lib\\soplex.lib" /ignore:4006
+  DYNAMIC_SCIP_LNK = $(STATIC_SCIP_LNK)
 endif
 # This is needed to find CPLEX include files and libraries.
 ifdef WINDOWS_CPLEX_DIR
