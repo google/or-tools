@@ -51,7 +51,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     return self.__solution_count
 
 
-def main(():
+def main():
   # Create the model.
   model = cp_model.CpModel()
 
