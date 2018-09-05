@@ -10,6 +10,7 @@ by type:
 -   [channeling constraints](channeling.md)
 -   [scheduling](scheduling.md)
 -   [Using the CP-SAT solver](solver.md)
+-   [Reference manual for the CpModel and CpSolver classes](reference.md)
 
 Code samples are given in C++ and python. Each language have different
 requirements for the code samples.
