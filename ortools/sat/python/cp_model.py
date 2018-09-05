@@ -151,14 +151,21 @@ def ShortName(model, i):
 class IntegerExpression(object):
   """Holds an integer expression.
 
-
   An integer expressiom regroups linear expressions build from integer
   constants and integer variables.
 
   x + 2 * (y - z + 1) is such an integer expression, and can be written that way
   directly in python, provided x, y, and z are integer variables.
 
+  Integer expressions are used in two places in the cp_model.
+  Associated with equality, inequality operators, the create bounded expressions
+  that can be added to the model as in:
 
+    model.Add(x + 2 * y <= 5)
+    model.Add(sum(array_of_vars) == 5)
+
+  IntegerExpressions can also be used to specify the objective of the model.
+  model.Minimize(x + 2 * y + z)
   """
 
 
