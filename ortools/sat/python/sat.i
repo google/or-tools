@@ -83,3 +83,4 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
+

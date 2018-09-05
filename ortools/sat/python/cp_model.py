@@ -1305,9 +1305,6 @@ def EvaluateBooleanExpression(literal, solution):
 class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
   """Nicer solution callback that uses the CpSolver class."""
 
-  def __init__(self):
-    pywrapsat.SolutionCallback.__init__(self)
-
   def BooleanValue(self, lit):
     if not self.Response().solution:
       raise RuntimeError('Solve() has not be called.')
