@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #include <atomic>
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -62,9 +63,8 @@ void StopAfterNSolutions() {
   model.Add(NewSatParameters(parameters));
 
   // Create an atomic Boolean that will be periodically checked by the limit.
-  std::atomic<bool> stopped;
-  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-      &stopped);
+  std::atomic<bool> stopped(false);
+  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
 
   const int kSolutionLimit = 5;
   int num_solutions = 0;

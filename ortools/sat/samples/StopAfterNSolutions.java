@@ -20,8 +20,8 @@ public class StopAfterNSolutions {
 
   static { System.loadLibrary("jniortools"); }
 
-  static class VarArraySolutionPrinter extends CpSolverSolutionCallback {
-    public VarArraySolutionPrinter(IntVar[] variables, int limit) {
+  static class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
+    public VarArraySolutionPrinterWithLimit(IntVar[] variables, int limit) {
       variableArray = variables;
       solutionLimit = limit;
     }
@@ -62,7 +62,8 @@ public class StopAfterNSolutions {
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] {x, y, z}, 5);
+    VarArraySolutionPrinterWithLimit cb =
+        new VarArraySolutionPrinterWithLimit(new IntVar[] {x, y, z}, 5);
     solver.searchAllSolutions(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");

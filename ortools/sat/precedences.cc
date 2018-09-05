@@ -742,6 +742,7 @@ void PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(
     // TODO(user): Find more than one disjoint set of incoming arcs.
     // TODO(user): call MinimizeCoreWithPropagation() on the clause.
     solver->Backtrack(0);
+    if (solver->IsModelUnsat()) return;
     std::vector<Literal> clause;
     for (const ArcIndex arc_index : incoming_arcs_[target]) {
       const Literal literal = arcs_[arc_index].presence_literals.front();

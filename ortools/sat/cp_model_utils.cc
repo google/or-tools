@@ -72,7 +72,7 @@ void AddReferencesUsedByConstraint(const ConstraintProto& ct,
       AddIndices(ct.element().vars(), &output->variables);
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
-      AddIndices(ct.circuit().literals(), &output->variables);
+      AddIndices(ct.circuit().literals(), &output->literals);
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
       AddIndices(ct.routes().literals(), &output->literals);

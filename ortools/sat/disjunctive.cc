@@ -366,7 +366,11 @@ bool DisjunctiveOverloadChecker::Propagate() {
       helper_->AddStartMinReason(optional_task, window_start);
       helper_->AddEndMaxReason(optional_task, window_end);
 
-      helper_->PushTaskAbsence(optional_task);  // This never fails.
+      // If tasks shares the same presence literal, it is possible that we
+      // already pushed this task absence.
+      if (!helper_->IsAbsent(optional_task)) {
+        helper_->PushTaskAbsence(optional_task);  // This never fails.
+      }
       theta_tree_.RemoveEvent(optional_event);
     }
   }

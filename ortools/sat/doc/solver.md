@@ -918,10 +918,12 @@ public class CodeSamplesSat
 
 Sometimes, one can decide that the current solution is good enough.
 In this section, we will take the previous model, but only ask for the
-first 5 solutions of the model.
+first 5 solutions of the model. 
 
 ### Python code
 
+Stopping search is performed by calling CpSolverSolutionCallback.StopSearch()
+when called on a solution.
 
 ```python
 """Code sample that solves a model and displays a small number of solutions."""
@@ -980,14 +982,18 @@ StopAfterNSolutions()
 
 ### C++ code
 
-To search for all solution, a parameter of the sat solver must be changed.
+Stopping search is done by registering an atomic bool on the model-owned time
+limit, and setting this one to true.
 
 ```cpp
+
+#include <atomic>
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -1032,9 +1038,8 @@ void StopAfterNSolutions() {
   model.Add(NewSatParameters(parameters));
 
   // Create an atomic Boolean that will be periodically checked by the limit.
-  std::atomic<bool> stopped;
-  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-      &stopped);
+  std::atomic<bool> stopped(false);
+  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
 
   const int kSolutionLimit = 5;
   int num_solutions = 0;
@@ -1065,6 +1070,9 @@ int main() {
 
 ### Java code
 
+Stopping search is performed by calling CpSolverSolutionCallback.stopSearch()
+when called on a solution.
+
 ```java
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -1075,8 +1083,8 @@ public class StopAfterNSolutions {
 
   static { System.loadLibrary("jniortools"); }
 
-  static class VarArraySolutionPrinter extends CpSolverSolutionCallback {
-    public VarArraySolutionPrinter(IntVar[] variables, int limit) {
+  static class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
+    public VarArraySolutionPrinterWithLimit(IntVar[] variables, int limit) {
       variableArray = variables;
       solutionLimit = limit;
     }
@@ -1117,7 +1125,8 @@ public class StopAfterNSolutions {
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] {x, y, z}, 5);
+    VarArraySolutionPrinterWithLimit cb =
+        new VarArraySolutionPrinterWithLimit(new IntVar[] {x, y, z}, 5);
     solver.searchAllSolutions(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
@@ -1127,12 +1136,17 @@ public class StopAfterNSolutions {
 
 ### C\# code
 
+Stopping search is performed by calling CpSolverSolutionCallback.StopSearch()
+when called on a solution.
+
 ```cs
+
 using System;
 using Google.OrTools.Sat;
 
 public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback {
-  public VarArraySolutionPrinter(IntVar[] variables, int solution_limit) {
+  public VarArraySolutionPrinterWithLimit(IntVar[] variables,
+                                          int solution_limit) {
     variables_ = variables;
     solution_limit_ = solution_limit;
   }

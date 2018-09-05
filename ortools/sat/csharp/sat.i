@@ -52,28 +52,38 @@ PROTO2_RETURN(
 %unignore operations_research::sat::SatHelper;
 %unignore operations_research::sat::SatHelper::Solve;
 %unignore operations_research::sat::SatHelper::SolveWithStringParameters;
-// We use the director version of the API.
 %unignore operations_research::sat::SatHelper::SolveWithStringParametersAndSolutionCallback;
-
-// --------- Include the swig helpers file to create the director classes ------
-// We cannot use %ignoreall/%unignoreall as this is not compatible with nested
-// swig files.
 
 %feature("director") operations_research::sat::SolutionCallback;
 
 %unignore operations_research::sat::SolutionCallback;
+%unignore operations_research::sat::SolutionCallback::SolutionCallback;
+%unignore operations_research::sat::SolutionCallback::~SolutionCallback;
 %unignore operations_research::sat::SolutionCallback::NumBinaryPropagations;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumBinaryPropagations;
 %unignore operations_research::sat::SolutionCallback::NumBooleans;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumBooleans;
 %unignore operations_research::sat::SolutionCallback::NumBranches;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumBooleans;
 %unignore operations_research::sat::SolutionCallback::NumConflicts;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumConflicts;
 %unignore operations_research::sat::SolutionCallback::NumIntegerPropagations;
+%feature("nodirector") operations_research::sat::SolutionCallback::NumIntegerPropagations;
 %unignore operations_research::sat::SolutionCallback::ObjectiveValue;
+%feature("nodirector") operations_research::sat::SolutionCallback::ObjectiveValue;
 %unignore operations_research::sat::SolutionCallback::OnSolutionCallback;
+%unignore operations_research::sat::SolutionCallback::Response;
+%feature("nodirector") operations_research::sat::SolutionCallback::Response;
 %unignore operations_research::sat::SolutionCallback::SolutionBooleanValue;
+%feature("nodirector") operations_research::sat::SolutionCallback::SolutionBooleanValue;
 %unignore operations_research::sat::SolutionCallback::SolutionIntegerValue;
+%feature("nodirector") operations_research::sat::SolutionCallback::SolutionIntegerValue;
 %unignore operations_research::sat::SolutionCallback::StopSearch;
+%feature("nodirector") operations_research::sat::SolutionCallback::StopSearch;
 %unignore operations_research::sat::SolutionCallback::UserTime;
+%feature("nodirector") operations_research::sat::SolutionCallback::UserTime;
 %unignore operations_research::sat::SolutionCallback::WallTime;
+%feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
 
 %include "ortools/sat/swig_helper.h"
 

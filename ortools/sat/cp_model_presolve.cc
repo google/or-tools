@@ -210,11 +210,19 @@ struct PresolveContext {
       is_unsat = true;
       return;
     }
+    bool added = false;
     if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
-      affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), 1, 0);
-      var_equiv_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), 1, 0);
+      added |=
+          affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), 1, 0);
+      added |= var_equiv_relations.TryAdd(PositiveRef(ref_a),
+                                          PositiveRef(ref_b), 1, 0);
     } else {
-      affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), -1, 1);
+      added |= affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b),
+                                       -1, 1);
+    }
+    if (added) {
+      modified_domains.Set(PositiveRef(ref_a));
+      modified_domains.Set(PositiveRef(ref_b));
     }
   }
 
@@ -1410,8 +1418,8 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
   }
 
   int num_fixed_at_true = 0;
-  for (const auto& node_to_refs : {incoming_arcs, outgoing_arcs}) {
-    for (const std::vector<int>& refs : node_to_refs) {
+  for (const auto* node_to_refs : {&incoming_arcs, &outgoing_arcs}) {
+    for (const std::vector<int>& refs : *node_to_refs) {
       if (refs.size() == 1) {
         if (!context->LiteralIsTrue(refs.front())) {
           ++num_fixed_at_true;
@@ -1472,46 +1480,6 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
     ++new_size;
   }
 
-  // Look for in/out-degree of two, this will imply that one of the indicator
-  // Boolean is equal to the negation of the other.
-  for (int i = 0; i < num_nodes; ++i) {
-    if (new_in_degree[i] == 2) {
-      std::vector<int> literals;
-      for (const int ref : incoming_arcs[i]) {
-        if (context->LiteralIsFalse(ref)) continue;
-        if (context->LiteralIsTrue(ref)) {
-          literals.clear();
-          break;
-        }
-        literals.push_back(ref);
-      }
-      if (literals.size() == 2) {
-        if (PositiveRef(literals[0]) != PositiveRef(literals[1])) {
-          context->UpdateRuleStats("circuit: degree 2");
-        }
-        context->AddBooleanEqualityRelation(literals[0],
-                                            NegatedRef(literals[1]));
-      }
-    }
-    if (new_out_degree[i] == 2) {
-      std::vector<int> literals;
-      for (const int ref : outgoing_arcs[i]) {
-        if (context->LiteralIsFalse(ref)) continue;
-        if (context->LiteralIsTrue(ref)) {
-          literals.clear();
-          break;
-        }
-      }
-      if (literals.size() == 2) {
-        if (PositiveRef(literals[0]) != PositiveRef(literals[1])) {
-          context->UpdateRuleStats("circuit: degree 2");
-        }
-        context->AddBooleanEqualityRelation(literals[0],
-                                            NegatedRef(literals[1]));
-      }
-    }
-  }
-
   // Detect infeasibility due to a node having no more incoming or outgoing arc.
   // This is a bit tricky because for now the meaning of the constraint says
   // that all nodes that appear in at least one of the arcs must be in the
@@ -1555,6 +1523,28 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
     if (num_true == new_size) {
       context->UpdateRuleStats("circuit: empty circuit.");
       return RemoveConstraint(ct, context);
+    }
+  }
+
+  // Look for in/out-degree of two, this will imply that one of the indicator
+  // Boolean is equal to the negation of the other.
+  for (int i = 0; i < num_nodes; ++i) {
+    for (const std::vector<int>* arc_literals :
+         {&incoming_arcs[i], &outgoing_arcs[i]}) {
+      std::vector<int> literals;
+      for (const int ref : *arc_literals) {
+        if (context->LiteralIsFalse(ref)) continue;
+        if (context->LiteralIsTrue(ref)) {
+          literals.clear();
+          break;
+        }
+        literals.push_back(ref);
+      }
+      if (literals.size() == 2 && literals[0] != NegatedRef(literals[1])) {
+        context->UpdateRuleStats("circuit: degree 2");
+        context->AddBooleanEqualityRelation(literals[0],
+                                            NegatedRef(literals[1]));
+      }
     }
   }
 
