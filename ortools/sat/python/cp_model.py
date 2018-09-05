@@ -434,7 +434,13 @@ class _Product(IntegerExpression):
 
 
 class BoundIntegerExpression(object):
-  """Represents a linear constraint: lb <= expression <= ub."""
+  """Represents a linear constraint: lb <= expression <= ub.
+
+  The only usage of this class is to be added to the CpModel through the
+  CpModel.Add(expression), as in:
+
+      model.Add(x + 2 * y -1 >= z)
+  """
 
   def __init__(self, expr, bounds):
     self.__expr = expr
@@ -473,11 +479,11 @@ class Constraint(object):
   The purpose of this class is to allow specifying enforcement literals for
   this constraint.
 
-    b = model.BoolVar('b')
-    x = model.IntVar(0, 10, 'x')
-    y = model.IntVar(0, 10, 'y')
+      b = model.BoolVar('b')
+      x = model.IntVar(0, 10, 'x')
+      y = model.IntVar(0, 10, 'y')
 
-    model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
+      model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   """
 
   def __init__(self, constraints):

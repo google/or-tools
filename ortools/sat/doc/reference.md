@@ -101,6 +101,12 @@ Not that this method is nilpotent: x.Not().Not() == x.
 BoundIntegerExpression(self, expr, bounds)
 ```
 Represents a linear constraint: lb <= expression <= ub.
+
+The only usage of this class is to be added to the CpModel through the
+CpModel.Add(expression), as in:
+
+    model.Add(x + 2 * y -1 >= z)
+
 <h2 id="ortools.sat.python.cp_model.Constraint">Constraint</h2>
 
 ```python
@@ -113,11 +119,11 @@ Once created bu the CpModel class, they are automatically added to the model.
 The purpose of this class is to allow specifying enforcement literals for
 this constraint.
 
-  b = model.BoolVar('b')
-  x = model.IntVar(0, 10, 'x')
-  y = model.IntVar(0, 10, 'y')
+    b = model.BoolVar('b')
+    x = model.IntVar(0, 10, 'x')
+    y = model.IntVar(0, 10, 'y')
 
-  model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
+    model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
 
 <h3 id="ortools.sat.python.cp_model.Constraint.OnlyEnforceIf">OnlyEnforceIf</h3>
 
