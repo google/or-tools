@@ -83,18 +83,42 @@ Scan the expression, and return a list of (var_coef_map, constant).
 IntVar(self, model, bounds, name)
 ```
 Represents a IntegerExpression containing only a single variable.
+<h3 id="ortools.sat.python.cp_model.IntVar.Not">Not</h3>
+
+```python
+IntVar.Not(self)
+```
+Returns the negation of a Boolean variable.
+
+This method implements the logical negation of a Boolean variable.
+It it only valid of the variable has a Boolean domain (0 or 1).
+
+Not that this method is nilpotent: x.Not().Not() == x.
+
 <h2 id="ortools.sat.python.cp_model.BoundIntegerExpression">BoundIntegerExpression</h2>
 
 ```python
 BoundIntegerExpression(self, expr, bounds)
 ```
-Represents a constraint: IntegerExpression in domain.
+Represents a linear constraint: lb <= expression <= ub.
 <h2 id="ortools.sat.python.cp_model.Constraint">Constraint</h2>
 
 ```python
 Constraint(self, constraints)
 ```
 Base class for constraints.
+
+Constraints are build by the CpModel through the Add<XXX> methods.
+Once created bu the CpModel class, they are automatically added to the model.
+The purpose of this class is to allow specifying enforcement literals for
+this constraint.
+
+  b = model.BoolVar('b')
+  x = model.IntVar(0, 10, 'x')
+  y = model.IntVar(0, 10, 'y')
+
+  model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
+
 <h3 id="ortools.sat.python.cp_model.Constraint.OnlyEnforceIf">OnlyEnforceIf</h3>
 
 ```python
@@ -111,12 +135,30 @@ true implies that the constraint must be enforce.
 IntervalVar(self, model, start_index, size_index, end_index, is_present_index, name)
 ```
 Represents a Interval variable.
+
+
+An interval variable is defined by three integer variables (start, size, end).
+Internally, it enforces that start + size == end.
+
+Optionally, an enforcement literal can be added on this
+constraint. This enforcement literal is understood by scheduling constraints
+(NoOverlap, NoOverlap2D, Cumulative). These constraints will simply ignore
+interval variables with enforcement literals assigned to false.
+
+Furthermore, these constraints will also set these enforcement literals to
+false if they cannot fit these intervals in the schedule.
+
 <h2 id="ortools.sat.python.cp_model.CpModel">CpModel</h2>
 
 ```python
 CpModel(self)
 ```
 Wrapper class around the cp_model proto.
+
+This class provides two types of methods:
+  - NewXXX to create integer, Boolean, or interval variables.
+  - AddXXX to create new constraints, and add them to the model.
+
 <h3 id="ortools.sat.python.cp_model.CpModel.NewIntVar">NewIntVar</h3>
 
 ```python
@@ -700,3 +742,33 @@ Returns the value of objective after solve.
 CpSolver.StatusName(self, status)
 ```
 Returns the name of the status returned by Solve().
+<h3 id="ortools.sat.python.cp_model.CpSolver.NumBooleans">NumBooleans</h3>
+
+```python
+CpSolver.NumBooleans(self)
+```
+Returns the number of boolean variables managed by the SAT solver.
+<h3 id="ortools.sat.python.cp_model.CpSolver.NumConflicts">NumConflicts</h3>
+
+```python
+CpSolver.NumConflicts(self)
+```
+Returns the number of active conflicts kept by the SAT solver.
+<h3 id="ortools.sat.python.cp_model.CpSolver.NumBranches">NumBranches</h3>
+
+```python
+CpSolver.NumBranches(self)
+```
+Returns the number of search branches explored.
+<h3 id="ortools.sat.python.cp_model.CpSolver.WallTime">WallTime</h3>
+
+```python
+CpSolver.WallTime(self)
+```
+Return the wall time in seconds since the creation of the solver.
+<h3 id="ortools.sat.python.cp_model.CpSolver.UserTime">UserTime</h3>
+
+```python
+CpSolver.UserTime(self)
+```
+Return the user time in seconds since the creation of the solver.

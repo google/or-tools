@@ -381,6 +381,14 @@ class IntVar(IntegerExpression):
     return self.__var.name
 
   def Not(self):
+    """Returns the negation of a Boolean variable.
+
+    This method implements the logical negation of a Boolean variable.
+    It it only valid of the variable has a Boolean domain (0 or 1).
+
+    Not that this method is nilpotent: x.Not().Not() == x.
+    """
+
     for bound in self.__var.domain:
       if bound < 0 or bound > 1:
         raise TypeError('Cannot call Not on a non boolean variable: %s' % self)
@@ -426,7 +434,7 @@ class _Product(IntegerExpression):
 
 
 class BoundIntegerExpression(object):
-  """Represents a constraint: IntegerExpression in domain."""
+  """Represents a linear constraint: lb <= expression <= ub."""
 
   def __init__(self, expr, bounds):
     self.__expr = expr
@@ -458,7 +466,19 @@ class BoundIntegerExpression(object):
 
 
 class Constraint(object):
-  """Base class for constraints."""
+  """Base class for constraints.
+
+  Constraints are build by the CpModel through the Add<XXX> methods.
+  Once created bu the CpModel class, they are automatically added to the model.
+  The purpose of this class is to allow specifying enforcement literals for
+  this constraint.
+
+    b = model.BoolVar('b')
+    x = model.IntVar(0, 10, 'x')
+    y = model.IntVar(0, 10, 'y')
+
+    model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
+  """
 
   def __init__(self, constraints):
     self.__index = len(constraints)
@@ -485,7 +505,20 @@ class Constraint(object):
 
 
 class IntervalVar(object):
-  """Represents a Interval variable."""
+  """Represents a Interval variable.
+
+
+  An interval variable is defined by three integer variables (start, size, end).
+  Internally, it enforces that start + size == end.
+
+  Optionally, an enforcement literal can be added on this
+  constraint. This enforcement literal is understood by scheduling constraints
+  (NoOverlap, NoOverlap2D, Cumulative). These constraints will simply ignore
+  interval variables with enforcement literals assigned to false.
+
+  Furthermore, these constraints will also set these enforcement literals to
+  false if they cannot fit these intervals in the schedule.
+  """
 
   def __init__(self, model, start_index, size_index, end_index,
                is_present_index, name):
@@ -525,7 +558,12 @@ class IntervalVar(object):
 
 
 class CpModel(object):
-  """Wrapper class around the cp_model proto."""
+  """Wrapper class around the cp_model proto.
+
+  This class provides two types of methods:
+    - NewXXX to create integer, Boolean, or interval variables.
+    - AddXXX to create new constraints, and add them to the model.
+  """
 
   def __init__(self):
     self.__model = cp_model_pb2.CpModelProto()
@@ -1432,16 +1470,21 @@ class CpSolver(object):
     return cp_model_pb2.CpSolverStatus.Name(status)
 
   def NumBooleans(self):
+    """Returns the number of boolean variables managed by the SAT solver."""
     return self.__solution.num_booleans
 
   def NumConflicts(self):
+    """Returns the number of active conflicts kept by the SAT solver."""
     return self.__solution.num_conflicts
 
   def NumBranches(self):
+    """Returns the number of search branches explored."""
     return self.__solution.num_branches
 
   def WallTime(self):
+    """Return the wall time in seconds since the creation of the solver."""
     return self.__solution.wall_time
 
   def UserTime(self):
+    """Return the user time in seconds since the creation of the solver."""
     return self.__solution.user_time
