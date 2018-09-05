@@ -64,11 +64,12 @@ Integer expressions are used in two places in the cp_model.
 Associated with equality, inequality operators, the create bounded expressions
 that can be added to the model as in:
 
-  model.Add(x + 2 * y <= 5)
-  model.Add(sum(array_of_vars) == 5)
+    model.Add(x + 2 * y <= 5)
+    model.Add(sum(array_of_vars) == 5)
 
 IntegerExpressions can also be used to specify the objective of the model.
-model.Minimize(x + 2 * y + z)
+
+    model.Minimize(x + 2 * y + z)
 
 <h3 id="ortools.sat.python.cp_model.IntegerExpression.GetVarValueMap">GetVarValueMap</h3>
 
