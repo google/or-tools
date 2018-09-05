@@ -149,7 +149,18 @@ def ShortName(model, i):
 
 
 class IntegerExpression(object):
-  """Holds an integer expression."""
+  """Holds an integer expression.
+
+
+  An integer expressiom regroups linear expressions build from integer
+  constants and integer variables.
+
+  x + 2 * (y - z + 1) is such an integer expression, and can be written that way
+  directly in python, provided x, y, and z are integer variables.
+
+
+  """
+
 
   def GetVarValueMap(self):
     """Scan the expression, and return a list of (var_coef_map, constant)."""
@@ -446,6 +457,12 @@ class Constraint(object):
     self.__constraint = constraints.add()
 
   def OnlyEnforceIf(self, boolvar):
+    """Adds an enforcement literal to the constraint.
+
+    An enforcement literal (boolean variable or its negation) decides if the
+    constraint is active or not. It acts as an implication, thus literal is
+    true implies that the constraint must be enforce."""
+
     if isinstance(boolvar, numbers.Integral) and boolvar == 1:
       # Always true. Do nothing.
       pass

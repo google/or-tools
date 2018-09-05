@@ -53,6 +53,16 @@ Returns a short name of an integer variable, or its negation.
 IntegerExpression(self)
 ```
 Holds an integer expression.
+
+
+An integer expressiom regroups linear expressions build from integer
+constants and integer variables.
+
+x + 2 * (y - z + 1) is such an integer expression, and can be written that way
+directly in python, provided x, y, and z are integer variables.
+
+
+
 <h3 id="ortools.sat.python.cp_model.IntegerExpression.GetVarValueMap">GetVarValueMap</h3>
 
 ```python
@@ -77,6 +87,16 @@ Represents a constraint: IntegerExpression in domain.
 Constraint(self, constraints)
 ```
 Base class for constraints.
+<h3 id="ortools.sat.python.cp_model.Constraint.OnlyEnforceIf">OnlyEnforceIf</h3>
+
+```python
+Constraint.OnlyEnforceIf(self, boolvar)
+```
+Adds an enforcement literal to the constraint.
+
+An enforcement literal (boolean variable or its negation) decides if the
+constraint is active or not. It acts as an implication, thus literal is
+true implies that the constraint must be enforce.
 <h2 id="ortools.sat.python.cp_model.IntervalVar">IntervalVar</h2>
 
 ```python
