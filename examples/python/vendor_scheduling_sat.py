@@ -51,7 +51,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     return self.__solution_count
 
 
-def VendorScheduling():
+def main(():
   # Create the model.
   model = cp_model.CpModel()
 
@@ -136,4 +136,5 @@ def VendorScheduling():
   print('  - number of solutions found: %i' % solution_printer.SolutionCount())
 
 
-VendorScheduling()
+if __name__ == '__main__':
+  main()
