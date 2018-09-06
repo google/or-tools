@@ -35,25 +35,10 @@ void StopAfterNSolutions() {
     return index;
   };
 
-  auto add_different = [&cp_model](const int left_var, const int right_var) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    lin->add_vars(left_var);
-    lin->add_coeffs(1);
-    lin->add_vars(right_var);
-    lin->add_coeffs(-1);
-    lin->add_domain(kint64min);
-    lin->add_domain(-1);
-    lin->add_domain(1);
-    lin->add_domain(kint64max);
-  };
-
   const int kNumVals = 3;
   const int x = new_variable(0, kNumVals - 1);
   const int y = new_variable(0, kNumVals - 1);
   const int z = new_variable(0, kNumVals - 1);
-
-  add_different(x, y);
 
   Model model;
 
@@ -81,6 +66,7 @@ void StopAfterNSolutions() {
   }));
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
+  CHECK_EQ(num_solutions, kSolutionLimit);
 }
 
 }  // namespace sat

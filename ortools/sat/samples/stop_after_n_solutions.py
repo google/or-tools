@@ -50,8 +50,6 @@ def StopAfterNSolutions():
   x = model.NewIntVar(0, num_vals - 1, 'x')
   y = model.NewIntVar(0, num_vals - 1, 'y')
   z = model.NewIntVar(0, num_vals - 1, 'z')
-  # Create the constraints.
-  model.Add(x != y)
 
   # Create a solver and solve.
   solver = cp_model.CpSolver()
@@ -59,6 +57,7 @@ def StopAfterNSolutions():
   status = solver.SearchForAllSolutions(model, solution_printer)
   print('Status = %s' % solver.StatusName(status))
   print('Number of solutions found: %i' % solution_printer.SolutionCount())
+  assert solution_printer.SolutionCount() == 5
 
 
 StopAfterNSolutions()

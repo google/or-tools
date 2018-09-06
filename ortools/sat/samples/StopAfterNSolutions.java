@@ -57,8 +57,6 @@ public class StopAfterNSolutions {
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
-    // Create the constraints.
-    model.addDifferent(x, y);
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
@@ -67,5 +65,8 @@ public class StopAfterNSolutions {
     solver.searchAllSolutions(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
+    if (cb.getSolutionCount() != 5) {
+      throw new RuntimeException("Did not stop the search correctly.");
+    }
   }
 }

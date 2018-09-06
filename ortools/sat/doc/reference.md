@@ -5,36 +5,6 @@ Propose a natural language on top of cp_model_pb2 python proto.
 This file implements a easy-to-use API on top of the cp_model_pb2 protobuf
 defined in ../ .
 
-<h2 id="ortools.sat.python.cp_model.AssertIsInt64">AssertIsInt64</h2>
-
-```python
-AssertIsInt64(x)
-```
-Asserts that x is integer and x is in [min_int_64, max_int_64].
-<h2 id="ortools.sat.python.cp_model.AssertIsInt32">AssertIsInt32</h2>
-
-```python
-AssertIsInt32(x)
-```
-Asserts that x is integer and x is in [min_int_32, max_int_32].
-<h2 id="ortools.sat.python.cp_model.AssertIsBoolean">AssertIsBoolean</h2>
-
-```python
-AssertIsBoolean(x)
-```
-Asserts that x is 0 or 1.
-<h2 id="ortools.sat.python.cp_model.CapInt64">CapInt64</h2>
-
-```python
-CapInt64(v)
-```
-Restrict v within [INT_MIN..INT_MAX] range.
-<h2 id="ortools.sat.python.cp_model.CapSub">CapSub</h2>
-
-```python
-CapSub(x, y)
-```
-Saturated arithmetics. Returns x - y truncated to the int64 range.
 <h2 id="ortools.sat.python.cp_model.DisplayBounds">DisplayBounds</h2>
 
 ```python
@@ -50,7 +20,7 @@ Returns a short name of an integer variable, or its negation.
 <h2 id="ortools.sat.python.cp_model.LinearExpression">LinearExpression</h2>
 
 ```python
-LinearExpression(self)
+LinearExpression(self, /, *args, **kwargs)
 ```
 Holds an integer expression.
 
@@ -556,7 +526,7 @@ Returns:
 ```python
 CpModel.NewOptionalIntervalVar(self, start, size, end, is_present, name)
 ```
-Creates an optional interval var from start, size, end and is_present.
+Creates an optional interval var from start, size, end, and is_present.
 
 An optional interval variable is a constraint, that is itself used in other
 constraints like NoOverlap. This constraint is protected by an is_present

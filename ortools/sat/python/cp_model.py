@@ -26,6 +26,7 @@ from six import iteritems
 
 from ortools.sat import cp_model_pb2
 from ortools.sat import sat_parameters_pb2
+from ortools.sat.python import cp_model_helper
 from ortools.sat import pywrapsat
 
 # The classes below allow linear expressions to be expressed naturally with the
@@ -34,8 +35,6 @@ from ortools.sat import pywrapsat
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
-INT32_MIN = -2147483648
-INT32_MAX = 2147483647
 
 # Cp Solver status (exported to avoid importing cp_model_cp2).
 UNKNOWN = cp_model_pb2.UNKNOWN
@@ -64,61 +63,6 @@ AUTOMATIC_SEARCH = sat_parameters_pb2.SatParameters.AUTOMATIC_SEARCH
 FIXED_SEARCH = sat_parameters_pb2.SatParameters.FIXED_SEARCH
 PORTFOLIO_SEARCH = sat_parameters_pb2.SatParameters.PORTFOLIO_SEARCH
 LP_SEARCH = sat_parameters_pb2.SatParameters.LP_SEARCH
-
-
-def AssertIsInt64(x):
-  """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
-  if not isinstance(x, numbers.Integral):
-    raise TypeError('Not an integer: %s' % x)
-  if x < INT_MIN or x > INT_MAX:
-    raise OverflowError('Does not fit in an int64: %s' % x)
-
-
-def AssertIsInt32(x):
-  """Asserts that x is integer and x is in [min_int_32, max_int_32]."""
-  if not isinstance(x, numbers.Integral):
-    raise TypeError('Not an integer: %s' % x)
-  if x < INT32_MIN or x > INT32_MAX:
-    raise OverflowError('Does not fit in an int32: %s' % x)
-
-
-def AssertIsBoolean(x):
-  """Asserts that x is 0 or 1."""
-  if not isinstance(x, numbers.Integral) or x < 0 or x > 1:
-    raise TypeError('Not an boolean: %s' % x)
-
-
-def CapInt64(v):
-  """Restrict v within [INT_MIN..INT_MAX] range."""
-  if v > INT_MAX:
-    return INT_MAX
-  if v < INT_MIN:
-    return INT_MIN
-  return v
-
-
-def CapSub(x, y):
-  """Saturated arithmetics. Returns x - y truncated to the int64 range."""
-  if not isinstance(x, numbers.Integral):
-    raise TypeError('Not integral: ' + str(x))
-  if not isinstance(y, numbers.Integral):
-    raise TypeError('Not integral: ' + str(y))
-  AssertIsInt64(x)
-  AssertIsInt64(y)
-  if y == 0:
-    return x
-  if x == y:
-    if x == INT_MAX or x == INT_MIN:
-      raise OverflowError(
-          'Integer NaN: subtracting INT_MAX or INT_MIN to itself')
-    return 0
-  if x == INT_MAX or x == INT_MIN:
-    return x
-  if y == INT_MAX:
-    return INT_MIN
-  if y == INT_MIN:
-    return INT_MAX
-  return CapInt64(x - y)
 
 
 def DisplayBounds(bounds):
@@ -209,13 +153,13 @@ class LinearExpression(object):
     if isinstance(arg, numbers.Integral):
       if arg == 1:
         return self
-      AssertIsInt64(arg)
+      cp_model_helper.AssertIsInt64(arg)
       return _ProductCst(self, arg)
     else:
       raise TypeError('Not an integer linear expression: ' + str(arg))
 
   def __rmul__(self, arg):
-    AssertIsInt64(arg)
+    cp_model_helper.AssertIsInt64(arg)
     if arg == 1:
       return self
     return _ProductCst(self, arg)
@@ -236,40 +180,40 @@ class LinearExpression(object):
     if arg is None:
       return False
     if isinstance(arg, numbers.Integral):
-      AssertIsInt64(arg)
+      cp_model_helper.AssertIsInt64(arg)
       return LinearInequality(self, [arg, arg])
     else:
       return LinearInequality(self - arg, [0, 0])
 
   def __ge__(self, arg):
     if isinstance(arg, numbers.Integral):
-      AssertIsInt64(arg)
+      cp_model_helper.AssertIsInt64(arg)
       return LinearInequality(self, [arg, INT_MAX])
     else:
       return LinearInequality(self - arg, [0, INT_MAX])
 
   def __le__(self, arg):
     if isinstance(arg, numbers.Integral):
-      AssertIsInt64(arg)
+      cp_model_helper.AssertIsInt64(arg)
       return LinearInequality(self, [INT_MIN, arg])
     else:
       return LinearInequality(self - arg, [INT_MIN, 0])
 
   def __lt__(self, arg):
     if isinstance(arg, numbers.Integral):
-      AssertIsInt64(arg)
+      cp_model_helper.AssertIsInt64(arg)
       if arg == INT_MIN:
         raise ArithmeticError('< INT_MIN is not supported')
-      return LinearInequality(self, [INT_MIN, CapInt64(arg - 1)])
+      return LinearInequality(self, [INT_MIN, cp_model_helper.CapInt64(arg - 1)])
     else:
       return LinearInequality(self - arg, [INT_MIN, -1])
 
   def __gt__(self, arg):
     if isinstance(arg, numbers.Integral):
-      AssertIsInt64(arg)
+      cp_model_helper.AssertIsInt64(arg)
       if arg == INT_MAX:
         raise ArithmeticError('> INT_MAX is not supported')
-      return LinearInequality(self, [CapInt64(arg + 1), INT_MAX])
+      return LinearInequality(self, [cp_model_helper.CapInt64(arg + 1), INT_MAX])
     else:
       return LinearInequality(self - arg, [1, INT_MAX])
 
@@ -277,7 +221,7 @@ class LinearExpression(object):
     if arg is None:
       return True
     if isinstance(arg, numbers.Integral):
-      AssertIsInt64(arg)
+      cp_model_helper.AssertIsInt64(arg)
       if arg == INT_MAX:
         return LinearInequality(self, [INT_MIN, INT_MAX - 1])
       elif arg == INT_MIN:
@@ -285,8 +229,8 @@ class LinearExpression(object):
       else:
         return LinearInequality(
             self,
-            [INT_MIN, CapInt64(arg - 1),
-             CapInt64(arg + 1), INT_MAX])
+            [INT_MIN, cp_model_helper.CapInt64(arg - 1),
+             cp_model_helper.CapInt64(arg + 1), INT_MAX])
     else:
       return LinearInequality(self - arg, [INT_MIN, -1, 1, INT_MAX])
 
@@ -295,7 +239,7 @@ class _ProductCst(LinearExpression):
   """Represents the product of a LinearExpression by a constant."""
 
   def __init__(self, expr, coef):
-    AssertIsInt64(coef)
+    cp_model_helper.AssertIsInt64(coef)
     if isinstance(expr, _ProductCst):
       self.__expr = expr.Expression()
       self.__coef = expr.Coefficient() * coef
@@ -327,7 +271,7 @@ class _SumArray(LinearExpression):
     self.__constant = 0
     for x in array:
       if isinstance(x, numbers.Integral):
-        AssertIsInt64(x)
+        cp_model_helper.AssertIsInt64(x)
         self.__constant += x
       elif isinstance(x, LinearExpression):
         self.__array.append(x)
@@ -600,7 +544,7 @@ class CpModel(object):
     for t in terms:
       if not isinstance(t[0], IntVar):
         raise TypeError('Wrong argument' + str(t))
-      AssertIsInt64(t[1])
+      cp_model_helper.AssertIsInt64(t[1])
       model_ct.linear.vars.append(t[0].Index())
       model_ct.linear.coeffs.append(t[1])
     model_ct.linear.domain.extend([lb, ub])
@@ -623,7 +567,7 @@ class CpModel(object):
     for t in terms:
       if not isinstance(t[0], IntVar):
         raise TypeError('Wrong argument' + str(t))
-      AssertIsInt64(t[1])
+      cp_model_helper.AssertIsInt64(t[1])
       model_ct.linear.vars.append(t[0].Index())
       model_ct.linear.coeffs.append(t[1])
     model_ct.linear.domain.extend(bounds)
@@ -633,7 +577,7 @@ class CpModel(object):
     """Adds a LinearInequality to the model."""
     if isinstance(ct, LinearInequality):
       coeffs_map, constant = ct.Expression().GetVarValueMap()
-      bounds = [CapSub(x, constant) for x in ct.Bounds()]
+      bounds = [cp_model_helper.CapSub(x, constant) for x in ct.Bounds()]
       return self.AddLinearConstraintWithBounds(iteritems(coeffs_map), bounds)
     elif ct and isinstance(ct, bool):
       pass  # Nothing to do, was already evaluated to true.
@@ -698,8 +642,8 @@ class CpModel(object):
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     for arc in arcs:
-      AssertIsInt32(arc[0])
-      AssertIsInt32(arc[1])
+      cp_model_helper.AssertIsInt32(arc[0])
+      cp_model_helper.AssertIsInt32(arc[1])
       lit = self.GetOrMakeBooleanIndex(arc[2])
       model_ct.circuit.tails.append(arc[0])
       model_ct.circuit.heads.append(arc[1])
@@ -741,7 +685,7 @@ class CpModel(object):
       if len(t) != arity:
         raise TypeError('Tuple ' + str(t) + ' has the wrong arity')
       for v in t:
-        AssertIsInt64(v)
+        cp_model_helper.AssertIsInt64(v)
       model_ct.table.values.extend(t)
 
   def AddForbiddenAssignments(self, variables, tuples_list):
@@ -828,17 +772,17 @@ class CpModel(object):
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.automata.vars.extend(
         [self.GetOrMakeIndex(x) for x in transition_variables])
-    AssertIsInt64(starting_state)
+    cp_model_helper.AssertIsInt64(starting_state)
     model_ct.automata.starting_state = starting_state
     for v in final_states:
-      AssertIsInt64(v)
+      cp_model_helper.AssertIsInt64(v)
       model_ct.automata.final_states.append(v)
     for t in transition_triples:
       if len(t) != 3:
         raise TypeError('Tuple ' + str(t) + ' has the wrong arity (!= 3)')
-      AssertIsInt64(t[0])
-      AssertIsInt64(t[1])
-      AssertIsInt64(t[2])
+      cp_model_helper.AssertIsInt64(t[0])
+      cp_model_helper.AssertIsInt64(t[1])
+      cp_model_helper.AssertIsInt64(t[2])
       model_ct.automata.transition_tail.append(t[0])
       model_ct.automata.transition_label.append(t[1])
       model_ct.automata.transition_head.append(t[2])
@@ -1094,7 +1038,7 @@ class CpModel(object):
                        name)
 
   def NewOptionalIntervalVar(self, start, size, end, is_present, name):
-    """Creates an optional interval var from start, size, end and is_present.
+    """Creates an optional interval var from start, size, end, and is_present.
 
     An optional interval variable is a constraint, that is itself used in other
     constraints like NoOverlap. This constraint is protected by an is_present
@@ -1210,7 +1154,7 @@ class CpModel(object):
           isinstance(arg.Expression(), IntVar) and arg.Coefficient() == -1):
       return -arg.Expression().Index() - 1
     elif isinstance(arg, numbers.Integral):
-      AssertIsInt64(arg)
+      cp_model_helper.AssertIsInt64(arg)
       return self.GetOrMakeIndexFromConstant(arg)
     else:
       raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
@@ -1224,7 +1168,7 @@ class CpModel(object):
       self.AssertIsBooleanVariable(arg.Not())
       return arg.Index()
     elif isinstance(arg, numbers.Integral):
-      AssertIsBoolean(arg)
+      cp_model_helper.AssertIsBoolean(arg)
       return self.GetOrMakeIndexFromConstant(arg)
     else:
       raise TypeError('NotSupported: model.GetOrMakeBooleanIndex(' + str(arg) +

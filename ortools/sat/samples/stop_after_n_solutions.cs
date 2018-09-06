@@ -58,9 +58,6 @@ public class CodeSamplesSat {
     IntVar y = model.NewIntVar(0, num_vals - 1, "y");
     IntVar z = model.NewIntVar(0, num_vals - 1, "z");
 
-    // Adds a different constraint.
-    model.Add(x != y);
-
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithLimit cb =
