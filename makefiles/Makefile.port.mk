@@ -17,7 +17,11 @@ ifeq ($(SYSTEM),unix)
   OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
   ifeq ($(UNIX_PYTHON_VER),)
-    DETECTED_PYTHON_VERSION := $(shell python -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
+    ifeq ($(shell which python3),)
+      DETECTED_PYTHON_VERSION := $(shell python -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
+    else
+      DETECTED_PYTHON_VERSION := $(shell python3 -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
+    endif
   else
     DETECTED_PYTHON_VERSION := $(UNIX_PYTHON_VER)
   endif
