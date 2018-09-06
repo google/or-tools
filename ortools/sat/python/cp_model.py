@@ -92,22 +92,21 @@ def ShortName(model, i):
 
 
 class LinearExpression(object):
-  """Holds an integer expression.
+  """Holds an integer linear expression.
 
-  An integer expressiom regroups linear expressions build from integer
-  constants and integer variables.
+  An linear expression is built from integer constants and variables.
 
-  x + 2 * (y - z + 1) is such an integer expression, and can be written that way
-  directly in python, provided x, y, and z are integer variables.
+  x + 2 * (y - z + 1) is one such linear expression, and can be written that
+  way directly in Python, provided x, y, and z are integer variables.
 
-  Integer expressions are used in two places in the cp_model.
-  Associated with equality, inequality operators, the create bounded expressions
-  that can be added to the model as in:
+  Linear expressions are used in two places in the cp_model.
+  When used with equality and inequality operators, they create linear
+  inequalities that can be added to the model as in:
 
       model.Add(x + 2 * y <= 5)
       model.Add(sum(array_of_vars) == 5)
 
-  LinearExpressions can also be used to specify the objective of the model.
+  Linear expressions can also be used to specify the objective of the model.
 
       model.Minimize(x + 2 * y + z)
   """
@@ -128,9 +127,9 @@ class LinearExpression(object):
       elif isinstance(expr, IntVar):
         coeffs[expr] += coef
       elif isinstance(expr, _NotBooleanVariable):
-        raise TypeError('Cannot interpret literals in a integer expression.')
+        raise TypeError('Cannot interpret literals in a linear expression.')
       else:
-        raise TypeError('Unrecognized integer expression: ' + str(expr))
+        raise TypeError('Unrecognized linear expression: ' + str(expr))
 
     return coeffs, constant
 
@@ -279,7 +278,7 @@ class _SumArray(LinearExpression):
       elif isinstance(x, LinearExpression):
         self.__array.append(x)
       else:
-        raise TypeError('Not an integer expression: ' + str(x))
+        raise TypeError('Not an linear expression: ' + str(x))
 
   def __str__(self):
     if self.__constant == 0:
@@ -302,15 +301,15 @@ class _SumArray(LinearExpression):
 class IntVar(LinearExpression):
   """An integer variable.
 
-  An integer variable is an object with a set of initial value.
-  Variables appears in constraint like:
+  An IntVar is an object that can take on any integer value within defined
+  ranges. Variables appears in constraint like:
 
       x + y >= 5
       AllDifferent([x, y, z])
 
   Solving a model is equivalent to finding, for each variable, a single value
-  from the set of initial values (called initial domain), such that the model is
-  feasible, or optimal in case there is an objective function.
+  from the set of initial values (called the initial domain), such that the
+  model is feasible, or optimal if you provided an objective function.
   """
 
   def __init__(self, model, bounds, name):
@@ -338,9 +337,9 @@ class IntVar(LinearExpression):
     """Returns the negation of a Boolean variable.
 
     This method implements the logical negation of a Boolean variable.
-    It it only valid of the variable has a Boolean domain (0 or 1).
+    It is only valid of the variable has a Boolean domain (0 or 1).
 
-    Not that this method is nilpotent: x.Not().Not() == x.
+    Note that this method is nilpotent: x.Not().Not() == x.
     """
 
     for bound in self.__var.domain:
@@ -370,7 +369,7 @@ class _NotBooleanVariable(LinearExpression):
 class LinearInequality(object):
   """Represents a linear constraint: lb <= expression <= ub.
 
-  The only usage of this class is to be added to the CpModel through the
+  The only use of this class is to be added to the CpModel through
   CpModel.Add(expression), as in:
 
       model.Add(x + 2 * y -1 >= z)
@@ -408,10 +407,10 @@ class LinearInequality(object):
 class Constraint(object):
   """Base class for constraints.
 
-  Constraints are build by the CpModel through the Add<XXX> methods.
-  Once created bu the CpModel class, they are automatically added to the model.
-  The purpose of this class is to allow specifying enforcement literals for
-  this constraint.
+  Constraints are built by the CpModel through the Add<XXX> methods.
+  Once created by the CpModel class, they are automatically added to the model.
+  The purpose of this class is to allow specification of enforcement literals
+  for this constraint.
 
       b = model.BoolVar('b')
       x = model.IntVar(0, 10, 'x')
@@ -428,10 +427,10 @@ class Constraint(object):
     """Adds an enforcement literal to the constraint.
 
     Args:
-        boolvar: A Boolean literal, that is a Boolean variable or its negation.
-          An enforcement literal (boolean variable or its negation) decides if
-          the constraint is active or not. It acts as an implication, thus
-          literal is true implies that the constraint must be enforce.
+        boolvar: A boolean literal, that is a boolean variable or its negation.
+          An enforcement literal (boolean variable or its negation) decides
+          whether the constraint is active or not. It acts as an implication, so
+          if the literal is true, that implies the constraint must be enforced.
     """
 
     if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -451,16 +450,19 @@ class IntervalVar(object):
   """Represents a Interval variable.
 
 
-  An interval variable is defined by three integer variables (start, size, end).
-  Internally, it enforces that start + size == end.
+  An interval variable both a constraint and a variable. It is itself defined by
+  three integer variables: start, size, and end.
 
-  Optionally, an enforcement literal can be added on this
-  constraint. This enforcement literal is understood by scheduling constraints
-  (NoOverlap, NoOverlap2D, Cumulative). These constraints will simply ignore
-  interval variables with enforcement literals assigned to false.
+  It is a constraint because, internally, it enforces that start + size == end.
 
-  Furthermore, these constraints will also set these enforcement literals to
-  false if they cannot fit these intervals in the schedule.
+  It is also a variable as it can appear in specific scheduling constraints:
+  NoOverlap, NoOverlap2D, Cumulative.
+
+  Optionally, an enforcement literal can be added to this
+  constraint. This enforcement literal is understood by the same constraints.
+  These constraints ignore interval variables with enforcement literals assigned
+  to false. Conversely, these constraints will also set these enforcement
+  literals to false if they cannot fit these intervals into the schedule.
   """
 
   def __init__(self, model, start_index, size_index, end_index,
@@ -504,8 +506,8 @@ class CpModel(object):
   """Wrapper class around the cp_model proto.
 
   This class provides two types of methods:
-    - NewXXX to create integer, Boolean, or interval variables.
-    - AddXXX to create new constraints, and add them to the model.
+    - NewXXX to create integer, boolean, or interval variables.
+    - AddXXX to create new constraints and add them to the model.
   """
 
   def __init__(self):
@@ -1269,7 +1271,7 @@ class CpModel(object):
 
 
 def EvaluateLinearExpression(expression, solution):
-  """Evaluate an integer expression against a solution."""
+  """Evaluate an linear expression against a solution."""
   if isinstance(expression, numbers.Integral):
     return expression
   value = 0
@@ -1285,7 +1287,7 @@ def EvaluateLinearExpression(expression, solution):
     elif isinstance(expr, IntVar):
       value += coef * solution.solution[expr.Index()]
     elif isinstance(expr, _NotBooleanVariable):
-      raise TypeError('Cannot interpret literals in a integer expression.')
+      raise TypeError('Cannot interpret literals in a linear expression.')
   return value
 
 
@@ -1315,16 +1317,16 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
   """
 
   def BooleanValue(self, lit):
-    """Returns the Boolean value of a Boolean literal.
+    """Returns the boolean value of a boolean literal.
 
     Args:
-        lit: A Boolean variable or its negation.
+        lit: A boolean variable or its negation.
 
     Returns:
-        The Boolean value of the literal in the solution.
+        The boolean value of the literal in the solution.
 
     Raises:
-        RuntimeError: if 'lit' is not a Boolean variable or its negation.
+        RuntimeError: if 'lit' is not a boolean variable or its negation.
     """
     if not self.Response().solution:
       raise RuntimeError('Solve() has not be called.')
@@ -1343,11 +1345,11 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         expression: a linear expression of the model.
 
     Returns:
-        An integer value equal to the evaluation of the of the linear expression
+        An integer value equal to the evaluation of the linear expression
         against the current solution.
 
     Raises:
-        RuntimeError: if 'expression' is not a linear integer expression.
+        RuntimeError: if 'expression' is not a LinearExpression.
     """
     if not self.Response().solution:
       raise RuntimeError('Solve() has not be called.')
@@ -1366,7 +1368,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
       elif isinstance(expr, IntVar):
         value += coef * self.SolutionIntegerValue(expr.Index())
       elif isinstance(expr, _NotBooleanVariable):
-        raise TypeError('Cannot interpret literals in a integer expression.')
+        raise TypeError('Cannot interpret literals in a linear expression.')
     return value
 
 
@@ -1376,9 +1378,9 @@ class CpSolver(object):
   The purpose of this class is to search for a solution of a model given to the
   Solve() method.
 
-  Once Solve() is called, this class allows the inspection of the solution found
+  Once Solve() is called, this class allows inspecting the solution found
   with the Value() and BooleanValue() methods, as well as general statistics
-  on the solve procedure.
+  about the solve procedure.
   """
 
   def __init__(self):
@@ -1426,13 +1428,13 @@ class CpSolver(object):
     return self.__solution.status
 
   def Value(self, expression):
-    """Returns the value of an integer expression after solve."""
+    """Returns the value of an linear expression after solve."""
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
     return EvaluateLinearExpression(expression, self.__solution)
 
   def BooleanValue(self, literal):
-    """Returns the boolean value of an integer expression after solve."""
+    """Returns the boolean value of a literal after solve."""
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
     return EvaluateBooleanExpression(literal, self.__solution)
