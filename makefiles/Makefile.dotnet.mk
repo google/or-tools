@@ -554,21 +554,21 @@ rdotnet_%: \
  $(DOTNET_EX_DIR)/%.csproj \
  $(DOTNET_ORTOOLS_NUPKG)
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
 
 rdotnet_%: \
  $(DOTNET_EX_DIR)/%.fs \
  $(DOTNET_EX_DIR)/%.fsproj \
  $(DOTNET_ORTOOLS_FSHARP_NUPKG)
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
 rdotnet_%: \
  ortools/sat/samples/%.cs \
  ortools/sat/samples/%.csproj \
  $(DOTNET_ORTOOLS_NUPKG)
 	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
 
 #####################
 ##  .NET Examples  ##
