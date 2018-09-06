@@ -374,7 +374,7 @@ void Solve(const JsspInputProblem& problem) {
       const int num_intervals = machine_to_intervals[m].size();
 
       // Create circuit constraint on a machine.
-      // Node 0 and num_intervals + 1 are source and sink.
+      // Node 0 is the root of the graph (both source and sink).
       CircuitConstraintProto* const circuit =
           cp_model.add_constraints()->mutable_circuit();
       for (int i = 0; i < num_intervals; ++i) {

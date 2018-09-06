@@ -26,6 +26,7 @@ from ortools.sat.python import visualization
 
 
 def main():
+  """Solves the gate scheduling problem."""
   model = cp_model.CpModel()
 
   jobs = [[3, 3], [2, 5], [1, 3], [3, 7], [7, 3], [2, 2], [2, 2], [5, 5],
@@ -61,7 +62,7 @@ def main():
 
     # Create an optional copy of interval to be executed on machine 0.
     start0 = model.NewIntVar(0, horizon, 'start_%i_on_m0' % i)
-    end0 = model.NewIntVar(0, horizon,  'end_%i_on_m0' % i)
+    end0 = model.NewIntVar(0, horizon, 'end_%i_on_m0' % i)
     interval0 = model.NewOptionalIntervalVar(
         start0, duration, end0, performed_on_m0, 'interval_%i_on_m0' % i)
     intervals0.append(interval0)
@@ -107,10 +108,10 @@ def main():
     for i in all_jobs:
       performed_machine = 1 - solver.Value(performed[i])
       start = solver.Value(starts[i])
-      dx = jobs[i][0]
-      dy = jobs[i][1]
-      sy = performed_machine * (max_length - dy)
-      output.AddRectangle(start, sy, dx, dy, color_manager.RandomColor(),
+      d_x = jobs[i][0]
+      d_y = jobs[i][1]
+      s_y = performed_machine * (max_length - d_y)
+      output.AddRectangle(start, s_y, d_x, d_y, color_manager.RandomColor(),
                           'black', 'j%i' % i)
 
     output.AddXScale()
