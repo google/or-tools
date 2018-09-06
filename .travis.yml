@@ -77,6 +77,13 @@ matrix:
       language: cpp
       compiler: clang
       env: BUILDER=cmake DISTRO=native
+# Jobs too long
+  allow_failures:
+    - os: osx
+      osx_image: xode9.4
+      language: cpp
+      compiler: clang
+      env: BUILDER=make DISTRO=native LANGUAGE=dotnet
 
 install:
   - ./.travis/install.sh

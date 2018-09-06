@@ -164,9 +164,9 @@ void DisplayPlan(
   for (int order = 1; order < routing.nodes(); ++order) {
     if (plan.Value(routing.NextVar(order)) == order) {
       if (dropped.empty()) {
-        StringAppendF(&dropped, " %d", order);
+        StringAppendF(&dropped, " %d", routing.IndexToNode(order).value());
       } else {
-        StringAppendF(&dropped, ", %d", order);
+        StringAppendF(&dropped, ", %d", routing.IndexToNode(order).value());
       }
     }
   }
@@ -216,15 +216,18 @@ void DisplayPlan(
         if (slack_var != nullptr && plan.Contains(slack_var)) {
           StringAppendF(
               &plan_output,
-              "%lld Load(%lld) Time(%lld, %lld) Slack(%lld, %lld) -> ", order,
+              "%lld Load(%lld) Time(%lld, %lld) Slack(%lld, %lld)",
+              routing.IndexToNode(order).value(),
               plan.Value(load_var), plan.Min(time_var), plan.Max(time_var),
               plan.Min(slack_var), plan.Max(slack_var));
         } else {
-          StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld) -> ",
-                        order, plan.Value(load_var), plan.Min(time_var),
+          StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld)",
+                        routing.IndexToNode(order).value(),
+                        plan.Value(load_var), plan.Min(time_var),
                         plan.Max(time_var));
         }
         if (routing.IsEnd(order)) break;
+        else plan_output += " -> ";
         order = plan.Value(routing.NextVar(order));
       }
       plan_output += "\n";
