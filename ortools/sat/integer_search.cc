@@ -176,7 +176,7 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
     }
     const int num_integer_variables =
         model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value() / 2;
-    if (num_integer_variables > 4 * num_lp_variables) return heuristic;
+    if (num_integer_variables > 2 * num_lp_variables) return heuristic;
   }
 
   bool last_decision_followed_lp = false;

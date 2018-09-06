@@ -18,7 +18,6 @@ from __future__ import print_function
 
 import numbers
 
-
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
 INT32_MIN = -2147483648

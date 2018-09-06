@@ -204,7 +204,8 @@ class LinearExpression(object):
       cp_model_helper.AssertIsInt64(arg)
       if arg == INT_MIN:
         raise ArithmeticError('< INT_MIN is not supported')
-      return LinearInequality(self, [INT_MIN, cp_model_helper.CapInt64(arg - 1)])
+      return LinearInequality(
+          self, [INT_MIN, cp_model_helper.CapInt64(arg - 1)])
     else:
       return LinearInequality(self - arg, [INT_MIN, -1])
 
@@ -213,7 +214,8 @@ class LinearExpression(object):
       cp_model_helper.AssertIsInt64(arg)
       if arg == INT_MAX:
         raise ArithmeticError('> INT_MAX is not supported')
-      return LinearInequality(self, [cp_model_helper.CapInt64(arg + 1), INT_MAX])
+      return LinearInequality(self,
+                              [cp_model_helper.CapInt64(arg + 1), INT_MAX])
     else:
       return LinearInequality(self - arg, [1, INT_MAX])
 
@@ -227,10 +229,11 @@ class LinearExpression(object):
       elif arg == INT_MIN:
         return LinearInequality(self, [INT_MIN + 1, INT_MAX])
       else:
-        return LinearInequality(
-            self,
-            [INT_MIN, cp_model_helper.CapInt64(arg - 1),
-             cp_model_helper.CapInt64(arg + 1), INT_MAX])
+        return LinearInequality(self, [
+            INT_MIN,
+            cp_model_helper.CapInt64(arg - 1),
+            cp_model_helper.CapInt64(arg + 1), INT_MAX
+        ])
     else:
       return LinearInequality(self - arg, [INT_MIN, -1, 1, INT_MAX])
 
@@ -1038,7 +1041,7 @@ class CpModel(object):
                        name)
 
   def NewOptionalIntervalVar(self, start, size, end, is_present, name):
-    """Creates an optional interval var from start, size, end, and is_present.
+    """Creates an optional interval var from start, size, end and is_present.
 
     An optional interval variable is a constraint, that is itself used in other
     constraints like NoOverlap. This constraint is protected by an is_present
@@ -1373,7 +1376,7 @@ class CpSolver(object):
   The purpose of this class is to search for a solution of a model given to the
   Solve() method.
 
-  Once Solve() is called, this class allows inspective the solution found
+  Once Solve() is called, this class allows the inspection of the solution found
   with the Value() and BooleanValue() methods, as well as general statistics
   on the solve procedure.
   """
