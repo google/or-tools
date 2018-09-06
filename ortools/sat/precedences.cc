@@ -650,7 +650,7 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
             gtl::STLSortAndRemoveDuplicates(conflict);
             return false;
           } else {
-            STLSortAndRemoveDuplicates(&literal_to_push);
+            gtl::STLSortAndRemoveDuplicates(&literal_to_push);
             for (const Literal l : literal_to_push) {
               integer_trail_->EnqueueLiteral(l, literal_reason_,
                                              integer_reason_);
