@@ -74,21 +74,21 @@ def main(sol='CBC'):
   ]
 
   # distance
-  d = [[M, 1, M, M, M, M, M, M, 1, M, M, M, M, M,
-        M], [M, M, 1, M, M, M, M, M, M, M, M, M, M, M,
-             M], [M, M, M, 1, M, M, M, M, 1, M, M, M, M, M,
-                  M], [M, M, M, M, 1, M, M, M, M, M, M, M, M, M, M],
-       [M, M, M, M, M, 1, M, M, 1, M, M, M, M, M,
-        M], [M, M, M, M, M, M, 1, M, M, M, M, M, M, M,
-             M], [M, M, M, M, M, M, M, 1, 1, M, M, M, M, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, M, M, M,
-        1], [M, M, M, M, M, M, M, M, M, 1, M, M, M, M,
-             M], [M, 1, M, M, M, M, M, M, M, M, 1, M, M, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, 1, M, M,
-        M], [M, 1, M, M, M, M, M, M, M, M, M, M, 1, M,
-             M], [M, M, M, M, M, M, M, M, M, M, M, M, M, 1, M], [
-                 M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1
-             ], [M, M, M, M, M, M, M, M, M, M, M, M, M, M, M]]
+  d = [[M, 1, M, M, M, M, M, M, 1, M, M, M, M, M, M],
+       [M, M, 1, M, M, M, M, M, M, M, M, M, M, M, M],
+       [M, M, M, 1, M, M, M, M, 1, M, M, M, M, M, M],
+       [M, M, M, M, 1, M, M, M, M, M, M, M, M, M, M],
+       [M, M, M, M, M, 1, M, M, 1, M, M, M, M, M, M],
+       [M, M, M, M, M, M, 1, M, M, M, M, M, M, M, M],
+       [M, M, M, M, M, M, M, 1, 1, M, M, M, M, M, M],
+       [M, M, M, M, M, M, M, M, M, M, M, M, M, M, 1],
+       [M, M, M, M, M, M, M, M, M, 1, M, M, M, M, M],
+       [M, 1, M, M, M, M, M, M, M, M, 1, M, M, M, M],
+       [M, M, M, M, M, M, M, M, M, M, M, 1, M, M, M],
+       [M, 1, M, M, M, M, M, M, M, M, M, M, 1, M, M],
+       [M, M, M, M, M, M, M, M, M, M, M, M, M, 1, M],
+       [M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1],
+       [M, M, M, M, M, M, M, M, M, M, M, M, M, M, M]]
 
   #
   # variables

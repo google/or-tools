@@ -43,6 +43,7 @@
 from __future__ import print_function
 from ortools.linear_solver import pywraplp
 
+
 def main(unused_argv):
   # Create the solver.
 
@@ -95,6 +96,7 @@ def main(unused_argv):
   print()
   print('walltime  :', solver.WallTime(), 'ms')
   # print 'iterations:', solver.Iterations()
+
 
 if __name__ == '__main__':
   main('coin grids')

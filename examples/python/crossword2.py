@@ -158,8 +158,8 @@ def main():
     # But we must use Element explicitly
     solver.Add(
         solver.Element(A_flat, E[overlapping[I][0]] * word_len +
-                       overlapping[I][1]) == solver.
-        Element(A_flat, E[overlapping[I][2]] * word_len + overlapping[I][3]))
+                       overlapping[I][1]) == solver
+        .Element(A_flat, E[overlapping[I][2]] * word_len + overlapping[I][3]))
 
   #
   # solution and search

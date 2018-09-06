@@ -91,9 +91,9 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
     this_len = len(prob)
 
     # sum all the digits with proper exponents to a number
-    solver.Add(sums[ix] == solver.Sum([(base**i) *
-                                       x[lookup[prob[this_len - i - 1]]]
-                                       for i in range(this_len)[::-1]]))
+    solver.Add(
+        sums[ix] == solver.Sum([(base**i) * x[lookup[prob[this_len - i - 1]]]
+                                for i in range(this_len)[::-1]]))
     # leading digits must be > 0
     solver.Add(x[lookup[prob[0]]] > 0)
     ix += 1

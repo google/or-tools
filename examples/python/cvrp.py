@@ -38,8 +38,10 @@ Vehicle = namedtuple('Vehicle', ['capacity'])
 # City block declaration
 CityBlock = namedtuple('CityBlock', ['width', 'height'])
 
+
 class DataProblem():
   """Stores the data for the problem"""
+
   def __init__(self):
     """Initializes the data for the problem"""
     # Locations in block unit
@@ -57,7 +59,7 @@ class DataProblem():
     # Manhattan average block: 750ft x 264ft -> 228m x 80m
     # here we use: 114m x 80m city block
     # src: https://nyti.ms/2GDoRIe "NY Times: Know Your distance"
-    city_block = CityBlock(width=228/2, height=80)
+    city_block = CityBlock(width=228 / 2, height=80)
     self._locations = [(loc[0] * city_block.width, loc[1] * city_block.height)
                        for loc in locations]
 
@@ -102,6 +104,7 @@ class DataProblem():
     """Gets demands at each location"""
     return self._demands
 
+
 #######################
 # Problem Constraints #
 #######################
@@ -110,8 +113,10 @@ def manhattan_distance(position_1, position_2):
   return (
       abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
 
+
 class CreateDistanceEvaluator(object):  # pylint: disable=too-few-public-methods
   """Creates callback to return distance between points."""
+
   def __init__(self, data):
     """Initializes the distance matrix."""
     self._distances = {}
@@ -131,6 +136,7 @@ class CreateDistanceEvaluator(object):  # pylint: disable=too-few-public-methods
     """Returns the manhattan distance between the two nodes"""
     return self._distances[from_node][to_node]
 
+
 class CreateDemandEvaluator(object):  # pylint: disable=too-few-public-methods
   """Creates callback to get demands at each location."""
 
@@ -143,6 +149,7 @@ class CreateDemandEvaluator(object):  # pylint: disable=too-few-public-methods
     del to_node
     return self._demands[from_node]
 
+
 def add_capacity_constraints(routing, data, demand_evaluator):
   """Adds capacity constraint"""
   capacity = 'Capacity'
@@ -152,6 +159,7 @@ def add_capacity_constraints(routing, data, demand_evaluator):
       data.vehicle.capacity,
       True,  # start cumul to zero
       capacity)
+
 
 ###########
 # Printer #
@@ -169,15 +177,14 @@ def print_solution(data, routing, assignment):
     while not routing.IsEnd(index):
       load_var = capacity_dimension.CumulVar(index)
       plan_output += ' {} Load({}) -> '.format(
-          routing.IndexToNode(index),
-          assignment.Value(load_var))
+          routing.IndexToNode(index), assignment.Value(load_var))
       previous_index = index
       index = assignment.Value(routing.NextVar(index))
-      distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
+      distance += routing.GetArcCostForVehicle(previous_index, index,
+                                               vehicle_id)
     load_var = capacity_dimension.CumulVar(index)
     plan_output += ' {0} Load({1})\n'.format(
-        routing.IndexToNode(index),
-        assignment.Value(load_var))
+        routing.IndexToNode(index), assignment.Value(load_var))
     plan_output += 'Distance of the route: {}m\n'.format(distance)
     plan_output += 'Load of the route: {}\n'.format(assignment.Value(load_var))
     print(plan_output)
@@ -185,6 +192,7 @@ def print_solution(data, routing, assignment):
     total_load += assignment.Value(load_var)
   print('Total Distance of all routes: {}m'.format(total_distance))
   print('Total Load of all routes: {}'.format(total_load))
+
 
 ########
 # Main #
@@ -195,10 +203,8 @@ def main():
   data = DataProblem()
 
   # Create Routing Model
-  routing = pywrapcp.RoutingModel(
-      data.num_locations,
-      data.num_vehicles,
-      data.depot)
+  routing = pywrapcp.RoutingModel(data.num_locations, data.num_vehicles,
+                                  data.depot)
 
   # Define weight of each edge
   distance_evaluator = CreateDistanceEvaluator(data).distance_evaluator
@@ -210,10 +216,11 @@ def main():
   # Setting first solution heuristic (cheapest addition).
   search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
   search_parameters.first_solution_strategy = (
-      routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC) # pylint: disable=no-member
+      routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)  # pylint: disable=no-member
   # Solve the problem.
   assignment = routing.SolveWithParameters(search_parameters)
   print_solution(data, routing, assignment)
+
 
 if __name__ == '__main__':
   main()

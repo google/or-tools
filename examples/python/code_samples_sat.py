@@ -366,8 +366,8 @@ def MinimalJobShop():
   # Add precedence contraints.
   for job in all_jobs:
     for index in range(0, len(machines[job]) - 1):
-      model.Add(all_tasks[(job, index + 1)].start >= all_tasks[(job,
-                                                                index)].end)
+      model.Add(
+          all_tasks[(job, index + 1)].start >= all_tasks[(job, index)].end)
 
   # Makespan objective.
   obj_var = model.NewIntVar(0, horizon, 'makespan')

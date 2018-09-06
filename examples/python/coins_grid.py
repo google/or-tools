@@ -55,6 +55,7 @@ from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
+
 def main(n=31, c=14):
   # Create the solver.
   solver = pywrapcp.Solver("Coins grid")
@@ -104,13 +105,14 @@ def main(n=31, c=14):
   print("objective:", collector.ObjectiveValue(0))
   for i in range(n):
     for j in range(n):
-      print(collector.Value(0, x[(i, j)]), end=' ')
+      print(collector.Value(0, x[(i, j)]), end=" ")
     print()
   print()
 
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())
   print("WallTime:", solver.WallTime())
+
 
 if __name__ == "__main__":
   # data

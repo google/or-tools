@@ -88,10 +88,10 @@ def main(sol='CBC'):
              solver.Sum([CostIngo[i] * ii[i] for i in Ingos]))
 
   for j in Metals:
-    solver.Add(metal[j] == p[j] +
-               solver.Sum([PercRaw[j][k] * r[k] for k in Raws]) +
-               solver.Sum([PercScrap[j][k] * s[k] for k in Scraps]) +
-               solver.Sum([PercIngo[j][k] * ii[k] for k in Ingos]))
+    solver.Add(
+        metal[j] == p[j] + solver.Sum([PercRaw[j][k] * r[k] for k in Raws]) +
+        solver.Sum([PercScrap[j][k] * s[k] for k in Scraps]) +
+        solver.Sum([PercIngo[j][k] * ii[k] for k in Ingos]))
 
   solver.Add(solver.Sum(metal) == Alloy)
 

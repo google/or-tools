@@ -28,6 +28,7 @@ PARSER.add_argument(
 PARSER.add_argument(
     '--num_workers', default=98, type=int, help='Maximum number of workers.')
 
+
 def find_combinations(durations, load_min, load_max, commute_time):
   """This methods find all valid combinations of appointments.
 
@@ -39,6 +40,7 @@ def find_combinations(durations, load_min, load_max, commute_time):
     load_min: The min number of worked minutes for a valid selection.
     load_max: The max number of worked minutes for a valid selection.
     commute_time: The commute time between two appointments in minutes.
+
   Returns:
     A matrix where each line is a valid combinations of appointments.
   """
@@ -58,6 +60,7 @@ def find_combinations(durations, load_min, load_max, commute_time):
     results.append(combination)
   solver.EndSearch()
   return results
+
 
 def select(combinations, loads, max_number_of_workers):
   """This method selects the optimal combination of appointments.
@@ -110,10 +113,11 @@ def select(combinations, loads, max_number_of_workers):
     ]
   return -1, []
 
+
 def get_optimal_schedule(demand, args):
   """Computes the optimal schedule for the appointment selection problem."""
   combinations = find_combinations([a[2] for a in demand], args.load_min,
-                                  args.load_max, args.commute_time)
+                                   args.load_max, args.commute_time)
   print('found %d possible combinations of appointements' % len(combinations))
 
   cost, selection = select(combinations, [a[0] for a in demand],
@@ -124,6 +128,7 @@ def get_optimal_schedule(demand, args):
             for i in range(len(selection))
             if selection[i] != 0]
   return cost, output
+
 
 def main(args):
   demand = [(40, 'A1', 90), (30, 'A2', 120), (25, 'A3', 180)]
@@ -139,6 +144,7 @@ def main(args):
     print('%d schedules with ' % template[0])
     for t in template[1]:
       print('   %d installation of type %s' % (t[0], t[1]))
+
 
 if __name__ == '__main__':
   main(PARSER.parse_args())
