@@ -530,98 +530,58 @@ bool PrecedencesPropagator::DisassembleSubtree(
   return false;
 }
 
-// Note(user): because of our "special" graph, we can't just follow the
-// bf_parent_arc_of_[] to reconstruct the cycle, this is because given an arc,
-// we don't know if it was impacted by its tail or by it offset_var (if not
-// equal to kNoIntegerVariable). Actually, this is now no longer the case
-// because we have duplicate arcs depending on the source that caused
-// propagation!
-//
-// Our solution is to walk again the forward graph using a DFS to reconstruct
-// the arcs that form a positive cycle.
-void PrecedencesPropagator::ReportPositiveCycle(ArcIndex first_arc,
-                                                Trail* trail) {
-  // TODO(user): I am not sure we have a theoretical guarantee than the
-  // set of arcs appearing in bf_parent_arc_of_[] form a tree here because
-  // we consider all of them, not just the marked ones. Because of that,
-  // for now we use an extra vector to be on the safe side.
-  std::vector<bool> in_queue(impacted_arcs_.size(), false);
+void PrecedencesPropagator::AnalyzePositiveCycle(
+    ArcIndex first_arc, Trail* trail, std::vector<Literal>* literal_to_push,
+    std::vector<Literal>* literal_reason,
+    std::vector<IntegerLiteral>* integer_reason) {
+  literal_to_push->clear();
+  literal_reason->clear();
+  integer_reason->clear();
 
-  const int first_node = arcs_[first_arc].head_var.value();
-  tmp_vector_.clear();
-  tmp_vector_.push_back(first_node);
-  in_queue[first_node] = true;
-  std::vector<ArcIndex> arc_queue{first_arc};
+  // Follow bf_parent_arc_of_[] to find the cycle containing first_arc.
+  const IntegerVariable first_arc_head = arcs_[first_arc].head_var;
+  ArcIndex arc_index = first_arc;
   std::vector<ArcIndex> arc_on_cycle;
-  bool found = false;
-  while (!found && !tmp_vector_.empty()) {
-    const int node = tmp_vector_.back();
-    const ArcIndex incoming_arc = arc_queue.back();
-    if (node == -1) {
-      // We are coming back up in the tree.
-      tmp_vector_.pop_back();
-      arc_queue.pop_back();
-      arc_on_cycle.pop_back();
-      continue;
-    }
 
-    // We are going down in the tree.
-    tmp_vector_.back() = -1;  // Mark as explored.
-    arc_on_cycle.push_back(incoming_arc);
-    for (const ArcIndex arc_index : impacted_arcs_[IntegerVariable(node)]) {
-      if (arc_index == first_arc) {
-        // The cycle is complete.
-        found = true;
-        break;
-      }
-      const ArcInfo& arc = arcs_[arc_index];
-
-      // We already cleared is_marked, so we use a slower detection of the
-      // arc in the tree. Note that this code is called a lot less often than
-      // DisassembleSubtree(), so this is probably good enough.
-      const int head_node = arc.head_var.value();
-      if (!in_queue[head_node] && bf_parent_arc_of_[head_node] == arc_index) {
-        tmp_vector_.push_back(head_node);
-        arc_queue.push_back(arc_index);
-        in_queue[head_node] = true;
-      }
-    }
+  // Just to be safe and avoid an infinite loop we use the fact that the maximum
+  // cycle size on a graph with n nodes is of size n. If we have more in the
+  // code below, it means first_arc is not part of a cycle according to
+  // bf_parent_arc_of_[], which should never happen.
+  const int num_nodes = impacted_arcs_.size();
+  while (arc_on_cycle.size() <= num_nodes) {
+    arc_on_cycle.push_back(arc_index);
+    const ArcInfo& arc = arcs_[arc_index];
+    if (arc.tail_var == first_arc_head) break;
+    arc_index = bf_parent_arc_of_[arc.tail_var.value()];
+    CHECK_NE(arc_index, ArcIndex(-1));
   }
-  CHECK(found);
-  CHECK_EQ(arc_on_cycle.front(), first_arc);
+  CHECK_NE(arc_on_cycle.size(), num_nodes + 1) << "Infinite loop.";
 
-  // Report the positive cycle.
-  std::vector<Literal>* conflict = trail->MutableConflict();
-  integer_reason_.clear();
-  conflict->clear();
+  // Compute the reason for this cycle.
   IntegerValue sum(0);
   for (const ArcIndex arc_index : arc_on_cycle) {
     const ArcInfo& arc = arcs_[arc_index];
     sum += ArcOffset(arc);
     AppendLowerBoundReasonIfValid(arc.offset_var, *integer_trail_,
-                                  &integer_reason_);
-    if (integer_trail_->IsOptional(arc.head_var)) {
-      // TODO(user): We don't deal with the case where the cycle is between
-      // optional variable that are not present (hence the CHECK below). For
-      // now, we never encountered this in practice. We could fix the code, but
-      // it is a bit involved.
-      const Literal l = integer_trail_->IsIgnoredLiteral(arc.head_var);
-      CHECK(trail_->Assignment().LiteralIsFalse(l));
-      conflict->push_back(l);
-    }
+                                  integer_reason);
     for (const Literal l : arc.presence_literals) {
-      conflict->push_back(l.Negated());
+      literal_reason->push_back(l.Negated());
+    }
+
+    // If the cycle happens to contain optional variable not yet ignored, then
+    // it is not a conflict anymore, but we can infer that these variable must
+    // all be ignored.
+    if (integer_trail_->IsOptional(arc.head_var)) {
+      const Literal l = integer_trail_->IsIgnoredLiteral(arc.head_var);
+      if (!trail->Assignment().LiteralIsFalse(l)) {
+        literal_to_push->push_back(l);
+      }
     }
   }
-  integer_trail_->MergeReasonInto(integer_reason_, conflict);
 
   // TODO(user): what if the sum overflow? this is just a check so I guess
   // we don't really care, but fix the issue.
   CHECK_GT(sum, 0);
-
-  // We don't want any duplicates.
-  // TODO(user): I think we could handle them, so maybe this is not needed.
-  gtl::STLSortAndRemoveDuplicates(conflict);
 }
 
 // Note that in our settings it is important to use an algorithm that tries to
@@ -676,8 +636,30 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
         // need to be propagated again later).
         if (DisassembleSubtree(arc.head_var.value(), arc.tail_var.value(),
                                &bf_can_be_skipped_)) {
-          ReportPositiveCycle(arc_index, trail);
-          return false;
+          std::vector<Literal> literal_to_push;
+          AnalyzePositiveCycle(arc_index, trail, &literal_to_push,
+                               &literal_reason_, &integer_reason_);
+          if (literal_to_push.empty()) {
+            std::vector<Literal>* conflict = trail->MutableConflict();
+            *conflict = literal_reason_;
+            integer_trail_->MergeReasonInto(integer_reason_, conflict);
+
+            // We don't want any duplicates.
+            // TODO(user): I think we could handle them, so maybe this is not
+            // needed.
+            gtl::STLSortAndRemoveDuplicates(conflict);
+            return false;
+          } else {
+            STLSortAndRemoveDuplicates(&literal_to_push);
+            for (const Literal l : literal_to_push) {
+              integer_trail_->EnqueueLiteral(l, literal_reason_,
+                                             integer_reason_);
+            }
+
+            // We just marked some optional variable as ignored, no need
+            // to update bf_parent_arc_of_[].
+            continue;
+          }
         }
 
         // We need to enforce the invariant that only the arc_index in

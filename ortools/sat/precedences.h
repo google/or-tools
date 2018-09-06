@@ -183,7 +183,10 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   bool BellmanFordTarjan(Trail* trail);
   bool DisassembleSubtree(int source, int target,
                           std::vector<bool>* can_be_skipped);
-  void ReportPositiveCycle(ArcIndex first_arc, Trail* trail);
+  void AnalyzePositiveCycle(ArcIndex first_arc, Trail* trail,
+                            std::vector<Literal>* literal_to_push,
+                            std::vector<Literal>* literal_reason,
+                            std::vector<IntegerLiteral>* integer_reason);
   void CleanUpMarkedArcsAndParents();
 
   // Loops over all the arcs and verify that there is no propagation left.
