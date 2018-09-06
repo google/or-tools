@@ -47,10 +47,10 @@ Displays a flattened list of intervals.
 ShortName(model, i)
 ```
 Returns a short name of an integer variable, or its negation.
-<h2 id="ortools.sat.python.cp_model.IntegerExpression">IntegerExpression</h2>
+<h2 id="ortools.sat.python.cp_model.LinearExpression">LinearExpression</h2>
 
 ```python
-IntegerExpression(self)
+LinearExpression(self)
 ```
 Holds an integer expression.
 
@@ -67,14 +67,14 @@ that can be added to the model as in:
     model.Add(x + 2 * y <= 5)
     model.Add(sum(array_of_vars) == 5)
 
-IntegerExpressions can also be used to specify the objective of the model.
+LinearExpressions can also be used to specify the objective of the model.
 
     model.Minimize(x + 2 * y + z)
 
-<h3 id="ortools.sat.python.cp_model.IntegerExpression.GetVarValueMap">GetVarValueMap</h3>
+<h3 id="ortools.sat.python.cp_model.LinearExpression.GetVarValueMap">GetVarValueMap</h3>
 
 ```python
-IntegerExpression.GetVarValueMap(self)
+LinearExpression.GetVarValueMap(self)
 ```
 Scan the expression, and return a list of (var_coef_map, constant).
 <h2 id="ortools.sat.python.cp_model.IntVar">IntVar</h2>
@@ -82,7 +82,18 @@ Scan the expression, and return a list of (var_coef_map, constant).
 ```python
 IntVar(self, model, bounds, name)
 ```
-Represents a IntegerExpression containing only a single variable.
+An integer variable.
+
+An integer variable is an object with a set of initial value.
+Variables appears in constraint like:
+
+    x + y >= 5
+    AllDifferent([x, y, z])
+
+Solving a model is equivalent to finding, for each variable, a single value
+from the set of initial values (called initial domain), such that the model is
+feasible, or optimal in case there is an objective function.
+
 <h3 id="ortools.sat.python.cp_model.IntVar.Not">Not</h3>
 
 ```python
@@ -95,10 +106,10 @@ It it only valid of the variable has a Boolean domain (0 or 1).
 
 Not that this method is nilpotent: x.Not().Not() == x.
 
-<h2 id="ortools.sat.python.cp_model.BoundIntegerExpression">BoundIntegerExpression</h2>
+<h2 id="ortools.sat.python.cp_model.LinearInequality">LinearInequality</h2>
 
 ```python
-BoundIntegerExpression(self, expr, bounds)
+LinearInequality(self, expr, bounds)
 ```
 Represents a linear constraint: lb <= expression <= ub.
 
@@ -132,9 +143,12 @@ Constraint.OnlyEnforceIf(self, boolvar)
 ```
 Adds an enforcement literal to the constraint.
 
-An enforcement literal (boolean variable or its negation) decides if the
-constraint is active or not. It acts as an implication, thus literal is
-true implies that the constraint must be enforce.
+Args:
+    boolvar: A Boolean literal, that is a Boolean variable or its negation.
+      An enforcement literal (boolean variable or its negation) decides if
+      the constraint is active or not. It acts as an implication, thus
+      literal is true implies that the constraint must be enforce.
+
 <h2 id="ortools.sat.python.cp_model.IntervalVar">IntervalVar</h2>
 
 ```python
@@ -217,7 +231,7 @@ Adds the constraints sum(terms) in bounds, where term = (var, coef).
 ```python
 CpModel.Add(self, ct)
 ```
-Adds a BoundIntegerExpression to the model.
+Adds a LinearInequality to the model.
 <h3 id="ortools.sat.python.cp_model.CpModel.AddAllDifferent">AddAllDifferent</h3>
 
 ```python
@@ -254,11 +268,10 @@ loop arc 'i -> i' associated with a true literal. Otherwise
 this constraint will fail.
 
 Args:
-  arcs: a list of arcs. An arc is a tuple
-        (source_node, destination_node, literal).
-        The arc is selected in the circuit if the literal is true.
-        Both source_node and destination_node must be integer value between
-        0 and the number of nodes - 1.
+  arcs: a list of arcs. An arc is a tuple (source_node, destination_node,
+    literal). The arc is selected in the circuit if the literal is true.
+    Both source_node and destination_node must be integer value between 0
+    and the number of nodes - 1.
 
 Returns:
   An instance of the Constraint class.
@@ -280,10 +293,9 @@ tuple_list.
 
 Args:
   variables: A list of variables.
-
   tuples_list: A list of admissible tuples. Each tuple must have the same
-               length as the variables, and the ith value of a tuple
-               corresponds to the ith variable.
+    length as the variables, and the ith value of a tuple corresponds to the
+    ith variable.
 
 Returns:
   An instance of the Constraint class.
@@ -305,10 +317,9 @@ where the list of impossible combinations is provided in the tuples list.
 
 Args:
   variables: A list of variables.
-
   tuples_list: A list of forbidden tuples. Each tuple must have the same
-               length as the variables, and the ith value of a tuple
-               corresponds to the ith variable.
+    length as the variables, and the ith value of a tuple corresponds to the
+    ith variable.
 
 Returns:
   An instance of the Constraint class.
@@ -354,7 +365,6 @@ Args:
   final_states: A non empty list of admissible final states.
   transition_triples: A list of transition for the automata, in the
     following format (current_state, variable_value, next_state).
-
 
 Returns:
   An instance of the Constraint class.
@@ -531,11 +541,11 @@ Internally, it ensures that start + size == end.
 
 Args:
   start: The start of the interval. It can be an integer value, or an
-         integer variable.
-  size: The size of the interval. It can be an integer value, or an
-        integer variable.
-  end: The end of the interval. It can be an integer value, or an
-       integer variable.
+    integer variable.
+  size: The size of the interval. It can be an integer value, or an integer
+    variable.
+  end: The end of the interval. It can be an integer value, or an integer
+    variable.
   name: The name of the interval variable.
 
 Returns:
@@ -546,7 +556,7 @@ Returns:
 ```python
 CpModel.NewOptionalIntervalVar(self, start, size, end, is_present, name)
 ```
-Creates an optional interval var from start, size, end. and is_present.
+Creates an optional interval var from start, size, end and is_present.
 
 An optional interval variable is a constraint, that is itself used in other
 constraints like NoOverlap. This constraint is protected by an is_present
@@ -556,13 +566,13 @@ Internally, it ensures that is_present implies start + size == end.
 
 Args:
   start: The start of the interval. It can be an integer value, or an
-         integer variable.
-  size: The size of the interval. It can be an integer value, or an
-        integer variable.
-  end: The end of the interval. It can be an integer value, or an
-       integer variable.
-  is_present: A literal that indicates if the interval is active or not.
-              A inactive interval is simply ignored by all constraints.
+    integer variable.
+  size: The size of the interval. It can be an integer value, or an integer
+    variable.
+  end: The end of the interval. It can be an integer value, or an integer
+    variable.
+  is_present: A literal that indicates if the interval is active or not. A
+    inactive interval is simply ignored by all constraints.
   name: The name of the interval variable.
 
 Returns:
@@ -618,9 +628,9 @@ This constraint enforces that:
 Args:
   intervals: The list of intervals.
   demands: The list of demands for each interval. Each demand must be >= 0.
-      Each demand can be an integer value, or an integer variable.
+    Each demand can be an integer value, or an integer variable.
   capacity: The maximum capacity of the cumulative constraint. It must be a
-            positive integer value or variable.
+    positive integer value or variable.
 
 Returns:
   An instance of the Constraint class.
@@ -660,15 +670,14 @@ Args:
   variables: a list of variables this strategy will assign.
   var_strategy: heuristic to choose the next variable to assign.
   domain_strategy: heuristic to reduce the domain of the selected variable.
+    Currently, this is advanced code, the union of all strategies added to
+    the model must be complete, i.e. instantiates all variables. Otherwise,
+    Solve() will fail.
 
-Currently, this is advanced code, the union of all strategies added to the
-model must be complete, i.e. instantiates all variables.
-Otherwise, Solve() will fail.
-
-<h2 id="ortools.sat.python.cp_model.EvaluateIntegerExpression">EvaluateIntegerExpression</h2>
+<h2 id="ortools.sat.python.cp_model.EvaluateLinearExpression">EvaluateLinearExpression</h2>
 
 ```python
-EvaluateIntegerExpression(expression, solution)
+EvaluateLinearExpression(expression, solution)
 ```
 Evaluate an integer expression against a solution.
 <h2 id="ortools.sat.python.cp_model.EvaluateBooleanExpression">EvaluateBooleanExpression</h2>
@@ -682,19 +691,62 @@ Evaluate an boolean expression against a solution.
 ```python
 CpSolverSolutionCallback(self)
 ```
-Nicer solution callback that uses the CpSolver class.
+Solution callback.
+
+This class implements a callback that will be called at each new solution
+found during search.
+
+The method OnSolutionCallback() will be called by the solver, and must be
+implemented. The current solution can be queried using the BooleanValue()
+and Value() methods.
+
+<h3 id="ortools.sat.python.cp_model.CpSolverSolutionCallback.BooleanValue">BooleanValue</h3>
+
+```python
+CpSolverSolutionCallback.BooleanValue(self, lit)
+```
+Returns the Boolean value of a Boolean literal.
+
+Args:
+    lit: A Boolean variable or its negation.
+
+Returns:
+    The Boolean value of the literal in the solution.
+
+Raises:
+    RuntimeError: if 'lit' is not a Boolean variable or its negation.
+
 <h3 id="ortools.sat.python.cp_model.CpSolverSolutionCallback.Value">Value</h3>
 
 ```python
 CpSolverSolutionCallback.Value(self, expression)
 ```
-Returns the value of an integer expression.
+Evaluates an linear expression in the current solution.
+
+Args:
+    expression: a linear expression of the model.
+
+Returns:
+    An integer value equal to the evaluation of the of the linear expression
+    against the current solution.
+
+Raises:
+    RuntimeError: if 'expression' is not a linear integer expression.
+
 <h2 id="ortools.sat.python.cp_model.CpSolver">CpSolver</h2>
 
 ```python
 CpSolver(self)
 ```
 Main solver class.
+
+The purpose of this class is to search for a solution of a model given to the
+Solve() method.
+
+Once Solve() is called, this class allows inspective the solution found
+with the Value() and BooleanValue() methods, as well as general statistics
+on the solve procedure.
+
 <h3 id="ortools.sat.python.cp_model.CpSolver.Solve">Solve</h3>
 
 ```python
@@ -759,13 +811,13 @@ Returns the number of boolean variables managed by the SAT solver.
 ```python
 CpSolver.NumConflicts(self)
 ```
-Returns the number of active conflicts kept by the SAT solver.
+Returns the number of conflicts since the creation of the solver.
 <h3 id="ortools.sat.python.cp_model.CpSolver.NumBranches">NumBranches</h3>
 
 ```python
 CpSolver.NumBranches(self)
 ```
-Returns the number of search branches explored.
+Returns the number of search branches explored by the solver.
 <h3 id="ortools.sat.python.cp_model.CpSolver.WallTime">WallTime</h3>
 
 ```python

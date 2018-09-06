@@ -142,7 +142,7 @@ public class SimpleSolve {
 
 ### C\# code
 
-As in python, the CpSolver class encapsulates searching for a solution of a
+As in Python, the CpSolver class encapsulates searching for a solution of a
 model.
 
 ```cs
@@ -188,7 +188,7 @@ public class CodeSamplesSat
 The SatParameters protobuf encapsulates the set of parameters of a CP-SAT
 solver. The most useful one is the time limit.
 
-### Specifying the time limit in python
+### Specifying the time limit in Python
 
 ```python
 """Solves a problem with a time limit."""
@@ -659,7 +659,7 @@ The exact implementation depends on the target language.
 
 ### Python code
 
-To search for all solutions, the SearchForAllSolutions method must be used.
+To search for all solutions, use the SearchForAllSolutions method.
 
 ```python
 """Code sample that solves a model and displays all solutions."""
@@ -714,7 +714,7 @@ MinimalSatSearchForAllSolutions()
 
 ### C++ code
 
-To search for all solution, a parameter of the sat solver must be changed.
+To search for all solutions, a parameter of the SAT solver must be changed.
 
 ```cpp
 #include "ortools/sat/cp_model.pb.h"
@@ -845,7 +845,7 @@ public class SolveAllSolutions {
 
 ### C\# code
 
-As in python, CpSolver.SearchAllSolutions() must be called.
+As in Python, CpSolver.SearchAllSolutions() must be called.
 
 ```cs
 using System;
@@ -916,14 +916,14 @@ public class CodeSamplesSat
 
 ## Stopping search early
 
-Sometimes, one can decide that the current solution is good enough.
-In this section, we will take the previous model, but only ask for the
-first 5 solutions of the model. 
+Sometimes, you might decide that the current solution is good enough. In this
+section, we will enumerate all possible combinations of three variables, and
+stop after the fifth combination found.
 
 ### Python code
 
-Stopping search is performed by calling CpSolverSolutionCallback.StopSearch()
-when called on a solution.
+You can stop the search by calling StopSearch() inside of
+CpSolverSolutionCallback.OnSolutionCallback().
 
 ```python
 """Code sample that solves a model and displays a small number of solutions."""
@@ -966,8 +966,6 @@ def StopAfterNSolutions():
   x = model.NewIntVar(0, num_vals - 1, 'x')
   y = model.NewIntVar(0, num_vals - 1, 'y')
   z = model.NewIntVar(0, num_vals - 1, 'z')
-  # Create the constraints.
-  model.Add(x != y)
 
   # Create a solver and solve.
   solver = cp_model.CpSolver()
@@ -975,6 +973,7 @@ def StopAfterNSolutions():
   status = solver.SearchForAllSolutions(model, solution_printer)
   print('Status = %s' % solver.StatusName(status))
   print('Number of solutions found: %i' % solution_printer.SolutionCount())
+  assert solution_printer.SolutionCount() == 5
 
 
 StopAfterNSolutions()
@@ -983,7 +982,7 @@ StopAfterNSolutions()
 ### C++ code
 
 Stopping search is done by registering an atomic bool on the model-owned time
-limit, and setting this one to true.
+limit, and setting that bool to true.
 
 ```cpp
 
@@ -1010,25 +1009,10 @@ void StopAfterNSolutions() {
     return index;
   };
 
-  auto add_different = [&cp_model](const int left_var, const int right_var) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    lin->add_vars(left_var);
-    lin->add_coeffs(1);
-    lin->add_vars(right_var);
-    lin->add_coeffs(-1);
-    lin->add_domain(kint64min);
-    lin->add_domain(-1);
-    lin->add_domain(1);
-    lin->add_domain(kint64max);
-  };
-
   const int kNumVals = 3;
   const int x = new_variable(0, kNumVals - 1);
   const int y = new_variable(0, kNumVals - 1);
   const int z = new_variable(0, kNumVals - 1);
-
-  add_different(x, y);
 
   Model model;
 
@@ -1056,6 +1040,7 @@ void StopAfterNSolutions() {
   }));
   const CpSolverResponse response = SolveCpModel(cp_model, &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
+  CHECK_EQ(num_solutions, kSolutionLimit);
 }
 
 }  // namespace sat
@@ -1070,8 +1055,8 @@ int main() {
 
 ### Java code
 
-Stopping search is performed by calling CpSolverSolutionCallback.stopSearch()
-when called on a solution.
+Stopping search is performed by calling stopSearch() inside of
+CpSolverSolutionCallback.onSolutionCallback().
 
 ```java
 import com.google.ortools.sat.CpModel;
@@ -1120,8 +1105,6 @@ public class StopAfterNSolutions {
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
-    // Create the constraints.
-    model.addDifferent(x, y);
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
@@ -1130,14 +1113,17 @@ public class StopAfterNSolutions {
     solver.searchAllSolutions(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
+    if (cb.getSolutionCount() != 5) {
+      throw new RuntimeException("Did not stop the search correctly.");
+    }
   }
 }
 ```
 
 ### C\# code
 
-Stopping search is performed by calling CpSolverSolutionCallback.StopSearch()
-when called on a solution.
+Stopping search is performed by calling StopSearch() inside of
+CpSolverSolutionCallback.OnSolutionCallback().
 
 ```cs
 
@@ -1186,9 +1172,6 @@ public class CodeSamplesSat {
     IntVar x = model.NewIntVar(0, num_vals - 1, "x");
     IntVar y = model.NewIntVar(0, num_vals - 1, "y");
     IntVar z = model.NewIntVar(0, num_vals - 1, "z");
-
-    // Adds a different constraint.
-    model.Add(x != y);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

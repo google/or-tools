@@ -30,13 +30,12 @@ from ortools.sat import pywrapsat
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
-# python API very intuitive. See cp_model_test.py for examples.
+# python API very intuitive. See ../samples/*.py for examples.
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
 INT32_MIN = -2147483648
 INT32_MAX = 2147483647
-
 
 # Cp Solver status (exported to avoid importing cp_model_cp2).
 UNKNOWN = cp_model_pb2.UNKNOWN
@@ -148,7 +147,7 @@ def ShortName(model, i):
     return '[%s]' % DisplayBounds(v.domain)
 
 
-class IntegerExpression(object):
+class LinearExpression(object):
   """Holds an integer expression.
 
   An integer expressiom regroups linear expressions build from integer
@@ -164,11 +163,10 @@ class IntegerExpression(object):
       model.Add(x + 2 * y <= 5)
       model.Add(sum(array_of_vars) == 5)
 
-  IntegerExpressions can also be used to specify the objective of the model.
+  LinearExpressions can also be used to specify the objective of the model.
 
       model.Minimize(x + 2 * y + z)
   """
-
 
   def GetVarValueMap(self):
     """Scan the expression, and return a list of (var_coef_map, constant)."""
@@ -213,10 +211,8 @@ class IntegerExpression(object):
         return self
       AssertIsInt64(arg)
       return _ProductCst(self, arg)
-    elif isinstance(arg, IntegerExpression):
-      return _Product(self, arg)
     else:
-      raise TypeError('Not an integer expression: ' + str(arg))
+      raise TypeError('Not an integer linear expression: ' + str(arg))
 
   def __rmul__(self, arg):
     AssertIsInt64(arg)
@@ -225,13 +221,13 @@ class IntegerExpression(object):
     return _ProductCst(self, arg)
 
   def __div__(self, _):
-    raise NotImplementedError('IntegerExpression.__div__')
+    raise NotImplementedError('LinearExpression.__div__')
 
   def __truediv__(self, _):
-    raise NotImplementedError('IntegerExpression.__truediv__')
+    raise NotImplementedError('LinearExpression.__truediv__')
 
   def __mod__(self, _):
-    raise NotImplementedError('IntegerExpression.__mod__')
+    raise NotImplementedError('LinearExpression.__mod__')
 
   def __neg__(self):
     return _ProductCst(self, -1)
@@ -241,41 +237,41 @@ class IntegerExpression(object):
       return False
     if isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
-      return BoundIntegerExpression(self, [arg, arg])
+      return LinearInequality(self, [arg, arg])
     else:
-      return BoundIntegerExpression(self - arg, [0, 0])
+      return LinearInequality(self - arg, [0, 0])
 
   def __ge__(self, arg):
     if isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
-      return BoundIntegerExpression(self, [arg, INT_MAX])
+      return LinearInequality(self, [arg, INT_MAX])
     else:
-      return BoundIntegerExpression(self - arg, [0, INT_MAX])
+      return LinearInequality(self - arg, [0, INT_MAX])
 
   def __le__(self, arg):
     if isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
-      return BoundIntegerExpression(self, [INT_MIN, arg])
+      return LinearInequality(self, [INT_MIN, arg])
     else:
-      return BoundIntegerExpression(self - arg, [INT_MIN, 0])
+      return LinearInequality(self - arg, [INT_MIN, 0])
 
   def __lt__(self, arg):
     if isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
       if arg == INT_MIN:
         raise ArithmeticError('< INT_MIN is not supported')
-      return BoundIntegerExpression(self, [INT_MIN, CapInt64(arg - 1)])
+      return LinearInequality(self, [INT_MIN, CapInt64(arg - 1)])
     else:
-      return BoundIntegerExpression(self - arg, [INT_MIN, -1])
+      return LinearInequality(self - arg, [INT_MIN, -1])
 
   def __gt__(self, arg):
     if isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
       if arg == INT_MAX:
         raise ArithmeticError('> INT_MAX is not supported')
-      return BoundIntegerExpression(self, [CapInt64(arg + 1), INT_MAX])
+      return LinearInequality(self, [CapInt64(arg + 1), INT_MAX])
     else:
-      return BoundIntegerExpression(self - arg, [1, INT_MAX])
+      return LinearInequality(self - arg, [1, INT_MAX])
 
   def __ne__(self, arg):
     if arg is None:
@@ -283,20 +279,20 @@ class IntegerExpression(object):
     if isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
       if arg == INT_MAX:
-        return BoundIntegerExpression(self, [INT_MIN, INT_MAX - 1])
+        return LinearInequality(self, [INT_MIN, INT_MAX - 1])
       elif arg == INT_MIN:
-        return BoundIntegerExpression(self, [INT_MIN + 1, INT_MAX])
+        return LinearInequality(self, [INT_MIN + 1, INT_MAX])
       else:
-        return BoundIntegerExpression(
-            self, [INT_MIN,
-                   CapInt64(arg - 1),
-                   CapInt64(arg + 1), INT_MAX])
+        return LinearInequality(
+            self,
+            [INT_MIN, CapInt64(arg - 1),
+             CapInt64(arg + 1), INT_MAX])
     else:
-      return BoundIntegerExpression(self - arg, [INT_MIN, -1, 1, INT_MAX])
+      return LinearInequality(self - arg, [INT_MIN, -1, 1, INT_MAX])
 
 
-class _ProductCst(IntegerExpression):
-  """Represents the product of a IntegerExpression by a constant."""
+class _ProductCst(LinearExpression):
+  """Represents the product of a LinearExpression by a constant."""
 
   def __init__(self, expr, coef):
     AssertIsInt64(coef)
@@ -323,8 +319,8 @@ class _ProductCst(IntegerExpression):
     return self.__expr
 
 
-class _SumArray(IntegerExpression):
-  """Represents the sum of a list of IntegerExpression and a constant."""
+class _SumArray(LinearExpression):
+  """Represents the sum of a list of LinearExpression and a constant."""
 
   def __init__(self, array):
     self.__array = []
@@ -333,7 +329,7 @@ class _SumArray(IntegerExpression):
       if isinstance(x, numbers.Integral):
         AssertIsInt64(x)
         self.__constant += x
-      elif isinstance(x, IntegerExpression):
+      elif isinstance(x, LinearExpression):
         self.__array.append(x)
       else:
         raise TypeError('Not an integer expression: ' + str(x))
@@ -356,8 +352,19 @@ class _SumArray(IntegerExpression):
     return self.__constant
 
 
-class IntVar(IntegerExpression):
-  """Represents a IntegerExpression containing only a single variable."""
+class IntVar(LinearExpression):
+  """An integer variable.
+
+  An integer variable is an object with a set of initial value.
+  Variables appears in constraint like:
+
+      x + y >= 5
+      AllDifferent([x, y, z])
+
+  Solving a model is equivalent to finding, for each variable, a single value
+  from the set of initial values (called initial domain), such that the model is
+  feasible, or optimal in case there is an objective function.
+  """
 
   def __init__(self, model, bounds, name):
     """See CpModel.NewIntVar below."""
@@ -397,7 +404,7 @@ class IntVar(IntegerExpression):
     return self.__negation
 
 
-class _NotBooleanVariable(IntegerExpression):
+class _NotBooleanVariable(LinearExpression):
   """Negation of a boolean variable."""
 
   def __init__(self, boolvar):
@@ -413,27 +420,7 @@ class _NotBooleanVariable(IntegerExpression):
     return 'not(%s)' % str(self.__boolvar)
 
 
-class _Product(IntegerExpression):
-  """Represents the product of two IntegerExpressions."""
-
-  def __init__(self, left, right):
-    self.__left = left
-    self.__right = right
-
-  def __str__(self):
-    return '(' + str(self.__left) + ' * ' + str(self.__right) + ')'
-
-  def __repr__(self):
-    return 'Product(' + repr(self.__left) + ', ' + repr(self.__right) + ')'
-
-  def Left(self):
-    return self.__left
-
-  def Right(self):
-    return self.__right
-
-
-class BoundIntegerExpression(object):
+class LinearInequality(object):
   """Represents a linear constraint: lb <= expression <= ub.
 
   The only usage of this class is to be added to the CpModel through the
@@ -493,9 +480,12 @@ class Constraint(object):
   def OnlyEnforceIf(self, boolvar):
     """Adds an enforcement literal to the constraint.
 
-    An enforcement literal (boolean variable or its negation) decides if the
-    constraint is active or not. It acts as an implication, thus literal is
-    true implies that the constraint must be enforce."""
+    Args:
+        boolvar: A Boolean literal, that is a Boolean variable or its negation.
+          An enforcement literal (boolean variable or its negation) decides if
+          the constraint is active or not. It acts as an implication, thus
+          literal is true implies that the constraint must be enforce.
+    """
 
     if isinstance(boolvar, numbers.Integral) and boolvar == 1:
       # Always true. Do nothing.
@@ -640,8 +630,8 @@ class CpModel(object):
     return ct
 
   def Add(self, ct):
-    """Adds a BoundIntegerExpression to the model."""
-    if isinstance(ct, BoundIntegerExpression):
+    """Adds a LinearInequality to the model."""
+    if isinstance(ct, LinearInequality):
       coeffs_map, constant = ct.Expression().GetVarValueMap()
       bounds = [CapSub(x, constant) for x in ct.Bounds()]
       return self.AddLinearConstraintWithBounds(iteritems(coeffs_map), bounds)
@@ -692,11 +682,10 @@ class CpModel(object):
     this constraint will fail.
 
     Args:
-      arcs: a list of arcs. An arc is a tuple
-            (source_node, destination_node, literal).
-            The arc is selected in the circuit if the literal is true.
-            Both source_node and destination_node must be integer value between
-            0 and the number of nodes - 1.
+      arcs: a list of arcs. An arc is a tuple (source_node, destination_node,
+        literal). The arc is selected in the circuit if the literal is true.
+        Both source_node and destination_node must be integer value between 0
+        and the number of nodes - 1.
 
     Returns:
       An instance of the Constraint class.
@@ -727,10 +716,9 @@ class CpModel(object):
 
     Args:
       variables: A list of variables.
-
       tuples_list: A list of admissible tuples. Each tuple must have the same
-                   length as the variables, and the ith value of a tuple
-                   corresponds to the ith variable.
+        length as the variables, and the ith value of a tuple corresponds to the
+        ith variable.
 
     Returns:
       An instance of the Constraint class.
@@ -764,10 +752,9 @@ class CpModel(object):
 
     Args:
       variables: A list of variables.
-
       tuples_list: A list of forbidden tuples. Each tuple must have the same
-                   length as the variables, and the ith value of a tuple
-                   corresponds to the ith variable.
+        length as the variables, and the ith value of a tuple corresponds to the
+        ith variable.
 
     Returns:
       An instance of the Constraint class.
@@ -819,7 +806,6 @@ class CpModel(object):
       final_states: A non empty list of admissible final states.
       transition_triples: A list of transition for the automata, in the
         following format (current_state, variable_value, next_state).
-
 
     Returns:
       An instance of the Constraint class.
@@ -1090,11 +1076,11 @@ class CpModel(object):
 
     Args:
       start: The start of the interval. It can be an integer value, or an
-             integer variable.
-      size: The size of the interval. It can be an integer value, or an
-            integer variable.
-      end: The end of the interval. It can be an integer value, or an
-           integer variable.
+        integer variable.
+      size: The size of the interval. It can be an integer value, or an integer
+        variable.
+      end: The end of the interval. It can be an integer value, or an integer
+        variable.
       name: The name of the interval variable.
 
     Returns:
@@ -1108,7 +1094,7 @@ class CpModel(object):
                        name)
 
   def NewOptionalIntervalVar(self, start, size, end, is_present, name):
-    """Creates an optional interval var from start, size, end. and is_present.
+    """Creates an optional interval var from start, size, end and is_present.
 
     An optional interval variable is a constraint, that is itself used in other
     constraints like NoOverlap. This constraint is protected by an is_present
@@ -1118,13 +1104,13 @@ class CpModel(object):
 
     Args:
       start: The start of the interval. It can be an integer value, or an
-             integer variable.
-      size: The size of the interval. It can be an integer value, or an
-            integer variable.
-      end: The end of the interval. It can be an integer value, or an
-           integer variable.
-      is_present: A literal that indicates if the interval is active or not.
-                  A inactive interval is simply ignored by all constraints.
+        integer variable.
+      size: The size of the interval. It can be an integer value, or an integer
+        variable.
+      end: The end of the interval. It can be an integer value, or an integer
+        variable.
+      is_present: A literal that indicates if the interval is active or not. A
+        inactive interval is simply ignored by all constraints.
       name: The name of the interval variable.
 
     Returns:
@@ -1189,9 +1175,9 @@ class CpModel(object):
     Args:
       intervals: The list of intervals.
       demands: The list of demands for each interval. Each demand must be >= 0.
-          Each demand can be an integer value, or an integer variable.
+        Each demand can be an integer value, or an integer variable.
       capacity: The maximum capacity of the cumulative constraint. It must be a
-                positive integer value or variable.
+        positive integer value or variable.
 
     Returns:
       An instance of the Constraint class.
@@ -1276,7 +1262,7 @@ class CpModel(object):
       else:
         self.__model.objective.vars.append(self.Negated(obj.Index()))
         self.__model.objective.scaling_factor = -1
-    elif isinstance(obj, IntegerExpression):
+    elif isinstance(obj, LinearExpression):
       coeffs_map, constant = obj.GetVarValueMap()
       self.__model.ClearField('objective')
       if minimize:
@@ -1315,10 +1301,9 @@ class CpModel(object):
       variables: a list of variables this strategy will assign.
       var_strategy: heuristic to choose the next variable to assign.
       domain_strategy: heuristic to reduce the domain of the selected variable.
-
-    Currently, this is advanced code, the union of all strategies added to the
-    model must be complete, i.e. instantiates all variables.
-    Otherwise, Solve() will fail.
+        Currently, this is advanced code, the union of all strategies added to
+        the model must be complete, i.e. instantiates all variables. Otherwise,
+        Solve() will fail.
     """
 
     strategy = self.__model.search_strategy.add()
@@ -1336,7 +1321,7 @@ class CpModel(object):
       raise TypeError('TypeError: ' + str(x) + ' is not a boolean variable')
 
 
-def EvaluateIntegerExpression(expression, solution):
+def EvaluateLinearExpression(expression, solution):
   """Evaluate an integer expression against a solution."""
   if isinstance(expression, numbers.Integral):
     return expression
@@ -1372,9 +1357,28 @@ def EvaluateBooleanExpression(literal, solution):
 
 
 class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
-  """Nicer solution callback that uses the CpSolver class."""
+  """Solution callback.
+
+  This class implements a callback that will be called at each new solution
+  found during search.
+
+  The method OnSolutionCallback() will be called by the solver, and must be
+  implemented. The current solution can be queried using the BooleanValue()
+  and Value() methods.
+  """
 
   def BooleanValue(self, lit):
+    """Returns the Boolean value of a Boolean literal.
+
+    Args:
+        lit: A Boolean variable or its negation.
+
+    Returns:
+        The Boolean value of the literal in the solution.
+
+    Raises:
+        RuntimeError: if 'lit' is not a Boolean variable or its negation.
+    """
     if not self.Response().solution:
       raise RuntimeError('Solve() has not be called.')
     if isinstance(lit, numbers.Integral):
@@ -1386,7 +1390,18 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
       raise TypeError('Cannot interpret %s as a boolean expression.' % lit)
 
   def Value(self, expression):
-    """Returns the value of an integer expression."""
+    """Evaluates an linear expression in the current solution.
+
+    Args:
+        expression: a linear expression of the model.
+
+    Returns:
+        An integer value equal to the evaluation of the of the linear expression
+        against the current solution.
+
+    Raises:
+        RuntimeError: if 'expression' is not a linear integer expression.
+    """
     if not self.Response().solution:
       raise RuntimeError('Solve() has not be called.')
     if isinstance(expression, numbers.Integral):
@@ -1409,7 +1424,15 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
 
 
 class CpSolver(object):
-  """Main solver class."""
+  """Main solver class.
+
+  The purpose of this class is to search for a solution of a model given to the
+  Solve() method.
+
+  Once Solve() is called, this class allows inspective the solution found
+  with the Value() and BooleanValue() methods, as well as general statistics
+  on the solve procedure.
+  """
 
   def __init__(self):
     self.__model = None
@@ -1459,7 +1482,7 @@ class CpSolver(object):
     """Returns the value of an integer expression after solve."""
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
-    return EvaluateIntegerExpression(expression, self.__solution)
+    return EvaluateLinearExpression(expression, self.__solution)
 
   def BooleanValue(self, literal):
     """Returns the boolean value of an integer expression after solve."""
@@ -1480,11 +1503,11 @@ class CpSolver(object):
     return self.__solution.num_booleans
 
   def NumConflicts(self):
-    """Returns the number of active conflicts kept by the SAT solver."""
+    """Returns the number of conflicts since the creation of the solver."""
     return self.__solution.num_conflicts
 
   def NumBranches(self):
-    """Returns the number of search branches explored."""
+    """Returns the number of search branches explored by the solver."""
     return self.__solution.num_branches
 
   def WallTime(self):

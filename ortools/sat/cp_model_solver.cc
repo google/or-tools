@@ -1645,6 +1645,7 @@ bool LoadConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
 
 void FillSolutionInResponse(const CpModelProto& model_proto,
                             const ModelWithMapping& m,
+                            IntegerVariable objective_var,
                             CpSolverResponse* response) {
   const std::vector<int64> solution = m.ExtractFullAssignment();
   response->set_status(CpSolverStatus::FEASIBLE);
@@ -1678,6 +1679,24 @@ void FillSolutionInResponse(const CpModelProto& model_proto,
             model_proto.variables(i).domain_size() - 1));
       }
     }
+  }
+
+  // Fill the objective value and the best objective bound.
+  if (model_proto.has_objective()) {
+    const CpObjectiveProto& obj = model_proto.objective();
+    int64 objective_value = 0;
+    for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
+      objective_value += model_proto.objective().coeffs(i) *
+                         m.model()->Get(LowerBound(
+                             m.Integer(model_proto.objective().vars(i))));
+    }
+    response->set_objective_value(ScaleObjectiveValue(obj, objective_value));
+    const IntegerTrail* integer_trail = m.model()->Get<IntegerTrail>();
+    response->set_best_objective_bound(ScaleObjectiveValue(
+        obj, integer_trail->LevelZeroBound(objective_var).value()));
+  } else {
+    response->clear_objective_value();
+    response->clear_best_objective_bound();
   }
 }
 
@@ -2313,11 +2332,11 @@ CpSolverResponse SolveCpModelInternal(
   response.set_status(CpSolverStatus::MODEL_INVALID);
 
   auto fill_response_statistics = [&]() {
-    response.set_num_booleans(model->Get<SatSolver>()->NumVariables());
-    response.set_num_branches(model->Get<SatSolver>()->num_branches());
-    response.set_num_conflicts(model->Get<SatSolver>()->num_failures());
-    response.set_num_binary_propagations(
-        model->Get<SatSolver>()->num_propagations());
+    auto* sat_solver = model->Get<SatSolver>();
+    response.set_num_booleans(sat_solver->NumVariables());
+    response.set_num_branches(sat_solver->num_branches());
+    response.set_num_conflicts(sat_solver->num_failures());
+    response.set_num_binary_propagations(sat_solver->num_propagations());
     response.set_num_integer_propagations(
         model->Get<IntegerTrail>() == nullptr
             ? 0
@@ -2502,6 +2521,21 @@ CpSolverResponse SolveCpModelInternal(
   int num_solutions = 0;
   SatSolver::Status status;
 
+  // TODO(user): remove argument as it isn't used. Pass solution info instead?
+  std::string solution_info;
+  const auto solution_observer = [&model_proto, &response, &num_solutions, &m,
+                                  &solution_info, &external_solution_observer,
+                                  objective_var,
+                                  &fill_response_statistics](const Model&) {
+    num_solutions++;
+    FillSolutionInResponse(model_proto, m, objective_var, &response);
+    fill_response_statistics();
+    response.set_solution_info(
+        absl::StrCat("num_bool:", m.model()->Get<SatSolver>()->NumVariables(),
+                     " ", solution_info));
+    external_solution_observer(response);
+  };
+
   // Load solution hint.
   // We follow it and allow for a tiny number of conflicts before giving up.
   //
@@ -2533,26 +2567,23 @@ CpSolverResponse SolveCpModelInternal(
     status =
         SolveProblemWithPortfolioSearch(decision_policies, {no_restart}, model);
     if (status == SatSolver::Status::FEASIBLE) {
-      VLOG(2) << "Solution hint: success, feasible solution found.";
-    } else {
-      VLOG(2) << "Solution: failure, no feasible solution found.";
+      solution_info = "hint";
+      solution_observer(*model);
+      CHECK(SolutionIsFeasible(model_proto,
+                               std::vector<int64>(response.solution().begin(),
+                                                  response.solution().end())));
     }
     model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(
         old_conflict_limit);
   }
 
+  solution_info = "";
   if (!model_proto.has_objective()) {
     while (true) {
       status = SolveIntegerProblemWithLazyEncoding(
           /*assumptions=*/{}, next_decision, model);
       if (status != SatSolver::Status::FEASIBLE) break;
-
-      // TODO(user): add all solutions to the response? or their count?
-      ++num_solutions;
-      FillSolutionInResponse(model_proto, m, &response);
-      fill_response_statistics();
-      external_solution_observer(response);
-
+      solution_observer(*model);
       if (!parameters.enumerate_all_solutions()) break;
       model->Add(ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
     }
@@ -2567,25 +2598,6 @@ CpSolverResponse SolveCpModelInternal(
     const CpObjectiveProto& obj = model_proto.objective();
     VLOG(2) << obj.vars_size() << " terms in the proto objective.";
     VLOG(2) << "Initial num_bool: " << model->Get<SatSolver>()->NumVariables();
-    const auto solution_observer = [&model_proto, &response, &num_solutions,
-                                    &obj, &m, &external_solution_observer,
-                                    objective_var, &fill_response_statistics](
-                                       const Model& sat_model) {
-      num_solutions++;
-      FillSolutionInResponse(model_proto, m, &response);
-      fill_response_statistics();
-      int64 objective_value = 0;
-      for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
-        objective_value += model_proto.objective().coeffs(i) *
-                           sat_model.Get(LowerBound(
-                               m.Integer(model_proto.objective().vars(i))));
-      }
-      response.set_objective_value(ScaleObjectiveValue(obj, objective_value));
-      const IntegerTrail* integer_trail = sat_model.Get<IntegerTrail>();
-      response.set_best_objective_bound(ScaleObjectiveValue(
-          obj, integer_trail->LevelZeroBound(objective_var).value()));
-      external_solution_observer(response);
-    };
 
     if (parameters.optimize_with_core()) {
       std::vector<IntegerVariable> linear_vars;
@@ -3050,9 +3062,6 @@ CpSolverResponse SolveCpModelParallel(
     const CpModelProto& model_proto,
     const std::function<void(const CpSolverResponse&)>& observer,
     Model* model) {
-  WallTimer timer;
-  timer.Start();
-
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   const int random_seed = params.random_seed();
   CHECK(!params.enumerate_all_solutions());
@@ -3078,10 +3087,6 @@ CpSolverResponse SolveCpModelParallel(
       best_response.set_best_objective_bound(-kInfinity);
     }
   }
-
-  // Fix the walltime before returning the response.
-  auto fix_walltime = ::operations_research::util::MakeCleanup(
-      [&timer, &best_response]() { best_response.set_wall_time(timer.Get()); });
 
   absl::Mutex mutex;
 
@@ -3133,29 +3138,21 @@ CpSolverResponse SolveCpModelParallel(
     return best_response;
   };
 
-  int num_solutions = 1;
   for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
     std::string worker_name;
     const SatParameters local_params =
         DiversifySearchParameters(params, model_proto, worker_id, &worker_name);
 
     const auto solution_observer =
-        [maximize, &num_solutions, worker_id, worker_name, &mutex,
-         &best_response, &observer, &timer,
+        [maximize, worker_name, &mutex, &best_response, &observer,
          &first_solution_found_or_search_finished](const CpSolverResponse& r) {
           absl::MutexLock lock(&mutex);
 
           // Check is the new solution is actually improving upon the best
           // solution found so far.
           if (MergeOptimizationSolution(r, maximize, &best_response)) {
-            VLOG(1) << absl::StrFormat(
-                "#%-5i %-6s %8.2fs  obj:[%0.0f,%0.0f] %s", num_solutions++,
-                worker_name.c_str(), timer.Get(),
-                maximize ? best_response.objective_value()
-                         : best_response.best_objective_bound(),
-                maximize ? best_response.best_objective_bound()
-                         : best_response.objective_value(),
-                r.solution_info().c_str());
+            best_response.set_solution_info(
+                absl::StrCat(worker_name, " ", best_response.solution_info()));
             observer(best_response);
             // We have potentially displayed the improving solution, and updated
             // the best_response. We can awaken sleeping LNS threads.
@@ -3222,6 +3219,9 @@ CpSolverResponse SolveCpModelParallel(
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
+  WallTimer timer;
+  timer.Start();
+
   // Validate model_proto.
   // TODO(user): provide an option to skip this step for speed?
   {
@@ -3317,9 +3317,19 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
+  int num_solutions = 0;
   std::function<void(const CpSolverResponse&)> observer_function =
-      [&model_proto, &observers,
+      [&model_proto, &observers, &num_solutions, &timer,
        &postprocess_solution](const CpSolverResponse& response) {
+        const bool maximize = model_proto.objective().scaling_factor() < 0.0;
+        VLOG(1) << absl::StrFormat("#%-5i %6.2fs  obj:[%0.0f,%0.0f]  %s",
+                                   ++num_solutions, timer.Get(),
+                                   maximize ? response.objective_value()
+                                            : response.best_objective_bound(),
+                                   maximize ? response.best_objective_bound()
+                                            : response.objective_value(),
+                                   response.solution_info().c_str());
+
         if (observers.empty()) return;
         CpSolverResponse copy = response;
         postprocess_solution(&copy);
@@ -3334,6 +3344,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       };
 
   CpSolverResponse response;
+
 #if defined(__PORTABLE_PLATFORM__)
   if (/* DISABLES CODE */ (false)) {
     // We ignore the multithreading parameter in this case.
@@ -3346,35 +3357,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // TODO(user, lperron): Provide a better diversification for different
     // seeds.
     const int random_seed = model->GetOrCreate<SatParameters>()->random_seed();
-    int num_solutions = 1;
-    response =
-        SolveCpModelWithLNS(new_model,
-                            [&num_solutions, &model, &observer_function](
-                                const CpSolverResponse& response) {
-                              observer_function(response);
-                              VLOG(1) << "Solution #" << num_solutions++
-                                      << " obj:" << response.objective_value()
-                                      << " " << response.solution_info();
-                            },
-                            1, random_seed, model);
+    response = SolveCpModelWithLNS(new_model, observer_function, 1, random_seed,
+                                   model);
   } else {
-    int num_solutions = 1;
-    const bool has_objective = new_model.has_objective();
-    response = SolveCpModelInternal(
-        new_model, /*is_real_solve=*/true,
-        [&num_solutions, &model, has_objective,
-         &observer_function](const CpSolverResponse& response) {
-          observer_function(response);
-          if (has_objective) {
-            VLOG(1) << "Solution #" << num_solutions++
-                    << " obj:" << response.objective_value()
-                    << " num_bool:" << model->Get<SatSolver>()->NumVariables();
-          } else {
-            VLOG(1) << "Solution #" << num_solutions++
-                    << " num_bool:" << model->Get<SatSolver>()->NumVariables();
-          }
-        },
-        model);
+    response = SolveCpModelInternal(new_model, /*is_real_solve=*/true,
+                                    observer_function, model);
   }
 
   postprocess_solution(&response);
@@ -3383,6 +3370,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                              std::vector<int64>(response.solution().begin(),
                                                 response.solution().end())));
   }
+
+  // Fix the walltime before returning the response.
+  response.set_wall_time(timer.Get());
   return response;
 }
 
