@@ -264,10 +264,29 @@ issue57 \
 min_max_test \
 visitor_test
 
+CC_SAMPLES = \
+binpacking_problem \
+bool_or_sample \
+channeling_sample \
+code_sample \
+interval_sample \
+literal_sample \
+no_overlap_sample \
+optional_interval_sample \
+rabbits_and_pheasants \
+ranking_sample \
+reified_sample \
+simple_solve \
+solve_all_solutions \
+solve_with_intermediate_solutions \
+solve_with_time_limit \
+stop_after_n_solutions \
+
 .PHONY: ccexe
 ccexe: \
- $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_EXAMPLES))) \
- $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_TESTS)))
+ $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_SAMPLES))) \
+ $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_TESTS))) \
+ $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_EXAMPLES)))
 
 # CVRPTW common library
 CVRPTW_OBJS = $(OBJ_DIR)/cvrptw_lib.$O
@@ -536,7 +555,7 @@ clean_cc:
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sparser_main$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
-	-$(DEL) $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(CC_EXAMPLES)))
+	-$(DEL) $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(CC_SAMPLES) $(CC_EXAMPLES) $(CC_TESTS)))
 	-$(DEL) $(GEN_PATH)$Sortools$Sbop$S*.pb.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pb.*
