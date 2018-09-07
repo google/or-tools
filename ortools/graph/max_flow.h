@@ -68,7 +68,7 @@
 // In this case the following operations can be applied to it:
 //
 // - if there are *admissible* incident arcs, i.e. arcs which are not saturated,
-//   and whose tail's height is lower than the height of the active node
+//   and whose head's height is lower than the height of the active node
 //   considered, a PushFlow operation can be applied. It consists in sending as
 //   much flow as both the excess at the node and the capacity of the arc
 //   permit.
