@@ -50,7 +50,7 @@ CMDSEP = ;
 CPSEP = :
 
 COPY = cp
-COPYREC = cp -r
+COPYREC = cp -R
 DEL = rm -f
 DELREC = rm -rf
 GREP = grep
