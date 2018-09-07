@@ -46,6 +46,7 @@ class SearchLimitParameters;
 %feature("director") SearchLimit;
 %feature("director") SearchMonitor;
 %feature("director") SequenceVarLocalSearchOperator;
+%feature("director") SolutionCollector;
 %feature("director") SymmetryBreaker;
 %{
 #include <setjmp.h>
