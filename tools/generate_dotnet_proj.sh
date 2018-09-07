@@ -14,11 +14,11 @@ fi
 ###############
 ##  Cleanup  ##
 ###############
-rm -rf examples/dotnet/bin examples/dotnet/obj
-echo "Remove prevous .*proj .sln files..."
-rm -f examples/dotnet/*.*proj
+echo "Remove previous .[cf]sproj .sln files..."
+rm -f examples/dotnet/*.csproj
+rm -f examples/dotnet/*.fsproj
 rm -f examples/dotnet/*.sln
-echo "Remove prevous .*proj files...DONE"
+echo "Remove previous .[cf]sproj files...DONE"
 
 ##############
 ##  CSHARP  ##
