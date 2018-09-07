@@ -15,15 +15,7 @@
     x[2]    : 0.000000
     x[3]    : 0.000000
     x[4]    : 1.000000
-
 *)
-
-#I "../../bin"
-#I "./packages/NETStandard.Library.2.0.2/build/netstandard2.0/ref"
-
-#r "Google.OrTools.dll"
-#r "Google.OrTools.FSharp.dll"
-#r "netstandard.dll"
 
 open System
 open Google.OrTools.FSharp

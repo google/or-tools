@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="network-min-cost-flow.fs" />
+    <Compile Include="fsnetwork-min-cost-flow.fs" />
     <PackageReference Include="Google.OrTools.FSharp" Version="6.8.*" />
   </ItemGroup>
 </Project>

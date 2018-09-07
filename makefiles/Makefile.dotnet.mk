@@ -401,10 +401,10 @@ test_dotnet_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
 #############################
 ##  .NET Examples/Samples  ##
 #############################
-.PHONY: test_donet_examples # Build and Run all .Net Examples (located in examples/dotnet)
-test_dotnet_examples: test_donet_examples_csharp test_donet_examples_fsharp
+.PHONY: test_dotnet_examples # Build and Run all .Net Examples (located in examples/dotnet)
+test_dotnet_examples: test_dotnet_examples_csharp test_dotnet_examples_fsharp
 
-.PHONY: test_donet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet)
+.PHONY: test_dotnet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet)
 test_dotnet_examples_csharp: $(DOTNET_ORTOOLS_NUPKG)
 	$(MAKE) rdotnet_3_jugs_regular
 	$(MAKE) rdotnet_alldifferent_except_0
@@ -438,7 +438,7 @@ test_dotnet_examples_csharp: $(DOTNET_ORTOOLS_NUPKG)
 	$(MAKE) rdotnet_cstsp
 	$(MAKE) rdotnet_curious_set_of_integers
 	$(MAKE) rdotnet_debruijn
-	$(MAKE) rdotnet_diet
+	$(MAKE) rdotnet_csdiet
 	$(MAKE) rdotnet_discrete_tomography
 	$(MAKE) rdotnet_divisible_by_9_through_1
 	$(MAKE) rdotnet_dudeney
@@ -530,23 +530,23 @@ endif
 	$(MAKE) rdotnet_young_tableaux
 	$(MAKE) rdotnet_zebra
 
-.PHONY: test_donet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet)
+.PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet)
 test_dotnet_examples_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG)
-	$(MAKE) rdotnet_csintegerprogramming
-	$(MAKE) rdotnet_cslinearprogramming
-	$(MAKE) rdotnet_diet
-	$(MAKE) rdotnet_equality
-	$(MAKE) rdotnet_equality-inequality
-	$(MAKE) rdotnet_integer-linear-program
-	$(MAKE) rdotnet_knapsack
-	$(MAKE) rdotnet_network-max-flow
-	$(MAKE) rdotnet_network-max-flow-lpSolve
-	$(MAKE) rdotnet_network-min-cost-flow
-	$(MAKE) rdotnet_Program
-	$(MAKE) rdotnet_rabbit-pheasant
-	$(MAKE) rdotnet_volsay3
-	$(MAKE) rdotnet_volsay3-lpSolve
-	$(MAKE) rdotnet_volsay
+	$(MAKE) rdotnet_fsintegerprogramming
+	$(MAKE) rdotnet_fslinearprogramming
+	$(MAKE) rdotnet_fsdiet
+	$(MAKE) rdotnet_fsequality
+	$(MAKE) rdotnet_fsequality-inequality
+	$(MAKE) rdotnet_fsinteger-linear-program
+	$(MAKE) rdotnet_fsknapsack
+	$(MAKE) rdotnet_fsnetwork-max-flow
+	$(MAKE) rdotnet_fsnetwork-max-flow-lpSolve
+	$(MAKE) rdotnet_fsnetwork-min-cost-flow
+	$(MAKE) rdotnet_fsProgram
+	$(MAKE) rdotnet_fsrabbit-pheasant
+	$(MAKE) rdotnet_fsvolsay3
+	$(MAKE) rdotnet_fsvolsay3-lpSolve
+	$(MAKE) rdotnet_fsvolsay
 
 .PHONY: test_donet_samples # Build and Run all .Net Samples (located in ortools/*/samples)
 test_dotnet_samples: $(DOTNET_ORTOOLS_NUPKG)

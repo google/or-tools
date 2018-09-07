@@ -17,15 +17,7 @@
     var[4]    : 0.000000
 
   Note: When entering the matrix, it is reduced to standard form with appropriate slack variables.
-
 *)
-
-#I "../../bin"
-#I "./packages/NETStandard.Library.2.0.2/build/netstandard2.0/ref"
-
-#r "Google.OrTools.dll"
-#r "Google.OrTools.FSharp.dll"
-#r "netstandard.dll"
 
 open System
 open Google.OrTools.FSharp
@@ -41,4 +33,3 @@ let opts = SolverOpts.Default
 
 let slvrCLP = opts.Algorithm(LP CLP) |> lpSolve |> SolverSummary
 let slvrGLOP = opts.Algorithm(LP GLOP) |> lpSolve |> SolverSummary
-

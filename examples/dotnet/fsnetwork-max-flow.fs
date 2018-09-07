@@ -1,5 +1,4 @@
 (*
-
   Copyright 2010-2017 Google
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -25,15 +24,7 @@
     Arc 7 (4 -> 3), capacity=6, computed=0, expected=0
     Arc 8 (5 -> 3), capacity=6, computed=6, expected=6
     Arc 9 (5 -> 4), capacity=4, computed=4, expected=4
-
 *)
-
-#I "../../bin"
-#I "./packages/NETStandard.Library.2.0.2/build/netstandard2.0/ref"
-
-#r "Google.OrTools.dll"
-#r "Google.OrTools.FSharp.dll"
-#r "netstandard.dll"
 
 open Google.OrTools.Graph
 open Google.OrTools.FSharp

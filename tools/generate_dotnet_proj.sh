@@ -11,6 +11,18 @@ fi
 # shellcheck disable=SC1090
 . "${DIR}/../Version.txt"
 
+###############
+##  Cleanup  ##
+###############
+rm -rf examples/dotnet/bin examples/dotnet/obj
+echo "Remove prevous .*proj .sln files..."
+rm -f examples/dotnet/*.*proj
+rm -f examples/dotnet/*.sln
+echo "Remove prevous .*proj files...DONE"
+
+##############
+##  CSHARP  ##
+##############
 for FILE in examples/dotnet/*.cs; do
   # if no files found do nothing
   [ -e "$FILE" ] || continue
@@ -42,6 +54,9 @@ EOL
   echo "Generate $PROJ...DONE"
 done
 
+##############
+##  CSHARP  ##
+##############
 for FILE in examples/dotnet/*.fs; do
   # if no files found do nothing
   [ -e "$FILE" ] || continue
@@ -72,7 +87,9 @@ EOL
   echo "Generate $PROJ...DONE"
 done
 
-# Samples
+###############
+##  Samples  ##
+###############
 for FILE in ortools/sat/samples/*.cs; do
   # if no files found do nothing
   [ -e "$FILE" ] || continue
@@ -103,4 +120,17 @@ for FILE in ortools/sat/samples/*.cs; do
 EOL
   echo "Generate $PROJ...DONE"
 done
+
+###########
+##  SLN  ##
+###########
+SLN=Google.OrTools.Examples.sln
+echo "Generate ${SLN}..."
+cd examples/dotnet
+dotnet new sln -n ${SLN%.sln}
+for i in *.*proj; do
+  dotnet sln ${SLN} add "$i"
+done
+echo "Generate ${SLN}...DONE"
+
 # vim: set tw=0 ts=2 sw=2 expandtab:

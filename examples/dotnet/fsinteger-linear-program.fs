@@ -7,7 +7,6 @@
 
   And           x[0] <= 1, x[1] <= 1, x[2] <= 4, x[3] <= 2
 
-
   Answer:
     Integer Program Solution
 
@@ -22,7 +21,6 @@
     Advanced usage:
     Problem solved in 0 branch-and-bound nodes
 
-
     Linear Program Solution
 
     Problem solved in 2 milliseconds
@@ -34,13 +32,6 @@
     var[2]    : 3.333333
     var[3]    : 0.888889
 *)
-
-#I "../../bin"
-#I "./packages/NETStandard.Library.2.0.2/build/netstandard2.0/ref"
-
-#r "Google.OrTools.dll"
-#r "Google.OrTools.FSharp.dll"
-#r "netstandard.dll"
 
 open Google.OrTools.FSharp
 

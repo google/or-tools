@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="equality.fs" />
+    <Compile Include="fsnetwork-max-flow-lpSolve.fs" />
     <PackageReference Include="Google.OrTools.FSharp" Version="6.8.*" />
   </ItemGroup>
 </Project>

@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="volsay.fs" />
+    <Compile Include="fsvolsay.fs" />
     <PackageReference Include="Google.OrTools.FSharp" Version="6.8.*" />
   </ItemGroup>
 </Project>

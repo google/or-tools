@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <LangVersion>7.2</LangVersion>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RestoreSources>../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
@@ -13,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="integer-linear-program.fs" />
-    <PackageReference Include="Google.OrTools.FSharp" Version="6.8.*" />
+    <Compile Include="csdiet.cs" />
+    <PackageReference Include="Google.OrTools" Version="6.8.*" />
   </ItemGroup>
 </Project>

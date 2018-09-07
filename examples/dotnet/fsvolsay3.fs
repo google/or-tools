@@ -1,4 +1,3 @@
-//
 // Copyright 2012 Hakan Kjellerstrand
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-#I "../../bin"
-#I "./packages/NETStandard.Library.2.0.2/build/netstandard2.0/ref"
-
-#r "Google.OrTools.dll"
-#r "Google.OrTools.FSharp.dll"
-#r "netstandard.dll"
 
 open System
 open Google.OrTools.FSharp

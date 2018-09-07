@@ -13,13 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#I "../../bin"
-#I "./packages/NETStandard.Library.2.0.2/build/netstandard2.0/ref"
-
-#r "Google.OrTools.dll"
-#r "Google.OrTools.FSharp.dll"
-#r "netstandard.dll"
-
 open System
 open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
@@ -56,6 +49,5 @@ let solver (solverType:LinearProgramming) =
   printfn "Chloride : %f ReducedCost: %f" (chloride.SolutionValue()) (chloride.ReducedCost())
   printfn "c1       : DualValue: %f" (c1.DualValue())
   printfn "c2       : DualValue: %f" (c2.DualValue())
-
 
 solver LinearProgramming.CLP

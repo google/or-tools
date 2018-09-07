@@ -1,10 +1,8 @@
+(* Here is a very simple Constraint Programming problem:
 
-#I "../../bin"
-#I "./packages/NETStandard.Library.2.0.2/build/netstandard2.0/ref"
-
-#r "Google.OrTools.dll"
-#r "Google.OrTools.FSharp.dll"
-#r "netstandard.dll"
+   Knowing that we see 56 legs and 20 heads, how many pheasants and rabbits
+   are we looking at ?
+*)
 
 open Google.OrTools.ConstraintSolver
 
