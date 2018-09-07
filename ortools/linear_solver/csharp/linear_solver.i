@@ -112,6 +112,7 @@ class MPSolutionResponse;
 %rename (SetTimeLimit) operations_research::MPSolver::set_time_limit;
 
 // Expose some of the more advanced MPSolver API.
+%unignore operations_research::MPSolver::InterruptSolve;
 %unignore operations_research::MPSolver::SupportsProblemType;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %rename (WallTime) operations_research::MPSolver::wall_time;
