@@ -520,7 +520,10 @@ test_dotnet_examples: $(DOTNET_ORTOOLS_NUPKG)
 	$(MAKE) rdotnet_volsay3
 	$(MAKE) rdotnet_wedding_optimal_chart
 	$(MAKE) rdotnet_who_killed_agatha
+ifneq ($(SYSTEM),win)
+# depends on /usr/share/dict/words
 	$(MAKE) rdotnet_word_square
+endif
 	$(MAKE) rdotnet_xkcd
 	$(MAKE) rdotnet_young_tableaux
 	$(MAKE) rdotnet_zebra
