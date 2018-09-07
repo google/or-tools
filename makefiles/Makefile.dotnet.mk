@@ -273,7 +273,7 @@ $(OBJ_DIR)/swig/sat_csharp_wrap.$O: \
  -c $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O
 
-$(DOTNET_ORTOOLS_SNK): $(SRC_DIR)/tools/dotnet/CreateSigningKey/CreateSigningKey.csproj | $(BIN_DIR)
+$(DOTNET_ORTOOLS_SNK): tools/dotnet/CreateSigningKey/CreateSigningKey.csproj | $(BIN_DIR)
 	"$(DOTNET_BIN)" run --project tools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(DOTNET_ORTOOLS_SNK_PATH)
 
 $(LIB_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX): \
@@ -402,8 +402,10 @@ test_dotnet_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
 ##  .NET Examples/Samples  ##
 #############################
 .PHONY: test_donet_examples # Build and Run all .Net Examples (located in examples/dotnet)
-test_dotnet_examples: $(DOTNET_ORTOOLS_NUPKG)
-# csharp examples
+test_dotnet_examples: test_donet_examples_csharp test_donet_examples_fsharp
+
+.PHONY: test_donet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet)
+test_dotnet_examples_csharp: $(DOTNET_ORTOOLS_NUPKG)
 	$(MAKE) rdotnet_3_jugs_regular
 	$(MAKE) rdotnet_alldifferent_except_0
 	$(MAKE) rdotnet_all_interval
@@ -527,8 +529,24 @@ endif
 	$(MAKE) rdotnet_xkcd
 	$(MAKE) rdotnet_young_tableaux
 	$(MAKE) rdotnet_zebra
-# fsharp examples
+
+.PHONY: test_donet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet)
+test_dotnet_examples_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG)
+	$(MAKE) rdotnet_csintegerprogramming
+	$(MAKE) rdotnet_cslinearprogramming
+	$(MAKE) rdotnet_diet
+	$(MAKE) rdotnet_equality
+	$(MAKE) rdotnet_equality-inequality
+	$(MAKE) rdotnet_integer-linear-program
+	$(MAKE) rdotnet_knapsack
+	$(MAKE) rdotnet_network-max-flow
+	$(MAKE) rdotnet_network-max-flow-lpSolve
+	$(MAKE) rdotnet_network-min-cost-flow
 	$(MAKE) rdotnet_Program
+	$(MAKE) rdotnet_rabbit-pheasant
+	$(MAKE) rdotnet_volsay3
+	$(MAKE) rdotnet_volsay3-lpSolve
+	$(MAKE) rdotnet_volsay
 
 .PHONY: test_donet_samples # Build and Run all .Net Samples (located in ortools/*/samples)
 test_dotnet_samples: $(DOTNET_ORTOOLS_NUPKG)
@@ -554,21 +572,21 @@ rdotnet_%: \
  $(DOTNET_EX_DIR)/%.csproj \
  $(DOTNET_ORTOOLS_NUPKG)
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
 
 rdotnet_%: \
  $(DOTNET_EX_DIR)/%.fs \
  $(DOTNET_EX_DIR)/%.fsproj \
  $(DOTNET_ORTOOLS_FSHARP_NUPKG)
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
 rdotnet_%: \
  ortools/sat/samples/%.cs \
  ortools/sat/samples/%.csproj \
  $(DOTNET_ORTOOLS_NUPKG)
 	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
 
 #####################
 ##  .NET Examples  ##
@@ -647,10 +665,8 @@ clean_dotnet:
 	-$(DEL) $(LIB_DIR)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(OR_TOOLS_ASSEMBLY_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).*
-	-$(DELREC) $(EX_PATH)$Sdotnet$Scsharp$Sbin
-	-$(DELREC) $(EX_PATH)$Sdotnet$Scsharp$Sobj
-	-$(DELREC) $(EX_PATH)$Sdotnet$Sfsharp$Sbin
-	-$(DELREC) $(EX_PATH)$Sdotnet$Sfsharp$Sobj
+	-$(DELREC) $(EX_PATH)$Sdotnet$Sbin
+	-$(DELREC) $(EX_PATH)$Sdotnet$Sobj
 	-$(DELREC) ortools$Ssat$Ssamples$Sbin
 	-$(DELREC) ortools$Ssat$Ssamples$Sobj
 	-$(DELREC) $(TEMP_DOTNET_DIR)

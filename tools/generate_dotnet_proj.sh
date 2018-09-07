@@ -72,6 +72,7 @@ EOL
   echo "Generate $PROJ...DONE"
 done
 
+# Samples
 for FILE in ortools/sat/samples/*.cs; do
   # if no files found do nothing
   [ -e "$FILE" ] || continue
