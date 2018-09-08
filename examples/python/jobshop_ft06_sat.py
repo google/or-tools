@@ -10,6 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""ft06 jobshop using the CP-SAT solver."""
 
 import collections
 from ortools.sat.python import cp_model
@@ -17,6 +18,7 @@ from ortools.sat.python import visualization
 
 
 def main():
+  """Solves the ft06 jobshop."""
   # Creates the solver.
   model = cp_model.CpModel()
 
@@ -72,16 +74,16 @@ def main():
 
   # Solve model.
   solver = cp_model.CpSolver()
-  response = solver.Solve(model)
+  status = solver.Solve(model)
 
   # Output solution.
-  if visualization.RunFromIPython():
-    starts = [[solver.Value(all_tasks[(i, j)][0])
-               for j in all_machines]
-              for i in all_jobs]
-    visualization.DisplayJobshop(starts, durations, machines, 'FT06')
-  else:
-    print('Optimal makespan: %i' % solver.ObjectiveValue())
+  if status == cp_model.OPTIMAL:
+    if visualization.RunFromIPython():
+      starts = [[solver.Value(all_tasks[(i, j)][0]) for j in all_machines]
+                for i in all_jobs]
+      visualization.DisplayJobshop(starts, durations, machines, 'FT06')
+    else:
+      print('Optimal makespan: %i' % solver.ObjectiveValue())
 
 
 if __name__ == '__main__':
