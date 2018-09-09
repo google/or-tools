@@ -97,7 +97,6 @@ def main():
     N = 3
 
     # Model
-
     model = cp_model.CpModel()
     x = {}
     for i in I:
@@ -124,10 +123,11 @@ def main():
 
     model.Minimize(count)
 
-    # Creates a solver and solves.
+    # Create a solver and solve the problem.
     solver = cp_model.CpSolver()
     # Dual approach.
     solver.parameters.optimize_with_core = True
+    # Log search.
     solution_printer = ObjectiveSolutionPrinter()
     status = solver.SolveWithSolutionCallback(model, solution_printer)
 
