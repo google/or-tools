@@ -108,9 +108,9 @@ def main():
     for i in I:
         model.Add(sum(x[(i, t)] for t in T if available[i][t] == 1) == 1)
 
-        for t in T:
-            model.Add(sum(x[(i, t)] for i in I if available[i][t] == 1) <= N)
-            model.AddBoolOr([x[(i, t)] for i in I if available[i][t] == 1]).OnlyEnforceIf(used[t])
+    for t in T:
+        model.Add(sum(x[(i, t)] for i in I if available[i][t] == 1) <= N)
+        model.AddBoolOr([x[(i, t)] for i in I if available[i][t] == 1]).OnlyEnforceIf(used[t])
         for i in I:
             if available[i][t] == 1:
                 model.AddImplication(used[t].Not(), x[(i, t)].Not())
@@ -119,14 +119,14 @@ def main():
 
     model.Add(count == sum(used))
     # Redundant constraint. This instance is trivial if we add this constraint.
-    # model.Add(count >= (nslots + N - 1) // N)]
+    # model.Add(count >= (nslots + N - 1) // N)
 
     model.Minimize(count)
 
     # Create a solver and solve the problem.
     solver = cp_model.CpSolver()
-    # Dual approach.
-    solver.parameters.optimize_with_core = True
+    # Uses the portfolion of heuristics.
+    solver.parameters.num_search_workers = 6
     # Log search.
     solution_printer = ObjectiveSolutionPrinter()
     status = solver.SolveWithSolutionCallback(model, solution_printer)
