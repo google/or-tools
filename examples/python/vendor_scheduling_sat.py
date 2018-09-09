@@ -10,6 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Solves a simple shift scheduling problem."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -33,8 +34,9 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     self.__min_vendors = min_vendors
 
   def OnSolutionCallback(self):
+    """Called at each new solution."""
     self.__solution_count += 1
-    print ('Solution %i: ', self.__solution_count)
+    print('Solution %i: ', self.__solution_count)
     print('  min vendors:', self.__min_vendors)
     for i in range(self.__num_vendors):
       print('  - vendor %i: ' % i,
@@ -48,10 +50,12 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     print()
 
   def SolutionCount(self):
+    """Returns the number of solution found."""
     return self.__solution_count
 
 
 def main():
+  """Create the shift scheduling model and solve it."""
   # Create the model.
   model = cp_model.CpModel()
 

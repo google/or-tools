@@ -12,10 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from __future__ import print_function
-from ortools.sat.python import cp_model
-import time
 """Finding an optimal wedding seating chart.
 
 From
@@ -39,6 +35,10 @@ minimize stress and arguments.
 Adapted from
 https://github.com/google/or-tools/blob/master/examples/csharp/wedding_optimal_chart.cs
 """
+
+from __future__ import print_function
+import time
+from ortools.sat.python import cp_model
 
 
 class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
@@ -196,7 +196,7 @@ def SolveWithDiscreteModel():
   ### Solve model.
   solver = cp_model.CpSolver()
   solution_printer = WeddingChartPrinter(seats, names, num_tables, num_guests)
-  status = solver.SolveWithSolutionCallback(model, solution_printer)
+  solver.SolveWithSolutionCallback(model, solution_printer)
 
   print("Statistics")
   print("  - conflicts    : %i" % solver.NumConflicts())
