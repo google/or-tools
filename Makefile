@@ -66,7 +66,6 @@ include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.dotnet.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
-include $(OR_ROOT)makefiles/Makefile.install.mk
 
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
