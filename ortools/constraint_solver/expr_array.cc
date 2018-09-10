@@ -155,7 +155,7 @@ class TreeArrayConstraint : public CastConstraint {
 // Workshop on Techniques for Implementing Constraint Programming
 // Systems (TRICS), a workshop of CP 2002, N. Beldiceanu, W. Harvey,
 // Martin Henz, Francois Laburthe, Eric Monfroy, Tobias Müller,
-// Laurent Perron and Christian Schulte editors, pages 39–46, 2002.
+// Laurent Perron and Christian Schulte editors, pages 39-46, 2002.
 
 // ----- SumConstraint -----
 

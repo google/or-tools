@@ -350,7 +350,7 @@ message SatParameters {
   //
   // Gilles Audemard, Jean-Marie Lagniez, Laurent Simon, "Improving Glucose for
   // Incremental SAT Solving with Assumptions: Application to MUS Extraction"
-  // Theory and Applications of Satisfiability Testing – SAT 2013, Lecture Notes
+  // Theory and Applications of Satisfiability Testing - SAT 2013, Lecture Notes
   // in Computer Science Volume 7962, 2013, pp 309-317.
   optional bool count_assumption_levels_in_lbd = 49 [default = true];
 

@@ -31,9 +31,9 @@ namespace operations_research {
 // Template class implementing a Union-Find algorithm with path compression for
 // maintaining the connected components of a graph.
 // See Cormen et al. 2nd Edition. MIT Press, 2001. ISBN 0-262-03293-7.
-// Chapter 21: Data structures for Disjoint Sets, pp. 498–524.
+// Chapter 21: Data structures for Disjoint Sets, pp. 498-524.
 // and Tarjan (1975). Efficiency of a Good But Not Linear Set
-// Union Algorithm. Journal of the ACM 22(2):215–225
+// Union Algorithm. Journal of the ACM 22(2):215-225
 // It is implemented as a template so that the size of NodeIndex can be chosen
 // depending on the size of the graphs considered.
 // The main interest is that arcs do not need to be kept. Thus the memory
@@ -42,7 +42,7 @@ namespace operations_research {
 // the inverse Ackermann function. alpha(n) <= log(log(log(..log(log(n))..)
 // In practice alpha(n) <= 5.
 // See Tarjan and van Leeuwen (1984). Worst-case analysis of set union
-// algorithms. Journal of the ACM 31(2):245–281.
+// algorithms. Journal of the ACM 31(2):245-281.
 //
 // Usage example:
 // ConnectedComponents<int, int> components;

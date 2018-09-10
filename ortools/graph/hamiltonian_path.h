@@ -17,7 +17,7 @@
 // Solves the Shortest Hamiltonian Path Problem using a complete algorithm.
 // The algorithm was first described in
 // M. Held, R.M. Karp, A dynamic programming approach to sequencing problems,
-// J. SIAM 10 (1962) 196–210
+// J. SIAM 10 (1962) 196-210
 //
 // The Shortest Hamiltonian Path Problem (SHPP) is similar to the Traveling
 // Salesperson Problem (TSP).
