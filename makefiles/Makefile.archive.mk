@@ -193,8 +193,12 @@ endif
 .PHONY: detect_archive # Show variables used to build archive OR-Tools.
 detect_archive:
 	@echo Relevant info for the archive build:
+	@echo TEMP_ARCHIVE_DIR = $(TEMP_ARCHIVE_DIR)
 	@echo INSTALL_DIR = $(INSTALL_DIR)
+	@echo TEMP_FZ_DIR = $(TEMP_FZ_DIR)
 	@echo FZ_INSTALL_DIR = $(FZ_INSTALL_DIR)
+	@echo TEMP_DATA_DIR = $(TEMP_DATA_DIR)
+	@echo DATA_INSTALL_DIR = $(DATA_INSTALL_DIR)
 	@echo ARCHIVE_EXT = $(ARCHIVE_EXT)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
