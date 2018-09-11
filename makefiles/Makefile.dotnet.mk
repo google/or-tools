@@ -273,8 +273,8 @@ $(OBJ_DIR)/swig/sat_csharp_wrap.$O: \
  -c $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O
 
-$(DOTNET_ORTOOLS_SNK): tools/dotnet/CreateSigningKey/CreateSigningKey.csproj | $(BIN_DIR)
-	"$(DOTNET_BIN)" run --project tools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(DOTNET_ORTOOLS_SNK_PATH)
+$(DOTNET_ORTOOLS_SNK): ortools/dotnet/CreateSigningKey/CreateSigningKey.csproj | $(BIN_DIR)
+	"$(DOTNET_BIN)" run --project ortools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(DOTNET_ORTOOLS_SNK_PATH)
 
 $(LIB_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX): \
  $(OR_TOOLS_LIBS) \
@@ -631,8 +631,8 @@ $(TEMP_DOTNET_DIR)/%$D: \
 ################
 .PHONY: clean_dotnet # Clean files
 clean_dotnet:
-	-$(DELREC) tools$Sdotnet$SCreateSigningKey$Sbin
-	-$(DELREC) tools$Sdotnet$SCreateSigningKey$Sobj
+	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sbin
+	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sobj
 	-$(DEL) $(DOTNET_ORTOOLS_SNK_PATH)
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$Sbin
