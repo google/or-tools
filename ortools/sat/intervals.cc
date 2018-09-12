@@ -33,14 +33,19 @@ IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
   fixed_sizes_.push_back(fixed_size);
   is_present_.push_back(is_present);
 
+  std::vector<Literal> enforcement_literals;
+  if (is_present != kNoLiteralIndex) {
+    enforcement_literals.push_back(Literal(is_present));
+  }
+
   // Link properly all its components.
   precedences_->AddPrecedenceWithAllOptions(StartVar(i), EndVar(i), fixed_size,
-                                            SizeVar(i), is_present);
+                                            SizeVar(i), enforcement_literals);
   precedences_->AddPrecedenceWithAllOptions(EndVar(i), StartVar(i), -fixed_size,
                                             SizeVar(i) == kNoIntegerVariable
                                                 ? kNoIntegerVariable
                                                 : NegationOf(SizeVar(i)),
-                                            is_present);
+                                            enforcement_literals);
   return i;
 }
 

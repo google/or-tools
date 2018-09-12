@@ -38,9 +38,12 @@ PROTO_INPUT(operations_research::sat::SatParameters,
             Google.OrTools.Sat.SatParameters,
             parameters);
 
-PROTO2_RETURN(
-    operations_research::sat::CpSolverResponse,
-    Google.OrTools.Sat.CpSolverResponse);
+PROTO_INPUT(operations_research::sat::CpSolverResponse,
+            Google.OrTools.Sat.CpSolverResponse,
+            response);
+
+PROTO2_RETURN(operations_research::sat::CpSolverResponse,
+              Google.OrTools.Sat.CpSolverResponse);
 
 %ignoreall
 
@@ -53,6 +56,8 @@ PROTO2_RETURN(
 %unignore operations_research::sat::SatHelper::Solve;
 %unignore operations_research::sat::SatHelper::SolveWithStringParameters;
 %unignore operations_research::sat::SatHelper::SolveWithStringParametersAndSolutionCallback;
+%unignore operations_research::sat::SatHelper::ModelStats;
+%unignore operations_research::sat::SatHelper::SolverResponseStats;
 
 %feature("director") operations_research::sat::SolutionCallback;
 

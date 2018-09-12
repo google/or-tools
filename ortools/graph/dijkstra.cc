@@ -60,7 +60,7 @@ class DijkstraSP {
  private:
   void Initialize();
   int SelectClosestNode(int64* distance);
-  void Update(int label);
+  void Update(int node);
   void FindPath(int dest, std::vector<int>* nodes);
 
   const int node_count_;

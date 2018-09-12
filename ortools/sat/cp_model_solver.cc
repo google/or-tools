@@ -358,13 +358,13 @@ void ModelWithMapping::ExtractEncoding(const CpModelProto& model_proto) {
 
   // Loop over all contraints and fill var_to_equalities and inequalities.
   for (const ConstraintProto& ct : model_proto.constraints()) {
-    // For now, we only look at linear constraints with one term and an
+    // For now, we only look at linear constraints with one term and one
     // enforcement literal.
-    if (ct.enforcement_literal().empty()) continue;
+    if (ct.enforcement_literal().size() != 1) continue;
+    if (ct.linear().vars_size() != 1) continue;
     if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
       continue;
     }
-    if (ct.linear().vars_size() != 1) continue;
 
     const sat::Literal enforcement_literal = Literal(ct.enforcement_literal(0));
     const int ref = ct.linear().vars(0);
@@ -632,6 +632,66 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
     }
   }
 
+  if (parameters.use_optional_variables() &&
+      !parameters.enumerate_all_solutions()) {
+    // Compute for each variables the intersection of the enforcement literals
+    // of the constraints in which they appear.
+    //
+    // TODO(user): This deals with the simplest cases, but we could try to
+    // detect literals that implies all the constaints in which a variable
+    // appear to false. This can be done with a LCA computation in the tree of
+    // Boolean implication (once the presolve remove cycles). Not sure if we can
+    // properly exploit that afterwards though. Do some research!
+    std::vector<bool> already_seen(num_proto_variables, false);
+    std::vector<std::set<int>> enforcement_intersection(num_proto_variables);
+    for (int c = 0; c < model_proto.constraints_size(); ++c) {
+      const ConstraintProto& ct = model_proto.constraints(c);
+      if (ct.enforcement_literal().empty()) {
+        for (const int var : UsedVariables(ct)) {
+          already_seen[var] = true;
+          enforcement_intersection[var].clear();
+        }
+      } else {
+        const std::set<int> literals{ct.enforcement_literal().begin(),
+                                     ct.enforcement_literal().end()};
+        for (const int var : UsedVariables(ct)) {
+          if (!already_seen[var]) {
+            enforcement_intersection[var] = literals;
+          } else {
+            // Take the intersection.
+            for (auto it = enforcement_intersection[var].begin();
+                 it != enforcement_intersection[var].end();) {
+              if (!gtl::ContainsKey(literals, *it)) {
+                it = enforcement_intersection[var].erase(it);
+              } else {
+                ++it;
+              }
+            }
+          }
+          already_seen[var] = true;
+        }
+      }
+    }
+
+    // Auto-detect optional variables.
+    int num_optionals = 0;
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    for (int var = 0; var < num_proto_variables; ++var) {
+      const IntegerVariableProto& var_proto = model_proto.variables(var);
+      const int64 min = var_proto.domain(0);
+      const int64 max = var_proto.domain(var_proto.domain().size() - 1);
+      if (min == max) continue;
+      if (min == 0 && max == 1) continue;
+      if (enforcement_intersection[var].empty()) continue;
+      if (integer_trail->IsOptional(Integer(var))) continue;
+
+      ++num_optionals;
+      integer_trail->MarkIntegerVariableAsOptional(
+          Integer(var), Literal(*enforcement_intersection[var].begin()));
+    }
+    VLOG(2) << "Auto-detected " << num_optionals << " optional variables.";
+  }
+
   // Detect the encodings (IntegerVariable <-> Booleans) present in the model.
   ModelWithMapping::ExtractEncoding(model_proto);
 }
@@ -870,19 +930,21 @@ bool FullEncodingFixedPointComputer::PropagateLinear(
 
 void LoadBoolOrConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   std::vector<Literal> literals = m->Literals(ct.bool_or().literals());
-  if (HasEnforcementLiteral(ct)) {
-    literals.push_back(m->Literal(ct.enforcement_literal(0)).Negated());
+  for (const int ref : ct.enforcement_literal()) {
+    literals.push_back(m->Literal(ref).Negated());
   }
   m->Add(ClauseConstraint(literals));
 }
 
 void LoadBoolAndConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
-  const std::vector<Literal> literals = m->Literals(ct.bool_and().literals());
-  if (HasEnforcementLiteral(ct)) {
-    const Literal is_true = m->Literal(ct.enforcement_literal(0));
-    for (const Literal lit : literals) m->Add(Implication(is_true, lit));
-  } else {
-    for (const Literal lit : literals) m->Add(ClauseConstraint({lit}));
+  std::vector<Literal> literals;
+  for (const int ref : ct.enforcement_literal()) {
+    literals.push_back(m->Literal(ref).Negated());
+  }
+  for (const Literal literal : m->Literals(ct.bool_and().literals())) {
+    literals.push_back(literal);
+    m->Add(ClauseConstraint(literals));
+    literals.pop_back();
   }
 }
 
@@ -922,12 +984,15 @@ void LoadLinearConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
         }
       }
     } else {
-      const Literal is_true = m->Literal(ct.enforcement_literal(0));
+      const std::vector<Literal> enforcement_literals =
+          m->Literals(ct.enforcement_literal());
       if (lb != kint64min) {
-        m->Add(ConditionalWeightedSumGreaterOrEqual(is_true, vars, coeffs, lb));
+        m->Add(ConditionalWeightedSumGreaterOrEqual(enforcement_literals, vars,
+                                                    coeffs, lb));
       }
       if (ub != kint64max) {
-        m->Add(ConditionalWeightedSumLowerOrEqual(is_true, vars, coeffs, ub));
+        m->Add(ConditionalWeightedSumLowerOrEqual(enforcement_literals, vars,
+                                                  coeffs, ub));
       }
     }
   } else {
@@ -935,17 +1000,19 @@ void LoadLinearConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
     for (int i = 0; i < ct.linear().domain_size(); i += 2) {
       const int64 lb = ct.linear().domain(i);
       const int64 ub = ct.linear().domain(i + 1);
-      const Literal literal(m->Add(NewBooleanVariable()), true);
-      clause.push_back(literal);
+      const Literal subdomain_literal(m->Add(NewBooleanVariable()), true);
+      clause.push_back(subdomain_literal);
       if (lb != kint64min) {
-        m->Add(ConditionalWeightedSumGreaterOrEqual(literal, vars, coeffs, lb));
+        m->Add(ConditionalWeightedSumGreaterOrEqual({subdomain_literal}, vars,
+                                                    coeffs, lb));
       }
       if (ub != kint64max) {
-        m->Add(ConditionalWeightedSumLowerOrEqual(literal, vars, coeffs, ub));
+        m->Add(ConditionalWeightedSumLowerOrEqual({subdomain_literal}, vars,
+                                                  coeffs, ub));
       }
     }
-    if (HasEnforcementLiteral(ct)) {
-      clause.push_back(m->Literal(ct.enforcement_literal(0)).Negated());
+    for (const int ref : ct.enforcement_literal()) {
+      clause.push_back(m->Literal(ref).Negated());
     }
 
     // TODO(user): In the cases where this clause only contains two literals,
@@ -1763,8 +1830,10 @@ void TryToLinearizeConstraint(
   const double kInfinity = std::numeric_limits<double>::infinity();
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
     if (linearization_level < 2) return;
-    if (HasEnforcementLiteral(ct)) return;
     LinearConstraintBuilder lc(m->model(), 1.0, kInfinity);
+    for (const int enforcement_ref : ct.enforcement_literal()) {
+      CHECK(lc.AddLiteralTerm(m->Literal(NegatedRef(enforcement_ref)), 1.0));
+    }
     for (const int ref : ct.bool_or().literals()) {
       CHECK(lc.AddLiteralTerm(m->Literal(ref), 1.0));
     }
@@ -1773,12 +1842,13 @@ void TryToLinearizeConstraint(
              ConstraintProto::ConstraintCase::kBoolAnd) {
     if (linearization_level < 2) return;
     if (!HasEnforcementLiteral(ct)) return;
-    const Literal e = m->Literal(ct.enforcement_literal(0));
     for (const int ref : ct.bool_and().literals()) {
-      // We linearize (e implies literal) as (e - literals <= 0).
-      LinearConstraintBuilder lc(m->model(), -kInfinity, 0.0);
-      CHECK(lc.AddLiteralTerm(e, 1.0));
-      CHECK(lc.AddLiteralTerm(m->Literal(ref), -1.0));
+      // Same as the clause linearization above.
+      LinearConstraintBuilder lc(m->model(), 1.0, kInfinity);
+      for (const int enforcement_ref : ct.enforcement_literal()) {
+        CHECK(lc.AddLiteralTerm(m->Literal(NegatedRef(enforcement_ref)), 1.0));
+      }
+      CHECK(lc.AddLiteralTerm(m->Literal(ref), 1.0));
       linear_constraints->push_back(lc.Build());
     }
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
@@ -1843,6 +1913,8 @@ void TryToLinearizeConstraint(
     }
 
     // Reified version.
+    // TODO(user): support any number of enforcement literal.
+    if (ct.enforcement_literal().size() != 1) return;
     if (linearization_level < 3) return;
 
     // Compute the implied bounds on the linear expression.
@@ -2512,7 +2584,7 @@ CpSolverResponse SolveCpModelInternal(
   // Initialize the search strategy function.
   std::function<LiteralIndex()> next_decision = ConstructSearchStrategy(
       model_proto, m.GetVariableMapping(), objective_var, model);
-  if (VLOG_IS_ON(2)) {
+  if (VLOG_IS_ON(3)) {
     next_decision = InstrumentSearchStrategy(
         model_proto, m.GetVariableMapping(), next_decision, model);
   }

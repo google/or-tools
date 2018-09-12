@@ -15,6 +15,7 @@
 
 #include <algorithm>
 
+#include "ortools/base/memory.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
@@ -62,15 +63,15 @@ SimpleMaxFlow::Status SimpleMaxFlow::Solve(NodeIndex source, NodeIndex sink) {
   if (source >= num_nodes_ || sink >= num_nodes_) {
     return OPTIMAL;
   }
-  underlying_graph_.reset(new Graph(num_nodes_, num_arcs));
+  underlying_graph_ = absl::make_unique<Graph>(num_nodes_, num_arcs);
   underlying_graph_->AddNode(source);
   underlying_graph_->AddNode(sink);
   for (int arc = 0; arc < num_arcs; ++arc) {
     underlying_graph_->AddArc(arc_tail_[arc], arc_head_[arc]);
   }
   underlying_graph_->Build(&arc_permutation_);
-  underlying_max_flow_.reset(
-      new GenericMaxFlow<Graph>(underlying_graph_.get(), source, sink));
+  underlying_max_flow_ = absl::make_unique<GenericMaxFlow<Graph>>(
+      underlying_graph_.get(), source, sink);
   for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
     ArcIndex permuted_arc =
         arc < arc_permutation_.size() ? arc_permutation_[arc] : arc;

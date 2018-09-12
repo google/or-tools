@@ -515,7 +515,9 @@ void CBCInterface::SetPresolveMode(int value) {
       // CBC presolve is always on.
       break;
     }
-    default: { SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE); }
+    default: {
+      SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE);
+    }
   }
 }
 

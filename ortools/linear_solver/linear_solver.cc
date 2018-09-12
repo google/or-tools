@@ -446,7 +446,7 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 }
 
 // static
-bool MPSolver::ParseSolverType(const std::string& solver,
+bool MPSolver::ParseSolverType(absl::string_view solver,
                                MPSolver::OptimizationProblemType* type) {
   if (solver == "glop") {
     *type = MPSolver::GLOP_LINEAR_PROGRAMMING;
@@ -662,10 +662,13 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     return;
   }
   if (model_request.has_solver_time_limit_seconds()) {
-    // static_cast<int64> avoids a warning with -Wreal-conversion. This
-    // helps catching bugs with unwanted conversions from double to ints.
-    solver.set_time_limit(
-        static_cast<int64>(model_request.solver_time_limit_seconds() * 1000));
+    double time_limit_ms = model_request.solver_time_limit_seconds() * 1000.0;
+    if (time_limit_ms <
+        static_cast<double>(std::numeric_limits<int64>::max())) {
+      // static_cast<int64> avoids a warning with -Wreal-conversion. This
+      // helps catching bugs with unwanted conversions from double to ints.
+      solver.set_time_limit(static_cast<int64>(time_limit_ms));
+    }
   }
   solver.SetSolverSpecificParametersAsString(
       model_request.solver_specific_parameters());

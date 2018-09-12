@@ -59,6 +59,8 @@ message IntegerVariableProto {
   //  - for all i < n-1 :  max_i + 1 < min_{i+1}.
   repeated int64 domain = 2;
 
+  // DEPRECATED.
+  //
   // Advanced usage. Note that this is not fully supported yet, contact or-sat@
   // if this does not work as expected.
   //
@@ -258,12 +260,20 @@ message ConstraintProto {
   // For debug/logging only. Can be empty.
   string name = 1;
 
-  // This should contain at most one literal. If there is one, then the
-  // constraint must be true when this literal is true, if it is false, then it
-  // doesn't matter. This is also called half-reification. To have an
-  // equivalence between a literal and a constraint (full reification), one must
-  // add both a constraint (controlled by a literal l) and its negation
-  // (controlled by the negation of l).
+  // The constraint will be enforced iff all literals listed here are true. If
+  // this is empty, then the constraint will always be enforced. An enforced
+  // constraint must be satisfied, and an un-enforced one will simply be
+  // ignored.
+  //
+  // This is also called half-reification. To have an equivalence between a
+  // literal and a constraint (full reification), one must add both a constraint
+  // (controlled by a literal l) and its negation (controlled by the negation of
+  // l).
+  //
+  // Important: as of September 2018, only a few constraint support enforcement:
+  // - bool_or, bool_and, linear: fully supported.
+  // - interval: only support a single enforcement literal.
+  // - other: no support (but can be added on a per-demand basis).
   repeated int32 enforcement_literal = 2;
 
   // The actual constraint with its arguments.
@@ -538,7 +548,7 @@ message CpSolverResponse {
 
   // This will be true iff the solver was asked to find all solutions to a
   // satisfiability problem (or all optimal solutions to an optimization
-  // problem), and he was succesfull in doing so.
+  // problem), and it was successful in doing so.
   bool all_solutions_were_found = 5;
 
   // Some statistics about the solve.

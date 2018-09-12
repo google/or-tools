@@ -142,6 +142,18 @@ class SatHelper {
         callback.stopped());
     return SolveCpModel(model_proto, &model);
   }
+
+  // Returns a std::string with some statistics on the given CpModelProto.
+  static std::string ModelStats(
+      const operations_research::sat::CpModelProto& model_proto) {
+    return CpModelStats(model_proto);
+  }
+
+  // Returns a std::string with some statistics on the solver response.
+  static std::string SolverResponseStats(
+      const operations_research::sat::CpSolverResponse& response) {
+    return CpSolverResponseStats(response);
+  }
 };
 
 }  // namespace sat

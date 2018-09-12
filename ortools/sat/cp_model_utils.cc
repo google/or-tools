@@ -386,8 +386,8 @@ std::vector<int> UsedVariables(const ConstraintProto& ct) {
   for (const int lit : references.literals) {
     used_variables.push_back(PositiveRef(lit));
   }
-  if (HasEnforcementLiteral(ct)) {
-    used_variables.push_back(PositiveRef(ct.enforcement_literal(0)));
+  for (const int lit : ct.enforcement_literal()) {
+    used_variables.push_back(PositiveRef(lit));
   }
   gtl::STLSortAndRemoveDuplicates(&used_variables);
   return used_variables;

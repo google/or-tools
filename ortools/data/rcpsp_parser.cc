@@ -59,6 +59,10 @@ bool RcpspParser::ParseFile(const std::string& file_name) {
       return false;
     }
   }
+  VLOG(1) << "Read file: " << file_name << ", max = " << is_rcpsp_max
+          << ", patterson = " << is_patterson << ", with "
+          << rcpsp_.tasks_size() << " tasks, and " << rcpsp_.resources_size()
+          << " resources.";
   // Count the extra start and end tasks.
   return num_declared_tasks_ + 2 == rcpsp_.tasks_size() &&
          load_status_ == PARSING_FINISHED;

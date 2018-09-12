@@ -1,7 +1,7 @@
 <summary> C++ examples to demonstrate usage of the different
 Operations Research libraries. </summary>
 
-  - %Constraint Solver examples:
+  - Constraint Solver examples:
     - cryptarithm.cc Demonstrates the use of basic modeling objects
       (integer variables, arithmetic constraints and expressions,
       simple search).

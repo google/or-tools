@@ -1126,20 +1126,28 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64 value) {
 // direction integer-bound => literal, but just literal => integer-bound? This
 // is the same as using different underlying variable for an integer literal and
 // its negation.
-inline std::function<void(Model*)> Implication(Literal l, IntegerLiteral i) {
+inline std::function<void(Model*)> Implication(
+    const std::vector<Literal>& enforcement_literals, IntegerLiteral i) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     if (i.bound <= integer_trail->LowerBound(i.var)) {
       // Always true! nothing to do.
     } else if (i.bound > integer_trail->UpperBound(i.var)) {
       // Always false.
-      model->Add(ClauseConstraint({l.Negated()}));
+      std::vector<Literal> clause;
+      for (const Literal literal : enforcement_literals) {
+        clause.push_back(literal.Negated());
+      }
+      model->Add(ClauseConstraint(clause));
     } else {
       // TODO(user): Double check what happen when we associate a trivially
       // true or false literal.
       IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-      const Literal current = encoder->GetOrCreateAssociatedLiteral(i);
-      model->Add(Implication(l, current));
+      std::vector<Literal> clause{encoder->GetOrCreateAssociatedLiteral(i)};
+      for (const Literal literal : enforcement_literals) {
+        clause.push_back(literal.Negated());
+      }
+      model->Add(ClauseConstraint(clause));
     }
   };
 }
@@ -1151,14 +1159,14 @@ inline std::function<void(Model*)> ImpliesInInterval(Literal in_interval,
   return [=](Model* model) {
     if (lb == ub) {
       IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-      model->Add(Implication(in_interval,
+      model->Add(Implication({in_interval},
                              encoder->GetOrCreateLiteralAssociatedToEquality(
                                  v, IntegerValue(lb))));
       return;
     }
     model->Add(Implication(
-        in_interval, IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb))));
-    model->Add(Implication(in_interval,
+        {in_interval}, IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb))));
+    model->Add(Implication({in_interval},
                            IntegerLiteral::LowerOrEqual(v, IntegerValue(ub))));
   };
 }

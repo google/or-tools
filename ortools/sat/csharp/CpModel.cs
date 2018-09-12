@@ -807,6 +807,10 @@ public class CpModel
     model_.Objective = objective;
   }
 
+  public String ModelStats() {
+    return SatHelper.ModelStats(model_);
+  }
+
   private int ConvertConstant(long value)
   {
     if (constant_map_.ContainsKey(value))

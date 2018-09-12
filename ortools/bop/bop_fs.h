@@ -141,6 +141,7 @@ class LinearRelaxation : public BopOptimizerBase {
   const BopParameters parameters_;
   int64 state_update_stamp_;
   bool lp_model_loaded_;
+  int num_full_solves_;
   glop::LinearProgram lp_model_;
   glop::LPSolver lp_solver_;
   double scaling_;

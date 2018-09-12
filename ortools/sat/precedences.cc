@@ -239,7 +239,7 @@ void PrecedencesPropagator::AdjustSizeFor(IntegerVariable i) {
 void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
                                    IntegerValue offset,
                                    IntegerVariable offset_var,
-                                   LiteralIndex presence_literal_index) {
+                                   absl::Span<Literal> presence_literals) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   AdjustSizeFor(tail);
   AdjustSizeFor(head);
@@ -248,8 +248,8 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
   // This arc is present iff all the literals here are true.
   absl::InlinedVector<Literal, 6> enforcement_literals;
   {
-    if (presence_literal_index != kNoLiteralIndex) {
-      enforcement_literals.push_back(Literal(presence_literal_index));
+    for (const Literal l : presence_literals) {
+      enforcement_literals.push_back(l);
     }
     if (integer_trail_->IsOptional(tail)) {
       enforcement_literals.push_back(
@@ -284,7 +284,7 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
     VLOG(1) << "Self arc! This could be presolved. "
             << "var:" << tail << " offset:" << offset
             << " offset_var:" << offset_var
-            << " conditioned_by:" << presence_literal_index;
+            << " conditioned_by:" << presence_literals;
   }
 
   // Remove the offset_var if it is fixed.

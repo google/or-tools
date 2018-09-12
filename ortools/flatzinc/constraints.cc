@@ -187,7 +187,9 @@ void ExtractAmong(fz::SolverData* data, fz::Constraint* ct) {
         tmp_sum.push_back(solver->MakeIsMemberVar(var, arg.values));
         break;
       }
-      default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+      default: {
+        LOG(FATAL) << "Invalid constraint " << ct->DebugString();
+      }
     }
   }
   if (ct->arguments[0].HasOneValue()) {
@@ -1747,7 +1749,9 @@ void ParseShortIntLin(fz::SolverData* data, fz::Constraint* ct, IntExpr** left,
       }
       break;
     }
-    default: { LOG(FATAL) << "Too many terms in " << ct->DebugString(); }
+    default: {
+      LOG(FATAL) << "Too many terms in " << ct->DebugString();
+    }
   }
 }
 
@@ -1818,7 +1822,9 @@ bool ExtractLinAsShort(fz::SolverData* data, fz::Constraint* ct) {
         return true;
       }
     }
-    default: { return false; }
+    default: {
+      return false;
+    }
   }
 }
 
@@ -2694,7 +2700,9 @@ void ExtractRegular(fz::SolverData* data, fz::Constraint* ct) {
       final_states = ct->arguments[5].values;
       break;
     }
-    default: { LOG(FATAL) << "Wrong constraint " << ct->DebugString(); }
+    default: {
+      LOG(FATAL) << "Wrong constraint " << ct->DebugString();
+    }
   }
   Constraint* const constraint = solver->MakeTransitionConstraint(
       variables, tuples, initial_state, final_states);
@@ -2750,7 +2758,9 @@ void ExtractRegularNfa(fz::SolverData* data, fz::Constraint* ct) {
       final_states = ct->arguments[5].values;
       break;
     }
-    default: { LOG(FATAL) << "Wrong constraint " << ct->DebugString(); }
+    default: {
+      LOG(FATAL) << "Wrong constraint " << ct->DebugString();
+    }
   }
   Constraint* const constraint = solver->MakeTransitionConstraint(
       variables, tuples, initial_state, final_states);
@@ -2780,7 +2790,9 @@ void ExtractSetIn(fz::SolverData* data, fz::Constraint* ct) {
       AddConstraint(solver, ct, constraint);
       break;
     }
-    default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+    default: {
+      LOG(FATAL) << "Invalid constraint " << ct->DebugString();
+    }
   }
 }
 
@@ -2808,7 +2820,9 @@ void ExtractSetNotIn(fz::SolverData* data, fz::Constraint* ct) {
       AddConstraint(solver, ct, constraint);
       break;
     }
-    default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+    default: {
+      LOG(FATAL) << "Invalid constraint " << ct->DebugString();
+    }
   }
 }
 
@@ -2841,7 +2855,9 @@ void ExtractSetInReif(fz::SolverData* data, fz::Constraint* ct) {
       AddConstraint(solver, ct, constraint);
       break;
     }
-    default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+    default: {
+      LOG(FATAL) << "Invalid constraint " << ct->DebugString();
+    }
   }
 }
 

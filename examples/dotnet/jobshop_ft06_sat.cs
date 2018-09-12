@@ -121,18 +121,15 @@ public class JobshopFt06Sat
     model.AddMaxEquality(makespan, all_ends);
     model.Minimize(makespan);
 
+    Console.WriteLine(model.ModelStats());
+
     // Creates the solver and solve.
     CpSolver solver = new CpSolver();
     // Display a few solutions picked at random.
-    CpSolverStatus status = solver.Solve(model);
+    solver.Solve(model);
 
     // Statistics.
-    Console.WriteLine("Statistics");
-    Console.WriteLine(String.Format("  - solve status : {0}", status));
-    Console.WriteLine("  - makespan     : " + solver.ObjectiveValue);
-    Console.WriteLine("  - conflicts    : " + solver.NumConflicts());
-    Console.WriteLine("  - branches     : " + solver.NumBranches());
-    Console.WriteLine("  - wall time    : " + solver.WallTime() + " ms");
+    Console.WriteLine(solver.ResponseStats());
   }
 
   static void Main() {

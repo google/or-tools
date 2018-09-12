@@ -428,7 +428,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         }
         break;
       }
-      default: { LOG(FATAL) << "Wrong constraint " << fz_ct.DebugString(); }
+      default: {
+        LOG(FATAL) << "Wrong constraint " << fz_ct.DebugString();
+      }
     }
   } else if (fz_ct.type == "all_different_int") {
     auto* arg = ct->mutable_all_diff();

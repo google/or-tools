@@ -163,7 +163,7 @@ std::function<void(Model*)> TableConstraint(
     }
 
     // Fully encode the variables using all the values appearing in the tuples.
-    IntegerTrail* interger_trail = model->GetOrCreate<IntegerTrail>();
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     const std::vector<std::vector<int64>> tr_tuples = Transpose(new_tuples);
     for (int i = 0; i < n; ++i) {
       const int64 first = tr_tuples[i].front();
@@ -171,7 +171,7 @@ std::function<void(Model*)> TableConstraint(
                       [first](int64 v) { return v == first; })) {
         model->Add(Equality(vars[i], first));
       } else {
-        interger_trail->UpdateInitialDomain(
+        integer_trail->UpdateInitialDomain(
             vars[i], SortedDisjointIntervalsFromValues(tr_tuples[i]));
         model->Add(FullyEncodeVariable(vars[i]));
         ProcessOneColumn(

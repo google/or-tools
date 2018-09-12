@@ -2856,7 +2856,9 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
       }
       break;
     }
-    default: { LOG(FATAL) << "Wrong constraint " << ct->DebugString(); }
+    default: {
+      LOG(FATAL) << "Wrong constraint " << ct->DebugString();
+    }
   }
 
   // Compute the set of reachable state at each time point.
@@ -3554,7 +3556,8 @@ void Presolver::SubstituteEverywhere(Model* model) {
             }
             break;
           }
-          default: {}
+          default: {
+          }
         }
       }
       // No need to update var_to_constraints, it should have been done already
@@ -3616,7 +3619,8 @@ void Presolver::SubstituteAnnotation(Annotation* ann) {
       }
       break;
     }
-    default: {}
+    default: {
+    }
   }
 }
 
@@ -3646,7 +3650,9 @@ bool Presolver::IntersectVarWithArg(IntegerVariable* var, const Argument& arg) {
       }
       break;
     }
-    default: { LOG(FATAL) << "Wrong domain type" << arg.DebugString(); }
+    default: {
+      LOG(FATAL) << "Wrong domain type" << arg.DebugString();
+    }
   }
   return false;
 }

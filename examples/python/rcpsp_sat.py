@@ -10,27 +10,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Sat based solver for the RCPSP problems (see rcpsp.proto)."""
 
-"""Full implementation of a RCPSP solver using the CP-SAT solver."""
-
+from __future__ import absolute_import
+from __future__ import division
 from __future__ import print_function
 
 import argparse
-from collections import defaultdict
+import collections
 import time
 
-from ortools.sat.python import cp_model
-from ortools.data import rcpsp_pb2
+from google.protobuf import text_format
 from ortools.data import pywraprcpsp
+from ortools.sat.python import cp_model
 
-parser = argparse.ArgumentParser()
-
-parser.add_argument(
-    '--input', default='', help='Input file to parse and solve.')
-parser.add_argument(
-    '--output_proto',
-    default='',
-    help='Output file to write the cp_model proto to.')
+Parser = argparse.ArgumentParser()
+Parser.add_argument('--input', default = "",
+                    help = 'Input file to parse and solve.')
+Parser.add_argument('--output_proto', default = "",
+                    help = 'Output file to write the cp_model'
+                           'proto to.')
+Parser.add_argument('--params', default = "",
+                    help = 'Sat solver parameters.')
 
 
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -49,20 +50,23 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     self.__solution_count += 1
 
 
-def SolveRcpsp(problem, proto_file):
-  """Solves the given RCPSP problem."""
+def SolveRcpsp(problem, proto_file, params):
+  """Parse and solve a given RCPSP problem in proto format."""
+
   # Determine problem type.
-  problem_type = ('Resource investment'
+  problem_type = ('Resource Investment Problem'
                   if problem.is_resource_investment else 'RCPSP')
 
   if problem.is_rcpsp_max:
     problem_type += '/Max delay'
+  # We print 2 less tasks as these are sentinel tasks that are not counted in
+  # the description of the rcpsp models.
   if problem.is_consumer_producer:
     print('Solving %s with %i reservoir resources and %i tasks' %
-          (problem_type, len(problem.resources), len(problem.tasks)))
+          (problem_type, len(problem.resources), len(problem.tasks) - 2))
   else:
     print('Solving %s with %i resources and %i tasks' %
-          (problem_type, len(problem.resources), len(problem.tasks)))
+          (problem_type, len(problem.resources), len(problem.tasks) - 2))
 
   # Create the model.
   model = cp_model.CpModel()
@@ -85,20 +89,22 @@ def SolveRcpsp(problem, proto_file):
   print('  - horizon = %i' % horizon)
 
   # Containers used to build resources.
-  intervals_per_resource = defaultdict(list)
-  demands_per_resource = defaultdict(list)
-  presences_per_resource = defaultdict(list)
-  starts_per_resource = defaultdict(list)
+  intervals_per_resource = collections.defaultdict(list)
+  demands_per_resource = collections.defaultdict(list)
+  presences_per_resource = collections.defaultdict(list)
+  starts_per_resource = collections.defaultdict(list)
 
   # Starts and ends for master interval variables.
   task_starts = {}
   task_ends = {}
 
   # Containers for per-recipe per task variables.
-  alternatives_per_task = defaultdict(list)
-  presences_per_task = defaultdict(list)
-  starts_per_task = defaultdict(list)
-  ends_per_task = defaultdict(list)
+  alternatives_per_task = collections.defaultdict(list)
+  presences_per_task = collections.defaultdict(list)
+  starts_per_task = collections.defaultdict(list)
+  ends_per_task = collections.defaultdict(list)
+
+  one = model.NewIntVar(1, 1, 'one')
 
   # Create tasks.
   for t in all_active_tasks:
@@ -116,7 +122,7 @@ def SolveRcpsp(problem, proto_file):
       alternatives_per_task[t].append(interval)
       starts_per_task[t].append(task_starts[t])
       ends_per_task[t].append(task_ends[t])
-      presences_per_task[t].append(1)
+      presences_per_task[t].append(one)
 
       # Register for resources.
       for i in range(len(recipe.demands)):
@@ -181,25 +187,31 @@ def SolveRcpsp(problem, proto_file):
 
   # Add precedences.
   if problem.is_rcpsp_max:
-    for t in all_active_tasks:
-      task = problem.tasks[t]
+    for task_id in all_active_tasks:
+      task = problem.tasks[task_id]
       num_modes = len(task.recipes)
-      num_successors = len(task.successors)
 
-      for s in range(num_successors):
-        n = task.successors[s]
-        delay_matrix = task.successor_delays[s]
-        num_other_modes = len(problem.tasks[n].recipes)
+      for successor_index in range(len(task.successors)):
+        next_id = task.successors[successor_index]
+        delay_matrix = task.successor_delays[successor_index]
+        num_next_modes = len(problem.tasks[next_id].recipes)
         for m1 in range(num_modes):
-          s1 = starts_per_task[t][m1]
-          if n == num_tasks - 1:
+          s1 = starts_per_task[task_id][m1]
+          p1 = presences_per_task[task_id][m1]
+          if next_id == num_tasks - 1:
             delay = delay_matrix.recipe_delays[m1].min_delays[0]
-            model.Add(s1 + delay <= makespan)
+            model.Add(s1 + delay <= makespan).OnlyEnforceIf(p1)
           else:
-            for m2 in range(num_other_modes):
+            for m2 in range(num_next_modes):
               delay = delay_matrix.recipe_delays[m1].min_delays[m2]
-              s2 = starts_per_task[n][m2]
-              model.Add(s1 + delay <= s2)
+              s2 = starts_per_task[next_id][m2]
+              p2 = presences_per_task[next_id][m2]
+              # Create p == (p1 and p2).
+              p = model.NewBoolVar('(%s and %s)' % (p1, p2))
+              model.AddImplication(p, p1)
+              model.AddImplication(p, p2)
+              model.AddBoolOr([p1.Not(), p2.Not(), p])
+              model.Add(s1 + delay <= s2).OnlyEnforceIf(p)
   else:  # Normal dependencies (task ends before the start of successors).
     for t in all_active_tasks:
       for n in problem.tasks[t].successors:
@@ -220,6 +232,7 @@ def SolveRcpsp(problem, proto_file):
       c = sum(demands_per_resource[r])
 
     if problem.is_resource_investment:
+      # RIP problems have only renewable resources.
       capacity = model.NewIntVar(0, c, 'capacity_of_%i' % r)
       model.AddCumulative(intervals_per_resource[r], demands_per_resource[r],
                           capacity)
@@ -251,27 +264,23 @@ def SolveRcpsp(problem, proto_file):
 
   if proto_file:
     print('Writing proto to %s' % proto_file)
-    text_file = open(proto_file, 'w')
-    text_file.write(str(model))
-    text_file.close()
+    with open(proto_file, 'w') as text_file:
+      text_file.write(str(model))
 
   # Solve model.
   solver = cp_model.CpSolver()
+  if params:
+    text_format.Merge(params, solver.parameters)
   solution_printer = SolutionPrinter()
-  status = solver.SolveWithSolutionCallback(model, solution_printer)
-  print('Solve status: %s' % solver.StatusName(status))
-  print('Optimal objective value: %i' % solver.ObjectiveValue())
-  print('Statistics')
-  print('  - conflicts : %i' % solver.NumConflicts())
-  print('  - branches  : %i' % solver.NumBranches())
-  print('  - wall time : %f s' % solver.WallTime())
+  solver.SolveWithSolutionCallback(model, solution_printer)
+  print(solver.ResponseStats())
 
 
 def main(args):
   rcpsp_parser = pywraprcpsp.RcpspParser()
   rcpsp_parser.ParseFile(args.input)
-  SolveRcpsp(rcpsp_parser.Problem(), args.output_proto)
+  SolveRcpsp(rcpsp_parser.Problem(), args.output_proto, args.params)
 
 
 if __name__ == '__main__':
-  main(parser.parse_args())
+  main(Parser.parse_args())

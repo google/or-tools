@@ -341,6 +341,7 @@ LinearRelaxation::LinearRelaxation(const BopParameters& parameters,
       parameters_(parameters),
       state_update_stamp_(ProblemState::kInitialStampValue),
       lp_model_loaded_(false),
+      num_full_solves_(0),
       lp_model_(),
       lp_solver_(),
       scaling_(1),
@@ -357,6 +358,14 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
     return BopOptimizerBase::CONTINUE;
   }
   state_update_stamp_ = problem_state.update_stamp();
+
+  // If this is a pure feasibility problem, obey
+  // `BopParameters.max_lp_solve_for_feasibility_problems`.
+  if (problem_state.original_problem().objective().literals_size() == 0 &&
+      parameters_.max_lp_solve_for_feasibility_problems() >= 0 &&
+      num_full_solves_ >= parameters_.max_lp_solve_for_feasibility_problems()) {
+    return BopOptimizerBase::ABORT;
+  }
 
   // Check if the number of fixed variables is greater than last time.
   // TODO(user): Consider checking changes in number of conflicts too.
@@ -420,10 +429,14 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
   return BopOptimizerBase::CONTINUE;
 }
 
-// Only run the LP solver when there is an objective to minimize.
+// Always let the LP solver run if there is an objective. If there isn't, only
+// let the LP solver run if the user asked for it by setting
+// `BopParameters.max_lp_solve_for_feasibility_problems` to a non-zero value
+// (a negative value means no limit).
 // TODO(user): also deal with problem_already_solved_
 bool LinearRelaxation::ShouldBeRun(const ProblemState& problem_state) const {
-  return problem_state.original_problem().objective().literals_size() > 0;
+  return problem_state.original_problem().objective().literals_size() > 0 ||
+         parameters_.max_lp_solve_for_feasibility_problems() != 0;
 }
 
 BopOptimizerBase::Status LinearRelaxation::Optimize(
@@ -446,6 +459,7 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
 
   if (lp_status == glop::ProblemStatus::OPTIMAL ||
       lp_status == glop::ProblemStatus::IMPRECISE) {
+    ++num_full_solves_;
     problem_already_solved_ = true;
   }
 

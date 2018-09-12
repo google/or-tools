@@ -31,9 +31,12 @@ PROTO_INPUT(operations_research::sat::SatParameters,
             com.google.ortools.sat.SatParameters,
             parameters);
 
-PROTO2_RETURN(
-    operations_research::sat::CpSolverResponse,
-    com.google.ortools.sat.CpSolverResponse);
+PROTO_INPUT(operations_research::sat::CpSolverResponse,
+            com.google.ortools.sat.CpSolverResponse,
+            response);
+
+PROTO2_RETURN(operations_research::sat::CpSolverResponse,
+              com.google.ortools.sat.CpSolverResponse);
 
 %ignoreall
 
@@ -45,6 +48,8 @@ PROTO2_RETURN(
 %rename (solve) operations_research::sat::SatHelper::Solve;
 %rename (solveWithParameters) operations_research::sat::SatHelper::SolveWithParameters;
 %rename (solveWithParametersAndSolutionCallback) operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
+%rename (modelStats) operations_research::sat::SatHelper::ModelStats;
+%rename (solverResponseStats) operations_research::sat::SatHelper::SolverResponseStats;
 
 // We use directors for the solution callback.
 %feature("director") operations_research::sat::SolutionCallback;

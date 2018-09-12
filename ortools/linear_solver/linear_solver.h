@@ -225,7 +225,7 @@ class MPSolver {
 
   // Parses the name of the solver. Returns true if the solver type is
   // successfully parsed as one of the OptimizationProblemType.
-  static bool ParseSolverType(const std::string& solver,
+  static bool ParseSolverType(absl::string_view solver,
                               OptimizationProblemType* type);
 
   bool IsMIP() const;
@@ -597,7 +597,7 @@ class MPSolver {
   // or not the solver computes them ahead of time or when NextSolution() is
   // called is solver specific.
   //
-  // As of July 17, 2018, only Gurobi supports NextSolution(), see
+  // As of 2018-08-09, only Gurobi supports NextSolution(), see
   // linear_solver_underlying_gurobi_test for an example of how to configure
   // Gurobi for this purpose. The other solvers return false unconditionally.
   bool NextSolution() MUST_USE_RESULT;

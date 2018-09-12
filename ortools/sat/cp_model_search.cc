@@ -435,7 +435,9 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
       return false;
       break;
     }
-    default: { return false; }
+    default: {
+      return false;
+    }
   }
 }
 

@@ -80,17 +80,6 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
     return absl::StrCat("var #", v, " has and invalid domain() format: ",
                         ProtobufShortDebugString(proto));
   }
-  if (!proto.enforcement_literal().empty()) {
-    if (proto.enforcement_literal_size() > 1) {
-      return absl::StrCat("var #", v,
-                          " has more than one enforcement_literal: ",
-                          ProtobufShortDebugString(proto));
-    }
-    if (!LiteralReferenceIsValid(model, proto.enforcement_literal(0))) {
-      return absl::StrCat("var #", v, " has an invalid enforcement_literal: ",
-                          ProtobufShortDebugString(proto));
-    }
-  }
   return "";
 }
 
@@ -106,12 +95,7 @@ std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
                           ProtobufShortDebugString(ct));
     }
   }
-  if (ct.enforcement_literal_size() > 1) {
-    return absl::StrCat("More than one enforcement_literal in constraint #", c,
-                        " : ", ProtobufShortDebugString(ct));
-  }
-  if (ct.enforcement_literal_size() == 1) {
-    const int lit = ct.enforcement_literal(0);
+  for (const int lit : ct.enforcement_literal()) {
     if (!LiteralReferenceIsValid(model, lit)) {
       return absl::StrCat("Invalid enforcement literal ", lit,
                           " in constraint #", c, " : ",
@@ -240,6 +224,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
 
     // Other non-generic validations.
     // TODO(user): validate all constraints.
+    // TODO(user): Make sure enforcement literals are only set when supported.
     const ConstraintProto& ct = model.constraints(c);
     const ConstraintProto::ConstraintCase type = ct.constraint_case();
     switch (type) {
@@ -313,10 +298,13 @@ class ConstraintChecker {
   // Note that this does not check the variables like
   // ConstraintHasNonEnforcedVariables() does.
   bool ConstraintIsEnforced(const ConstraintProto& ct) {
-    return !HasEnforcementLiteral(ct) ||
-           LiteralIsTrue(ct.enforcement_literal(0));
+    for (const int lit : ct.enforcement_literal()) {
+      if (LiteralIsFalse(lit)) return false;
+    }
+    return true;
   }
 
+  // TODO(user): remove.
   bool ConstraintHasNonEnforcedVariables(const CpModelProto& model,
                                          const ConstraintProto& ct) {
     IndexReferences references;

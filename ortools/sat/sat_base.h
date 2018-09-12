@@ -110,6 +110,14 @@ inline std::ostream& operator<<(std::ostream& os, Literal literal) {
   return os;
 }
 
+inline std::ostream& operator<<(std::ostream& os,
+                                absl::Span<Literal> literals) {
+  for (const Literal literal : literals) {
+    os << literal.DebugString() << ",";
+  }
+  return os;
+}
+
 // Holds the current variable assignment of the solver.
 // Each variable can be unassigned or be assigned to true or false.
 class VariablesAssignment {

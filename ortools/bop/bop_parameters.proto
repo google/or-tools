@@ -50,7 +50,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 41
+// NEXT TAG: 42
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -277,4 +277,10 @@ message BopParameters {
   // conflicts at the time. This allows to simulate parallelism between the
   // different guiding strategy on a single core.
   optional int32 guided_sat_conflicts_chunk = 34 [default = 1000];
+
+  // The maximum number of time the LP solver will run to feasibility for pure
+  // feasibility problems (with a constant-valued objective function). Set this
+  // to a small value, e.g., 1, if fractional solutions offer useful guidance to
+  // other solvers in the portfolio. A negative value means no limit.
+  optional int32 max_lp_solve_for_feasibility_problems = 41 [default = 0];
 }

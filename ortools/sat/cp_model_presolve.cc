@@ -318,57 +318,51 @@ MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct,
   return true;
 }
 
-MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
-                                           PresolveContext* context) {
-  if (HasEnforcementLiteral(*ct)) {
-    context->SetLiteralToFalse(ct->enforcement_literal(0));
-  } else {
-    context->is_unsat = true;
-  }
-  return RemoveConstraint(ct, context);
-}
-
 bool PresolveEnforcementLiteral(ConstraintProto* ct, PresolveContext* context) {
   if (!HasEnforcementLiteral(*ct)) return false;
 
-  const int literal = ct->enforcement_literal(0);
-  if (context->LiteralIsTrue(literal)) {
-    context->UpdateRuleStats("true enforcement literal");
-    ct->clear_enforcement_literal();
-    return true;
-  }
+  int new_size = 0;
+  const int old_size = ct->enforcement_literal().size();
+  for (const int literal : ct->enforcement_literal()) {
+    // Remove true literal.
+    if (context->LiteralIsTrue(literal)) {
+      context->UpdateRuleStats("true enforcement literal");
+      continue;
+    }
 
-  // TODO(user): because the cumulative and disjunctive constraint refer to this
-  // interval, we cannot simply remove the constraint even if we know that this
-  // optional interval will not be present. We could fix that by removing this
-  // interval from these constraints, but it is difficult to do that in a
-  // general code, so we will need the presolve for these constraint to take
-  // care of that, and then we would be able to remove this interval if it is
-  // not longer used.
-  if (ct->constraint_case() == ConstraintProto::ConstraintCase::kInterval) {
-    return false;
-  }
+    // TODO(user): because the cumulative and disjunctive constraint refer to
+    // this interval, we cannot simply remove the constraint even if we know
+    // that this optional interval will not be present. We could fix that by
+    // removing this interval from these constraints, but it is difficult to do
+    // that in a general code, so we will need the presolve for these constraint
+    // to take care of that, and then we would be able to remove this interval
+    // if it is not longer used.
+    if (ct->constraint_case() != ConstraintProto::ConstraintCase::kInterval) {
+      if (context->LiteralIsFalse(literal)) {
+        context->UpdateRuleStats("false enforcement literal");
+        return RemoveConstraint(ct, context);
+      } else if (context->IsUnique(literal)) {
+        // We can simply set it to false and ignore the constraint in this case.
+        context->UpdateRuleStats("enforcement literal not used");
+        context->SetLiteralToFalse(literal);
+        return RemoveConstraint(ct, context);
+      }
+    }
 
-  if (context->LiteralIsFalse(literal)) {
-    context->UpdateRuleStats("false enforcement literal");
-    return RemoveConstraint(ct, context);
+    ct->set_enforcement_literal(new_size++, literal);
   }
-  if (context->IsUnique(literal)) {
-    // We can simply set it to false and ignore the constraint in this case.
-    context->UpdateRuleStats("enforcement literal not used");
-    context->SetLiteralToFalse(literal);
-    return RemoveConstraint(ct, context);
-  }
-  return false;
+  ct->mutable_enforcement_literal()->Truncate(new_size);
+  return new_size != old_size;
 }
 
 bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
-  // Move the enforcement literal inside the clause if any.
+  // Move the enforcement literal inside the clause if any. Note that we do not
+  // mark this as a change since the literal in the constraint are the same.
   if (HasEnforcementLiteral(*ct)) {
-    // Note that we do not mark this as changed though since the literal in the
-    // constraint are the same.
     context->UpdateRuleStats("bool_or: removed enforcement literal");
-    ct->mutable_bool_or()->add_literals(NegatedRef(ct->enforcement_literal(0)));
+    for (const int literal : ct->enforcement_literal()) {
+      ct->mutable_bool_or()->add_literals(NegatedRef(literal));
+    }
     ct->clear_enforcement_literal();
   }
 
@@ -401,7 +395,8 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
 
   if (context->tmp_literals.empty()) {
     context->UpdateRuleStats("bool_or: empty");
-    return MarkConstraintAsFalse(ct, context);
+    context->is_unsat = true;
+    return true;
   }
   if (context->tmp_literals.size() == 1) {
     context->UpdateRuleStats("bool_or: only one literal");
@@ -425,6 +420,22 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
     }
   }
   return changed;
+}
+
+MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
+                                           PresolveContext* context) {
+  if (HasEnforcementLiteral(*ct)) {
+    // Change the constraint to a bool_or.
+    ct->mutable_bool_or()->clear_literals();
+    for (const int lit : ct->enforcement_literal()) {
+      ct->mutable_bool_or()->add_literals(NegatedRef(lit));
+    }
+    ct->clear_enforcement_literal();
+    return PresolveBoolOr(ct, context);
+  } else {
+    context->is_unsat = true;
+    return RemoveConstraint(ct, context);
+  }
 }
 
 bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
@@ -455,6 +466,9 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
     context->tmp_literals.push_back(literal);
   }
 
+  // Note that this is not the same behavior as a bool_or:
+  // - bool_or means "at least one", so it is false if empty.
+  // - bool_and means "all literals inside true", so it is true if empty.
   if (context->tmp_literals.empty()) return RemoveConstraint(ct, context);
 
   if (changed) {

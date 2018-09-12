@@ -138,6 +138,10 @@ public class CpSolver
     return response_.Status;
   }
 
+  public String ResponseStats() {
+    return SatHelper.SolverResponseStats(response_);
+  }  
+
   public double ObjectiveValue
   {
     get { return response_.ObjectiveValue; }

@@ -21,7 +21,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 108
+// NEXT TAG: 109
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -599,4 +599,9 @@ message SatParameters {
   // variables where
   //    lm <= variable min <= lm + search_randomization_tolerance
   optional int64 search_randomization_tolerance = 104 [default = 0];
+
+  // If true, we automatically detect variables whose constraint are always
+  // enforced by the same literal and we mark them as optional. This allows
+  // to propagate them as if they where present in some situation.
+  optional bool use_optional_variables = 108 [default = true];
 }
