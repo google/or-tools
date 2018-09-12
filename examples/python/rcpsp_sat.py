@@ -206,12 +206,7 @@ def SolveRcpsp(problem, proto_file, params):
               delay = delay_matrix.recipe_delays[m1].min_delays[m2]
               s2 = starts_per_task[next_id][m2]
               p2 = presences_per_task[next_id][m2]
-              # Create p == (p1 and p2).
-              p = model.NewBoolVar('(%s and %s)' % (p1, p2))
-              model.AddImplication(p, p1)
-              model.AddImplication(p, p2)
-              model.AddBoolOr([p1.Not(), p2.Not(), p])
-              model.Add(s1 + delay <= s2).OnlyEnforceIf(p)
+              model.Add(s1 + delay <= s2).OnlyEnforceIf([p1, p2])
   else:  # Normal dependencies (task ends before the start of successors).
     for t in all_active_tasks:
       for n in problem.tasks[t].successors:
