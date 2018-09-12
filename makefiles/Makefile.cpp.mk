@@ -248,7 +248,6 @@ multidim_knapsack \
 network_routing \
 nqueens \
 pdptw \
-rcpsp_sat \
 shift_minimization_sat \
 solve \
 sports_scheduling \
