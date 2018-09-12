@@ -427,18 +427,28 @@ class Constraint(object):
     """Adds an enforcement literal to the constraint.
 
     Args:
-        boolvar: A boolean literal, that is a boolean variable or its negation.
-          An enforcement literal (boolean variable or its negation) decides
-          whether the constraint is active or not. It acts as an implication, so
-          if the literal is true, that implies the constraint must be enforced.
+        boolvar: A boolean literal or a list of boolean literals.
 
-    Returns:
-        The constraint itself.
+    This method adds one or more literals (that is a boolean variable or its
+    negation) as enforcement literals. The conjunction of all these literals
+    decides whether the constraint is active or not. It acts as an
+    implication, so if the conjunction is true, it implies that the constraint
+    must be enforced. If it is false, then the constraint is ignored.
+
+    The following constraints support enforcement literals:
+       bool or, bool and, and any linear constraints support any number of
+       enforcement literals.
     """
 
     if isinstance(boolvar, numbers.Integral) and boolvar == 1:
       # Always true. Do nothing.
       pass
+    elif isinstance(boolvar, list):
+      for b in boolvar:
+        if isinstance(b, numbers.Integral) and b == 1:
+          pass
+        else:
+          self.__constraint.enforcement_literal.append(b.Index())
     else:
       self.__constraint.enforcement_literal.append(boolvar.Index())
     return self

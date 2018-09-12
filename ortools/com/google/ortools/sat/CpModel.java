@@ -1139,6 +1139,11 @@ public class CpModel {
     ds.setDomainReductionStrategy(domStr);
   }
 
+  /** Returns some statistics on model as a string. */
+  public String modelStats() {
+    return SatHelper.modelStats(model());
+  }
+
   // Helpers
 
   long[] toLongArray(int[] values) {

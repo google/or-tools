@@ -295,26 +295,11 @@ class ConstraintChecker {
     return -variable_values_[-var - 1];
   }
 
-  // Note that this does not check the variables like
-  // ConstraintHasNonEnforcedVariables() does.
   bool ConstraintIsEnforced(const ConstraintProto& ct) {
     for (const int lit : ct.enforcement_literal()) {
       if (LiteralIsFalse(lit)) return false;
     }
     return true;
-  }
-
-  // TODO(user): remove.
-  bool ConstraintHasNonEnforcedVariables(const CpModelProto& model,
-                                         const ConstraintProto& ct) {
-    IndexReferences references;
-    AddReferencesUsedByConstraint(ct, &references);
-    for (const int ref : references.variables) {
-      const auto& var_proto = model.variables(PositiveRef(ref));
-      if (var_proto.enforcement_literal().empty()) continue;
-      if (LiteralIsFalse(var_proto.enforcement_literal(0))) return true;
-    }
-    return false;
   }
 
   bool BoolOrConstraintIsFeasible(const ConstraintProto& ct) {
@@ -719,11 +704,7 @@ bool SolutionIsFeasible(const CpModelProto& model,
   }
 
   // Check that all values fall in the variable domains.
-  int num_optional_vars = 0;
   for (int i = 0; i < model.variables_size(); ++i) {
-    if (!model.variables(i).enforcement_literal().empty()) {
-      ++num_optional_vars;
-    }
     if (!DomainInProtoContains(model.variables(i), variable_values[i])) {
       VLOG(1) << "Variable #" << i << " has value " << variable_values[i]
               << " which do not fall in its domain: "
@@ -739,11 +720,6 @@ bool SolutionIsFeasible(const CpModelProto& model,
     const ConstraintProto& ct = model.constraints(c);
 
     if (!checker.ConstraintIsEnforced(ct)) continue;
-    if (num_optional_vars > 0) {
-      // This function can be slow because it uses reflection. So we only
-      // call it if there is any optional variables.
-      if (checker.ConstraintHasNonEnforcedVariables(model, ct)) continue;
-    }
 
     bool is_feasible = true;
     const ConstraintProto::ConstraintCase type = ct.constraint_case();

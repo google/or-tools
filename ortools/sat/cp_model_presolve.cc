@@ -1806,18 +1806,6 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
     context.UpdateConstraintVariableUsage(c);
   }
 
-  // Hack for the optional variable so their literal is never considered to
-  // appear in only one constraint. TODO(user): if it appears in none, then we
-  // can remove the variable...
-  for (int i = 0; i < context.working_model->variables_size(); ++i) {
-    if (!context.working_model->variables(i).enforcement_literal().empty()) {
-      context
-          .var_to_constraints[PositiveRef(
-              context.working_model->variables(i).enforcement_literal(0))]
-          .insert(-1);
-    }
-  }
-
   // Hack for the objective so that it is never considered to appear in only one
   // constraint.
   if (context.working_model->has_objective()) {
@@ -2355,11 +2343,6 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   for (ConstraintProto& ct_ref : *proto->mutable_constraints()) {
     ApplyToAllVariableIndices(mapping_function, &ct_ref);
     ApplyToAllLiteralIndices(mapping_function, &ct_ref);
-  }
-  for (IntegerVariableProto& variable_proto : *proto->mutable_variables()) {
-    for (int& ref : *variable_proto.mutable_enforcement_literal()) {
-      mapping_function(&ref);
-    }
   }
 
   // Remap the objective variables.

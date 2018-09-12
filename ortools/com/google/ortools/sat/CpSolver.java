@@ -112,6 +112,11 @@ public class CpSolver {
     return solveParameters;
   }
 
+  /** Returns some statistics on the solution found as a string. */
+  public String responseStats() {
+    return SatHelper.solverResponseStats(solveResponse);
+  }
+
   private CpSolverResponse solveResponse;
   private final SatParameters.Builder solveParameters;
 }

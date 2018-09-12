@@ -561,10 +561,9 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
     }
 
     // Make sure any unused variable, that is not already a Boolean is
-    // considered "used". Same for optional variable that needs to be integer.
+    // considered "used".
     for (int i = 0; i < num_proto_variables; ++i) {
-      if (booleans_[i] == kNoBooleanVariable ||
-          !model_proto.variables(i).enforcement_literal().empty()) {
+      if (booleans_[i] == kNoBooleanVariable) {
         references.variables.insert(i);
       }
     }
@@ -588,16 +587,8 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
     reverse_integer_map_[integers_[i]] = i;
   }
 
+  // Link any variable that has both views.
   for (int i = 0; i < num_proto_variables; ++i) {
-    // Mark the optional IntegerVariable.
-    const auto& var_proto = model_proto.variables(i);
-    if (!var_proto.enforcement_literal().empty()) {
-      const sat::Literal l = Literal(var_proto.enforcement_literal(0));
-      model_->GetOrCreate<IntegerTrail>()->MarkIntegerVariableAsOptional(
-          Integer(i), l);
-    }
-
-    // Link any variable that has both views.
     if (integers_[i] == kNoIntegerVariable) continue;
     if (booleans_[i] == kNoBooleanVariable) continue;
 
@@ -683,7 +674,6 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
       if (min == max) continue;
       if (min == 0 && max == 1) continue;
       if (enforcement_intersection[var].empty()) continue;
-      if (integer_trail->IsOptional(Integer(var))) continue;
 
       ++num_optionals;
       integer_trail->MarkIntegerVariableAsOptional(
@@ -1505,12 +1495,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   int num_constants = 0;
-  int num_optionals = 0;
   std::set<int64> constant_values;
   std::map<std::vector<ClosedInterval>, int, ExactVectorOfDomainComparator>
       num_vars_per_domains;
   for (const IntegerVariableProto& var : model_proto.variables()) {
-    if (!var.enforcement_literal().empty()) ++num_optionals;
     if (var.domain_size() == 2 && var.domain(0) == var.domain(1)) {
       ++num_constants;
       constant_values.insert(var.domain(0));
@@ -1545,10 +1533,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
           ? absl::StrCat(" (", model_proto.objective().vars_size(),
                          " in objective)")
           : "";
-  const std::string optional_string =
-      num_optionals == 0 ? "" : absl::StrCat(" (", num_optionals, " optional)");
   absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
-                  objective_string, optional_string, "\n");
+                  objective_string.c_str(), "\n");
   if (num_vars_per_domains.size() < 50) {
     for (const auto& entry : num_vars_per_domains) {
       const std::string temp = absl::StrCat(

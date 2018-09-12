@@ -829,25 +829,6 @@ public class CpModel
     }
   }
 
-  private int ConvertOptionalConstant(long value, int is_present_index)
-  {
-    if (constant_map_.ContainsKey(value))
-    {
-      return constant_map_[value];
-    }
-    else
-    {
-      int index = model_.Variables.Count;
-      IntegerVariableProto var = new IntegerVariableProto();
-      var.Domain.Add(value);
-      var.Domain.Add(value);
-      constant_map_.Add(value, index);
-      var.EnforcementLiteral.Add(is_present_index);
-      model_.Variables.Add(var);
-      return index;
-    }
-  }
-
   private int GetOrCreateIndex<X>(X x)
   {
     if (typeof(X) == typeof(IntVar))
@@ -858,20 +839,6 @@ public class CpModel
     if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
     {
       return ConvertConstant(Convert.ToInt64(x));
-    }
-    throw new ArgumentException("Cannot extract index from argument");
-  }
-
-  private int GetOrCreateOptionalIndex<X>(X x, int is_present_index)
-  {
-    if (typeof(X) == typeof(IntVar))
-    {
-      IntVar vx = (IntVar)(Object)x;
-      return vx.Index;
-    }
-    if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
-    {
-      return ConvertOptionalConstant(Convert.ToInt64(x), is_present_index);
     }
     throw new ArgumentException("Cannot extract index from argument");
   }

@@ -86,15 +86,6 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     std::vector<int>* initial_equivalence_classes) {
   CHECK(initial_equivalence_classes != nullptr);
 
-  // If the model contains any variables with enforcement literals, return here.
-  for (const IntegerVariableProto& variable : problem.variables()) {
-    if (variable.enforcement_literal_size() > 0) {
-      // TODO(user): support enforcement literals on variables.
-      LOG(ERROR) << "Unsupported enforcement literal on variables.";
-      return nullptr;
-    }
-  }
-
   const int num_variables = problem.variables_size();
   auto graph = absl::make_unique<Graph>();
   initial_equivalence_classes->clear();

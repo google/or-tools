@@ -58,22 +58,6 @@ message IntegerVariableProto {
   //  - for all i < n   :      min_i <= max_i
   //  - for all i < n-1 :  max_i + 1 < min_{i+1}.
   repeated int64 domain = 2;
-
-  // DEPRECATED.
-  //
-  // Advanced usage. Note that this is not fully supported yet, contact or-sat@
-  // if this does not work as expected.
-  //
-  // If this is not empty, it must contains only one literal. Any constraint
-  // having a reference to this variable will be ignored if this literal is
-  // true. When this is the case, the value of this variable can thus take any
-  // value in its domain. As of 2017/09/18, only linear constraints with two
-  // terms support this (i.e. precedence constraints).
-  //
-  // This can be a powerful concept because it allows the solver to propagate
-  // the variable regardless of the enforcement literal, and if its domain
-  // become empty, it can propagate this literal to false.
-  repeated int32 enforcement_literal = 3;
 }
 
 // Argument of the constraints of the form OP(literals).

@@ -33,6 +33,13 @@ public class Constraint {
     constraintBuilder.addEnforcementLiteral(lit.getIndex());
   }
 
+  /** Adds a list of literals to the constraint. */
+  public void onlyEnforceIf(ILiteral[] lits) {
+    for (ILiteral lit : lits) {
+      constraintBuilder.addEnforcementLiteral(lit.getIndex());
+    }
+  }
+
   int getIndex() {
     return constraintIndex;
   }

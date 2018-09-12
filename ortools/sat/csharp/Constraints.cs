@@ -30,6 +30,13 @@ public class Constraint
     constraint_.EnforcementLiteral.Add(lit.GetIndex());
   }
 
+  public void OnlyEnforceIf(ILiteral[] lits)
+  {
+    foreach (ILiteral lit in lits) {
+      constraint_.EnforcementLiteral.Add(lit.GetIndex());
+    }
+  }
+
   public int Index
   {
     get  { return index_; }
