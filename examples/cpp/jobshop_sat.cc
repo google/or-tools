@@ -55,14 +55,13 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
   int64 max_earliest_start = 0;
   for (const Job& job : problem.jobs()) {
     if (job.has_latest_end()) {
-      max_latest_end =
-          std::max<int64>(max_latest_end, job.latest_end().value());
+      max_latest_end = std::max(max_latest_end, job.latest_end().value());
     } else {
       max_latest_end = kint64max;
     }
     if (job.has_earliest_start()) {
       max_earliest_start =
-          std::max<int64>(max_earliest_start, job.earliest_start().value());
+          std::max(max_earliest_start, job.earliest_start().value());
     }
     for (const Task& task : job.tasks()) {
       int64 max_duration = 0;
@@ -81,8 +80,8 @@ int64 ComputeHorizon(const JsspInputProblem& problem) {
     for (int i = 0; i < num_jobs; ++i) {
       int64 max_transition = 0;
       for (int j = 0; j < num_jobs; ++j) {
-        max_transition = std::max<int64>(
-            max_transition, matrix.transition_time(i * num_jobs + j));
+        max_transition =
+            std::max(max_transition, matrix.transition_time(i * num_jobs + j));
       }
       sum_of_transitions += max_transition;
     }
@@ -108,15 +107,6 @@ void Solve(const JsspInputProblem& problem) {
     IntegerVariableProto* const var = cp_model.add_variables();
     var->add_domain(lb);
     var->add_domain(ub);
-    return index;
-  };
-
-  auto new_optional_variable = [&cp_model](int64 lb, int64 ub, int lit) {
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    var->add_enforcement_literal(lit);
     return index;
   };
 
@@ -306,24 +296,25 @@ void Solve(const JsspInputProblem& problem) {
         std::vector<int> presences;
         for (int a = 0; a < num_alternatives; ++a) {
           const int presence = new_variable(0, 1);
-          const int local_start =
-              FLAGS_use_optional_variables
-                  ? new_optional_variable(hard_start, hard_end, presence)
-                  : start;
+          const int local_start = FLAGS_use_optional_variables
+                                      ? new_variable(hard_start, hard_end)
+                                      : start;
           const int local_duration = new_constant(task.duration(a));
-          const int local_end =
-              FLAGS_use_optional_variables
-                  ? new_optional_variable(hard_start, hard_end, presence)
-                  : end;
+          const int local_end = FLAGS_use_optional_variables
+                                    ? new_variable(hard_start, hard_end)
+                                    : end;
           const int local_interval = new_optional_interval(
               local_start, local_duration, local_end, presence);
+
           // Link local and global variables.
           if (FLAGS_use_optional_variables) {
             add_conditional_equality(start, local_start, presence);
             add_conditional_equality(end, local_end, presence);
+
             // TODO(user): Experiment with the following implication.
             add_conditional_equality(duration, local_duration, presence);
           }
+
           // Record relevant variables for later use.
           const int m = task.machine(a);
           machine_to_intervals[m].push_back(local_interval);
@@ -374,7 +365,7 @@ void Solve(const JsspInputProblem& problem) {
       const int num_intervals = machine_to_intervals[m].size();
 
       // Create circuit constraint on a machine.
-      // Node 0 is the root of the graph (both source and sink).
+      // Node 0 and num_intervals + 1 are source and sink.
       CircuitConstraintProto* const circuit =
           cp_model.add_constraints()->mutable_circuit();
       for (int i = 0; i < num_intervals; ++i) {
