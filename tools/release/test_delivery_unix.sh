@@ -1,15 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -x
 set -e
 
 # Check all prerequisite
 # cc
-which cmake | xargs echo "cmake: " | tee build.log
-which make | xargs echo "make: " | tee -a build.log
-which swig | xargs echo "swig: " | tee -a build.log
+command -v cmake | xargs echo "cmake: " | tee build.log
+command -v make | xargs echo "make: " | tee -a build.log
+command -v swig | xargs echo "swig: " | tee -a build.log
 # python
-which python2 | xargs echo "python2: " | tee -a build.log
-which python3 | xargs echo "python3: " | tee -a build.log
+command -v python2 | xargs echo "python2: " | tee -a build.log
+command -v python3 | xargs echo "python3: " | tee -a build.log
 
 echo Creating Python 2 venv...
 TEMP_DIR=temp_python2

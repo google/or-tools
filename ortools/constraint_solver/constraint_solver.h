@@ -569,7 +569,7 @@ class Solver {
   // This enum is used in Solver::MakeOperator associated with an evaluator
   // to specify the neighborhood to create.
   enum EvaluatorLocalSearchOperators {
-    // Lin–Kernighan local search.
+    // Lin-Kernighan local search.
     // While the accumulated local gain is positive, perform a 2opt or a 3opt
     // move followed by a series of 2opt moves. Return a neighbor for which the
     // global gain is positive.

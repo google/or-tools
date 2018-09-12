@@ -228,6 +228,7 @@ $(BIN_DIR)/strawberry_fields_with_column_generation$E \
 $(BIN_DIR)/tsp$E \
 $(BIN_DIR)/weighted_tardiness_sat$E
 
+.PHONY: cc test_cc ccc rcc
 ifndef CXX_BIN
 cc test_cc ccc rcc:
 	@echo the $(CXX) command was not found in your PATH
@@ -235,13 +236,13 @@ cc test_cc ccc rcc:
 else
 cc: $(EXE)
 
-test_cc: detect_cc $(BIN_DIR)/nqueens$E $(BIN_DIR)/golomb$E $(BIN_DIR)/cvrptw$E
-	$(BIN_DIR)$Snqueens$E
-	$(BIN_DIR)$Sgolomb$E
-	$(BIN_DIR)$Scvrptw$E
+test_cc: detect_cc
+	$(MAKE) rcc_nqueens
+	$(MAKE) rcc_golomb
+	$(MAKE) rcc_tsp
+	$(MAKE) rcc_cvrptw
 
 # C++ generic running command
-.PHONY: ccc rcc
 ifeq ($(EX),)
 ccc rcc:
 	@echo No C++ file was provided, the $@ target must be used like so: \
@@ -290,6 +291,9 @@ $(BIN_DIR)/dimacs_assignment$E: $(OBJ_DIR)/dimacs_assignment$O
 
 $(BIN_DIR)/frequency_assignment_problem$E: $(OBJ_DIR)/frequency_assignment_problem$O
 	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Sfrequency_assignment_problem$O $(FAP_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
+
+rcc_%: $(BIN_DIR)/%$E
+	$(BIN_DIR)$S$*$E $(ARGS)
 
 .PHONY: detect_cc
 detect_cc:
@@ -378,33 +382,18 @@ endif
 
 ifndef HAS_JAVA
 java test_java rjava cjava:
-	@echo the java, javac or jar command was not found in your PATH
+	@echo the command 'java', 'javac' or 'jar' was not found in your PATH
 	exit 127
 else
 java: $(JAR)
 
-test_java: detect_java \
- $(LIB_DIR)/LinearProgramming$J \
- $(LIB_DIR)/IntegerProgramming$J \
- $(LIB_DIR)/StiglerMIP$J \
- $(LIB_DIR)/Sudoku$J \
- $(LIB_DIR)/NQueens$J \
- $(LIB_DIR)/Tsp$J
-	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$SLinearProgramming$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
- LinearProgramming
-	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$SIntegerProgramming$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
- IntegerProgramming
-	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$SStiglerMIP$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
- StiglerMIP
-	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$SSudoku$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
- Sudoku
-	"$(JAVA_BIN)" $(JAVAFLAGS) \
- -cp $(LIB_DIR)$STsp$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
- Tsp
+test_java: detect_java
+	$(MAKE) rjava_LinearProgramming
+	$(MAKE) rjava_IntegerProgramming
+	$(MAKE) rjava_StiglerMIP
+	$(MAKE) rjava_Sudoku
+	$(MAKE) rjava_NQueens
+	$(MAKE) rjava_Tsp
 
 # Java generic compilation command.
 .PHONY: cjava rjava
@@ -438,6 +427,11 @@ $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java | $(CLASS_DIR)
 $(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*$J -C $(CLASS_DIR)$S$* .
 
+rjava_%: $(LIB_DIR)/%$J
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$*.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ $* $(ARGS)
+
 .PHONY: detect_java
 detect_java:
 	@echo JAVA_HOME = $(JAVA_HOME)
@@ -459,13 +453,12 @@ DLL = \
 $(BIN_DIR)/a_puzzle$D \
 $(BIN_DIR)/Program$D
 
+.PHONY: dotnet test_dotnet cdotnet rdotnet
 ifndef DOTNET_BIN
-NUGET_BIN =
 dotnet test_dotnet cdotnet rdotnet:
-	@echo the $(DOTNET) command was not found in your PATH
+	@echo the command 'dotnet' was not found in your PATH
 	exit 127
 else
-NUGET_BIN = $(DOTNET_BIN) nuget
 dotnet: $(DLL)
 
 test_dotnet: detect_dotnet $(BIN_DIR)/a_puzzle$D $(BIN_DIR)/Program$D
@@ -473,7 +466,6 @@ test_dotnet: detect_dotnet $(BIN_DIR)/a_puzzle$D $(BIN_DIR)/Program$D
 	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram$D
 
 # .NET generic compilation command.
-.PHONY: cdotnet rdotnet
 ifeq ($(EX),)
 cdotnet rdotnet:
 	@echo No CSharp file was provided, the $@ target must be used like so: \
@@ -503,7 +495,6 @@ $(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/fsharp/%.fsproj $(DOTNET_EX_DIR)/fsharp/%.fs \
 .PHONY: detect_dotnet
 detect_dotnet:
 	@echo DOTNET_BIN = $(DOTNET_BIN)
-	@echo NUGET_BIN = $(NUGET_BIN)
 	@echo CLR_DLL_NAME = $(CLR_DLL_NAME)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(

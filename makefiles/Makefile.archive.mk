@@ -76,26 +76,14 @@ endif
 
 .PHONY: archive_dotnet # Add .Net OR-Tools to archive.
 archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)
-	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sbin
-	"$(DOTNET_BIN)" publish \
--f netstandard2.0 \
--c Release \
--o "..$S..$S..$Stemp_archive$S$(INSTALL_DIR)$Sbin" \
-ortools$Sdotnet$S$(ORTOOLS_DLL_NAME)$S$(ORTOOLS_DLL_NAME).csproj
-	"$(DOTNET_BIN)" publish \
--f netstandard2.0 \
--c Release \
--o "..$S..$S..$Stemp_archive$S$(INSTALL_DIR)$Sbin" \
-ortools$Sdotnet$S$(ORTOOLS_FSHARP_DLL_NAME)$S$(ORTOOLS_FSHARP_DLL_NAME).fsproj
-	$(COPY) $(BIN_DIR)$S$(CLR_ORTOOLS_IMPORT_DLL_NAME).$(SWIG_DOTNET_LIB_SUFFIX) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sbin
-	$(COPY) $(BIN_DIR)$S$(CLR_PROTOBUF_DLL_NAME)$D $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sbin
-	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
-ifeq ($(SYSTEM),win)
-	-$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
-	$(COPYREC) $(DOTNET_EX_PATH) "$(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet" /E
-else
-	$(COPYREC) $(DOTNET_EX_PATH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
-endif
+	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
+	$(COPY) packages$S*.nupkg $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
+	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	$(COPY) examples$Sdotnet$S*.cs $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	$(COPY) examples$Sdotnet$S*.csproj $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	$(COPY) examples$Sdotnet$S*.fs $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	$(COPY) examples$Sdotnet$S*.fsproj $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	$(COPY) examples$Sdotnet$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 
 $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S*
@@ -193,8 +181,12 @@ endif
 .PHONY: detect_archive # Show variables used to build archive OR-Tools.
 detect_archive:
 	@echo Relevant info for the archive build:
+	@echo TEMP_ARCHIVE_DIR = $(TEMP_ARCHIVE_DIR)
 	@echo INSTALL_DIR = $(INSTALL_DIR)
+	@echo TEMP_FZ_DIR = $(TEMP_FZ_DIR)
 	@echo FZ_INSTALL_DIR = $(FZ_INSTALL_DIR)
+	@echo TEMP_DATA_DIR = $(TEMP_DATA_DIR)
+	@echo DATA_INSTALL_DIR = $(DATA_INSTALL_DIR)
 	@echo ARCHIVE_EXT = $(ARCHIVE_EXT)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(

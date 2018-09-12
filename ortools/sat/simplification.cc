@@ -651,7 +651,7 @@ bool SatPresolver::CrossProduct(Literal x) {
       //
       // For more details, see the paper "Blocked clause elimination", Matti
       // Jarvisalo, Armin Biere, Marijn Heule. TACAS, volume 6015 of Lecture
-      // Notes in Computer Science, pages 129–144. Springer, 2010.
+      // Notes in Computer Science, pages 129-144. Springer, 2010.
       //
       // TODO(user): Choose if we use x or x.Negated() depending on the list
       // sizes? The function achieve the same if x = x.Negated(), however the

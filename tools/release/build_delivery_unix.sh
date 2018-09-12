@@ -1,22 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -x
 set -e
 
 # Check all prerequisite
 # cc
-which gcc | xargs echo "gcc: " | tee build.log
-which cmake | xargs echo "cmake: " | tee -a build.log
-which make | xargs echo "make: " | tee -a build.log
-which swig | xargs echo "swig: " | tee -a build.log
+command -v gcc | xargs echo "gcc: " | tee build.log
+command -v cmake | xargs echo "cmake: " | tee -a build.log
+command -v make | xargs echo "make: " | tee -a build.log
+command -v swig | xargs echo "swig: " | tee -a build.log
 # python
-which python2 | xargs echo "python2: " | tee -a build.log
-which python3 | xargs echo "python3: " | tee -a build.log
+command -v python2 | xargs echo "python2: " | tee -a build.log
+command -v python3 | xargs echo "python3: " | tee -a build.log
 # java
-which java | xargs echo "java: " | tee -a build.log
-which javac | xargs echo "javac: " | tee -a build.log
-which jar | xargs echo "jar: " | tee -a build.log
+command -v java | xargs echo "java: " | tee -a build.log
+command -v javac | xargs echo "javac: " | tee -a build.log
+command -v jar | xargs echo "jar: " | tee -a build.log
 # dotnet
-which dotnet | xargs echo "dotnet: " | tee -a build.log
+command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
 # Build Third Party
 make clean_third_party
