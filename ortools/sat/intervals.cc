@@ -174,7 +174,7 @@ bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
       if (lit.bound > integer_trail_->UpperBound(lit.var)) {
         integer_reason_.push_back(
             IntegerLiteral::LowerOrEqual(lit.var, lit.bound - 1));
-        PushTaskAbsence(t);
+        if (!PushTaskAbsence(t)) return false;
       }
       return true;
     }
@@ -200,12 +200,16 @@ bool SchedulingConstraintHelper::DecreaseEndMax(int t,
       t, IntegerLiteral::LowerOrEqual(end_vars_[t], new_max_end));
 }
 
-void SchedulingConstraintHelper::PushTaskAbsence(int t) {
+bool SchedulingConstraintHelper::PushTaskAbsence(int t) {
   DCHECK_NE(reason_for_presence_[t], kNoLiteralIndex);
-  DCHECK(!IsPresent(t));
   DCHECK(!IsAbsent(t));
+  if (IsPresent(t)) {
+    literal_reason_.push_back(Literal(reason_for_presence_[t]).Negated());
+    return ReportConflict();
+  }
   integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]).Negated(),
                                  literal_reason_, integer_reason_);
+  return true;
 }
 
 bool SchedulingConstraintHelper::ReportConflict() {

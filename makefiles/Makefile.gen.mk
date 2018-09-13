@@ -1561,6 +1561,7 @@ $(OBJ_DIR)/graph/max_flow.$O: \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/graph/ebert_graph.h \
  $(GEN_DIR)/ortools/graph/flow_problem.pb.h \

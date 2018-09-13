@@ -598,12 +598,14 @@ class IntegerTrail : public SatPropagator {
   // simply do: return integer_trail_->ReportConflict(...);
   bool ReportConflict(absl::Span<Literal> literal_reason,
                       absl::Span<IntegerLiteral> integer_reason) {
+    DCHECK(ReasonIsValid(literal_reason, integer_reason));
     std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->assign(literal_reason.begin(), literal_reason.end());
     MergeReasonInto(integer_reason, conflict);
     return false;
   }
   bool ReportConflict(absl::Span<IntegerLiteral> integer_reason) {
+    DCHECK(ReasonIsValid({}, integer_reason));
     std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->clear();
     MergeReasonInto(integer_reason, conflict);
@@ -631,9 +633,10 @@ class IntegerTrail : public SatPropagator {
   int Index() const { return integer_trail_.size(); }
 
  private:
-  // Tests that all the literals in the given reason are assigned to false.
-  // This is used to DCHECK the given reasons to the Enqueue*() functions.
-  bool AllLiteralsAreFalse(absl::Span<Literal> literals) const;
+  // Used for DHECKs to validate the reason given to the public functions above.
+  // Tests that all Literal are false. Tests that all IntegerLiteral are true.
+  bool ReasonIsValid(absl::Span<Literal> literal_reason,
+                     absl::Span<IntegerLiteral> integer_reason);
 
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;

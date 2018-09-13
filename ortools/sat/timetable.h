@@ -83,10 +83,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   // the mandatory parts that overlap time.
   bool IncreaseCapacity(IntegerValue time, IntegerValue new_min);
 
-  // Explains the resource overload at time or removes task_id if it is
-  // optional.
-  bool OverloadOrRemove(int task_id, IntegerValue time);
-
   // Explains the state of the profile in the time interval [left, right). The
   // reason is all the mandatory parts that overlap the interval. The current
   // reason is not cleared when this method is called.

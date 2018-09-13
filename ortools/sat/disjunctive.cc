@@ -369,7 +369,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
       // If tasks shares the same presence literal, it is possible that we
       // already pushed this task absence.
       if (!helper_->IsAbsent(optional_task)) {
-        helper_->PushTaskAbsence(optional_task);  // This never fails.
+        if (!helper_->PushTaskAbsence(optional_task)) return false;
       }
       theta_tree_.RemoveEvent(optional_event);
     }

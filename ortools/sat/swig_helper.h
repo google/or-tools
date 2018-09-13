@@ -101,6 +101,7 @@ class SatHelper {
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
     model.GetOrCreate<SigintHandler>()->Register(
         [&stopped]() { stopped = true; });
+
     return operations_research::sat::SolveCpModel(model_proto, &model);
   }
 

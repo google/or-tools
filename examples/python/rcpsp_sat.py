@@ -24,7 +24,7 @@ from google.protobuf import text_format
 from ortools.data import pywraprcpsp
 from ortools.sat.python import cp_model
 
-Parser = argparse.ArgumentParser()
+Parser=argparse.ArgumentParser()
 Parser.add_argument('--input', default = "",
                     help = 'Input file to parse and solve.')
 Parser.add_argument('--output_proto', default = "",

@@ -1362,26 +1362,42 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
     if (!ct.enforcement_literal().empty()) has_optional_interval = true;
     const IntervalConstraintProto& interval = ct.interval();
     start_indices[i] = interval.start();
-    const int duration_index = interval.size();
-    const int demand_index = proto.demands(i);
-    if (context->IsFixed(duration_index) &&
-        context->MinOf(duration_index) == 1) {
+    const int duration_ref = interval.size();
+    const int demand_ref = proto.demands(i);
+    if (context->IsFixed(duration_ref) && context->MinOf(duration_ref) == 1) {
       num_duration_one++;
     }
-    if (context->MinOf(duration_index) == 0) {
+    if (context->MinOf(duration_ref) == 0) {
       // The behavior for zero-duration interval is currently not the same in
       // the no-overlap and the cumulative constraint.
       return false;
     }
-    const int64 demand_min = context->MinOf(demand_index);
-    const int64 demand_max = context->MaxOf(demand_index);
+    const int64 demand_min = context->MinOf(demand_ref);
+    const int64 demand_max = context->MaxOf(demand_ref);
     if (demand_min > capacity / 2) {
       num_greater_half_capacity++;
     }
     if (demand_min > capacity) {
-      context->UpdateRuleStats("TODO cumulative: demand_min exceeds capacity");
+      context->UpdateRuleStats("cumulative: demand_min exceeds capacity");
+      if (ct.enforcement_literal().empty()) {
+        context->is_unsat = true;
+        return false;
+      } else {
+        CHECK_EQ(ct.enforcement_literal().size(), 1);
+        context->SetLiteralToFalse(ct.enforcement_literal(0));
+      }
+      return false;
     } else if (demand_max > capacity) {
-      context->UpdateRuleStats("TODO cumulative: demand_max exceeds capacity");
+      if (ct.enforcement_literal().empty()) {
+        context->UpdateRuleStats("cumulative: demand_max exceeds capacity.");
+        context->IntersectDomainWith(demand_ref, {{kint64min, capacity}});
+      } else {
+        // TODO(user): we abort because we cannot convert this to a no_overlap
+        // for instance.
+        context->UpdateRuleStats(
+            "cumulative: demand_max of optional interval exceeds capacity.");
+        return false;
+      }
     }
   }
 
