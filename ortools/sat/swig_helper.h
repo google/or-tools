@@ -20,6 +20,7 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/sigint.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -96,6 +97,10 @@ class SatHelper {
   static operations_research::sat::CpSolverResponse Solve(
       const operations_research::sat::CpModelProto& model_proto) {
     Model model;
+    std::atomic<bool> stopped(false);
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
+    model.GetOrCreate<SigintHandler>()->Register(
+        [&stopped]() { stopped = true; });
     return operations_research::sat::SolveCpModel(model_proto, &model);
   }
 
@@ -104,6 +109,11 @@ class SatHelper {
       const operations_research::sat::SatParameters& parameters) {
     Model model;
     model.Add(NewSatParameters(parameters));
+    std::atomic<bool> stopped(false);
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
+    model.GetOrCreate<SigintHandler>()->Register(
+        [&stopped]() { stopped = true; });
+
     return SolveCpModel(model_proto, &model);
   }
 
@@ -112,6 +122,11 @@ class SatHelper {
       const std::string& parameters) {
     Model model;
     model.Add(NewSatParameters(parameters));
+    std::atomic<bool> stopped(false);
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
+    model.GetOrCreate<SigintHandler>()->Register(
+        [&stopped]() { stopped = true; });
+
     return SolveCpModel(model_proto, &model);
   }
 
@@ -126,6 +141,8 @@ class SatHelper {
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
         callback.stopped());
+    model.GetOrCreate<SigintHandler>()->Register(
+        [&callback]() { *callback.stopped() = true; });
 
     return SolveCpModel(model_proto, &model);
   }
@@ -140,6 +157,9 @@ class SatHelper {
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
         callback.stopped());
+    model.GetOrCreate<SigintHandler>()->Register(
+        [&callback]() { *callback.stopped() = true; });
+
     return SolveCpModel(model_proto, &model);
   }
 
