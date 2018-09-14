@@ -221,8 +221,8 @@ $(BIN_DIR)/multidim_knapsack$E \
 $(BIN_DIR)/network_routing$E \
 $(BIN_DIR)/nqueens$E \
 $(BIN_DIR)/pdptw$E \
-$(BIN_DIR)/rcpsp_sat$E \
 $(BIN_DIR)/shift_minimization_sat$E \
+$(BIN_DIR)/solve$E \
 $(BIN_DIR)/sports_scheduling$E \
 $(BIN_DIR)/strawberry_fields_with_column_generation$E \
 $(BIN_DIR)/tsp$E \
@@ -449,17 +449,148 @@ endif
 ##############
 ##  DOTNET  ##
 ##############
-DLL = \
-$(BIN_DIR)/a_puzzle$D \
-$(BIN_DIR)/Program$D
-
 .PHONY: dotnet test_dotnet cdotnet rdotnet
 ifndef DOTNET_BIN
 dotnet test_dotnet cdotnet rdotnet:
 	@echo the command 'dotnet' was not found in your PATH
 	exit 127
 else
-dotnet: $(DLL)
+dotnet:
+	$(MAKE) rdotnet_3_jugs_regular
+	$(MAKE) rdotnet_alldifferent_except_0
+	$(MAKE) rdotnet_all_interval
+	$(MAKE) rdotnet_a_puzzle
+	$(MAKE) rdotnet_a_round_of_golf
+	$(MAKE) rdotnet_assignment
+	$(MAKE) rdotnet_broken_weights
+	$(MAKE) rdotnet_bus_schedule
+	$(MAKE) rdotnet_circuit2
+	$(MAKE) rdotnet_circuit
+	$(MAKE) rdotnet_coins3
+	$(MAKE) rdotnet_coins_grid ARGS="5 2"
+	$(MAKE) rdotnet_combinatorial_auction2
+	$(MAKE) rdotnet_contiguity_regular
+	$(MAKE) rdotnet_contiguity_transition
+	$(MAKE) rdotnet_costas_array
+	$(MAKE) rdotnet_covering_opl
+	$(MAKE) rdotnet_crew
+	$(MAKE) rdotnet_crossword
+	$(MAKE) rdotnet_crypta
+	$(MAKE) rdotnet_crypto
+	$(MAKE) rdotnet_cscvrptw
+	$(MAKE) rdotnet_csflow
+	$(MAKE) rdotnet_csintegerprogramming
+	$(MAKE) rdotnet_csjobshop
+	$(MAKE) rdotnet_csknapsack
+	$(MAKE) rdotnet_cslinearprogramming
+	$(MAKE) rdotnet_csls_api
+	$(MAKE) rdotnet_csrabbitspheasants
+	$(MAKE) rdotnet_cstsp
+	$(MAKE) rdotnet_curious_set_of_integers
+	$(MAKE) rdotnet_debruijn
+	$(MAKE) rdotnet_csdiet
+	$(MAKE) rdotnet_discrete_tomography
+	$(MAKE) rdotnet_divisible_by_9_through_1
+	$(MAKE) rdotnet_dudeney
+	$(MAKE) rdotnet_einav_puzzle2
+	$(MAKE) rdotnet_eq10
+	$(MAKE) rdotnet_eq20
+	$(MAKE) rdotnet_fill_a_pix
+	$(MAKE) rdotnet_furniture_moving
+	$(MAKE) rdotnet_furniture_moving_intervals
+	$(MAKE) rdotnet_futoshiki
+	$(MAKE) rdotnet_gate_scheduling_sat
+	$(MAKE) rdotnet_golomb_ruler
+	$(MAKE) rdotnet_grocery
+	$(MAKE) rdotnet_hidato_table
+	$(MAKE) rdotnet_jobshop_ft06_sat
+	$(MAKE) rdotnet_just_forgotten
+	$(MAKE) rdotnet_kakuro
+	$(MAKE) rdotnet_kenken2
+	$(MAKE) rdotnet_killer_sudoku
+	$(MAKE) rdotnet_labeled_dice
+	$(MAKE) rdotnet_langford
+	$(MAKE) rdotnet_least_diff
+	$(MAKE) rdotnet_lectures
+	$(MAKE) rdotnet_magic_sequence
+	$(MAKE) rdotnet_magic_square_and_cards
+	$(MAKE) rdotnet_magic_square
+	$(MAKE) rdotnet_map2
+	$(MAKE) rdotnet_map
+	$(MAKE) rdotnet_marathon2
+	$(MAKE) rdotnet_max_flow_taha
+	$(MAKE) rdotnet_max_flow_winston1
+	$(MAKE) rdotnet_minesweeper
+	$(MAKE) rdotnet_mr_smith
+#	$(MAKE) rdotnet_nontransitive_dice # too long
+	$(MAKE) rdotnet_nqueens
+	$(MAKE) rdotnet_nurse_rostering_regular
+	$(MAKE) rdotnet_nurse_rostering_transition
+	$(MAKE) rdotnet_nurses_sat
+	$(MAKE) rdotnet_olympic
+	$(MAKE) rdotnet_organize_day
+	$(MAKE) rdotnet_organize_day_intervals
+	$(MAKE) rdotnet_pandigital_numbers
+#	$(MAKE) rdotnet_partition # too long
+	$(MAKE) rdotnet_perfect_square_sequence
+	$(MAKE) rdotnet_photo_problem
+	$(MAKE) rdotnet_place_number_puzzle
+	$(MAKE) rdotnet_p_median
+	$(MAKE) rdotnet_post_office_problem2
+	$(MAKE) rdotnet_quasigroup_completion
+	$(MAKE) rdotnet_regex
+	$(MAKE) rdotnet_rogo2
+	$(MAKE) rdotnet_scheduling_speakers
+	$(MAKE) rdotnet_secret_santa2
+#	$(MAKE) rdotnet_secret_santa # too long
+	$(MAKE) rdotnet_send_more_money2
+	$(MAKE) rdotnet_send_more_money
+	$(MAKE) rdotnet_send_most_money
+	$(MAKE) rdotnet_seseman
+	$(MAKE) rdotnet_set_covering2
+	$(MAKE) rdotnet_set_covering3
+	$(MAKE) rdotnet_set_covering4
+	$(MAKE) rdotnet_set_covering
+	$(MAKE) rdotnet_set_covering_deployment
+	$(MAKE) rdotnet_set_covering_skiena
+	$(MAKE) rdotnet_set_partition
+	$(MAKE) rdotnet_sicherman_dice
+	$(MAKE) rdotnet_ski_assignment
+	$(MAKE) rdotnet_slow_scheduling
+	$(MAKE) rdotnet_stable_marriage
+	$(MAKE) rdotnet_strimko2
+	$(MAKE) rdotnet_subset_sum
+	$(MAKE) rdotnet_sudoku
+	$(MAKE) rdotnet_survo_puzzle
+	$(MAKE) rdotnet_TaskScheduling
+	$(MAKE) rdotnet_techtalk_scheduling
+	$(MAKE) rdotnet_to_num
+	$(MAKE) rdotnet_traffic_lights
+	$(MAKE) rdotnet_tsp
+	$(MAKE) rdotnet_volsay
+	$(MAKE) rdotnet_volsay2
+	$(MAKE) rdotnet_volsay3
+	$(MAKE) rdotnet_wedding_optimal_chart
+	$(MAKE) rdotnet_who_killed_agatha
+	$(MAKE) rdotnet_xkcd
+	$(MAKE) rdotnet_young_tableaux
+	$(MAKE) rdotnet_zebra
+	$(MAKE) rdotnet_fsintegerprogramming
+	$(MAKE) rdotnet_fslinearprogramming
+	$(MAKE) rdotnet_fsdiet
+	$(MAKE) rdotnet_fsequality
+	$(MAKE) rdotnet_fsequality-inequality
+	$(MAKE) rdotnet_fsinteger-linear-program
+	$(MAKE) rdotnet_fsknapsack
+	$(MAKE) rdotnet_fsnetwork-max-flow
+	$(MAKE) rdotnet_fsnetwork-max-flow-lpSolve
+	$(MAKE) rdotnet_fsnetwork-min-cost-flow
+	$(MAKE) rdotnet_fsProgram
+	$(MAKE) rdotnet_fsrabbit-pheasant
+	$(MAKE) rdotnet_fsvolsay3
+	$(MAKE) rdotnet_fsvolsay3-lpSolve
+	$(MAKE) rdotnet_fsvolsay
+#	$(MAKE) rdotnet_word_square # depends on /usr/share/dict/words
 
 test_dotnet: detect_dotnet $(BIN_DIR)/a_puzzle$D $(BIN_DIR)/Program$D
 	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle$D
@@ -482,15 +613,29 @@ rdotnet: $(BIN_DIR)/$(EX_NAME)$D
 endif # ifeq ($(EX),)
 endif # ifndef DOTNET_BIN
 
-$(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/csharp/%.csproj $(DOTNET_EX_DIR)/csharp/%.cs \
+$(BIN_DIR)/%$D: \
+ $(DOTNET_EX_DIR)/%.cs \
+ $(DOTNET_EX_DIR)/%.csproj \
  | $(BIN_DIR)
-	"$(DOTNET_BIN)" build -o "..$S..$S..$S$(BIN_DIR)" \
- $(DOTNET_EX_PATH)$Scsharp$S$*.csproj
+	"$(DOTNET_BIN)" build -o "..$S..$S$(BIN_DIR)" $(DOTNET_EX_PATH)$S$*.csproj
 
-$(BIN_DIR)/%$D: $(DOTNET_EX_DIR)/fsharp/%.fsproj $(DOTNET_EX_DIR)/fsharp/%.fs \
+$(BIN_DIR)/%$D: \
+ $(DOTNET_EX_DIR)/%.fs \
+ $(DOTNET_EX_DIR)/%.fsproj \
  | $(BIN_DIR)
-	"$(DOTNET_BIN)" build -o "..$S..$S..$S$(BIN_DIR)" \
- $(DOTNET_EX_PATH)$Sfsharp$S$*.fsproj
+	"$(DOTNET_BIN)" build -o "..$S..$S$(BIN_DIR)" $(DOTNET_EX_PATH)$S$*.fsproj
+
+rdotnet_%: \
+ $(DOTNET_EX_DIR)/%.cs \
+ $(DOTNET_EX_DIR)/%.csproj
+	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
+
+rdotnet_%: \
+ $(DOTNET_EX_DIR)/%.fs \
+ $(DOTNET_EX_DIR)/%.fsproj \
+	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
 .PHONY: detect_dotnet
 detect_dotnet:
