@@ -35,7 +35,7 @@ for FILE in examples/dotnet/*.cs; do
     <OutputType>Exe</OutputType>
     <LangVersion>7.2</LangVersion>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
     <RestoreSources>../../packages;\$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
 
@@ -55,7 +55,7 @@ EOL
 done
 
 ##############
-##  CSHARP  ##
+##  FSHARP  ##
 ##############
 for FILE in examples/dotnet/*.fs; do
   # if no files found do nothing
@@ -68,7 +68,7 @@ for FILE in examples/dotnet/*.fs; do
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
     <RestoreSources>../../packages;\$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
 
@@ -102,7 +102,7 @@ for FILE in ortools/sat/samples/*.cs; do
     <OutputType>Exe</OutputType>
     <LangVersion>7.2</LangVersion>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
     <RestoreSources>../../../packages;\$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
 
