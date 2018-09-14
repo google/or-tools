@@ -98,10 +98,10 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   }
 
   LOG_IF(WARNING, num_truncated_bounds > 0)
-      << num_truncated_bounds << " bounds where truncated to "
+      << num_truncated_bounds << " bounds were truncated to "
       << kMaxVariableBound << ".";
   LOG_IF(WARNING, num_small_domains > 0)
-      << num_small_domains << " continuous variable domain with less than "
+      << num_small_domains << " continuous variable domain with fewer than "
       << kSmallDomainSize << " values.";
 
   // Variables needed to scale the double coefficients into int64.

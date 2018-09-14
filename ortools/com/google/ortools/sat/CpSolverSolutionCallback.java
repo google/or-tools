@@ -44,7 +44,7 @@ public class CpSolverSolutionCallback extends SolutionCallback {
   }
 
   /** Returns the Boolean value of the literal in the current solution. */
-  public Boolean booleanValue(ILiteral literal) {
+  public Boolean booleanValue(Literal literal) {
     return solutionBooleanValue(literal.getIndex());
   }
 

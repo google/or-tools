@@ -234,7 +234,7 @@ class MutableUpperBoundedLinearConstraint {
 
   // Relaxes the constraint so that:
   // - ComputeSlackForTrailPrefix(trail, trail_index) == target;
-  // - All the variable that where propagated given the assignment < trail_index
+  // - All the variables that were propagated given the assignment < trail_index
   //   are still propagated.
   //
   // As a precondition, ComputeSlackForTrailPrefix(trail, trail_index) >= target
@@ -244,7 +244,7 @@ class MutableUpperBoundedLinearConstraint {
   // linear expression in 3 parts:
   // - P1: the true variables (only the one assigned < trail_index).
   // - P2: the other variables with a coeff > diff.
-  //       Note that all these variables where the propagated ones.
+  //       Note that all these variables were the propagated ones.
   // - P3: the other variables with a coeff <= diff.
   // We can then transform P1 + P2 + P3 <= rhs_ into P1 + P2' <= rhs_ - diff
   // Where P2' is the same sum as P2 with all the coefficient reduced by diff.
@@ -537,7 +537,7 @@ class PbConstraints : public SatPropagator {
 
   // Changes the number of variables.
   void Resize(int num_variables) {
-    // Note that we avoid using up memory in the common case where there is no
+    // Note that we avoid using up memory in the common case where there are no
     // pb constraints at all. If there is 10 million variables, this vector
     // alone will take 480 MB!
     if (!constraints_.empty()) {

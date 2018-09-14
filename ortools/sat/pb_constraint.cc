@@ -948,7 +948,7 @@ void PbConstraints::Untrail(const Trail& trail, int trail_index) {
     for (ConstraintIndexWithCoeff& update : to_update_[literal.Index()]) {
       thresholds_[update.index] += update.coefficient;
 
-      // Only the constraints which where inspected during Propagate() need
+      // Only the constraints which were inspected during Propagate() need
       // inspection during Untrail().
       if (update.need_untrail_inspection) {
         update.need_untrail_inspection = false;

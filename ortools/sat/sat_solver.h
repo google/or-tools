@@ -131,7 +131,7 @@ class SatSolver {
   bool IsModelUnsat() const { return is_model_unsat_; }
 
   // Adds and registers the given propagator with the sat solver. Note that
-  // during propagation, they will be called in the order they where added.
+  // during propagation, they will be called in the order they were added.
   void AddPropagator(SatPropagator* propagator);
   void AddLastPropagator(SatPropagator* propagator);
   void TakePropagatorOwnership(std::unique_ptr<SatPropagator> propagator) {
@@ -243,7 +243,7 @@ class SatSolver {
 
   // This function starts by calling EnqueueDecisionAndBackjumpOnConflict(). If
   // there is no conflict, it stops there. Otherwise, it tries to reapply all
-  // the decisions that where backjumped over until the first one that can't be
+  // the decisions that were backjumped over until the first one that can't be
   // taken because it is incompatible. Note that during this process, more
   // conflicts may happen and the trail may be backtracked even further.
   //
@@ -428,7 +428,7 @@ class SatSolver {
 
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
-  // where added since that time, they will be considered unassigned.
+  // were added since that time, they will be considered unassigned.
   bool ClauseIsValidUnderDebugAssignement(
       const std::vector<Literal>& clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
@@ -497,7 +497,7 @@ class SatSolver {
   // Returns true iff the clause is the reason for an assigned variable.
   //
   // TODO(user): With our current data structures, we could also return true
-  // for clauses that where just used as a reason (like just before an untrail).
+  // for clauses that were just used as a reason (like just before an untrail).
   // This may be beneficial, but should properly be defined so that we can
   // have the same behavior if we change the implementation.
   bool ClauseIsUsedAsReason(SatClause* clause) const {

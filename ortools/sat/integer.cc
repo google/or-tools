@@ -899,9 +899,9 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
       return false;
     } else {
       // Note(user): We never make the bound of an optional literal cross. We
-      // used to have a bug where we propagated these bound and their associated
-      // literal, and we where reaching a conflict while propagating the
-      // associated literal instead of setting is_ignored below to false.
+      // used to have a bug where we propagated these bounds and their
+      // associated literals, and we were reaching a conflict while propagating
+      // the associated literal instead of setting is_ignored below to false.
       const Literal is_ignored = Literal(is_ignored_literals_[var]);
       if (integer_search_levels_.empty()) {
         trail_->EnqueueWithUnitReason(is_ignored);
@@ -988,7 +988,7 @@ IntegerTrail::Dependencies(int trail_index) const {
     //
     // To detect if we already did the computation, we store the negated index.
     // Note that we will redo the computation in the corner case where all the
-    // given IntegerLiteral turn out to be assigned at level zero.
+    // given IntegerLiterals turn out to be assigned at level zero.
     //
     // TODO(user): We could check that the same IntegerVariable never appear
     // twice. And if it does the one with the lowest bound could be removed.

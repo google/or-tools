@@ -581,7 +581,7 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
     const SatSolver::Status result =
         solver->ResetAndSolveWithGivenAssumptions(assumptions_subset);
     if (result == SatSolver::FEASIBLE) {
-      // If not all assumptions where taken, continue with a lower stratified
+      // If not all assumptions were taken, continue with a lower stratified
       // bound. Otherwise we have an optimal solution!
       //
       // TODO(user): Try more advanced variant where the bound is lowered by
@@ -1052,7 +1052,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
         upper_bound = obj + offset;
       }
 
-      // If not all assumptions where taken, continue with a lower stratified
+      // If not all assumptions were taken, continue with a lower stratified
       // bound. Otherwise we have an optimal solution.
       stratified_lower_bound =
           MaxNodeWeightSmallerThan(nodes, stratified_lower_bound);
@@ -1603,7 +1603,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     if (result == SatSolver::FEASIBLE) {
       process_solution();
       if (cores.empty()) {
-        // If not all assumptions where taken, continue with a lower stratified
+        // If not all assumptions were taken, continue with a lower stratified
         // bound. Otherwise we have an optimal solution.
         stratified_threshold = next_stratified_threshold;
         if (stratified_threshold == 0) break;
@@ -1856,7 +1856,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     if (result == SatSolver::FEASIBLE) {
       process_solution();
       if (cores.empty()) {
-        // If not all assumptions where taken, continue with a lower stratified
+        // If not all assumptions were taken, continue with a lower stratified
         // bound. Otherwise we have an optimal solution.
         stratified_threshold = next_stratified_threshold;
         if (stratified_threshold == 0) break;

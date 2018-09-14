@@ -12,8 +12,8 @@
 // limitations under the License.
 
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.ILiteral;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.Literal;
 
 public class BoolOrSample {
 
@@ -23,6 +23,6 @@ public class BoolOrSample {
     CpModel model = new CpModel();
     IntVar x = model.newBoolVar("x");
     IntVar y = model.newBoolVar("y");
-    model.addBoolOr(new ILiteral[] {x, y.not()});
+    model.addBoolOr(new Literal[] {x, y.not()});
   }
 }

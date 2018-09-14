@@ -12,8 +12,8 @@
 // limitations under the License.
 
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.ILiteral;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.Literal;
 
 public class LiteralSample {
 
@@ -22,7 +22,7 @@ public class LiteralSample {
   public static void main(String[] args) throws Exception {
     CpModel model = new CpModel();
     IntVar x = model.newBoolVar("x");
-    ILiteral notX = x.not();
+    Literal notX = x.not();
     System.out.println(notX.getShortString());
   }
 }

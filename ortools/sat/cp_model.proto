@@ -514,7 +514,7 @@ message CpSolverResponse {
   // If the problem has some variables that are not fixed at the end of the
   // search (because of a particular search strategy in the CpModelProto) then
   // this will be used instead of filling the solution above. The two fields
-  // will then contains the lower and upper bound of each variable as they where
+  // will then contains the lower and upper bounds of each variable as they were
   // when the best "solution" was found.
   repeated int64 solution_lower_bounds = 18;
   repeated int64 solution_upper_bounds = 19;

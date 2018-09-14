@@ -365,7 +365,7 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
       // enqueued after the true_literal on the trail. This property is
       // important for ComputeFirstUIPConflict() to work since it needs the
       // trail order to be a topological order for the deduction graph.
-      // But the performance where not too good...
+      // But the performance was not too good...
       continue;
     }
 

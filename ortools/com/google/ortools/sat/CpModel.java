@@ -107,38 +107,38 @@ public class CpModel {
   // Boolean Constraints.
 
   /** Adds {@code Or(literals) == true}. */
-  public Constraint addBoolOr(ILiteral[] literals) {
+  public Constraint addBoolOr(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolOr = ct.builder().getBoolOrBuilder();
-    for (ILiteral lit : literals) {
+    for (Literal lit : literals) {
       boolOr.addLiterals(lit.getIndex());
     }
     return ct;
   }
 
   /** Adds {@code And(literals) == true}. */
-  public Constraint addBoolAnd(ILiteral[] literals) {
+  public Constraint addBoolAnd(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolOr = ct.builder().getBoolAndBuilder();
-    for (ILiteral lit : literals) {
+    for (Literal lit : literals) {
       boolOr.addLiterals(lit.getIndex());
     }
     return ct;
   }
 
   /** Adds {@code XOr(literals) == true}. */
-  public Constraint addBoolXor(ILiteral[] literals) {
+  public Constraint addBoolXor(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolOr = ct.builder().getBoolXorBuilder();
-    for (ILiteral lit : literals) {
+    for (Literal lit : literals) {
       boolOr.addLiterals(lit.getIndex());
     }
     return ct;
   }
 
   /** Adds {@code a => b}. */
-  public Constraint addImplication(ILiteral a, ILiteral b) {
-    return addBoolOr(new ILiteral[] {a.not(), b});
+  public Constraint addImplication(Literal a, Literal b) {
+    return addBoolOr(new Literal[] {a.not(), b});
   }
 
   // Linear constraints.
@@ -448,7 +448,7 @@ public class CpModel {
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if the arrays have different sizes
    */
-  public Constraint addCircuit(int[] tails, int[] heads, ILiteral[] literals)
+  public Constraint addCircuit(int[] tails, int[] heads, Literal[] literals)
       throws MismatchedArrayLengths {
     if (tails.length != heads.length) {
       throw new MismatchedArrayLengths("addCircuit", "tails", "heads");
@@ -465,7 +465,7 @@ public class CpModel {
     for (int h : heads) {
       circuit.addHeads(h);
     }
-    for (ILiteral lit : literals) {
+    for (Literal lit : literals) {
       circuit.addLiterals(lit.getIndex());
     }
     return ct;
@@ -697,7 +697,7 @@ public class CpModel {
   }
 
   /** Adds {@code var == i + offset <=> booleans[i] == true for all i in [0, booleans.length)}. */
-  public void addMapDomain(IntVar var, ILiteral[] booleans, long offset) {
+  public void addMapDomain(IntVar var, Literal[] booleans, long offset) {
     for (int i = 0; i < booleans.length; ++i) {
       addEquality(var, offset + i).onlyEnforceIf(booleans[i]);
       addDifferent(var, offset + i).onlyEnforceIf(booleans[i].not());
@@ -845,7 +845,7 @@ public class CpModel {
    * @return an IntervalVar object
    */
   public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar size, IntVar end, ILiteral isPresent, String name) {
+      IntVar start, IntVar size, IntVar end, Literal isPresent, String name) {
     return new IntervalVar(
         modelBuilder,
         start.getIndex(),
@@ -858,10 +858,10 @@ public class CpModel {
   /**
    * Creates an optional interval with a fixed end.
    *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String) newOptionalIntervalVar
+   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
    */
   public IntervalVar newOptionalIntervalVar(
-      IntVar start, IntVar size, long end, ILiteral isPresent, String name) {
+      IntVar start, IntVar size, long end, Literal isPresent, String name) {
     return new IntervalVar(
         modelBuilder,
         start.getIndex(),
@@ -874,10 +874,10 @@ public class CpModel {
   /**
    * Creates an optional interval with a fixed size.
    *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String) newOptionalIntervalVar
+   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
    */
   public IntervalVar newOptionalIntervalVar(
-      IntVar start, long size, IntVar end, ILiteral isPresent, String name) {
+      IntVar start, long size, IntVar end, Literal isPresent, String name) {
     return new IntervalVar(
         modelBuilder,
         start.getIndex(),
@@ -889,7 +889,7 @@ public class CpModel {
 
   /** Creates an optional interval with a fixed start. */
   public IntervalVar newOptionalIntervalVar(
-      long start, IntVar size, IntVar end, ILiteral isPresent, String name) {
+      long start, IntVar size, IntVar end, Literal isPresent, String name) {
     return new IntervalVar(
         modelBuilder,
         indexFromConstant(start),
@@ -902,10 +902,10 @@ public class CpModel {
   /**
    * Creates an optional fixed interval from start and size.
    *
-   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, ILiteral, String) newOptionalIntervalVar
+   * @see #newOptionalIntervalVar(IntVar, IntVar, IntVar, Literal, String) newOptionalIntervalVar
    */
   public IntervalVar newOptionalFixedInterval(
-      long start, long size, ILiteral isPresent, String name) {
+      long start, long size, Literal isPresent, String name) {
     return new IntervalVar(
         modelBuilder,
         indexFromConstant(start),

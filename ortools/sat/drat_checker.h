@@ -203,7 +203,7 @@ class DratChecker {
                                  ClauseIndex source_clause_index);
 
   // Marks the given clause as needed to check the DRAT proof, as well as the
-  // other clauses which where used to check this clause (these are found from
+  // other clauses which were used to check this clause (these are found from
   // 'unit_stack_', containing the clauses that became unit in
   // AssignAndPropagate, and from 'assignment_source_', containing for each
   // variable the clause that caused its assignment).

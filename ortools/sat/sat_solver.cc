@@ -563,7 +563,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
 
   // PB resolution.
   // There is no point using this if the conflict and all the reasons involved
-  // in its resolution where clauses.
+  // in its resolution were clauses.
   bool compute_pb_conflict = false;
   if (parameters_->use_pb_resolution()) {
     compute_pb_conflict = (pb_constraints_.ConflictingConstraint() != nullptr);
@@ -718,7 +718,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
 
   // Note that we need to output the learned clause before cleaning the clause
   // database. This is because we already backtracked and some of the clauses
-  // that where needed to infer the conflict may not be "reasons" anymore and
+  // that were needed to infer the conflict may not be "reasons" anymore and
   // may be deleted.
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause(learned_conflict_);
@@ -1252,7 +1252,7 @@ std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
   }
 
   // We reverse the assumptions so they are in the same order as the one in
-  // which the decision where made.
+  // which the decision were made.
   std::reverse(unsat_assumptions.begin(), unsat_assumptions.end());
   return unsat_assumptions;
 }
@@ -1753,13 +1753,13 @@ void SatSolver::ComputeFirstUIPConflict(
   // expand each of its literal using the reason for this literal assignement to
   // false. The is_marked_ set allow us to never expand the same literal twice.
   //
-  // The expansion is not done (i.e. stop) for literal that where assigned at a
+  // The expansion is not done (i.e. stop) for literals that were assigned at a
   // decision level below the current one. If the level of such literal is not
   // zero, it is added to the conflict clause.
   //
   // Now, the trick is that we use the trail to expand the literal of the
   // current level in a very specific order. Namely the reverse order of the one
-  // in which they where infered. We stop as soon as
+  // in which they were inferred. We stop as soon as
   // num_literal_at_highest_level_that_needs_to_be_processed is exactly one.
   //
   // This last literal will be the first UIP because by definition all the

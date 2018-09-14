@@ -167,8 +167,7 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
 // ============================================================================
 
 // Changes the node indices so that we get a graph in [0, num_nodes) where every
-// nodes has at least one incoming or outgoing arcs. Returns the number of
-// nodes.
+// node has at least one incoming or outgoing arc. Returns the number of nodes.
 int ReindexArcs(std::vector<int>* tails, std::vector<int>* heads,
                 std::vector<Literal>* literals);
 

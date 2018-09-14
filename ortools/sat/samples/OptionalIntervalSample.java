@@ -12,9 +12,9 @@
 // limitations under the License.
 
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.ILiteral;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.Literal;
 
 public class OptionalIntervalSample {
 
@@ -27,7 +27,7 @@ public class OptionalIntervalSample {
     IntVar endVar = model.newIntVar(0, horizon, "end");
     // Java code supports IntVar or integer constants in intervals.
     int duration = 10;
-    ILiteral presence = model.newBoolVar("presence");
+    Literal presence = model.newBoolVar("presence");
     IntervalVar interval =
         model.newOptionalIntervalVar(startVar, duration, endVar, presence, "interval");
 

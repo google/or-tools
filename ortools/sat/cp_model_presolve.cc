@@ -201,7 +201,7 @@ struct PresolveContext {
   }
 
   // Because we always replace equivalent literals before preprocessing a
-  // constraint, we should never run into a case where one of the literal is
+  // constraint, we should never run into a case where one of the literals is
   // fixed but the other is not updated. So this can be called without the need
   // to keep around the constraints that detected this relation.
   void AddBooleanEqualityRelation(int ref_a, int ref_b) {
@@ -616,7 +616,7 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
     }
   }
 
-  // For now, we only presolve the case where all variable are Booleans.
+  // For now, we only presolve the case where all variables are Booleans.
   const int target_ref = ct->int_prod().target();
   if (!RefIsPositive(target_ref)) return false;
   for (const int var : ct->int_prod().vars()) {
@@ -2328,10 +2328,10 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
   // Stats and checks.
   if (log_info) {
     LOG(INFO) << "- " << context.affine_relations.NumRelations()
-              << " affine relations where detected. " << num_affine_relations
-              << " where kept.";
+              << " affine relations were detected. " << num_affine_relations
+              << " were kept.";
     LOG(INFO) << "- " << context.var_equiv_relations.NumRelations()
-              << " variable equivalence relations where detected.";
+              << " variable equivalence relations were detected.";
     std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
                                             context.stats_by_rule_name.end());
     for (const auto& entry : sorted_rules) {

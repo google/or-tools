@@ -14,11 +14,11 @@
 package com.google.ortools.sat;
 
 /** Interface to describe a boolean variable or its negation. */
-public interface ILiteral {
+public interface Literal {
   int getIndex();
 
   /** Returns the Boolean negation of the current literal. */
-  public ILiteral not();
+  public Literal not();
 
   /** Returns a short string to describe the literal. */
   public String getShortString();

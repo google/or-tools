@@ -251,9 +251,9 @@ int main() {
 
 ```java
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.ILiteral;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.Literal;
 
 public class OptionalIntervalSample {
 
@@ -266,7 +266,7 @@ public class OptionalIntervalSample {
     IntVar endVar = model.newIntVar(0, horizon, "end");
     // Java code supports IntVar or integer constants in intervals.
     int duration = 10;
-    ILiteral presence = model.newBoolVar("presence");
+    Literal presence = model.newBoolVar("presence");
     IntervalVar interval =
         model.newOptionalIntervalVar(startVar, duration, endVar, presence, "interval");
 
@@ -1063,9 +1063,9 @@ int main() {
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
-import com.google.ortools.sat.ILiteral;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -1077,11 +1077,11 @@ public class RankingSample {
 
   static { System.loadLibrary("jniortools"); }
 
-  static void rankTasks(CpModel model, IntVar[] starts, ILiteral[] presences, IntVar[] ranks) {
+  static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks) {
     int numTasks = starts.length;
 
     // Creates precedence variables between pairs of intervals.
-    ILiteral[][] precedences = new ILiteral[numTasks][numTasks];
+    Literal[][] precedences = new Literal[numTasks][numTasks];
     for (int i = 0; i < numTasks; ++i) {
       for (int j = 0; j < numTasks; ++j) {
         if (i == j) {
@@ -1098,7 +1098,7 @@ public class RankingSample {
     // Create optional intervals.
     for (int i = 0; i < numTasks - 1; ++i) {
       for (int j = i + 1; j < numTasks; ++j) {
-        List<ILiteral> list = new ArrayList<>();
+        List<Literal> list = new ArrayList<>();
         list.add(precedences[i][j]);
         list.add(precedences[j][i]);
         list.add(presences[i].not());
@@ -1112,7 +1112,7 @@ public class RankingSample {
         // The following boolOr will enforce that for any two intervals:
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.
-        model.addBoolOr(list.toArray(new ILiteral[0]));
+        model.addBoolOr(list.toArray(new Literal[0]));
         // For efficiency, we add a redundant constraint declaring that only one of i precedes j and
         // j precedes i are true. This will speed up the solve because the reason of this
         // propagation is shorter that using interval bounds is true.
@@ -1144,7 +1144,7 @@ public class RankingSample {
     IntVar[] starts = new IntVar[numTasks];
     IntVar[] ends = new IntVar[numTasks];
     IntervalVar[] intervals = new IntervalVar[numTasks];
-    ILiteral[] presences = new ILiteral[numTasks];
+    Literal[] presences = new Literal[numTasks];
     IntVar[] ranks = new IntVar[numTasks];
 
     IntVar trueVar = model.newConstant(1);

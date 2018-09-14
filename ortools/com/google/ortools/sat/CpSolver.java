@@ -73,7 +73,7 @@ public class CpSolver {
   }
 
   /** Returns the Boolean value of a literal in the last solution found. */
-  public Boolean booleanValue(ILiteral var) {
+  public Boolean booleanValue(Literal var) {
     int index = var.getIndex();
     if (index >= 0) {
       return solveResponse.getSolution(index) != 0;

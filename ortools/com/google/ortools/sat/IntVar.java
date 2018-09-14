@@ -17,7 +17,7 @@ import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.IntegerVariableProto;
 
 /** An integer variable. */
-public class IntVar implements ILiteral {
+public class IntVar implements Literal {
   IntVar(CpModelProto.Builder builder, long lb, long ub, String name) {
     this.modelBuilder = builder;
     this.variableIndex = modelBuilder.getVariablesCount();
@@ -87,7 +87,7 @@ public class IntVar implements ILiteral {
 
   /** Returns the negation of a boolean variable. */
   @Override
-  public ILiteral not() {
+  public Literal not() {
     if (negation_ == null) {
       negation_ = new NotBooleanVariable(this);
     }

@@ -54,7 +54,7 @@ void RandomizeDecisionHeuristic(URBG* random, SatParameters* parameters);
 //
 // For a vector of size n, if we want to call this n times so that each literal
 // is last at least once, the sum of the size of the changed suffixes will be
-// O(n log n). If we where to use a simpler algorithm (like moving the last
+// O(n log n). If we were to use a simpler algorithm (like moving the last
 // unprocessed literal to the last position), this sum would be O(n^2).
 //
 // Returns the size of the common prefix of literals before and after the move,

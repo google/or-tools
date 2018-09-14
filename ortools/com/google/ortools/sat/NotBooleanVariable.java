@@ -14,10 +14,10 @@
 package com.google.ortools.sat;
 
 /**
- * The negation of a boolean variable. This class should not be used directly, ILiteral must be used
+ * The negation of a boolean variable. This class should not be used directly, Literal must be used
  * instead.
  */
-public class NotBooleanVariable implements ILiteral {
+public class NotBooleanVariable implements Literal {
   public NotBooleanVariable(IntVar boolvar) {
     boolVar = boolvar;
   }
@@ -30,7 +30,7 @@ public class NotBooleanVariable implements ILiteral {
 
   /** Returns the negation of this literal. */
   @Override
-  public ILiteral not() {
+  public Literal not() {
     return boolVar;
   }
 

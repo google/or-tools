@@ -787,7 +787,7 @@ class PropagatorInterface {
   //   updated many times or if different watched literals have the same
   //   watch_index.
   // - At level zero, it will not contain any indices associated with literals
-  //   that where already fixed when the propagator was registered. Only the
+  //   that were already fixed when the propagator was registered. Only the
   //   indices of the literals modified after the registration will be present.
   virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
     LOG(FATAL) << "Not implemented.";

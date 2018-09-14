@@ -12,8 +12,8 @@
 // limitations under the License.
 
 import com.google.ortools.sat.CpModel;
-import com.google.ortools.sat.ILiteral;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.Literal;
 
 /**
  * Reification is the action of associating a Boolean variable to a constraint. This boolean
@@ -37,14 +37,14 @@ public class ReifiedSample {
     IntVar b = model.newBoolVar("b");
 
     // Version 1: a half-reified boolean and.
-    model.addBoolAnd(new ILiteral[] {x, y.not()}).onlyEnforceIf(b);
+    model.addBoolAnd(new Literal[] {x, y.not()}).onlyEnforceIf(b);
 
     // Version 2: implications.
     model.addImplication(b, x);
     model.addImplication(b, y.not());
 
     // Version 3: boolean or.
-    model.addBoolOr(new ILiteral[] {b.not(), x});
-    model.addBoolOr(new ILiteral[] {b.not(), y.not()});
+    model.addBoolOr(new Literal[] {b.not(), x});
+    model.addBoolOr(new Literal[] {b.not(), y.not()});
   }
 }

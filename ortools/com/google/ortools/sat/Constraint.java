@@ -29,13 +29,13 @@ public class Constraint {
   }
 
   /** Adds a literal to the constraint. */
-  public void onlyEnforceIf(ILiteral lit) {
+  public void onlyEnforceIf(Literal lit) {
     constraintBuilder.addEnforcementLiteral(lit.getIndex());
   }
 
   /** Adds a list of literals to the constraint. */
-  public void onlyEnforceIf(ILiteral[] lits) {
-    for (ILiteral lit : lits) {
+  public void onlyEnforceIf(Literal[] lits) {
+    for (Literal lit : lits) {
       constraintBuilder.addEnforcementLiteral(lit.getIndex());
     }
   }

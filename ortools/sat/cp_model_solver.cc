@@ -293,7 +293,7 @@ class ModelWithMapping {
   // Used to return a feasible solution for the unused variables.
   std::vector<int64> lower_bounds_;
 
-  // Set of constraints to ignore because they where already dealt with by
+  // Set of constraints to ignore because they were already dealt with by
   // ExtractEncoding().
   std::unordered_set<const ConstraintProto*> ct_to_ignore_;
 };
@@ -2455,7 +2455,7 @@ CpSolverResponse SolveCpModelInternal(
     }
   }
   if (num_ignored_constraints > 0) {
-    VLOG(2) << num_ignored_constraints << " constraints where skipped.";
+    VLOG(2) << num_ignored_constraints << " constraints were skipped.";
   }
   if (!unsupported_types.empty()) {
     VLOG(1) << "There is unsuported constraints types in this model: ";
@@ -2552,7 +2552,7 @@ CpSolverResponse SolveCpModelInternal(
   }
 
   // Note that we do one last propagation at level zero once all the constraints
-  // where added.
+  // were added.
   model->GetOrCreate<SatSolver>()->Propagate();
 
   // Probing Boolean variables. Because we don't have a good deterministic time
