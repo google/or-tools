@@ -184,6 +184,7 @@ for machine_id in all_machines:
         arcs.append([i + 1, j + 1, lit])
         model.AddImplication(lit, PRESENCES[i])
         model.AddImplication(lit, PRESENCES[j])
+        # Compute the transition time if task j is the successor of task i.
         if Resource[i] != Resource[j]:
           transition_time = 3
           switch_literals.append(lit)
