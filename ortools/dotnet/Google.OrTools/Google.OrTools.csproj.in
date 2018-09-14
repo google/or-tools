@@ -26,7 +26,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <UseSharedCompilation>false</UseSharedCompilation>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
 
   <!-- Check at least one reference assembly has been generated -->

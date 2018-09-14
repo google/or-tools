@@ -24,7 +24,7 @@
     <IncludeBuildOutput>true</IncludeBuildOutput>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <UseSharedCompilation>false</UseSharedCompilation>
-    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -32,6 +32,10 @@
     <Optimize>true</Optimize>
     <GenerateTailCalls>true</GenerateTailCalls>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="OrTools.fs"/>
+  </ItemGroup>
 
   <PropertyGroup>
     <RestoreSources>../../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>

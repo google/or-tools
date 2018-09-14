@@ -22,7 +22,7 @@
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
     <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
     <UseSharedCompilation>false</UseSharedCompilation>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
     <BuildOutputTargetFolder>runtimes/$(RuntimeIdentifier)/lib</BuildOutputTargetFolder>
   </PropertyGroup>
 
