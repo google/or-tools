@@ -221,8 +221,8 @@ $(BIN_DIR)/multidim_knapsack$E \
 $(BIN_DIR)/network_routing$E \
 $(BIN_DIR)/nqueens$E \
 $(BIN_DIR)/pdptw$E \
-$(BIN_DIR)/rcpsp_sat$E \
 $(BIN_DIR)/shift_minimization_sat$E \
+$(BIN_DIR)/solve$E \
 $(BIN_DIR)/sports_scheduling$E \
 $(BIN_DIR)/strawberry_fields_with_column_generation$E \
 $(BIN_DIR)/tsp$E \
