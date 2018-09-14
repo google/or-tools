@@ -633,7 +633,7 @@ rdotnet_%: \
 
 rdotnet_%: \
  $(DOTNET_EX_DIR)/%.fs \
- $(DOTNET_EX_DIR)/%.fsproj \
+ $(DOTNET_EX_DIR)/%.fsproj
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
 	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
