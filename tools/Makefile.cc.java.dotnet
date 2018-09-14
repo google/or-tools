@@ -592,9 +592,9 @@ dotnet:
 	$(MAKE) rdotnet_fsvolsay
 #	$(MAKE) rdotnet_word_square # depends on /usr/share/dict/words
 
-test_dotnet: detect_dotnet $(BIN_DIR)/a_puzzle$D $(BIN_DIR)/Program$D
-	"$(DOTNET_BIN)" $(BIN_DIR)$Sa_puzzle$D
-	"$(DOTNET_BIN)" $(BIN_DIR)$SProgram$D
+test_dotnet: detect_dotnet
+	$(MAKE) rdotnet_a_puzzle
+	$(MAKE) rdotnet_fsProgram
 
 # .NET generic compilation command.
 ifeq ($(EX),)
