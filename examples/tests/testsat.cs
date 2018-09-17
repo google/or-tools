@@ -131,9 +131,57 @@ public class CsTestCpOperator
     Console.WriteLine("response = " + response.ToString());
   }
 
+  static void TestNegativeIntVar() {
+    CpModel model = new CpModel();
+        
+    IntVar boolvar = model.NewBoolVar("boolvar");
+    IntVar x = model.NewIntVar(0,10, "x");
+    IntVar delta = model.NewIntVar(-5, 5,"delta");
+    IntVar squaredDelta = model.NewIntVar(0, 25,"squaredDelta");
+    
+    // model.Add(x == 4).OnlyEnforceIf(boolvar);
+    // model.Add(x == 0).OnlyEnforceIf(boolvar.Not());
+    model.Add(x == boolvar * 4);
+    model.Add(delta == x - 5 );
+
+    model.AddProdEquality(squaredDelta, new IntVar[] {delta, delta});
+    model.Minimize(squaredDelta);
+
+    // Creates the solver and solve.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    Console.WriteLine(solver.ResponseStats());
+  }
+
+static void TestNegativeSquareVar() {
+    CpModel model = new CpModel();
+        
+    IntVar boolvar = model.NewBoolVar("boolvar");
+    IntVar x = model.NewIntVar(0,10, "x");
+    IntVar delta = model.NewIntVar(-5, 5,"delta");
+    IntVar squaredDelta = model.NewIntVar(0, 25,"squaredDelta");
+    
+    model.Add(x == 4).OnlyEnforceIf(boolvar);
+    model.Add(x == 0).OnlyEnforceIf(boolvar.Not());
+    model.Add(delta == x - 5 );
+
+    long[,] tuples = { {-5, 25}, {-4, 16}, {-3, 9}, {-2, 4}, {-1, 1}, {0, 0},
+                       {1, 1}, {2, 4}, {3, 9}, {4, 16}, {5, 25} };
+    model.AddAllowedAssignments(new IntVar[] {delta, squaredDelta}, tuples);
+
+    model.Minimize(squaredDelta);
+
+    // Creates the solver and solve.
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    Console.WriteLine(solver.ResponseStats());
+  }
+
   static void Main() {
     TestSimpleLinearModel();
     TestSimpleLinearModel2();
+    TestNegativeIntVar();
+    TestNegativeSquareVar();
     if (error_count_ != 0) {
       Console.WriteLine("Found " + error_count_ + " errors.");
       Environment.Exit(1);
