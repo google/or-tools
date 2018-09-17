@@ -151,12 +151,12 @@ test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 	$(MKDIR) $(TEMP_TEST_DIR)
 ifeq ($(SYSTEM),win)
 	$(UNZIP) $< -d $(TEMP_TEST_DIR)
-	cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) && $(MAKE) all
+	cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) && $(MAKE) MAKEFLAGS= all
 else
 #this is to make sure the archive tests don't use the root libraries
 	$(RENAME) lib lib2
 	$(TAR) -xvf $< -C $(TEMP_TEST_DIR)
-	( cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) && $(MAKE) all ) && \
+	( cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) && $(MAKE) MAKEFLAGS= all ) && \
 $(RENAME) lib2 lib && echo "archive test succeeded" || \
 ( $(RENAME) lib2 lib && echo "archive test failed" && exit 1)
 endif
