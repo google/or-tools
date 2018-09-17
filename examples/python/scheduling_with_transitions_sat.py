@@ -15,7 +15,7 @@ from ortools.sat.python import cp_model
 def main():
   """Solves the scheduling with transitions problem."""
 
-  #------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Intermediate solution printer
   class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
@@ -30,25 +30,25 @@ def main():
              self.Value(makespan)))
       self.__solution_count += 1
 
-  #------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   jobs = [[[(100, 0, 'R6'), (2, 1, 'R6')]], [[(2, 0, 'R3'), (100, 1, 'R3')]],
           [[(100, 0, 'R1'), (16, 1, 'R1')]], [[(1, 0, 'R1'), (38, 1, 'R1')]],
           [[(14, 0, 'R1'), (10, 1, 'R1')]], [[(16, 0, 'R3'), (17, 1, 'R3')]],
           [[(14, 0, 'R3'), (14, 1, 'R3')]], [[(14, 0, 'R3'), (15, 1, 'R3')]],
           [[(14, 0, 'R3'), (13, 1, 'R3')]], [[(100, 0, 'R1'), (38, 1, 'R1')]]]
 
-  #------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Helper data
   num_jobs = len(jobs)
   all_jobs = range(num_jobs)
   num_machines = 2
   all_machines = range(num_machines)
 
-  #------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Model
   model = cp_model.CpModel()
 
-  #------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Sum each lot longest process time for max makespan
   horizon = 0
   for job in jobs:
@@ -60,7 +60,7 @@ def main():
 
   print('Horizon = %i' % horizon)
 
-  #------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Scan the jobs and create the relevant variables and intervals.
   intervals_per_machines = collections.defaultdict(list)
   presences_per_machines = collections.defaultdict(list)
@@ -148,14 +148,14 @@ def main():
 
     job_ends.append(previous_end)
 
-  #--------------------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Create machines constraints nonoverlap process
   for machine_id in all_machines:
     intervals = intervals_per_machines[machine_id]
     if len(intervals) > 1:
       model.AddNoOverlap(intervals)
 
-  #--------------------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Transition times and transition costs using a circuit constraints.
   switch_literals = []
   for machine_id in all_machines:
@@ -186,13 +186,14 @@ def main():
             switch_literals.append(lit)
           else:
             transition_time = 0
-          # We add the reified transition to link the literals with the times of the tasks.
+          # We add the reified transition to link the literals with the times
+          # of the tasks.
           model.Add(machine_starts[j] >= machine_ends[i] +
                     transition_time).OnlyEnforceIf(lit)
 
   model.AddCircuit(arcs)
 
-  #--------------------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Objective
   makespan = model.NewIntVar(0, horizon, 'makespan')
   model.AddMaxEquality(makespan, job_ends)
@@ -201,14 +202,14 @@ def main():
   model.Minimize(makespan * makespan_weight +
                  sum(switch_literals) * transition_weight)
 
-  #--------------------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Solve
   solver = cp_model.CpSolver()
   solver.parameters.max_time_in_seconds = 60 * 60 * 2
   solution_printer = SolutionPrinter()
   status = solver.SolveWithSolutionCallback(model, solution_printer)
 
-  #--------------------------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Print solution
   if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
     for job_id in all_jobs:
