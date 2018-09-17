@@ -148,9 +148,9 @@ SWIG_INC = \
 SYS_LNK = psapi.lib ws2_32.lib shlwapi.lib
 
 JAVA_INC=/I"$(JAVA_HOME)\\include" /I"$(JAVA_HOME)\\include\\win32"
-JAVAC_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\javac")"
-JAVA_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\java")"
-JAR_BIN="$(shell $(WHICH) "$(JAVA_HOME)\bin\jar")"
+JAVAC_BIN=$(shell $(WHICH) "$(JAVA_HOME)\bin\javac")
+JAVA_BIN=$(shell $(WHICH) "$(JAVA_HOME)\bin\java")
+JAR_BIN=$(shell $(WHICH) "$(JAVA_HOME)\bin\jar")
 
 DEPENDENCIES_INC = /I$(INC_DIR) /I$(EX_DIR) /I$(GEN_DIR) \
  $(ZLIB_INC) $(GFLAGS_INC) $(GLOG_INC) $(PROTOBUF_INC) \
