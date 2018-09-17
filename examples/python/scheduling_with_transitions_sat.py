@@ -40,18 +40,18 @@ def main():
           [[(14, 0, 'R3'), (13, 1, 'R3')]], [[(100, 0, 'R1'), (38, 1, 'R1')]]]
 
   #----------------------------------------------------------------------------
-  # Helper data
+  # Helper data.
   num_jobs = len(jobs)
   all_jobs = range(num_jobs)
   num_machines = 2
   all_machines = range(num_machines)
 
   #----------------------------------------------------------------------------
-  # Model
+  # Model.
   model = cp_model.CpModel()
 
   #----------------------------------------------------------------------------
-  # Sum each lot longest process time for max makespan
+  # Sum each lot longest process time for max makespan.
   horizon = 0
   for job in jobs:
     for task in job:
@@ -91,7 +91,7 @@ def main():
         min_duration = min(min_duration, alt_duration)
         max_duration = max(max_duration, alt_duration)
 
-      # Create main interval for the task
+      # Create main interval for the task.
       suffix_name = '_j%i_t%i' % (job_id, task_id)
       start = model.NewIntVar(0, horizon, 'start' + suffix_name)
       duration = model.NewIntVar(min_duration, max_duration,
@@ -100,20 +100,20 @@ def main():
       interval = model.NewIntervalVar(start, duration, end,
                                       'interval' + suffix_name)
 
-      # Store the start for the solution
+      # Store the start for the solution.
       job_starts[(job_id, task_id)] = start
 
-      # Add precedence with previous task in the same job
+      # Add precedence with previous task in the same job.
       if previous_end:
         model.Add(start >= previous_end)
       previous_end = end
 
-      # Create alternative intervals
+      # Create alternative intervals.
       if num_alternatives > 1:
         l_presences = []
         for alt_id in all_alternatives:
-          ### add to link interval with eqp constraint
-          ### process time = -1 cannot be processed at this machine
+          ### add to link interval with eqp constraint.
+          ### process time = -1 cannot be processed at this machine.
           if jobs[job_id][task_id][alt_id][0] == -1:
             continue
           alt_suffix = '_j%i_t%i_a%i' % (job_id, task_id, alt_id)
@@ -127,12 +127,12 @@ def main():
           l_machine = task[alt_id][1]
           l_type = task[alt_id][2]
 
-          # Link the master variables with the local ones
+          # Link the master variables with the local ones.
           model.Add(start == l_start).OnlyEnforceIf(l_presence)
           model.Add(duration == l_duration).OnlyEnforceIf(l_presence)
           model.Add(end == l_end).OnlyEnforceIf(l_presence)
 
-          # Add the local variables to the right machine
+          # Add the local variables to the right machine.
           intervals_per_machines[l_machine].append(l_interval)
           starts_per_machines[l_machine].append(l_start)
           ends_per_machines[l_machine].append(l_end)
@@ -142,7 +142,7 @@ def main():
           # Store the presences for the solution.
           job_presences[(job_id, task_id, alt_id)] = l_presence
 
-        # Only one machine can process each lot
+        # Only one machine can process each lot.
         model.Add(sum(l_presences) == 1)
       else:
         intervals_per_machines[task[0][1]].append(interval)
@@ -194,7 +194,7 @@ def main():
   model.AddCircuit(arcs)
 
   #----------------------------------------------------------------------------
-  # Objective
+  # Objective.
   makespan = model.NewIntVar(0, horizon, 'makespan')
   model.AddMaxEquality(makespan, job_ends)
   makespan_weight = 1
@@ -203,14 +203,14 @@ def main():
                  sum(switch_literals) * transition_weight)
 
   #----------------------------------------------------------------------------
-  # Solve
+  # Solve.
   solver = cp_model.CpSolver()
   solver.parameters.max_time_in_seconds = 60 * 60 * 2
   solution_printer = SolutionPrinter(makespan)
   status = solver.SolveWithSolutionCallback(model, solution_printer)
 
   #----------------------------------------------------------------------------
-  # Print solution
+  # Print solution.
   if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
     for job_id in all_jobs:
       for task_id in range(len(jobs[job_id])):
