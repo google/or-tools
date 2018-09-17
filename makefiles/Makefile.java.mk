@@ -248,7 +248,7 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(GEN_DIR)/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/com/google/ortools/sat/CpModel.java | \
  $(CLASS_DIR)/com/google/ortools
-	$(JAVAC_BIN) -d $(CLASS_DIR) \
+	"$(JAVAC_BIN)" -d $(CLASS_DIR) \
  -cp $(LIB_DIR)$Sprotobuf.jar \
  $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java \
  $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Ssat$S*.java \
@@ -257,7 +257,7 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
-	$(JAR_BIN) cvf $(LIB_DIR)$Scom.google.ortools.jar -C $(CLASS_DIR) com$Sgoogle$Sortools$S
+	"$(JAR_BIN)" cvf $(LIB_DIR)$Scom.google.ortools.jar -C $(CLASS_DIR) com$Sgoogle$Sortools$S
 
 #############################
 ##  Java Examples/Samples  ##
