@@ -105,7 +105,3 @@ make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
 echo make test_python3.7: DONE | tee.exe -a build.log
 make.exe pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
 echo make pypi_archive3.7: DONE | tee.exe -a build.log
-
-REM Creating .NET artifacts
-make.exe nuget_archive WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
-echo make nuget_archive: DONE | tee.exe -a build.log
