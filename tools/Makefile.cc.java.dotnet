@@ -416,7 +416,7 @@ endif # ifeq ($(EX),)
 endif # ifndef HAS_JAVA
 
 $(CLASS_DIR):
-	$(MKDIR) $(CLASS_DIR)
+	-$(MKDIR) $(CLASS_DIR)
 
 $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java | $(CLASS_DIR)
 	-$(MKDIR) $(CLASS_DIR)$S$*
