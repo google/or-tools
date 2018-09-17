@@ -6,8 +6,10 @@ REM run it as: cmd /c tools\release\build_delivery_win.cmd
 REM Check all prerequisite
 REM C++
 set PATH=%PATH%;tools;tools\win
+make.exe print-OR_TOOLS_VERSION | tee.exe build.log
+
 which.exe cmake || exit 1
-which.exe cmake | tee.exe build.log
+which.exe cmake | tee.exe -a build.log
 REM Python
 which.exe C:\python27-64\python.exe || exit 1
 echo C:\python27-64\python.exe: FOUND | tee.exe -a build.log

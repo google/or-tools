@@ -2,9 +2,12 @@
 set -x
 set -e
 
+# Print version
+make print-OR_TOOLS_VERSION | tee build.log
+
 # Check all prerequisite
 # cc
-command -v gcc | xargs echo "gcc: " | tee build.log
+command -v gcc | xargs echo "gcc: " | tee -a build.log
 command -v cmake | xargs echo "cmake: " | tee -a build.log
 command -v make | xargs echo "make: " | tee -a build.log
 command -v swig | xargs echo "swig: " | tee -a build.log
