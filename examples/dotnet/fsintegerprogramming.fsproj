@@ -14,6 +14,6 @@
 
   <ItemGroup>
     <Compile Include="fsintegerprogramming.fs" />
-    <PackageReference Include="Google.OrTools.FSharp" Version="6.8.*" />
+    <PackageReference Include="Google.OrTools.FSharp" Version="6.9.*" />
   </ItemGroup>
 </Project>
