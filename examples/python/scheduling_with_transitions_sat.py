@@ -17,14 +17,15 @@ from ortools.sat.python import cp_model
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
-  def __init__(self):
+  def __init__(self, makespan):
     cp_model.CpSolverSolutionCallback.__init__(self)
     self.__solution_count = 0
+    self.__makespan = makespan
 
   def OnSolutionCallback(self):
     print('Solution %i, time = %f s, objective = %i, makespan = %i' %
           (self.__solution_count, self.WallTime(), self.ObjectiveValue(),
-            self.Value(makespan)))
+           self.Value(self.__makespan)))
     self.__solution_count += 1
 
 
@@ -205,7 +206,7 @@ def main():
   # Solve
   solver = cp_model.CpSolver()
   solver.parameters.max_time_in_seconds = 60 * 60 * 2
-  solution_printer = SolutionPrinter()
+  solution_printer = SolutionPrinter(makespan)
   status = solver.SolveWithSolutionCallback(model, solution_printer)
 
   #----------------------------------------------------------------------------
