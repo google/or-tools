@@ -44,6 +44,7 @@ dotnet: \
 test_dotnet: \
  test_dotnet_csharp \
  test_dotnet_fsharp \
+ test_donet_tests \
  test_donet_samples \
  test_dotnet_examples
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
@@ -401,6 +402,23 @@ test_dotnet_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
 #############################
 ##  .NET Examples/Samples  ##
 #############################
+.PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
+test_dotnet_tests: $(DOTNET_ORTOOLS_NUPKG)
+	$(MAKE) rdotnet_issue18
+	$(MAKE) rdotnet_issue22
+	$(MAKE) rdotnet_issue33
+	$(MAKE) rdotnet_testcp
+	$(MAKE) rdotnet_testlp
+	$(MAKE) rdotnet_testsat
+	$(MAKE) rdotnet_test_sat_model
+
+rdotnet_%: \
+ $(DOTNET_TEST_DIR)/%.cs \
+ $(DOTNET_TEST_DIR)/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG)
+	"$(DOTNET_BIN)" build $(DOTNET_TEST_PATH)$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_TEST_PATH)$S$*.csproj -- $(ARGS)
+
 .PHONY: test_dotnet_examples # Build and Run all .Net Examples (located in examples/dotnet)
 test_dotnet_examples: test_dotnet_examples_csharp test_dotnet_examples_fsharp
 
@@ -530,6 +548,13 @@ endif
 	$(MAKE) rdotnet_young_tableaux
 	$(MAKE) rdotnet_zebra
 
+rdotnet_%: \
+ $(DOTNET_EX_DIR)/%.cs \
+ $(DOTNET_EX_DIR)/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG)
+	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
+
 .PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet)
 test_dotnet_examples_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG)
 	$(MAKE) rdotnet_fsintegerprogramming
@@ -547,6 +572,13 @@ test_dotnet_examples_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG)
 	$(MAKE) rdotnet_fsvolsay3
 	$(MAKE) rdotnet_fsvolsay3-lpSolve
 	$(MAKE) rdotnet_fsvolsay
+
+rdotnet_%: \
+ $(DOTNET_EX_DIR)/%.fs \
+ $(DOTNET_EX_DIR)/%.fsproj \
+ $(DOTNET_ORTOOLS_FSHARP_NUPKG)
+	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
+	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
 .PHONY: test_donet_samples # Build and Run all .Net Samples (located in ortools/*/samples)
 test_dotnet_samples: $(DOTNET_ORTOOLS_NUPKG)
@@ -566,20 +598,6 @@ test_dotnet_samples: $(DOTNET_ORTOOLS_NUPKG)
 	$(MAKE) rdotnet_solve_with_intermediate_solutions
 	$(MAKE) rdotnet_solve_with_time_limit
 	$(MAKE) rdotnet_stop_after_n_solutions
-
-rdotnet_%: \
- $(DOTNET_EX_DIR)/%.cs \
- $(DOTNET_EX_DIR)/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG)
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
-
-rdotnet_%: \
- $(DOTNET_EX_DIR)/%.fs \
- $(DOTNET_EX_DIR)/%.fsproj \
- $(DOTNET_ORTOOLS_FSHARP_NUPKG)
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
 rdotnet_%: \
  ortools/sat/samples/%.cs \
@@ -665,12 +683,13 @@ clean_dotnet:
 	-$(DEL) $(LIB_DIR)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(OR_TOOLS_ASSEMBLY_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).*
-	-$(DELREC) $(EX_PATH)$Sdotnet$Sbin
-	-$(DELREC) $(EX_PATH)$Sdotnet$Sobj
+	-$(DELREC) $(DOTNET_EX_PATH)$Sbin
+	-$(DELREC) $(DOTNET_EX_PATH)$Sobj
+	-$(DELREC) $(DOTNET_TEST_PATH)$Sbin
+	-$(DELREC) $(DOTNET_TEST_PATH)$Sobj
 	-$(DELREC) ortools$Ssat$Ssamples$Sbin
 	-$(DELREC) ortools$Ssat$Ssamples$Sobj
 	-$(DELREC) $(TEMP_DOTNET_DIR)
-	-$(DELREC) $(TEMP_DOTNET_TEST_DIR)
 	-@"$(DOTNET_BIN)" nuget locals all --clear
 
 ######################

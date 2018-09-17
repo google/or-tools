@@ -18,14 +18,10 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class OrTools
-{
-  private static long Solve(long num_buses_check = 0)
-  {
-    SolverParameters sPrm = new SolverParameters();
-    sPrm.compress_trail = 0;
-    sPrm.trace_level = 0;
-    sPrm.profile_level = 0;
+public class OrTools {
+  private static long Solve(long num_buses_check = 0) {
+    ConstraintSolverParameters sPrm = Solver.DefaultSolverParameters();
+    sPrm.CompressTrail = 0;
     Solver solver = new Solver("OrTools",sPrm);
 
     //this works
@@ -34,29 +30,25 @@ public class OrTools
     //this doesn't work
     IntVar[,] x = solver.MakeIntVarMatrix(2, 2, new int[] { 0, 1, 2 }, "x");
 
-    for (int w = 0; w < 2; w++)
-    {
+    for (int w = 0; w < 2; w++) {
       IntVar[] b = new IntVar[2];
-      for (int i = 0; i < 2; i++)
-      {
+      for (int i = 0; i < 2; i++) {
         b[i] = solver.MakeIsEqualCstVar(x[w, i], 0);
       }
       solver.Add(solver.MakeSumGreaterOrEqual(b, 2));
     }
 
     IntVar[] x_flat = x.Flatten();
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        x_flat,
+        Solver.CHOOSE_FIRST_UNBOUND,
+        Solver.ASSIGN_MIN_VALUE);
     solver.NewSearch(db);
-    while (solver.NextSolution())
-    {
+    while (solver.NextSolution()) {
       Console.WriteLine("x: ");
-      for (int j = 0; j < 2; j++)
-      {
+      for (int j = 0; j < 2; j++) {
         Console.Write("worker" + (j + 1).ToString() + ":");
-        for (int i = 0; i < 2; i++)
-        {
+        for (int i = 0; i < 2; i++) {
           Console.Write(" {0,2} ", x[j, i].Value());
         }
         Console.Write("\n");
@@ -73,8 +65,7 @@ public class OrTools
     return 1;
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     Console.WriteLine("Check for minimum number of buses: ");
     long num_buses = Solve();
     Console.WriteLine("\n... got {0} as minimal value.", num_buses);

@@ -23,7 +23,7 @@ echo "Remove previous .[cf]sproj files...DONE"
 ##############
 ##  CSHARP  ##
 ##############
-for FILE in examples/dotnet/*.cs; do
+for FILE in examples/dotnet/*.cs examples/tests/*.cs; do
   # if no files found do nothing
   [ -e "$FILE" ] || continue
   PROJ="${FILE%.cs}.csproj";

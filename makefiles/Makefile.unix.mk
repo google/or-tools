@@ -28,6 +28,8 @@ JAVA_TEST_PATH = $(subst /,$S,$(JAVA_TEST_DIR))
 PACKAGE_DIR = $(OR_ROOT)packages
 DOTNET_EX_DIR  = $(OR_ROOT)examples/dotnet
 DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
+DOTNET_TEST_DIR  = $(OR_ROOT)examples/tests
+DOTNET_TEST_PATH = $(subst /,$S,$(DOTNET_TEST_DIR))
 
 O = o
 ifeq ($(PLATFORM),LINUX)

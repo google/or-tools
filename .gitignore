@@ -96,6 +96,8 @@ ortools/dotnet/*/runtime.json
 ortools/dotnet/**/bin
 ortools/dotnet/**/obj
 packages
+examples/tests/**/bin
+examples/tests/**/obj
 examples/dotnet/**/bin
 examples/dotnet/**/obj
 ortools/**/samples/bin

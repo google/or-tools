@@ -109,7 +109,7 @@ public class CsTestCpOperator
 
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
-    Check(status == CpSolverStatus.ModelSat, "Wrong status after solve");
+    Check(status == CpSolverStatus.Feasible, "Wrong status after solve");
     Console.WriteLine("v1 = {0}", solver.Value(v1));
     Console.WriteLine("v2 = {0}", solver.Value(v2));
   }
