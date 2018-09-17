@@ -69,7 +69,7 @@
     </Compile>
 
     <!-- Native library must be in native directory... -->
-    <Content Include="../../../dependencies/install/lib/*.so*">
+    <Content Include="../../../dependencies/install/lib*/*.so*">
       <PackagePath>runtimes/linux-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

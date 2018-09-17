@@ -15,6 +15,6 @@
 
   <ItemGroup>
     <Compile Include="stop_after_n_solutions.cs" />
-    <PackageReference Include="Google.OrTools" Version="6.8.*" />
+    <PackageReference Include="Google.OrTools" Version="6.9.*" />
   </ItemGroup>
 </Project>
