@@ -173,10 +173,8 @@ def main():
       arcs.append([i + 1, 0, model.NewBoolVar('')])
       arcs.append([i + 1, i + 1, machine_presences[i].Not()])  # Self arc.
       for j in all_machine_tasks:
-        lit = model.NewBoolVar('%i follows %i' % (j, i))
-        if i == j:
-          model.Add(lit == 0)
-        else:
+        if i != j:
+          lit = model.NewBoolVar('%i follows %i' % (j, i))
           arcs.append([i + 1, j + 1, lit])
           model.AddImplication(lit, machine_presences[i])
           model.AddImplication(lit, machine_presences[j])
