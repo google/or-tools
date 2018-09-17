@@ -12,23 +12,24 @@ import collections
 from ortools.sat.python import cp_model
 
 
+#----------------------------------------------------------------------------
+# Intermediate solution printer
+class SolutionPrinter(cp_model.CpSolverSolutionCallback):
+  """Print intermediate solutions."""
+
+  def __init__(self):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__solution_count = 0
+
+  def OnSolutionCallback(self):
+    print('Solution %i, time = %f s, objective = %i, makespan = %i' %
+          (self.__solution_count, self.WallTime(), self.ObjectiveValue(),
+            self.Value(makespan)))
+    self.__solution_count += 1
+
+
 def main():
   """Solves the scheduling with transitions problem."""
-
-  #----------------------------------------------------------------------------
-  # Intermediate solution printer
-  class SolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
-
-    def __init__(self):
-      cp_model.CpSolverSolutionCallback.__init__(self)
-      self.__solution_count = 0
-
-    def OnSolutionCallback(self):
-      print('Solution %i, time = %f s, objective = %i, makespan = %i' %
-            (self.__solution_count, self.WallTime(), self.ObjectiveValue(),
-             self.Value(makespan)))
-      self.__solution_count += 1
 
   #----------------------------------------------------------------------------
   jobs = [[[(100, 0, 'R6'), (2, 1, 'R6')]], [[(2, 0, 'R3'), (100, 1, 'R3')]],
