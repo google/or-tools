@@ -413,11 +413,11 @@ test_dotnet_tests: $(DOTNET_ORTOOLS_NUPKG)
 	$(MAKE) rdotnet_test_sat_model
 
 rdotnet_%: \
- $(DOTNET_TEST_DIR)/%.cs \
- $(DOTNET_TEST_DIR)/%.csproj \
+ $(TEST_DIR)/%.cs \
+ $(TEST_DIR)/%.csproj \
  $(DOTNET_ORTOOLS_NUPKG)
-	"$(DOTNET_BIN)" build $(DOTNET_TEST_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_TEST_PATH)$S$*.csproj -- $(ARGS)
+	"$(DOTNET_BIN)" build $(TEST_PATH)$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project $(TEST_PATH)$S$*.csproj -- $(ARGS)
 
 .PHONY: test_dotnet_examples # Build and Run all .Net Examples (located in examples/dotnet)
 test_dotnet_examples: test_dotnet_examples_csharp test_dotnet_examples_fsharp
@@ -685,8 +685,8 @@ clean_dotnet:
 	-$(DEL) $(BIN_DIR)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).*
 	-$(DELREC) $(DOTNET_EX_PATH)$Sbin
 	-$(DELREC) $(DOTNET_EX_PATH)$Sobj
-	-$(DELREC) $(DOTNET_TEST_PATH)$Sbin
-	-$(DELREC) $(DOTNET_TEST_PATH)$Sobj
+	-$(DELREC) $(TEST_PATH)$Sbin
+	-$(DELREC) $(TEST_PATH)$Sobj
 	-$(DELREC) ortools$Ssat$Ssamples$Sbin
 	-$(DELREC) ortools$Ssat$Ssamples$Sobj
 	-$(DELREC) $(TEMP_DOTNET_DIR)

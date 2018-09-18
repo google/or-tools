@@ -622,8 +622,18 @@ test_python_examples: python
 	$(MAKE) rpy_xkcd
 	$(MAKE) rpy_young_tableaux
 	$(MAKE) rpy_zebra
-	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Stests$Stest_cp_api.py
-	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(EX_DIR)$Stests$Stest_lp_api.py
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(TEST_PATH)$Stest_cp_api.py
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(TEST_PATH)$Stest_lp_api.py
+
+rpy_%: \
+ $(PYTHON_EX_DIR)/%.py \
+ $(PYLP_LIBS) \
+ $(PYCP_LIBS) \
+ $(PYGRAPH_LIBS) \
+ $(PYALGORITHMS_LIBS) \
+ $(PYSAT_LIBS) \
+ $(PYDATA_LIBS)
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(PYTHON_EX_PATH)$S$*.py $(ARGS)
 
 .PHONY: test_python_samples # Run all Python Samples (located in ortools/*/python)
 test_python_samples: python
@@ -643,16 +653,6 @@ test_python_samples: python
 	$(MAKE) rpy_solve_with_intermediate_solutions
 	$(MAKE) rpy_solve_with_time_limit
 	$(MAKE) rpy_stop_after_n_solutions
-
-rpy_%: \
- $(PYTHON_EX_DIR)/%.py \
- $(PYLP_LIBS) \
- $(PYCP_LIBS) \
- $(PYGRAPH_LIBS) \
- $(PYALGORITHMS_LIBS) \
- $(PYSAT_LIBS) \
- $(PYDATA_LIBS)
-	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(PYTHON_EX_PATH)$S$*.py $(ARGS)
 
 rpy_%: \
  ortools/sat/samples/%.py \

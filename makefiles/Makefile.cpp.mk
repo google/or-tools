@@ -43,6 +43,7 @@ cc: $(OR_TOOLS_LIBS)
 
 test_cc: \
  ccexe \
+ test_cc_tests \
  test_cc_samples \
  test_cc_examples
 test_fz: \
@@ -182,7 +183,7 @@ endif
 CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
 CVRPTW_PATH = $(subst /,$S,$(CVRPTW_LIBS))
 CVRPTW_DEPS = \
-	$(EX_DIR)/cpp/cvrptw_lib.h \
+	$(CC_EX_DIR)/cvrptw_lib.h \
 	$(CP_DEPS)
 CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
 ifeq ($(PLATFORM),MACOSX)
@@ -193,8 +194,8 @@ cvrptwlibs: $(CVRPTW_LIBS)
 DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
 DIMACS_PATH = $(subst /,$S,$(DIMACS_LIBS))
 DIMACS_DEPS = \
-	$(EX_DIR)/cpp/parse_dimacs_assignment.h \
-	$(EX_DIR)/cpp/print_dimacs_assignment.h \
+	$(CC_EX_DIR)/parse_dimacs_assignment.h \
+	$(CC_EX_DIR)/print_dimacs_assignment.h \
 	$(GRAPH_DEPS)
 DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
 ifeq ($(PLATFORM),MACOSX)
@@ -205,9 +206,9 @@ dimacslibs: $(DIMACS_LIBS)
 FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
 FAP_PATH = $(subst /,$S,$(FAP_LIBS))
 FAP_DEPS = \
-	$(EX_DIR)/cpp/fap_model_printer.h \
-	$(EX_DIR)/cpp/fap_parser.h \
-	$(EX_DIR)/cpp/fap_utilities.h \
+	$(CC_EX_DIR)/fap_model_printer.h \
+	$(CC_EX_DIR)/fap_parser.h \
+	$(CC_EX_DIR)/fap_utilities.h \
 	$(CP_DEPS) \
 	$(LP_DEPS)
 FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
@@ -294,11 +295,11 @@ ccexe: \
 # CVRPTW common library
 CVRPTW_OBJS = $(OBJ_DIR)/cvrptw_lib.$O
 $(CVRPTW_OBJS): \
- $(EX_DIR)/cpp/cvrptw_lib.cc \
- $(EX_DIR)/cpp/cvrptw_lib.h \
+ $(CC_EX_DIR)/cvrptw_lib.cc \
+ $(CC_EX_DIR)/cvrptw_lib.h \
  $(CP_DEPS) \
  | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
 
 $(CVRPTW_LIBS): $(OR_TOOLS_LIBS) $(CVRPTW_OBJS) | $(LIB_DIR)
 	$(LINK_CMD) \
@@ -334,22 +335,22 @@ $(FAP_LIBS): $(OR_TOOLS_LIBS) $(FAP_OBJS) | $(LIB_DIR)
  $(OR_TOOLS_LDFLAGS)
 
 # CVRP Problem
-$(OBJ_DIR)/cvrp%.$O: $(EX_DIR)/cpp/cvrp%.cc $(CVRPTW_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Scvrp$*.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrp$*.$O
+$(OBJ_DIR)/cvrp%.$O: $(CC_EX_DIR)/cvrp%.cc $(CVRPTW_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrp$*.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrp$*.$O
 
 $(BIN_DIR)/cvrp%$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrp%.$O | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrp$*.$O $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp$*$E
 
 # Dimacs Assignment Problem
-$(OBJ_DIR)/dimacs_assignment.$O: $(EX_DIR)/cpp/dimacs_assignment.cc $(DIMACS_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sdimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
+$(OBJ_DIR)/dimacs_assignment.$O: $(CC_EX_DIR)/dimacs_assignment.cc $(DIMACS_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sdimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
 
 $(BIN_DIR)/dimacs_assignment$E: $(DIMACS_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/dimacs_assignment.$O | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sdimacs_assignment.$O $(DIMACS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
 
 # Frequency Assignment Problem
-$(OBJ_DIR)/frequency_assignment_problem.$O: $(EX_DIR)/cpp/frequency_assignment_problem.cc $(FAP_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/frequency_assignment_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sfrequency_assignment_problem.$O
+$(OBJ_DIR)/frequency_assignment_problem.$O: $(CC_EX_DIR)/frequency_assignment_problem.cc $(FAP_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sfrequency_assignment_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sfrequency_assignment_problem.$O
 
 $(BIN_DIR)/frequency_assignment_problem$E: $(FAP_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/frequency_assignment_problem.$O | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
@@ -416,8 +417,8 @@ $(FLATZINC_LIBS): $(OR_TOOLS_LIBS) $(FLATZINC_OBJS) | $(LIB_DIR)
  $(OR_TOOLS_LNK) \
  $(OR_TOOLS_LDFLAGS)
 
-$(OBJ_DIR)/boolean_test.$O: $(EX_DIR)/tests/boolean_test.cc $(FLATZINC_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests$Sboolean_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_test.$O
+$(OBJ_DIR)/boolean_test.$O: $(TEST_DIR)/boolean_test.cc $(FLATZINC_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(TEST_PATH)$Sboolean_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_test.$O
 
 $(BIN_DIR)/boolean_test$E: $(OBJ_DIR)/boolean_test.$O $(FLATZINC_LIBS) | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sboolean_test.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sboolean_test$E
@@ -440,23 +441,17 @@ $(BIN_DIR)/parser_main$E: $(OBJ_DIR)/flatzinc/parser_main.$O $(FLATZINC_LIBS) $(
 sat: $(BIN_DIR)/sat_runner$E
 
 $(OBJ_DIR)/sat_runner.$O: \
- $(EX_DIR)/cpp/sat_runner.cc \
- $(EX_DIR)/cpp/opb_reader.h \
- $(EX_DIR)/cpp/sat_cnf_reader.h \
+ $(CC_EX_DIR)/sat_runner.cc \
+ $(CC_EX_DIR)/opb_reader.h \
+ $(CC_EX_DIR)/sat_cnf_reader.h \
  $(SAT_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
 
 ############################
 ##  CPP Examples/Samples  ##
 ############################
-.PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
-test_cc_examples: cc
-	$(MAKE) rcc_golomb ARGS="--size=5"
-	$(MAKE) rcc_cvrptw
-	$(MAKE) rcc_flow_api
-	$(MAKE) rcc_linear_programming
-	$(MAKE) rcc_integer_programming
-	$(MAKE) rcc_tsp
+.PHONY: test_cc_tests # Build and Run all C++ Examples (located in examples/tests)
+test_cc_tests: cc
 	$(MAKE) rcc_ac4r_table_test
 	$(MAKE) rcc_boolean_test
 	$(MAKE) rcc_bug_fz1
@@ -467,6 +462,21 @@ test_cc_examples: cc
 	$(MAKE) rcc_issue57
 	$(MAKE) rcc_min_max_test
 	$(MAKE) rcc_visitor_test
+
+$(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(TEST_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+.PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
+test_cc_examples: cc
+	$(MAKE) rcc_golomb ARGS="--size=5"
+	$(MAKE) rcc_cvrptw
+	$(MAKE) rcc_flow_api
+	$(MAKE) rcc_linear_programming
+	$(MAKE) rcc_integer_programming
+	$(MAKE) rcc_tsp
+
+$(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS)| $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
 .PHONY: test_cc_samples # Build and Run all C++ Samples (located in ortools/*/samples)
 test_cc_samples: cc
@@ -487,13 +497,6 @@ test_cc_samples: cc
 	$(MAKE) rcc_solve_with_time_limit
 	$(MAKE) rcc_stop_after_n_solutions
 
-# Generic CPP rules
-$(OBJ_DIR)/%.$O: $(EX_DIR)/tests/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
-
-$(OBJ_DIR)/%.$O: $(EX_DIR)/cpp/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS)| $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
-
 $(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
@@ -508,8 +511,8 @@ test_fz_examples: fz
 	$(MAKE) rfz_golomb
 	$(MAKE) rfz_alpha
 
-rfz_%: fz $(EX_DIR)/flatzinc/%.fzn
-	$(BIN_DIR)$Sfz$E $(EX_PATH)$Sflatzinc$S$*.fzn
+rfz_%: fz $(FZ_EX_DIR)/%.fzn
+	$(BIN_DIR)$Sfz$E $(FZ_EX_PATH)$S$*.fzn
 ####################
 ##  C++ Examples  ##
 ####################
@@ -709,7 +712,7 @@ detect_cc:
 	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
 	@echo SRC_DIR = $(SRC_DIR)
 	@echo GEN_DIR = $(GEN_DIR)
-	@echo EX_DIR = $(EX_DIR)
+	@echo CC_EX_DIR = $(CC_EX_DIR)
 	@echo OBJ_DIR = $(OBJ_DIR)
 	@echo LIB_DIR = $(LIB_DIR)
 	@echo BIN_DIR = $(BIN_DIR)
