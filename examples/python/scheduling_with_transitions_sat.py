@@ -100,8 +100,6 @@ def main():
       duration = model.NewIntVar(min_duration, max_duration,
                                  'duration' + suffix_name)
       end = model.NewIntVar(0, horizon, 'end' + suffix_name)
-      interval = model.NewIntervalVar(start, duration, end,
-                                      'interval' + suffix_name)
 
       # Store the start for the solution.
       job_starts[(job_id, task_id)] = start
