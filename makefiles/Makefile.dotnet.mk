@@ -44,7 +44,7 @@ dotnet: \
 test_dotnet: \
  test_dotnet_csharp \
  test_dotnet_fsharp \
- test_donet_tests \
+ test_dotnet_tests \
  test_donet_samples \
  test_dotnet_examples
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
