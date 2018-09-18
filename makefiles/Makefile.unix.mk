@@ -26,8 +26,6 @@ PYTHON_EX_PATH = $(subst /,$S,$(PYTHON_EX_DIR))
 CLASS_DIR = $(OR_ROOT)classes
 JAVA_EX_DIR  = $(OR_ROOT)examples/java
 JAVA_EX_PATH = $(subst /,$S,$(JAVA_EX_DIR))
-JAVA_TEST_DIR  = $(OR_ROOT)examples/tests
-JAVA_TEST_PATH = $(subst /,$S,$(JAVA_TEST_DIR))
 # .Net relevant directory
 PACKAGE_DIR = $(OR_ROOT)packages
 DOTNET_EX_DIR  = $(OR_ROOT)examples/dotnet

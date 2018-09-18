@@ -39,6 +39,7 @@ test_java: java
 else
 java: $(JAVA_OR_TOOLS_LIBS)
 test_java: \
+ test_java_tests \
  test_java_samples \
  test_java_examples
 BUILT_LANGUAGES +=, Java
@@ -262,6 +263,17 @@ $(JAVA_OR_TOOLS_LIBS): \
 #############################
 ##  Java Examples/Samples  ##
 #############################
+.PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
+test_java_tests: $(JAVA_OR_TOOLS_LIBS)
+	$(MAKE) rjava_TestLp
+
+$(CLASS_DIR)/%: $(TEST_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
+	-$(DELREC) $(CLASS_DIR)$S$*
+	-$(MKDIR_P) $(CLASS_DIR)$S$*
+	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+ -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ $(TEST_PATH)$S$*.java
+
 .PHONY: test_java_examples # Build and Run all Java Examples (located in examples/java)
 test_java_examples: $(JAVA_OR_TOOLS_LIBS)
 	$(MAKE) rjava_AllDifferentExcept0
@@ -317,6 +329,13 @@ test_java_examples: $(JAVA_OR_TOOLS_LIBS)
 	$(MAKE) rjava_Xkcd
 	$(MAKE) rjava_YoungTableaux
 
+$(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
+	-$(DELREC) $(CLASS_DIR)$S$*
+	-$(MKDIR_P) $(CLASS_DIR)$S$*
+	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+ -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ $(JAVA_EX_PATH)$S$*.java
+
 .PHONY: test_java_samples # Build and Run all Java Samples (located in ortools/*/samples)
 test_java_samples: $(JAVA_OR_TOOLS_LIBS)
 	$(MAKE) rjava_BinPackingProblem
@@ -335,20 +354,6 @@ test_java_samples: $(JAVA_OR_TOOLS_LIBS)
 	$(MAKE) rjava_SolveWithIntermediateSolutions
 	$(MAKE) rjava_SolveWithTimeLimit
 	$(MAKE) rjava_StopAfterNSolutions
-
-$(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(JAVA_EX_PATH)$S$*.java
-
-$(CLASS_DIR)/%: $(JAVA_TEST_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(JAVA_TEST_PATH)$S$*.java
 
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/sat/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
