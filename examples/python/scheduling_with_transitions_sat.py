@@ -69,9 +69,12 @@ def main():
   starts_per_machines = collections.defaultdict(list)
   ends_per_machines = collections.defaultdict(list)
   resources_per_machines = collections.defaultdict(list)
+  ranks_per_machines = collections.defaultdict(list)
+
   job_starts = {}  # indexed by (job_id, task_id).
   job_presences = {}  # indexed by (job_id, task_id, alt_id).
-  job_ends = []
+  job_ranks = {}  # indexed by (job_id, task_id, alt_id).
+  job_ends = []  # indexed by job_id
 
   for job_id in all_jobs:
     job = jobs[job_id]
@@ -109,44 +112,43 @@ def main():
       previous_end = end
 
       # Create alternative intervals.
-      if num_alternatives > 1:
-        l_presences = []
-        for alt_id in all_alternatives:
-          ### add to link interval with eqp constraint.
-          ### process time = -1 cannot be processed at this machine.
-          if jobs[job_id][task_id][alt_id][0] == -1:
-            continue
-          alt_suffix = '_j%i_t%i_a%i' % (job_id, task_id, alt_id)
-          l_presence = model.NewBoolVar('presence' + alt_suffix)
-          l_start = model.NewIntVar(0, horizon, 'start' + alt_suffix)
-          l_duration = task[alt_id][0]
-          l_end = model.NewIntVar(0, horizon, 'end' + alt_suffix)
-          l_interval = model.NewOptionalIntervalVar(
-              l_start, l_duration, l_end, l_presence, 'interval' + alt_suffix)
-          l_presences.append(l_presence)
-          l_machine = task[alt_id][1]
-          l_type = task[alt_id][2]
+      l_presences = []
+      for alt_id in all_alternatives:
+        ### add to link interval with eqp constraint.
+        ### process time = -1 cannot be processed at this machine.
+        if jobs[job_id][task_id][alt_id][0] == -1:
+          continue
+        alt_suffix = '_j%i_t%i_a%i' % (job_id, task_id, alt_id)
+        l_presence = model.NewBoolVar('presence' + alt_suffix)
+        l_start = model.NewIntVar(0, horizon, 'start' + alt_suffix)
+        l_duration = task[alt_id][0]
+        l_end = model.NewIntVar(0, horizon, 'end' + alt_suffix)
+        l_interval = model.NewOptionalIntervalVar(
+            l_start, l_duration, l_end, l_presence, 'interval' + alt_suffix)
+        l_rank = model.NewIntVar(-1, num_jobs, 'rank' + alt_suffix)
+        l_presences.append(l_presence)
+        l_machine = task[alt_id][1]
+        l_type = task[alt_id][2]
 
-          # Link the master variables with the local ones.
-          model.Add(start == l_start).OnlyEnforceIf(l_presence)
-          model.Add(duration == l_duration).OnlyEnforceIf(l_presence)
-          model.Add(end == l_end).OnlyEnforceIf(l_presence)
+        # Link the master variables with the local ones.
+        model.Add(start == l_start).OnlyEnforceIf(l_presence)
+        model.Add(duration == l_duration).OnlyEnforceIf(l_presence)
+        model.Add(end == l_end).OnlyEnforceIf(l_presence)
 
-          # Add the local variables to the right machine.
-          intervals_per_machines[l_machine].append(l_interval)
-          starts_per_machines[l_machine].append(l_start)
-          ends_per_machines[l_machine].append(l_end)
-          presences_per_machines[l_machine].append(l_presence)
-          resources_per_machines[l_machine].append(l_type)
+        # Add the local variables to the right machine.
+        intervals_per_machines[l_machine].append(l_interval)
+        starts_per_machines[l_machine].append(l_start)
+        ends_per_machines[l_machine].append(l_end)
+        presences_per_machines[l_machine].append(l_presence)
+        resources_per_machines[l_machine].append(l_type)
+        ranks_per_machines[l_machine].append(l_rank)
 
-          # Store the presences for the solution.
-          job_presences[(job_id, task_id, alt_id)] = l_presence
+        # Store the variables for the solution.
+        job_presences[(job_id, task_id, alt_id)] = l_presence
+        job_ranks[(job_id, task_id, alt_id)] = l_rank
 
-        # Only one machine can process each lot.
-        model.Add(sum(l_presences) == 1)
-      else:
-        intervals_per_machines[task[0][1]].append(interval)
-        job_presences[(job_id, task_id, 0)] = model.NewIntVar(1, 1, '')
+      # Only one machine can process each lot.
+      model.Add(sum(l_presences) == 1)
 
     job_ends.append(previous_end)
 
@@ -165,33 +167,50 @@ def main():
     machine_ends = ends_per_machines[machine_id]
     machine_presences = presences_per_machines[machine_id]
     machine_resources = resources_per_machines[machine_id]
+    machine_ranks = ranks_per_machines[machine_id]
     intervals = intervals_per_machines[machine_id]
     arcs = []
     num_machine_tasks = len(machine_starts)
     all_machine_tasks = range(num_machine_tasks)
 
     for i in all_machine_tasks:
-      arcs.append([0, i + 1, model.NewBoolVar('')])
+      # Initial arc from the dummy node (0) to a task.
+      start_lit = model.NewBoolVar('')
+      arcs.append([0, i + 1, start_lit])
+      # If this task is the first, set both rank and start to 0.
+      model.Add(machine_ranks[i] == 0).OnlyEnforceIf(start_lit)
+      model.Add(machine_starts[i] == 0).OnlyEnforceIf(start_lit)
+      # Final arc from an arc to the dummy node.
       arcs.append([i + 1, 0, model.NewBoolVar('')])
-      arcs.append([i + 1, i + 1, machine_presences[i].Not()])  # Self arc.
-      for j in all_machine_tasks:
-        if i != j:
-          lit = model.NewBoolVar('%i follows %i' % (j, i))
-          arcs.append([i + 1, j + 1, lit])
-          model.AddImplication(lit, machine_presences[i])
-          model.AddImplication(lit, machine_presences[j])
-          # Compute the transition time if task j is the successor of task i.
-          if machine_resources[i] != machine_resources[j]:
-            transition_time = 3
-            switch_literals.append(lit)
-          else:
-            transition_time = 0
-          # We add the reified transition to link the literals with the times
-          # of the tasks.
-          model.Add(machine_starts[j] >= machine_ends[i] +
-                    transition_time).OnlyEnforceIf(lit)
+      # Self arc if the task is not performed.
+      arcs.append([i + 1, i + 1, machine_presences[i].Not()])
+      model.Add(machine_ranks[i] == -1).OnlyEnforceIf(
+          machine_presences[i].Not())
 
-  model.AddCircuit(arcs)
+      for j in all_machine_tasks:
+        if i == j:
+          continue
+
+        lit = model.NewBoolVar('%i follows %i' % (j, i))
+        arcs.append([i + 1, j + 1, lit])
+        model.AddImplication(lit, machine_presences[i])
+        model.AddImplication(lit, machine_presences[j])
+
+        # Maintain rank incrementally.
+        model.Add(machine_ranks[j] == machine_ranks[i] + 1).OnlyEnforceIf(lit)
+
+        # Compute the transition time if task j is the successor of task i.
+        if machine_resources[i] != machine_resources[j]:
+          transition_time = 3
+          switch_literals.append(lit)
+        else:
+          transition_time = 0
+        # We add the reified transition to link the literals with the times
+        # of the tasks.
+        model.Add(machine_starts[j] >= machine_ends[i] +
+                  transition_time).OnlyEnforceIf(lit)
+
+    model.AddCircuit(arcs)
 
   #----------------------------------------------------------------------------
   # Objective.
@@ -218,15 +237,18 @@ def main():
         machine = 0
         duration = 0
         select = 0
+        rank = -1
 
         for alt_id in range(len(jobs[job_id][task_id])):
           if solver.BooleanValue(job_presences[(job_id, task_id, alt_id)]):
             duration = jobs[job_id][task_id][alt_id][0]
             machine = jobs[job_id][task_id][alt_id][1]
             select = alt_id
+            rank = solver.Value(job_ranks[(job_id, task_id, alt_id)])
 
-        print('  Job %i starts at %i (alt %i, machine %i, duration %i)' %
-              (job_id, start_value, select, machine, duration))
+        print(
+            '  Job %i starts at %i (alt %i, duration %i) with rank %i on machine %i'
+            % (job_id, start_value, select, duration, rank, machine))
 
     print('Solve status: %s' % solver.StatusName(status))
     print('Objective value: %i' % solver.ObjectiveValue())
