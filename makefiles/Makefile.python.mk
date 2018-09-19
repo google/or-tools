@@ -548,6 +548,7 @@ test_python_examples: python
 	$(MAKE) rpy_lectures
 	$(MAKE) rpy_linear_assignment_api
 	$(MAKE) rpy_linear_programming
+	$(MAKE) rpy_magic_sequence_sat
 	$(MAKE) rpy_magic_sequence_distribute
 	$(MAKE) rpy_magic_square_and_cards
 	$(MAKE) rpy_magic_square_mip
