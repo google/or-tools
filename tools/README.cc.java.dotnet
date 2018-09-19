@@ -1,84 +1,98 @@
-This file describes how to install the or-tools C++, java and .Net binary
-archive.
+# Introduction
+This file describes how to install the OR-Tools C++, Java and .Net binary archive.
 
 OR-Tools is located at https://developers.google.com/optimization
 
 These modules have been tested under:
-  - Ubuntu 14.04 and 16.04 up (64-bit).
-  - Mac OS X El Capitan with Xcode 7.x (64 bit).
-  - Microsoft Windows with Visual Studio 2013 and 2015 (64-bit)
+  - Ubuntu 14.04, 16.04, 17.10 and 18.04 (64-bit).
+  - macOS 10.13 High Sierra with Xcode 9.4 (64 bit).
+  - Microsoft Windows with Visual Studio 2015 and 2017 (64-bit)
 
 Upon decompressing the archive, you will get the following structure:
 
+```
 or-tools/
-  LICENSE-2.0.txt  <- Apache License
-  README           <- This file
-  Makefile/        <- Main makefile for cpp
-  examples/        <- C++, java and .Net examples
-  lib/             <- directory containing libraries and jar files.
-  include/         <- all include files
-  objs/            <- directory containing C++ compiled object files (*.o)
-  bin/             <- directory containing executable files, and .NET assemblies
+  LICENSE-2.0.txt <- Apache 2.0 License
+  README.md       <- This file
+  Makefile        <- Main Makefile for C++,Java and .Net
+  examples/       <- C++, Java and .Net examples
+  include/        <- all include files
+  objs/           <- directory containing C++ compiled object files (*.o)
+  classes/        <- directory containing Java class files.
+  packages/       <- directory containing .Net nuget packages.
+  lib/            <- directory containing libraries and jar files.
+  bin/            <- directory containing executable files
+```
 
- ##########################  C++   ###########################
+# C++
+
+Running the examples will involve compiling them, then running them.
+We have provided a makefile target to help you.
 
 Use Makefile:
+```shell
+make rcc_golomb
+```
 
-make rcc EX=examples/cpp/golomb.cc
+**OR** this is equivalent to compiling and running
+`examples/cpp/golomb.cc`.
+- on Unix:
+  ```shell
+  make bin/golomb
+  ./bin/golomb
+  ```
+- on Windows:
+  ```shell
+  make bin\\golomb.exe
+  bin\\golomb.exe
+  ```
 
-OR :
-
-  - on unix:
-make bin/golomb
-./bin/golomb
-
-  - on windows:
-make bin\\golomb.exe
-bin\\golomb.exe
-
-
- ##########################  java   ##########################
+# Java
 
 Running the examples will involve compiling them, then running them.
 We have provided a makefile target to help you. You need to have the
 java and javac tools accessible from the command line.
 
-make rjava EX=examples/com/google/ortools/samples/RabbitsPheasants.java
+Use Makefile:
+```shell
+make rjava_RabbitsPheasants
+```
 
-This is equivalent to compiling and running
-examples/com/google/ortools/samples/RabbitsPheasants.java:
+**OR** this is equivalent to compiling and running
+`examples/java/RabbitsPheasants.java`.
+- on Unix:
+  ```shell
+  javac -d classes/RabbitsPheasants -cp lib/com.google.ortools.jar:lib/protobuf.jar examples/java/RabbitsPheasants.java
+  jar cvf lib/RabbitsPheasants.jar -C classes/RabbitsPheasants .
+  java -Djava.library.path=lib -cp lib/RabbitsPheasants.jar:lib/com.google.ortools.jar:lib/protobuf.jar RabbitsPheasants
+  ```
+- on Windows:
+  ```shell
+  javac -d class/RabbitsPheasants -cp lib/com.google.ortools.jar;lib/protobuf.jar examples/java/RabbitsPheasants.java
+  jar cvf lib/RabbitsPheasants.jar -C classes/RabbitsPheasants .
+  java -Djava.library.path=lib -cp lib/RabbitPheasants.jar;lib/com.google.ortools.jar;lib/protobuf.jar RabbitsPheasants
+  ```
 
-  - on unix:
-javac -d objs -cp lib/com.google.ortools.jar:lib/protobuf.jar examples/com/google/ortools/samples/RabbitsPheasants.java
-java -Djava.library.path=lib -cp objs:lib/com.google.ortools.jar com.google.ortools.samples.RabbitsPheasants
-
-  - on windows:
-javac -d objs -cp lib/com.google.ortools.jar;lib/protobuf.jar examples/com/google/ortools/samples/RabbitsPheasants.java
-java -Djava.library.path=lib -cp objs;lib/com.google.ortools.jar com.google.ortools.samples.RabbitsPheasants
-
-
- ##########################  .Net   ##########################
+# .Net
 
 Running the examples will involve compiling them, then running them.
 We have provided a makefile target to help you. You need to have the
-compiler tools accessible from the command line.
+dotnet/cli tools accessible from the command line.
 
-make rcs EX=examples/csharp/csflow.cs
+Use Makefile:
+```shell
+make rdotnet_csflow
+```
 
-This is equivalent to compiling and running examples/csflow.cs and running it:
-
-  - on windows 32 bit:
-csc /target:exe /out:bin\csflow.exe /platform:x86 /lib:bin /r:Google.OrTools.dll examples\csharp\csflow.cs
-bin\csflow.exe
-
-  - on windows 64 bit:
-csc /target:exe /out:bin/csflow.exe /platform:x64 /lib:bin /r:Google.OrTools.dll  examples\csharp\csflow.cs
-bin\csflow.exe
-
-  - on linux (mono comes from the distribution, on ubuntu 16.04 and up):
-mcs /target:exe /out:bin/csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.dll examples/csharp/csflow.cs
-MONO_PATH=bin mono bin/csflow.exe
-
-  - on Mac OS X (Use installer with version 4.2.1 or up):
-mcs /target:exe /out:bin/csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.dll examples/csharp/csflow.cs
-DYLD_FALLBACK_LIBRARY_PATH=lib mono64 bin/csflow.exe
+**OR** this is equivalent to compiling and running
+`examples/dotnet/csflow.cs`.
+- on Unix:
+  ```shell
+  dotnet build examples/dotnet/csflow.csproj
+  dotnet run --no-build --project examples/dotnet/csflow.csproj
+  ```
+- on Windows:
+  ```shell
+  dotnet build examples\dotnet\csflow.csproj
+  dotnet run --no-build --project examples\dotnet\csflow.csproj
+  ```
