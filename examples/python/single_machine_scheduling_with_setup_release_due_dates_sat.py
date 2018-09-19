@@ -31,7 +31,7 @@ PARSER.add_argument(
 PARSER.add_argument('--params', default='', help='Sat solver parameters.')
 PARSER.add_argument(
     '--preprocess_times',
-    default=False,
+    default=True,
     type=bool,
     help='Preprocess setup times and durations')
 

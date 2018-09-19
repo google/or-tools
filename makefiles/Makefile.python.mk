@@ -610,6 +610,7 @@ test_python_examples: python
 	$(MAKE) rpy_set_partition
 	$(MAKE) rpy_sicherman_dice
 	$(MAKE) rpy_simple_meeting
+	$(MAKE) rpy_single_machine_scheduling_with_setup_release_due_dates_sat
 	$(MAKE) rpy_ski_assignment
 	$(MAKE) rpy_slitherlink
 	$(MAKE) rpy_stable_marriage
