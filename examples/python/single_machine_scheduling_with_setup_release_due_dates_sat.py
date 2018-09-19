@@ -147,10 +147,18 @@ def main(args):
   if args.preprocess_times:
     for job_id in all_jobs:
       min_incoming_setup = min(setup_times[j][job_id] for j in range(num_jobs + 1))
+      if release_dates[job_id] != 0:
+        min_incoming_setup = min(min_incoming_setup, release_dates[job_id])
+      if min_incoming_setup == 0:
+        continue
+        
       print('job %i has a min incoming setup of %i' % (job_id, min_incoming_setup))
+      # We can transfer some setup times to the duration of the job.
+      job_durations[job_id] += min_incoming_setup
+      # Decrease corresponding incoming setup times.
       for j in range(num_jobs + 1):
         setup_times[j][job_id] -= min_incoming_setup
-      job_durations[job_id] += min_incoming_setup
+      # Adjust release dates if needed.
       if release_dates[job_id] != 0:
         release_dates[job_id] -= min_incoming_setup
   
