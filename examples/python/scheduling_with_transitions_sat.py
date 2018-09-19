@@ -8,9 +8,24 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
 
+import argparse
 import collections
+
+from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
+
+#----------------------------------------------------------------------------
+# Command line arguments.
+Parser=argparse.ArgumentParser()
+Parser.add_argument('--problem_instance', default=0, type=int,
+                    help = 'Problem instance.')
+Parser.add_argument('--output_proto', default = "",
+                    help = 'Output file to write the cp_model'
+                           'proto to.')
+Parser.add_argument('--params', default = "",
+                    help = 'Sat solver parameters.')
+                    
 
 #----------------------------------------------------------------------------
 # Intermediate solution printer
@@ -29,8 +44,12 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     self.__solution_count += 1
 
 
-def main():
+def main(args):
   """Solves the scheduling with transitions problem."""
+
+  instance = args.problem_instance
+  parameters = args.params
+  output_proto = args.output_proto
 
   #----------------------------------------------------------------------------
   small_jobs = [[[(100, 0, 'R6'), (2, 1, 'R6')]],
@@ -267,10 +286,18 @@ def main():
                  sum(switch_literals) * transition_weight)
 
   #----------------------------------------------------------------------------
+  # Write problem to file.
+  if output_proto:
+    print('Writing proto to %s' % output_proto)
+    with open(output_proto, 'w') as text_file:
+      text_file.write(str(model))                 
+
+  #----------------------------------------------------------------------------
   # Solve.
   solver = cp_model.CpSolver()
   solver.parameters.max_time_in_seconds = 60 * 60 * 2
-  solver.parameters.num_search_workers = 8
+  if parameters:
+    text_format.Merge(parameters, solver.parameters)
   solution_printer = SolutionPrinter(makespan)
   status = solver.SolveWithSolutionCallback(model, solution_printer)
 
@@ -305,4 +332,4 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
+  main(Parser.parse_args())
