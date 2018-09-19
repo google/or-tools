@@ -52,6 +52,7 @@ def main(args):
   output_proto = args.output_proto
 
   #----------------------------------------------------------------------------
+  # Data.
   small_jobs = [[[(100, 0, 'R6'), (2, 1, 'R6')]],
                 [[(2, 0, 'R3'), (100, 1, 'R3')]],
                 [[(100, 0, 'R1'), (16, 1, 'R1')]],
@@ -224,7 +225,7 @@ def main(args):
       model.AddNoOverlap(intervals)
 
   #----------------------------------------------------------------------------
-  # Transition times and transition costs using a circuit constraints.
+  # Transition times and transition costs using a circuit constraint.
   switch_literals = []
   for machine_id in all_machines:
     machine_starts = starts_per_machines[machine_id]
