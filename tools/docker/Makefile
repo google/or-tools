@@ -139,14 +139,14 @@ bash_ubuntu-18.04: export/ubuntu-18.04/docker.tar
 	$(DOCKER_RUN_CMD) or-tools_ubuntu-18.04:devel /bin/bash
 
 # Build Archives
-.PHONY: archive \
+.PHONY: archives \
 archive_centos-7 \
 archive_debian-9 \
 archive_ubuntu-14.04 \
 archive_ubuntu-16.04 \
 archive_ubuntu-17.10 \
 archive_ubuntu-18.04
-archive: \
+archives: \
 archive_centos-7 \
 archive_debian-9 \
 archive_ubuntu-14.04 \
