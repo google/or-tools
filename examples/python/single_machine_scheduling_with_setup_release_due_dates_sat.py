@@ -30,7 +30,7 @@ Parser.add_argument(
     'proto to.')
 Parser.add_argument('--params', default='', help='Sat solver parameters.')
 Parser.add_argument('--preprocess_times', default=False, type=bool,
-                    'Preprocess setup times and durations')
+                    help='Preprocess setup times and durations')
 
 
 #----------------------------------------------------------------------------
