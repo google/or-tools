@@ -11,11 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# We are trying to group items in equal sized groups.
-# Each item has a color and a value. We want the sum of values of each group to
-# be as close to the average as possible.
-# Furthermore, if one color is an a group, at least k items with this color must
-# be in that group.
+"""We are trying to group items in equal sized groups.
+
+Each item has a color and a value. We want the sum of values of each group to
+be as close to the average as possible.
+Furthermore, if one color is an a group, at least k items with this color must
+be in that group.
+"""
 
 from __future__ import print_function
 from __future__ import division
