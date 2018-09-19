@@ -224,9 +224,14 @@ def main(args):
       lit = model.NewBoolVar('%i follows %i' % (j, i))
       arcs.append([i + 1, j + 1, lit])
 
-      # We add the reified transition to link the literals with the times
-      # of the tasks.
-      model.Add(starts[j] >= ends[i] + setup_times[i + 1][j]).OnlyEnforceIf(lit)
+      # We add the reified precedence to link the literal with the times of the
+      # two tasks.
+      # If release_dates[j] == 0, we can strenghten this precedence into an
+      # equality as we are minimizing the makespan.
+      if release_dates[j] == 0:
+        model.Add(starts[j] == ends[i] + setup_times[i + 1][j]).OnlyEnforceIf(lit)
+      else:
+        model.Add(starts[j] >= ends[i] + setup_times[i + 1][j]).OnlyEnforceIf(lit)
 
   model.AddCircuit(arcs)
 
