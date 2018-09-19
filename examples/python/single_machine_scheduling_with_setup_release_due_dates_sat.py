@@ -22,15 +22,18 @@ from google.protobuf import text_format
 
 #----------------------------------------------------------------------------
 # Command line arguments.
-Parser = argparse.ArgumentParser()
-Parser.add_argument(
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument(
     '--output_proto',
     default='',
     help='Output file to write the cp_model'
     'proto to.')
-Parser.add_argument('--params', default='', help='Sat solver parameters.')
-Parser.add_argument('--preprocess_times', default=False, type=bool,
-                    help='Preprocess setup times and durations')
+PARSER.add_argument('--params', default='', help='Sat solver parameters.')
+PARSER.add_argument(
+    '--preprocess_times',
+    default=False,
+    type=bool,
+    help='Preprocess setup times and durations')
 
 
 #----------------------------------------------------------------------------
@@ -146,13 +149,15 @@ def main(args):
   # Preprocess.
   if args.preprocess_times:
     for job_id in all_jobs:
-      min_incoming_setup = min(setup_times[j][job_id] for j in range(num_jobs + 1))
+      min_incoming_setup = min(
+          setup_times[j][job_id] for j in range(num_jobs + 1))
       if release_dates[job_id] != 0:
         min_incoming_setup = min(min_incoming_setup, release_dates[job_id])
       if min_incoming_setup == 0:
         continue
-        
-      print('job %i has a min incoming setup of %i' % (job_id, min_incoming_setup))
+
+      print('job %i has a min incoming setup of %i' % (job_id,
+                                                       min_incoming_setup))
       # We can transfer some setup times to the duration of the job.
       job_durations[job_id] += min_incoming_setup
       # Decrease corresponding incoming setup times.
@@ -161,7 +166,7 @@ def main(args):
       # Adjust release dates if needed.
       if release_dates[job_id] != 0:
         release_dates[job_id] -= min_incoming_setup
-  
+
   #----------------------------------------------------------------------------
   # Model.
   model = cp_model.CpModel()
@@ -259,4 +264,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-  main(Parser.parse_args())
+  main(PARSER.parse_args())

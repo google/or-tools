@@ -20,6 +20,7 @@ from ortools.sat.python import cp_model
 
 
 def main():
+  """Magic sequence problem."""
   n = 50
   values = range(n)
 

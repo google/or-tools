@@ -11,21 +11,20 @@ from __future__ import division
 import argparse
 import collections
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
+from google.protobuf import text_format
 
 
 #----------------------------------------------------------------------------
 # Command line arguments.
-Parser=argparse.ArgumentParser()
-Parser.add_argument('--problem_instance', default=0, type=int,
-                    help = 'Problem instance.')
-Parser.add_argument('--output_proto', default = "",
-                    help = 'Output file to write the cp_model'
-                           'proto to.')
-Parser.add_argument('--params', default = "",
-                    help = 'Sat solver parameters.')
-                    
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('--problem_instance', default=0, type=int,
+                    help='Problem instance.')
+PARSER.add_argument('--output_proto', default="",
+                    help='Output file to write the cp_model proto to.')
+PARSER.add_argument('--params', default="",
+                    help='Sat solver parameters.')
+
 
 #----------------------------------------------------------------------------
 # Intermediate solution printer
@@ -65,7 +64,7 @@ def main(args):
                 [[(100, 0, 'R1'), (38, 1, 'R1')]]]
 
   large_jobs = [
-      [[(-1, 0, 'R1'), (10, 1, 'R1')]], [[(9, 0, 'R3'),  (22, 1, 'R3')]],
+      [[(-1, 0, 'R1'), (10, 1, 'R1')]], [[(9, 0, 'R3'), (22, 1, 'R3')]],
       [[(-1, 0, 'R3'), (13, 1, 'R3')]], [[(-1, 0, 'R3'), (38, 1, 'R3')]],
       [[(-1, 0, 'R3'), (38, 1, 'R3')]], [[(-1, 0, 'R3'), (16, 1, 'R3')]],
       [[(-1, 0, 'R3'), (11, 1, 'R3')]], [[(-1, 0, 'R3'), (13, 1, 'R3')]],
@@ -291,7 +290,7 @@ def main(args):
   if output_proto:
     print('Writing proto to %s' % output_proto)
     with open(output_proto, 'w') as text_file:
-      text_file.write(str(model))                 
+      text_file.write(str(model))
 
   #----------------------------------------------------------------------------
   # Solve.
@@ -333,4 +332,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-  main(Parser.parse_args())
+  main(PARSER.parse_args())
