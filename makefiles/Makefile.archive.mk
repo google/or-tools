@@ -38,8 +38,9 @@ clean_archive:
 $(TEMP_ARCHIVE_DIR):
 	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)
 
-$(INSTALL_DIR)$(ARCHIVE_EXT): archive_cc archive_java archive_dotnet
-	$(COPY) tools$SREADME.cc.java.dotnet $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SREADME
+$(INSTALL_DIR)$(ARCHIVE_EXT): archive_cc archive_java archive_dotnet \
+ tools/README.cc.java.dotnet tools/Makefile.cc.java.dotnet
+	$(COPY) tools$SREADME.cc.java.dotnet $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SREADME.md
 	$(COPY) tools$SMakefile.cc.java.dotnet $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SMakefile
 ifeq ($(SYSTEM),win)
 	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools$Swin
