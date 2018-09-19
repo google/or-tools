@@ -101,7 +101,7 @@ def main(args):
       [[(1, 0, 'R2'), (-1, 1, 'R2')]], [[(12, 0, 'R4'), (-1, 1, 'R4')]]
   ]
 
-  jobs = large_jobs
+  jobs = small_jobs if instance == 0 else large_jobs
 
   #----------------------------------------------------------------------------
   # Helper data.
