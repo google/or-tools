@@ -29,6 +29,8 @@ Parser.add_argument(
     help='Output file to write the cp_model'
     'proto to.')
 Parser.add_argument('--params', default='', help='Sat solver parameters.')
+Parser.add_argument('--preprocess_times', default=False, type=bool,
+                    'Preprocess setup times and durations')
 
 
 #----------------------------------------------------------------------------
@@ -55,7 +57,7 @@ def main(args):
   #----------------------------------------------------------------------------
   # Data.
 
-  jobs_durations = [
+  job_durations = [
       2546, 8589, 5953, 3710, 3630, 3016, 4148, 8706, 1604, 5502, 9983, 6209,
       9920, 7860, 2176
   ]
@@ -136,17 +138,29 @@ def main(args):
   precedences = [(0, 2), (1, 2)]
 
   #----------------------------------------------------------------------------
+  # Helper data.
+  num_jobs = len(job_durations)
+  all_jobs = range(num_jobs)
+
+  #----------------------------------------------------------------------------
+  # Preprocess.
+  if args.preprocess_times:
+    for job_id in all_jobs:
+      min_incoming_setup = min(setup_times[j][job_id] for j in range(num_jobs + 1))
+      print('job %i has a min incoming setup of %i' % (job_id, min_incoming_setup))
+      for j in range(num_jobs + 1):
+        setup_times[j][job_id] -= min_incoming_setup
+      job_durations[job_id] += min_incoming_setup
+      if release_dates[job_id] != 0:
+        release_dates[job_id] -= min_incoming_setup
+  
+  #----------------------------------------------------------------------------
   # Model.
   model = cp_model.CpModel()
 
   #----------------------------------------------------------------------------
-  # Helper data.
-  num_jobs = len(jobs_durations)
-  all_jobs = range(num_jobs)
-
-  #----------------------------------------------------------------------------
   # Compute a maximum makespan greedily.
-  horizon = sum(jobs_durations) + sum(
+  horizon = sum(job_durations) + sum(
       max(setup_times[i][j]
           for i in range(num_jobs + 1))
       for j in range(num_jobs))
@@ -161,7 +175,7 @@ def main(args):
   #----------------------------------------------------------------------------
   # Scan the jobs and create the relevant variables and intervals.
   for job_id in all_jobs:
-    duration = jobs_durations[job_id]
+    duration = job_durations[job_id]
     release_date = release_dates[job_id]
     due_date = due_dates[job_id] if due_dates[job_id] != -1 else horizon
     print('job %2i: start = %5i, duration = %4i, end = %6i' %
