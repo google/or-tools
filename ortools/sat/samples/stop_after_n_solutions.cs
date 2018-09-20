@@ -15,22 +15,27 @@
 using System;
 using Google.OrTools.Sat;
 
-public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback {
+public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback
+{
   public VarArraySolutionPrinterWithLimit(IntVar[] variables,
-                                          int solution_limit) {
+                                          int solution_limit)
+  {
     variables_ = variables;
     solution_limit_ = solution_limit;
   }
 
-  public override void OnSolutionCallback() {
+  public override void OnSolutionCallback()
+  {
     Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
           solution_count_, WallTime()));
-    foreach (IntVar v in variables_) {
+    foreach (IntVar v in variables_)
+    {
       Console.WriteLine(
           String.Format("  {0} = {1}", v.ShortString(), Value(v)));
     }
     solution_count_++;
-    if (solution_count_ >= solution_limit_) {
+    if (solution_count_ >= solution_limit_)
+    {
       Console.WriteLine(
           String.Format("Stopping search after {0} solutions",
             solution_limit_));
@@ -38,7 +43,8 @@ public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback {
     }
   }
 
-  public int SolutionCount() {
+  public int SolutionCount()
+  {
     return solution_count_;
   }
 
@@ -47,8 +53,10 @@ public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback {
   private int solution_limit_;
 }
 
-public class CodeSamplesSat {
-  static void StopAfterNSolutions() {
+public class CodeSamplesSat
+{
+  static void StopAfterNSolutions()
+  {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
@@ -61,13 +69,14 @@ public class CodeSamplesSat {
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithLimit cb =
-      new VarArraySolutionPrinterWithLimit(new IntVar[] {x, y, z}, 5);
+      new VarArraySolutionPrinterWithLimit(new IntVar[] { x, y, z }, 5);
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
           cb.SolutionCount()));
   }
 
-  static void Main() {
+  static void Main()
+  {
     StopAfterNSolutions();
   }
 }

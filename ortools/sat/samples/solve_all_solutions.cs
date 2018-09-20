@@ -64,7 +64,7 @@ public class CodeSamplesSat
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, y, z});
+        new VarArraySolutionPrinter(new IntVar[] { x, y, z });
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
                                     cb.SolutionCount()));

@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """We are trying to group items in equal sized groups.
 
 Each item has a color and a value. We want the sum of values of each group to

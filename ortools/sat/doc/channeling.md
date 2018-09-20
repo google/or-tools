@@ -672,7 +672,7 @@ public class CodeSamplesSat
     int slack_capacity = 20;
     int num_bins = 10;
 
-    int[,] items = new int[,] { {20, 12}, {15, 12}, {30, 8}, {45, 5} };
+    int[,] items = new int[,] { { 20, 12 }, { 15, 12 }, { 30, 8 }, { 45, 5 } };
     int num_items = items.GetLength(0);
 
     // Model.
@@ -705,7 +705,8 @@ public class CodeSamplesSat
 
     // Links load and x.
     int[] sizes = new int[num_items];
-    for (int i = 0; i < num_items; ++i) {
+    for (int i = 0; i < num_items; ++i)
+    {
       sizes[i] = items[i, 0];
     }
     for (int b = 0; b < num_bins; ++b)
@@ -766,6 +767,7 @@ public class CodeSamplesSat
     Console.WriteLine(String.Format("  - branches  : {0}",
                                     solver.NumBranches()));
     Console.WriteLine(String.Format("  - wall time : {0} s",
+                                    solver.WallTime()));
   }
 
   static void Main()

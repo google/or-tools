@@ -229,11 +229,12 @@ public class CodeSamplesSat
   {
     CpModel model = new CpModel();
     IntVar x = model.NewBoolVar("x");
-    IntVar y = model.newBoolVar("y");
-    model.AddBoolOr(new ILiteral[] {x, y.Not()});
+    IntVar y = model.NewBoolVar("y");
+    model.AddBoolOr(new ILiteral[] { x, y.Not() });
   }
 
-  static void Main() {
+  static void Main()
+  {
     BoolOrSample();
   }
 }

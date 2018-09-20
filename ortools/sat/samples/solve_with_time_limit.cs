@@ -33,7 +33,7 @@ public class CodeSamplesSat
     CpSolver solver = new CpSolver();
 
     // Adds a time limit. Parameters are stored as strings in the solver.
-    solver.StringParameters = "max_time_in_seconds:10.0" ;
+    solver.StringParameters = "max_time_in_seconds:10.0";
 
     CpSolverStatus status = solver.Solve(model);
 
