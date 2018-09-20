@@ -147,6 +147,11 @@ public class CpSolver
     get { return response_.ObjectiveValue; }
   }
 
+  public double BestObjectiveBound
+  {
+    get { return response_.BestObjectiveBound; }
+  }
+
   public string StringParameters
   {
     get { return string_parameters_; }

@@ -67,6 +67,14 @@ public class CpSolver {
     return solveResponse.getObjectiveValue();
   }
 
+  /**
+   * Returns the best lower bound found when minimizing, of the best upper bound found when
+   * maximizing.
+   */
+  public double bestObjectiveBound() {
+    return solveResponse.getBestObjectiveBound();
+  }
+
   /** Returns the value of a variable in the last solution found. */
   public long value(IntVar var) {
     return solveResponse.getSolution(var.getIndex());

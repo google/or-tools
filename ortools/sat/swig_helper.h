@@ -59,7 +59,9 @@ class SolutionCallback {
 
   double DeterministicTime() const { return response_.deterministic_time(); }
 
-  int64 ObjectiveValue() const { return response_.objective_value(); }
+  double ObjectiveValue() const { return response_.objective_value(); }
+
+  double BestObjectiveBound() const { return response_.best_objective_bound(); }
 
   int64 SolutionIntegerValue(int index) {
     return index >= 0 ? response_.solution(index)

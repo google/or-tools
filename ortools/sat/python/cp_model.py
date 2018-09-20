@@ -1461,6 +1461,10 @@ class CpSolver(object):
     """Returns the value of objective after solve."""
     return self.__solution.objective_value
 
+  def BestObjectiveBound(self):
+    """Returns the best lower (upper) bound found when min(max)imizing."""
+    return self.__solution.best_objective_bound
+
   def StatusName(self, status):
     """Returns the name of the status returned by Solve()."""
     return cp_model_pb2.CpSolverStatus.Name(status)

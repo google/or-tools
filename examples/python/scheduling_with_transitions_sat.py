@@ -271,7 +271,7 @@ def main(args):
           transition_time = 0
         # We add the reified transition to link the literals with the times
         # of the tasks.
-        model.Add(machine_starts[j] >= machine_ends[i] +
+        model.Add(machine_starts[j] == machine_ends[i] +
                   transition_time).OnlyEnforceIf(lit)
 
     model.AddCircuit(arcs)

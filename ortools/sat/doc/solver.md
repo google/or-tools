@@ -536,7 +536,7 @@ public class SolveWithIntermediateSolutions {
     @Override
     public void onSolutionCallback() {
       System.out.printf("Solution #%d: time = %.02f s%n", solutionCount, wallTime());
-      System.out.printf("  objective value = %d%n", objectiveValue());
+      System.out.printf("  objective value = %f%n", objectiveValue());
       for (IntVar v : variableArray) {
         System.out.printf("  %s = %d%n", v.getName(), value(v));
       }

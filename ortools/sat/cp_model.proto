@@ -104,25 +104,28 @@ message IntervalConstraintProto {
   int32 size = 3;
 }
 
-// All the intervals (index of IntervalConstraintProto) must be disjoint.
-// Note that interval are interpreted as [start, end). This is also known as
-// a disjunctive constraint in scheduling.
+// All the intervals (index of IntervalConstraintProto) must be disjoint. More
+// formally, there must exist a sequence so that for each consecutive intervals,
+// we have end_i <= start_{i+1}. In particular, intervals of size zero do matter
+// for this constraint. This is also known as a disjunctive constraint in
+// scheduling.
 message NoOverlapConstraintProto {
   repeated int32 intervals = 1;
 }
 
 // The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.
+//
+// TODO(user): If one of the box dimension is zero, it is not clear what
+// happens. For now, only use with non-zero box dimensions.
 message NoOverlap2DConstraintProto {
   repeated int32 x_intervals = 1;
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
 }
 
-// The sum of the demands of the intervals at each interval point
-// cannot exceed a capacity. Note that intervals are interpreted as
-// [start, end) and as such intervals like [2,3) and [3,4) do not
-// overlap for the point of view of this constraint.
-//
-// Note: this enforces that all start <= end.
+// The sum of the demands of the intervals at each interval point cannot exceed
+// a capacity. Note that intervals are interpreted as [start, end) and as
+// such intervals like [2,3) and [3,4) do not overlap for the point of view of
+// this constraint. Moreover, intervals of size zero are ignored.
 message CumulativeConstraintProto {
   int32 capacity = 1;
   repeated int32 intervals = 2;
@@ -146,9 +149,9 @@ message CumulativeConstraintProto {
 message ReservoirConstraintProto {
   int64 min_level = 1;
   int64 max_level = 2;
-  repeated int32 times = 3;
-  repeated int64 demands = 4;
-  repeated int32 actives = 5;
+  repeated int32 times = 3;    // variables.
+  repeated int64 demands = 4;  // constants, can be negative.
+  repeated int32 actives = 5;  // literals.
 }
 
 // The circuit constraint is defined on a graph where the arc presence are
@@ -165,7 +168,7 @@ message CircuitConstraintProto {
   repeated int32 literals = 5;
 }
 
-// The "VRP" constraint.
+// The "VRP" (Vehicle Routing Problem) constraint.
 //
 // The direct graph where arc #i (from tails[i] to head[i]) is present iff
 // literals[i] is true must satisfy this set of properties:

@@ -84,9 +84,6 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool TimeTablingPerTask::Propagate() {
-  // TODO(user): understand why the following line creates a bug.
-  // if (num_tasks_to_sweep_ == 0) return true;
-
   // Save the current state of the set of tasks.
   rev_repository_int_.SaveState(&forward_num_tasks_to_sweep_);
   rev_repository_int_.SaveState(&backward_num_tasks_to_sweep_);
@@ -449,11 +446,12 @@ void TimeTablingPerTask::AddProfileReason(IntegerValue left,
                                           IntegerValue right) {
   for (int i = 0; i < num_profile_tasks_; ++i) {
     const int t = profile_tasks_[i];
-    const IntegerValue start_max = helper_->StartMax(t);
-    const IntegerValue end_min = helper_->EndMin(t);
 
-    // Do not consider the task if it does not overlap [left, right).
-    if (end_min <= left || right <= start_max) continue;
+    // Do not consider the task if it does not overlap for sure (left, right).
+    const IntegerValue start_max = helper_->StartMax(t);
+    if (right <= start_max) continue;
+    const IntegerValue end_min = helper_->EndMin(t);
+    if (end_min <= left) continue;
 
     helper_->AddPresenceReason(t);
     helper_->AddStartMaxReason(t, std::max(left, start_max));
