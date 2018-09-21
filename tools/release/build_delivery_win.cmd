@@ -100,6 +100,8 @@ copy test.py.in %TEMP_DIR%\venv\test.py
 %TEMP_DIR%\venv\Scripts\python %TEMP_DIR%\venv\test.py 2>&1 | tee.exe -a test.log
 echo Testing ortools Python2.7...DONE | tee.exe -a test.log
 
+FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
+
 REM ##################
 REM ##  PYTHON 3.5  ##
 REM ##################
@@ -131,6 +133,8 @@ echo Testing ortools Python3.5... | tee.exe -a test.log
 copy test.py.in %TEMP_DIR%\venv\test.py
 %TEMP_DIR%\venv\Scripts\python %TEMP_DIR%\venv\test.py 2>&1 | tee.exe -a test.log
 echo Testing ortools Python3.5...DONE | tee.exe -a test.log
+
+FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
 
 REM ##################
 REM ##  PYTHON 3.6  ##
@@ -164,6 +168,8 @@ copy test.py.in %TEMP_DIR%\venv\test.py
 %TEMP_DIR%\venv\Scripts\python %TEMP_DIR%\venv\test.py 2>&1 | tee.exe -a test.log
 echo Testing ortools Python3.6...DONE | tee.exe -a test.log
 
+FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
+
 REM ##################
 REM ##  PYTHON 3.7  ##
 REM ##################
@@ -195,3 +201,5 @@ echo Testing ortools Python3.7... | tee.exe -a test.log
 copy test.py.in %TEMP_DIR%\venv\test.py
 %TEMP_DIR%\venv\Scripts\python %TEMP_DIR%\venv\test.py 2>&1 | tee.exe -a test.log
 echo Testing ortools Python3.7...DONE | tee.exe -a test.log
+
+FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
