@@ -758,7 +758,7 @@ clean_python:
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_pywrap*
 	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_PYTHON_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
-	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
+	-$(DELREC) temp-python*
 
 #####################
 ##  Pypi artifact  ##
