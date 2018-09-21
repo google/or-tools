@@ -4,37 +4,77 @@ set -e
 
 # Check all prerequisite
 # cc
-command -v cmake | xargs echo "cmake: " | tee build.log
-command -v make | xargs echo "make: " | tee -a build.log
-command -v swig | xargs echo "swig: " | tee -a build.log
+command -v cmake | xargs echo "cmake: " | tee test.log
+command -v make | xargs echo "make: " | tee -a test.log
+command -v swig | xargs echo "swig: " | tee -a test.log
 # python
-command -v python2 | xargs echo "python2: " | tee -a build.log
-command -v python3 | xargs echo "python3: " | tee -a build.log
+command -v python2 | xargs echo "python2: " | tee -a test.log
+command -v python3 | xargs echo "python3: " | tee -a test.log
 
-echo Creating Python 2 venv...
-TEMP_DIR=temp_python2
+##################
+##  PYTHON 2.7  ##
+##################
+echo Cleaning Python... | tee -a test.log
+make clean_python
+echo Cleaning Python...DONE | tee -a test.log
+
+echo Rebuild Python2.7 pypi archive... | tee -a test.log
+make pypi_archive UNIX_PYTHON_VER=2.7
+echo Rebuild Python2.7 pypi archive...DONE | tee -a test.log
+
+echo Creating Python2.7 venv... | tee -a test.log
+TEMP_DIR=temp-python2.7
 VENV_DIR=${TEMP_DIR}/venv
 python2 -m pip install --user virtualenv
-python2 -m virtualenv -p python2 ${VENV_DIR}
-# Bug: setup.py must be run in this directory !
-(cd ${TEMP_DIR}/ortools && ../venv/bin/python setup.py install)
-cp test.py.in ${TEMP_DIR}/venv/test.py
-echo Creating Python 2 venv...DONE
+python2 -m virtualenv ${VENV_DIR}
+echo Creating Python2.7 venv...DONE | tee -a test.log
 
-echo Creating Python 3 venv...
-TEMP_DIR=temp_python3
+echo Installing ortools Python2.7 venv... | tee -a test.log
+${VENV_DIR}/bin/python -m pip install ${TEMP_DIR}/ortools/dist/*.whl
+echo Installing ortools Python2.7 venv...DONE | tee -a test.log
+
+set +e
+echo Testing ortools Python2.7... | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.linear_solver import pywraplp") 2>&1 | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.constraint_solver import pywrapcp") 2>&1 | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.sat import pywrapsat") 2>&1 | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.graph import pywrapgraph") 2>&1 | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.algorithms import pywrapknapsack_solver") 2>&1 | tee -a test.log
+cp test.py.in ${VENV_DIR}/test.py
+${VENV_DIR}/bin/python ${VENV_DIR}/test.py 2>&1 | tee -a test.log
+echo Testing ortools Python2.7...DONE | tee -a test.log
+set -e
+
+##################
+##  PYTHON 3.5  ##
+##################
+echo Cleaning Python... | tee -a test.log
+make clean_python
+echo Cleaning Python...DONE | tee -a test.log
+
+echo Rebuild Python3.5 pypi archive... | tee -a test.log
+make pypi_archive UNIX_PYTHON_VER=3.5
+echo Rebuild Python3.5 pypi archive...DONE | tee -a test.log
+
+echo Creating Python3.5 venv... | tee -a test.log
+TEMP_DIR=temp-python3.5
 VENV_DIR=${TEMP_DIR}/venv
 python3 -m pip install --user virtualenv
-python3 -m virtualenv -p python3 ${VENV_DIR}
-# Bug: setup.py must be run in this directory !
-(cd ${TEMP_DIR}/ortools && ../venv/bin/python setup.py install)
-cp test.py.in ${TEMP_DIR}/venv/test.py
-echo Creating Python 3 venv...DONE
+python3 -m virtualenv ${VENV_DIR}
+echo Creating Python3.5 venv...DONE | tee -a test.log
 
-# To be sure to have sandboxed library (i.e. @loader_path)
-make clean_cc
+echo Installing ortools Python3.5 venv... | tee -a test.log
+${VENV_DIR}/bin/python -m pip install ${TEMP_DIR}/ortools/dist/*.whl
+echo Installing ortools Python3.5 venv...DONE | tee -a test.log
 
-echo Testing in virtualenv...
-temp_python2/venv/bin/python temp_python2/venv/test.py
-temp_python3/venv/bin/python temp_python3/venv/test.py
-echo Testing in virtualenv...DONE
+set +e
+echo Testing ortools Python3.5... | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.linear_solver import pywraplp") 2>&1 | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.constraint_solver import pywrapcp") 2>&1 | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.sat import pywrapsat") 2>&1 | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.graph import pywrapgraph") 2>&1 | tee -a test.log
+(cd ${VENV_DIR}/bin && ./python -c "from ortools.algorithms import pywrapknapsack_solver") 2>&1 | tee -a test.log
+cp test.py.in ${VENV_DIR}/test.py
+${VENV_DIR}/bin/python ${VENV_DIR}/test.py 2>&1 | tee -a test.log
+echo Testing ortools Python3.5...DONE | tee -a test.log
+set -e

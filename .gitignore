@@ -22,6 +22,7 @@ or-tools*.zip
 *.swp
 
 build.log
+test.log
 bin/
 ortools/gen/
 objs/
