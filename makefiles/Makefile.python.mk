@@ -937,7 +937,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 
 .PHONY: pypi_archive # Create Python "ortools" wheel package
-pypi_archive: python $(MISSING_PYPI_FILES)
+pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
 ifneq ($(SYSTEM),win)
 	cp $(OR_TOOLS_LIBS) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
 endif
