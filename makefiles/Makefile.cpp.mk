@@ -468,12 +468,42 @@ $(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
 
 .PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
 test_cc_examples: cc
-	$(MAKE) rcc_golomb ARGS="--size=5"
+	$(MAKE) rcc_costas_array
+	$(MAKE) rcc_cryptarithm
+	$(MAKE) rcc_cvrp_disjoint_tw
 	$(MAKE) rcc_cvrptw
+	$(MAKE) rcc_cvrptw_with_breaks
+	$(MAKE) rcc_cvrptw_with_refueling
+	$(MAKE) rcc_cvrptw_with_resources
+	$(MAKE) rcc_cvrptw_with_stop_times_and_resources
+	$(MAKE) rcc_dimacs_assignment
+	$(MAKE) rcc_dobble_ls
+	$(MAKE) rcc_flexible_jobshop
 	$(MAKE) rcc_flow_api
-	$(MAKE) rcc_linear_programming
+	$(MAKE) rcc_frequency_assignment_problem
+	$(MAKE) rcc_golomb ARGS="--size=5"
 	$(MAKE) rcc_integer_programming
+	$(MAKE) rcc_jobshop
+	$(MAKE) rcc_jobshop_earlytardy
+	$(MAKE) rcc_jobshop_ls
+	$(MAKE) rcc_jobshop_sat
+	$(MAKE) rcc_linear_assignment_api
+	$(MAKE) rcc_linear_programming
+	$(MAKE) rcc_linear_solver_protocol_buffers
+	$(MAKE) rcc_ls_api
+	$(MAKE) rcc_magic_square
+	$(MAKE) rcc_model_util
+	$(MAKE) rcc_mps_driver
+	$(MAKE) rcc_multidim_knapsack
+	$(MAKE) rcc_network_routing
+	$(MAKE) rcc_nqueens
+	$(MAKE) rcc_pdptw
+	$(MAKE) rcc_shift_minimization_sat
+	$(MAKE) rcc_solve
+	$(MAKE) rcc_sports_scheduling
+	$(MAKE) rcc_strawberry_fields_with_column_generation
 	$(MAKE) rcc_tsp
+	$(MAKE) rcc_weighted_tardiness_sat
 
 $(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS)| $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
