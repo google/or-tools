@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include <unordered_map>
 #include "ortools/base/hash.h"
 #include "ortools/base/inlined_vector.h"
 #include "ortools/base/int_type.h"
@@ -721,20 +722,13 @@ class IntegerTrail : public SatPropagator {
   gtl::ITIVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
 
   // This is only filled for variables with a domain more complex than a single
-  // interval of values. All intervals are stored in a vector, and we keep
-  // indices to the current interval of the lower bound, and to the end index
-  // which is exclusive.
+  // interval of values. var_to_current_lb_interval_index_[var] stores the
+  // intervals in (*domains_)[var] where the current lower-bound lies.
   //
-  // TODO(user): Avoid using hash_map here and above, a simple vector should
-  // be more efficient. Except if there is really little variables like this.
-  //
-  // TODO(user): We could share the std::vector<ClosedInterval> entry between a
-  // variable and its negations instead of having duplicates.
+  // TODO(user): Avoid using hash_map here, a simple vector should be more
+  // efficient, but we need the "rev" aspect.
   RevMap<std::unordered_map<IntegerVariable, int>>
       var_to_current_lb_interval_index_;
-  std::unordered_map<IntegerVariable, int>
-      var_to_end_interval_index_;              // const entries.
-  std::vector<ClosedInterval> all_intervals_;  // const entries.
 
   // Temporary data used by MergeReasonInto().
   mutable std::vector<int> tmp_queue_;

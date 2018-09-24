@@ -232,6 +232,13 @@ std::pair<IntegerLiteral, IntegerLiteral> IntegerEncoder::Canonicalize(
 }
 
 Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
+  if (i_lit.bound <= (*domains_)[i_lit.var].front().start) {
+    return GetTrueLiteral();
+  }
+  if (i_lit.bound > (*domains_)[i_lit.var].back().end) {
+    return GetFalseLiteral();
+  }
+
   const IntegerLiteral new_lit = Canonicalize(i_lit).first;
   if (new_lit.var < encoding_by_var_.size()) {
     const std::map<IntegerValue, Literal>& encoding =
@@ -540,22 +547,15 @@ IntegerVariable IntegerTrail::AddIntegerVariable(
   return var;
 }
 
+// Because we use InlinedVectors internally, we need the conversion.
+//
 // TODO(user): we could return a reference, but this is likely not in any
 // critical code path.
 std::vector<ClosedInterval> IntegerTrail::InitialVariableDomain(
     IntegerVariable var) const {
-  const int interval_index =
-      gtl::FindWithDefault(var_to_current_lb_interval_index_, var, -1);
-  if (interval_index >= 0) {
-    return std::vector<ClosedInterval>(
-        &all_intervals_[interval_index],
-        &all_intervals_[gtl::FindOrDie(var_to_end_interval_index_, var)]);
-  } else {
-    std::vector<ClosedInterval> result;
-    result.push_back({LevelZeroBound(var).value(),
-                      -LevelZeroBound(NegationOf(var)).value()});
-    return result;
-  }
+  std::vector<ClosedInterval> domain;
+  for (const ClosedInterval& i : (*domains_)[var]) domain.push_back(i);
+  return domain;
 }
 
 bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
@@ -563,15 +563,12 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
 
   // TODO(user): A bit inefficient as this recreate a vector for no reason.
-  const std::vector<ClosedInterval> old_domain = InitialVariableDomain(var);
+  // The IntersectionOfSortedDisjointIntervals() should take a Span<> instead.
+  std::vector<ClosedInterval> old_domain = InitialVariableDomain(var);
   domain = IntersectionOfSortedDisjointIntervals(domain, old_domain);
-  domain = IntersectionOfSortedDisjointIntervals(
-      domain, {{LowerBound(var).value(), UpperBound(var).value()}});
   if (old_domain == domain) return true;
   if (domain.empty()) return false;
 
-  // TODO(user): we currently keep the domain in domains_ but also in
-  // all_intervals_ for domains with holes. Try to consolidate both structures.
   (*domains_)[var].assign(domain.begin(), domain.end());
   {
     std::vector<ClosedInterval> temp =
@@ -579,36 +576,21 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
     (*domains_)[NegationOf(var)].assign(temp.begin(), temp.end());
   }
 
+  if (domain.size() > 1) {
+    var_to_current_lb_interval_index_.Set(var, 0);
+    var_to_current_lb_interval_index_.Set(NegationOf(var), 0);
+  }
+
+  // TODO(user): That works, but it might be better to simply update the
+  // bounds here directly. This is because these function might call again
+  // UpdateInitialDomain(), and we will abort after realizing that the domain
+  // didn't change this time.
   CHECK(Enqueue(
       IntegerLiteral::GreaterOrEqual(var, IntegerValue(domain.front().start)),
       {}, {}));
   CHECK(Enqueue(
       IntegerLiteral::LowerOrEqual(var, IntegerValue(domain.back().end)), {},
       {}));
-
-  // TODO(user): reuse the memory if possible.
-  if (gtl::ContainsKey(var_to_current_lb_interval_index_, var)) {
-    var_to_current_lb_interval_index_.EraseOrDie(var);
-    var_to_end_interval_index_.erase(var);
-    var_to_current_lb_interval_index_.EraseOrDie(NegationOf(var));
-    var_to_end_interval_index_.erase(NegationOf(var));
-  }
-  if (domain.size() > 1) {
-    var_to_current_lb_interval_index_.Set(var, all_intervals_.size());
-    for (const ClosedInterval interval : domain) {
-      all_intervals_.push_back(interval);
-    }
-    gtl::InsertOrDie(&var_to_end_interval_index_, var, all_intervals_.size());
-
-    // Copy for the negated variable.
-    var_to_current_lb_interval_index_.Set(NegationOf(var),
-                                          all_intervals_.size());
-    for (const ClosedInterval interval : ::gtl::reversed_view(domain)) {
-      all_intervals_.push_back({-interval.end, -interval.start});
-    }
-    gtl::InsertOrDie(&var_to_end_interval_index_, NegationOf(var),
-                     all_intervals_.size());
-  }
 
   // If the variable is fully encoded, set to false excluded literals.
   if (encoder_->VariableIsFullyEncoded(var)) {
@@ -640,8 +622,11 @@ IntegerVariable IntegerTrail::GetOrCreateConstantIntegerVariable(
   if (insert.second) {  // new element.
     const IntegerVariable new_var = AddIntegerVariable(value, value);
     insert.first->second = new_var;
-    if (value != 0)
+    if (value != 0) {
+      // Note that this might invalidate insert.first->second.
       gtl::InsertOrDie(&constant_map_, -value, NegationOf(new_var));
+    }
+    return new_var;
   }
   return insert.first->second;
 }
@@ -845,22 +830,18 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   //
   // Note: The literals in the reason are not necessarily canonical, but then
   // we always map these to enqueued literals during conflict resolution.
-  {
-    int interval_index =
-        gtl::FindWithDefault(var_to_current_lb_interval_index_, var, -1);
-    if (interval_index >= 0) {
-      const int end_index = gtl::FindOrDie(var_to_end_interval_index_, var);
-      while (interval_index < end_index &&
-             i_lit.bound > all_intervals_[interval_index].end) {
-        ++interval_index;
-      }
-      if (interval_index == end_index) {
-        return ReportConflict(literal_reason, integer_reason);
-      } else {
-        var_to_current_lb_interval_index_.Set(var, interval_index);
-        i_lit.bound = std::max(
-            i_lit.bound, IntegerValue(all_intervals_[interval_index].start));
-      }
+  if ((*domains_)[var].size() > 1) {
+    const auto& domain = (*domains_)[var];
+    int index = var_to_current_lb_interval_index_.FindOrDie(var);
+    const int size = domain.size();
+    while (index < size && i_lit.bound > domain[index].end) {
+      ++index;
+    }
+    if (index == size) {
+      return ReportConflict(literal_reason, integer_reason);
+    } else {
+      var_to_current_lb_interval_index_.Set(var, index);
+      i_lit.bound = std::max(i_lit.bound, IntegerValue(domain[index].start));
     }
   }
 
@@ -940,8 +921,13 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   if (integer_search_levels_.empty()) {
     vars_[i_lit.var].current_bound = i_lit.bound;
     integer_trail_[i_lit.var.value()].bound = i_lit.bound;
+
+    // We also update the initial domain.
+    CHECK(UpdateInitialDomain(i_lit.var, {{LowerBound(i_lit.var).value(),
+                                           UpperBound(i_lit.var).value()}}));
     return true;
   }
+  DCHECK_GT(trail_->CurrentDecisionLevel(), 0);
 
   int reason_index = literals_reason_starts_.size();
   if (trail_index_with_same_reason >= integer_trail_.size()) {

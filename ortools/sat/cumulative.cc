@@ -231,6 +231,9 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
       sat_solver->AddLinearConstraint(false, Coefficient(0), true,
                                       Coefficient(capacity.value()),
                                       &literals_with_coeff);
+
+      // Abort if UNSAT.
+      if (sat_solver->IsModelUnsat()) return;
     }
   };
 }
