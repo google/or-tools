@@ -16,10 +16,10 @@
 #include <cstdio>
 #include <string>
 
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "graph/ebert_graph.h"
-#include "graph/linear_assignment.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/linear_assignment.h"
 
 namespace operations_research {
 
@@ -35,10 +35,10 @@ static void WriteOrDie(const char* buffer, size_t item_size,
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<ForwardStarGraph>& assignment,
     const TailArrayManager<ForwardStarGraph>& tail_array_manager,
-    const string& output_filename) {
+    const std::string& output_filename) {
   FILE* output = fopen(output_filename.c_str(), "w");
   const ForwardStarGraph& graph(assignment.Graph());
-  string output_line =
+  std::string output_line =
       StringPrintf("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
   WriteOrDie(output_line.c_str(), 1, output_line.length(), output);
 

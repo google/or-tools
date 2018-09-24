@@ -310,7 +310,7 @@ $(CVRPTW_LIBS): $(OR_TOOLS_LIBS) $(CVRPTW_OBJS) | $(LIB_DIR)
  $(OR_TOOLS_LDFLAGS)
 
 # DIMACS challenge problem format library
-DIMACS_OBJS = $(OBJ_DIR)/parse_dimacs_assignment.$O
+DIMACS_OBJS = $(OBJ_DIR)/parse_dimacs_assignment.$O $(OBJ_DIR)/print_dimacs_assignment.$O
 
 $(DIMACS_LIBS): $(OR_TOOLS_LIBS) $(DIMACS_OBJS) | $(LIB_DIR)
 	$(LINK_CMD) \
