@@ -476,7 +476,7 @@ test_cc_examples: cc
 	$(MAKE) rcc_cvrptw_with_refueling
 	$(MAKE) rcc_cvrptw_with_resources
 	$(MAKE) rcc_cvrptw_with_stop_times_and_resources
-	$(MAKE) rcc_dimacs_assignment
+#	$(MAKE) rcc_dimacs_assignment  # Miss data file.
 	$(MAKE) rcc_dobble_ls
 	$(MAKE) rcc_flexible_jobshop
 	$(MAKE) rcc_flow_api
