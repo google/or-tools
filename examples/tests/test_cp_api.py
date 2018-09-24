@@ -1,54 +1,66 @@
-# Various calls to CP api from python to verify they work.
+""" Various calls to CP api from python to verify they work."""
+import unittest
+
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import search_limit_pb2
 
+class TestCPMethods(unittest.TestCase):
+  def test_member(self):
+    solver = pywrapcp.Solver('test member')
+    x = solver.IntVar(1, 10, 'x')
+    ct = x.Member([1, 2, 3, 5])
+    print('Constraint: {}'.format(ct))
 
-def test_member():
-  solver = pywrapcp.Solver('test member')
-  x = solver.IntVar(1, 10, 'x')
-  ct = x.Member([1, 2, 3, 5])
-  print(ct)
+  def test_sparse_var(self):
+    solver = pywrapcp.Solver('test sparse')
+    x = solver.IntVar([1, 3, 5], 'x')
+    self.assertTrue(x.Contains(1))
+    self.assertFalse(x.Contains(2))
+    #print(x)
 
+  def test_modulo(self):
+    solver = pywrapcp.Solver('test modulo')
+    x = solver.IntVar(0, 10, 'x')
+    y = solver.IntVar(2, 4, 'y')
+    print(x % 3)
+    print(x % y)
 
-def test_sparse_var():
-  solver = pywrapcp.Solver('test sparse')
-  x = solver.IntVar([1, 3, 5], 'x')
-  print(x)
+  def test_modulo2(self):
+    solver = pywrapcp.Solver('test modulo')
+    x = solver.IntVar([-7, 7], 'x')
+    y = solver.IntVar([-4, 4], 'y')
+    z = (x % y).Var()
+    t = (x // y).Var()
+    db = solver.Phase([x, y], solver.CHOOSE_FIRST_UNBOUND,
+                      solver.ASSIGN_MIN_VALUE)
+    solver.NewSearch(db)
+    while solver.NextSolution():
+      print ('x = %d, y = %d, x %% y = %d, x div y = %d' % (
+          x.Value(), y.Value(), z.Value(), t.Value()))
+    solver.EndSearch()
 
+  def test_limit(self):
+    solver = pywrapcp.Solver('test limit')
+    #limit_proto = solver.DefaultSearchLimitParameters()
+    limit_proto = search_limit_pb2.RegularLimitParameters()
+    limit_proto.time = 10000
+    limit_proto.branches = 10
+    print('limit proto: {}'.format(limit_proto))
+    limit = solver.Limit(limit_proto)
+    print('limit: {}'.format(limit))
 
-def test_modulo():
-  solver = pywrapcp.Solver('test modulo')
-  x = solver.IntVar(0, 10, 'x')
-  y = solver.IntVar(2, 4, 'y')
-  print(x % 3)
-  print(x % y)
-
-def test_modulo2():
-  solver = pywrapcp.Solver('test modulo')
-  x = solver.IntVar([-7, 7], 'x')
-  y = solver.IntVar([-4, 4], 'y')
-  z = (x % y).Var()
-  t = (x // y).Var()
-  db = solver.Phase([x, y], solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
-  solver.NewSearch(db)
-  while solver.NextSolution():
-    print ('x = %d, y = %d, x %% y = %d, x div y = %d' % (
-        x.Value(), y.Value(), z.Value(), t.Value()))
-  solver.EndSearch()
-
-def test_limit():
-  solver = pywrapcp.Solver('test limit')
-  limit_proto = search_limit_pb2.SearchLimitProto()
-  limit_proto.time = 10000
-  limit_proto.branches = 10
-  print(limit_proto)
-  limit = solver.Limit(limit_proto)
-  print(limit)
-
+  def test_export(self):
+    solver = pywrapcp.Solver('test export')
+    x = solver.IntVar(1, 10, 'x')
+    ct = x.Member([1, 2, 3, 5])
+    solver.Add(ct)
+    #proto = model_pb2.CpModel()
+    #proto.model = 'wrong name'
+    #solver.ExportModel(proto)
+    #print(repr(proto))
+    #print(str(proto))
 
 class SearchMonitorTest(pywrapcp.SearchMonitor):
-
   def __init__(self, solver, nexts):
     print('Build')
     pywrapcp.SearchMonitor.__init__(self, solver)
@@ -62,20 +74,18 @@ class SearchMonitorTest(pywrapcp.SearchMonitor):
     print('In EndInitialPropagation')
     print(self._nexts)
 
-
-def test_search_monitor():
-  print('test_search_monitor')
-  solver = pywrapcp.Solver('test search monitor')
-  x = solver.IntVar(1, 10, 'x')
-  ct = (x == 3)
-  solver.Add(ct)
-  db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
-  monitor = SearchMonitorTest(solver, x)
-  solver.Solve(db, monitor)
-
+class TestSearchMonitor(unittest.TestCase):
+  def runTest(self):
+    print('test_search_monitor')
+    solver = pywrapcp.Solver('test search monitor')
+    x = solver.IntVar(1, 10, 'x')
+    ct = (x == 3)
+    solver.Add(ct)
+    db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+    monitor = SearchMonitorTest(solver, x)
+    solver.Solve(db, monitor)
 
 class DemonTest(pywrapcp.PyDemon):
-
   def __init__(self, x):
     pywrapcp.Demon.__init__(self)
     self._x = x
@@ -84,17 +94,15 @@ class DemonTest(pywrapcp.PyDemon):
   def Run(self, solver):
     print('in Run(), saw ' + str(self._x))
 
-
-def test_demon():
-  print('test_demon')
-  solver = pywrapcp.Solver('test export')
-  x = solver.IntVar(1, 10, 'x')
-  demon = DemonTest(x)
-  demon.Run(solver)
-
+class TestDemon(unittest.TestCase):
+  def runTest(self):
+    print('test_demon')
+    solver = pywrapcp.Solver('test export')
+    x = solver.IntVar(1, 10, 'x')
+    demon = DemonTest(x)
+    demon.Run(solver)
 
 class ConstraintTest(pywrapcp.PyConstraint):
-
   def __init__(self, solver, x):
     pywrapcp.Constraint.__init__(self, solver)
     self._x = x
@@ -115,7 +123,6 @@ class ConstraintTest(pywrapcp.PyConstraint):
   def DebugString(self):
     return('ConstraintTest')
 
-
 def test_constraint():
   solver = pywrapcp.Solver('test export')
   x = solver.IntVar(1, 10, 'x')
@@ -124,9 +131,7 @@ def test_constraint():
   db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
   solver.Solve(db)
 
-
 class InitialPropagateDemon(pywrapcp.PyDemon):
-
   def __init__(self, ct):
     pywrapcp.Demon.__init__(self)
     self._ct = ct
@@ -134,9 +139,7 @@ class InitialPropagateDemon(pywrapcp.PyDemon):
   def Run(self, solver):
     self._ct.InitialPropagate()
 
-
 class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
-
   def __init__(self, solver, x):
     pywrapcp.Constraint.__init__(self, solver)
     self._x = x
@@ -153,7 +156,6 @@ class DumbGreaterOrEqualToFive(pywrapcp.PyConstraint):
       else:
         print('Accept %d' % self._x.Value())
 
-
 def test_failing_constraint():
   solver = pywrapcp.Solver('test export')
   x = solver.IntVar(1, 10, 'x')
@@ -169,9 +171,7 @@ def test_domain_iterator():
   for i in x.DomainIterator():
     print(i)
 
-
 class WatchDomain(pywrapcp.PyDemon):
-
   def __init__(self, x):
     pywrapcp.Demon.__init__(self)
     self._x = x
@@ -180,9 +180,7 @@ class WatchDomain(pywrapcp.PyDemon):
     for i in self._x.HoleIterator():
       print('Removed %d' % i)
 
-
 class HoleConstraintTest(pywrapcp.PyConstraint):
-
   def __init__(self, solver, x):
     pywrapcp.Constraint.__init__(self, solver)
     self._x = x
@@ -203,9 +201,7 @@ def test_hole_iterator():
   db = solver.Phase([x], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
   solver.Solve(db)
 
-
 class BinarySum(pywrapcp.PyConstraint):
-
   def __init__(self, solver, x, y, z):
     pywrapcp.Constraint.__init__(self, solver)
     self._x = x
@@ -248,16 +244,11 @@ def test_cumulative_api():
   #Vars
   S=[solver.FixedDurationIntervalVar(0, 10, 5,False, "S_%s"%a)
      for a in range(10)]
-
   C = solver.IntVar(2, 5)
-
   D = [a % 3 + 2 for a in range(10)]
-
   solver.Add(solver.Cumulative(S, D, C, "cumul"))
 
-
 class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
-
   def __init__(self):
     pywrapcp.PyDecisionBuilder.__init__(self)
 
@@ -268,17 +259,13 @@ class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
   def DebugString(self):
     return 'CustomDecisionBuilder'
 
-
 def test_custom_decision_builder():
   solver = pywrapcp.Solver('test_custom_decision_builder')
   db = CustomDecisionBuilder()
   print(str(db))
   solver.Solve(db)
 
-
-
 class CustomDecision(pywrapcp.PyDecision):
-
   def __init__(self):
     pywrapcp.PyDecision.__init__(self)
     self._val = 1
@@ -296,7 +283,6 @@ class CustomDecision(pywrapcp.PyDecision):
     return('CustomDecision')
 
 class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
-
   def __init__(self):
     pywrapcp.PyDecisionBuilder.__init__(self)
     self.__done = False
@@ -310,7 +296,6 @@ class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
 
   def DebugString(self):
     return 'CustomDecisionBuilderCustomDecision'
-
 
 def test_custom_decision():
   solver = pywrapcp.Solver('test_custom_decision')
@@ -330,7 +315,6 @@ def test_search_alldiff():
   solver.Solve(aux_phase, [collector])
   for i in range(8):
     print(collector.Value(0, in_pos[i]))
-
 
 def main():
   test_member()
@@ -352,6 +336,5 @@ def main():
   test_custom_decision()
   test_search_alldiff()
 
-
 if __name__ == '__main__':
-  main()
+  unittest.main(verbosity=2)
