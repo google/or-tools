@@ -199,7 +199,7 @@ DIMACS_DEPS = \
 	$(GRAPH_DEPS)
 DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
 ifeq ($(PLATFORM),MACOSX)
-DIMACS_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+DIMACS_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)dimacs.$L #
 endif
 dimacslibs: $(DIMACS_LIBS)
 
