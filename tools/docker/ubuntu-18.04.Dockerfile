@@ -6,16 +6,33 @@ FROM ubuntu:18.04
 RUN apt update \
 && apt install -y -q \
  git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
- swig lsb-release \
- python-dev python-wheel python-setuptools python-six \
- python3-dev python3-wheel python3-setuptools \
- default-jdk \
+ lsb-release \
 && apt clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Swig Install
+RUN apt-get update -qq \
+&& apt-get install -yq swig \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Python Install
+RUN apt-get update -qq \
+&& apt-get install -yq \
+ python-dev python-pip python-wheel python-six \
+ python3-dev python3-pip python3-wheel python3-six \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Java install
+RUN apt-get update -qq \
+&& apt-get install -yq openjdk-8-jdk \
+&& apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Dotnet Install
 RUN apt-get update -qq \
-&& apt-get install -y -q gpg apt-transport-https \
+&& apt-get install -yq gpg apt-transport-https \
 && wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
 && mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/ \
 && wget -q https://packages.microsoft.com/config/ubuntu/18.04/prod.list \
@@ -24,12 +41,6 @@ RUN apt-get update -qq \
 && apt-get install -y -q dotnet-sdk-2.1 \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-## Mono Install
-#RUN apt-get update \
-#&& apt-get install -qq mono-complete \
-#&& apt-get clean \
-#&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

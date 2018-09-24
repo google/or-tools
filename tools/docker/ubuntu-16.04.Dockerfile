@@ -3,31 +3,42 @@ FROM ubuntu:16.04
 #############
 ##  SETUP  ##
 #############
-RUN apt update \
-&& apt install -y -q \
-git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
-swig lsb-release \
-python-dev python-wheel python-setuptools python-six \
-python3-dev python3-wheel python3-setuptools \
-default-jdk \
+RUN apt update -qq \
+&& apt install -yq \
+ git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ lsb-release \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Dotnet Install
-RUN apt-get update \
-&& wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb \
-&& dpkg -i packages-microsoft-prod.deb \
-&& apt-get install -qq apt-transport-https \
-&& apt-get update \
-&& apt-get install -qq dotnet-sdk-2.1 \
+# Swig Install
+RUN apt-get update -qq \
+&& apt-get install -yq swig \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-## Mono Install
-#RUN apt-get update \
-#&& apt-get install -qq mono-complete \
-#&& apt-get clean \
-#&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Python Install
+RUN apt-get update -qq \
+&& apt-get install -yq \
+ python-dev python-pip python-wheel python-six \
+ python3-dev python3-pip python3-wheel python3-six \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Java install
+RUN apt-get update -qq \
+&& apt-get install -yq openjdk-8-jdk \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Dotnet Install
+RUN apt-get update -qq \
+&& apt-get install -yq apt-transport-https \
+&& wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb \
+&& dpkg -i packages-microsoft-prod.deb \
+&& apt-get update -qq \
+&& apt-get install -yq dotnet-sdk-2.1 \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
