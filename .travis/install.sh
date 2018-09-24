@@ -76,7 +76,8 @@ if [ "${BUILDER}" == make ]; then
 				brew upgrade python;
 				python3 -m pip install -q virtualenv wheel six;
 			elif [ "${LANGUAGE}" == java ]; then
-				brew cask install java;
+				brew tap caskroom/versions;
+				brew cask install java8;
 			elif [ "${LANGUAGE}" == dotnet ]; then
 				#brew install mono;
 				# Installer changes path but won't be picked up in current terminal session

@@ -927,6 +927,7 @@ namespace operations_research {
 %rename (FailuresLimit) Solver::MakeFailuresLimit;
 %rename (SolutionsLimit) Solver::MakeSolutionsLimit;
 %rename (CustomLimit) Solver::MakeCustomLimit;
+%rename (DefaultSearchLimitParameters) Solver::MakeDefaultSearchLimitParameters;
 
 // Solver: Search logs.
 %rename (SearchLog) Solver::MakeSearchLog;
@@ -1887,7 +1888,7 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.assignment_pb2,
 PY_PROTO_TYPEMAP(ortools.constraint_solver.solver_parameters_pb2,
                  ConstraintSolverParameters,
                  operations_research::ConstraintSolverParameters)
-PY_PROTO_TYPEMAP(ortools.constraint_solver_search_limit_pb2,
+PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
                  SearchLimitParameters,
                  operations_research::SearchLimitParameters)
 

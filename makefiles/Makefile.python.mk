@@ -758,7 +758,7 @@ clean_python:
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_pywrap*
 	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_PYTHON_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
-	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
+	-$(DELREC) temp-python*
 
 #####################
 ##  Pypi artifact  ##
@@ -937,7 +937,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 
 .PHONY: pypi_archive # Create Python "ortools" wheel package
-pypi_archive: python $(MISSING_PYPI_FILES)
+pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
 ifneq ($(SYSTEM),win)
 	cp $(OR_TOOLS_LIBS) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
 endif

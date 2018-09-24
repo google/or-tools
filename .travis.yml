@@ -31,27 +31,27 @@ matrix:
       env: BUILDER=make DISTRO=native LANGUAGE=dotnet
 
     - os: osx
-      osx_image: xode9.4
+      osx_image: xcode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=cc
     - os: osx
-      osx_image: xode9.4
+      osx_image: xcode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=python2
     - os: osx
-      osx_image: xode9.4
+      osx_image: xcode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=python3
     - os: osx
-      osx_image: xode9.4
+      osx_image: xcode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=java
     - os: osx
-      osx_image: xode9.4
+      osx_image: xcode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=dotnet
@@ -68,25 +68,28 @@ matrix:
       env: BUILDER=cmake DISTRO=native
 
     - os: osx
-      osx_image: xode9.4
+      osx_image: xcode9.4
       language: cpp
       compiler: gcc
       env: BUILDER=cmake DISTRO=native
     - os: osx
-      osx_image: xode9.4
+      osx_image: xcode9.4
       language: cpp
       compiler: clang
       env: BUILDER=cmake DISTRO=native
 # Jobs too long
   allow_failures:
     - os: osx
-      osx_image: xode9.4
+      osx_image: xcode9.4
       language: cpp
       compiler: clang
       env: BUILDER=make DISTRO=native LANGUAGE=dotnet
 
 install:
   - ./.travis/install.sh
+
+before_script:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export JAVA_HOME=`/usr/libexec/java_home -v 1.8`; fi
 
 script:
   - ./.travis/script.sh

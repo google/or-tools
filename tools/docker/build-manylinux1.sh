@@ -56,6 +56,8 @@ function export_manylinux_wheel {
     # (for the makefile, it exists even if previously generated for another
     # platform)
     make -B install_python_modules  # regenerates Makefile.local
+    # We need to clean first to avoid to use previous python swig object file
+    make clean_python
     make python
     make test_python
     make pypi_archive
