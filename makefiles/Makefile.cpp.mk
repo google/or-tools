@@ -480,7 +480,7 @@ test_cc_examples: cc
 	$(MAKE) rcc_dobble_ls
 	$(MAKE) rcc_flexible_jobshop ARGS="--data_file examples/data/flexible_jobshop/hurink_data/edata/la01.fjs"
 	$(MAKE) rcc_flow_api
-#	$(MAKE) rcc_frequency_assignment_problem
+#	$(MAKE) rcc_frequency_assignment_problem  # Need data file
 	$(MAKE) rcc_golomb ARGS="--size=5"
 	$(MAKE) rcc_integer_programming
 	$(MAKE) rcc_jobshop ARGS="--data_file=examples/data/jobshop/ft06"
@@ -492,15 +492,15 @@ test_cc_examples: cc
 	$(MAKE) rcc_linear_solver_protocol_buffers
 	$(MAKE) rcc_ls_api
 	$(MAKE) rcc_magic_square
-	$(MAKE) rcc_model_util
+#	$(MAKE) rcc_model_util  # Need data file
 	$(MAKE) rcc_mps_driver
-	$(MAKE) rcc_multidim_knapsack
-	$(MAKE) rcc_network_routing
+	$(MAKE) rcc_multidim_knapsack ARGS="--data_file examples/data/multidim_knapsack/PB1.DAT"
+	$(MAKE) rcc_network_routing ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
 	$(MAKE) rcc_nqueens
-	$(MAKE) rcc_pdptw
-	$(MAKE) rcc_shift_minimization_sat
-	$(MAKE) rcc_solve
-	$(MAKE) rcc_sports_scheduling
+	$(MAKE) rcc_pdptw ARGS="--pdp_file=examples/data/pdptw/LC1_2_1.txt"
+#	$(MAKE) rcc_shift_minimization_sat  # Port to new API.
+#	$(MAKE) rcc_solve  # Need data file
+	$(MAKE) rcc_sports_scheduling ARGS="--num_teams=8 --time_limit=10000"
 	$(MAKE) rcc_strawberry_fields_with_column_generation
 	$(MAKE) rcc_tsp
 	$(MAKE) rcc_weighted_tardiness_sat
