@@ -160,7 +160,6 @@ class FlexibleJobShopData {
         }
         AddTask(current_job_index_, machines, durations);
       }
-      CHECK_EQ(index, words.size());
       current_job_index_++;
     }
   }

@@ -478,7 +478,7 @@ test_cc_examples: cc
 	$(MAKE) rcc_cvrptw_with_stop_times_and_resources
 	$(MAKE) rcc_dimacs_assignment ARGS=examples/data/dimacs/assignment/small.asn
 	$(MAKE) rcc_dobble_ls
-	$(MAKE) rcc_flexible_jobshop
+	$(MAKE) rcc_flexible_jobshop ARGS="--data_file examples/data/flexible_jobshop/hurink_data/edata/la01.fjs"
 	$(MAKE) rcc_flow_api
 	$(MAKE) rcc_frequency_assignment_problem
 	$(MAKE) rcc_golomb ARGS="--size=5"
