@@ -888,7 +888,7 @@ class CpModel(object):
     at
     any time >= 0, it must be within min_level, and max_level. Furthermore, this
     constraints expect all times variables to be >= 0.
-    If the actives[i] is true, and if times[i] is assigned a value t, then the
+    If actives[i] is true, and if times[i] is assigned a value t, then the
     level of the reservoir changes by demands[i] (which is constant) at time t.
 
     Note that level_min can be > 0, or level_max can be < 0. It just forces

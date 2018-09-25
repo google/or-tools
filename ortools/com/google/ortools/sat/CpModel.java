@@ -696,6 +696,69 @@ public class CpModel {
     return addReservoirConstraint(times, toLongArray(demands), minLevel, maxLevel);
   }
 
+  /**
+   * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
+   *
+   * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any non
+   * negative time , it must be between minLevel and maxLevel. Furthermore, this constraints expect
+   * all times variables to be non negative. If actives[i] is true, and if times[i] is assigned a
+   * value t, then the current level changes by demands[i] (which is constant) at the time t.
+   *
+   * <p>Note that {@code minLevel} can be greater than 0, or {@code maxLevel} can be less than 0. It
+   * just forces some demands to be executed at time 0 to make sure that we are within those bounds
+   * with the executed demands. Therefore, {@code forall t >= 0: minLevel <= sum(demands[i] *
+   * actives[i] if times[i] <= t) <= maxLevel}.
+   *
+   * @param times a list of positive integer variables which specify the time of the filling or
+   *     emptying the reservoir
+   * @param demands a list of integer values that specifies the amount of the emptying or feeling
+   * @param actives a list of integer variables that specifies if the operation actually takes
+   *     place.
+   * @param minLevel at any non negative time, the level of the reservoir must be greater of equal
+   *     than the min level
+   * @param maxLevel at any non negative time, the level of the reservoir must be less or equal than
+   *     the max level
+   * @return an instance of the Constraint class
+   * @throws MismatchedArrayLengths if times, demands, or actives have different length
+   */
+  public Constraint addReservoirConstraintWithActive(
+      IntVar[] times, long[] demands, IntVar[] actives, long minLevel, long maxLevel)
+      throws MismatchedArrayLengths {
+    if (times.length != demands.length) {
+      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
+    }
+    if (times.length != actives.length) {
+      throw new MismatchedArrayLengths("addReservoirConstraint", "times", "actives");
+    }
+
+    Constraint ct = new Constraint(modelBuilder);
+    ReservoirConstraintProto.Builder reservoir = ct.builder().getReservoirBuilder();
+    for (IntVar var : times) {
+      reservoir.addTimes(var.getIndex());
+    }
+    for (long d : demands) {
+      reservoir.addDemands(d);
+    }
+    for (IntVar var : actives) {
+      reservoir.addActives(var.getIndex());
+    }
+    reservoir.setMinLevel(minLevel);
+    reservoir.setMaxLevel(maxLevel);
+    return ct;
+  }
+
+  /**
+   * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
+   *
+   * @see #addReservoirConstraintWithActive(IntVar[], long[], actives, long, long) Reservoir
+   */
+  public Constraint addReservoirConstraintWithActive(
+      IntVar[] times, int[] demands, IntVar[] actives, long minLevel, long maxLevel)
+      throws MismatchedArrayLengths {
+    return addReservoirConstraintWithActive(
+        times, toLongArray(demands), actives, minLevel, maxLevel);
+  }
+
   /** Adds {@code var == i + offset <=> booleans[i] == true for all i in [0, booleans.length)}. */
   public void addMapDomain(IntVar var, Literal[] booleans, long offset) {
     for (int i = 0; i < booleans.length; ++i) {

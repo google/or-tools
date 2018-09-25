@@ -489,10 +489,11 @@ public class CpModel
     return ct;
   }
 
-  public Constraint AddReservoirConstraint<I>(IEnumerable<IntVar> times,
-                                              IEnumerable<I> demands,
-                                              IEnumerable<IntVar> actives,
-                                              long min_level, long max_level)
+  public Constraint AddReservoirConstraintWithActive<I>(
+    IEnumerable<IntVar> times,
+    IEnumerable<I> demands,
+    IEnumerable<IntVar> actives,
+    long min_level, long max_level)
   {
     Constraint ct = new Constraint(model_);
     ReservoirConstraintProto res = new ReservoirConstraintProto();
