@@ -1,0 +1,42 @@
+c This is a simple example file to demonstrate the DIMACS
+c input file format for assignment problems.
+c
+c Problem line (resources+tasks) (resources*tasks)
+p asn 10 25
+c
+c Node descriptor lines (indeces of assignable resources only)
+n 1
+n 2
+n 3
+n 4
+n 5
+c
+c Arc descriptor lines (tasks over each resource and "score")
+a 1  6 22
+a 1  7 30
+a 1  8 26
+a 1  9 16
+a 1 10 25
+a 2  6 27
+a 2  7 29
+a 2  8 28
+a 2  9 20
+a 2 10 32
+a 3  6 33
+a 3  7 25
+a 3  8 21
+a 3  9 29
+a 3 10 23
+a 4  6 24
+a 4  7 24
+a 4  8 30
+a 4  9 19
+a 4 10 26
+a 5  6 30
+a 5  7 33
+a 5  8 32
+a 5  9 37
+a 5 10 31
+c
+c End of file
+
