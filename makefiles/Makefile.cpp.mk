@@ -480,13 +480,13 @@ test_cc_examples: cc
 	$(MAKE) rcc_dobble_ls
 	$(MAKE) rcc_flexible_jobshop ARGS="--data_file examples/data/flexible_jobshop/hurink_data/edata/la01.fjs"
 	$(MAKE) rcc_flow_api
-	$(MAKE) rcc_frequency_assignment_problem
+#	$(MAKE) rcc_frequency_assignment_problem
 	$(MAKE) rcc_golomb ARGS="--size=5"
 	$(MAKE) rcc_integer_programming
-	$(MAKE) rcc_jobshop
+	$(MAKE) rcc_jobshop ARGS="--data_file=examples/data/jobshop/ft06"
 	$(MAKE) rcc_jobshop_earlytardy
-	$(MAKE) rcc_jobshop_ls
-	$(MAKE) rcc_jobshop_sat
+	$(MAKE) rcc_jobshop_ls ARGS="--data_file=examples/data/jobshop/ft06"
+	$(MAKE) rcc_jobshop_sat ARGS="--input=examples/data/jobshop/ft06"
 	$(MAKE) rcc_linear_assignment_api
 	$(MAKE) rcc_linear_programming
 	$(MAKE) rcc_linear_solver_protocol_buffers
