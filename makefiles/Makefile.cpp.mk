@@ -484,7 +484,7 @@ test_cc_examples: cc
 	$(MAKE) rcc_golomb ARGS="--size=5"
 	$(MAKE) rcc_integer_programming
 	$(MAKE) rcc_jobshop ARGS="--data_file=examples/data/jobshop/ft06"
-	$(MAKE) rcc_jobshop_earlytardy
+	$(MAKE) rcc_jobshop_earlytardy ARGS="--machine_count=6 --job_count=6"
 	$(MAKE) rcc_jobshop_ls ARGS="--data_file=examples/data/jobshop/ft06"
 	$(MAKE) rcc_jobshop_sat ARGS="--input=examples/data/jobshop/ft06"
 	$(MAKE) rcc_linear_assignment_api
