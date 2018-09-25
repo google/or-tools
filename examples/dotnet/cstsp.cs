@@ -107,7 +107,7 @@ class Tsp
       size = Convert.ToInt32(args[0]);
     }
     int forbidden = 0;
-    if (args.Length > 0) {
+    if (args.Length > 1) {
       forbidden = Convert.ToInt32(args[1]);
     }
     int seed = 0;
