@@ -213,7 +213,7 @@ FAP_DEPS = \
 	$(LP_DEPS)
 FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
 ifeq ($(PLATFORM),MACOSX)
-FAP_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+FAP_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fap.$L #
 endif
 faplibs: $(FAP_LIBS)
 
