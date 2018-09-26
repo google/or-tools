@@ -77,123 +77,185 @@ BASE_LIB_OBJS = \
  $(OBJ_DIR)/base/time_support.$O \
  $(OBJ_DIR)/base/timer.$O
 
-$(SRC_DIR)/ortools/base/accurate_sum.h: ;
+$(SRC_DIR)/ortools/base/accurate_sum.h: \
 
-$(SRC_DIR)/ortools/base/adjustable_priority_queue-inl.h: ;
+$(SRC_DIR)/ortools/base/adjustable_priority_queue-inl.h: \
+ $(SRC_DIR)/ortools/base/adjustable_priority_queue.h
 
-$(SRC_DIR)/ortools/base/adjustable_priority_queue.h: ;
+$(SRC_DIR)/ortools/base/adjustable_priority_queue.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/base/base_export.h: ;
+$(SRC_DIR)/ortools/base/base_export.h: \
 
-$(SRC_DIR)/ortools/base/basictypes.h: ;
+$(SRC_DIR)/ortools/base/basictypes.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/base/bitmap.h: ;
+$(SRC_DIR)/ortools/base/bitmap.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h
 
-$(SRC_DIR)/ortools/base/callback.h: ;
+$(SRC_DIR)/ortools/base/callback.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/base/canonical_errors.h: ;
+$(SRC_DIR)/ortools/base/canonical_errors.h: \
 
-$(SRC_DIR)/ortools/base/casts.h: ;
+$(SRC_DIR)/ortools/base/casts.h: \
 
-$(SRC_DIR)/ortools/base/cleanup.h: ;
+$(SRC_DIR)/ortools/base/cleanup.h: \
 
-$(SRC_DIR)/ortools/base/commandlineflags.h: ;
+$(SRC_DIR)/ortools/base/commandlineflags.h: \
 
-$(SRC_DIR)/ortools/base/encodingutils.h: ;
+$(SRC_DIR)/ortools/base/encodingutils.h: \
 
-$(SRC_DIR)/ortools/base/file.h: ;
+$(SRC_DIR)/ortools/base/file.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/status.h \
+ $(SRC_DIR)/ortools/base/string_view.h
 
-$(SRC_DIR)/ortools/base/filelineiter.h: ;
+$(SRC_DIR)/ortools/base/filelineiter.h: \
+ $(SRC_DIR)/ortools/base/file.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/stringpiece_utils.h \
+ $(SRC_DIR)/ortools/base/strutil.h
 
-$(SRC_DIR)/ortools/base/hash.h: ;
+$(SRC_DIR)/ortools/base/hash.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h
 
-$(SRC_DIR)/ortools/base/inlined_vector.h: ;
+$(SRC_DIR)/ortools/base/inlined_vector.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/base/int_type.h: ;
+$(SRC_DIR)/ortools/base/int_type.h: \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/base/int_type_indexed_vector.h: ;
+$(SRC_DIR)/ortools/base/int_type_indexed_vector.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/base/integral_types.h: ;
+$(SRC_DIR)/ortools/base/integral_types.h: \
 
-$(SRC_DIR)/ortools/base/iterator_adaptors.h: ;
+$(SRC_DIR)/ortools/base/iterator_adaptors.h: \
 
-$(SRC_DIR)/ortools/base/jniutil.h: ;
+$(SRC_DIR)/ortools/base/jniutil.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/base/join.h: ;
+$(SRC_DIR)/ortools/base/join.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/string_view.h
 
-$(SRC_DIR)/ortools/base/logging.h: ;
+$(SRC_DIR)/ortools/base/logging.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/base/macros.h: ;
+$(SRC_DIR)/ortools/base/macros.h: \
 
-$(SRC_DIR)/ortools/base/map_util.h: ;
+$(SRC_DIR)/ortools/base/map_util.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/base/match.h: ;
+$(SRC_DIR)/ortools/base/match.h: \
+ $(SRC_DIR)/ortools/base/string_view.h
 
-$(SRC_DIR)/ortools/base/mathutil.h: ;
+$(SRC_DIR)/ortools/base/mathutil.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/casts.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/base/memory.h: ;
+$(SRC_DIR)/ortools/base/memory.h: \
 
-$(SRC_DIR)/ortools/base/murmur.h: ;
+$(SRC_DIR)/ortools/base/murmur.h: \
+ $(SRC_DIR)/ortools/base/thorough_hash.h
 
-$(SRC_DIR)/ortools/base/mutex.h: ;
+$(SRC_DIR)/ortools/base/mutex.h: \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/base/notification.h: ;
+$(SRC_DIR)/ortools/base/notification.h: \
 
-$(SRC_DIR)/ortools/base/numbers.h: ;
+$(SRC_DIR)/ortools/base/numbers.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/join.h
 
-$(SRC_DIR)/ortools/base/optional.h: ;
+$(SRC_DIR)/ortools/base/optional.h: \
 
-$(SRC_DIR)/ortools/base/port.h: ;
+$(SRC_DIR)/ortools/base/port.h: \
 
-$(SRC_DIR)/ortools/base/protoutil.h: ;
+$(SRC_DIR)/ortools/base/protoutil.h: \
+ $(SRC_DIR)/ortools/base/status.h \
+ $(SRC_DIR)/ortools/base/statusor.h \
+ $(SRC_DIR)/ortools/base/time_support.h
 
-$(SRC_DIR)/ortools/base/ptr_util.h: ;
+$(SRC_DIR)/ortools/base/ptr_util.h: \
 
-$(SRC_DIR)/ortools/base/python-swig.h: ;
+$(SRC_DIR)/ortools/base/python-swig.h: \
 
-$(SRC_DIR)/ortools/base/random.h: ;
+$(SRC_DIR)/ortools/base/random.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h
 
-$(SRC_DIR)/ortools/base/recordio.h: ;
+$(SRC_DIR)/ortools/base/recordio.h: \
+ $(SRC_DIR)/ortools/base/file.h
 
-$(SRC_DIR)/ortools/base/small_map.h: ;
+$(SRC_DIR)/ortools/base/small_map.h: \
 
-$(SRC_DIR)/ortools/base/small_ordered_set.h: ;
+$(SRC_DIR)/ortools/base/small_ordered_set.h: \
 
-$(SRC_DIR)/ortools/base/span.h: ;
+$(SRC_DIR)/ortools/base/span.h: \
+ $(SRC_DIR)/ortools/base/inlined_vector.h
 
-$(SRC_DIR)/ortools/base/sparsetable.h: ;
+$(SRC_DIR)/ortools/base/sparsetable.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/base/split.h: ;
+$(SRC_DIR)/ortools/base/split.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/string_view.h
 
-$(SRC_DIR)/ortools/base/status.h: ;
+$(SRC_DIR)/ortools/base/status.h: \
+ $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/base/statusor.h: ;
+$(SRC_DIR)/ortools/base/statusor.h: \
+ $(SRC_DIR)/ortools/base/status.h
 
-$(SRC_DIR)/ortools/base/stl_util.h: ;
+$(SRC_DIR)/ortools/base/stl_util.h: \
 
-$(SRC_DIR)/ortools/base/string_view.h: ;
+$(SRC_DIR)/ortools/base/string_view.h: \
 
-$(SRC_DIR)/ortools/base/stringpiece_utils.h: ;
+$(SRC_DIR)/ortools/base/stringpiece_utils.h: \
+ $(SRC_DIR)/ortools/base/string_view.h
 
-$(SRC_DIR)/ortools/base/stringprintf.h: ;
+$(SRC_DIR)/ortools/base/stringprintf.h: \
 
-$(SRC_DIR)/ortools/base/strtoint.h: ;
+$(SRC_DIR)/ortools/base/strtoint.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h
 
-$(SRC_DIR)/ortools/base/strutil.h: ;
+$(SRC_DIR)/ortools/base/strutil.h: \
+ $(SRC_DIR)/ortools/base/string_view.h
 
-$(SRC_DIR)/ortools/base/synchronization.h: ;
+$(SRC_DIR)/ortools/base/synchronization.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/base/sysinfo.h: ;
+$(SRC_DIR)/ortools/base/sysinfo.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h
 
-$(SRC_DIR)/ortools/base/thorough_hash.h: ;
+$(SRC_DIR)/ortools/base/thorough_hash.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/base/threadpool.h: ;
+$(SRC_DIR)/ortools/base/threadpool.h: \
 
-$(SRC_DIR)/ortools/base/time_support.h: ;
+$(SRC_DIR)/ortools/base/time_support.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/base/timer.h: ;
+$(SRC_DIR)/ortools/base/timer.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/time_support.h
 
-$(SRC_DIR)/ortools/base/typeid.h: ;
+$(SRC_DIR)/ortools/base/typeid.h: \
 
 $(SRC_DIR)/ortools/base/bitmap.cc: ;
 
@@ -360,13 +422,19 @@ PORT_LIB_OBJS = \
  $(OBJ_DIR)/port/file_nonport.$O \
  $(OBJ_DIR)/port/sysinfo_nonport.$O
 
-$(SRC_DIR)/ortools/port/file.h: ;
+$(SRC_DIR)/ortools/port/file.h: \
+ $(SRC_DIR)/ortools/base/status.h \
+ $(SRC_DIR)/ortools/base/string_view.h
 
-$(SRC_DIR)/ortools/port/proto_utils.h: ;
+$(SRC_DIR)/ortools/port/proto_utils.h: \
+ $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/port.h
 
-$(SRC_DIR)/ortools/port/sysinfo.h: ;
+$(SRC_DIR)/ortools/port/sysinfo.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/port/utf8.h: ;
+$(SRC_DIR)/ortools/port/utf8.h: \
+ $(SRC_DIR)/ortools/base/encodingutils.h
 
 $(SRC_DIR)/ortools/port/file_nonport.cc: ;
 
@@ -438,69 +506,133 @@ UTIL_LIB_OBJS = \
  $(OBJ_DIR)/util/xml_helper.$O \
  $(OBJ_DIR)/util/optional_boolean.pb.$O
 
-$(SRC_DIR)/ortools/util/affine_relation.h: ;
+$(SRC_DIR)/ortools/util/affine_relation.h: \
+ $(SRC_DIR)/ortools/base/iterator_adaptors.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/util/bitset.h: ;
+$(SRC_DIR)/ortools/util/bitset.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/util/cached_log.h: ;
+$(SRC_DIR)/ortools/util/cached_log.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/util/file_util.h: ;
+$(SRC_DIR)/ortools/util/file_util.h: \
+ $(SRC_DIR)/ortools/base/file.h \
+ $(SRC_DIR)/ortools/base/recordio.h \
+ $(SRC_DIR)/ortools/base/string_view.h
 
-$(SRC_DIR)/ortools/util/fp_utils.h: ;
+$(SRC_DIR)/ortools/util/fp_utils.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/util/functions_swig_helpers.h: ;
+$(SRC_DIR)/ortools/util/functions_swig_helpers.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/util/functions_swig_test_helpers.h: ;
+$(SRC_DIR)/ortools/util/functions_swig_test_helpers.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/util/graph_export.h: ;
+$(SRC_DIR)/ortools/util/graph_export.h: \
+ $(SRC_DIR)/ortools/base/file.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/util/integer_pq.h: ;
+$(SRC_DIR)/ortools/util/integer_pq.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/util/monoid_operation_tree.h: ;
+$(SRC_DIR)/ortools/util/monoid_operation_tree.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h
 
-$(SRC_DIR)/ortools/util/permutation.h: ;
+$(SRC_DIR)/ortools/util/permutation.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/util/piecewise_linear_function.h: ;
+$(SRC_DIR)/ortools/util/piecewise_linear_function.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/util/saturated_arithmetic.h
 
-$(SRC_DIR)/ortools/util/proto_tools.h: ;
+$(SRC_DIR)/ortools/util/proto_tools.h: \
 
-$(SRC_DIR)/ortools/util/random_engine.h: ;
+$(SRC_DIR)/ortools/util/random_engine.h: \
 
-$(SRC_DIR)/ortools/util/range_minimum_query.h: ;
+$(SRC_DIR)/ortools/util/range_minimum_query.h: \
+ $(SRC_DIR)/ortools/util/bitset.h
 
-$(SRC_DIR)/ortools/util/range_query_function.h: ;
+$(SRC_DIR)/ortools/util/range_query_function.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/util/rational_approximation.h: ;
+$(SRC_DIR)/ortools/util/rational_approximation.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/util/return_macros.h: ;
+$(SRC_DIR)/ortools/util/return_macros.h: \
 
-$(SRC_DIR)/ortools/util/rev.h: ;
+$(SRC_DIR)/ortools/util/rev.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/map_util.h
 
-$(SRC_DIR)/ortools/util/running_stat.h: ;
+$(SRC_DIR)/ortools/util/running_stat.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/util/saturated_arithmetic.h: ;
+$(SRC_DIR)/ortools/util/saturated_arithmetic.h: \
+ $(SRC_DIR)/ortools/base/casts.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/util/bitset.h
 
-$(SRC_DIR)/ortools/util/sigint.h: ;
+$(SRC_DIR)/ortools/util/sigint.h: \
 
-$(SRC_DIR)/ortools/util/sort.h: ;
+$(SRC_DIR)/ortools/util/sort.h: \
 
-$(SRC_DIR)/ortools/util/sorted_interval_list.h: ;
+$(SRC_DIR)/ortools/util/sorted_interval_list.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/span.h
 
-$(SRC_DIR)/ortools/util/stats.h: ;
+$(SRC_DIR)/ortools/util/stats.h: \
+ $(SRC_DIR)/ortools/base/timer.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/util/string_array.h: ;
+$(SRC_DIR)/ortools/util/string_array.h: \
 
-$(SRC_DIR)/ortools/util/time_limit.h: ;
+$(SRC_DIR)/ortools/util/time_limit.h: \
+ $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/memory.h \
+ $(SRC_DIR)/ortools/base/port.h \
+ $(SRC_DIR)/ortools/base/time_support.h \
+ $(SRC_DIR)/ortools/base/timer.h \
+ $(SRC_DIR)/ortools/util/running_stat.h
 
-$(SRC_DIR)/ortools/util/tuple_set.h: ;
+$(SRC_DIR)/ortools/util/tuple_set.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/map_util.h
 
-$(SRC_DIR)/ortools/util/vector_map.h: ;
+$(SRC_DIR)/ortools/util/vector_map.h: \
+ $(SRC_DIR)/ortools/base/map_util.h
 
-$(SRC_DIR)/ortools/util/vector_or_function.h: ;
+$(SRC_DIR)/ortools/util/vector_or_function.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/util/xml_helper.h: ;
+$(SRC_DIR)/ortools/util/xml_helper.h: \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/util/zvector.h: ;
+$(SRC_DIR)/ortools/util/zvector.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
 $(SRC_DIR)/ortools/util/bitset.cc: ;
 
@@ -701,13 +833,20 @@ DATA_LIB_OBJS = \
  $(OBJ_DIR)/data/jobshop_scheduling.pb.$O \
  $(OBJ_DIR)/data/rcpsp.pb.$O
 
-$(SRC_DIR)/ortools/data/jobshop_scheduling_parser.h: ;
+$(SRC_DIR)/ortools/data/jobshop_scheduling_parser.h: \
+ $(SRC_DIR)/ortools/base/match.h \
+ $(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h
 
-$(SRC_DIR)/ortools/data/rcpsp_parser.h: ;
+$(SRC_DIR)/ortools/data/rcpsp_parser.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(GEN_DIR)/ortools/data/rcpsp.pb.h
 
-$(SRC_DIR)/ortools/data/set_covering_data.h: ;
+$(SRC_DIR)/ortools/data/set_covering_data.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/data/set_covering_parser.h: ;
+$(SRC_DIR)/ortools/data/set_covering_parser.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/data/set_covering_data.h
 
 $(SRC_DIR)/ortools/data/jobshop_scheduling_parser.cc: ;
 
@@ -828,37 +967,103 @@ LP_DATA_LIB_OBJS = \
  $(OBJ_DIR)/lp_data/sparse.$O \
  $(OBJ_DIR)/lp_data/sparse_column.$O
 
-$(SRC_DIR)/ortools/lp_data/lp_data.h: ;
+$(SRC_DIR)/ortools/lp_data/lp_data.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/sparse.h \
+ $(SRC_DIR)/ortools/util/fp_utils.h
 
-$(SRC_DIR)/ortools/lp_data/lp_data_utils.h: ;
+$(SRC_DIR)/ortools/lp_data/lp_data_utils.h: \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/matrix_scaler.h
 
-$(SRC_DIR)/ortools/lp_data/lp_decomposer.h: ;
+$(SRC_DIR)/ortools/lp_data/lp_decomposer.h: \
+ $(SRC_DIR)/ortools/base/mutex.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h
 
-$(SRC_DIR)/ortools/lp_data/lp_print_utils.h: ;
+$(SRC_DIR)/ortools/lp_data/lp_print_utils.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h
 
-$(SRC_DIR)/ortools/lp_data/lp_types.h: ;
+$(SRC_DIR)/ortools/lp_data/lp_types.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/util/bitset.h
 
-$(SRC_DIR)/ortools/lp_data/lp_utils.h: ;
+$(SRC_DIR)/ortools/lp_data/lp_utils.h: \
+ $(SRC_DIR)/ortools/base/accurate_sum.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/sparse_column.h
 
-$(SRC_DIR)/ortools/lp_data/matrix_scaler.h: ;
+$(SRC_DIR)/ortools/lp_data/matrix_scaler.h: \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/revised_simplex.h \
+ $(SRC_DIR)/ortools/glop/status.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h
 
-$(SRC_DIR)/ortools/lp_data/matrix_utils.h: ;
+$(SRC_DIR)/ortools/lp_data/matrix_utils.h: \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/sparse.h
 
-$(SRC_DIR)/ortools/lp_data/model_reader.h: ;
+$(SRC_DIR)/ortools/lp_data/model_reader.h: \
+ $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h
 
-$(SRC_DIR)/ortools/lp_data/mps_reader.h: ;
+$(SRC_DIR)/ortools/lp_data/mps_reader.h: \
+ $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h
 
-$(SRC_DIR)/ortools/lp_data/permutation.h: ;
+$(SRC_DIR)/ortools/lp_data/permutation.h: \
+ $(SRC_DIR)/ortools/base/random.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/util/return_macros.h
 
-$(SRC_DIR)/ortools/lp_data/proto_utils.h: ;
+$(SRC_DIR)/ortools/lp_data/proto_utils.h: \
+ $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h
 
-$(SRC_DIR)/ortools/lp_data/sparse.h: ;
+$(SRC_DIR)/ortools/lp_data/sparse.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/permutation.h \
+ $(SRC_DIR)/ortools/lp_data/sparse_column.h \
+ $(SRC_DIR)/ortools/util/return_macros.h
 
-$(SRC_DIR)/ortools/lp_data/sparse_column.h: ;
+$(SRC_DIR)/ortools/lp_data/sparse_column.h: \
+ $(SRC_DIR)/ortools/lp_data/sparse_vector.h
 
-$(SRC_DIR)/ortools/lp_data/sparse_row.h: ;
+$(SRC_DIR)/ortools/lp_data/sparse_row.h: \
+ $(SRC_DIR)/ortools/lp_data/sparse_vector.h
 
-$(SRC_DIR)/ortools/lp_data/sparse_vector.h: ;
+$(SRC_DIR)/ortools/lp_data/sparse_vector.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/graph/iterators.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/permutation.h \
+ $(SRC_DIR)/ortools/util/return_macros.h
 
 $(SRC_DIR)/ortools/lp_data/lp_data.cc: ;
 
@@ -1092,37 +1297,138 @@ GLOP_LIB_OBJS = \
  $(OBJ_DIR)/glop/variables_info.$O \
  $(OBJ_DIR)/glop/parameters.pb.$O
 
-$(SRC_DIR)/ortools/glop/basis_representation.h: ;
+$(SRC_DIR)/ortools/glop/basis_representation.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/glop/lu_factorization.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/rank_one_update.h \
+ $(SRC_DIR)/ortools/glop/status.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/sparse.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/dual_edge_norms.h: ;
+$(SRC_DIR)/ortools/glop/dual_edge_norms.h: \
+ $(SRC_DIR)/ortools/glop/basis_representation.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/entering_variable.h: ;
+$(SRC_DIR)/ortools/glop/entering_variable.h: \
+ $(SRC_DIR)/ortools/glop/basis_representation.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/primal_edge_norms.h \
+ $(SRC_DIR)/ortools/glop/reduced_costs.h \
+ $(SRC_DIR)/ortools/glop/status.h \
+ $(SRC_DIR)/ortools/glop/update_row.h \
+ $(SRC_DIR)/ortools/glop/variables_info.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/util/bitset.h \
+ $(SRC_DIR)/ortools/util/random_engine.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/initial_basis.h: ;
+$(SRC_DIR)/ortools/glop/initial_basis.h: \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/sparse.h
 
-$(SRC_DIR)/ortools/glop/lp_solver.h: ;
+$(SRC_DIR)/ortools/glop/lp_solver.h: \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/preprocessor.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/glop/lu_factorization.h: ;
+$(SRC_DIR)/ortools/glop/lu_factorization.h: \
+ $(SRC_DIR)/ortools/glop/markowitz.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/status.h \
+ $(SRC_DIR)/ortools/lp_data/sparse.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/markowitz.h: ;
+$(SRC_DIR)/ortools/glop/markowitz.h: \
+ $(SRC_DIR)/ortools/base/inlined_vector.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/status.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/sparse.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/preprocessor.h: ;
+$(SRC_DIR)/ortools/glop/preprocessor.h: \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/revised_simplex.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/matrix_scaler.h
 
-$(SRC_DIR)/ortools/glop/primal_edge_norms.h: ;
+$(SRC_DIR)/ortools/glop/primal_edge_norms.h: \
+ $(SRC_DIR)/ortools/glop/basis_representation.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/update_row.h \
+ $(SRC_DIR)/ortools/glop/variables_info.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/rank_one_update.h: ;
+$(SRC_DIR)/ortools/glop/rank_one_update.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/lp_utils.h \
+ $(SRC_DIR)/ortools/lp_data/sparse.h
 
-$(SRC_DIR)/ortools/glop/reduced_costs.h: ;
+$(SRC_DIR)/ortools/glop/reduced_costs.h: \
+ $(SRC_DIR)/ortools/glop/basis_representation.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/primal_edge_norms.h \
+ $(SRC_DIR)/ortools/glop/status.h \
+ $(SRC_DIR)/ortools/glop/update_row.h \
+ $(SRC_DIR)/ortools/glop/variables_info.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/util/random_engine.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/revised_simplex.h: ;
+$(SRC_DIR)/ortools/glop/revised_simplex.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/glop/basis_representation.h \
+ $(SRC_DIR)/ortools/glop/dual_edge_norms.h \
+ $(SRC_DIR)/ortools/glop/entering_variable.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/primal_edge_norms.h \
+ $(SRC_DIR)/ortools/glop/reduced_costs.h \
+ $(SRC_DIR)/ortools/glop/status.h \
+ $(SRC_DIR)/ortools/glop/update_row.h \
+ $(SRC_DIR)/ortools/glop/variable_values.h \
+ $(SRC_DIR)/ortools/glop/variables_info.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_print_utils.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/sparse_row.h \
+ $(SRC_DIR)/ortools/util/random_engine.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/glop/status.h: ;
+$(SRC_DIR)/ortools/glop/status.h: \
+ $(SRC_DIR)/ortools/base/port.h
 
-$(SRC_DIR)/ortools/glop/update_row.h: ;
+$(SRC_DIR)/ortools/glop/update_row.h: \
+ $(SRC_DIR)/ortools/glop/basis_representation.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/glop/variables_info.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/variable_values.h: ;
+$(SRC_DIR)/ortools/glop/variable_values.h: \
+ $(SRC_DIR)/ortools/glop/basis_representation.h \
+ $(SRC_DIR)/ortools/glop/variables_info.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/glop/variables_info.h: ;
+$(SRC_DIR)/ortools/glop/variables_info.h: \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/sparse.h
 
 $(SRC_DIR)/ortools/glop/basis_representation.cc: ;
 
@@ -1435,45 +1741,131 @@ GRAPH_LIB_OBJS = \
  $(OBJ_DIR)/graph/util.$O \
  $(OBJ_DIR)/graph/flow_problem.pb.$O
 
-$(SRC_DIR)/ortools/graph/assignment.h: ;
+$(SRC_DIR)/ortools/graph/assignment.h: \
+ $(SRC_DIR)/ortools/graph/ebert_graph.h
 
-$(SRC_DIR)/ortools/graph/christofides.h: ;
+$(SRC_DIR)/ortools/graph/christofides.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/graph/eulerian_path.h \
+ $(SRC_DIR)/ortools/graph/graph.h \
+ $(SRC_DIR)/ortools/graph/minimum_spanning_tree.h \
+ $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
+ $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h
 
-$(SRC_DIR)/ortools/graph/cliques.h: ;
+$(SRC_DIR)/ortools/graph/cliques.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/graph/connected_components.h: ;
+$(SRC_DIR)/ortools/graph/connected_components.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/ptr_util.h
 
-$(SRC_DIR)/ortools/graph/connectivity.h: ;
+$(SRC_DIR)/ortools/graph/connectivity.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/graph/ebert_graph.h: ;
+$(SRC_DIR)/ortools/graph/ebert_graph.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/util/permutation.h \
+ $(SRC_DIR)/ortools/util/zvector.h
 
-$(SRC_DIR)/ortools/graph/eulerian_path.h: ;
+$(SRC_DIR)/ortools/graph/eulerian_path.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/graph/graph.h: ;
+$(SRC_DIR)/ortools/graph/graph.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/port.h \
+ $(SRC_DIR)/ortools/graph/iterators.h
 
-$(SRC_DIR)/ortools/graph/graphs.h: ;
+$(SRC_DIR)/ortools/graph/graphs.h: \
+ $(SRC_DIR)/ortools/graph/ebert_graph.h
 
-$(SRC_DIR)/ortools/graph/hamiltonian_path.h: ;
+$(SRC_DIR)/ortools/graph/hamiltonian_path.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/util/bitset.h \
+ $(SRC_DIR)/ortools/util/saturated_arithmetic.h \
+ $(SRC_DIR)/ortools/util/vector_or_function.h
 
-$(SRC_DIR)/ortools/graph/io.h: ;
+$(SRC_DIR)/ortools/graph/io.h: \
+ $(SRC_DIR)/ortools/base/filelineiter.h \
+ $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/numbers.h \
+ $(SRC_DIR)/ortools/base/split.h \
+ $(SRC_DIR)/ortools/base/status.h \
+ $(SRC_DIR)/ortools/base/statusor.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/graph/graph.h
 
-$(SRC_DIR)/ortools/graph/iterators.h: ;
+$(SRC_DIR)/ortools/graph/iterators.h: \
 
-$(SRC_DIR)/ortools/graph/linear_assignment.h: ;
+$(SRC_DIR)/ortools/graph/linear_assignment.h: \
+ $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/graph/ebert_graph.h \
+ $(SRC_DIR)/ortools/util/permutation.h \
+ $(SRC_DIR)/ortools/util/zvector.h
 
-$(SRC_DIR)/ortools/graph/max_flow.h: ;
+$(SRC_DIR)/ortools/graph/max_flow.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/graph/ebert_graph.h \
+ $(GEN_DIR)/ortools/graph/flow_problem.pb.h \
+ $(SRC_DIR)/ortools/graph/graph.h \
+ $(SRC_DIR)/ortools/util/stats.h \
+ $(SRC_DIR)/ortools/util/zvector.h
 
-$(SRC_DIR)/ortools/graph/min_cost_flow.h: ;
+$(SRC_DIR)/ortools/graph/min_cost_flow.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/graph/ebert_graph.h \
+ $(SRC_DIR)/ortools/graph/graph.h \
+ $(SRC_DIR)/ortools/util/stats.h \
+ $(SRC_DIR)/ortools/util/zvector.h
 
-$(SRC_DIR)/ortools/graph/minimum_spanning_tree.h: ;
+$(SRC_DIR)/ortools/graph/minimum_spanning_tree.h: \
+ $(SRC_DIR)/ortools/base/adjustable_priority_queue-inl.h \
+ $(SRC_DIR)/ortools/base/adjustable_priority_queue.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/graph/connectivity.h \
+ $(SRC_DIR)/ortools/util/vector_or_function.h
 
-$(SRC_DIR)/ortools/graph/one_tree_lower_bound.h: ;
+$(SRC_DIR)/ortools/graph/one_tree_lower_bound.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/graph/christofides.h \
+ $(SRC_DIR)/ortools/graph/minimum_spanning_tree.h
 
-$(SRC_DIR)/ortools/graph/shortestpaths.h: ;
+$(SRC_DIR)/ortools/graph/shortestpaths.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/graph/strongly_connected_components.h: ;
+$(SRC_DIR)/ortools/graph/strongly_connected_components.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/graph/util.h: ;
+$(SRC_DIR)/ortools/graph/util.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/graph/connected_components.h \
+ $(SRC_DIR)/ortools/graph/graph.h \
+ $(SRC_DIR)/ortools/graph/iterators.h
 
 $(SRC_DIR)/ortools/graph/assignment.cc: ;
 
@@ -1649,19 +2041,37 @@ ALGORITHMS_LIB_OBJS = \
  $(OBJ_DIR)/algorithms/knapsack_solver.$O \
  $(OBJ_DIR)/algorithms/sparse_permutation.$O
 
-$(SRC_DIR)/ortools/algorithms/dense_doubly_linked_list.h: ;
+$(SRC_DIR)/ortools/algorithms/dense_doubly_linked_list.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/algorithms/dynamic_partition.h: ;
+$(SRC_DIR)/ortools/algorithms/dynamic_partition.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/algorithms/dynamic_permutation.h: ;
+$(SRC_DIR)/ortools/algorithms/dynamic_permutation.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
-$(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h: ;
+$(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h: \
+ $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
+ $(SRC_DIR)/ortools/algorithms/dynamic_permutation.h \
+ $(SRC_DIR)/ortools/base/status.h \
+ $(SRC_DIR)/ortools/base/time_support.h \
+ $(SRC_DIR)/ortools/graph/graph.h \
+ $(SRC_DIR)/ortools/graph/iterators.h \
+ $(SRC_DIR)/ortools/util/stats.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/algorithms/hungarian.h: ;
+$(SRC_DIR)/ortools/algorithms/hungarian.h: \
 
-$(SRC_DIR)/ortools/algorithms/knapsack_solver.h: ;
+$(SRC_DIR)/ortools/algorithms/knapsack_solver.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/memory.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/algorithms/sparse_permutation.h: ;
+$(SRC_DIR)/ortools/algorithms/sparse_permutation.h: \
+ $(SRC_DIR)/ortools/base/logging.h
 
 $(SRC_DIR)/ortools/algorithms/dynamic_partition.cc: ;
 
@@ -1840,95 +2250,372 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/cp_model.pb.$O \
  $(OBJ_DIR)/sat/sat_parameters.pb.$O
 
-$(SRC_DIR)/ortools/sat/all_different.h: ;
+$(SRC_DIR)/ortools/sat/all_different.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/util/sorted_interval_list.h
 
-$(SRC_DIR)/ortools/sat/boolean_problem.h: ;
+$(SRC_DIR)/ortools/sat/boolean_problem.h: \
+ $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/status.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(SRC_DIR)/ortools/sat/pb_constraint.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/sat/simplification.h
 
-$(SRC_DIR)/ortools/sat/circuit.h: ;
+$(SRC_DIR)/ortools/sat/circuit.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/util/rev.h
 
-$(SRC_DIR)/ortools/sat/clause.h: ;
+$(SRC_DIR)/ortools/sat/clause.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/inlined_vector.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/sat/drat_proof_handler.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+ $(SRC_DIR)/ortools/util/bitset.h \
+ $(SRC_DIR)/ortools/util/random_engine.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/sat/cp_constraints.h: ;
+$(SRC_DIR)/ortools/sat/cp_constraints.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/util/rev.h
 
-$(SRC_DIR)/ortools/sat/cp_model_checker.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_checker.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
-$(SRC_DIR)/ortools/sat/cp_model_expand.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_expand.h: \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
-$(SRC_DIR)/ortools/sat/cp_model_lns.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_lns.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
-$(SRC_DIR)/ortools/sat/cp_model_objective.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_objective.h: \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
-$(SRC_DIR)/ortools/sat/cp_model_presolve.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_presolve.h: \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
-$(SRC_DIR)/ortools/sat/cp_model_search.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_search.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/integer_search.h \
+ $(SRC_DIR)/ortools/sat/model.h
 
-$(SRC_DIR)/ortools/sat/cp_model_solver.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_solver.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h
 
-$(SRC_DIR)/ortools/sat/cp_model_symmetries.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_symmetries.h: \
+ $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
-$(SRC_DIR)/ortools/sat/cp_model_utils.h: ;
+$(SRC_DIR)/ortools/sat/cp_model_utils.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(SRC_DIR)/ortools/util/sorted_interval_list.h
 
-$(SRC_DIR)/ortools/sat/cumulative.h: ;
+$(SRC_DIR)/ortools/sat/cumulative.h: \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/intervals.h \
+ $(SRC_DIR)/ortools/sat/model.h
 
-$(SRC_DIR)/ortools/sat/disjunctive.h: ;
+$(SRC_DIR)/ortools/sat/disjunctive.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/intervals.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/precedences.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/theta_tree.h
 
-$(SRC_DIR)/ortools/sat/drat_checker.h: ;
+$(SRC_DIR)/ortools/sat/drat_checker.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h
 
-$(SRC_DIR)/ortools/sat/drat_proof_handler.h: ;
+$(SRC_DIR)/ortools/sat/drat_proof_handler.h: \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/sat/drat_checker.h \
+ $(SRC_DIR)/ortools/sat/drat_writer.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h
 
-$(SRC_DIR)/ortools/sat/drat_writer.h: ;
+$(SRC_DIR)/ortools/sat/drat_writer.h: \
+ $(SRC_DIR)/ortools/base/file.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h
 
-$(SRC_DIR)/ortools/sat/encoding.h: ;
+$(SRC_DIR)/ortools/sat/encoding.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/pb_constraint.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/sat/integer.h: ;
+$(SRC_DIR)/ortools/sat/integer.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/inlined_vector.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/port.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/graph/iterators.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/util/bitset.h \
+ $(SRC_DIR)/ortools/util/rev.h \
+ $(SRC_DIR)/ortools/util/saturated_arithmetic.h \
+ $(SRC_DIR)/ortools/util/sorted_interval_list.h
 
-$(SRC_DIR)/ortools/sat/integer_expr.h: ;
+$(SRC_DIR)/ortools/sat/integer_expr.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/precedences.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/sat/integer_search.h: ;
+$(SRC_DIR)/ortools/sat/integer_search.h: \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/sat/intervals.h: ;
+$(SRC_DIR)/ortools/sat/intervals.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/cp_constraints.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/integer_expr.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/pb_constraint.h \
+ $(SRC_DIR)/ortools/sat/precedences.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/sat/linear_programming_constraint.h: ;
+$(SRC_DIR)/ortools/sat/linear_programming_constraint.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/glop/revised_simplex.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(SRC_DIR)/ortools/lp_data/matrix_scaler.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/util/rev.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/sat/linear_relaxation.h: ;
+$(SRC_DIR)/ortools/sat/linear_relaxation.h: \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
+ $(SRC_DIR)/ortools/sat/model.h
 
-$(SRC_DIR)/ortools/sat/lns.h: ;
+$(SRC_DIR)/ortools/sat/lns.h: \
+ $(SRC_DIR)/ortools/base/threadpool.h
 
-$(SRC_DIR)/ortools/sat/lp_utils.h: ;
+$(SRC_DIR)/ortools/sat/lp_utils.h: \
+ $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/sat/model.h: ;
+$(SRC_DIR)/ortools/sat/model.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/typeid.h
 
-$(SRC_DIR)/ortools/sat/optimization.h: ;
+$(SRC_DIR)/ortools/sat/optimization.h: \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/integer_search.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/sat/overload_checker.h: ;
+$(SRC_DIR)/ortools/sat/overload_checker.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/intervals.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h
 
-$(SRC_DIR)/ortools/sat/pb_constraint.h: ;
+$(SRC_DIR)/ortools/sat/pb_constraint.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+ $(SRC_DIR)/ortools/util/bitset.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/sat/precedences.h: ;
+$(SRC_DIR)/ortools/sat/precedences.h: \
+ $(SRC_DIR)/ortools/base/inlined_vector.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/util/bitset.h
 
-$(SRC_DIR)/ortools/sat/restart.h: ;
+$(SRC_DIR)/ortools/sat/restart.h: \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+ $(SRC_DIR)/ortools/util/bitset.h \
+ $(SRC_DIR)/ortools/util/running_stat.h
 
-$(SRC_DIR)/ortools/sat/sat_base.h: ;
+$(SRC_DIR)/ortools/sat/sat_base.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/port.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/util/bitset.h
 
-$(SRC_DIR)/ortools/sat/sat_decision.h: ;
+$(SRC_DIR)/ortools/sat/sat_decision.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/pb_constraint.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+ $(SRC_DIR)/ortools/util/bitset.h \
+ $(SRC_DIR)/ortools/util/integer_pq.h \
+ $(SRC_DIR)/ortools/util/random_engine.h
 
-$(SRC_DIR)/ortools/sat/sat_solver.h: ;
+$(SRC_DIR)/ortools/sat/sat_solver.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/base/timer.h \
+ $(SRC_DIR)/ortools/sat/clause.h \
+ $(SRC_DIR)/ortools/sat/drat_proof_handler.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/pb_constraint.h \
+ $(SRC_DIR)/ortools/sat/restart.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/sat/sat_decision.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+ $(SRC_DIR)/ortools/util/stats.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/sat/simplification.h: ;
+$(SRC_DIR)/ortools/sat/simplification.h: \
+ $(SRC_DIR)/ortools/base/adjustable_priority_queue.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/sat/drat_proof_handler.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/sat/swig_helper.h: ;
+$(SRC_DIR)/ortools/sat/swig_helper.h: \
+ $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+ $(SRC_DIR)/ortools/sat/cp_model_solver.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+ $(SRC_DIR)/ortools/util/sigint.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/sat/symmetry.h: ;
+$(SRC_DIR)/ortools/sat/symmetry.h: \
+ $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/span.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/util/stats.h
 
-$(SRC_DIR)/ortools/sat/table.h: ;
+$(SRC_DIR)/ortools/sat/table.h: \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h
 
-$(SRC_DIR)/ortools/sat/theta_tree.h: ;
+$(SRC_DIR)/ortools/sat/theta_tree.h: \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/sat/integer.h
 
-$(SRC_DIR)/ortools/sat/timetable.h: ;
+$(SRC_DIR)/ortools/sat/timetable.h: \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/intervals.h \
+ $(SRC_DIR)/ortools/util/rev.h
 
-$(SRC_DIR)/ortools/sat/timetable_edgefinding.h: ;
+$(SRC_DIR)/ortools/sat/timetable_edgefinding.h: \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/sat/integer.h \
+ $(SRC_DIR)/ortools/sat/intervals.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h
 
-$(SRC_DIR)/ortools/sat/util.h: ;
+$(SRC_DIR)/ortools/sat/util.h: \
+ $(SRC_DIR)/ortools/base/random.h \
+ $(SRC_DIR)/ortools/sat/model.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
+ $(SRC_DIR)/ortools/util/random_engine.h
 
 $(SRC_DIR)/ortools/sat/all_different.cc: ;
 
@@ -2894,27 +3581,124 @@ BOP_LIB_OBJS = \
  $(OBJ_DIR)/bop/integral_solver.$O \
  $(OBJ_DIR)/bop/bop_parameters.pb.$O
 
-$(SRC_DIR)/ortools/bop/bop_base.h: ;
+$(SRC_DIR)/ortools/bop/bop_base.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/mutex.h \
+ $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
+ $(SRC_DIR)/ortools/bop/bop_solution.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/clause.h \
+ $(SRC_DIR)/ortools/sat/sat_base.h \
+ $(SRC_DIR)/ortools/util/stats.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/bop/bop_fs.h: ;
+$(SRC_DIR)/ortools/bop/bop_fs.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/random.h \
+ $(SRC_DIR)/ortools/bop/bop_base.h \
+ $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
+ $(SRC_DIR)/ortools/bop/bop_solution.h \
+ $(SRC_DIR)/ortools/bop/bop_types.h \
+ $(SRC_DIR)/ortools/bop/bop_util.h \
+ $(SRC_DIR)/ortools/glop/lp_solver.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/bop/bop_lns.h: ;
+$(SRC_DIR)/ortools/bop/bop_lns.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/random.h \
+ $(SRC_DIR)/ortools/bop/bop_base.h \
+ $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
+ $(SRC_DIR)/ortools/bop/bop_solution.h \
+ $(SRC_DIR)/ortools/bop/bop_types.h \
+ $(SRC_DIR)/ortools/bop/bop_util.h \
+ $(SRC_DIR)/ortools/glop/lp_solver.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/util/stats.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/bop/bop_ls.h: ;
+$(SRC_DIR)/ortools/bop/bop_ls.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/random.h \
+ $(SRC_DIR)/ortools/bop/bop_base.h \
+ $(SRC_DIR)/ortools/bop/bop_solution.h \
+ $(SRC_DIR)/ortools/bop/bop_types.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/bop/bop_portfolio.h: ;
+$(SRC_DIR)/ortools/bop/bop_portfolio.h: \
+ $(SRC_DIR)/ortools/bop/bop_base.h \
+ $(SRC_DIR)/ortools/bop/bop_lns.h \
+ $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
+ $(SRC_DIR)/ortools/bop/bop_solution.h \
+ $(SRC_DIR)/ortools/bop/bop_types.h \
+ $(SRC_DIR)/ortools/glop/lp_solver.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/util/stats.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/bop/bop_solution.h: ;
+$(SRC_DIR)/ortools/bop/bop_solution.h: \
+ $(SRC_DIR)/ortools/bop/bop_types.h \
+ $(SRC_DIR)/ortools/sat/boolean_problem.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h
 
-$(SRC_DIR)/ortools/bop/bop_solver.h: ;
+$(SRC_DIR)/ortools/bop/bop_solver.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/bop/bop_base.h \
+ $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
+ $(SRC_DIR)/ortools/bop/bop_solution.h \
+ $(SRC_DIR)/ortools/bop/bop_types.h \
+ $(SRC_DIR)/ortools/glop/lp_solver.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/util/stats.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
-$(SRC_DIR)/ortools/bop/bop_types.h: ;
+$(SRC_DIR)/ortools/bop/bop_types.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h
 
-$(SRC_DIR)/ortools/bop/bop_util.h: ;
+$(SRC_DIR)/ortools/bop/bop_util.h: \
+ $(SRC_DIR)/ortools/base/basictypes.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/bop/bop_base.h \
+ $(SRC_DIR)/ortools/bop/bop_solution.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/bop/complete_optimizer.h: ;
+$(SRC_DIR)/ortools/bop/complete_optimizer.h: \
+ $(SRC_DIR)/ortools/bop/bop_base.h \
+ $(SRC_DIR)/ortools/bop/bop_solution.h \
+ $(SRC_DIR)/ortools/bop/bop_types.h \
+ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+ $(SRC_DIR)/ortools/sat/encoding.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h
 
-$(SRC_DIR)/ortools/bop/integral_solver.h: ;
+$(SRC_DIR)/ortools/bop/integral_solver.h: \
+ $(SRC_DIR)/ortools/base/port.h \
+ $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
+ $(SRC_DIR)/ortools/bop/bop_types.h \
+ $(SRC_DIR)/ortools/lp_data/lp_data.h \
+ $(SRC_DIR)/ortools/util/time_limit.h
 
 $(SRC_DIR)/ortools/bop/bop_base.cc: ;
 
@@ -3181,15 +3965,34 @@ LP_LIB_OBJS = \
  $(OBJ_DIR)/linear_solver/scip_interface.$O \
  $(OBJ_DIR)/linear_solver/linear_solver.pb.$O
 
-$(SRC_DIR)/ortools/linear_solver/glop_utils.h: ;
+$(SRC_DIR)/ortools/linear_solver/glop_utils.h: \
+ $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
+ $(SRC_DIR)/ortools/lp_data/lp_types.h
 
-$(SRC_DIR)/ortools/linear_solver/linear_expr.h: ;
+$(SRC_DIR)/ortools/linear_solver/linear_expr.h: \
 
-$(SRC_DIR)/ortools/linear_solver/linear_solver.h: ;
+$(SRC_DIR)/ortools/linear_solver/linear_solver.h: \
+ $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/optional.h \
+ $(SRC_DIR)/ortools/base/port.h \
+ $(SRC_DIR)/ortools/base/status.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/base/strutil.h \
+ $(SRC_DIR)/ortools/base/timer.h \
+ $(GEN_DIR)/ortools/glop/parameters.pb.h \
+ $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
+ $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
+ $(SRC_DIR)/ortools/port/proto_utils.h
 
-$(SRC_DIR)/ortools/linear_solver/model_exporter.h: ;
+$(SRC_DIR)/ortools/linear_solver/model_exporter.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/macros.h
 
-$(SRC_DIR)/ortools/linear_solver/model_validator.h: ;
+$(SRC_DIR)/ortools/linear_solver/model_validator.h: \
+ $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h
 
 $(SRC_DIR)/ortools/linear_solver/bop_interface.cc: ;
 
@@ -3486,21 +4289,78 @@ CP_LIB_OBJS = \
  $(OBJ_DIR)/constraint_solver/search_limit.pb.$O \
  $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O
 
-$(SRC_DIR)/ortools/constraint_solver/constraint_solver.h: ;
+$(SRC_DIR)/ortools/constraint_solver/constraint_solver.h: \
+ $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/random.h \
+ $(SRC_DIR)/ortools/base/stringprintf.h \
+ $(SRC_DIR)/ortools/base/sysinfo.h \
+ $(SRC_DIR)/ortools/base/timer.h \
+ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h \
+ $(SRC_DIR)/ortools/util/piecewise_linear_function.h \
+ $(SRC_DIR)/ortools/util/sorted_interval_list.h \
+ $(SRC_DIR)/ortools/util/tuple_set.h
 
-$(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h: ;
+$(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h: \
+ $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/integral_types.h \
+ $(SRC_DIR)/ortools/base/join.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/base/sysinfo.h \
+ $(SRC_DIR)/ortools/base/timer.h \
+ $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h \
+ $(GEN_DIR)/ortools/constraint_solver/model.pb.h \
+ $(SRC_DIR)/ortools/util/bitset.h \
+ $(SRC_DIR)/ortools/util/tuple_set.h \
+ $(SRC_DIR)/ortools/util/vector_map.h
 
-$(SRC_DIR)/ortools/constraint_solver/hybrid.h: ;
+$(SRC_DIR)/ortools/constraint_solver/hybrid.h: \
+ $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 
-$(SRC_DIR)/ortools/constraint_solver/routing.h: ;
+$(SRC_DIR)/ortools/constraint_solver/routing.h: \
+ $(SRC_DIR)/ortools/base/adjustable_priority_queue-inl.h \
+ $(SRC_DIR)/ortools/base/adjustable_priority_queue.h \
+ $(SRC_DIR)/ortools/base/callback.h \
+ $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
+ $(SRC_DIR)/ortools/base/logging.h \
+ $(SRC_DIR)/ortools/base/macros.h \
+ $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h \
+ $(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h \
+ $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
+ $(SRC_DIR)/ortools/constraint_solver/routing_types.h \
+ $(SRC_DIR)/ortools/graph/graph.h \
+ $(SRC_DIR)/ortools/util/range_query_function.h \
+ $(SRC_DIR)/ortools/util/sorted_interval_list.h
 
-$(SRC_DIR)/ortools/constraint_solver/routing_flags.h: ;
+$(SRC_DIR)/ortools/constraint_solver/routing_flags.h: \
+ $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h
 
-$(SRC_DIR)/ortools/constraint_solver/routing_neighborhoods.h: ;
+$(SRC_DIR)/ortools/constraint_solver/routing_neighborhoods.h: \
+ $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h \
+ $(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h \
+ $(SRC_DIR)/ortools/constraint_solver/routing_types.h
 
-$(SRC_DIR)/ortools/constraint_solver/routing_types.h: ;
+$(SRC_DIR)/ortools/constraint_solver/routing_types.h: \
+ $(SRC_DIR)/ortools/base/callback.h \
+ $(SRC_DIR)/ortools/base/int_type.h \
+ $(SRC_DIR)/ortools/base/integral_types.h
 
-$(SRC_DIR)/ortools/constraint_solver/sat_constraint.h: ;
+$(SRC_DIR)/ortools/constraint_solver/sat_constraint.h: \
+ $(SRC_DIR)/ortools/base/hash.h \
+ $(SRC_DIR)/ortools/base/map_util.h \
+ $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h \
+ $(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h \
+ $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/util/tuple_set.h
 
 $(SRC_DIR)/ortools/constraint_solver/ac4_mdd_reset_table.cc: ;
 
