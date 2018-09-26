@@ -198,6 +198,7 @@ $(SRC_DIR)/ortools/base/typeid.h: ;
 $(SRC_DIR)/ortools/base/bitmap.cc: ;
 
 $(OBJ_DIR)/base/bitmap.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/bitmap.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/bitmap.h \
@@ -207,6 +208,7 @@ $(OBJ_DIR)/base/bitmap.$O: \
 $(SRC_DIR)/ortools/base/callback.cc: ;
 
 $(OBJ_DIR)/base/callback.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/callback.cc \
  $(SRC_DIR)/ortools/base/callback.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -216,6 +218,7 @@ $(OBJ_DIR)/base/callback.$O: \
 $(SRC_DIR)/ortools/base/file.cc: ;
 
 $(OBJ_DIR)/base/file.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/file.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -229,6 +232,7 @@ $(OBJ_DIR)/base/file.$O: \
 $(SRC_DIR)/ortools/base/join.cc: ;
 
 $(OBJ_DIR)/base/join.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/join.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -241,6 +245,7 @@ $(OBJ_DIR)/base/join.$O: \
 $(SRC_DIR)/ortools/base/mutex.cc: ;
 
 $(OBJ_DIR)/base/mutex.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/mutex.cc \
  $(SRC_DIR)/ortools/base/macros.h \
  $(SRC_DIR)/ortools/base/mutex.h \
@@ -250,6 +255,7 @@ $(OBJ_DIR)/base/mutex.$O: \
 $(SRC_DIR)/ortools/base/notification.cc: ;
 
 $(OBJ_DIR)/base/notification.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/notification.cc \
  $(SRC_DIR)/ortools/base/notification.h \
  | $(OBJ_DIR)/base
@@ -258,6 +264,7 @@ $(OBJ_DIR)/base/notification.$O: \
 $(SRC_DIR)/ortools/base/numbers.cc: ;
 
 $(OBJ_DIR)/base/numbers.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/numbers.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -268,6 +275,7 @@ $(OBJ_DIR)/base/numbers.$O: \
 $(SRC_DIR)/ortools/base/random.cc: ;
 
 $(OBJ_DIR)/base/random.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/random.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -278,6 +286,7 @@ $(OBJ_DIR)/base/random.$O: \
 $(SRC_DIR)/ortools/base/recordio.cc: ;
 
 $(OBJ_DIR)/base/recordio.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/recordio.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -288,6 +297,7 @@ $(OBJ_DIR)/base/recordio.$O: \
 $(SRC_DIR)/ortools/base/split.cc: ;
 
 $(OBJ_DIR)/base/split.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/split.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -299,6 +309,7 @@ $(OBJ_DIR)/base/split.$O: \
 $(SRC_DIR)/ortools/base/string_view.cc: ;
 
 $(OBJ_DIR)/base/string_view.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/string_view.cc \
  $(SRC_DIR)/ortools/base/string_view.h \
  | $(OBJ_DIR)/base
@@ -307,6 +318,7 @@ $(OBJ_DIR)/base/string_view.$O: \
 $(SRC_DIR)/ortools/base/stringprintf.cc: ;
 
 $(OBJ_DIR)/base/stringprintf.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/stringprintf.cc \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  | $(OBJ_DIR)/base
@@ -315,6 +327,7 @@ $(OBJ_DIR)/base/stringprintf.$O: \
 $(SRC_DIR)/ortools/base/sysinfo.cc: ;
 
 $(OBJ_DIR)/base/sysinfo.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/sysinfo.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/sysinfo.h \
@@ -324,6 +337,7 @@ $(OBJ_DIR)/base/sysinfo.$O: \
 $(SRC_DIR)/ortools/base/threadpool.cc: ;
 
 $(OBJ_DIR)/base/threadpool.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/threadpool.cc \
  $(SRC_DIR)/ortools/base/threadpool.h \
  | $(OBJ_DIR)/base
@@ -332,6 +346,7 @@ $(OBJ_DIR)/base/threadpool.$O: \
 $(SRC_DIR)/ortools/base/time_support.cc: ;
 
 $(OBJ_DIR)/base/time_support.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/time_support.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/time_support.h \
@@ -341,6 +356,7 @@ $(OBJ_DIR)/base/time_support.$O: \
 $(SRC_DIR)/ortools/base/timer.cc: ;
 
 $(OBJ_DIR)/base/timer.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/base/timer.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -371,6 +387,7 @@ $(SRC_DIR)/ortools/port/utf8.h: ;
 $(SRC_DIR)/ortools/port/file_nonport.cc: ;
 
 $(OBJ_DIR)/port/file_nonport.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/port/file_nonport.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/port/file.h \
@@ -380,6 +397,7 @@ $(OBJ_DIR)/port/file_nonport.$O: \
 $(SRC_DIR)/ortools/port/sysinfo_nonport.cc: ;
 
 $(OBJ_DIR)/port/sysinfo_nonport.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/port/sysinfo_nonport.cc \
  $(SRC_DIR)/ortools/base/sysinfo.h \
  $(SRC_DIR)/ortools/port/sysinfo.h \
@@ -505,6 +523,7 @@ $(SRC_DIR)/ortools/util/zvector.h: ;
 $(SRC_DIR)/ortools/util/bitset.cc: ;
 
 $(OBJ_DIR)/util/bitset.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/bitset.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
@@ -517,6 +536,7 @@ $(OBJ_DIR)/util/bitset.$O: \
 $(SRC_DIR)/ortools/util/cached_log.cc: ;
 
 $(OBJ_DIR)/util/cached_log.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/cached_log.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -529,6 +549,7 @@ $(OBJ_DIR)/util/cached_log.$O: \
 $(SRC_DIR)/ortools/util/file_util.cc: ;
 
 $(OBJ_DIR)/util/file_util.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/file_util.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -541,6 +562,7 @@ $(OBJ_DIR)/util/file_util.$O: \
 $(SRC_DIR)/ortools/util/fp_utils.cc: ;
 
 $(OBJ_DIR)/util/fp_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/fp_utils.cc \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/util/bitset.h \
@@ -551,6 +573,7 @@ $(OBJ_DIR)/util/fp_utils.$O: \
 $(SRC_DIR)/ortools/util/graph_export.cc: ;
 
 $(OBJ_DIR)/util/graph_export.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/graph_export.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -564,6 +587,7 @@ $(OBJ_DIR)/util/graph_export.$O: \
 $(SRC_DIR)/ortools/util/piecewise_linear_function.cc: ;
 
 $(OBJ_DIR)/util/piecewise_linear_function.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/piecewise_linear_function.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -578,6 +602,7 @@ $(OBJ_DIR)/util/piecewise_linear_function.$O: \
 $(SRC_DIR)/ortools/util/proto_tools.cc: ;
 
 $(OBJ_DIR)/util/proto_tools.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/proto_tools.cc \
  $(SRC_DIR)/ortools/base/join.h \
  $(SRC_DIR)/ortools/util/proto_tools.h \
@@ -587,6 +612,7 @@ $(OBJ_DIR)/util/proto_tools.$O: \
 $(SRC_DIR)/ortools/util/range_query_function.cc: ;
 
 $(OBJ_DIR)/util/range_query_function.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/range_query_function.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -599,6 +625,7 @@ $(OBJ_DIR)/util/range_query_function.$O: \
 $(SRC_DIR)/ortools/util/rational_approximation.cc: ;
 
 $(OBJ_DIR)/util/rational_approximation.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/rational_approximation.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -609,6 +636,7 @@ $(OBJ_DIR)/util/rational_approximation.$O: \
 $(SRC_DIR)/ortools/util/sigint.cc: ;
 
 $(OBJ_DIR)/util/sigint.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/sigint.cc \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/util/sigint.h \
@@ -618,6 +646,7 @@ $(OBJ_DIR)/util/sigint.$O: \
 $(SRC_DIR)/ortools/util/sorted_interval_list.cc: ;
 
 $(OBJ_DIR)/util/sorted_interval_list.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/sorted_interval_list.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -631,6 +660,7 @@ $(OBJ_DIR)/util/sorted_interval_list.$O: \
 $(SRC_DIR)/ortools/util/stats.cc: ;
 
 $(OBJ_DIR)/util/stats.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/stats.cc \
  $(SRC_DIR)/ortools/base/stl_util.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
@@ -645,6 +675,7 @@ $(OBJ_DIR)/util/stats.$O: \
 $(SRC_DIR)/ortools/util/time_limit.cc: ;
 
 $(OBJ_DIR)/util/time_limit.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/time_limit.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -662,6 +693,7 @@ $(OBJ_DIR)/util/time_limit.$O: \
 $(SRC_DIR)/ortools/util/xml_helper.cc: ;
 
 $(OBJ_DIR)/util/xml_helper.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/util/xml_helper.cc \
  $(SRC_DIR)/ortools/base/join.h \
  $(SRC_DIR)/ortools/base/macros.h \
@@ -712,6 +744,7 @@ $(SRC_DIR)/ortools/data/set_covering_parser.h: ;
 $(SRC_DIR)/ortools/data/jobshop_scheduling_parser.cc: ;
 
 $(OBJ_DIR)/data/jobshop_scheduling_parser.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/data/jobshop_scheduling_parser.cc \
  $(SRC_DIR)/ortools/base/filelineiter.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -729,6 +762,7 @@ $(OBJ_DIR)/data/jobshop_scheduling_parser.$O: \
 $(SRC_DIR)/ortools/data/rcpsp_parser.cc: ;
 
 $(OBJ_DIR)/data/rcpsp_parser.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/data/rcpsp_parser.cc \
  $(SRC_DIR)/ortools/base/filelineiter.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -745,6 +779,7 @@ $(OBJ_DIR)/data/rcpsp_parser.$O: \
 $(SRC_DIR)/ortools/data/set_covering_data.cc: ;
 
 $(OBJ_DIR)/data/set_covering_data.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/data/set_covering_data.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/data/set_covering_data.h \
@@ -755,6 +790,7 @@ $(OBJ_DIR)/data/set_covering_data.$O: \
 $(SRC_DIR)/ortools/data/set_covering_parser.cc: ;
 
 $(OBJ_DIR)/data/set_covering_parser.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/data/set_covering_parser.cc \
  $(SRC_DIR)/ortools/base/filelineiter.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -863,6 +899,7 @@ $(SRC_DIR)/ortools/lp_data/sparse_vector.h: ;
 $(SRC_DIR)/ortools/lp_data/lp_data.cc: ;
 
 $(OBJ_DIR)/lp_data/lp_data.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/lp_data.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -886,6 +923,7 @@ $(OBJ_DIR)/lp_data/lp_data.$O: \
 $(SRC_DIR)/ortools/lp_data/lp_data_utils.cc: ;
 
 $(OBJ_DIR)/lp_data/lp_data_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/lp_data_utils.cc \
  $(GEN_DIR)/ortools/glop/parameters.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
@@ -898,6 +936,7 @@ $(OBJ_DIR)/lp_data/lp_data_utils.$O: \
 $(SRC_DIR)/ortools/lp_data/lp_decomposer.cc: ;
 
 $(OBJ_DIR)/lp_data/lp_decomposer.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/lp_decomposer.cc \
  $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
  $(SRC_DIR)/ortools/base/mutex.h \
@@ -911,6 +950,7 @@ $(OBJ_DIR)/lp_data/lp_decomposer.$O: \
 $(SRC_DIR)/ortools/lp_data/lp_print_utils.cc: ;
 
 $(OBJ_DIR)/lp_data/lp_print_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/lp_print_utils.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -925,6 +965,7 @@ $(OBJ_DIR)/lp_data/lp_print_utils.$O: \
 $(SRC_DIR)/ortools/lp_data/lp_types.cc: ;
 
 $(OBJ_DIR)/lp_data/lp_types.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/lp_types.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -937,6 +978,7 @@ $(OBJ_DIR)/lp_data/lp_types.$O: \
 $(SRC_DIR)/ortools/lp_data/lp_utils.cc: ;
 
 $(OBJ_DIR)/lp_data/lp_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/lp_utils.cc \
  $(SRC_DIR)/ortools/base/accurate_sum.h \
  $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -948,6 +990,7 @@ $(OBJ_DIR)/lp_data/lp_utils.$O: \
 $(SRC_DIR)/ortools/lp_data/matrix_scaler.cc: ;
 
 $(OBJ_DIR)/lp_data/matrix_scaler.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/matrix_scaler.cc \
  $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -970,6 +1013,7 @@ $(OBJ_DIR)/lp_data/matrix_scaler.$O: \
 $(SRC_DIR)/ortools/lp_data/matrix_utils.cc: ;
 
 $(OBJ_DIR)/lp_data/matrix_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/matrix_utils.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -981,6 +1025,7 @@ $(OBJ_DIR)/lp_data/matrix_utils.$O: \
 $(SRC_DIR)/ortools/lp_data/model_reader.cc: ;
 
 $(OBJ_DIR)/lp_data/model_reader.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/model_reader.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
@@ -995,6 +1040,7 @@ $(OBJ_DIR)/lp_data/model_reader.$O: \
 $(SRC_DIR)/ortools/lp_data/mps_reader.cc: ;
 
 $(OBJ_DIR)/lp_data/mps_reader.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/mps_reader.cc \
  $(SRC_DIR)/ortools/base/callback.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
@@ -1022,6 +1068,7 @@ $(OBJ_DIR)/lp_data/mps_reader.$O: \
 $(SRC_DIR)/ortools/lp_data/proto_utils.cc: ;
 
 $(OBJ_DIR)/lp_data/proto_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/proto_utils.cc \
  $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
  $(SRC_DIR)/ortools/lp_data/lp_data.h \
@@ -1032,6 +1079,7 @@ $(OBJ_DIR)/lp_data/proto_utils.$O: \
 $(SRC_DIR)/ortools/lp_data/sparse.cc: ;
 
 $(OBJ_DIR)/lp_data/sparse.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/sparse.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -1047,6 +1095,7 @@ $(OBJ_DIR)/lp_data/sparse.$O: \
 $(SRC_DIR)/ortools/lp_data/sparse_column.cc: ;
 
 $(OBJ_DIR)/lp_data/sparse_column.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/lp_data/sparse_column.cc \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -1127,6 +1176,7 @@ $(SRC_DIR)/ortools/glop/variables_info.h: ;
 $(SRC_DIR)/ortools/glop/basis_representation.cc: ;
 
 $(OBJ_DIR)/glop/basis_representation.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/basis_representation.cc \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
@@ -1145,6 +1195,7 @@ $(OBJ_DIR)/glop/basis_representation.$O: \
 $(SRC_DIR)/ortools/glop/dual_edge_norms.cc: ;
 
 $(OBJ_DIR)/glop/dual_edge_norms.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/dual_edge_norms.cc \
  $(SRC_DIR)/ortools/glop/basis_representation.h \
  $(SRC_DIR)/ortools/glop/dual_edge_norms.h \
@@ -1159,6 +1210,7 @@ $(OBJ_DIR)/glop/dual_edge_norms.$O: \
 $(SRC_DIR)/ortools/glop/entering_variable.cc: ;
 
 $(OBJ_DIR)/glop/entering_variable.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/entering_variable.cc \
  $(SRC_DIR)/ortools/base/timer.h \
  $(SRC_DIR)/ortools/glop/basis_representation.h \
@@ -1182,6 +1234,7 @@ $(OBJ_DIR)/glop/entering_variable.$O: \
 $(SRC_DIR)/ortools/glop/initial_basis.cc: ;
 
 $(OBJ_DIR)/glop/initial_basis.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/initial_basis.cc \
  $(SRC_DIR)/ortools/glop/initial_basis.h \
  $(SRC_DIR)/ortools/glop/markowitz.h \
@@ -1195,6 +1248,7 @@ $(OBJ_DIR)/glop/initial_basis.$O: \
 $(SRC_DIR)/ortools/glop/lp_solver.cc: ;
 
 $(OBJ_DIR)/glop/lp_solver.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/lp_solver.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -1220,6 +1274,7 @@ $(OBJ_DIR)/glop/lp_solver.$O: \
 $(SRC_DIR)/ortools/glop/lu_factorization.cc: ;
 
 $(OBJ_DIR)/glop/lu_factorization.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/lu_factorization.cc \
  $(SRC_DIR)/ortools/glop/lu_factorization.h \
  $(SRC_DIR)/ortools/glop/markowitz.h \
@@ -1234,6 +1289,7 @@ $(OBJ_DIR)/glop/lu_factorization.$O: \
 $(SRC_DIR)/ortools/glop/markowitz.cc: ;
 
 $(OBJ_DIR)/glop/markowitz.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/markowitz.cc \
  $(SRC_DIR)/ortools/base/inlined_vector.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -1251,6 +1307,7 @@ $(OBJ_DIR)/glop/markowitz.$O: \
 $(SRC_DIR)/ortools/glop/preprocessor.cc: ;
 
 $(OBJ_DIR)/glop/preprocessor.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/preprocessor.cc \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(GEN_DIR)/ortools/glop/parameters.pb.h \
@@ -1269,6 +1326,7 @@ $(OBJ_DIR)/glop/preprocessor.$O: \
 $(SRC_DIR)/ortools/glop/primal_edge_norms.cc: ;
 
 $(OBJ_DIR)/glop/primal_edge_norms.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/primal_edge_norms.cc \
  $(SRC_DIR)/ortools/base/timer.h \
  $(SRC_DIR)/ortools/glop/basis_representation.h \
@@ -1286,6 +1344,7 @@ $(OBJ_DIR)/glop/primal_edge_norms.$O: \
 $(SRC_DIR)/ortools/glop/reduced_costs.cc: ;
 
 $(OBJ_DIR)/glop/reduced_costs.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/reduced_costs.cc \
  $(SRC_DIR)/ortools/glop/basis_representation.h \
  $(GEN_DIR)/ortools/glop/parameters.pb.h \
@@ -1305,6 +1364,7 @@ $(OBJ_DIR)/glop/reduced_costs.$O: \
 $(SRC_DIR)/ortools/glop/revised_simplex.cc: ;
 
 $(OBJ_DIR)/glop/revised_simplex.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/revised_simplex.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -1339,6 +1399,7 @@ $(OBJ_DIR)/glop/revised_simplex.$O: \
 $(SRC_DIR)/ortools/glop/status.cc: ;
 
 $(OBJ_DIR)/glop/status.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/status.cc \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/port.h \
@@ -1349,6 +1410,7 @@ $(OBJ_DIR)/glop/status.$O: \
 $(SRC_DIR)/ortools/glop/update_row.cc: ;
 
 $(OBJ_DIR)/glop/update_row.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/update_row.cc \
  $(SRC_DIR)/ortools/glop/basis_representation.h \
  $(GEN_DIR)/ortools/glop/parameters.pb.h \
@@ -1363,6 +1425,7 @@ $(OBJ_DIR)/glop/update_row.$O: \
 $(SRC_DIR)/ortools/glop/variable_values.cc: ;
 
 $(OBJ_DIR)/glop/variable_values.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/variable_values.cc \
  $(SRC_DIR)/ortools/glop/basis_representation.h \
  $(SRC_DIR)/ortools/glop/variable_values.h \
@@ -1377,6 +1440,7 @@ $(OBJ_DIR)/glop/variable_values.$O: \
 $(SRC_DIR)/ortools/glop/variables_info.cc: ;
 
 $(OBJ_DIR)/glop/variables_info.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/glop/variables_info.cc \
  $(SRC_DIR)/ortools/glop/variables_info.h \
  $(SRC_DIR)/ortools/lp_data/lp_types.h \
@@ -1478,6 +1542,7 @@ $(SRC_DIR)/ortools/graph/util.h: ;
 $(SRC_DIR)/ortools/graph/assignment.cc: ;
 
 $(OBJ_DIR)/graph/assignment.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/assignment.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/graph/assignment.h \
@@ -1489,6 +1554,7 @@ $(OBJ_DIR)/graph/assignment.$O: \
 $(SRC_DIR)/ortools/graph/astar.cc: ;
 
 $(OBJ_DIR)/graph/astar.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/astar.cc \
  $(SRC_DIR)/ortools/base/adjustable_priority_queue.h \
  $(SRC_DIR)/ortools/base/callback.h \
@@ -1499,6 +1565,7 @@ $(OBJ_DIR)/graph/astar.$O: \
 $(SRC_DIR)/ortools/graph/bellman_ford.cc: ;
 
 $(OBJ_DIR)/graph/bellman_ford.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/bellman_ford.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(GEN_DIR)/ortools/graph/flow_problem.pb.h | $(OBJ_DIR)/graph
@@ -1507,6 +1574,7 @@ $(OBJ_DIR)/graph/bellman_ford.$O: \
 $(SRC_DIR)/ortools/graph/cliques.cc: ;
 
 $(OBJ_DIR)/graph/cliques.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/cliques.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -1521,6 +1589,7 @@ $(OBJ_DIR)/graph/cliques.$O: \
 $(SRC_DIR)/ortools/graph/connected_components.cc: ;
 
 $(OBJ_DIR)/graph/connected_components.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/connected_components.cc \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/map_util.h \
@@ -1532,6 +1601,7 @@ $(OBJ_DIR)/graph/connected_components.$O: \
 $(SRC_DIR)/ortools/graph/dijkstra.cc: ;
 
 $(OBJ_DIR)/graph/dijkstra.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/dijkstra.cc \
  $(SRC_DIR)/ortools/base/adjustable_priority_queue.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -1541,6 +1611,7 @@ $(OBJ_DIR)/graph/dijkstra.$O: \
 $(SRC_DIR)/ortools/graph/linear_assignment.cc: ;
 
 $(OBJ_DIR)/graph/linear_assignment.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/linear_assignment.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -1557,6 +1628,7 @@ $(OBJ_DIR)/graph/linear_assignment.$O: \
 $(SRC_DIR)/ortools/graph/max_flow.cc: ;
 
 $(OBJ_DIR)/graph/max_flow.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/max_flow.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -1576,6 +1648,7 @@ $(OBJ_DIR)/graph/max_flow.$O: \
 $(SRC_DIR)/ortools/graph/min_cost_flow.cc: ;
 
 $(OBJ_DIR)/graph/min_cost_flow.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/min_cost_flow.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -1596,6 +1669,7 @@ $(OBJ_DIR)/graph/min_cost_flow.$O: \
 $(SRC_DIR)/ortools/graph/shortestpaths.cc: ;
 
 $(OBJ_DIR)/graph/shortestpaths.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/shortestpaths.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -1608,6 +1682,7 @@ $(OBJ_DIR)/graph/shortestpaths.$O: \
 $(SRC_DIR)/ortools/graph/util.cc: ;
 
 $(OBJ_DIR)/graph/util.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/graph/util.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/map_util.h \
@@ -1666,6 +1741,7 @@ $(SRC_DIR)/ortools/algorithms/sparse_permutation.h: ;
 $(SRC_DIR)/ortools/algorithms/dynamic_partition.cc: ;
 
 $(OBJ_DIR)/algorithms/dynamic_partition.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/algorithms/dynamic_partition.cc \
  $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -1678,6 +1754,7 @@ $(OBJ_DIR)/algorithms/dynamic_partition.$O: \
 $(SRC_DIR)/ortools/algorithms/dynamic_permutation.cc: ;
 
 $(OBJ_DIR)/algorithms/dynamic_permutation.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/algorithms/dynamic_permutation.cc \
  $(SRC_DIR)/ortools/algorithms/dynamic_permutation.h \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
@@ -1688,6 +1765,7 @@ $(OBJ_DIR)/algorithms/dynamic_permutation.$O: \
 $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.cc: ;
 
 $(OBJ_DIR)/algorithms/find_graph_symmetries.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.cc \
  $(SRC_DIR)/ortools/algorithms/dense_doubly_linked_list.h \
  $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
@@ -1712,6 +1790,7 @@ $(OBJ_DIR)/algorithms/find_graph_symmetries.$O: \
 $(SRC_DIR)/ortools/algorithms/hungarian.cc: ;
 
 $(OBJ_DIR)/algorithms/hungarian.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/algorithms/hungarian.cc \
  $(SRC_DIR)/ortools/algorithms/hungarian.h \
  | $(OBJ_DIR)/algorithms
@@ -1720,6 +1799,7 @@ $(OBJ_DIR)/algorithms/hungarian.$O: \
 $(SRC_DIR)/ortools/algorithms/knapsack_solver.cc: ;
 
 $(OBJ_DIR)/algorithms/knapsack_solver.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/algorithms/knapsack_solver.cc \
  $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
  $(SRC_DIR)/ortools/base/basictypes.h \
@@ -1737,6 +1817,7 @@ $(OBJ_DIR)/algorithms/knapsack_solver.$O: \
 $(SRC_DIR)/ortools/algorithms/sparse_permutation.cc: ;
 
 $(OBJ_DIR)/algorithms/sparse_permutation.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.cc \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -1933,6 +2014,7 @@ $(SRC_DIR)/ortools/sat/util.h: ;
 $(SRC_DIR)/ortools/sat/all_different.cc: ;
 
 $(OBJ_DIR)/sat/all_different.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/all_different.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -1955,6 +2037,7 @@ $(OBJ_DIR)/sat/all_different.$O: \
 $(SRC_DIR)/ortools/sat/boolean_problem.cc: ;
 
 $(OBJ_DIR)/sat/boolean_problem.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/boolean_problem.cc \
  $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
@@ -1986,6 +2069,7 @@ $(OBJ_DIR)/sat/boolean_problem.$O: \
 $(SRC_DIR)/ortools/sat/circuit.cc: ;
 
 $(OBJ_DIR)/sat/circuit.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/circuit.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2006,6 +2090,7 @@ $(OBJ_DIR)/sat/circuit.$O: \
 $(SRC_DIR)/ortools/sat/clause.cc: ;
 
 $(OBJ_DIR)/sat/clause.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/clause.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/inlined_vector.h \
@@ -2031,6 +2116,7 @@ $(OBJ_DIR)/sat/clause.$O: \
 $(SRC_DIR)/ortools/sat/cp_constraints.cc: ;
 
 $(OBJ_DIR)/sat/cp_constraints.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_constraints.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2052,6 +2138,7 @@ $(OBJ_DIR)/sat/cp_constraints.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_checker.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_checker.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_checker.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2072,6 +2159,7 @@ $(OBJ_DIR)/sat/cp_model_checker.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_expand.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_expand.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_expand.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/map_util.h \
@@ -2087,6 +2175,7 @@ $(OBJ_DIR)/sat/cp_model_expand.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_lns.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_lns.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_lns.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(GEN_DIR)/ortools/sat/cp_model.pb.h \
@@ -2101,6 +2190,7 @@ $(OBJ_DIR)/sat/cp_model_lns.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_objective.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_objective.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_objective.cc \
  $(GEN_DIR)/ortools/sat/cp_model.pb.h \
  $(SRC_DIR)/ortools/sat/cp_model_objective.h \
@@ -2113,6 +2203,7 @@ $(OBJ_DIR)/sat/cp_model_objective.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_presolve.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_presolve.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_presolve.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2140,6 +2231,7 @@ $(OBJ_DIR)/sat/cp_model_presolve.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_search.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_search.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_search.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
@@ -2158,6 +2250,7 @@ $(OBJ_DIR)/sat/cp_model_search.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_solver.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_solver.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_solver.cc \
  $(SRC_DIR)/ortools/base/cleanup.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
@@ -2216,6 +2309,7 @@ $(OBJ_DIR)/sat/cp_model_solver.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_symmetries.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_symmetries.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_symmetries.cc \
  $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
@@ -2233,6 +2327,7 @@ $(OBJ_DIR)/sat/cp_model_symmetries.$O: \
 $(SRC_DIR)/ortools/sat/cp_model_utils.cc: ;
 
 $(OBJ_DIR)/sat/cp_model_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cp_model_utils.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -2248,6 +2343,7 @@ $(OBJ_DIR)/sat/cp_model_utils.$O: \
 $(SRC_DIR)/ortools/sat/cumulative.cc: ;
 
 $(OBJ_DIR)/sat/cumulative.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/cumulative.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -2272,6 +2368,7 @@ $(OBJ_DIR)/sat/cumulative.$O: \
 $(SRC_DIR)/ortools/sat/disjunctive.cc: ;
 
 $(OBJ_DIR)/sat/disjunctive.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/disjunctive.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/iterator_adaptors.h \
@@ -2295,6 +2392,7 @@ $(OBJ_DIR)/sat/disjunctive.$O: \
 $(SRC_DIR)/ortools/sat/drat_checker.cc: ;
 
 $(OBJ_DIR)/sat/drat_checker.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/drat_checker.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -2315,6 +2413,7 @@ $(OBJ_DIR)/sat/drat_checker.$O: \
 $(SRC_DIR)/ortools/sat/drat_proof_handler.cc: ;
 
 $(OBJ_DIR)/sat/drat_proof_handler.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/drat_proof_handler.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -2333,6 +2432,7 @@ $(OBJ_DIR)/sat/drat_proof_handler.$O: \
 $(SRC_DIR)/ortools/sat/drat_writer.cc: ;
 
 $(OBJ_DIR)/sat/drat_writer.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/drat_writer.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -2349,6 +2449,7 @@ $(OBJ_DIR)/sat/drat_writer.$O: \
 $(SRC_DIR)/ortools/sat/encoding.cc: ;
 
 $(OBJ_DIR)/sat/encoding.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/encoding.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2368,6 +2469,7 @@ $(OBJ_DIR)/sat/encoding.$O: \
 $(SRC_DIR)/ortools/sat/integer.cc: ;
 
 $(OBJ_DIR)/sat/integer.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/integer.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/inlined_vector.h \
@@ -2400,6 +2502,7 @@ $(OBJ_DIR)/sat/integer.$O: \
 $(SRC_DIR)/ortools/sat/integer_expr.cc: ;
 
 $(OBJ_DIR)/sat/integer_expr.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/integer_expr.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2421,6 +2524,7 @@ $(OBJ_DIR)/sat/integer_expr.$O: \
 $(SRC_DIR)/ortools/sat/integer_search.cc: ;
 
 $(OBJ_DIR)/sat/integer_search.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/integer_search.cc \
  $(SRC_DIR)/ortools/sat/integer.h \
  $(SRC_DIR)/ortools/sat/integer_search.h \
@@ -2436,6 +2540,7 @@ $(OBJ_DIR)/sat/integer_search.$O: \
 $(SRC_DIR)/ortools/sat/intervals.cc: ;
 
 $(OBJ_DIR)/sat/intervals.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/intervals.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -2460,6 +2565,7 @@ $(OBJ_DIR)/sat/intervals.$O: \
 $(SRC_DIR)/ortools/sat/linear_programming_constraint.cc: ;
 
 $(OBJ_DIR)/sat/linear_programming_constraint.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/linear_programming_constraint.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -2487,6 +2593,7 @@ $(OBJ_DIR)/sat/linear_programming_constraint.$O: \
 $(SRC_DIR)/ortools/sat/linear_relaxation.cc: ;
 
 $(OBJ_DIR)/sat/linear_relaxation.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/linear_relaxation.cc \
  $(SRC_DIR)/ortools/base/iterator_adaptors.h \
  $(SRC_DIR)/ortools/sat/integer.h \
@@ -2501,6 +2608,7 @@ $(OBJ_DIR)/sat/linear_relaxation.$O: \
 $(SRC_DIR)/ortools/sat/lp_utils.cc: ;
 
 $(OBJ_DIR)/sat/lp_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/lp_utils.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -2526,6 +2634,7 @@ $(OBJ_DIR)/sat/lp_utils.$O: \
 $(SRC_DIR)/ortools/sat/optimization.cc: ;
 
 $(OBJ_DIR)/sat/optimization.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/optimization.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2561,6 +2670,7 @@ $(OBJ_DIR)/sat/optimization.$O: \
 $(SRC_DIR)/ortools/sat/overload_checker.cc: ;
 
 $(OBJ_DIR)/sat/overload_checker.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/overload_checker.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -2578,6 +2688,7 @@ $(OBJ_DIR)/sat/overload_checker.$O: \
 $(SRC_DIR)/ortools/sat/pb_constraint.cc: ;
 
 $(OBJ_DIR)/sat/pb_constraint.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/pb_constraint.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -2602,6 +2713,7 @@ $(OBJ_DIR)/sat/pb_constraint.$O: \
 $(SRC_DIR)/ortools/sat/precedences.cc: ;
 
 $(OBJ_DIR)/sat/precedences.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/precedences.cc \
  $(SRC_DIR)/ortools/base/cleanup.h \
  $(SRC_DIR)/ortools/base/inlined_vector.h \
@@ -2626,6 +2738,7 @@ $(OBJ_DIR)/sat/precedences.$O: \
 $(SRC_DIR)/ortools/sat/restart.cc: ;
 
 $(OBJ_DIR)/sat/restart.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/restart.cc \
  $(SRC_DIR)/ortools/base/split.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
@@ -2642,6 +2755,7 @@ $(OBJ_DIR)/sat/restart.$O: \
 $(SRC_DIR)/ortools/sat/sat_decision.cc: ;
 
 $(OBJ_DIR)/sat/sat_decision.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/sat_decision.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/sat/model.h \
@@ -2661,6 +2775,7 @@ $(OBJ_DIR)/sat/sat_decision.$O: \
 $(SRC_DIR)/ortools/sat/sat_solver.cc: ;
 
 $(OBJ_DIR)/sat/sat_solver.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/sat_solver.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -2697,6 +2812,7 @@ $(OBJ_DIR)/sat/sat_solver.$O: \
 $(SRC_DIR)/ortools/sat/simplification.cc: ;
 
 $(OBJ_DIR)/sat/simplification.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/simplification.cc \
  $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
  $(SRC_DIR)/ortools/base/adjustable_priority_queue-inl.h \
@@ -2727,6 +2843,7 @@ $(OBJ_DIR)/sat/simplification.$O: \
 $(SRC_DIR)/ortools/sat/symmetry.cc: ;
 
 $(OBJ_DIR)/sat/symmetry.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/symmetry.cc \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -2745,6 +2862,7 @@ $(OBJ_DIR)/sat/symmetry.$O: \
 $(SRC_DIR)/ortools/sat/table.cc: ;
 
 $(OBJ_DIR)/sat/table.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/table.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2765,6 +2883,7 @@ $(OBJ_DIR)/sat/table.$O: \
 $(SRC_DIR)/ortools/sat/theta_tree.cc: ;
 
 $(OBJ_DIR)/sat/theta_tree.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/theta_tree.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -2778,6 +2897,7 @@ $(OBJ_DIR)/sat/theta_tree.$O: \
 $(SRC_DIR)/ortools/sat/timetable.cc: ;
 
 $(OBJ_DIR)/sat/timetable.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/timetable.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -2795,6 +2915,7 @@ $(OBJ_DIR)/sat/timetable.$O: \
 $(SRC_DIR)/ortools/sat/timetable_edgefinding.cc: ;
 
 $(OBJ_DIR)/sat/timetable_edgefinding.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/timetable_edgefinding.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -2813,6 +2934,7 @@ $(OBJ_DIR)/sat/timetable_edgefinding.$O: \
 $(SRC_DIR)/ortools/sat/util.cc: ;
 
 $(OBJ_DIR)/sat/util.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/sat/util.cc \
  $(SRC_DIR)/ortools/base/random.h \
  $(SRC_DIR)/ortools/sat/model.h \
@@ -2919,6 +3041,7 @@ $(SRC_DIR)/ortools/bop/integral_solver.h: ;
 $(SRC_DIR)/ortools/bop/bop_base.cc: ;
 
 $(OBJ_DIR)/bop/bop_base.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/bop_base.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/mutex.h \
@@ -2938,6 +3061,7 @@ $(OBJ_DIR)/bop/bop_base.$O: \
 $(SRC_DIR)/ortools/bop/bop_fs.cc: ;
 
 $(OBJ_DIR)/bop/bop_fs.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/bop_fs.cc \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.h \
  $(SRC_DIR)/ortools/base/basictypes.h \
@@ -2973,6 +3097,7 @@ $(OBJ_DIR)/bop/bop_fs.$O: \
 $(SRC_DIR)/ortools/bop/bop_lns.cc: ;
 
 $(OBJ_DIR)/bop/bop_lns.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/bop_lns.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/cleanup.h \
@@ -3007,6 +3132,7 @@ $(OBJ_DIR)/bop/bop_lns.$O: \
 $(SRC_DIR)/ortools/bop/bop_ls.cc: ;
 
 $(OBJ_DIR)/bop/bop_ls.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/bop_ls.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/memory.h \
@@ -3026,6 +3152,7 @@ $(OBJ_DIR)/bop/bop_ls.$O: \
 $(SRC_DIR)/ortools/bop/bop_portfolio.cc: ;
 
 $(OBJ_DIR)/bop/bop_portfolio.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/bop_portfolio.cc \
  $(SRC_DIR)/ortools/base/memory.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
@@ -3053,6 +3180,7 @@ $(OBJ_DIR)/bop/bop_portfolio.$O: \
 $(SRC_DIR)/ortools/bop/bop_solution.cc: ;
 
 $(OBJ_DIR)/bop/bop_solution.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/bop_solution.cc \
  $(SRC_DIR)/ortools/bop/bop_solution.h \
  $(SRC_DIR)/ortools/bop/bop_types.h \
@@ -3064,6 +3192,7 @@ $(OBJ_DIR)/bop/bop_solution.$O: \
 $(SRC_DIR)/ortools/bop/bop_solver.cc: ;
 
 $(OBJ_DIR)/bop/bop_solver.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/bop_solver.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
@@ -3100,6 +3229,7 @@ $(OBJ_DIR)/bop/bop_solver.$O: \
 $(SRC_DIR)/ortools/bop/bop_util.cc: ;
 
 $(OBJ_DIR)/bop/bop_util.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/bop_util.cc \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -3114,6 +3244,7 @@ $(OBJ_DIR)/bop/bop_util.$O: \
 $(SRC_DIR)/ortools/bop/complete_optimizer.cc: ;
 
 $(OBJ_DIR)/bop/complete_optimizer.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/complete_optimizer.cc \
  $(SRC_DIR)/ortools/bop/bop_base.h \
  $(SRC_DIR)/ortools/bop/bop_solution.h \
@@ -3131,6 +3262,7 @@ $(OBJ_DIR)/bop/complete_optimizer.$O: \
 $(SRC_DIR)/ortools/bop/integral_solver.cc: ;
 
 $(OBJ_DIR)/bop/integral_solver.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/bop/integral_solver.cc \
  $(SRC_DIR)/ortools/base/port.h \
  $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
@@ -3194,6 +3326,7 @@ $(SRC_DIR)/ortools/linear_solver/model_validator.h: ;
 $(SRC_DIR)/ortools/linear_solver/bop_interface.cc: ;
 
 $(OBJ_DIR)/linear_solver/bop_interface.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/bop_interface.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/file.h \
@@ -3211,6 +3344,7 @@ $(OBJ_DIR)/linear_solver/bop_interface.$O: \
 $(SRC_DIR)/ortools/linear_solver/cbc_interface.cc: ;
 
 $(OBJ_DIR)/linear_solver/cbc_interface.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/cbc_interface.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -3226,6 +3360,7 @@ $(OBJ_DIR)/linear_solver/cbc_interface.$O: \
 $(SRC_DIR)/ortools/linear_solver/clp_interface.cc: ;
 
 $(OBJ_DIR)/linear_solver/clp_interface.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/clp_interface.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -3243,6 +3378,7 @@ $(OBJ_DIR)/linear_solver/clp_interface.$O: \
 $(SRC_DIR)/ortools/linear_solver/cplex_interface.cc: ;
 
 $(OBJ_DIR)/linear_solver/cplex_interface.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/cplex_interface.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -3255,6 +3391,7 @@ $(OBJ_DIR)/linear_solver/cplex_interface.$O: \
 $(SRC_DIR)/ortools/linear_solver/glop_interface.cc: ;
 
 $(OBJ_DIR)/linear_solver/glop_interface.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/glop_interface.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -3275,6 +3412,7 @@ $(OBJ_DIR)/linear_solver/glop_interface.$O: \
 $(SRC_DIR)/ortools/linear_solver/glop_utils.cc: ;
 
 $(OBJ_DIR)/linear_solver/glop_utils.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/glop_utils.cc \
  $(SRC_DIR)/ortools/linear_solver/glop_utils.h \
  $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
@@ -3285,6 +3423,7 @@ $(OBJ_DIR)/linear_solver/glop_utils.$O: \
 $(SRC_DIR)/ortools/linear_solver/glpk_interface.cc: ;
 
 $(OBJ_DIR)/linear_solver/glpk_interface.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/glpk_interface.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -3301,6 +3440,7 @@ $(OBJ_DIR)/linear_solver/glpk_interface.$O: \
 $(SRC_DIR)/ortools/linear_solver/gurobi_interface.cc: ;
 
 $(OBJ_DIR)/linear_solver/gurobi_interface.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/gurobi_interface.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -3316,6 +3456,7 @@ $(OBJ_DIR)/linear_solver/gurobi_interface.$O: \
 $(SRC_DIR)/ortools/linear_solver/linear_expr.cc: ;
 
 $(OBJ_DIR)/linear_solver/linear_expr.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/linear_expr.cc \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
@@ -3326,6 +3467,7 @@ $(OBJ_DIR)/linear_solver/linear_expr.$O: \
 $(SRC_DIR)/ortools/linear_solver/linear_solver.cc: ;
 
 $(OBJ_DIR)/linear_solver/linear_solver.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/linear_solver.cc \
  $(SRC_DIR)/ortools/base/accurate_sum.h \
  $(SRC_DIR)/ortools/base/canonical_errors.h \
@@ -3358,6 +3500,7 @@ $(OBJ_DIR)/linear_solver/linear_solver.$O: \
 $(SRC_DIR)/ortools/linear_solver/model_exporter.cc: ;
 
 $(OBJ_DIR)/linear_solver/model_exporter.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/model_exporter.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -3377,6 +3520,7 @@ $(OBJ_DIR)/linear_solver/model_exporter.$O: \
 $(SRC_DIR)/ortools/linear_solver/model_validator.cc: ;
 
 $(OBJ_DIR)/linear_solver/model_validator.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/model_validator.cc \
  $(SRC_DIR)/ortools/base/accurate_sum.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -3390,6 +3534,7 @@ $(OBJ_DIR)/linear_solver/model_validator.$O: \
 $(SRC_DIR)/ortools/linear_solver/scip_interface.cc: ;
 
 $(OBJ_DIR)/linear_solver/scip_interface.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/linear_solver/scip_interface.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -3505,6 +3650,7 @@ $(SRC_DIR)/ortools/constraint_solver/sat_constraint.h: ;
 $(SRC_DIR)/ortools/constraint_solver/ac4_mdd_reset_table.cc: ;
 
 $(OBJ_DIR)/constraint_solver/ac4_mdd_reset_table.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/ac4_mdd_reset_table.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -3528,6 +3674,7 @@ $(OBJ_DIR)/constraint_solver/ac4_mdd_reset_table.$O: \
 $(SRC_DIR)/ortools/constraint_solver/ac4r_table.cc: ;
 
 $(OBJ_DIR)/constraint_solver/ac4r_table.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/ac4r_table.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -3551,6 +3698,7 @@ $(OBJ_DIR)/constraint_solver/ac4r_table.$O: \
 $(SRC_DIR)/ortools/constraint_solver/alldiff_cst.cc: ;
 
 $(OBJ_DIR)/constraint_solver/alldiff_cst.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/alldiff_cst.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -3570,6 +3718,7 @@ $(OBJ_DIR)/constraint_solver/alldiff_cst.$O: \
 $(SRC_DIR)/ortools/constraint_solver/assignment.cc: ;
 
 $(OBJ_DIR)/constraint_solver/assignment.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/assignment.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -3593,6 +3742,7 @@ $(OBJ_DIR)/constraint_solver/assignment.$O: \
 $(SRC_DIR)/ortools/constraint_solver/collect_variables.cc: ;
 
 $(OBJ_DIR)/constraint_solver/collect_variables.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/collect_variables.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -3612,6 +3762,7 @@ $(OBJ_DIR)/constraint_solver/collect_variables.$O: \
 $(SRC_DIR)/ortools/constraint_solver/constraint_solver.cc: ;
 
 $(OBJ_DIR)/constraint_solver/constraint_solver.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/constraint_solver.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/file.h \
@@ -3645,6 +3796,7 @@ $(OBJ_DIR)/constraint_solver/constraint_solver.$O: \
 $(SRC_DIR)/ortools/constraint_solver/constraints.cc: ;
 
 $(OBJ_DIR)/constraint_solver/constraints.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/constraints.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -3666,6 +3818,7 @@ $(OBJ_DIR)/constraint_solver/constraints.$O: \
 $(SRC_DIR)/ortools/constraint_solver/count_cst.cc: ;
 
 $(OBJ_DIR)/constraint_solver/count_cst.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/count_cst.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -3686,6 +3839,7 @@ $(OBJ_DIR)/constraint_solver/count_cst.$O: \
 $(SRC_DIR)/ortools/constraint_solver/default_search.cc: ;
 
 $(OBJ_DIR)/constraint_solver/default_search.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/default_search.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -3710,6 +3864,7 @@ $(OBJ_DIR)/constraint_solver/default_search.$O: \
 $(SRC_DIR)/ortools/constraint_solver/demon_profiler.cc: ;
 
 $(OBJ_DIR)/constraint_solver/demon_profiler.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/demon_profiler.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -3734,6 +3889,7 @@ $(OBJ_DIR)/constraint_solver/demon_profiler.$O: \
 $(SRC_DIR)/ortools/constraint_solver/deviation.cc: ;
 
 $(OBJ_DIR)/constraint_solver/deviation.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/deviation.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -3753,6 +3909,7 @@ $(OBJ_DIR)/constraint_solver/deviation.$O: \
 $(SRC_DIR)/ortools/constraint_solver/diffn.cc: ;
 
 $(OBJ_DIR)/constraint_solver/diffn.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/diffn.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/int_type.h \
@@ -3775,6 +3932,7 @@ $(OBJ_DIR)/constraint_solver/diffn.$O: \
 $(SRC_DIR)/ortools/constraint_solver/element.cc: ;
 
 $(OBJ_DIR)/constraint_solver/element.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/element.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -3796,6 +3954,7 @@ $(OBJ_DIR)/constraint_solver/element.$O: \
 $(SRC_DIR)/ortools/constraint_solver/expr_array.cc: ;
 
 $(OBJ_DIR)/constraint_solver/expr_array.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/expr_array.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -3818,6 +3977,7 @@ $(OBJ_DIR)/constraint_solver/expr_array.$O: \
 $(SRC_DIR)/ortools/constraint_solver/expr_cst.cc: ;
 
 $(OBJ_DIR)/constraint_solver/expr_cst.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/expr_cst.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -3841,6 +4001,7 @@ $(OBJ_DIR)/constraint_solver/expr_cst.$O: \
 $(SRC_DIR)/ortools/constraint_solver/expressions.cc: ;
 
 $(OBJ_DIR)/constraint_solver/expressions.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/expressions.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -3867,6 +4028,7 @@ $(OBJ_DIR)/constraint_solver/expressions.$O: \
 $(SRC_DIR)/ortools/constraint_solver/gcc.cc: ;
 
 $(OBJ_DIR)/constraint_solver/gcc.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/gcc.cc \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -3892,6 +4054,7 @@ $(OBJ_DIR)/constraint_solver/gcc.$O: \
 $(SRC_DIR)/ortools/constraint_solver/graph_constraints.cc: ;
 
 $(OBJ_DIR)/constraint_solver/graph_constraints.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/graph_constraints.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -3913,6 +4076,7 @@ $(OBJ_DIR)/constraint_solver/graph_constraints.$O: \
 $(SRC_DIR)/ortools/constraint_solver/hybrid.cc: ;
 
 $(OBJ_DIR)/constraint_solver/hybrid.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/hybrid.cc \
  $(SRC_DIR)/ortools/base/callback.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
@@ -3936,6 +4100,7 @@ $(OBJ_DIR)/constraint_solver/hybrid.$O: \
 $(SRC_DIR)/ortools/constraint_solver/interval.cc: ;
 
 $(OBJ_DIR)/constraint_solver/interval.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/interval.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -3957,6 +4122,7 @@ $(OBJ_DIR)/constraint_solver/interval.$O: \
 $(SRC_DIR)/ortools/constraint_solver/io.cc: ;
 
 $(OBJ_DIR)/constraint_solver/io.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/io.cc \
  $(SRC_DIR)/ortools/base/callback.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -3982,6 +4148,7 @@ $(OBJ_DIR)/constraint_solver/io.$O: \
 $(SRC_DIR)/ortools/constraint_solver/local_search.cc: ;
 
 $(OBJ_DIR)/constraint_solver/local_search.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/local_search.cc \
  $(SRC_DIR)/ortools/base/callback.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
@@ -4009,6 +4176,7 @@ $(OBJ_DIR)/constraint_solver/local_search.$O: \
 $(SRC_DIR)/ortools/constraint_solver/model_cache.cc: ;
 
 $(OBJ_DIR)/constraint_solver/model_cache.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/model_cache.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -4028,6 +4196,7 @@ $(OBJ_DIR)/constraint_solver/model_cache.$O: \
 $(SRC_DIR)/ortools/constraint_solver/nogoods.cc: ;
 
 $(OBJ_DIR)/constraint_solver/nogoods.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/nogoods.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -4048,6 +4217,7 @@ $(OBJ_DIR)/constraint_solver/nogoods.$O: \
 $(SRC_DIR)/ortools/constraint_solver/pack.cc: ;
 
 $(OBJ_DIR)/constraint_solver/pack.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/pack.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/join.h \
@@ -4067,6 +4237,7 @@ $(OBJ_DIR)/constraint_solver/pack.$O: \
 $(SRC_DIR)/ortools/constraint_solver/range_cst.cc: ;
 
 $(OBJ_DIR)/constraint_solver/range_cst.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/range_cst.cc \
  $(SRC_DIR)/ortools/base/logging.h \
  $(SRC_DIR)/ortools/base/stringprintf.h \
@@ -4084,6 +4255,7 @@ $(OBJ_DIR)/constraint_solver/range_cst.$O: \
 $(SRC_DIR)/ortools/constraint_solver/resource.cc: ;
 
 $(OBJ_DIR)/constraint_solver/resource.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/resource.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -4111,6 +4283,7 @@ $(OBJ_DIR)/constraint_solver/resource.$O: \
 $(SRC_DIR)/ortools/constraint_solver/routing.cc: ;
 
 $(OBJ_DIR)/constraint_solver/routing.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/routing.cc \
  $(SRC_DIR)/ortools/base/adjustable_priority_queue-inl.h \
  $(SRC_DIR)/ortools/base/adjustable_priority_queue.h \
@@ -4153,6 +4326,7 @@ $(OBJ_DIR)/constraint_solver/routing.$O: \
 $(SRC_DIR)/ortools/constraint_solver/routing_flags.cc: ;
 
 $(OBJ_DIR)/constraint_solver/routing_flags.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/routing_flags.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/map_util.h \
@@ -4172,6 +4346,7 @@ $(OBJ_DIR)/constraint_solver/routing_flags.$O: \
 $(SRC_DIR)/ortools/constraint_solver/routing_neighborhoods.cc: ;
 
 $(OBJ_DIR)/constraint_solver/routing_neighborhoods.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/routing_neighborhoods.cc \
  $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h \
  $(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h \
@@ -4189,6 +4364,7 @@ $(OBJ_DIR)/constraint_solver/routing_neighborhoods.$O: \
 $(SRC_DIR)/ortools/constraint_solver/routing_search.cc: ;
 
 $(OBJ_DIR)/constraint_solver/routing_search.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/routing_search.cc \
  $(SRC_DIR)/ortools/base/small_map.h \
  $(SRC_DIR)/ortools/base/small_ordered_set.h \
@@ -4208,6 +4384,7 @@ $(OBJ_DIR)/constraint_solver/routing_search.$O: \
 $(SRC_DIR)/ortools/constraint_solver/sat_constraint.cc: ;
 
 $(OBJ_DIR)/constraint_solver/sat_constraint.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/sat_constraint.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/map_util.h \
@@ -4228,6 +4405,7 @@ $(OBJ_DIR)/constraint_solver/sat_constraint.$O: \
 $(SRC_DIR)/ortools/constraint_solver/sched_constraints.cc: ;
 
 $(OBJ_DIR)/constraint_solver/sched_constraints.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/sched_constraints.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -4248,6 +4426,7 @@ $(OBJ_DIR)/constraint_solver/sched_constraints.$O: \
 $(SRC_DIR)/ortools/constraint_solver/sched_expr.cc: ;
 
 $(OBJ_DIR)/constraint_solver/sched_expr.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/sched_expr.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -4267,6 +4446,7 @@ $(OBJ_DIR)/constraint_solver/sched_expr.$O: \
 $(SRC_DIR)/ortools/constraint_solver/sched_search.cc: ;
 
 $(OBJ_DIR)/constraint_solver/sched_search.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/sched_search.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -4286,6 +4466,7 @@ $(OBJ_DIR)/constraint_solver/sched_search.$O: \
 $(SRC_DIR)/ortools/constraint_solver/search.cc: ;
 
 $(OBJ_DIR)/constraint_solver/search.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/search.cc \
  $(SRC_DIR)/ortools/base/bitmap.h \
  $(SRC_DIR)/ortools/base/casts.h \
@@ -4316,6 +4497,7 @@ $(OBJ_DIR)/constraint_solver/search.$O: \
 $(SRC_DIR)/ortools/constraint_solver/softgcc.cc: ;
 
 $(OBJ_DIR)/constraint_solver/softgcc.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/softgcc.cc \
  $(SRC_DIR)/ortools/base/stringprintf.h \
  $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h \
@@ -4334,6 +4516,7 @@ $(OBJ_DIR)/constraint_solver/softgcc.$O: \
 $(SRC_DIR)/ortools/constraint_solver/table.cc: ;
 
 $(OBJ_DIR)/constraint_solver/table.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/table.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -4359,6 +4542,7 @@ $(OBJ_DIR)/constraint_solver/table.$O: \
 $(SRC_DIR)/ortools/constraint_solver/timetabling.cc: ;
 
 $(OBJ_DIR)/constraint_solver/timetabling.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/timetabling.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \
@@ -4378,6 +4562,7 @@ $(OBJ_DIR)/constraint_solver/timetabling.$O: \
 $(SRC_DIR)/ortools/constraint_solver/trace.cc: ;
 
 $(OBJ_DIR)/constraint_solver/trace.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/trace.cc \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -4399,6 +4584,7 @@ $(OBJ_DIR)/constraint_solver/trace.$O: \
 $(SRC_DIR)/ortools/constraint_solver/tree_monitor.cc: ;
 
 $(OBJ_DIR)/constraint_solver/tree_monitor.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/tree_monitor.cc \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/hash.h \
@@ -4422,6 +4608,7 @@ $(OBJ_DIR)/constraint_solver/tree_monitor.$O: \
 $(SRC_DIR)/ortools/constraint_solver/utilities.cc: ;
 
 $(OBJ_DIR)/constraint_solver/utilities.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/utilities.cc \
  $(SRC_DIR)/ortools/base/hash.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
@@ -4444,6 +4631,7 @@ $(OBJ_DIR)/constraint_solver/utilities.$O: \
 $(SRC_DIR)/ortools/constraint_solver/visitor.cc: ;
 
 $(OBJ_DIR)/constraint_solver/visitor.$O: \
+ $(PROTO_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/visitor.cc \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/logging.h \

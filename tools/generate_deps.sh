@@ -81,6 +81,7 @@ do
   echo
   # Print makefile command for .$O.
   echo -e "\$(OBJ_DIR)/${main_dir}/${name}.\$O: \\"
+  echo -e " \$(PROTO_DEPS) \\"
   echo -e " \$(SRC_DIR)/ortools/${main_dir}/${name}.cc \\"
   if [[ "${#all_deps[@]}" != 0 ]];then
     print_paths "${all_deps[@]}"
