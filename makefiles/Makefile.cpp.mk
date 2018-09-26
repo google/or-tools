@@ -155,11 +155,11 @@ $(OR_TOOLS_LIBS): \
  $(DATA_LIB_OBJS) \
  $(LP_DATA_LIB_OBJS) \
  $(GLOP_LIB_OBJS) \
+ $(BOP_LIB_OBJS) \
+ $(LP_LIB_OBJS) \
  $(GRAPH_LIB_OBJS) \
  $(ALGORITHMS_LIB_OBJS) \
  $(SAT_LIB_OBJS) \
- $(BOP_LIB_OBJS) \
- $(LP_LIB_OBJS) \
  $(CP_LIB_OBJS) | $(LIB_DIR)
 	$(LINK_CMD) \
  $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L \
@@ -466,7 +466,13 @@ test_cc_tests: cc
 	$(MAKE) rcc_min_max_test
 	$(MAKE) rcc_visitor_test
 
-$(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
+$(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc \
+ $(BASE_DEPS) $(PORT_DEPS) $(UTIL_DEPS) \
+ $(DATA_DEPS) $(LP_DATA_DEPS) \
+ $(LP_DEPS) $(GLOP_DEPS) $(BOP_DEPS) \
+ $(CP_DEPS) $(SAT_DEPS) \
+ $(GRAPH_DEPS) $(ALGORITHMS_DEPS) \
+ | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(TEST_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
 .PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
@@ -515,7 +521,13 @@ test_cc_examples: cc
 	$(MAKE) rcc_strawberry_fields_with_column_generation
 	$(MAKE) rcc_weighted_tardiness_sat
 
-$(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS)| $(OBJ_DIR)
+$(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc \
+ $(BASE_DEPS) $(PORT_DEPS) $(UTIL_DEPS) \
+ $(DATA_DEPS) $(LP_DATA_DEPS) \
+ $(LP_DEPS) $(GLOP_DEPS) $(BOP_DEPS) \
+ $(CP_DEPS) $(SAT_DEPS) \
+ $(GRAPH_DEPS) $(ALGORITHMS_DEPS) \
+ | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
 .PHONY: check_cc_examples # Build and Run few C++ Examples
@@ -549,7 +561,13 @@ test_cc_samples: cc
 	$(MAKE) rcc_solve_with_time_limit
 	$(MAKE) rcc_stop_after_n_solutions
 
-$(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
+$(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc \
+ $(BASE_DEPS) $(PORT_DEPS) $(UTIL_DEPS) \
+ $(DATA_DEPS) $(LP_DATA_DEPS) \
+ $(LP_DEPS) $(GLOP_DEPS) $(BOP_DEPS) \
+ $(CP_DEPS) $(SAT_DEPS) \
+ $(GRAPH_DEPS) $(ALGORITHMS_DEPS) \
+ | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
 $(BIN_DIR)/%$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/%.$O | $(BIN_DIR)
