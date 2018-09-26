@@ -633,8 +633,8 @@ $(TEMP_DOTNET_DIR)/%$D: \
  $(DOTNET_ORTOOLS_NUPKG) \
  | $(TEMP_DOTNET_DIR)
 	"$(DOTNET_BIN)" build \
- -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
- $(DOTNET_EX_PATH)$Scsharp$S$*.csproj
+ -o "..$S..$S$(TEMP_DOTNET_DIR)" \
+ $(DOTNET_EX_PATH)$S$*.csproj
 
 $(TEMP_DOTNET_DIR)/%$D: \
  $(DOTNET_EX_DIR)/%.fsproj \
@@ -642,8 +642,8 @@ $(TEMP_DOTNET_DIR)/%$D: \
  $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
  | $(TEMP_DOTNET_DIR)
 	"$(DOTNET_BIN)" build \
- -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
- $(DOTNET_EX_PATH)$Sfsharp$S$*.fsproj
+ -o "..$S..$S$(TEMP_DOTNET_DIR)" \
+ $(DOTNET_EX_PATH)$S$*.fsproj
 
 ################
 ##  Cleaning  ##
