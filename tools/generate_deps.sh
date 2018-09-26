@@ -59,15 +59,9 @@ echo
 
 # Generate dependencies for .h files
 for file in "${all_h[@]}"; do
-  # Compute dependencies.
-  all_deps=( $(get_dependencies "${file}") )
   name=$(basename "${file}" .h)
   # Print makefile command for .h.
-  echo -e "\$(SRC_DIR)/ortools/${main_dir}/${name}.h: \\"
-  if [[ "${#all_deps[@]}" != 0 ]];then
-    print_paths "${all_deps[@]}"
-    echo ""
-  fi
+  echo -e "\$(SRC_DIR)/ortools/${main_dir}/${name}.h: ;"
   echo
 done
 
