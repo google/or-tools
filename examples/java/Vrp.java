@@ -12,7 +12,6 @@
 // limitations under the License.
 import java.io.*;
 import static java.lang.Math.abs;
-//import java.util.*;
 
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.NodeEvaluator2;

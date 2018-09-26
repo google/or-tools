@@ -535,6 +535,7 @@ test_dotnet_examples_csharp: $(DOTNET_ORTOOLS_NUPKG)
 	$(MAKE) rdotnet_to_num
 	$(MAKE) rdotnet_traffic_lights
 	$(MAKE) rdotnet_tsp
+	$(MAKE) rdotnet_vrp
 	$(MAKE) rdotnet_volsay
 	$(MAKE) rdotnet_volsay2
 	$(MAKE) rdotnet_volsay3

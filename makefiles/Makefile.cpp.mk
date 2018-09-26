@@ -37,6 +37,7 @@ cc:
 	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system path.)
 
 test_cc: cc
+check_cc: cc
 test_fz: cc
 else
 cc: $(OR_TOOLS_LIBS)
@@ -46,6 +47,8 @@ test_cc: \
  test_cc_tests \
  test_cc_samples \
  test_cc_examples
+.PHONY: check_cc
+check_cc: check_cc_examples
 test_fz: \
  test_fz_examples
 BUILT_LANGUAGES += C++
@@ -468,6 +471,15 @@ $(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS) | $(OBJ_DIR)
 
 .PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
 test_cc_examples: cc
+	$(MAKE) rcc_linear_programming
+	$(MAKE) rcc_integer_programming
+	$(MAKE) rcc_constraint_programming_cp
+	$(MAKE) rcc_rabbits_pheasants_cp
+	$(MAKE) rcc_tsp
+	$(MAKE) rcc_vrp
+	$(MAKE) rcc_knapsack
+	$(MAKE) rcc_max_flow
+	$(MAKE) rcc_min_cost_flow
 	$(MAKE) rcc_costas_array
 	$(MAKE) rcc_cryptarithm
 	$(MAKE) rcc_cvrp_disjoint_tw
@@ -482,13 +494,11 @@ test_cc_examples: cc
 	$(MAKE) rcc_flow_api
 #	$(MAKE) rcc_frequency_assignment_problem  # Need data file
 	$(MAKE) rcc_golomb ARGS="--size=5"
-	$(MAKE) rcc_integer_programming
 	$(MAKE) rcc_jobshop ARGS="--data_file=examples/data/jobshop/ft06"
 	$(MAKE) rcc_jobshop_earlytardy ARGS="--machine_count=6 --job_count=6"
 	$(MAKE) rcc_jobshop_ls ARGS="--data_file=examples/data/jobshop/ft06"
 	$(MAKE) rcc_jobshop_sat ARGS="--input=examples/data/jobshop/ft06"
 	$(MAKE) rcc_linear_assignment_api
-	$(MAKE) rcc_linear_programming
 	$(MAKE) rcc_linear_solver_protocol_buffers
 	$(MAKE) rcc_ls_api
 	$(MAKE) rcc_magic_square
@@ -497,16 +507,28 @@ test_cc_examples: cc
 	$(MAKE) rcc_multidim_knapsack ARGS="--data_file examples/data/multidim_knapsack/PB1.DAT"
 	$(MAKE) rcc_network_routing ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
 	$(MAKE) rcc_nqueens
-	$(MAKE) rcc_pdptw ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt"
+	$(MAKE) rcc_random_tsp
+	$(MAKE) rcc_pdptw ARGS="--pdp_file=examples/data/pdptw/LC1_2_1.txt"
 #	$(MAKE) rcc_shift_minimization_sat  # Port to new API.
 #	$(MAKE) rcc_solve  # Need data file
 	$(MAKE) rcc_sports_scheduling ARGS="--num_teams=8 --time_limit=10000"
 	$(MAKE) rcc_strawberry_fields_with_column_generation
-	$(MAKE) rcc_tsp
 	$(MAKE) rcc_weighted_tardiness_sat
 
 $(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(CP_DEPS) $(SAT_DEPS) $(LP_DEPS)| $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+.PHONY: check_cc_examples # Build and Run few C++ Examples
+check_cc_examples:
+	$(MAKE) rcc_linear_programming
+	$(MAKE) rcc_integer_programming
+	$(MAKE) rcc_constraint_programming_cp
+	$(MAKE) rcc_rabbits_pheasants_cp
+	$(MAKE) rcc_tsp
+	$(MAKE) rcc_vrp
+	$(MAKE) rcc_knapsack
+	$(MAKE) rcc_max_flow
+	$(MAKE) rcc_min_cost_flow
 
 .PHONY: test_cc_samples # Build and Run all C++ Samples (located in ortools/*/samples)
 test_cc_samples: cc

@@ -47,7 +47,7 @@ namespace operations_research {
         }
       }
 
-      std::size_t GetVehicleNumber() const { return 1;}
+      std::size_t GetVehicleNumber() const { return 4;}
       const std::vector<std::vector<int>>& GetLocations() const { return locations_;}
       RoutingModel::NodeIndex GetDepot() const { return RoutingModel::kFirstNode;}
   };
@@ -84,6 +84,23 @@ namespace operations_research {
     }
   };
 
+  //! @brief Add distance Dimension.
+  //! @param[in] data Data of the problem.
+  //! @param[in, out] routing Routing solver used.
+  static void AddDistanceDimension(const DataProblem& data, RoutingModel* routing) {
+    std::string distance("Distance");
+    routing->AddDimension(
+        new ManhattanDistance(data),
+        0,  // null slack
+        3000, // maximum distance per vehicle
+        true, // start cumul to zero
+        distance);
+    RoutingDimension* distanceDimension = routing->GetMutableDimension(distance);
+    // Try to minimize the max distance among vehicles.
+    // /!\ It doesn't mean the standard deviation is minimized
+    distanceDimension->SetGlobalSpanCostCoefficient(100);
+  }
+
   //! @brief Print the solution
   //! @param[in] data Data of the problem.
   //! @param[in] routing Routing solver used.
@@ -94,18 +111,20 @@ namespace operations_research {
       const Assignment& solution) {
     LOG(INFO) << "Objective: " << solution.ObjectiveValue();
     // Inspect solution.
-    int64 index = routing.Start(0);
-    LOG(INFO) << "Route for Vehicle 0:";
-    int64 distance = 0LL;
-    std::stringstream route;
-    while (routing.IsEnd(index) == false) {
-      route << routing.IndexToNode(index).value() << " -> ";
-      int64 previous_index = index;
-      index = solution.Value(routing.NextVar(index));
-      distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(previous_index, index, 0LL);
+    for (int i=0; i < data.GetVehicleNumber(); ++i) {
+      int64 index = routing.Start(i);
+      LOG(INFO) << "Route for Vehicle " << i << ":";
+      int64 distance = 0LL;
+      std::stringstream route;
+      while (routing.IsEnd(index) == false) {
+        route << routing.IndexToNode(index).value() << " -> ";
+        int64 previous_index = index;
+        index = solution.Value(routing.NextVar(index));
+        distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(previous_index, index, i);
+      }
+      LOG(INFO) << route.str() << routing.IndexToNode(index).value();
+      LOG(INFO) << "Distance of the route: " << distance << "m";
     }
-    LOG(INFO) << route.str() << routing.IndexToNode(index).value();
-    LOG(INFO) << "Distance of the route: " << distance << "m";
   }
 
   void Solve() {
@@ -120,11 +139,14 @@ namespace operations_research {
 
     // Define weight of each edge
     ManhattanDistance distance(data);
-    routing.SetArcCostEvaluatorOfAllVehicles(NewPermanentCallback(&distance, &ManhattanDistance::Run));
+    routing.SetArcCostEvaluatorOfAllVehicles(
+        NewPermanentCallback(&distance, &ManhattanDistance::Run));
+    AddDistanceDimension(data, &routing);
 
     // Setting first solution heuristic (cheapest addition).
-    RoutingSearchParameters searchParameters = RoutingModel::DefaultSearchParameters();
-    searchParameters.set_first_solution_strategy(FirstSolutionStrategy::PATH_CHEAPEST_ARC);
+    auto searchParameters = RoutingModel::DefaultSearchParameters();
+    searchParameters.set_first_solution_strategy(
+        FirstSolutionStrategy::PATH_CHEAPEST_ARC);
 
     const Assignment* solution = routing.SolveWithParameters(searchParameters);
     PrintSolution(data, routing, *solution);
