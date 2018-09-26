@@ -19,7 +19,6 @@
 
 #include "ortools/base/mutex.h"
 #include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {
 namespace bop {

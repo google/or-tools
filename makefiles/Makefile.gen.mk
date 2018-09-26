@@ -3713,7 +3713,6 @@ $(OBJ_DIR)/bop/bop_base.$O: \
  $(SRC_DIR)/ortools/sat/boolean_problem.h \
  $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
  $(SRC_DIR)/ortools/sat/clause.h \
- $(GEN_DIR)/ortools/sat/cp_model.pb.h \
  $(SRC_DIR)/ortools/sat/sat_base.h \
  $(SRC_DIR)/ortools/util/stats.h \
  $(SRC_DIR)/ortools/util/time_limit.h \
