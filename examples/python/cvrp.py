@@ -24,7 +24,6 @@
 """
 
 from __future__ import print_function
-from collections import namedtuple
 from six.moves import xrange
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
@@ -32,38 +31,27 @@ from ortools.constraint_solver import routing_enums_pb2
 ###########################
 # Problem Data Definition #
 ###########################
-# Vehicle declaration
-Vehicle = namedtuple('Vehicle', ['capacity'])
-
-# City block declaration
-CityBlock = namedtuple('CityBlock', ['width', 'height'])
-
-
-class DataProblem():
+def create_data_model():
   """Stores the data for the problem"""
-
-  def __init__(self):
-    """Initializes the data for the problem"""
-    # Locations in block unit
-    locations = \
-            [(4, 4), # depot
-             (2, 0), (8, 0), # order location
-             (0, 1), (1, 1),
-             (5, 2), (7, 2),
-             (3, 3), (6, 3),
-             (5, 5), (8, 5),
-             (1, 6), (2, 6),
-             (3, 7), (6, 7),
-             (0, 8), (7, 8)]
-    # Compute locations in meters using the block dimension defined as follow
-    # Manhattan average block: 750ft x 264ft -> 228m x 80m
-    # here we use: 114m x 80m city block
-    # src: https://nyti.ms/2GDoRIe "NY Times: Know Your distance"
-    city_block = CityBlock(width=228 / 2, height=80)
-    self._locations = [(loc[0] * city_block.width, loc[1] * city_block.height)
-                       for loc in locations]
-
-    self._demands = \
+  data = {}
+  # Locations in block unit
+  _locations = \
+          [(4, 4), # depot
+           (2, 0), (8, 0), # locations to visit
+           (0, 1), (1, 1),
+           (5, 2), (7, 2),
+           (3, 3), (6, 3),
+           (5, 5), (8, 5),
+           (1, 6), (2, 6),
+           (3, 7), (6, 7),
+           (0, 8), (7, 8)]
+  # Compute locations in meters using the block dimension defined as follow
+  # Manhattan average block: 750ft x 264ft -> 228m x 80m
+  # here we use: 114m x 80m city block
+  # src: https://nyti.ms/2GDoRIe "NY Times: Know Your distance"
+  data["locations"] = [(l[0] * 114, l[1] * 80) for l in _locations]
+  data["num_locations"] = len(data["locations"])
+  data["demands"] = \
         [0, # depot
          1, 1, # 1, 2
          2, 4, # 3, 4
@@ -73,37 +61,10 @@ class DataProblem():
          1, 2, # 11,12
          4, 4, # 13, 14
          8, 8] # 15, 16
-
-  @property
-  def vehicle(self):
-    """Gets a vehicle"""
-    return Vehicle(capacity=15)
-
-  @property
-  def num_vehicles(self):
-    """Gets number of vehicles"""
-    return 4
-
-  @property
-  def locations(self):
-    """Gets locations"""
-    return self._locations
-
-  @property
-  def num_locations(self):
-    """Gets number of locations"""
-    return len(self.locations)
-
-  @property
-  def depot(self):
-    """Gets depot location index"""
-    return 0
-
-  @property
-  def demands(self):
-    """Gets demands at each location"""
-    return self._demands
-
+  data["num_vehicles"] = 4
+  data["vehicle_capacity"] = 15
+  data["depot"] = 0
+  return data
 
 #######################
 # Problem Constraints #
@@ -113,42 +74,36 @@ def manhattan_distance(position_1, position_2):
   return (
       abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
 
-
-class CreateDistanceEvaluator(object):  # pylint: disable=too-few-public-methods
+def create_distance_evaluator(data):
   """Creates callback to return distance between points."""
+  _distances = {}
+  # precompute distance between location to have distance callback in O(1)
+  for from_node in xrange(data["num_locations"]):
+    _distances[from_node] = {}
+    for to_node in xrange(data["num_locations"]):
+      if from_node == to_node:
+        _distances[from_node][to_node] = 0
+      else:
+        _distances[from_node][to_node] = (
+            manhattan_distance(data["locations"][from_node],
+                               data["locations"][to_node]))
 
-  def __init__(self, data):
-    """Initializes the distance matrix."""
-    self._distances = {}
-
-    # precompute distance between location to have distance callback in O(1)
-    for from_node in xrange(data.num_locations):
-      self._distances[from_node] = {}
-      for to_node in xrange(data.num_locations):
-        if from_node == to_node:
-          self._distances[from_node][to_node] = 0
-        else:
-          self._distances[from_node][to_node] = (
-              manhattan_distance(data.locations[from_node],
-                                 data.locations[to_node]))
-
-  def distance_evaluator(self, from_node, to_node):
+  def distance_evaluator(from_node, to_node):
     """Returns the manhattan distance between the two nodes"""
-    return self._distances[from_node][to_node]
+    return _distances[from_node][to_node]
 
+  return distance_evaluator
 
-class CreateDemandEvaluator(object):  # pylint: disable=too-few-public-methods
+def create_demand_evaluator(data):
   """Creates callback to get demands at each location."""
+  _demands = data["demands"]
 
-  def __init__(self, data):
-    """Initializes the demand array."""
-    self._demands = data.demands
-
-  def demand_evaluator(self, from_node, to_node):
+  def demand_evaluator(from_node, to_node):
     """Returns the demand of the current node"""
     del to_node
-    return self._demands[from_node]
+    return _demands[from_node]
 
+  return demand_evaluator
 
 def add_capacity_constraints(routing, data, demand_evaluator):
   """Adds capacity constraint"""
@@ -156,10 +111,9 @@ def add_capacity_constraints(routing, data, demand_evaluator):
   routing.AddDimension(
       demand_evaluator,
       0,  # null capacity slack
-      data.vehicle.capacity,
+      data["vehicle_capacity"],
       True,  # start cumul to zero
       capacity)
-
 
 ###########
 # Printer #
@@ -170,7 +124,7 @@ def print_solution(data, routing, assignment):
   total_distance = 0
   total_load = 0
   capacity_dimension = routing.GetDimensionOrDie('Capacity')
-  for vehicle_id in xrange(data.num_vehicles):
+  for vehicle_id in xrange(data["num_vehicles"]):
     index = routing.Start(vehicle_id)
     plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
     distance = 0
@@ -193,24 +147,24 @@ def print_solution(data, routing, assignment):
   print('Total Distance of all routes: {}m'.format(total_distance))
   print('Total Load of all routes: {}'.format(total_load))
 
-
 ########
 # Main #
 ########
 def main():
   """Entry point of the program"""
   # Instantiate the data problem.
-  data = DataProblem()
+  data = create_data_model()
 
   # Create Routing Model
-  routing = pywrapcp.RoutingModel(data.num_locations, data.num_vehicles,
-                                  data.depot)
-
+  routing = pywrapcp.RoutingModel(
+      data["num_locations"],
+      data["num_vehicles"],
+      data["depot"])
   # Define weight of each edge
-  distance_evaluator = CreateDistanceEvaluator(data).distance_evaluator
+  distance_evaluator = create_distance_evaluator(data)
   routing.SetArcCostEvaluatorOfAllVehicles(distance_evaluator)
   # Add Capacity constraint
-  demand_evaluator = CreateDemandEvaluator(data).demand_evaluator
+  demand_evaluator = create_demand_evaluator(data)
   add_capacity_constraints(routing, data, demand_evaluator)
 
   # Setting first solution heuristic (cheapest addition).
@@ -220,7 +174,6 @@ def main():
   # Solve the problem.
   assignment = routing.SolveWithParameters(search_parameters)
   print_solution(data, routing, assignment)
-
 
 if __name__ == '__main__':
   main()
