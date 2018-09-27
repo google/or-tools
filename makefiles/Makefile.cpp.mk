@@ -42,8 +42,8 @@ test_fz: cc
 else
 cc: $(OR_TOOLS_LIBS)
 
+
 test_cc: \
- ccexe \
  test_cc_tests \
  test_cc_samples \
  test_cc_examples
@@ -238,81 +238,6 @@ ifeq ($(PLATFORM),MACOSX)
 FAP_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fap.$L #
 endif
 faplibs: $(FAP_LIBS)
-
-# Binaries
-CC_EXAMPLES = \
-costas_array \
-cryptarithm \
-cvrp_disjoint_tw \
-cvrptw \
-cvrptw_with_breaks \
-cvrptw_with_refueling \
-cvrptw_with_resources \
-cvrptw_with_stop_times_and_resources \
-dimacs_assignment \
-dobble_ls \
-flexible_jobshop \
-flow_api \
-frequency_assignment_problem \
-golomb \
-integer_programming \
-jobshop \
-jobshop_earlytardy \
-jobshop_ls \
-jobshop_sat \
-linear_assignment_api \
-linear_programming \
-linear_solver_protocol_buffers \
-ls_api \
-magic_square \
-model_util \
-mps_driver \
-multidim_knapsack \
-network_routing \
-nqueens \
-pdptw \
-shift_minimization_sat \
-solve \
-sports_scheduling \
-strawberry_fields_with_column_generation \
-tsp \
-weighted_tardiness_sat
-
-CC_TESTS = \
-ac4r_table_test \
-boolean_test \
-bug_fz1 \
-cpp11_test \
-forbidden_intervals_test \
-gcc_test \
-issue173 \
-issue57 \
-min_max_test \
-visitor_test
-
-CC_SAMPLES = \
-binpacking_problem \
-bool_or_sample \
-channeling_sample \
-code_sample \
-interval_sample \
-literal_sample \
-no_overlap_sample \
-optional_interval_sample \
-rabbits_and_pheasants \
-ranking_sample \
-reified_sample \
-simple_solve \
-solve_all_solutions \
-solve_with_intermediate_solutions \
-solve_with_time_limit \
-stop_after_n_solutions \
-
-.PHONY: ccexe
-ccexe: \
- $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_SAMPLES))) \
- $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_TESTS))) \
- $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(CC_EXAMPLES)))
 
 # CVRPTW common library
 CVRPTW_OBJS = $(OBJ_DIR)/cvrptw_lib.$O
