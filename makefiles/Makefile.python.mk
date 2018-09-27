@@ -936,6 +936,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 
+ifneq ($(PYTHON_EXECUTABLE),)
 .PHONY: pypi_archive # Create Python "ortools" wheel package
 pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
 ifneq ($(SYSTEM),win)
@@ -968,11 +969,12 @@ ifneq ($(SYSTEM),win)
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python -m pip install $(PYPI_ARCHIVE_TEMP_DIR)/ortools/dist/*.whl
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/test.py
 else
-	# wildcar not working on windows:  i.e. `pip install *.whl`:
-	# *.whl is not a valid wheel filename.
+# wildcar not working on windows:  i.e. `pip install *.whl`:
+# *.whl is not a valid wheel filename.
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python -m pip install --find-links=$(PYPI_ARCHIVE_TEMP_DIR)\ortools\dist ortools
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\test.py
 endif
+endif # ifneq ($(PYTHON_EXECUTABLE),)
 
 .PHONY: install_python # Install Python OR-Tools on the host system
 install_python: pypi_archive
