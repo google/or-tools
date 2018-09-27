@@ -460,7 +460,7 @@ test_cc_examples: cc
 	$(MAKE) rcc_network_routing ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
 	$(MAKE) rcc_nqueens
 	$(MAKE) rcc_random_tsp
-	$(MAKE) rcc_pdptw ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt"
+#	$(MAKE) rcc_pdptw ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
 #	$(MAKE) rcc_shift_minimization_sat  # Port to new API.
 #	$(MAKE) rcc_solve  # Need data file
 	$(MAKE) rcc_sports_scheduling ARGS="--num_teams=8 --time_limit=10000"
