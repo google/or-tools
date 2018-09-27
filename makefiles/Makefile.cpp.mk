@@ -28,13 +28,13 @@ HAS_CCC =
 endif
 
 # Main target
-.PHONY: cc # Build C++ OR-Tools and C++ Examples.
-.PHONY: test_cc # Test C++ OR-Tools using various examples.
-.PHONY: test_fz # Test Flatzinc OR-Tools using various examples.
+.PHONY: cc # Build C++ OR-Tools library.
+.PHONY: test_cc # Run all C++ OR-Tools examples.
+.PHONY: test_fz # Run all Flatzinc OR-Tools examples.
 ifndef HAS_CCC
 cc:
 	@echo CCC = $(CCC)
-	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system path.)
+	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system PATH.)
 
 test_cc: cc
 check_cc: cc
@@ -42,13 +42,15 @@ test_fz: cc
 else
 cc: $(OR_TOOLS_LIBS)
 
+# Quick check only running same examples than on optimization site
+.PHONY: check_cc
+check_cc: check_cc_examples
 
 test_cc: \
  test_cc_tests \
  test_cc_samples \
  test_cc_examples
-.PHONY: check_cc
-check_cc: check_cc_examples
+
 test_fz: \
  test_fz_examples
 BUILT_LANGUAGES += C++
