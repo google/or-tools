@@ -45,6 +45,15 @@ function get_dependencies {
      | cut -d '"' -f 2 | LC_COLLATE=C sort -u
 }
 
+# Input: filename sub_dir
+# Output: dependencies command for that file:
+#    objs/sub_dir/filename.o : ortools/
+function print_dependencies {
+  cmd=$(gcc -MM -MT objs/${2}/${1}.o -c ortools/${2}/${1}.cc -I. -Iortools/gen \
+        -isystem dependencies/install/include)
+  echo "${cmd} | \$(OBJ_DIR)/${2}"
+}
+
 # Generate XXX_DEPS macro
 echo "${libname}"_DEPS = \\
 print_paths ortools/"${main_dir}"/*.h "${all_proto[@]/.proto/.pb.h}"
@@ -57,38 +66,12 @@ print_paths "${all_cc[@]/.cc/.\$O}" "${all_proto[@]/.proto/.pb.\$O}"
 echo ""
 echo
 
-# Generate dependencies for .h files
-for file in "${all_h[@]}"; do
-  name=$(basename "${file}" .h)
-  # Print makefile command for .h.
-  echo -e "\$(SRC_DIR)/ortools/${main_dir}/${name}.h: ;"
-  echo
-done
-
 # Generate dependencies and compilation command for .cc files.
 for file in "${all_cc[@]}"
 do
   name=$(basename "${file}" .cc)
-  if [[ -e "${file/.cc/.h}" ]]; then
-    header="${file/.cc/.h}"
-  else
-    header=""
-  fi
   # Compute dependencies.
-  all_deps=( $(get_dependencies "${file} ${header}") )
-  # Print makefile command for .cc.
-  echo -e "\$(SRC_DIR)/ortools/${main_dir}/${name}.cc: ;"
-  echo
-  # Print makefile command for .$O.
-  echo -e "\$(OBJ_DIR)/${main_dir}/${name}.\$O: \\"
-  echo -e " \$(PROTO_DEPS) \\"
-  echo -e " \$(SRC_DIR)/ortools/${main_dir}/${name}.cc \\"
-  if [[ "${#all_deps[@]}" != 0 ]];then
-    print_paths "${all_deps[@]}"
-    echo -e " \\"
-  fi
-  print_paths "${all_proto[@]/.proto/.pb.h}"
-  echo -e " | \$(OBJ_DIR)/${main_dir}"
+  print_dependencies "${name}" "${main_dir}"
   echo -e "\t\$(CCC) \$(CFLAGS) -c \$(SRC_DIR)\$Sortools\$S${main_dir}\$S${name}.cc \$(OBJ_OUT)\$(OBJ_DIR)\$S${main_dir}\$S${name}.\$O"
   echo
 done
