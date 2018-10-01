@@ -23,6 +23,7 @@ or-tools*.zip
 
 build.log
 test.log
+publish.log
 bin/
 ortools/gen/
 objs/

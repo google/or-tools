@@ -984,10 +984,6 @@ install_python: pypi_archive
 uninstall_python:
 	"$(PYTHON_EXECUTABLE)" -m pip uninstall ortools
 
-pypi_upload: pypi_archive # Upload Wheel package to Pypi.org
-	@echo Uploading Pypi module for "$(PYTHON_EXECUTABLE)".
-	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && twine upload dist/*
-
 .PHONY: python_examples_archive # Build stand-alone Python examples archive file for redistribution.
 python_examples_archive:
 	-$(DELREC) temp
