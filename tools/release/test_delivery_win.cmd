@@ -40,7 +40,7 @@ echo Rebuild Python2.7 pypi archive...DONE | tee.exe -a test.log
 echo Creating Python2.7 venv... | tee.exe -a test.log
 set PATH=c:\python27-64;c:\python27-64\Scripts;%PATH%
 python -m pip install virtualenv
-set TEMP_DIR=temp-python27
+set TEMP_DIR=temp_python27
 python -m virtualenv %TEMP_DIR%\venv
 set PATH=%LOCAL_PATH%
 echo Creating Python2.7 venv...DONE | tee.exe -a test.log
@@ -74,7 +74,7 @@ echo Rebuild Python3.5 pypi archive...DONE | tee.exe -a test.log
 echo Creating Python3.5 venv... | tee.exe -a test.log
 set PATH=c:\python35-64;c:\python35-64\Scripts;%PATH%
 python -m pip install virtualenv
-set TEMP_DIR=temp-python35
+set TEMP_DIR=temp_python35
 python -m virtualenv %TEMP_DIR%\venv
 set PATH=%LOCAL_PATH%
 echo Creating Python3.5 venv...DONE | tee.exe -a test.log
@@ -108,7 +108,7 @@ echo Rebuild Python3.6 pypi archive...DONE | tee.exe -a test.log
 echo Creating Python3.6 venv... | tee.exe -a test.log
 set PATH=c:\python36-64;c:\python36-64\Scripts;%PATH%
 python -m pip install virtualenv
-set TEMP_DIR=temp-python36
+set TEMP_DIR=temp_python36
 python -m virtualenv %TEMP_DIR%\venv
 set PATH=%LOCAL_PATH%
 echo Creating Python3.6 venv...DONE | tee.exe -a test.log
@@ -142,7 +142,7 @@ echo Rebuild Python3.7 pypi archive...DONE | tee.exe -a test.log
 echo Creating Python3.7 venv... | tee.exe -a test.log
 set PATH=c:\python37-64;c:\python37-64\Scripts;%PATH%
 python -m pip install virtualenv
-set TEMP_DIR=temp-python37
+set TEMP_DIR=temp_python37
 python -m virtualenv %TEMP_DIR%\venv
 set PATH=%LOCAL_PATH%
 echo Creating Python3.7 venv...DONE | tee.exe -a test.log

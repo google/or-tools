@@ -95,6 +95,7 @@ echo Test Python2.7 pypi archive... | tee.exe -a build.log
 make.exe test_pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
 echo Test Python2.7 pypi archive...DONE | tee.exe -a build.log
 
+set TEMP_DIR=temp_python27
 FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
 
 REM ##################
@@ -115,6 +116,7 @@ echo Test Python3.5 pypi archive... | tee.exe -a build.log
 make.exe test_pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
 echo Test Python3.5 pypi archive...DONE | tee.exe -a build.log
 
+set TEMP_DIR=temp_python35
 FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
 
 REM ##################
@@ -135,6 +137,7 @@ echo Test Python3.6 pypi archive... | tee.exe -a build.log
 make.exe test_pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
 echo Test Python3.6 pypi archive...DONE | tee.exe -a build.log
 
+set TEMP_DIR=temp_python36
 FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
 
 REM ##################
@@ -155,4 +158,5 @@ echo Test Python3.7 pypi archive... | tee.exe -a build.log
 make.exe test_pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
 echo Test Python3.7 pypi archive...DONE | tee.exe -a build.log
 
+set TEMP_DIR=temp_python37
 FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .

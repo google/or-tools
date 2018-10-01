@@ -97,7 +97,7 @@ echo -n "Test Python 2 wheel archive..." | tee -a build.log
 make test_pypi_archive UNIX_PYTHON_VER=2
 echo "DONE" | tee -a build.log
 
-cp temp-python2/ortools/dist/*.whl .
+cp temp_python2/ortools/dist/*.whl .
 
 ################
 ##  Python 3  ##
@@ -118,4 +118,4 @@ echo -n "Test Python 3 wheel archive..." | tee -a build.log
 make test_pypi_archive UNIX_PYTHON_VER=3
 echo "DONE" | tee -a build.log
 
-cp temp-python3/ortools/dist/*.whl .
+cp temp_python3/ortools/dist/*.whl .

@@ -62,7 +62,7 @@ function export_manylinux_wheel {
     make test_python
     make pypi_archive
     # Build and repair wheels
-    cd temp-python*/ortools
+    cd temp_python*/ortools
     python setup.py bdist_wheel
     cd dist
     auditwheel repair ./*.whl -w "$export_root"
