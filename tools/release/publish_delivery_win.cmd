@@ -1,6 +1,6 @@
 REM /!\ THIS SCRIPT SUPPOSE A FIXED PATH FOR PYTHON /!\
 REM run it as: cmd /c tools\release\publish_delivery_win.cmd
-set PATH=%PATH%;tools
+set PATH=%PATH%;tools;tools\win
 set PATH=%PATH%;C:\python37-64;C:\python37-64\Scripts
 
 REM Print version
