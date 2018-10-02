@@ -23,7 +23,7 @@ make pypi_archive UNIX_PYTHON_VER=2.7
 echo Rebuild Python2.7 pypi archive...DONE | tee -a test.log
 
 echo Creating Python2.7 venv... | tee -a test.log
-TEMP_DIR=temp-python2.7
+TEMP_DIR=temp_python2.7
 VENV_DIR=${TEMP_DIR}/venv
 python2 -m pip install --user virtualenv
 python2 -m virtualenv ${VENV_DIR}
@@ -57,7 +57,7 @@ make pypi_archive UNIX_PYTHON_VER=3.5
 echo Rebuild Python3.5 pypi archive...DONE | tee -a test.log
 
 echo Creating Python3.5 venv... | tee -a test.log
-TEMP_DIR=temp-python3.5
+TEMP_DIR=temp_python3.5
 VENV_DIR=${TEMP_DIR}/venv
 python3 -m pip install --user virtualenv
 python3 -m virtualenv ${VENV_DIR}

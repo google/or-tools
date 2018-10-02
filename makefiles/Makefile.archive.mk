@@ -190,6 +190,8 @@ else
  && $(MAKE) MAKEFLAGS= rcc_knapsack \
  && $(MAKE) MAKEFLAGS= rcc_max_flow \
  && $(MAKE) MAKEFLAGS= rcc_min_cost_flow \
+ && $(MAKE) MAKEFLAGS= rcc_nurses_cp \
+ && $(MAKE) MAKEFLAGS= rcc_jobshop_cp \
  \
  && $(MAKE) MAKEFLAGS= rjava_LinearProgramming \
  && $(MAKE) MAKEFLAGS= rjava_IntegerProgramming \

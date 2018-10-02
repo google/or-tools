@@ -11,19 +11,29 @@ make print-OR_TOOLS_VERSION | tee build.log
 
 # Check all prerequisite
 # cc
+command -v clang
 command -v clang | xargs echo "clang: " | tee -a build.log
+command -v cmake
 command -v cmake | xargs echo "cmake: " | tee -a build.log
+command -v make
 command -v make | xargs echo "make: " | tee -a build.log
+command -v swig
 command -v swig | xargs echo "swig: " | tee -a build.log
 # python
+command -v python2.7
 command -v python2.7 | xargs echo "python2.7: " | tee -a build.log
+command -v python3.7
 command -v python3.7 | xargs echo "python3.7: " | tee -a build.log
 # java
 echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
+command -v java
 command -v java | xargs echo "java: " | tee -a build.log
+command -v javac
 command -v javac | xargs echo "javac: " | tee -a build.log
+command -v jar
 command -v jar | xargs echo "jar: " | tee -a build.log
 # C#
+command -v dotnet
 command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
 #########################
@@ -97,7 +107,7 @@ echo -n "Test Python 2.7 wheel archive..." | tee -a build.log
 make test_pypi_archive UNIX_PYTHON_VER=2.7
 echo "DONE" | tee -a build.log
 
-cp temp-python2.7/ortools/dist/*.whl .
+cp temp_python2.7/ortools/dist/*.whl .
 
 ##################
 ##  Python 3.7  ##
@@ -118,4 +128,4 @@ echo -n "Test Python 3.7 wheel archive..." | tee -a build.log
 make test_pypi_archive UNIX_PYTHON_VER=3.7
 echo "DONE" | tee -a build.log
 
-cp temp-python3.7/ortools/dist/*.whl .
+cp temp_python3.7/ortools/dist/*.whl .

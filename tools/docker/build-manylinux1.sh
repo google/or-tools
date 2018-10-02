@@ -15,6 +15,7 @@
 #                  destination path for the wheels export.
 #   BUILD_ROOT     if not specified at command line, this value is used as the
 #                  root path for the build process.
+set -x
 set -e
 
 DEFAULT_BUILD_ROOT="$HOME"
@@ -62,7 +63,7 @@ function export_manylinux_wheel {
     make test_python
     make pypi_archive
     # Build and repair wheels
-    cd temp-python*/ortools
+    cd temp_python*/ortools
     python setup.py bdist_wheel
     cd dist
     auditwheel repair ./*.whl -w "$export_root"
@@ -134,6 +135,9 @@ TESTS=(
 
 ###############################################################################
 # Main
+# Force the use of wheel 0.31.1 since 0.32 is broken
+# cf pypa/auditwheel#102
+/opt/_internal/cpython-3.6.6/bin/python -m pip install wheel==0.31.1
 
 mkdir -p "${BUILD_ROOT}"
 mkdir -p "${EXPORT_ROOT}"
