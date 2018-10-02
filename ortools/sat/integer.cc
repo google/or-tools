@@ -682,7 +682,7 @@ void IntegerTrail::RelaxLinearReason(
   std::vector<int> indices(size);
   for (int i = 0; i < size; ++i) {
     CHECK_EQ((*reason)[i].bound, LowerBound((*reason)[i].var));
-    CHECK_GT(coeffs[i], 0);
+    CHECK_GE(coeffs[i], 0);
     indices[i] = vars_[(*reason)[i].var].current_trail_index;
   }
 
