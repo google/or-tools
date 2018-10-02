@@ -174,8 +174,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
   current_linear_program_.PopulateFromLinearProgram(lp);
 
   // Preprocess.
-  MainLpPreprocessor preprocessor;
-  preprocessor.SetParameters(parameters_);
+  MainLpPreprocessor preprocessor(&parameters_);
   preprocessor.SetTimeLimit(time_limit);
 
   const bool postsolve_is_needed = preprocessor.Run(&current_linear_program_);

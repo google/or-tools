@@ -61,13 +61,12 @@ std::unordered_map<IntegerValue, Literal> GetEncoding(IntegerVariable var,
 
 void FilterValues(IntegerVariable var, Model* model,
                   std::unordered_set<int64>* values) {
-  std::vector<ClosedInterval> domain =
-      model->Get<IntegerTrail>()->InitialVariableDomain(var);
+  const Domain domain = model->Get<IntegerTrail>()->InitialVariableDomain(var);
   for (auto it = values->begin(); it != values->end();) {
     const int64 v = *it;
     auto copy = it++;
     // TODO(user): quadratic! improve.
-    if (!SortedDisjointIntervalsContain(domain, v)) {
+    if (!domain.Contains(v)) {
       values->erase(copy);
     }
   }
@@ -171,8 +170,8 @@ std::function<void(Model*)> TableConstraint(
                       [first](int64 v) { return v == first; })) {
         model->Add(Equality(vars[i], first));
       } else {
-        integer_trail->UpdateInitialDomain(
-            vars[i], SortedDisjointIntervalsFromValues(tr_tuples[i]));
+        integer_trail->UpdateInitialDomain(vars[i],
+                                           Domain::FromValues(tr_tuples[i]));
         model->Add(FullyEncodeVariable(vars[i]));
         ProcessOneColumn(
             tuple_literals,
@@ -322,7 +321,7 @@ std::function<void(Model*)> TransitionConstraint(
       const auto domain = integer_trail->InitialVariableDomain(vars[time]);
       for (const std::vector<int64>& transition : automata) {
         // TODO(user): quadratic algo, improve!
-        if (SortedDisjointIntervalsContain(domain, transition[1])) {
+        if (domain.Contains(transition[1])) {
           possible_values[time].insert(transition[1]);
         }
       }
@@ -411,8 +410,8 @@ std::function<void(Model*)> TransitionConstraint(
           std::vector<int64> values;
           values.reserve(s.size());
           for (IntegerValue v : s) values.push_back(v.value());
-          integer_trail->UpdateInitialDomain(
-              vars[time], SortedDisjointIntervalsFromValues(values));
+          integer_trail->UpdateInitialDomain(vars[time],
+                                             Domain::FromValues(values));
           model->Add(FullyEncodeVariable(vars[time]));
           encoding = GetEncoding(vars[time], model);
         } else {

@@ -314,8 +314,8 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   // Detect literal view. Note that the same literal can be associated to more
   // than one variable, and thus already have a view. We don't change it in
   // this case.
-  const auto& domain = (*domains_)[var];
-  if (value == 1 && domain.front().start >= 0 && domain.back().end <= 1) {
+  const Domain domain = Domain::FromIntervals((*domains_)[var]);
+  if (value == 1 && domain.Min() >= 0 && domain.Max() <= 1) {
     if (literal.Index() >= literal_view_.size()) {
       literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
       literal_view_[literal.Index()] = var;
@@ -323,7 +323,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
       literal_view_[literal.Index()] = var;
     }
   }
-  if (value == -1 && domain.front().start >= -1 && domain.back().end <= 0) {
+  if (value == -1 && domain.Min() >= -1 && domain.Max() <= 0) {
     if (literal.Index() >= literal_view_.size()) {
       literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
       literal_view_[literal.Index()] = NegationOf(var);
@@ -333,17 +333,17 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   }
 
   // Fix literal for value outside the domain or for singleton domain.
-  if (!SortedDisjointIntervalsContain(domain, value.value())) {
+  if (!domain.Contains(value.value())) {
     sat_solver_->AddUnitClause(literal.Negated());
     return;
   }
-  if (value == domain.front().start && value == domain.back().end) {
+  if (value == domain.Min() && value == domain.Max()) {
     sat_solver_->AddUnitClause(literal);
     return;
   }
 
   // Special case for the first and last value.
-  if (value == domain.front().start) {
+  if (value == domain.Min()) {
     // Note that this will recursively call AssociateToIntegerEqualValue() but
     // since equality_to_associated_literal_[] is now set, the recursion will
     // stop there. When a domain has just 2 values, this allows to call just
@@ -353,7 +353,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
                               IntegerLiteral::LowerOrEqual(var, value));
     return;
   }
-  if (value == domain.back().end) {
+  if (value == domain.Max()) {
     AssociateToIntegerLiteral(literal,
                               IntegerLiteral::GreaterOrEqual(var, value));
     return;
@@ -537,12 +537,10 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   return i;
 }
 
-IntegerVariable IntegerTrail::AddIntegerVariable(
-    const std::vector<ClosedInterval>& domain) {
-  CHECK(!domain.empty());
-  CHECK(IntervalsAreSortedAndDisjoint(domain));
-  const IntegerVariable var = AddIntegerVariable(
-      IntegerValue(domain.front().start), IntegerValue(domain.back().end));
+IntegerVariable IntegerTrail::AddIntegerVariable(const Domain& domain) {
+  CHECK(!domain.IsEmpty());
+  const IntegerVariable var = AddIntegerVariable(IntegerValue(domain.Min()),
+                                                 IntegerValue(domain.Max()));
   CHECK(UpdateInitialDomain(var, domain));
   return var;
 }
@@ -551,32 +549,30 @@ IntegerVariable IntegerTrail::AddIntegerVariable(
 //
 // TODO(user): we could return a reference, but this is likely not in any
 // critical code path.
-std::vector<ClosedInterval> IntegerTrail::InitialVariableDomain(
-    IntegerVariable var) const {
-  std::vector<ClosedInterval> domain;
-  for (const ClosedInterval& i : (*domains_)[var]) domain.push_back(i);
-  return domain;
+Domain IntegerTrail::InitialVariableDomain(IntegerVariable var) const {
+  return Domain::FromIntervals((*domains_)[var]);
 }
 
-bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
-                                       std::vector<ClosedInterval> domain) {
+bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
 
   // TODO(user): A bit inefficient as this recreate a vector for no reason.
   // The IntersectionOfSortedDisjointIntervals() should take a Span<> instead.
-  std::vector<ClosedInterval> old_domain = InitialVariableDomain(var);
-  domain = IntersectionOfSortedDisjointIntervals(domain, old_domain);
+  const Domain old_domain = InitialVariableDomain(var);
+  domain = domain.IntersectionWith(old_domain);
   if (old_domain == domain) return true;
-  if (domain.empty()) return false;
+  if (domain.IsEmpty()) return false;
 
-  (*domains_)[var].assign(domain.begin(), domain.end());
   {
-    std::vector<ClosedInterval> temp =
-        NegationOfSortedDisjointIntervals(domain);
+    const std::vector<ClosedInterval> temp = domain.intervals();
+    (*domains_)[var].assign(temp.begin(), temp.end());
+  }
+  {
+    const std::vector<ClosedInterval> temp = domain.Negation().intervals();
     (*domains_)[NegationOf(var)].assign(temp.begin(), temp.end());
   }
 
-  if (domain.size() > 1) {
+  if (domain.intervals().size() > 1) {
     var_to_current_lb_interval_index_.Set(var, 0);
     var_to_current_lb_interval_index_.Set(NegationOf(var), 0);
   }
@@ -585,21 +581,20 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
   // bounds here directly. This is because these function might call again
   // UpdateInitialDomain(), and we will abort after realizing that the domain
   // didn't change this time.
-  CHECK(Enqueue(
-      IntegerLiteral::GreaterOrEqual(var, IntegerValue(domain.front().start)),
-      {}, {}));
-  CHECK(Enqueue(
-      IntegerLiteral::LowerOrEqual(var, IntegerValue(domain.back().end)), {},
-      {}));
+  CHECK(Enqueue(IntegerLiteral::GreaterOrEqual(var, IntegerValue(domain.Min())),
+                {}, {}));
+  CHECK(Enqueue(IntegerLiteral::LowerOrEqual(var, IntegerValue(domain.Max())),
+                {}, {}));
 
   // If the variable is fully encoded, set to false excluded literals.
   if (encoder_->VariableIsFullyEncoded(var)) {
     int i = 0;
     int num_fixed = 0;
     const auto encoding = encoder_->FullDomainEncoding(var);
+    const auto intervals = domain.intervals();
     for (const auto pair : encoding) {
-      while (i < domain.size() && pair.value > domain[i].end) ++i;
-      if (i == domain.size() || pair.value < domain[i].start) {
+      while (i < intervals.size() && pair.value > intervals[i].end) ++i;
+      if (i == intervals.size() || pair.value < intervals[i].start) {
         // Set the literal to false;
         ++num_fixed;
         if (trail_->Assignment().LiteralIsTrue(pair.literal)) return false;
@@ -671,6 +666,44 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
     }
     prev_trail_index = trail_index;
     trail_index = entry.prev_trail_index;
+  }
+}
+
+// We try to relax the reason in a smart way here by minimizing the maximum
+// trail indices of the literals appearing in reason.
+//
+// TODO(user): use priority queue instead of O(n^2) algo.
+void IntegerTrail::RelaxLinearReason(
+    IntegerValue slack, absl::Span<IntegerValue> coeffs,
+    std::vector<IntegerLiteral>* reason) const {
+  CHECK_GE(slack, 0);
+  if (slack == 0) return;
+  const int size = reason->size();
+  std::vector<int> indices(size);
+  for (int i = 0; i < size; ++i) {
+    CHECK_EQ((*reason)[i].bound, LowerBound((*reason)[i].var));
+    CHECK_GT(coeffs[i], 0);
+    indices[i] = vars_[(*reason)[i].var].current_trail_index;
+  }
+
+  const int num_vars = vars_.size();
+  while (slack != 0) {
+    int best_i = -1;
+    for (int i = 0; i < size; ++i) {
+      if (indices[i] < num_vars) continue;  // level zero.
+      if (best_i != -1 && indices[i] < indices[best_i]) continue;
+      const TrailEntry& entry = integer_trail_[indices[i]];
+      const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
+      if (coeffs[i] * (entry.bound - previous_entry.bound) > slack) continue;
+      best_i = i;
+    }
+    if (best_i == -1) return;
+
+    const TrailEntry& entry = integer_trail_[indices[best_i]];
+    const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
+    indices[best_i] = entry.prev_trail_index;
+    (*reason)[best_i].bound = previous_entry.bound;
+    slack -= coeffs[best_i] * (entry.bound - previous_entry.bound);
   }
 }
 
@@ -923,8 +956,9 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
     integer_trail_[i_lit.var.value()].bound = i_lit.bound;
 
     // We also update the initial domain.
-    CHECK(UpdateInitialDomain(i_lit.var, {{LowerBound(i_lit.var).value(),
-                                           UpperBound(i_lit.var).value()}}));
+    CHECK(UpdateInitialDomain(
+        i_lit.var,
+        Domain(LowerBound(i_lit.var).value(), UpperBound(i_lit.var).value())));
     return true;
   }
   DCHECK_GT(trail_->CurrentDecisionLevel(), 0);

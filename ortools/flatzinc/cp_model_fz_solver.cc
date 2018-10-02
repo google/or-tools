@@ -270,10 +270,10 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     arg->add_vars(LookupVar(fz_ct.arguments[0]));
     arg->add_coeffs(1);
     if (fz_ct.arguments[1].type == fz::Argument::INT_LIST) {
-      FillDomain(
-          SortedDisjointIntervalsFromValues({fz_ct.arguments[1].values.begin(),
-                                             fz_ct.arguments[1].values.end()}),
-          arg);
+      FillDomainInProto(Domain::FromValues(std::vector<int64>{
+                            fz_ct.arguments[1].values.begin(),
+                            fz_ct.arguments[1].values.end()}),
+                        arg);
     } else if (fz_ct.arguments[1].type == fz::Argument::INT_INTERVAL) {
       FillDomain({{fz_ct.arguments[1].values[0], fz_ct.arguments[1].values[1]}},
                  arg);
@@ -285,15 +285,16 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     arg->add_vars(LookupVar(fz_ct.arguments[0]));
     arg->add_coeffs(1);
     if (fz_ct.arguments[1].type == fz::Argument::INT_LIST) {
-      FillDomain(
-          ComplementOfSortedDisjointIntervals(SortedDisjointIntervalsFromValues(
-              {fz_ct.arguments[1].values.begin(),
-               fz_ct.arguments[1].values.end()})),
+      FillDomainInProto(
+          Domain::FromValues(
+              std::vector<int64>{fz_ct.arguments[1].values.begin(),
+                                 fz_ct.arguments[1].values.end()})
+              .Complement(),
           arg);
     } else if (fz_ct.arguments[1].type == fz::Argument::INT_INTERVAL) {
-      FillDomain(
-          ComplementOfSortedDisjointIntervals(
-              {{fz_ct.arguments[1].values[0], fz_ct.arguments[1].values[1]}}),
+      FillDomainInProto(
+          Domain(fz_ct.arguments[1].values[0], fz_ct.arguments[1].values[1])
+              .Complement(),
           arg);
     } else {
       LOG(FATAL) << "Wrong format";
@@ -456,21 +457,18 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     int index = min_index;
     const bool is_circuit = (fz_ct.type == "circuit");
     for (const int var : LookupVars(fz_ct.arguments[0])) {
+      Domain domain = ReadDomainFromProto(proto.variables(var));
+
       // Restrict the domain of var to [min_index, max_index]
-      FillDomain(
-          IntersectionOfSortedDisjointIntervals(
-              ReadDomain(proto.variables(var)), {{min_index, max_index}}),
-          proto.mutable_variables(var));
+      domain = domain.IntersectionWith(Domain(min_index, max_index));
       if (is_circuit) {
         // We simply make sure that the variable cannot take the value index.
-        FillDomain(IntersectionOfSortedDisjointIntervals(
-                       ReadDomain(proto.variables(var)),
-                       {{kint64min, index - 1}, {index + 1, kint64max}}),
-                   proto.mutable_variables(var));
+        domain = domain.IntersectionWith(Domain::FromIntervals(
+            {{kint64min, index - 1}, {index + 1, kint64max}}));
       }
+      FillDomainInProto(domain, proto.mutable_variables(var));
 
-      const auto domain = ReadDomain(proto.variables(var));
-      for (const auto interval : domain) {
+      for (const ClosedInterval interval : domain.intervals()) {
         for (int64 value = interval.start; value <= interval.end; ++value) {
           // Create one Boolean variable for this arc.
           const int literal = proto.variables_size();
@@ -540,20 +538,20 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     for (const int var : direct_variables) {
       arg->add_f_direct(var);
       // Intersect domains with offset + [0, num_variables).
-      FillDomain(IntersectionOfSortedDisjointIntervals(
-                     ReadDomain(proto.variables(var)),
-                     {{offset, num_variables - 1 + offset}}),
-                 proto.mutable_variables(var));
+      FillDomainInProto(
+          ReadDomainFromProto(proto.variables(var))
+              .IntersectionWith(Domain(offset, num_variables - 1 + offset)),
+          proto.mutable_variables(var));
     }
 
     if (is_one_based) arg->add_f_inverse(LookupConstant(0));
     for (const int var : inverse_variables) {
       arg->add_f_inverse(var);
       // Intersect domains with offset + [0, num_variables).
-      FillDomain(IntersectionOfSortedDisjointIntervals(
-                     ReadDomain(proto.variables(var)),
-                     {{offset, num_variables - 1 + offset}}),
-                 proto.mutable_variables(var));
+      FillDomainInProto(
+          ReadDomainFromProto(proto.variables(var))
+              .IntersectionWith(Domain(offset, num_variables - 1 + offset)),
+          proto.mutable_variables(var));
     }
   } else if (fz_ct.type == "cumulative") {
     const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
@@ -863,12 +861,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         var->add_domain(fz_var->domain.values[1]);
       }
     } else {
-      const std::vector<ClosedInterval> domain =
-          SortedDisjointIntervalsFromValues(fz_var->domain.values);
-      for (const ClosedInterval& interval : domain) {
-        var->add_domain(interval.start);
-        var->add_domain(interval.end);
-      }
+      FillDomainInProto(Domain::FromValues(fz_var->domain.values), var);
     }
 
     // Some variables in flatzinc have large domain and we don't really support
@@ -877,9 +870,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     // variable domains with [kint32min, kint32max].
     //
     // TODO(user): Warn when we reduce the domain.
-    FillDomain(IntersectionOfSortedDisjointIntervals(ReadDomain(*var),
-                                                     {{kint32min, kint32max}}),
-               var);
+    FillDomainInProto(ReadDomainFromProto(*var).IntersectionWith(
+                          Domain(kint32min, kint32max)),
+                      var);
   }
 
   // Translate the constraints.

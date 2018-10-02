@@ -111,27 +111,15 @@ bool IntegerSumLE::Propagate() {
   const IntegerValue new_lb = rev_lb_fixed_vars_ + lb_unfixed_vars;
 
   // Conflict?
-  IntegerValue slack = upper_bound_ - new_lb;
+  const IntegerValue slack = upper_bound_ - new_lb;
   if (slack < 0) {
-    // Like FillIntegerReason() but try to relax the reason a bit.
-    //
-    // TODO(user): if not all the slack is consumed, we could relax it even
-    // more. It might also be advantageous to relax first the variable with the
-    // highest "trail index".
-    integer_reason_.clear();
+    FillIntegerReason();
+    std::vector<IntegerValue> coeffs;
     for (int i = 0; i < vars_.size(); ++i) {
-      const IntegerVariable var = vars_[i];
-      const IntegerValue lb = integer_trail_->LowerBound(var);
-      const IntegerValue prev_lb = integer_trail_->PreviousLowerBound(var);
-      if (lb == prev_lb) continue;  // level zero.
-      const IntegerValue diff = (lb - prev_lb) * coeffs_[i];
-      if (slack + diff < 0) {
-        integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, prev_lb));
-        slack += diff;
-      } else {
-        integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, lb));
-      }
+      if (index_in_integer_reason_[i] == -1) continue;
+      coeffs.push_back(coeffs_[i]);
     }
+    integer_trail_->RelaxLinearReason(-slack - 1, coeffs, &integer_reason_);
 
     if (num_unassigned_enforcement_literal == 1) {
       // Propagate the only non-true literal to false.
@@ -550,8 +538,7 @@ std::function<void(Model*)> IsOneOf(IntegerVariable var,
     }
     gtl::STLSortAndRemoveDuplicates(&unique_values);
 
-    integer_trail->UpdateInitialDomain(
-        var, SortedDisjointIntervalsFromValues(unique_values));
+    integer_trail->UpdateInitialDomain(var, Domain::FromValues(unique_values));
     if (unique_values.size() == 1) {
       model->Add(ClauseConstraint(selectors));
       return;

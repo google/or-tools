@@ -52,43 +52,42 @@ namespace {
 // in-memory domain of each variables and the constraint variable graph.
 struct PresolveContext {
   bool DomainIsEmpty(int ref) const {
-    return domains[PositiveRef(ref)].empty();
+    return domains[PositiveRef(ref)].IsEmpty();
   }
 
   bool IsFixed(int ref) const {
     CHECK(!DomainIsEmpty(ref));
-    return domains[PositiveRef(ref)].front().start ==
-           domains[PositiveRef(ref)].back().end;
+    return domains[PositiveRef(ref)].Min() == domains[PositiveRef(ref)].Max();
   }
 
   bool LiteralIsTrue(int lit) const {
     if (!IsFixed(lit)) return false;
     if (RefIsPositive(lit)) {
-      return domains[lit].front().start == 1ll;
+      return domains[lit].Min() == 1ll;
     } else {
-      return domains[PositiveRef(lit)].front().start == 0ll;
+      return domains[PositiveRef(lit)].Min() == 0ll;
     }
   }
 
   bool LiteralIsFalse(int lit) const {
     if (!IsFixed(lit)) return false;
     if (RefIsPositive(lit)) {
-      return domains[lit].front().start == 0ll;
+      return domains[lit].Min() == 0ll;
     } else {
-      return domains[PositiveRef(lit)].front().start == 1ll;
+      return domains[PositiveRef(lit)].Min() == 1ll;
     }
   }
 
   int64 MinOf(int ref) const {
     CHECK(!DomainIsEmpty(ref));
-    return RefIsPositive(ref) ? domains[PositiveRef(ref)].front().start
-                              : -domains[PositiveRef(ref)].back().end;
+    return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
+                              : -domains[PositiveRef(ref)].Max();
   }
 
   int64 MaxOf(int ref) const {
     CHECK(!DomainIsEmpty(ref));
-    return RefIsPositive(ref) ? domains[PositiveRef(ref)].back().end
-                              : -domains[PositiveRef(ref)].front().start;
+    return RefIsPositive(ref) ? domains[PositiveRef(ref)].Max()
+                              : -domains[PositiveRef(ref)].Min();
   }
 
   // Returns true if this ref only appear in one constraint.
@@ -96,27 +95,28 @@ struct PresolveContext {
     return var_to_constraints[PositiveRef(ref)].size() == 1;
   }
 
-  std::vector<ClosedInterval> GetRefDomain(int ref) const {
+  Domain DomainOf(int ref) const {
     if (RefIsPositive(ref)) return domains[ref];
-    return NegationOfSortedDisjointIntervals(domains[PositiveRef(ref)]);
+    return domains[PositiveRef(ref)].Negation();
   }
 
-  // Returns false if the domain changed.
-  bool IntersectDomainWith(int ref, const std::vector<ClosedInterval>& domain) {
+  // Returns true iff the domain changed.
+  bool IntersectDomainWith(int ref, const Domain& domain) {
+    CHECK(!DomainIsEmpty(ref));
     const int var = PositiveRef(ref);
-    tmp_domain = IntersectionOfSortedDisjointIntervals(
-        domains[var], RefIsPositive(ref)
-                          ? domain
-                          : NegationOfSortedDisjointIntervals(domain));
-    if (tmp_domain != domains[var]) {
-      modified_domains.Set(var);
-      domains[var] = tmp_domain;
-      if (tmp_domain.empty()) {
-        is_unsat = true;
-      }
-      return true;
+
+    if (RefIsPositive(ref)) {
+      if (domains[var].IsIncludedIn(domain)) return false;
+      domains[var] = domains[var].IntersectionWith(domain);
+    } else {
+      const Domain temp = domain.Negation();
+      if (domains[var].IsIncludedIn(temp)) return false;
+      domains[var] = domains[var].IntersectionWith(temp);
     }
-    return false;
+
+    modified_domains.Set(var);
+    if (domains[var].IsEmpty()) is_unsat = true;
+    return true;
   }
 
   void SetLiteralToFalse(int lit) {
@@ -128,7 +128,7 @@ struct PresolveContext {
         is_unsat = true;
       }
     } else {
-      IntersectDomainWith(var, {{value, value}});
+      IntersectDomainWith(var, Domain(value));
     }
   }
 
@@ -240,7 +240,7 @@ struct PresolveContext {
   // Create the internal structure for any new variables in working_model.
   void InitializeNewDomains() {
     for (int i = domains.size(); i < working_model->variables_size(); ++i) {
-      domains.push_back(ReadDomain(working_model->variables(i)));
+      domains.push_back(ReadDomainFromProto(working_model->variables(i)));
       if (IsFixed(i)) ExploitFixedDomain(i);
     }
     modified_domains.Resize(domains.size());
@@ -290,16 +290,15 @@ struct PresolveContext {
 
   // Temporary storage.
   std::vector<int> tmp_literals;
-  std::vector<ClosedInterval> tmp_domain;
-  std::vector<std::vector<ClosedInterval>> tmp_term_domains;
-  std::vector<std::vector<ClosedInterval>> tmp_left_domains;
+  std::vector<Domain> tmp_term_domains;
+  std::vector<Domain> tmp_left_domains;
 
   // Each time a domain is modified this is set to true.
   SparseBitset<int64> modified_domains;
 
  private:
   // The current domain of each variables.
-  std::vector<std::vector<ClosedInterval>> domains;
+  std::vector<Domain> domains;
 };
 
 // =============================================================================
@@ -529,12 +528,10 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   // Update the target domain.
   bool domain_reduced = false;
   if (!HasEnforcementLiteral(*ct)) {
-    std::vector<ClosedInterval> infered_domain;
+    Domain infered_domain;
     for (const int ref : ct->int_max().vars()) {
-      infered_domain = UnionOfSortedDisjointIntervals(
-          infered_domain,
-          IntersectionOfSortedDisjointIntervals(context->GetRefDomain(ref),
-                                                {{target_min, target_max}}));
+      infered_domain = infered_domain.UnionWith(
+          context->DomainOf(ref).IntersectionWith({target_min, target_max}));
     }
     domain_reduced |= context->IntersectDomainWith(target_ref, infered_domain);
   }
@@ -546,7 +543,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   for (const int ref : ct->int_max().vars()) {
     if (!HasEnforcementLiteral(*ct)) {
       domain_reduced |=
-          context->IntersectDomainWith(ref, {{kint64min, target_max}});
+          context->IntersectDomainWith(ref, Domain(kint64min, target_max));
     }
     if (context->MaxOf(ref) >= target_min) {
       ct->mutable_int_max()->set_vars(new_size++, ref);
@@ -626,7 +623,7 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // This is a bool constraint!
-  context->IntersectDomainWith(target_ref, {{0, 1}});
+  context->IntersectDomainWith(target_ref, Domain(0, 1));
   context->UpdateRuleStats("int_prod: all Boolean.");
   {
     ConstraintProto* new_ct = context->working_model->add_constraints();
@@ -662,8 +659,7 @@ bool PresolveIntDiv(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("TODO int_div: rewrite to equality");
   }
   if (context->IntersectDomainWith(
-          target, DivisionOfSortedDisjointIntervals(
-                      context->GetRefDomain(ref_x), divisor))) {
+          target, context->DomainOf(ref_x).DivisionBy(divisor))) {
     context->UpdateRuleStats(
         "int_div: updated domain of target in target = X / cte");
   }
@@ -721,7 +717,7 @@ bool ExploitEquivalenceRelations(ConstraintProto* ct,
 
 bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   bool var_constraint_graph_changed = false;
-  std::vector<ClosedInterval> rhs = ReadDomain(ct->linear());
+  Domain rhs = ReadDomainFromProto(ct->linear());
 
   // First regroup the terms on the same variables and sum the fixed ones.
   // Note that we use a map to sort the variables and because we expect most
@@ -781,15 +777,15 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
       if (context->IsUnique(var) &&
           context->affine_relations.ClassSize(var) == 1) {
         bool success;
-        const auto term_domain = PreciseMultiplicationOfSortedDisjointIntervals(
-            context->GetRefDomain(var), -coeff, &success);
+        const auto term_domain =
+            context->DomainOf(var).MultiplicationBy(-coeff, &success);
         if (success) {
           // Note that we can't do that if we loose information in the
           // multiplication above because the new domain might not be as strict
           // as the initial constraint otherwise. TODO(user): because of the
           // addition, it might be possible to cover more cases though.
           var_to_erase.push_back(var);
-          rhs = AdditionOfSortedDisjointIntervals(rhs, term_domain);
+          rhs = rhs.AdditionWith(term_domain);
           continue;
         }
       }
@@ -837,11 +833,10 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   // Rewrite the constraint in canonical form and update rhs (it will be copied
   // to the constraint later).
   if (sum_of_fixed_terms != 0) {
-    rhs = AdditionOfSortedDisjointIntervals(
-        rhs, {{-sum_of_fixed_terms, -sum_of_fixed_terms}});
+    rhs = rhs.AdditionWith({-sum_of_fixed_terms, -sum_of_fixed_terms});
   }
   if (gcd > 1) {
-    rhs = InverseMultiplicationOfSortedDisjointIntervals(rhs, gcd);
+    rhs = rhs.InverseMultiplicationBy(gcd);
   }
   ct->mutable_linear()->clear_vars();
   ct->mutable_linear()->clear_coeffs();
@@ -854,7 +849,7 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   // Empty constraint?
   if (ct->linear().vars().empty()) {
     context->UpdateRuleStats("linear: empty");
-    if (SortedDisjointIntervalsContain(rhs, 0)) {
+    if (rhs.Contains(0)) {
       return RemoveConstraint(ct, context);
     } else {
       return MarkConstraintAsFalse(ct, context);
@@ -871,7 +866,7 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
       context->IntersectDomainWith(var, rhs);
     } else {
       DCHECK_EQ(coeff, -1);  // Because of the GCD above.
-      context->IntersectDomainWith(var, NegationOfSortedDisjointIntervals(rhs));
+      context->IntersectDomainWith(var, rhs.Negation());
     }
     return RemoveConstraint(ct, context);
   }
@@ -883,69 +878,69 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   const int num_vars = arg.vars_size();
   term_domains.resize(num_vars + 1);
   left_domains.resize(num_vars + 1);
-  left_domains[0] = {{0, 0}};
+  left_domains[0] = Domain(0);
   for (int i = 0; i < num_vars; ++i) {
     const int var = PositiveRef(arg.vars(i));
     const int64 coeff = arg.coeffs(i);
-    const auto& domain = context->GetRefDomain(var);
 
     // TODO(user): Try PreciseMultiplicationOfSortedDisjointIntervals() if
     // the size is reasonable.
-    term_domains[i] = MultiplicationOfSortedDisjointIntervals(domain, coeff);
-    left_domains[i + 1] =
-        AdditionOfSortedDisjointIntervals(left_domains[i], term_domains[i]);
-    if (left_domains[i + 1].size() > kDomainComplexityLimit) {
+    term_domains[i] = context->DomainOf(var).ContinuousMultiplicationBy(coeff);
+    left_domains[i + 1] = left_domains[i].AdditionWith(term_domains[i]);
+    if (left_domains[i + 1].intervals().size() > kDomainComplexityLimit) {
       // We take a super-set, otherwise it will be too slow.
+      //
       // TODO(user): We could be smarter in how we compute this if we allow for
       // more than one intervals.
-      left_domains[i + 1] = {
-          {left_domains[i + 1].front().start, left_domains[i + 1].back().end}};
+      left_domains[i + 1] =
+          Domain(left_domains[i + 1].Min(), left_domains[i + 1].Max());
     }
   }
-  const std::vector<ClosedInterval>& implied_rhs = left_domains[num_vars];
+  const Domain& implied_rhs = left_domains[num_vars];
 
   // Abort if intersection is empty.
-  const std::vector<ClosedInterval> restricted_rhs =
-      IntersectionOfSortedDisjointIntervals(rhs, implied_rhs);
-  if (restricted_rhs.empty()) {
+  const Domain restricted_rhs = rhs.IntersectionWith(implied_rhs);
+  if (restricted_rhs.IsEmpty()) {
     context->UpdateRuleStats("linear: infeasible");
     return MarkConstraintAsFalse(ct, context);
   }
 
   // Relax the constraint rhs for faster propagation.
   // TODO(user): add an IntersectionIsEmpty() function.
-  rhs.clear();
-  for (const ClosedInterval i : UnionOfSortedDisjointIntervals(
-           restricted_rhs, ComplementOfSortedDisjointIntervals(implied_rhs))) {
-    if (!IntersectionOfSortedDisjointIntervals({i}, restricted_rhs).empty()) {
-      rhs.push_back(i);
+  std::vector<ClosedInterval> rhs_intervals;
+  for (const ClosedInterval i :
+       restricted_rhs.UnionWith(implied_rhs.Complement()).intervals()) {
+    if (!Domain::FromIntervals({i})
+             .IntersectionWith(restricted_rhs)
+             .IsEmpty()) {
+      rhs_intervals.push_back(i);
     }
   }
-  if (rhs.size() == 1 && rhs[0].start == kint64min && rhs[0].end == kint64max) {
+  rhs = Domain::FromIntervals(rhs_intervals);
+  if (rhs == Domain::AllValues()) {
     context->UpdateRuleStats("linear: always true");
     return RemoveConstraint(ct, context);
   }
-  if (rhs != ReadDomain(ct->linear())) {
+  if (rhs != ReadDomainFromProto(ct->linear())) {
     context->UpdateRuleStats("linear: simplified rhs");
   }
-  FillDomain(rhs, ct->mutable_linear());
+  FillDomainInProto(rhs, ct->mutable_linear());
 
   // Propagate the variable bounds.
   if (!HasEnforcementLiteral(*ct)) {
     bool new_bounds = false;
-    std::vector<ClosedInterval> new_domain;
-    std::vector<ClosedInterval> right_domain = {{0, 0}};
-    term_domains[num_vars] = NegationOfSortedDisjointIntervals(rhs);
+    Domain new_domain;
+    Domain right_domain(0, 0);
+    term_domains[num_vars] = rhs.Negation();
     for (int i = num_vars - 1; i >= 0; --i) {
-      right_domain =
-          AdditionOfSortedDisjointIntervals(right_domain, term_domains[i + 1]);
-      if (right_domain.size() > kDomainComplexityLimit) {
+      right_domain = right_domain.AdditionWith(term_domains[i + 1]);
+      if (right_domain.intervals().size() > kDomainComplexityLimit) {
         // We take a super-set, otherwise it will be too slow.
-        right_domain = {{right_domain.front().start, right_domain.back().end}};
+        right_domain = Domain(right_domain.Min(), right_domain.Max());
       }
-      new_domain = InverseMultiplicationOfSortedDisjointIntervals(
-          AdditionOfSortedDisjointIntervals(left_domains[i], right_domain),
-          -arg.coeffs(i));
+      new_domain = left_domains[i]
+                       .AdditionWith(right_domain)
+                       .InverseMultiplicationBy(-arg.coeffs(i));
       if (context->IntersectDomainWith(arg.vars(i), new_domain)) {
         new_bounds = true;
       }
@@ -961,8 +956,8 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   // a coefficient of magnitude 1, and later the one with larger coeffs.
   if (!was_affine && !HasEnforcementLiteral(*ct)) {
     const LinearConstraintProto& arg = ct->linear();
-    const int64 rhs_min = rhs.front().start;
-    const int64 rhs_max = rhs.back().end;
+    const int64 rhs_min = rhs.Min();
+    const int64 rhs_max = rhs.Max();
     if (rhs_min == rhs_max && arg.vars_size() == 2) {
       const int v1 = arg.vars(0);
       const int v2 = arg.vars(1);
@@ -1008,9 +1003,9 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
   // Detect clauses and reified ands.
   // TODO(user): split an == 1 constraint or similar into a clause and a <= 1
   // constraint?
-  const std::vector<ClosedInterval> domain = ReadDomain(arg);
-  DCHECK(!domain.empty());
-  if (offset + min_coeff > domain.back().end) {
+  const Domain domain = ReadDomainFromProto(arg);
+  DCHECK(!domain.IsEmpty());
+  if (offset + min_coeff > domain.Max()) {
     // All Boolean are false if the reified literal is true.
     context->UpdateRuleStats("linear: reified and");
     const auto copy = arg;
@@ -1020,8 +1015,8 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
           copy.coeffs(i) > 0 ? NegatedRef(copy.vars(i)) : copy.vars(i));
     }
     return PresolveBoolAnd(ct, context);
-  } else if (offset + min_coeff >= domain[0].start &&
-             domain[0].end == kint64max) {
+  } else if (offset + min_coeff >= domain.Min() &&
+             domain.intervals()[0].end == kint64max) {
     // At least one Boolean is true.
     context->UpdateRuleStats("linear: clause");
     const auto copy = arg;
@@ -1045,7 +1040,7 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
     for (int i = 0; i < num_vars; ++i) {
       if ((mask >> i) & 1) value += arg.coeffs(i);
     }
-    if (SortedDisjointIntervalsContain(domain, value)) continue;
+    if (domain.Contains(value)) continue;
 
     // Add a new clause to exclude this bad assignment.
     ConstraintProto* new_ct = context->working_model->add_constraints();
@@ -1069,16 +1064,13 @@ bool PresolveInterval(ConstraintProto* ct, PresolveContext* context) {
   const int size = ct->interval().size();
   bool changed = false;
   changed |= context->IntersectDomainWith(
-      end, AdditionOfSortedDisjointIntervals(context->GetRefDomain(start),
-                                             context->GetRefDomain(size)));
+      end, context->DomainOf(start).AdditionWith(context->DomainOf(size)));
   changed |= context->IntersectDomainWith(
-      start, AdditionOfSortedDisjointIntervals(
-                 context->GetRefDomain(end), NegationOfSortedDisjointIntervals(
-                                                 context->GetRefDomain(size))));
+      start,
+      context->DomainOf(end).AdditionWith(context->DomainOf(size).Negation()));
   changed |= context->IntersectDomainWith(
-      size, AdditionOfSortedDisjointIntervals(
-                context->GetRefDomain(end), NegationOfSortedDisjointIntervals(
-                                                context->GetRefDomain(start))));
+      size,
+      context->DomainOf(end).AdditionWith(context->DomainOf(start).Negation()));
   if (changed) {
     context->UpdateRuleStats("interval: reduced domains");
   }
@@ -1110,45 +1102,34 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
 
   bool all_included_in_target_domain = true;
   bool reduced_index_domain = false;
-  const std::vector<ClosedInterval> index_domain =
-      context->GetRefDomain(index_ref);
-  if (index_domain.front().start < 0 ||
-      index_domain.back().end >= ct->element().vars_size()) {
+  if (context->IntersectDomainWith(index_ref,
+                                   Domain(0, ct->element().vars_size() - 1))) {
     reduced_index_domain = true;
-    context->IntersectDomainWith(index_ref,
-                                 {{0, ct->element().vars_size() - 1}});
   }
 
-  std::vector<ClosedInterval> infered_domain;
-  const std::vector<ClosedInterval> target_domain =
-      context->GetRefDomain(target_ref);
-  const std::vector<ClosedInterval> complement_of_target_domain =
-      ComplementOfSortedDisjointIntervals(context->GetRefDomain(target_ref));
-
-  for (const ClosedInterval interval : context->GetRefDomain(index_ref)) {
-    for (int i = interval.start; i <= interval.end; ++i) {
-      CHECK_GE(i, 0);
-      CHECK_LT(i, ct->element().vars_size());
-      const int ref = ct->element().vars(i);
-      const auto& domain = context->GetRefDomain(ref);
-      if (IntersectionOfSortedDisjointIntervals(target_domain, domain)
-              .empty()) {
-        context->IntersectDomainWith(index_ref,
-                                     {{kint64min, i - 1}, {i + 1, kint64max}});
+  Domain infered_domain;
+  const Domain target_domain = context->DomainOf(target_ref);
+  for (const ClosedInterval interval :
+       context->DomainOf(index_ref).intervals()) {
+    for (int value = interval.start; value <= interval.end; ++value) {
+      CHECK_GE(value, 0);
+      CHECK_LT(value, ct->element().vars_size());
+      const int ref = ct->element().vars(value);
+      const Domain domain = context->DomainOf(ref);
+      if (domain.IntersectionWith(target_domain).IsEmpty()) {
+        context->IntersectDomainWith(index_ref, Domain(value).Complement());
         reduced_index_domain = true;
       } else {
         ++num_vars;
-        if (domain.front().start == domain.back().end) {
-          constant_set.insert(domain.front().start);
+        if (domain.Min() == domain.Max()) {
+          constant_set.insert(domain.Min());
         } else {
           all_constants = false;
         }
-        if (!IntersectionOfSortedDisjointIntervals(domain,
-                                                   complement_of_target_domain)
-                 .empty()) {
+        if (!domain.IsIncludedIn(target_domain)) {
           all_included_in_target_domain = false;
         }
-        infered_domain = UnionOfSortedDisjointIntervals(infered_domain, domain);
+        infered_domain = infered_domain.UnionWith(domain);
       }
     }
   }
@@ -1156,6 +1137,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("element: reduced index domain");
   }
   if (context->IntersectDomainWith(target_ref, infered_domain)) {
+    if (context->DomainOf(target_ref).IsEmpty()) return true;
     context->UpdateRuleStats("element: reduced target domain");
   }
 
@@ -1169,6 +1151,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     *(context->mapping_model->add_constraints()) = *ct;
     return RemoveConstraint(ct, context);
   }
+
   const bool unique_target =
       context->IsUnique(target_ref) || context->IsFixed(target_ref);
   if (all_included_in_target_domain && unique_target) {
@@ -1217,7 +1200,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
       const int ref = ct->table().vars(j);
       const int64 v = ct->table().values(i * num_vars + j);
       tuple[j] = v;
-      if (!SortedDisjointIntervalsContain(context->GetRefDomain(ref), v)) {
+      if (!context->DomainOf(ref).Contains(v)) {
         delete_row = true;
         break;
       }
@@ -1248,7 +1231,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   for (int j = 0; j < num_vars; ++j) {
     const int ref = ct->table().vars(j);
     changed |= context->IntersectDomainWith(
-        PositiveRef(ref), SortedDisjointIntervalsFromValues(std::vector<int64>(
+        PositiveRef(ref), Domain::FromValues(std::vector<int64>(
                               new_domains[j].begin(), new_domains[j].end())));
   }
   if (changed) {
@@ -1390,7 +1373,7 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
     } else if (demand_max > capacity) {
       if (ct.enforcement_literal().empty()) {
         context->UpdateRuleStats("cumulative: demand_max exceeds capacity.");
-        context->IntersectDomainWith(demand_ref, {{kint64min, capacity}});
+        context->IntersectDomainWith(demand_ref, Domain(kint64min, capacity));
       } else {
         // TODO(user): we abort because we cannot convert this to a no_overlap
         // for instance.
@@ -1989,8 +1972,9 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
     // it allows us to update the proto objective domain too.
     CHECK_EQ(context.working_model->objective().vars_size(), 1);
     CHECK_EQ(context.working_model->objective().coeffs(0), 1);
-    FillDomain(context.GetRefDomain(context.working_model->objective().vars(0)),
-               context.working_model->mutable_objective());
+    FillDomainInProto(
+        context.DomainOf(context.working_model->objective().vars(0)),
+        context.working_model->mutable_objective());
 
     // We use a general code even if we currently have only one term (see checks
     // above).
@@ -2108,25 +2092,22 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
 
         // If the objective variable wasn't used in other constraints and it can
         // be reconstructed whatever the value of the other variables, we can
-        // remove the constraint. Note that we can't do that if the magnitude of
-        // objective_coeff_in_expanded_constraint is not one because of integer
-        // division.
+        // remove the constraint.
         //
         // TODO(user): It should be possible to refactor the code so this is
         // automatically done by the linear constraint singleton presolve rule.
-        if (context.var_to_constraints[objective_var].size() == 1 &&
-            std::abs(objective_coeff_in_expanded_constraint) == 1) {
+        if (context.var_to_constraints[objective_var].size() == 1) {
           // Compute implied domain on objective_var.
-          std::vector<ClosedInterval> rhs = {
-              {ct.linear().domain(0), ct.linear().domain(0)}};
+          Domain implied_domain = ReadDomainFromProto(ct.linear());
           for (int i = 0; i < num_terms; ++i) {
             const int ref = ct.linear().vars(i);
             if (PositiveRef(ref) == objective_var) continue;
-            std::vector<ClosedInterval> domain = context.GetRefDomain(ref);
-            domain = MultiplicationOfSortedDisjointIntervals(
-                domain, -ct.linear().coeffs(i));
-            rhs = AdditionOfSortedDisjointIntervals(rhs, domain);
+            implied_domain = implied_domain.AdditionWith(
+                context.DomainOf(ref).ContinuousMultiplicationBy(
+                    -ct.linear().coeffs(i)));
           }
+          implied_domain = implied_domain.InverseMultiplicationBy(
+              objective_coeff_in_expanded_constraint);
 
           // Remove the constraint if the implied domain is included in the
           // domain of the objective_var term.
@@ -2134,15 +2115,8 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
           // Note the special case for the first expansion where any domain
           // restriction will be handled by the objective domain because we
           // called EncodeObjectiveAsSingleVariable() above.
-          std::vector<ClosedInterval> objective_var_domain =
-              context.GetRefDomain(objective_var);
-          objective_var_domain = MultiplicationOfSortedDisjointIntervals(
-              objective_var_domain, objective_coeff_in_expanded_constraint);
           if (num_expansions == 0 ||
-              IntersectionOfSortedDisjointIntervals(
-                  ComplementOfSortedDisjointIntervals(objective_var_domain),
-                  rhs)
-                  .empty()) {
+              implied_domain.IsIncludedIn(context.DomainOf(objective_var))) {
             context.UpdateRuleStats("objective: removed objective constraint.");
             *(context.mapping_model->add_constraints()) = ct;
             context.working_model->mutable_constraints(expanded_linear_index)
@@ -2164,10 +2138,9 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
     }
     mutable_objective->set_offset(mutable_objective->offset() +
                                   objective_offset);
-    FillDomain(AdditionOfSortedDisjointIntervals(
-                   ReadDomain(*mutable_objective),
-                   {{-objective_offset, -objective_offset}}),
-               mutable_objective);
+    FillDomainInProto(ReadDomainFromProto(*mutable_objective)
+                          .AdditionWith(Domain(-objective_offset)),
+                      mutable_objective);
   }
 
   // Remove all empty or affine constraints (they will be re-added later if
@@ -2225,10 +2198,9 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
     CpModelProto* proto;
     if (context.var_to_constraints[var].empty()) {
       // Make sure that domain(representative) is tight.
-      const auto implied = InverseMultiplicationOfSortedDisjointIntervals(
-          AdditionOfSortedDisjointIntervals({{-r.offset, -r.offset}},
-                                            context.GetRefDomain(var)),
-          r.coeff);
+      const Domain implied = context.DomainOf(var)
+                                 .AdditionWith({-r.offset, -r.offset})
+                                 .InverseMultiplicationBy(r.coeff);
       if (context.IntersectDomainWith(r.representative, implied)) {
         LOG(WARNING) << "Domain of " << r.representative
                      << " was not fully propagated using the affine relation "
@@ -2309,7 +2281,8 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
 
   // Update the variables domain of the presolved_model.
   for (int i = 0; i < presolved_model->variables_size(); ++i) {
-    FillDomain(context.GetRefDomain(i), presolved_model->mutable_variables(i));
+    FillDomainInProto(context.DomainOf(i),
+                      presolved_model->mutable_variables(i));
   }
 
   // Set the variables of the mapping_model.

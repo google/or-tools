@@ -92,6 +92,10 @@ void FillDomain(const std::vector<ClosedInterval>& domain,
     proto->add_domain(interval.end);
   }
 }
+template <typename ProtoWithDomain>
+void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
+  FillDomain(domain.intervals(), proto);
+}
 
 // Extract a sorted interval list from the domain field of a proto.
 template <typename ProtoWithDomain>
@@ -102,6 +106,10 @@ std::vector<ClosedInterval> ReadDomain(const ProtoWithDomain& proto) {
   }
   CHECK(IntervalsAreSortedAndDisjoint(result));
   return result;
+}
+template <typename ProtoWithDomain>
+Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
+  return Domain::FromIntervals(ReadDomain(proto));
 }
 
 // Returns the list of values in a given domain.

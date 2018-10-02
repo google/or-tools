@@ -463,7 +463,6 @@ class Constraint(object):
 class IntervalVar(object):
   """Represents a Interval variable.
 
-
   An interval variable is both a constraint and a variable. It is defined by
   three integer variables: start, size, and end.
 

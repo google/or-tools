@@ -749,8 +749,8 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   }
 }
 
-util::Status MPSolver::LoadSolutionFromProto(
-    const MPSolutionResponse& response) {
+util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
+                                             double tolerance) {
   interface_->result_status_ = static_cast<ResultStatus>(response.status());
   if (response.status() != MPSOLVER_OPTIMAL &&
       response.status() != MPSOLVER_FEASIBLE) {
@@ -768,34 +768,35 @@ util::Status MPSolver::LoadSolutionFromProto(
         response.variable_value_size(),
         ") does not correspond to the Solver's (", variables_.size(), ")"));
   }
-  double largest_error = 0;
   interface_->ExtractModel();
 
-  // Look further: verify that the variable values are within the bounds.
-  int num_vars_out_of_bounds = 0;
-  const double tolerance = MPSolverParameters::kDefaultPrimalTolerance;
-  int last_offending_var = -1;
-  for (int i = 0; i < response.variable_value_size(); ++i) {
-    const double var_value = response.variable_value(i);
-    MPVariable* var = variables_[i];
-    // TODO(user): Use parameter when they become available in this class.
-    const double lb_error = var->lb() - var_value;
-    const double ub_error = var_value - var->ub();
-    if (lb_error > tolerance || ub_error > tolerance) {
-      ++num_vars_out_of_bounds;
-      largest_error = std::max(largest_error, std::max(lb_error, ub_error));
-      last_offending_var = i;
+  if (tolerance != infinity()) {
+    // Look further: verify that the variable values are within the bounds.
+    double largest_error = 0;
+    int num_vars_out_of_bounds = 0;
+    int last_offending_var = -1;
+    for (int i = 0; i < response.variable_value_size(); ++i) {
+      const double var_value = response.variable_value(i);
+      MPVariable* var = variables_[i];
+      // TODO(user): Use parameter when they become available in this class.
+      const double lb_error = var->lb() - var_value;
+      const double ub_error = var_value - var->ub();
+      if (lb_error > tolerance || ub_error > tolerance) {
+        ++num_vars_out_of_bounds;
+        largest_error = std::max(largest_error, std::max(lb_error, ub_error));
+        last_offending_var = i;
+      }
     }
-  }
-  if (num_vars_out_of_bounds > 0) {
-    return util::InvalidArgumentError(absl::StrCat(
-        "Loaded a solution whose variables matched the solver's, but ",
-        num_vars_out_of_bounds, " of ", variables_.size(),
-        " variables were out of their bounds, by more than the primal"
-        " tolerance which is: ",
-        tolerance, ". Max error: ", largest_error, ", last offendir var is #",
-        last_offending_var, ": '", variables_[last_offending_var]->name(),
-        "'"));
+    if (num_vars_out_of_bounds > 0) {
+      return util::InvalidArgumentError(absl::StrCat(
+          "Loaded a solution whose variables matched the solver's, but ",
+          num_vars_out_of_bounds, " of ", variables_.size(),
+          " variables were out of their bounds, by more than the primal"
+          " tolerance which is: ",
+          tolerance, ". Max error: ", largest_error, ", last offender var is #",
+          last_offending_var, ": '", variables_[last_offending_var]->name(),
+          "'"));
+    }
   }
   for (int i = 0; i < response.variable_value_size(); ++i) {
     variables_[i]->set_solution_value(response.variable_value(i));
@@ -1074,6 +1075,24 @@ std::string PrettyPrintConstraint(const MPConstraint& constraint) {
                          constraint.ub());
 }
 }  // namespace
+
+util::Status MPSolver::ClampSolutionWithinBounds() {
+  interface_->ExtractModel();
+  for (MPVariable* const variable : variables_) {
+    const double value = variable->solution_value();
+    if (std::isnan(value)) {
+      return util::InvalidArgumentError(
+          absl::StrCat("NaN value for ", PrettyPrintVar(*variable)));
+    }
+    if (value < variable->lb()) {
+      variable->set_solution_value(variable->lb());
+    } else if (value > variable->ub()) {
+      variable->set_solution_value(variable->ub());
+    }
+  }
+  interface_->sync_status_ = MPSolverInterface::SOLUTION_SYNCHRONIZED;
+  return util::OkStatus();
+}
 
 std::vector<double> MPSolver::ComputeConstraintActivities() const {
   // TODO(user): test this failure case.
@@ -1354,7 +1373,7 @@ bool MPSolverInterface::CheckSolutionIsSynchronized() const {
   if (sync_status_ != SOLUTION_SYNCHRONIZED) {
     LOG(DFATAL)
         << "The model has been changed since the solution was last computed."
-        << " MPSolverInterface::status_ = " << sync_status_;
+        << " MPSolverInterface::sync_status_ = " << sync_status_;
     return false;
   }
   return true;
@@ -1527,7 +1546,8 @@ std::string MPSolverInterface::ValidFileExtensionForParameterFile() const {
 
 const double MPSolverParameters::kDefaultRelativeMipGap = 1e-4;
 // For the primal and dual tolerances, choose the same default as CLP and GLPK.
-const double MPSolverParameters::kDefaultPrimalTolerance = 1e-7;
+const double MPSolverParameters::kDefaultPrimalTolerance =
+    operations_research::kDefaultPrimalTolerance;
 const double MPSolverParameters::kDefaultDualTolerance = 1e-7;
 const MPSolverParameters::PresolveValues MPSolverParameters::kDefaultPresolve =
     MPSolverParameters::PRESOLVE_ON;

@@ -154,6 +154,20 @@ SchedulingConstraintHelper::TaskByDecreasingEndMax() {
   return task_by_decreasing_max_end_;
 }
 
+// Produces a relaxed reason for StartMax(before) < EndMin(after).
+void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
+                                                         int after) {
+  DCHECK_LT(StartMax(before), EndMin(after));
+  const IntegerValue slack = EndMin(after) - StartMax(before) - 1;
+  std::vector<IntegerLiteral> temp;
+  temp.push_back(integer_trail_->LowerBoundAsLiteral(end_vars_[after]));
+  temp.push_back(
+      integer_trail_->LowerBoundAsLiteral(NegationOf(start_vars_[before])));
+  integer_trail_->RelaxLinearReason(slack, {IntegerValue(1), IntegerValue(1)},
+                                    &temp);
+  integer_reason_.insert(integer_reason_.end(), temp.begin(), temp.end());
+}
+
 bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral bound) {
   return integer_trail_->Enqueue(bound, literal_reason_, integer_reason_);
 }

@@ -163,6 +163,8 @@
 
 namespace operations_research {
 
+constexpr double kDefaultPrimalTolerance = 1e-07;
+
 class MPConstraint;
 class MPObjective;
 class MPSolverInterface;
@@ -449,7 +451,15 @@ class MPSolver {
   // - loading a solution with a status other than OPTIMAL / FEASIBLE.
   // Note: the objective value isnn't checked. You can use VerifySolution()
   // for that.
-  util::Status LoadSolutionFromProto(const MPSolutionResponse& response);
+  // TODO(b/116117536) split this into two separate functions: Load...() without
+  // checking for tolerance and SolutionIsFeasibleWithTolerance().
+  util::Status LoadSolutionFromProto(
+      const MPSolutionResponse& response,
+      double tolerance = kDefaultPrimalTolerance);
+
+  // Resets values of out of bound variables to the corresponding bound
+  // and returns an error if any of the variables have NaN value.
+  util::Status ClampSolutionWithinBounds();
 
   // ----- Export model to files or strings -----
   // Shortcuts to the homonymous MPModelProtoExporter methods, via

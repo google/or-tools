@@ -225,8 +225,7 @@ bool DisjunctiveWithTwoItems::Propagate() {
       helper_->StartMin(task_after) < helper_->EndMin(task_before)) {
     // Reason for precedences if both present.
     helper_->ClearReason();
-    helper_->AddStartMaxReason(task_before, helper_->EndMin(task_after) - 1);
-    helper_->AddEndMinReason(task_after, helper_->EndMin(task_after));
+    helper_->AddReasonForBeingBefore(task_before, task_after);
 
     // Reason for the bound push.
     helper_->AddPresenceReason(task_before);
@@ -240,8 +239,7 @@ bool DisjunctiveWithTwoItems::Propagate() {
       helper_->EndMax(task_before) > helper_->StartMax(task_after)) {
     // Reason for precedences if both present.
     helper_->ClearReason();
-    helper_->AddStartMaxReason(task_before, helper_->EndMin(task_after) - 1);
-    helper_->AddEndMinReason(task_after, helper_->EndMin(task_after));
+    helper_->AddReasonForBeingBefore(task_before, task_after);
 
     // Reason for the bound push.
     helper_->AddPresenceReason(task_after);

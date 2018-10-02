@@ -179,6 +179,10 @@ class SchedulingConstraintHelper {
   void AddEndMinReason(int t, IntegerValue lower_bound);
   void AddEndMaxReason(int t, IntegerValue upper_bound);
 
+  // Adds the reason why task "before" must be before task "after".
+  // That is StartMax(before) < EndMin(after).
+  void AddReasonForBeingBefore(int before, int after);
+
   // It is also possible to directly manipulates the underlying reason vectors
   // that will be used when pushing something.
   std::vector<Literal>* MutableLiteralReason() { return &literal_reason_; }

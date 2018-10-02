@@ -42,100 +42,142 @@ struct ClosedInterval {
   }
 };
 
-// Custom exact comparators.
-class ExactDomainComparator {
- public:
-  bool operator()(const ClosedInterval& i1, const ClosedInterval& i2) const;
-};
-
-class ExactVectorOfDomainComparator {
- public:
-  bool operator()(const std::vector<ClosedInterval>& d1,
-                  const std::vector<ClosedInterval>& d2) const;
-};
-
-// Returns a compact std::string of a vector of intervals like
-// "[1,4][6][10,20]".
-std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals);
-
 std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval);
 std::ostream& operator<<(std::ostream& out,
                          const std::vector<ClosedInterval>& intervals);
-
-// TODO(user): Regroup all the functions below in a SortedDisjointIntervalVector
-// class, it will lead to shorter/easier to use names. This will also allow to
-// use an inlined vector for the most common case of one or two intervals.
-
-// Converts an unsorted list of integer values to the unique list of
-// non-adjacent, disjoint ClosedInterval spanning exactly these values. Eg. for
-// values (after sorting): {1, 2, 3, 5, 7, 8, 10, 11}, it returns the list of
-// intervals: [1,3] [5] [7,8] [10,11]. Input values may be repeated, with no
-// consequence on the output.
-//
-// The output will satisfy the criteria of IntervalsAreSortedAndDisjoint().
-std::vector<ClosedInterval> SortedDisjointIntervalsFromValues(
-    std::vector<int64> values);
 
 // Returns true iff we have:
 // - The intervals appear in increasing order.
 // - for all i: intervals[i].start <= intervals[i].end
 // - for all i but the last: intervals[i].end + 1 < intervals[i+1].start
+//
+// TODO(user): rename to IntervalsAreSortedAndNonAdjacent().
 bool IntervalsAreSortedAndDisjoint(
     const std::vector<ClosedInterval>& intervals);
 
-// Returns true iff the given intervals contain the given value.
+// We call "domain" any subset of Int64 = [kint64min, kint64max].
 //
-// TODO(user): This works in O(n), but could be made to work in O(log n) for
-// long list of intervals.
-bool SortedDisjointIntervalsContain(absl::Span<ClosedInterval> intervals,
-                                    int64 value);
+// This class can be used to represent such set efficiently as a sorted and
+// non-adjacent list of intervals. This is efficient as long as the size of such
+// list stays reasonable.
+//
+// In the comments below, the domain of *this will always be written 'D'.
+// Note that all the functions are safe with respect to integer overflow.
+class Domain {
+ public:
+  // By default, Domain will be empty.
+  Domain() {}
 
-// Returns the intersection of two lists of sorted disjoint intervals in a
-// sorted disjoint interval form.
-std::vector<ClosedInterval> IntersectionOfSortedDisjointIntervals(
-    const std::vector<ClosedInterval>& a, const std::vector<ClosedInterval>& b);
+  // Constructor for the common case of a singleton domain.
+  explicit Domain(int64 value);
 
-// Returns the union of two lists of sorted disjoint intervals in a
-// sorted disjoint interval form.
+  // Constructor for the common case of a single interval [left, right].
+  // If left > right, this will result in the empty domain.
+  Domain(int64 left, int64 right);
+
+  // Returns the full domain Int64.
+  static Domain AllValues();
+
+  // Creates a domain from the union of an unsorted list of integer values.
+  // Input values may be repeated, with no consequence on the output
+  static Domain FromValues(absl::Span<int64> values);
+
+  // Creates a domain from the union of an unsorted list of intervals.
+  static Domain FromIntervals(absl::Span<ClosedInterval> intervals);
+
+  // Returns true if this is the empty set.
+  bool IsEmpty() const;
+
+  // Returns the domain min/max value.
+  // This Checks that the domain is not empty.
+  int64 Min() const;
+  int64 Max() const;
+
+  // Returns true iff value is in Domain.
+  bool Contains(int64 value) const;
+
+  // Returns true iff D is included in the given domain.
+  bool IsIncludedIn(const Domain& domain) const;
+
+  // Returns the set Int64 ∖ D.
+  Domain Complement() const;
+
+  // Returns {x ∈ Int64, ∃ e ∈ D, x = -e}.
+  //
+  // Note in particular that if the negation of Int64 is not Int64 but
+  // Int64 \ {kint64min} !!
+  Domain Negation() const;
+
+  // Returns the set D ∩ domain.
+  Domain IntersectionWith(const Domain& domain) const;
+
+  // Returns the set D ∪ domain.
+  Domain UnionWith(const Domain& domain) const;
+
+  // Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.
+  Domain AdditionWith(const Domain& domain) const;
+
+  // Returns {x ∈ Int64, ∃ e ∈ D, x = e * coeff}.
+  //
+  // Note that because the resulting domain will only contains multiple of
+  // coeff, the size of intervals.size() can become really large. If it is
+  // larger than a fixed constant, success will be set to false and an empty
+  // Domain will be returned.
+  Domain MultiplicationBy(int64 coeff, bool* success) const;
+
+  // Returns a super-set of MultiplicationBy() to avoid the explosion in the
+  // representation size. This behaves as if we replace the set D of
+  // non-adjacent integer intervals by the set of floating-point element in the
+  // same intervals.
+  //
+  // For instance, [1, 100] * 2 will be transformed in [2, 200] and not in
+  // [2][4][6]...[200] like in MultiplicationBy(). Note that this would be
+  // similar to a InverseDivisionBy(), but not quite the same because if we
+  // look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
+  // the case above.
+  Domain ContinuousMultiplicationBy(int64 coeff) const;
+
+  // Returns {x ∈ Int64, ∃ e ∈ D, x = e / coeff}.
+  //
+  // For instance Domain(1, 7).DivisionBy(2) == Domain(0, 3).
+  Domain DivisionBy(int64 coeff) const;
+
+  // Returns {x ∈ Int64, ∃ e ∈ D, x * coeff = e}.
+  //
+  // For instance Domain(1, 7).InverseMultiplicationBy(2) == Domain(1, 3).
+  Domain InverseMultiplicationBy(const int64 coeff) const;
+
+  // Returns the representation of D as the unique sorted list of non-adjacent
+  // intervals. This will always satisfy IntervalsAreSortedAndDisjoint().
+  std::vector<ClosedInterval> intervals() const { return intervals_; }
+
+  // Returns a compact std::string of a vector of intervals like
+  // "[1,4][6][10,20]"
+  std::string ToString() const;
+
+  // Lexicographic order on the intervals() representation.
+  bool operator<(const Domain& other) const;
+
+  bool operator==(const Domain& other) const {
+    return intervals_ == other.intervals_;
+  }
+
+  bool operator!=(const Domain& other) const {
+    return intervals_ != other.intervals_;
+  }
+
+ private:
+  // Invariant: will always satisfy IntervalsAreSortedAndDisjoint().
+  std::vector<ClosedInterval> intervals_;
+};
+
+std::ostream& operator<<(std::ostream& out, const Domain& domain);
+
+// TODO(user): Remove. These are deprecated. Use the Domain class instead.
 std::vector<ClosedInterval> UnionOfSortedDisjointIntervals(
     const std::vector<ClosedInterval>& a, const std::vector<ClosedInterval>& b);
-
-// Returns the domain of x + y given that the domain of x is a and the one of y
-// is b.
-std::vector<ClosedInterval> AdditionOfSortedDisjointIntervals(
-    const std::vector<ClosedInterval>& a, const std::vector<ClosedInterval>& b);
-
-// Returns [kint64min, kint64max] minus the given intervals.
-std::vector<ClosedInterval> ComplementOfSortedDisjointIntervals(
-    const std::vector<ClosedInterval>& intervals);
-
-// For an x in the given intervals, this returns the domain of -x.
-//
-// Tricky: because the negation of kint64min doesn't fit, we always remove
-// kint64min from the given intervals.
 std::vector<ClosedInterval> NegationOfSortedDisjointIntervals(
     std::vector<ClosedInterval> intervals);
-
-// Returns the domain of x * coeff given the domain of x.
-// To avoid an explosion in the size of the returned vector, the first function
-// will actually return a super-set of the domain. For instance [1, 100] * 2
-// will be transformed in [2, 200] not [2][4][6]...[200]. The second version
-// will try to be exact as long as the result is not too large, and will set
-// success to true when this is the case.
-std::vector<ClosedInterval> MultiplicationOfSortedDisjointIntervals(
-    std::vector<ClosedInterval> intervals, int64 coeff);
-std::vector<ClosedInterval> PreciseMultiplicationOfSortedDisjointIntervals(
-    std::vector<ClosedInterval> intervals, int64 coeff, bool* success);
-
-// If x * coeff is in the given intervals, this returns the domain of x. Note
-// that it is not the same as given the domains of x, return the domain of x /
-// coeff because of how the integer division work.
-std::vector<ClosedInterval> InverseMultiplicationOfSortedDisjointIntervals(
-    std::vector<ClosedInterval> intervals, int64 coeff);
-
-// Given the domain of x, this returns the domain of x / coeff.
-std::vector<ClosedInterval> DivisionOfSortedDisjointIntervals(
-    std::vector<ClosedInterval> intervals, int64 coeff);
 
 // This class represents a sorted list of disjoint, closed intervals.  When an
 // interval is inserted, all intervals that overlap it or that are even adjacent

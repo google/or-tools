@@ -452,6 +452,37 @@ bool PrecedencesPropagator::EnqueueAndCheck(const ArcInfo& arc,
   AppendLowerBoundReasonIfValid(arc.offset_var, *integer_trail_,
                                 &integer_reason_);
 
+  // The code works without this block since Enqueue() below can already take
+  // care of conflicts. However, it is better to deal with the conflict
+  // ourselves because we can be smarter about the reason this way.
+  //
+  // The reason for a "precedence" conflict is always a linear reason
+  // involving the tail lower_bound, the head upper bound and eventually the
+  // size lower bound. Because of that, we can use the RelaxLinearReason()
+  // code.
+  if (new_head_lb > integer_trail_->UpperBound(arc.head_var)) {
+    const IntegerValue slack =
+        new_head_lb - integer_trail_->UpperBound(arc.head_var) - 1;
+    integer_reason_.push_back(
+        integer_trail_->UpperBoundAsLiteral(arc.head_var));
+    std::vector<IntegerValue> coeffs(integer_reason_.size(), IntegerValue(1));
+    integer_trail_->RelaxLinearReason(slack, coeffs, &integer_reason_);
+
+    if (!integer_trail_->IsOptional(arc.head_var)) {
+      return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
+    } else {
+      CHECK(!integer_trail_->IsCurrentlyIgnored(arc.head_var));
+      const Literal l = integer_trail_->IsIgnoredLiteral(arc.head_var);
+      if (trail->Assignment().LiteralIsFalse(l)) {
+        literal_reason_.push_back(l);
+        return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
+      } else {
+        integer_trail_->EnqueueLiteral(l, literal_reason_, integer_reason_);
+        return true;
+      }
+    }
+  }
+
   return integer_trail_->Enqueue(
       IntegerLiteral::GreaterOrEqual(arc.head_var, new_head_lb),
       literal_reason_, integer_reason_);
