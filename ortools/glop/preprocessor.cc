@@ -144,7 +144,7 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
     VLOG(1) << absl::StrFormat(
-        "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name,
+        "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name.c_str(),
         preprocess_time, lp->num_constraints().value(),
         (lp->num_constraints() - initial_num_rows_).value(),
         lp->num_variables().value(),
