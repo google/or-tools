@@ -14,6 +14,8 @@ WINDOWS_GLOG_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_GLOG_PATH = $(subst /,$S,$(WINDOWS_GLOG_DIR))
 WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_PROTOBUF_PATH = $(subst /,$S,$(WINDOWS_PROTOBUF_DIR))
+WINDOWS_CCTZ_DIR ?= $(OR_ROOT)dependencies/install
+WINDOWS_CCTZ_PATH = $(subst /,$S,$(WINDOWS_CCTZ_DIR))
 WINDOWS_CBC_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_CBC_PATH = $(subst /,$S,$(WINDOWS_CBC_DIR))
 WINDOWS_CGL_DIR ?= $(WINDOWS_CBC_DIR)
@@ -36,6 +38,7 @@ ZLIB_ARCHIVE_TAG = 1211
 GFLAGS_TAG = 2.2.1
 GLOG_TAG = 0.3.5
 PROTOBUF_TAG = 3.6.1
+CCTZ_TAG = master
 CBC_TAG = 2.9.9
 CGL_TAG = 0.59.10
 CLP_TAG = 1.16.11
@@ -335,6 +338,39 @@ dependencies/install/lib/protobuf.jar: | dependencies/install/bin/protoc.exe
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && "$(JAR_BIN)" cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*class
 
 ############
+##  CCTZ  ##
+############
+# This uses cctz cmake-based build.
+.PHONY: install_cctz
+install_cctz: dependencies/install/lib/cctz.lib
+
+dependencies/install/lib/cctz.lib: dependencies/sources/cctz-$(CCTZ_TAG) | dependencies/install
+	cd dependencies\sources\cctz-$(CCTZ_TAG) && \
+  $(SET_COMPILER) "$(CMAKE)" -H. -Bbuild_cmake \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_TOOLS=OFF \
+    -DBUILD_EXAMPLES=OFF \
+    -DBUILD_TESTING=OFF \
+	  -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=..\..\install \
+		-G "NMake Makefiles" && \
+  "$(CMAKE)" --build build_cmake && \
+  "$(CMAKE)" --build build_cmake --target install
+
+dependencies/sources/cctz-$(CCTZ_TAG): | dependencies/sources
+	-$(DELREC) dependencies\sources\cctz-$(CCTZ_TAG)
+	git clone --quiet -b $(CCTZ_TAG) https://github.com/google/cctz.git dependencies\sources\cctz-$(CCTZ_TAG)
+	cd dependencies\sources\cctz-$(CCTZ_TAG) && git apply "$(OR_TOOLS_TOP)\patches\cctz-$(CCTZ_TAG).patch"
+
+CCTZ_INC = /I"$(WINDOWS_CCTZ_PATH)\\include"
+CCTZ_SWIG = -I"$(WINDOWS_CCTZ_PATH)/include"
+DYNAMIC_CCTZ_LNK = "$(WINDOWS_CCTZ_PATH)\\lib\\cctz.lib"
+STATIC_CCTZ_LNK = "$(WINDOWS_CCTZ_PATH)\\lib\\cctz.lib"
+
+CCTZ_LNK = $(STATIC_CCTZ_LNK)
+DEPENDENCIES_LNK += $(CCTZ_LNK)
+
+############
 ##  COIN  ##
 ############
 # Install Coin CBC
@@ -474,6 +510,7 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DELREC) dependencies\sources\gflags*
 	-$(DELREC) dependencies\sources\glog*
 	-$(DELREC) dependencies\sources\protobuf*
+	-$(DELREC) dependencies\sources\cctz*
 	-$(DELREC) dependencies\sources\Cbc-*
 	-$(DELREC) dependencies\sources\google*
 	-$(DELREC) dependencies\sources\glpk*
