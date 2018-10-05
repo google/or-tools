@@ -3162,35 +3162,37 @@ CpSolverResponse SolveCpModelParallel(
   const int num_search_workers = params.num_search_workers();
   VLOG(1) << "Starting parallel search with " << num_search_workers
           << " workers.";
-  ThreadPool pool("Parallel_search", num_search_workers);
-  pool.StartWorkers();
 
   if (!model_proto.has_objective()) {
-    for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
-      std::string worker_name;
-      const SatParameters local_params = DiversifySearchParameters(
-          params, model_proto, worker_id, &worker_name);
-      pool.Schedule([&model_proto, stopped, local_params, &best_response,
-                     &mutex, worker_name]() {
-        Model local_model;
-        local_model.Add(NewSatParameters(local_params));
-        local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-            stopped);
-        const CpSolverResponse local_response = SolveCpModelInternal(
-            model_proto, true, [](const CpSolverResponse& response) {},
-            &local_model);
+    {
+      ThreadPool pool("Parallel_search", num_search_workers);
+      pool.StartWorkers();
+      for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
+        std::string worker_name;
+        const SatParameters local_params = DiversifySearchParameters(
+            params, model_proto, worker_id, &worker_name);
+        pool.Schedule([&model_proto, stopped, local_params, &best_response,
+                        &mutex, worker_name]() {
+          Model local_model;
+          local_model.Add(NewSatParameters(local_params));
+          local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+              stopped);
+          const CpSolverResponse local_response = SolveCpModelInternal(
+              model_proto, true, [](const CpSolverResponse& response) {},
+              &local_model);
 
-        absl::MutexLock lock(&mutex);
-        if (best_response.status() == CpSolverStatus::UNKNOWN) {
-          best_response = local_response;
-        }
-        if (local_response.status() != CpSolverStatus::UNKNOWN) {
-          CHECK_EQ(local_response.status(), best_response.status());
-          VLOG(1) << "Solution found by worker '" << worker_name << "'.";
-          *stopped = true;
-        }
-      });
-    }
+          absl::MutexLock lock(&mutex);
+          if (best_response.status() == CpSolverStatus::UNKNOWN) {
+            best_response = local_response;
+          }
+          if (local_response.status() != CpSolverStatus::UNKNOWN) {
+            CHECK_EQ(local_response.status(), best_response.status());
+            VLOG(1) << "Solution found by worker '" << worker_name << "'.";
+            *stopped = true;
+          }
+        });
+      }
+    }  // Force the dtor of the threadpool.
     return best_response;
   }
 
@@ -3203,80 +3205,83 @@ CpSolverResponse SolveCpModelParallel(
     absl::MutexLock lock(&mutex);
     return best_response;
   };
+  {
+    ThreadPool pool("Parallel_search", num_search_workers);
+    pool.StartWorkers();
+    for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
+      std::string worker_name;
+      const SatParameters local_params =
+          DiversifySearchParameters(params, model_proto, worker_id, &worker_name);
 
-  for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
-    std::string worker_name;
-    const SatParameters local_params =
-        DiversifySearchParameters(params, model_proto, worker_id, &worker_name);
+      const auto solution_observer =
+          [maximize, worker_name, &mutex, &best_response, &observer,
+          &first_solution_found_or_search_finished](const CpSolverResponse& r) {
+            absl::MutexLock lock(&mutex);
 
-    const auto solution_observer =
-        [maximize, worker_name, &mutex, &best_response, &observer,
-         &first_solution_found_or_search_finished](const CpSolverResponse& r) {
-          absl::MutexLock lock(&mutex);
-
-          // Check is the new solution is actually improving upon the best
-          // solution found so far.
-          if (MergeOptimizationSolution(r, maximize, &best_response)) {
-            best_response.set_solution_info(
-                absl::StrCat(worker_name, " ", best_response.solution_info()));
-            observer(best_response);
-            // We have potentially displayed the improving solution, and updated
-            // the best_response. We can awaken sleeping LNS threads.
-            if (!first_solution_found_or_search_finished.HasBeenNotified()) {
-              first_solution_found_or_search_finished.Notify();
+            // Check is the new solution is actually improving upon the best
+            // solution found so far.
+            if (MergeOptimizationSolution(r, maximize, &best_response)) {
+              best_response.set_solution_info(
+                  absl::StrCat(worker_name, " ", best_response.solution_info()));
+              observer(best_response);
+              // We have potentially displayed the improving solution, and updated
+              // the best_response. We can awaken sleeping LNS threads.
+              if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+                first_solution_found_or_search_finished.Notify();
+              }
             }
-          }
-        };
+          };
 
-    pool.Schedule([&model_proto, solution_observer, solution_synchronization,
-                   objective_synchronization, stopped, local_params, worker_id,
-                   &mutex, &best_response, num_search_workers, random_seed,
-                   &first_solution_found_or_search_finished, maximize,
-                   worker_name]() {
-      Model local_model;
-      local_model.Add(NewSatParameters(local_params));
-      local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-          stopped);
-      SetSynchronizationFunction(std::move(solution_synchronization),
-                                 &local_model);
-      SetObjectiveSynchronizationFunction(std::move(objective_synchronization),
-                                          &local_model);
+      pool.Schedule([&model_proto, solution_observer, solution_synchronization,
+                    objective_synchronization, stopped, local_params, worker_id,
+                    &mutex, &best_response, num_search_workers, random_seed,
+                    &first_solution_found_or_search_finished, maximize,
+                    worker_name]() {
+        Model local_model;
+        local_model.Add(NewSatParameters(local_params));
+        local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+            stopped);
+        SetSynchronizationFunction(std::move(solution_synchronization),
+                                  &local_model);
+        SetObjectiveSynchronizationFunction(std::move(objective_synchronization),
+                                            &local_model);
 
-      CpSolverResponse thread_response;
-      if (local_params.use_lns()) {
-        first_solution_found_or_search_finished.WaitForNotification();
-        // TODO(user, lperron): Provide a better diversification for different
-        // seeds.
-        thread_response = SolveCpModelWithLNS(
-            model_proto, solution_observer, num_search_workers,
-            worker_id + random_seed, &local_model);
-      } else {
-        thread_response = SolveCpModelInternal(model_proto, true,
-                                               solution_observer, &local_model);
-      }
-
-      // Process final solution. Decide which worker has the 'best'
-      // solution. Note that the solution observer may or may not have been
-      // called.
-      {
-        absl::MutexLock lock(&mutex);
-        VLOG(1) << "Worker '" << worker_name << "' terminates with status "
-                << ProtoEnumToString<CpSolverStatus>(thread_response.status())
-                << " and an objective value of "
-                << thread_response.objective_value();
-
-        MergeOptimizationSolution(thread_response, maximize, &best_response);
-
-        // TODO(user): For now we assume that each worker only terminate when
-        // the time limit is reached or when the problem is solved, so we just
-        // abort all other threads and return.
-        *stopped = true;
-        if (!first_solution_found_or_search_finished.HasBeenNotified()) {
-          first_solution_found_or_search_finished.Notify();
+        CpSolverResponse thread_response;
+        if (local_params.use_lns()) {
+          first_solution_found_or_search_finished.WaitForNotification();
+          // TODO(user, lperron): Provide a better diversification for different
+          // seeds.
+          thread_response = SolveCpModelWithLNS(
+              model_proto, solution_observer, num_search_workers,
+              worker_id + random_seed, &local_model);
+        } else {
+          thread_response = SolveCpModelInternal(model_proto, true,
+                                                solution_observer, &local_model);
         }
-      }
-    });
-  }
+
+        // Process final solution. Decide which worker has the 'best'
+        // solution. Note that the solution observer may or may not have been
+        // called.
+        {
+          absl::MutexLock lock(&mutex);
+          VLOG(1) << "Worker '" << worker_name << "' terminates with status "
+                  << ProtoEnumToString<CpSolverStatus>(thread_response.status())
+                  << " and an objective value of "
+                  << thread_response.objective_value();
+
+          MergeOptimizationSolution(thread_response, maximize, &best_response);
+
+          // TODO(user): For now we assume that each worker only terminate when
+          // the time limit is reached or when the problem is solved, so we just
+          // abort all other threads and return.
+          *stopped = true;
+          if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+            first_solution_found_or_search_finished.Notify();
+          }
+        }
+      });
+    }
+  }  // Force the synchronization of the threadpoool.
   return best_response;
 }
 
