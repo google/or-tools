@@ -71,9 +71,6 @@ def CPIsFun():
   model.Add(p + s + n + kBase * (c + i + u) + kBase * kBase * f == e +
             kBase * u + kBase * kBase * r + kBase * kBase * kBase * t)
 
-  solver = cp_model.CpSolver()
-  status = solver.Solve(model)
-
   ### Solve model.
   solver = cp_model.CpSolver()
   solution_printer = VarArraySolutionPrinter(letters)
@@ -81,6 +78,7 @@ def CPIsFun():
 
   print()
   print('Statistics')
+  print('  - status          : %s' % solver.StatusName(status))
   print('  - conflicts       : %i' % solver.NumConflicts())
   print('  - branches        : %i' % solver.NumBranches())
   print('  - wall time       : %f ms' % solver.WallTime())
