@@ -169,7 +169,7 @@
 <polygon fill="royalblue" stroke="black" points="307,-674 83,-674 83,-670 79,-670 79,-666 83,-666 83,-644 79,-644 79,-640 83,-640 83,-636 307,-636 307,-674"/>
 <polyline fill="none" stroke="black" points="83,-670 87,-670 87,-666 83,-666 "/>
 <polyline fill="none" stroke="black" points="83,-644 87,-644 87,-640 83,-640 "/>
-<text text-anchor="middle" x="195" y="-658.8" font-family="Times,serif" font-size="14.00">runtime.linux&#45;x64.Google.OrTools.so</text>
+<text text-anchor="middle" x="195" y="-658.8" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.linux&#45;x64.so</text>
 <text text-anchor="middle" x="195" y="-643.8" font-family="Times,serif" font-size="14.00">runtimes/linux&#45;x64/native</text>
 </g>
 <!-- LINUX_LIB&#45;&gt;LINUX_LIBWRP -->
@@ -183,7 +183,7 @@
 <polygon fill="darkviolet" stroke="black" points="386.5,-498 147.5,-498 147.5,-462 392.5,-462 392.5,-492 386.5,-498"/>
 <polyline fill="none" stroke="black" points="386.5,-498 386.5,-492 "/>
 <polyline fill="none" stroke="black" points="392.5,-492 386.5,-492 "/>
-<text text-anchor="middle" x="270" y="-476.3" font-family="Times,serif" font-size="14.00">runtime.linux&#45;x64.Google.OrTools.csproj</text>
+<text text-anchor="middle" x="270" y="-476.3" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.linux&#45;x64.csproj</text>
 </g>
 <!-- LINUX_LIB&#45;&gt;LINUX_CSPROJ -->
 <g id="edge6" class="edge"><title>LINUX_LIB&#45;&gt;LINUX_CSPROJ</title>
@@ -194,7 +194,7 @@
 <!-- LINUX_NUPKG -->
 <g id="node10" class="node"><title>LINUX_NUPKG</title>
 <polygon fill="darkviolet" stroke="black" points="294.5,-322 291.5,-326 270.5,-326 267.5,-322 49.5,-322 49.5,-286 294.5,-286 294.5,-322"/>
-<text text-anchor="middle" x="172" y="-300.3" font-family="Times,serif" font-size="14.00">runtime.linux&#45;x64.Google.OrTools.nupkg</text>
+<text text-anchor="middle" x="172" y="-300.3" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.linux&#45;x64.nupkg</text>
 </g>
 <!-- LINUX_LIB&#45;&gt;LINUX_NUPKG -->
 <g id="edge10" class="edge"><title>LINUX_LIB&#45;&gt;LINUX_NUPKG</title>
@@ -307,7 +307,7 @@
 <polygon fill="royalblue" stroke="black" points="1336,-674 1106,-674 1106,-670 1102,-670 1102,-666 1106,-666 1106,-644 1102,-644 1102,-640 1106,-640 1106,-636 1336,-636 1336,-674"/>
 <polyline fill="none" stroke="black" points="1106,-670 1110,-670 1110,-666 1106,-666 "/>
 <polyline fill="none" stroke="black" points="1106,-644 1110,-644 1110,-640 1106,-640 "/>
-<text text-anchor="middle" x="1221" y="-658.8" font-family="Times,serif" font-size="14.00">runtime.osx&#45;x64.Google.OrTools.dylib</text>
+<text text-anchor="middle" x="1221" y="-658.8" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.osx&#45;x64.dylib</text>
 <text text-anchor="middle" x="1221" y="-643.8" font-family="Times,serif" font-size="14.00">runtimes/osx&#45;x64/native</text>
 </g>
 <!-- OSX_LIB&#45;&gt;OSX_LIBWRP -->
@@ -321,7 +321,7 @@
 <polygon fill="darkviolet" stroke="black" points="1409,-498 1179,-498 1179,-462 1415,-462 1415,-492 1409,-498"/>
 <polyline fill="none" stroke="black" points="1409,-498 1409,-492 "/>
 <polyline fill="none" stroke="black" points="1415,-492 1409,-492 "/>
-<text text-anchor="middle" x="1297" y="-476.3" font-family="Times,serif" font-size="14.00">runtime.osx&#45;x64.Google.OrTools.csproj</text>
+<text text-anchor="middle" x="1297" y="-476.3" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.osx&#45;x64.csproj</text>
 </g>
 <!-- OSX_LIB&#45;&gt;OSX_CSPROJ -->
 <g id="edge21" class="edge"><title>OSX_LIB&#45;&gt;OSX_CSPROJ</title>
@@ -332,7 +332,7 @@
 <!-- OSX_NUPKG -->
 <g id="node18" class="node"><title>OSX_NUPKG</title>
 <polygon fill="darkviolet" stroke="black" points="1518,-322 1515,-326 1494,-326 1491,-322 1282,-322 1282,-286 1518,-286 1518,-322"/>
-<text text-anchor="middle" x="1400" y="-300.3" font-family="Times,serif" font-size="14.00">runtime.osx&#45;x64.Google.OrTools.nupkg</text>
+<text text-anchor="middle" x="1400" y="-300.3" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.osx&#45;x64.nupkg</text>
 </g>
 <!-- OSX_LIB&#45;&gt;OSX_NUPKG -->
 <g id="edge25" class="edge"><title>OSX_LIB&#45;&gt;OSX_NUPKG</title>
@@ -430,7 +430,7 @@
 <polygon fill="royalblue" stroke="black" points="947,-674 729,-674 729,-670 725,-670 725,-666 729,-666 729,-644 725,-644 725,-640 729,-640 729,-636 947,-636 947,-674"/>
 <polyline fill="none" stroke="black" points="729,-670 733,-670 733,-666 729,-666 "/>
 <polyline fill="none" stroke="black" points="729,-644 733,-644 733,-640 729,-640 "/>
-<text text-anchor="middle" x="838" y="-658.8" font-family="Times,serif" font-size="14.00">runtime.win&#45;x64.Google.OrTools.dll</text>
+<text text-anchor="middle" x="838" y="-658.8" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.win&#45;x64.dll</text>
 <text text-anchor="middle" x="838" y="-643.8" font-family="Times,serif" font-size="14.00">runtimes/win&#45;x64/native</text>
 </g>
 <!-- WIN_LIB&#45;&gt;WIN_LIBWRP -->
@@ -444,7 +444,7 @@
 <polygon fill="darkviolet" stroke="black" points="940.5,-498 709.5,-498 709.5,-462 946.5,-462 946.5,-492 940.5,-498"/>
 <polyline fill="none" stroke="black" points="940.5,-498 940.5,-492 "/>
 <polyline fill="none" stroke="black" points="946.5,-492 940.5,-492 "/>
-<text text-anchor="middle" x="828" y="-476.3" font-family="Times,serif" font-size="14.00">runtime.win&#45;x64.Google.OrTools.csproj</text>
+<text text-anchor="middle" x="828" y="-476.3" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.win&#45;x64.csproj</text>
 </g>
 <!-- WIN_CSWRP&#45;&gt;WIN_CSPROJ -->
 <g id="edge35" class="edge"><title>WIN_CSWRP&#45;&gt;WIN_CSPROJ</title>
@@ -473,7 +473,7 @@
 <!-- WIN_NUPKG -->
 <g id="node26" class="node"><title>WIN_NUPKG</title>
 <polygon fill="darkviolet" stroke="black" points="1028,-322 1025,-326 1004,-326 1001,-322 790,-322 790,-286 1028,-286 1028,-322"/>
-<text text-anchor="middle" x="909" y="-300.3" font-family="Times,serif" font-size="14.00">runtime.win&#45;x64.Google.OrTools.nupkg</text>
+<text text-anchor="middle" x="909" y="-300.3" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.win&#45;x64.nupkg</text>
 </g>
 <!-- WIN_LIBWRP&#45;&gt;WIN_NUPKG -->
 <g id="edge39" class="edge"><title>WIN_LIBWRP&#45;&gt;WIN_NUPKG</title>

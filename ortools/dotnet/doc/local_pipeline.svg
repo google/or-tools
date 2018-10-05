@@ -78,7 +78,7 @@
 <polygon fill="royalblue" stroke="black" points="306,-653 82,-653 82,-649 78,-649 78,-645 82,-645 82,-623 78,-623 78,-619 82,-619 82,-615 306,-615 306,-653"/>
 <polyline fill="none" stroke="black" points="82,-649 86,-649 86,-645 82,-645 "/>
 <polyline fill="none" stroke="black" points="82,-623 86,-623 86,-619 82,-619 "/>
-<text text-anchor="middle" x="194" y="-637.8" font-family="Times,serif" font-size="14.00">runtime.linux&#45;x64.Google.OrTools.so</text>
+<text text-anchor="middle" x="194" y="-637.8" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.linux&#45;x64.so</text>
 <text text-anchor="middle" x="194" y="-622.8" font-family="Times,serif" font-size="14.00">runtimes/linux&#45;x64/native</text>
 </g>
 <!-- LINUX_LIB&#45;&gt;LINUX_LIBWRP -->
@@ -92,7 +92,7 @@
 <polygon fill="darkviolet" stroke="black" points="265.5,-477 26.5,-477 26.5,-441 271.5,-441 271.5,-471 265.5,-477"/>
 <polyline fill="none" stroke="black" points="265.5,-477 265.5,-471 "/>
 <polyline fill="none" stroke="black" points="271.5,-471 265.5,-471 "/>
-<text text-anchor="middle" x="149" y="-455.3" font-family="Times,serif" font-size="14.00">runtime.linux&#45;x64.Google.OrTools.csproj</text>
+<text text-anchor="middle" x="149" y="-455.3" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.linux&#45;x64.csproj</text>
 </g>
 <!-- LINUX_LIB&#45;&gt;LINUX_CSPROJ -->
 <g id="edge6" class="edge"><title>LINUX_LIB&#45;&gt;LINUX_CSPROJ</title>
@@ -103,7 +103,7 @@
 <!-- LINUX_NUPKG -->
 <g id="node9" class="node"><title>LINUX_NUPKG</title>
 <polygon fill="darkviolet" stroke="black" points="371.5,-301 368.5,-305 347.5,-305 344.5,-301 126.5,-301 126.5,-265 371.5,-265 371.5,-301"/>
-<text text-anchor="middle" x="249" y="-279.3" font-family="Times,serif" font-size="14.00">runtime.linux&#45;x64.Google.OrTools.nupkg</text>
+<text text-anchor="middle" x="249" y="-279.3" font-family="Times,serif" font-size="14.00">Google.OrTools.runtime.linux&#45;x64.nupkg</text>
 </g>
 <!-- LINUX_LIB&#45;&gt;LINUX_NUPKG -->
 <g id="edge9" class="edge"><title>LINUX_LIB&#45;&gt;LINUX_NUPKG</title>

@@ -23,11 +23,11 @@ The library is compiled against `netstandard2.0`, so you'll only need:
 - .Net Core SDK >= 2.1.302
 
 # Directory Layout
-* [`runtime.linux-x64.Google.OrTools`](runtime.linux-x64.Google.OrTools) Contains the
+* [`Google.OrTools.runtime.linux-x64`](Google.OrTools.runtime.linux-x64) Contains the
 .Net Standard 2.0 native project for the rid linux-x64.
-* [`runtime.osx-x64.Google.OrTools`](runtime.osx-x64.Google.OrTools) Contains the
+* [`Google.OrTools.runtime.osx-x64`](Google.OrTools.runtime.osx-x64) Contains the
 .Net Standard 2.0 native project for the rid osx-x64.
-* [`runtime.win-x64.Google.OrTools`](runtime.win-x64.Google.OrTools) Contains the
+* [`Google.OrTools.runtime.win-x64`](Google.OrTools.runtime.win-x64) Contains the
 .Net Standard 2.0 native project for the rid win-x64.
 * [`Google.OrTools`](Google.OrTools) Is the .Net Standard 2.0 meta-package which
 should depends on all previous available packages and contains the Reference Assembly.
@@ -41,7 +41,7 @@ will replace package in `<OR_ROOT>/packages`.
 
 ## Build Process
 To Create a native dependent package we will split it in two parts:
-- A bunch of `runtime.{rid}.Google.OrTools.nupkg` packages for each 
+- A bunch of `Google.OrTools.runtime.{rid}.nupkg` packages for each 
 [Runtime Identifier (RId)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) targeted.
 - A meta-package `Google.OrTools.nupkg` depending on each runtime packages.
 
@@ -57,7 +57,7 @@ note: This is usefull since the C++ build is a complex process for Windows, Linu
 i.e. We don't support cross-compilation for the native library generation.
 
 2. Be able to create a complete cross-platform (ed. platform as multiple rid) Google.OrTools package.  
-i.e. First you generate each native Nuget package (`runtime.{rid}.Google.OrTools.nupkg`)
+i.e. First you generate each native Nuget package (`Google.OrTools.runtime.{rid}.nupkg`)
 on each native architecture, then copy paste these artifacts on one native machine
 to generate the meta-package `Google.OrTools`.
 
@@ -65,7 +65,7 @@ to generate the meta-package `Google.OrTools`.
 Let's start with scenario 1: Create a *Local* `Google.OrTools` package targeting **one** 
 [Runtime Identifier (RID)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).  
 We would like to build a `Google.OrTools.nupkg` package which only depends on one
-`runtime.{rid}.Google.OrTools.nupkg` in order to work locally.  
+`Google.OrTools.runtime.{rid}.nupkg` in order to work locally.  
 
 The pipeline for `linux-x64` should be as follow:  
 note: The pipeline will be similar for `osx-x64` and `win-x64` architecture, don't hesitate to look at the CI log.
@@ -74,16 +74,16 @@ note: The pipeline will be similar for `osx-x64` and `win-x64` architecture, don
 
 ### Building local runtime Google.OrTools Package
 disclaimer: We won't cover the C++ ortools library build.
-So first let's create the local `runtime.{rid}.Google.OrTools.nupkg` nuget package.
+So first let's create the local `Google.OrTools.runtime.{rid}.nupkg` nuget package.
 
-Here some dev-note concerning this `runtime.{rid}.Google.OrTools.csproj`.
+Here some dev-note concerning this `Google.OrTools.runtime.{rid}.csproj`.
 - `AssemblyName` must be `Google.OrTools.dll` i.e. all {rid} projects **must**
   generate an assembly with the **same** name (i.e. no {rid} in the name).
   On the other hand package identifier will contain the {rid}...
   ```xml
   <RuntimeIdentifier>{rid}</RuntimeIdentifier>
   <AssemblyName>Google.OrTools</AssemblyName>
-  <PackageId>runtime.{rid}.Google.OrTools</PackageId>
+  <PackageId>Google.OrTools.runtime.{rid}</PackageId>
   ```
 - Once you specify a `RuntimeIdentifier` then `dotnet build` or `dotnet build -r {rid}` 
 will behave identically (save you from typing it).
@@ -119,14 +119,14 @@ to add the tag `native` to the
 
 Then you can generate the package using:
 ```bash
-dotnet pack src/runtime.{rid}.Google.OrTools
+dotnet pack src/Google.OrTools.runtime.{rid}
 ```
 note: this will automatically trigger the `dotnet build`.
 
 If everything good the package (located where your `PackageOutputPath` was defined) should have this layout:
 ```
-{...}/packages/runtime.{rid}.Google.OrTools.nupkg:
-\- runtime.{rid}.Google.OrTools.nuspec
+{...}/packages/Google.OrTools.runtime.{rid}.nupkg:
+\- Google.OrTools.runtime.{rid}.nuspec
 \- runtimes
    \- {rid}
       \- lib
@@ -154,8 +154,8 @@ Here some dev-note concerning this `Google.OrTools.csproj`.
   ```
 - Add dependency (i.e. `PackageReference`) on each runtime package(s) availabe:
   ```xml
-  <ItemGroup Condition="Exists('{...}/packages/runtime.linux-x64.Google.OrTools.1.0.0.nupkg')">
-    <PackageReference Include="runtime.linux-x64.Google.OrTools" Version="1.0.0" />
+  <ItemGroup Condition="Exists('{...}/packages/Google.OrTools.runtime.linux-x64.1.0.0.nupkg')">
+    <PackageReference Include="Google.OrTools.runtime.linux-x64" Version="1.0.0" />
   </ItemGroup>
   ```
   Thanks to the `RestoreSource` we can work locally with our just builded package
@@ -163,7 +163,7 @@ Here some dev-note concerning this `Google.OrTools.csproj`.
 - To expose the .Net Surface API the `Google.OrTools.csproj` must contains a least one 
 [Reference Assembly](https://docs.microsoft.com/en-us/nuget/reference/nuspec#explicit-assembly-references) of the previously rumtime package.
   ```xml
-  <Content Include="../runtime.{rid}.Google.OrTools/bin/$(Configuration)/$(TargetFramework)/{rid}/ref/*.dll">
+  <Content Include="../Google.OrTools.runtime.{rid}/bin/$(Configuration)/$(TargetFramework)/{rid}/ref/*.dll">
     <PackagePath>ref/$(TargetFramework)/%(Filename)%(Extension)</PackagePath>
     <Pack>true</Pack>
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -188,22 +188,22 @@ If everything good the package (located where your `PackageOutputPath` was defin
 ## Complete Google.OrTools Package
 Let's start with scenario 2: Create a *Complete* `Google.OrTools.nupkg` package targeting multiple
 [Runtime Identifier (RID)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).  
-We would like to build a `Google.OrTools.nupkg` package which depends on several `runtime.{rid}.Google.OrTools.nupkg`.  
+We would like to build a `Google.OrTools.nupkg` package which depends on several `Google.OrTools.runtime.{rid}.nupkg`.  
 
 The pipeline should be as follow:  
 note: This pipeline should be run on any architecture,
-provided you have generated the three architecture dependent `runtime.{rid}.Google.OrTools.nupkg` nuget packages.
+provided you have generated the three architecture dependent `Google.OrTools.runtime.{rid}.nupkg` nuget packages.
 ![Full Pipeline](doc/full_pipeline.svg)
 ![Legend](doc/legend.svg)
 
 ### Building All runtime Google.OrTools Package 
 Like in the previous scenario, on each targeted OS Platform you can build the coresponding
-`runtime.{rid}.Google.OrTools.nupkg` package.
+`Google.OrTools.runtime.{rid}.nupkg` package.
 
 Simply run on each platform
 ```bash
-dotnet build src/runtime.{rid}.Google.OrTools
-dotnet pack src/runtime.{rid}.Google.OrTools
+dotnet build src/Google.OrTools.runtime.{rid}
+dotnet pack src/Google.OrTools.runtime.{rid}
 ```
 note: replace `{rid}` by the Runtime Identifier associated to the current OS platform.
 

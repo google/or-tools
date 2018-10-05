@@ -2,11 +2,11 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RuntimeIdentifier>osx-x64</RuntimeIdentifier>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AssemblyName>Google.OrTools</AssemblyName>
 
     <!-- Nuget Properties-->
-    <PackageId>runtime.osx-x64.Google.OrTools</PackageId>
+    <PackageId>Google.OrTools.runtime.win-x64</PackageId>
     <Version>@PROJECT_VERSION@</Version>
     <Authors>Google LLC</Authors>
     <Description>.NET native wrapper for the Operations Research Tools project</Description>
@@ -15,7 +15,7 @@
     <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
     <PackageTags>native;math;LinearSolver;ConstraintSolver;ConstraintProgramming</PackageTags>
     <PackageOutputPath>../../../packages</PackageOutputPath>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
@@ -67,13 +67,9 @@
     </Compile>
 
     <!-- Native library must be in native directory... -->
-    <Content Include="../../../dependencies/install/lib/*.dylib*">
-      <PackagePath>runtimes/osx-x64/native/%(Filename)%(Extension)</PackagePath>
-      <Pack>true</Pack>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="../../../lib/runtime.osx-x64.Google.OrTools.dylib; ../../../lib/libortools.dylib">
-      <PackagePath>runtimes/osx-x64/native/%(Filename)%(Extension)</PackagePath>
+    <!-- On windows libortools is built as static -->
+    <Content Include="../../../lib/Google.OrTools.runtime.win-x64.dll">
+      <PackagePath>runtimes/win-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

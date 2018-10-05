@@ -2,17 +2,17 @@
   "runtimes": {
     "linux-x64": {
       "Google.OrTools": {
-        "runtime.linux-x64.Google.OrTools": "@PROJECT_VERSION@"
+        "Google.OrTools.runtime.linux-x64": "@PROJECT_VERSION@"
       }
     },
     "osx-x64": {
       "Google.OrTools": {
-        "runtime.osx-x64.Google.OrTools": "@PROJECT_VERSION@"
+        "Google.OrTools.runtime.osx-x64": "@PROJECT_VERSION@"
       }
     },
     "win-x64": {
       "Google.OrTools": {
-        "runtime.win-x64.Google.OrTools": "@PROJECT_VERSION@"
+        "Google.OrTools.runtime.win-x64": "@PROJECT_VERSION@"
       }
     }
   }

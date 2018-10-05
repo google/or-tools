@@ -13,10 +13,10 @@ digraph Make {
     LINUX_LIB [label="libortools.so\nruntimes/linux-x64/native", shape=component, fillcolor=royalblue];
     LINUX_CSWRP [label="ortools.cs"];
     LINUX_CPPWRP [label="ortools_csharp_wrap.cc", fillcolor=royalblue];
-    LINUX_LIBWRP [label="runtime.linux-x64.Google.OrTools.so\nruntimes/linux-x64/native", shape=component, fillcolor=royalblue];
-    LINUX_CSPROJ [label="runtime.linux-x64.Google.OrTools.csproj"];
+    LINUX_LIBWRP [label="Google.OrTools.runtime.linux-x64.so\nruntimes/linux-x64/native", shape=component, fillcolor=royalblue];
+    LINUX_CSPROJ [label="Google.OrTools.runtime.linux-x64.csproj"];
     LINUX_DLL [label="Google.OrTools.dll\nruntimes/linux-x64/lib/netstandard2.0/", shape=component];
-    LINUX_NUPKG [label="runtime.linux-x64.Google.OrTools.nupkg", shape=folder];
+    LINUX_NUPKG [label="Google.OrTools.runtime.linux-x64.nupkg", shape=folder];
 
     LINUX_CPPWRP -> LINUX_LIBWRP [label="g++", style=bold];
     LINUX_LIB -> LINUX_LIBWRP [label="ld", style=bold];

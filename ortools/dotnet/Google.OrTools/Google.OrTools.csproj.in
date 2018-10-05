@@ -13,7 +13,7 @@
     <Copyright>Copyright 2018 Google LLC</Copyright>
     <PackageLicenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</PackageLicenseUrl>
     <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
-    <PackageTags>native;math;LinearSolver;ConstraintSolver;ConstraintProgramming</PackageTags>
+    <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
     <PackageOutputPath>../../../packages</PackageOutputPath>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
@@ -32,44 +32,44 @@
   <!-- Check at least one reference assembly has been generated -->
   <Target Name="ValidateRuntimeRef" BeforeTargets="Compile">
     <ItemGroup>
-      <RefLinux Include="../runtime.linux-x64.Google.OrTools/bin/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
-      <RefOsx Include="../runtime.osx-x64.Google.OrTools/bin/$(Configuration)/$(TargetFramework)/osx-x64/ref/*.dll" />
-      <RefWin Include="../runtime.win-x64.Google.OrTools/bin/x64/$(Configuration)/$(TargetFramework)/win-x64/ref/*.dll" />
+      <RefLinux Include="../Google.OrTools.runtime.linux-x64/bin/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
+      <RefOsx Include="../Google.OrTools.runtime.osx-x64/bin/$(Configuration)/$(TargetFramework)/osx-x64/ref/*.dll" />
+      <RefWin Include="../Google.OrTools.runtime.win-x64/bin/x64/$(Configuration)/$(TargetFramework)/win-x64/ref/*.dll" />
     </ItemGroup>
     <Message
       Importance="high"
-      Text="RefAssembly from runtime.linux-x64.Google.OrTools: found"
+      Text="RefAssembly from Google.OrTools.runtime.linux-x64: found"
       Condition="Exists('@(RefLinux)')" />
     <Message
       Importance="high"
-      Text="RefAssembly from runtime.linux-x64.Google.OrTools: not found"
+      Text="RefAssembly from Google.OrTools.runtime.linux-x64: not found"
       Condition="!Exists('@(RefLinux)')" />
     <Message
       Importance="high"
-      Text="RefAssembly from runtime.osx-x64.Google.OrTools: found"
+      Text="RefAssembly from Google.OrTools.runtime.osx-x64: found"
       Condition="Exists('@(RefOsx)')" />
     <Message
       Importance="high"
-      Text="RefAssembly from runtime.osx-x64.Google.OrTools: not found"
+      Text="RefAssembly from Google.OrTools.runtime.osx-x64: not found"
       Condition="!Exists('@(RefOsx)')" />
     <Message
       Importance="high"
-      Text="RefAssembly from runtime.win-x64.Google.OrTools: found"
+      Text="RefAssembly from Google.OrTools.runtime.win-x64: found"
       Condition="Exists('@(RefWin)')" />
     <Message
       Importance="high"
-      Text="RefAssembly from runtime.win-x64.Google.OrTools: not found"
+      Text="RefAssembly from Google.OrTools.runtime.win-x64: not found"
       Condition="!Exists('@(RefWin)')" />
     <Error
-      Text="You must locally 'dotnet build' at least one runtime.{rid}.Google.OrTools Project."
+      Text="You must locally 'dotnet build' at least one Google.OrTools.runtime.{rid} Project."
       Condition="!Exists('@(RefLinux)') AND !Exists('@(RefOsx)') AND !Exists('@(RefWin)')" />
   </Target>
 
   <!-- Need to copy one of the reference assembly generated -->
   <ItemGroup>
-    <RefLinux Include="../runtime.linux-x64.Google.OrTools/bin/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
-    <RefOsx Include="../runtime.osx-x64.Google.OrTools/bin/$(Configuration)/$(TargetFramework)/osx-x64/ref/*.dll" />
-    <RefWin Include="../runtime.win-x64.Google.OrTools/bin/x64/$(Configuration)/$(TargetFramework)/win-x64/ref/*.dll" />
+    <RefLinux Include="../Google.OrTools.runtime.linux-x64/bin/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
+    <RefOsx Include="../Google.OrTools.runtime.osx-x64/bin/$(Configuration)/$(TargetFramework)/osx-x64/ref/*.dll" />
+    <RefWin Include="../Google.OrTools.runtime.win-x64/bin/x64/$(Configuration)/$(TargetFramework)/win-x64/ref/*.dll" />
     <Content
       Include="@(RefLinux)"
       Condition="Exists('@(RefLinux)')">
@@ -96,36 +96,36 @@
   <!-- Check at least one runtime package has been generated -->
   <Target Name="ValidateRuntimePack" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <RuntimeLinux Include="../../../packages/runtime.linux-x64.Google.OrTools.*.nupkg" />
-      <RuntimeOsx Include="../../../packages/runtime.osx-x64.Google.OrTools.*.nupkg" />
-      <RuntimeWin Include="../../../packages/runtime.win-x64.Google.OrTools.*.nupkg" />
+      <RuntimeLinux Include="../../../packages/Google.OrTools.runtime.linux-x64.*.nupkg" />
+      <RuntimeOsx Include="../../../packages/Google.OrTools.runtime.osx-x64.*.nupkg" />
+      <RuntimeWin Include="../../../packages/Google.OrTools.runtime.win-x64.*.nupkg" />
     </ItemGroup>
     <Message
       Importance="high"
-      Text="Package runtime.linux-x64.Google.OrTools: found"
+      Text="Package Google.OrTools.runtime.linux-x64: found"
       Condition="Exists('@(RuntimeLinux)')" />
     <Message
       Importance="high"
-      Text="Package runtime.linux-x64.Google.OrTools: not found"
+      Text="Package Google.OrTools.runtime.linux-x64: not found"
       Condition="!Exists('@(RuntimeLinux)')" />
     <Message
       Importance="high"
-      Text="Package runtime.osx-x64.Google.OrTools: found"
+      Text="Package Google.OrTools.runtime.osx-x64: found"
       Condition="Exists('@(RuntimeOsx)')" />
     <Message
       Importance="high"
-      Text="Package runtime.osx-x64.Google.OrTools: not found"
+      Text="Package Google.OrTools.runtime.osx-x64: not found"
       Condition="!Exists('@(RuntimeOsx)')" />
     <Message
       Importance="high"
-      Text="Package runtime.win-x64.Google.OrTools: found"
+      Text="Package Google.OrTools.runtime.win-x64: found"
       Condition="Exists('@(RuntimeWin)')" />
     <Message
       Importance="high"
-      Text="Package runtime.win-x64.Google.OrTools: not found"
+      Text="Package Google.OrTools.runtime.win-x64: not found"
       Condition="!Exists('@(RuntimeWin)')" />
     <Error
-      Text="You must locally 'dotnet pack' at least one runtime.{rid}.Google.OrTools Project."
+      Text="You must locally 'dotnet pack' at least one Google.OrTools.runtime.{rid} Project."
       Condition="!Exists('@(RuntimeLinux)') AND !Exists('@(RuntimeOsx)') AND !Exists('@(RuntimeWin)')" />
   </Target>
 
@@ -133,20 +133,20 @@
   <PropertyGroup>
     <RestoreSources>../../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
-  <ItemGroup Condition="Exists('../../../packages/runtime.linux-x64.Google.OrTools.@PROJECT_VERSION@.nupkg')">
-    <PackageReference Include="runtime.linux-x64.Google.OrTools" Version="@PROJECT_VERSION@" />
+  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.linux-x64.@PROJECT_VERSION@.nupkg')">
+    <PackageReference Include="Google.OrTools.runtime.linux-x64" Version="@PROJECT_VERSION@" />
   </ItemGroup>
-  <ItemGroup Condition="Exists('../../../packages/runtime.osx-x64.Google.OrTools.@PROJECT_VERSION@.nupkg')">
-    <PackageReference Include="runtime.osx-x64.Google.OrTools" Version="@PROJECT_VERSION@" />
+  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.osx-x64.@PROJECT_VERSION@.nupkg')">
+    <PackageReference Include="Google.OrTools.runtime.osx-x64" Version="@PROJECT_VERSION@" />
   </ItemGroup>
-  <ItemGroup Condition="Exists('../../../packages/runtime.win-x64.Google.OrTools.@PROJECT_VERSION@.nupkg')">
-    <PackageReference Include="runtime.win-x64.Google.OrTools" Version="@PROJECT_VERSION@" />
+  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.win-x64.@PROJECT_VERSION@.nupkg')">
+    <PackageReference Include="Google.OrTools.runtime.win-x64" Version="@PROJECT_VERSION@" />
   </ItemGroup>
 
   <ItemGroup>
-    <RuntimeLinux Include="../../../packages/runtime.linux-x64.Google.OrTools.*.nupkg" />
-    <RuntimeOsx Include="../../../packages/runtime.osx-x64.Google.OrTools.*.nupkg" />
-    <RuntimeWin Include="../../../packages/runtime.win-x64.Google.OrTools.*.nupkg" />
+    <RuntimeLinux Include="../../../packages/Google.OrTools.runtime.linux-x64.*.nupkg" />
+    <RuntimeOsx Include="../../../packages/Google.OrTools.runtime.osx-x64.*.nupkg" />
+    <RuntimeWin Include="../../../packages/Google.OrTools.runtime.win-x64.*.nupkg" />
     <Content
       Include="runtime.json"
       Condition="Exists('@(RuntimeLinux)') AND Exists('@(RuntimeOsx)') AND Exists('@(RuntimeWin)')">

@@ -2,11 +2,11 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     <AssemblyName>Google.OrTools</AssemblyName>
 
     <!-- Nuget Properties-->
-    <PackageId>runtime.win-x64.Google.OrTools</PackageId>
+    <PackageId>Google.OrTools.runtime.linux-x64</PackageId>
     <Version>@PROJECT_VERSION@</Version>
     <Authors>Google LLC</Authors>
     <Description>.NET native wrapper for the Operations Research Tools project</Description>
@@ -15,11 +15,13 @@
     <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
     <PackageTags>native;math;LinearSolver;ConstraintSolver;ConstraintProgramming</PackageTags>
     <PackageOutputPath>../../../packages</PackageOutputPath>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
     <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+
+    <!-- Build Properties -->
     <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
     <UseSharedCompilation>false</UseSharedCompilation>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -67,9 +69,13 @@
     </Compile>
 
     <!-- Native library must be in native directory... -->
-    <!-- On windows libortools is built as static -->
-    <Content Include="../../../lib/runtime.win-x64.Google.OrTools.dll">
-      <PackagePath>runtimes/win-x64/native/%(Filename)%(Extension)</PackagePath>
+    <Content Include="../../../dependencies/install/lib*/*.so*">
+      <PackagePath>runtimes/linux-x64/native/%(Filename)%(Extension)</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../../lib/Google.OrTools.runtime.linux-x64.so; ../../../lib/libortools.so">
+      <PackagePath>runtimes/linux-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

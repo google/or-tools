@@ -3,7 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "runtime.linux-x64.Google.OrTools", "runtime.linux-x64.Google.OrTools\runtime.linux-x64.Google.OrTools.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.linux-x64", "Google.OrTools.runtime.linux-x64\Google.OrTools.runtime.linux-x64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.osx-x64",   "Google.OrTools.runtime.osx-x64\Google.OrTools.runtime.osx-x64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.runtime.win-x64",   "Google.OrTools.runtime.win-x64\Google.OrTools.runtime.win-x64.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools",   "Google.OrTools\Google.OrTools.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.Tests",   "Google.OrTools.Tests\Google.OrTools.Tests.csproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.FSharp",   "Google.OrTools.FSharp\Google.OrTools.FSharp.fsproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Google.OrTools.FSharp.Tests",   "Google.OrTools.FSharp.Tests\Google.OrTools.FSharp.Tests.fsproj", "{FC646C34-8541-427D-B9F6-1247798F4574}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
