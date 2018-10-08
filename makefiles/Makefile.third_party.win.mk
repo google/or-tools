@@ -256,20 +256,20 @@ DEPENDENCIES_LNK += $(GFLAGS_LNK)
 ##  GLOG  ##
 ############
 # This uses glog cmake-based build.
-install_glog: dependencies/install/include/glog/logging.h
+install_glog: dependencies/install/lib/glog.lib
 
-dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt install_gflags
-	-md dependencies\sources\glog-$(GLOG_TAG)\build_cmake
-	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && \
-	  "$(CMAKE)" -D CMAKE_INSTALL_PREFIX=..\..\..\install \
-	           -D CMAKE_BUILD_TYPE=Release \
-	           -D CMAKE_PREFIX_PATH="$(OR_ROOT)dependencies\install" \
-	           -G "NMake Makefiles" \
-	           ..
-	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && set MAKEFLAGS= && nmake install
-	$(TOUCH) dependencies/install/lib/glog_static.lib
+dependencies/install/lib/glog.lib: dependencies/sources/glog-$(GLOG_TAG) install_gflags
+	cd dependencies\sources\glog-$(GLOG_TAG) && \
+  "$(CMAKE)" -H. -Bbuild_cmake \
+    -DCMAKE_PREFIX_PATH=..\..\install \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_TESTING=OFF \
+    -DCMAKE_INSTALL_PREFIX=..\..\install \
+    -G "NMake Makefiles" && \
+  "$(CMAKE)" --build build_cmake && \
+  "$(CMAKE)" --build build_cmake --target install
 
-dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt: dependencies/archives/glog-$(GLOG_TAG).zip
+dependencies/sources/glog-$(GLOG_TAG): dependencies/archives/glog-$(GLOG_TAG).zip | dependencies/sources
 	$(UNZIP) -q -d dependencies/sources dependencies\archives\glog-$(GLOG_TAG).zip
 	-$(TOUCH) dependencies\sources\glog-$(GLOG_TAG)\CMakeLists.txt
 
