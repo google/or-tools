@@ -225,18 +225,18 @@ DEPENDENCIES_LNK += $(ZLIB_LNK)
 # This uses gflags cmake-based build.
 install_gflags: dependencies/install/lib/gflags.lib
 
-dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md
-	-mkdir dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake
-	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && set MAKEFLAGS= && \
-	  "$(CMAKE)" -D CMAKE_INSTALL_PREFIX=..\..\..\install \
-	           -D CMAKE_BUILD_TYPE=Release \
-	           -G "NMake Makefiles" \
-	           ..
-	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && set MAKEFLAGS= && \
-	nmake install
-	$(TOUCH) dependencies/install/lib/gflags_static.lib
+dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)
+	cd dependencies\sources\gflags-$(GFLAGS_TAG) && \
+  set MAKEFLAGS= && \
+  "$(CMAKE)" -H. -Bbuild_cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_TESTING=OFF \
+    -DCMAKE_INSTALL_PREFIX=..\..\install \
+    -G "NMake Makefiles" && \
+  "$(CMAKE)" --build build_cmake && \
+  "$(CMAKE)" --build build_cmake --target install
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
+dependencies/sources/gflags-$(GFLAGS_TAG): dependencies/archives/gflags-$(GFLAGS_TAG).zip | dependencies/sources
 	$(UNZIP) -q -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
 	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
