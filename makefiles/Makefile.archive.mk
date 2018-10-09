@@ -153,59 +153,17 @@ test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 ifeq ($(SYSTEM),win)
 	$(UNZIP) $< -d $(TEMP_TEST_DIR)
 	cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) \
- && $(MAKE) MAKEFLAGS= rcc_linear_programming \
- && $(MAKE) MAKEFLAGS= rcc_integer_programming \
- && $(MAKE) MAKEFLAGS= rcc_constraint_programming_cp \
- && $(MAKE) MAKEFLAGS= rcc_rabbits_pheasants_cp \
- && $(MAKE) MAKEFLAGS= rcc_tsp \
- && $(MAKE) MAKEFLAGS= rcc_vrp \
- && $(MAKE) MAKEFLAGS= rcc_knapsack \
- && $(MAKE) MAKEFLAGS= rcc_max_flow \
- && $(MAKE) MAKEFLAGS= rcc_min_cost_flow \
- \
- && $(MAKE) MAKEFLAGS= rjava_LinearProgramming \
- && $(MAKE) MAKEFLAGS= rjava_IntegerProgramming \
- && $(MAKE) MAKEFLAGS= rjava_RabbitsPheasants \
- && $(MAKE) MAKEFLAGS= rjava_Tsp \
- && $(MAKE) MAKEFLAGS= rjava_Vrp \
- && $(MAKE) MAKEFLAGS= rjava_Knapsack \
- \
- && $(MAKE) MAKEFLAGS= rdotnet_cslinearprogramming \
- && $(MAKE) MAKEFLAGS= rdotnet_csintegerprogramming \
- && $(MAKE) MAKEFLAGS= rdotnet_tsp \
- && $(MAKE) MAKEFLAGS= rdotnet_vrp \
- && $(MAKE) MAKEFLAGS= rdotnet_assignment \
- && $(MAKE) MAKEFLAGS= rdotnet_nurses_sat
+ && $(MAKE) MAKEFLAGS= test_cc \
+ && $(MAKE) MAKEFLAGS= test_java \
+ && $(MAKE) MAKEFLAGS= test_dotnet \
 else
 #this is to make sure the archive tests don't use the root libraries
 	$(RENAME) lib lib2
 	$(TAR) -xvf $< -C $(TEMP_TEST_DIR)
 	( cd $(TEMP_TEST_DIR)$S$(INSTALL_DIR) \
- && $(MAKE) MAKEFLAGS= rcc_linear_programming \
- && $(MAKE) MAKEFLAGS= rcc_integer_programming \
- && $(MAKE) MAKEFLAGS= rcc_constraint_programming_cp \
- && $(MAKE) MAKEFLAGS= rcc_rabbits_pheasants_cp \
- && $(MAKE) MAKEFLAGS= rcc_tsp \
- && $(MAKE) MAKEFLAGS= rcc_vrp \
- && $(MAKE) MAKEFLAGS= rcc_knapsack \
- && $(MAKE) MAKEFLAGS= rcc_max_flow \
- && $(MAKE) MAKEFLAGS= rcc_min_cost_flow \
- && $(MAKE) MAKEFLAGS= rcc_nurses_cp \
- && $(MAKE) MAKEFLAGS= rcc_jobshop_cp \
- \
- && $(MAKE) MAKEFLAGS= rjava_LinearProgramming \
- && $(MAKE) MAKEFLAGS= rjava_IntegerProgramming \
- && $(MAKE) MAKEFLAGS= rjava_RabbitsPheasants \
- && $(MAKE) MAKEFLAGS= rjava_Tsp \
- && $(MAKE) MAKEFLAGS= rjava_Vrp \
- && $(MAKE) MAKEFLAGS= rjava_Knapsack \
- \
- && $(MAKE) MAKEFLAGS= rdotnet_cslinearprogramming \
- && $(MAKE) MAKEFLAGS= rdotnet_csintegerprogramming \
- && $(MAKE) MAKEFLAGS= rdotnet_tsp \
- && $(MAKE) MAKEFLAGS= rdotnet_vrp \
- && $(MAKE) MAKEFLAGS= rdotnet_assignment \
- && $(MAKE) MAKEFLAGS= rdotnet_nurses_sat \
+ && $(MAKE) MAKEFLAGS= test_cc \
+ && $(MAKE) MAKEFLAGS= test_java \
+ && $(MAKE) MAKEFLAGS= test_dotnet \
  ) && $(RENAME) lib2 lib && echo "archive test succeeded" \
  || ( $(RENAME) lib2 lib && echo "archive test failed" && exit 1)
 endif

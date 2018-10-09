@@ -191,6 +191,18 @@ endif
 ##  C++  ##
 ###########
 EXE = \
+$(BIN_DIR)/linear_programming$E \
+$(BIN_DIR)/integer_programming$E \
+$(BIN_DIR)/constraint_programming_cp$E \
+$(BIN_DIR)/rabbits_pheasants_cp$E \
+$(BIN_DIR)/tsp$E \
+$(BIN_DIR)/vrp$E \
+$(BIN_DIR)/knapsack$E \
+$(BIN_DIR)/max_flow$E \
+$(BIN_DIR)/min_cost_flow$E \
+$(BIN_DIR)/nurses_cp$E \
+$(BIN_DIR)/job_shop_cp$E \
+\
 $(BIN_DIR)/costas_array$E \
 $(BIN_DIR)/cryptarithm$E \
 $(BIN_DIR)/cvrp_disjoint_tw$E \
@@ -205,13 +217,11 @@ $(BIN_DIR)/flexible_jobshop$E \
 $(BIN_DIR)/flow_api$E \
 $(BIN_DIR)/frequency_assignment_problem$E \
 $(BIN_DIR)/golomb$E \
-$(BIN_DIR)/integer_programming$E \
 $(BIN_DIR)/jobshop$E \
 $(BIN_DIR)/jobshop_earlytardy$E \
 $(BIN_DIR)/jobshop_ls$E \
 $(BIN_DIR)/jobshop_sat$E \
 $(BIN_DIR)/linear_assignment_api$E \
-$(BIN_DIR)/linear_programming$E \
 $(BIN_DIR)/linear_solver_protocol_buffers$E \
 $(BIN_DIR)/ls_api$E \
 $(BIN_DIR)/magic_square$E \
@@ -220,12 +230,12 @@ $(BIN_DIR)/mps_driver$E \
 $(BIN_DIR)/multidim_knapsack$E \
 $(BIN_DIR)/network_routing$E \
 $(BIN_DIR)/nqueens$E \
+$(BIN_DIR)/random_tsp$E \
 $(BIN_DIR)/pdptw$E \
 $(BIN_DIR)/shift_minimization_sat$E \
 $(BIN_DIR)/solve$E \
 $(BIN_DIR)/sports_scheduling$E \
 $(BIN_DIR)/strawberry_fields_with_column_generation$E \
-$(BIN_DIR)/tsp$E \
 $(BIN_DIR)/weighted_tardiness_sat$E
 
 .PHONY: cc test_cc ccc rcc
@@ -237,10 +247,17 @@ else
 cc: $(EXE)
 
 test_cc: detect_cc
-	$(MAKE) rcc_nqueens
-	$(MAKE) rcc_golomb
+	$(MAKE) rcc_linear_programming
+	$(MAKE) rcc_integer_programming
+	$(MAKE) rcc_constraint_programming_cp
+	$(MAKE) rcc_rabbits_pheasants_cp
 	$(MAKE) rcc_tsp
-	$(MAKE) rcc_cvrptw
+	$(MAKE) rcc_vrp
+	$(MAKE) rcc_knapsack
+	$(MAKE) rcc_max_flow
+	$(MAKE) rcc_min_cost_flow
+	$(MAKE) rcc_nurses_cp
+	$(MAKE) rcc_job_shop_cp
 
 # C++ generic running command
 ifeq ($(EX),)
@@ -315,6 +332,13 @@ endif
 ##  JAVA  ##
 ############
 JAR = \
+$(LIB_DIR)/LinearProgramming$J \
+$(LIB_DIR)/IntegerProgramming$J \
+$(LIB_DIR)/RabbitsPheasants$J \
+$(LIB_DIR)/Tsp$J \
+$(LIB_DIR)/Vrp$J \
+$(LIB_DIR)/Knapsack$J \
+\
 $(LIB_DIR)/AllDifferentExcept0$J \
 $(LIB_DIR)/AllInterval$J \
 $(LIB_DIR)/CapacitatedVehicleRoutingProblemWithTimeWindows$J \
@@ -330,13 +354,10 @@ $(LIB_DIR)/DietMIP$J \
 $(LIB_DIR)/DivisibleBy9Through1$J \
 $(LIB_DIR)/FlowExample$J \
 $(LIB_DIR)/GolombRuler$J \
-$(LIB_DIR)/IntegerProgramming$J \
 $(LIB_DIR)/Issue173$J \
-$(LIB_DIR)/Knapsack$J \
 $(LIB_DIR)/KnapsackMIP$J \
 $(LIB_DIR)/LeastDiff$J \
 $(LIB_DIR)/LinearAssignmentAPI$J \
-$(LIB_DIR)/LinearProgramming$J \
 $(LIB_DIR)/LsApi$J \
 $(LIB_DIR)/MagicSquare$J \
 $(LIB_DIR)/Map2$J \
@@ -347,7 +368,6 @@ $(LIB_DIR)/NQueens2$J \
 $(LIB_DIR)/NQueens$J \
 $(LIB_DIR)/Partition$J \
 $(LIB_DIR)/QuasigroupCompletion$J \
-$(LIB_DIR)/RabbitsPheasants$J \
 $(LIB_DIR)/SendMoreMoney2$J \
 $(LIB_DIR)/SendMoreMoney$J \
 $(LIB_DIR)/SendMostMoney$J \
@@ -364,7 +384,6 @@ $(LIB_DIR)/Strimko2$J \
 $(LIB_DIR)/Sudoku$J \
 $(LIB_DIR)/SurvoPuzzle$J \
 $(LIB_DIR)/ToNum$J \
-$(LIB_DIR)/Tsp$J \
 $(LIB_DIR)/WhoKilledAgatha$J \
 $(LIB_DIR)/Xkcd$J \
 $(LIB_DIR)/YoungTableaux$J
@@ -390,10 +409,10 @@ java: $(JAR)
 test_java: detect_java
 	$(MAKE) rjava_LinearProgramming
 	$(MAKE) rjava_IntegerProgramming
-	$(MAKE) rjava_StiglerMIP
-	$(MAKE) rjava_Sudoku
-	$(MAKE) rjava_NQueens
+	$(MAKE) rjava_RabbitsPheasants
 	$(MAKE) rjava_Tsp
+	$(MAKE) rjava_Vrp
+	$(MAKE) rjava_Knapsack
 
 # Java generic compilation command.
 .PHONY: cjava rjava
@@ -456,12 +475,17 @@ dotnet test_dotnet cdotnet rdotnet:
 	exit 127
 else
 dotnet:
+	$(MAKE) rdotnet_cslinearprogramming
+	$(MAKE) rdotnet_csintegerprogramming
+	$(MAKE) rdotnet_tsp
+	$(MAKE) rdotnet_vrp
+	$(MAKE) rdotnet_assignment
+	$(MAKE) rdotnet_nurses_sat
 	$(MAKE) rdotnet_3_jugs_regular
 	$(MAKE) rdotnet_alldifferent_except_0
 	$(MAKE) rdotnet_all_interval
 	$(MAKE) rdotnet_a_puzzle
 	$(MAKE) rdotnet_a_round_of_golf
-	$(MAKE) rdotnet_assignment
 	$(MAKE) rdotnet_broken_weights
 	$(MAKE) rdotnet_bus_schedule
 	$(MAKE) rdotnet_circuit2
@@ -479,10 +503,8 @@ dotnet:
 	$(MAKE) rdotnet_crypto
 	$(MAKE) rdotnet_cscvrptw
 	$(MAKE) rdotnet_csflow
-	$(MAKE) rdotnet_csintegerprogramming
 	$(MAKE) rdotnet_csjobshop
 	$(MAKE) rdotnet_csknapsack
-	$(MAKE) rdotnet_cslinearprogramming
 	$(MAKE) rdotnet_csls_api
 	$(MAKE) rdotnet_csrabbitspheasants
 	$(MAKE) rdotnet_cstsp
@@ -526,7 +548,6 @@ dotnet:
 	$(MAKE) rdotnet_nqueens
 	$(MAKE) rdotnet_nurse_rostering_regular
 	$(MAKE) rdotnet_nurse_rostering_transition
-	$(MAKE) rdotnet_nurses_sat
 	$(MAKE) rdotnet_olympic
 	$(MAKE) rdotnet_organize_day
 	$(MAKE) rdotnet_organize_day_intervals
@@ -566,7 +587,6 @@ dotnet:
 	$(MAKE) rdotnet_techtalk_scheduling
 	$(MAKE) rdotnet_to_num
 	$(MAKE) rdotnet_traffic_lights
-	$(MAKE) rdotnet_tsp
 	$(MAKE) rdotnet_volsay
 	$(MAKE) rdotnet_volsay2
 	$(MAKE) rdotnet_volsay3
@@ -593,8 +613,12 @@ dotnet:
 #	$(MAKE) rdotnet_word_square # depends on /usr/share/dict/words
 
 test_dotnet: detect_dotnet
-	$(MAKE) rdotnet_a_puzzle
-	$(MAKE) rdotnet_fsProgram
+	$(MAKE) rdotnet_cslinearprogramming
+	$(MAKE) rdotnet_csintegerprogramming
+	$(MAKE) rdotnet_tsp
+	$(MAKE) rdotnet_vrp
+	$(MAKE) rdotnet_assignment
+	$(MAKE) rdotnet_nurses_sat
 
 # .NET generic compilation command.
 ifeq ($(EX),)
