@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <numeric> // std::iota
+
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
