@@ -224,7 +224,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     FillAMinusBInDomain({kint64min, -1}, fz_ct, ct);
   } else if (fz_ct.type == "bool_gt" || fz_ct.type == "int_gt") {
     FillAMinusBInDomain({1, kint64max}, fz_ct, ct);
-  } else if (fz_ct.type == "bool_eq" || fz_ct.type == "int_eq" || fz_ct.type == "bool2int") {
+  } else if (fz_ct.type == "bool_eq" || fz_ct.type == "int_eq" || 
+             fz_ct.type == "bool2int") {
     FillAMinusBInDomain({0, 0}, fz_ct, ct);
   } else if (fz_ct.type == "bool_ne" || fz_ct.type == "bool_not" ||
              fz_ct.type == "int_ne") {
