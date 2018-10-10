@@ -52,7 +52,7 @@ endif()
 include(CMakeDependentOption)
 option(BUILD_DEPS "Force re-build of all dependencies" ON)
 option(BUILD_CXX "Build C++ library" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_PYTHON	"Build Python Library" ON
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON	"Build Python Library" OFF
 	"BUILD_CXX; NOT ORTOOLS_IS_SUBPROJECT"	OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_JAVA "Build Java Library" OFF
 	"BUILD_CXX; NOT ORTOOLS_IS_SUBPROJECT" OFF)
