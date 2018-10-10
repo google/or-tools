@@ -1,16 +1,20 @@
 file(GLOB _SRCS "*.h" "*.cc")
-list(REMOVE_ITEM _SRCS ${CMAKE_CURRENT_SOURCE_DIR}/hungarian_test.cc
-	${CMAKE_CURRENT_SOURCE_DIR}/hungarian_test.h)
+list(REMOVE_ITEM _SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/hungarian_test.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/hungarian_test.h
+)
 
 set(NAME ${PROJECT_NAME}_algorithms)
 
 # Will be merge in libortools.so
 #add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES CXX_STANDARD 11)
-set_target_properties(${NAME} PROPERTIES CXX_STANDARD_REQUIRED ON)
-set_target_properties(${NAME} PROPERTIES CXX_EXTENSIONS OFF)
-set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(${NAME} PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+  POSITION_INDEPENDENT_CODE ON
+)
 target_include_directories(${NAME} PRIVATE
 	${PROJECT_SOURCE_DIR}
 	${PROJECT_BINARY_DIR}

@@ -1,7 +1,3 @@
-if(NOT BUILD_CXX)
-	return()
-endif()
-
 include(utils)
 set_version(VERSION)
 project(ortools LANGUAGES CXX VERSION ${VERSION})
@@ -53,11 +49,7 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 
 # Main Target
-if(BUILD_SHARED_LIBS)
-	add_library(${PROJECT_NAME} SHARED "")
-else()
-	add_library(${PROJECT_NAME} STATIC "")
-endif()
+add_library(${PROJECT_NAME} "")
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
 if(NOT APPLE)
 	set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
