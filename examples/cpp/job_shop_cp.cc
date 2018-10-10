@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include <iomanip>
+#include <numeric> // std::iota
+
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
