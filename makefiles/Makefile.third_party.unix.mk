@@ -670,6 +670,7 @@ clean_third_party:
 	-$(DELREC) dependencies/sources/gflags*
 	-$(DELREC) dependencies/sources/glog*
 	-$(DELREC) dependencies/sources/protobuf*
+	-$(DELREC) dependencies/sources/abseil-cpp*
 	-$(DELREC) dependencies/sources/google*
 	-$(DELREC) dependencies/sources/Cbc*
 	-$(DELREC) dependencies/sources/Cgl*
