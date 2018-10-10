@@ -101,9 +101,7 @@ namespace Google.OrTools.Sat
       }
       else
       {
-        string parameters = "";
-        response_ = SatHelper.SolveWithStringParametersAndSolutionCallback(
-            model.Model, parameters, cb);
+        response_ = SatHelper.Solve(model.Model);
       }
       return response_.Status;
     }
