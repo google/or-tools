@@ -106,6 +106,9 @@ namespace operations_research {
     }
     LOG(INFO) << route.str() << routing.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << distance << "m";
+    LOG(INFO) << "";
+    LOG(INFO) << "Advanced usage:";
+    LOG(INFO) << "Problem solved in " << routing.solver()->wall_time() << "ms";
   }
 
   void Solve() {
