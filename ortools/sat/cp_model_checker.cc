@@ -19,8 +19,8 @@
 #include <unordered_set>
 #include <utility>
 
+#include "absl/strings/str_cat.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/port/proto_utils.h"
@@ -316,6 +316,14 @@ class ConstraintChecker {
     return true;
   }
 
+  bool AtMostOneConstraintIsFeasible(const ConstraintProto& ct) {
+    int num_true_literals = 0;
+    for (const int lit : ct.at_most_one().literals()) {
+      if (LiteralIsTrue(lit)) ++num_true_literals;
+    }
+    return num_true_literals <= 1;
+  }
+
   bool BoolXorConstraintIsFeasible(const ConstraintProto& ct) {
     int sum = 0;
     for (const int lit : ct.bool_xor().literals()) {
@@ -324,7 +332,6 @@ class ConstraintChecker {
     return sum == 1;
   }
 
-  // TODO(user): deal with integer overflows.
   bool LinearConstraintIsFeasible(const ConstraintProto& ct) {
     int64 sum = 0;
     const int num_variables = ct.linear().coeffs_size();
@@ -729,6 +736,9 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kBoolAnd:
         is_feasible = checker.BoolAndConstraintIsFeasible(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kAtMostOne:
+        is_feasible = checker.AtMostOneConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kBoolXor:
         is_feasible = checker.BoolAndConstraintIsFeasible(ct);

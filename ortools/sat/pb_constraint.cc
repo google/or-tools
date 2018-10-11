@@ -15,7 +15,7 @@
 
 #include <utility>
 
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/thorough_hash.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -277,10 +277,10 @@ std::string MutableUpperBoundedLinearConstraint::DebugString() {
   std::string result;
   for (BooleanVariable var : PossibleNonZeros()) {
     if (!result.empty()) result += " + ";
-    result += absl::StrFormat("%lld[%s]", GetCoefficient(var).value(),
-                              GetLiteral(var).DebugString().c_str());
+    result += absl::StrFormat("%d[%s]", GetCoefficient(var).value(),
+                              GetLiteral(var).DebugString());
   }
-  result += absl::StrFormat(" <= %lld", rhs_.value());
+  result += absl::StrFormat(" <= %d", rhs_.value());
   return result;
 }
 
@@ -962,8 +962,8 @@ void PbConstraints::Untrail(const Trail& trail, int trail_index) {
   }
 }
 
-absl::Span<Literal> PbConstraints::Reason(const Trail& trail,
-                                          int trail_index) const {
+absl::Span<const Literal> PbConstraints::Reason(const Trail& trail,
+                                                int trail_index) const {
   SCOPED_TIME_STAT(&stats_);
   const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];

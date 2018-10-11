@@ -24,22 +24,23 @@
 #include <unordered_set>
 #include <utility>
 
+#include "absl/strings/str_format.h"
+#include "absl/synchronization/mutex.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/mutex.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
+#include "absl/synchronization/notification.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/notification.h"
 #endif  // __PORTABLE_PLATFORM__
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/memory.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connectivity.h"
 #include "ortools/port/proto_utils.h"
@@ -949,6 +950,11 @@ void LoadBoolAndConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   }
 }
 
+void LoadAtMostOneConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
+  CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
+  m->Add(AtMostOneConstraint(m->Literals(ct.at_most_one().literals())));
+}
+
 void LoadBoolXorConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
   m->Add(LiteralXorIs(m->Literals(ct.bool_xor().literals()), true));
@@ -1542,11 +1548,11 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                          " in objective)")
           : "";
   absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
-                  objective_string.c_str(), "\n");
+                  objective_string, "\n");
   if (num_vars_per_domains.size() < 50) {
     for (const auto& entry : num_vars_per_domains) {
       const std::string temp = absl::StrCat(" - ", entry.second, " in ",
-                                            entry.first.ToString().c_str(), "\n");
+                                            entry.first.ToString(), "\n");
       absl::StrAppend(&result, Summarize(temp));
     }
   } else {
@@ -1601,10 +1607,9 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
     absl::StrAppend(&result, "\nobjective: NA");
     absl::StrAppend(&result, "\nbest_bound: NA");
   } else {
-    absl::StrAppend(&result, "\nobjective: ",
-                    absl::LegacyPrecision(response.objective_value()));
-    absl::StrAppend(&result, "\nbest_bound: ",
-                    absl::LegacyPrecision(response.best_objective_bound()));
+    absl::StrAppend(&result, "\nobjective: ", (response.objective_value()));
+    absl::StrAppend(&result,
+                    "\nbest_bound: ", (response.best_objective_bound()));
   }
 
   absl::StrAppend(&result, "\nbooleans: ", response.num_booleans());
@@ -1617,12 +1622,10 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
                   "\npropagations: ", response.num_binary_propagations());
   absl::StrAppend(
       &result, "\ninteger_propagations: ", response.num_integer_propagations());
+  absl::StrAppend(&result, "\nwalltime: ", (response.wall_time()));
+  absl::StrAppend(&result, "\nusertime: ", (response.user_time()));
   absl::StrAppend(&result,
-                  "\nwalltime: ", absl::LegacyPrecision(response.wall_time()));
-  absl::StrAppend(&result,
-                  "\nusertime: ", absl::LegacyPrecision(response.user_time()));
-  absl::StrAppend(&result, "\ndeterministic_time: ",
-                  absl::LegacyPrecision(response.deterministic_time()));
+                  "\ndeterministic_time: ", (response.deterministic_time()));
   absl::StrAppend(&result, "\n");
   return result;
 }
@@ -1644,6 +1647,9 @@ bool LoadConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
       return true;
     case ConstraintProto::ConstraintCase::kBoolAnd:
       LoadBoolAndConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+      LoadAtMostOneConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintCase::kBoolXor:
       LoadBoolXorConstraint(ct, m);
@@ -1845,6 +1851,14 @@ void TryToLinearizeConstraint(
       CHECK(lc.AddLiteralTerm(m->Literal(ref), 1.0));
       linear_constraints->push_back(lc.Build());
     }
+  } else if (ct.constraint_case() ==
+             ConstraintProto::ConstraintCase::kAtMostOne) {
+    if (HasEnforcementLiteral(ct)) return;
+    LinearConstraintBuilder lc(m->model(), -kInfinity, 1);
+    for (const int ref : ct.at_most_one().literals()) {
+      CHECK(lc.AddLiteralTerm(m->Literal(ref), 1.0));
+    }
+    linear_constraints->push_back(lc.Build());
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
     if (HasEnforcementLiteral(ct)) return;
     const int target = ct.int_max().target();
@@ -2477,6 +2491,12 @@ CpSolverResponse SolveCpModelInternal(
       ->AddAllImplicationsBetweenAssociatedLiterals();
   model->GetOrCreate<SatSolver>()->Propagate();
 
+  // TODO(user): This should be done in the presolve instead.
+  if (!model->GetOrCreate<BinaryImplicationGraph>()
+           ->ComputeTransitiveReduction()) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+  }
+
   // Auto detect "at least one of" constraints in the PrecedencesPropagator.
   // Note that we do that before we finish loading the problem (objective and LP
   // relaxation), because propagation will be faster at this point and it should
@@ -3032,7 +3052,7 @@ CpSolverResponse SolveCpModelWithLNS(
         CpModelProto local_problem = generators[selected_generator]->Generate(
             response, num_workers * seed + worker_id, saved_difficulty);
         const std::string solution_info = absl::StrFormat(
-            "%s(d=%0.2f s=%i t=%0.2f)", generators[selected_generator]->name().c_str(),
+            "%s(d=%0.2f s=%i t=%0.2f)", generators[selected_generator]->name(),
             saved_difficulty, seed, deterministic_time);
 
         Model local_model;
@@ -3167,12 +3187,13 @@ CpSolverResponse SolveCpModelParallel(
     {
       ThreadPool pool("Parallel_search", num_search_workers);
       pool.StartWorkers();
+
       for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
         std::string worker_name;
         const SatParameters local_params = DiversifySearchParameters(
             params, model_proto, worker_id, &worker_name);
         pool.Schedule([&model_proto, stopped, local_params, &best_response,
-                        &mutex, worker_name]() {
+                       &mutex, worker_name]() {
           Model local_model;
           local_model.Add(NewSatParameters(local_params));
           local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
@@ -3192,7 +3213,7 @@ CpSolverResponse SolveCpModelParallel(
           }
         });
       }
-    }  // Force the dtor of the threadpool.
+    }  // for the dtor of the threadpool (join workers) before returning.
     return best_response;
   }
 
@@ -3205,46 +3226,49 @@ CpSolverResponse SolveCpModelParallel(
     absl::MutexLock lock(&mutex);
     return best_response;
   };
+
   {
     ThreadPool pool("Parallel_search", num_search_workers);
     pool.StartWorkers();
+
     for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
       std::string worker_name;
-      const SatParameters local_params =
-          DiversifySearchParameters(params, model_proto, worker_id, &worker_name);
+      const SatParameters local_params = DiversifySearchParameters(
+          params, model_proto, worker_id, &worker_name);
 
-      const auto solution_observer =
-          [maximize, worker_name, &mutex, &best_response, &observer,
-          &first_solution_found_or_search_finished](const CpSolverResponse& r) {
-            absl::MutexLock lock(&mutex);
+      const auto solution_observer = [maximize, worker_name, &mutex,
+                                      &best_response, &observer,
+                                      &first_solution_found_or_search_finished](
+                                         const CpSolverResponse& r) {
+        absl::MutexLock lock(&mutex);
 
-            // Check is the new solution is actually improving upon the best
-            // solution found so far.
-            if (MergeOptimizationSolution(r, maximize, &best_response)) {
-              best_response.set_solution_info(
-                  absl::StrCat(worker_name, " ", best_response.solution_info()));
-              observer(best_response);
-              // We have potentially displayed the improving solution, and updated
-              // the best_response. We can awaken sleeping LNS threads.
-              if (!first_solution_found_or_search_finished.HasBeenNotified()) {
-                first_solution_found_or_search_finished.Notify();
-              }
-            }
-          };
+        // Check is the new solution is actually improving upon the best
+        // solution found so far.
+        if (MergeOptimizationSolution(r, maximize, &best_response)) {
+          best_response.set_solution_info(
+              absl::StrCat(worker_name, " ", best_response.solution_info()));
+          observer(best_response);
+          // We have potentially displayed the improving solution, and updated
+          // the best_response. We can awaken sleeping LNS threads.
+          if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+            first_solution_found_or_search_finished.Notify();
+          }
+        }
+      };
 
       pool.Schedule([&model_proto, solution_observer, solution_synchronization,
-                    objective_synchronization, stopped, local_params, worker_id,
-                    &mutex, &best_response, num_search_workers, random_seed,
-                    &first_solution_found_or_search_finished, maximize,
-                    worker_name]() {
+                     objective_synchronization, stopped, local_params,
+                     worker_id, &mutex, &best_response, num_search_workers,
+                     random_seed, &first_solution_found_or_search_finished,
+                     maximize, worker_name]() {
         Model local_model;
         local_model.Add(NewSatParameters(local_params));
         local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
             stopped);
         SetSynchronizationFunction(std::move(solution_synchronization),
-                                  &local_model);
-        SetObjectiveSynchronizationFunction(std::move(objective_synchronization),
-                                            &local_model);
+                                   &local_model);
+        SetObjectiveSynchronizationFunction(
+            std::move(objective_synchronization), &local_model);
 
         CpSolverResponse thread_response;
         if (local_params.use_lns()) {
@@ -3255,8 +3279,8 @@ CpSolverResponse SolveCpModelParallel(
               model_proto, solution_observer, num_search_workers,
               worker_id + random_seed, &local_model);
         } else {
-          thread_response = SolveCpModelInternal(model_proto, true,
-                                                solution_observer, &local_model);
+          thread_response = SolveCpModelInternal(
+              model_proto, true, solution_observer, &local_model);
         }
 
         // Process final solution. Decide which worker has the 'best'
@@ -3281,7 +3305,7 @@ CpSolverResponse SolveCpModelParallel(
         }
       });
     }
-  }  // Force the synchronization of the threadpoool.
+  }  // for the dtor of the threadpool (join workers) before returning.
   return best_response;
 }
 
@@ -3399,7 +3423,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                             : response.best_objective_bound(),
                                    maximize ? response.best_objective_bound()
                                             : response.objective_value(),
-                                   response.solution_info().c_str());
+                                   response.solution_info());
 
         if (observers.empty()) return;
         CpSolverResponse copy = response;

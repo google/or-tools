@@ -17,9 +17,8 @@
 #include <cmath>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/memory.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"

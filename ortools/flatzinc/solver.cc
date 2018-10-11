@@ -16,12 +16,12 @@
 #include <string>
 #include <unordered_set>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/constraints.h"
@@ -93,16 +93,15 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
   if (output.variable != nullptr) {
     const int64 value = SolutionValue(output.variable);
     if (output.display_as_boolean) {
-      return absl::StrFormat("%s = %s;", output.name.c_str(),
+      return absl::StrFormat("%s = %s;", output.name,
                              value == 1 ? "true" : "false");
     } else {
-      return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name.c_str(),
-                             value);
+      return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name, value);
     }
   } else {
     const int bound_size = output.bounds.size();
     std::string result =
-        absl::StrFormat("%s = array%dd(", output.name.c_str(), bound_size);
+        absl::StrFormat("%s = array%dd(", output.name, bound_size);
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
         result.append(absl::StrFormat(
@@ -166,8 +165,8 @@ struct ConstraintsWithRequiredVariables {
   }
 
   std::string DebugString() const {
-    return absl::StrFormat("Ctio(%s, %d, deps_size = %lu)", ct->type.c_str(),
-                           index, required.size());
+    return absl::StrFormat("Ctio(%s, %d, deps_size = %u)", ct->type, index,
+                           required.size());
   }
 };
 
@@ -717,7 +716,7 @@ void Solver::ReportInconsistentModel(const Model& model, FlatzincParameters p,
     absl::StrAppendFormat(
         &solver_status,
         "%%%%  csv: %s, **unsat**, , 0, 0 ms, 0 ms, 0, 0, 0, 0, 0, %s, free",
-        model.name().c_str(), MemoryUsage().c_str());
+        model.name(), MemoryUsage());
     report->Print(p.thread_id, solver_status);
   }
 }
@@ -881,7 +880,7 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
         absl::StrFormat("%%%%  failures:             %" GG_LL_FORMAT "d\n",
                         solver_->failures()));
     solver_status.append(
-        absl::StrFormat("%%%%  memory:               %s\n", MemoryUsage().c_str()));
+        absl::StrFormat("%%%%  memory:               %s\n", MemoryUsage()));
     const int64 best = report->BestSolution();
     if (model_.objective() != nullptr) {
       if (!model_.maximize() && num_solutions > 0) {
@@ -900,7 +899,7 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
           DefaultPhaseStatString(default_phase_);
       if (!default_search_stats.empty()) {
         solver_status.append(absl::StrFormat("%%%%  free search stats:    %s\n",
-                                             default_search_stats.c_str()));
+                                             default_search_stats));
       }
     }
 
@@ -920,12 +919,12 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
         "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
         "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
         "d, %" GG_LL_FORMAT "d, %s, %s",
-        model_.name().c_str(), status_string.c_str(), obj_string.c_str(),
-        num_solutions, solve_time, build_time, solver_->branches(),
-        solver_->failures(), solver_->constraints(),
+        model_.name(), status_string, obj_string, num_solutions, solve_time,
+        build_time, solver_->branches(), solver_->failures(),
+        solver_->constraints(),
         solver_->demon_runs(operations_research::Solver::NORMAL_PRIORITY),
         solver_->demon_runs(operations_research::Solver::DELAYED_PRIORITY),
-        MemoryUsage().c_str(), search_name_.c_str()));
+        MemoryUsage(), search_name_));
     report->Print(p.thread_id, search_status);
     if (p.statistics) {
       report->Print(p.thread_id, solver_status);

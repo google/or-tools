@@ -13,7 +13,7 @@
 
 #include "ortools/sat/linear_relaxation.h"
 
-#include <unordered_set>
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/iterator_adaptors.h"
 
 namespace operations_research {
@@ -49,7 +49,8 @@ namespace {
 
 // TODO(user): Not super efficient.
 std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
-    IntegerVariable var, const std::unordered_set<IntegerValue>& encoded_values,
+    IntegerVariable var,
+    const absl::flat_hash_set<IntegerValue>& encoded_values,
     const Model& model) {
   const auto* domains = model.Get<IntegerDomains>();
   if (domains == nullptr || var >= domains->size()) {
@@ -98,7 +99,7 @@ void AppendPartialEncodingRelaxation(
 
   const double kInfinity = std::numeric_limits<double>::infinity();
   LinearConstraintBuilder at_most_one_ct(&model, -kInfinity, 1.0);
-  std::unordered_set<IntegerValue> encoded_values;
+  absl::flat_hash_set<IntegerValue> encoded_values;
   for (const auto value_literal : encoding) {
     // Note that we skip pairs that do not have an Integer view.
     if (at_most_one_ct.AddLiteralTerm(value_literal.literal, 1)) {

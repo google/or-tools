@@ -12,16 +12,18 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <deque>
 #include <memory>
 #include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -351,7 +353,7 @@ void NoCycle::ComputeSupport(int index) {
 }
 
 std::string NoCycle::DebugString() const {
-  return StringPrintf("NoCycle(%s)", JoinDebugStringPtr(nexts_, ", ").c_str());
+  return absl::StrFormat("NoCycle(%s)", JoinDebugStringPtr(nexts_, ", "));
 }
 
 // ----- Circuit constraint -----
@@ -427,8 +429,8 @@ class Circuit : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("%sCircuit(%s)", sub_circuit_ ? "Sub" : "",
-                        JoinDebugStringPtr(nexts_, " ").c_str());
+    return absl::StrFormat("%sCircuit(%s)", sub_circuit_ ? "Sub" : "",
+                           JoinDebugStringPtr(nexts_, " "));
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1434,14 +1436,21 @@ Constraint* Solver::MakePathConnected(std::vector<IntVar*> nexts,
 namespace {
 class PathTransitPrecedenceConstraint : public Constraint {
  public:
+  enum PrecedenceType {
+    ANY,
+    LIFO,
+    FIFO,
+  };
   PathTransitPrecedenceConstraint(
       Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
-      const std::vector<std::pair<int, int>>& precedences)
+      const std::vector<std::pair<int, int>>& precedences,
+      std::unordered_map<int, PrecedenceType> precedence_types)
       : Constraint(solver),
         nexts_(std::move(nexts)),
         transits_(std::move(transits)),
         predecessors_(nexts_.size()),
         successors_(nexts_.size()),
+        precedence_types_(std::move(precedence_types)),
         starts_(nexts_.size(), -1),
         ends_(nexts_.size(), -1),
         transit_cumuls_(nexts_.size(), 0) {
@@ -1505,13 +1514,32 @@ class PathTransitPrecedenceConstraint : public Constraint {
     if (end < nexts_.size()) starts_.SetValue(solver(), end, start);
     ends_.SetValue(solver(), start, end);
     int current = start;
+    PrecedenceType type = ANY;
+    auto it = precedence_types_.find(start);
+    if (it != precedence_types_.end()) {
+      type = it->second;
+    }
     forbidden_.clear();
     marked_.clear();
+    pushed_.clear();
     int64 transit_cumul = 0;
     const bool has_transits = !transits_.empty();
     while (current < nexts_.size() && current != end) {
       transit_cumuls_[current] = transit_cumul;
       marked_.insert(current);
+      // If current has predecessors and we are in LIFO/FIFO mode.
+      if (!predecessors_[current].empty() && !pushed_.empty()) {
+        bool found = false;
+        // One of the predecessors must be at the top of the stack.
+        for (const int predecessor : predecessors_[current]) {
+          if (pushed_.back() == predecessor) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) solver()->Fail();
+        pushed_.pop_back();
+      }
       if (forbidden_.find(current) != forbidden_.end()) {
         for (const int successor : successors_[current]) {
           if (marked_.find(successor) != marked_.end()) {
@@ -1520,6 +1548,18 @@ class PathTransitPrecedenceConstraint : public Constraint {
               solver()->Fail();
             }
           }
+        }
+      }
+      if (!successors_[current].empty()) {
+        switch (type) {
+          case LIFO:
+            pushed_.push_back(current);
+            break;
+          case FIFO:
+            pushed_.push_front(current);
+            break;
+          case ANY:
+            break;
         }
       }
       for (const int predecessor : predecessors_[current]) {
@@ -1546,12 +1586,28 @@ class PathTransitPrecedenceConstraint : public Constraint {
   const std::vector<IntVar*> transits_;
   std::vector<std::vector<int>> predecessors_;
   std::vector<std::vector<int>> successors_;
+  const std::unordered_map<int, PrecedenceType> precedence_types_;
   RevArray<int> starts_;
   RevArray<int> ends_;
   std::unordered_set<int> forbidden_;
   std::unordered_set<int> marked_;
+  std::deque<int> pushed_;
   std::vector<int64> transit_cumuls_;
 };
+
+Constraint* MakePathTransitTypedPrecedenceConstraint(
+    Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+    const std::vector<std::pair<int, int>>& precedences,
+    std::unordered_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
+        precedence_types) {
+  if (precedences.empty()) {
+    return solver->MakeTrueConstraint();
+  }
+  return solver->RevAlloc(new PathTransitPrecedenceConstraint(
+      solver, std::move(nexts), std::move(transits), precedences,
+      std::move(precedence_types)));
+}
+
 }  // namespace
 
 Constraint* Solver::MakePathPrecedenceConstraint(
@@ -1560,13 +1616,27 @@ Constraint* Solver::MakePathPrecedenceConstraint(
   return MakePathTransitPrecedenceConstraint(std::move(nexts), {}, precedences);
 }
 
+Constraint* Solver::MakePathPrecedenceConstraint(
+    std::vector<IntVar*> nexts,
+    const std::vector<std::pair<int, int>>& precedences,
+    const std::vector<int>& lifo_path_starts,
+    const std::vector<int>& fifo_path_starts) {
+  std::unordered_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
+      precedence_types;
+  for (int start : lifo_path_starts) {
+    precedence_types[start] = PathTransitPrecedenceConstraint::LIFO;
+  }
+  for (int start : fifo_path_starts) {
+    precedence_types[start] = PathTransitPrecedenceConstraint::FIFO;
+  }
+  return MakePathTransitTypedPrecedenceConstraint(
+      this, std::move(nexts), {}, precedences, std::move(precedence_types));
+}
+
 Constraint* Solver::MakePathTransitPrecedenceConstraint(
     std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
     const std::vector<std::pair<int, int>>& precedences) {
-  if (precedences.empty()) {
-    return MakeTrueConstraint();
-  }
-  return RevAlloc(new PathTransitPrecedenceConstraint(
-      this, std::move(nexts), std::move(transits), precedences));
+  return MakePathTransitTypedPrecedenceConstraint(
+      this, std::move(nexts), std::move(transits), precedences, {{}});
 }
 }  // namespace operations_research

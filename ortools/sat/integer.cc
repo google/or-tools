@@ -674,7 +674,7 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
 //
 // TODO(user): use priority queue instead of O(n^2) algo.
 void IntegerTrail::RelaxLinearReason(
-    IntegerValue slack, absl::Span<IntegerValue> coeffs,
+    IntegerValue slack, absl::Span<const IntegerValue> coeffs,
     std::vector<IntegerLiteral>* reason) const {
   CHECK_GE(slack, 0);
   if (slack == 0) return;
@@ -709,8 +709,8 @@ void IntegerTrail::RelaxLinearReason(
 
 bool IntegerTrail::EnqueueAssociatedLiteral(
     Literal literal, int trail_index_with_same_reason,
-    absl::Span<Literal> literal_reason,
-    absl::Span<IntegerLiteral> integer_reason,
+    absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason,
     BooleanVariable* variable_with_same_reason) {
   if (!trail_->Assignment().VariableIsAssigned(literal.Variable())) {
     if (integer_search_levels_.empty()) {
@@ -759,8 +759,8 @@ bool IntegerTrail::EnqueueAssociatedLiteral(
 
 namespace {
 
-std::string ReasonDebugString(absl::Span<Literal> literal_reason,
-                              absl::Span<IntegerLiteral> integer_reason) {
+std::string ReasonDebugString(absl::Span<const Literal> literal_reason,
+                              absl::Span<const IntegerLiteral> integer_reason) {
   std::string result = "literals:{";
   for (const Literal l : literal_reason) {
     if (result.back() != '{') result += ",";
@@ -797,13 +797,14 @@ std::string IntegerTrail::DebugString() {
 }
 
 bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
-                           absl::Span<Literal> literal_reason,
-                           absl::Span<IntegerLiteral> integer_reason) {
+                           absl::Span<const Literal> literal_reason,
+                           absl::Span<const IntegerLiteral> integer_reason) {
   return Enqueue(i_lit, literal_reason, integer_reason, integer_trail_.size());
 }
 
-bool IntegerTrail::ReasonIsValid(absl::Span<Literal> literal_reason,
-                                 absl::Span<IntegerLiteral> integer_reason) {
+bool IntegerTrail::ReasonIsValid(
+    absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
   const VariablesAssignment& assignment = trail_->Assignment();
   for (const Literal lit : literal_reason) {
     if (!assignment.LiteralIsFalse(lit)) return false;
@@ -829,8 +830,8 @@ bool IntegerTrail::ReasonIsValid(absl::Span<Literal> literal_reason,
 }
 
 bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
-                           absl::Span<Literal> literal_reason,
-                           absl::Span<IntegerLiteral> integer_reason,
+                           absl::Span<const Literal> literal_reason,
+                           absl::Span<const IntegerLiteral> integer_reason,
                            int trail_index_with_same_reason) {
   DCHECK(ReasonIsValid(literal_reason, integer_reason));
 
@@ -1051,7 +1052,7 @@ std::vector<Literal> IntegerTrail::ReasonFor(IntegerLiteral literal) const {
 
 // TODO(user): If this is called many time on the same variables, it could be
 // made faster by using some caching mecanism.
-void IntegerTrail::MergeReasonInto(absl::Span<IntegerLiteral> literals,
+void IntegerTrail::MergeReasonInto(absl::Span<const IntegerLiteral> literals,
                                    std::vector<Literal>* output) const {
   DCHECK(tmp_queue_.empty());
   const int size = vars_.size();
@@ -1176,8 +1177,8 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
   }
 }
 
-absl::Span<Literal> IntegerTrail::Reason(const Trail& trail,
-                                         int trail_index) const {
+absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
+                                               int trail_index) const {
   const int index = boolean_trail_index_to_integer_one_[trail_index];
   std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);
   added_variables_.ClearAndResize(BooleanVariable(trail_->NumVariables()));
@@ -1193,9 +1194,9 @@ absl::Span<Literal> IntegerTrail::Reason(const Trail& trail,
   return *reason;
 }
 
-void IntegerTrail::EnqueueLiteral(Literal literal,
-                                  absl::Span<Literal> literal_reason,
-                                  absl::Span<IntegerLiteral> integer_reason) {
+void IntegerTrail::EnqueueLiteral(
+    Literal literal, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
   DCHECK(!trail_->Assignment().LiteralIsAssigned(literal));
   DCHECK(ReasonIsValid(literal_reason, integer_reason));
   if (integer_search_levels_.empty()) {

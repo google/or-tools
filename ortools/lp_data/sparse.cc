@@ -14,8 +14,7 @@
 #include "ortools/lp_data/sparse.h"
 #include <algorithm>
 
-#include "ortools/base/join.h"
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_format.h"
 
 namespace operations_research {
 namespace glop {

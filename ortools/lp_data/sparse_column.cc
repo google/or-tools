@@ -14,7 +14,6 @@
 #include "ortools/lp_data/sparse_column.h"
 #include <algorithm>
 
-#include "ortools/base/stringprintf.h"
 #include "ortools/lp_data/lp_types.h"
 
 namespace operations_research {

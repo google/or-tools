@@ -199,11 +199,11 @@ class SchedulingConstraintHelper {
   // conditionned on its presence. The functions will do the correct thing
   // depending on whether or not the start_min/end_max are optional variables
   // whose presence implies the interval presence.
-  MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue new_min_start);
-  MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue new_max_end);
-  MUST_USE_RESULT bool PushTaskAbsence(int t);
-  MUST_USE_RESULT bool PushIntegerLiteral(IntegerLiteral bound);
-  MUST_USE_RESULT bool ReportConflict();
+  ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue new_min_start);
+  ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue new_max_end);
+  ABSL_MUST_USE_RESULT bool PushTaskAbsence(int t);
+  ABSL_MUST_USE_RESULT bool PushIntegerLiteral(IntegerLiteral bound);
+  ABSL_MUST_USE_RESULT bool ReportConflict();
 
   // Returns the underlying integer variables.
   const std::vector<IntegerVariable>& StartVars() const { return start_vars_; }

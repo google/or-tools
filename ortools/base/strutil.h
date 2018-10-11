@@ -15,7 +15,7 @@
 #define OR_TOOLS_BASE_STRUTIL_H_
 
 #include <string>
-#include "ortools/base/string_view.h"
+#include "absl/strings/string_view.h"
 
 using std::string;
 

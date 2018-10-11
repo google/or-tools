@@ -13,7 +13,7 @@
 
 #include "ortools/glop/preprocessor.h"
 
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_format.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_data_utils.h"
@@ -144,7 +144,7 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     const EntryIndex new_num_entries = lp->num_entries();
     const double preprocess_time = time_limit->GetElapsedTime() - start_time;
     VLOG(1) << absl::StrFormat(
-        "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name.c_str(),
+        "%s(%fs): %d(%d) rows, %d(%d) columns, %d(%d) entries.", name,
         preprocess_time, lp->num_constraints().value(),
         (lp->num_constraints() - initial_num_rows_).value(),
         lp->num_variables().value(),
@@ -3044,14 +3044,14 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
       // When the modified variable is either basic or free, we keep it as is,
       // and simply make the deleted one basic.
       case VariableStatus::FREE:
-        FALLTHROUGH_INTENDED;
+        ABSL_FALLTHROUGH_INTENDED;
       case VariableStatus::BASIC:
         // Several code paths set the deleted column as basic. The code that
         // sets its value in that case is below, after the switch() block.
         solution->variable_statuses[r.col[DELETED]] = VariableStatus::BASIC;
         break;
       case VariableStatus::AT_LOWER_BOUND:
-        FALLTHROUGH_INTENDED;
+        ABSL_FALLTHROUGH_INTENDED;
       case VariableStatus::AT_UPPER_BOUND: {
         // The bound was induced by a bound of one of the two original
         // variables. Put that original variable at its bound, and make
@@ -3474,7 +3474,7 @@ void ShiftVariableBoundsPreprocessor::RecoverSolution(
     } else {
       switch (solution->variable_statuses[col]) {
         case VariableStatus::FIXED_VALUE:
-          FALLTHROUGH_INTENDED;
+          ABSL_FALLTHROUGH_INTENDED;
         case VariableStatus::AT_LOWER_BOUND:
           solution->primal_values[col] = variable_initial_lbs_[col];
           break;
@@ -3539,7 +3539,7 @@ void ScalingPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   for (ColIndex col(0); col < num_cols; ++col) {
     switch (solution->variable_statuses[col]) {
       case VariableStatus::AT_UPPER_BOUND:
-        FALLTHROUGH_INTENDED;
+        ABSL_FALLTHROUGH_INTENDED;
       case VariableStatus::FIXED_VALUE:
         solution->primal_values[col] = variable_upper_bounds_[col];
         break;
@@ -3547,7 +3547,7 @@ void ScalingPreprocessor::RecoverSolution(ProblemSolution* solution) const {
         solution->primal_values[col] = variable_lower_bounds_[col];
         break;
       case VariableStatus::FREE:
-        FALLTHROUGH_INTENDED;
+        ABSL_FALLTHROUGH_INTENDED;
       case VariableStatus::BASIC:
         break;
     }

@@ -242,7 +242,7 @@ message AutomataConstraintProto {
   repeated int32 vars = 7;
 }
 
-// Next id: 26
+// Next id: 27
 message ConstraintProto {
   // For debug/logging only. Can be empty.
   string name = 1;
@@ -270,7 +270,18 @@ message ConstraintProto {
     BoolArgumentProto bool_or = 3;
 
     // The bool_and constraint forces all of the literals to be true.
+    //
+    // This is a "redundant" constraint in the sense that this can easily be
+    // encoded with many bool_or. It is just more space efficient and handled
+    // slightly differently internally.
     BoolArgumentProto bool_and = 4;
+
+    // The at_most_one constraint enforces that no more than one literal is
+    // true at the same time. Note that an at most one constraint of length n
+    // could be encoded with n bool_and constraint with n-1 term on the right
+    // hand side. So in a sense, this constraint contribute directly to the
+    // "implication-graph" or the 2-SAT part of the model.
+    BoolArgumentProto at_most_one = 26;
 
     // The bool_xor constraint forces an odd number of the literals to be true.
     BoolArgumentProto bool_xor = 5;

@@ -20,12 +20,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/sat_constraint.h"
@@ -77,7 +77,8 @@ struct AffineTransformation {  // y == a*x + b.
   }
 
   std::string DebugString() const {
-    return StringPrintf("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)", a, b);
+    return absl::StrFormat("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)", a,
+                           b);
   }
 };
 
@@ -198,8 +199,8 @@ class BasePositiveTableConstraint : public Constraint {
   ~BasePositiveTableConstraint() override {}
 
   std::string DebugString() const override {
-    return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
-                        arity_, tuple_count_);
+    return absl::StrFormat("AllowedAssignments(arity = %d, tuple_count = %d)",
+                           arity_, tuple_count_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -372,8 +373,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("PositiveTableConstraint([%s], %d tuples)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
+    return absl::StrFormat("PositiveTableConstraint([%s], %d tuples)",
+                           JoinDebugStringPtr(vars_, ", "), tuple_count_);
   }
 
  protected:
@@ -631,8 +632,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("CompactPositiveTableConstraint([%s], %d tuples)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
+    return absl::StrFormat("CompactPositiveTableConstraint([%s], %d tuples)",
+                           JoinDebugStringPtr(vars_, ", "), tuple_count_);
   }
 
  private:
@@ -1097,8 +1098,9 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("SmallCompactPositiveTableConstraint([%s], %d tuples)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
+    return absl::StrFormat(
+        "SmallCompactPositiveTableConstraint([%s], %d tuples)",
+        JoinDebugStringPtr(vars_, ", "), tuple_count_);
   }
 
  private:
@@ -1245,11 +1247,11 @@ class TransitionConstraint : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf(
+    return absl::StrFormat(
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",
-        JoinDebugStringPtr(vars_, ", ").c_str(), transition_table_.NumTuples(),
-        initial_state_, absl::StrJoin(final_states_, ", ").c_str());
+        JoinDebugStringPtr(vars_, ", "), transition_table_.NumTuples(),
+        initial_state_, absl::StrJoin(final_states_, ", "));
   }
 
  private:

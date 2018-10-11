@@ -15,8 +15,8 @@
 
 #include <algorithm>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -35,7 +35,7 @@ std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals) {
 }
 
 // TODO(user): binary search if size is large?
-bool SortedDisjointIntervalsContain(absl::Span<ClosedInterval> intervals,
+bool SortedDisjointIntervalsContain(absl::Span<const ClosedInterval> intervals,
                                     int64 value) {
   for (const ClosedInterval& interval : intervals) {
     if (interval.start <= value && interval.end >= value) return true;
@@ -290,14 +290,14 @@ Domain::Domain(int64 left, int64 right) : intervals_({{left, right}}) {
 
 Domain Domain::AllValues() { return Domain(kint64min, kint64max); }
 
-Domain Domain::FromValues(absl::Span<int64> values) {
+Domain Domain::FromValues(absl::Span<const int64> values) {
   Domain result;
   result.intervals_ = SortedDisjointIntervalsFromValues(
       std::vector<int64>(values.begin(), values.end()));
   return result;
 }
 
-Domain Domain::FromIntervals(absl::Span<ClosedInterval> intervals) {
+Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
   Domain result;
   result.intervals_.assign(intervals.begin(), intervals.end());
   std::sort(result.intervals_.begin(), result.intervals_.end());

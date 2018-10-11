@@ -12,10 +12,9 @@
 // limitations under the License.
 
 #include "ortools/sat/restart.h"
-#include "ortools/base/stringprintf.h"
 
-#include "ortools/base/split.h"
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_split.h"
 
 namespace operations_research {
 namespace sat {

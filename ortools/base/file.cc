@@ -13,7 +13,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include "ortools/base/join.h"
+#include "absl/strings/str_cat.h"
 #if defined(_MSC_VER)
 #include <io.h>
 #define access _access

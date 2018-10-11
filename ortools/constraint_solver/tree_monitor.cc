@@ -23,14 +23,15 @@
 
 #include <fstream>
 #include <iostream>
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/file.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/xml_helper.h"
 
@@ -368,14 +369,15 @@ class TreeNode {
           current.size() == (current.back() - current[0] + 1)) {
         // Use %d .. %d format.
         visualization_writer->AddAttribute(
-            "domain", StringPrintf("%" GG_LL_FORMAT "d .. %" GG_LL_FORMAT "d",
-                                   current[0], current.back()));
+            "domain",
+            absl::StrFormat("%" GG_LL_FORMAT "d .. %" GG_LL_FORMAT "d",
+                            current[0], current.back()));
       } else {
         // Use list of integers
         std::string domain;
 
         for (int j = 0; j < current.size(); ++j) {
-          StringAppendF(&domain, " %" GG_LL_FORMAT "d", current[j]);
+          absl::StrAppendFormat(&domain, " %" GG_LL_FORMAT "d", current[j]);
         }
 
         visualization_writer->AddAttribute(
@@ -409,7 +411,7 @@ class TreeNode {
   void GenerateTreeXML(XmlHelper* const tree_writer) {
     CHECK(tree_writer != nullptr);
 
-    // The solution element is preceeded by a try element.
+    // The solution element is preceded by a try element.
     const char* kElementName[] = {"root", "try", "fail", "try"};
 
     if (node_type_ == ROOT) {
@@ -571,9 +573,9 @@ void TreeMonitor::Init(const IntVar* const* vars, int size) {
 }
 
 void TreeMonitor::EnterSearch() {
-  if (!root_node_.get()) {
+  if (!root_node_) {
     id_counter_ = 0;
-    root_node_.reset(new TreeNode(nullptr, id_counter_++));
+    root_node_ = absl::make_unique<TreeNode>(nullptr, id_counter_++);
     root_node_->set_node_type(TreeNode::ROOT);
     root_node_->SetDomain(vars_);
     current_node_ = root_node_.get();
@@ -688,7 +690,7 @@ std::string TreeMonitor::GenerateVisualizationXML() const {
 }
 
 std::string TreeMonitor::DebugString() const {
-  return StringPrintf("TreeMonitor:\n%s", GenerateTreeXML().c_str());
+  return absl::StrFormat("TreeMonitor:\n%s", GenerateTreeXML());
 }
 
 void TreeMonitor::ExitSearch() {

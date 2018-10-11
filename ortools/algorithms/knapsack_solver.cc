@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/memory.h"
+#include "absl/memory/memory.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/bitset.h"

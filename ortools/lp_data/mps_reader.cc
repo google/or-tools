@@ -19,18 +19,16 @@
 #include <memory>
 #include <utility>
 
+#include "absl/strings/match.h"
+#include "absl/strings/numbers.h"  // for safe_strtod
+#include "absl/strings/str_split.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"  // for FindOrNull, FindWithDefault
-#include "ortools/base/match.h"
-#include "ortools/base/numbers.h"  // for safe_strtod
-#include "ortools/base/split.h"
 #include "ortools/base/status.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/strutil.h"
 #include "ortools/lp_data/lp_print_utils.h"
 
 DEFINE_bool(mps_free_form, false, "Read MPS files in free form.");
@@ -108,9 +106,8 @@ void MPSReader::DisplaySummary() {
 
 void MPSReader::SplitLineIntoFields() {
   if (free_form_) {
-    fields_ =
-        absl::StrSplit(line_, absl::delimiter::AnyOf(" \t"), absl::SkipEmpty());
-    CHECK_GE(kNumFields, fields_.size());
+    fields_ = absl::StrSplit(line_, absl::ByAnyChar(" \t"), absl::SkipEmpty());
+    DCHECK_GE(kNumFields, fields_.size());
   } else {
     int length = line_.length();
     for (int i = 0; i < kNumFields; ++i) {
@@ -293,7 +290,7 @@ void MPSReader::ProcessLine(const std::string& line) {
 
 double MPSReader::GetDoubleFromString(const std::string& param) {
   double result;
-  if (!strings::safe_strtod(param, &result)) {
+  if (!absl::SimpleAtod(param, &result)) {
     if (log_errors_) {
       LOG(ERROR) << "At line " << line_num_
                  << ": Failed to convert std::string to double. String = "

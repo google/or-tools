@@ -15,7 +15,7 @@
 
 #include <numeric>
 
-#include <unordered_set>
+#include "absl/container/flat_hash_set.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/random_engine.h"
 

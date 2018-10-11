@@ -21,12 +21,11 @@
 #include <type_traits>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/sysinfo.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/port/sysinfo.h"
 #include "ortools/sat/util.h"
@@ -39,23 +38,14 @@ SatSolver::SatSolver() : SatSolver(new Model()) { owned_model_.reset(model_); }
 
 SatSolver::SatSolver(Model* model)
     : model_(model),
-      num_variables_(0),
-      pb_constraints_(),
+      binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       track_binary_clauses_(false),
       trail_(model->GetOrCreate<Trail>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       parameters_(model->GetOrCreate<SatParameters>()),
       restart_(model->GetOrCreate<RestartPolicy>()),
       decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
-      current_decision_level_(0),
-      last_decision_or_backtrack_trail_index_(0),
-      assumption_level_(0),
-      num_processed_fixed_variables_(0),
-      deterministic_time_of_last_fixed_variables_cleanup_(0.0),
-      counters_(),
-      is_model_unsat_(false),
       clause_activity_increment_(1.0),
-      num_learned_clause_before_cleanup_(0),
       same_reason_identifier_(*trail_),
       is_relevant_for_core_computation_(true),
       problem_is_pure_sat_(true),
@@ -63,7 +53,6 @@ SatSolver::SatSolver(Model* model)
       stats_("SatSolver") {
   // TODO(user): move these 3 classes in the Model so that everyone can access
   // them if needed and we don't have the wiring here.
-  trail_->RegisterPropagator(&binary_implication_graph_);
   trail_->RegisterPropagator(&clauses_propagator_);
   trail_->RegisterPropagator(&pb_constraints_);
   InitializePropagators();
@@ -78,7 +67,7 @@ void SatSolver::SetNumVariables(int num_variables) {
   CHECK_GE(num_variables, num_variables_);
 
   num_variables_ = num_variables;
-  binary_implication_graph_.Resize(num_variables);
+  binary_implication_graph_->Resize(num_variables);
   clauses_propagator_.Resize(num_variables);
   trail_->Resize(num_variables);
   decision_policy_->IncreaseNumVariables(num_variables);
@@ -103,7 +92,7 @@ double SatSolver::deterministic_time() const {
   // TODO(user): Find a better procedure to fix the weight than just educated
   // guess.
   return 1e-8 * (8.0 * trail_->NumberOfEnqueues() +
-                 1.0 * binary_implication_graph_.num_inspections() +
+                 1.0 * binary_implication_graph_->num_inspections() +
                  4.0 * clauses_propagator_.num_inspected_clauses() +
                  1.0 * clauses_propagator_.num_inspected_clause_literals() +
 
@@ -138,7 +127,8 @@ std::string SatSolver::Indent() const {
 }
 
 bool SatSolver::IsMemoryLimitReached() const {
-  const int64 memory_usage = GetProcessMemoryUsage();
+  const int64 memory_usage =
+      ::operations_research::sysinfo::MemoryUsageProcess();
   const int64 kMegaByte = 1024 * 1024;
   return memory_usage > kMegaByte * parameters_->max_memory_in_mb();
 }
@@ -182,7 +172,7 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
       &tmp_pb_constraint_);
 }
 
-bool SatSolver::AddProblemClause(absl::Span<Literal> literals) {
+bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
 
   // TODO(user): To avoid duplication, we currently just call
@@ -245,6 +235,22 @@ bool SatSolver::AddLinearConstraintInternal(
       literals_scratchpad_.push_back(term.literal.Negated());
     }
     return AddProblemClauseInternal(literals_scratchpad_);
+  }
+
+  // Detect at most one constraints. Note that this use the fact that the
+  // coefficient are sorted.
+  if (parameters_->treat_binary_clauses_separately() &&
+      cst.back().coefficient <= rhs && 2 * cst.front().coefficient > rhs) {
+    literals_scratchpad_.clear();
+    for (const LiteralWithCoeff& term : cst) {
+      literals_scratchpad_.push_back(term.literal);
+    }
+    binary_implication_graph_->AddAtMostOne(literals_scratchpad_);
+
+    // In case this is the first constraint in the binary_implication_graph_.
+    // TODO(user): refactor so this is not needed!
+    InitializePropagators();
+    return true;
   }
 
   problem_is_pure_sat_ = false;
@@ -326,8 +332,8 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     if (track_binary_clauses_) {
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
-    binary_implication_graph_.AddBinaryClauseDuringSearch(literals[0],
-                                                          literals[1], trail_);
+    binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
+                                                           literals[1], trail_);
     // In case this is the first binary clauses.
     InitializePropagators();
     return /*lbd=*/2;
@@ -401,7 +407,7 @@ void SatSolver::SaveDebugAssignment() {
 
 void SatSolver::AddBinaryClauseInternal(Literal a, Literal b) {
   if (!track_binary_clauses_ || binary_clauses_.Add(BinaryClause(a, b))) {
-    binary_implication_graph_.AddBinaryClause(a, b);
+    binary_implication_graph_->AddBinaryClause(a, b);
 
     // In case this is the first binary clauses.
     InitializePropagators();
@@ -669,15 +675,15 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // MinimizeConflict() can take advantage of that. Because of this, the
   // LBD of the learned conflict can change.
   DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
-  if (binary_implication_graph_.NumberOfImplications() != 0) {
+  if (binary_implication_graph_->NumberOfImplications() != 0) {
     if (parameters_->binary_minimization_algorithm() ==
         SatParameters::BINARY_MINIMIZATION_FIRST) {
-      binary_implication_graph_.MinimizeConflictFirst(
+      binary_implication_graph_->MinimizeConflictFirst(
           *trail_, &learned_conflict_, &is_marked_);
     } else if (parameters_->binary_minimization_algorithm() ==
                SatParameters::
                    BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION) {
-      binary_implication_graph_.MinimizeConflictFirstWithTransitiveReduction(
+      binary_implication_graph_->MinimizeConflictFirstWithTransitiveReduction(
           *trail_, &learned_conflict_, &is_marked_,
           model_->GetOrCreate<ModelRandomGenerator>());
     }
@@ -688,23 +694,23 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   MinimizeConflict(&learned_conflict_, &reason_used_to_infer_the_conflict_);
 
   // Minimize it further with binary clauses?
-  if (binary_implication_graph_.NumberOfImplications() != 0) {
+  if (binary_implication_graph_->NumberOfImplications() != 0) {
     // Note that on the contrary to the MinimizeConflict() above that
     // just uses the reason graph, this minimization can change the
     // clause LBD and even the backtracking level.
     switch (parameters_->binary_minimization_algorithm()) {
       case SatParameters::NO_BINARY_MINIMIZATION:
-        FALLTHROUGH_INTENDED;
+        ABSL_FALLTHROUGH_INTENDED;
       case SatParameters::BINARY_MINIMIZATION_FIRST:
-        FALLTHROUGH_INTENDED;
+        ABSL_FALLTHROUGH_INTENDED;
       case SatParameters::BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION:
         break;
       case SatParameters::BINARY_MINIMIZATION_WITH_REACHABILITY:
-        binary_implication_graph_.MinimizeConflictWithReachability(
+        binary_implication_graph_->MinimizeConflictWithReachability(
             &learned_conflict_);
         break;
       case SatParameters::EXPERIMENTAL_BINARY_MINIMIZATION:
-        binary_implication_graph_.MinimizeConflictExperimental(
+        binary_implication_graph_->MinimizeConflictExperimental(
             *trail_, &learned_conflict_);
         break;
     }
@@ -1057,7 +1063,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     LOG(INFO) << "Number of clauses (size > 2): "
               << clauses_propagator_.num_clauses();
     LOG(INFO) << "Number of binary clauses: "
-              << binary_implication_graph_.NumberOfImplications();
+              << binary_implication_graph_->NumberOfImplications();
     LOG(INFO) << "Number of linear constraints: "
               << pb_constraints_.NumberOfConstraints();
     LOG(INFO) << "Number of fixed variables: " << trail_->Index();
@@ -1389,9 +1395,9 @@ int SatSolver::ComputeLbd(const LiteralList& literals) {
 
 std::string SatSolver::StatusString(Status status) const {
   const double time_in_s = timer_.Get();
-  return absl::StrFormat("\n  status: %s\n", SatStatusString(status).c_str()) +
+  return absl::StrFormat("\n  status: %s\n", SatStatusString(status)) +
          absl::StrFormat("  time: %fs\n", time_in_s) +
-         absl::StrFormat("  memory: %s\n", MemoryUsage().c_str()) +
+         absl::StrFormat("  memory: %s\n", MemoryUsage()) +
          absl::StrFormat(
              "  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
              counters_.num_failures,
@@ -1405,12 +1411,12 @@ std::string SatSolver::StatusString(Status status) const {
                          num_propagations(),
                          static_cast<double>(num_propagations()) / time_in_s) +
          absl::StrFormat("  num binary propagations: %" GG_LL_FORMAT "d\n",
-                         binary_implication_graph_.num_propagations()) +
+                         binary_implication_graph_->num_propagations()) +
          absl::StrFormat("  num binary inspections: %" GG_LL_FORMAT "d\n",
-                         binary_implication_graph_.num_inspections()) +
+                         binary_implication_graph_->num_inspections()) +
          absl::StrFormat(
              "  num binary redundant implications: %" GG_LL_FORMAT "d\n",
-             binary_implication_graph_.num_redundant_implications()) +
+             binary_implication_graph_->num_redundant_implications()) +
          absl::StrFormat("  num classic minimizations: %" GG_LL_FORMAT
                          "d"
                          "  (literals removed: %" GG_LL_FORMAT "d)\n",
@@ -1419,8 +1425,8 @@ std::string SatSolver::StatusString(Status status) const {
          absl::StrFormat("  num binary minimizations: %" GG_LL_FORMAT
                          "d"
                          "  (literals removed: %" GG_LL_FORMAT "d)\n",
-                         binary_implication_graph_.num_minimization(),
-                         binary_implication_graph_.num_literals_removed()) +
+                         binary_implication_graph_->num_minimization(),
+                         binary_implication_graph_->num_literals_removed()) +
          absl::StrFormat("  num inspected clauses: %" GG_LL_FORMAT "d\n",
                          clauses_propagator_.num_inspected_clauses()) +
          absl::StrFormat("  num inspected clause_literals: %" GG_LL_FORMAT
@@ -1462,12 +1468,12 @@ std::string SatSolver::RunningStatisticsString() const {
       "%6.2fs, mem:%s, fails:%" GG_LL_FORMAT
       "d, "
       "depth:%d, clauses:%lld, tmp:%lld, bin:%llu, restarts:%d, vars:%d",
-      time_in_s, MemoryUsage().c_str(), counters_.num_failures,
-      CurrentDecisionLevel(),
+      time_in_s, MemoryUsage(), counters_.num_failures, CurrentDecisionLevel(),
       clauses_propagator_.num_clauses() -
           clauses_propagator_.num_removable_clauses(),
       clauses_propagator_.num_removable_clauses(),
-      binary_implication_graph_.NumberOfImplications(), restart_->NumRestarts(),
+      binary_implication_graph_->NumberOfImplications(),
+      restart_->NumRestarts(),
       num_variables_.value() - num_processed_fixed_variables_);
 }
 
@@ -1544,8 +1550,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
   }
 
   // We also clean the binary implication graph.
-  binary_implication_graph_.RemoveFixedVariables(num_processed_fixed_variables_,
-                                                 *trail_);
+  binary_implication_graph_->RemoveFixedVariables(
+      num_processed_fixed_variables_, *trail_);
   num_processed_fixed_variables_ = trail_->Index();
   deterministic_time_of_last_fixed_variables_cleanup_ = deterministic_time();
 }
@@ -1583,8 +1589,8 @@ void SatSolver::InitializePropagators() {
   // model.GetOrCreate<BinaryImplicationGraph>() when the first binary
   // constraint is needed, and have a mecanism to always make this propagator
   // first. Same for the linear constraints.
-  if (binary_implication_graph_.NumberOfImplications() > 0) {
-    propagators_.push_back(&binary_implication_graph_);
+  if (binary_implication_graph_->NumberOfImplications() > 0) {
+    propagators_.push_back(binary_implication_graph_);
   }
   propagators_.push_back(&clauses_propagator_);
   if (pb_constraints_.NumberOfConstraints() > 0) {
@@ -1707,13 +1713,12 @@ std::string SatSolver::DebugString(const SatClause& clause) const {
             ? "true"
             : (trail_->Assignment().LiteralIsFalse(literal) ? "false"
                                                             : "undef");
-    result.append(
-        absl::StrFormat("%s(%s)", literal.DebugString().c_str(), value.c_str()));
+    result.append(absl::StrFormat("%s(%s)", literal.DebugString(), value));
   }
   return result;
 }
 
-int SatSolver::ComputeMaxTrailIndex(absl::Span<Literal> clause) const {
+int SatSolver::ComputeMaxTrailIndex(absl::Span<const Literal> clause) const {
   SCOPED_TIME_STAT(&stats_);
   int trail_index = -1;
   for (const Literal literal : clause) {
@@ -1764,7 +1769,7 @@ void SatSolver::ComputeFirstUIPConflict(
   //
   // This last literal will be the first UIP because by definition all the
   // propagation done at the current level will pass though it at some point.
-  absl::Span<Literal> clause_to_expand = trail_->FailingClause();
+  absl::Span<const Literal> clause_to_expand = trail_->FailingClause();
   SatClause* sat_clause = trail_->FailingSatClause();
   DCHECK(!clause_to_expand.empty());
   int num_literal_at_highest_level_that_needs_to_be_processed = 0;
@@ -2071,7 +2076,7 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
     bool can_be_removed = false;
     if (DecisionLevel(var) != current_level) {
       // It is important not to call Reason(var) when it can be avoided.
-      const absl::Span<Literal> reason = trail_->Reason(var);
+      const absl::Span<const Literal> reason = trail_->Reason(var);
       if (!reason.empty()) {
         can_be_removed = true;
         for (Literal literal : reason) {
@@ -2330,7 +2335,7 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
 
     // A nullptr reason means that this was a decision variable from the
     // previous levels.
-    const absl::Span<Literal> reason = trail_->Reason(var);
+    const absl::Span<const Literal> reason = trail_->Reason(var);
     if (reason.empty()) continue;
 
     // Compute how many and which literals from the current reason do not appear

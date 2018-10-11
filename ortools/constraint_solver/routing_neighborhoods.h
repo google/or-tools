@@ -47,7 +47,7 @@ class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64)> start_empty_path_class,
-      RoutingTransitEvaluator2 arc_evaluator);
+      RoutingTransitCallback2 arc_evaluator);
   ~MakeRelocateNeighborsOperator() override {}
 
   bool MakeNeighbor() override;
@@ -64,11 +64,15 @@ class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
                           int64 destination);
 
   // Moves node after 'before_to_move' down the path until a position is found
-  // where NextVar domains are not violated, it it exists. Stops when reaching
+  // where NextVar domains are not violated, if it exists. Stops when reaching
   // position after 'up_to'.
+  // If the node was not moved (either because the current position does not
+  // violate any domains or because not such position could be found), returns
+  // -1. If the node was moved to a new position before up_to, returns up_to;
+  // if it was moved just after up_to returns the node which was after up_to.
   int64 Reposition(int64 before_to_move, int64 up_to);
 
-  RoutingTransitEvaluator2 arc_evaluator_;
+  RoutingTransitCallback2 arc_evaluator_;
 };
 
 // Pair-based neighborhood operators, designed to move nodes by pairs (pairs
@@ -99,7 +103,7 @@ class MakePairActiveOperator : public PathOperator {
   MakePairActiveOperator(const std::vector<IntVar*>& vars,
                          const std::vector<IntVar*>& secondary_vars,
                          std::function<int(int64)> start_empty_path_class,
-                         const RoutingNodePairs& pairs);
+                         const RoutingIndexPairs& pairs);
   ~MakePairActiveOperator() override {}
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
   bool MakeNeighbor() override;
@@ -122,7 +126,7 @@ class MakePairActiveOperator : public PathOperator {
   void OnNodeInitialization() override;
 
   int inactive_pair_;
-  RoutingNodePairs pairs_;
+  RoutingIndexPairs pairs_;
 };
 
 // Operator which makes pairs of active nodes inactive.
@@ -131,7 +135,7 @@ class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
   MakePairInactiveOperator(const std::vector<IntVar*>& vars,
                            const std::vector<IntVar*>& secondary_vars,
                            std::function<int(int64)> start_empty_path_class,
-                           const RoutingNodePairs& node_pairs);
+                           const RoutingIndexPairs& index_pairs);
 
   bool MakeNeighbor() override;
   std::string DebugString() const override { return "MakePairInActive"; }
@@ -147,12 +151,13 @@ class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
 // is a pair of nodes):
 //   1 -> [A] ->  2  -> [B] -> 3
 //   1 ->  2  -> [A] -> [B] -> 3
-class PairRelocateOperator : public PathOperator {
+// The pair can be moved to another path.
+class PairRelocateOperator : public PathWithPreviousNodesOperator {
  public:
   PairRelocateOperator(const std::vector<IntVar*>& vars,
                        const std::vector<IntVar*>& secondary_vars,
                        std::function<int(int64)> start_empty_path_class,
-                       const RoutingNodePairs& node_pairs);
+                       const RoutingIndexPairs& index_pairs);
   ~PairRelocateOperator() override {}
 
   bool MakeNeighbor() override;
@@ -166,31 +171,167 @@ class PairRelocateOperator : public PathOperator {
   int64 GetBaseNodeRestartPosition(int base_index) override;
 
  private:
-  void OnNodeInitialization() override;
   bool RestartAtPathStartOnSynchronize() override { return true; }
 
   std::vector<int> pairs_;
-  std::vector<int> prevs_;
   std::vector<bool> is_first_;
   static const int kPairFirstNode = 0;
   static const int kPairFirstNodeDestination = 1;
   static const int kPairSecondNodeDestination = 2;
 };
 
+class LightPairRelocateOperator : public PathWithPreviousNodesOperator {
+ public:
+  LightPairRelocateOperator(const std::vector<IntVar*>& vars,
+                            const std::vector<IntVar*>& secondary_vars,
+                            std::function<int(int64)> start_empty_path_class,
+                            const RoutingIndexPairs& index_pairs);
+  ~LightPairRelocateOperator() override {}
+
+  bool MakeNeighbor() override;
+  std::string DebugString() const override {
+    return "LightPairRelocateOperator";
+  }
+
+ private:
+  std::vector<int> pairs_;
+};
+
+// Operator which exchanges the position of two pairs; for both pairs the first
+// node of the pair must be before the second node on the same path.
+// Possible neighbors for the paths 1 -> A -> B -> 2 -> 3 and 4 -> C -> D -> 5
+// (where (1, 3) and (4, 5) are first and last nodes of the paths and can
+// therefore not be moved, and (A, B) and (C,D) are pairs of nodes):
+//   1 -> [C] ->  [D] -> 2 -> 3, 4 -> [A] -> [B] -> 5
+class PairExchangeOperator : public PathWithPreviousNodesOperator {
+ public:
+  PairExchangeOperator(const std::vector<IntVar*>& vars,
+                       const std::vector<IntVar*>& secondary_vars,
+                       std::function<int(int64)> start_empty_path_class,
+                       const RoutingIndexPairs& index_pairs);
+  ~PairExchangeOperator() override {}
+
+  bool MakeNeighbor() override;
+  std::string DebugString() const override { return "PairExchangeOperator"; }
+
+ private:
+  bool RestartAtPathStartOnSynchronize() override { return true; }
+  bool GetPreviousAndSibling(int64 node, int64* previous, int64* sibling,
+                             int64* sibling_previous) const;
+
+  std::vector<int> pairs_;
+  std::vector<bool> is_first_;
+};
+
+// Operator which exchanges the paths of two pairs (path have to be different).
+// Pairs are inserted in all possible positions in their new path with the
+// constraint that the second node must be placed after the first.
+// Possible neighbors for the path 1 -> A -> B -> 2 -> 3, 4 -> C -> 5 -> D -> 6
+// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
+// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
+// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
+// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
+// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
+// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
+// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
+// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
+// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
+class PairExchangeRelocateOperator : public PathWithPreviousNodesOperator {
+ public:
+  PairExchangeRelocateOperator(const std::vector<IntVar*>& vars,
+                               const std::vector<IntVar*>& secondary_vars,
+                               std::function<int(int64)> start_empty_path_class,
+                               const RoutingIndexPairs& index_pairs);
+  ~PairExchangeRelocateOperator() override {}
+
+  bool MakeNeighbor() override;
+  std::string DebugString() const override {
+    return "PairExchangeRelocateOperator";
+  }
+
+ protected:
+  bool OnSamePathAsPreviousBase(int64 base_index) override;
+  int64 GetBaseNodeRestartPosition(int base_index) override;
+
+ private:
+  bool RestartAtPathStartOnSynchronize() override { return true; }
+  bool GetPreviousAndSibling(int64 node, int64* previous, int64* sibling,
+                             int64* sibling_previous) const;
+  bool MoveNode(int pair, int node, int64 nodes[2][2], int64 dest[2][2],
+                int64 prev[2][2]);
+  bool LoadAndCheckDest(int pair, int node, int64 base_node, int64 nodes[2][2],
+                        int64 dest[2][2]) const;
+
+  std::vector<int> pairs_;
+  std::vector<bool> is_first_;
+  static const int kFirstPairFirstNode = 0;
+  static const int kSecondPairFirstNode = 1;
+  static const int kFirstPairFirstNodeDestination = 2;
+  static const int kFirstPairSecondNodeDestination = 3;
+  static const int kSecondPairFirstNodeDestination = 4;
+  static const int kSecondPairSecondNodeDestination = 5;
+};
+
+// Operator which iterates through each alternative of a set of pairs. If a
+// pair has n and m alternatives, n.m alternatives will be explored.
+// Possible neighbors for the path 1 -> A -> a -> 2 (where (1, 2) are first and
+// last nodes of a path and A has B, C as alternatives and a has b as
+// alternative):
+// 1 -> A -> [b] -> 2
+// 1 -> [B] -> a -> 2
+// 1 -> [B] -> [b] -> 2
+// 1 -> [C] -> a -> 2
+// 1 -> [C] -> [b] -> 2
+class SwapIndexPairOperator : public IntVarLocalSearchOperator {
+ public:
+  SwapIndexPairOperator(const std::vector<IntVar*>& vars,
+                        const std::vector<IntVar*>& path_vars,
+                        const RoutingIndexPairs& index_pairs);
+  ~SwapIndexPairOperator() override {}
+
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
+  void OnStart() override;
+  std::string DebugString() const override { return "SwapIndexPairOperator"; }
+
+ private:
+  // Updates first_active_ and second_active_ to make them correspond to the
+  // active nodes of the node pair of index pair_index_.
+  bool UpdateActiveNodes();
+  // Sets the to to be the node after from
+  void SetNext(int64 from, int64 to, int64 path) {
+    DCHECK_LT(from, number_of_nexts_);
+    SetValue(from, to);
+    if (!ignore_path_vars_) {
+      DCHECK_LT(from + number_of_nexts_, Size());
+      SetValue(from + number_of_nexts_, path);
+    }
+  }
+
+  const RoutingIndexPairs index_pairs_;
+  int pair_index_;
+  int first_index_;
+  int second_index_;
+  int64 first_active_;
+  int64 second_active_;
+  std::vector<int64> prevs_;
+  const int number_of_nexts_;
+  const bool ignore_path_vars_;
+};
+
 // Operator which inserts inactive nodes into a path and makes a pair of
 // active nodes inactive.
-class NodePairSwapActiveOperator : public PathWithPreviousNodesOperator {
+class IndexPairSwapActiveOperator : public PathWithPreviousNodesOperator {
  public:
-  NodePairSwapActiveOperator(const std::vector<IntVar*>& vars,
-                             const std::vector<IntVar*>& secondary_vars,
-                             std::function<int(int64)> start_empty_path_class,
-                             const RoutingNodePairs& node_pairs);
-  ~NodePairSwapActiveOperator() override {}
+  IndexPairSwapActiveOperator(const std::vector<IntVar*>& vars,
+                              const std::vector<IntVar*>& secondary_vars,
+                              std::function<int(int64)> start_empty_path_class,
+                              const RoutingIndexPairs& index_pairs);
+  ~IndexPairSwapActiveOperator() override {}
 
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
   bool MakeNeighbor() override;
   std::string DebugString() const override {
-    return "NodePairSwapActiveOperator";
+    return "IndexPairSwapActiveOperator";
   }
 
  private:
@@ -198,6 +339,54 @@ class NodePairSwapActiveOperator : public PathWithPreviousNodesOperator {
 
   int inactive_node_;
   std::vector<int> pairs_;
+};
+
+// ----- RelocateExpensiveChain -----
+// Operator which relocates the most expensive subchains (given a cost callback)
+// in a path to a different position.
+// The most expensive chain on a path is the one resulting from cutting the 2
+// most expensive arcs on this path.
+class RelocateExpensiveChain : public PathOperator {
+ public:
+  RelocateExpensiveChain(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      std::function<int(int64)> start_empty_path_class,
+      int num_arcs_to_consider,
+      std::function<int64(int64, int64, int64)> arc_cost_for_path_start);
+  ~RelocateExpensiveChain() override {}
+  bool MakeNeighbor() override;
+  bool MakeOneNeighbor() override;
+
+  std::string DebugString() const override { return "RelocateExpensiveChain"; }
+
+ private:
+  void OnNodeInitialization() override;
+  void IncrementCurrentPath();
+  bool IncrementCurrentArcIndices();
+  // Returns false if current_path_ is empty. Otherwise sets
+  // current_expensive_chain_ to the pair of {"preceding", "last"} nodes
+  // corresponding to the most expensive chain on current_path_, and returns
+  // true.
+  bool FindMostExpensiveChainsOnCurrentPath();
+  // Calls FindMostExpensiveChainOnCurrentPath() on remaining paths until one
+  // of them returns true. Returns false if all remaining paths are empty.
+  bool FindMostExpensiveChainsOnRemainingPaths();
+
+  int num_arcs_to_consider_;
+  int current_path_;
+  std::vector<std::pair<int64, int> > most_expensive_arc_starts_and_ranks_;
+  // Indices in most_expensive_arc_starts_and_ranks_ corresponding to the first
+  // and second arcs currently being considered for removal.
+  std::pair</*first_arc_index*/ int, /*second_arc_index*/ int>
+      current_expensive_arc_indices_;
+  std::function<int64(/*before_node*/ int64, /*after_node*/ int64,
+                      /*path_start*/ int64)>
+      arc_cost_for_path_start_;
+  int end_path_;
+  // The following boolean indicates if there are any non-empty paths left to
+  // explore by the operator.
+  bool has_non_empty_paths_to_explore_;
 };
 
 // Operator which inserts pairs of inactive nodes into a path and makes an
@@ -213,7 +402,7 @@ class PairNodeSwapActiveOperator : public PathOperator {
   PairNodeSwapActiveOperator(const std::vector<IntVar*>& vars,
                              const std::vector<IntVar*>& secondary_vars,
                              std::function<int(int64)> start_empty_path_class,
-                             const RoutingNodePairs& node_pairs);
+                             const RoutingIndexPairs& index_pairs);
   ~PairNodeSwapActiveOperator() override {}
 
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
@@ -239,7 +428,7 @@ class PairNodeSwapActiveOperator : public PathOperator {
   void OnNodeInitialization() override;
 
   int inactive_pair_;
-  RoutingNodePairs pairs_;
+  RoutingIndexPairs pairs_;
 };
 
 // ==========================================================================
@@ -250,10 +439,11 @@ PairNodeSwapActiveOperator<swap_first>::PairNodeSwapActiveOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64)> start_empty_path_class,
-    const RoutingNodePairs& node_pairs)
-    : PathOperator(vars, secondary_vars, 2, std::move(start_empty_path_class)),
+    const RoutingIndexPairs& index_pairs)
+    : PathOperator(vars, secondary_vars, 2, false,
+                   std::move(start_empty_path_class)),
       inactive_pair_(0),
-      pairs_(node_pairs) {}
+      pairs_(index_pairs) {}
 
 template <bool swap_first>
 int64 PairNodeSwapActiveOperator<swap_first>::GetBaseNodeRestartPosition(

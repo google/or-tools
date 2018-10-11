@@ -13,9 +13,9 @@
 
 #include "ortools/bop/bop_portfolio.h"
 
-#include "ortools/base/memory.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_ls.h"
@@ -416,7 +416,7 @@ std::string OptimizerSelector::PrintStats(
   return absl::StrFormat(
       "    %40s : %3d/%-3d  (%6.2f%%)  Total gain: %6d  Total Dtime: %0.3f "
       "score: %f\n",
-      info.name.c_str(), info.num_successes, info.num_calls,
+      info.name, info.num_successes, info.num_calls,
       100.0 * info.num_successes / info.num_calls, info.total_gain,
       info.time_spent, info.score);
 }

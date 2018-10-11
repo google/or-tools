@@ -15,8 +15,8 @@
 
 #include <unordered_set>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/util/string_array.h"
@@ -107,7 +107,7 @@ class BooleanSumOdd : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat("BooleanSumOdd([%s])",
-                           JoinDebugStringPtr(vars_, ", ").c_str());
+                           JoinDebugStringPtr(vars_, ", "));
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -154,8 +154,7 @@ class FixedModulo : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat("(%s %% %s == %" GG_LL_FORMAT "d)",
-                           var_->DebugString().c_str(),
-                           mod_->DebugString().c_str(), residual_);
+                           var_->DebugString(), mod_->DebugString(), residual_);
   }
 
  private:
@@ -202,7 +201,7 @@ class VariableParity : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("VarParity(%s, %d)", var_->DebugString().c_str(), odd_);
+    return absl::StrFormat("VarParity(%s, %d)", var_->DebugString(), odd_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -307,8 +306,8 @@ class IsBooleanSumInRange : public Constraint {
   std::string DebugString() const override {
     return absl::StrFormat("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
                            "d] == %s",
-                           JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
-                           range_max_, target_->DebugString().c_str());
+                           JoinDebugStringPtr(vars_, ", "), range_min_,
+                           range_max_, target_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -426,7 +425,7 @@ class BooleanSumInRange : public Constraint {
   std::string DebugString() const override {
     return absl::StrFormat(
         "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
-        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_, range_max_);
+        JoinDebugStringPtr(vars_, ", "), range_min_, range_max_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -624,8 +623,7 @@ std::string StartVarDurationVarPerformedIntervalVar::DebugString() const {
     out = "IntervalVar(start = ";
   }
   absl::StrAppendFormat(&out, "%s, duration = %s, performed = true)",
-                        start_->DebugString().c_str(),
-                        duration_->DebugString().c_str());
+                        start_->DebugString(), duration_->DebugString());
   return out;
 }
 

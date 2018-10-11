@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include <unordered_set>
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -47,9 +47,9 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
 //
 // TODO(user): replace this by constant version of the Apply...() functions?
 struct IndexReferences {
-  std::unordered_set<int> variables;
-  std::unordered_set<int> literals;
-  std::unordered_set<int> intervals;
+  absl::flat_hash_set<int> variables;
+  absl::flat_hash_set<int> literals;
+  absl::flat_hash_set<int> intervals;
 };
 void AddReferencesUsedByConstraint(const ConstraintProto& ct,
                                    IndexReferences* output);

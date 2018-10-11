@@ -26,13 +26,12 @@
 #include <utility>
 #include <vector>
 
-#include <unordered_set>
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/port.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_objective.h"
@@ -260,7 +259,7 @@ struct PresolveContext {
   //
   // WARNING: This assumes the ConstraintProto* to stay valid during the full
   // presolve even if we add new constraint to the CpModelProto.
-  std::unordered_set<ConstraintProto const*> affine_constraints;
+  absl::flat_hash_set<ConstraintProto const*> affine_constraints;
 
   // For each constant variable appearing in the model, we maintain a reference
   // variable with the same constant value. If two variables end up having the
@@ -277,7 +276,7 @@ struct PresolveContext {
   //
   // TODO(user): Make this private?
   std::vector<std::vector<int>> constraint_to_vars;
-  std::vector<std::unordered_set<int>> var_to_constraints;
+  std::vector<absl::flat_hash_set<int>> var_to_constraints;
 
   CpModelProto* working_model;
   CpModelProto* mapping_model;
@@ -311,8 +310,8 @@ struct PresolveContext {
 // PresolveContext class.
 // =============================================================================
 
-MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct,
-                                      PresolveContext* context) {
+ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct,
+                                           PresolveContext* context) {
   ct->Clear();
   return true;
 }
@@ -421,8 +420,8 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
   return changed;
 }
 
-MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
-                                           PresolveContext* context) {
+ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
+                                                PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) {
     // Change the constraint to a bool_or.
     ct->mutable_bool_or()->clear_literals();
@@ -476,6 +475,38 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
       ct->mutable_bool_and()->add_literals(lit);
     }
     context->UpdateRuleStats("bool_and: fixed literals");
+  }
+  return changed;
+}
+
+bool PresolveAtMostOne(ConstraintProto* ct, PresolveContext* context) {
+  CHECK(!HasEnforcementLiteral(*ct));
+
+  bool changed = false;
+  context->tmp_literals.clear();
+  for (const int literal : ct->at_most_one().literals()) {
+    if (context->LiteralIsTrue(literal)) {
+      context->UpdateRuleStats("at_most_one: satisfied");
+      for (const int other : ct->at_most_one().literals()) {
+        if (other == literal) continue;
+        context->SetLiteralToFalse(other);
+      }
+      return RemoveConstraint(ct, context);
+    }
+    if (context->LiteralIsFalse(literal)) {
+      changed = true;
+      continue;
+    }
+    context->tmp_literals.push_back(literal);
+  }
+  if (context->tmp_literals.empty()) return RemoveConstraint(ct, context);
+
+  if (changed) {
+    ct->mutable_at_most_one()->mutable_literals()->Clear();
+    for (const int lit : context->tmp_literals) {
+      ct->mutable_at_most_one()->add_literals(lit);
+    }
+    context->UpdateRuleStats("at_most_one: removed literals");
   }
   return changed;
 }
@@ -977,37 +1008,48 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   return var_constraint_graph_changed;
 }
 
-// Convert small linear constraint involving only Booleans to clauses.
-bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
+// Convert some linear constraint involving only Booleans to their Boolean
+// form.
+bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
   // TODO(user): the alternative to mark any newly created constraints might
   // be better.
   if (gtl::ContainsKey(context->affine_constraints, ct)) return false;
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
   int64 min_coeff = kint64max;
-  int64 offset = 0;
+  int64 max_coeff = 0;
+  int64 min_sum = 0;
+  int64 max_sum = 0;
   for (int i = 0; i < num_vars; ++i) {
-    const int var = PositiveRef(arg.vars(i));
+    // We assume we already ran PresolveLinear().
+    const int var = arg.vars(i);
+    const int64 coeff = arg.coeffs(i);
+    CHECK(RefIsPositive(var));
+    CHECK_NE(coeff, 0);
     if (context->MinOf(var) != 0) return false;
     if (context->MaxOf(var) != 1) return false;
-    const int64 coeff = arg.coeffs(i);
+
     if (coeff > 0) {
+      max_sum += coeff;
       min_coeff = std::min(min_coeff, coeff);
+      max_coeff = std::min(max_coeff, coeff);
     } else {
       // We replace the Boolean ref, by a ref to its negation (1 - x).
-      offset += coeff;
+      min_sum += coeff;
       min_coeff = std::min(min_coeff, -coeff);
+      max_coeff = std::min(max_coeff, -coeff);
     }
   }
 
-  // Detect clauses and reified ands.
-  // TODO(user): split an == 1 constraint or similar into a clause and a <= 1
-  // constraint?
+  // Detect clauses, reified ands, at_most_one.
+  //
+  // TODO(user): split a == 1 constraint or similar into a clause and an at
+  // most one constraint?
   const Domain domain = ReadDomainFromProto(arg);
   DCHECK(!domain.IsEmpty());
-  if (offset + min_coeff > domain.Max()) {
+  if (min_sum + min_coeff > domain.Max()) {
     // All Boolean are false if the reified literal is true.
-    context->UpdateRuleStats("linear: reified and");
+    context->UpdateRuleStats("linear: negative reified and");
     const auto copy = arg;
     ct->mutable_bool_and()->clear_literals();
     for (int i = 0; i < num_vars; ++i) {
@@ -1015,10 +1057,20 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
           copy.coeffs(i) > 0 ? NegatedRef(copy.vars(i)) : copy.vars(i));
     }
     return PresolveBoolAnd(ct, context);
-  } else if (offset + min_coeff >= domain.Min() &&
-             domain.intervals()[0].end == kint64max) {
+  } else if (max_sum - min_coeff < domain.Min()) {
+    // All Boolean are true if the reified literal is true.
+    context->UpdateRuleStats("linear: positive reified and");
+    const auto copy = arg;
+    ct->mutable_bool_and()->clear_literals();
+    for (int i = 0; i < num_vars; ++i) {
+      ct->mutable_bool_and()->add_literals(
+          copy.coeffs(i) > 0 ? copy.vars(i) : NegatedRef(copy.vars(i)));
+    }
+    return PresolveBoolAnd(ct, context);
+  } else if (min_sum + min_coeff >= domain.Min() &&
+             domain.intervals().front().end == kint64max) {
     // At least one Boolean is true.
-    context->UpdateRuleStats("linear: clause");
+    context->UpdateRuleStats("linear: positive clause");
     const auto copy = arg;
     ct->mutable_bool_or()->clear_literals();
     for (int i = 0; i < num_vars; ++i) {
@@ -1026,9 +1078,49 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
           copy.coeffs(i) > 0 ? copy.vars(i) : NegatedRef(copy.vars(i)));
     }
     return PresolveBoolOr(ct, context);
+  } else if (max_sum - min_coeff <= domain.Max() &&
+             domain.intervals().back().start == kint64min) {
+    // At least one Boolean is false.
+    context->UpdateRuleStats("linear: negative clause");
+    const auto copy = arg;
+    ct->mutable_bool_or()->clear_literals();
+    for (int i = 0; i < num_vars; ++i) {
+      ct->mutable_bool_or()->add_literals(
+          copy.coeffs(i) > 0 ? NegatedRef(copy.vars(i)) : copy.vars(i));
+    }
+    return PresolveBoolOr(ct, context);
+  } else if (!HasEnforcementLiteral(*ct) &&
+             min_sum + max_coeff <= domain.Max() &&
+             min_sum + 2 * min_coeff > domain.Max() &&
+             domain.intervals().back().start == kint64min) {
+    // At most one Boolean is true.
+    context->UpdateRuleStats("linear: positive at most one");
+    const auto copy = arg;
+    ct->mutable_at_most_one()->clear_literals();
+    for (int i = 0; i < num_vars; ++i) {
+      ct->mutable_at_most_one()->add_literals(
+          copy.coeffs(i) > 0 ? copy.vars(i) : NegatedRef(copy.vars(i)));
+    }
+    return true;
+  } else if (!HasEnforcementLiteral(*ct) &&
+             max_sum - max_coeff >= domain.Min() &&
+             max_sum - 2 * min_coeff < domain.Min() &&
+             domain.intervals().front().end == kint64max) {
+    // At most one Boolean is false.
+    context->UpdateRuleStats("linear: negative at most one");
+    const auto copy = arg;
+    ct->mutable_at_most_one()->clear_literals();
+    for (int i = 0; i < num_vars; ++i) {
+      ct->mutable_at_most_one()->add_literals(
+          copy.coeffs(i) > 0 ? NegatedRef(copy.vars(i)) : copy.vars(i));
+    }
+    return true;
   }
 
   // Expand small expression into clause.
+  //
+  // TODO(user): This is bad from a LP relaxation perspective. Do not do that
+  // now? On another hand it is good for the SAT presolving.
   if (num_vars > 3) return false;
   context->UpdateRuleStats("linear: small Boolean expression");
 
@@ -1098,7 +1190,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
 
   int num_vars = 0;
   bool all_constants = true;
-  std::unordered_set<int64> constant_set;
+  absl::flat_hash_set<int64> constant_set;
 
   bool all_included_in_target_domain = true;
   bool reduced_index_domain = false;
@@ -1192,7 +1284,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   std::vector<int64> tuple(num_vars);
   std::vector<std::vector<int64>> new_tuples;
   new_tuples.reserve(num_tuples);
-  std::vector<std::unordered_set<int64>> new_domains(num_vars);
+  std::vector<absl::flat_hash_set<int64>> new_domains(num_vars);
   for (int i = 0; i < num_tuples; ++i) {
     bool delete_row = false;
     std::string tmp;
@@ -1648,6 +1740,11 @@ void PresolvePureSatPart(PresolveContext* context) {
   // TODO(user): The removing and adding back of the same clause when nothing
   // happens in the presolve "seems" bad. That said, complexity wise, it is
   // a lot faster that what happens in the presolve though.
+  //
+  // TODO(user): Add the "small" at most one constraints to the SAT presolver by
+  // expanding them to implications? that could remove a lot of clauses. Do that
+  // when we are sure we don't load duplicates at_most_one/implications in the
+  // solver.
   std::vector<Literal> clause;
   int num_removed_constraints = 0;
   for (int i = 0; i < context->working_model->constraints_size(); ++i) {
@@ -1793,7 +1890,7 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
   // This is used for constraint having unique variables in them (i.e. not
   // appearing anywhere else) to not call the presolve more than once for this
   // reason.
-  std::unordered_set<std::pair<int, int>> var_constraint_pair_already_called;
+  absl::flat_hash_set<std::pair<int, int>> var_constraint_pair_already_called;
 
   // Initialize the initial context.working_model domains.
   context.InitializeNewDomains();
@@ -1841,6 +1938,9 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
         case ConstraintProto::ConstraintCase::kBoolAnd:
           changed |= PresolveBoolAnd(ct, &context);
           break;
+        case ConstraintProto::ConstraintCase::kAtMostOne:
+          changed |= PresolveAtMostOne(ct, &context);
+          break;
         case ConstraintProto::ConstraintCase::kIntMax:
           changed |= PresolveIntMax(ct, &context);
           break;
@@ -1860,7 +1960,7 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
             // Tricky: This is needed in case the variables have been mapped to
             // their representative by PresolveLinear() above.
             if (changed) context.UpdateConstraintVariableUsage(c);
-            changed |= PresolveLinearIntoClauses(ct, &context);
+            changed |= PresolveLinearOnBooleans(ct, &context);
           }
           break;
         case ConstraintProto::ConstraintCase::kInterval:
@@ -1936,11 +2036,18 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
         break;
       }
       if (context.IsFixed(v)) context.ExploitFixedDomain(v);
+
+      // We need the intermediate vector to stay deterministic.
+      std::vector<int> to_add;
       for (const int c : context.var_to_constraints[v]) {
         if (c >= 0 && !in_queue[c]) {
-          in_queue[c] = true;
-          queue.push_back(c);
+          to_add.push_back(c);
         }
+      }
+      std::sort(to_add.begin(), to_add.end());
+      for (const int c : to_add) {
+        in_queue[c] = true;
+        queue.push_back(c);
       }
     }
 
@@ -2003,7 +2110,13 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
       int expanded_linear_index = -1;
       int64 objective_coeff_in_expanded_constraint;
       int64 size_of_expanded_constraint = 0;
-      for (const int ct_index : context.var_to_constraints[objective_var]) {
+      const auto& non_deterministic_list =
+          context.var_to_constraints[objective_var];
+      std::vector<int> constraints_with_objective(
+          non_deterministic_list.begin(), non_deterministic_list.end());
+      std::sort(constraints_with_objective.begin(),
+                constraints_with_objective.end());
+      for (const int ct_index : constraints_with_objective) {
         if (ct_index == -1) continue;
         const ConstraintProto& ct =
             context.working_model->constraints(ct_index);
@@ -2237,7 +2350,7 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
   // will result in the same domain reduction strategy. Moreover, if the
   // variable order is not CHOOSE_FIRST, then we also encode the associated
   // affine transformation in order to preserve the order.
-  std::unordered_set<int> used_variables;
+  absl::flat_hash_set<int> used_variables;
   for (DecisionStrategyProto& strategy :
        *presolved_model->mutable_search_strategy()) {
     DecisionStrategyProto copy = strategy;

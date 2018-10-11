@@ -129,4 +129,12 @@ message ConstraintSolverParameters {
   // Control the implementation of the element constraint.
   //
   bool use_element_rmq = 111;
+
+  //
+  // Skip locally optimal pairs of paths in PathOperators. Setting this
+  // parameter to true might skip valid neighbors if there are constraints
+  // linking paths together (such as precedences). In any other case this
+  // should only speed up the search without omitting any neighbors.
+  //
+  bool skip_locally_optimal_paths = 113;
 };

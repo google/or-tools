@@ -21,6 +21,7 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/graph/strongly_connected_components.h"
 
 namespace operations_research {
 namespace sat {
@@ -169,8 +170,8 @@ bool LiteralWatchers::Propagate(Trail* trail) {
   return true;
 }
 
-absl::Span<Literal> LiteralWatchers::Reason(const Trail& trail,
-                                            int trail_index) const {
+absl::Span<const Literal> LiteralWatchers::Reason(const Trail& trail,
+                                                  int trail_index) const {
   return reasons_[trail_index]->PropagationReason();
 }
 
@@ -328,9 +329,9 @@ void BinaryImplicationGraph::Resize(int num_variables) {
 
 void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   SCOPED_TIME_STAT(&stats_);
-  implications_[a.Negated().Index()].push_back(b);
-  implications_[b.Negated().Index()].push_back(a);
-  ++num_implications_;
+  implications_[a.NegatedIndex()].push_back(b);
+  implications_[b.NegatedIndex()].push_back(a);
+  num_implications_ += 2;
 }
 
 void BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b,
@@ -347,6 +348,18 @@ void BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b,
     reasons_[trail->Index()] = b;
     trail->Enqueue(a, propagator_id_);
   }
+}
+
+void BinaryImplicationGraph::AddAtMostOne(
+    absl::Span<const Literal> at_most_one) {
+  if (at_most_one.empty()) return;
+  for (const Literal a : at_most_one) {
+    for (const Literal b : at_most_one) {
+      if (a == b) continue;
+      implications_[a.Index()].push_back(b.Negated());
+    }
+  }
+  num_implications_ += at_most_one.size() * (at_most_one.size() - 1);
 }
 
 bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
@@ -395,8 +408,8 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
   return true;
 }
 
-absl::Span<Literal> BinaryImplicationGraph::Reason(const Trail& trail,
-                                                   int trail_index) const {
+absl::Span<const Literal> BinaryImplicationGraph::Reason(
+    const Trail& trail, int trail_index) const {
   return {&reasons_[trail_index], 1};
 }
 
@@ -644,6 +657,168 @@ void BinaryImplicationGraph::RemoveFixedVariables(
       return assignment.LiteralIsTrue(lit);
     });
   }
+}
+
+void BinaryImplicationGraph::RemoveDuplicates() {
+  int64 diff = 0;
+  for (auto& list : implications_) {
+    const int old_size = list.size();
+    gtl::STLSortAndRemoveDuplicates(&list);
+    diff += old_size - list.size();
+  }
+  num_implications_ -= diff;
+  VLOG(1) << "Removed " << diff << " duplicate implications. "
+          << num_implications_ << " implications left.";
+}
+
+class SccWrapper {
+ public:
+  using Graph = gtl::ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
+
+  explicit SccWrapper(Graph* graph) : graph_(*graph) {}
+  std::vector<int32> operator[](int32 node) const {
+    tmp_.clear();
+    for (const Literal l : graph_[LiteralIndex(node)]) {
+      tmp_.push_back(l.Index().value());
+    }
+    return tmp_;
+  }
+
+ private:
+  mutable std::vector<int32> tmp_;
+  const Graph& graph_;
+};
+
+bool BinaryImplicationGraph::DetectEquivalences() {
+  const int32 size(implications_.size());
+  is_redundant_.resize(size, false);
+
+  std::vector<std::vector<int32>> scc;
+  FindStronglyConnectedComponents(size, SccWrapper(&implications_), &scc);
+
+  int num_equivalences = 0;
+  reverse_topological_order_.clear();
+  gtl::ITIVector<LiteralIndex, LiteralIndex> representative_of(size,
+                                                               kNoLiteralIndex);
+  for (std::vector<int32>& component : scc) {
+    std::sort(component.begin(), component.end());
+    const LiteralIndex representative(component[0]);
+    reverse_topological_order_.push_back(representative);
+    if (component.size() == 1) {
+      continue;
+    }
+
+    auto& representative_list = implications_[representative];
+    for (int i = 1; i < component.size(); ++i) {
+      const Literal literal = Literal(LiteralIndex(component[i]));
+      is_redundant_[literal.Index()] = true;
+      representative_of[literal.Index()] = representative;
+
+      // Detect if x <=> not(x) which means unsat. Note that we relly on the
+      // fact that when sorted, they will both be consecutive in the list.
+      if (Literal(LiteralIndex(component[i - 1])).Negated() == literal) {
+        VLOG(1) << "Trivially UNSAT in DetectEquivalences()";
+        return false;
+      }
+
+      // Merge all the lists in implications_[representative].
+      // Note that we do not want representative in its own list.
+      auto& ref = implications_[literal.Index()];
+      for (const Literal l : ref) {
+        if (l.Index() != representative) representative_list.push_back(l);
+      }
+
+      // Add representative <=> literal.
+      representative_list.push_back(literal);
+      ref.clear();
+      ref.push_back(Literal(representative));
+    }
+    num_equivalences += component.size() - 1;
+    gtl::STLSortAndRemoveDuplicates(&representative_list);
+  }
+  if (num_equivalences == 0) return true;
+
+  // Remap all the implications to only use representative.
+  num_implications_ = 0;
+  for (LiteralIndex i(0); i < size; ++i) {
+    num_implications_ += implications_[i].size();
+    if (is_redundant_[i]) continue;
+    for (Literal& ref : implications_[i]) {
+      if (representative_of[ref.Index()] == i) continue;
+      if (representative_of[ref.Index()] == kNoLiteralIndex) continue;
+      ref = Literal(representative_of[ref.Index()]);
+    }
+  }
+
+  VLOG(1) << num_equivalences << " redundant equivalent literals. "
+          << num_implications_ << " implications left. " << implications_.size()
+          << " literals.";
+  return true;
+}
+
+bool BinaryImplicationGraph::ComputeTransitiveReduction() {
+  RemoveDuplicates();
+  if (!DetectEquivalences()) return false;
+
+  // For each node we do a graph traversal and only keep the literals
+  // at maximum distance 1. This only works because we have a DAG when ignoring
+  // the "redundant" literal marked by DetectEquivalences().
+  const LiteralIndex size(implications_.size());
+  int64 work_done = 0;
+  for (const LiteralIndex i : reverse_topological_order_) {
+    CHECK(!is_redundant_[i]);
+    auto& direct_implications = implications_[i];
+
+    is_marked_.ClearAndResize(size);
+    for (const Literal root : direct_implications) {
+      if (is_redundant_[root.Index()]) continue;
+      if (is_marked_[root.Index()]) continue;
+
+      // We use dfs_stack_ but we do a simple linear exploration.
+      dfs_stack_ = {root};
+      is_marked_.Set(root.Index());
+      for (int j = 0; j < dfs_stack_.size(); ++j) {
+        const Literal current = dfs_stack_[j];
+        for (const Literal l : implications_[current.Index()]) {
+          if (!is_marked_[l.Index()] && !is_redundant_[l.Index()]) {
+            dfs_stack_.push_back(l);
+            is_marked_.Set(l.Index());
+          }
+        }
+      }
+      work_done += dfs_stack_.size();
+
+      // We have a DAG, so root could only be marked first.
+      is_marked_.Clear(root.Index());
+    }
+
+    // Only keep the non-marked literal (and the redundant one which are never
+    // marked).
+    int new_size = 0;
+    for (const Literal l : direct_implications) {
+      if (!is_marked_[l.Index()]) {
+        direct_implications[new_size++] = l;
+      }
+    }
+    const int diff = direct_implications.size() - new_size;
+    direct_implications.resize(new_size);
+    direct_implications.shrink_to_fit();
+    num_redundant_implications_ += diff;
+    num_implications_ -= diff;
+
+    // Abort if the computation involved is too big.
+    if (work_done > 1e9) {
+      VLOG(1) << "Transitive reduction aborted.";
+      break;
+    }
+  }
+
+  if (num_redundant_implications_ > 0) {
+    VLOG(1) << "Transitive reduction removed " << num_redundant_implications_
+            << " literals. " << num_implications_ << " implications left. "
+            << implications_.size() << " literals.";
+  }
+  return true;
 }
 
 // ----- SatClause -----

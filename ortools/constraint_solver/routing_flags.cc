@@ -16,9 +16,13 @@
 #include <map>
 #include <vector>
 
+#include "absl/time/time.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/protoutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_parameters.h"
+#include "ortools/util/optional_boolean.pb.h"
 
 // --- Routing search flags ---
 
@@ -43,6 +47,8 @@ DEFINE_bool(routing_no_make_active, false,
             "Routing: forbids use of MakeActive/SwapActive/MakeInactive "
             "neighborhoods.");
 DEFINE_bool(routing_no_lkh, false, "Routing: forbids use of LKH neighborhood.");
+DEFINE_bool(routing_no_relocate_expensive_chain, false,
+            "Routing: forbids use of RelocateExpensiveChain operator.");
 DEFINE_bool(routing_no_tsp, true,
             "Routing: forbids use of TSPOpt neighborhood.");
 DEFINE_bool(routing_no_tsplns, true,
@@ -59,8 +65,8 @@ DEFINE_double(routing_guided_local_search_lambda_coefficient, 0.1,
 DEFINE_bool(routing_simulated_annealing, false,
             "Routing: use simulated annealing.");
 DEFINE_bool(routing_tabu_search, false, "Routing: use tabu search.");
-DEFINE_bool(routing_objective_tabu_search, false,
-            "Routing: use tabu search based on objective value.");
+DEFINE_bool(routing_generic_tabu_search, false,
+            "Routing: use tabu search based on a list of values.");
 
 // Search limits
 DEFINE_int64(routing_solution_limit, kint64max,
@@ -75,14 +81,28 @@ DEFINE_string(routing_first_solution, "",
               "in the code to get a full list.");
 DEFINE_bool(routing_use_filtered_first_solutions, true,
             "Use filtered version of first solution heuristics if available.");
-DEFINE_double(savings_neighbors_ratio, 0,
+DEFINE_double(savings_neighbors_ratio, 1,
               "Ratio of neighbors to consider for each node when "
               "constructing the savings.");
 DEFINE_bool(savings_add_reverse_arcs, false,
             "Add savings related to reverse arcs when finding the nearest "
             "neighbors of the nodes.");
+DEFINE_double(savings_arc_coefficient, 1.0,
+              "Coefficient of the cost of the arc for which the saving value "
+              "is being computed.");
+DEFINE_double(cheapest_insertion_farthest_seeds_ratio, 0,
+              "Ratio of available vehicles in the model on which farthest "
+              "nodes of the model are inserted as seeds.");
+DEFINE_double(cheapest_insertion_neighbors_ratio, 1.0,
+              "Ratio of nodes considered as neighbors in the "
+              "GlobalCheapestInsertion heuristic.");
 DEFINE_bool(routing_dfs, false, "Routing: use a complete depth-first search.");
 DEFINE_int64(routing_optimization_step, 1, "Optimization step.");
+DEFINE_int32(routing_number_of_solutions_to_collect, 1,
+             "Number of solutions to collect.");
+DEFINE_int32(routing_relocate_expensive_chain_num_arcs_to_consider, 4,
+             "Number of arcs to consider in the RelocateExpensiveChain "
+             "neighborhood operator.");
 
 // Propagation control
 DEFINE_bool(routing_use_light_propagation, true,
@@ -94,9 +114,6 @@ DEFINE_int64(routing_max_cache_size, 1000,
              "Maximum cache size when callback caching is on.");
 
 // Misc
-DEFINE_bool(routing_fingerprint_arc_cost_evaluators, true,
-            "Compare arc-cost evaluators using the fingerprint of their "
-            "corresponding matrix instead of evaluator addresses.");
 DEFINE_bool(routing_trace, false, "Routing: trace search.");
 DEFINE_bool(routing_profile, false, "Routing: profile search.");
 
@@ -123,6 +140,8 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
           {"BestInsertion", FirstSolutionStrategy::BEST_INSERTION},
           {"GlobalCheapestInsertion",
            FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION},
+          {"SequentialGlobalCheapestInsertion",
+           FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION},
           {"LocalCheapestInsertion",
            FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION},
           {"GlobalCheapestArc", FirstSolutionStrategy::GLOBAL_CHEAPEST_ARC},
@@ -134,10 +153,15 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
                     FLAGS_routing_first_solution, &strategy)) {
     parameters->set_first_solution_strategy(strategy);
   }
-  parameters->set_use_filtered_first_solution_strategy(
-      FLAGS_routing_use_filtered_first_solutions);
+  parameters->set_use_unfiltered_first_solution_strategy(
+      !FLAGS_routing_use_filtered_first_solutions);
   parameters->set_savings_neighbors_ratio(FLAGS_savings_neighbors_ratio);
   parameters->set_savings_add_reverse_arcs(FLAGS_savings_add_reverse_arcs);
+  parameters->set_savings_arc_coefficient(FLAGS_savings_arc_coefficient);
+  parameters->set_cheapest_insertion_farthest_seeds_ratio(
+      FLAGS_cheapest_insertion_farthest_seeds_ratio);
+  parameters->set_cheapest_insertion_neighbors_ratio(
+      FLAGS_cheapest_insertion_neighbors_ratio);
 }
 
 void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {
@@ -145,9 +169,9 @@ void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {
   if (FLAGS_routing_tabu_search) {
     parameters->set_local_search_metaheuristic(
         LocalSearchMetaheuristic::TABU_SEARCH);
-  } else if (FLAGS_routing_objective_tabu_search) {
+  } else if (FLAGS_routing_generic_tabu_search) {
     parameters->set_local_search_metaheuristic(
-        LocalSearchMetaheuristic::OBJECTIVE_TABU_SEARCH);
+        LocalSearchMetaheuristic::GENERIC_TABU_SEARCH);
   } else if (FLAGS_routing_simulated_annealing) {
     parameters->set_local_search_metaheuristic(
         LocalSearchMetaheuristic::SIMULATED_ANNEALING);
@@ -159,51 +183,89 @@ void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {
       FLAGS_routing_guided_local_search_lambda_coefficient);
 }
 
+namespace {
+OptionalBoolean ToOptionalBoolean(bool x) { return x ? BOOL_TRUE : BOOL_FALSE; }
+}  // namespace
+
 void AddLocalSearchNeighborhoodOperatorsFromFlags(
     RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   RoutingSearchParameters::LocalSearchNeighborhoodOperators* const
       local_search_operators = parameters->mutable_local_search_operators();
-  local_search_operators->set_use_relocate_pair(true);
-  local_search_operators->set_use_relocate(!FLAGS_routing_no_relocate);
+
+  // TODO(user): Remove these overrides: they should be set by the caller, via
+  // a baseline RoutingSearchParameters obtained from DefaultSearchParameters().
+  local_search_operators->set_use_relocate_pair(BOOL_TRUE);
+  local_search_operators->set_use_light_relocate_pair(BOOL_TRUE);
+  local_search_operators->set_use_exchange_pair(BOOL_TRUE);
+  local_search_operators->set_use_relocate_and_make_active(BOOL_FALSE);
+  local_search_operators->set_use_node_pair_swap_active(BOOL_FALSE);
+  local_search_operators->set_use_cross_exchange(BOOL_FALSE);
+
+  local_search_operators->set_use_relocate(
+      ToOptionalBoolean(!FLAGS_routing_no_relocate));
   local_search_operators->set_use_relocate_neighbors(
-      !FLAGS_routing_no_relocate_neighbors);
-  local_search_operators->set_use_exchange(!FLAGS_routing_no_exchange);
-  local_search_operators->set_use_cross(!FLAGS_routing_no_cross);
-  local_search_operators->set_use_two_opt(!FLAGS_routing_no_2opt);
-  local_search_operators->set_use_or_opt(!FLAGS_routing_no_oropt);
-  local_search_operators->set_use_lin_kernighan(!FLAGS_routing_no_lkh);
-  local_search_operators->set_use_tsp_opt(!FLAGS_routing_no_tsp);
-  local_search_operators->set_use_make_active(!FLAGS_routing_no_make_active);
-  local_search_operators->set_use_make_inactive(
-      !FLAGS_routing_use_chain_make_inactive && !FLAGS_routing_no_make_active);
-  local_search_operators->set_use_make_chain_inactive(
-      FLAGS_routing_use_chain_make_inactive && !FLAGS_routing_no_make_active);
+      ToOptionalBoolean(!FLAGS_routing_no_relocate_neighbors));
+  local_search_operators->set_use_exchange(
+      ToOptionalBoolean(!FLAGS_routing_no_exchange));
+  local_search_operators->set_use_cross(
+      ToOptionalBoolean(!FLAGS_routing_no_cross));
+  local_search_operators->set_use_two_opt(
+      ToOptionalBoolean(!FLAGS_routing_no_2opt));
+  local_search_operators->set_use_or_opt(
+      ToOptionalBoolean(!FLAGS_routing_no_oropt));
+  local_search_operators->set_use_lin_kernighan(
+      ToOptionalBoolean(!FLAGS_routing_no_lkh));
+  local_search_operators->set_use_relocate_expensive_chain(
+      ToOptionalBoolean(!FLAGS_routing_no_relocate_expensive_chain));
+  local_search_operators->set_use_tsp_opt(
+      ToOptionalBoolean(!FLAGS_routing_no_tsp));
+  local_search_operators->set_use_make_active(
+      ToOptionalBoolean(!FLAGS_routing_no_make_active));
+  local_search_operators->set_use_make_inactive(ToOptionalBoolean(
+      !FLAGS_routing_use_chain_make_inactive && !FLAGS_routing_no_make_active));
+  local_search_operators->set_use_make_chain_inactive(ToOptionalBoolean(
+      FLAGS_routing_use_chain_make_inactive && !FLAGS_routing_no_make_active));
   local_search_operators->set_use_swap_active(
-      !FLAGS_routing_use_extended_swap_active && !FLAGS_routing_no_make_active);
-  local_search_operators->set_use_extended_swap_active(
-      FLAGS_routing_use_extended_swap_active && !FLAGS_routing_no_make_active);
-  local_search_operators->set_use_path_lns(!FLAGS_routing_no_lns);
-  local_search_operators->set_use_inactive_lns(!FLAGS_routing_no_lns);
-  local_search_operators->set_use_full_path_lns(!FLAGS_routing_no_fullpathlns);
-  local_search_operators->set_use_tsp_lns(!FLAGS_routing_no_tsplns);
+      ToOptionalBoolean(!FLAGS_routing_use_extended_swap_active &&
+                        !FLAGS_routing_no_make_active));
+  local_search_operators->set_use_extended_swap_active(ToOptionalBoolean(
+      FLAGS_routing_use_extended_swap_active && !FLAGS_routing_no_make_active));
+  local_search_operators->set_use_path_lns(
+      ToOptionalBoolean(!FLAGS_routing_no_lns));
+  local_search_operators->set_use_inactive_lns(
+      ToOptionalBoolean(!FLAGS_routing_no_lns));
+  local_search_operators->set_use_full_path_lns(
+      ToOptionalBoolean(!FLAGS_routing_no_fullpathlns));
+  local_search_operators->set_use_tsp_lns(
+      ToOptionalBoolean(!FLAGS_routing_no_tsplns));
 }
 
 void SetSearchLimitsFromFlags(RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   parameters->set_use_depth_first_search(FLAGS_routing_dfs);
   parameters->set_optimization_step(FLAGS_routing_optimization_step);
+  parameters->set_number_of_solutions_to_collect(
+      FLAGS_routing_number_of_solutions_to_collect);
   parameters->set_solution_limit(FLAGS_routing_solution_limit);
-  parameters->set_time_limit_ms(FLAGS_routing_time_limit);
-  parameters->set_lns_time_limit_ms(FLAGS_routing_lns_time_limit);
+  if (FLAGS_routing_time_limit != kint64max) {
+    CHECK_OK(util_time::EncodeGoogleApiProto(
+        absl::Milliseconds(FLAGS_routing_time_limit),
+        parameters->mutable_time_limit()));
+  }
+  if (FLAGS_routing_lns_time_limit != kint64max) {
+    CHECK_OK(util_time::EncodeGoogleApiProto(
+        absl::Milliseconds(FLAGS_routing_lns_time_limit),
+        parameters->mutable_lns_time_limit()));
+  }
 }
 
 void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
-  parameters->set_use_light_propagation(FLAGS_routing_use_light_propagation);
-  parameters->set_fingerprint_arc_cost_evaluators(
-      FLAGS_routing_fingerprint_arc_cost_evaluators);
+  parameters->set_use_full_propagation(!FLAGS_routing_use_light_propagation);
   parameters->set_log_search(FLAGS_routing_trace);
+  parameters->set_relocate_expensive_chain_num_arcs_to_consider(
+      FLAGS_routing_relocate_expensive_chain_num_arcs_to_consider);
 }
 
 RoutingSearchParameters BuildSearchParametersFromFlags() {
@@ -213,6 +275,9 @@ RoutingSearchParameters BuildSearchParametersFromFlags() {
   AddLocalSearchNeighborhoodOperatorsFromFlags(&parameters);
   SetSearchLimitsFromFlags(&parameters);
   SetMiscellaneousParametersFromFlags(&parameters);
+  const std::string error = FindErrorInRoutingSearchParameters(parameters);
+  LOG_IF(DFATAL, !error.empty())
+      << "Error in the routing search parameters built from flags: " << error;
   return parameters;
 }
 
@@ -228,4 +293,5 @@ RoutingModelParameters BuildModelParametersFromFlags() {
   solver_parameters->set_profile_local_search(FLAGS_routing_profile);
   return parameters;
 }
+
 }  // namespace operations_research

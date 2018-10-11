@@ -19,9 +19,9 @@
 #include <unordered_map>
 #include <utility>
 
-#include "ortools/base/join.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
@@ -416,7 +416,7 @@ Fractional LinearProgram::GetObjectiveCoefficientForMinimizationVersion(
 
 std::string LinearProgram::GetDimensionString() const {
   return absl::StrFormat(
-      "%d rows, %d columns, %lld entries", num_constraints().value(),
+      "%d rows, %d columns, %d entries", num_constraints().value(),
       num_variables().value(),
       // static_cast<int64> is needed because the Android port uses int32.
       static_cast<int64>(num_entries().value()));
@@ -436,7 +436,7 @@ std::string LinearProgram::GetObjectiveStatsString() const {
   if (num_non_zeros == 0) {
     return "No objective term. This is a pure feasibility problem.";
   } else {
-    return absl::StrFormat("%lld non-zeros, range [%e, %e]", num_non_zeros,
+    return absl::StrFormat("%d non-zeros, range [%e, %e]", num_non_zeros,
                            min_value, max_value);
   }
 }
@@ -613,7 +613,7 @@ std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
   for (ColIndex col(0); col < variable_values.size(); ++col) {
     if (!output.empty()) absl::StrAppend(&output, ", ");
     absl::StrAppend(&output, GetVariableName(col), " = ",
-                    absl::LegacyPrecision(variable_values[col]));
+                    (variable_values[col]));
   }
   return output;
 }
@@ -1456,14 +1456,14 @@ std::string ProblemSolution::DebugString() const {
   std::string s = "Problem status: " + GetProblemStatusString(status);
   for (ColIndex col(0); col < primal_values.size(); ++col) {
     absl::StrAppendFormat(&s, "\n  Var #%d: %s %g", col.value(),
-                  GetVariableStatusString(variable_statuses[col]).c_str(),
-                  primal_values[col]);
+                          GetVariableStatusString(variable_statuses[col]),
+                          primal_values[col]);
   }
   s += "\n------------------------------";
   for (RowIndex row(0); row < dual_values.size(); ++row) {
     absl::StrAppendFormat(&s, "\n  Constraint #%d: %s %g", row.value(),
-                  GetConstraintStatusString(constraint_statuses[row]).c_str(),
-                  dual_values[row]);
+                          GetConstraintStatusString(constraint_statuses[row]),
+                          dual_values[row]);
   }
   return s;
 }

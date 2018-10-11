@@ -18,8 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/span.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/drat_writer.h"
 #include "ortools/sat/sat_base.h"
@@ -65,13 +65,13 @@ class DratProofHandler {
   // Adds a clause of the UNSAT problem. This must be called before any call to
   // AddClause() or DeleteClause(), in order to be able to check the DRAT proof
   // with the Check() method when it is complete.
-  void AddProblemClause(absl::Span<Literal> clause);
+  void AddProblemClause(absl::Span<const Literal> clause);
 
   // Writes a new clause to the DRAT output. The output clause is sorted so that
   // newer variables always comes first. This is needed because in the DRAT
   // format, the clause is checked for the RAT property with only its first
   // literal. Must not be called after Check().
-  void AddClause(absl::Span<Literal> clause);
+  void AddClause(absl::Span<const Literal> clause);
 
   // Writes a "deletion" information about a clause that has been added before
   // to the DRAT output. Note that it is also possible to delete a clause from
@@ -80,7 +80,7 @@ class DratProofHandler {
   // Because of a limitation a the DRAT-trim tool, it seems the order of the
   // literals during addition and deletion should be EXACTLY the same. Because
   // of this we get warnings for problem clauses.
-  void DeleteClause(absl::Span<Literal> clause);
+  void DeleteClause(absl::Span<const Literal> clause);
 
   // Returns VALID if the DRAT proof is correct, INVALID if it is not correct,
   // or UNKNOWN if proof checking was not enabled (by choosing the right
@@ -92,7 +92,7 @@ class DratProofHandler {
   DratChecker::Status Check(double max_time_in_seconds);
 
  private:
-  void MapClause(absl::Span<Literal> clause);
+  void MapClause(absl::Span<const Literal> clause);
 
   // We need to keep track of the variable newly created.
   int variable_index_;

@@ -14,10 +14,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -52,7 +52,7 @@ class IntervalVarStartExpr : public BaseIntExpr {
   void WhenRange(Demon* d) override { interval_->WhenStartRange(d); }
 
   std::string DebugString() const override {
-    return absl::StrFormat("start(%s)", interval_->DebugString().c_str());
+    return absl::StrFormat("start(%s)", interval_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -91,7 +91,7 @@ class IntervalVarEndExpr : public BaseIntExpr {
   void WhenRange(Demon* d) override { interval_->WhenEndRange(d); }
 
   std::string DebugString() const override {
-    return absl::StrFormat("end(%s)", interval_->DebugString().c_str());
+    return absl::StrFormat("end(%s)", interval_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -132,7 +132,7 @@ class IntervalVarDurationExpr : public BaseIntExpr {
   void WhenRange(Demon* d) override { interval_->WhenDurationRange(d); }
 
   std::string DebugString() const override {
-    return absl::StrFormat("duration(%s)", interval_->DebugString().c_str());
+    return absl::StrFormat("duration(%s)", interval_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -154,7 +154,7 @@ IntExpr* BuildStartExpr(IntervalVar* var) {
   IntExpr* const expr =
       s->RegisterIntExpr(s->RevAlloc(new IntervalVarStartExpr(var)));
   if (var->HasName()) {
-    expr->set_name(absl::StrFormat("start<%s>", var->name().c_str()));
+    expr->set_name(absl::StrFormat("start<%s>", var->name()));
   }
   return expr;
 }
@@ -164,7 +164,7 @@ IntExpr* BuildDurationExpr(IntervalVar* var) {
   IntExpr* const expr =
       s->RegisterIntExpr(s->RevAlloc(new IntervalVarDurationExpr(var)));
   if (var->HasName()) {
-    expr->set_name(absl::StrFormat("duration<%s>", var->name().c_str()));
+    expr->set_name(absl::StrFormat("duration<%s>", var->name()));
   }
   return expr;
 }
@@ -174,7 +174,7 @@ IntExpr* BuildEndExpr(IntervalVar* var) {
   IntExpr* const expr =
       s->RegisterIntExpr(s->RevAlloc(new IntervalVarEndExpr(var)));
   if (var->HasName()) {
-    expr->set_name(absl::StrFormat("end<%s>", var->name().c_str()));
+    expr->set_name(absl::StrFormat("end<%s>", var->name()));
   }
   return expr;
 }

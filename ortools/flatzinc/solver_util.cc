@@ -13,8 +13,8 @@
 
 #include "ortools/flatzinc/solver_util.h"
 
-#include "ortools/base/join.h"
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/flatzinc/logging.h"
 
 namespace operations_research {

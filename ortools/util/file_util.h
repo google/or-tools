@@ -17,10 +17,10 @@
 #include <limits>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/file.h"
 #include "ortools/base/recordio.h"
-#include "ortools/base/string_view.h"
 
 namespace operations_research {
 

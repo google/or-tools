@@ -27,7 +27,6 @@
 // The following uses disjoint-sets algorithms, see:
 // https://en.wikipedia.org/wiki/Disjoint-set_data_structure#Disjoint-set_forests
 
-#include <algorithm>
 #include <numeric>
 
 #include "ortools/graph/connected_components.h"

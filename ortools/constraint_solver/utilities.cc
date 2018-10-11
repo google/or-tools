@@ -15,12 +15,12 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
@@ -419,7 +419,7 @@ class PrintModelVisitor : public ModelVisitor {
         if (j != 0) {
           array.append(", ");
         }
-        StringAppendF(&array, "%lld", values.Value(i, j));
+        absl::StrAppendFormat(&array, "%d", values.Value(i, j));
       }
       array.append("]");
     }
@@ -429,7 +429,7 @@ class PrintModelVisitor : public ModelVisitor {
 
   void VisitIntegerExpressionArgument(const std::string& arg_name,
                                       IntExpr* const argument) override {
-    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
+    set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
     Decrease();
@@ -450,7 +450,7 @@ class PrintModelVisitor : public ModelVisitor {
   // Visit interval argument.
   void VisitIntervalArgument(const std::string& arg_name,
                              IntervalVar* const argument) override {
-    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
+    set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
     Decrease();
@@ -470,7 +470,7 @@ class PrintModelVisitor : public ModelVisitor {
   // Visit sequence argument.
   void VisitSequenceArgument(const std::string& arg_name,
                              SequenceVar* const argument) override {
-    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
+    set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
     Decrease();

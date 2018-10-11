@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/span.h"
 
 namespace operations_research {
 
@@ -80,10 +80,10 @@ class Domain {
 
   // Creates a domain from the union of an unsorted list of integer values.
   // Input values may be repeated, with no consequence on the output
-  static Domain FromValues(absl::Span<int64> values);
+  static Domain FromValues(absl::Span<const int64> values);
 
   // Creates a domain from the union of an unsorted list of intervals.
-  static Domain FromIntervals(absl::Span<ClosedInterval> intervals);
+  static Domain FromIntervals(absl::Span<const ClosedInterval> intervals);
 
   // Returns true if this is the empty set.
   bool IsEmpty() const;

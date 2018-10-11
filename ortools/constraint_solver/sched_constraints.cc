@@ -24,10 +24,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
@@ -61,9 +61,8 @@ class TreeArrayConstraint : public Constraint {
   }
 
   std::string DebugStringInternal(const std::string& name) const {
-    return StringPrintf("Cover(%s) == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("Cover(%s) == %s", JoinDebugStringPtr(vars_, ", "),
+                           target_var_->DebugString());
   }
 
   void AcceptInternal(const std::string& name,
@@ -182,7 +181,7 @@ class TreeArrayConstraint : public Constraint {
     return target_var_->MayBePerformed() ? target_var_->EndMax() : 0;
   }
 
-  // Returns the the performed status of the 'position' nth interval
+  // Returns the performed status of the 'position' nth interval
   // var of the problem.
   PerformedStatus VarPerformed(int position) const {
     IntervalVar* const var = vars_[position];
@@ -195,7 +194,7 @@ class TreeArrayConstraint : public Constraint {
     }
   }
 
-  // Returns the the performed status of the target var.
+  // Returns the performed status of the target var.
   PerformedStatus TargetVarPerformed() const {
     if (target_var_->MustBePerformed()) {
       return PERFORMED;
@@ -309,7 +308,7 @@ class CoverConstraint : public TreeArrayConstraint {
         break;
       case PERFORMED:
         target_var_->SetPerformed(true);
-        FALLTHROUGH_INTENDED;
+        ABSL_FALLTHROUGH_INTENDED;
       case UNDECIDED:
         target_var_->SetStartRange(RootStartMin(), RootStartMax());
         target_var_->SetEndRange(RootEndMin(), RootEndMax());
@@ -347,7 +346,7 @@ class CoverConstraint : public TreeArrayConstraint {
           break;
         case PERFORMED:
           vars_[position]->SetPerformed(true);
-          FALLTHROUGH_INTENDED;
+          ABSL_FALLTHROUGH_INTENDED;
         case UNDECIDED:
           vars_[position]->SetStartRange(new_start_min, new_start_max);
           vars_[position]->SetEndRange(new_end_min, new_end_max);
@@ -376,7 +375,7 @@ class CoverConstraint : public TreeArrayConstraint {
               break;
             case PERFORMED:
               must_be_performed_count++;
-              FALLTHROUGH_INTENDED;
+              ABSL_FALLTHROUGH_INTENDED;
             case UNDECIDED:
               may_be_performed_count++;
               candidate = i;
@@ -452,7 +451,7 @@ class CoverConstraint : public TreeArrayConstraint {
           parent_depth, parent, &bucket_start_min, &bucket_start_max,
           &bucket_end_min, &bucket_end_max, &one_undecided);
       if (bucket_start_min > StartMin(parent_depth, parent) ||
-          bucket_start_max < StartMax(parent_depth, parent_depth) ||
+          bucket_start_max < StartMax(parent_depth, parent) ||
           bucket_end_min > EndMin(parent_depth, parent) ||
           bucket_end_max < EndMax(parent_depth, parent) ||
           status_up != Performed(parent_depth, parent)) {
@@ -566,8 +565,8 @@ class IntervalEquality : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("Equality(%s, %s)", var1_->DebugString().c_str(),
-                        var2_->DebugString().c_str());
+    return absl::StrFormat("Equality(%s, %s)", var1_->DebugString(),
+                           var2_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {

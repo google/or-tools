@@ -19,13 +19,11 @@
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 
-#include "ortools/base/join.h"
-#include "ortools/base/memory.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/strutil.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"

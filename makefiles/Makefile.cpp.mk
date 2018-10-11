@@ -166,6 +166,8 @@ $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
+all_protos: $(PROTO_DEPS)
+
 # OR Tools unique library.
 $(OR_TOOLS_LIBS): \
  dependencies/check.log \

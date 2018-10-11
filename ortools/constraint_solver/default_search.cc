@@ -24,8 +24,8 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -154,7 +154,7 @@ class FindVar : public DecisionVisitor {
   Operation operation_;
 };
 
-// ----- Auxilliary decision builders to init impacts -----
+// ----- Auxiliary decision builders to init impacts -----
 
 // This class initialize impacts by scanning each value of the domain
 // of the variable.
@@ -678,8 +678,8 @@ class ChoiceInfo {
       : value_(value), var_(var), left_(left) {}
 
   std::string DebugString() const {
-    return StringPrintf("%s %s %lld", var_->name().c_str(),
-                        (left_ ? "==" : "!="), value_);
+    return absl::StrFormat("%s %s %d", var_->name(), (left_ ? "==" : "!="),
+                           value_);
   }
 
   IntVar* var() const { return var_; }
@@ -1185,7 +1185,9 @@ class DefaultIntegerSearch : public DecisionBuilder {
           }
           break;
         }
-        default: { break; }
+        default: {
+          break;
+        }
       }
     }
 
@@ -1248,7 +1250,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
     if (restarts == 1) {
       result.append("1 restart");
     } else if (restarts > 1) {
-      StringAppendF(&result, "%d restarts", restarts);
+      absl::StrAppendFormat(&result, "%d restarts", restarts);
     }
 
     if (runs > 0) {
@@ -1258,7 +1260,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
       if (runs == 1) {
         result.append("1 heuristic run");
       } else {
-        StringAppendF(&result, "%d heuristic runs", runs);
+        absl::StrAppendFormat(&result, "%d heuristic runs", runs);
       }
     }
     if (last_conflict_count_ > 0) {
@@ -1268,7 +1270,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
       if (last_conflict_count_ == 1) {
         result.append("1 last conflict hint");
       } else {
-        StringAppendF(&result, "%d last conflict hints", last_conflict_count_);
+        absl::StrAppendFormat(&result, "%d last conflict hints",
+                              last_conflict_count_);
       }
     }
     return result;

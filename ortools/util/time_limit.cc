@@ -13,7 +13,7 @@
 
 #include "ortools/util/time_limit.h"
 
-#include "ortools/base/join.h"
+#include "absl/strings/str_cat.h"
 
 DEFINE_bool(time_limit_use_usertime, false,
             "If true, rely on the user time in the TimeLimit class. This is "
@@ -29,19 +29,16 @@ const double TimeLimit::kSafetyBufferSeconds = 1e-4;
 const int TimeLimit::kHistorySize = 100;
 
 std::string TimeLimit::DebugString() const {
-  std::string buffer =
-      absl::StrCat("Time left: ", absl::LegacyPrecision(GetTimeLeft()),
-                   "\nDeterministic time left: ",
-                   absl::LegacyPrecision(GetDeterministicTimeLeft()),
-                   "\nElapsed time: ", absl::LegacyPrecision(GetElapsedTime()),
-                   "\nElapsed deterministic time: ",
-                   absl::LegacyPrecision(GetElapsedDeterministicTime()));
+  std::string buffer = absl::StrCat(
+      "Time left: ", (GetTimeLeft()),
+      "\nDeterministic time left: ", (GetDeterministicTimeLeft()),
+      "\nElapsed time: ", (GetElapsedTime()),
+      "\nElapsed deterministic time: ", (GetElapsedDeterministicTime()));
 #ifndef NDEBUG
   for (const auto& counter : deterministic_counters_) {
     const std::string& counter_name = counter.first;
     const double counter_value = counter.second;
-    absl::StrAppend(&buffer, "\n", counter_name, ": ",
-                    absl::LegacyPrecision(counter_value));
+    absl::StrAppend(&buffer, "\n", counter_name, ": ", (counter_value));
   }
 #endif
   return buffer;

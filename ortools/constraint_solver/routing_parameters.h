@@ -11,19 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_STRINGPRINTF_H_
-#define OR_TOOLS_BASE_STRINGPRINTF_H_
+#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_
+#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_
 
 #include <string>
+#include "ortools/constraint_solver/routing_parameters.pb.h"
 
 namespace operations_research {
-std::string StringPrintf(const char* const format, ...);
-void SStringPrintf(std::string* const dst, const char* const format, ...);
-void StringAppendF(std::string* const dst, const char* const format, ...);
+
+RoutingModelParameters DefaultRoutingModelParameters();
+RoutingSearchParameters DefaultRoutingSearchParameters();
+
+// Returns an empty std::string if the routing search parameters are valid, and
+// a non-empty, human readable error description if they're not.
+std::string FindErrorInRoutingSearchParameters(
+    const RoutingSearchParameters& search_parameters);
+
 }  // namespace operations_research
 
-namespace absl {
-std::string StrFormat(const char* const format, ...);
-void StrAppendFormat(std::string* const dst, const char* const format, ...);
-}  // namespace absl
-#endif  // OR_TOOLS_BASE_STRINGPRINTF_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_

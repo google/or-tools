@@ -14,11 +14,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/string_array.h"
 
@@ -83,8 +83,8 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("(%s %s %lld)", integer_variable_->name().c_str(),
-                        assign_ ? "==" : "!=", value_);
+    return absl::StrFormat("(%s %s %d)", integer_variable_->name(),
+                           assign_ ? "==" : "!=", value_);
   }
 
   IntVar* integer_variable() const { return integer_variable_; }
@@ -147,7 +147,7 @@ bool NoGood::Apply(Solver* const solver) {
 }
 
 std::string NoGood::DebugString() const {
-  return StringPrintf("(%s)", JoinDebugStringPtr(terms_, " && ").c_str());
+  return absl::StrFormat("(%s)", JoinDebugStringPtr(terms_, " && "));
 }
 
 namespace {
@@ -177,7 +177,7 @@ class NaiveNoGoodManager : public NoGoodManager {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("NaiveNoGoodManager(%d)", NoGoodCount());
+    return absl::StrFormat("NaiveNoGoodManager(%d)", NoGoodCount());
   }
 
  private:

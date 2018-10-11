@@ -15,9 +15,9 @@
 
 #include <algorithm>
 
+#include "absl/memory/memory.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/memory.h"
 
 namespace operations_research {
 namespace sat {
@@ -62,13 +62,13 @@ void DratProofHandler::AddOneVariable() {
   reverse_mapping_.push_back(BooleanVariable(variable_index_++));
 }
 
-void DratProofHandler::AddProblemClause(absl::Span<Literal> clause) {
+void DratProofHandler::AddProblemClause(absl::Span<const Literal> clause) {
   if (drat_checker_ != nullptr) {
     drat_checker_->AddProblemClause(clause);
   }
 }
 
-void DratProofHandler::AddClause(absl::Span<Literal> clause) {
+void DratProofHandler::AddClause(absl::Span<const Literal> clause) {
   MapClause(clause);
   if (drat_checker_ != nullptr) {
     drat_checker_->AddInferedClause(values_);
@@ -78,7 +78,7 @@ void DratProofHandler::AddClause(absl::Span<Literal> clause) {
   }
 }
 
-void DratProofHandler::DeleteClause(absl::Span<Literal> clause) {
+void DratProofHandler::DeleteClause(absl::Span<const Literal> clause) {
   MapClause(clause);
   if (drat_checker_ != nullptr) {
     drat_checker_->DeleteClause(values_);
@@ -97,7 +97,7 @@ DratChecker::Status DratProofHandler::Check(double max_time_in_seconds) {
   return DratChecker::Status::UNKNOWN;
 }
 
-void DratProofHandler::MapClause(absl::Span<Literal> clause) {
+void DratProofHandler::MapClause(absl::Span<const Literal> clause) {
   values_.clear();
   for (const Literal l : clause) {
     CHECK_LT(l.Variable(), reverse_mapping_.size());

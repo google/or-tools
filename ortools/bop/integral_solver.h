@@ -14,7 +14,6 @@
 #ifndef OR_TOOLS_BOP_INTEGRAL_SOLVER_H_
 #define OR_TOOLS_BOP_INTEGRAL_SOLVER_H_
 
-#include "ortools/base/port.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_types.h"
 #include "ortools/lp_data/lp_data.h"
@@ -39,20 +38,20 @@ class IntegralSolver {
 
   // Solves the given linear program and returns the solve status.
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem)
-      MUST_USE_RESULT;
+      ABSL_MUST_USE_RESULT;
   BopSolveStatus SolveWithTimeLimit(const glop::LinearProgram& linear_problem,
-                                    TimeLimit* time_limit) MUST_USE_RESULT;
+                                    TimeLimit* time_limit) ABSL_MUST_USE_RESULT;
 
   // Same as Solve() but starts from the given solution.
   // TODO(user): Change the API to accept a partial solution instead since the
   // underlying solver supports it.
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem,
                        const glop::DenseRow& user_provided_initial_solution)
-      MUST_USE_RESULT;
+      ABSL_MUST_USE_RESULT;
   BopSolveStatus SolveWithTimeLimit(
       const glop::LinearProgram& linear_problem,
       const glop::DenseRow& user_provided_initial_solution,
-      TimeLimit* time_limit) MUST_USE_RESULT;
+      TimeLimit* time_limit) ABSL_MUST_USE_RESULT;
 
   // Returns the objective value of the solution with its offset.
   glop::Fractional objective_value() const { return objective_value_; }

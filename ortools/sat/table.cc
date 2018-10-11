@@ -429,19 +429,17 @@ std::function<void(Model*)> TransitionConstraint(
         gtl::STLSortAndRemoveDuplicates(&s);
 
         out_encoding.clear();
+        std::vector<Literal> state_literals;
         if (s.size() == 2) {
           const BooleanVariable var = model->Add(NewBooleanVariable());
           out_encoding[s.front()] = Literal(var, true);
           out_encoding[s.back()] = Literal(var, false);
         } else if (s.size() > 1) {
-          std::vector<Literal> state_literals;
           for (const IntegerValue state : s) {
             const Literal l = Literal(model->Add(NewBooleanVariable()), true);
             out_encoding[state] = l;
             state_literals.push_back(l);
           }
-          // Exactly one state literal is true.
-          model->Add(ExactlyOneConstraint(state_literals));
         }
       }
 

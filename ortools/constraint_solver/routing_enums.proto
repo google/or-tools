@@ -23,9 +23,12 @@ package operations_research;
 // First solution strategies, used as starting point of local search.
 message FirstSolutionStrategy {
   enum Value {
+    // See the homonymous value in LocalSearchMetaheuristic.
+    UNSET = 0;
+
     // Lets the solver detect which strategy to use according to the model being
     // solved.
-    AUTOMATIC = 0;
+    AUTOMATIC = 15;
 
     // --- Path addition heuristics ---
     // Starting from a route "start" node, connect it to the node which produces
@@ -72,14 +75,20 @@ message FirstSolutionStrategy {
     // optional nodes (with finite penalty costs).
     BEST_INSERTION = 7;
     // Iteratively build a solution by inserting the cheapest node at its
-    // cheapest position; the cost of insertion is based on the the arc cost
+    // cheapest position; the cost of insertion is based on the arc cost
     // function. Is faster than BEST_INSERTION.
     PARALLEL_CHEAPEST_INSERTION = 8;
+    // Iteratively build a solution by constructing routes sequentially, for
+    // each route inserting the cheapest node at its cheapest position until the
+    // route is completed; the cost of insertion is based on the arc cost
+    // function. Is faster than PARALLEL_CHEAPEST_INSERTION.
+    SEQUENTIAL_CHEAPEST_INSERTION = 14;
     // Iteratively build a solution by inserting each node at its cheapest
-    // position; the cost of insertion is based on the the arc cost function.
+    // position; the cost of insertion is based on the arc cost function.
     // Differs from PARALLEL_CHEAPEST_INSERTION by the node selected for
-    // insertion; here nodes are considered in their order of creation. Is
-    // faster than PARALLEL_CHEAPEST_INSERTION.
+    // insertion; here nodes are considered in decreasing order of distance to
+    // the start/ends of the routes, i.e. farthest nodes are inserted first.
+    // Is faster than SEQUENTIAL_CHEAPEST_INSERTION.
     LOCAL_CHEAPEST_INSERTION = 9;
 
     // --- Variable-based heuristics ---
@@ -100,8 +109,13 @@ message FirstSolutionStrategy {
 // descent, they will try to escape local minima.
 message LocalSearchMetaheuristic {
   enum Value {
+    // Means "not set". If the solver sees that, it'll behave like for
+    // AUTOMATIC. But this value won't override others upon a proto MergeFrom(),
+    // whereas "AUTOMATIC" will.
+    UNSET = 0;
+
     // Lets the solver select the metaheuristic.
-    AUTOMATIC = 0;
+    AUTOMATIC = 6;
 
     // Accepts improving (cost-reducing) local search neighbors until a local
     // minimum is reached.
@@ -116,8 +130,9 @@ message LocalSearchMetaheuristic {
     // Uses tabu search to escape local minima
     // (cf. http://en.wikipedia.org/wiki/Tabu_search).
     TABU_SEARCH = 4;
-    // Uses tabu search on the objective value of solution to escape local
-    // minima
-    OBJECTIVE_TABU_SEARCH = 5;
+    // Uses tabu search on a list of variables to escape local minima. The list
+    // of variables to use must be provided via the SetTabuVarsCallback
+    // callback.
+    GENERIC_TABU_SEARCH = 5;
   }
 }

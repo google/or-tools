@@ -19,14 +19,15 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
+#include "absl/time/clock.h"
 #include "ortools/base/file.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/status.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/time_support.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/demon_profiler.pb.h"
@@ -264,7 +265,7 @@ class DemonProfiler : public PropagationMonitor {
         "d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
     File* file;
     const std::string model =
-        StringPrintf("Model %s:\n", solver->model_name().c_str());
+        absl::StrFormat("Model %s:\n", solver->model_name());
     if (file::Open(filename, "w", &file, file::Defaults()).ok()) {
       file::WriteString(file, model, file::Defaults()).IgnoreError();
       std::vector<Container> to_sort;
@@ -297,9 +298,9 @@ class DemonProfiler : public PropagationMonitor {
                           &demon_invocations, &total_demon_runtime,
                           &demon_count);
         const std::string constraint_message =
-            StringPrintf(kConstraintFormat, ct->DebugString().c_str(), fails,
-                         initial_propagation_runtime, demon_count,
-                         demon_invocations, total_demon_runtime);
+            absl::StrFormat(kConstraintFormat, ct->DebugString(), fails,
+                            initial_propagation_runtime, demon_count,
+                            demon_invocations, total_demon_runtime);
         file::WriteString(file, constraint_message, file::Defaults())
             .IgnoreError();
         const std::vector<DemonRuns*>& demons = demons_per_constraint_[ct];
@@ -315,9 +316,9 @@ class DemonProfiler : public PropagationMonitor {
           ExportInformation(demon_runs, &invocations, &fails, &runtime,
                             &mean_runtime, &median_runtime,
                             &standard_deviation);
-          const std::string runs = StringPrintf(
-              kDemonFormat, demon_runs->demon_id().c_str(), invocations, fails,
-              runtime, mean_runtime, median_runtime, standard_deviation);
+          const std::string runs = absl::StrFormat(
+              kDemonFormat, demon_runs->demon_id(), invocations, fails, runtime,
+              mean_runtime, median_runtime, standard_deviation);
           file::WriteString(file, runs, file::Defaults()).IgnoreError();
         }
       }

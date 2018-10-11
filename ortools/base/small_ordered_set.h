@@ -14,7 +14,9 @@
 #ifndef OR_TOOLS_BASE_SMALL_ORDERED_SET_H_
 #define OR_TOOLS_BASE_SMALL_ORDERED_SET_H_
 
+namespace gtl {
 template <class T>
 class small_ordered_set : public T {};
+}  // namespace gtl
 
 #endif  // OR_TOOLS_BASE_SMALL_ORDERED_SET_H_

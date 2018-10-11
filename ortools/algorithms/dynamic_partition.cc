@@ -15,9 +15,9 @@
 
 #include <algorithm>
 
-#include "ortools/base/join.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/murmur.h"
-#include "ortools/base/stringprintf.h"
 
 namespace operations_research {
 

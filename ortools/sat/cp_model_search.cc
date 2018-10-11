@@ -16,7 +16,7 @@
 #include <random>
 #include <unordered_map>
 
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_format.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
 

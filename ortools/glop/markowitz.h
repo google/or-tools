@@ -75,7 +75,7 @@
 
 #include <queue>
 
-#include "ortools/base/inlined_vector.h"
+#include "absl/container/inlined_vector.h"
 #include "ortools/base/logging.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
@@ -279,7 +279,7 @@ class Markowitz {
   // non-singular.
   Status ComputeLU(const MatrixView& basis_matrix, RowPermutation* row_perm,
                    ColumnPermutation* col_perm, TriangularMatrix* lower,
-                   TriangularMatrix* upper) MUST_USE_RESULT;
+                   TriangularMatrix* upper) ABSL_MUST_USE_RESULT;
 
   // Only computes P and Q^{-1}, L and U can be computed later from these
   // permutations using another algorithm (for instance left-looking L.U). This
@@ -293,7 +293,7 @@ class Markowitz {
   // independent, the returned Status will be OK.
   Status ComputeRowAndColumnPermutation(
       const MatrixView& basis_matrix, RowPermutation* row_perm,
-      ColumnPermutation* col_perm) MUST_USE_RESULT;
+      ColumnPermutation* col_perm) ABSL_MUST_USE_RESULT;
 
   // Releases the memory used by this class.
   void Clear();

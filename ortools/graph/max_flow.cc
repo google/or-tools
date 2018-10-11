@@ -15,8 +15,8 @@
 
 #include <algorithm>
 
-#include "ortools/base/memory.h"
-#include "ortools/base/stringprintf.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 
@@ -321,13 +321,13 @@ std::string GenericMaxFlow<Graph>::DebugString(const std::string& context,
   const NodeIndex head = Head(arc);
   return absl::StrFormat(
       "%s Arc %d, from %d to %d, "
-      "Capacity = %lld, Residual capacity = %lld, "
-      "Flow = residual capacity for reverse arc = %lld, "
+      "Capacity = %d, Residual capacity = %d, "
+      "Flow = residual capacity for reverse arc = %d, "
       "Height(tail) = %d, Height(head) = %d, "
-      "Excess(tail) = %lld, Excess(head) = %lld",
-      context.c_str(), arc, tail, head, Capacity(arc),
-      residual_arc_capacity_[arc], Flow(arc), node_potential_[tail],
-      node_potential_[head], node_excess_[tail], node_excess_[head]);
+      "Excess(tail) = %d, Excess(head) = %d",
+      context, arc, tail, head, Capacity(arc), residual_arc_capacity_[arc],
+      Flow(arc), node_potential_[tail], node_potential_[head],
+      node_excess_[tail], node_excess_[head]);
 }
 
 template <typename Graph>

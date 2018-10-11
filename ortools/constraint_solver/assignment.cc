@@ -16,14 +16,14 @@
 #include <unordered_map>
 #include <vector>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/file.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/recordio.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/assignment.pb.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
@@ -96,10 +96,10 @@ void IntVarElement::WriteToProto(
 std::string IntVarElement::DebugString() const {
   if (Activated()) {
     if (min_ == max_) {
-      return StringPrintf("(%" GG_LL_FORMAT "d)", min_);
+      return absl::StrFormat("(%" GG_LL_FORMAT "d)", min_);
     } else {
-      return StringPrintf("(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d)", min_,
-                          max_);
+      return absl::StrFormat("(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d)", min_,
+                             max_);
     }
   } else {
     return "(...)";
@@ -201,17 +201,19 @@ void IntervalVarElement::WriteToProto(
 std::string IntervalVarElement::DebugString() const {
   if (Activated()) {
     std::string out;
-    SStringPrintf(&out, "(start = %" GG_LL_FORMAT "d", start_min_);
+    absl::StrAppendFormat(&out, "(start = %" GG_LL_FORMAT "d", start_min_);
     if (start_max_ != start_min_) {
-      StringAppendF(&out, "..%" GG_LL_FORMAT "d", start_max_);
+      absl::StrAppendFormat(&out, "..%" GG_LL_FORMAT "d", start_max_);
     }
-    StringAppendF(&out, ", duration = %" GG_LL_FORMAT "d", duration_min_);
+    absl::StrAppendFormat(&out, ", duration = %" GG_LL_FORMAT "d",
+                          duration_min_);
     if (duration_max_ != duration_min_) {
-      StringAppendF(&out, "..%" GG_LL_FORMAT "d", duration_max_);
+      absl::StrAppendFormat(&out, "..%" GG_LL_FORMAT "d", duration_max_);
     }
-    StringAppendF(&out, ", status = %" GG_LL_FORMAT "d", performed_min_);
+    absl::StrAppendFormat(&out, ", status = %" GG_LL_FORMAT "d",
+                          performed_min_);
     if (performed_max_ != performed_min_) {
-      StringAppendF(&out, "..%" GG_LL_FORMAT "d", performed_max_);
+      absl::StrAppendFormat(&out, "..%" GG_LL_FORMAT "d", performed_max_);
     }
     out.append(")");
     return out;
@@ -317,10 +319,10 @@ void SequenceVarElement::WriteToProto(
 
 std::string SequenceVarElement::DebugString() const {
   if (Activated()) {
-    return StringPrintf("[forward %s, backward %s, unperformed [%s]]",
-                        absl::StrJoin(forward_sequence_, " -> ").c_str(),
-                        absl::StrJoin(backward_sequence_, " -> ").c_str(),
-                        absl::StrJoin(unperformed_, ", ").c_str());
+    return absl::StrFormat("[forward %s, backward %s, unperformed [%s]]",
+                           absl::StrJoin(forward_sequence_, " -> "),
+                           absl::StrJoin(backward_sequence_, " -> "),
+                           absl::StrJoin(unperformed_, ", "));
   } else {
     return "(...)";
   }
@@ -614,8 +616,8 @@ template <class Container, class Element>
 void RealDebugString(const Container& container, std::string* const out) {
   for (const Element& element : container.elements()) {
     if (element.Var() != nullptr) {
-      StringAppendF(out, "%s %s | ", element.Var()->name().c_str(),
-                    element.DebugString().c_str());
+      absl::StrAppendFormat(out, "%s %s | ", element.Var()->name().c_str(),
+                            element.DebugString().c_str());
     }
   }
 }

@@ -35,7 +35,6 @@
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/macros.h"    // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/base/map_util.h"  // for FindOrNull, FindWithDefault
-#include "ortools/base/stringprintf.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 

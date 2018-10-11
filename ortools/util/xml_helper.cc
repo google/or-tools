@@ -16,9 +16,10 @@
 #include <sstream>
 #include <string>
 
-#include "ortools/base/join.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/strutil.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_replace.h"
 
 namespace operations_research {
 
@@ -34,7 +35,7 @@ void XmlHelper::StartElement(const std::string& name) {
     content_.append(">\n");
   }
   tags_.push(name);
-  absl::StrAppendFormat(&content_, "<%s", name.c_str());
+  absl::StrAppendFormat(&content_, "<%s", name);
   direction_down_ = true;
 }
 
@@ -71,7 +72,7 @@ void XmlHelper::AddAttribute(const std::string& key, const std::string& value) {
   }
 
   absl::StrAppendFormat(&content_, " %s=\"%s\"", key.c_str(),
-                escaped_value.str().c_str());
+                        escaped_value.str().c_str());
 }
 
 void XmlHelper::EndElement() {
@@ -80,7 +81,7 @@ void XmlHelper::EndElement() {
   if (direction_down_) {
     content_.append(" />\n");
   } else {
-    absl::StrAppendFormat(&content_, "</%s>\n", tag.c_str());
+    absl::StrAppendFormat(&content_, "</%s>\n", tag);
   }
   direction_down_ = false;
 

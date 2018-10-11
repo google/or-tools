@@ -164,7 +164,8 @@ class RevisedSimplex {
   // and try to use the previously computed solution as a warm-start. To disable
   // this behavior or give explicit warm-start data, use one of the State*()
   // functions below.
-  Status Solve(const LinearProgram& lp, TimeLimit* time_limit) MUST_USE_RESULT;
+  Status Solve(const LinearProgram& lp,
+               TimeLimit* time_limit) ABSL_MUST_USE_RESULT;
 
   // Do not use the current solution as a warm-start for the next Solve(). The
   // next Solve() will behave as if the class just got created.
@@ -362,15 +363,15 @@ class RevisedSimplex {
 
   // Initializes the starting basis. In most cases it starts by the all slack
   // basis and tries to apply some heuristics to replace fixed variables.
-  Status CreateInitialBasis() MUST_USE_RESULT;
+  Status CreateInitialBasis() ABSL_MUST_USE_RESULT;
 
   // Sets the initial basis to the given columns, try to factorize it and
   // recompute the basic variable values.
   Status InitializeFirstBasis(const RowToColMapping& initial_basis)
-      MUST_USE_RESULT;
+      ABSL_MUST_USE_RESULT;
 
   // Entry point for the solver initialization.
-  Status Initialize(const LinearProgram& lp) MUST_USE_RESULT;
+  Status Initialize(const LinearProgram& lp) ABSL_MUST_USE_RESULT;
 
   // Saves the current variable statuses in solution_state_.
   void SaveState();
@@ -466,9 +467,9 @@ class RevisedSimplex {
   //   along this dual edge.
   // - target_bound: the bound at which the leaving variable should go when
   //   leaving the basis.
-  Status DualChooseLeavingVariableRow(RowIndex* leaving_row,
-                                      Fractional* cost_variation,
-                                      Fractional* target_bound) MUST_USE_RESULT;
+  Status DualChooseLeavingVariableRow(
+      RowIndex* leaving_row, Fractional* cost_variation,
+      Fractional* target_bound) ABSL_MUST_USE_RESULT;
 
   // Updates the prices used by DualChooseLeavingVariableRow() after a simplex
   // iteration by using direction_. The prices are stored in
@@ -491,7 +492,7 @@ class RevisedSimplex {
   // http://rd.springer.com/article/10.1023%2FA%3A1025102305440
   Status DualPhaseIChooseLeavingVariableRow(
       RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound) MUST_USE_RESULT;
+      Fractional* target_bound) ABSL_MUST_USE_RESULT;
 
   // Makes sure the boxed variable are dual-feasible by setting them to the
   // correct bound according to their reduced costs. This is called
@@ -523,7 +524,7 @@ class RevisedSimplex {
   // Returns an error if the update could not be done because of some precision
   // issue.
   Status UpdateAndPivot(ColIndex entering_col, RowIndex leaving_row,
-                        Fractional target_bound) MUST_USE_RESULT;
+                        Fractional target_bound) ABSL_MUST_USE_RESULT;
 
   // Displays all the timing stats related to the calling object.
   void DisplayAllStats();
@@ -542,11 +543,11 @@ class RevisedSimplex {
 
   // Minimize the objective function, be it for satisfiability or for
   // optimization. Used by Solve().
-  Status Minimize(TimeLimit* time_limit) MUST_USE_RESULT;
+  Status Minimize(TimeLimit* time_limit) ABSL_MUST_USE_RESULT;
 
   // Same as Minimize() for the dual simplex algorithm.
   // TODO(user): remove duplicate code between the two functions.
-  Status DualMinimize(TimeLimit* time_limit) MUST_USE_RESULT;
+  Status DualMinimize(TimeLimit* time_limit) ABSL_MUST_USE_RESULT;
 
   // Utility functions to return the current ColIndex of the slack column with
   // given number. Note that currently, such columns are always present in the

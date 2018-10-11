@@ -17,13 +17,13 @@
 #include <limits>
 #include <unordered_set>
 
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/strutil.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/fp_utils.h"
 
@@ -106,7 +106,7 @@ std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
   int i = 0;
   for (const auto& item : proto) {
     const std::string obfuscated_name =
-        absl::StrFormat("%s%0*d", prefix.c_str(), num_digits, i);
+        absl::StrFormat("%s%0*d", prefix, num_digits, i);
     if (obfuscate || !item.has_name()) {
       result[i] = namer.MakeUniqueName(obfuscated_name);
       LOG_IF(WARNING, FLAGS_lp_log_invalid_name && !item.has_name())
@@ -208,12 +208,10 @@ void LineBreaker::Append(const std::string& s) {
 }
 
 std::string DoubleToStringWithForcedSign(double d) {
-  return absl::StrCat((d < 0 ? "" : "+"), absl::LegacyPrecision(d));
+  return absl::StrCat((d < 0 ? "" : "+"), (d));
 }
 
-std::string DoubleToString(double d) {
-  return absl::StrCat(absl::LegacyPrecision(d));
-}
+std::string DoubleToString(double d) { return absl::StrCat((d)); }
 
 }  // namespace
 
@@ -351,7 +349,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
     const double ub = var_proto.upper_bound();
     if (var_proto.is_integer() && lb == round(lb) && ub == round(ub)) {
       absl::StrAppendFormat(output, " %.0f <= %s <= %.0f\n", lb,
-                            exported_variable_names_[var_index].c_str(), ub);
+                            exported_variable_names_[var_index], ub);
     } else {
       absl::StrAppend(output, " ");
       if (lb == -std::numeric_limits<double>::infinity() &&
@@ -378,7 +376,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
       const MPVariableProto& var_proto = proto_.variable(var_index);
       if (IsBoolean(var_proto)) {
         absl::StrAppendFormat(output, " %s\n",
-                              exported_variable_names_[var_index].c_str());
+                              exported_variable_names_[var_index]);
       }
     }
   }
@@ -409,19 +407,20 @@ void MPModelProtoExporter::AppendMpsPair(const std::string& name, double value,
       --precision;
       value_str = absl::StrFormat("%.*g", precision, value);
     }
-    absl::StrAppendFormat(output, "  %-8s  %*s ", name.c_str(), kFixedMpsDoubleWidth,
-                  value_str.c_str());
+    absl::StrAppendFormat(output, "  %-8s  %*s ", name, kFixedMpsDoubleWidth,
+                          value_str);
   } else {
-    absl::StrAppendFormat(output, "  %-16s  %21s ", name.c_str(),
-                  DoubleToString(value).c_str());
+    absl::StrAppendFormat(output, "  %-16s  %21s ", name,
+                          DoubleToString(value));
   }
 }
 
 void MPModelProtoExporter::AppendMpsLineHeader(const std::string& id,
                                                const std::string& name,
                                                std::string* output) const {
-  absl::StrAppendFormat(output, use_fixed_mps_format_ ? " %-2s %-8s" : " %-2s  %-16s",
-                id.c_str(), name.c_str());
+  absl::StrAppendFormat(output,
+                        use_fixed_mps_format_ ? " %-2s %-8s" : " %-2s  %-16s",
+                        id.c_str(), name.c_str());
 }
 
 void MPModelProtoExporter::AppendMpsLineHeaderWithNewLine(
@@ -503,7 +502,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   AppendComments("*", output);
 
   // NAME section.
-  absl::StrAppendFormat(output, "%-14s%s\n", "NAME", proto_.name().c_str());
+  absl::StrAppendFormat(output, "%-14s%s\n", "NAME", proto_.name());
 
   // ROWS section.
   current_mps_column_ = 0;
@@ -554,7 +553,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   std::string columns_section;
   AppendMpsColumns(/*integrality=*/true, transpose, &columns_section);
   if (!columns_section.empty()) {
-    const char* const kIntMarkerFormat = "  %-10s%-36s%-10s\n";
+    constexpr const char kIntMarkerFormat[] = "  %-10s%-36s%-10s\n";
     columns_section =
         absl::StrFormat(kIntMarkerFormat, "INTSTART", "'MARKER'", "'INTORG'") +
         columns_section;
@@ -612,7 +611,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     if (var_proto.is_integer()) {
       if (IsBoolean(var_proto)) {
         AppendMpsLineHeader("BV", "BOUND", &bounds_section);
-        absl::StrAppendFormat(&bounds_section, "  %s\n", var_name.c_str());
+        absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
       } else {
         if (lb != 0.0) {
           AppendMpsBound("LI", var_name, lb, &bounds_section);
@@ -625,7 +624,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
       if (lb == -std::numeric_limits<double>::infinity() &&
           ub == +std::numeric_limits<double>::infinity()) {
         AppendMpsLineHeader("FR", "BOUND", &bounds_section);
-        absl::StrAppendFormat(&bounds_section, "  %s\n", var_name.c_str());
+        absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
       } else if (lb == ub) {
         AppendMpsBound("FX", var_name, lb, &bounds_section);
       } else {
@@ -633,7 +632,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
           AppendMpsBound("LO", var_name, lb, &bounds_section);
         } else if (ub == +std::numeric_limits<double>::infinity()) {
           AppendMpsLineHeader("PL", "BOUND", &bounds_section);
-          absl::StrAppendFormat(&bounds_section, "  %s\n", var_name.c_str());
+          absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
         }
         if (ub != +std::numeric_limits<double>::infinity()) {
           AppendMpsBound("UP", var_name, ub, &bounds_section);

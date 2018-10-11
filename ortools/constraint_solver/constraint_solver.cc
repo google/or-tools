@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include "absl/memory/memory.h"
 #include "ortools/base/random.h"
 
 #include "ortools/base/commandlineflags.h"
@@ -33,7 +34,6 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/recordio.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/model.pb.h"
 #include "ortools/util/tuple_set.h"
@@ -609,7 +609,9 @@ class CompressedTrail {
         packer_.reset(new ZlibTrailPacker<T>(block_size));
         break;
       }
-      default: { LOG(ERROR) << "Should not be here"; }
+      default: {
+        LOG(ERROR) << "Should not be here";
+      }
     }
 
     // We zero all memory used by addrval arrays.
@@ -711,7 +713,7 @@ class CompressedTrail {
 
 // ----- Trail -----
 
-// Object are explicitely copied using the copy ctor instead of
+// Object are explicitly copied using the copy ctor instead of
 // passing and storing a pointer. As objects are small, copying is
 // much faster than allocating (around 35% on a complete solve).
 
@@ -831,7 +833,7 @@ struct Trail {
 
     target = m->rev_memory_index_;
     for (int curr = rev_memory_.size() - 1; curr >= target; --curr) {
-      // Explicitely call unsized delete
+      // Explicitly call unsized delete
       ::operator delete(reinterpret_cast<char*>(rev_memory_[curr]));
       // The previous cast is necessary to deallocate generic memory
       // described by a void* when passed to the RevAlloc procedure
@@ -1041,6 +1043,10 @@ class Search {
       solver_->Fail();
     }
   }
+  void set_search_context(const std::string& search_context) {
+    search_context_ = search_context;
+  }
+  std::string search_context() const { return search_context_; }
   friend class Solver;
 
  private:
@@ -1066,6 +1072,7 @@ class Search {
   int sentinel_pushed_;
   bool jmpbuf_filled_;
   bool backtrack_at_the_end_of_the_search_;
+  std::string search_context_;
 };
 
 // Backtrack is implemented using 3 primitives:
@@ -1389,9 +1396,9 @@ Solver::Solver(const std::string& name)
 
 void Solver::Init() {
   CheckSolverParameters(parameters_);
-  queue_.reset(new Queue(this));
-  trail_.reset(
-      new Trail(parameters_.trail_block_size(), parameters_.compress_trail()));
+  queue_ = absl::make_unique<Queue>(this);
+  trail_ = absl::make_unique<Trail>(parameters_.trail_block_size(),
+                                    parameters_.compress_trail());
   state_ = OUTSIDE_SEARCH;
   branches_ = 0;
   fails_ = 0;
@@ -1399,14 +1406,14 @@ void Solver::Init() {
   neighbors_ = 0;
   filtered_neighbors_ = 0;
   accepted_neighbors_ = 0;
-  timer_.reset(new ClockTimer);
+  timer_ = absl::make_unique<ClockTimer>();
   searches_.assign(1, new Search(this, 0));
   fail_stamp_ = GG_ULONGLONG(1);
-  balancing_decision_.reset(new BalancingDecision);
+  balancing_decision_ = absl::make_unique<BalancingDecision>();
   fail_intercept_ = nullptr;
   true_constraint_ = nullptr;
   false_constraint_ = nullptr;
-  fail_decision_.reset(new FailDecision());
+  fail_decision_ = absl::make_unique<FailDecision>();
   constraint_index_ = 0;
   additional_constraint_index_ = 0;
   num_int_vars_ = 0;
@@ -1470,7 +1477,7 @@ std::string Solver::DebugString() const {
       out += "PROBLEM_INFEASIBLE";
       break;
   }
-  StringAppendF(
+  absl::StrAppendFormat(
       &out,
       ", branches = %" GG_LL_FORMAT "d, fails = %" GG_LL_FORMAT
       "d, decisions = %" GG_LL_FORMAT "d, delayed demon runs = %" GG_LL_FORMAT
@@ -2147,7 +2154,7 @@ bool Solver::NextSolution() {
             case SWITCH_BRANCHES: {
               d = RevAlloc(new ReverseDecision(d));
               // We reverse the decision and fall through the normal code.
-              FALLTHROUGH_INTENDED;
+              ABSL_FALLTHROUGH_INTENDED;
             }
             case NO_CHANGE: {
               decisions_++;
@@ -2328,8 +2335,8 @@ class AddConstraintDecisionBuilder : public DecisionBuilder {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("AddConstraintDecisionBuilder(%s)",
-                        constraint_->DebugString().c_str());
+    return absl::StrFormat("AddConstraintDecisionBuilder(%s)",
+                           constraint_->DebugString());
   }
 
  private:
@@ -2426,13 +2433,12 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
       gtl::FindOrNull(cast_information_, object);
   if (cast_info != nullptr && cast_info->expression != nullptr) {
     if (cast_info->expression->HasName()) {
-      return StringPrintf("Var<%s>", cast_info->expression->name().c_str());
+      return absl::StrFormat("Var<%s>", cast_info->expression->name());
     } else if (parameters_.name_cast_variables()) {
-      return StringPrintf("Var<%s>",
-                          cast_info->expression->DebugString().c_str());
+      return absl::StrFormat("Var<%s>", cast_info->expression->DebugString());
     } else {
       const std::string new_name =
-          StringPrintf("CastVar<%d>", anonymous_variable_index_++);
+          absl::StrFormat("CastVar<%d>", anonymous_variable_index_++);
       propagation_object_names_[object] = new_name;
       return new_name;
     }
@@ -2440,7 +2446,7 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
   const std::string base_name = object->BaseName();
   if (parameters_.name_all_variables() && !base_name.empty()) {
     const std::string new_name =
-        StringPrintf("%s_%d", base_name.c_str(), anonymous_variable_index_++);
+        absl::StrFormat("%s_%d", base_name, anonymous_variable_index_++);
     propagation_object_names_[object] = new_name;
     return new_name;
   }
@@ -3183,6 +3189,19 @@ void Solver::AddLocalSearchMonitor(LocalSearchMonitor* const monitor) {
 
 LocalSearchMonitor* Solver::GetLocalSearchMonitor() const {
   return local_search_monitor_.get();
+}
+
+void Solver::SetSearchContext(Search* search,
+                              const std::string& search_context) {
+  search->set_search_context(search_context);
+}
+
+std::string Solver::SearchContext() const {
+  return ActiveSearch()->search_context();
+}
+
+std::string Solver::SearchContext(const Search* search) const {
+  return search->search_context();
 }
 
 // ----------------- Constraint class -------------------

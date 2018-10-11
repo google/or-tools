@@ -20,10 +20,10 @@
 #include <unordered_map>
 #include <utility>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/graph/io.h"
 #endif  // __PORTABLE_PLATFORM__
@@ -429,7 +429,7 @@ std::string LinearBooleanProblemToCnfString(
       hard_weight += weight;
       ++i;
     }
-    output += absl::StrFormat("p wcnf %d %d %lld\n", first_slack_variable,
+    output += absl::StrFormat("p wcnf %d %d %d\n", first_slack_variable,
                               static_cast<int>(problem.constraints_size() +
                                                non_slack_objective.size()),
                               hard_weight);
@@ -453,7 +453,7 @@ std::string LinearBooleanProblemToCnfString(
       }
     }
     if (is_wcnf) {
-      output += absl::StrFormat("%lld ", weight);
+      output += absl::StrFormat("%d ", weight);
     }
     output += constraint_output + " 0\n";
   }
@@ -464,8 +464,7 @@ std::string LinearBooleanProblemToCnfString(
       // Since it is falsifying this clause that cost "weigtht", we need to take
       // its negation.
       const Literal literal(-p.first);
-      output += absl::StrFormat("%lld %s 0\n", p.second,
-                                literal.DebugString().c_str());
+      output += absl::StrFormat("%d %s 0\n", p.second, literal.DebugString());
     }
   }
 

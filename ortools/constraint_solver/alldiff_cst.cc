@@ -20,9 +20,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
@@ -36,8 +36,7 @@ class BaseAllDifferent : public Constraint {
       : Constraint(s), vars_(vars) {}
   ~BaseAllDifferent() override {}
   std::string DebugStringInternal(const std::string& name) const {
-    return StringPrintf("%s(%s)", name.c_str(),
-                        JoinDebugStringPtr(vars_, ", ").c_str());
+    return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
   }
 
  protected:
@@ -496,9 +495,8 @@ class SortConstraint : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("Sort(%s, %s)",
-                        JoinDebugStringPtr(ovars_, ", ").c_str(),
-                        JoinDebugStringPtr(svars_, ", ").c_str());
+    return absl::StrFormat("Sort(%s, %s)", JoinDebugStringPtr(ovars_, ", "),
+                           JoinDebugStringPtr(svars_, ", "));
   }
 
  private:
@@ -574,8 +572,8 @@ class AllDifferentExcept : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), escape_value_);
+    return absl::StrFormat("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
+                           JoinDebugStringPtr(vars_, ", "), escape_value_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -665,10 +663,10 @@ class NullIntersectArrayExcept : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf(
+    return absl::StrFormat(
         "NullIntersectArray([%s], [%s], escape = %" GG_LL_FORMAT "d",
-        JoinDebugStringPtr(first_vars_, ", ").c_str(),
-        JoinDebugStringPtr(second_vars_, ", ").c_str(), escape_value_);
+        JoinDebugStringPtr(first_vars_, ", "),
+        JoinDebugStringPtr(second_vars_, ", "), escape_value_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {

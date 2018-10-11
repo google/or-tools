@@ -15,7 +15,6 @@
 #define OR_TOOLS_GLOP_STATUS_H_
 
 #include <string>
-#include "ortools/base/port.h"
 
 namespace operations_research {
 namespace glop {

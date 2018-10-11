@@ -1485,7 +1485,7 @@ class Ac4MddTableConstraint : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("Mdd4R(arity = %d)", num_variables_);
+    return absl::StrFormat("Mdd4R(arity = %d)", num_variables_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {

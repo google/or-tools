@@ -18,15 +18,16 @@
 // Joint Conference on Artificial Intelligence (IJCAI 03), Acapulco,
 // Mexico, pages 245-250, 2003.
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/vector_map.h"
@@ -42,8 +43,9 @@ struct Interval {
   int64 min_rank;
   int64 max_rank;  // rank of min & max in bounds_[]
   std::string DebugString() const {
-    return StringPrintf("Interval(value = [%lld, %lld], rank = [%lld, %lld])",
-                        min_value, max_value, min_rank, max_rank);
+    return absl::StrFormat(
+        "Interval(value = [%lld, %lld], rank = [%lld, %lld])", min_value,
+        max_value, min_rank, max_rank);
   }
 };
 
@@ -146,7 +148,7 @@ class PartialSum {
   int64 last_value() const { return last_value_; }
 
   std::string DebugString() const {
-    return StringPrintf(
+    return absl::StrFormat(
         "PartialSum(offset=%lld, last_value = %lld, sum = %s, ds = %s)",
         offset_, last_value_, absl::StrJoin(sum_, ", ").c_str(),
         absl::StrJoin(ds_, ", ").c_str());

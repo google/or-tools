@@ -39,7 +39,7 @@ void ParseFile(const std::string& filename, bool presolve) {
 
   std::string problem_name = filename;
   // Remove the .fzn extension.
-  CHECK(strings::EndsWith(problem_name, ".fzn"));
+  CHECK(absl::EndsWith(problem_name, ".fzn"));
   problem_name.resize(problem_name.size() - 4);
   // Remove the leading path if present.
   const size_t found = problem_name.find_last_of("/\\");

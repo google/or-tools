@@ -14,8 +14,8 @@
 #ifndef OR_TOOLS_PORT_FILE_H_
 #define OR_TOOLS_PORT_FILE_H_
 
+#include "absl/strings/string_view.h"
 #include "ortools/base/status.h"
-#include "ortools/base/string_view.h"
 
 namespace operations_research {
 

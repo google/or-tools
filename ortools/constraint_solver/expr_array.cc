@@ -20,14 +20,13 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
-#include "ortools/base/join.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
 
@@ -58,9 +57,9 @@ class TreeArrayConstraint : public CastConstraint {
   }
 
   std::string DebugStringInternal(const std::string& name) const {
-    return StringPrintf("%s(%s) == %s", name.c_str(),
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("%s(%s) == %s", name,
+                           JoinDebugStringPtr(vars_, ", "),
+                           target_var_->DebugString());
   }
 
   void AcceptInternal(const std::string& name,
@@ -395,9 +394,9 @@ class SmallSumConstraint : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("SmallSum(%s) == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("SmallSum(%s) == %s",
+                           JoinDebugStringPtr(vars_, ", "),
+                           target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -635,7 +634,7 @@ class SafeSumConstraint : public TreeArrayConstraint {
 
 // ---------- Min Array ----------
 
-// This constraint implements std::min(vars) == min_var.
+// This constraint implements min(vars) == min_var.
 class MinConstraint : public TreeArrayConstraint {
  public:
   MinConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
@@ -833,9 +832,9 @@ class SmallMinConstraint : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("SmallMin(%s) == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("SmallMin(%s) == %s",
+                           JoinDebugStringPtr(vars_, ", "),
+                           target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -916,7 +915,7 @@ class SmallMinConstraint : public Constraint {
 
 // ---------- Max Array ----------
 
-// This constraint implements std::max(vars) == max_var.
+// This constraint implements max(vars) == max_var.
 class MaxConstraint : public TreeArrayConstraint {
  public:
   MaxConstraint(Solver* const solver, const std::vector<IntVar*>& vars,
@@ -1113,9 +1112,9 @@ class SmallMaxConstraint : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("SmallMax(%s) == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("SmallMax(%s) == %s",
+                           JoinDebugStringPtr(vars_, ", "),
+                           target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1286,9 +1285,8 @@ class ArrayBoolAndEq : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("And(%s) == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("And(%s) == %s", JoinDebugStringPtr(vars_, ", "),
+                           target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1417,8 +1415,8 @@ class ArrayBoolOrEq : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("Or(%s) == %s", JoinDebugStringPtr(vars_, ", ").c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("Or(%s) == %s", JoinDebugStringPtr(vars_, ", "),
+                           target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1467,8 +1465,7 @@ class BaseSumBooleanConstraint : public Constraint {
 
  protected:
   std::string DebugStringInternal(const std::string& name) const {
-    return StringPrintf("%s(%s)", name.c_str(),
-                        JoinDebugStringPtr(vars_, ", ").c_str());
+    return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
   }
 
   const std::vector<IntVar*> vars_;
@@ -1835,8 +1832,8 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("%s == %s", DebugStringInternal("SumBoolean").c_str(),
-                        sum_var_->DebugString().c_str());
+    return absl::StrFormat("%s == %s", DebugStringInternal("SumBoolean"),
+                           sum_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1989,9 +1986,9 @@ class BooleanScalProdLessConstant : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("BooleanScalProd([%s], [%s]) <= %" GG_LL_FORMAT "d)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        absl::StrJoin(coefs_, ", ").c_str(), upper_bound_);
+    return absl::StrFormat("BooleanScalProd([%s], [%s]) <= %" GG_LL_FORMAT "d)",
+                           JoinDebugStringPtr(vars_, ", "),
+                           absl::StrJoin(coefs_, ", "), upper_bound_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -2110,10 +2107,10 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("PositiveBooleanScal([%s], [%s]) == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        absl::StrJoin(coefs_, ", ").c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("PositiveBooleanScal([%s], [%s]) == %s",
+                           JoinDebugStringPtr(vars_, ", "),
+                           absl::StrJoin(coefs_, ", "),
+                           target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -2225,9 +2222,9 @@ class PositiveBooleanScalProd : public BaseIntExpr {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("PositiveBooleanScalProd([%s], [%s])",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        absl::StrJoin(coefs_, ", ").c_str());
+    return absl::StrFormat("PositiveBooleanScalProd([%s], [%s])",
+                           JoinDebugStringPtr(vars_, ", "),
+                           absl::StrJoin(coefs_, ", "));
   }
 
   void WhenRange(Demon* d) override {
@@ -2355,10 +2352,10 @@ class PositiveBooleanScalProdEqCst : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("PositiveBooleanScalProd([%s], [%s]) == %" GG_LL_FORMAT
-                        "d",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        absl::StrJoin(coefs_, ", ").c_str(), constant_);
+    return absl::StrFormat(
+        "PositiveBooleanScalProd([%s], [%s]) == %" GG_LL_FORMAT "d",
+        JoinDebugStringPtr(vars_, ", "), absl::StrJoin(coefs_, ", "),
+        constant_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -3062,7 +3059,7 @@ IntExpr* MakeSumArrayAux(Solver* const solver, const std::vector<IntVar*>& vars,
     return solver->MakeSum(cache, constant);
   } else {
     const std::string name =
-        StringPrintf("Sum([%s])", JoinNamePtr(vars, ", ").c_str());
+        absl::StrFormat("Sum([%s])", JoinNamePtr(vars, ", "));
     IntVar* const sum_var = solver->MakeIntVar(new_min, new_max, name);
     if (AreAllBooleans(vars)) {
       solver->AddConstraint(
@@ -3260,7 +3257,7 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
       const bool all_booleans = AreAllBooleans(vars);
       if (all_booleans) {
         const std::string name =
-            StringPrintf("BooleanSum([%s])", JoinNamePtr(vars, ", ").c_str());
+            absl::StrFormat("BooleanSum([%s])", JoinNamePtr(vars, ", "));
         sum_expr = MakeIntVar(new_min, new_max, name);
         AddConstraint(
             RevAlloc(new SumBooleanEqualToVar(this, vars, sum_expr->Var())));
@@ -3268,7 +3265,7 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
         sum_expr = MakeSumFct(this, vars);
       } else {
         const std::string name =
-            StringPrintf("Sum([%s])", JoinNamePtr(vars, ", ").c_str());
+            absl::StrFormat("Sum([%s])", JoinNamePtr(vars, ", "));
         sum_expr = MakeIntVar(new_min, new_max, name);
         AddConstraint(
             RevAlloc(new SafeSumConstraint(this, vars, sum_expr->Var())));

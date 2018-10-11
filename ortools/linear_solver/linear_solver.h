@@ -146,15 +146,14 @@
 
 #include "ortools/base/commandlineflags.h"
 
-#include <unordered_map>
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
+#include "absl/types/optional.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/optional.h"
-#include "ortools/base/port.h"
 #include "ortools/base/status.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/strutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_expr.h"
@@ -555,8 +554,8 @@ class MPSolver {
   // Returns the number of simplex iterations.
   int64 iterations() const;
 
-  // Returns the number of branch-and-bound nodes. Only available for
-  // discrete problems.
+  // Returns the number of branch-and-bound nodes evaluated during the solve.
+  // Only available for discrete problems.
   int64 nodes() const;
 
   // Returns a std::string describing the underlying solver and its version.
@@ -610,7 +609,7 @@ class MPSolver {
   // As of 2018-08-09, only Gurobi supports NextSolution(), see
   // linear_solver_underlying_gurobi_test for an example of how to configure
   // Gurobi for this purpose. The other solvers return false unconditionally.
-  bool NextSolution() MUST_USE_RESULT;
+  ABSL_MUST_USE_RESULT bool NextSolution();
 
   friend class GLPKInterface;
   friend class CLPInterface;
@@ -659,7 +658,7 @@ class MPSolver {
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
-  mutable absl::optional<std::unordered_map<std::string, int> >
+  mutable absl::optional<absl::flat_hash_map<std::string, int> >
       variable_name_to_index_;
   // Whether variables have been extracted to the underlying interface.
   std::vector<bool> variable_is_extracted_;
@@ -667,7 +666,7 @@ class MPSolver {
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  mutable absl::optional<std::unordered_map<std::string, int> >
+  mutable absl::optional<absl::flat_hash_map<std::string, int> >
       constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
@@ -722,7 +721,7 @@ class MPObjective {
 
   // Returns a map from variables to their coefficients in the objective. If a
   // variable is not present in the map, then its coefficient is zero.
-  const std::unordered_map<const MPVariable*, double>& terms() const {
+  const absl::flat_hash_map<const MPVariable*, double>& terms() const {
     return coefficients_;
   }
 
@@ -796,7 +795,7 @@ class MPObjective {
   MPSolverInterface* const interface_;
 
   // Mapping var -> coefficient.
-  std::unordered_map<const MPVariable*, double> coefficients_;
+  absl::flat_hash_map<const MPVariable*, double> coefficients_;
   // Constant term.
   double offset_;
 
@@ -910,7 +909,7 @@ class MPConstraint {
 
   // Returns a map from variables to their coefficients in the constraint. If a
   // variable is not present in the map, then its coefficient is zero.
-  const std::unordered_map<const MPVariable*, double>& terms() const {
+  const absl::flat_hash_map<const MPVariable*, double>& terms() const {
     return coefficients_;
   }
 
@@ -990,7 +989,7 @@ class MPConstraint {
   bool ContainsNewVariables();
 
   // Mapping var -> coefficient.
-  std::unordered_map<const MPVariable*, double> coefficients_;
+  absl::flat_hash_map<const MPVariable*, double> coefficients_;
 
   const int index_;  // See index().
 

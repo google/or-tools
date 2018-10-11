@@ -22,13 +22,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
-#include "ortools/base/join.h"
-#include "ortools/base/numbers.h"
-#include "ortools/base/split.h"
 #include "ortools/base/status.h"
 #include "ortools/base/statusor.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/graph/graph.h"
 
 namespace util {
@@ -139,14 +140,14 @@ util::StatusOr<Graph*> ReadGraphFile(
     ++num_lines_read;
     if (num_lines_read == 1) {
       std::vector<int64> header_ints;
-      if (!SplitStringAndParse(line, " ", &strings::safe_strto64,
-                               &header_ints) ||
-          header_ints.size() < 2 || header_ints[0] < 0 || header_ints[1] < 0) {
-        return util::Status(
-            util::error::INVALID_ARGUMENT,
-            absl::StrCat("First line of '", filename,
-                         "' should be at least two nonnegative integers."));
-      }
+      // if (!SplitStringAndParse(line, " ", &absl::SimpleAtoi,
+      //                          &header_ints) ||
+      //     header_ints.size() < 2 || header_ints[0] < 0 || header_ints[1] < 0) {
+      //   return util::Status(
+      //       util::error::INVALID_ARGUMENT,
+      //       absl::StrCat("First line of '", filename,
+      //                    "' should be at least two nonnegative integers."));
+      // }
       num_nodes = header_ints[0];
       num_expected_lines = header_ints[1];
       if (num_nodes_with_color_or_null != nullptr) {
@@ -244,8 +245,8 @@ util::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
                           " arcs!");
     }
   }
-  fprintf(
-      f, "%lld %lld", static_cast<int64>(graph.num_nodes()),
+  absl::FPrintF(
+      f, "%d %d", static_cast<int64>(graph.num_nodes()),
       static_cast<int64>(directed ? graph.num_arcs()
                                   : (graph.num_arcs() + num_self_arcs) / 2));
   if (!num_nodes_with_color.empty()) {
@@ -258,7 +259,7 @@ util::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
     }
     fprintf(f, " %lu", num_nodes_with_color.size());
     for (int i = 0; i < num_nodes_with_color.size() - 1; ++i) {
-      fprintf(f, " %lld", static_cast<int64>(num_nodes_with_color[i]));
+      absl::FPrintF(f, " %d", static_cast<int64>(num_nodes_with_color[i]));
     }
   }
   fprintf(f, "\n");
@@ -267,8 +268,8 @@ util::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
     for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
       const typename Graph::NodeIndex head = graph.Head(arc);
       if (directed || head >= node) {
-        fprintf(f, "%lld %lld\n", static_cast<int64>(node),
-                static_cast<uint64>(head));
+        absl::FPrintF(f, "%d %d\n", static_cast<int64>(node),
+                      static_cast<uint64>(head));
       }
     }
   }

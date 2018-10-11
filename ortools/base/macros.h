@@ -16,12 +16,6 @@
 
 #include <cstdlib>  // for size_t.
 
-#if (defined(COMPILER_GCC3) || defined(OS_MACOSX)) && !defined(SWIG)
-#define ATTRIBUTE_UNUSED __attribute__((__unused__))
-#else  // GCC
-#define ATTRIBUTE_UNUSED
-#endif  // GCC
-
 #define COMPILE_ASSERT(x, msg)
 
 #ifdef NDEBUG
@@ -35,18 +29,6 @@ const bool DEBUG_MODE = true;
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&);               \
   void operator=(const TypeName&)
-
-// The FALLTHROUGH_INTENDED macro can be used to annotate implicit fall-through
-// between switch labels.
-#ifndef FALLTHROUGH_INTENDED
-#define FALLTHROUGH_INTENDED \
-  do {                       \
-  } while (0)
-#endif
-// Alternate name.
-#ifndef ABSL_FALLTHROUGH_INTENDED
-#define ABSL_FALLTHROUGH_INTENDED FALLTHROUGH_INTENDED
-#endif
 
 template <typename T, size_t N>
 char (&ArraySizeHelper(T (&array)[N]))[N];

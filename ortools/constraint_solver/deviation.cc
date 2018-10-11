@@ -17,10 +17,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/util/string_array.h"
 
@@ -71,9 +71,9 @@ class Deviation : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("Deviation([%s], deviation_var = %s, sum = %lld)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        deviation_var_->DebugString().c_str(), total_sum_);
+    return absl::StrFormat("Deviation([%s], deviation_var = %s, sum = %d)",
+                           JoinDebugStringPtr(vars_, ", "),
+                           deviation_var_->DebugString(), total_sum_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {

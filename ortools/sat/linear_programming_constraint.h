@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include <unordered_map>
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/int_type.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
@@ -83,7 +83,7 @@ class LinearConstraintBuilder {
 
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
-  bool AddLiteralTerm(Literal lit, double coeff) MUST_USE_RESULT {
+  bool AddLiteralTerm(Literal lit, double coeff) ABSL_MUST_USE_RESULT {
     if (assignment_.LiteralIsTrue(lit)) {
       lb_ -= coeff;
       ub_ -= coeff;
@@ -326,7 +326,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Note that these indices are dense in [0, mirror_lp_variable_.size()] so
   // they can be used as vector indices.
   std::vector<IntegerVariable> integer_variables_;
-  std::unordered_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
+  absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
 
   // We need to remember what to optimize if an objective is given, because
   // then we will switch the objective between feasibility and optimization.
@@ -346,6 +346,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // LinearProgrammingConstraint has a given IntegerVariable.
   LinearProgrammingDispatcher* dispatcher_;
 
+  std::vector<double> reason_reduced_costs_;
   std::vector<IntegerLiteral> integer_reason_;
   std::vector<IntegerLiteral> deductions_;
 

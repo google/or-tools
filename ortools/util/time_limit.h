@@ -20,16 +20,16 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include "absl/memory/memory.h"
+#include "absl/time/clock.h"
 #ifndef NDEBUG
 #include <unordered_map>
 #endif
 
+#include "absl/time/time.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/memory.h"
-#include "ortools/base/port.h"
-#include "ortools/base/time_support.h"
 #include "ortools/base/timer.h"
 #include "ortools/util/running_stat.h"
 #ifdef HAS_PERF_SUBSYSTEM

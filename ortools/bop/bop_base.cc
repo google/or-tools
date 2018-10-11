@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/mutex.h"
+#include "absl/synchronization/mutex.h"
 #include "ortools/sat/boolean_problem.h"
 
 namespace operations_research {

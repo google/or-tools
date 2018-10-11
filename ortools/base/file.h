@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/message.h"
@@ -25,7 +26,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status.h"
-#include "ortools/base/string_view.h"
 
 // This file defines some IO interfaces for compatibility with Google
 // IO specifications.

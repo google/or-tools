@@ -18,12 +18,12 @@
 #include <unordered_map>
 #include <utility>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -457,8 +457,7 @@ class PrintTrace : public PropagationMonitor {
   }
 
   void BeginNextDecision(DecisionBuilder* const b) override {
-    DisplaySearch(
-        StringPrintf("DecisionBuilder(%s)", b->DebugString().c_str()));
+    DisplaySearch(absl::StrFormat("DecisionBuilder(%s)", b->DebugString()));
     IncreaseIndent();
     contexes_.top().in_decision_builder = true;
   }
@@ -475,18 +474,19 @@ class PrintTrace : public PropagationMonitor {
       DecreaseIndent();
       LOG(INFO) << Indent() << "}";
     }
-    DisplaySearch(StringPrintf("Failure at depth %d", solver()->SearchDepth()));
+    DisplaySearch(
+        absl::StrFormat("Failure at depth %d", solver()->SearchDepth()));
   }
 
   bool AtSolution() override {
     DisplaySearch(
-        StringPrintf("Solution found at depth %d", solver()->SearchDepth()));
+        absl::StrFormat("Solution found at depth %d", solver()->SearchDepth()));
     return false;
   }
 
   void ApplyDecision(Decision* const decision) override {
     DisplaySearch(
-        StringPrintf("ApplyDecision(%s)", decision->DebugString().c_str()));
+        absl::StrFormat("ApplyDecision(%s)", decision->DebugString()));
     IncreaseIndent();
     contexes_.top().in_decision = true;
   }
@@ -497,7 +497,7 @@ class PrintTrace : public PropagationMonitor {
       contexes_.top().in_objective = false;
     }
     DisplaySearch(
-        StringPrintf("RefuteDecision(%s)", decision->DebugString().c_str()));
+        absl::StrFormat("RefuteDecision(%s)", decision->DebugString()));
     IncreaseIndent();
     contexes_.top().in_decision = true;
   }
@@ -533,7 +533,7 @@ class PrintTrace : public PropagationMonitor {
   void BeginConstraintInitialPropagation(
       Constraint* const constraint) override {
     PushDelayedInfo(
-        StringPrintf("Constraint(%s)", constraint->DebugString().c_str()));
+        absl::StrFormat("Constraint(%s)", constraint->DebugString()));
     contexes_.top().in_constraint = true;
   }
 
@@ -544,8 +544,7 @@ class PrintTrace : public PropagationMonitor {
 
   void BeginNestedConstraintInitialPropagation(
       Constraint* const parent, Constraint* const nested) override {
-    PushDelayedInfo(
-        StringPrintf("Constraint(%s)", nested->DebugString().c_str()));
+    PushDelayedInfo(absl::StrFormat("Constraint(%s)", nested->DebugString()));
     contexes_.top().in_constraint = true;
   }
   void EndNestedConstraintInitialPropagation(Constraint* const,
@@ -559,7 +558,7 @@ class PrintTrace : public PropagationMonitor {
   void BeginDemonRun(Demon* const demon) override {
     if (demon->priority() != Solver::VAR_PRIORITY) {
       contexes_.top().in_demon = true;
-      PushDelayedInfo(StringPrintf("Demon(%s)", demon->DebugString().c_str()));
+      PushDelayedInfo(absl::StrFormat("Demon(%s)", demon->DebugString()));
     }
   }
 
@@ -571,8 +570,7 @@ class PrintTrace : public PropagationMonitor {
   }
 
   void StartProcessingIntegerVariable(IntVar* const var) override {
-    PushDelayedInfo(
-        StringPrintf("StartProcessing(%s)", var->DebugString().c_str()));
+    PushDelayedInfo(absl::StrFormat("StartProcessing(%s)", var->DebugString()));
   }
 
   void EndProcessingIntegerVariable(IntVar* const var) override {
@@ -589,152 +587,145 @@ class PrintTrace : public PropagationMonitor {
 
   void SetMin(IntExpr* const expr, int64 new_min) override {
     DisplayModification(
-        StringPrintf("SetMin(%s, %lld)", expr->DebugString().c_str(), new_min));
+        absl::StrFormat("SetMin(%s, %d)", expr->DebugString(), new_min));
   }
 
   void SetMax(IntExpr* const expr, int64 new_max) override {
     DisplayModification(
-        StringPrintf("SetMax(%s, %lld)", expr->DebugString().c_str(), new_max));
+        absl::StrFormat("SetMax(%s, %d)", expr->DebugString(), new_max));
   }
 
   void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) override {
-    DisplayModification(StringPrintf("SetRange(%s, [%lld .. %lld])",
-                                     expr->DebugString().c_str(), new_min,
-                                     new_max));
+    DisplayModification(absl::StrFormat("SetRange(%s, [%d .. %d])",
+                                        expr->DebugString(), new_min, new_max));
   }
 
   // ----- IntVar modifiers -----
 
   void SetMin(IntVar* const var, int64 new_min) override {
     DisplayModification(
-        StringPrintf("SetMin(%s, %lld)", var->DebugString().c_str(), new_min));
+        absl::StrFormat("SetMin(%s, %d)", var->DebugString(), new_min));
   }
 
   void SetMax(IntVar* const var, int64 new_max) override {
     DisplayModification(
-        StringPrintf("SetMax(%s, %lld)", var->DebugString().c_str(), new_max));
+        absl::StrFormat("SetMax(%s, %d)", var->DebugString(), new_max));
   }
 
   void SetRange(IntVar* const var, int64 new_min, int64 new_max) override {
-    DisplayModification(StringPrintf("SetRange(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(), new_min,
-                                     new_max));
+    DisplayModification(absl::StrFormat("SetRange(%s, [%d .. %d])",
+                                        var->DebugString(), new_min, new_max));
   }
 
   void RemoveValue(IntVar* const var, int64 value) override {
-    DisplayModification(StringPrintf("RemoveValue(%s, %lld)",
-                                     var->DebugString().c_str(), value));
+    DisplayModification(
+        absl::StrFormat("RemoveValue(%s, %d)", var->DebugString(), value));
   }
 
   void SetValue(IntVar* const var, int64 value) override {
     DisplayModification(
-        StringPrintf("SetValue(%s, %lld)", var->DebugString().c_str(), value));
+        absl::StrFormat("SetValue(%s, %d)", var->DebugString(), value));
   }
 
   void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {
-    DisplayModification(StringPrintf("RemoveInterval(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(), imin, imax));
+    DisplayModification(absl::StrFormat("RemoveInterval(%s, [%d .. %d])",
+                                        var->DebugString(), imin, imax));
   }
 
   void SetValues(IntVar* const var, const std::vector<int64>& values) override {
-    DisplayModification(StringPrintf("SetValues(%s, %s)",
-                                     var->DebugString().c_str(),
-                                     absl::StrJoin(values, ", ").c_str()));
+    DisplayModification(absl::StrFormat("SetValues(%s, %s)", var->DebugString(),
+                                        absl::StrJoin(values, ", ")));
   }
 
   void RemoveValues(IntVar* const var,
                     const std::vector<int64>& values) override {
-    DisplayModification(StringPrintf("RemoveValues(%s, %s)",
-                                     var->DebugString().c_str(),
-                                     absl::StrJoin(values, ", ").c_str()));
+    DisplayModification(absl::StrFormat("RemoveValues(%s, %s)",
+                                        var->DebugString(),
+                                        absl::StrJoin(values, ", ")));
   }
 
   // ----- IntervalVar modifiers -----
 
   void SetStartMin(IntervalVar* const var, int64 new_min) override {
-    DisplayModification(StringPrintf("SetStartMin(%s, %lld)",
-                                     var->DebugString().c_str(), new_min));
+    DisplayModification(
+        absl::StrFormat("SetStartMin(%s, %d)", var->DebugString(), new_min));
   }
 
   void SetStartMax(IntervalVar* const var, int64 new_max) override {
-    DisplayModification(StringPrintf("SetStartMax(%s, %lld)",
-                                     var->DebugString().c_str(), new_max));
+    DisplayModification(
+        absl::StrFormat("SetStartMax(%s, %d)", var->DebugString(), new_max));
   }
 
   void SetStartRange(IntervalVar* const var, int64 new_min,
                      int64 new_max) override {
-    DisplayModification(StringPrintf("SetStartRange(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(), new_min,
-                                     new_max));
+    DisplayModification(absl::StrFormat("SetStartRange(%s, [%d .. %d])",
+                                        var->DebugString(), new_min, new_max));
   }
 
   void SetEndMin(IntervalVar* const var, int64 new_min) override {
-    DisplayModification(StringPrintf("SetEndMin(%s, %lld)",
-                                     var->DebugString().c_str(), new_min));
+    DisplayModification(
+        absl::StrFormat("SetEndMin(%s, %d)", var->DebugString(), new_min));
   }
 
   void SetEndMax(IntervalVar* const var, int64 new_max) override {
-    DisplayModification(StringPrintf("SetEndMax(%s, %lld)",
-                                     var->DebugString().c_str(), new_max));
+    DisplayModification(
+        absl::StrFormat("SetEndMax(%s, %d)", var->DebugString(), new_max));
   }
 
   void SetEndRange(IntervalVar* const var, int64 new_min,
                    int64 new_max) override {
-    DisplayModification(StringPrintf("SetEndRange(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(), new_min,
-                                     new_max));
+    DisplayModification(absl::StrFormat("SetEndRange(%s, [%d .. %d])",
+                                        var->DebugString(), new_min, new_max));
   }
 
   void SetDurationMin(IntervalVar* const var, int64 new_min) override {
-    DisplayModification(StringPrintf("SetDurationMin(%s, %lld)",
-                                     var->DebugString().c_str(), new_min));
+    DisplayModification(
+        absl::StrFormat("SetDurationMin(%s, %d)", var->DebugString(), new_min));
   }
 
   void SetDurationMax(IntervalVar* const var, int64 new_max) override {
-    DisplayModification(StringPrintf("SetDurationMax(%s, %lld)",
-                                     var->DebugString().c_str(), new_max));
+    DisplayModification(
+        absl::StrFormat("SetDurationMax(%s, %d)", var->DebugString(), new_max));
   }
 
   void SetDurationRange(IntervalVar* const var, int64 new_min,
                         int64 new_max) override {
-    DisplayModification(StringPrintf("SetDurationRange(%s, [%lld .. %lld])",
-                                     var->DebugString().c_str(), new_min,
-                                     new_max));
+    DisplayModification(absl::StrFormat("SetDurationRange(%s, [%d .. %d])",
+                                        var->DebugString(), new_min, new_max));
   }
 
   void SetPerformed(IntervalVar* const var, bool value) override {
-    DisplayModification(StringPrintf("SetPerformed(%s, %d)",
-                                     var->DebugString().c_str(), value));
+    DisplayModification(
+        absl::StrFormat("SetPerformed(%s, %d)", var->DebugString(), value));
   }
 
   void RankFirst(SequenceVar* const var, int index) override {
     DisplayModification(
-        StringPrintf("RankFirst(%s, %d)", var->DebugString().c_str(), index));
+        absl::StrFormat("RankFirst(%s, %d)", var->DebugString(), index));
   }
 
   void RankNotFirst(SequenceVar* const var, int index) override {
-    DisplayModification(StringPrintf("RankNotFirst(%s, %d)",
-                                     var->DebugString().c_str(), index));
+    DisplayModification(
+        absl::StrFormat("RankNotFirst(%s, %d)", var->DebugString(), index));
   }
 
   void RankLast(SequenceVar* const var, int index) override {
     DisplayModification(
-        StringPrintf("RankLast(%s, %d)", var->DebugString().c_str(), index));
+        absl::StrFormat("RankLast(%s, %d)", var->DebugString(), index));
   }
 
   void RankNotLast(SequenceVar* const var, int index) override {
     DisplayModification(
-        StringPrintf("RankNotLast(%s, %d)", var->DebugString().c_str(), index));
+        absl::StrFormat("RankNotLast(%s, %d)", var->DebugString(), index));
   }
 
   void RankSequence(SequenceVar* const var, const std::vector<int>& rank_first,
                     const std::vector<int>& rank_last,
                     const std::vector<int>& unperformed) override {
-    DisplayModification(StringPrintf(
+    DisplayModification(absl::StrFormat(
         "RankSequence(%s, forward [%s], backward[%s], unperformed[%s])",
-        var->DebugString().c_str(), absl::StrJoin(rank_first, ", ").c_str(),
-        absl::StrJoin(rank_last, ", ").c_str(),
-        absl::StrJoin(unperformed, ", ").c_str()));
+        var->DebugString(), absl::StrJoin(rank_first, ", "),
+        absl::StrJoin(rank_last, ", "), absl::StrJoin(unperformed, ", ")));
   }
 
   void Install() override {
@@ -808,7 +799,7 @@ class PrintTrace : public PropagationMonitor {
         // RefuteDecision() callbacks must be from the objective.
         // In that case, we push the in_objective context.
         CHECK(contexes_.top().TopLevel());
-        DisplaySearch(StringPrintf("Objective -> %s", to_print.c_str()));
+        DisplaySearch(absl::StrFormat("Objective -> %s", to_print));
         IncreaseIndent();
         contexes_.top().in_objective = true;
       }

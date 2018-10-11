@@ -27,13 +27,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/span.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
@@ -103,7 +103,7 @@ class SatSolver {
   // be UNSAT.
   //
   // TODO(user): Rename this to AddClause().
-  bool AddProblemClause(absl::Span<Literal> literals);
+  bool AddProblemClause(absl::Span<const Literal> literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this
@@ -304,7 +304,7 @@ class SatSolver {
   // Extract the current problem clauses. The Output type must support the two
   // functions:
   //  - void AddBinaryClause(Literal a, Literal b);
-  //  - void AddClause(absl::Span<Literal> clause);
+  //  - void AddClause(absl::Span<const Literal> clause);
   //
   // TODO(user): also copy the removable clauses?
   template <typename Output>
@@ -322,7 +322,7 @@ class SatSolver {
 
     // Note(user): Putting the binary clauses first help because the presolver
     // currently process the clauses in order.
-    binary_implication_graph_.ExtractAllBinaryClauses(out);
+    binary_implication_graph_->ExtractAllBinaryClauses(out);
     for (SatClause* clause : clauses_propagator_.AllClausesInCreationOrder()) {
       if (!clauses_propagator_.IsRemovable(clause)) {
         out->AddClause(clause->AsSpan());
@@ -389,8 +389,9 @@ class SatSolver {
     // The new clause should not propagate.
     CHECK(!trail_->Assignment().LiteralIsFalse(a));
     CHECK(!trail_->Assignment().LiteralIsFalse(b));
-    binary_implication_graph_.AddBinaryClauseDuringSearch(a, b, trail_);
-    if (binary_implication_graph_.NumberOfImplications() == 1) {
+    const bool init = binary_implication_graph_->NumberOfImplications() == 0;
+    binary_implication_graph_->AddBinaryClauseDuringSearch(a, b, trail_);
+    if (init) {
       // This is needed because we just added the first binary clause.
       InitializePropagators();
     }
@@ -551,7 +552,7 @@ class SatSolver {
 
   // Returns the maximum trail_index of the literals in the given clause.
   // All the literals must be assigned. Returns -1 if the clause is empty.
-  int ComputeMaxTrailIndex(absl::Span<Literal> clause) const;
+  int ComputeMaxTrailIndex(absl::Span<const Literal> clause) const;
 
   // Computes what is known as the first UIP (Unique implication point) conflict
   // clause starting from the failing clause. For a definition of UIP and a
@@ -666,12 +667,12 @@ class SatSolver {
   Model* model_;
   std::unique_ptr<Model> owned_model_;
 
-  BooleanVariable num_variables_;
+  BooleanVariable num_variables_ = BooleanVariable(0);
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
+  BinaryImplicationGraph* binary_implication_graph_;
   LiteralWatchers clauses_propagator_;
-  BinaryImplicationGraph binary_implication_graph_;
   PbConstraints pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().
@@ -702,21 +703,21 @@ class SatSolver {
   // current_decision_level_). The vector is of size num_variables_ so it can
   // store all the decisions. This is done this way because in some situation we
   // need to remember the previously taken decisions after a backtrack.
-  int current_decision_level_;
+  int current_decision_level_ = 0;
   std::vector<Decision> decisions_;
 
   // The trail index after the last Backtrack() call or before the last
   // EnqueueNewDecision() call.
-  int last_decision_or_backtrack_trail_index_;
+  int last_decision_or_backtrack_trail_index_ = 0;
 
   // The assumption level. See SolveWithAssumptions().
-  int assumption_level_;
+  int assumption_level_ = 0;
 
   // The size of the trail when ProcessNewlyFixedVariables() was last called.
   // Note that the trail contains only fixed literals (that is literals of
   // decision levels 0) before this point.
-  int num_processed_fixed_variables_;
-  double deterministic_time_of_last_fixed_variables_cleanup_;
+  int num_processed_fixed_variables_ = 0;
+  double deterministic_time_of_last_fixed_variables_cleanup_ = 0.0;
 
   // Used in ProcessNewlyFixedVariablesForDratProof().
   int drat_num_processed_fixed_variables_ = 0;
@@ -752,14 +753,14 @@ class SatSolver {
 
   // This is set to true if the model is found to be UNSAT when adding new
   // constraints.
-  bool is_model_unsat_;
+  bool is_model_unsat_ = false;
 
   // Increment used to bump the variable activities.
   double clause_activity_increment_;
 
   // This counter is decremented each time we learn a clause that can be
   // deleted. When it reaches zero, a clause cleanup is triggered.
-  int num_learned_clause_before_cleanup_;
+  int num_learned_clause_before_cleanup_ = 0;
 
   // Temporary members used during conflict analysis.
   SparseBitset<BooleanVariable> is_marked_;

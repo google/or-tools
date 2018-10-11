@@ -13,7 +13,7 @@
 
 #include "ortools/sat/cp_model_utils.h"
 
-#include <unordered_set>
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/stl_util.h"
 
 namespace operations_research {
@@ -22,7 +22,7 @@ namespace sat {
 namespace {
 
 template <typename IntList>
-void AddIndices(const IntList& indices, std::unordered_set<int>* output) {
+void AddIndices(const IntList& indices, absl::flat_hash_set<int>* output) {
   output->insert(indices.begin(), indices.end());
 }
 
@@ -36,6 +36,9 @@ void AddReferencesUsedByConstraint(const ConstraintProto& ct,
       break;
     case ConstraintProto::ConstraintCase::kBoolAnd:
       AddIndices(ct.bool_and().literals(), &output->literals);
+      break;
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+      AddIndices(ct.at_most_one().literals(), &output->literals);
       break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       AddIndices(ct.bool_xor().literals(), &output->literals);
@@ -138,6 +141,9 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kBoolAnd:
       APPLY_TO_REPEATED_FIELD(bool_and, literals);
       break;
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+      APPLY_TO_REPEATED_FIELD(at_most_one, literals);
+      break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       APPLY_TO_REPEATED_FIELD(bool_xor, literals);
       break;
@@ -192,6 +198,8 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kBoolOr:
       break;
     case ConstraintProto::ConstraintCase::kBoolAnd:
+      break;
+    case ConstraintProto::ConstraintCase::kAtMostOne:
       break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       break;
@@ -271,6 +279,8 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kBoolAnd:
       break;
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+      break;
     case ConstraintProto::ConstraintCase::kBoolXor:
       break;
     case ConstraintProto::ConstraintCase::kIntDiv:
@@ -330,6 +340,8 @@ std::string ConstraintCaseName(
       return "kBoolOr";
     case ConstraintProto::ConstraintCase::kBoolAnd:
       return "kBoolAnd";
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+      return "kAtMostOne";
     case ConstraintProto::ConstraintCase::kBoolXor:
       return "kBoolXor";
     case ConstraintProto::ConstraintCase::kIntDiv:

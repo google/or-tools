@@ -18,10 +18,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -176,7 +176,7 @@ class MapDomain : public Constraint {
     const int64 vmin = var_->Min();
     const int64 vmax = var_->Max();
     const int64 size = actives_.size();
-    for (int64 j = std::max(oldmin, 0LL); j < std::min(vmin, size); ++j) {
+    for (int64 j = std::max(oldmin, int64{0}); j < std::min(vmin, size); ++j) {
       actives_[j]->SetValue(0);
     }
     for (const int64 j : InitAndGetValues(holes_)) {
@@ -184,8 +184,8 @@ class MapDomain : public Constraint {
         actives_[j]->SetValue(0);
       }
     }
-    for (int64 j = std::max(vmax + 1LL, 0LL); j <= std::min(oldmax, size - 1LL);
-         ++j) {
+    for (int64 j = std::max(vmax + int64{1}, int64{0});
+         j <= std::min(oldmax, size - int64{1}); ++j) {
       actives_[j]->SetValue(0LL);
     }
   }
@@ -197,8 +197,8 @@ class MapDomain : public Constraint {
     }
   }
   std::string DebugString() const override {
-    return StringPrintf("MapDomain(%s, [%s])", var_->DebugString().c_str(),
-                        JoinDebugStringPtr(actives_, ", ").c_str());
+    return absl::StrFormat("MapDomain(%s, [%s])", var_->DebugString(),
+                           JoinDebugStringPtr(actives_, ", "));
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -271,10 +271,9 @@ class LexicalLess : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("%s([%s], [%s])",
-                        strict_ ? "LexicalLess" : "LexicalLessOrEqual",
-                        JoinDebugStringPtr(left_, ", ").c_str(),
-                        JoinDebugStringPtr(right_, ", ").c_str());
+    return absl::StrFormat(
+        "%s([%s], [%s])", strict_ ? "LexicalLess" : "LexicalLessOrEqual",
+        JoinDebugStringPtr(left_, ", "), JoinDebugStringPtr(right_, ", "));
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -370,9 +369,9 @@ class InversePermutationConstraint : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("InversePermutationConstraint([%s], [%s])",
-                        JoinDebugStringPtr(left_, ", ").c_str(),
-                        JoinDebugStringPtr(right_, ", ").c_str());
+    return absl::StrFormat("InversePermutationConstraint([%s], [%s])",
+                           JoinDebugStringPtr(left_, ", "),
+                           JoinDebugStringPtr(right_, ", "));
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -388,7 +387,7 @@ class InversePermutationConstraint : public Constraint {
   // See PropagateHolesOfLeftVarToRight() and PropagateHolesOfRightVarToLeft().
   void PropagateHoles(int index, IntVar* const var, IntVarIterator* const holes,
                       const std::vector<IntVar*>& inverse) {
-    const int64 oldmin = std::max(var->OldMin(), 0LL);
+    const int64 oldmin = std::max(var->OldMin(), int64{0});
     const int64 oldmax =
         std::min(var->OldMax(), static_cast<int64>(left_.size() - 1));
     const int64 vmin = var->Min();
@@ -455,7 +454,7 @@ class IndexOfFirstMaxValue : public Constraint {
 
   void InitialPropagate() override {
     const int64 vsize = vars_.size();
-    const int64 imin = std::max(0LL, index_->Min());
+    const int64 imin = std::max(int64{0}, index_->Min());
     const int64 imax = std::min(vsize - 1, index_->Max());
     int64 max_max = kint64min;
     int64 max_min = kint64min;
@@ -488,8 +487,8 @@ class IndexOfFirstMaxValue : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("IndexMax(%s, [%s])", index_->DebugString().c_str(),
-                        JoinDebugStringPtr(vars_, ", ").c_str());
+    return absl::StrFormat("IndexMax(%s, [%s])", index_->DebugString(),
+                           JoinDebugStringPtr(vars_, ", "));
   }
 
   void Accept(ModelVisitor* const visitor) const override {

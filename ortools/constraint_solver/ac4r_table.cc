@@ -127,8 +127,8 @@ class TableVar {
   }
 
   ~TableVar() {
-    // delete all elements of a vector
-    gtl::STLDeleteElements(&tuples_per_value_);
+    gtl::STLDeleteElements(
+        &tuples_per_value_);  // delete all elements of a vector
   }
 
   IntVar* Variable() const { return var_; }
@@ -382,8 +382,8 @@ class Ac4TableConstraint : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
-                        table_->NumVars(), table_->NumTuples());
+    return absl::StrFormat("AllowedAssignments(arity = %d, tuple_count = %d)",
+                           table_->NumVars(), table_->NumTuples());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {

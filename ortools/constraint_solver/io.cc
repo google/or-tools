@@ -2471,13 +2471,12 @@ bool Solver::LoadModelWithSearchMonitors(
                << " vs " << kModelVersion << ")";
     return false;
   }
-  CHECK(model_loader_.get() == nullptr) << "You can only load a model once";
-  model_loader_.reset(new CpModelLoader(this));
+  CpModelLoader builder(this);
   for (int i = 0; i < model_proto.tags_size(); ++i) {
-    model_loader_->AddTag(model_proto.tags(i));
+    builder.AddTag(model_proto.tags(i));
   }
   for (int i = 0; i < model_proto.intervals_size(); ++i) {
-    if (!model_loader_->BuildFromProto(model_proto.intervals(i))) {
+    if (!builder.BuildFromProto(model_proto.intervals(i))) {
       LOG(ERROR) << "Interval variable proto "
                  << model_proto.intervals(i).DebugString()
                  << " was not parsed correctly";
@@ -2485,7 +2484,7 @@ bool Solver::LoadModelWithSearchMonitors(
     }
   }
   for (int i = 0; i < model_proto.sequences_size(); ++i) {
-    if (!model_loader_->BuildFromProto(model_proto.sequences(i))) {
+    if (!builder.BuildFromProto(model_proto.sequences(i))) {
       LOG(ERROR) << "Sequence variable proto "
                  << model_proto.sequences(i).DebugString()
                  << " was not parsed correctly";
@@ -2493,7 +2492,7 @@ bool Solver::LoadModelWithSearchMonitors(
     }
   }
   for (int i = 0; i < model_proto.expressions_size(); ++i) {
-    if (!model_loader_->BuildFromProto(model_proto.expressions(i))) {
+    if (!builder.BuildFromProto(model_proto.expressions(i))) {
       LOG(ERROR) << "Integer expression proto "
                  << model_proto.expressions(i).DebugString()
                  << " was not parsed correctly";
@@ -2502,7 +2501,7 @@ bool Solver::LoadModelWithSearchMonitors(
   }
   for (int i = 0; i < model_proto.constraints_size(); ++i) {
     Constraint* const constraint =
-        model_loader_->BuildFromProto(model_proto.constraints(i));
+        builder.BuildFromProto(model_proto.constraints(i));
     if (constraint == nullptr) {
       LOG(ERROR) << "Constraint proto "
                  << model_proto.constraints(i).DebugString()
@@ -2518,8 +2517,7 @@ bool Solver::LoadModelWithSearchMonitors(
     if (model_proto.has_objective()) {
       const CpObjective& objective_proto = model_proto.objective();
       IntVar* const objective_var =
-          model_loader_->IntegerExpression(objective_proto.objective_index())
-              ->Var();
+          builder.IntegerExpression(objective_proto.objective_index())->Var();
       const bool maximize = objective_proto.maximize();
       const int64 step = objective_proto.step();
       OptimizeVar* const objective =

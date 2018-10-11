@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/callback.h"
 #include "ortools/base/integral_types.h"
 
 namespace operations_research {

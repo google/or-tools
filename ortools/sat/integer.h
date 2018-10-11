@@ -24,18 +24,17 @@
 #include <utility>
 #include <vector>
 
-#include <unordered_map>
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/inlined_vector.h"
+#include "absl/strings/str_cat.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/inlined_vector.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/port.h"
-#include "ortools/base/span.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -397,7 +396,7 @@ class IntegerEncoder {
   // Mapping (variable == value) -> associated literal. Note that even if
   // there is more than one literal associated to the same fact, we just keep
   // the first one that was added.
-  std::unordered_map<std::pair<IntegerVariable, IntegerValue>, Literal>
+  absl::flat_hash_map<std::pair<IntegerVariable, IntegerValue>, Literal>
       equality_to_associated_literal_;
 
   // Variables that are fully encoded.
@@ -431,7 +430,8 @@ class IntegerTrail : public SatPropagator {
   // correct state before calling any of its functions.
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int literal_trail_index) final;
-  absl::Span<Literal> Reason(const Trail& trail, int trail_index) const final;
+  absl::Span<const Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Returns the number of created integer variables.
   //
@@ -537,8 +537,11 @@ class IntegerTrail : public SatPropagator {
   // and produce the reason directly.
   //
   // TODO(user): change API so that this work is performed during the conflict
-  // analysis. Note that we could be smarter there.
-  void RelaxLinearReason(IntegerValue slack, absl::Span<IntegerValue> coeffs,
+  // analysis where we can be smarter in how we relax the reason. Note however
+  // that this function is mainly used when we have a conflict, so this is not
+  // really high priority.
+  void RelaxLinearReason(IntegerValue slack,
+                         absl::Span<const IntegerValue> coeffs,
                          std::vector<IntegerLiteral>* reason) const;
 
   // Enqueue new information about a variable bound. Calling this with a less
@@ -560,23 +563,23 @@ class IntegerTrail : public SatPropagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
-  MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
-                               absl::Span<Literal> literal_reason,
-                               absl::Span<IntegerLiteral> integer_reason);
+  ABSL_MUST_USE_RESULT bool Enqueue(
+      IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
 
   // Same as Enqueue(), but takes an extra argument which if smaller than
   // integer_trail_.size() is interpreted as the trail index of an old Enqueue()
   // that had the same reason as this one. Note that the given Span must still
   // be valid as they are used in case of conflict.
-  MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
-                               absl::Span<Literal> literal_reason,
-                               absl::Span<IntegerLiteral> integer_reason,
-                               int trail_index_with_same_reason);
+  ABSL_MUST_USE_RESULT bool Enqueue(
+      IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason,
+      int trail_index_with_same_reason);
 
   // Enqueues the given literal on the trail.
   // See the comment of Enqueue() for the reason format.
-  void EnqueueLiteral(Literal literal, absl::Span<Literal> literal_reason,
-                      absl::Span<IntegerLiteral> integer_reason);
+  void EnqueueLiteral(Literal literal, absl::Span<const Literal> literal_reason,
+                      absl::Span<const IntegerLiteral> integer_reason);
 
   // Returns the reason (as set of Literal currently false) for a given integer
   // literal. Note that the bound must be less restrictive than the current
@@ -585,7 +588,7 @@ class IntegerTrail : public SatPropagator {
 
   // Appends the reason for the given integer literals to the output and call
   // STLSortAndRemoveDuplicates() on it.
-  void MergeReasonInto(absl::Span<IntegerLiteral> literals,
+  void MergeReasonInto(absl::Span<const IntegerLiteral> literals,
                        std::vector<Literal>* output) const;
 
   // Returns the number of enqueues that changed a variable bounds. We don't
@@ -606,15 +609,15 @@ class IntegerTrail : public SatPropagator {
 
   // Helper functions to report a conflict. Always return false so a client can
   // simply do: return integer_trail_->ReportConflict(...);
-  bool ReportConflict(absl::Span<Literal> literal_reason,
-                      absl::Span<IntegerLiteral> integer_reason) {
+  bool ReportConflict(absl::Span<const Literal> literal_reason,
+                      absl::Span<const IntegerLiteral> integer_reason) {
     DCHECK(ReasonIsValid(literal_reason, integer_reason));
     std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->assign(literal_reason.begin(), literal_reason.end());
     MergeReasonInto(integer_reason, conflict);
     return false;
   }
-  bool ReportConflict(absl::Span<IntegerLiteral> integer_reason) {
+  bool ReportConflict(absl::Span<const IntegerLiteral> integer_reason) {
     DCHECK(ReasonIsValid({}, integer_reason));
     std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->clear();
@@ -645,8 +648,8 @@ class IntegerTrail : public SatPropagator {
  private:
   // Used for DHECKs to validate the reason given to the public functions above.
   // Tests that all Literal are false. Tests that all IntegerLiteral are true.
-  bool ReasonIsValid(absl::Span<Literal> literal_reason,
-                     absl::Span<IntegerLiteral> integer_reason);
+  bool ReasonIsValid(absl::Span<const Literal> literal_reason,
+                     absl::Span<const IntegerLiteral> integer_reason);
 
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;
@@ -655,8 +658,8 @@ class IntegerTrail : public SatPropagator {
   // an integer literal and maintained by encoder_.
   bool EnqueueAssociatedLiteral(Literal literal,
                                 int trail_index_with_same_reason,
-                                absl::Span<Literal> literal_reason,
-                                absl::Span<IntegerLiteral> integer_reason,
+                                absl::Span<const Literal> literal_reason,
+                                absl::Span<const IntegerLiteral> integer_reason,
                                 BooleanVariable* variable_with_same_reason);
 
   // Returns the lowest trail index of a TrailEntry that can be used to explain
@@ -698,7 +701,7 @@ class IntegerTrail : public SatPropagator {
 
   // Used by GetOrCreateConstantIntegerVariable() to return already created
   // constant variables that share the same value.
-  std::unordered_map<IntegerValue, IntegerVariable> constant_map_;
+  absl::flat_hash_map<IntegerValue, IntegerVariable> constant_map_;
 
   // The integer trail. It always start by num_vars sentinel values with the
   // level 0 bounds (in one to one correspondence with vars_).
@@ -736,7 +739,7 @@ class IntegerTrail : public SatPropagator {
   //
   // TODO(user): Avoid using hash_map here, a simple vector should be more
   // efficient, but we need the "rev" aspect.
-  RevMap<std::unordered_map<IntegerVariable, int>>
+  RevMap<absl::flat_hash_map<IntegerVariable, int>>
       var_to_current_lb_interval_index_;
 
   // Temporary data used by MergeReasonInto().

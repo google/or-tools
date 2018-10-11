@@ -23,6 +23,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/preprocessor.h"
 #include "ortools/glop/status.h"
 #include "ortools/graph/strongly_connected_components.h"
 
@@ -96,6 +97,18 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   DCHECK(!lp_constraint_is_registered_);
   lp_constraint_is_registered_ = true;
   model->GetOrCreate<LinearProgrammingConstraintCollection>()->push_back(this);
+
+  // Because sometimes we split a == constraint in two (>= and <=), it make
+  // sense to run the proportional_row presolve to regroup them together. Note
+  // that it doesn't change the number of variable so we don't need any
+  // postsolve.
+  {
+    glop::GlopParameters parameters;
+    glop::ProportionalRowPreprocessor proportional_row(&parameters);
+    proportional_row.Run(&lp_data_);
+    glop::EmptyConstraintPreprocessor empty_row(&parameters);
+    empty_row.Run(&lp_data_);
+  }
 
   // Note that the order is important so that the lp objective is exactly the
   // same as the cp objective after scaling by the factor stored in lp_data_.
@@ -321,6 +334,41 @@ bool LinearProgrammingConstraint::Propagate() {
       FillReducedCostsReason();
       const IntegerLiteral deduction =
           IntegerLiteral::GreaterOrEqual(objective_cp_, new_lb);
+
+      // If we have some "slack", we report any conflict ourselves which allow
+      // to relax the reason.
+      //
+      // TODO(user): This code seems to cause some issue on two flatzinc
+      // problems (radiation_i8-7_sat.fzn and model_data2_6_12_sat.fzn) even if
+      // we increase the tolerance. Investigate more.
+      if (/* DISABLES CODE */ (false) &&
+          new_lb > integer_trail_->UpperBound(objective_cp_)) {
+        // We assume a relative precision of 1e-6 compared to the infinity norm
+        // of the coeffs. We also prefer an integer scaling factor because it
+        // seems that in practice, many reduced costs will be integer.
+        double max_magnitude = 0.0;
+        for (const double positive_coeff : reason_reduced_costs_) {
+          max_magnitude = std::max(max_magnitude, positive_coeff);
+        }
+        const int64 scaling =
+            std::round(std::max(1.0, 1e6 / std::max(1.0, max_magnitude)));
+        std::vector<IntegerValue> coeffs;
+        for (const double coeff : reason_reduced_costs_) {
+          coeffs.push_back(IntegerValue(std::ceil(scaling * coeff)));
+        }
+
+        // Add the objective upper bound.
+        integer_reason_.push_back(
+            integer_trail_->UpperBoundAsLiteral(objective_cp_));
+        coeffs.push_back(IntegerValue(scaling));
+
+        const IntegerValue diff =
+            new_lb - integer_trail_->UpperBound(objective_cp_);
+        integer_trail_->RelaxLinearReason(diff * scaling - 1, coeffs,
+                                          &integer_reason_);
+        return integer_trail_->ReportConflict({}, integer_reason_);
+      }
+
       if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
         return false;
       }
@@ -408,19 +456,19 @@ bool LinearProgrammingConstraint::Propagate() {
 
 void LinearProgrammingConstraint::FillReducedCostsReason() {
   integer_reason_.clear();
+  reason_reduced_costs_.clear();
   const int num_vars = integer_variables_.size();
+  const double objective_scale = lp_data_.objective_scaling_factor();
   for (int i = 0; i < num_vars; i++) {
-    // TODO(user): try to extend the bounds that are put in the
-    // explanation of feasibility: can we compute bounds of variables for which
-    // the objective would still not be low/high enough for the problem to be
-    // feasible? If the violation minimum is 10 and a variable has rc 1,
-    // then decreasing it by 9 would still leave the problem infeasible.
-    // Using this could allow to generalize some explanations.
     const double rc = simplex_.GetReducedCost(glop::ColIndex(i));
+    const double scaled_rc =
+        rc * CpToLpScalingFactor(glop::ColIndex(i)) * objective_scale;
     if (rc > kLpEpsilon) {
+      reason_reduced_costs_.push_back(scaled_rc);
       integer_reason_.push_back(
           integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
     } else if (rc < -kLpEpsilon) {
+      reason_reduced_costs_.push_back(-scaled_rc);
       integer_reason_.push_back(
           integer_trail_->UpperBoundAsLiteral(integer_variables_[i]));
     }

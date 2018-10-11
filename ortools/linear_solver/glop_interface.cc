@@ -19,8 +19,6 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/port.h"
-#include "ortools/base/stringprintf.h"
 
 #include "ortools/base/hash.h"
 #include "ortools/glop/lp_solver.h"

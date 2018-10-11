@@ -236,10 +236,9 @@ void PrecedencesPropagator::AdjustSizeFor(IntegerVariable i) {
   }
 }
 
-void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
-                                   IntegerValue offset,
-                                   IntegerVariable offset_var,
-                                   absl::Span<Literal> presence_literals) {
+void PrecedencesPropagator::AddArc(
+    IntegerVariable tail, IntegerVariable head, IntegerValue offset,
+    IntegerVariable offset_var, absl::Span<const Literal> presence_literals) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   AdjustSizeFor(tail);
   AdjustSizeFor(head);

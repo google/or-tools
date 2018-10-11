@@ -15,11 +15,11 @@
 
 #include <algorithm>
 #include <fstream>
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_split.h"
+#include "absl/time/clock.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/numbers.h"
-#include "ortools/base/split.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/time_support.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -52,7 +52,7 @@ bool DratChecker::Clause::IsDeleted(ClauseIndex clause_index) const {
   return deleted_index <= clause_index;
 }
 
-void DratChecker::AddProblemClause(absl::Span<Literal> clause) {
+void DratChecker::AddProblemClause(absl::Span<const Literal> clause) {
   DCHECK_EQ(first_infered_clause_index_, kNoClauseIndex);
   const ClauseIndex clause_index = AddClause(clause);
 
@@ -65,7 +65,7 @@ void DratChecker::AddProblemClause(absl::Span<Literal> clause) {
   }
 }
 
-void DratChecker::AddInferedClause(absl::Span<Literal> clause) {
+void DratChecker::AddInferedClause(absl::Span<const Literal> clause) {
   const ClauseIndex infered_clause_index = AddClause(clause);
   if (first_infered_clause_index_ == kNoClauseIndex) {
     first_infered_clause_index_ = infered_clause_index;
@@ -85,7 +85,7 @@ void DratChecker::AddInferedClause(absl::Span<Literal> clause) {
   }
 }
 
-ClauseIndex DratChecker::AddClause(absl::Span<Literal> clause) {
+ClauseIndex DratChecker::AddClause(absl::Span<const Literal> clause) {
   const int first_literal_index = literals_.size();
   literals_.insert(literals_.end(), clause.begin(), clause.end());
   // Sort the input clause in strictly increasing order (by sorting and then
@@ -107,7 +107,7 @@ ClauseIndex DratChecker::AddClause(absl::Span<Literal> clause) {
   return ClauseIndex(clauses_.size() - 1);
 }
 
-void DratChecker::DeleteClause(absl::Span<Literal> clause) {
+void DratChecker::DeleteClause(absl::Span<const Literal> clause) {
   // Temporarily add 'clause' to find if it has been previously added.
   const auto it = clause_set_.find(AddClause(clause));
   if (it != clause_set_.end()) {
@@ -219,7 +219,7 @@ std::vector<std::vector<Literal>> DratChecker::GetClausesNeededForProof(
   for (ClauseIndex i = begin; i < end; ++i) {
     const Clause& clause = clauses_[i];
     if (clause.is_needed_for_proof) {
-      const absl::Span<Literal>& literals = Literals(clause);
+      const absl::Span<const Literal>& literals = Literals(clause);
       result.emplace_back(literals.begin(), literals.end());
       if (clause.rat_literal_index != kNoLiteralIndex) {
         const int rat_literal_clause_index =
@@ -233,9 +233,9 @@ std::vector<std::vector<Literal>> DratChecker::GetClausesNeededForProof(
   return result;
 }
 
-absl::Span<Literal> DratChecker::Literals(const Clause& clause) const {
-  return absl::Span<Literal>(literals_.data() + clause.first_literal_index,
-                             clause.num_literals);
+absl::Span<const Literal> DratChecker::Literals(const Clause& clause) const {
+  return absl::Span<const Literal>(
+      literals_.data() + clause.first_literal_index, clause.num_literals);
 }
 
 void DratChecker::Init() {
@@ -274,7 +274,7 @@ void DratChecker::WatchClause(ClauseIndex clause_index) {
 }
 
 bool DratChecker::HasRupProperty(ClauseIndex num_clauses,
-                                 absl::Span<Literal> clause) {
+                                 absl::Span<const Literal> clause) {
   ClauseIndex conflict = kNoClauseIndex;
   for (const Literal literal : clause) {
     conflict =
@@ -456,11 +456,12 @@ void DratChecker::LogStatistics(int64 duration_nanos) const {
   LOG(INFO) << "verification time: " << 1e-9 * duration_nanos << " s";
 }
 
-bool ContainsLiteral(absl::Span<Literal> clause, Literal literal) {
+bool ContainsLiteral(absl::Span<const Literal> clause, Literal literal) {
   return std::find(clause.begin(), clause.end(), literal) != clause.end();
 }
 
-bool Resolve(absl::Span<Literal> clause, absl::Span<Literal> other_clause,
+bool Resolve(absl::Span<const Literal> clause,
+             absl::Span<const Literal> other_clause,
              Literal complementary_literal, VariablesAssignment* assignment,
              std::vector<Literal>* resolvent) {
   DCHECK(ContainsLiteral(clause, complementary_literal));
@@ -507,17 +508,16 @@ bool AddProblemClauses(const std::string& file_path,
   bool result = true;
   while (std::getline(file, line)) {
     line_number++;
-    std::vector<std::string> words =
-        absl::StrSplit(line, absl::delimiter::AnyOf(" \t"), absl::SkipEmpty());
+    std::vector<absl::string_view> words =
+        absl::StrSplit(line, absl::ByAnyChar(" \t"), absl::SkipWhitespace());
     if (words.empty() || words[0] == "c") {
       // Ignore empty and comment lines.
       continue;
     }
     if (words[0] == "p") {
       if (num_clauses > 0 || words.size() != 4 || words[1] != "cnf" ||
-          !strings::safe_strto32(words[2], &num_variables) ||
-          num_variables <= 0 ||
-          !strings::safe_strto32(words[3], &num_clauses) || num_clauses <= 0) {
+          !absl::SimpleAtoi(words[2], &num_variables) || num_variables <= 0 ||
+          !absl::SimpleAtoi(words[3], &num_clauses) || num_clauses <= 0) {
         LOG(ERROR) << "Invalid content '" << line << "' at line " << line_number
                    << " of " << file_path;
         result = false;
@@ -528,7 +528,7 @@ bool AddProblemClauses(const std::string& file_path,
     literals.clear();
     for (int i = 0; i < words.size(); ++i) {
       int signed_value;
-      if (!strings::safe_strto32(words[i], &signed_value) ||
+      if (!absl::SimpleAtoi(words[i], &signed_value) ||
           std::abs(signed_value) > num_variables ||
           (signed_value == 0 && i != words.size() - 1)) {
         LOG(ERROR) << "Invalid content '" << line << "' at line " << line_number
@@ -556,13 +556,13 @@ bool AddInferedAndDeletedClauses(const std::string& file_path,
   bool result = true;
   while (std::getline(file, line)) {
     line_number++;
-    std::vector<std::string> words =
-        absl::StrSplit(line, absl::delimiter::AnyOf(" \t"), absl::SkipEmpty());
+    std::vector<absl::string_view> words =
+        absl::StrSplit(line, absl::ByAnyChar(" \t"), absl::SkipWhitespace());
     bool delete_clause = !words.empty() && words[0] == "d";
     literals.clear();
     for (int i = (delete_clause ? 1 : 0); i < words.size(); ++i) {
       int signed_value;
-      if (!strings::safe_strto32(words[i], &signed_value) ||
+      if (!absl::SimpleAtoi(words[i], &signed_value) ||
           (signed_value == 0 && i != words.size() - 1)) {
         LOG(ERROR) << "Invalid content '" << line << "' at line " << line_number
                    << " of " << file_path;

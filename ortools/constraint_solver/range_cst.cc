@@ -17,8 +17,8 @@
 #include <stddef.h>
 #include <string>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -301,9 +301,8 @@ class IsEqualCt : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("IsEqualCt(%s, %s, %s)", left_->DebugString().c_str(),
-                        right_->DebugString().c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("IsEqualCt(%s, %s, %s)", left_->DebugString(),
+                           right_->DebugString(), target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -381,9 +380,8 @@ class IsDifferentCt : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf(
-        "IsDifferentCt(%s, %s, %s)", left_->DebugString().c_str(),
-        right_->DebugString().c_str(), target_var_->DebugString().c_str());
+    return absl::StrFormat("IsDifferentCt(%s, %s, %s)", left_->DebugString(),
+                           right_->DebugString(), target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -436,9 +434,8 @@ class IsLessOrEqualCt : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf(
-        "IsLessOrEqualCt(%s, %s, %s)", left_->DebugString().c_str(),
-        right_->DebugString().c_str(), target_var_->DebugString().c_str());
+    return absl::StrFormat("IsLessOrEqualCt(%s, %s, %s)", left_->DebugString(),
+                           right_->DebugString(), target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -490,9 +487,8 @@ class IsLessCt : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("IsLessCt(%s, %s, %s)", left_->DebugString().c_str(),
-                        right_->DebugString().c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("IsLessCt(%s, %s, %s)", left_->DebugString(),
+                           right_->DebugString(), target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -612,8 +608,8 @@ IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
       if (name2.empty()) {
         name2 = v2->DebugString();
       }
-      boolvar = MakeBoolVar(
-          StringPrintf("IsEqualVar(%s, %s)", name1.c_str(), name2.c_str()));
+      boolvar =
+          MakeBoolVar(absl::StrFormat("IsEqualVar(%s, %s)", name1, name2));
       AddConstraint(MakeIsEqualCt(v1, v2, boolvar));
       model_cache_->InsertExprExprExpression(boolvar, v1, v2,
                                              ModelCache::EXPR_EXPR_IS_EQUAL);
@@ -676,8 +672,8 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
       if (name2.empty()) {
         name2 = v2->DebugString();
       }
-      boolvar = MakeBoolVar(
-          StringPrintf("IsDifferentVar(%s, %s)", name1.c_str(), name2.c_str()));
+      boolvar =
+          MakeBoolVar(absl::StrFormat("IsDifferentVar(%s, %s)", name1, name2));
       AddConstraint(MakeIsDifferentCt(v1, v2, boolvar));
     }
     model_cache_->InsertExprExprExpression(boolvar, v1, v2,
@@ -720,8 +716,8 @@ IntVar* Solver::MakeIsLessOrEqualVar(IntExpr* const left,
     if (name2.empty()) {
       name2 = right->DebugString();
     }
-    IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("IsLessOrEqual(%s, %s)", name1.c_str(), name2.c_str()));
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("IsLessOrEqual(%s, %s)", name1, name2));
 
     AddConstraint(RevAlloc(new IsLessOrEqualCt(this, left, right, boolvar)));
     model_cache_->InsertExprExprExpression(
@@ -763,8 +759,8 @@ IntVar* Solver::MakeIsLessVar(IntExpr* const left, IntExpr* const right) {
     if (name2.empty()) {
       name2 = right->DebugString();
     }
-    IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("IsLessOrEqual(%s, %s)", name1.c_str(), name2.c_str()));
+    IntVar* const boolvar =
+        MakeBoolVar(absl::StrFormat("IsLessOrEqual(%s, %s)", name1, name2));
 
     AddConstraint(RevAlloc(new IsLessCt(this, left, right, boolvar)));
     model_cache_->InsertExprExprExpression(boolvar, left, right,

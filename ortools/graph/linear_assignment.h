@@ -204,11 +204,11 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
@@ -392,8 +392,8 @@ class LinearSumAssignment {
     }
     std::string StatsString() const {
       return absl::StrFormat(
-          "%lld refinements; %lld relabelings; "
-          "%lld double pushes; %lld pushes",
+          "%d refinements; %d relabelings; "
+          "%d double pushes; %d pushes",
           refinements_, relabelings_, double_pushes_, pushes_);
     }
     int64 pushes_;
