@@ -38,6 +38,7 @@ endif
 
 # Main target
 .PHONY: python # Build Python OR-Tools.
+.PHONY: check_python # Quick check only running few Python OR-Tools examples.
 .PHONY: test_python # Test Python OR-Tools using various examples.
 ifneq ($(PYTHON_EXECUTABLE),)
 python: \
@@ -50,6 +51,8 @@ python: \
  pysat \
  pyrcpsp
 
+check_python: check_python_examples
+
 test_python: \
  test_python_tests \
  test_python_samples \
@@ -61,6 +64,7 @@ python:
 	@echo PYTHON_EXECUTABLE = "${PYTHON_EXECUTABLE}"
 	$(warning Cannot find '$(PYTHON_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
 
+check_python: python
 test_python: python
 endif
 
@@ -451,6 +455,31 @@ endif
 ###############################
 ##  Python Examples/Samples  ##
 ###############################
+.PHONY: check_python_examples
+check_python_examples: python
+	$(MAKE) rpy_linear_programming
+#	$(MAKE) rpy_constraint_programming_cp
+#	$(MAKE) rpy_constraint_programming_sat
+#	$(MAKE) rpy_rabbits_pheasants_cp
+#	$(MAKE) rpy_rabbits_pheasants_sat
+#	$(MAKE) rpy_cryptarithmetic_cp
+#	$(MAKE) rpy_cryptarithmetic_sat
+#	$(MAKE) rpy_nqueens_cp
+#	$(MAKE) rpy_nqueens_sat
+#	$(MAKE) rpy_integer_programming
+#	$(MAKE) rpy_tsp
+#	$(MAKE) rpy_vrp
+#	$(MAKE) rpy_cvrp
+#	$(MAKE) rpy_cvrptw
+#	$(MAKE) rpy_knapsack
+#	$(MAKE) rpy_max_flow
+#	$(MAKE) rpy_min_cost_flow
+#	$(MAKE) rpy_assignment
+#	$(MAKE) rpy_nurses_cp
+#	$(MAKE) rpy_nurses_sat
+#	$(MAKE) rpy_job_shop_cp
+#	$(MAKE) rpy_job_shop_sat
+
 .PHONY: test_python_tests # Run all Python Tests (located in examples/tests)
 test_python_tests: python
 	$(MAKE) rpy_test_cp_api
