@@ -46,10 +46,10 @@ namespace operations_research {
     int count = 0;
     while (solver.NextSolution()) {
       count++;
-      LOG(INFO) << "Solution " << count << ":";
-      LOG(INFO) << "x = " << x->Value()
-        << " ; y = " << x->Value()
-        << " ; z = " << z->Value();
+      LOG(INFO) << "Solution " << count
+        << ": x = " << x->Value()
+        << "; y = " << x->Value()
+        << "; z = " << z->Value();
     }
     LOG(INFO) << "Number of solutions: " << count;
     LOG(INFO) << "";
