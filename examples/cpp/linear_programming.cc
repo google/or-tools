@@ -25,7 +25,7 @@ namespace operations_research {
     MPVariable* const x = solver.MakeNumVar(0.0, infinity, "x");
     MPVariable* const y = solver.MakeNumVar(0.0, infinity, "y");
 
-    // Objectif function: Maximize 3x + 4y).
+    // Objectif function: Maximize 3x + 4y.
     MPObjective* const objective = solver.MutableObjective();
     objective->SetCoefficient(x, 3);
     objective->SetCoefficient(y, 4);
