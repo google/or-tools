@@ -31,6 +31,8 @@ namespace operations_research {
     std::vector<IntVar*> xyvars = {x, y};
     solver.AddConstraint(solver.MakeAllDifferent(xyvars));
 
+    LOG(INFO) << "Number of constraints: " << solver.constraints();
+
     // Create decision builder to search for solutions.
     std::vector<IntVar*> allvars = {x, y, z};
     DecisionBuilder* const db = solver.MakePhase(
@@ -38,23 +40,19 @@ namespace operations_research {
         Solver::CHOOSE_FIRST_UNBOUND,
         Solver::ASSIGN_MIN_VALUE);
 
-    bool has_result = solver.Solve(db);
-    // Check that the problem has a solution.
-    if (has_result != true) {
-      LOG(FATAL) << "The problem does not have a solution!";
-    }
-    int count = 0;
+    solver.NewSearch(db);
     while (solver.NextSolution()) {
-      count++;
-      LOG(INFO) << "Solution " << count
+      LOG(INFO) << "Solution"
         << ": x = " << x->Value()
         << "; y = " << x->Value()
         << "; z = " << z->Value();
     }
-    LOG(INFO) << "Number of solutions: " << count;
+    solver.EndSearch();
+    LOG(INFO) << "Number of solutions: " << solver.solutions();
     LOG(INFO) << "";
     LOG(INFO) << "Advanced usage:";
     LOG(INFO) << "Problem solved in " << solver.wall_time() << "ms";
+    LOG(INFO) << "Memory usage: " << Solver::MemoryUsage() << " bytes";
   }
 }  // namespace operations_research
 
