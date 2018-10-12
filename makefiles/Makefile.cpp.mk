@@ -401,6 +401,7 @@ $(OBJ_DIR)/sat_runner.$O: \
 .PHONY: check_cc_examples
 check_cc_examples: cc
 	$(MAKE) rcc_linear_programming
+	$(MAKE) rcc_stigler_diet
 	$(MAKE) rcc_constraint_programming_cp
 	$(MAKE) rcc_rabbits_pheasants_cp
 	$(MAKE) rcc_integer_programming

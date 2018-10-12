@@ -458,6 +458,7 @@ endif
 .PHONY: check_python_examples
 check_python_examples: python
 	$(MAKE) rpy_linear_programming
+	$(MAKE) rpy_stigler_diet
 #	$(MAKE) rpy_constraint_programming_cp
 #	$(MAKE) rpy_constraint_programming_sat
 #	$(MAKE) rpy_rabbits_pheasants_cp

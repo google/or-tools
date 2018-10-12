@@ -250,6 +250,9 @@ void RunStiglerDietExample() {
     }
   }
 
+  LOG(INFO) << "Number of variables = " << solver.NumVariables();
+  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
+
   // Solve!
   const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
@@ -262,31 +265,26 @@ void RunStiglerDietExample() {
     }
     return;
   }
-  LOG(INFO) << "Optimal Solution:";
-  // Display the amounts (in dollars) to purchase of each food.
-  double price = 0.0;
+
   std::vector<double> nutrients_result(nutrients.size());
   LOG(INFO) << "";
-  LOG(INFO) << "Menu:";
+  LOG(INFO) << "Annual Foods:";
   for (std::size_t i = 0; i < data.size(); ++i) {
-    price += food[i]->solution_value();
-
+    if (food[i]->solution_value() > 0.0) {
+      LOG(INFO) << data[i].name << ": $" << 365. * food[i]->solution_value();
+    }
     for (std::size_t j = 0; j < nutrients.size(); ++j) {
       nutrients_result[j] += data[i].nutrients[j] * food[i]->solution_value();
     }
-
-    if (food[i]->solution_value() > 0.0) {
-      LOG(INFO) << data[i].name << " = " << food[i]->solution_value();
-    }
   }
   LOG(INFO) << "";
-  LOG(INFO) << "Nutrients:";
+  LOG(INFO) << "Optimal annual price: $" << 365. * objective->Value();
+  LOG(INFO) << "";
+  LOG(INFO) << "Nutrients per day:";
   for (std::size_t i = 0; i < nutrients.size(); ++i) {
     LOG(INFO) << nutrients[i].first << ": " << nutrients_result[i] << " (min "
               << nutrients[i].second << ")";
   }
-  LOG(INFO) << "";
-  LOG(INFO) << "Optimal annual price: " << 365 * price << "cents";
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
   LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
