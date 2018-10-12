@@ -18,8 +18,9 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
-  void RunLinearProgrammingExample() {
-    MPSolver solver("LinearProgrammingExample", MPSolver::GLOP_LINEAR_PROGRAMMING);
+  void RunLinearProgrammingExample(
+      MPSolver::OptimizationProblemType optimization_problem_type) {
+    MPSolver solver("LinearProgrammingExample", optimization_problem_type);
     const double infinity = solver.infinity();
     // x and y are continuous non-negative variables.
     MPVariable* const x = solver.MakeNumVar(0.0, infinity, "x");
@@ -72,11 +73,38 @@ namespace operations_research {
     LOG(INFO) << "c2: dual value = " << c2->dual_value()
       << " activity = " << activities[c2->index()];
   }
+
+  void RunAllExamples() {
+#if defined(USE_GLOP)
+    LOG(INFO) << "---- Linear programming example with GLOP ----";
+    RunLinearProgrammingExample(MPSolver::GLOP_LINEAR_PROGRAMMING);
+#endif  // USE_GLOP
+#if defined(USE_CLP)
+    LOG(INFO) << "---- Linear programming example with CLP ----";
+    RunLinearProgrammingExample(MPSolver::CLP_LINEAR_PROGRAMMING);
+#endif  // USE_CLP
+#if defined(USE_GLPK)
+    LOG(INFO) << "---- Linear programming example with GLPK ----";
+    RunLinearProgrammingExample(MPSolver::GLPK_LINEAR_PROGRAMMING);
+#endif  // USE_GLPK
+#if defined(USE_SLM)
+    LOG(INFO) << "---- Linear programming example with Sulum ----";
+    RunLinearProgrammingExample(MPSolver::SULUM_LINEAR_PROGRAMMING);
+#endif  // USE_SLM
+#if defined(USE_GUROBI)
+    LOG(INFO) << "---- Linear programming example with Gurobi ----";
+    RunLinearProgrammingExample(MPSolver::GUROBI_LINEAR_PROGRAMMING);
+#endif  // USE_GUROBI
+#if defined(USE_CPLEX)
+    LOG(INFO) << "---- Linear programming example with CPLEX ----";
+    RunLinearProgrammingExample(MPSolver::CPLEX_LINEAR_PROGRAMMING);
+#endif  // USE_CPLEX
+  }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
-  operations_research::RunLinearProgrammingExample();
+  operations_research::RunAllExamples();
   return 0;
 }
