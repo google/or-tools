@@ -19,10 +19,10 @@
 // The problem is trivial for odd orders, but not for even orders.
 // We do not handle odd orders with the trivial method here.
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_int32(size, 0, "Size of the magic square.");
@@ -106,7 +106,9 @@ void MagicSquare(int grid_size) {
           DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT;
       break;
     }
-    default: { LOG(FATAL) << "Should not be here"; }
+    default: {
+      LOG(FATAL) << "Should not be here";
+    }
   }
   parameters.value_selection_schema =
       FLAGS_select_max_impact_value ? DefaultPhaseParameters::SELECT_MAX_IMPACT
@@ -134,7 +136,7 @@ void MagicSquare(int grid_size) {
       std::string output;
       for (int m = 0; m < grid_size; ++m) {  // extract row indices
         int64 v = vars[n * grid_size + m]->Value();
-        StringAppendF(&output, "%3lld ", v);
+        absl::StrAppendFormat(&output, "%3d ", v);
       }
       LOG(INFO) << output;
     }

@@ -23,9 +23,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "absl/strings/str_split.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/split.h"
 #include "ortools/base/strtoint.h"
 
 namespace operations_research {

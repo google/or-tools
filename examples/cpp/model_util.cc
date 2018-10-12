@@ -13,18 +13,17 @@
 
 #include <memory>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/recordio.h"
 #include "ortools/base/status.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/model.pb.h"
-#include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/util/graph_export.h"
 #include "ortools/util/string_array.h"
 
@@ -64,17 +63,19 @@ static const char kYellow[] = "#FFF68F";
 static const char kRed[] = "#A52A2A";
 
 // Creates node labels.
-std::string ExprLabel(int index) { return StringPrintf("expr_%i", index); }
+std::string ExprLabel(int index) { return absl::StrFormat("expr_%i", index); }
 
 std::string IntervalLabel(int index) {
-  return StringPrintf("interval_%i", index);
+  return absl::StrFormat("interval_%i", index);
 }
 
 std::string SequenceLabel(int index) {
-  return StringPrintf("sequence_%i", index);
+  return absl::StrFormat("sequence_%i", index);
 }
 
-std::string ConstraintLabel(int index) { return StringPrintf("ct_%i", index); }
+std::string ConstraintLabel(int index) {
+  return absl::StrFormat("ct_%i", index);
+}
 
 // Scans argument to add links in the graph.
 template <class T>

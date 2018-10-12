@@ -19,6 +19,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/string_view_utils.h"
 #include "examples/cpp/opb_reader.h"
 #include "examples/cpp/sat_cnf_reader.h"
 #include "google/protobuf/text_format.h"
@@ -26,11 +30,8 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/boolean_problem.h"
@@ -317,7 +318,7 @@ int Run() {
     }
     if (result == SatSolver::LIMIT_REACHED) {
       if (FLAGS_qmaxsat) {
-        solver.reset(new SatSolver());
+        solver = absl::make_unique<SatSolver>();
         solver->SetParameters(parameters);
         CHECK(LoadBooleanProblem(problem, solver.get()));
         result = SolveWithCardinalityEncoding(STDOUT_LOG, problem, solver.get(),
@@ -408,9 +409,9 @@ int Run() {
 
   // Print final statistics.
   printf("c booleans: %d\n", solver->NumVariables());
-  printf("c conflicts: %lld\n", solver->num_failures());
-  printf("c branches: %lld\n", solver->num_branches());
-  printf("c propagations: %lld\n", solver->num_propagations());
+  absl::PrintF("c conflicts: %d\n", solver->num_failures());
+  absl::PrintF("c branches: %d\n", solver->num_branches());
+  absl::PrintF("c propagations: %d\n", solver->num_propagations());
   printf("c walltime: %f\n", wall_timer.Get());
   printf("c usertime: %f\n", user_timer.Get());
   printf("c deterministic_time: %f\n", solver->deterministic_time());

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string>
 
+#include "absl/strings/match.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
@@ -24,14 +25,13 @@
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/base/strutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/mps_reader.h"
 #include "ortools/lp_data/proto_utils.h"
+#include "ortools/util/file_util.h"
 #include "ortools/util/proto_tools.h"
 
 DEFINE_bool(mps_dump_problem, false, "Dumps problem in readable form.");
@@ -50,6 +50,8 @@ DEFINE_string(params, "",
 
 using google::protobuf::TextFormat;
 using operations_research::FullProtocolMessageAsString;
+using operations_research::HasSuffixString;
+using operations_research::ReadFileToProto;
 using operations_research::glop::GetProblemStatusString;
 using operations_research::glop::GlopParameters;
 using operations_research::glop::LinearProgram;
@@ -97,7 +99,7 @@ int main(int argc, char* argv[]) {
         continue;
       }
     } else {
-      file::ReadFileToProto(file_name, &model_proto);
+      ReadFileToProto(file_name, &model_proto);
       MPModelProtoToLinearProgram(model_proto, &linear_program);
     }
     if (FLAGS_mps_dump_problem) {

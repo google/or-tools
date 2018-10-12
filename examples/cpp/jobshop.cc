@@ -37,11 +37,11 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_string(
@@ -77,8 +77,8 @@ void Jobshop(const JobShopData& data) {
       const JobShopData::Task& task = tasks[task_index];
       CHECK_EQ(job_id, task.job_id);
       const std::string name =
-          StringPrintf("J%dM%dI%dD%d", task.job_id, task.machine_id, task_index,
-                       task.duration);
+          absl::StrFormat("J%dM%dI%dD%d", task.job_id, task.machine_id,
+                          task_index, task.duration);
       IntervalVar* const one_task = solver.MakeFixedDurationIntervalVar(
           0, horizon, task.duration, false, name);
       jobs_to_tasks[task.job_id].push_back(one_task);
@@ -105,7 +105,7 @@ void Jobshop(const JobShopData& data) {
   // whose job is to sequence interval variables.
   std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
-    const std::string name = StringPrintf("Machine_%d", machine_id);
+    const std::string name = absl::StrFormat("Machine_%d", machine_id);
     DisjunctiveConstraint* const ct =
         solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
     solver.AddConstraint(ct);

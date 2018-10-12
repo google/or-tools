@@ -24,12 +24,13 @@
 #include <ctime>
 #include <set>
 #include <utility>
+#include "absl/strings/str_format.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/random.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -358,7 +359,7 @@ void CostasSoft(const int dim) {
     for (int n = 0; n < dim; ++n) {
       const int64 v = collector->Value(0, vars[n]);
       costas_matrix.push_back(v);
-      StringAppendF(&output, "%3lld", v);
+      absl::StrAppendFormat(&output, "%3d", v);
     }
 
     if (!CheckCostas(costas_matrix)) {
@@ -408,7 +409,7 @@ void CostasHard(const int dim) {
     for (int n = 0; n < dim; ++n) {
       const int64 v = vars[n]->Value();
       costas_matrix.push_back(v);
-      StringAppendF(&output, "%3lld", v);
+      absl::StrAppendFormat(&output, "%3d", v);
     }
 
     LOG(INFO) << output << " (" << solver.wall_time() << "ms)";

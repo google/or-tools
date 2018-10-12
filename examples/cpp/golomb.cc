@@ -26,10 +26,10 @@
 
 #include <cstdio>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_bool(print, false, "If true, print the minimal solution.");
@@ -54,7 +54,7 @@ void GolombRuler(int size) {
   ticks[0] = s.MakeIntConst(0);  // X(0) = 0
   const int64 max = 1 + size * size * size;
   for (int i = 1; i < size; ++i) {
-    ticks[i] = s.MakeIntVar(1, max, StringPrintf("X%02d", i));
+    ticks[i] = s.MakeIntVar(1, max, absl::StrFormat("X%02d", i));
   }
   std::vector<IntVar*> diffs;
   for (int i = 0; i < size; ++i) {

@@ -21,33 +21,42 @@
 
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "examples/cpp/cvrptw_lib.h"
-#include "ortools/base/callback.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/random.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_enums.pb.h"
-#include "ortools/constraint_solver/routing_flags.h"
+#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/routing_parameters.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
 
 using operations_research::ACMRandom;
+using operations_research::Assignment;
+using operations_research::DefaultRoutingSearchParameters;
 using operations_research::GetSeed;
 using operations_research::IntervalVar;
+using operations_research::IntVar;
 using operations_research::LocationContainer;
 using operations_research::RandomDemand;
+using operations_research::RoutingDimension;
+using operations_research::RoutingIndexManager;
 using operations_research::RoutingModel;
+using operations_research::RoutingNodeIndex;
 using operations_research::RoutingSearchParameters;
+using operations_research::Solver;
 using operations_research::StopServiceTimePlusTransition;
-using operations_research::StringAppendF;
-using operations_research::StringPrintf;
 
 DEFINE_int32(vrp_stops, 25, "Stop locations in the problem.");
 DEFINE_int32(vrp_orders_per_stop, 5, "Nodes for each stop.");
 DEFINE_int32(vrp_vehicles, 20, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(vrp_use_deterministic_random_seed, false,
             "Use deterministic random seeds.");
+DEFINE_string(routing_search_parameters, "",
+              "Text proto RoutingSearchParameters (possibly partial) that will "
+              "override the DefaultRoutingSearchParameters()");
 
 const char* kTime = "Time";
 const char* kCapacity = "Capacity";
@@ -61,13 +70,9 @@ int main(int argc, char** argv) {
   const int vrp_orders = FLAGS_vrp_stops * FLAGS_vrp_orders_per_stop;
   // Nodes are indexed from 0 to vrp_orders, the starts and ends of the routes
   // are at node 0.
-  const RoutingModel::NodeIndex kDepot(0);
-  RoutingModel routing(vrp_orders + 1, FLAGS_vrp_vehicles, kDepot);
-  RoutingSearchParameters parameters =
-      operations_research::BuildSearchParametersFromFlags();
-  parameters.set_first_solution_strategy(
-      operations_research::FirstSolutionStrategy::PATH_CHEAPEST_ARC);
-  parameters.mutable_local_search_operators()->set_use_path_lns(false);
+  const RoutingIndexManager::NodeIndex kDepot(0);
+  RoutingIndexManager manager(vrp_orders + 1, FLAGS_vrp_vehicles, kDepot);
+  RoutingModel routing(manager);
 
   // Setting up locations.
   const int64 kXMax = 100000;
@@ -80,28 +85,40 @@ int main(int argc, char** argv) {
   }
 
   // Setting the cost function.
-  routing.SetArcCostEvaluatorOfAllVehicles(
-      NewPermanentCallback(&locations, &LocationContainer::ManhattanDistance));
+  const int vehicle_cost =
+      routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
+        return locations.ManhattanDistance(manager.IndexToNode(i),
+                                           manager.IndexToNode(j));
+      });
+  routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
   const int64 kVehicleCapacity = 40;
   const int64 kNullCapacitySlack = 0;
-  RandomDemand demand(routing.nodes(), kDepot,
+  RandomDemand demand(manager.num_nodes(), kDepot,
                       FLAGS_vrp_use_deterministic_random_seed);
   demand.Initialize();
-  routing.AddDimension(NewPermanentCallback(&demand, &RandomDemand::Demand),
-                       kNullCapacitySlack, kVehicleCapacity,
-                       /*fix_start_cumul_to_zero=*/true, kCapacity);
+  routing.AddDimension(
+      routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
+        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
+      }),
+      kNullCapacitySlack, kVehicleCapacity,
+      /*fix_start_cumul_to_zero=*/true, kCapacity);
 
   // Adding time dimension constraints.
   const int64 kStopTime = 300;
   const int64 kHorizon = 24 * 3600;
   StopServiceTimePlusTransition time(
       kStopTime, locations,
-      NewPermanentCallback(&locations, &LocationContainer::ManhattanTime));
+      [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
+        return locations.ManhattanTime(i, j);
+      });
   routing.AddDimension(
-      NewPermanentCallback(&time, &StopServiceTimePlusTransition::Compute),
+      routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
+        return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
+      }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding time windows, for the sake of simplicty same for each stop.
   ACMRandom randomizer(GetSeed(FLAGS_vrp_use_deterministic_random_seed));
@@ -111,12 +128,12 @@ int main(int argc, char** argv) {
     for (int stop_order = 0; stop_order < FLAGS_vrp_orders_per_stop;
          ++stop_order) {
       const int order = stop * FLAGS_vrp_orders_per_stop + stop_order + 1;
-      routing.CumulVar(order, kTime)->SetRange(start, start + kTWDuration);
+      time_dimension.CumulVar(order)->SetRange(start, start + kTWDuration);
     }
   }
 
   // Adding resource constraints at order locations.
-  operations_research::Solver* const solver = routing.solver();
+  Solver* const solver = routing.solver();
   std::vector<IntervalVar*> intervals;
   for (int stop = 0; stop < FLAGS_vrp_stops; ++stop) {
     std::vector<IntervalVar*> stop_intervals;
@@ -128,15 +145,14 @@ int main(int argc, char** argv) {
       intervals.push_back(interval);
       stop_intervals.push_back(interval);
       // Link order and interval.
-      operations_research::IntVar* const order_start =
-          routing.CumulVar(order, kTime);
+      IntVar* const order_start = time_dimension.CumulVar(order);
       solver->AddConstraint(
           solver->MakeIsEqualCt(interval->SafeStartExpr(0), order_start,
                                 interval->PerformedExpr()->Var()));
       // Make interval performed iff corresponding order has service time.
       // An order has no service time iff it is at the same location as the
       // next order on the route.
-      operations_research::IntVar* const is_null_duration =
+      IntVar* const is_null_duration =
           solver
               ->MakeElement(
                   [&locations, order](int64 index) {
@@ -157,25 +173,27 @@ int main(int argc, char** argv) {
         stop_intervals, location_usage, 1, absl::StrCat("Client", stop)));
   }
   // Minimizing route duration.
-  for (int vehicle = 0; vehicle < routing.vehicles(); ++vehicle) {
+  for (int vehicle = 0; vehicle < manager.num_vehicles(); ++vehicle) {
     routing.AddVariableMinimizedByFinalizer(
-        routing.CumulVar(routing.End(vehicle), kTime));
+        time_dimension.CumulVar(routing.End(vehicle)));
   }
 
   // Adding penalty costs to allow skipping orders.
   const int64 kPenalty = 100000;
-  const RoutingModel::NodeIndex kFirstNodeAfterDepot(1);
-  for (RoutingModel::NodeIndex order = kFirstNodeAfterDepot;
+  const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
+  for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
        order < routing.nodes(); ++order) {
-    std::vector<RoutingModel::NodeIndex> orders(1, order);
+    std::vector<int64> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 
   // Solve, returns a solution if any (owned by RoutingModel).
-  const operations_research::Assignment* solution =
-      routing.SolveWithParameters(parameters);
+  RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+  CHECK(google::protobuf::TextFormat::MergeFromString(
+      FLAGS_routing_search_parameters, &parameters));
+  const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
-    DisplayPlan(routing, *solution, /*use_same_vehicle_costs=*/false,
+    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
                 /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
                 routing.GetDimensionOrDie(kCapacity),
                 routing.GetDimensionOrDie(kTime));

@@ -32,10 +32,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include "absl/strings/str_split.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/split.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model_solver.h"

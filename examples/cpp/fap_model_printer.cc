@@ -18,7 +18,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_format.h"
 
 namespace operations_research {
 
@@ -38,7 +38,7 @@ void FapModelPrinter::PrintFapVariables() {
   for (const auto& it : variables_) {
     std::string domain = "{";
     for (const int value : it.second.domain) {
-      StringAppendF(&domain, "%d ", value);
+      absl::StrAppendFormat(&domain, "%d ", value);
     }
     domain.append("}");
 
@@ -47,13 +47,13 @@ void FapModelPrinter::PrintFapVariables() {
       hard = " hard";
     }
 
-    LOG(INFO) << "Variable " << StringPrintf("%3d: ", it.first)
-              << StringPrintf("(degree: %2d) ", it.second.degree)
-              << StringPrintf("%3d", it.second.domain_index)
-              << StringPrintf("%3d", it.second.initial_position)
-              << StringPrintf("%3d", it.second.mobility_index)
-              << StringPrintf("%8d", it.second.mobility_cost)
-              << StringPrintf(" (%2d) ", it.second.domain_size) << domain
+    LOG(INFO) << "Variable " << absl::StrFormat("%3d: ", it.first)
+              << absl::StrFormat("(degree: %2d) ", it.second.degree)
+              << absl::StrFormat("%3d", it.second.domain_index)
+              << absl::StrFormat("%3d", it.second.initial_position)
+              << absl::StrFormat("%3d", it.second.mobility_index)
+              << absl::StrFormat("%8d", it.second.mobility_cost)
+              << absl::StrFormat(" (%2d) ", it.second.domain_size) << domain
               << hard;
   }
 }
@@ -66,11 +66,11 @@ void FapModelPrinter::PrintFapConstraints() {
       hard = " hard";
     }
 
-    LOG(INFO) << StringPrintf("%3d ", ct.variable1)
-              << StringPrintf("%3d ", ct.variable2) << ct.type << " "
-              << ct.operation << " " << StringPrintf("%3d", ct.value)
-              << StringPrintf("%3d", ct.weight_index)
-              << StringPrintf("%8d", ct.weight_cost) << hard;
+    LOG(INFO) << absl::StrFormat("%3d ", ct.variable1)
+              << absl::StrFormat("%3d ", ct.variable2) << ct.type << " "
+              << ct.operation << " " << absl::StrFormat("%3d", ct.value)
+              << absl::StrFormat("%3d", ct.weight_index)
+              << absl::StrFormat("%8d", ct.weight_cost) << hard;
   }
 }
 
@@ -79,10 +79,11 @@ void FapModelPrinter::PrintFapObjective() {
 }
 
 void FapModelPrinter::PrintFapValues() {
-  LOG(INFO) << StringPrintf("Values(%d): ", static_cast<int>(values_.size()));
+  LOG(INFO) << absl::StrFormat("Values(%d): ",
+                               static_cast<int>(values_.size()));
   std::string domain = " ";
   for (const int value : values_) {
-    StringAppendF(&domain, "%d ", value);
+    absl::StrAppendFormat(&domain, "%d ", value);
   }
   LOG(INFO) << domain;
 }

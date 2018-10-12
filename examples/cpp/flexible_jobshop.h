@@ -35,16 +35,18 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <sstream>
+#include <string>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/split.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
-#include "ortools/util/string_array.h"
 
 namespace operations_research {
+
 // A FlexibleJobShopData parses data files and stores all data internally for
 // easy retrieval.
 class FlexibleJobShopData {
@@ -57,10 +59,10 @@ class FlexibleJobShopData {
         : job_id(j), machines(m), durations(d) {}
 
     std::string DebugString() const {
-      std::string out = StringPrintf("Job %d Task(", job_id);
+      std::string out = absl::StrFormat("Job %d Task(", job_id);
       for (int k = 0; k < machines.size(); ++k) {
         if (k > 0) out.append(" | ");
-        out.append(StringPrintf("<m%d,%d>", machines[k], durations[k]));
+        out.append(absl::StrFormat("<m%d,%d>", machines[k], durations[k]));
       }
       out.append(")");
       return out;
@@ -80,7 +82,7 @@ class FlexibleJobShopData {
 
   ~FlexibleJobShopData() {}
 
-  // Parses a file in .fjs format and loads the model. Note that the format is
+  // Parses a file in .fjp format and loads the model. Note that the format is
   // only partially checked: bad inputs might cause undefined behavior.
   void Load(const std::string& filename) {
     size_t found = filename.find_last_of("/\\");
@@ -117,10 +119,10 @@ class FlexibleJobShopData {
 
   std::string DebugString() const {
     std::string out =
-        StringPrintf("FlexibleJobshop(name = %s, %d machines, %d jobs)\n",
-                     name_.c_str(), machine_count_, job_count_);
+        absl::StrFormat("FlexibleJobshop(name = %s, %d machines, %d jobs)\n",
+                        name_, machine_count_, job_count_);
     for (int j = 0; j < all_tasks_.size(); ++j) {
-      out.append(StringPrintf("  job %d: ", j));
+      out.append(absl::StrFormat("  job %d: ", j));
       for (int k = 0; k < all_tasks_[j].size(); ++k) {
         out.append(all_tasks_[j][k].DebugString());
         if (k < all_tasks_[j].size() - 1) {
@@ -160,6 +162,7 @@ class FlexibleJobShopData {
         }
         AddTask(current_job_index_, machines, durations);
       }
+      CHECK_EQ(index, words.size());
       current_job_index_++;
     }
   }

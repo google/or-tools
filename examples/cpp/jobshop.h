@@ -37,11 +37,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/split.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
 
 namespace operations_research {

@@ -32,16 +32,12 @@
 //
 // Search will then be applied on the sequence constraints.
 
-#include <cstdio>
-#include <cstdlib>
-
-#include "examples/cpp/flexible_jobshop.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/util/string_array.h"
 
 DEFINE_string(data_file, "", "A flexible shobshop problem (.fjs).");
 DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, 0 means no limit.");
@@ -84,8 +80,8 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
         const int machine_id = task.machines[alt];
         const int duration = task.durations[alt];
         const std::string name =
-            StringPrintf("J%dI%dA%dM%dD%d", task.job_id, task_index, alt,
-                         machine_id, duration);
+            absl::StrFormat("J%dI%dA%dM%dD%d", task.job_id, task_index, alt,
+                            machine_id, duration);
         IntervalVar* const interval = solver.MakeFixedDurationIntervalVar(
             0, horizon, duration, optional, name);
         jobs_to_tasks[job_id].back().intervals.push_back(interval);
@@ -94,7 +90,8 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
           active_variables.push_back(interval->PerformedExpr()->Var());
         }
       }
-      std::string alternative_name = StringPrintf("J%dI%d", job_id, task_index);
+      std::string alternative_name =
+          absl::StrFormat("J%dI%d", job_id, task_index);
       IntVar* alt_var =
           solver.MakeIntVar(0, task.machines.size() - 1, alternative_name);
       jobs_to_tasks[job_id].back().alternative_variable = alt_var;
@@ -140,7 +137,7 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
   // whose job is to sequence interval variables.
   std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
-    const std::string name = StringPrintf("Machine_%d", machine_id);
+    const std::string name = absl::StrFormat("Machine_%d", machine_id);
     DisjunctiveConstraint* const ct =
         solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
     solver.AddConstraint(ct);

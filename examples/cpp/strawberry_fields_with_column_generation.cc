@@ -59,16 +59,16 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 DEFINE_bool(colgen_verbose, false, "print verbosely");
 DEFINE_bool(colgen_complete, false, "generate all columns initially");
 DEFINE_int32(colgen_max_iterations, 500, "max iterations");
-DEFINE_string(colgen_solver, "glop", "solver - glop (default) or clp");
+DEFINE_string(colgen_solver, "clp", "solver - glpk or clp (default)");
 DEFINE_int32(colgen_instance, -1, "Which instance to solve (0 - 9)");
 
 namespace operations_research {
@@ -275,8 +275,8 @@ class Box {
   }
 
   std::string DebugString() const {
-    return StringPrintf("[%d,%dx%d,%d]c%d", x_min(), y_min(), x_max(), y_max(),
-                        Cost());
+    return absl::StrFormat("[%d,%dx%d,%d]c%d", x_min(), y_min(), x_max(),
+                           y_max(), Cost());
   }
 
  private:
@@ -442,11 +442,11 @@ class CoveringProblem {
 
   std::string PrintGrid() const {
     std::string output =
-        StringPrintf("width = %d, height = %d, max_boxes = %d\n", width_,
-                     height_, max_boxes_);
+        absl::StrFormat("width = %d, height = %d, max_boxes = %d\n", width_,
+                        height_, max_boxes_);
     for (int y = 0; y < height_; ++y) {
-      StringAppendF(&output, "%s\n",
-                    std::string(grid_ + width_ * y, width_).c_str());
+      absl::StrAppendFormat(&output, "%s\n",
+                            std::string(grid_ + width_ * y, width_));
     }
     return output;
   }
@@ -458,7 +458,7 @@ class CoveringProblem {
   std::string PrintCovering() const {
     static const double kTolerance = 1e-5;
     std::string output =
-        StringPrintf("cost = %lf\n", solver_->Objective().Value());
+        absl::StrFormat("cost = %f\n", solver_->Objective().Value());
     std::unique_ptr<char[]> display(new char[(width_ + 1) * height_ + 1]);
     for (int y = 0; y < height_; ++y) {
       memcpy(display.get() + y * (width_ + 1), grid_ + width_ * y,
@@ -473,8 +473,8 @@ class CoveringProblem {
         const char box_character =
             (i->second->solution_value() >= (1. - kTolerance) ? 'A' : 'a') +
             active_box_index++;
-        StringAppendF(&output, "%c: box %s with value %lf\n", box_character,
-                      i->first.DebugString().c_str(), value);
+        absl::StrAppendFormat(&output, "%c: box %s with value %f\n",
+                              box_character, i->first.DebugString(), value);
         const Box& box = i->first;
         for (int x = box.x_min(); x <= box.x_max(); ++x) {
           for (int y = box.y_min(); y <= box.y_max(); ++y) {

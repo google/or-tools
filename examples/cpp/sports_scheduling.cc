@@ -55,10 +55,10 @@
 //
 // Usage: run this with --helpshort for a short usage manual.
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -222,7 +222,7 @@ void AddOneTeamConstraints(Solver* const solver,
 // ----- Constraints for one team and all days -----
 
 // Computes all valid tuples for home_away variables for a single team
-// on the full lenght of the season.
+// on the full length of the season.
 void ComputeOneTeamHomeAwayTuples(int num_teams,
                                   IntTupleSet* const home_away_tuples) {
   LOG(INFO) << "Compute possible sequence of home and aways for any team.";
@@ -280,13 +280,13 @@ void SportsScheduling(int num_teams) {
   std::vector<std::vector<IntVar*> > signed_opponents(num_teams);
   for (int team_index = 0; team_index < num_teams; ++team_index) {
     solver.MakeIntVarArray(full_season, 0, num_teams - 1,
-                           StringPrintf("opponent_%d_", team_index),
+                           absl::StrFormat("opponent_%d_", team_index),
                            &opponents[team_index]);
     solver.MakeBoolVarArray(full_season,
-                            StringPrintf("home_away_%d_", team_index),
+                            absl::StrFormat("home_away_%d_", team_index),
                             &home_aways[team_index]);
     solver.MakeIntVarArray(full_season, 0, 2 * num_teams - 1,
-                           StringPrintf("signed_opponent_%d", team_index),
+                           absl::StrFormat("signed_opponent_%d", team_index),
                            &signed_opponents[team_index]);
   }
   // ----- Constraints -----
@@ -380,7 +380,7 @@ void SportsScheduling(int num_teams) {
       for (int day = 0; day < full_season; ++day) {
         const int opponent = collector->Value(0, opponents[team_index][day]);
         const int home_away = collector->Value(0, home_aways[team_index][day]);
-        line += StringPrintf("%2d%s ", opponent, home_away ? "@" : " ");
+        line += absl::StrFormat("%2d%s ", opponent, home_away ? "@" : " ");
       }
       LOG(INFO) << line;
     }

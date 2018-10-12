@@ -18,26 +18,24 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
-//#include "ortools/base/options.h"
-#include "ortools/base/stringpiece_utils.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-//#include "ortools/linear_solver/model_anonymizer.h"
 #include "ortools/lp_data/lp_data.h"
-#include "ortools/lp_data/mps_reader.h"
+#include "ortools/lp_data/model_reader.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/util/file_util.h"
 
 DEFINE_string(input, "", "REQUIRED: Input file name.");
 DEFINE_string(solver, "glop",
               "The solver to use: bop, cbc, clp, glop, glpk_lp, glpk_mip, "
-              "gurobi_lp, gurobi_mip, scip, knapsack.");
+              "gurobi_lp, gurobi_mip, scip, knapsack, sat.");
 
 DEFINE_string(params_file, "",
               "Solver specific parameters file. "
@@ -52,10 +50,6 @@ DEFINE_string(forced_mps_format, "",
 DEFINE_string(output_csv, "",
               "If non-empty, write the returned solution in csv format with "
               "each line formed by a variable name and its value.");
-
-// DEFINE_bool(anonymize, false,
-//             "Whether to anonymize model before solving. Useful if model, "
-//             "request, and/or response is dumped to a file.");
 
 DEFINE_string(dump_format, "text",
               "Format in which to dump protos (if flags --dump_model, "
@@ -86,87 +80,22 @@ namespace {
 void Run() {
   // Create the solver and set its parameters.
   MPSolver::OptimizationProblemType type;
-  if (FLAGS_solver == "glop") {
-    type = MPSolver::GLOP_LINEAR_PROGRAMMING;
-#if defined(USE_GLPK)
-  } else if (FLAGS_solver == "glpk_lp") {
-    type = MPSolver::GLPK_LINEAR_PROGRAMMING;
-#endif
-#if defined(USE_CLP)
-  } else if (FLAGS_solver == "clp") {
-    type = MPSolver::CLP_LINEAR_PROGRAMMING;
-#endif
-#if defined(USE_CPLEX)
-  } else if (FLAGS_solver == "cplex") {
-    type = MPSolver::CPLEX_LINEAR_PROGRAMMING;
-#endif
-#if defined(USE_GUROBI)
-  } else if (FLAGS_solver == "gurobi_lp") {
-    type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
-#endif
-#if defined(USE_SCIP)
-  } else if (FLAGS_solver == "scip") {
-    type = MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_GUROBI)
-  } else if (FLAGS_solver == "cbc") {
-    type = MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_GLPK)
-  } else if (FLAGS_solver == "glpk_mip") {
-    type = MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_CPLEX)
-  } else if (FLAGS_solver == "cplex_mip") {
-    type = MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_GUROBI)
-  } else if (FLAGS_solver == "gurobi_mip") {
-    type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_BOP)
-  } else if (FLAGS_solver == "bop") {
-    type = MPSolver::BOP_INTEGER_PROGRAMMING;
-#endif
-  } else {
-    LOG(FATAL) << "Unsupported --solver: " << FLAGS_solver;
-  }
+  QCHECK(MPSolver::ParseSolverType(FLAGS_solver, &type))
+      << "Unsupported --solver: " << FLAGS_solver;
+
   // Load the problem into an MPModelProto.
   MPModelProto model_proto;
   MPModelRequest request_proto;
   if (strings::EndsWith(FLAGS_input, ".mps") ||
       strings::EndsWith(FLAGS_input, ".mps.gz")) {
-    glop::LinearProgram linear_program_fixed;
-    glop::LinearProgram linear_program_free;
-    glop::MPSReader mps_reader;
-    mps_reader.set_log_errors(FLAGS_forced_mps_format == "free" ||
-                              FLAGS_forced_mps_format == "fixed");
-    bool fixed_read =
-        FLAGS_forced_mps_format != "free" &&
-        mps_reader.LoadFileWithMode(FLAGS_input, false, &linear_program_fixed);
-    const bool free_read =
-        FLAGS_forced_mps_format != "fixed" &&
-        mps_reader.LoadFileWithMode(FLAGS_input, true, &linear_program_free);
-    CHECK(fixed_read || free_read)
-        << "Error while parsing the mps file '" << FLAGS_input << "' "
-        << "Use the --forced_mps_format flags to see the errors.";
-    if (fixed_read && free_read) {
-      if (linear_program_fixed.name() != linear_program_free.name()) {
-        LOG(INFO) << "Name of the model differs between fixed and free forms. "
-                  << "Fallbacking to free form.";
-        fixed_read = false;
-      }
-    }
-    if (!fixed_read) {
-      LOG(INFO) << "Read file in free format.";
-      LinearProgramToMPModelProto(linear_program_free, &model_proto);
-    } else {
-      LOG(INFO) << "Read file in fixed format.";
-      LinearProgramToMPModelProto(linear_program_fixed, &model_proto);
-    }
+    glop::LinearProgram linear_program;
+    CHECK(glop::LoadLinearProgramFromMps(FLAGS_input, FLAGS_forced_mps_format,
+                                         &linear_program))
+        << "Failed to parse mps file " << FLAGS_input;
+    LinearProgramToMPModelProto(linear_program, &model_proto);
   } else {
-    file::ReadFileToProto(FLAGS_input, &model_proto);
-    file::ReadFileToProto(FLAGS_input, &request_proto);
+    ReadFileToProto(FLAGS_input, &model_proto);
+    ReadFileToProto(FLAGS_input, &request_proto);
     // If the input proto is in binary format, both ReadFileToProto could return
     // true. Instead use the actual number of variables found to test the
     // correct format of the input.
@@ -185,10 +114,6 @@ void Run() {
       }
     }
   }
-  // if (FLAGS_anonymize) {
-  //   LOG(INFO) << "Anonymizing the model with autonumbers.";
-  //   operations_research::Anonymize(/*autonumber=*/true, &model_proto);
-  // }
   printf("%-12s: '%s'\n", "File", FLAGS_input.c_str());
 
   // Detect format to dump protos.
@@ -283,9 +208,8 @@ void Run() {
     solver.FillSolutionResponseProto(&result);
     std::string csv_file;
     for (int i = 0; i < result.variable_value_size(); ++i) {
-      csv_file +=
-          StringPrintf("%s,%e\n", model_proto.variable(i).name().c_str(),
-                       result.variable_value(i));
+      csv_file += absl::StrFormat("%s,%e\n", model_proto.variable(i).name(),
+                                  result.variable_value(i));
     }
     CHECK_OK(file::SetContents(FLAGS_output_csv, csv_file, file::Defaults()));
   }
@@ -304,10 +228,12 @@ void Run() {
              .c_str());
   printf("%-12s: %15.15e\n", "Objective",
          has_solution ? solver.Objective().Value() : 0.0);
-  printf("%-12s: %lld\n", "Iterations", solver.iterations());
+  printf("%-12s: %15.15e\n", "BestBound",
+         has_solution ? solver.Objective().BestBound() : 0.0);
+  absl::PrintF("%-12s: %d\n", "Iterations", solver.iterations());
   // NOTE(user): nodes() for non-MIP solvers crashes in debug mode by design.
   if (solver.IsMIP()) {
-    printf("%-12s: %lld\n", "Nodes", solver.nodes());
+    absl::PrintF("%-12s: %d\n", "Nodes", solver.nodes());
   }
   printf("%-12s: %-6.4g\n", "Time", solving_time_in_sec);
 }

@@ -21,7 +21,6 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
 
 namespace operations_research {
 

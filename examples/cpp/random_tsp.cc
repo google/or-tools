@@ -27,15 +27,17 @@
 
 #include <memory>
 
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/random.h"
 #include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_enums.pb.h"
-#include "ortools/constraint_solver/routing_flags.h"
+#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/routing_parameters.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
 
 DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(tsp_use_random_matrix, true, "Use random cost matrix.");
@@ -43,6 +45,13 @@ DEFINE_int32(tsp_random_forbidden_connections, 0,
              "Number of random forbidden connections.");
 DEFINE_bool(tsp_use_deterministic_random_seed, false,
             "Use deterministic random seeds.");
+DEFINE_string(routing_search_parameters,
+              "local_search_operators {"
+              "  use_path_lns:BOOL_TRUE"
+              "  use_inactive_lns:BOOL_TRUE"
+              "}",
+              "Text proto RoutingSearchParameters (possibly partial) that will "
+              "override the DefaultRoutingSearchParameters()");
 
 namespace operations_research {
 
@@ -58,7 +67,8 @@ int32 GetSeed() {
 // Cost/distance functions.
 
 // Sample function.
-int64 MyDistance(RoutingModel::NodeIndex from, RoutingModel::NodeIndex to) {
+int64 MyDistance(RoutingIndexManager::NodeIndex from,
+                 RoutingIndexManager::NodeIndex to) {
   // Put your distance code here.
   return (from + to).value();  // for instance
 }
@@ -68,13 +78,11 @@ class RandomMatrix {
  public:
   explicit RandomMatrix(int size) : size_(size) {}
   void Initialize() {
-    matrix_.reset(new int64[size_ * size_]);
+    matrix_ = absl::make_unique<int64[]>(size_ * size_);
     const int64 kDistanceMax = 100;
     ACMRandom randomizer(GetSeed());
-    for (RoutingModel::NodeIndex from = RoutingModel::kFirstNode; from < size_;
-         ++from) {
-      for (RoutingModel::NodeIndex to = RoutingModel::kFirstNode; to < size_;
-           ++to) {
+    for (RoutingIndexManager::NodeIndex from(0); from < size_; ++from) {
+      for (RoutingIndexManager::NodeIndex to(0); to < size_; ++to) {
         if (to != from) {
           matrix_[MatrixIndex(from, to)] = randomizer.Uniform(kDistanceMax);
         } else {
@@ -83,14 +91,14 @@ class RandomMatrix {
       }
     }
   }
-  int64 Distance(RoutingModel::NodeIndex from,
-                 RoutingModel::NodeIndex to) const {
+  int64 Distance(RoutingIndexManager::NodeIndex from,
+                 RoutingIndexManager::NodeIndex to) const {
     return matrix_[MatrixIndex(from, to)];
   }
 
  private:
-  int64 MatrixIndex(RoutingModel::NodeIndex from,
-                    RoutingModel::NodeIndex to) const {
+  int64 MatrixIndex(RoutingIndexManager::NodeIndex from,
+                    RoutingIndexManager::NodeIndex to) const {
     return (from * size_ + to).value();
   }
   std::unique_ptr<int64[]> matrix_;
@@ -103,11 +111,12 @@ void Tsp() {
     // Second argument = 1 to build a single tour (it's a TSP).
     // Nodes are indexed from 0 to FLAGS_tsp_size - 1, by default the start of
     // the route is node 0.
-    RoutingModel routing(FLAGS_tsp_size, 1, RoutingModel::NodeIndex(0));
-    RoutingSearchParameters parameters = BuildSearchParametersFromFlags();
-    // Setting first solution heuristic (cheapest addition).
-    parameters.set_first_solution_strategy(
-        FirstSolutionStrategy::PATH_CHEAPEST_ARC);
+    RoutingIndexManager manager(FLAGS_tsp_size, 1,
+                                RoutingIndexManager::NodeIndex(0));
+    RoutingModel routing(manager);
+    RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
+    CHECK(google::protobuf::TextFormat::MergeFromString(
+        FLAGS_routing_search_parameters, &parameters));
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
@@ -116,11 +125,18 @@ void Tsp() {
     RandomMatrix matrix(FLAGS_tsp_size);
     if (FLAGS_tsp_use_random_matrix) {
       matrix.Initialize();
-      routing.SetArcCostEvaluatorOfAllVehicles(
-          NewPermanentCallback(&matrix, &RandomMatrix::Distance));
+      const int vehicle_cost = routing.RegisterTransitCallback(
+          [&matrix, &manager](int64 i, int64 j) {
+            return matrix.Distance(manager.IndexToNode(i),
+                                   manager.IndexToNode(j));
+          });
+      routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
     } else {
-      routing.SetArcCostEvaluatorOfAllVehicles(
-          NewPermanentCallback(MyDistance));
+      const int vehicle_cost =
+          routing.RegisterTransitCallback([&manager](int64 i, int64 j) {
+            return MyDistance(manager.IndexToNode(i), manager.IndexToNode(j));
+          });
+      routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
     }
     // Forbid node connections (randomly).
     ACMRandom randomizer(GetSeed());
@@ -145,11 +161,11 @@ void Tsp() {
       std::string route;
       for (int64 node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {
-        absl::StrAppend(&route, routing.IndexToNode(node).value(), " (", node,
+        absl::StrAppend(&route, manager.IndexToNode(node).value(), " (", node,
                         ") -> ");
       }
       const int64 end = routing.End(route_number);
-      absl::StrAppend(&route, routing.IndexToNode(end).value(), " (", end, ")");
+      absl::StrAppend(&route, manager.IndexToNode(end).value(), " (", end, ")");
       LOG(INFO) << route;
     } else {
       LOG(INFO) << "No solution found.";

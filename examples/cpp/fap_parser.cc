@@ -17,9 +17,9 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "absl/strings/str_split.h"
 #include "ortools/base/file.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/split.h"
 
 namespace operations_research {
 

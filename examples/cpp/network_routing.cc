@@ -31,6 +31,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
@@ -38,7 +39,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/random.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph/shortestpaths.h"
 #include "ortools/util/tuple_set.h"
@@ -145,8 +145,13 @@ class NetworkRoutingData {
   int num_nodes_;
   int max_capacity_;
   int fixed_charge_cost_;
+#if defined(_MSC_VER)
+  hash_map<std::pair<int, int>, int, PairIntHasher> all_arcs_;
+  hash_map<std::pair<int, int>, int, PairIntHasher> all_demands_;
+#else
   std::unordered_map<std::pair<int, int>, int> all_arcs_;
   std::unordered_map<std::pair<int, int>, int> all_demands_;
+#endif
 };
 
 // ----- Data Generation -----
@@ -290,7 +295,7 @@ class NetworkRoutingDataBuilder {
                 NetworkRoutingData* const data) {
     const int size = num_backbones + num_clients;
 
-    const std::string name = StringPrintf(
+    const std::string name = absl::StrFormat(
         "mp_c%i_b%i_d%i.t%i-%i.cd%i-%i.bd%i-%i.mc%i.fc%i.s%i", num_clients,
         num_backbones, num_demands, traffic_min, traffic_max, min_client_degree,
         max_client_degree, min_backbone_degree, max_backbone_degree,
@@ -547,7 +552,7 @@ class NetworkRoutingSolver {
       tuple_set.Insert(tuple);
     }
 
-    const std::string name = StringPrintf("PathDecision_%i", demand_index);
+    const std::string name = absl::StrFormat("PathDecision_%i", demand_index);
     IntVar* const var = solver->MakeIntVar(0, tuple_set.NumTuples() - 1, name);
     std::vector<IntVar*> tmp_vars;
     tmp_vars.push_back(var);
@@ -706,7 +711,7 @@ class NetworkRoutingSolver {
     std::string DebugString() const override { return "ApplyMaxDiscrepancy"; }
   };
 
-  // ----- Auxilliary Decision Builder to Store the Cost of a Solution -----
+  // ----- Auxiliary Decision Builder to Store the Cost of a Solution -----
 
   class StoreUsageCosts : public DecisionBuilder {
    public:
@@ -751,7 +756,7 @@ class NetworkRoutingSolver {
     // Node - Graph Constraint.
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
       solver.MakeBoolVarArray(num_arcs,
-                              StringPrintf("path_vars_%i_", demand_index),
+                              absl::StrFormat("path_vars_%i_", demand_index),
                               &path_vars[demand_index]);
       BuildNodePathConstraint(&solver, path_vars[demand_index], demand_index,
                               &decision_vars);
@@ -760,7 +765,7 @@ class NetworkRoutingSolver {
     std::vector<IntVar*> vtraffic(num_arcs);
     for (int arc_index = 0; arc_index < num_arcs; ++arc_index) {
       BuildTrafficVariable(&solver, arc_index, path_vars, &vtraffic[arc_index]);
-      vtraffic[arc_index]->set_name(StringPrintf("traffic_%i", arc_index));
+      vtraffic[arc_index]->set_name(absl::StrFormat("traffic_%i", arc_index));
     }
 
     // Objective Function.
@@ -891,8 +896,8 @@ class NetworkRoutingSolver {
             if (path_vars[demand_index][i]->Value() == 1) {
               const Demand& demand = demands_array_[demand_index];
               LOG(INFO) << "   - "
-                        << StringPrintf("%i -> %i (%i)", demand.source,
-                                        demand.destination, demand.traffic);
+                        << absl::StrFormat("%i -> %i (%i)", demand.source,
+                                           demand.destination, demand.traffic);
             }
           }
         }
