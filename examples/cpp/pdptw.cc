@@ -389,7 +389,7 @@ bool LoadAndSolve(const std::string& pdp_file,
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  base::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RoutingModelParameters model_parameters =
       operations_research::DefaultRoutingModelParameters();
