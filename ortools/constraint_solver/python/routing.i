@@ -1,4 +1,4 @@
-// Copyright 2010-2014 Google
+// Copyright 2010-2017 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,8 @@
 %include "ortools/base/base.i"
 
 %include "ortools/constraint_solver/python/constraint_solver.i"
+%include "ortools/constraint_solver/python/routing_types.i"
+%include "ortools/constraint_solver/python/routing_index_manager.i"
 // TODO(user): remove this when we no longer use callbacks in the routing.
 #define FATAL_CALLBACK_EXCEPTION
 %include "ortools/base/python/callbacks.i"
@@ -28,80 +30,15 @@ class RoutingModelParameters;
 class RoutingSearchParameters;
 }  // namespace operations_research
 
-// Include the file we want to wrap a first time.
+// Include the files we want to wrap a first time.
 %{
+#include "ortools/constraint_solver/routing_types.h"
+#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/util/optional_boolean.pb.h"
 %}
 
-
-// Convert RoutingModel::NodeIndex to (32-bit signed) integers.
-%typemap(in) operations_research::RoutingModel::NodeIndex {
-  $1 = operations_research::RoutingModel::NodeIndex(PyInt_AsLong($input));
-}
-%typemap(out) operations_research::RoutingModel::NodeIndex {
-  $result = PyInt_FromLong($1.value());
-}
-
-// Convert std::vector<RoutingModel::NodeIndex> to/from int arrays.
-%{
-template<>
-bool PyObjAs(PyObject *py, operations_research::RoutingModel::NodeIndex* i) {
-  int temp;
-  if (!PyObjAs(py, &temp)) return false;
-  *i = operations_research::RoutingModel::NodeIndex(temp);
-  return true;
-}
-%}
-PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
-                       PyInt_Check, PyInt_FromLong);
-PY_LIST_LIST_INPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
-                           PyInt_Check);
-// TODO(user): also support std::vector<std::vector<>> <-> list of list.
-
-// Create input mapping for NodeEvaluator2
-%{
-static int64 PyCallback2NodeIndexNodeIndex(
-    PyObject* pyfunc,
-    operations_research::RoutingModel::NodeIndex i,
-    operations_research::RoutingModel::NodeIndex j) {
-  int64 result = 0;
-  // Cast to int needed, no int64 support
-  PyObject* arglist = Py_BuildValue("ll",
-                                    i.value<int>(),
-                                    j.value<int>());
-  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-  Py_DECREF(arglist);
-  if (pyresult) {
-    result = PyInt_AsLong(pyresult);
-  }
-  Py_XDECREF(pyresult);
-  return result;
-}
-%}
-%typemap(in) operations_research::RoutingModel::NodeEvaluator2* {
-  if (!PyCallable_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-    SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallback2NodeIndexNodeIndex, $input);
-}
-// Create conversion of vectors of NodeEvaluator2
-%{
-template<>
-bool PyObjAs(PyObject* py_obj,
-             operations_research::RoutingModel::NodeEvaluator2** b) {
-  if (!PyCallable_Check(py_obj)) {
-    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-    return false;
-  }
-  *b = NewPermanentCallback(&PyCallback2NodeIndexNodeIndex, py_obj);
-  return true;
-}
-%}
-// Passing an empty parameter as converter is ok here since no API outputs
-// a vector of NodeEvaluator2*.
-PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
-                       PyCallable_Check, );
 
 %ignore operations_research::RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
@@ -118,6 +55,8 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
   }
 }
 
+%ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
+%ignore operations_research::RoutingModel::StateDependentTransitCallback;
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
 %ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 
@@ -128,55 +67,29 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingSearchParameters,
                  operations_research::RoutingSearchParameters)
 
-%ignore operations_research::RoutingModel::WrapIndexEvaluator(
-    Solver::IndexEvaluator2* evaluator);
-
-%ignore operations_research::RoutingModel::RoutingModel(
-    int nodes, int vehicles, NodeIndex depot);
-
-%ignore operations_research::RoutingModel::RoutingModel(
-    int nodes, int vehicles, NodeIndex depot,
-    const RoutingModelParameters& parameters);
-
-%extend operations_research::RoutingModel {
-  RoutingModel(int nodes, int vehicles, int depot) {
-    operations_research::RoutingModel* model =
-        new operations_research::RoutingModel(
-            nodes, vehicles,
-            operations_research::RoutingModel::NodeIndex(depot));
-    return model;
-  }
-  RoutingModel(int nodes, int vehicles, int depot,
-               const RoutingModelParameters& parameters) {
-      operations_research::RoutingModel* model =
-          new operations_research::RoutingModel(
-              nodes, vehicles,
-              operations_research::RoutingModel::NodeIndex(depot), parameters);
-      return model;
-  }
-}
-
-%ignore operations_research::RoutingModel::RoutingModel(
-    int nodes, int vehicles,
-    const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
-
-%ignore operations_research::RoutingModel::RoutingModel(
-    int nodes, int vehicles,
-    const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end,
-    const RoutingModelParameters& parameters);
-
+// Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
 %ignoreall
-%unignore RoutingNodeIndex;
-%unignore RoutingCostClassIndex;
-%unignore RoutingDimensionIndex;
-%unignore RoutingDisjunctionIndex;
-%unignore RoutingVehicleClassIndex;
-%unignore RoutingNodeEvaluator2;
-%unignore RoutingTransitEvaluator2;
-%unignore RoutingNodePair;
-%unignore RoutingNodePairs;
+%unignore RoutingTransitCallback2;
+%unignore RoutingIndexPair;
+%unignore RoutingIndexPairs;
+
+%unignore DefaultRoutingSearchParameters;
+%unignore DefaultRoutingModelParameters;
+%unignore FindErrorInRoutingSearchParameters;
+
 %include "ortools/constraint_solver/routing_types.h"
+%include "ortools/constraint_solver/routing_parameters.h"
 %unignoreall
+
+// %including a .proto.h is frowned upon (for good general reasons), so we
+// have to duplicate the OptionalBoolean enum here to give it to python users.
+namespace operations_research {
+enum OptionalBoolean {
+  BOOL_UNSPECIFIED = 0,
+  BOOL_FALSE = 2,
+  BOOL_TRUE = 3,
+};
+}  // namespace operations_research
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 %include "ortools/constraint_solver/routing.h"

@@ -91,7 +91,7 @@ struct FailureProtect {
 %module(directors="1") operations_research
 // The %feature and %exception below let python exceptions that occur within
 // director method propagate to the user as they were originally. See
-// http://www.i.org/Doc1.3/Python.html#Python_nn36 for example.
+// http://www.swig.org/Doc1.3/Python.html#Python_nn36 for example.
 %feature("director:except") {
     if ($error != NULL) {
         throw Swig::DirectorMethodException();
@@ -351,17 +351,15 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
                                        penalty_factor);
   }
 
-  LocalSearchFilter* LocalSearchObjectiveFilter(
+  LocalSearchFilter* SumObjectiveFilter(
       const std::vector<IntVar*>& vars,
       Solver::IndexEvaluator2 values,
       IntVar* const objective,
-      Solver::LocalSearchFilterBound filter_enum,
-      Solver::LocalSearchOperation op_enum) {
-    return $self->MakeLocalSearchObjectiveFilter(vars,
-                                                values,
-                                                objective,
-                                                filter_enum,
-                                                op_enum);
+      Solver::LocalSearchFilterBound filter_enum) {
+    return $self->MakeSumObjectiveFilter(vars,
+                                         values,
+                                         objective,
+                                         filter_enum);
   }
 }
 
@@ -927,7 +925,6 @@ namespace operations_research {
 %rename (FailuresLimit) Solver::MakeFailuresLimit;
 %rename (SolutionsLimit) Solver::MakeSolutionsLimit;
 %rename (CustomLimit) Solver::MakeCustomLimit;
-%rename (DefaultSearchLimitParameters) Solver::MakeDefaultSearchLimitParameters;
 
 // Solver: Search logs.
 %rename (SearchLog) Solver::MakeSearchLog;
@@ -1050,12 +1047,6 @@ namespace operations_research {
 %unignore Solver::GE;
 %unignore Solver::LE;
 %unignore Solver::EQ;
-
-%unignore Solver::LocalSearchOperation;
-%unignore Solver::SUM;
-%unignore Solver::PROD;
-%unignore Solver::MAX;
-%unignore Solver::MIN;
 
 }  // namespace operations_research
 
@@ -2019,10 +2010,10 @@ namespace operations_research {
 // - MakeNextNeighbor()
 %unignore IntVarLocalSearchOperator;
 %feature("director") IntVarLocalSearchOperator;
-%feature("nodirector") IntVarLocalSearchOperator::Start;
 %unignore IntVarLocalSearchOperator::IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::~IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::Size;
+%feature("nodirector") IntVarLocalSearchOperator::Start;
 %rename (OneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
 
 
@@ -2250,3 +2241,4 @@ class PyConstraint(Constraint):
 
 
 }  // %pythoncode
+
