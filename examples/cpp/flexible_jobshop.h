@@ -82,7 +82,7 @@ class FlexibleJobShopData {
 
   ~FlexibleJobShopData() {}
 
-  // Parses a file in .fjp format and loads the model. Note that the format is
+  // Parses a file in .fjs format and loads the model. Note that the format is
   // only partially checked: bad inputs might cause undefined behavior.
   void Load(const std::string& filename) {
     size_t found = filename.find_last_of("/\\");
@@ -138,27 +138,32 @@ class FlexibleJobShopData {
  private:
   void ProcessNewLine(const std::string& line) {
     const std::vector<std::string> words =
-        absl::StrSplit(line, ' ', absl::SkipEmpty());
+        absl::StrSplit(line, ' ', absl::SkipWhitespace());
     if (machine_count_ == -1 && words.size() > 1) {
       job_count_ = atoi32(words[0]);
       machine_count_ = atoi32(words[1]);
       CHECK_GT(machine_count_, 0);
       CHECK_GT(job_count_, 0);
-      LOG(INFO) << machine_count_ << " machines and " << job_count_ << " jobs";
+      LOG(INFO) << "jobs: " << job_count_ << ", machines: " << machine_count_;
       all_tasks_.resize(job_count_);
     } else if (words.size() > 1) {
       const int operations_count = atoi32(words[0]);
+      LOG(INFO) << "operations: "<< operations_count;
       int index = 1;
       for (int operation = 0; operation < operations_count; ++operation) {
         std::vector<int> machines;
         std::vector<int> durations;
         const int alternatives_count = atoi32(words[index++]);
+        LOG(INFO) << "alternatives: " << alternatives_count;
         for (int alt = 0; alt < alternatives_count; alt++) {
           // Machine id are 1 based.
           const int machine_id = atoi32(words[index++]) - 1;
           const int duration = atoi32(words[index++]);
+          CHECK_LT(machine_id, machine_count_);
+          CHECK_GT(duration, 0);
           machines.push_back(machine_id);
           durations.push_back(duration);
+          LOG(INFO) << "machine: "<< machine_id << ", duration: " << duration;
         }
         AddTask(current_job_index_, machines, durations);
       }

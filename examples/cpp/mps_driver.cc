@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
         continue;
       }
     } else {
-      ReadFileToProto(file_name, &model_proto);
+      file::ReadFileToProto(file_name, &model_proto);
       MPModelProtoToLinearProgram(model_proto, &linear_program);
     }
     if (FLAGS_mps_dump_problem) {
