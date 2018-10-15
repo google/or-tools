@@ -201,7 +201,7 @@ class SatCnfReader {
 
   void ProcessHeader(const std::string& line) {
     static const char kWordDelimiters[] = " ";
-    words_ = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty()));
+    words_ = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty());
 
     CHECK_EQ(words_[0], "p");
     if (words_[1] == "cnf" || words_[1] == "wcnf") {

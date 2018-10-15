@@ -20,9 +20,9 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/string_view_utils.h"
 #include "examples/cpp/opb_reader.h"
 #include "examples/cpp/sat_cnf_reader.h"
 #include "google/protobuf/text_format.h"
@@ -141,16 +141,16 @@ double GetScaledTrivialBestBound(const LinearBooleanProblem& problem) {
 
 void LoadBooleanProblem(const std::string& filename,
                         LinearBooleanProblem* problem, CpModelProto* cp_model) {
-  if (strings::EndsWith(filename, ".opb") ||
-      strings::EndsWith(filename, ".opb.bz2")) {
+  if (absl::EndsWith(filename, ".opb") ||
+      absl::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
     if (!reader.Load(filename, problem)) {
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
-  } else if (strings::EndsWith(filename, ".cnf") ||
-             strings::EndsWith(filename, ".cnf.gz") ||
-             strings::EndsWith(filename, ".wcnf") ||
-             strings::EndsWith(filename, ".wcnf.gz")) {
+  } else if (absl::EndsWith(filename, ".cnf") ||
+             absl::EndsWith(filename, ".cnf.gz") ||
+             absl::EndsWith(filename, ".wcnf") ||
+             absl::EndsWith(filename, ".wcnf.gz")) {
     SatCnfReader reader;
     if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_qmaxsat ||
         FLAGS_core_enc) {
@@ -232,7 +232,7 @@ int Run() {
     LOG(INFO) << CpSolverResponseStats(response);
 
     if (!FLAGS_output.empty()) {
-      if (strings::EndsWith(FLAGS_output, ".txt")) {
+      if (absl::EndsWith(FLAGS_output, ".txt")) {
         CHECK_OK(file::SetTextProto(FLAGS_output, response, file::Defaults()));
       } else {
         CHECK_OK(
@@ -382,7 +382,7 @@ int Run() {
       if (result == SatSolver::FEASIBLE) {
         StoreAssignment(solver->Assignment(), problem.mutable_assignment());
       }
-      if (strings::EndsWith(FLAGS_output, ".txt")) {
+      if (absl::EndsWith(FLAGS_output, ".txt")) {
         CHECK_OK(file::SetTextProto(FLAGS_output, problem, file::Defaults()));
       } else {
         CHECK_OK(file::SetBinaryProto(FLAGS_output, problem, file::Defaults()));
