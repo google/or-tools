@@ -16,6 +16,8 @@
 #include <cmath>
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/routing_parameters.h"
 
 namespace operations_research {
   class DataProblem {
@@ -49,13 +51,13 @@ namespace operations_research {
 
       std::size_t GetVehicleNumber() const { return 4;}
       const std::vector<std::vector<int>>& GetLocations() const { return locations_;}
-      RoutingModel::NodeIndex GetDepot() const { return RoutingModel::kFirstNode;}
+      RoutingIndexManager::NodeIndex GetDepot() const { return RoutingIndexManager::NodeIndex(0);}
   };
 
   /*! @brief Manhattan distance implemented as a callback.
    * @details It uses an array of positions and
    * computes the Manhattan distance between the two positions of two different indices.*/
-  class ManhattanDistance: public RoutingModel::NodeEvaluator2 {
+  class ManhattanDistance {
     private:
       std::vector<std::vector<int64>> distances_;
     public:
@@ -76,21 +78,20 @@ namespace operations_research {
       }
     }
 
-    bool IsRepeatable() const override {return true;}
-
     //! @brief Returns the manhattan distance between the two nodes.
-    int64 Run(RoutingModel::NodeIndex FromNode, RoutingModel::NodeIndex ToNode) override {
+    int64 operator()(RoutingIndexManager::NodeIndex FromNode, RoutingIndexManager::NodeIndex ToNode) {
       return distances_[FromNode.value()][ToNode.value()];
     }
   };
 
   //! @brief Add distance Dimension.
   //! @param[in] data Data of the problem.
+  //! @param[in] callback transit cost callback.
   //! @param[in, out] routing Routing solver used.
-  static void AddDistanceDimension(const DataProblem& data, RoutingModel* routing) {
+  static void AddDistanceDimension(const DataProblem& data, const int callback, RoutingModel* routing) {
     std::string distance("Distance");
     routing->AddDimension(
-        new ManhattanDistance(data),
+        callback,
         0,  // null slack
         3000, // maximum distance per vehicle
         true, // start cumul to zero
@@ -103,10 +104,12 @@ namespace operations_research {
 
   //! @brief Print the solution
   //! @param[in] data Data of the problem.
+  //! @param[in] manager Index manager used.
   //! @param[in] routing Routing solver used.
   //! @param[in] solution Solution found by the solver.
   void PrintSolution(
       const DataProblem& data,
+      const RoutingIndexManager& manager,
       const RoutingModel& routing,
       const Assignment& solution) {
     LOG(INFO) << "Objective: " << solution.ObjectiveValue();
@@ -117,12 +120,12 @@ namespace operations_research {
       int64 distance = 0LL;
       std::stringstream route;
       while (routing.IsEnd(index) == false) {
-        route << routing.IndexToNode(index).value() << " -> ";
+        route << manager.IndexToNode(index).value() << " -> ";
         int64 previous_index = index;
         index = solution.Value(routing.NextVar(index));
         distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(previous_index, index, i);
       }
-      LOG(INFO) << route.str() << routing.IndexToNode(index).value();
+      LOG(INFO) << route.str() << manager.IndexToNode(index).value();
       LOG(INFO) << "Distance of the route: " << distance << "m";
     }
     LOG(INFO) << "";
@@ -134,25 +137,29 @@ namespace operations_research {
     // Instantiate the data problem.
     DataProblem data;
 
-    // Create Routing Model
-    RoutingModel routing(
+    // Create Routing Index Manager & Routing Model
+    RoutingIndexManager manager(
         data.GetLocations().size(),
         data.GetVehicleNumber(),
         data.GetDepot());
+    RoutingModel routing(manager);
 
     // Define weight of each edge
     ManhattanDistance distance(data);
-    routing.SetArcCostEvaluatorOfAllVehicles(
-        NewPermanentCallback(&distance, &ManhattanDistance::Run));
-    AddDistanceDimension(data, &routing);
+    const int vehicle_cost = routing.RegisterTransitCallback(
+        [&distance, &manager](int64 fromNode, int64 toNode) -> int64 {
+        return distance(manager.IndexToNode(fromNode), manager.IndexToNode(toNode));
+        });
+    routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
+    AddDistanceDimension(data, vehicle_cost, &routing);
 
     // Setting first solution heuristic (cheapest addition).
-    auto searchParameters = RoutingModel::DefaultSearchParameters();
+    RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
     searchParameters.set_first_solution_strategy(
         FirstSolutionStrategy::PATH_CHEAPEST_ARC);
 
     const Assignment* solution = routing.SolveWithParameters(searchParameters);
-    PrintSolution(data, routing, *solution);
+    PrintSolution(data, manager, routing, *solution);
   }
 }  // namespace operations_research
 
