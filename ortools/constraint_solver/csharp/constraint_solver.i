@@ -408,25 +408,21 @@ namespace operations_research {
                              const std::vector<IntVar*>& secondary_vars,
                              IndexEvaluator3 evaluator,
                              EvaluatorLocalSearchOperators op);
-%ignore Solver::MakeLocalSearchObjectiveFilter(
+%ignore Solver::MakeSumObjectiveFilter(
     const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
-    Solver::LocalSearchOperation op_enum);
-%ignore Solver::MakeLocalSearchObjectiveFilter(
+    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
+%ignore Solver::MakeSumObjectiveFilter(
     const std::vector<IntVar*>& vars, IndexEvaluator2 values,
     ObjectiveWatcher delta_objective_callback, IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum,
-    Solver::LocalSearchOperation op_enum);
-%ignore Solver::MakeLocalSearchObjectiveFilter(
+    Solver::LocalSearchFilterBound filter_enum);
+%ignore Solver::MakeSumObjectiveFilter(
     const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
     Solver::IndexEvaluator3 values, IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum,
-    Solver::LocalSearchOperation op_enum);
-%ignore Solver::MakeLocalSearchObjectiveFilter(
+    Solver::LocalSearchFilterBound filter_enum);
+%ignore Solver::MakeSumObjectiveFilter(
     const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
     Solver::IndexEvaluator3 values, ObjectiveWatcher delta_objective_callback,
-    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
-    Solver::LocalSearchOperation op_enum);
+    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
 %ignore Solver::ConcatenateOperators(
     const std::vector<LocalSearchOperator*>& ops,
     std::function<int64(int, int)> evaluator);
@@ -585,48 +581,44 @@ namespace operations_research {
         [evaluator](int64 i, int64 j, int64 k) {
           return evaluator->Run(i, j, k); }, op);
   }
-  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+  LocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars, swig_util::LongLongToLong* values,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
-      Solver::LocalSearchOperation op_enum) {
-    return $self->MakeLocalSearchObjectiveFilter(
+      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum) {
+    return $self->MakeSumObjectiveFilter(
         vars, [values](int64 i, int64 j) { return values->Run(i, j); },
-        objective, filter_enum, op_enum);
+        objective, filter_enum);
   }
-  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+  LocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars, swig_util::LongLongToLong* values,
       swig_util::LongToVoid* delta_objective_callback, IntVar* const objective,
-      Solver::LocalSearchFilterBound filter_enum,
-      Solver::LocalSearchOperation op_enum) {
-    return $self->MakeLocalSearchObjectiveFilter(
+      Solver::LocalSearchFilterBound filter_enum) {
+    return $self->MakeSumObjectiveFilter(
         vars, [values](int64 i, int64 j) { return values->Run(i, j); },
         [delta_objective_callback](int64 i) {
           return delta_objective_callback->Run(i); },
-        objective, filter_enum, op_enum);
+        objective, filter_enum);
   }
-  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+  LocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
       swig_util::LongLongLongToLong* values, IntVar* const objective,
-      Solver::LocalSearchFilterBound filter_enum,
-      Solver::LocalSearchOperation op_enum) {
-    return $self->MakeLocalSearchObjectiveFilter(
+      Solver::LocalSearchFilterBound filter_enum) {
+    return $self->MakeSumObjectiveFilter(
         vars, secondary_vars,
         [values](int64 i, int64 j, int64 k) { return values->Run(i, j, k); },
-        objective, filter_enum, op_enum);
+        objective, filter_enum);
   }
-  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+  LocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       swig_util::LongLongLongToLong* values,
       swig_util::LongToVoid* delta_objective_callback,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
-      Solver::LocalSearchOperation op_enum) {
-    return $self->MakeLocalSearchObjectiveFilter(
+      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum) {
+    return $self->MakeSumObjectiveFilter(
         vars, secondary_vars,
         [values](int64 i, int64 j, int64 k) { return values->Run(i, j, k); },
         [delta_objective_callback](int64 i) {
           return delta_objective_callback->Run(i); },
-        objective, filter_enum, op_enum);
+        objective, filter_enum);
   }
   LocalSearchOperator* ConcatenateOperators(
       const std::vector<LocalSearchOperator*>& ops,
@@ -883,7 +875,7 @@ PROTO2_RETURN(operations_research::SearchLimitParameters,
 
 PROTO_INPUT(operations_research::CpModel,
             Google.OrTools.ConstraintSolver.CpModel,
-            model_proto)
+            proto)
 PROTO2_RETURN(operations_research::CpModel,
               Google.OrTools.ConstraintSolver.CpModel)
 
