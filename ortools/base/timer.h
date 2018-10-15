@@ -73,6 +73,8 @@ class CycleTimer : public WallTimer {
   int64 GetCycles() const { return GetNanos(); }
 };
 
+typedef CycleTimer SimpleCycleTimer;
+
 // Conversion routines between CycleTimer::GetCycles and actual times.
 class CycleTimerBase {
  public:
