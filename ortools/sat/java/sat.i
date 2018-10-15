@@ -55,6 +55,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %feature("director") operations_research::sat::SolutionCallback;
 
 %unignore operations_research::sat::SolutionCallback;
+%unignore operations_research::sat::SolutionCallback::~SolutionCallback;
 %rename (bestObjectiveBound) operations_research::sat::SolutionCallback::BestObjectiveBound;
 %rename (numBinaryPropagations) operations_research::sat::SolutionCallback::NumBinaryPropagations;
 %rename (numBooleans) operations_research::sat::SolutionCallback::NumBooleans;
