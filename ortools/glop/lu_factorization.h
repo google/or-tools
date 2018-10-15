@@ -48,7 +48,7 @@ class LuFactorization {
   // it being confused by this revert to identity factorization behavior. The
   // reason behind it is that this way, calling any public function of this
   // class will never cause a crash of the program.
-  Status ComputeFactorization(const MatrixView& matrix) ABSL_MUST_USE_RESULT;
+  ABSL_MUST_USE_RESULT Status ComputeFactorization(const MatrixView& matrix);
 
   // Returns the column permutation used by the LU factorization.
   const ColumnPermutation& GetColumnPermutation() const { return col_perm_; }

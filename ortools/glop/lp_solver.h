@@ -49,12 +49,12 @@ class LPSolver {
   // it will just solve the problem from scratch. On the other hand, if the lp
   // is the same, calling Solve() again should basically resume the solve from
   // the last position. To disable this behavior, simply call Clear() before.
-  ProblemStatus Solve(const LinearProgram& lp) ABSL_MUST_USE_RESULT;
+  ABSL_MUST_USE_RESULT ProblemStatus Solve(const LinearProgram& lp);
 
   // Same as Solve() but use the given time limit rather than constructing a new
   // one from the current GlopParameters.
-  ProblemStatus SolveWithTimeLimit(const LinearProgram& lp,
-                                   TimeLimit* time_limit) ABSL_MUST_USE_RESULT;
+  ABSL_MUST_USE_RESULT ProblemStatus SolveWithTimeLimit(const LinearProgram& lp,
+                                                        TimeLimit* time_limit);
 
   // Puts the solver in a clean state.
   //

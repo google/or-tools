@@ -283,7 +283,7 @@ class Trail {
   // already assigned to false, then MutableConflict() will be set appropriately
   // and this will return false otherwise this will enqueue the literal and
   // returns true.
-  bool EnqueueWithStoredReason(Literal true_literal) ABSL_MUST_USE_RESULT {
+  ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(Literal true_literal) {
     if (assignment_.LiteralIsTrue(true_literal)) return true;
     if (assignment_.LiteralIsFalse(true_literal)) {
       *MutableConflict() = reasons_repository_[Index()];
