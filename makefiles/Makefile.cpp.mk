@@ -492,19 +492,6 @@ $(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc \
  | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
-.PHONY: check_cc_examples # Build and Run few C++ Examples
-check_cc_examples:
-	$(MAKE) rcc_linear_programming
-	$(MAKE) rcc_integer_programming
-	$(MAKE) rcc_constraint_programming_cp
-	$(MAKE) rcc_rabbits_pheasants_cp
-	$(MAKE) rcc_tsp
-	$(MAKE) rcc_vrp
-	$(MAKE) rcc_knapsack
-	$(MAKE) rcc_max_flow
-	$(MAKE) rcc_min_cost_flow
-	$(MAKE) rcc_nurses_cp
-	$(MAKE) rcc_job_shop_cp
 
 .PHONY: test_cc_samples # Build and Run all C++ Samples (located in ortools/*/samples)
 test_cc_samples: cc
