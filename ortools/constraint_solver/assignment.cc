@@ -616,8 +616,8 @@ template <class Container, class Element>
 void RealDebugString(const Container& container, std::string* const out) {
   for (const Element& element : container.elements()) {
     if (element.Var() != nullptr) {
-      absl::StrAppendFormat(out, "%s %s | ", element.Var()->name().c_str(),
-                            element.DebugString().c_str());
+      absl::StrAppendFormat(out, "%s %s | ", element.Var()->name(),
+                            element.DebugString());
     }
   }
 }

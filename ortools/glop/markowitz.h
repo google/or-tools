@@ -277,9 +277,9 @@ class Markowitz {
   // of the matrix. Moreover, by adding singleton columns with a one at the rows
   // such that 'row_perm[row] == kInvalidRow', then the matrix will be
   // non-singular.
-  ABSL_MUST_USE_RESULT Status ComputeLU(const MatrixView& basis_matrix, RowPermutation* row_perm,
+  Status ComputeLU(const MatrixView& basis_matrix, RowPermutation* row_perm,
                    ColumnPermutation* col_perm, TriangularMatrix* lower,
-                   TriangularMatrix* upper);
+                   TriangularMatrix* upper) ABSL_MUST_USE_RESULT;
 
   // Only computes P and Q^{-1}, L and U can be computed later from these
   // permutations using another algorithm (for instance left-looking L.U). This
@@ -291,9 +291,9 @@ class Markowitz {
   // This function also works with a non-square matrix. It will return a set of
   // independent columns of maximum size. If all the given columns are
   // independent, the returned Status will be OK.
-  ABSL_MUST_USE_RESULT Status ComputeRowAndColumnPermutation(
+  Status ComputeRowAndColumnPermutation(
       const MatrixView& basis_matrix, RowPermutation* row_perm,
-      ColumnPermutation* col_perm);
+      ColumnPermutation* col_perm) ABSL_MUST_USE_RESULT;
 
   // Releases the memory used by this class.
   void Clear();

@@ -42,7 +42,7 @@ const int MPSReader::kFieldStartPos[kNumFields] = {1, 4, 14, 24, 39, 49};
 const int MPSReader::kFieldLength[kNumFields] = {2, 8, 8, 12, 8, 12};
 
 MPSReader::MPSReader()
-    : free_form_(FLAGS_mps_free_form),
+    : free_form_(absl::GetFlag(FLAGS_mps_free_form)),
       data_(nullptr),
       problem_name_(""),
       parse_success_(true),
@@ -157,10 +157,10 @@ bool MPSReader::LoadFileWithMode(const std::string& file_name, bool free_form,
                                  LinearProgram* data) {
   free_form_ = free_form;
   if (LoadFile(file_name, data)) {
-    free_form_ = FLAGS_mps_free_form;
+    free_form_ = absl::GetFlag(FLAGS_mps_free_form);
     return true;
   }
-  free_form_ = FLAGS_mps_free_form;
+  free_form_ = absl::GetFlag(FLAGS_mps_free_form);
   return false;
 }
 
@@ -190,7 +190,8 @@ bool MPSReader::IsCommentOrBlank() const {
 
 void MPSReader::ProcessLine(const std::string& line) {
   ++line_num_;
-  if (!parse_success_ && FLAGS_mps_stop_after_first_error) return;
+  if (!parse_success_ && absl::GetFlag(FLAGS_mps_stop_after_first_error))
+    return;
   line_ = line;
   if (IsCommentOrBlank()) {
     return;  // Skip blank lines and comments.

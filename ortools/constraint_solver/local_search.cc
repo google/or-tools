@@ -2723,44 +2723,36 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
     std::string overview = "Local search operator statistics:\n";
     absl::StrAppendFormat(&overview,
-                          absl::StrCat("%", op_name_size,
-                                       "s | Neighbors | Filtered | "
-                                       "Accepted | Time (s)\n")
-                              .c_str(),
-                          "");
+                          "%*s | Neighbors | Filtered | Accepted | Time (s)\n",
+                          op_name_size, "");
     OperatorStats total_stats;
-    const std::string row_format =
-        absl::StrCat("%", op_name_size, "s | %9ld | %8ld | %8ld | %7.2g\n");
     for (const auto& stat : operator_stats_) {
       absl::StrAppendFormat(
-          &overview, row_format.c_str(), stat.first.c_str(),
-          stat.second.neighbors, stat.second.filtered_neighbors,
+          &overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n", op_name_size,
+          stat.first, stat.second.neighbors, stat.second.filtered_neighbors,
           stat.second.accepted_neighbors, stat.second.seconds);
       total_stats.neighbors += stat.second.neighbors;
       total_stats.filtered_neighbors += stat.second.filtered_neighbors;
       total_stats.accepted_neighbors += stat.second.accepted_neighbors;
       total_stats.seconds += stat.second.seconds;
     }
-    absl::StrAppendFormat(&overview, row_format.c_str(), "Total",
-                          total_stats.neighbors, total_stats.filtered_neighbors,
+    absl::StrAppendFormat(&overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n",
+                          op_name_size, "Total", total_stats.neighbors,
+                          total_stats.filtered_neighbors,
                           total_stats.accepted_neighbors, total_stats.seconds);
     op_name_size = 0;
     for (const auto& stat : filter_stats_) {
       op_name_size = std::max(op_name_size, stat.first.length());
     }
-    absl::StrAppendFormat(
-        &overview,
-        absl::StrCat("Local search filter statistics:\n%", op_name_size,
-                     "s |     Calls |   Rejects | Time (s) "
-                     "| Rejects/s\n")
-            .c_str(),
-        "");
+    absl::StrAppendFormat(&overview,
+                          "Local search filter statistics:\n%*s |     Calls |  "
+                          " Rejects | Time (s) "
+                          "| Rejects/s\n",
+                          op_name_size, "");
     FilterStats total_filter_stats;
-    const std::string filter_row_format =
-        absl::StrCat("%", op_name_size, "s | %9ld | %9ld | %7.2g  | %7.2g\n");
     for (const auto& stat : filter_stats_) {
-      absl::StrAppendFormat(&overview, filter_row_format.c_str(),
-                            stat.first.c_str(), stat.second.calls,
+      absl::StrAppendFormat(&overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n",
+                            op_name_size, stat.first, stat.second.calls,
                             stat.second.rejects, stat.second.seconds,
                             stat.second.rejects / stat.second.seconds);
       total_filter_stats.calls += stat.second.calls;
@@ -2768,8 +2760,9 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       total_filter_stats.seconds += stat.second.seconds;
     }
     absl::StrAppendFormat(
-        &overview, filter_row_format.c_str(), "Total", total_filter_stats.calls,
-        total_filter_stats.rejects, total_filter_stats.seconds,
+        &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n", op_name_size,
+        "Total", total_filter_stats.calls, total_filter_stats.rejects,
+        total_filter_stats.seconds,
         total_filter_stats.rejects / total_filter_stats.seconds);
     return overview;
   }

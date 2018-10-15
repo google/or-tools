@@ -338,7 +338,9 @@ class BinaryClauseManager {
 };
 
 // Special class to store and propagate clauses of size 2 (i.e. implication).
-// Such clauses are never deleted.
+// Such clauses are never deleted. Together, they represent the 2-SAT part of
+// the problem. Note that 2-SAT satisfiability is a polynomial problem, but
+// W2SAT (weighted 2-SAT) is NP-complete.
 //
 // TODO(user): All the variables in a strongly connected component are
 // equivalent and can be thus merged as one. This is relatively cheap to compute
@@ -451,6 +453,17 @@ class BinaryImplicationGraph : public SatPropagator {
   // early if we start doing too much work.
   bool ComputeTransitiveReduction();
 
+  // Another way of representing an implication graph is a list of maximal "at
+  // most one" constraints, each forming a max-clique in the incompatibility
+  // graph. This representation is useful for having a good linear relaxation.
+  //
+  // This function will transform each of the given constraint into a maximal
+  // one in the underlying implication graph. Constraints that are redundant
+  // after other have been expanded (i.e. included into) will be cleared.
+  //
+  // Preconditions: DetectEquivalences() must have been called just before.
+  void TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones);
+
   // Number of literal propagated by this class (including conflicts).
   int64 num_propagations() const { return num_propagations_; }
 
@@ -494,6 +507,17 @@ class BinaryImplicationGraph : public SatPropagator {
   // Remove any literal whose negation is marked (except the first one).
   void RemoveRedundantLiterals(std::vector<Literal>* conflict);
 
+  // Fill is_marked_ with all the descendant of root.
+  // Note that this also use dfs_stack_.
+  void MarkDescendants(Literal root);
+
+  // Expands greedily the given at most one until we get a maximum clique in
+  // the underlying incompatibility graph. Note that there is no guarantee that
+  // if this is called with any sub-clique of the result we will get the same
+  // maximal clique.
+  std::vector<Literal> ExpandAtMostOne(
+      const absl::Span<const Literal> at_most_one);
+
   // Binary reasons by trail_index. We need a deque because we kept pointers to
   // elements of this array and this can dynamically change size.
   std::deque<Literal> reasons_;
@@ -529,8 +553,10 @@ class BinaryImplicationGraph : public SatPropagator {
   std::vector<Literal> dfs_stack_;
 
   // Filled by DetectEquivalences().
+  bool is_dag_ = false;
   std::vector<LiteralIndex> reverse_topological_order_;
   gtl::ITIVector<LiteralIndex, bool> is_redundant_;
+  gtl::ITIVector<LiteralIndex, LiteralIndex> representative_of_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(BinaryImplicationGraph);

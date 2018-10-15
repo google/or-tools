@@ -1,4 +1,4 @@
-// Copyright 2010-2014 Google
+// Copyright 2010-2017 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -24,18 +24,22 @@ class RoutingSearchParameters;
 
 // Include the file we want to wrap a first time.
 %{
+#include "ortools/constraint_solver/routing_types.h"
+#include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing.h"
 %}
 
 %module(directors="1") operations_research;
-%feature("director") swig_util::NodeEvaluator2;
+%feature("director") LongResultCallback1;
+%feature("director") LongResultCallback2;
+%feature("director") LongResultCallback3;
 
-// Convert RoutingModel::NodeIndex to (32-bit signed) integers.
-%typemap(ctype) operations_research::RoutingModel::NodeIndex "int"
-%typemap(imtype) operations_research::RoutingModel::NodeIndex "int"
-%typemap(cstype) operations_research::RoutingModel::NodeIndex "int"
-%typemap(csin) operations_research::RoutingModel::NodeIndex "$csinput"
-%typemap(csout) operations_research::RoutingModel::NodeIndex {
+// Convert RoutingNodeIndex to (32-bit signed) integers.
+%typemap(ctype) operations_research::RoutingNodeIndex "int"
+%typemap(imtype) operations_research::RoutingNodeIndex "int"
+%typemap(cstype) operations_research::RoutingNodeIndex "int"
+%typemap(csin) operations_research::RoutingNodeIndex "$csinput"
+%typemap(csout) operations_research::RoutingNodeIndex {
   return $imcall;
 }
 %typemap(in) operations_research::RoutingModel::NodeIndex {
@@ -113,97 +117,76 @@ CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
 
 CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int);
 
-// Create input mapping for NodeEvaluator2 callback wrapping.
+// Create input mapping for LongResultCallbackN.
+// Callback wrapping.
 // TODO(user): split out the callback code; it creates another file since
 // it uses a different module.
 %{
-namespace swig_util {
-class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
+class LongResultCallback1 {
  public:
-  NodeEvaluator2() : used_as_permanent_handler_(false) {}
-
-  virtual ~NodeEvaluator2() {}
-
-  virtual int64 Run(int i, int j) = 0;
-
-  operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
+  virtual int64 Run(int64) = 0;
+  ResultCallback1<int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback1::Run);
   }
-
- private:
-  virtual bool IsRepeatable() const { return true; }
-
-  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
-                    operations_research::RoutingModel::NodeIndex j) {
-    return Run(i.value(), j.value());
-  }
-
-  bool used_as_permanent_handler_;
+  virtual ~LongResultCallback1() {}
 };
-}  // namespace swig_util
-%}
-
-// We prefer keeping this C# extension here (instead of moving it to a dedicated
-// C# file, using partial classes) because it uses SWIG's $descriptor().
-%typemap(cscode) swig_util::NodeEvaluator2 %{
-  public $descriptor(operations_research::RoutingModel::NodeEvaluator2*) DisownAndGetPermanentCallback() {
-    swigCMemOwn = false;
-    GC.SuppressFinalize(this);
-    return GetPermanentCallback();
-  }
-%}
-
-namespace swig_util {
-class NodeEvaluator2 : private ::operations_research::RoutingModel::NodeEvaluator2 {
+class LongResultCallback2 {
  public:
-  NodeEvaluator2();
-  virtual int64 Run(int i, int j) = 0;
-  ::operations_research::RoutingModel::NodeEvaluator2* GetPermanentCallback();
-  virtual ~NodeEvaluator2();
-
- private:
-  virtual bool IsRepeatable() const;
-  virtual int64 Run(::operations_research::RoutingModel::NodeIndex i,
-                    ::operations_research::RoutingModel::NodeIndex j);
-  bool used_as_permanent_handler_;
+  virtual int64 Run(int64, int64) = 0;
+  ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback2::Run);
+  }
+  virtual ~LongResultCallback2() {}
 };
-}  // namespace swig_util
+class LongResultCallback3 {
+ public:
+  virtual int64 Run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback3::Run);
+  }
+  virtual ~LongResultCallback3() {}
+};
 
-
-%typemap(cscode) operations_research::RoutingModel %{
-      private System.Collections.Generic.List<NodeEvaluator2> pinned =
-          new System.Collections.Generic.List<NodeEvaluator2>();
-    
-    private HandleRef TakeOwnershipAndAddReference(NodeEvaluator2 value)
-    {
-        var handle = $descriptor(ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*).getCPtr(value.DisownAndGetPermanentCallback());
-        this.pinned.Add(value);
-        return handle;
-    }
-    
-    private HandleRef TakeOwnershipAndAddReference(NodeEvaluator2[] values)
-    {
-        NodeEvaluator2Vector vector = new NodeEvaluator2Vector(values);
-        foreach (NodeEvaluator2 value in values)
-        {
-            value.DisownAndGetPermanentCallback();
-            this.pinned.Add(value);
-        }
-        
-        return NodeEvaluator2Vector.getCPtr(vector);
-    }
 %}
 
-// Typemaps for NodeEvaluator2 callbacks in csharp.
-%typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
-%typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "this.TakeOwnershipAndAddReference($csinput)";
+class LongResultCallback1 {
+ public:
+  virtual int64 Run(int64) = 0;
+  ResultCallback1<int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback1();
+};
+class LongResultCallback2 {
+ public:
+  virtual int64 Run(int64, int64) = 0;
+  ResultCallback2<int64, int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback2();
+};
+class LongResultCallback3 {
+ public:
+  virtual int64 Run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback3();
+};
 
-// Typemaps for NodeEvaluator2 arrays in csharp.
-%typemap(cstype) std::vector<ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*>& "NodeEvaluator2[]";
-%typemap(csin) std::vector<ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*>& %{  this.TakeOwnershipAndAddReference($csinput) %}
+// Typemaps for callbacks in csharp.
+%typemap(cstype) ResultCallback1<int64, int64>* "LongResultCallback1";
+%typemap(csin) ResultCallback1<int64, int64>*
+    "$descriptor(ResultCallback1<int64, int64>*)
+     .getCPtr($csinput.GetPermanentCallback())";
+%typemap(cstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
+%typemap(csin) ResultCallback2<int64, int64, int64>*
+    "$descriptor(ResultCallback2<int64, int64, int64>*)
+     .getCPtr($csinput.GetPermanentCallback())";
+%typemap(cstype) ResultCallback3<int64, int64, int64, int64>*
+    "LongResultCallback3";
+%typemap(csin) ResultCallback3<int64, int64, int64, int64>*
+    "$descriptor(ResultCallback3<int64, int64, int64, int64>*)
+     .getCPtr($csinput.GetPermanentCallback())";
 
+%rename (AddDimensionAux) operations_research::RoutingModel::AddDimension;
+%rename (AddDimensionWithVehicleCapacityAux) operations_research::RoutingModel::AddDimensionWithVehicleCapacity;
+%rename (SetArcCostEvaluatorOfAllVehiclesAux) operations_research::RoutingModel::SetArcCostEvaluatorOfAllVehicles;
+%rename (SetArcCostEvaluatorOfVehicleAux) operations_research::RoutingModel::SetArcCostEvaluatorOfVehicle;
 %rename (RoutingModelStatus) operations_research::RoutingModel::Status;
 
 %ignore operations_research::RoutingModel::AddVectorDimension(
@@ -216,6 +199,8 @@ class NodeEvaluator2 : private ::operations_research::RoutingModel::NodeEvaluato
     int64 capacity,
     const std::string& name);
 
+%ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
+%ignore operations_research::RoutingModel::StateDependentTransitCallback;
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
 %ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 
@@ -230,12 +215,10 @@ class NodeEvaluator2 : private ::operations_research::RoutingModel::NodeEvaluato
   }
 }
 
-%ignore operations_research::RoutingModel::WrapIndexEvaluator(
-    Solver::IndexEvaluator2* evaluator);
-
 %ignore operations_research::RoutingModel::RoutingModel(
-    int nodes, int vehicles,
-    const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+    const RoutingIndexManager&);
+%ignore operations_research::RoutingModel::RoutingModel(
+    const RoutingIndexManager&, const RoutingModelParameters&);
 
 %rename("%(camelcase)s", %$isfunction) "";
 
@@ -253,4 +236,5 @@ PROTO2_RETURN(operations_research::RoutingModelParameters,
 
 
 %include "ortools/constraint_solver/routing_types.h"
+%include "ortools/constraint_solver/routing_parameters.h"
 %include "ortools/constraint_solver/routing.h"

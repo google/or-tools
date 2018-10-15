@@ -215,7 +215,7 @@ std::string MonoidOperationTree<T>::DebugString() const {
       ++layer;
     }
     absl::StrAppendFormat(&out, "Position %d: %s\n", i,
-                          nodes_[i].DebugString().c_str());
+                          nodes_[i].DebugString());
   }
   return out;
 }

@@ -225,10 +225,13 @@ bool SatSolver::AddLinearConstraintInternal(
   // updates the weighted sign.
   if (rhs > 0) decision_policy_->UpdateWeightedSign(cst, rhs);
 
+  // Since the constraint is in canonical form, the coefficients are sorted.
+  const Coefficient min_coeff = cst.front().coefficient;
+  const Coefficient max_coeff = cst.back().coefficient;
+
   // A linear upper bounded constraint is a clause if the only problematic
-  // assignment is the one where all the literals are true. Since they are
-  // ordered by coefficient, this is easy to check.
-  if (max_value - cst[0].coefficient <= rhs) {
+  // assignment is the one where all the literals are true.
+  if (max_value - min_coeff <= rhs) {
     // This constraint is actually a clause. It is faster to treat it as one.
     literals_scratchpad_.clear();
     for (const LiteralWithCoeff& term : cst) {
@@ -240,7 +243,8 @@ bool SatSolver::AddLinearConstraintInternal(
   // Detect at most one constraints. Note that this use the fact that the
   // coefficient are sorted.
   if (parameters_->treat_binary_clauses_separately() &&
-      cst.back().coefficient <= rhs && 2 * cst.front().coefficient > rhs) {
+      !parameters_->use_pb_resolution() && max_coeff <= rhs &&
+      2 * min_coeff > rhs) {
     literals_scratchpad_.clear();
     for (const LiteralWithCoeff& term : cst) {
       literals_scratchpad_.push_back(term.literal);
@@ -288,6 +292,7 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
   }
 
   // Canonicalize the constraint.
+  // TODO(user): fix variables that must be true/false and remove them.
   Coefficient bound_shift;
   Coefficient max_value;
   CHECK(ComputeBooleanLinearExpressionCanonicalForm(cst, &bound_shift,

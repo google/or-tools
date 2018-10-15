@@ -1008,6 +1008,57 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   return var_constraint_graph_changed;
 }
 
+void ExtractAtMostOneFromLinear(ConstraintProto* ct, PresolveContext* context) {
+  if (HasEnforcementLiteral(*ct)) return;
+  const Domain domain = ReadDomainFromProto(ct->linear());
+
+  const LinearConstraintProto& arg = ct->linear();
+  const int num_vars = arg.vars_size();
+  int64 min_sum = 0;
+  int64 max_sum = 0;
+  for (int i = 0; i < num_vars; ++i) {
+    const int ref = arg.vars(i);
+    const int64 coeff = arg.coeffs(i);
+    const int64 term_a = coeff * context->MinOf(ref);
+    const int64 term_b = coeff * context->MaxOf(ref);
+    min_sum += std::min(term_a, term_b);
+    max_sum += std::max(term_a, term_b);
+  }
+  for (const int type : {0, 1}) {
+    std::vector<int> at_most_one;
+    for (int i = 0; i < num_vars; ++i) {
+      const int ref = arg.vars(i);
+      const int64 coeff = arg.coeffs(i);
+      if (context->MinOf(ref) != 0) continue;
+      if (context->MaxOf(ref) != 1) continue;
+
+      if (type == 0) {
+        // TODO(user): we could potentially add one more Boolean with a lower
+        // coeff as long as we have lower_coeff + min_of_other_coeff >
+        // domain.Max().
+        if (min_sum + 2 * std::abs(coeff) > domain.Max()) {
+          at_most_one.push_back(coeff > 0 ? ref : NegatedRef(ref));
+        }
+      } else {
+        if (max_sum - 2 * std::abs(coeff) < domain.Min()) {
+          at_most_one.push_back(coeff > 0 ? NegatedRef(ref) : ref);
+        }
+      }
+    }
+    if (at_most_one.size() > 1) {
+      if (type == 0) {
+        context->UpdateRuleStats("linear: extracted at most one (max).");
+      } else {
+        context->UpdateRuleStats("linear: extracted at most one (min).");
+      }
+      ConstraintProto* new_ct = context->working_model->add_constraints();
+      for (const int ref : at_most_one) {
+        new_ct->mutable_at_most_one()->add_literals(ref);
+      }
+    }
+  }
+}
+
 // Convert some linear constraint involving only Booleans to their Boolean
 // form.
 bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
@@ -2055,6 +2106,24 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
     // order changes from one run to the next.
     std::sort(queue.begin() + old_queue_size, queue.end());
     context.modified_domains.SparseClearAll();
+  }
+
+  // Extract redundant at most one constraint form the linear ones.
+  //
+  // TODO(user): more generally if we do some probing, the same relation will
+  // be detected (and more). Also add an option to turn this off?
+  if (!context.is_unsat) {
+    const int old_size = context.working_model->constraints_size();
+    for (int c = 0; c < old_size; ++c) {
+      ConstraintProto* ct = context.working_model->mutable_constraints(c);
+      if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
+        continue;
+      }
+      ExtractAtMostOneFromLinear(ct, &context);
+    }
+    for (int c = old_size; c < context.working_model->constraints_size(); ++c) {
+      context.UpdateConstraintVariableUsage(c);
+    }
   }
 
   // Run SAT specific presolve on the pure-SAT part of the problem.

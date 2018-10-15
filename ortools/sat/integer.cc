@@ -298,19 +298,6 @@ void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
 void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
                                                   IntegerVariable var,
                                                   IntegerValue value) {
-  const std::pair<IntegerVariable, IntegerValue> key{var, value};
-  if (gtl::ContainsKey(equality_to_associated_literal_, key)) {
-    // If this key is already associated, make the two literals equal.
-    const Literal representative = equality_to_associated_literal_[key];
-    if (representative != literal) {
-      sat_solver_->AddBinaryClause(literal, representative.Negated());
-      sat_solver_->AddBinaryClause(literal.Negated(), representative);
-    }
-    return;
-  }
-  equality_to_associated_literal_[key] = literal;
-  equality_to_associated_literal_[{NegationOf(var), -value}] = literal;
-
   // Detect literal view. Note that the same literal can be associated to more
   // than one variable, and thus already have a view. We don't change it in
   // this case.
@@ -331,6 +318,19 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
       literal_view_[literal.Index()] = NegationOf(var);
     }
   }
+
+  const std::pair<IntegerVariable, IntegerValue> key{var, value};
+  if (gtl::ContainsKey(equality_to_associated_literal_, key)) {
+    // If this key is already associated, make the two literals equal.
+    const Literal representative = equality_to_associated_literal_[key];
+    if (representative != literal) {
+      sat_solver_->AddBinaryClause(literal, representative.Negated());
+      sat_solver_->AddBinaryClause(literal.Negated(), representative);
+    }
+    return;
+  }
+  equality_to_associated_literal_[key] = literal;
+  equality_to_associated_literal_[{NegationOf(var), -value}] = literal;
 
   // Fix literal for value outside the domain or for singleton domain.
   if (!domain.Contains(value.value())) {

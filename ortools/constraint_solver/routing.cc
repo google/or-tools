@@ -4904,7 +4904,7 @@ GlobalVehicleBreaksConstraint::GlobalVehicleBreaksConstraint(
 
 void GlobalVehicleBreaksConstraint::Post() {
   for (int vehicle = 0; vehicle < model_->vehicles(); vehicle++) {
-    if (dimension_->GetBreakIntervalsOfVehicle(vehicle).empty()) continue;
+    if (!dimension_->VehicleHasBreakIntervals(vehicle)) continue;
     vehicle_demons_[vehicle] = MakeDelayedConstraintDemon1(
         solver(), this, &GlobalVehicleBreaksConstraint::PropagateVehicle,
         "PropagateVehicle", vehicle);
@@ -4927,8 +4927,9 @@ void GlobalVehicleBreaksConstraint::Post() {
 
 void GlobalVehicleBreaksConstraint::InitialPropagate() {
   for (int vehicle = 0; vehicle < model_->vehicles(); vehicle++) {
-    if (dimension_->GetBreakIntervalsOfVehicle(vehicle).empty()) continue;
-    PropagateVehicle(vehicle);
+    if (dimension_->VehicleHasBreakIntervals(vehicle)) {
+      PropagateVehicle(vehicle);
+    }
   }
 }
 
@@ -5642,6 +5643,12 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
   DCHECK_EQ(0, vehicle_node_visit_transits_[vehicle].size());
   vehicle_node_visit_transits_[vehicle] = std::move(node_visit_transits);
   vehicle_break_intervals_[vehicle] = std::move(breaks);
+}
+
+bool RoutingDimension::VehicleHasBreakIntervals(int vehicle) const {
+  DCHECK_LE(0, vehicle);
+  return (vehicle < vehicle_break_intervals_.size()) &&
+         !vehicle_break_intervals_[vehicle].empty();
 }
 
 const std::vector<IntervalVar*>& RoutingDimension::GetBreakIntervalsOfVehicle(

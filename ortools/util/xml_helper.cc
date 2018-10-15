@@ -16,7 +16,6 @@
 #include <sstream>
 #include <string>
 
-#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
@@ -71,8 +70,7 @@ void XmlHelper::AddAttribute(const std::string& key, const std::string& value) {
     }
   }
 
-  absl::StrAppendFormat(&content_, " %s=\"%s\"", key.c_str(),
-                        escaped_value.str().c_str());
+  absl::StrAppendFormat(&content_, " %s=\"%s\"", key, escaped_value.str());
 }
 
 void XmlHelper::EndElement() {

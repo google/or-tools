@@ -37,19 +37,21 @@ class IntegralSolver {
   BopParameters parameters() const { return parameters_; }
 
   // Solves the given linear program and returns the solve status.
-  ABSL_MUST_USE_RESULT BopSolveStatus Solve(const glop::LinearProgram& linear_problem);
-  ABSL_MUST_USE_RESULT BopSolveStatus SolveWithTimeLimit(const glop::LinearProgram& linear_problem,
-                                    TimeLimit* time_limit);
+  BopSolveStatus Solve(const glop::LinearProgram& linear_problem)
+      ABSL_MUST_USE_RESULT;
+  BopSolveStatus SolveWithTimeLimit(const glop::LinearProgram& linear_problem,
+                                    TimeLimit* time_limit) ABSL_MUST_USE_RESULT;
 
   // Same as Solve() but starts from the given solution.
   // TODO(user): Change the API to accept a partial solution instead since the
   // underlying solver supports it.
-  ABSL_MUST_USE_RESULT BopSolveStatus Solve(const glop::LinearProgram& linear_problem,
-                       const glop::DenseRow& user_provided_initial_solution);
-  ABSL_MUST_USE_RESULT BopSolveStatus SolveWithTimeLimit(
+  BopSolveStatus Solve(const glop::LinearProgram& linear_problem,
+                       const glop::DenseRow& user_provided_initial_solution)
+      ABSL_MUST_USE_RESULT;
+  BopSolveStatus SolveWithTimeLimit(
       const glop::LinearProgram& linear_problem,
       const glop::DenseRow& user_provided_initial_solution,
-      TimeLimit* time_limit);
+      TimeLimit* time_limit) ABSL_MUST_USE_RESULT;
 
   // Returns the objective value of the solution with its offset.
   glop::Fractional objective_value() const { return objective_value_; }

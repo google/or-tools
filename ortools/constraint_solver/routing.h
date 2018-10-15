@@ -1712,6 +1712,8 @@ class RoutingDimension {
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   std::vector<int64> node_visit_transits);
 #if !defined(SWIGPYTHON)
+  // Returns true if the vehicle has break intervals.
+  bool VehicleHasBreakIntervals(int vehicle) const;
   // Returns the break intervals set by SetBreakIntervalsOfVehicle().
   const std::vector<IntervalVar*>& GetBreakIntervalsOfVehicle(
       int vehicle) const;

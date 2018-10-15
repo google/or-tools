@@ -6514,7 +6514,7 @@ std::string IndexedName(const std::string& prefix, int index, int max_index) {
 #else
   const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1: 1;
 #endif
-  return absl::StrFormat("%s%0*d", prefix.c_str(), digits, index);
+  return absl::StrFormat("%s%0*d", prefix, digits, index);
 #else
   return absl::StrCat(prefix, index);
 #endif

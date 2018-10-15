@@ -180,7 +180,7 @@ class BasisFactorization {
   // matrix_ and basis_. This is fast if IsIdentityBasis() is true, otherwise
   // it will trigger a refactorization and will return an error if the matrix
   // could not be factorized.
-  ABSL_MUST_USE_RESULT Status Initialize();
+  Status Initialize() ABSL_MUST_USE_RESULT;
 
   // Return the number of rows in the basis.
   RowIndex GetNumberOfRows() const { return matrix_.num_rows(); }
@@ -188,11 +188,11 @@ class BasisFactorization {
   // Clears eta factorization and refactorizes LU.
   // Nothing happens if this is called on an already refactorized basis.
   // Returns an error if the matrix could not be factorized: i.e. not a basis.
-  ABSL_MUST_USE_RESULT Status Refactorize();
+  Status Refactorize() ABSL_MUST_USE_RESULT;
 
   // Like Refactorize(), but do it even if IsRefactorized() is true.
   // Call this if the underlying basis_ changed and Update() wasn't called.
-  ABSL_MUST_USE_RESULT Status ForceRefactorization();
+  Status ForceRefactorization() ABSL_MUST_USE_RESULT;
 
   // Returns true if the factorization was just recomputed.
   bool IsRefactorized() const;
@@ -200,8 +200,8 @@ class BasisFactorization {
   // Updates the factorization. The 'eta' column will be modified with a swap to
   // avoid a copy (only if the standard eta update is used). Returns an error if
   // the matrix could not be factorized: i.e. not a basis.
-  ABSL_MUST_USE_RESULT Status Update(ColIndex entering_col, RowIndex leaving_variable_row,
-                const ScatteredColumn& direction);
+  Status Update(ColIndex entering_col, RowIndex leaving_variable_row,
+                const ScatteredColumn& direction) ABSL_MUST_USE_RESULT;
 
   // Left solves the system y.B = rhs, where y initialy contains rhs.
   void LeftSolve(ScatteredRow* y) const;
@@ -279,8 +279,9 @@ class BasisFactorization {
   // Updates the factorization using the middle product form update.
   // Qi Huangfu, J. A. Julian Hall, "Novel update techniques for the revised
   // simplex method", 28 january 2013, Technical Report ERGO-13-0001
-  ABSL_MUST_USE_RESULT Status MiddleProductFormUpdate(ColIndex entering_col,
-                                 RowIndex leaving_variable_row);
+  Status MiddleProductFormUpdate(ColIndex entering_col,
+                                 RowIndex leaving_variable_row)
+      ABSL_MUST_USE_RESULT;
 
   // Increases the deterministic time for a solve operation with a vector having
   // this number of non-zero entries (it can be an approximation).

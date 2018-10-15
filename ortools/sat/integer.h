@@ -1061,6 +1061,7 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
     }
 
     encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
+    DCHECK_NE(encoder->GetLiteralView(lit), kNoIntegerVariable);
     return var;
   };
 }

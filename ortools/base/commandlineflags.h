@@ -33,6 +33,11 @@ inline const T& GetFlag(T* flag) {
   return *flag;
 }
 
+template <class T>
+inline const T& GetFlag(const T& flag) {
+  return flag;
+}
+
 }  // namespace absl
 
 #endif  // OR_TOOLS_BASE_COMMANDLINEFLAGS_H_

@@ -620,7 +620,7 @@ std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
 
 std::string LinearProgram::GetProblemStats() const {
   return ProblemStatFormatter(
-      "%d,%d,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+      "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
       "%d,%d,%d,%d");
 }
 
@@ -628,7 +628,7 @@ std::string LinearProgram::GetPrettyProblemStats() const {
   return ProblemStatFormatter(
       "Number of rows                               : %d\n"
       "Number of variables in file                  : %d\n"
-      "Number of entries (non-zeros)                : %lld\n"
+      "Number of entries (non-zeros)                : %d\n"
       "Number of entries in the objective           : %d\n"
       "Number of entries in the right-hand side     : %d\n"
       "Number of <= constraints                     : %d\n"
@@ -1257,7 +1257,8 @@ bool LinearProgram::IsValid() const {
   return true;
 }
 
-std::string LinearProgram::ProblemStatFormatter(const char* format) const {
+std::string LinearProgram::ProblemStatFormatter(
+    const absl::string_view format) const {
   int num_objective_non_zeros = 0;
   int num_non_negative_variables = 0;
   int num_boxed_variables = 0;
@@ -1334,17 +1335,23 @@ std::string LinearProgram::ProblemStatFormatter(const char* format) const {
   const int num_non_binary_variables = NonBinaryVariablesList().size();
   const int num_continuous_variables =
       ColToIntIndex(num_variables()) - num_integer_variables;
+  auto format_runtime =
+      absl::ParsedFormat<'d', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd',
+                         'd', 'd', 'd', 'd', 'd', 'd', 'd'>::New(format);
+  CHECK(format_runtime);
   return absl::StrFormat(
-      format, RowToIntIndex(num_constraints()), ColToIntIndex(num_variables()),
-      matrix_.num_entries().value(), num_objective_non_zeros, num_rhs_non_zeros,
-      num_less_than_constraints, num_greater_than_constraints,
-      num_equal_constraints, num_range_constraints, num_non_negative_variables,
-      num_boxed_variables, num_free_variables, num_fixed_variables,
-      num_other_variables, num_integer_variables, num_binary_variables,
-      num_non_binary_variables, num_continuous_variables);
+      *format_runtime, RowToIntIndex(num_constraints()),
+      ColToIntIndex(num_variables()), matrix_.num_entries().value(),
+      num_objective_non_zeros, num_rhs_non_zeros, num_less_than_constraints,
+      num_greater_than_constraints, num_equal_constraints,
+      num_range_constraints, num_non_negative_variables, num_boxed_variables,
+      num_free_variables, num_fixed_variables, num_other_variables,
+      num_integer_variables, num_binary_variables, num_non_binary_variables,
+      num_continuous_variables);
 }
 
-std::string LinearProgram::NonZeroStatFormatter(const char* format) const {
+std::string LinearProgram::NonZeroStatFormatter(
+    const absl::string_view format) const {
   StrictITIVector<RowIndex, EntryIndex> num_entries_in_row(num_constraints(),
                                                            EntryIndex(0));
   StrictITIVector<ColIndex, EntryIndex> num_entries_in_column(num_variables(),
@@ -1367,8 +1374,10 @@ std::string LinearProgram::NonZeroStatFormatter(const char* format) const {
   const double fill_rate = 100.0 * static_cast<double>(num_entries.value()) /
                            static_cast<double>(height * width);
 
+  auto format_runtime =
+      absl::ParsedFormat<'f', 'd', 'f', 'f', 'd', 'f', 'f'>::New(format);
   return absl::StrFormat(
-      format, fill_rate, GetMaxElement(num_entries_in_row).value(),
+      *format_runtime, fill_rate, GetMaxElement(num_entries_in_row).value(),
       Average(num_entries_in_row), StandardDeviation(num_entries_in_row),
       GetMaxElement(num_entries_in_column).value(),
       Average(num_entries_in_column), StandardDeviation(num_entries_in_column));

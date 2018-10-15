@@ -17,7 +17,6 @@
 #include <limits>
 #include <unordered_set>
 
-#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -418,9 +417,11 @@ void MPModelProtoExporter::AppendMpsPair(const std::string& name, double value,
 void MPModelProtoExporter::AppendMpsLineHeader(const std::string& id,
                                                const std::string& name,
                                                std::string* output) const {
-  absl::StrAppendFormat(output,
-                        use_fixed_mps_format_ ? " %-2s %-8s" : " %-2s  %-16s",
-                        id.c_str(), name.c_str());
+  if (use_fixed_mps_format_) {
+    absl::StrAppendFormat(output, " %-2s %-8s", id, name);
+  } else {
+    absl::StrAppendFormat(output, " %-2s  %-16s", id, name);
+  }
 }
 
 void MPModelProtoExporter::AppendMpsLineHeaderWithNewLine(

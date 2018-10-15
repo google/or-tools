@@ -1602,8 +1602,10 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
   // TODO(user): This test is not ideal for the corner case where the status is
   // still UNKNOWN yet we already know that if there is a solution, then its
   // objective is zero...
-  if (response.status() != CpSolverStatus::OPTIMAL &&
-      response.objective_value() == 0 && response.best_objective_bound() == 0) {
+  if (response.status() == CpSolverStatus::INFEASIBLE ||
+      (response.status() != CpSolverStatus::OPTIMAL &&
+       response.objective_value() == 0 &&
+       response.best_objective_bound() == 0)) {
     absl::StrAppend(&result, "\nobjective: NA");
     absl::StrAppend(&result, "\nbest_bound: NA");
   } else {
@@ -1823,10 +1825,11 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
 // we encode. At level zero, we only encode non-reified linear constraints.
 //
 // TODO(user): In full generality, we could encode all the constraint as an LP.
-void TryToLinearizeConstraint(
-    const CpModelProto& model_proto, const ConstraintProto& ct,
-    ModelWithMapping* m, int linearization_level,
-    std::vector<LinearConstraint>* linear_constraints) {
+void TryToLinearizeConstraint(const CpModelProto& model_proto,
+                              const ConstraintProto& ct, ModelWithMapping* m,
+                              int linearization_level,
+                              std::vector<LinearConstraint>* linear_constraints,
+                              std::vector<std::vector<Literal>>* at_most_ones) {
   const double kInfinity = std::numeric_limits<double>::infinity();
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
     if (linearization_level < 2) return;
@@ -1842,6 +1845,13 @@ void TryToLinearizeConstraint(
              ConstraintProto::ConstraintCase::kBoolAnd) {
     if (linearization_level < 2) return;
     if (!HasEnforcementLiteral(ct)) return;
+    if (ct.enforcement_literal().size() == 1) {
+      const Literal enforcement = m->Literal(ct.enforcement_literal(0));
+      for (const int ref : ct.bool_and().literals()) {
+        at_most_ones->push_back({enforcement, m->Literal(ref).Negated()});
+      }
+      return;
+    }
     for (const int ref : ct.bool_and().literals()) {
       // Same as the clause linearization above.
       LinearConstraintBuilder lc(m->model(), 1.0, kInfinity);
@@ -1854,11 +1864,11 @@ void TryToLinearizeConstraint(
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kAtMostOne) {
     if (HasEnforcementLiteral(ct)) return;
-    LinearConstraintBuilder lc(m->model(), -kInfinity, 1);
+    std::vector<Literal> at_most_one;
     for (const int ref : ct.at_most_one().literals()) {
-      CHECK(lc.AddLiteralTerm(m->Literal(ref), 1.0));
+      at_most_one.push_back(m->Literal(ref));
     }
-    linear_constraints->push_back(lc.Build());
+    at_most_ones->push_back(at_most_one);
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
     if (HasEnforcementLiteral(ct)) return;
     const int target = ct.int_max().target();
@@ -1903,6 +1913,8 @@ void TryToLinearizeConstraint(
     // TODO(user): In LoadLinearConstraint() we already created intermediate
     // Booleans for each disjoint interval, we should reuse them here if
     // possible.
+    //
+    // TODO(user): process the "at most one" part of a == 1 separately?
     const int64 min = ct.linear().domain(0);
     const int64 max = ct.linear().domain(ct.linear().domain_size() - 1);
     if (min == kint64min && max == kint64max) return;
@@ -1978,19 +1990,8 @@ void TryToLinearizeConstraint(
 
     // Each node must have exactly one incoming and one outgoing arc (note that
     // it can be the unique self-arc of this node too).
-    std::map<int, std::unique_ptr<LinearConstraintBuilder>>
-        incoming_arc_constraints;
-    std::map<int, std::unique_ptr<LinearConstraintBuilder>>
-        outgoing_arc_constraints;
-    auto get_constraint =
-        [m](std::map<int, std::unique_ptr<LinearConstraintBuilder>>* node_map,
-            int node) {
-          if (!gtl::ContainsKey(*node_map, node)) {
-            (*node_map)[node] =
-                absl::make_unique<LinearConstraintBuilder>(m->model(), 1, 1);
-          }
-          return (*node_map)[node].get();
-        };
+    std::map<int, std::vector<Literal>> incoming_arc_constraints;
+    std::map<int, std::vector<Literal>> outgoing_arc_constraints;
     for (int i = 0; i < num_arcs; i++) {
       const Literal arc = m->Literal(ct.circuit().literals(i));
       const int tail = ct.circuit().tails(i);
@@ -1998,17 +1999,22 @@ void TryToLinearizeConstraint(
 
       // Make sure this literal has a view.
       m->Add(NewIntegerVariableFromLiteral(arc));
-
-      CHECK(get_constraint(&outgoing_arc_constraints, tail)
-                ->AddLiteralTerm(arc, 1.0));
-      CHECK(get_constraint(&incoming_arc_constraints, head)
-                ->AddLiteralTerm(arc, 1.0));
+      outgoing_arc_constraints[tail].push_back(arc);
+      incoming_arc_constraints[head].push_back(arc);
     }
     for (const auto* node_map :
          {&outgoing_arc_constraints, &incoming_arc_constraints}) {
       for (const auto& entry : *node_map) {
-        if (entry.second->size() > 1) {
-          linear_constraints->push_back(entry.second->Build());
+        const std::vector<Literal>& exactly_one = entry.second;
+        if (exactly_one.size() > 1) {
+          LinearConstraintBuilder at_least_one_lc(m->model(), 1, kInfinity);
+          for (const Literal l : exactly_one) {
+            CHECK(at_least_one_lc.AddLiteralTerm(l, 1.0));
+          }
+
+          // We separate the two constraints.
+          at_most_ones->push_back(exactly_one);
+          linear_constraints->push_back(at_least_one_lc.Build());
         }
       }
     }
@@ -2093,6 +2099,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   // Linearize the constraints.
   IndexReferences refs;
   std::vector<LinearConstraint> linear_constraints;
+  std::vector<std::vector<Literal>> at_most_ones;
   std::vector<CutGenerator> cut_generators;
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
   for (const auto& ct : model_proto.constraints()) {
@@ -2101,11 +2108,9 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     if (m->IgnoreConstraint(&ct)) continue;
 
     // Make sure the literal from a circuit constraint always have a view.
-    if (linearization_level > 1) {
-      if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
-        for (const int ref : ct.circuit().literals()) {
-          m->Add(NewIntegerVariableFromLiteral(m->Literal(ref)));
-        }
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
+      for (const int ref : ct.circuit().literals()) {
+        m->Add(NewIntegerVariableFromLiteral(m->Literal(ref)));
       }
     }
 
@@ -2128,8 +2133,9 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
       }
     }
     if (!ok) continue;
+
     TryToLinearizeConstraint(model_proto, ct, m, linearization_level,
-                             &linear_constraints);
+                             &linear_constraints, &at_most_ones);
 
     // For now these are only useful on problem with circuit. They can help
     // a lot on complex problems, but they also slow down simple ones.
@@ -2166,12 +2172,28 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     }
   }
 
+  // Linearize the at most one constraints. Note that we transform them
+  // into maximum "at most one" first and we removes redundant ones.
+  m->GetOrCreate<BinaryImplicationGraph>()->TransformIntoMaxCliques(
+      &at_most_ones);
+  for (const std::vector<Literal>& at_most_one : at_most_ones) {
+    if (at_most_one.empty()) continue;
+    const double kInfinity = std::numeric_limits<double>::infinity();
+    LinearConstraintBuilder lc(m->model(), -kInfinity, 1.0);
+    for (const Literal literal : at_most_one) {
+      // Note that it is okay to simply ignore the literal if it has no
+      // integer view.
+      const bool unused ABSL_ATTRIBUTE_UNUSED = lc.AddLiteralTerm(literal, 1.0);
+    }
+    linear_constraints.push_back(lc.Build());
+  }
+
   // Remove size one LP constraints, they are not useful.
   const int num_extra_constraints = linear_constraints.size() - old_size;
   {
     int new_size = 0;
     for (int i = 0; i < linear_constraints.size(); ++i) {
-      if (linear_constraints[i].vars.size() == 1) continue;
+      if (linear_constraints[i].vars.size() <= 1) continue;
       std::swap(linear_constraints[new_size++], linear_constraints[i]);
     }
     linear_constraints.resize(new_size);
@@ -2491,12 +2513,6 @@ CpSolverResponse SolveCpModelInternal(
       ->AddAllImplicationsBetweenAssociatedLiterals();
   model->GetOrCreate<SatSolver>()->Propagate();
 
-  // TODO(user): This should be done in the presolve instead.
-  if (!model->GetOrCreate<BinaryImplicationGraph>()
-           ->ComputeTransitiveReduction()) {
-    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-  }
-
   // Auto detect "at least one of" constraints in the PrecedencesPropagator.
   // Note that we do that before we finish loading the problem (objective and LP
   // relaxation), because propagation will be faster at this point and it should
@@ -2507,6 +2523,12 @@ CpSolverResponse SolveCpModelInternal(
     model->Mutable<PrecedencesPropagator>()
         ->AddGreaterThanAtLeastOneOfConstraints(model);
     model->GetOrCreate<SatSolver>()->Propagate();
+  }
+
+  // TODO(user): This should be done in the presolve instead.
+  if (!model->GetOrCreate<BinaryImplicationGraph>()
+           ->ComputeTransitiveReduction()) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
   }
 
   // Create an objective variable and its associated linear constraint if

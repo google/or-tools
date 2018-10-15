@@ -61,27 +61,28 @@ class EnteringVariable {
   // IsValidPrimalEnteringCandidate() for more details) or kInvalidCol if no
   // such column exists. This latter case means that the primal algorithm has
   // terminated: the optimal has been reached.
-  ABSL_MUST_USE_RESULT Status PrimalChooseEnteringColumn(ColIndex* entering_col);
+  Status PrimalChooseEnteringColumn(ColIndex* entering_col)
+      ABSL_MUST_USE_RESULT;
 
   // Dual optimization phase (i.e. phase II) ratio test.
   // Returns the index of the entering column given that we want to move along
   // the "update" row vector in the direction given by the sign of
   // cost_variation. Computes the smallest step that keeps the dual feasibility
   // for all the columns.
-  ABSL_MUST_USE_RESULT Status DualChooseEnteringColumn(const UpdateRow& update_row,
+  Status DualChooseEnteringColumn(const UpdateRow& update_row,
                                   Fractional cost_variation,
                                   std::vector<ColIndex>* bound_flip_candidates,
                                   ColIndex* entering_col,
-                                  Fractional* step);
+                                  Fractional* step) ABSL_MUST_USE_RESULT;
 
   // Dual feasibility phase (i.e. phase I) ratio test.
   // Similar to the optimization phase test, but allows a step that increases
   // the infeasibility of an already infeasible column. The step magnitude is
   // the one that minimize the sum of infeasibilities when applied.
-  ABSL_MUST_USE_RESULT Status DualPhaseIChooseEnteringColumn(const UpdateRow& update_row,
+  Status DualPhaseIChooseEnteringColumn(const UpdateRow& update_row,
                                         Fractional cost_variation,
                                         ColIndex* entering_col,
-                                        Fractional* step);
+                                        Fractional* step) ABSL_MUST_USE_RESULT;
 
   // Sets the pricing parameters. This does not change the pricing rule.
   void SetParameters(const GlopParameters& parameters);

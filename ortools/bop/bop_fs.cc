@@ -406,13 +406,13 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
                         (clause.b.IsPositive() ? 0 : -1);
       const ColIndex col_a(clause.a.Variable().value());
       const ColIndex col_b(clause.b.Variable().value());
+      const std::string name_a = lp_model_.GetVariableName(col_a);
+      const std::string name_b = lp_model_.GetVariableName(col_b);
+
       lp_model_.SetConstraintName(
           constraint_index,
-          absl::StrFormat((clause.a.IsPositive() ? "%s" : "not(%s)"),
-                          lp_model_.GetVariableName(col_a).c_str()) +
-              " or " +
-              absl::StrFormat((clause.b.IsPositive() ? "%s" : "not(%s)"),
-                              lp_model_.GetVariableName(col_b).c_str()));
+          (clause.a.IsPositive() ? name_a : "not(" + name_a + ")") + " or " +
+              (clause.b.IsPositive() ? name_b : "not(" + name_b + ")"));
       lp_model_.SetCoefficient(constraint_index, col_a, coefficient_a);
       lp_model_.SetCoefficient(constraint_index, col_b, coefficient_b);
       lp_model_.SetConstraintBounds(constraint_index, rhs, glop::kInfinity);

@@ -995,6 +995,10 @@ class PathCumulFilter : public BasePathFilter {
            has_vehicle_span_upper_bounds_;
   }
 
+  bool FilterBreakCost(int vehicle) const {
+    return dimension_.VehicleHasBreakIntervals(vehicle);
+  }
+
   bool FilterCumulSoftBounds() const { return !cumul_soft_bounds_.empty(); }
 
   int64 GetCumulSoftCost(int64 node, int64 cumul_value) const;
@@ -1043,9 +1047,9 @@ class PathCumulFilter : public BasePathFilter {
       const std::vector<int64>& min_path_cumuls) const;
 
   // Compute the max start cumul value for a given path given an end cumul
-  // value.
+  // value. Does not take time windows into account.
   int64 ComputePathMaxStartFromEndCumul(const PathTransits& path_transits,
-                                        int path, int end_cumul) const;
+                                        int path, int64 end_cumul) const;
 
   const RoutingModel& routing_model_;
   const RoutingDimension& dimension_;
@@ -1162,7 +1166,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
           dimension.GetCumulVarPiecewiseLinearCost(i);
     }
     IntVar* const cumul_var = cumuls_[i];
-    if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max) {
+    if (cumul_var->Min() > 0 || cumul_var->Max() < kint64max) {
       has_cumul_hard_bounds = true;
     }
   }
@@ -1407,21 +1411,42 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
           CapAdd(cumul_cost_delta, GetCumulPiecewiseLinearCost(node, cumul));
     }
   }
+  const int64 min_end = cumul;
+
   if (!PickupToDeliveryLimitsRespected(delta_path_transits_, path,
                                        min_path_cumuls)) {
     return false;
   }
-  if (FilterSlackCost()) {
-    const int64 start =
-        ComputePathMaxStartFromEndCumul(delta_path_transits_, path, cumul);
-    const int64 path_cumul_range = CapSub(cumul, start);
-    if (path_cumul_range > vehicle_span_upper_bounds_[vehicle]) {
-      return false;
-    }
+  if (FilterSlackCost() || FilterBreakCost(vehicle)) {
+    const int64 max_start_from_min_end =
+        ComputePathMaxStartFromEndCumul(delta_path_transits_, path, min_end);
+    int64 min_total_slack =
+        CapSub(CapSub(min_end, max_start_from_min_end), total_transit);
     if (!filter_with_optimizer) {
+      if (FilterBreakCost(vehicle)) {
+        // Compute a lower bound of the amount of break that must be made inside
+        // the route. We compute a mandatory interval (might be empty)
+        // [max_start, min_end[ during which the route will have to happen,
+        // then the duration of break that must happen during this interval.
+        int64 min_total_break = 0;
+        int64 max_path_end = cumuls_[routing_model_.End(vehicle)]->Max();
+        const int64 max_start = ComputePathMaxStartFromEndCumul(
+            delta_path_transits_, path, max_path_end);
+        for (const IntervalVar* br :
+             dimension_.GetBreakIntervalsOfVehicle(vehicle)) {
+          if (max_start < br->EndMin() && br->StartMax() < min_end) {
+            min_total_break = CapAdd(min_total_break, br->DurationMin());
+          }
+        }
+        min_total_slack = std::max(min_total_slack, min_total_break);
+      }
       cumul_cost_delta = CapAdd(
-          cumul_cost_delta, CapProd(vehicle_span_cost_coefficients_[vehicle],
-                                    CapSub(path_cumul_range, total_transit)));
+          cumul_cost_delta,
+          CapProd(vehicle_span_cost_coefficients_[vehicle], min_total_slack));
+    }
+    if (CapAdd(total_transit, min_total_slack) >
+        vehicle_span_upper_bounds_[vehicle]) {
+      return false;
     }
   }
   if (FilterCumulSoftLowerBounds() && !filter_with_optimizer) {
@@ -1597,7 +1622,7 @@ bool PathCumulFilter::PickupToDeliveryLimitsRespected(
 }
 
 int64 PathCumulFilter::ComputePathMaxStartFromEndCumul(
-    const PathTransits& path_transits, int path, int end_cumul) const {
+    const PathTransits& path_transits, int path, int64 end_cumul) const {
   int64 cumul = end_cumul;
   for (int i = path_transits.PathSize(path) - 2; i >= 0; --i) {
     cumul = CapSub(cumul, path_transits.Transit(path, i));
@@ -1983,7 +2008,7 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
                                      int64 chain_end) {
   // Translate path and breaks to tasks.
   const int vehicle = start_to_vehicle_[path_start];
-  if (dimension_.GetBreakIntervalsOfVehicle(vehicle).empty()) return true;
+  if (!dimension_.VehicleHasBreakIntervals(vehicle)) return true;
   tasks_.start_min.clear();
   tasks_.duration_min.clear();
   tasks_.end_max.clear();

@@ -115,7 +115,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
     for (int i = 0; i < output.flat_variables.size(); ++i) {
       const int64 value = SolutionValue(output.flat_variables[i]);
       if (output.display_as_boolean) {
-        result.append(absl::StrFormat(value ? "true" : "false"));
+        result.append(value ? "true" : "false");
       } else {
         absl::StrAppend(&result, value);
       }
