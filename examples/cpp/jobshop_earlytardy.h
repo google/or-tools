@@ -39,12 +39,13 @@
 
 #include <vector>
 
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/random.h"
-#include "ortools/base/split.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
 
 namespace operations_research {
@@ -73,7 +74,7 @@ class EtJobShopData {
 
   void LoadJetFile(const std::string& filename) {
     LOG(INFO) << "Reading jet file " << filename;
-    name_ = StringPrintf("JetData(%s)", filename.c_str());
+    name_ = absl::StrFormat("JetData(%s)", filename);
     for (const std::string& line : FileLines(filename)) {
       if (line.empty()) {
         continue;
@@ -86,10 +87,10 @@ class EtJobShopData {
                           int max_release_date, int max_early_cost,
                           int max_tardy_cost, int max_duration,
                           int scale_factor, int seed) {
-    name_ =
-        StringPrintf("EtJobshop(m%d-j%d-mrd%d-mew%d-mtw%d-md%d-sf%d-s%d)",
-                     machine_count, job_count, max_release_date, max_early_cost,
-                     max_tardy_cost, max_duration, scale_factor, seed);
+    name_ = absl::StrFormat(
+        "EtJobshop(m%d-j%d-mrd%d-mew%d-mtw%d-md%d-sf%d-s%d)", machine_count,
+        job_count, max_release_date, max_early_cost, max_tardy_cost,
+        max_duration, scale_factor, seed);
     LOG(INFO) << "Generating random problem " << name_;
     ACMRandom random(seed);
     machine_count_ = machine_count;

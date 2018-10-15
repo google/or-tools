@@ -50,7 +50,6 @@ DEFINE_string(params, "",
 
 using google::protobuf::TextFormat;
 using operations_research::FullProtocolMessageAsString;
-using operations_research::HasSuffixString;
 using operations_research::ReadFileToProto;
 using operations_research::glop::GetProblemStatusString;
 using operations_research::glop::GlopParameters;
@@ -91,8 +90,8 @@ int main(int argc, char* argv[]) {
     const std::string& file_name = file_list[i];
     MPSReader mps_reader;
     operations_research::MPModelProto model_proto;
-    if (strings::EndsWith(file_name, ".mps") ||
-        strings::EndsWith(file_name, ".mps.gz")) {
+    if (absl::EndsWith(file_name, ".mps") ||
+        absl::EndsWith(file_name, ".mps.gz")) {
       if (!mps_reader.LoadFileAndTryFreeFormOnFail(file_name,
                                                    &linear_program)) {
         LOG(INFO) << "Parse error for " << file_name;

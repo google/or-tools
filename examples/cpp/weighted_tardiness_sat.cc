@@ -17,6 +17,7 @@
 
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
@@ -274,7 +275,7 @@ void ParseAndSolve() {
     entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
     for (const std::string& entry : entries) {
       numbers.push_back(0);
-      strings::safe_strto32(entry, &numbers.back());
+      CHECK(absl::SimpleAtoi(entry, &numbers.back()));
     }
   }
 

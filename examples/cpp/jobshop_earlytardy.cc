@@ -36,12 +36,12 @@
 
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "examples/cpp/jobshop_earlytardy.h"
 #include "examples/cpp/jobshop_ls.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/string_array.h"
@@ -98,7 +98,7 @@ class TimePlacement : public DecisionBuilder {
     for (int s = 0; s < jobs_to_tasks_.size(); ++s) {
       for (int t = 0; t < jobs_to_tasks_[s].size(); ++t) {
         IntervalVar* const task = jobs_to_tasks_[s][t];
-        const std::string name = StringPrintf("J%dT%d", s, t);
+        const std::string name = absl::StrFormat("J%dT%d", s, t);
         MPVariable* const var =
             mp_solver_.MakeIntVar(task->StartMin(), task->StartMax(), name);
         mapping[task] = var;
@@ -218,8 +218,8 @@ void EtJobShop(const EtJobShopData& data) {
       const Task& task = tasks[task_index];
       CHECK_EQ(job_id, task.job_id);
       const std::string name =
-          StringPrintf("J%dM%dI%dD%d", task.job_id, task.machine_id, task_index,
-                       task.duration);
+          absl::StrFormat("J%dM%dI%dD%d", task.job_id, task.machine_id,
+                          task_index, task.duration);
       IntervalVar* const one_task = solver.MakeFixedDurationIntervalVar(
           0, horizon, task.duration, false, name);
       jobs_to_tasks[task.job_id].push_back(one_task);
@@ -267,7 +267,7 @@ void EtJobShop(const EtJobShopData& data) {
   // whose job is to sequence interval variables.
   std::vector<SequenceVar*> all_sequences;
   for (int machine_id = 0; machine_id < machine_count; ++machine_id) {
-    const std::string name = StringPrintf("Machine_%d", machine_id);
+    const std::string name = absl::StrFormat("Machine_%d", machine_id);
     DisjunctiveConstraint* const ct =
         solver.MakeDisjunctiveConstraint(machines_to_tasks[machine_id], name);
     solver.AddConstraint(ct);

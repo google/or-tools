@@ -17,10 +17,10 @@
 //  unique solutions: http://www.research.att.com/~njas/sequences/A000170
 //  distinct solutions: http://www.research.att.com/~njas/sequences/A002562
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_int32(
@@ -36,7 +36,8 @@ void NQueens(int size) {
   // model
   std::vector<IntVar*> queens;
   for (int i = 0; i < size; ++i) {
-    queens.push_back(s.MakeIntVar(0, size - 1, StringPrintf("queen%04d", i)));
+    queens.push_back(
+        s.MakeIntVar(0, size - 1, absl::StrFormat("queen%04d", i)));
   }
   for (int i = 0; i < size - 1; ++i) {
     for (int j = i + 1; j < size; ++j) {

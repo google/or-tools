@@ -86,8 +86,8 @@ void Run() {
   // Load the problem into an MPModelProto.
   MPModelProto model_proto;
   MPModelRequest request_proto;
-  if (strings::EndsWith(FLAGS_input, ".mps") ||
-      strings::EndsWith(FLAGS_input, ".mps.gz")) {
+  if (absl::EndsWith(FLAGS_input, ".mps") ||
+      absl::EndsWith(FLAGS_input, ".mps.gz")) {
     glop::LinearProgram linear_program;
     CHECK(glop::LoadLinearProgramFromMps(FLAGS_input, FLAGS_forced_mps_format,
                                          &linear_program))

@@ -126,8 +126,8 @@ class BooleanSumEven : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("BooleanSumEven([%s])",
-                        JoinDebugStringPtr(vars_, ", ").c_str());
+    return absl::StrFormat("BooleanSumEven([%s])",
+                           JoinDebugStringPtr(vars_, ", ").c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -230,7 +230,7 @@ class GridSinglePath : public Constraint {
       to_process.pop_front();
       visited_points.insert(candidate);
       for (int neighbor : neighbors[candidate]) {
-        if (!ContainsKey(visited_points, neighbor)) {
+        if (!gtl::ContainsKey(visited_points, neighbor)) {
           to_process.push_back(neighbor);
           visited_points.insert(neighbor);
         }
@@ -281,7 +281,7 @@ void PrintSolution(const std::vector<std::vector<int>>& data,
       const int sum = data[i][j];
       first_line += h_arc == 1 ? " ---" : "    ";
       second_line += v_arc == 1 ? "|" : " ";
-      second_line += sum == -1 ? "   " : StringPrintf(" %d ", sum).c_str();
+      second_line += sum == -1 ? "   " : absl::StrFormat(" %d ", sum).c_str();
       third_line += v_arc == 1 ? "|   " : "    ";
     }
     const int termination = v_arcs[num_columns][i]->Value();
@@ -309,14 +309,15 @@ void SlitherLink(const std::vector<std::vector<int>>& data) {
   std::vector<IntVar*> all_vars;
   std::vector<std::vector<IntVar*>> h_arcs(num_rows + 1);
   for (int i = 0; i < num_rows + 1; ++i) {
-    solver.MakeBoolVarArray(num_columns, StringPrintf("h_arc_%i_", i),
+    solver.MakeBoolVarArray(num_columns, absl::StrFormat("h_arc_%i_", i),
                             &h_arcs[i]);
     all_vars.insert(all_vars.end(), h_arcs[i].begin(), h_arcs[i].end());
   }
 
   std::vector<std::vector<IntVar*>> v_arcs(num_columns + 1);
   for (int i = 0; i < num_columns + 1; ++i) {
-    solver.MakeBoolVarArray(num_rows, StringPrintf("v_arc_%i_", i), &v_arcs[i]);
+    solver.MakeBoolVarArray(num_rows, absl::StrFormat("v_arc_%i_", i),
+                            &v_arcs[i]);
     all_vars.insert(all_vars.end(), v_arcs[i].begin(), v_arcs[i].end());
   }
 

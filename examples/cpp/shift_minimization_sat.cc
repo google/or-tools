@@ -113,7 +113,7 @@ class ShiftMinimizationParser {
     }
 
     const std::vector<std::string> words =
-        absl::StrSplit(line, absl::delimiter::AnyOf(" :\t"), absl::SkipEmpty());
+        absl::StrSplit(line, absl::ByAnyChar(" :\t"), absl::SkipEmpty());
 
     switch (load_status_) {
       case NOT_STARTED: {
