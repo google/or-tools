@@ -197,6 +197,7 @@ static const char kUsage[] =
     " optimization output besides the debug LOGs of the solver.";
 
 int main(int argc, char** argv) {
+  absl::SetFlag(&FLAGS_logtostderr, true);
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {
