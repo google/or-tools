@@ -429,6 +429,9 @@ class Constraint(object):
     Args:
         boolvar: A boolean literal or a list of boolean literals.
 
+    Returns:
+        self.
+
     This method adds one or more literals (that is a boolean variable or its
     negation) as enforcement literals. The conjunction of all these literals
     decides whether the constraint is active or not. It acts as an
