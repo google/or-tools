@@ -1,4 +1,3 @@
-// Copyright 2010-2017 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,19 +14,19 @@
 
 #include <cstdio>
 
-#include "base/commandlineflags.h"
-#include "base/file.h"
-#include "base/filelinereader.h"
-#include "base/hash.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/map_util.h"
-#include "base/split.h"
-#include "base/stringprintf.h"
-#include "base/strtoint.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/routing.h"
-#include "util/tuple_set.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_split.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/file.h"
+#include "ortools/base/filelineiter.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/strtoint.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/routing.h"
+#include "ortools/util/tuple_set.h"
 
 DEFINE_string(input, "", "");
 DEFINE_string(solution, "", "");
@@ -48,18 +47,17 @@ class AcpData {
       : num_periods_(-1), num_products_(-1), inventory_cost_(0), state_(0) {}
 
   void Load(const std::string& filename) {
-    FileLineReader reader(filename.c_str());
-    reader.set_line_callback(
-        NewPermanentCallback(this, &AcpData::ProcessNewLine));
-    reader.Reload();
-    if (!reader.loaded_successfully()) {
-      LOG(ERROR) << "Could not open acp challenge file";
+    for (const std::string& line : FileLines(filename)) {
+      if (line.empty()) {
+        continue;
+      }
+      ProcessNewLine(line);
     }
   }
 
-  void ProcessNewLine(char* const line) {
+  void ProcessNewLine(const std::string& line) {
     const std::vector<std::string> words =
-        strings::Split(line, " ", strings::SkipEmpty());
+        absl::StrSplit(line, " ", absl::SkipEmpty());
     if (words.empty()) return;
     switch (state_) {
       case 0: {
@@ -103,8 +101,8 @@ class AcpData {
   }
 
   std::string DebugString() const {
-    return StringPrintf("AcpData(%d periods, %d products, %d cost)",
-                        num_periods_, num_products_, inventory_cost_);
+    return absl::StrFormat("AcpData(%d periods, %d products, %d cost)",
+                           num_periods_, num_products_, inventory_cost_);
   }
 
   const std::vector<std::vector<int>>& due_dates_per_product() const {
@@ -133,13 +131,13 @@ void LoadSolution(const std::string& filename, std::vector<int>* vec) {
   std::string line;
   file->ReadToString(&line, 10000);
   const std::vector<std::string> words =
-      strings::Split(line, " ", strings::SkipEmpty());
+      absl::StrSplit(line, " ", absl::SkipEmpty());
   LOG(INFO) << "Solution file has " << words.size() << " entries";
   vec->clear();
   for (const std::string& word : words) {
     vec->push_back(atoi32(word));
   }
-  LOG(INFO) << "  - loaded " << strings::Join(*vec, " ");
+  LOG(INFO) << "  - loaded " << absl::StrJoin(*vec, " ");
 }
 
 int Evaluate(const AcpData& data, const std::vector<int>& schedule) {
@@ -248,8 +246,8 @@ void Solve(const std::string& filename, const std::string& solution_file) {
       dates_to_modified_dates.push_back(-1);
     }
   }
-  LOG(INFO) << "original: " << strings::Join(dates_to_modified_dates, " ");
-  LOG(INFO) << "modified: " << strings::Join(modified_dates_to_dates, " ");
+  LOG(INFO) << "original: " << absl::StrJoin(dates_to_modified_dates, " ");
+  LOG(INFO) << "modified: " << absl::StrJoin(modified_dates_to_dates, " ");
 
   std::vector<int> item_to_product;
   std::vector<int> modified_due_dates;
