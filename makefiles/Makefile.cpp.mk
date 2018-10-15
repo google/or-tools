@@ -406,9 +406,15 @@ check_cc_examples: cc
 	$(MAKE) rcc_constraint_programming_sat
 	$(MAKE) rcc_rabbits_pheasants_cp
 	$(MAKE) rcc_rabbits_pheasants_sat
+#	$(MAKE) rcc_cryptarithmetic_cp
+#	$(MAKE) rcc_cryptarithmetic_sat
+#	$(MAKE) rcc_nqueens_cp
+#	$(MAKE) rcc_nqueens_sat
 	$(MAKE) rcc_integer_programming
 	$(MAKE) rcc_tsp
 	$(MAKE) rcc_vrp
+#	$(MAKE) rcc_cvrp
+#	$(MAKE) rcc_cvrptw
 	$(MAKE) rcc_knapsack
 	$(MAKE) rcc_max_flow
 	$(MAKE) rcc_min_cost_flow
