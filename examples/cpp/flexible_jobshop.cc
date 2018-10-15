@@ -10,27 +10,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// This model implements a simple jobshop problem.
-//
-// A jobshop is a standard scheduling problem where you must schedule a
-// set of jobs on a set of machines.  Each job is a sequence of tasks
-// (a task can only start when the preceding task finished), each of
-// which occupies a single specific machine during a specific
-// duration. Therefore, a job is simply given by a sequence of pairs
-// (machine id, duration).
 
-// The objective is to minimize the 'makespan', which is the duration
-// between the start of the first task (across all machines) and the
-// completion of the last task (across all machines).
-//
-// This will be modelled by sets of intervals variables (see class
-// IntervalVar in constraint_solver/constraint_solver.h), one per
-// task, representing the [start_time, end_time] of the task.  Tasks
-// in the same job will be linked by precedence constraints.  Tasks on
-// the same machine will be covered by Sequence constraints.
-//
-// Search will then be applied on the sequence constraints.
+#include "examples/cpp/flexible_jobshop.h"
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"

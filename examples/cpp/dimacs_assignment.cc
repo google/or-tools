@@ -177,7 +177,6 @@ using ::operations_research::ForwardStarGraph;
 using ::operations_research::ForwardStarStaticGraph;
 using ::operations_research::SolveDimacsAssignment;
 using ::operations_research::StarGraph;
-using ::operations_research::absl::StrFormat;
 
 int main(int argc, char* argv[]) {
   std::string usage;

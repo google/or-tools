@@ -44,8 +44,6 @@ using operations_research::RoutingModel;
 using operations_research::RoutingNodeIndex;
 using operations_research::RoutingSearchParameters;
 using operations_research::ServiceTimePlusTransition;
-using operations_research::absl::StrAppendFormat;
-using operations_research::absl::StrFormat;
 
 DEFINE_int32(vrp_orders, 100, "Nodes in the problem.");
 DEFINE_int32(vrp_vehicles, 20, "Size of Traveling Salesman Problem instance.");
