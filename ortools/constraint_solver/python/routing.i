@@ -18,9 +18,6 @@
 %include "ortools/constraint_solver/python/constraint_solver.i"
 %include "ortools/constraint_solver/python/routing_types.i"
 %include "ortools/constraint_solver/python/routing_index_manager.i"
-// TODO(user): remove this when we no longer use callbacks in the routing.
-#define FATAL_CALLBACK_EXCEPTION
-%include "ortools/base/python/callbacks.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be

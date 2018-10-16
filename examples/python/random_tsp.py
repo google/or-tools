@@ -29,15 +29,14 @@ from functools import partial
 import random
 
 from ortools.constraint_solver import routing_enums_pb2
-from ortools.constraint_solver import pywraprouting
-from ortools.constraint_solver import pywraproutingindexmanager
+from ortools.constraint_solver import pywrapcp
 
-Parser=argparse.ArgumentParser()
+parser=argparse.ArgumentParser()
 
 parser.add_argument('--tsp_size', default=10, type=int,
                     help='Size of Traveling Salesman Problem instance.')
-parser.add_arguments('--tsp_use_random_matrix', default=True, type=bool,
-                     help='Use random cost matrix.')
+parser.add_argument('--tsp_use_random_matrix', default=True, type=bool,
+                    help='Use random cost matrix.')
 parser.add_argument('--tsp_random_forbidden_connections', default=0, type=int,
                     help='Number of random forbidden connections.')
 parser.add_argument('--tsp_random_seed', default=0, type=int,
@@ -65,9 +64,9 @@ class RandomMatrix(object):
     rand.seed(seed)
     distance_max = 100
     self.matrix = {}
-    for from_node in xrange(size):
+    for from_node in range(size):
       self.matrix[from_node] = {}
-      for to_node in xrange(size):
+      for to_node in range(size):
         if from_node == to_node:
           self.matrix[from_node][to_node] = 0
         else:
@@ -85,10 +84,10 @@ def main(args):
     # Second argument = 1 to build a single tour (it's a TSP).
     # Nodes are indexed from 0 to args_tsp_size - 1, by default the start of
     # the route is node 0.
-    manager = pywraproutingindexmanager.RoutingIndexManager(
+    manager = pywrapcp.RoutingIndexManager(
         args.tsp_size, 1, 0)
-    routing = pywraprouting.RoutingModel(manager)
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+    routing = pywrapcp.RoutingModel(manager)
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     # Setting first solution heuristic (cheapest addition).
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
@@ -137,4 +136,4 @@ def main(args):
     print('Specify an instance greater than 0.')
 
 if __name__ == '__main__':
-  main(Parser.parse_args())
+  main(parser.parse_args())
