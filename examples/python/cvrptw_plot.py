@@ -123,7 +123,7 @@ class Customers():
         self.extents['llcrnrlon'] + np.random.randn(num_stops) *
         (self.extents['urcrnrlon'] - self.extents['llcrnrlon']) / stdv)
     # uniformly distributed integer demands.
-    demmands = np.random.randint(min_demand, max_demand, num_stops)
+    demands = np.random.randint(min_demand, max_demand, num_stops)
 
     self.time_horizon = 24 * 60**2  # A 24 hour period.
 
@@ -156,7 +156,7 @@ class Customers():
     self.customers = [
         Customer(idx, dem, lat, lon, tw_open, tw_close)
         for idx, dem, lat, lon, tw_open, tw_close in zip(
-            stops, demmands, lats, lons, start_times, stop_times)
+            stops, demands, lats, lons, start_times, stop_times)
     ]
 
     # The number of seconds needed to 'unload' 1 unit of goods.
