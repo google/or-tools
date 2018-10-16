@@ -790,7 +790,7 @@ class MPObjective {
   // At construction, an MPObjective has no terms (which is equivalent
   // on having a coefficient of 0 for all variables), and an offset of 0.
   explicit MPObjective(MPSolverInterface* const interface)
-      : interface_(interface), coefficients_(1), offset_(0.0) {}
+      : interface_(interface), offset_(0.0) {}
 
   MPSolverInterface* const interface_;
 
@@ -972,8 +972,7 @@ class MPConstraint {
   // to several models.
   MPConstraint(int index, double lb, double ub, const std::string& name,
                MPSolverInterface* const interface)
-      : coefficients_(1),
-        index_(index),
+      : index_(index),
         lb_(lb),
         ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
