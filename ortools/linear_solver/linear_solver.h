@@ -789,8 +789,8 @@ class MPObjective {
   // to several models.
   // At construction, an MPObjective has no terms (which is equivalent
   // on having a coefficient of 0 for all variables), and an offset of 0.
-  explicit MPObjective(MPSolverInterface* const interface)
-      : interface_(interface), offset_(0.0) {}
+  explicit MPObjective(MPSolverInterface* const interface_in)
+      : interface_(interface_in), offset_(0.0) {}
 
   MPSolverInterface* const interface_;
 
@@ -864,7 +864,7 @@ class MPVariable {
   // is specified in the constructor. A variable cannot belong to
   // several models.
   MPVariable(int index, double lb, double ub, bool integer,
-             const std::string& name, MPSolverInterface* const interface)
+             const std::string& name, MPSolverInterface* const interface_in)
       : index_(index),
         lb_(lb),
         ub_(ub),
@@ -872,7 +872,7 @@ class MPVariable {
         name_(name.empty() ? absl::StrFormat("auto_v_%09d", index) : name),
         solution_value_(0.0),
         reduced_cost_(0.0),
-        interface_(interface) {}
+        interface_(interface_in) {}
 
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
@@ -971,14 +971,14 @@ class MPConstraint {
   // that is specified in the constructor. A constraint cannot belong
   // to several models.
   MPConstraint(int index, double lb, double ub, const std::string& name,
-               MPSolverInterface* const interface)
+               MPSolverInterface* const interface_in)
       : index_(index),
         lb_(lb),
         ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
         is_lazy_(false),
         dual_value_(0.0),
-        interface_(interface) {}
+        interface_(interface_in) {}
 
   void set_dual_value(double dual_value) { dual_value_ = dual_value; }
 
