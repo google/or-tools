@@ -840,7 +840,7 @@ RoutingModel::~RoutingModel() {
   gtl::STLDeleteElements(&index_functions_delete);
 }
 
-int RoutingModel::RegisterTransitCallback(TransitCallback1 callback) {
+int RoutingModel::RegisterUnaryTransitCallback(TransitCallback1 callback) {
   const int index = unary_transit_evaluators_.size();
   unary_transit_evaluators_.push_back(std::move(callback));
   return RegisterTransitCallback([this, index](int i, int j) {

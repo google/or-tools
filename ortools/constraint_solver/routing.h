@@ -362,9 +362,7 @@ class RoutingModel {
   ~RoutingModel();
 
   // Registers 'callback' and returns its index.
-#ifndef SWIG
-  int RegisterTransitCallback(TransitCallback1 callback);
-#endif
+  int RegisterUnaryTransitCallback(TransitCallback1 callback);
   int RegisterTransitCallback(TransitCallback2 callback);
   int RegisterStateDependentTransitCallback(VariableIndexEvaluator2 callback);
   const TransitCallback2& TransitCallback(int callback_index) const {
