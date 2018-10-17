@@ -1,10 +1,12 @@
 import java.util.ArrayList;
 
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.NodeEvaluator2;
+import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.RoutingModel;
+import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.main;
 
 public class SimpleRoutingTest {
 
@@ -29,29 +31,34 @@ public class SimpleRoutingTest {
   }
 
   //Node Distance Evaluation
-  public static class NodeDistance extends NodeEvaluator2 {
+  public static class NodeDistance extends LongLongToLong {
     private int[][] costMatrix;
+    private RoutingIndexManager indexManager;
 
-    public NodeDistance(int[][] costMatrix) {
+    public NodeDistance(RoutingIndexManager manager, int[][] costMatrix) {
       this.costMatrix = costMatrix;
+      this.indexManager = manager;
     }
 
     @Override
-    public long run(int firstIndex, int secondIndex) {
-      return costMatrix[firstIndex][secondIndex];
+    public long run(long firstIndex, long secondIndex) {
+      final int firstNode = indexManager.indexToNode((int) firstIndex);
+      final int secondNode = indexManager.indexToNode((int) secondIndex);
+      return costMatrix[firstNode][secondNode];
     }
   }
 
   //Solve Method
   public void solve() {
-    RoutingModel routing = new RoutingModel(costMatrix.length, 1, 0);
+    RoutingIndexManager manager = new RoutingIndexManager(costMatrix.length, 1, 0);
+    RoutingModel routing = new RoutingModel(manager);
     RoutingSearchParameters parameters =
         RoutingSearchParameters.newBuilder()
-            .mergeFrom(RoutingModel.defaultSearchParameters())
+            .mergeFrom(main.defaultRoutingSearchParameters())
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();
-    NodeDistance distances = new NodeDistance(costMatrix);
-    routing.setArcCostEvaluatorOfAllVehicles(distances);
+    NodeDistance distances = new NodeDistance(manager, costMatrix);
+    routing.setArcCostEvaluatorOfAllVehicles(routing.registerTransitCallback(distances));
 
     Assignment solution = routing.solve();
     if (solution != null) {

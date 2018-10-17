@@ -14,10 +14,13 @@
 // limitations under the License.
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.NodeEvaluator2;
+import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.RoutingModel;
+import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.main;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,9 +51,7 @@ class Pair<K, V> {
 
 public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
   private static Logger logger =
       Logger.getLogger(CapacitatedVehicleRoutingProblemWithTimeWindows.class.getName());
@@ -61,8 +62,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
   // Quantity to be picked up for each order.
   private List<Integer> orderDemands = new ArrayList();
-  // Time duration spent to deliver each order.
-  private List<Integer> orderDurations = new ArrayList();
   // Time window in which each order must be performed.
   private List<Pair<Integer, Integer>> orderTimeWindows = new ArrayList();
   // Penalty cost "paid" for dropping an order.
@@ -70,8 +69,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
   // Capacity of the vehicles.
   private int vehicleCapacity = 0;
-  // Earliest time at which each vehicle must start its tour.
-  private List<Integer> vehicleStartTime = new ArrayList();
   // Latest time at which each vehicle must end its tour.
   private List<Integer> vehicleEndTime = new ArrayList();
   // Cost per unit of distance of each vehicle.
@@ -85,9 +82,30 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   private final Random randomGenerator = new Random(0xBEEF);
 
   /**
-   * Constructs a capacitated vehicle routing problem with time windows.
+   * Creates a Manhattan Distance evaluator with 'costCoefficient'.
+   *
+   * @param manager Node Index Manager.
+   * @param costCoefficient The coefficient to apply to the evaluator.
    */
-  private CapacitatedVehicleRoutingProblemWithTimeWindows() {}
+  private LongLongToLong buildManhattanCallback(RoutingIndexManager manager, int costCoefficient) {
+    return new LongLongToLong() {
+      @Override
+      public long run(long firstIndex, long secondIndex) {
+        try {
+          int firstNode = manager.indexToNode((int) firstIndex);
+          int secondNode = manager.indexToNode((int) secondIndex);
+          Pair<Integer, Integer> firstLocation = locations.get(firstNode);
+          Pair<Integer, Integer> secondLocation = locations.get(secondNode);
+          return (long) costCoefficient
+              * (Math.abs(firstLocation.first - secondLocation.first)
+                  + Math.abs(firstLocation.second - secondLocation.second));
+        } catch (Throwable throwed) {
+          logger.warning(throwed.getMessage());
+          return 0;
+        }
+      }
+    };
+  }
 
   /**
    * Creates order data. Location of the order is random, as well as its
@@ -97,7 +115,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
    * @param xMax maximum x coordinate in which orders are located.
    * @param yMax maximum y coordinate in which orders are located.
    * @param demandMax maximum quantity of a demand.
-   * @param timeWindowMin minimum starting time of the order time window.
    * @param timeWindowMax maximum starting time of the order time window.
    * @param timeWindowWidth duration of the order time window.
    * @param penaltyMin minimum pernalty cost if order is dropped.
@@ -106,7 +123,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   private void buildOrders(int numberOfOrders,
                            int xMax, int yMax,
                            int demandMax,
-                           int timeWindowMin,
                            int timeWindowMax,
                            int timeWindowWidth,
                            int penaltyMin,
@@ -116,9 +132,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       locations.add(Pair.of(randomGenerator.nextInt(xMax + 1),
                             randomGenerator.nextInt(yMax + 1)));
       orderDemands.add(randomGenerator.nextInt(demandMax + 1));
-      /** @todo 1) Specify deliver duration for each shipment*/
-      orderDurations.add(2); // in minutes
-      int timeWindowStart = randomGenerator.nextInt(timeWindowMax - timeWindowMin) + timeWindowMin;
+      int timeWindowStart = randomGenerator.nextInt(timeWindowMax + 1);
       orderTimeWindows.add(Pair.of(timeWindowStart, timeWindowStart + timeWindowWidth));
       orderPenalties.add(randomGenerator.nextInt(penaltyMax - penaltyMin + 1) + penaltyMin);
     }
@@ -131,7 +145,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
    * @param numberOfVehicles
    * @param xMax maximum x coordinate in which orders are located.
    * @param yMax maximum y coordinate in which orders are located.
-   * @param startTime earliest start time of a tour of a vehicle.
    * @param endTime latest end time of a tour of a vehicle.
    * @param capacity capacity of a vehicle.
    * @param costCoefficientMax maximum cost per distance unit of a vehicle
@@ -139,7 +152,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
    */
   private void buildFleet(int numberOfVehicles,
                           int xMax, int yMax,
-                          int startTime,
                           int endTime,
                           int capacity,
                           int costCoefficientMax) {
@@ -154,7 +166,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       vehicleEnds[vehicle] = locations.size();
       locations.add(Pair.of(randomGenerator.nextInt(xMax + 1),
                             randomGenerator.nextInt(yMax + 1)));
-      vehicleStartTime.add(startTime);
       vehicleEndTime.add(endTime);
       vehicleCostCoefficients.add(randomGenerator.nextInt(costCoefficientMax) + 1);
     }
@@ -169,89 +180,64 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     // Finalizing model
     final int numberOfLocations = locations.size();
 
-    RoutingModel model =
-        new RoutingModel(numberOfLocations, numberOfVehicles,
-            vehicleStarts, vehicleEnds);
+    RoutingIndexManager manager =
+        new RoutingIndexManager(numberOfLocations, numberOfVehicles, vehicleStarts, vehicleEnds);
+    RoutingModel model = new RoutingModel(manager);
 
     // Setting up dimensions
     final int bigNumber = 100000;
-    NodeEvaluator2 timeCallback = new NodeEvaluator2(){
-        @Override
-        public long run(int firstIndex, int secondIndex) {
-          try {
-            Pair<Integer, Integer> firstLocation = locations.get(firstIndex);
-            Pair<Integer, Integer> secondLocation = locations.get(secondIndex);
-            Integer distance = 0;
-            Integer duration = 0;
-            distance = Math.abs(firstLocation.first - secondLocation.first) +
-                       Math.abs(firstLocation.second - secondLocation.second);
-            // Deal with Order duration shipment
-            if (firstIndex < numberOfOrders) {
-              // shipment duration
-              duration += orderDurations.get(firstIndex);
-            }
-            return  distance + duration;
-          } catch (Throwable throwed) {
-            logger.warning(throwed.getMessage());
-            return 0;
-          }
-        }
-      };
-    model.addDimension(timeCallback, bigNumber, bigNumber, false, "time");
-    NodeEvaluator2 demandCallback = new NodeEvaluator2(){
-        @Override
-        public long run(int firstIndex, int secondIndex) {
-          try {
-            if (firstIndex < numberOfOrders) {
-              return orderDemands.get(firstIndex);
-            }
-            return 0;
-          } catch (Throwable throwed) {
-            logger.warning(throwed.getMessage());
-            return 0;
-          }
-        }
-      };
-    model.addDimension(demandCallback, 0, vehicleCapacity, true, "capacity");
+    final LongLongToLong callback = buildManhattanCallback(manager, 1);
+    final String timeStr = "time";
+    model.addDimension(
+        model.registerTransitCallback(callback), bigNumber, bigNumber, false, timeStr);
+    RoutingDimension timeDimension = model.getMutableDimension(timeStr);
 
-    // Setting up vehicles
-    for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
-      final int costCoefficient = vehicleCostCoefficients.get(vehicle);
-      NodeEvaluator2 manhattanCostCallback = new NodeEvaluator2() {
+    LongLongToLong demandCallback =
+        new LongLongToLong() {
           @Override
-          public long run(int firstIndex, int secondIndex) {
+          public long run(long firstIndex, long secondIndex) {
             try {
-              Pair<Integer, Integer> firstLocation = locations.get(firstIndex);
-              Pair<Integer, Integer> secondLocation = locations.get(secondIndex);
-              return costCoefficient *
-                  (Math.abs(firstLocation.first - secondLocation.first) +
-                   Math.abs(firstLocation.second - secondLocation.second));
+              int firstNode = manager.indexToNode((int) firstIndex);
+              if (firstNode < numberOfOrders) {
+                return orderDemands.get(firstNode);
+              }
+              return 0;
             } catch (Throwable throwed) {
               logger.warning(throwed.getMessage());
               return 0;
             }
           }
         };
-      model.setArcCostEvaluatorOfVehicle(manhattanCostCallback, vehicle);
-      model.cumulVar(model.start(vehicle), "time").setMin(vehicleStartTime.get(vehicle));
-      model.cumulVar(model.end(vehicle), "time").setMax(vehicleEndTime.get(vehicle));
+    final String capacityStr = "capacity";
+    model.addDimension(
+        model.registerTransitCallback(demandCallback), 0, vehicleCapacity, true, capacityStr);
+    RoutingDimension capacityDimension = model.getMutableDimension(capacityStr);
+
+    // Setting up vehicles
+    LongLongToLong[] callbacks = new LongLongToLong[numberOfVehicles];
+    for (int vehicle = 0; vehicle < numberOfVehicles; ++vehicle) {
+      final int costCoefficient = vehicleCostCoefficients.get(vehicle);
+      callbacks[vehicle] = buildManhattanCallback(manager, costCoefficient);
+      final int vehicleCost = model.registerTransitCallback(callbacks[vehicle]);
+      model.setArcCostEvaluatorOfVehicle(vehicleCost, vehicle);
+      timeDimension.cumulVar(model.end(vehicle)).setMax(vehicleEndTime.get(vehicle));
     }
 
     // Setting up orders
     for (int order = 0; order < numberOfOrders; ++order) {
-      model.cumulVar(model.nodeToIndex(order), "time").setRange(
-          orderTimeWindows.get(order).first,
-          orderTimeWindows.get(order).second);
-      int[] orders = {order};
-      model.addDisjunction(orders, orderPenalties.get(order));
+      timeDimension
+          .cumulVar(order)
+          .setRange(orderTimeWindows.get(order).first, orderTimeWindows.get(order).second);
+      long[] orderIndices = {manager.nodeToIndex(order)};
+      model.addDisjunction(orderIndices, orderPenalties.get(order));
     }
 
     // Solving
     RoutingSearchParameters parameters =
-        RoutingSearchParameters.newBuilder()
-        .mergeFrom(RoutingModel.defaultSearchParameters())
-        .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
-        .build();
+        main.defaultRoutingSearchParameters()
+            .toBuilder()
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.ALL_UNPERFORMED)
+            .build();
 
     logger.info("Search");
     Assignment solution = model.solveWithParameters(parameters);
@@ -274,28 +260,38 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
         long order = model.start(vehicle);
         // Empty route has a minimum of two nodes: Start => End
         if (model.isEnd(solution.value(model.nextVar(order)))) {
-          route += "/!\\Empty Route/!\\ ";
-        }
-        {
-          for (;
-              !model.isEnd(order);
-              order = solution.value(model.nextVar(order))) {
-            IntVar load = model.cumulVar(order, "capacity");
-            IntVar time = model.cumulVar(order, "time");
-            route += order + " Load(" + solution.value(load) + ") " +
-              "Time(" + solution.min(time) + ", " + solution.max(time) +
-              ") -> ";
+          route += "Empty";
+        } else {
+          for (; !model.isEnd(order); order = solution.value(model.nextVar(order))) {
+            IntVar load = capacityDimension.cumulVar(order);
+            IntVar time = timeDimension.cumulVar(order);
+            route +=
+                order
+                    + " Load("
+                    + solution.value(load)
+                    + ") "
+                    + "Time("
+                    + solution.min(time)
+                    + ", "
+                    + solution.max(time)
+                    + ") -> ";
           }
-          IntVar load = model.cumulVar(order, "capacity");
-          IntVar time = model.cumulVar(order, "time");
-          route += order + " Load(" + solution.value(load) + ") " +
-            "Time(" + solution.min(time) + ", " + solution.max(time) + ")";
+          IntVar load = capacityDimension.cumulVar(order);
+          IntVar time = timeDimension.cumulVar(order);
+          route +=
+              order
+                  + " Load("
+                  + solution.value(load)
+                  + ") "
+                  + "Time("
+                  + solution.min(time)
+                  + ", "
+                  + solution.max(time)
+                  + ")";
         }
         output += route + "\n";
       }
       logger.info(output);
-    } else {
-      logger.info("No solution Found !");
     }
   }
 
@@ -305,15 +301,11 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     final int xMax = 20;
     final int yMax = 20;
     final int demandMax = 3;
-    final int timeWindowMin = 8 * 60;
-    final int timeWindowMax = 17 * 60;
+    final int timeWindowMax = 24 * 60;
     final int timeWindowWidth = 4 * 60;
     final int penaltyMin = 50;
     final int penaltyMax = 100;
-    /** @todo Specify vehicle start time*/
-    final int startTime = 8 * 60;
-    /** @todo Specify vehicle end time*/
-    final int endTime = 17 * 60;
+    final int endTime = 24 * 60;
     final int costCoefficientMax = 3;
 
     final int orders = 100;
@@ -324,7 +316,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
                         xMax,
                         yMax,
                         demandMax,
-                        timeWindowMin,
                         timeWindowMax,
                         timeWindowWidth,
                         penaltyMin,
@@ -332,7 +323,6 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     problem.buildFleet(vehicles,
                        xMax,
                        yMax,
-                       startTime,
                        endTime,
                        capacity,
                        costCoefficientMax);
