@@ -94,7 +94,7 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_java_wrap.cc: \
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java \
  -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_java_wrap.cc \
  -package com.google.ortools.constraintsolver \
- -module operations_research_constraint_solver \
+ -module main \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Sjava$Srouting.i
 
@@ -116,7 +116,7 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_java_wrap.cc: \
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java \
  -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_java_wrap.cc \
  -package com.google.ortools.algorithms \
- -module operations_research_algorithms \
+ -module main \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms \
  $(SRC_DIR)$Sortools$Salgorithms$Sjava$Sknapsack_solver.i
 
@@ -135,7 +135,7 @@ $(GEN_DIR)/ortools/graph/graph_java_wrap.cc: \
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java \
  -o $(GEN_PATH)$Sortools$Sgraph$Sgraph_java_wrap.cc \
  -package com.google.ortools.graph \
- -module operations_research_graph \
+ -module main \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph \
  $(SRC_DIR)$Sortools$Sgraph$Sjava$Sgraph.i
 
@@ -156,7 +156,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_java_wrap.cc: \
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java \
  -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_java_wrap.cc \
  -package com.google.ortools.linearsolver \
- -module operations_research_linear_solver \
+ -module main_research_linear_solver \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver \
  $(SRC_DIR)$Sortools$Slinear_solver$Sjava$Slinear_solver.i
 
@@ -176,7 +176,7 @@ $(GEN_DIR)/ortools/sat/sat_java_wrap.cc: \
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -java \
  -o $(GEN_PATH)$Sortools$Ssat$Ssat_java_wrap.cc \
  -package com.google.ortools.sat \
- -module operations_research_sat \
+ -module main \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat \
  $(SRC_DIR)$Sortools$Ssat$Sjava$Ssat.i
 

@@ -89,6 +89,7 @@ WRAP_STD_FUNCTION_JAVA(
 %rename (solveWithParameters) SolveWithParameters;
 %rename (solveFromAssignmentWithParameters) SolveFromAssignmentWithParameters;
 %rename (registerTransitCallback) RegisterTransitCallback;
+%rename (registerUnaryTransitCallback) RegisterUnaryTransitCallback;
 %rename (setArcCostEvaluatorOfAllVehicles) SetArcCostEvaluatorOfAllVehicles;
 %rename (setArcCostEvaluatorOfVehicle) SetArcCostEvaluatorOfVehicle;
 %rename (addDimension) AddDimension;
