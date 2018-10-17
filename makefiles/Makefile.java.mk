@@ -63,6 +63,9 @@ $(GEN_DIR)/com/google/ortools/flatzinc:
 $(GEN_DIR)/com/google/ortools/sat:
 	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat
 
+$(GEN_DIR)/com/google/ortools/util:
+	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Sutil
+
 $(CLASS_DIR):
 	$(MKDIR_P) $(CLASS_DIR)
 
@@ -239,6 +242,11 @@ $(GEN_DIR)/com/google/ortools/sat/SatParameters.java: \
  | $(GEN_DIR)/com/google/ortools/sat
 	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH) $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
 
+$(GEN_DIR)/com/google/ortools/util/OptionalBoolean.java: \
+ $(SRC_DIR)/ortools/util/optional_boolean.proto \
+ | $(GEN_DIR)/com/google/ortools/util
+	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH) $(SRC_DIR)$Sortools$Sutil$Soptional_boolean.proto
+
 $(JAVA_OR_TOOLS_LIBS): \
  $(JAVA_OR_TOOLS_NATIVE_LIBS) \
  $(LIB_DIR)/protobuf.jar \
@@ -247,6 +255,7 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.java \
  $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java \
  $(GEN_DIR)/com/google/ortools/sat/SatParameters.java \
+ $(GEN_DIR)/com/google/ortools/util/OptionalBoolean.java \
  $(GEN_DIR)/com/google/ortools/sat/CpModel.java | \
  $(CLASS_DIR)/com/google/ortools
 	"$(JAVAC_BIN)" -d $(CLASS_DIR) \
@@ -255,6 +264,7 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Ssat$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat$S*.java \
+ $(GEN_PATH)$Scom$Sgoogle$Sortools$Sutil$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java

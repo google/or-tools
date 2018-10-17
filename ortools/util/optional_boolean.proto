@@ -12,6 +12,10 @@
 // limitations under the License.
 
 syntax = "proto3";
+option java_package = "com.google.ortools.util";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Util";
+
 
 package operations_research;
 
