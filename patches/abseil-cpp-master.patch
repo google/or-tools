@@ -322,6 +322,27 @@ index 9e40690..677d07e 100644
 -    absl::base absl::hash absl_throw_delegate test_instance_tracker_lib
 +    absl::base absl::hash absl_throw_delegate absl_test_instance_tracker_lib
  )
+diff --git a/absl/container/internal/raw_hash_map.h b/absl/container/internal/raw_hash_map.h
+index 1edc007..05270ef 100644
+--- a/absl/container/internal/raw_hash_map.h
++++ b/absl/container/internal/raw_hash_map.h
+@@ -39,11 +39,14 @@ class raw_hash_map : public raw_hash_set<Policy, Hash, Eq, Alloc> {
+   using MappedConstReference = decltype(P::value(
+       std::addressof(std::declval<typename raw_hash_map::const_reference>())));
+ 
++  using KeyArgImpl = container_internal::KeyArg<IsTransparent<Eq>::value &&
++                                                IsTransparent<Hash>::value>;
++
+  public:
+   using key_type = typename Policy::key_type;
+   using mapped_type = typename Policy::mapped_type;
+-  template <typename K>
+-  using key_arg = typename raw_hash_map::raw_hash_set::template key_arg<K>;
++  template <class K>
++  using key_arg = typename KeyArgImpl::template type<K, key_type>;
+ 
+   static_assert(!std::is_reference<key_type>::value, "");
+   // TODO(alkis): remove this assertion and verify that reference mapped_type is
 diff --git a/absl/debugging/CMakeLists.txt b/absl/debugging/CMakeLists.txt
 index 4af2ec8..44ba7ef 100644
 --- a/absl/debugging/CMakeLists.txt
