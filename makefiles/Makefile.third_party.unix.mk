@@ -321,6 +321,8 @@ DYLD_LIBRARY_PATH="$(UNIX_PROTOBUF_DIR)/lib":$(DYLD_LIBRARY_PATH) $(PROTOC_BINAR
 endif
 
 # Install Java protobuf
+#  - Compile generic message proto.
+#  - Compile duration.proto
 dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.$L
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
  $(PROTOC) --java_out=core/src/main/java -I../src \

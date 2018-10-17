@@ -34,19 +34,6 @@
 #include "ortools/util/tuple_set.h"
 
 namespace operations_research {
-// External table code.
-Constraint* BuildAc4TableConstraint(Solver* const solver,
-                                    const IntTupleSet& tuples,
-                                    const std::vector<IntVar*>& vars);
-
-Constraint* BuildSatTableConstraint(Solver* solver,
-                                    const std::vector<IntVar*>& vars,
-                                    const IntTupleSet& tuples);
-
-Constraint* BuildAc4MddResetTableConstraint(Solver* const solver,
-                                            const IntTupleSet& tuples,
-                                            const std::vector<IntVar*>& vars);
-
 namespace {
 // ----- Presolve helpers -----
 // TODO(user): Move this out of this file.
@@ -1217,14 +1204,6 @@ class TransitionConstraint : public Constraint {
       if (num_tuples <= kBitsInUint64) {
         s->AddConstraint(s->RevAlloc(new SmallCompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
-      } else if (params.use_sat_table() &&
-                 num_tuples > params.ac4r_table_threshold()) {
-        s->AddConstraint(
-            BuildSatTableConstraint(s, tmp_vars, transition_table_));
-      } else if (params.use_mdd_table() &&
-                 num_tuples > params.ac4r_table_threshold()) {
-        s->AddConstraint(
-            BuildAc4MddResetTableConstraint(s, transition_table_, tmp_vars));
       } else {
         s->AddConstraint(s->RevAlloc(new CompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
@@ -1274,9 +1253,6 @@ const int TransitionConstraint::kTransitionTupleSize = 3;
 
 Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
                                            const IntTupleSet& tuples) {
-  if (parameters_.use_sat_table()) {
-    return BuildSatTableConstraint(this, vars, tuples);
-  }
   if (parameters_.use_compact_table() && HasCompactDomains(vars)) {
     if (tuples.NumTuples() < kBitsInUint64 && parameters_.use_small_table()) {
       return RevAlloc(
@@ -1285,15 +1261,7 @@ Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
       return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
     }
   }
-  if (tuples.NumTuples() > parameters_.ac4r_table_threshold()) {
-    if (parameters_.use_mdd_table()) {
-      return BuildAc4MddResetTableConstraint(this, tuples, vars);
-    } else {
-      return BuildAc4TableConstraint(this, tuples, vars);
-    }
-  } else {
-    return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
-  }
+  return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
 }
 
 Constraint* Solver::MakeTransitionConstraint(

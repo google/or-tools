@@ -65,10 +65,6 @@ DEFINE_bool(cp_use_small_table, true,
             "Use small compact table constraint when possible.");
 DEFINE_bool(cp_use_sat_table, false,
             "If true, use a SAT constraint for all table constraints.");
-DEFINE_int32(cp_ac4r_table_threshold, 2048,
-             "Above this size, allowed assignment constraints will use the "
-             "revised AC-4 implementation of the table constraint.");
-DEFINE_bool(cp_use_mdd_table, false, "Use mdd table");
 DEFINE_bool(cp_use_cumulative_edge_finder, true,
             "Use the O(n log n) cumulative edge finding algorithm described "
             "in 'Edge Finding Filtering Algorithm for Discrete  Cumulative "
@@ -135,11 +131,7 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_disable_solve(FLAGS_cp_disable_solve);
   params.set_name_cast_variables(FLAGS_cp_name_cast_variables);
   params.set_print_added_constraints(FLAGS_cp_print_added_constraints);
-  params.set_use_compact_table(FLAGS_cp_use_compact_table);
   params.set_use_small_table(FLAGS_cp_use_small_table);
-  params.set_use_sat_table(FLAGS_cp_use_sat_table);
-  params.set_ac4r_table_threshold(FLAGS_cp_ac4r_table_threshold);
-  params.set_use_mdd_table(FLAGS_cp_use_mdd_table);
   params.set_use_cumulative_edge_finder(FLAGS_cp_use_cumulative_edge_finder);
   params.set_use_cumulative_time_table(FLAGS_cp_use_cumulative_time_table);
   params.set_use_cumulative_time_table_sync(

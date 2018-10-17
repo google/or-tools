@@ -417,7 +417,6 @@ check_cc_examples: cc
 
 .PHONY: test_cc_tests # Build and Run all C++ tests (located in examples/tests)
 test_cc_tests: cc
-	$(MAKE) rcc_ac4r_table_test
 	$(MAKE) rcc_boolean_test
 	$(MAKE) rcc_bug_fz1
 	$(MAKE) rcc_cpp11_test
