@@ -331,10 +331,15 @@ PROTOBUF_LNK = $(STATIC_PROTOBUF_LNK)
 DEPENDENCIES_LNK += $(PROTOBUF_LNK)
 
 # Install Java protobuf
+#  - Compile generic message proto.
+#  - Compile duration.proto
 dependencies/install/lib/protobuf.jar: | dependencies/install/bin/protoc.exe
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
 	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
 	  ../src/google/protobuf/descriptor.proto
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
+	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
+	  ../src/google/protobuf/duration.proto
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && "$(JAVAC_BIN)" com\\google\\protobuf\\*java
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && "$(JAR_BIN)" cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*class
 
