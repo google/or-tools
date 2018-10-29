@@ -60,6 +60,22 @@ include $(OR_ROOT)makefiles/Makefile.$(SYSTEM).mk
 # Rules to fetch and build third party dependencies.
 include $(OR_ROOT)makefiles/Makefile.third_party.$(SYSTEM).mk
 
+# Check SOURCE argument
+SOURCE_SUFFIX = $(suffix $(SOURCE))
+# will contain “/any/path/foo.cc” on unix and “\\any\\path\\foo.cc” on windows
+SOURCE_PATH = $(subst /,$S,$(SOURCE))
+SOURCE_NAME= $(basename $(notdir $(SOURCE)))
+ifeq ($(SOURCE),) # Those rules will be used if SOURCE is empty
+.PHONY: build run
+build run:
+	$(error no source file provided, the "$@" target must be used like so: \
+ make $@ SOURCE=relative/path/to/filename.extension)
+else
+ifeq (,$(wildcard $(SOURCE)))
+$(error File "$(SOURCE)" does not exist !)
+endif
+endif
+
 # Include .mk files.
 include $(OR_ROOT)makefiles/Makefile.cpp.mk
 include $(OR_ROOT)makefiles/Makefile.python.mk
@@ -105,5 +121,17 @@ clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat clean_arch
 
 .PHONY: detect_all
 detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_dotnet detect_archive
+	@echo SOURCE = $(SOURCE)
+	@echo SOURCE_PATH = $(SOURCE_PATH)
+	@echo SOURCE_NAME = $(SOURCE_NAME)
+	@echo SOURCE_SUFFIX = $(SOURCE_SUFFIX)
+ifeq ($(SYSTEM),win)
+	@echo off & echo(
+else
+	@echo
+endif
 
 print-%  : ; @echo $* = $($*)
+
+.PHONY: FORCE
+FORCE:

@@ -34,10 +34,14 @@ java:
 	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo JAR_BIN = $(JAR_BIN)
 	@echo JAVA_BIN = $(JAVA_BIN)
-	$(warning Cannot find 'java' command which is needed for build. Please make sure it is installed and in system path. Check Makefile.local for more information.)
+	$(warning Cannot find 'java' command which is needed for build. \
+ Please make sure it is installed and in system path. \
+ Check Makefile.local for more information.)
+check_java: java
 test_java: java
 else
 java: $(JAVA_OR_TOOLS_LIBS)
+check_java: check_java_examples
 test_java: \
  test_java_tests \
  test_java_samples \
@@ -46,34 +50,34 @@ BUILT_LANGUAGES +=, Java
 endif
 
 $(GEN_DIR)/com/google/ortools/algorithms:
-	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms
+	-$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Salgorithms
 
 $(GEN_DIR)/com/google/ortools/constraintsolver:
-	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver
+	-$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver
 
 $(GEN_DIR)/com/google/ortools/graph:
-	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph
+	-$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph
 
 $(GEN_DIR)/com/google/ortools/linearsolver:
-	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver
+	-$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver
 
 $(GEN_DIR)/com/google/ortools/flatzinc:
-	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Sflatzinc
+	-$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Sflatzinc
 
 $(GEN_DIR)/com/google/ortools/sat:
-	$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat
+	-$(MKDIR_P) $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat
 
 $(CLASS_DIR):
-	$(MKDIR_P) $(CLASS_DIR)
+	-$(MKDIR_P) $(CLASS_DIR)
 
 $(CLASS_DIR)/com: | $(CLASS_DIR)
-	$(MKDIR) $(CLASS_DIR)$Scom
+	-$(MKDIR) $(CLASS_DIR)$Scom
 
 $(CLASS_DIR)/com/google: | $(CLASS_DIR)/com
-	$(MKDIR) $(CLASS_DIR)$Scom$Sgoogle
+	-$(MKDIR) $(CLASS_DIR)$Scom$Sgoogle
 
 $(CLASS_DIR)/com/google/ortools: | $(CLASS_DIR)/com/google
-	$(MKDIR) $(CLASS_DIR)$Scom$Sgoogle$Sortools
+	-$(MKDIR) $(CLASS_DIR)$Scom$Sgoogle$Sortools
 
 ################
 ##  JAVA JNI  ##
@@ -260,13 +264,34 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
 	"$(JAR_BIN)" cvf $(LIB_DIR)$Scom.google.ortools.jar -C $(CLASS_DIR) com$Sgoogle$Sortools$S
 
+###################
+##  Java SOURCE  ##
+###################
+ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .java file
+$(CLASS_DIR)/$(SOURCE_NAME): $(SOURCE) $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
+	-$(DELREC) $(CLASS_DIR)$S$(SOURCE_NAME)
+	-$(MKDIR_P) $(CLASS_DIR)$S$(SOURCE_NAME)
+	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$(SOURCE_NAME) \
+ -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ $(SOURCE_PATH)
+
+$(LIB_DIR)/$(SOURCE_NAME)$J: $(CLASS_DIR)/$(SOURCE_NAME) | $(LIB_DIR)
+	-$(DEL) $(LIB_DIR)$S$(SOURCE_NAME)$J
+	"$(JAR_BIN)" cvf $(LIB_DIR)$S$(SOURCE_NAME)$J -C $(CLASS_DIR)$S$(SOURCE_NAME) .
+
+.PHONY: build # Build a Java program.
+build: $(LIB_DIR)/$(SOURCE_NAME)$J
+
+.PHONY: run # Run a Java program.
+run: build
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$(SOURCE_NAME)$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ $(SOURCE_NAME) $(ARGS)
+endif
+
 #############################
 ##  Java Examples/Samples  ##
 #############################
-.PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
-test_java_tests: $(JAVA_OR_TOOLS_LIBS)
-	$(MAKE) rjava_TestLp
-
 $(CLASS_DIR)/%: $(TEST_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
@@ -274,86 +299,12 @@ $(CLASS_DIR)/%: $(TEST_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(TEST_PATH)$S$*.java
 
-.PHONY: test_java_examples # Build and Run all Java Examples (located in examples/java)
-test_java_examples: $(JAVA_OR_TOOLS_LIBS)
-	$(MAKE) rjava_AllDifferentExcept0
-	$(MAKE) rjava_AllInterval
-	$(MAKE) rjava_CapacitatedVehicleRoutingProblemWithTimeWindows
-	$(MAKE) rjava_Circuit
-	$(MAKE) rjava_CoinsGridMIP
-	$(MAKE) rjava_ColoringMIP
-	$(MAKE) rjava_CoveringOpl
-	$(MAKE) rjava_Crossword
-	$(MAKE) rjava_DeBruijn
-	$(MAKE) rjava_Diet
-	$(MAKE) rjava_DietMIP
-	$(MAKE) rjava_DivisibleBy9Through1
-	$(MAKE) rjava_FlowExample
-	$(MAKE) rjava_GolombRuler
-	$(MAKE) rjava_IntegerProgramming
-	$(MAKE) rjava_Knapsack
-	$(MAKE) rjava_KnapsackMIP
-	$(MAKE) rjava_LeastDiff
-	$(MAKE) rjava_LinearAssignmentAPI
-	$(MAKE) rjava_LinearProgramming
-	$(MAKE) rjava_LsApi
-	$(MAKE) rjava_MagicSquare
-	$(MAKE) rjava_Map2
-	$(MAKE) rjava_Map
-	$(MAKE) rjava_Minesweeper
-	$(MAKE) rjava_MultiThreadTest
-	$(MAKE) rjava_NQueens2
-	$(MAKE) rjava_NQueens
-	$(MAKE) rjava_Partition
-	$(MAKE) rjava_QuasigroupCompletion
-	$(MAKE) rjava_RabbitsPheasants
-	$(MAKE) rjava_SendMoreMoney2
-	$(MAKE) rjava_SendMoreMoney
-	$(MAKE) rjava_SendMostMoney
-	$(MAKE) rjava_Seseman
-	$(MAKE) rjava_SetCovering2
-	$(MAKE) rjava_SetCovering3
-	$(MAKE) rjava_SetCovering4
-	$(MAKE) rjava_SetCoveringDeployment
-	$(MAKE) rjava_SetCovering
-	$(MAKE) rjava_SimpleRoutingTest
-	$(MAKE) rjava_StableMarriage
-	$(MAKE) rjava_StiglerMIP
-	$(MAKE) rjava_Strimko2
-	$(MAKE) rjava_Sudoku
-	$(MAKE) rjava_SurvoPuzzle
-	$(MAKE) rjava_ToNum
-	$(MAKE) rjava_Tsp
-	$(MAKE) rjava_Vrp
-	$(MAKE) rjava_WhoKilledAgatha
-	$(MAKE) rjava_Xkcd
-	$(MAKE) rjava_YoungTableaux
-
 $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
 	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(JAVA_EX_PATH)$S$*.java
-
-.PHONY: test_java_samples # Build and Run all Java Samples (located in ortools/*/samples)
-test_java_samples: $(JAVA_OR_TOOLS_LIBS)
-	$(MAKE) rjava_BinPackingProblem
-	$(MAKE) rjava_BoolOrSample
-	$(MAKE) rjava_ChannelingSample
-	$(MAKE) rjava_CodeSample
-	$(MAKE) rjava_IntervalSample
-	$(MAKE) rjava_LiteralSample
-	$(MAKE) rjava_NoOverlapSample
-	$(MAKE) rjava_OptionalIntervalSample
-	$(MAKE) rjava_RabbitsAndPheasants
-	$(MAKE) rjava_RankingSample
-	$(MAKE) rjava_ReifiedSample
-	$(MAKE) rjava_SimpleSolve
-	$(MAKE) rjava_SolveAllSolutions
-	$(MAKE) rjava_SolveWithIntermediateSolutions
-	$(MAKE) rjava_SolveWithTimeLimit
-	$(MAKE) rjava_StopAfterNSolutions
 
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/sat/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
@@ -366,25 +317,91 @@ $(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	-$(DEL) $(LIB_DIR)$S$*.jar
 	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
 
-rjava_%: $(LIB_DIR)/%$J
+rjava_%: $(LIB_DIR)/%$J FORCE
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $* $(ARGS)
 
-.PHONY: rjava cjava
-ifeq ($(EX),) # Those rules will be used if EX variable is not set
-rjava cjava:
-	@echo No java file was provided, the $@ target must be used like so: \
- make $@ EX=examples/java/example.java
-else # This generic rule will be used if EX variable is set
-EX_NAME = $(basename $(notdir $(EX)))
+.PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
+test_java_tests: \
+ rjava_TestLp
 
-cjava: $(CLASS_DIR)/$(EX_NAME)
+.PHONY: check_java_examples # Build and Run few Java Examples (located in examples/java)
+check_java_examples: \
+ rjava_LinearProgramming \
+ rjava_IntegerProgramming \
+ rjava_Tsp \
+ rjava_Vrp \
+ rjava_Knapsack
 
-rjava: $(LIB_DIR)/$(EX_NAME)$J
-	@echo running $<
-	$(MAKE) rjava_$(EX_NAME)
-endif # ifeq ($(EX),)
+.PHONY: test_java_examples # Build and Run all Java Examples (located in examples/java)
+test_java_examples: check_java_examples \
+ rjava_AllDifferentExcept0 \
+ rjava_AllInterval \
+ rjava_CapacitatedVehicleRoutingProblemWithTimeWindows \
+ rjava_Circuit \
+ rjava_CoinsGridMIP \
+ rjava_ColoringMIP \
+ rjava_CoveringOpl \
+ rjava_Crossword \
+ rjava_DeBruijn \
+ rjava_Diet \
+ rjava_DietMIP \
+ rjava_DivisibleBy9Through1 \
+ rjava_FlowExample \
+ rjava_GolombRuler \
+ rjava_KnapsackMIP \
+ rjava_LeastDiff \
+ rjava_LinearAssignmentAPI \
+ rjava_LsApi \
+ rjava_MagicSquare \
+ rjava_Map2 \
+ rjava_Map \
+ rjava_Minesweeper \
+ rjava_MultiThreadTest \
+ rjava_NQueens2 \
+ rjava_NQueens \
+ rjava_Partition \
+ rjava_QuasigroupCompletion \
+ rjava_RabbitsPheasants \
+ rjava_SendMoreMoney2 \
+ rjava_SendMoreMoney \
+ rjava_SendMostMoney \
+ rjava_Seseman \
+ rjava_SetCovering2 \
+ rjava_SetCovering3 \
+ rjava_SetCovering4 \
+ rjava_SetCoveringDeployment \
+ rjava_SetCovering \
+ rjava_SimpleRoutingTest \
+ rjava_StableMarriage \
+ rjava_StiglerMIP \
+ rjava_Strimko2 \
+ rjava_Sudoku \
+ rjava_SurvoPuzzle \
+ rjava_ToNum \
+ rjava_WhoKilledAgatha \
+ rjava_Xkcd \
+ rjava_YoungTableaux
+
+.PHONY: test_java_samples # Build and Run all Java Samples (located in ortools/*/samples)
+test_java_samples: \
+ rjava_BinPackingProblem \
+ rjava_BoolOrSample \
+ rjava_ChannelingSample \
+ rjava_CodeSample \
+ rjava_IntervalSample \
+ rjava_LiteralSample \
+ rjava_NoOverlapSample \
+ rjava_OptionalIntervalSample \
+ rjava_RabbitsAndPheasants \
+ rjava_RankingSample \
+ rjava_ReifiedSample \
+ rjava_SimpleSolve \
+ rjava_SolveAllSolutions \
+ rjava_SolveWithIntermediateSolutions \
+ rjava_SolveWithTimeLimit \
+ rjava_StopAfterNSolutions
 
 ################
 ##  Cleaning  ##

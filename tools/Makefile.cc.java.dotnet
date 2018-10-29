@@ -158,13 +158,21 @@ OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools$L
 CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib$L
 DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs$L
 FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap$L
-CLR_DLL_NAME ?= Google.OrTools
 
 .PHONY: all
 all: detect cc java dotnet test
 
 .PHONY: detect
 detect: detect_port detect_cc detect_java detect_dotnet
+	@echo SOURCE = $(SOURCE)
+	@echo SOURCE_PATH = $(SOURCE_PATH)
+	@echo SOURCE_NAME = $(SOURCE_NAME)
+	@echo SOURCE_SUFFIX = $(SOURCE_SUFFIX)
+ifeq ($(SYSTEM),win)
+	@echo off & echo(
+else
+	@echo
+endif
 
 .PHONY: test
 test: test_cc test_java test_dotnet
@@ -185,6 +193,25 @@ ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else
 	@echo
+endif
+
+##############
+##  SOURCE  ##
+##############
+# Check SOURCE argument
+SOURCE_SUFFIX = $(suffix $(SOURCE))
+# will contain “/any/path/foo.cc” on unix and “\\any\\path\\foo.cc” on windows
+SOURCE_PATH = $(subst /,$S,$(SOURCE))
+SOURCE_NAME= $(basename $(notdir $(SOURCE)))
+ifeq ($(SOURCE),) # Those rules will be used if SOURCE is empty
+.PHONY: build run
+build run:
+	$(error no source file provided, the "$@" target must be used like so: \
+ make $@ SOURCE=relative/path/to/filename.extension)
+else
+ifeq (,$(wildcard $(SOURCE)))
+$(error File "$(SOURCE)" does not exist !)
+endif
 endif
 
 ###########
@@ -238,46 +265,53 @@ $(BIN_DIR)/sports_scheduling$E \
 $(BIN_DIR)/strawberry_fields_with_column_generation$E \
 $(BIN_DIR)/weighted_tardiness_sat$E
 
-.PHONY: cc test_cc ccc rcc
+.PHONY: cc test_cc
 ifndef CXX_BIN
-cc test_cc ccc rcc:
+cc test_cc:
 	@echo the $(CXX) command was not found in your PATH
 	exit 127
 else
 cc: $(EXE)
-
 test_cc: detect_cc
-	$(MAKE) rcc_linear_programming
-	$(MAKE) rcc_integer_programming
-	$(MAKE) rcc_constraint_programming_cp
-	$(MAKE) rcc_rabbits_pheasants_cp
-	$(MAKE) rcc_tsp
-	$(MAKE) rcc_vrp
-	$(MAKE) rcc_knapsack
-	$(MAKE) rcc_max_flow
-	$(MAKE) rcc_min_cost_flow
-	$(MAKE) rcc_nurses_cp
-	$(MAKE) rcc_job_shop_cp
+	$(MAKE) run SOURCE=examples/cpp/linear_programming.cc
+	$(MAKE) run SOURCE=examples/cpp/integer_programming.cc
+	$(MAKE) run SOURCE=examples/cpp/constraint_programming_cp.cc
+	$(MAKE) run SOURCE=examples/cpp/rabbits_pheasants_cp.cc
+	$(MAKE) run SOURCE=examples/cpp/tsp.cc
+	$(MAKE) run SOURCE=examples/cpp/vrp.cc
+	$(MAKE) run SOURCE=examples/cpp/knapsack.cc
+	$(MAKE) run SOURCE=examples/cpp/max_flow.cc
+	$(MAKE) run SOURCE=examples/cpp/min_cost_flow.cc
+	$(MAKE) run SOURCE=examples/cpp/nurses_cp.cc
+	$(MAKE) run SOURCE=examples/cpp/job_shop_cp.cc
 
-# C++ generic running command
-ifeq ($(EX),)
-ccc rcc:
-	@echo No C++ file was provided, the $@ target must be used like so: \
-	make $@ EX=examples/cpp/example.cc
-	exit 2
-else # ifeq ($(EX),)
-EX_NAME = $(basename $(notdir $(EX)))
+##################
+##  C++ SOURCE  ##
+##################
+ifeq ($(SOURCE_SUFFIX),.cc) # Those rules will be used if SOURCE contain a .cc file
+$(OBJ_DIR)/$(SOURCE_NAME).$O: $(SOURCE) | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) \
+ -c $(SOURCE_PATH) \
+ $(OBJ_OUT)$(OBJ_DIR)$S$(SOURCE_NAME).$O
 
-ccc: $(BIN_DIR)/$(EX_NAME)$E
+$(BIN_DIR)/$(SOURCE_NAME)$E: $(OBJ_DIR)/$(SOURCE_NAME).$O | $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) \
+ $(OBJ_DIR)$S$(SOURCE_NAME).$O \
+ $(OR_TOOLS_LNK) $(LDFLAGS) \
+ $(EXE_OUT)$(BIN_DIR)$S$(SOURCE_NAME)$E
 
-rcc: $(BIN_DIR)/$(EX_NAME)$E
-	@echo running $<
-	$(BIN_DIR)$S$(EX_NAME)$E $(ARGS)
-endif # ifeq ($(EX),)
+.PHONY: build # Build a C++ program.
+build: $(BIN_DIR)/$(SOURCE_NAME)$E
+
+.PHONY: run # Run a C++ program.
+run: build
+	$(BIN_DIR)$S$(SOURCE_NAME)$E $(ARGS)
+endif # ifeq ($(SOURCE_SUFFIX),.cc)
+
 endif # ifndef CXX_BIN
 
 $(OBJ_DIR):
-	$(MKDIR) $(OBJ_DIR)
+	-$(MKDIR) $(OBJ_DIR)
 
 $(OBJ_DIR)/%$O: $(CPP_EX_DIR)/%.cc | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $(CPP_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*$O
@@ -308,9 +342,6 @@ $(BIN_DIR)/dimacs_assignment$E: $(OBJ_DIR)/dimacs_assignment$O
 
 $(BIN_DIR)/frequency_assignment_problem$E: $(OBJ_DIR)/frequency_assignment_problem$O
 	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Sfrequency_assignment_problem$O $(FAP_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
-
-rcc_%: $(BIN_DIR)/%$E
-	$(BIN_DIR)$S$*$E $(ARGS)
 
 .PHONY: detect_cc
 detect_cc:
@@ -399,39 +430,46 @@ ifndef JAVA_BIN
 HAS_JAVA =
 endif
 
+.PHONY: java test_java
 ifndef HAS_JAVA
-java test_java rjava cjava:
+java test_java:
 	@echo the command 'java', 'javac' or 'jar' was not found in your PATH
 	exit 127
 else
 java: $(JAR)
-
 test_java: detect_java
-	$(MAKE) rjava_LinearProgramming
-	$(MAKE) rjava_IntegerProgramming
-	$(MAKE) rjava_RabbitsPheasants
-	$(MAKE) rjava_Tsp
-	$(MAKE) rjava_Vrp
-	$(MAKE) rjava_Knapsack
+	$(MAKE) run SOURCE=examples/java/LinearProgramming.java
+	$(MAKE) run SOURCE=examples/java/IntegerProgramming.java
+	$(MAKE) run SOURCE=examples/java/RabbitsPheasants.java
+	$(MAKE) run SOURCE=examples/java/Tsp.java
+	$(MAKE) run SOURCE=examples/java/Vrp.java
+	$(MAKE) run SOURCE=examples/java/Knapsack.java
 
-# Java generic compilation command.
-.PHONY: cjava rjava
-ifeq ($(EX),)
-rjava cjava:
-	@echo No Java file was provided, the $@ target must be used like so: \
-	make $@ EX=examples/java/example.java
-	exit 2
-else # ifeq ($(EX),)
-EX_NAME = $(basename $(notdir $(EX)))
+###################
+##  Java SOURCE  ##
+###################
+ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .java file
+$(CLASS_DIR)/$(SOURCE_NAME): $(SOURCE) | $(CLASS_DIR)
+	-$(DELREC) $(CLASS_DIR)$S$(SOURCE_NAME)
+	-$(MKDIR_P) $(CLASS_DIR)$S$(SOURCE_NAME)
+	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$(SOURCE_NAME) \
+ -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ $(SOURCE_PATH)
 
-cjava: $(CLASS_DIR)/$(EX_NAME)
+$(LIB_DIR)/$(SOURCE_NAME)$J: $(CLASS_DIR)/$(SOURCE_NAME) | $(LIB_DIR)
+	-$(DEL) $(LIB_DIR)$S$(SOURCE_NAME)$J
+	"$(JAR_BIN)" cvf $(LIB_DIR)$S$(SOURCE_NAME)$J -C $(CLASS_DIR)$S$(SOURCE_NAME) .
 
-rjava: $(LIB_DIR)/$(EX_NAME)$J
-	@echo running $<
+.PHONY: build # Build a Java program.
+build: $(LIB_DIR)/$(SOURCE_NAME)$J
+
+.PHONY: run # Run a Java program.
+run: build
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$(EX_NAME)$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools$J$(CPSEP)$(LIB_DIR)$Sprotobuf$J \
- $(EX_NAME) $(ARGS)
-endif # ifeq ($(EX),)
+ -cp $(LIB_DIR)$S$(SOURCE_NAME)$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ $(SOURCE_NAME) $(ARGS)
+endif # ifeq ($(SOURCE_SUFFIX),.java)
+
 endif # ifndef HAS_JAVA
 
 $(CLASS_DIR):
@@ -445,11 +483,6 @@ $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java | $(CLASS_DIR)
 
 $(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*$J -C $(CLASS_DIR)$S$* .
-
-rjava_%: $(LIB_DIR)/%$J
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*.jar$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $* $(ARGS)
 
 .PHONY: detect_java
 detect_java:
@@ -468,203 +501,198 @@ endif
 ##############
 ##  DOTNET  ##
 ##############
-.PHONY: dotnet test_dotnet cdotnet rdotnet
+.PHONY: dotnet test_dotnet
 ifndef DOTNET_BIN
-dotnet test_dotnet cdotnet rdotnet:
+dotnet test_dotnet:
 	@echo the command 'dotnet' was not found in your PATH
 	exit 127
 else
 dotnet:
-	$(MAKE) rdotnet_cslinearprogramming
-	$(MAKE) rdotnet_csintegerprogramming
-	$(MAKE) rdotnet_tsp
-	$(MAKE) rdotnet_vrp
-	$(MAKE) rdotnet_assignment
-	$(MAKE) rdotnet_nurses_sat
-	$(MAKE) rdotnet_3_jugs_regular
-	$(MAKE) rdotnet_alldifferent_except_0
-	$(MAKE) rdotnet_all_interval
-	$(MAKE) rdotnet_a_puzzle
-	$(MAKE) rdotnet_a_round_of_golf
-	$(MAKE) rdotnet_broken_weights
-	$(MAKE) rdotnet_bus_schedule
-	$(MAKE) rdotnet_circuit2
-	$(MAKE) rdotnet_circuit
-	$(MAKE) rdotnet_coins3
-	$(MAKE) rdotnet_coins_grid ARGS="5 2"
-	$(MAKE) rdotnet_combinatorial_auction2
-	$(MAKE) rdotnet_contiguity_regular
-	$(MAKE) rdotnet_contiguity_transition
-	$(MAKE) rdotnet_costas_array
-	$(MAKE) rdotnet_covering_opl
-	$(MAKE) rdotnet_crew
-	$(MAKE) rdotnet_crossword
-	$(MAKE) rdotnet_crypta
-	$(MAKE) rdotnet_crypto
-	$(MAKE) rdotnet_cscvrptw
-	$(MAKE) rdotnet_csflow
-	$(MAKE) rdotnet_csjobshop
-	$(MAKE) rdotnet_csknapsack
-	$(MAKE) rdotnet_csls_api
-	$(MAKE) rdotnet_csrabbitspheasants
-	$(MAKE) rdotnet_cstsp
-	$(MAKE) rdotnet_curious_set_of_integers
-	$(MAKE) rdotnet_debruijn
-	$(MAKE) rdotnet_csdiet
-	$(MAKE) rdotnet_discrete_tomography
-	$(MAKE) rdotnet_divisible_by_9_through_1
-	$(MAKE) rdotnet_dudeney
-	$(MAKE) rdotnet_einav_puzzle2
-	$(MAKE) rdotnet_eq10
-	$(MAKE) rdotnet_eq20
-	$(MAKE) rdotnet_fill_a_pix
-	$(MAKE) rdotnet_furniture_moving
-	$(MAKE) rdotnet_furniture_moving_intervals
-	$(MAKE) rdotnet_futoshiki
-	$(MAKE) rdotnet_gate_scheduling_sat
-	$(MAKE) rdotnet_golomb_ruler
-	$(MAKE) rdotnet_grocery
-	$(MAKE) rdotnet_hidato_table
-	$(MAKE) rdotnet_jobshop_ft06_sat
-	$(MAKE) rdotnet_just_forgotten
-	$(MAKE) rdotnet_kakuro
-	$(MAKE) rdotnet_kenken2
-	$(MAKE) rdotnet_killer_sudoku
-	$(MAKE) rdotnet_labeled_dice
-	$(MAKE) rdotnet_langford
-	$(MAKE) rdotnet_least_diff
-	$(MAKE) rdotnet_lectures
-	$(MAKE) rdotnet_magic_sequence
-	$(MAKE) rdotnet_magic_square_and_cards
-	$(MAKE) rdotnet_magic_square
-	$(MAKE) rdotnet_map2
-	$(MAKE) rdotnet_map
-	$(MAKE) rdotnet_marathon2
-	$(MAKE) rdotnet_max_flow_taha
-	$(MAKE) rdotnet_max_flow_winston1
-	$(MAKE) rdotnet_minesweeper
-	$(MAKE) rdotnet_mr_smith
-#	$(MAKE) rdotnet_nontransitive_dice # too long
-	$(MAKE) rdotnet_nqueens
-	$(MAKE) rdotnet_nurse_rostering_regular
-	$(MAKE) rdotnet_nurse_rostering_transition
-	$(MAKE) rdotnet_olympic
-	$(MAKE) rdotnet_organize_day
-	$(MAKE) rdotnet_organize_day_intervals
-	$(MAKE) rdotnet_pandigital_numbers
-#	$(MAKE) rdotnet_partition # too long
-	$(MAKE) rdotnet_perfect_square_sequence
-	$(MAKE) rdotnet_photo_problem
-	$(MAKE) rdotnet_place_number_puzzle
-	$(MAKE) rdotnet_p_median
-	$(MAKE) rdotnet_post_office_problem2
-	$(MAKE) rdotnet_quasigroup_completion
-	$(MAKE) rdotnet_regex
-	$(MAKE) rdotnet_rogo2
-	$(MAKE) rdotnet_scheduling_speakers
-	$(MAKE) rdotnet_secret_santa2
-#	$(MAKE) rdotnet_secret_santa # too long
-	$(MAKE) rdotnet_send_more_money2
-	$(MAKE) rdotnet_send_more_money
-	$(MAKE) rdotnet_send_most_money
-	$(MAKE) rdotnet_seseman
-	$(MAKE) rdotnet_set_covering2
-	$(MAKE) rdotnet_set_covering3
-	$(MAKE) rdotnet_set_covering4
-	$(MAKE) rdotnet_set_covering
-	$(MAKE) rdotnet_set_covering_deployment
-	$(MAKE) rdotnet_set_covering_skiena
-	$(MAKE) rdotnet_set_partition
-	$(MAKE) rdotnet_sicherman_dice
-	$(MAKE) rdotnet_ski_assignment
-	$(MAKE) rdotnet_slow_scheduling
-	$(MAKE) rdotnet_stable_marriage
-	$(MAKE) rdotnet_strimko2
-	$(MAKE) rdotnet_subset_sum
-	$(MAKE) rdotnet_sudoku
-	$(MAKE) rdotnet_survo_puzzle
-	$(MAKE) rdotnet_TaskScheduling
-	$(MAKE) rdotnet_techtalk_scheduling
-	$(MAKE) rdotnet_to_num
-	$(MAKE) rdotnet_traffic_lights
-	$(MAKE) rdotnet_volsay
-	$(MAKE) rdotnet_volsay2
-	$(MAKE) rdotnet_volsay3
-	$(MAKE) rdotnet_wedding_optimal_chart
-	$(MAKE) rdotnet_who_killed_agatha
-	$(MAKE) rdotnet_xkcd
-	$(MAKE) rdotnet_young_tableaux
-	$(MAKE) rdotnet_zebra
-	$(MAKE) rdotnet_fsintegerprogramming
-	$(MAKE) rdotnet_fslinearprogramming
-	$(MAKE) rdotnet_fsdiet
-	$(MAKE) rdotnet_fsequality
-	$(MAKE) rdotnet_fsequality-inequality
-	$(MAKE) rdotnet_fsinteger-linear-program
-	$(MAKE) rdotnet_fsknapsack
-	$(MAKE) rdotnet_fsnetwork-max-flow
-	$(MAKE) rdotnet_fsnetwork-max-flow-lpSolve
-	$(MAKE) rdotnet_fsnetwork-min-cost-flow
-	$(MAKE) rdotnet_fsProgram
-	$(MAKE) rdotnet_fsrabbit-pheasant
-	$(MAKE) rdotnet_fsvolsay3
-	$(MAKE) rdotnet_fsvolsay3-lpSolve
-	$(MAKE) rdotnet_fsvolsay
-#	$(MAKE) rdotnet_word_square # depends on /usr/share/dict/words
+	$(MAKE) run SOURCE=examples/dotnet/cslinearprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/tsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/vrp.cs
+	$(MAKE) run SOURCE=examples/dotnet/assignment.cs
+	$(MAKE) run SOURCE=examples/dotnet/nurses_sat.cs
+	$(MAKE) run SOURCE=examples/dotnet/3_jugs_regular.cs
+	$(MAKE) run SOURCE=examples/dotnet/alldifferent_except_0.cs
+	$(MAKE) run SOURCE=examples/dotnet/all_interval.cs
+	$(MAKE) run SOURCE=examples/dotnet/a_puzzle.cs
+	$(MAKE) run SOURCE=examples/dotnet/a_round_of_golf.cs
+	$(MAKE) run SOURCE=examples/dotnet/broken_weights.cs
+	$(MAKE) run SOURCE=examples/dotnet/bus_schedule.cs
+	$(MAKE) run SOURCE=examples/dotnet/circuit2.cs
+	$(MAKE) run SOURCE=examples/dotnet/circuit.cs
+	$(MAKE) run SOURCE=examples/dotnet/coins3.cs
+	$(MAKE) run SOURCE=examples/dotnet/coins_grid.cs ARGS="5 2"
+	$(MAKE) run SOURCE=examples/dotnet/combinatorial_auction2.cs
+	$(MAKE) run SOURCE=examples/dotnet/contiguity_regular.cs
+	$(MAKE) run SOURCE=examples/dotnet/contiguity_transition.cs
+	$(MAKE) run SOURCE=examples/dotnet/costas_array.cs
+	$(MAKE) run SOURCE=examples/dotnet/covering_opl.cs
+	$(MAKE) run SOURCE=examples/dotnet/crew.cs
+	$(MAKE) run SOURCE=examples/dotnet/crossword.cs
+	$(MAKE) run SOURCE=examples/dotnet/crypta.cs
+	$(MAKE) run SOURCE=examples/dotnet/crypto.cs
+	$(MAKE) run SOURCE=examples/dotnet/cscvrptw.cs
+	$(MAKE) run SOURCE=examples/dotnet/csflow.cs
+	$(MAKE) run SOURCE=examples/dotnet/csjobshop.cs
+	$(MAKE) run SOURCE=examples/dotnet/csknapsack.cs
+	$(MAKE) run SOURCE=examples/dotnet/csls_api.cs
+	$(MAKE) run SOURCE=examples/dotnet/csrabbitspheasants.cs
+	$(MAKE) run SOURCE=examples/dotnet/cstsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/curious_set_of_integers.cs
+	$(MAKE) run SOURCE=examples/dotnet/debruijn.cs
+	$(MAKE) run SOURCE=examples/dotnet/csdiet.cs
+	$(MAKE) run SOURCE=examples/dotnet/discrete_tomography.cs
+	$(MAKE) run SOURCE=examples/dotnet/divisible_by_9_through_1.cs
+	$(MAKE) run SOURCE=examples/dotnet/dudeney.cs
+	$(MAKE) run SOURCE=examples/dotnet/einav_puzzle2.cs
+	$(MAKE) run SOURCE=examples/dotnet/eq10.cs
+	$(MAKE) run SOURCE=examples/dotnet/eq20.cs
+	$(MAKE) run SOURCE=examples/dotnet/fill_a_pix.cs
+	$(MAKE) run SOURCE=examples/dotnet/furniture_moving.cs
+	$(MAKE) run SOURCE=examples/dotnet/furniture_moving_intervals.cs
+	$(MAKE) run SOURCE=examples/dotnet/futoshiki.cs
+	$(MAKE) run SOURCE=examples/dotnet/gate_scheduling_sat.cs
+	$(MAKE) run SOURCE=examples/dotnet/golomb_ruler.cs
+	$(MAKE) run SOURCE=examples/dotnet/grocery.cs
+	$(MAKE) run SOURCE=examples/dotnet/hidato_table.cs
+	$(MAKE) run SOURCE=examples/dotnet/jobshop_ft06_sat.cs
+	$(MAKE) run SOURCE=examples/dotnet/just_forgotten.cs
+	$(MAKE) run SOURCE=examples/dotnet/kakuro.cs
+	$(MAKE) run SOURCE=examples/dotnet/kenken2.cs
+	$(MAKE) run SOURCE=examples/dotnet/killer_sudoku.cs
+	$(MAKE) run SOURCE=examples/dotnet/labeled_dice.cs
+	$(MAKE) run SOURCE=examples/dotnet/langford.cs
+	$(MAKE) run SOURCE=examples/dotnet/least_diff.cs
+	$(MAKE) run SOURCE=examples/dotnet/lectures.cs
+	$(MAKE) run SOURCE=examples/dotnet/magic_sequence.cs
+	$(MAKE) run SOURCE=examples/dotnet/magic_square_and_cards.cs
+	$(MAKE) run SOURCE=examples/dotnet/magic_square.cs
+	$(MAKE) run SOURCE=examples/dotnet/map2.cs
+	$(MAKE) run SOURCE=examples/dotnet/map.cs
+	$(MAKE) run SOURCE=examples/dotnet/marathon2.cs
+	$(MAKE) run SOURCE=examples/dotnet/max_flow_taha.cs
+	$(MAKE) run SOURCE=examples/dotnet/max_flow_winston1.cs
+	$(MAKE) run SOURCE=examples/dotnet/minesweeper.cs
+	$(MAKE) run SOURCE=examples/dotnet/mr_smith.cs
+#	$(MAKE) run SOURCE=examples/dotnet/nontransitive_dice.cs # too long
+	$(MAKE) run SOURCE=examples/dotnet/nqueens.cs
+	$(MAKE) run SOURCE=examples/dotnet/nurse_rostering_regular.cs
+	$(MAKE) run SOURCE=examples/dotnet/nurse_rostering_transition.cs
+	$(MAKE) run SOURCE=examples/dotnet/olympic.cs
+	$(MAKE) run SOURCE=examples/dotnet/organize_day.cs
+	$(MAKE) run SOURCE=examples/dotnet/organize_day_intervals.cs
+	$(MAKE) run SOURCE=examples/dotnet/pandigital_numbers.cs
+#	$(MAKE) run SOURCE=examples/dotnet/partition.cs # too long
+	$(MAKE) run SOURCE=examples/dotnet/perfect_square_sequence.cs
+	$(MAKE) run SOURCE=examples/dotnet/photo_problem.cs
+	$(MAKE) run SOURCE=examples/dotnet/place_number_puzzle.cs
+	$(MAKE) run SOURCE=examples/dotnet/p_median.cs
+	$(MAKE) run SOURCE=examples/dotnet/post_office_problem2.cs
+	$(MAKE) run SOURCE=examples/dotnet/quasigroup_completion.cs
+	$(MAKE) run SOURCE=examples/dotnet/regex.cs
+	$(MAKE) run SOURCE=examples/dotnet/rogo2.cs
+	$(MAKE) run SOURCE=examples/dotnet/scheduling_speakers.cs
+	$(MAKE) run SOURCE=examples/dotnet/secret_santa2.cs
+#	$(MAKE) run SOURCE=examples/dotnet/secret_santa.cs # too long
+	$(MAKE) run SOURCE=examples/dotnet/send_more_money2.cs
+	$(MAKE) run SOURCE=examples/dotnet/send_more_money.cs
+	$(MAKE) run SOURCE=examples/dotnet/send_most_money.cs
+	$(MAKE) run SOURCE=examples/dotnet/seseman.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering2.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering3.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering4.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering_deployment.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_covering_skiena.cs
+	$(MAKE) run SOURCE=examples/dotnet/set_partition.cs
+	$(MAKE) run SOURCE=examples/dotnet/sicherman_dice.cs
+	$(MAKE) run SOURCE=examples/dotnet/ski_assignment.cs
+	$(MAKE) run SOURCE=examples/dotnet/slow_scheduling.cs
+	$(MAKE) run SOURCE=examples/dotnet/stable_marriage.cs
+	$(MAKE) run SOURCE=examples/dotnet/strimko2.cs
+	$(MAKE) run SOURCE=examples/dotnet/subset_sum.cs
+	$(MAKE) run SOURCE=examples/dotnet/sudoku.cs
+	$(MAKE) run SOURCE=examples/dotnet/survo_puzzle.cs
+	$(MAKE) run SOURCE=examples/dotnet/TaskScheduling.cs
+	$(MAKE) run SOURCE=examples/dotnet/techtalk_scheduling.cs
+	$(MAKE) run SOURCE=examples/dotnet/to_num.cs
+	$(MAKE) run SOURCE=examples/dotnet/traffic_lights.cs
+	$(MAKE) run SOURCE=examples/dotnet/volsay.cs
+	$(MAKE) run SOURCE=examples/dotnet/volsay2.cs
+	$(MAKE) run SOURCE=examples/dotnet/volsay3.cs
+	$(MAKE) run SOURCE=examples/dotnet/wedding_optimal_chart.cs
+	$(MAKE) run SOURCE=examples/dotnet/who_killed_agatha.cs
+	$(MAKE) run SOURCE=examples/dotnet/xkcd.cs
+	$(MAKE) run SOURCE=examples/dotnet/young_tableaux.cs
+	$(MAKE) run SOURCE=examples/dotnet/zebra.cs
+	$(MAKE) run SOURCE=examples/dotnet/fsintegerprogramming.fs
+	$(MAKE) run SOURCE=examples/dotnet/fslinearprogramming.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsdiet.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsequality.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsequality-inequality.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsinteger-linear-program.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsknapsack.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-max-flow.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-max-flow-lpSolve.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsnetwork-min-cost-flow.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsProgram.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsrabbit-pheasant.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsvolsay3.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsvolsay3-lpSolve.fs
+	$(MAKE) run SOURCE=examples/dotnet/fsvolsay.fs
+#	$(MAKE) run SOURCE=examples/dotnet/word_square.cs # depends on /usr/share/dict/words
 
 test_dotnet: detect_dotnet
-	$(MAKE) rdotnet_cslinearprogramming
-	$(MAKE) rdotnet_csintegerprogramming
-	$(MAKE) rdotnet_tsp
-	$(MAKE) rdotnet_vrp
-	$(MAKE) rdotnet_assignment
-	$(MAKE) rdotnet_nurses_sat
+	$(MAKE) run SOURCE=examples/dotnet/cslinearprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/tsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/vrp.cs
+	$(MAKE) run SOURCE=examples/dotnet/assignment.cs
+	$(MAKE) run SOURCE=examples/dotnet/nurses_sat.cs
 
-# .NET generic compilation command.
-ifeq ($(EX),)
-cdotnet rdotnet:
-	@echo No CSharp file was provided, the $@ target must be used like so: \
-	make $@ EX=example/dotnet/example.cs
-	exit 2
-else # ifeq ($(EX),)
-EX_NAME = $(basename $(notdir $(EX)))
+###################
+##  .NET SOURCE  ##
+###################
+# .Net C#
+ifeq ($(SOURCE_SUFFIX),.cs) # Those rules will be used if SOURCE contain a .cs file
+ifeq (,$(wildcard $(SOURCE)proj))
+$(error File "$(SOURCE)proj" does not exist !)
+endif
 
-cdotnet: $(BIN_DIR)/$(EX_NAME)$D
+.PHONY: build # Build a .Net C# program.
+build: $(SOURCE) $(SOURCE)proj
+	"$(DOTNET_BIN)" build $(SOURCE_PATH)proj
 
-rdotnet: $(BIN_DIR)/$(EX_NAME)$D
-	@echo running $<
-	"$(DOTNET_BIN)" $(BIN_DIR)$S$(EX_NAME)$D
-endif # ifeq ($(EX),)
+.PHONY: run # Run a .Net C# program.
+run: build
+	"$(DOTNET_BIN)" --no-build \
+ --project $(SOURCE_PATH)proj -- $(ARGS)
+endif # ifeq ($(SOURCE_SUFFIX),.cs)
+
+# .Net F#
+ifeq ($(SOURCE_SUFFIX),.fs) # Those rules will be used if SOURCE contain a .cs file
+ifeq (,$(wildcard $(SOURCE)proj))
+$(error File "$(SOURCE)proj" does not exist !)
+endif
+
+.PHONY: build # Build a .Net F# program.
+build: $(SOURCE) $(SOURCE)proj
+	"$(DOTNET_BIN)" build $(SOURCE_PATH)proj
+
+.PHONY: run # Run a .Net F# program.
+run: build
+	"$(DOTNET_BIN)" --no-build \
+ --project $(SOURCE_PATH)proj -- $(ARGS)
+endif # ifeq ($(SOURCE_SUFFIX),.fs)
+
 endif # ifndef DOTNET_BIN
-
-$(BIN_DIR)/%$D: \
- $(DOTNET_EX_DIR)/%.cs \
- $(DOTNET_EX_DIR)/%.csproj \
- | $(BIN_DIR)
-	"$(DOTNET_BIN)" build -o "..$S..$S$(BIN_DIR)" $(DOTNET_EX_PATH)$S$*.csproj
-
-$(BIN_DIR)/%$D: \
- $(DOTNET_EX_DIR)/%.fs \
- $(DOTNET_EX_DIR)/%.fsproj \
- | $(BIN_DIR)
-	"$(DOTNET_BIN)" build -o "..$S..$S$(BIN_DIR)" $(DOTNET_EX_PATH)$S$*.fsproj
-
-rdotnet_%: \
- $(DOTNET_EX_DIR)/%.cs \
- $(DOTNET_EX_DIR)/%.csproj
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
-
-rdotnet_%: \
- $(DOTNET_EX_DIR)/%.fs \
- $(DOTNET_EX_DIR)/%.fsproj
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
 .PHONY: detect_dotnet
 detect_dotnet:
 	@echo DOTNET_BIN = $(DOTNET_BIN)
-	@echo CLR_DLL_NAME = $(CLR_DLL_NAME)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

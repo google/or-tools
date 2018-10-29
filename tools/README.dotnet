@@ -20,22 +20,10 @@ Running the examples will involve compiling them, then running them.
 We have provided a makefile target to help you. You need to have the
 compiler tools accessible from the command line.
 
-make rcs EX=csflow
+make run SOURCE=example/dotnet/csflow.cs
 
-This is equivalent to compiling and running examples/csflow.cs and running it:
-
-  - on windows 32 bit:
-csc /target:exe /out:bin\csflow.exe /platform:x86 /lib:bin /r:Google.OrTools.dll examples\csharp\csflow.cs
-bin\csflow.exe
-
-  - on windows 64 bit:
-csc /target:exe /out:bin/csflow.exe /platform:x64 /lib:bin /r:Google.OrTools.dll  examples\csharp\csflow.cs
-bin\csflow.exe
-
-  - on linux (mono comes from the distribution, on ubuntu 16.04 and up):
-mcs /target:exe /out:bin/csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.dll examples/csharp/csflow.cs
-MONO_PATH=bin mono bin/csflow.exe
-
-  - on Mac OS X (Use installer with version 4.2.1 or up):
-mcs /target:exe /out:bin/csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.dll examples/csharp/csflow.cs
-DYLD_FALLBACK_LIBRARY_PATH=lib mono64 bin/csflow.exe
+This is equivalent to build `examples/dotnet/csflow.cs` and running it:
+```
+dotnet build examples/dotnet/csflow.csproj
+dotnet --no-build --project examples/dotnet/csflow.csproj
+```

@@ -36,111 +36,107 @@ ifndef HAS_CCC
 cc:
 	@echo CCC = $(CCC)
 	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system PATH.)
-
 check_cc: cc
 test_cc: cc
 test_fz: cc
 else
 cc: $(OR_TOOLS_LIBS)
-
 check_cc: check_cc_examples
-
 test_cc: \
  test_cc_tests \
  test_cc_samples \
  test_cc_examples
-
 test_fz: \
  test_fz_examples
 BUILT_LANGUAGES += C++
 endif
 
 $(GEN_DIR):
-	$(MKDIR_P) $(GEN_PATH)
+	-$(MKDIR_P) $(GEN_PATH)
 
 $(GEN_DIR)/ortools: | $(GEN_DIR)
-	$(MKDIR_P) $(GEN_PATH)$Sortools
+	-$(MKDIR_P) $(GEN_PATH)$Sortools
 
 $(GEN_DIR)/ortools/algorithms: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Salgorithms
+	-$(MKDIR) $(GEN_PATH)$Sortools$Salgorithms
 
 $(GEN_DIR)/ortools/bop: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Sbop
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sbop
 
 $(GEN_DIR)/ortools/constraint_solver: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Sconstraint_solver
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sconstraint_solver
 
 $(GEN_DIR)/ortools/data: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Sdata
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sdata
 
 $(GEN_DIR)/ortools/flatzinc: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Sflatzinc
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sflatzinc
 
 $(GEN_DIR)/ortools/glop: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Sglop
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sglop
 
 $(GEN_DIR)/ortools/graph: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Sgraph
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sgraph
 
 $(GEN_DIR)/ortools/linear_solver: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Slinear_solver
+	-$(MKDIR) $(GEN_PATH)$Sortools$Slinear_solver
 
 $(GEN_DIR)/ortools/sat: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Ssat
+	-$(MKDIR) $(GEN_PATH)$Sortools$Ssat
 
 $(GEN_DIR)/ortools/util: | $(GEN_DIR)/ortools
-	$(MKDIR) $(GEN_PATH)$Sortools$Sutil
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sutil
 
 $(BIN_DIR):
-	$(MKDIR) $(BIN_DIR)
+	-$(MKDIR) $(BIN_DIR)
 
 $(LIB_DIR):
-	$(MKDIR) $(LIB_DIR)
+	-$(MKDIR) $(LIB_DIR)
 
 $(OBJ_DIR):
-	$(MKDIR) $(OBJ_DIR)
+	-$(MKDIR) $(OBJ_DIR)
 
 $(OBJ_DIR)/algorithms: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Salgorithms
+	-$(MKDIR_P) $(OBJ_DIR)$Salgorithms
 
 $(OBJ_DIR)/base: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sbase
+	-$(MKDIR_P) $(OBJ_DIR)$Sbase
 
 $(OBJ_DIR)/bop: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sbop
+	-$(MKDIR_P) $(OBJ_DIR)$Sbop
 
 $(OBJ_DIR)/constraint_solver: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sconstraint_solver
+	-$(MKDIR_P) $(OBJ_DIR)$Sconstraint_solver
 
 $(OBJ_DIR)/data: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sdata
+	-$(MKDIR_P) $(OBJ_DIR)$Sdata
 
 $(OBJ_DIR)/flatzinc: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sflatzinc
+	-$(MKDIR_P) $(OBJ_DIR)$Sflatzinc
 
 $(OBJ_DIR)/glop: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sglop
+	-$(MKDIR_P) $(OBJ_DIR)$Sglop
 
 $(OBJ_DIR)/graph: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sgraph
+	-$(MKDIR_P) $(OBJ_DIR)$Sgraph
 
 $(OBJ_DIR)/linear_solver: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Slinear_solver
+	-$(MKDIR_P) $(OBJ_DIR)$Slinear_solver
 
 $(OBJ_DIR)/lp_data: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Slp_data
+	-$(MKDIR_P) $(OBJ_DIR)$Slp_data
 
 $(OBJ_DIR)/port: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sport
+	-$(MKDIR_P) $(OBJ_DIR)$Sport
 
 $(OBJ_DIR)/sat: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Ssat
+	-$(MKDIR_P) $(OBJ_DIR)$Ssat
 
 $(OBJ_DIR)/util: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sutil
+	-$(MKDIR_P) $(OBJ_DIR)$Sutil
 
 $(OBJ_DIR)/swig: | $(OBJ_DIR)
-	$(MKDIR_P) $(OBJ_DIR)$Sswig
+	-$(MKDIR_P) $(OBJ_DIR)$Sswig
 
 ###############
 ##  CPP LIB  ##
@@ -181,108 +177,6 @@ $(OR_TOOLS_LIBS): \
 ifdef WINDOWS_SCIP_DIR
 	$(COPY) $(WINDOWS_SCIP_DIR)$Sbin$Sscip.dll $(BIN_DIR)
 endif
-
-
-# Specific libraries for examples, and flatzinc.
-CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
-CVRPTW_PATH = $(subst /,$S,$(CVRPTW_LIBS))
-CVRPTW_DEPS = \
-	$(CC_EX_DIR)/cvrptw_lib.h \
-	$(CP_DEPS)
-CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
-ifeq ($(PLATFORM),MACOSX)
-CVRPTW_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
-endif
-cvrptwlibs: $(CVRPTW_LIBS)
-
-DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
-DIMACS_PATH = $(subst /,$S,$(DIMACS_LIBS))
-DIMACS_DEPS = \
-	$(CC_EX_DIR)/parse_dimacs_assignment.h \
-	$(CC_EX_DIR)/print_dimacs_assignment.h \
-	$(GRAPH_DEPS)
-DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
-ifeq ($(PLATFORM),MACOSX)
-DIMACS_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)dimacs.$L #
-endif
-dimacslibs: $(DIMACS_LIBS)
-
-FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
-FAP_PATH = $(subst /,$S,$(FAP_LIBS))
-FAP_DEPS = \
-	$(CC_EX_DIR)/fap_model_printer.h \
-	$(CC_EX_DIR)/fap_parser.h \
-	$(CC_EX_DIR)/fap_utilities.h \
-	$(CP_DEPS) \
-	$(LP_DEPS)
-FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
-ifeq ($(PLATFORM),MACOSX)
-FAP_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fap.$L #
-endif
-faplibs: $(FAP_LIBS)
-
-# CVRPTW common library
-CVRPTW_OBJS = $(OBJ_DIR)/cvrptw_lib.$O
-$(CVRPTW_OBJS): \
- $(CC_EX_DIR)/cvrptw_lib.cc \
- $(CC_EX_DIR)/cvrptw_lib.h \
- $(CP_DEPS) \
- | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
-
-$(CVRPTW_LIBS): $(OR_TOOLS_LIBS) $(CVRPTW_OBJS) | $(LIB_DIR)
-	$(LINK_CMD) \
- $(CVRPTW_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L \
- $(CVRPTW_OBJS) \
- $(OR_TOOLS_LNK) \
- $(OR_TOOLS_LDFLAGS)
-
-# DIMACS challenge problem format library
-DIMACS_OBJS = $(OBJ_DIR)/parse_dimacs_assignment.$O $(OBJ_DIR)/print_dimacs_assignment.$O
-
-$(DIMACS_LIBS): $(OR_TOOLS_LIBS) $(DIMACS_OBJS) | $(LIB_DIR)
-	$(LINK_CMD) \
- $(DIMACS_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L \
- $(DIMACS_OBJS) \
- $(OR_TOOLS_LNK) \
- $(OR_TOOLS_LDFLAGS)
-
-# FAP challenge problem format library
-FAP_OBJS = \
-	$(OBJ_DIR)/fap_model_printer.$O \
-	$(OBJ_DIR)/fap_parser.$O \
-	$(OBJ_DIR)/fap_utilities.$O
-
-$(FAP_LIBS): $(OR_TOOLS_LIBS) $(FAP_OBJS) | $(LIB_DIR)
-	$(LINK_CMD) \
- $(FAP_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fap.$L \
- $(FAP_OBJS) \
- $(OR_TOOLS_LNK) \
- $(OR_TOOLS_LDFLAGS)
-
-# CVRP Problem
-$(OBJ_DIR)/cvrp%.$O: $(CC_EX_DIR)/cvrp%.cc $(CVRPTW_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrp$*.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrp$*.$O
-
-$(BIN_DIR)/cvrp%$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrp%.$O | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrp$*.$O $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp$*$E
-
-# Dimacs Assignment Problem
-$(OBJ_DIR)/dimacs_assignment.$O: $(CC_EX_DIR)/dimacs_assignment.cc $(DIMACS_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sdimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
-
-$(BIN_DIR)/dimacs_assignment$E: $(DIMACS_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/dimacs_assignment.$O | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sdimacs_assignment.$O $(DIMACS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
-
-# Frequency Assignment Problem
-$(OBJ_DIR)/frequency_assignment_problem.$O: $(CC_EX_DIR)/frequency_assignment_problem.cc $(FAP_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sfrequency_assignment_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sfrequency_assignment_problem.$O
-
-$(BIN_DIR)/frequency_assignment_problem$E: $(FAP_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/frequency_assignment_problem.$O | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
 
 #####################
 ##  Flatzinc code  ##
@@ -376,168 +270,275 @@ $(OBJ_DIR)/sat_runner.$O: \
  $(SAT_DEPS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat_runner.$O
 
-############################
-##  CPP Examples/Samples  ##
-############################
-.PHONY: check_cc_examples
-check_cc_examples: cc
-	$(MAKE) rcc_linear_programming
-	$(MAKE) rcc_stigler_diet
-	$(MAKE) rcc_constraint_programming_cp
-	$(MAKE) rcc_rabbits_pheasants_cp
-	$(MAKE) rcc_integer_programming
-	$(MAKE) rcc_tsp
-	$(MAKE) rcc_vrp
-	$(MAKE) rcc_knapsack
-	$(MAKE) rcc_max_flow
-	$(MAKE) rcc_min_cost_flow
-	$(MAKE) rcc_nurses_cp
-	$(MAKE) rcc_job_shop_cp
+##################
+##  C++ SOURCE  ##
+##################
+ifeq ($(SOURCE_SUFFIX),.cc) # Those rules will be used if SOURCE contain a .cc file
+$(OBJ_DIR)/$(SOURCE_NAME).$O: $(SOURCE) $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) \
+ -c $(SOURCE_PATH) \
+ $(OBJ_OUT)$(OBJ_DIR)$S$(SOURCE_NAME).$O
 
-.PHONY: test_cc_tests # Build and Run all C++ tests (located in examples/tests)
-test_cc_tests: cc
-	$(MAKE) rcc_ac4r_table_test
-	$(MAKE) rcc_boolean_test
-	$(MAKE) rcc_bug_fz1
-	$(MAKE) rcc_cpp11_test
-	$(MAKE) rcc_forbidden_intervals_test
-	$(MAKE) rcc_gcc_test
-#	$(MAKE) rcc_issue173 # error: too long
-	$(MAKE) rcc_issue57
-	$(MAKE) rcc_min_max_test
-	$(MAKE) rcc_visitor_test
+$(BIN_DIR)/$(SOURCE_NAME)$E: $(OBJ_DIR)/$(SOURCE_NAME).$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
+	$(CCC) $(CFLAGS) \
+ $(OBJ_DIR)$S$(SOURCE_NAME).$O \
+ $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) \
+ $(EXE_OUT)$(BIN_DIR)$S$(SOURCE_NAME)$E
 
-$(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc \
- $(BASE_DEPS) $(PORT_DEPS) $(UTIL_DEPS) \
- $(DATA_DEPS) $(LP_DATA_DEPS) \
- $(LP_DEPS) $(GLOP_DEPS) $(BOP_DEPS) \
- $(CP_DEPS) $(SAT_DEPS) \
- $(GRAPH_DEPS) $(ALGORITHMS_DEPS) \
- | $(OBJ_DIR)
+.PHONY: build # Build a C++ program.
+build: $(BIN_DIR)/$(SOURCE_NAME)$E
+
+.PHONY: run # Run a C++ program.
+run: build
+	$(BIN_DIR)$S$(SOURCE_NAME)$E $(ARGS)
+endif
+
+##################################
+##  CPP Tests/Examples/Samples  ##
+##################################
+$(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(TEST_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
-.PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
-test_cc_examples: cc
-	$(MAKE) rcc_linear_programming
-	$(MAKE) rcc_integer_programming
-	$(MAKE) rcc_constraint_programming_cp
-	$(MAKE) rcc_rabbits_pheasants_cp
-	$(MAKE) rcc_tsp
-	$(MAKE) rcc_vrp
-	$(MAKE) rcc_knapsack
-	$(MAKE) rcc_max_flow
-	$(MAKE) rcc_min_cost_flow
-	$(MAKE) rcc_nurses_cp
-	$(MAKE) rcc_job_shop_cp
-	$(MAKE) rcc_costas_array
-	$(MAKE) rcc_cryptarithm
-	$(MAKE) rcc_cvrp_disjoint_tw
-	$(MAKE) rcc_cvrptw
-	$(MAKE) rcc_cvrptw_with_breaks
-	$(MAKE) rcc_cvrptw_with_refueling
-	$(MAKE) rcc_cvrptw_with_resources
-	$(MAKE) rcc_cvrptw_with_stop_times_and_resources
-	$(MAKE) rcc_dimacs_assignment ARGS=examples/data/dimacs/assignment/small.asn
-	$(MAKE) rcc_dobble_ls
-	$(MAKE) rcc_flexible_jobshop ARGS="--data_file examples/data/flexible_jobshop/hurink_data/edata/la01.fjs"
-	$(MAKE) rcc_flow_api
-#	$(MAKE) rcc_frequency_assignment_problem  # Need data file
-	$(MAKE) rcc_golomb ARGS="--size=5"
-	$(MAKE) rcc_jobshop ARGS="--data_file=examples/data/jobshop/ft06"
-	$(MAKE) rcc_jobshop_earlytardy ARGS="--machine_count=6 --job_count=6"
-	$(MAKE) rcc_jobshop_ls ARGS="--data_file=examples/data/jobshop/ft06"
-	$(MAKE) rcc_jobshop_sat ARGS="--input=examples/data/jobshop/ft06"
-	$(MAKE) rcc_linear_assignment_api
-	$(MAKE) rcc_linear_solver_protocol_buffers
-	$(MAKE) rcc_ls_api
-	$(MAKE) rcc_magic_square
-#	$(MAKE) rcc_model_util  # Need data file
-	$(MAKE) rcc_mps_driver
-	$(MAKE) rcc_multidim_knapsack ARGS="--data_file examples/data/multidim_knapsack/PB1.DAT"
-	$(MAKE) rcc_network_routing ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
-	$(MAKE) rcc_nqueens
-	$(MAKE) rcc_random_tsp
-#	$(MAKE) rcc_pdptw ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
-#	$(MAKE) rcc_shift_minimization_sat  # Port to new API.
-#	$(MAKE) rcc_solve  # Need data file
-	$(MAKE) rcc_sports_scheduling ARGS="--num_teams=8 --time_limit=10000"
-	$(MAKE) rcc_strawberry_fields_with_column_generation
-	$(MAKE) rcc_weighted_tardiness_sat
-
-$(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc \
- $(BASE_DEPS) $(PORT_DEPS) $(UTIL_DEPS) \
- $(DATA_DEPS) $(LP_DATA_DEPS) \
- $(LP_DEPS) $(GLOP_DEPS) $(BOP_DEPS) \
- $(CP_DEPS) $(SAT_DEPS) \
- $(GRAPH_DEPS) $(ALGORITHMS_DEPS) \
- | $(OBJ_DIR)
+$(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
-
-.PHONY: test_cc_samples # Build and Run all C++ Samples (located in ortools/*/samples)
-test_cc_samples: cc
-	$(MAKE) rcc_binpacking_problem
-	$(MAKE) rcc_bool_or_sample
-	$(MAKE) rcc_channeling_sample
-	$(MAKE) rcc_code_sample
-	$(MAKE) rcc_interval_sample
-	$(MAKE) rcc_literal_sample
-	$(MAKE) rcc_no_overlap_sample
-	$(MAKE) rcc_optional_interval_sample
-	$(MAKE) rcc_rabbits_and_pheasants
-	$(MAKE) rcc_ranking_sample
-	$(MAKE) rcc_reified_sample
-	$(MAKE) rcc_simple_solve
-	$(MAKE) rcc_solve_all_solutions
-	$(MAKE) rcc_solve_with_intermediate_solutions
-	$(MAKE) rcc_solve_with_time_limit
-	$(MAKE) rcc_stop_after_n_solutions
-
-$(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc \
- $(BASE_DEPS) $(PORT_DEPS) $(UTIL_DEPS) \
- $(DATA_DEPS) $(LP_DATA_DEPS) \
- $(LP_DEPS) $(GLOP_DEPS) $(BOP_DEPS) \
- $(CP_DEPS) $(SAT_DEPS) \
- $(GRAPH_DEPS) $(ALGORITHMS_DEPS) \
- | $(OBJ_DIR)
+$(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
-$(BIN_DIR)/%$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/%.$O | $(BIN_DIR)
+$(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
 
-rcc_%: $(BIN_DIR)/%$E
+# Specific libraries for examples
+# CVRP(TW) common library
+CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
+CVRPTW_PATH = $(subst /,$S,$(CVRPTW_LIBS))
+CVRPTW_DEPS = \
+	$(CC_EX_DIR)/cvrptw_lib.h \
+	$(CP_DEPS)
+CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
+ifeq ($(PLATFORM),MACOSX)
+CVRPTW_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
+endif
+cvrptwlibs: $(CVRPTW_LIBS)
+
+CVRPTW_OBJS = $(OBJ_DIR)/cvrptw_lib.$O
+$(CVRPTW_OBJS): \
+ $(CC_EX_DIR)/cvrptw_lib.cc \
+ $(CC_EX_DIR)/cvrptw_lib.h \
+ $(CP_DEPS) \
+ | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
+
+$(CVRPTW_LIBS): $(OR_TOOLS_LIBS) $(CVRPTW_OBJS) | $(LIB_DIR)
+	$(LINK_CMD) \
+ $(CVRPTW_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L \
+ $(CVRPTW_OBJS) \
+ $(OR_TOOLS_LNK) \
+ $(OR_TOOLS_LDFLAGS)
+
+# CVRP(TW) examples
+$(OBJ_DIR)/cvrp%.$O: $(CC_EX_DIR)/cvrp%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrp$*.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrp$*.$O
+
+$(BIN_DIR)/cvrp%$E: $(OBJ_DIR)/cvrp%.$O $(CVRPTW_LIBS) | $(BIN_DIR)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrp$*.$O $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp$*$E
+
+# DIMACS Assignment challenge problem format library
+DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
+DIMACS_PATH = $(subst /,$S,$(DIMACS_LIBS))
+DIMACS_DEPS = \
+	$(CC_EX_DIR)/parse_dimacs_assignment.h \
+	$(CC_EX_DIR)/print_dimacs_assignment.h \
+	$(GRAPH_DEPS)
+DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
+ifeq ($(PLATFORM),MACOSX)
+DIMACS_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)dimacs.$L #
+endif
+dimacslibs: $(DIMACS_LIBS)
+
+DIMACS_OBJS = $(OBJ_DIR)/parse_dimacs_assignment.$O $(OBJ_DIR)/print_dimacs_assignment.$O
+
+$(DIMACS_LIBS): $(OR_TOOLS_LIBS) $(DIMACS_OBJS) | $(LIB_DIR)
+	$(LINK_CMD) \
+ $(DIMACS_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L \
+ $(DIMACS_OBJS) \
+ $(OR_TOOLS_LNK) \
+ $(OR_TOOLS_LDFLAGS)
+
+# DIMACS examples
+$(OBJ_DIR)/dimacs_assignment.$O: $(CC_EX_DIR)/dimacs_assignment.cc $(DIMACS_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sdimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
+
+$(BIN_DIR)/dimacs_assignment$E: $(DIMACS_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/dimacs_assignment.$O | $(BIN_DIR)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sdimacs_assignment.$O $(DIMACS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
+
+# Frequency Assignment Problem (FAP) challenge problem format library
+FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
+FAP_PATH = $(subst /,$S,$(FAP_LIBS))
+FAP_DEPS = \
+	$(CC_EX_DIR)/fap_model_printer.h \
+	$(CC_EX_DIR)/fap_parser.h \
+	$(CC_EX_DIR)/fap_utilities.h \
+	$(CP_DEPS) \
+	$(LP_DEPS)
+FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
+ifeq ($(PLATFORM),MACOSX)
+FAP_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fap.$L #
+endif
+faplibs: $(FAP_LIBS)
+
+FAP_OBJS = \
+	$(OBJ_DIR)/fap_model_printer.$O \
+	$(OBJ_DIR)/fap_parser.$O \
+	$(OBJ_DIR)/fap_utilities.$O
+
+$(FAP_LIBS): $(OR_TOOLS_LIBS) $(FAP_OBJS) | $(LIB_DIR)
+	$(LINK_CMD) \
+ $(FAP_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fap.$L \
+ $(FAP_OBJS) \
+ $(OR_TOOLS_LNK) \
+ $(OR_TOOLS_LDFLAGS)
+
+# FAP examples
+$(OBJ_DIR)/frequency_assignment_problem.$O: $(CC_EX_DIR)/frequency_assignment_problem.cc $(FAP_DEPS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sfrequency_assignment_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sfrequency_assignment_problem.$O
+
+$(BIN_DIR)/frequency_assignment_problem$E: $(FAP_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/frequency_assignment_problem.$O | $(BIN_DIR)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
+
+rcc_%: $(BIN_DIR)/%$E FORCE
 	$(BIN_DIR)$S$*$E $(ARGS)
 
+.PHONY: test_cc_tests # Build and Run all C++ tests (located in examples/tests)
+test_cc_tests: \
+ rcc_ac4r_table_test \
+ rcc_boolean_test \
+ rcc_bug_fz1 \
+ rcc_cpp11_test \
+ rcc_forbidden_intervals_test \
+ rcc_gcc_test \
+ rcc_issue57 \
+ rcc_min_max_test \
+ rcc_visitor_test
+#	$(MAKE) rcc_issue173 # error: too long
+
+.PHONY: check_cc_examples # Build and Run few C++ Examples (located in examples/cpp)
+check_cc_examples: \
+ rcc_linear_programming \
+ rcc_stigler_diet \
+ rcc_constraint_programming_cp \
+ rcc_rabbits_pheasants_cp \
+ rcc_integer_programming \
+ rcc_tsp \
+ rcc_vrp \
+ rcc_knapsack \
+ rcc_max_flow \
+ rcc_min_cost_flow \
+ rcc_nurses_cp \
+ rcc_job_shop_cp ;
+
+.PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
+test_cc_examples: check_cc_examples \
+ rcc_costas_array \
+ rcc_cryptarithm \
+ rcc_cvrp_disjoint_tw \
+ rcc_cvrptw \
+ rcc_cvrptw_with_breaks \
+ rcc_cvrptw_with_refueling \
+ rcc_cvrptw_with_resources \
+ rcc_cvrptw_with_stop_times_and_resources \
+ rcc_dobble_ls \
+ rcc_flow_api \
+ rcc_linear_assignment_api \
+ rcc_linear_solver_protocol_buffers \
+ rcc_ls_api \
+ rcc_magic_square \
+ rcc_mps_driver \
+ rcc_nqueens \
+ rcc_random_tsp \
+ rcc_strawberry_fields_with_column_generation \
+ rcc_weighted_tardiness_sat
+	$(MAKE) run \
+ SOURCE=examples/cpp/dimacs_assignment.cc \
+ ARGS=examples/data/dimacs/assignment/small.asn
+	$(MAKE) run \
+ SOURCE=examples/cpp/flexible_jobshop.cc \
+ ARGS="--data_file examples/data/flexible_jobshop/hurink_data/edata/la01.fjs"
+	$(MAKE) run \
+ SOURCE=examples/cpp/golomb.cc \
+ ARGS="--size=5"
+	$(MAKE) run \
+ SOURCE=examples/cpp/jobshop_earlytardy.cc \
+ ARGS="--machine_count=6 --job_count=6"
+	$(MAKE) run \
+ SOURCE=examples/cpp/jobshop.cc \
+ ARGS="--data_file=examples/data/jobshop/ft06"
+	$(MAKE) run \
+ SOURCE=examples/cpp/jobshop_ls.cc \
+ ARGS="--data_file=examples/data/jobshop/ft06"
+	$(MAKE) run \
+ SOURCE=examples/cpp/jobshop_sat.cc \
+ ARGS="--input=examples/data/jobshop/ft06"
+	$(MAKE) run \
+ SOURCE=examples/cpp/multidim_knapsack.cc \
+ ARGS="--data_file examples/data/multidim_knapsack/PB1.DAT"
+	$(MAKE) run \
+ SOURCE=examples/cpp/network_routing.cc \
+ ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
+	$(MAKE) run \
+ SOURCE=examples/cpp/sports_scheduling.cc \
+ ARGS="--num_teams=8 --time_limit=10000"
+#	$(MAKE) run SOURCE=examples/cpp/frequency_assignment_problem.cc  # Need data file
+#	$(MAKE) run SOURCE=examples/cpp/model_util.cc  # Need data file
+#	$(MAKE) run SOURCE=examples/cpp/pdptw.cc ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
+#	$(MAKE) run SOURCE=examples/cpp/shift_minimization_sat.cc  # Port to new API.
+#	$(MAKE) run SOURCE=examples/cpp/solve.cc  # Need data file
+
+.PHONY: test_cc_samples # Build and Run all C++ Samples (located in ortools/*/samples)
+test_cc_samples: \
+ rcc_binpacking_problem \
+ rcc_bool_or_sample \
+ rcc_channeling_sample \
+ rcc_code_sample \
+ rcc_interval_sample \
+ rcc_literal_sample \
+ rcc_no_overlap_sample \
+ rcc_optional_interval_sample \
+ rcc_rabbits_and_pheasants \
+ rcc_ranking_sample \
+ rcc_reified_sample \
+ rcc_simple_solve \
+ rcc_solve_all_solutions \
+ rcc_solve_with_intermediate_solutions \
+ rcc_solve_with_time_limit \
+ rcc_stop_after_n_solutions
+
 .PHONY: test_fz_examples # Build and Run few Flatzinc Samples (located in examples/flatzinc)
-test_fz_examples: fz
-	$(MAKE) rfz_golomb
-	$(MAKE) rfz_alpha
+test_fz_examples: \
+ rfz_golomb \
+ rfz_alpha
 
 rfz_%: fz $(FZ_EX_DIR)/%.fzn
 	$(BIN_DIR)$Sfz$E $(FZ_EX_PATH)$S$*.fzn
-####################
-##  C++ Examples  ##
-####################
-ifeq ($(EX),) # Those rules will be used if EX variable is not set
-.PHONY: rcc ccc
-rcc ccc:
-	@echo No C++ file was provided, the $@ target must be used like so: \
- make $@ EX=examples/cpp/example.cc
-else # This generic rule will be used if EX variable is set
-EX_NAME = $(basename $(notdir $(EX)))
-
-.PHONY: ccc
-ccc: $(BIN_DIR)/$(EX_NAME)$E
-
-.PHONY: rcc
-rcc: $(BIN_DIR)/$(EX_NAME)$E
-	@echo running $<
-	$(BIN_DIR)$S$(EX_NAME)$E $(ARGS)
-endif # ifeq ($(EX),)
 
 ################
 ##  Cleaning  ##
 ################
+CC_SAMPLES :=  $(wildcard ortools/sat/samples/*.cc)
+CC_SAMPLES :=  $(notdir $(CC_SAMPLES))
+CC_SAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_SAMPLES))))
+
+CC_EXAMPLES :=  $(wildcard $(CC_EX_DIR)/*.cc)
+CC_EXAMPLES :=  $(notdir $(CC_EXAMPLES))
+CC_EXAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_EXAMPLES))))
+
+CC_TESTS :=  $(wildcard $(TEST_DIR)/*.cc)
+CC_TESTS :=  $(notdir $(CC_TESTS))
+CC_TESTS := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_TESTS))))
+
 .PHONY: clean_cc # Clean C++ output from previous build.
 clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L
@@ -563,7 +564,9 @@ clean_cc:
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sparser_main$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
-	-$(DEL) $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(CC_SAMPLES) $(CC_EXAMPLES) $(CC_TESTS)))
+	-$(DEL) $(CC_SAMPLES)
+	-$(DEL) $(CC_EXAMPLES)
+	-$(DEL) $(CC_TESTS)
 	-$(DEL) $(GEN_PATH)$Sortools$Sbop$S*.pb.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pb.*
@@ -604,19 +607,19 @@ install_dirs:
 
 install_ortools_dirs: install_dirs
 	-$(DELREC) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbase"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbop"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sconstraint_solver"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sglop"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sport"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
-	$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sdata"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Salgorithms"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbase"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sbop"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sconstraint_solver"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sglop"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sgraph"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slinear_solver"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Slp_data"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sport"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Ssat"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sutil"
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sortools$Sdata"
 
 .PHONY: install_cc # Install C++ OR-Tools to $(DESTDIR)$(prefix)
 install_cc: install_libortools install_third_party install_doc

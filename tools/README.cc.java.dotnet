@@ -31,7 +31,7 @@ We have provided a makefile target to help you.
 
 Use Makefile:
 ```shell
-make rcc_golomb
+make run SOURCE=examples/cpp/golomb.cc
 ```
 
 **OR** this is equivalent to compiling and running
@@ -55,7 +55,7 @@ java and javac tools accessible from the command line.
 
 Use Makefile:
 ```shell
-make rjava_RabbitsPheasants
+make run SOURCE=examples/java/RabbitsPheasants.java
 ```
 
 **OR** this is equivalent to compiling and running
@@ -81,7 +81,7 @@ dotnet/cli tools accessible from the command line.
 
 Use Makefile:
 ```shell
-make rdotnet_csflow
+make run SOURCE=examples/dotnet/csflow.cs
 ```
 
 **OR** this is equivalent to compiling and running

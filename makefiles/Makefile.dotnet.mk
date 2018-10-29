@@ -34,13 +34,13 @@ ifndef HAS_DOTNET
 dotnet:
 	@echo DOTNET_BIN = $(DOTNET_BIN)
 	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system path.)
-
+check_dotnet: dotnet
 test_dotnet: dotnet
 else
 dotnet: \
  dotnet_csharp \
  dotnet_fsharp
-
+check_dotnet: check_dotnet_examples
 test_dotnet: \
  test_dotnet_csharp \
  test_dotnet_fsharp \
@@ -399,251 +399,247 @@ test_dotnet_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
 	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
 	"$(DOTNET_BIN)" test ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
 
+###################
+##  .NET SOURCE  ##
+###################
+# .Net C#
+ifeq ($(SOURCE_SUFFIX),.cs) # Those rules will be used if SOURCE contain a .cs file
+ifeq (,$(wildcard $(SOURCE)proj))
+$(error File "$(SOURCE)proj" does not exist !)
+endif
+
+.PHONY: build # Build a .Net C# program.
+build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_NUPKG)
+	"$(DOTNET_BIN)" build $(SOURCE_PATH)proj
+
+.PHONY: run # Run a .Net C# program.
+run: build
+	"$(DOTNET_BIN)" --no-build \
+ --project $(SOURCE_PATH)proj -- $(ARGS)
+endif
+
+# .Net F#
+ifeq ($(SOURCE_SUFFIX),.fs) # Those rules will be used if SOURCE contain a .cs file
+ifeq (,$(wildcard $(SOURCE)proj))
+$(error File "$(SOURCE)proj" does not exist !)
+endif
+
+.PHONY: build # Build a .Net F# program.
+build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_FSHARP_NUPKG)
+	"$(DOTNET_BIN)" build $(SOURCE_PATH)proj
+
+.PHONY: run # Run a .Net F# program.
+run: build
+	"$(DOTNET_BIN)" --no-build \
+ --project $(SOURCE_PATH)proj -- $(ARGS)
+endif
+
 #############################
 ##  .NET Examples/Samples  ##
 #############################
-.PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
-test_dotnet_tests: $(DOTNET_ORTOOLS_NUPKG)
-	$(MAKE) rdotnet_issue18
-	$(MAKE) rdotnet_issue22
-	$(MAKE) rdotnet_issue33
-	$(MAKE) rdotnet_testcp
-	$(MAKE) rdotnet_testlp
-	$(MAKE) rdotnet_testsat
-	$(MAKE) rdotnet_test_sat_model
-
 rdotnet_%: \
- $(TEST_DIR)/%.cs \
- $(TEST_DIR)/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG)
-	"$(DOTNET_BIN)" build $(TEST_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project $(TEST_PATH)$S$*.csproj -- $(ARGS)
+ $(TEST_DIR)/% \
+ $(TEST_DIR)/%proj \
+ $(DOTNET_ORTOOLS_NUPKG) FORCE
+	"$(DOTNET_BIN)" build $(TEST_PATH)$S$*proj
+	"$(DOTNET_BIN)" run --no-build --project $(TEST_PATH)$S$*proj -- $(ARGS)
 
-.PHONY: test_dotnet_examples # Build and Run all .Net Examples (located in examples/dotnet)
-test_dotnet_examples: test_dotnet_examples_csharp test_dotnet_examples_fsharp
-
-.PHONY: test_dotnet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet)
-test_dotnet_examples_csharp: $(DOTNET_ORTOOLS_NUPKG)
-	$(MAKE) rdotnet_3_jugs_regular
-	$(MAKE) rdotnet_alldifferent_except_0
-	$(MAKE) rdotnet_all_interval
-	$(MAKE) rdotnet_a_puzzle
-	$(MAKE) rdotnet_a_round_of_golf
-	$(MAKE) rdotnet_assignment
-	$(MAKE) rdotnet_broken_weights
-	$(MAKE) rdotnet_bus_schedule
-	$(MAKE) rdotnet_circuit2
-	$(MAKE) rdotnet_circuit
-	$(MAKE) rdotnet_coins3
-	$(MAKE) rdotnet_coins_grid ARGS="5 2"
-	$(MAKE) rdotnet_combinatorial_auction2
-	$(MAKE) rdotnet_contiguity_regular
-	$(MAKE) rdotnet_contiguity_transition
-	$(MAKE) rdotnet_costas_array
-	$(MAKE) rdotnet_covering_opl
-	$(MAKE) rdotnet_crew
-	$(MAKE) rdotnet_crossword
-	$(MAKE) rdotnet_crypta
-	$(MAKE) rdotnet_crypto
-	$(MAKE) rdotnet_cscvrptw
-	$(MAKE) rdotnet_csflow
-	$(MAKE) rdotnet_csintegerprogramming
-	$(MAKE) rdotnet_csjobshop
-	$(MAKE) rdotnet_csknapsack
-	$(MAKE) rdotnet_cslinearprogramming
-	$(MAKE) rdotnet_csls_api
-	$(MAKE) rdotnet_csrabbitspheasants
-	$(MAKE) rdotnet_cstsp
-	$(MAKE) rdotnet_curious_set_of_integers
-	$(MAKE) rdotnet_debruijn
-	$(MAKE) rdotnet_csdiet
-	$(MAKE) rdotnet_discrete_tomography
-	$(MAKE) rdotnet_divisible_by_9_through_1
-	$(MAKE) rdotnet_dudeney
-	$(MAKE) rdotnet_einav_puzzle2
-	$(MAKE) rdotnet_eq10
-	$(MAKE) rdotnet_eq20
-	$(MAKE) rdotnet_fill_a_pix
-	$(MAKE) rdotnet_furniture_moving
-	$(MAKE) rdotnet_furniture_moving_intervals
-	$(MAKE) rdotnet_futoshiki
-	$(MAKE) rdotnet_gate_scheduling_sat
-	$(MAKE) rdotnet_golomb_ruler
-	$(MAKE) rdotnet_grocery
-	$(MAKE) rdotnet_hidato_table
-	$(MAKE) rdotnet_jobshop_ft06_sat
-	$(MAKE) rdotnet_just_forgotten
-	$(MAKE) rdotnet_kakuro
-	$(MAKE) rdotnet_kenken2
-	$(MAKE) rdotnet_killer_sudoku
-	$(MAKE) rdotnet_labeled_dice
-	$(MAKE) rdotnet_langford
-	$(MAKE) rdotnet_least_diff
-	$(MAKE) rdotnet_lectures
-	$(MAKE) rdotnet_magic_sequence
-	$(MAKE) rdotnet_magic_square_and_cards
-	$(MAKE) rdotnet_magic_square
-	$(MAKE) rdotnet_map2
-	$(MAKE) rdotnet_map
-	$(MAKE) rdotnet_marathon2
-	$(MAKE) rdotnet_max_flow_taha
-	$(MAKE) rdotnet_max_flow_winston1
-	$(MAKE) rdotnet_minesweeper
-	$(MAKE) rdotnet_mr_smith
-#	$(MAKE) rdotnet_nontransitive_dice # too long
-	$(MAKE) rdotnet_nqueens
-	$(MAKE) rdotnet_nurse_rostering_regular
-	$(MAKE) rdotnet_nurse_rostering_transition
-	$(MAKE) rdotnet_nurses_sat
-	$(MAKE) rdotnet_olympic
-	$(MAKE) rdotnet_organize_day
-	$(MAKE) rdotnet_organize_day_intervals
-	$(MAKE) rdotnet_pandigital_numbers
-#	$(MAKE) rdotnet_partition # too long
-	$(MAKE) rdotnet_perfect_square_sequence
-	$(MAKE) rdotnet_photo_problem
-	$(MAKE) rdotnet_place_number_puzzle
-	$(MAKE) rdotnet_p_median
-	$(MAKE) rdotnet_post_office_problem2
-	$(MAKE) rdotnet_quasigroup_completion
-	$(MAKE) rdotnet_regex
-	$(MAKE) rdotnet_rogo2
-	$(MAKE) rdotnet_scheduling_speakers
-	$(MAKE) rdotnet_secret_santa2
-#	$(MAKE) rdotnet_secret_santa # too long
-	$(MAKE) rdotnet_send_more_money2
-	$(MAKE) rdotnet_send_more_money
-	$(MAKE) rdotnet_send_most_money
-	$(MAKE) rdotnet_seseman
-	$(MAKE) rdotnet_set_covering2
-	$(MAKE) rdotnet_set_covering3
-	$(MAKE) rdotnet_set_covering4
-	$(MAKE) rdotnet_set_covering
-	$(MAKE) rdotnet_set_covering_deployment
-	$(MAKE) rdotnet_set_covering_skiena
-	$(MAKE) rdotnet_set_partition
-	$(MAKE) rdotnet_sicherman_dice
-	$(MAKE) rdotnet_ski_assignment
-	$(MAKE) rdotnet_slow_scheduling
-	$(MAKE) rdotnet_stable_marriage
-	$(MAKE) rdotnet_strimko2
-	$(MAKE) rdotnet_subset_sum
-	$(MAKE) rdotnet_sudoku
-	$(MAKE) rdotnet_survo_puzzle
-	$(MAKE) rdotnet_TaskScheduling
-	$(MAKE) rdotnet_techtalk_scheduling
-	$(MAKE) rdotnet_to_num
-	$(MAKE) rdotnet_traffic_lights
-	$(MAKE) rdotnet_tsp
-	$(MAKE) rdotnet_vrp
-	$(MAKE) rdotnet_volsay
-	$(MAKE) rdotnet_volsay2
-	$(MAKE) rdotnet_volsay3
-	$(MAKE) rdotnet_wedding_optimal_chart
-	$(MAKE) rdotnet_who_killed_agatha
-ifneq ($(SYSTEM),win)
-# depends on /usr/share/dict/words
-	$(MAKE) rdotnet_word_square
-endif
-	$(MAKE) rdotnet_xkcd
-	$(MAKE) rdotnet_young_tableaux
-	$(MAKE) rdotnet_zebra
-
-rdotnet_%: \
+rdotnet_%.cs: \
  $(DOTNET_EX_DIR)/%.cs \
  $(DOTNET_EX_DIR)/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG)
+ $(DOTNET_ORTOOLS_NUPKG) FORCE
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
 	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
 
-.PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet)
-test_dotnet_examples_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG)
-	$(MAKE) rdotnet_fsintegerprogramming
-	$(MAKE) rdotnet_fslinearprogramming
-	$(MAKE) rdotnet_fsdiet
-	$(MAKE) rdotnet_fsequality
-	$(MAKE) rdotnet_fsequality-inequality
-	$(MAKE) rdotnet_fsinteger-linear-program
-	$(MAKE) rdotnet_fsknapsack
-	$(MAKE) rdotnet_fsnetwork-max-flow
-	$(MAKE) rdotnet_fsnetwork-max-flow-lpSolve
-	$(MAKE) rdotnet_fsnetwork-min-cost-flow
-	$(MAKE) rdotnet_fsProgram
-	$(MAKE) rdotnet_fsrabbit-pheasant
-	$(MAKE) rdotnet_fsvolsay3
-	$(MAKE) rdotnet_fsvolsay3-lpSolve
-	$(MAKE) rdotnet_fsvolsay
-
-rdotnet_%: \
+rdotnet_%.fs: \
  $(DOTNET_EX_DIR)/%.fs \
  $(DOTNET_EX_DIR)/%.fsproj \
- $(DOTNET_ORTOOLS_FSHARP_NUPKG)
+ $(DOTNET_ORTOOLS_FSHARP_NUPKG) FORCE
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
 	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
 
-.PHONY: test_donet_samples # Build and Run all .Net Samples (located in ortools/*/samples)
-test_dotnet_samples: $(DOTNET_ORTOOLS_NUPKG)
-	$(MAKE) rdotnet_binpacking_problem
-	$(MAKE) rdotnet_bool_or_sample
-	$(MAKE) rdotnet_channeling_sample
-	$(MAKE) rdotnet_code_sample
-	$(MAKE) rdotnet_interval_sample
-	$(MAKE) rdotnet_literal_sample
-	$(MAKE) rdotnet_no_overlap_sample
-	$(MAKE) rdotnet_optional_interval_sample
-	$(MAKE) rdotnet_rabbits_and_pheasants
-	$(MAKE) rdotnet_ranking_sample
-	$(MAKE) rdotnet_reified_sample
-	$(MAKE) rdotnet_simple_solve
-	$(MAKE) rdotnet_solve_all_solutions
-	$(MAKE) rdotnet_solve_with_intermediate_solutions
-	$(MAKE) rdotnet_solve_with_time_limit
-	$(MAKE) rdotnet_stop_after_n_solutions
-
-rdotnet_%: \
+rdotnet_%.cs: \
  ortools/sat/samples/%.cs \
  ortools/sat/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG)
+ $(DOTNET_ORTOOLS_NUPKG) FORCE
 	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
 	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
 
-#####################
-##  .NET Examples  ##
-#####################
-ifeq ($(EX),) # Those rules will be used if EX variable is not set
-.PHONY: rdotnet cdotnet
-rdotnet cdotnet:
-	@echo No .Net file was provided, the $@ target must be used like so: \
- make $@ EX=examples/dotnet/csharp/example.csproj
-else # This generic rule will be used if EX variable is set
-EX_NAME = $(basename $(notdir $(EX)))
+.PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
+test_dotnet_tests: \
+ rdotnet_issue18.cs \
+ rdotnet_issue22.cs \
+ rdotnet_issue33.cs \
+ rdotnet_testcp.cs \
+ rdotnet_testlp.cs \
+ rdotnet_testsat.cs \
+ rdotnet_test_sat_model.cs
 
-.PHONY: cdotnet
-cdotnet: $(TEMP_DOTNET_DIR)/$(EX_NAME)$D
+.PHONY: test_dotnet_examples # Build and Run all .Net Examples (located in examples/dotnet)
+test_dotnet_examples: \
+ test_dotnet_examples_csharp \
+ test_dotnet_examples_fsharp
 
-.PHONY: rdotnet
-rdotnet: $(TEMP_DOTNET_DIR)/$(EX_NAME)$D
-	@echo running $<
-	"$(DOTNET_BIN)" $(TEMP_DOTNET_DIR)$S$(EX_NAME)$D
-endif # ifeq ($(EX),)
+.PHONY: test_dotnet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet)
+test_dotnet_examples_csharp: \
+ rdotnet_3_jugs_regular.cs \
+ rdotnet_alldifferent_except_0.cs \
+ rdotnet_all_interval.cs \
+ rdotnet_a_puzzle.cs \
+ rdotnet_a_round_of_golf.cs \
+ rdotnet_assignment.cs \
+ rdotnet_broken_weights.cs \
+ rdotnet_bus_schedule.cs \
+ rdotnet_circuit2.cs \
+ rdotnet_circuit.cs \
+ rdotnet_coins3.cs \
+ rdotnet_combinatorial_auction2.cs \
+ rdotnet_contiguity_regular.cs \
+ rdotnet_contiguity_transition.cs \
+ rdotnet_costas_array.cs \
+ rdotnet_covering_opl.cs \
+ rdotnet_crew.cs \
+ rdotnet_crossword.cs \
+ rdotnet_crypta.cs \
+ rdotnet_crypto.cs \
+ rdotnet_cscvrptw.cs \
+ rdotnet_csflow.cs \
+ rdotnet_csintegerprogramming.cs \
+ rdotnet_csjobshop.cs \
+ rdotnet_csknapsack.cs \
+ rdotnet_cslinearprogramming.cs \
+ rdotnet_csls_api.cs \
+ rdotnet_csrabbitspheasants.cs \
+ rdotnet_cstsp.cs \
+ rdotnet_curious_set_of_integers.cs \
+ rdotnet_debruijn.cs \
+ rdotnet_csdiet.cs \
+ rdotnet_discrete_tomography.cs \
+ rdotnet_divisible_by_9_through_1.cs \
+ rdotnet_dudeney.cs \
+ rdotnet_einav_puzzle2.cs \
+ rdotnet_eq10.cs \
+ rdotnet_eq20.cs \
+ rdotnet_fill_a_pix.cs \
+ rdotnet_furniture_moving.cs \
+ rdotnet_furniture_moving_intervals.cs \
+ rdotnet_futoshiki.cs \
+ rdotnet_gate_scheduling_sat.cs \
+ rdotnet_golomb_ruler.cs \
+ rdotnet_grocery.cs \
+ rdotnet_hidato_table.cs \
+ rdotnet_jobshop_ft06_sat.cs \
+ rdotnet_just_forgotten.cs \
+ rdotnet_kakuro.cs \
+ rdotnet_kenken2.cs \
+ rdotnet_killer_sudoku.cs \
+ rdotnet_labeled_dice.cs \
+ rdotnet_langford.cs \
+ rdotnet_least_diff.cs \
+ rdotnet_lectures.cs \
+ rdotnet_magic_sequence.cs \
+ rdotnet_magic_square_and_cards.cs \
+ rdotnet_magic_square.cs \
+ rdotnet_map2.cs \
+ rdotnet_map.cs \
+ rdotnet_marathon2.cs \
+ rdotnet_max_flow_taha.cs \
+ rdotnet_max_flow_winston1.cs \
+ rdotnet_minesweeper.cs \
+ rdotnet_mr_smith.cs \
+ rdotnet_nqueens.cs \
+ rdotnet_nurse_rostering_regular.cs \
+ rdotnet_nurse_rostering_transition.cs \
+ rdotnet_nurses_sat.cs \
+ rdotnet_olympic.cs \
+ rdotnet_organize_day.cs \
+ rdotnet_organize_day_intervals.cs \
+ rdotnet_pandigital_numbers.cs \
+ rdotnet_perfect_square_sequence.cs \
+ rdotnet_photo_problem.cs \
+ rdotnet_place_number_puzzle.cs \
+ rdotnet_p_median.cs \
+ rdotnet_post_office_problem2.cs \
+ rdotnet_quasigroup_completion.cs \
+ rdotnet_regex.cs \
+ rdotnet_rogo2.cs \
+ rdotnet_scheduling_speakers.cs \
+ rdotnet_secret_santa2.cs \
+ rdotnet_send_more_money2.cs \
+ rdotnet_send_more_money.cs \
+ rdotnet_send_most_money.cs \
+ rdotnet_seseman.cs \
+ rdotnet_set_covering2.cs \
+ rdotnet_set_covering3.cs \
+ rdotnet_set_covering4.cs \
+ rdotnet_set_covering.cs \
+ rdotnet_set_covering_deployment.cs \
+ rdotnet_set_covering_skiena.cs \
+ rdotnet_set_partition.cs \
+ rdotnet_sicherman_dice.cs \
+ rdotnet_ski_assignment.cs \
+ rdotnet_slow_scheduling.cs \
+ rdotnet_stable_marriage.cs \
+ rdotnet_strimko2.cs \
+ rdotnet_subset_sum.cs \
+ rdotnet_sudoku.cs \
+ rdotnet_survo_puzzle.cs \
+ rdotnet_TaskScheduling.cs \
+ rdotnet_techtalk_scheduling.cs \
+ rdotnet_to_num.cs \
+ rdotnet_traffic_lights.cs \
+ rdotnet_tsp.cs \
+ rdotnet_vrp.cs \
+ rdotnet_volsay.cs \
+ rdotnet_volsay2.cs \
+ rdotnet_volsay3.cs \
+ rdotnet_wedding_optimal_chart.cs \
+ rdotnet_who_killed_agatha.cs \
+ rdotnet_xkcd.cs \
+ rdotnet_young_tableaux.cs \
+ rdotnet_zebra.cs
+	$(MAKE) run SOURCE=examples/dotnet/coins_grid.cs ARGS="5 2"
+#	$(MAKE) rdotnet_nontransitive_dice # too long
+#	$(MAKE) rdotnet_partition # too long
+#	$(MAKE) rdotnet_secret_santa # too long
+# $(MAKE) rdotnet_word_square # depends on /usr/share/dict/words
 
-$(TEMP_DOTNET_DIR)/%$D: \
- $(DOTNET_EX_DIR)/%.csproj \
- $(DOTNET_EX_DIR)/%.cs \
- $(DOTNET_ORTOOLS_NUPKG) \
- | $(TEMP_DOTNET_DIR)
-	"$(DOTNET_BIN)" build \
- -o "..$S..$S$(TEMP_DOTNET_DIR)" \
- $(DOTNET_EX_PATH)$S$*.csproj
+.PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet)
+test_dotnet_examples_fsharp: \
+ rdotnet_fsintegerprogramming.fs \
+ rdotnet_fslinearprogramming.fs \
+ rdotnet_fsdiet.fs \
+ rdotnet_fsequality.fs \
+ rdotnet_fsequality-inequality.fs \
+ rdotnet_fsinteger-linear-program.fs \
+ rdotnet_fsknapsack.fs \
+ rdotnet_fsnetwork-max-flow.fs \
+ rdotnet_fsnetwork-max-flow-lpSolve.fs \
+ rdotnet_fsnetwork-min-cost-flow.fs \
+ rdotnet_fsProgram.fs \
+ rdotnet_fsrabbit-pheasant.fs \
+ rdotnet_fsvolsay3.fs \
+ rdotnet_fsvolsay3-lpSolve.fs \
+ rdotnet_fsvolsay.fs
 
-$(TEMP_DOTNET_DIR)/%$D: \
- $(DOTNET_EX_DIR)/%.fsproj \
- $(DOTNET_EX_DIR)/%.fs \
- $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
- | $(TEMP_DOTNET_DIR)
-	"$(DOTNET_BIN)" build \
- -o "..$S..$S$(TEMP_DOTNET_DIR)" \
- $(DOTNET_EX_PATH)$S$*.fsproj
+.PHONY: test_donet_samples # Build and Run all .Net Samples (located in ortools/*/samples)
+test_dotnet_samples: \
+ rdotnet_binpacking_problem.cs \
+ rdotnet_bool_or_sample.cs \
+ rdotnet_channeling_sample.cs \
+ rdotnet_code_sample.cs \
+ rdotnet_interval_sample.cs \
+ rdotnet_literal_sample.cs \
+ rdotnet_no_overlap_sample.cs \
+ rdotnet_optional_interval_sample.cs \
+ rdotnet_rabbits_and_pheasants.cs \
+ rdotnet_ranking_sample.cs \
+ rdotnet_reified_sample.cs \
+ rdotnet_simple_solve.cs \
+ rdotnet_solve_all_solutions.cs \
+ rdotnet_solve_with_intermediate_solutions.cs \
+ rdotnet_solve_with_time_limit.cs \
+ rdotnet_stop_after_n_solutions.cs
 
 ################
 ##  Cleaning  ##
