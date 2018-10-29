@@ -40,56 +40,40 @@ function installdotnetsdk(){
 ################
 if [ "${BUILDER}" == make ]; then
   if [ "${TRAVIS_OS_NAME}" == linux ]; then
-    if [ "${DISTRO}" == native ]; then
-      sudo apt-get -qq update
-      sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl	lsb-release
-      if [ "${LANGUAGE}" != cc ]; then
-        installswig
-      fi
-      if [ "${LANGUAGE}" == python2 ]; then
-        pyenv global system 2.7;
-        python2.7 -m pip install -q virtualenv wheel six;
-      elif [ "${LANGUAGE}" == python3 ]; then
-        pyenv global system 3.6;
-        python3.6 -m pip install -q virtualenv wheel six;
-      elif [ "${LANGUAGE}" == dotnet ]; then
-        #installmono
-        sudo apt-get -yqq install fsharp
-        installdotnetsdk
-      fi
-    else
-      # Linux Docker Makefile build:
-      echo "NOT SUPPORTED"
-      exit 42
+    sudo apt-get -qq update
+    sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl	lsb-release
+    if [ "${LANGUAGE}" != cc ]; then
+      installswig
+    fi
+    if [ "${LANGUAGE}" == python2 ]; then
+      pyenv global system 2.7
+      python2.7 -m pip install -q virtualenv wheel six;
+    elif [ "${LANGUAGE}" == python3 ]; then
+      pyenv global system 3.6
+      python3.6 -m pip install -q virtualenv wheel six
+    elif [ "${LANGUAGE}" == dotnet ]; then
+      installdotnetsdk
     fi
   elif [ "${TRAVIS_OS_NAME}" == osx ]; then
-    if [ "${DISTRO}" == native ]; then
-      brew update;
-      brew install gcc || brew link --overwrite gcc;
-      brew install make --with-default-names;
-      if [ "${LANGUAGE}" != cc ]; then
-        brew install swig;
-      fi
-      if [ "${LANGUAGE}" == python2 ]; then
-        brew outdated | grep -q python@2 && brew upgrade python@2;
-        python2 -m pip install -q virtualenv wheel six;
-      elif [ "${LANGUAGE}" == python3 ]; then
-        brew upgrade python;
-        python3 -m pip install -q virtualenv wheel six;
-      elif [ "${LANGUAGE}" == java ]; then
-        brew tap caskroom/versions;
-        brew cask install java8;
-      elif [ "${LANGUAGE}" == dotnet ]; then
-        #brew install mono;
-        # Installer changes path but won't be picked up in current terminal session
-        # Need to explicitly add location (see Makefile.fsharp.mk)
-        brew tap caskroom/cask
-        brew cask install dotnet-sdk;
-      fi
-    else
-      # MacOS Docker Makefile build:
-      echo "NOT SUPPORTED"
-      exit 42
+    brew update
+    # see https://github.com/travis-ci/travis-ci/issues/10275
+    brew install gcc || brew link --overwrite gcc
+    brew install make --with-default-names
+    if [ "${LANGUAGE}" != cc ]; then
+      brew install swig
+    fi
+    if [ "${LANGUAGE}" == python2 ]; then
+      brew outdated | grep -q python@2 && brew upgrade python@2
+      python2 -m pip install -q virtualenv wheel six
+    elif [ "${LANGUAGE}" == python3 ]; then
+      brew upgrade python
+      python3 -m pip install -q virtualenv wheel six
+    elif [ "${LANGUAGE}" == java ]; then
+      brew tap caskroom/versions
+      brew cask install java8
+    elif [ "${LANGUAGE}" == dotnet ]; then
+      brew tap caskroom/cask
+      brew cask install dotnet-sdk
     fi
   fi
 fi
@@ -99,25 +83,14 @@ fi
 #############
 if [ "${BUILDER}" == cmake ]; then
   if [ "${TRAVIS_OS_NAME}" == linux ]; then
-    if [ "${DISTRO}" == native ]; then
-      installswig
-      pyenv global system 3.6;
-      python3.6 -m pip install -q virtualenv wheel six;
-    else
-      # Linux Docker CMake build:
-      echo "NOT SUPPORTED"
-      exit 42
-    fi
+    installswig
+    pyenv global system 3.6
+    python3.6 -m pip install -q virtualenv wheel six
   elif [ "${TRAVIS_OS_NAME}" == osx ]; then
-    if [ "${DISTRO}" == native ]; then
-      brew update;
-      brew install gcc || brew link --overwrite gcc;
-      brew install swig;
-      brew upgrade python;
-    else
-      # MacOS Docker CMake build:
-      echo "NOT SUPPORTED"
-      exit 42
-    fi
+    brew update
+    # see https://github.com/travis-ci/travis-ci/issues/10275
+    brew install gcc || brew link --overwrite gcc
+    brew install swig
+    brew upgrade python
   fi
 fi

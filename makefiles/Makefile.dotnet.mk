@@ -414,8 +414,7 @@ build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_NUPKG)
 
 .PHONY: run # Run a .Net C# program.
 run: build
-	"$(DOTNET_BIN)" --no-build \
- --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
 endif
 
 # .Net F#
@@ -430,8 +429,7 @@ build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_FSHARP_NUPKG)
 
 .PHONY: run # Run a .Net F# program.
 run: build
-	"$(DOTNET_BIN)" --no-build \
- --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
 endif
 
 #############################

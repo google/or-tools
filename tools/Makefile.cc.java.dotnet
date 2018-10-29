@@ -202,7 +202,7 @@ endif
 SOURCE_SUFFIX = $(suffix $(SOURCE))
 # will contain “/any/path/foo.cc” on unix and “\\any\\path\\foo.cc” on windows
 SOURCE_PATH = $(subst /,$S,$(SOURCE))
-SOURCE_NAME= $(basename $(notdir $(SOURCE)))
+SOURCE_NAME = $(basename $(notdir $(SOURCE)))
 ifeq ($(SOURCE),) # Those rules will be used if SOURCE is empty
 .PHONY: build run
 build run:
@@ -450,8 +450,7 @@ test_java: detect_java
 ###################
 ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .java file
 $(CLASS_DIR)/$(SOURCE_NAME): $(SOURCE) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$(SOURCE_NAME)
-	-$(MKDIR_P) $(CLASS_DIR)$S$(SOURCE_NAME)
+	-$(MKDIR) $(CLASS_DIR)$S$(SOURCE_NAME)
 	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$(SOURCE_NAME) \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(SOURCE_PATH)
@@ -668,8 +667,7 @@ build: $(SOURCE) $(SOURCE)proj
 
 .PHONY: run # Run a .Net C# program.
 run: build
-	"$(DOTNET_BIN)" --no-build \
- --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.cs)
 
 # .Net F#
@@ -684,8 +682,7 @@ build: $(SOURCE) $(SOURCE)proj
 
 .PHONY: run # Run a .Net F# program.
 run: build
-	"$(DOTNET_BIN)" --no-build \
- --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.fs)
 
 endif # ifndef DOTNET_BIN

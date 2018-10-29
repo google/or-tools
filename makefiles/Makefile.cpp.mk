@@ -296,18 +296,6 @@ endif
 ##################################
 ##  CPP Tests/Examples/Samples  ##
 ##################################
-$(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(TEST_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
-
-$(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
-
-$(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
-
-$(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
-
 # Specific libraries for examples
 # CVRP(TW) common library
 CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
@@ -329,7 +317,7 @@ $(CVRPTW_OBJS): \
  | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
 
-$(CVRPTW_LIBS): $(OR_TOOLS_LIBS) $(CVRPTW_OBJS) | $(LIB_DIR)
+$(CVRPTW_LIBS): $(CVRPTW_OBJS) $(OR_TOOLS_LIBS) | $(LIB_DIR)
 	$(LINK_CMD) \
  $(CVRPTW_LDFLAGS) \
  $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L \
@@ -368,10 +356,10 @@ $(DIMACS_LIBS): $(OR_TOOLS_LIBS) $(DIMACS_OBJS) | $(LIB_DIR)
  $(OR_TOOLS_LDFLAGS)
 
 # DIMACS examples
-$(OBJ_DIR)/dimacs_assignment.$O: $(CC_EX_DIR)/dimacs_assignment.cc $(DIMACS_DEPS) | $(OBJ_DIR)
+$(OBJ_DIR)/dimacs_assignment.$O: $(CC_EX_DIR)/dimacs_assignment.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sdimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
 
-$(BIN_DIR)/dimacs_assignment$E: $(DIMACS_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/dimacs_assignment.$O | $(BIN_DIR)
+$(BIN_DIR)/dimacs_assignment$E: $(OBJ_DIR)/dimacs_assignment.$O $(DIMACS_LIBS) | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sdimacs_assignment.$O $(DIMACS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
 
 # Frequency Assignment Problem (FAP) challenge problem format library
@@ -403,11 +391,24 @@ $(FAP_LIBS): $(OR_TOOLS_LIBS) $(FAP_OBJS) | $(LIB_DIR)
  $(OR_TOOLS_LDFLAGS)
 
 # FAP examples
-$(OBJ_DIR)/frequency_assignment_problem.$O: $(CC_EX_DIR)/frequency_assignment_problem.cc $(FAP_DEPS) | $(OBJ_DIR)
+$(OBJ_DIR)/frequency_assignment_problem.$O: $(CC_EX_DIR)/frequency_assignment_problem.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sfrequency_assignment_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sfrequency_assignment_problem.$O
 
-$(BIN_DIR)/frequency_assignment_problem$E: $(FAP_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/frequency_assignment_problem.$O | $(BIN_DIR)
+$(BIN_DIR)/frequency_assignment_problem$E: $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LIBS) | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
+
+# Generic Command
+$(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(TEST_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+$(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+$(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+$(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
 
 rcc_%: $(BIN_DIR)/%$E FORCE
 	$(BIN_DIR)$S$*$E $(ARGS)

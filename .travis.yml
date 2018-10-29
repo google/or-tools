@@ -1,89 +1,74 @@
 sudo: required
-language: generic
+language: cpp
 
 matrix:
   include:
 # Makefile builder
     - os: linux
       dist: trusty
-      language: cpp
       compiler: gcc
-      env: BUILDER=make DISTRO=native LANGUAGE=cc
+      env: BUILDER=make LANGUAGE=cc
     - os: linux
       dist: trusty
-      language: cpp
       compiler: gcc
-      env: BUILDER=make DISTRO=native LANGUAGE=python2
+      env: BUILDER=make LANGUAGE=python2
     - os: linux
       dist: trusty
-      language: cpp
       compiler: gcc
-      env: BUILDER=make DISTRO=native LANGUAGE=python3
+      env: BUILDER=make LANGUAGE=python3
     - os: linux
       dist: trusty
-      language: cpp
       compiler: gcc
-      env: BUILDER=make DISTRO=native LANGUAGE=java
+      env: BUILDER=make LANGUAGE=java
     - os: linux
       dist: trusty
-      language: cpp
       compiler: gcc
-      env: BUILDER=make DISTRO=native LANGUAGE=dotnet
+      env: BUILDER=make LANGUAGE=dotnet
 
     - os: osx
       osx_image: xcode9.4
-      language: cpp
       compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=cc
+      env: BUILDER=make LANGUAGE=cc
     - os: osx
       osx_image: xcode9.4
-      language: cpp
       compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=python2
+      env: BUILDER=make LANGUAGE=python2
     - os: osx
       osx_image: xcode9.4
-      language: cpp
       compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=python3
+      env: BUILDER=make LANGUAGE=python3
     - os: osx
       osx_image: xcode9.4
-      language: cpp
       compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=java
+      env: BUILDER=make LANGUAGE=java
     - os: osx
       osx_image: xcode9.4
-      language: cpp
       compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=dotnet
+      env: BUILDER=make LANGUAGE=dotnet
 # CMake Build Generator
     - os: linux
       dist: trusty
-      language: cpp
       compiler: gcc
-      env: BUILDER=cmake DISTRO=native
+      env: BUILDER=cmake
     - os: linux
       dist: trusty
-      language: cpp
       compiler: clang
-      env: BUILDER=cmake DISTRO=native
+      env: BUILDER=cmake
 
     - os: osx
       osx_image: xcode9.4
-      language: cpp
       compiler: gcc
-      env: BUILDER=cmake DISTRO=native
+      env: BUILDER=cmake
     - os: osx
       osx_image: xcode9.4
-      language: cpp
       compiler: clang
-      env: BUILDER=cmake DISTRO=native
+      env: BUILDER=cmake
 # Jobs too long
   allow_failures:
     - os: osx
       osx_image: xcode9.4
-      language: cpp
       compiler: clang
-      env: BUILDER=make DISTRO=native LANGUAGE=dotnet
+      env: BUILDER=make LANGUAGE=dotnet
 
 install:
   - ./.travis/install.sh
