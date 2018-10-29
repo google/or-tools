@@ -145,25 +145,6 @@ $(OBJ_DIR)/swig: | $(OBJ_DIR)
 ###############
 ##  CPP LIB  ##
 ###############
-# build from: $> grep "pb\.h:" makefiles/Makefile.gen.mk
-PROTO_DEPS = \
-$(GEN_DIR)/ortools/util/optional_boolean.pb.h \
-$(GEN_DIR)/ortools/data/jobshop_scheduling.pb.h \
-$(GEN_DIR)/ortools/data/rcpsp.pb.h \
-$(GEN_DIR)/ortools/glop/parameters.pb.h \
-$(GEN_DIR)/ortools/graph/flow_problem.pb.h \
-$(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
-$(GEN_DIR)/ortools/sat/cp_model.pb.h \
-$(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
-$(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
-$(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/demon_profiler.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/model.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 # OR Tools unique library.
