@@ -36,8 +36,6 @@ should depends on all previous available packages and contains the Reference Ass
 Either use the Makefile based build or you can build in Visual Studio.
 The workflow is typically  `make dotnet` which will build both C# and F# libraries package in debug mode.
 The output will be placed in `<OR_ROOT>/packages` folder. All tests will be run based on this folder.
-When you are ready to package the application `make dotnet_release` will compile in release mode and
-will replace package in `<OR_ROOT>/packages`.
 
 ## Build Process
 To Create a native dependent package we will split it in two parts:
