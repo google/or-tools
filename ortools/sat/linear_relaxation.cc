@@ -13,8 +13,11 @@
 
 #include "ortools/sat/linear_relaxation.h"
 
-#include <unordered_set>
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/linear_programming_constraint.h"
 
 namespace operations_research {
 namespace sat {
@@ -57,7 +60,7 @@ namespace {
 // TODO(user): Not super efficient.
 std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
     IntegerVariable var,
-    const std::unordered_set<IntegerValue>& encoded_values,
+    const absl::flat_hash_set<IntegerValue>& encoded_values,
     const Model& model) {
   const auto* domains = model.Get<IntegerDomains>();
   if (domains == nullptr || var >= domains->size()) {
@@ -78,7 +81,9 @@ std::pair<IntegerValue, IntegerValue> GetMinAndMaxNotEncoded(
   }
 
   IntegerValue max = kMinIntegerValue;
-  for (const ClosedInterval interval : gtl::reversed_view((*domains)[var])) {
+  const auto& domain = (*domains)[var];
+  for (int i = domain.NumIntervals() - 1; i >= 0; --i) {
+    const ClosedInterval interval = domain[i];
     for (IntegerValue v(interval.end); v >= interval.start; --v) {
       if (!gtl::ContainsKey(encoded_values, v)) {
         max = v;
@@ -104,7 +109,7 @@ void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
   if (encoding.empty()) return;
 
   std::vector<Literal> at_most_one_ct;
-  std::unordered_set<IntegerValue> encoded_values;
+  absl::flat_hash_set<IntegerValue> encoded_values;
   for (const auto value_literal : encoding) {
     const Literal literal = value_literal.literal;
 
@@ -236,6 +241,97 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
     if (!lb_constraint.IsEmpty()) {
       relaxation->linear_constraints.push_back(lb_constraint.Build());
     }
+  }
+}
+
+void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,
+                                      const int linearization_level,
+                                      const Model& model,
+                                      LinearRelaxation* relaxation) {
+  auto* mapping = model.Get<CpModelMapping>();
+
+  // Note that we ignore the holes in the domain.
+  //
+  // TODO(user): In LoadLinearConstraint() we already created intermediate
+  // Booleans for each disjoint interval, we should reuse them here if
+  // possible.
+  //
+  // TODO(user): process the "at most one" part of a == 1 separately?
+  const IntegerValue rhs_domain_min =
+      IntegerValue(constraint_proto.linear().domain(0));
+  const IntegerValue rhs_domain_max =
+      IntegerValue(constraint_proto.linear().domain(
+          constraint_proto.linear().domain_size() - 1));
+  if (rhs_domain_min == kint64min && rhs_domain_max == kint64max) return;
+
+  if (!HasEnforcementLiteral(constraint_proto)) {
+    LinearConstraintBuilder lc(&model, rhs_domain_min, rhs_domain_max);
+    for (int i = 0; i < constraint_proto.linear().vars_size(); i++) {
+      const int ref = constraint_proto.linear().vars(i);
+      const int64 coeff = constraint_proto.linear().coeffs(i);
+      lc.AddTerm(mapping->Integer(ref), IntegerValue(coeff));
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
+    return;
+  }
+
+  // Reified version.
+  if (linearization_level < 2) return;
+
+  // We linearize reified constraints of size 1 together in a different way.
+  if (constraint_proto.linear().vars_size() <= 1) return;
+
+  // Compute the implied bounds on the linear expression.
+  IntegerValue min_sum(0);
+  IntegerValue max_sum(0);
+  for (int i = 0; i < constraint_proto.linear().vars_size(); i++) {
+    int ref = constraint_proto.linear().vars(i);
+    IntegerValue coeff(constraint_proto.linear().coeffs(i));
+    if (!RefIsPositive(ref)) {
+      ref = PositiveRef(ref);
+      coeff = -coeff;
+    }
+    const IntegerVariable int_var = mapping->Integer(ref);
+    const auto* integer_trail = model.Get<IntegerTrail>();
+    integer_trail->LowerBound(int_var);
+    if (coeff > 0.0) {
+      min_sum += coeff * integer_trail->LowerBound(int_var);
+      max_sum += coeff * integer_trail->UpperBound(int_var);
+    } else {
+      min_sum += coeff * integer_trail->UpperBound(int_var);
+      max_sum += coeff * integer_trail->LowerBound(int_var);
+    }
+  }
+
+  if (rhs_domain_min != kint64min) {
+    // And(ei) => terms >= rhs_domain_min
+    // <=> Sum_i (~ei * (rhs_domain_min - min_sum)) + terms >= rhs_domain_min
+    LinearConstraintBuilder lc(&model, rhs_domain_min, kMaxIntegerValue);
+    for (const int enforcement_ref : constraint_proto.enforcement_literal()) {
+      CHECK(lc.AddLiteralTerm(mapping->Literal(NegatedRef(enforcement_ref)),
+                              rhs_domain_min - min_sum));
+    }
+    for (int i = 0; i < constraint_proto.linear().vars_size(); i++) {
+      const int ref = constraint_proto.linear().vars(i);
+      lc.AddTerm(mapping->Integer(ref),
+                 IntegerValue(constraint_proto.linear().coeffs(i)));
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
+  }
+  if (rhs_domain_max != kint64max) {
+    // And(ei) => terms <= rhs_domain_max
+    // <=> Sum_i (~ei * (rhs_domain_max - max_sum)) + terms <= rhs_domain_max
+    LinearConstraintBuilder lc(&model, kMinIntegerValue, rhs_domain_max);
+    for (const int enforcement_ref : constraint_proto.enforcement_literal()) {
+      CHECK(lc.AddLiteralTerm(mapping->Literal(NegatedRef(enforcement_ref)),
+                              rhs_domain_max - max_sum));
+    }
+    for (int i = 0; i < constraint_proto.linear().vars_size(); i++) {
+      const int ref = constraint_proto.linear().vars(i);
+      lc.AddTerm(mapping->Integer(ref),
+                 IntegerValue(constraint_proto.linear().coeffs(i)));
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
   }
 }
 

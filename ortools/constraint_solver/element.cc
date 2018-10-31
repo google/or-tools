@@ -18,10 +18,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/range_minimum_query.h"
@@ -41,7 +41,7 @@ template <class T>
 class VectorLess {
  public:
   explicit VectorLess(const std::vector<T>* values) : values_(values) {}
-  bool operator()(const T& x, const T& y) {
+  bool operator()(const T& x, const T& y) const {
     return (*values_)[x] < (*values_)[y];
   }
 
@@ -53,7 +53,7 @@ template <class T>
 class VectorGreater {
  public:
   explicit VectorGreater(const std::vector<T>* values) : values_(values) {}
-  bool operator()(const T& x, const T& y) {
+  bool operator()(const T& x, const T& y) const {
     return (*values_)[x] > (*values_)[y];
   }
 
@@ -258,10 +258,9 @@ class IntElementConstraint : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("IntElementConstraint(%s, %s, %s)",
-                        absl::StrJoin(values_, ", ").c_str(),
-                        index_->DebugString().c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("IntElementConstraint(%s, %s, %s)",
+                           absl::StrJoin(values_, ", "), index_->DebugString(),
+                           target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -296,24 +295,22 @@ class IntExprElement : public BaseIntExprElement {
   std::string name() const override {
     const int size = values_.size();
     if (size > 10) {
-      return StringPrintf("IntElement(array of size %d, %s)", size,
-                          expr_->name().c_str());
+      return absl::StrFormat("IntElement(array of size %d, %s)", size,
+                             expr_->name());
     } else {
-      return StringPrintf("IntElement(%s, %s)",
-                          absl::StrJoin(values_, ", ").c_str(),
-                          expr_->name().c_str());
+      return absl::StrFormat("IntElement(%s, %s)", absl::StrJoin(values_, ", "),
+                             expr_->name());
     }
   }
 
   std::string DebugString() const override {
     const int size = values_.size();
     if (size > 10) {
-      return StringPrintf("IntElement(array of size %d, %s)", size,
-                          expr_->DebugString().c_str());
+      return absl::StrFormat("IntElement(array of size %d, %s)", size,
+                             expr_->DebugString());
     } else {
-      return StringPrintf("IntElement(%s, %s)",
-                          absl::StrJoin(values_, ", ").c_str(),
-                          expr_->DebugString().c_str());
+      return absl::StrFormat("IntElement(%s, %s)", absl::StrJoin(values_, ", "),
+                             expr_->DebugString());
     }
   }
 
@@ -339,7 +336,7 @@ class IntExprElement : public BaseIntExprElement {
     DCHECK_LT(index, values_.size());
     return values_[index];
   }
-  int64 ExprMin() const override { return std::max(0LL, expr_->Min()); }
+  int64 ExprMin() const override { return std::max(int64{0}, expr_->Min()); }
   int64 ExprMax() const override {
     return std::min(static_cast<int64>(values_.size()) - 1, expr_->Max());
   }
@@ -384,7 +381,7 @@ class RangeMinimumQueryExprElement : public BaseIntExpr {
   }
 
  private:
-  int64 IndexMin() const { return std::max(0LL, index_->Min()); }
+  int64 IndexMin() const { return std::max(int64{0}, index_->Min()); }
   int64 IndexMax() const {
     return std::min(static_cast<int64>(min_rmq_.array().size()) - 1,
                     index_->Max());
@@ -469,14 +466,12 @@ class IncreasingIntExprElement : public BaseIntExpr {
   bool Bound() const override { return (index_->Bound()); }
   // TODO(user) : improve me, the previous test is not always true
   std::string name() const override {
-    return StringPrintf("IntElement(%s, %s)",
-                        absl::StrJoin(values_, ", ").c_str(),
-                        index_->name().c_str());
+    return absl::StrFormat("IntElement(%s, %s)", absl::StrJoin(values_, ", "),
+                           index_->name());
   }
   std::string DebugString() const override {
-    return StringPrintf("IntElement(%s, %s)",
-                        absl::StrJoin(values_, ", ").c_str(),
-                        index_->DebugString().c_str());
+    return absl::StrFormat("IntElement(%s, %s)", absl::StrJoin(values_, ", "),
+                           index_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -509,13 +504,13 @@ IncreasingIntExprElement::IncreasingIntExprElement(
 }
 
 int64 IncreasingIntExprElement::Min() const {
-  const int64 expression_min = std::max(0LL, index_->Min());
+  const int64 expression_min = std::max(int64{0}, index_->Min());
   return (expression_min < values_.size() ? values_[expression_min]
                                           : kint64max);
 }
 
 void IncreasingIntExprElement::SetMin(int64 m) {
-  const int64 index_min = std::max(0LL, index_->Min());
+  const int64 index_min = std::max(int64{0}, index_->Min());
   const int64 index_max =
       std::min(static_cast<int64>(values_.size()) - 1LL, index_->Max());
 
@@ -536,7 +531,7 @@ int64 IncreasingIntExprElement::Max() const {
 }
 
 void IncreasingIntExprElement::SetMax(int64 m) {
-  int64 index_min = std::max(0LL, index_->Min());
+  int64 index_min = std::max(int64{0}, index_->Min());
   if (m < values_[index_min]) {
     solver()->Fail();
   }
@@ -551,7 +546,7 @@ void IncreasingIntExprElement::SetRange(int64 mi, int64 ma) {
   if (mi > ma) {
     solver()->Fail();
   }
-  const int64 index_min = std::max(0LL, index_->Min());
+  const int64 index_min = std::max(int64{0}, index_->Min());
   const int64 index_max =
       std::min(static_cast<int64>(values_.size()) - 1LL, index_->Max());
 
@@ -681,11 +676,11 @@ class IntExprFunctionElement : public BaseIntExprElement {
   ~IntExprFunctionElement() override;
 
   std::string name() const override {
-    return StringPrintf("IntFunctionElement(%s)", expr_->name().c_str());
+    return absl::StrFormat("IntFunctionElement(%s)", expr_->name());
   }
 
   std::string DebugString() const override {
-    return StringPrintf("IntFunctionElement(%s)", expr_->DebugString().c_str());
+    return absl::StrFormat("IntFunctionElement(%s)", expr_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -693,12 +688,7 @@ class IntExprFunctionElement : public BaseIntExprElement {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             expr_);
-    if (expr_->Min() == 0) {
-      visitor->VisitInt64ToInt64AsArray(values_, ModelVisitor::kValuesArgument,
-                                        expr_->Max());
-    } else {
-      visitor->VisitInt64ToInt64Extension(values_, expr_->Min(), expr_->Max());
-    }
+    visitor->VisitInt64ToInt64Extension(values_, expr_->Min(), expr_->Max());
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
 
@@ -779,13 +769,13 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
   }
 
   std::string name() const override {
-    return StringPrintf("IncreasingIntExprFunctionElement(values, %s)",
-                        index_->name().c_str());
+    return absl::StrFormat("IncreasingIntExprFunctionElement(values, %s)",
+                           index_->name());
   }
 
   std::string DebugString() const override {
-    return StringPrintf("IncreasingIntExprFunctionElement(values, %s)",
-                        index_->DebugString().c_str());
+    return absl::StrFormat("IncreasingIntExprFunctionElement(values, %s)",
+                           index_->DebugString());
   }
 
   void WhenRange(Demon* d) override { index_->WhenRange(d); }
@@ -894,9 +884,8 @@ class IntIntExprFunctionElement : public BaseIntExpr {
                             IntVar* const expr1, IntVar* const expr2);
   ~IntIntExprFunctionElement() override;
   std::string DebugString() const override {
-    return StringPrintf("IntIntFunctionElement(%s,%s)",
-                        expr1_->DebugString().c_str(),
-                        expr2_->DebugString().c_str());
+    return absl::StrFormat("IntIntFunctionElement(%s,%s)",
+                           expr1_->DebugString(), expr2_->DebugString());
   }
   int64 Min() const override;
   int64 Max() const override;
@@ -1179,10 +1168,9 @@ class IfThenElseCt : public CastConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf(
-        "(%s ? %s : %s) == %s", condition_->DebugString().c_str(),
-        one_->DebugString().c_str(), zero_->DebugString().c_str(),
-        target_var_->DebugString().c_str());
+    return absl::StrFormat("(%s ? %s : %s) == %s", condition_->DebugString(),
+                           one_->DebugString(), zero_->DebugString(),
+                           target_var_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {}
@@ -1335,8 +1323,8 @@ std::string StringifyEvaluatorBare(const Solver::Int64ToIntVar& evaluator,
     if (i != range_start) {
       out += ", ";
     }
-    out += StringPrintf("%" GG_LL_FORMAT "d -> %s", i,
-                        evaluator(i)->DebugString().c_str());
+    out += absl::StrFormat("%" GG_LL_FORMAT "d -> %s", i,
+                           evaluator(i)->DebugString());
   }
   return out;
 }
@@ -1345,14 +1333,14 @@ std::string StringifyInt64ToIntVar(const Solver::Int64ToIntVar& evaluator,
                                    int64 range_begin, int64 range_end) {
   std::string out;
   if (range_end - range_begin > 10) {
-    out = StringPrintf(
+    out = absl::StrFormat(
         "IntToIntVar(%s, ...%s)",
-        StringifyEvaluatorBare(evaluator, range_begin, range_begin + 5).c_str(),
-        StringifyEvaluatorBare(evaluator, range_end - 5, range_end).c_str());
+        StringifyEvaluatorBare(evaluator, range_begin, range_begin + 5),
+        StringifyEvaluatorBare(evaluator, range_end - 5, range_end));
   } else {
-    out = StringPrintf(
+    out = absl::StrFormat(
         "IntToIntVar(%s)",
-        StringifyEvaluatorBare(evaluator, range_begin, range_end).c_str());
+        StringifyEvaluatorBare(evaluator, range_begin, range_end));
   }
   return out;
 }
@@ -1393,22 +1381,21 @@ IntExprArrayElementCt::IntExprArrayElementCt(Solver* const s,
                                              std::vector<IntVar*> vars,
                                              IntVar* const index,
                                              IntVar* const target_var)
-    : IntExprEvaluatorElementCt(s, [this](int64 idx) { return vars_[idx]; }, 0,
-                                vars.size(), index, target_var),
+    : IntExprEvaluatorElementCt(
+          s, [this](int64 idx) { return vars_[idx]; }, 0, vars.size(), index,
+          target_var),
       vars_(std::move(vars)) {}
 
 std::string IntExprArrayElementCt::DebugString() const {
   int64 size = vars_.size();
   if (size > 10) {
-    return StringPrintf("IntExprArrayElement(var array of size %" GG_LL_FORMAT
-                        "d, %s) == %s",
-                        size, index_->DebugString().c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat(
+        "IntExprArrayElement(var array of size %" GG_LL_FORMAT "d, %s) == %s",
+        size, index_->DebugString(), target_var_->DebugString());
   } else {
-    return StringPrintf("IntExprArrayElement([%s], %s) == %s",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        index_->DebugString().c_str(),
-                        target_var_->DebugString().c_str());
+    return absl::StrFormat("IntExprArrayElement([%s], %s) == %s",
+                           JoinDebugStringPtr(vars_, ", "),
+                           index_->DebugString(), target_var_->DebugString());
   }
 }
 
@@ -1471,9 +1458,9 @@ class IntExprArrayElementCstCt : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("IntExprArrayElement([%s], %s) == %" GG_LL_FORMAT "d",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        index_->DebugString().c_str(), target_);
+    return absl::StrFormat(
+        "IntExprArrayElement([%s], %s) == %" GG_LL_FORMAT "d",
+        JoinDebugStringPtr(vars_, ", "), index_->DebugString(), target_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1564,9 +1551,9 @@ class IntExprIndexOfCt : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("IntExprIndexOf([%s], %s) == %" GG_LL_FORMAT "d",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        index_->DebugString().c_str(), target_);
+    return absl::StrFormat("IntExprIndexOf([%s], %s) == %" GG_LL_FORMAT "d",
+                           JoinDebugStringPtr(vars_, ", "),
+                           index_->DebugString(), target_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1637,9 +1624,8 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars,
     IntVar* const scaled_index = MakeSum(index, -index->Min())->Var();
     IntVar* const zero = vars[index->Min()];
     IntVar* const one = vars[index->Max()];
-    const std::string name =
-        StringPrintf("ElementVar([%s], %s)", JoinNamePtr(vars, ", ").c_str(),
-                     index->name().c_str());
+    const std::string name = absl::StrFormat(
+        "ElementVar([%s], %s)", JoinNamePtr(vars, ", "), index->name());
     IntVar* const target = MakeIntVar(std::min(zero->Min(), one->Min()),
                                       std::max(zero->Max(), one->Max()), name);
     AddConstraint(
@@ -1656,11 +1642,10 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars,
     }
   }
   const std::string vname =
-      size > 10 ? StringPrintf("ElementVar(var array of size %d, %s)", size,
-                               index->DebugString().c_str())
-                : StringPrintf("ElementVar([%s], %s)",
-                               JoinNamePtr(vars, ", ").c_str(),
-                               index->name().c_str());
+      size > 10 ? absl::StrFormat("ElementVar(var array of size %d, %s)", size,
+                                  index->DebugString())
+                : absl::StrFormat("ElementVar([%s], %s)",
+                                  JoinNamePtr(vars, ", "), index->name());
   IntVar* const element_var = MakeIntVar(emin, emax, vname);
   AddConstraint(
       RevAlloc(new IntExprArrayElementCt(this, vars, index, element_var)));
@@ -1671,10 +1656,9 @@ IntExpr* Solver::MakeElement(Int64ToIntVar vars, int64 range_start,
                              int64 range_end, IntVar* argument) {
   const std::string index_name =
       !argument->name().empty() ? argument->name() : argument->DebugString();
-  const std::string vname =
-      StringPrintf("ElementVar(%s, %s)",
-                   StringifyInt64ToIntVar(vars, range_start, range_end).c_str(),
-                   index_name.c_str());
+  const std::string vname = absl::StrFormat(
+      "ElementVar(%s, %s)",
+      StringifyInt64ToIntVar(vars, range_start, range_end), index_name);
   IntVar* const element_var = MakeIntVar(kint64min, kint64max, vname);
   IntExprEvaluatorElementCt* evaluation_ct = new IntExprEvaluatorElementCt(
       this, std::move(vars), range_start, range_end, argument, element_var);
@@ -1768,9 +1752,8 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    const std::string name =
-        StringPrintf("Index(%s, %" GG_LL_FORMAT "d)",
-                     JoinNamePtr(vars, ", ").c_str(), value);
+    const std::string name = absl::StrFormat("Index(%s, %" GG_LL_FORMAT "d)",
+                                             JoinNamePtr(vars, ", "), value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(

@@ -10,14 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.constraintsolver.OptimizeVar;
+import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class SetCoveringDeployment {
 
@@ -25,12 +24,9 @@ public class SetCoveringDeployment {
     System.loadLibrary("jniortools");
   }
 
-
   /**
-   *
-   * Solves a set covering deployment problem.
-   * See http://www.hakank.org/google_or_tools/set_covering_deployment.py
-   *
+   * Solves a set covering deployment problem. See
+   * http://www.hakank.org/google_or_tools/set_covering_deployment.py
    */
   private static void solve() {
 
@@ -41,27 +37,23 @@ public class SetCoveringDeployment {
     //
 
     // From http://mathworld.wolfram.com/SetCoveringDeployment.html
-    String[] countries = {"Alexandria",
-                           "Asia Minor",
-                           "Britain",
-                           "Byzantium",
-                           "Gaul",
-                           "Iberia",
-                           "Rome",
-                           "Tunis"};
+    String[] countries = {
+      "Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia", "Rome", "Tunis"
+    };
 
     int n = countries.length;
 
     // the incidence matrix (neighbours)
-    int[][] mat = {{0, 1, 0, 1, 0, 0, 1, 1},
-                   {1, 0, 0, 1, 0, 0, 0, 0},
-                   {0, 0, 0, 0, 1, 1, 0, 0},
-                   {1, 1, 0, 0, 0, 0, 1, 0},
-                   {0, 0, 1, 0, 0, 1, 1, 0},
-                   {0, 0, 1, 0, 1, 0, 1, 1},
-                   {1, 0, 0, 1, 1, 1, 0, 1},
-                   {1, 0, 0, 0, 0, 1, 1, 0}};
-
+    int[][] mat = {
+      {0, 1, 0, 1, 0, 0, 1, 1},
+      {1, 0, 0, 1, 0, 0, 0, 0},
+      {0, 0, 0, 0, 1, 1, 0, 0},
+      {1, 1, 0, 0, 0, 0, 1, 0},
+      {0, 0, 1, 0, 0, 1, 1, 0},
+      {0, 0, 1, 0, 1, 0, 1, 1},
+      {1, 0, 0, 1, 1, 1, 0, 1},
+      {1, 0, 0, 0, 0, 1, 1, 0}
+    };
 
     //
     // variables
@@ -74,8 +66,7 @@ public class SetCoveringDeployment {
     IntVar[] y = solver.makeIntVarArray(n, 0, 1, "y");
 
     // total number of armies
-    IntVar num_armies = solver.makeSum(solver.makeSum(x),
-                                       solver.makeSum(y)).var();
+    IntVar num_armies = solver.makeSum(solver.makeSum(x), solver.makeSum(y)).var();
 
     //
     // constraints
@@ -87,7 +78,7 @@ public class SetCoveringDeployment {
     //                Or rather: Is there a backup, there
     //                must be an an army
     //
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       solver.addConstraint(solver.makeGreaterOrEqual(x[i], y[i]));
     }
 
@@ -95,18 +86,17 @@ public class SetCoveringDeployment {
     // Constraint 2: There should always be an backup
     //               army near every city
     //
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       ArrayList<IntVar> count_neighbours = new ArrayList<IntVar>();
-      for(int j = 0; j < n; j++) {
+      for (int j = 0; j < n; j++) {
         if (mat[i][j] == 1) {
           count_neighbours.add(y[j]);
         }
       }
       solver.addConstraint(
           solver.makeGreaterOrEqual(
-              solver.makeSum(x[i],
-                  solver.makeSum(
-                      count_neighbours.toArray(new IntVar[1])).var()), 1));
+              solver.makeSum(x[i], solver.makeSum(count_neighbours.toArray(new IntVar[1])).var()),
+              1));
     }
 
     //
@@ -114,13 +104,10 @@ public class SetCoveringDeployment {
     //
     OptimizeVar objective = solver.makeMinimize(num_armies, 1);
 
-
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.INT_VAR_DEFAULT,
-                                          solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.makePhase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT);
     solver.newSearch(db, objective);
 
     //
@@ -128,7 +115,7 @@ public class SetCoveringDeployment {
     //
     while (solver.nextSolution()) {
       System.out.println("num_armies: " + num_armies.value());
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         if (x[i].value() == 1) {
           System.out.print("Army: " + countries[i] + " ");
         }
@@ -136,7 +123,6 @@ public class SetCoveringDeployment {
           System.out.println("Reserve army: " + countries[i]);
         }
       }
-
     }
     solver.endSearch();
 
@@ -146,12 +132,10 @@ public class SetCoveringDeployment {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {
 
     SetCoveringDeployment.solve();
-
   }
 }

@@ -10,14 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
+import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class Xkcd {
 
@@ -25,20 +24,14 @@ public class Xkcd {
     System.loadLibrary("jniortools");
   }
 
-
-  /**
-   *
-   * Solves the xkcd problem.
-   * See http://www.hakank.org/google_or_tools/xkcd.py
-   *
-   */
+  /** Solves the xkcd problem. See http://www.hakank.org/google_or_tools/xkcd.py */
   private static void solve() {
 
     Solver solver = new Solver("Xkcd");
 
     int n = 6;
     // for price and total: multiplied by 100 to be able to use integers
-    int[]price = {215, 275, 335, 355, 420, 580};
+    int[] price = {215, 275, 335, 355, 420, 580};
     int total = 1505;
 
     //
@@ -49,20 +42,17 @@ public class Xkcd {
     //
     // Constraints
     //
-    solver.addConstraint(
-        solver.makeEquality(solver.makeScalProd(x, price).var(), total));
+    solver.addConstraint(solver.makeEquality(solver.makeScalProd(x, price).var(), total));
 
     //
     // Search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.CHOOSE_FIRST_UNBOUND,
-                                          solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.makePhase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db);
 
     while (solver.nextSolution()) {
       System.out.print("x: ");
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.println();
@@ -75,7 +65,6 @@ public class Xkcd {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

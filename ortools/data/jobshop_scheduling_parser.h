@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
 #define OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
 
-#include "ortools/base/match.h"
+#include "absl/strings/match.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
 
 namespace operations_research {

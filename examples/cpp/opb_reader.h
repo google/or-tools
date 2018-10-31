@@ -19,10 +19,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/split.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/sat/boolean_problem.pb.h"
 

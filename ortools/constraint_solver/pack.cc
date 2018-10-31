@@ -20,10 +20,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -224,17 +224,16 @@ void Pack::InitialPropagate() {
   }
   for (int bin_index = 0; bin_index < bins_; ++bin_index) {
     if (need_context) {
-      solver()->GetPropagationMonitor()->PushContext(StringPrintf(
-          "Pack(bin %d, forced = [%s], undecided = [%s])", bin_index,
-          absl::StrJoin(forced_[bin_index], ", ").c_str(),
-          absl::StrJoin(data->undecided(bin_index), ", ").c_str()));
+      solver()->GetPropagationMonitor()->PushContext(
+          absl::StrFormat("Pack(bin %d, forced = [%s], undecided = [%s])",
+                          bin_index, absl::StrJoin(forced_[bin_index], ", "),
+                          absl::StrJoin(data->undecided(bin_index), ", ")));
     }
 
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
       if (need_context) {
-        solver()->GetPropagationMonitor()->PushContext(
-            StringPrintf("InitialProgateDimension(%s)",
-                         dims_[dim_index]->DebugString().c_str()));
+        solver()->GetPropagationMonitor()->PushContext(absl::StrFormat(
+            "InitialProgateDimension(%s)", dims_[dim_index]->DebugString()));
       }
       dims_[dim_index]->InitialPropagate(bin_index, forced_[bin_index],
                                          data->undecided(bin_index));
@@ -248,15 +247,14 @@ void Pack::InitialPropagate() {
   }
   if (need_context) {
     solver()->GetPropagationMonitor()->PushContext(
-        StringPrintf("Pack(assigned = [%s], unassigned = [%s])",
-                     absl::StrJoin(data->assigned(), ", ").c_str(),
-                     absl::StrJoin(data->unassigned(), ", ").c_str()));
+        absl::StrFormat("Pack(assigned = [%s], unassigned = [%s])",
+                        absl::StrJoin(data->assigned(), ", "),
+                        absl::StrJoin(data->unassigned(), ", ")));
   }
   for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
     if (need_context) {
-      solver()->GetPropagationMonitor()->PushContext(
-          StringPrintf("InitialProgateDimension(%s)",
-                       dims_[dim_index]->DebugString().c_str()));
+      solver()->GetPropagationMonitor()->PushContext(absl::StrFormat(
+          "InitialProgateDimension(%s)", dims_[dim_index]->DebugString()));
     }
     dims_[dim_index]->InitialPropagateUnassigned(data->assigned(),
                                                  data->unassigned());
@@ -280,16 +278,16 @@ void Pack::Propagate() {
   for (int bin_index = 0; bin_index < bins_; ++bin_index) {
     if (!removed_[bin_index].empty() || !forced_[bin_index].empty()) {
       if (need_context) {
-        solver()->GetPropagationMonitor()->PushContext(StringPrintf(
-            "Pack(bin %d, forced = [%s], removed = [%s])", bin_index,
-            absl::StrJoin(forced_[bin_index], ", ").c_str(),
-            absl::StrJoin(removed_[bin_index], ", ").c_str()));
+        solver()->GetPropagationMonitor()->PushContext(
+            absl::StrFormat("Pack(bin %d, forced = [%s], removed = [%s])",
+                            bin_index, absl::StrJoin(forced_[bin_index], ", "),
+                            absl::StrJoin(removed_[bin_index], ", ")));
       }
 
       for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
         if (need_context) {
-          solver()->GetPropagationMonitor()->PushContext(StringPrintf(
-              "ProgateDimension(%s)", dims_[dim_index]->DebugString().c_str()));
+          solver()->GetPropagationMonitor()->PushContext(absl::StrFormat(
+              "ProgateDimension(%s)", dims_[dim_index]->DebugString()));
         }
         dims_[dim_index]->Propagate(bin_index, forced_[bin_index],
                                     removed_[bin_index]);
@@ -305,15 +303,15 @@ void Pack::Propagate() {
   if (!removed_[bins_].empty() || !forced_[bins_].empty()) {
     if (need_context) {
       solver()->GetPropagationMonitor()->PushContext(
-          StringPrintf("Pack(removed = [%s], forced = [%s])",
-                       absl::StrJoin(removed_[bins_], ", ").c_str(),
-                       absl::StrJoin(forced_[bins_], ", ").c_str()));
+          absl::StrFormat("Pack(removed = [%s], forced = [%s])",
+                          absl::StrJoin(removed_[bins_], ", "),
+                          absl::StrJoin(forced_[bins_], ", ")));
     }
 
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
       if (need_context) {
-        solver()->GetPropagationMonitor()->PushContext(StringPrintf(
-            "ProgateDimension(%s)", dims_[dim_index]->DebugString().c_str()));
+        solver()->GetPropagationMonitor()->PushContext(absl::StrFormat(
+            "ProgateDimension(%s)", dims_[dim_index]->DebugString()));
       }
       dims_[dim_index]->PropagateUnassigned(removed_[bins_], forced_[bins_]);
       if (need_context) {
@@ -347,8 +345,8 @@ void Pack::OneDomain(int var_index) {
   const int64 oldmax = var->OldMax();
   const int64 vmin = var->Min();
   const int64 vmax = var->Max();
-  for (int64 value = std::max(oldmin, 0LL); value < std::min(vmin, bins_ + 1LL);
-       ++value) {
+  for (int64 value = std::max(oldmin, int64{0});
+       value < std::min(vmin, bins_ + int64{1}); ++value) {
     if (unprocessed_->IsSet(value, var_index)) {
       unprocessed_->SetToZero(s, value, var_index);
       removed_[value].push_back(var_index);
@@ -356,7 +354,7 @@ void Pack::OneDomain(int var_index) {
   }
   if (!bound) {
     for (const int64 value : InitAndGetValues(holes_[var_index])) {
-      if (value >= std::max(0LL, vmin) &&
+      if (value >= std::max(int64{0}, vmin) &&
           value <= std::min(static_cast<int64>(bins_), vmax)) {
         DCHECK(unprocessed_->IsSet(value, var_index));
         unprocessed_->SetToZero(s, value, var_index);
@@ -364,7 +362,7 @@ void Pack::OneDomain(int var_index) {
       }
     }
   }
-  for (int64 value = std::max(vmax + 1, 0LL);
+  for (int64 value = std::max(vmax + 1, int64{0});
        value <= std::min(oldmax, static_cast<int64>(bins_)); ++value) {
     if (unprocessed_->IsSet(value, var_index)) {
       unprocessed_->SetToZero(s, value, var_index);
@@ -387,7 +385,7 @@ std::string Pack::DebugString() const {
   for (int i = 0; i < dims_.size(); ++i) {
     result += dims_[i]->DebugString() + " ";
   }
-  StringAppendF(&result, "], bins = %d)", bins_);
+  absl::StrAppendFormat(&result, "], bins = %d)", bins_);
   return result;
 }
 

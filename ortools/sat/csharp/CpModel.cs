@@ -823,9 +823,9 @@ public class CpModel
     return SatHelper.ModelStats(model_);
   }
 
-  public String Validate() {
+ public String Validate() {
     return SatHelper.ValidateModel(model_);
-  }  
+  }
 
   private int ConvertConstant(long value)
   {

@@ -16,7 +16,8 @@ using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 
 /// <summary>
-///   This is a sample using the routing library .Net wrapper to solve a TSP problem.
+///   This is a sample using the routing library .Net wrapper to solve a TSP
+///   problem.
 ///   A description of the problem can be found here:
 ///   http://en.wikipedia.org/wiki/Travelling_salesman_problem.
 /// </summary>
@@ -61,20 +62,25 @@ public class TSP {
   ///   positions and computes the Manhattan distance between the two
   ///   positions of two different indices.
   /// </summary>
-  class ManhattanDistance : NodeEvaluator2 {
+  class ManhattanDistance : IntIntToLong {
     private int[,] distances_;
+    private RoutingIndexManager manager_;
 
-    public ManhattanDistance(in DataProblem data) {
+    public ManhattanDistance(in DataProblem data,
+                             in RoutingIndexManager manager) {
       // precompute distance between location to have distance callback in O(1)
       distances_ = new int[data.GetLocationNumber(), data.GetLocationNumber()];
+      manager_ = manager;
       for (int fromNode = 0; fromNode < data.GetLocationNumber(); fromNode++) {
         for (int toNode = 0; toNode < data.GetLocationNumber(); toNode++) {
           if (fromNode == toNode)
             distances_[fromNode, toNode] = 0;
           else
             distances_[fromNode, toNode] =
-              Math.Abs(data.GetLocations()[toNode, 0] - data.GetLocations()[fromNode, 0]) +
-              Math.Abs(data.GetLocations()[toNode, 1] - data.GetLocations()[fromNode, 1]);
+              Math.Abs(data.GetLocations()[toNode, 0] -
+                       data.GetLocations()[fromNode, 0]) +
+              Math.Abs(data.GetLocations()[toNode, 1] -
+                       data.GetLocations()[fromNode, 1]);
         }
       }
     }
@@ -82,7 +88,9 @@ public class TSP {
     /// <summary>
     ///   Returns the manhattan distance between the two nodes
     /// </summary>
-    public override long Run(int FromNode, int ToNode) {
+    public override long Run(int FromIndex, int ToIndex) {
+      int FromNode = manager_.IndexToNode(FromIndex);
+      int ToNode = manager_.IndexToNode(ToIndex);
       return distances_[FromNode, ToNode];
     }
   };
@@ -93,6 +101,7 @@ public class TSP {
   static void PrintSolution(
       in DataProblem data,
       in RoutingModel routing,
+      in RoutingIndexManager manager,
       in Assignment solution) {
     Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
     // Inspect solution.
@@ -100,12 +109,12 @@ public class TSP {
     Console.WriteLine("Route for Vehicle 0:");
     long distance = 0;
     while (routing.IsEnd(index) == false) {
-      Console.Write("{0} -> ", routing.IndexToNode(index));
+      Console.Write("{0} -> ", manager.IndexToNode((int)index));
       var previousIndex = index;
       index = solution.Value(routing.NextVar(index));
       distance += routing.GetArcCostForVehicle(previousIndex, index, 0);
     }
-    Console.WriteLine("{0}", routing.IndexToNode(index));
+    Console.WriteLine("{0}", manager.IndexToNode((int)index));
     Console.WriteLine("Distance of the route: {0}m", distance);
   }
 
@@ -117,23 +126,27 @@ public class TSP {
     DataProblem data = new DataProblem();
 
     // Create Routing Model
-    RoutingModel routing = new RoutingModel(
+    RoutingIndexManager manager = new RoutingIndexManager(
         data.GetLocationNumber(),
         data.GetVehicleNumber(),
         data.GetDepot());
+    RoutingModel routing = new RoutingModel(manager);
 
     // Define weight of each edge
-    NodeEvaluator2 distanceEvaluator = new ManhattanDistance(data);
+    IntIntToLong distanceEvaluator = new ManhattanDistance(data, manager);
     //protect callbacks from the GC
     GC.KeepAlive(distanceEvaluator);
-    routing.SetArcCostEvaluatorOfAllVehicles(distanceEvaluator);
+    routing.SetArcCostEvaluatorOfAllVehicles(
+        routing.RegisterTransitCallback(distanceEvaluator));
 
     // Setting first solution heuristic (cheapest addition).
-    RoutingSearchParameters searchParameters = RoutingModel.DefaultSearchParameters();
-    searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
+    RoutingSearchParameters searchParameters =
+        operations_research_constraint_solver.DefaultRoutingSearchParameters();
+    searchParameters.FirstSolutionStrategy =
+        FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
     Assignment solution = routing.SolveWithParameters(searchParameters);
-    PrintSolution(data, routing, solution);
+    PrintSolution(data, routing, manager, solution);
   }
 
   public static void Main(String[] args) {

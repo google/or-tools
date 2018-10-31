@@ -10,14 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.constraintsolver.OptimizeVar;
+import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class SetCovering {
 
@@ -25,13 +24,7 @@ public class SetCovering {
     System.loadLibrary("jniortools");
   }
 
-
-  /**
-   *
-   * Solves a set covering problem.
-   * See http://www.hakank.org/google_or_tools/set_covering.py
-   *
-   */
+  /** Solves a set covering problem. See http://www.hakank.org/google_or_tools/set_covering.py */
   private static void solve() {
 
     Solver solver = new Solver("SetCovering");
@@ -44,13 +37,14 @@ public class SetCovering {
     int min_distance = 15;
     int num_cities = 6;
 
-    int[][] distance = {{ 0,10,20,30,30,20},
-                        {10, 0,25,35,20,10},
-                        {20,25, 0,15,30,20},
-                        {30,35,15, 0,15,25},
-                        {30,20,30,15, 0,14},
-                        {20,10,20,25,14, 0}};
-
+    int[][] distance = {
+      {0, 10, 20, 30, 30, 20},
+      {10, 0, 25, 35, 20, 10},
+      {20, 25, 0, 15, 30, 20},
+      {30, 35, 15, 0, 15, 25},
+      {30, 20, 30, 15, 0, 14},
+      {20, 10, 20, 25, 14, 0}
+    };
 
     //
     // variables
@@ -58,22 +52,19 @@ public class SetCovering {
     IntVar[] x = solver.makeIntVarArray(num_cities, 0, 1, "x");
     IntVar z = solver.makeSum(x).var();
 
-
     //
     // constraints
     //
 
     // ensure that all cities are covered
-    for(int i = 0; i < num_cities; i++) {
+    for (int i = 0; i < num_cities; i++) {
       ArrayList<IntVar> b = new ArrayList<IntVar>();
-      for(int j = 0; j < num_cities; j++) {
+      for (int j = 0; j < num_cities; j++) {
         if (distance[i][j] <= min_distance) {
           b.add(x[j]);
         }
       }
-      solver.addConstraint(
-          solver.makeSumGreaterOrEqual(b.toArray(new IntVar[1]), 1));
-
+      solver.addConstraint(solver.makeSumGreaterOrEqual(b.toArray(new IntVar[1]), 1));
     }
 
     //
@@ -81,13 +72,10 @@ public class SetCovering {
     //
     OptimizeVar objective = solver.makeMinimize(z, 1);
 
-
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.INT_VAR_DEFAULT,
-                                          solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.makePhase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT);
     solver.newSearch(db, objective);
 
     //
@@ -96,7 +84,7 @@ public class SetCovering {
     while (solver.nextSolution()) {
       System.out.println("z: " + z.value());
       System.out.print("x: ");
-      for(int i = 0; i < num_cities; i++) {
+      for (int i = 0; i < num_cities; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.println();
@@ -109,7 +97,6 @@ public class SetCovering {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

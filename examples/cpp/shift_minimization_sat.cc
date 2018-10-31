@@ -26,16 +26,15 @@
 //   - The objective it to minimize the number of active workers, while
 //     performing all the jobs.
 
+#include <map>
 #include <set>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
+#include "absl/strings/str_split.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/split.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
@@ -108,7 +107,7 @@ class ShiftMinimizationParser {
     }
 
     const std::vector<std::string> words =
-        absl::StrSplit(line, absl::delimiter::AnyOf(" :\t"), absl::SkipEmpty());
+        absl::StrSplit(line, absl::ByAnyChar(" :\t"), absl::SkipEmpty());
 
     switch (load_status_) {
       case NOT_STARTED: {
@@ -296,7 +295,7 @@ void LoadAndSolve(const std::string& file_name) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  base::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

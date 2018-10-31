@@ -10,14 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.constraintsolver.OptimizeVar;
+import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class SetCovering2 {
 
@@ -25,13 +24,7 @@ public class SetCovering2 {
     System.loadLibrary("jniortools");
   }
 
-
-  /**
-   *
-   * Solves a set covering problem.
-   * See http://www.hakank.org/google_or_tools/set_covering2.py
-   *
-   */
+  /** Solves a set covering problem. See http://www.hakank.org/google_or_tools/set_covering2.py */
   private static void solve() {
 
     Solver solver = new Solver("SetCovering2");
@@ -46,22 +39,24 @@ public class SetCovering2 {
     // Minimize the number of security telephones in street
     // corners on a campus.
 
-    int n = 8;            // maximum number of corners
+    int n = 8; // maximum number of corners
     int num_streets = 11; // number of connected streets
 
     // corners of each street
     // Note: 1-based (handled below)
-    int[][] corner = {{1,2},
-                      {2,3},
-                      {4,5},
-                      {7,8},
-                      {6,7},
-                      {2,6},
-                      {1,6},
-                      {4,7},
-                      {2,4},
-                      {5,8},
-                      {3,5}};
+    int[][] corner = {
+      {1, 2},
+      {2, 3},
+      {4, 5},
+      {7, 8},
+      {6, 7},
+      {2, 6},
+      {1, 6},
+      {4, 7},
+      {2, 4},
+      {5, 8},
+      {3, 5}
+    };
 
     //
     // variables
@@ -76,12 +71,11 @@ public class SetCovering2 {
     //
 
     // ensure that all cities are covered
-    for(int i = 0; i < num_streets; i++) {
+    for (int i = 0; i < num_streets; i++) {
       IntVar[] b = new IntVar[2];
       b[0] = x[corner[i][0] - 1];
       b[1] = x[corner[i][1] - 1];
-      solver.addConstraint(
-          solver.makeSumGreaterOrEqual(b, 1));
+      solver.addConstraint(solver.makeSumGreaterOrEqual(b, 1));
     }
 
     //
@@ -89,13 +83,10 @@ public class SetCovering2 {
     //
     OptimizeVar objective = solver.makeMinimize(z, 1);
 
-
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.INT_VAR_DEFAULT,
-                                          solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.makePhase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT);
     solver.newSearch(db, objective);
 
     //
@@ -104,7 +95,7 @@ public class SetCovering2 {
     while (solver.nextSolution()) {
       System.out.println("z: " + z.value());
       System.out.print("x: ");
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.println();
@@ -117,7 +108,6 @@ public class SetCovering2 {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

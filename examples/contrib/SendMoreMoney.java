@@ -10,13 +10,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class SendMoreMoney {
 
@@ -24,12 +23,7 @@ public class SendMoreMoney {
     System.loadLibrary("jniortools");
   }
 
-
-  /**
-   *
-   * Solves the SEND+MORE=MONEY problem.
-   *
-   */
+  /** Solves the SEND+MORE=MONEY problem. */
   private static void solve() {
     int base = 10;
 
@@ -43,19 +37,30 @@ public class SendMoreMoney {
     IntVar r = solver.makeIntVar(0, base - 1, "r");
     IntVar y = solver.makeIntVar(0, base - 1, "y");
 
-    IntVar[] x = {s,e,n,d,m,o,r,y};
+    IntVar[] x = {s, e, n, d, m, o, r, y};
 
-    IntVar[] eq = {s,e,n,d,  m,o,r,e, m,o,n,e,y};
-    int[] coeffs = {1000, 100, 10, 1,            //    S E N D +
-                    1000, 100, 10, 1,            //    M O R E
-                    -10000, -1000, -100, -10, -1 // == M O N E Y
+    IntVar[] eq = {s, e, n, d, m, o, r, e, m, o, n, e, y};
+    int[] coeffs = {
+      1000,
+      100,
+      10,
+      1, //    S E N D +
+      1000,
+      100,
+      10,
+      1, //    M O R E
+      -10000,
+      -1000,
+      -100,
+      -10,
+      -1 // == M O N E Y
     };
     solver.addConstraint(solver.makeScalProdEquality(eq, coeffs, 0));
 
     // alternative:
     solver.addConstraint(
-        solver.makeScalProdEquality(new IntVar[] {s,e,n,d,  m,o,r,e, m,o,n,e,y},
-                                    coeffs, 0));
+        solver.makeScalProdEquality(
+            new IntVar[] {s, e, n, d, m, o, r, e, m, o, n, e, y}, coeffs, 0));
 
     // s > 0
     solver.addConstraint(solver.makeGreater(s, 0));
@@ -64,12 +69,10 @@ public class SendMoreMoney {
 
     solver.addConstraint(solver.makeAllDifferent(x));
 
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.INT_VAR_DEFAULT,
-                                          solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.makePhase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT);
     solver.newSearch(db);
     while (solver.nextSolution()) {
-      for(int i = 0; i < 8; i++) {
+      for (int i = 0; i < 8; i++) {
         System.out.print(x[i].toString() + " ");
       }
       System.out.println();
@@ -82,7 +85,6 @@ public class SendMoreMoney {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

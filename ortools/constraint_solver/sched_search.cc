@@ -15,9 +15,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
@@ -61,11 +61,11 @@ std::string SequenceVar::DebugString() const {
   int ranked = 0;
   int not_ranked = 0;
   ComputeStatistics(&ranked, &not_ranked, &unperformed);
-  return StringPrintf("%s(horizon = %" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                      "d, duration = %" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                      "d, not ranked = %d, ranked = %d, nexts = [%s])",
-                      name().c_str(), hmin, hmax, dmin, dmax, not_ranked,
-                      ranked, JoinDebugStringPtr(nexts_, ", ").c_str());
+  return absl::StrFormat("%s(horizon = %" GG_LL_FORMAT "d..%" GG_LL_FORMAT
+                         "d, duration = %" GG_LL_FORMAT "d..%" GG_LL_FORMAT
+                         "d, not ranked = %d, ranked = %d, nexts = [%s])",
+                         name(), hmin, hmax, dmin, dmax, not_ranked, ranked,
+                         JoinDebugStringPtr(nexts_, ", "));
 }
 
 void SequenceVar::Accept(ModelVisitor* const visitor) const {
@@ -105,7 +105,7 @@ void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
 
 void SequenceVar::ActiveHorizonRange(int64* const hmin,
                                      int64* const hmax) const {
-  std::unordered_set<int> decided;
+  absl::flat_hash_set<int> decided;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (intervals_[i]->CannotBePerformed()) {
       decided.insert(i);
@@ -190,7 +190,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
     std::vector<int>* const possible_lasts) {
   possible_firsts->clear();
   possible_lasts->clear();
-  std::unordered_set<int> to_check;
+  absl::flat_hash_set<int> to_check;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (intervals_[i]->MayBePerformed()) {
       to_check.insert(i);
@@ -408,8 +408,8 @@ class ScheduleOrPostpone : public Decision {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("ScheduleOrPostpone(%s at %" GG_LL_FORMAT "d)",
-                        var_->DebugString().c_str(), est_.Value());
+    return absl::StrFormat("ScheduleOrPostpone(%s at %" GG_LL_FORMAT "d)",
+                           var_->DebugString(), est_.Value());
   }
 
  private:
@@ -518,8 +518,8 @@ class ScheduleOrExpedite : public Decision {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("ScheduleOrExpedite(%s at %" GG_LL_FORMAT "d)",
-                        var_->DebugString().c_str(), est_.Value());
+    return absl::StrFormat("ScheduleOrExpedite(%s at %" GG_LL_FORMAT "d)",
+                           var_->DebugString(), est_.Value());
   }
 
  private:
@@ -599,8 +599,8 @@ class RankFirst : public Decision {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("RankFirst(%s, %d)", sequence_->DebugString().c_str(),
-                        index_);
+    return absl::StrFormat("RankFirst(%s, %d)", sequence_->DebugString(),
+                           index_);
   }
 
  private:
@@ -623,8 +623,8 @@ class RankLast : public Decision {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("RankLast(%s, %d)", sequence_->DebugString().c_str(),
-                        index_);
+    return absl::StrFormat("RankLast(%s, %d)", sequence_->DebugString(),
+                           index_);
   }
 
  private:

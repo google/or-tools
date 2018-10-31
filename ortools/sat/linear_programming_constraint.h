@@ -17,8 +17,9 @@
 #include <utility>
 #include <vector>
 
-#include <unordered_map>
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/hash.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
@@ -57,7 +58,9 @@ struct LinearConstraint {
       absl::StrAppend(&result, lb.value(), " <= ");
     }
     for (int i = 0; i < vars.size(); ++i) {
-      absl::StrAppend(&result, coeffs[i].value(), "*[", vars[i].value(), "] ");
+      const IntegerValue coeff =
+          VariableIsPositive(vars[i]) ? coeffs[i] : -coeffs[i];
+      absl::StrAppend(&result, coeff.value(), "*X", vars[i].value() / 2, " ");
     }
     if (ub.value() < kMaxIntegerValue) {
       absl::StrAppend(&result, "<= ", ub.value());
@@ -100,7 +103,7 @@ class LinearConstraintBuilder {
 
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
-  MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff) {
+  ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff) {
     if (assignment_.LiteralIsTrue(lit)) {
       if (lb_ > kMinIntegerValue) lb_ -= coeff;
       if (ub_ < kMaxIntegerValue) ub_ -= coeff;
@@ -411,7 +414,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Note that these indices are dense in [0, mirror_lp_variable_.size()] so
   // they can be used as vector indices.
   std::vector<IntegerVariable> integer_variables_;
-  std::unordered_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
+  absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
 
   // We need to remember what to optimize if an objective is given, because
   // then we will switch the objective between feasibility and optimization.
@@ -465,7 +468,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 //
 // Important: only positive variable do appear here.
 class LinearProgrammingDispatcher
-    : public std::unordered_map<IntegerVariable, LinearProgrammingConstraint*> {
+    : public absl::flat_hash_map<IntegerVariable,
+                                 LinearProgrammingConstraint*> {
  public:
   explicit LinearProgrammingDispatcher(Model* model) {}
 };

@@ -1,6 +1,7 @@
 from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
+
 def main():
   # Create the solver.
   solver = pywrapcp.Solver('Vendors scheduling')
@@ -18,12 +19,12 @@ def main():
   # Last columns are :
   #   index_of_the_schedule, sum of worked hours (per work type).
   # The index is useful for branching.
-  possible_schedules = [[1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0,
-                         8], [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1,
-                              4], [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2,
-                                   5], [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
-                        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4,
-                         3], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]]
+  possible_schedules = [[1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 8],
+                        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 4],
+                        [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2, 5],
+                        [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
+                        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4, 3],
+                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]]
 
   num_possible_schedules = len(possible_schedules)
   selected_schedules = []
@@ -77,7 +78,8 @@ def main():
     num_solutions += 1
 
     for i in range(num_vendors):
-      print('Vendor %i: ' % i, possible_schedules[selected_schedules[i].Value()])
+      print('Vendor %i: ' % i,
+            possible_schedules[selected_schedules[i].Value()])
     print()
 
     print('Statistics per day:')
@@ -93,6 +95,7 @@ def main():
   print('failures:', solver.Failures())
   print('branches:', solver.Branches())
   print('WallTime:', solver.WallTime(), 'ms')
+
 
 if __name__ == '__main__':
   main()

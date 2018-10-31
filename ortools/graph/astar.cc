@@ -12,12 +12,11 @@
 // limitations under the License.
 
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 #include "ortools/base/adjustable_priority_queue.h"
-#include "ortools/base/callback.h"
 #include "ortools/base/integral_types.h"
 
 namespace operations_research {
@@ -83,8 +82,8 @@ class AStarSP {
   std::unique_ptr<int[]> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
   std::vector<Element> elements_;
-  std::unordered_set<int> not_visited_;
-  std::unordered_set<int> added_to_the_frontier_;
+  absl::flat_hash_set<int> not_visited_;
+  absl::flat_hash_set<int> added_to_the_frontier_;
 };
 
 void AStarSP::Initialize() {
@@ -114,7 +113,7 @@ int AStarSP::SelectClosestNode(int64* distance) {
 }
 
 void AStarSP::Update(int node) {
-  for (std::unordered_set<int>::const_iterator it = not_visited_.begin();
+  for (absl::flat_hash_set<int>::const_iterator it = not_visited_.begin();
        it != not_visited_.end(); ++it) {
     const int other_node = *it;
     const int64 graph_node_i = graph_(node, other_node);

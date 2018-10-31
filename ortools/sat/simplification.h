@@ -24,12 +24,12 @@
 #include <set>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/span.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -51,7 +51,7 @@ class SatPostsolver {
   // The postsolver will process the Add() calls in reverse order. If the given
   // clause has all its literals at false, it simply sets the literal x to true.
   // Note that x must be a literal of the given clause.
-  void Add(Literal x, const absl::Span<Literal> clause);
+  void Add(Literal x, const absl::Span<const Literal> clause);
 
   // Tells the postsolver that the given literal must be true in any solution.
   // We currently check that the variable is not already fixed.
@@ -154,7 +154,7 @@ class SatPresolver {
   // Adds new clause to the SatPresolver.
   void SetNumVariables(int num_variables);
   void AddBinaryClause(Literal a, Literal b);
-  void AddClause(absl::Span<Literal> clause);
+  void AddClause(absl::Span<const Literal> clause);
 
   // Presolves the problem currently loaded. Returns false if the model is
   // proven to be UNSAT during the presolving.

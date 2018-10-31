@@ -15,7 +15,7 @@
 // where Num is an atomic numeric type.
 //
 // Normally we'd simply use %include "std_vector.i" with the %template
-// directive (see http://www.i.org/Doc1.3/Library.html#Library_nn15), but
+// directive (see http://www.swig.org/Doc1.3/Library.html#Library_nn15), but
 // in google3 we can't, because exceptions are forbidden.
 //
 // TODO(user): move to base/swig/java.

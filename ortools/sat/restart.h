@@ -28,7 +28,9 @@ namespace sat {
 class RestartPolicy {
  public:
   explicit RestartPolicy(Model* model)
-      : parameters_(*(model->GetOrCreate<SatParameters>())) {}
+      : parameters_(*(model->GetOrCreate<SatParameters>())) {
+    Reset();
+  }
 
   // Resets the policy using the current model parameters.
   void Reset();

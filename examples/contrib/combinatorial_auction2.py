@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-
-  Combinatorial auction in Google CP Solver.
+"""Combinatorial auction in Google CP Solver.
 
   This is a more general model for the combinatorial example
   in the Numberjack Tutorial, pages 9 and 24 (slides  19/175 and

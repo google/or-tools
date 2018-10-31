@@ -26,12 +26,11 @@
 
 #include <functional>
 #include <numeric>
-#include <unordered_set>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/util/time_limit.h"
 

@@ -32,6 +32,7 @@ DECLARE_bool(routing_no_2opt);
 DECLARE_bool(routing_no_oropt);
 DECLARE_bool(routing_no_make_active);
 DECLARE_bool(routing_no_lkh);
+DECLARE_bool(routing_no_relocate_expensive_chain);
 DECLARE_bool(routing_no_tsp);
 DECLARE_bool(routing_no_tsplns);
 DECLARE_bool(routing_use_chain_make_inactive);
@@ -42,7 +43,7 @@ DECLARE_bool(routing_guided_local_search);
 DECLARE_double(routing_guided_local_search_lambda_coefficient);
 DECLARE_bool(routing_simulated_annealing);
 DECLARE_bool(routing_tabu_search);
-DECLARE_bool(routing_objective_tabu_search);
+DECLARE_bool(routing_generic_tabu_search);
 
 // Search limits
 DECLARE_int64(routing_solution_limit);
@@ -52,8 +53,15 @@ DECLARE_int64(routing_lns_time_limit);
 // Search control
 DECLARE_string(routing_first_solution);
 DECLARE_bool(routing_use_filtered_first_solutions);
+DECLARE_double(savings_neighbors_ratio);
+DECLARE_bool(savings_add_reverse_arcs);
+DECLARE_double(savings_arc_coefficient);
+DECLARE_double(cheapest_insertion_farthest_seeds_ratio);
+DECLARE_double(cheapest_insertion_neighbors_ratio);
 DECLARE_bool(routing_dfs);
 DECLARE_int64(routing_optimization_step);
+DECLARE_int32(routing_number_of_solutions_to_collect);
+DECLARE_int32(routing_relocate_expensive_chain_num_arcs_to_consider);
 
 // Propagation control
 DECLARE_bool(routing_use_light_propagation);
@@ -63,7 +71,6 @@ DECLARE_bool(routing_cache_callbacks);
 DECLARE_int64(routing_max_cache_size);
 
 // Misc
-DECLARE_bool(routing_fingerprint_arc_cost_evaluators);
 DECLARE_bool(routing_trace);
 DECLARE_bool(routing_profile);
 
@@ -77,6 +84,8 @@ namespace operations_research {
 RoutingModelParameters BuildModelParametersFromFlags();
 
 // Builds routing search parameters from flags.
+// TODO(user): Make this return a StatusOr, verifying that the flags
+// describe a valid set of routing search parameters.
 RoutingSearchParameters BuildSearchParametersFromFlags();
 
 }  // namespace operations_research

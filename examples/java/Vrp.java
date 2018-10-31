@@ -10,22 +10,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
 import static java.lang.Math.abs;
 
+import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.IntIntToLong;
+import com.google.ortools.constraintsolver.RoutingDimension;
+import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.NodeEvaluator2;
 import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.main;
+import java.io.*;
 
 class DataProblem {
   private int[][] locations_;
 
   public DataProblem() {
-    locations_ = new int[][] {{4, 4}, {2, 0}, {8, 0}, {0, 1}, {1, 1}, {5, 2}, {7, 2}, {3, 3},
-        {6, 3}, {5, 5}, {8, 5}, {1, 6}, {2, 6}, {3, 7}, {6, 7}, {0, 8}, {7, 8}};
+    locations_ =
+        new int[][] {
+          {4, 4}, {2, 0}, {8, 0}, {0, 1}, {1, 1}, {5, 2}, {7, 2}, {3, 3}, {6, 3}, {5, 5}, {8, 5},
+          {1, 6}, {2, 6}, {3, 7}, {6, 7}, {0, 8}, {7, 8}
+        };
 
     // Compute locations in meters using the block dimension defined as follow
     // Manhattan average block: 750ft x 264ft -> 228m x 80m
@@ -60,28 +67,31 @@ class DataProblem {
 /// @details It uses an array of positions and computes
 /// the Manhattan distance between the two positions of
 /// two different indices.
-class ManhattanDistance extends NodeEvaluator2 {
-  private int[][] distances_;
+class ManhattanDistance extends IntIntToLong {
+  private int[][] distances;
+  private RoutingIndexManager indexManager;
 
-  public ManhattanDistance(DataProblem data) {
+  public ManhattanDistance(DataProblem data, RoutingIndexManager manager) {
     // precompute distance between location to have distance callback in O(1)
-    distances_ = new int[data.getLocationNumber()][data.getLocationNumber()];
+    distances = new int[data.getLocationNumber()][data.getLocationNumber()];
+    indexManager = manager;
     for (int fromNode = 0; fromNode < data.getLocationNumber(); ++fromNode) {
       for (int toNode = 0; toNode < data.getLocationNumber(); ++toNode) {
-        if (fromNode == toNode)
-          distances_[fromNode][toNode] = 0;
+        if (fromNode == toNode) distances[fromNode][toNode] = 0;
         else
-          distances_[fromNode][toNode] =
+          distances[fromNode][toNode] =
               abs(data.getLocations()[toNode][0] - data.getLocations()[fromNode][0])
-              + abs(data.getLocations()[toNode][1] - data.getLocations()[fromNode][1]);
+                  + abs(data.getLocations()[toNode][1] - data.getLocations()[fromNode][1]);
       }
     }
   }
 
   @Override
   /// @brief Returns the manhattan distance between the two nodes.
-  public long run(int fromNode, int toNode) {
-    return distances_[fromNode][toNode];
+  public long run(int fromIndex, int toIndex) {
+    int fromNode = indexManager.indexToNode(fromIndex);
+    int toNode = indexManager.indexToNode(toIndex);
+    return distances[fromNode][toNode];
   }
 }
 
@@ -91,9 +101,10 @@ class Vrp {
   }
 
   /// @brief Add Global Span constraint.
-  static void addDistanceDimension(RoutingModel routing, DataProblem data) {
+  static void addDistanceDimension(RoutingModel routing, DataProblem data, int distanceIndex) {
     String distance = "Distance";
-    routing.addDimension(new ManhattanDistance(data),
+    routing.addDimension(
+        distanceIndex,
         0, // null slack
         3000, // maximum distance per vehicle
         true, // start cumul to zero
@@ -105,21 +116,22 @@ class Vrp {
   }
 
   /// @brief Print the solution
-  static void printSolution(DataProblem data, RoutingModel routing, Assignment solution) {
+  static void printSolution(
+      DataProblem data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
     // Solution cost.
     System.out.println("Objective : " + solution.objectiveValue());
     // Inspect solution.
     for (int i = 0; i < data.getVehicleNumber(); ++i) {
       System.out.println("Route for Vehicle " + i + ":");
       long distance = 0;
-      for (long index = routing.start(i); !routing.isEnd(index);) {
-        System.out.print(routing.indexToNode(index) + " -> ");
+      for (long index = routing.start(i); !routing.isEnd(index); ) {
+        System.out.print(manager.indexToNode((int) index) + " -> ");
 
         long previousIndex = index;
         index = solution.value(routing.nextVar(index));
         distance += routing.getArcCostForVehicle(previousIndex, index, i);
       }
-      System.out.println(routing.indexToNode(routing.end(i)));
+      System.out.println(manager.indexToNode((int) routing.end(i)));
       System.out.println("Distance of the route: " + distance + "m");
     }
   }
@@ -130,24 +142,26 @@ class Vrp {
     DataProblem data = new DataProblem();
 
     // Create Routing Model
-    RoutingModel routing =
-        new RoutingModel(data.getLocationNumber(), data.getVehicleNumber(), data.getDepot());
+    RoutingIndexManager manager =
+        new RoutingIndexManager(data.getLocationNumber(), data.getVehicleNumber(), data.getDepot());
+    RoutingModel routing = new RoutingModel(manager);
 
     // Setting the cost function.
     // [todo]: protect callback from the GC
-    NodeEvaluator2 distanceEvaluator = new ManhattanDistance(data);
-    routing.setArcCostEvaluatorOfAllVehicles(distanceEvaluator);
-    addDistanceDimension(routing, data);
+    IntIntToLong distanceEvaluator = new ManhattanDistance(data, manager);
+    int distanceIndex = routing.registerTransitCallback(distanceEvaluator);
+    routing.setArcCostEvaluatorOfAllVehicles(distanceIndex);
+    addDistanceDimension(routing, data, distanceIndex);
 
     // Setting first solution heuristic (cheapest addition).
     RoutingSearchParameters search_parameters =
         RoutingSearchParameters.newBuilder()
-            .mergeFrom(RoutingModel.defaultSearchParameters())
+            .mergeFrom(main.defaultRoutingSearchParameters())
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();
 
     Assignment solution = routing.solveWithParameters(search_parameters);
-    printSolution(data, routing, solution);
+    printSolution(data, routing, manager, solution);
   }
 
   /// @brief Entry point of the program.

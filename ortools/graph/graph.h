@@ -165,7 +165,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/port.h"
 #include "ortools/graph/iterators.h"
 
 namespace util {
@@ -1120,7 +1119,7 @@ template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ListGraph<NodeIndexType, ArcIndexType>::OutDegree(
     NodeIndexType node) const {
   ArcIndexType degree(0);
-  for (auto arc ATTRIBUTE_UNUSED : OutgoingArcs(node)) ++degree;
+  for (auto arc ABSL_ATTRIBUTE_UNUSED : OutgoingArcs(node)) ++degree;
   return degree;
 }
 
@@ -1438,7 +1437,7 @@ template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutDegree(
     NodeIndexType node) const {
   ArcIndexType degree(0);
-  for (auto arc ATTRIBUTE_UNUSED : OutgoingArcs(node)) ++degree;
+  for (auto arc ABSL_ATTRIBUTE_UNUSED : OutgoingArcs(node)) ++degree;
   return degree;
 }
 
@@ -1446,7 +1445,7 @@ template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcListGraph<NodeIndexType, ArcIndexType>::InDegree(
     NodeIndexType node) const {
   ArcIndexType degree(0);
-  for (auto arc ATTRIBUTE_UNUSED : OppositeIncomingArcs(node)) ++degree;
+  for (auto arc ABSL_ATTRIBUTE_UNUSED : OppositeIncomingArcs(node)) ++degree;
   return degree;
 }
 
@@ -1947,7 +1946,7 @@ template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::InDegree(
     NodeIndexType node) const {
   ArcIndexType degree(0);
-  for (auto arc ATTRIBUTE_UNUSED : OppositeIncomingArcs(node)) ++degree;
+  for (auto arc ABSL_ATTRIBUTE_UNUSED : OppositeIncomingArcs(node)) ++degree;
   return degree;
 }
 

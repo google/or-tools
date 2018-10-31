@@ -10,13 +10,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class AllInterval {
 
@@ -24,17 +23,12 @@ public class AllInterval {
     System.loadLibrary("jniortools");
   }
 
-
   /**
-   *
-   * Implements the all interval problem.
-   * See http://www.hakank.org/google_or_tools/all_interval.py
-   *
+   * Implements the all interval problem. See http://www.hakank.org/google_or_tools/all_interval.py
    */
   private static void solve(int n) {
 
     Solver solver = new Solver("AllInterval");
-
 
     //
     // variables
@@ -48,24 +42,20 @@ public class AllInterval {
     solver.addConstraint(solver.makeAllDifferent(x));
     solver.addConstraint(solver.makeAllDifferent(diffs));
 
-    for(int k = 0; k < n - 1; k++) {
+    for (int k = 0; k < n - 1; k++) {
       solver.addConstraint(
-          solver.makeEquality(diffs[k],
-              solver.makeAbs(solver.makeDifference(x[k + 1], x[k])).var()));
+          solver.makeEquality(
+              diffs[k], solver.makeAbs(solver.makeDifference(x[k + 1], x[k])).var()));
     }
-
 
     // symmetry breaking
     solver.addConstraint(solver.makeLess(x[0], x[n - 1]));
     solver.addConstraint(solver.makeLess(diffs[0], diffs[1]));
 
-
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.CHOOSE_FIRST_UNBOUND,
-                                          solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.makePhase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE);
 
     solver.newSearch(db);
 
@@ -74,16 +64,15 @@ public class AllInterval {
     //
     while (solver.nextSolution()) {
       System.out.print("x    : ");
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.print("\ndiffs: ");
 
-      for(int i = 0; i < n-1; i++) {
+      for (int i = 0; i < n - 1; i++) {
         System.out.print(diffs[i].value() + " ");
       }
       System.out.println("\n");
-
     }
     solver.endSearch();
 
@@ -93,7 +82,6 @@ public class AllInterval {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

@@ -20,14 +20,14 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/span.h"
-#include "ortools/base/split.h"
-#include "ortools/base/string_view.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -35,8 +35,6 @@
 DEFINE_bool(wcnf_use_strong_slack, true,
             "If true, when we add a slack variable to reify a soft clause, we "
             "enforce the fact that when it is true, the clause must be false.");
-
-using ::absl::delimiter::AnyOf;
 
 namespace operations_research {
 namespace sat {
@@ -49,7 +47,7 @@ struct LinearBooleanProblemWrapper {
     problem->set_original_num_variables(num);
   }
 
-  void AddConstraint(absl::Span<int> clause) {
+  void AddConstraint(absl::Span<const int> clause) {
     LinearBooleanConstraint* constraint = problem->add_constraints();
     constraint->mutable_literals()->Reserve(clause.size());
     constraint->mutable_coefficients()->Reserve(clause.size());
@@ -94,7 +92,7 @@ struct CpModelProtoWrapper {
     return signed_value > 0 ? signed_value - 1 : signed_value;
   }
 
-  void AddConstraint(absl::Span<int> clause) {
+  void AddConstraint(absl::Span<const int> clause) {
     auto* constraint = problem->add_constraints()->mutable_bool_or();
     constraint->mutable_literals()->Reserve(clause.size());
     for (const int literal : clause) {
@@ -233,8 +231,7 @@ class SatCnfReader {
     }
 
     static const char kWordDelimiters[] = " ";
-    auto splitter = absl::StrSplit(line, kWordDelimiters,
-                                   static_cast<int64>(absl::SkipEmpty()));
+    auto splitter = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty());
 
     tmp_clause_.clear();
     int64 weight = (!is_wcnf_ && interpret_cnf_as_max_sat_) ? 1 : hard_weight_;
@@ -312,7 +309,7 @@ class SatCnfReader {
   int num_variables_;
 
   // Temporary storage for ProcessNewLine().
-  std::vector<std::string> words_;
+  std::vector<absl::string_view> words_;
 
   // We stores the objective in a map because we want the variables to appear
   // only once in the LinearObjective proto.

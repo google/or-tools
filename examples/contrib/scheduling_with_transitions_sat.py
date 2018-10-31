@@ -14,16 +14,16 @@ import collections
 from ortools.sat.python import cp_model
 from google.protobuf import text_format
 
-
 #----------------------------------------------------------------------------
 # Command line arguments.
 PARSER = argparse.ArgumentParser()
-PARSER.add_argument('--problem_instance', default=0, type=int,
-                    help='Problem instance.')
-PARSER.add_argument('--output_proto', default="",
-                    help='Output file to write the cp_model proto to.')
-PARSER.add_argument('--params', default="",
-                    help='Sat solver parameters.')
+PARSER.add_argument(
+    '--problem_instance', default=0, type=int, help='Problem instance.')
+PARSER.add_argument(
+    '--output_proto',
+    default='',
+    help='Output file to write the cp_model proto to.')
+PARSER.add_argument('--params', default='', help='Sat solver parameters.')
 
 
 #----------------------------------------------------------------------------
@@ -55,8 +55,8 @@ def main(args):
   small_jobs = [[[(100, 0, 'R6'), (2, 1, 'R6')]],
                 [[(2, 0, 'R3'), (100, 1, 'R3')]],
                 [[(100, 0, 'R1'), (16, 1, 'R1')]],
-                [[(1, 0, 'R1'), (38, 1, 'R1')]],
-                [[(14, 0, 'R1'), (10, 1, 'R1')]],
+                [[(1, 0, 'R1'), (38, 1, 'R1')]], [[(14, 0, 'R1'), (10, 1,
+                                                                   'R1')]],
                 [[(16, 0, 'R3'), (17, 1, 'R3')]],
                 [[(14, 0, 'R3'), (14, 1, 'R3')]],
                 [[(14, 0, 'R3'), (15, 1, 'R3')]],
@@ -64,7 +64,8 @@ def main(args):
                 [[(100, 0, 'R1'), (38, 1, 'R1')]]]
 
   large_jobs = [
-      [[(-1, 0, 'R1'), (10, 1, 'R1')]], [[(9, 0, 'R3'), (22, 1, 'R3')]],
+      [[(-1, 0, 'R1'), (10, 1, 'R1')]], [[(9, 0, 'R3'),
+                                          (22, 1, 'R3')]],
       [[(-1, 0, 'R3'), (13, 1, 'R3')]], [[(-1, 0, 'R3'), (38, 1, 'R3')]],
       [[(-1, 0, 'R3'), (38, 1, 'R3')]], [[(-1, 0, 'R3'), (16, 1, 'R3')]],
       [[(-1, 0, 'R3'), (11, 1, 'R3')]], [[(-1, 0, 'R3'), (13, 1, 'R3')]],

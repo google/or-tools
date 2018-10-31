@@ -18,10 +18,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
@@ -126,9 +126,8 @@ class AtMost : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("AtMost(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), value_,
-                        max_count_);
+    return absl::StrFormat("AtMost(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
+                           JoinDebugStringPtr(vars_, ", "), value_, max_count_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -170,10 +169,10 @@ class Distribute : public Constraint {
   void CardMin(int cindex);
   void CardMax(int cindex);
   std::string DebugString() const override {
-    return StringPrintf("Distribute(vars = [%s], values = [%s], cards = [%s])",
-                        JoinDebugStringPtr(vars_, ", ").c_str(),
-                        absl::StrJoin(values_, ", ").c_str(),
-                        JoinDebugStringPtr(cards_, ", ").c_str());
+    return absl::StrFormat(
+        "Distribute(vars = [%s], values = [%s], cards = [%s])",
+        JoinDebugStringPtr(vars_, ", "), absl::StrJoin(values_, ", "),
+        JoinDebugStringPtr(cards_, ", "));
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -390,9 +389,9 @@ FastDistribute::FastDistribute(Solver* const s,
 }
 
 std::string FastDistribute::DebugString() const {
-  return StringPrintf("FastDistribute(vars = [%s], cards = [%s])",
-                      JoinDebugStringPtr(vars_, ", ").c_str(),
-                      JoinDebugStringPtr(cards_, ", ").c_str());
+  return absl::StrFormat("FastDistribute(vars = [%s], cards = [%s])",
+                         JoinDebugStringPtr(vars_, ", "),
+                         JoinDebugStringPtr(cards_, ", "));
 }
 
 void FastDistribute::Post() {
@@ -456,7 +455,7 @@ void FastDistribute::OneDomain(int index) {
   const int64 oldmax = var->OldMax();
   const int64 vmin = var->Min();
   const int64 vmax = var->Max();
-  for (int64 card_index = std::max(oldmin, 0LL);
+  for (int64 card_index = std::max(oldmin, int64{0});
        card_index < std::min(vmin, card_size()); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
@@ -468,7 +467,7 @@ void FastDistribute::OneDomain(int index) {
       SetRevCannotContribute(index, card_index);
     }
   }
-  for (int64 card_index = std::max(vmax + 1, 0LL);
+  for (int64 card_index = std::max(vmax + 1, int64{0});
        card_index <= std::min(oldmax, card_size() - 1); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
@@ -589,13 +588,11 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
 }
 
 std::string BoundedDistribute::DebugString() const {
-  return StringPrintf(
+  return absl::StrFormat(
       "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = "
       "[%s]",
-      JoinDebugStringPtr(vars_, ", ").c_str(),
-      absl::StrJoin(values_, ", ").c_str(),
-      absl::StrJoin(card_min_, ", ").c_str(),
-      absl::StrJoin(card_max_, ", ").c_str());
+      JoinDebugStringPtr(vars_, ", "), absl::StrJoin(values_, ", "),
+      absl::StrJoin(card_min_, ", "), absl::StrJoin(card_max_, ", "));
 }
 
 void BoundedDistribute::Post() {
@@ -789,11 +786,10 @@ BoundedFastDistribute::BoundedFastDistribute(Solver* const s,
 }
 
 std::string BoundedFastDistribute::DebugString() const {
-  return StringPrintf(
+  return absl::StrFormat(
       "BoundedFastDistribute([%s], card_min = [%s], card_max = [%s]",
-      JoinDebugStringPtr(vars_, ", ").c_str(),
-      absl::StrJoin(card_min_, ", ").c_str(),
-      absl::StrJoin(card_max_, ", ").c_str());
+      JoinDebugStringPtr(vars_, ", "), absl::StrJoin(card_min_, ", "),
+      absl::StrJoin(card_max_, ", "));
 }
 
 void BoundedFastDistribute::Post() {
@@ -872,7 +868,7 @@ void BoundedFastDistribute::OneDomain(int index) {
   const int64 oldmax = var->OldMax();
   const int64 vmin = var->Min();
   const int64 vmax = var->Max();
-  for (int64 card_index = std::max(oldmin, 0LL);
+  for (int64 card_index = std::max(oldmin, int64{0});
        card_index < std::min(vmin, card_size()); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);
@@ -884,7 +880,7 @@ void BoundedFastDistribute::OneDomain(int index) {
       SetRevCannotContribute(index, card_index);
     }
   }
-  for (int64 card_index = std::max(vmax + 1, 0LL);
+  for (int64 card_index = std::max(vmax + 1, int64{0});
        card_index <= std::min(oldmax, card_size() - 1); ++card_index) {
     if (undecided_.IsSet(index, card_index)) {
       SetRevCannotContribute(index, card_index);

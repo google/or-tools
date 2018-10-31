@@ -17,15 +17,12 @@
 #include <algorithm>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/port.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "scip/scip.h"
@@ -440,7 +437,8 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   }
 
   ExtractModel();
-  VLOG(1) << absl::StrFormat("Model built in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Model built in %s.",
+                             absl::FormatDuration(timer.GetDuration()));
 
   // Time limit.
   if (solver_->time_limit() != 0) {
@@ -516,7 +514,8 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     result_status_ = MPSolver::ABNORMAL;
     return result_status_;
   }
-  VLOG(1) << absl::StrFormat("Solved in %.3f seconds.", timer.Get());
+  VLOG(1) << absl::StrFormat("Solved in %s.",
+                             absl::FormatDuration(timer.GetDuration()));
 
   // Get the results.
   SCIP_SOL* const solution = SCIPgetBestSol(scip_);
@@ -581,8 +580,10 @@ int64 SCIPInterface::iterations() const {
 
 int64 SCIPInterface::nodes() const {
   if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
-  // TODO(user): or is it SCIPgetNTotalNodes?
-  return SCIPgetNNodes(scip_);
+  // This is the total number of nodes used in the solve, potentially across
+  // multiple branch-and-bound trees. Use limits/totalnodes (rather than
+  // limits/nodes) to control this value.
+  return SCIPgetNTotalNodes(scip_);
 }
 
 double SCIPInterface::best_objective_bound() const {

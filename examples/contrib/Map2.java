@@ -11,14 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
+import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class Map2 {
 
@@ -26,12 +25,8 @@ public class Map2 {
     System.loadLibrary("jniortools");
   }
 
-
   /**
-   *
-   * Solves a simple map coloring problem, take II.
-   * See http://www.hakank.org/google_or_tools/map.py
-   *
+   * Solves a simple map coloring problem, take II. See http://www.hakank.org/google_or_tools/map.py
    */
   private static void solve() {
 
@@ -40,26 +35,27 @@ public class Map2 {
     //
     // data
     //
-    int Belgium     = 0;
-    int Denmark     = 1;
-    int France      = 2;
-    int Germany     = 3;
+    int Belgium = 0;
+    int Denmark = 1;
+    int France = 2;
+    int Germany = 3;
     int Netherlands = 4;
-    int Luxembourg  = 5;
+    int Luxembourg = 5;
 
     int n = 6;
     int max_num_colors = 4;
 
-    int[][] neighbours = {{France,     Belgium},
-                          {France,     Luxembourg},
-                          {France,     Germany},
-                          {Luxembourg, Germany},
-                          {Luxembourg, Belgium},
-                          {Belgium,    Netherlands},
-                          {Belgium,    Germany},
-                          {Germany,    Netherlands},
-                          {Germany,    Denmark}};
-
+    int[][] neighbours = {
+      {France, Belgium},
+      {France, Luxembourg},
+      {France, Germany},
+      {Luxembourg, Germany},
+      {Luxembourg, Belgium},
+      {Belgium, Netherlands},
+      {Belgium, Germany},
+      {Germany, Netherlands},
+      {Germany, Denmark}
+    };
 
     //
     // Variables
@@ -69,27 +65,24 @@ public class Map2 {
     //
     // Constraints
     //
-    for(int i = 0; i < neighbours.length; i++) {
+    for (int i = 0; i < neighbours.length; i++) {
       solver.addConstraint(
-                           solver.makeNonEquality(color[neighbours[i][0]],
-                                                  color[neighbours[i][1]]));
+          solver.makeNonEquality(color[neighbours[i][0]], color[neighbours[i][1]]));
     }
 
     // Symmetry breaking
     solver.addConstraint(solver.makeEquality(color[Belgium], 1));
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.makePhase(color,
-                                          solver.CHOOSE_FIRST_UNBOUND,
-                                          solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.makePhase(color, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db);
 
     while (solver.nextSolution()) {
       System.out.print("Colors: ");
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         System.out.print(color[i].value() + " ");
       }
       System.out.println();
@@ -102,7 +95,6 @@ public class Map2 {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

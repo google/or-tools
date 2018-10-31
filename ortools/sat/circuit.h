@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 
-#include <unordered_map>
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -82,7 +82,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // TODO(user): for large dense graph, using a matrix is faster and uses less
   // memory. If the need arise we can have the two implementations.
   std::vector<Literal> self_arcs_;
-  std::unordered_map<std::pair<int, int>, Literal> graph_;
+  absl::flat_hash_map<std::pair<int, int>, Literal> graph_;
 
   // Data used to interpret the watch indices passed to IncrementalPropagate().
   struct Arc {

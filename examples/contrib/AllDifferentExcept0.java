@@ -10,13 +10,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class AllDifferentExcept0 {
 
@@ -34,25 +33,19 @@ public class AllDifferentExcept0 {
   public static void alldifferent_except_0(Solver solver, IntVar[] a) {
 
     int n = a.length;
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < i; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < i; j++) {
         IntVar bi = solver.makeIsDifferentCstVar(a[i], 0);
         IntVar bj = solver.makeIsDifferentCstVar(a[j], 0);
         IntVar bij = solver.makeIsDifferentCstVar(a[i], a[j]);
-        solver.addConstraint(
-            solver.makeLessOrEqual(
-                solver.makeProd(bi, bj).var(), bij));
+        solver.addConstraint(solver.makeLessOrEqual(solver.makeProd(bi, bj).var(), bij));
       }
     }
   }
 
-
   /**
-   *
-   * Implements a (decomposition) of global constraint
-   * alldifferent_except_0.
-   * See http://www.hakank.org/google_or_tools/circuit.py
-   *
+   * Implements a (decomposition) of global constraint alldifferent_except_0. See
+   * http://www.hakank.org/google_or_tools/circuit.py
    */
   private static void solve() {
 
@@ -75,9 +68,8 @@ public class AllDifferentExcept0 {
 
     // we also require at least 2 0's
     IntVar[] z_tmp = solver.makeBoolVarArray(n, "z_tmp");
-    for(int i = 0; i < n; i++) {
-      solver.addConstraint(
-          solver.makeIsEqualCstCt(x[i], 0, z_tmp[i]));
+    for (int i = 0; i < n; i++) {
+      solver.addConstraint(solver.makeIsEqualCstCt(x[i], 0, z_tmp[i]));
     }
 
     IntVar z = solver.makeSum(z_tmp).var();
@@ -86,9 +78,7 @@ public class AllDifferentExcept0 {
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.INT_VAR_DEFAULT,
-                                          solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.makePhase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT);
     solver.newSearch(db);
 
     //
@@ -96,7 +86,7 @@ public class AllDifferentExcept0 {
     //
     while (solver.nextSolution()) {
       System.out.print("x: ");
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.println("  z: " + z.value());
@@ -109,7 +99,6 @@ public class AllDifferentExcept0 {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

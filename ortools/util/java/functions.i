@@ -238,6 +238,8 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 %rename (run) operations_research::swig_util::LongToLong::Run;
 %feature("director") operations_research::swig_util::LongLongToLong;
 %rename (run) operations_research::swig_util::LongLongToLong::Run;
+%feature("director") operations_research::swig_util::IntToLong;
+%rename (run) operations_research::swig_util::IntToLong::Run;
 %feature("director") operations_research::swig_util::IntIntToLong;
 %rename (run) operations_research::swig_util::IntIntToLong::Run;
 %feature("director") operations_research::swig_util::LongLongLongToLong;

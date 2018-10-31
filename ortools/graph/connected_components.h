@@ -42,10 +42,13 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <unordered_map>
-#include <unordered_set>
+#include <type_traits>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/hash/hash.h"
+#include "absl/meta/type_traits.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/ptr_util.h"
@@ -124,35 +127,28 @@ namespace internal {
 // is a comparator or a hasher (prefer the latter).
 template <typename T, typename CompareOrHashT>
 struct ConnectedComponentsTypeHelper {
-  // SFINAE helpers to detect a hash functor.
-  template <typename U, size_t (U::*)(const T&) const>
-  struct hash_by_ref {};
-  template <typename U, size_t (U::*)(T) const>
-  struct hash_by_value {};
+  // SFINAE trait to detect hash functors and select unordered containers if so,
+  // and ordered containers otherwise (= by default).
+  template <typename U, typename E = void>
+  struct SelectContainer {
+    using Set = std::set<T, CompareOrHashT>;
+    using Map = std::map<T, int, CompareOrHashT>;
+  };
 
-  // SFINAE dispatchers that return the right kind of set depending on the
-  // functor.
+  // The expression inside decltype is basically saying that "H(x)" is
+  // well-formed, where H is an instance of U and x is an instance of T, and is
+  // a value of integral type. That is, we are "duck-typing" on whether U looks
+  // like a hash functor.
   template <typename U>
-  static std::unordered_set<T, CompareOrHashT> ReturnSet(
-      hash_by_ref<U, &U::operator()>*);
-  template <typename U>
-  static std::unordered_set<T, CompareOrHashT> ReturnSet(
-      hash_by_value<U, &U::operator()>*);
-  template <typename U>
-  static std::set<T, CompareOrHashT> ReturnSet(...);
-  using Set = decltype(ReturnSet<CompareOrHashT>(nullptr));
+  struct SelectContainer<
+      U, absl::enable_if_t<std::is_integral<decltype(
+             std::declval<const U&>()(std::declval<const T&>()))>::value>> {
+    using Set = absl::flat_hash_set<T, CompareOrHashT>;
+    using Map = absl::flat_hash_map<T, int, CompareOrHashT>;
+  };
 
-  // SFINAE dispatchers that return the right kind of map depending on the
-  // functor.
-  template <typename U>
-  static std::unordered_map<T, int, CompareOrHashT> ReturnMap(
-      hash_by_ref<U, &U::operator()>*);
-  template <typename U>
-  static std::unordered_map<T, int, CompareOrHashT> ReturnMap(
-      hash_by_value<U, &U::operator()>*);
-  template <typename U>
-  static std::map<T, int, CompareOrHashT> ReturnMap(...);
-  using Map = decltype(ReturnMap<CompareOrHashT>(nullptr));
+  using Set = typename SelectContainer<CompareOrHashT>::Set;
+  using Map = typename SelectContainer<CompareOrHashT>::Map;
 };
 
 }  // namespace internal

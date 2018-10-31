@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <cstring>
 #include <memory>
-#include <unordered_map>
 #include <utility>
 
 #include "ortools/base/commandlineflags.h"

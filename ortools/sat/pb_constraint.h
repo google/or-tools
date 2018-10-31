@@ -18,16 +18,16 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/span.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
@@ -533,7 +533,8 @@ class PbConstraints : public SatPropagator {
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
-  absl::Span<Literal> Reason(const Trail& trail, int trail_index) const final;
+  absl::Span<const Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Changes the number of variables.
   void Resize(int num_variables) {
@@ -652,7 +653,7 @@ class PbConstraints : public SatPropagator {
 
   // Pointers to the constraints grouped by their hash.
   // This is used to find duplicate constraints by AddConstraint().
-  std::unordered_map<int64, std::vector<UpperBoundedLinearConstraint*>>
+  absl::flat_hash_map<int64, std::vector<UpperBoundedLinearConstraint*>>
       possible_duplicates_;
 
   // Helper to enqueue propagated literals on the trail and store their reasons.

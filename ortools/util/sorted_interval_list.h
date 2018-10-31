@@ -19,8 +19,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/span.h"
 
 namespace operations_research {
 
@@ -50,10 +51,8 @@ std::ostream& operator<<(std::ostream& out,
 // - The intervals appear in increasing order.
 // - for all i: intervals[i].start <= intervals[i].end
 // - for all i but the last: intervals[i].end + 1 < intervals[i+1].start
-//
-// TODO(user): rename to IntervalsAreSortedAndNonAdjacent().
-bool IntervalsAreSortedAndDisjoint(
-    const std::vector<ClosedInterval>& intervals);
+bool IntervalsAreSortedAndNonAdjacent(
+    absl::Span<const ClosedInterval> intervals);
 
 // We call "domain" any subset of Int64 = [kint64min, kint64max].
 //
@@ -80,10 +79,10 @@ class Domain {
 
   // Creates a domain from the union of an unsorted list of integer values.
   // Input values may be repeated, with no consequence on the output
-  static Domain FromValues(absl::Span<int64> values);
+  static Domain FromValues(std::vector<int64> values);
 
   // Creates a domain from the union of an unsorted list of intervals.
-  static Domain FromIntervals(absl::Span<ClosedInterval> intervals);
+  static Domain FromIntervals(absl::Span<const ClosedInterval> intervals);
 
   // Returns true if this is the empty set.
   bool IsEmpty() const;
@@ -147,10 +146,6 @@ class Domain {
   // For instance Domain(1, 7).InverseMultiplicationBy(2) == Domain(1, 3).
   Domain InverseMultiplicationBy(const int64 coeff) const;
 
-  // Returns the representation of D as the unique sorted list of non-adjacent
-  // intervals. This will always satisfy IntervalsAreSortedAndDisjoint().
-  std::vector<ClosedInterval> intervals() const { return intervals_; }
-
   // Returns a compact std::string of a vector of intervals like
   // "[1,4][6][10,20]"
   std::string ToString() const;
@@ -166,18 +161,39 @@ class Domain {
     return intervals_ != other.intervals_;
   }
 
+  // Basic read-only std::vector<> wrapping to view a Domain as a sorted list of
+  // non-adjacent intervals. Note that we don't expose size() which might be
+  // confused with the number of values in the domain.
+  //
+  // Note(user): I used to provide a Domain::intervals() function instead that
+  // returned a reference to the underlying intervals_, but this was bug-prone
+  // with temporary like "domain.Negation().intervals()".
+  int NumIntervals() const { return intervals_.size(); }
+  ClosedInterval front() const { return intervals_.front(); }
+  ClosedInterval back() const { return intervals_.back(); }
+  ClosedInterval operator[](int i) const { return intervals_[i]; }
+  absl::InlinedVector<ClosedInterval, 1>::const_iterator begin() const {
+    return intervals_.begin();
+  }
+  absl::InlinedVector<ClosedInterval, 1>::const_iterator end() const {
+    return intervals_.end();
+  }
+
+  // Deprecated. TODO(user): remove, this makes a copy.
+  std::vector<ClosedInterval> intervals() const {
+    return {intervals_.begin(), intervals_.end()};
+  }
+
  private:
-  // Invariant: will always satisfy IntervalsAreSortedAndDisjoint().
-  std::vector<ClosedInterval> intervals_;
+  // Invariant: will always satisfy IntervalsAreSortedAndNonAdjacent().
+  //
+  // Note that we use InlinedVector for the common case of single interal
+  // domains. This provide a good performance boost when working with a
+  // std::vector<Domain>.
+  absl::InlinedVector<ClosedInterval, 1> intervals_;
 };
 
 std::ostream& operator<<(std::ostream& out, const Domain& domain);
-
-// TODO(user): Remove. These are deprecated. Use the Domain class instead.
-std::vector<ClosedInterval> UnionOfSortedDisjointIntervals(
-    const std::vector<ClosedInterval>& a, const std::vector<ClosedInterval>& b);
-std::vector<ClosedInterval> NegationOfSortedDisjointIntervals(
-    std::vector<ClosedInterval> intervals);
 
 // This class represents a sorted list of disjoint, closed intervals.  When an
 // interval is inserted, all intervals that overlap it or that are even adjacent
@@ -261,6 +277,9 @@ class SortedDisjointIntervalList {
   // }
   const Iterator begin() const { return intervals_.begin(); }
   const Iterator end() const { return intervals_.end(); }
+
+  // Returns a const& to the last interval. The list must not be empty.
+  const ClosedInterval& last() const { return *intervals_.rbegin(); }
 
   void clear() { intervals_.clear(); }
   void swap(SortedDisjointIntervalList& other) {

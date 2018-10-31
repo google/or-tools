@@ -19,18 +19,18 @@
 
 #include <deque>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 
+#include "absl/container/inlined_vector.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/inlined_vector.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/span.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -79,13 +79,13 @@ class SatClause {
   // Returns the reason for the last unit propagation of this clause. The
   // preconditions are the same as for PropagatedLiteral(). Note that we don't
   // need to include the propagated literal.
-  absl::Span<Literal> PropagationReason() const {
-    return absl::Span<Literal>(&(literals_[1]), size_ - 1);
+  absl::Span<const Literal> PropagationReason() const {
+    return absl::Span<const Literal>(&(literals_[1]), size_ - 1);
   }
 
   // Returns a Span<> representation of the clause.
-  absl::Span<Literal> AsSpan() const {
-    return absl::Span<Literal>(&(literals_[0]), size_);
+  absl::Span<const Literal> AsSpan() const {
+    return absl::Span<const Literal>(&(literals_[0]), size_);
   }
 
   // Removes literals that are fixed. This should only be called at level 0
@@ -98,7 +98,7 @@ class SatClause {
 
   // Rewrites a clause with another shorter one. Note that the clause shouldn't
   // be attached when this is called.
-  void Rewrite(absl::Span<Literal> new_clause) {
+  void Rewrite(absl::Span<const Literal> new_clause) {
     size_ = 0;
     for (const Literal l : new_clause) literals_[size_++] = l;
   }
@@ -159,7 +159,8 @@ class LiteralWatchers : public SatPropagator {
 
   // SatPropagator API.
   bool Propagate(Trail* trail) final;
-  absl::Span<Literal> Reason(const Trail& trail, int trail_index) const final;
+  absl::Span<const Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Returns the reason of the variable at given trail_index. This only works
   // for variable propagated by this class and is almost the same as Reason()
@@ -205,7 +206,7 @@ class LiteralWatchers : public SatPropagator {
     return gtl::ContainsKey(clauses_info_, clause);
   }
   int64 num_removable_clauses() const { return clauses_info_.size(); }
-  std::unordered_map<SatClause*, ClauseInfo>* mutable_clauses_info() {
+  absl::flat_hash_map<SatClause*, ClauseInfo>* mutable_clauses_info() {
     return &clauses_info_;
   }
 
@@ -291,7 +292,7 @@ class LiteralWatchers : public SatPropagator {
   int to_minimize_index_ = 0;
 
   // Only contains removable clause.
-  std::unordered_map<SatClause*, ClauseInfo> clauses_info_;
+  absl::flat_hash_map<SatClause*, ClauseInfo> clauses_info_;
 
   DratProofHandler* drat_proof_handler_ = nullptr;
 
@@ -331,7 +332,7 @@ class BinaryClauseManager {
   void ClearNewlyAdded() { newly_added_.clear(); }
 
  private:
-  std::unordered_set<std::pair<int, int>> set_;
+  absl::flat_hash_set<std::pair<int, int>> set_;
   std::vector<BinaryClause> newly_added_;
   DISALLOW_COPY_AND_ASSIGN(BinaryClauseManager);
 };
@@ -386,7 +387,8 @@ class BinaryImplicationGraph : public SatPropagator {
   }
 
   bool Propagate(Trail* trail) final;
-  absl::Span<Literal> Reason(const Trail& trail, int trail_index) const final;
+  absl::Span<const Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Resizes the data structure.
   void Resize(int num_variables);
@@ -405,7 +407,7 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): For large constraint, handle them natively instead of
   // converting them into implications?
-  void AddAtMostOne(absl::Span<Literal> at_most_one);
+  void AddAtMostOne(absl::Span<const Literal> at_most_one);
 
   // Uses the binary implication graph to minimize the given conflict by
   // removing literals that implies others. The idea is that if a and b are two
@@ -523,7 +525,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // if this is called with any sub-clique of the result we will get the same
   // maximal clique.
   std::vector<Literal> ExpandAtMostOne(
-      const absl::Span<Literal> at_most_one);
+      const absl::Span<const Literal> at_most_one);
 
   // Binary reasons by trail_index. We need a deque because we kept pointers to
   // elements of this array and this can dynamically change size.

@@ -17,16 +17,17 @@
 #include <limits>
 #include <numeric>
 
+#include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "ortools/algorithms/dense_doubly_linked_list.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/join.h"
-#include "ortools/base/memory.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/time_support.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/graph/util.h"
 
@@ -1017,7 +1018,7 @@ std::string GraphSymmetryFinder::SearchState::DebugString() const {
       " remaining_pruned_image_nodes=[%s],"
       " num_parts_before_trying_to_map_base_node=%d }",
       base_node, first_image_node,
-      absl::StrJoin(remaining_pruned_image_nodes, " ").c_str(),
+      absl::StrJoin(remaining_pruned_image_nodes, " "),
       num_parts_before_trying_to_map_base_node);
 }
 

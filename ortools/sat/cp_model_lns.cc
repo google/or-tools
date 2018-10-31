@@ -15,7 +15,6 @@
 
 #include <numeric>
 
-#include <unordered_set>
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/random_engine.h"
 

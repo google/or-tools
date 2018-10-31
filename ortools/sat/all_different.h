@@ -15,10 +15,10 @@
 #define OR_TOOLS_SAT_ALL_DIFFERENT_H_
 
 #include <functional>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
@@ -186,7 +186,7 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   // is needed.
   int64 num_calls_;
   std::vector<std::pair<int64, IntegerVariable>> to_insert_;
-  std::unordered_map<int64, IntegerVariable> value_to_variable_;
+  absl::flat_hash_map<int64, IntegerVariable> value_to_variable_;
   std::vector<IntegerLiteral> integer_reason_;
 
   DISALLOW_COPY_AND_ASSIGN(AllDifferentBoundsPropagator);

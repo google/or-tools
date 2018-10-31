@@ -17,12 +17,14 @@ void Solve() {
   const IntVar start_p1 = cp_model.NewIntVar(Domain(500, 800));
   const IntVar duration_p1 = cp_model.NewIntVar(Domain(1, 360));
   const IntVar end_p1 = cp_model.NewIntVar(Domain(500, 1000));
-  const IntervalVar p1 = cp_model.NewIntervalVar(start_p1, duration_p1, end_p1);
+  const IntervalVar p1 =
+      cp_model.NewIntervalVar(start_p1, duration_p1, end_p1);
 
   const IntVar start_p2 = cp_model.NewIntVar(Domain(500, 800));
   const IntVar duration_p2 = cp_model.NewIntVar(Domain(1, 360));
   const IntVar end_p2 = cp_model.NewIntVar(Domain(500, 1000));
-  const IntervalVar p2 = cp_model.NewIntervalVar(start_p2, duration_p2, end_p2);
+  const IntervalVar p2 =
+      cp_model.NewIntervalVar(start_p2, duration_p2, end_p2);
 
   cp_model.AddEquality(LinearExpr::Sum({duration_p1, duration_p2}), 360);
   cp_model.AddLessOrEqual(end_p1, start_p2);

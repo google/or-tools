@@ -64,6 +64,9 @@
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
 
+    <Compile Include="../../gen/ortools/util/*.cs">
+      <Link>util/%(Filename)%(Extension)</Link>
+    </Compile>
     <Compile Include="../../util/csharp/*.cs">
       <Link>util/%(Filename)%(Extension)</Link>
     </Compile>

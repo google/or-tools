@@ -1,13 +1,13 @@
 # Copyright 2010 Hakan Kjellerstrand hakank@gmail.com
 #
-# Licensed under the Apache License, Version 2.0 (the 'License');
+# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an 'AS IS' BASIS,
+# distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
@@ -58,14 +58,13 @@ from ortools.constraint_solver import pywrapcp
 # http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/rules
 default_n = 10
 X = -1
-default_puzzle = [[X, X, X, X, X, X, X, X, 0, X], [
-    X, 8, 8, X, 2, X, 0, X, X, X
-], [5, X, 8, X, X, X, X, X, X,
-    X], [X, X, X, X, X, 2, X, X, X,
-         2], [1, X, X, X, 4, 5, 6, X, X, X], [X, 0, X, X, X, 7, 9, X, X, 6], [
-             X, X, X, 6, X, X, 9, X, X, 6
-         ], [X, X, 6, 6, 8, 7, 8, 7, X, 5], [X, 4, X, 6, 6, 6, X, 6, X, 4],
-                  [X, X, X, X, X, X, 3, X, X, X]]
+default_puzzle = [
+    [X, X, X, X, X, X, X, X, 0, X], [X, 8, 8, X, 2, X, 0, X, X, X],
+    [5, X, 8, X, X, X, X, X, X, X], [X, X, X, X, X, 2, X, X, X, 2],
+    [1, X, X, X, 4, 5, 6, X, X, X], [X, 0, X, X, X, 7, 9, X, X, 6],
+    [X, X, X, 6, X, X, 9, X, X, 6], [X, X, 6, 6, 8, 7, 8, 7, X, 5],
+    [X, 4, X, 6, 6, 6, X, 6, X, 4], [X, X, X, X, X, X, 3, X, X, X]
+]
 
 
 def main(puzzle='', n=''):

@@ -15,7 +15,7 @@
 
 #include <map>
 
-#include <unordered_map>
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -28,7 +28,7 @@ namespace {
 
 struct ExpansionHelper {
   CpModelProto expanded_proto;
-  std::unordered_map<std::pair<int, int>, int> precedence_cache;
+  absl::flat_hash_map<std::pair<int, int>, int> precedence_cache;
   std::map<std::string, int> statistics;
   static const int kAlwaysTrue = kint32min;
 

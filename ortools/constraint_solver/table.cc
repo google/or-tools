@@ -17,15 +17,15 @@
 #include <algorithm>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/sat_constraint.h"
@@ -34,19 +34,6 @@
 #include "ortools/util/tuple_set.h"
 
 namespace operations_research {
-// External table code.
-Constraint* BuildAc4TableConstraint(Solver* const solver,
-                                    const IntTupleSet& tuples,
-                                    const std::vector<IntVar*>& vars);
-
-Constraint* BuildSatTableConstraint(Solver* solver,
-                                    const std::vector<IntVar*>& vars,
-                                    const IntTupleSet& tuples);
-
-Constraint* BuildAc4MddResetTableConstraint(Solver* const solver,
-                                            const IntTupleSet& tuples,
-                                            const std::vector<IntVar*>& vars);
-
 namespace {
 // ----- Presolve helpers -----
 // TODO(user): Move this out of this file.
@@ -77,7 +64,8 @@ struct AffineTransformation {  // y == a*x + b.
   }
 
   std::string DebugString() const {
-    return StringPrintf("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)", a, b);
+    return absl::StrFormat("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)", a,
+                           b);
   }
 };
 
@@ -198,8 +186,8 @@ class BasePositiveTableConstraint : public Constraint {
   ~BasePositiveTableConstraint() override {}
 
   std::string DebugString() const override {
-    return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
-                        arity_, tuple_count_);
+    return absl::StrFormat("AllowedAssignments(arity = %d, tuple_count = %d)",
+                           arity_, tuple_count_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -249,7 +237,7 @@ class BasePositiveTableConstraint : public Constraint {
 
 class PositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  typedef std::unordered_map<int, std::vector<uint64>> ValueBitset;
+  typedef absl::flat_hash_map<int, std::vector<uint64>> ValueBitset;
 
   PositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                           const IntTupleSet& tuples)
@@ -372,8 +360,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("PositiveTableConstraint([%s], %d tuples)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
+    return absl::StrFormat("PositiveTableConstraint([%s], %d tuples)",
+                           JoinDebugStringPtr(vars_, ", "), tuple_count_);
   }
 
  protected:
@@ -631,8 +619,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("CompactPositiveTableConstraint([%s], %d tuples)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
+    return absl::StrFormat("CompactPositiveTableConstraint([%s], %d tuples)",
+                           JoinDebugStringPtr(vars_, ", "), tuple_count_);
   }
 
  private:
@@ -1097,8 +1085,9 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("SmallCompactPositiveTableConstraint([%s], %d tuples)",
-                        JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
+    return absl::StrFormat(
+        "SmallCompactPositiveTableConstraint([%s], %d tuples)",
+        JoinDebugStringPtr(vars_, ", "), tuple_count_);
   }
 
  private:
@@ -1211,18 +1200,9 @@ class TransitionConstraint : public Constraint {
       tmp_vars[1] = vars_[var_index];
       tmp_vars[2] = states[var_index + 1];
       // We always build the compact versions of the tables.
-      const ConstraintSolverParameters& params = solver()->parameters();
       if (num_tuples <= kBitsInUint64) {
         s->AddConstraint(s->RevAlloc(new SmallCompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
-      } else if (params.use_sat_table() &&
-                 num_tuples > params.ac4r_table_threshold()) {
-        s->AddConstraint(
-            BuildSatTableConstraint(s, tmp_vars, transition_table_));
-      } else if (params.use_mdd_table() &&
-                 num_tuples > params.ac4r_table_threshold()) {
-        s->AddConstraint(
-            BuildAc4MddResetTableConstraint(s, transition_table_, tmp_vars));
       } else {
         s->AddConstraint(s->RevAlloc(new CompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
@@ -1245,11 +1225,11 @@ class TransitionConstraint : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf(
+    return absl::StrFormat(
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",
-        JoinDebugStringPtr(vars_, ", ").c_str(), transition_table_.NumTuples(),
-        initial_state_, absl::StrJoin(final_states_, ", ").c_str());
+        JoinDebugStringPtr(vars_, ", "), transition_table_.NumTuples(),
+        initial_state_, absl::StrJoin(final_states_, ", "));
   }
 
  private:
@@ -1272,10 +1252,7 @@ const int TransitionConstraint::kTransitionTupleSize = 3;
 
 Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
                                            const IntTupleSet& tuples) {
-  if (parameters_.use_sat_table()) {
-    return BuildSatTableConstraint(this, vars, tuples);
-  }
-  if (parameters_.use_compact_table() && HasCompactDomains(vars)) {
+  if (HasCompactDomains(vars)) {
     if (tuples.NumTuples() < kBitsInUint64 && parameters_.use_small_table()) {
       return RevAlloc(
           new SmallCompactPositiveTableConstraint(this, vars, tuples));
@@ -1283,15 +1260,7 @@ Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
       return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
     }
   }
-  if (tuples.NumTuples() > parameters_.ac4r_table_threshold()) {
-    if (parameters_.use_mdd_table()) {
-      return BuildAc4MddResetTableConstraint(this, tuples, vars);
-    } else {
-      return BuildAc4TableConstraint(this, tuples, vars);
-    }
-  } else {
-    return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
-  }
+  return RevAlloc(new PositiveTableConstraint(this, vars, tuples));
 }
 
 Constraint* Solver::MakeTransitionConstraint(

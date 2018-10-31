@@ -16,8 +16,8 @@
 #ifndef OR_TOOLS_UTIL_VECTOR_MAP_H_
 #define OR_TOOLS_UTIL_VECTOR_MAP_H_
 
-#include <unordered_map>
 #include <vector>
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/map_util.h"
 
 namespace operations_research {
@@ -62,7 +62,7 @@ class VectorMap {
   }
   // TODO(user): explore a int-type version.
 
-  // Returns wether the element has already been added to the vector-map.
+  // Returns whether the element has already been added to the vector-map.
   bool Contains(const T& element) const {
     return gtl::ContainsKey(map_, element);
   }
@@ -109,7 +109,7 @@ class VectorMap {
 
  private:
   std::vector<T> list_;
-  std::unordered_map<T, int> map_;
+  absl::flat_hash_map<T, int> map_;
 };
 
 }  // namespace operations_research

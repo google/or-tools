@@ -21,7 +21,7 @@
 #else
 class File {};
 #endif  // !__PORTABLE_PLATFORM__
-#include "ortools/base/span.h"
+#include "absl/types/span.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
@@ -41,15 +41,15 @@ class DratWriter {
 
   // Writes a new clause to the DRAT output. Note that the RAT property is only
   // checked on the first literal.
-  void AddClause(absl::Span<Literal> clause);
+  void AddClause(absl::Span<const Literal> clause);
 
   // Writes a "deletion" information about a clause that has been added before
   // to the DRAT output. Note that it is also possible to delete a clause from
   // the problem.
-  void DeleteClause(absl::Span<Literal> clause);
+  void DeleteClause(absl::Span<const Literal> clause);
 
  private:
-  void WriteClause(absl::Span<Literal> clause);
+  void WriteClause(absl::Span<const Literal> clause);
 
   // TODO(user): Support binary format as proof in text format can be large.
   bool in_binary_format_;

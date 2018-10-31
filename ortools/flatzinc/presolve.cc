@@ -15,14 +15,12 @@
 
 #include <map>
 #include <set>
-#include <unordered_set>
 
-#include "ortools/base/join.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/string_view.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/strutil.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/graph/cliques.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -69,8 +67,8 @@ bool AtMostOne0OrAtMostOne1(const std::vector<T>& values) {
   return true;
 }
 
-std::unordered_set<int64> GetValueSet(const Argument& arg) {
-  std::unordered_set<int64> result;
+absl::flat_hash_set<int64> GetValueSet(const Argument& arg) {
+  absl::flat_hash_set<int64> result;
   if (arg.HasOneValue()) {
     result.insert(arg.Value());
   } else {
@@ -146,7 +144,7 @@ bool OverlapsAt(const Argument& array, int pos, const Argument& other) {
 }
 
 template <class T>
-void AppendIfNotInSet(T* value, std::unordered_set<T*>* s,
+void AppendIfNotInSet(T* value, absl::flat_hash_set<T*>* s,
                       std::vector<T*>* vec) {
   if (s->insert(value).second) {
     vec->push_back(value);
@@ -170,7 +168,7 @@ void AppendIfNotInSet(T* value, std::unordered_set<T*>* s,
 // ----- Rule helpers -----
 
 void Presolver::ApplyRule(
-    Constraint* ct, const std::string& rule_name,
+    int index, Constraint* ct, const std::string& rule_name,
     const std::function<Presolver::RuleStatus(Constraint* ct, std::string*)>&
         rule) {
   const std::string before = HASVLOG ? ct->DebugString() : "";
@@ -195,8 +193,8 @@ void Presolver::ApplyRule(
       break;
     }
     case CONSTRAINT_REWRITTEN: {
-      AddConstraintToMapping(ct);
-      AppendIfNotInSet(ct, &changed_constraints_, &changed_constraints_vector_);
+      AddConstraintToMapping(index, ct);
+      changed_constraints_.insert(index);
       if (HASVLOG) {
         const std::string after = ct->DebugString();
         if (after != before) {
@@ -207,13 +205,13 @@ void Presolver::ApplyRule(
     }
     case CONSTRAINT_ALWAYS_FALSE: {
       FZVLOG << "  - constraint is set to false";
-      RemoveConstraintFromMapping(ct);
+      RemoveConstraintFromMapping(index, ct);
       ct->SetAsFalse();
       break;
     }
     case CONSTRAINT_ALWAYS_TRUE: {
       FZVLOG << "  - constraint is set to true";
-      RemoveConstraintFromMapping(ct);
+      RemoveConstraintFromMapping(index, ct);
       ct->MarkAsInactive();
       break;
     }
@@ -224,18 +222,18 @@ void Presolver::MarkChangedVariable(IntegerVariable* var) {
   AppendIfNotInSet(var, &changed_variables_, &changed_variables_vector_);
 }
 
-void Presolver::AddConstraintToMapping(Constraint* ct) {
+void Presolver::AddConstraintToMapping(int index, Constraint* ct) {
   for (const Argument& arg : ct->arguments) {
     for (IntegerVariable* const var : arg.variables) {
-      var_to_constraints_[var].insert(ct);
+      var_to_constraint_indices_[var].insert(index);
     }
   }
 }
 
-void Presolver::RemoveConstraintFromMapping(Constraint* ct) {
+void Presolver::RemoveConstraintFromMapping(int index, Constraint* ct) {
   for (const Argument& arg : ct->arguments) {
     for (IntegerVariable* const var : arg.variables) {
-      var_to_constraints_[var].erase(ct);
+      var_to_constraint_indices_[var].erase(index);
     }
   }
 }
@@ -528,7 +526,7 @@ Presolver::RuleStatus Presolver::Unreify(Constraint* ct, std::string* log) {
   if (!last_argument.HasOneValue()) {
     return NOT_CHANGED;
   }
-  DCHECK(strings::EndsWith(ct->type, "_reif")) << ct->DebugString();
+  DCHECK(absl::EndsWith(ct->type, "_reif")) << ct->DebugString();
   ct->type.resize(ct->type.size() - 5);
   ct->RemoveTargetVariable();
   if (last_argument.Value() == 1) {
@@ -1303,7 +1301,7 @@ Presolver::RuleStatus Presolver::PresolveArrayIntElement(Constraint* ct,
     const std::string after = ct->arguments[2].Var()->DebugString();
     if (before != after) {
       log->append(absl::StrFormat(", reduce target variable from %s to %s",
-                                  before.c_str(), after.c_str()));
+                                  before, after));
       ct->presolve_propagation_done = true;
       return CONSTRAINT_REWRITTEN;
     }
@@ -1480,14 +1478,14 @@ Presolver::RuleStatus Presolver::RegroupLinear(Constraint* ct,
     // Only constants, or size == 0.
     return NOT_CHANGED;
   }
-  std::unordered_map<const IntegerVariable*, int64> coefficients;
+  absl::flat_hash_map<const IntegerVariable*, int64> coefficients;
   const int original_size = ct->arguments[0].values.size();
   for (int i = 0; i < original_size; ++i) {
     coefficients[ct->arguments[1].variables[i]] += ct->arguments[0].values[i];
   }
   if (coefficients.size() != original_size) {  // Duplicate variables.
     log->append("regroup variables");
-    std::unordered_set<const IntegerVariable*> processed;
+    absl::flat_hash_set<const IntegerVariable*> processed;
     int index = 0;
     int zero = 0;
     for (int i = 0; i < original_size; ++i) {
@@ -1550,7 +1548,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
         if (bound < var->domain.Max()) {
           absl::StrAppendFormat(log,
                                 ", intersect %s with [0..%" GG_LL_FORMAT "d]",
-                                var->DebugString().c_str(), bound);
+                                var->DebugString(), bound);
           IntersectVarWithInterval(var, 0, bound);
         }
       }
@@ -1564,7 +1562,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
     if (bound > var->domain.Min()) {
       absl::StrAppendFormat(
           log, ", intersect %s with [%" GG_LL_FORMAT "d .. INT_MAX]",
-          var->DebugString().c_str(), bound);
+          var->DebugString(), bound);
       IntersectVarWithInterval(var, bound, kint64max);
       return CONSTRAINT_ALWAYS_TRUE;
     }
@@ -1964,7 +1962,7 @@ Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
 
   // Rule 6.
   if (ct->arguments[0].IsVariable()) {
-    std::unordered_set<int64> all_values = GetValueSet(ct->arguments[2]);
+    absl::flat_hash_set<int64> all_values = GetValueSet(ct->arguments[2]);
     const std::vector<int64>& array = ct->arguments[1].values;
     const int array_size = array.size();
     if (!all_values.empty()) {
@@ -2004,7 +2002,7 @@ Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
           MarkChangedVariable(ct->arguments[0].Var());
         }
         log->append(absl::StrFormat("reduce index domain to %s",
-                                    ct->arguments[0].Var()->DebugString().c_str()));
+                                    ct->arguments[0].Var()->DebugString()));
       }
     }
   }
@@ -2139,7 +2137,7 @@ Presolver::RuleStatus Presolver::PresolveSimplifyExprElement(Constraint* ct,
         MarkChangedVariable(ct->arguments[0].Var());
       }
       log->append(absl::StrFormat("reduce index domain to %s",
-                                  ct->arguments[0].Var()->DebugString().c_str()));
+                                  ct->arguments[0].Var()->DebugString()));
     }
   }
 
@@ -2772,7 +2770,7 @@ Presolver::RuleStatus Presolver::PresolveTableInt(Constraint* ct,
   const int num_tuples = ct->arguments[1].values.size() / num_vars;
   int ignored_tuples = 0;
   std::vector<int64> new_tuples;
-  std::vector<std::unordered_set<int64>> next_values(num_vars);
+  std::vector<absl::flat_hash_set<int64>> next_values(num_vars);
   for (int t = 0; t < num_tuples; ++t) {
     std::vector<int64> tuple(
         ct->arguments[1].values.begin() + t * num_vars,
@@ -2837,7 +2835,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
 
   const int64 initial_state = ct->arguments[4].Value();
 
-  std::unordered_set<int64> final_states;
+  absl::flat_hash_set<int64> final_states;
   switch (ct->arguments[5].type) {
     case fz::Argument::INT_VALUE: {
       final_states.insert(ct->arguments[5].values[0]);
@@ -2862,7 +2860,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
   }
 
   // Compute the set of reachable state at each time point.
-  std::vector<std::unordered_set<int64>> reachable_states(num_vars + 1);
+  std::vector<absl::flat_hash_set<int64>> reachable_states(num_vars + 1);
   reachable_states[0].insert(initial_state);
   reachable_states[num_vars] = {final_states.begin(), final_states.end()};
 
@@ -2878,7 +2876,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
 
   // Backward.
   for (int time = num_vars - 1; time > 0; --time) {
-    std::unordered_set<int64> new_set;
+    absl::flat_hash_set<int64> new_set;
     const Domain& domain = vars[time]->domain;
     for (const std::vector<int64>& transition : automata) {
       if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
@@ -2894,7 +2892,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
   for (int time = 0; time < num_vars; ++time) {
     Domain& domain = vars[time]->domain;
     // Collect valid values.
-    std::unordered_set<int64> reached_values;
+    absl::flat_hash_set<int64> reached_values;
     for (const std::vector<int64>& transition : automata) {
       if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
       if (!domain.Contains(transition[1])) continue;
@@ -2929,7 +2927,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
       if (HASVLOG) {
         absl::StrAppendFormat(log,
                               "reduce domain of variable %d from %s to %s; ",
-                              time, before.c_str(), vars[time]->DebugString().c_str());
+                              time, before, vars[time]->DebugString());
       }
     }
   }
@@ -2968,114 +2966,114 @@ Presolver::RuleStatus Presolver::PresolveDiffN(Constraint* ct,
   return NOT_CHANGED;
 }
 
-#define CALL_TYPE(ct, t, method)                                      \
-  if (ct->active && ct->type == t) {                                  \
-    ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                         \
-    });                                                               \
+#define CALL_TYPE(index, ct, t, method)                                      \
+  if (ct->active && ct->type == t) {                                         \
+    ApplyRule(index, ct, #method, [this](Constraint* ct, std::string* log) { \
+      return method(ct, log);                                                \
+    });                                                                      \
   }
-#define CALL_PREFIX(ct, t, method)                                    \
-  if (ct->active && strings::StartsWith(ct->type, t)) {               \
-    ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                         \
-    });                                                               \
+#define CALL_PREFIX(index, ct, t, method)                                    \
+  if (ct->active && absl::StartsWith(ct->type, t)) {                         \
+    ApplyRule(index, ct, #method, [this](Constraint* ct, std::string* log) { \
+      return method(ct, log);                                                \
+    });                                                                      \
   }
-#define CALL_SUFFIX(ct, t, method)                                    \
-  if (ct->active && strings::EndsWith(ct->type, t)) {                 \
-    ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                         \
-    });                                                               \
+#define CALL_SUFFIX(index, ct, t, method)                                    \
+  if (ct->active && absl::EndsWith(ct->type, t)) {                           \
+    ApplyRule(index, ct, #method, [this](Constraint* ct, std::string* log) { \
+      return method(ct, log);                                                \
+    });                                                                      \
   }
 
 // Main presolve rule caller.
-void Presolver::PresolveOneConstraint(Constraint* ct) {
-  CALL_SUFFIX(ct, "_reif", Unreify);
-  CALL_TYPE(ct, "bool2int", PresolveBool2Int);
-  if (strings::StartsWith(ct->type, "int_")) {
-    CALL_TYPE(ct, "int_le", PresolveInequalities);
-    CALL_TYPE(ct, "int_lt", PresolveInequalities);
-    CALL_TYPE(ct, "int_ge", PresolveInequalities);
-    CALL_TYPE(ct, "int_gt", PresolveInequalities);
+void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
+  CALL_SUFFIX(index, ct, "_reif", Unreify);
+  CALL_TYPE(index, ct, "bool2int", PresolveBool2Int);
+  if (absl::StartsWith(ct->type, "int_")) {
+    CALL_TYPE(index, ct, "int_le", PresolveInequalities);
+    CALL_TYPE(index, ct, "int_lt", PresolveInequalities);
+    CALL_TYPE(index, ct, "int_ge", PresolveInequalities);
+    CALL_TYPE(index, ct, "int_gt", PresolveInequalities);
   }
-  if (strings::StartsWith(ct->type, "bool_")) {
-    CALL_TYPE(ct, "bool_le", PresolveInequalities);
-    CALL_TYPE(ct, "bool_lt", PresolveInequalities);
-    CALL_TYPE(ct, "bool_ge", PresolveInequalities);
-    CALL_TYPE(ct, "bool_gt", PresolveInequalities);
-  }
-
-  CALL_TYPE(ct, "int_abs", StoreAbs);
-  CALL_TYPE(ct, "int_eq_reif", StoreIntEqReif);
-  CALL_TYPE(ct, "int_ne_reif", SimplifyIntNeReif);
-  CALL_TYPE(ct, "int_eq_reif", RemoveAbsFromIntEqNeReif);
-  CALL_TYPE(ct, "int_ne", RemoveAbsFromIntEqNeReif);
-  CALL_TYPE(ct, "int_ne_reif", RemoveAbsFromIntEqNeReif);
-  CALL_TYPE(ct, "set_in", PresolveSetIn);
-  CALL_TYPE(ct, "set_not_in", PresolveSetNotIn);
-  CALL_TYPE(ct, "set_in_reif", PresolveSetInReif);
-
-  if (strings::StartsWith(ct->type, "int_lin_")) {
-    CALL_TYPE(ct, "int_lin_gt", PresolveIntLinGt);
-    CALL_TYPE(ct, "int_lin_lt", PresolveIntLinLt);
-    CALL_PREFIX(ct, "int_lin_", SimplifyLinear);
-    CALL_PREFIX(ct, "int_lin_", PresolveLinear);
-    CALL_PREFIX(ct, "int_lin_", RegroupLinear);
-    CALL_PREFIX(ct, "int_lin_", SimplifyUnaryLinear);
-    CALL_PREFIX(ct, "int_lin_", SimplifyBinaryLinear);
-    CALL_TYPE(ct, "int_lin_eq", PropagatePositiveLinear);
-    CALL_TYPE(ct, "int_lin_le", PropagatePositiveLinear);
-    CALL_TYPE(ct, "int_lin_ge", PropagatePositiveLinear);
-    CALL_TYPE(ct, "int_lin_eq", CreateLinearTarget);
-    CALL_TYPE(ct, "int_lin_eq", PresolveStoreMapping);
-    CALL_TYPE(ct, "int_lin_eq_reif", CheckIntLinReifBounds);
-    CALL_TYPE(ct, "int_lin_eq_reif", SimplifyIntLinEqReif);
+  if (absl::StartsWith(ct->type, "bool_")) {
+    CALL_TYPE(index, ct, "bool_le", PresolveInequalities);
+    CALL_TYPE(index, ct, "bool_lt", PresolveInequalities);
+    CALL_TYPE(index, ct, "bool_ge", PresolveInequalities);
+    CALL_TYPE(index, ct, "bool_gt", PresolveInequalities);
   }
 
-  if (strings::StartsWith(ct->type, "array_")) {
-    CALL_TYPE(ct, "array_bool_and", PresolveArrayBoolAnd);
-    CALL_TYPE(ct, "array_bool_or", PresolveArrayBoolOr);
-    CALL_TYPE(ct, "array_int_element", PresolveSimplifyElement);
-    CALL_TYPE(ct, "array_bool_element", PresolveSimplifyElement);
-    CALL_TYPE(ct, "array_int_element", PresolveArrayIntElement);
-    CALL_TYPE(ct, "array_var_int_element", PresolveSimplifyExprElement);
-    CALL_TYPE(ct, "array_var_bool_element", PresolveSimplifyExprElement);
+  CALL_TYPE(index, ct, "int_abs", StoreAbs);
+  CALL_TYPE(index, ct, "int_eq_reif", StoreIntEqReif);
+  CALL_TYPE(index, ct, "int_ne_reif", SimplifyIntNeReif);
+  CALL_TYPE(index, ct, "int_eq_reif", RemoveAbsFromIntEqNeReif);
+  CALL_TYPE(index, ct, "int_ne", RemoveAbsFromIntEqNeReif);
+  CALL_TYPE(index, ct, "int_ne_reif", RemoveAbsFromIntEqNeReif);
+  CALL_TYPE(index, ct, "set_in", PresolveSetIn);
+  CALL_TYPE(index, ct, "set_not_in", PresolveSetNotIn);
+  CALL_TYPE(index, ct, "set_in_reif", PresolveSetInReif);
+
+  if (absl::StartsWith(ct->type, "int_lin_")) {
+    CALL_TYPE(index, ct, "int_lin_gt", PresolveIntLinGt);
+    CALL_TYPE(index, ct, "int_lin_lt", PresolveIntLinLt);
+    CALL_PREFIX(index, ct, "int_lin_", SimplifyLinear);
+    CALL_PREFIX(index, ct, "int_lin_", PresolveLinear);
+    CALL_PREFIX(index, ct, "int_lin_", RegroupLinear);
+    CALL_PREFIX(index, ct, "int_lin_", SimplifyUnaryLinear);
+    CALL_PREFIX(index, ct, "int_lin_", SimplifyBinaryLinear);
+    CALL_TYPE(index, ct, "int_lin_eq", PropagatePositiveLinear);
+    CALL_TYPE(index, ct, "int_lin_le", PropagatePositiveLinear);
+    CALL_TYPE(index, ct, "int_lin_ge", PropagatePositiveLinear);
+    CALL_TYPE(index, ct, "int_lin_eq", CreateLinearTarget);
+    CALL_TYPE(index, ct, "int_lin_eq", PresolveStoreMapping);
+    CALL_TYPE(index, ct, "int_lin_eq_reif", CheckIntLinReifBounds);
+    CALL_TYPE(index, ct, "int_lin_eq_reif", SimplifyIntLinEqReif);
   }
 
-  if (strings::StartsWith(ct->type, "int_")) {
-    CALL_TYPE(ct, "int_div", PresolveIntDiv);
-    CALL_TYPE(ct, "int_times", PresolveIntTimes);
-    CALL_TYPE(ct, "int_eq", PresolveIntEq);
-    CALL_TYPE(ct, "int_ne", PresolveIntNe);
-    CALL_TYPE(ct, "int_eq_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "int_ne_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "int_le_reif", RemoveAbsFromIntLeReif);
-    CALL_TYPE(ct, "int_le_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "int_lt_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "int_ge_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "int_gt_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "int_mod", PresolveIntMod);
+  if (absl::StartsWith(ct->type, "array_")) {
+    CALL_TYPE(index, ct, "array_bool_and", PresolveArrayBoolAnd);
+    CALL_TYPE(index, ct, "array_bool_or", PresolveArrayBoolOr);
+    CALL_TYPE(index, ct, "array_int_element", PresolveSimplifyElement);
+    CALL_TYPE(index, ct, "array_bool_element", PresolveSimplifyElement);
+    CALL_TYPE(index, ct, "array_int_element", PresolveArrayIntElement);
+    CALL_TYPE(index, ct, "array_var_int_element", PresolveSimplifyExprElement);
+    CALL_TYPE(index, ct, "array_var_bool_element", PresolveSimplifyExprElement);
   }
 
-  if (strings::StartsWith(ct->type, "bool_")) {
-    CALL_TYPE(ct, "bool_eq", PresolveIntEq);
-    CALL_TYPE(ct, "bool_ne", PresolveIntNe);
-    CALL_TYPE(ct, "bool_not", PresolveIntNe);
-    CALL_TYPE(ct, "bool_eq_reif", PresolveBoolEqNeReif);
-    CALL_TYPE(ct, "bool_ne_reif", PresolveBoolEqNeReif);
-    CALL_TYPE(ct, "bool_xor", PresolveBoolXor);
-    CALL_TYPE(ct, "bool_ne", PresolveBoolNot);
-    CALL_TYPE(ct, "bool_not", PresolveBoolNot);
-    CALL_TYPE(ct, "bool_clause", PresolveBoolClause);
-    CALL_TYPE(ct, "bool_eq_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "bool_ne_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "bool_le_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "bool_lt_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "bool_ge_reif", PropagateReifiedComparisons);
-    CALL_TYPE(ct, "bool_gt_reif", PropagateReifiedComparisons);
+  if (absl::StartsWith(ct->type, "int_")) {
+    CALL_TYPE(index, ct, "int_div", PresolveIntDiv);
+    CALL_TYPE(index, ct, "int_times", PresolveIntTimes);
+    CALL_TYPE(index, ct, "int_eq", PresolveIntEq);
+    CALL_TYPE(index, ct, "int_ne", PresolveIntNe);
+    CALL_TYPE(index, ct, "int_eq_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "int_ne_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "int_le_reif", RemoveAbsFromIntLeReif);
+    CALL_TYPE(index, ct, "int_le_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "int_lt_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "int_ge_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "int_gt_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "int_mod", PresolveIntMod);
   }
-  CALL_TYPE(ct, "table_int", PresolveTableInt);
-  CALL_TYPE(ct, "diffn", PresolveDiffN);
-  CALL_TYPE(ct, "regular", PresolveRegular);
+
+  if (absl::StartsWith(ct->type, "bool_")) {
+    CALL_TYPE(index, ct, "bool_eq", PresolveIntEq);
+    CALL_TYPE(index, ct, "bool_ne", PresolveIntNe);
+    CALL_TYPE(index, ct, "bool_not", PresolveIntNe);
+    CALL_TYPE(index, ct, "bool_eq_reif", PresolveBoolEqNeReif);
+    CALL_TYPE(index, ct, "bool_ne_reif", PresolveBoolEqNeReif);
+    CALL_TYPE(index, ct, "bool_xor", PresolveBoolXor);
+    CALL_TYPE(index, ct, "bool_ne", PresolveBoolNot);
+    CALL_TYPE(index, ct, "bool_not", PresolveBoolNot);
+    CALL_TYPE(index, ct, "bool_clause", PresolveBoolClause);
+    CALL_TYPE(index, ct, "bool_eq_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "bool_ne_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "bool_le_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "bool_lt_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "bool_ge_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "bool_gt_reif", PropagateReifiedComparisons);
+  }
+  CALL_TYPE(index, ct, "table_int", PresolveTableInt);
+  CALL_TYPE(index, ct, "diffn", PresolveDiffN);
+  CALL_TYPE(index, ct, "regular", PresolveRegular);
 
   // Last rule: if the target variable of a constraint is fixed, removed it
   // the target part.
@@ -3111,11 +3109,11 @@ void Presolver::StoreDifference(Constraint* ct) {
 }
 
 void Presolver::MergeIntEqNe(Model* model) {
-  std::unordered_map<const IntegerVariable*,
-                     std::unordered_map<int64, IntegerVariable*>>
+  absl::flat_hash_map<const IntegerVariable*,
+                      absl::flat_hash_map<int64, IntegerVariable*>>
       int_eq_reif_map;
-  std::unordered_map<const IntegerVariable*,
-                     std::unordered_map<int64, IntegerVariable*>>
+  absl::flat_hash_map<const IntegerVariable*,
+                      absl::flat_hash_map<int64, IntegerVariable*>>
       int_ne_reif_map;
   for (Constraint* const ct : model->constraints()) {
     if (!ct->active) continue;
@@ -3346,10 +3344,12 @@ bool Presolver::RegroupDifferent(Model* model) {
 }
 
 bool Presolver::Run(Model* model) {
+  auto constraint = [model](int index) { return model->constraints()[index]; };
+
   // Rebuild var_constraint map if empty.
-  if (var_to_constraints_.empty()) {
-    for (Constraint* const ct : model->constraints()) {
-      AddConstraintToMapping(ct);
+  if (var_to_constraint_indices_.empty()) {
+    for (int i = 0; i < model->constraints().size(); ++i) {
+      AddConstraintToMapping(i, constraint(i));
     }
   }
 
@@ -3360,14 +3360,16 @@ bool Presolver::Run(Model* model) {
     // Some new substitutions were introduced. Let's process them.
     SubstituteEverywhere(model);
     var_representative_map_.clear();
+    var_representative_vector_.clear();
   }
 
   bool changed_since_start = false;
   // Let's presolve the bool2int predicates first.
-  for (Constraint* const ct : model->constraints()) {
+  for (int index = 0; index < model->constraints().size(); ++index) {
+    Constraint* const ct = constraint(index);
     if (ct->active && ct->type == "bool2int") {
       std::string log;
-      ApplyRule(ct, "PresolveBool2Int",
+      ApplyRule(index, ct, "PresolveBool2Int",
                 [this](Constraint* ct, std::string* log) {
                   return PresolveBool2Int(ct, log);
                 });
@@ -3377,15 +3379,17 @@ bool Presolver::Run(Model* model) {
     // Some new substitutions were introduced. Let's process them.
     SubstituteEverywhere(model);
     var_representative_map_.clear();
+    var_representative_vector_.clear();
   }
 
   {
     FZVLOG << "  - processing initial model with "
            << model->constraints().size() << " constraints." << FZENDL;
-    for (Constraint* const ct : model->constraints()) {
+    for (int index = 0; index < model->constraints().size(); ++index) {
+      Constraint* const ct = constraint(index);
       if (ct->active) {
         // TODO(user):  Optim: remove from postponed queue.
-        PresolveOneConstraint(ct);
+        PresolveOneConstraint(index, ct);
         if (!ct->active || ct->type == "false_constraint") {
           changed_since_start = true;
         }
@@ -3393,6 +3397,7 @@ bool Presolver::Run(Model* model) {
       if (!var_representative_map_.empty()) {
         SubstituteEverywhere(model);
         var_representative_map_.clear();
+        var_representative_vector_.clear();
       }
     }
     FZVLOG << "  - done" << FZENDL;
@@ -3404,41 +3409,44 @@ bool Presolver::Run(Model* model) {
     loops++;
     FZVLOG << "--- loop " << loops << FZENDL;
     changed_since_start = true;
-    std::unordered_set<Constraint*> to_scan;
-    std::vector<Constraint*> to_scan_vector;
+    std::set<int> to_scan;
 
     for (IntegerVariable* var : changed_variables_vector_) {
-      for (Constraint* ct : var_to_constraints_[var]) {
+      for (const int index : var_to_constraint_indices_[var]) {
+        Constraint* const ct = constraint(index);
         if (ct->active) {
-          AppendIfNotInSet(ct, &to_scan, &to_scan_vector);
+          to_scan.insert(index);
         }
       }
     }
-    for (Constraint* ct : changed_constraints_vector_) {
+    for (const int index : changed_constraints_) {
+      Constraint* const ct = constraint(index);
       if (ct->active) {
-        AppendIfNotInSet(ct, &to_scan, &to_scan_vector);
+        to_scan.insert(index);
       }
     }
 
     changed_variables_.clear();
-    changed_constraints_.clear();
     changed_variables_vector_.clear();
-    changed_constraints_vector_.clear();
+    changed_constraints_.clear();
 
     var_representative_map_.clear();
+    var_representative_vector_.clear();
+
     FZVLOG << "  - processing " << to_scan.size() << " constraints" << FZENDL;
-    for (Constraint* const ct : to_scan_vector) {
+    for (const int index : to_scan) {
+      Constraint* const ct = constraint(index);
       if (!var_representative_map_.empty()) {
-        AppendIfNotInSet(ct, &changed_constraints_,
-                         &changed_constraints_vector_);
+        changed_constraints_.insert(index);
       } else if (ct->active) {
-        PresolveOneConstraint(ct);
+        PresolveOneConstraint(index, ct);
       }
     }
     if (!var_representative_map_.empty()) {
       // Some new substitutions were introduced. Let's process them.
       SubstituteEverywhere(model);
       var_representative_map_.clear();
+      var_representative_vector_.clear();
     }
   }
 
@@ -3508,6 +3516,7 @@ void Presolver::AddVariableSubstition(IntegerVariable* from,
                     from->temporary));
     from->active = false;
     var_representative_map_[from] = to;
+    var_representative_vector_.push_back(from);
   }
 }
 
@@ -3531,15 +3540,17 @@ IntegerVariable* Presolver::FindRepresentativeOfVar(IntegerVariable* var) {
 }
 
 void Presolver::SubstituteEverywhere(Model* model) {
+  auto constraint = [model](int index) { return model->constraints()[index]; };
+
   // Collected impacted constraints.
-  std::unordered_set<Constraint*> impacted;
-  for (const auto& p : var_representative_map_) {
-    const std::unordered_set<Constraint*>& contains =
-        var_to_constraints_[p.first];
+  absl::flat_hash_set<int> impacted;
+  for (const IntegerVariable* var : var_representative_vector_) {
+    const std::set<int>& contains = var_to_constraint_indices_[var];
     impacted.insert(contains.begin(), contains.end());
   }
   // Rewrite the constraints.
-  for (Constraint* const ct : impacted) {
+  for (const int index : impacted) {
+    Constraint* const ct = constraint(index);
     if (ct != nullptr && ct->active) {
       for (int i = 0; i < ct->arguments.size(); ++i) {
         Argument& argument = ct->arguments[i];
@@ -3551,7 +3562,7 @@ void Presolver::SubstituteEverywhere(Model* model) {
               IntegerVariable* const new_var = FindRepresentativeOfVar(old_var);
               if (new_var != old_var) {
                 argument.variables[i] = new_var;
-                var_to_constraints_[new_var].insert(ct);
+                var_to_constraint_indices_[new_var].insert(index);
               }
             }
             break;
@@ -3566,8 +3577,8 @@ void Presolver::SubstituteEverywhere(Model* model) {
     }
   }
   // Cleanup the outdated var_to_constraints sets.
-  for (const auto& p : var_representative_map_) {
-    var_to_constraints_[p.first].clear();
+  for (IntegerVariable* var : var_representative_vector_) {
+    var_to_constraint_indices_[var].clear();
   }
   // Rewrite the search.
   for (Annotation* const ann : model->mutable_search_annotations()) {
@@ -3724,7 +3735,7 @@ void CheckRegroupStart(Constraint* ct, Constraint** start,
 //  - *_reif: arity
 //  - otherwise arity + 100.
 int SortWeight(Constraint* ct) {
-  int arity = strings::EndsWith(ct->type, "_reif") ? 0 : 100;
+  int arity = absl::EndsWith(ct->type, "_reif") ? 0 : 100;
   for (const Argument& arg : ct->arguments) {
     arity += arg.variables.size();
   }
@@ -3732,7 +3743,7 @@ int SortWeight(Constraint* ct) {
 }
 
 void CleanUpVariableWithMultipleDefiningConstraints(Model* model) {
-  std::unordered_map<IntegerVariable*, std::vector<Constraint*>> ct_var_map;
+  absl::flat_hash_map<IntegerVariable*, std::vector<Constraint*>> ct_var_map;
   for (Constraint* const ct : model->constraints()) {
     if (ct->target_variable != nullptr) {
       ct_var_map[ct->target_variable].push_back(ct);
@@ -3785,6 +3796,8 @@ bool IsStrictPrefix(const std::vector<T>& v1, const std::vector<T>& v2) {
 }  // namespace
 
 void Presolver::CleanUpModelForTheCpSolver(Model* model, bool use_sat) {
+  auto constraint = [model](int index) { return model->constraints()[index]; };
+
   // First pass.
   for (Constraint* const ct : model->constraints()) {
     // Treat float variables as int variables, convert constraints to int.
@@ -3826,7 +3839,7 @@ void Presolver::CleanUpModelForTheCpSolver(Model* model, bool use_sat) {
     }
     if (id == "array_var_int_element") {
       if (ct->target_variable != nullptr) {
-        std::unordered_set<IntegerVariable*> variables_in_array;
+        absl::flat_hash_set<IntegerVariable*> variables_in_array;
         for (IntegerVariable* const var : ct->arguments[1].variables) {
           variables_in_array.insert(var);
         }
@@ -3891,23 +3904,25 @@ void Presolver::CleanUpModelForTheCpSolver(Model* model, bool use_sat) {
   Constraint* start = nullptr;
   std::vector<IntegerVariable*> chain;
   std::vector<IntegerVariable*> carry_over;
-  var_to_constraints_.clear();
-  for (Constraint* const ct : model->constraints()) {
+  var_to_constraint_indices_.clear();
+  for (int index = 0; index < model->constraints().size(); ++index) {
+    Constraint* const ct = constraint(index);
     for (const Argument& arg : ct->arguments) {
       for (IntegerVariable* const var : arg.variables) {
-        var_to_constraints_[var].insert(ct);
+        var_to_constraint_indices_[var].insert(index);
       }
     }
   }
 
   // First version. The start is recognized by the double var in the max.
   //   tmp1 = std::max(v1, v1)
-  for (Constraint* const ct : model->constraints()) {
+  for (int index = 0; index < model->constraints().size(); ++index) {
+    Constraint* const ct = constraint(index);
     if (start == nullptr) {
       CheckRegroupStart(ct, &start, &chain, &carry_over);
     } else if (ct->type == start->type &&
                ct->arguments[1].Var() == carry_over.back() &&
-               var_to_constraints_[ct->arguments[0].Var()].size() <= 2) {
+               var_to_constraint_indices_[ct->arguments[0].Var()].size() <= 2) {
       chain.push_back(ct->arguments[0].Var());
       carry_over.push_back(ct->arguments[2].Var());
       ct->active = false;

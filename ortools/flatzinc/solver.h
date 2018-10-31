@@ -14,9 +14,8 @@
 #ifndef OR_TOOLS_FLATZINC_SOLVER_H_
 #define OR_TOOLS_FLATZINC_SOLVER_H_
 
-#include <unordered_map>
-#include <unordered_set>
-
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/reporting.h"
@@ -48,7 +47,6 @@ struct FlatzincParameters {
   bool logging;
   bool statistics;
   bool verbose_impact;
-  double restart_log_size;
   bool run_all_heuristics;
   int heuristic_period;
   int log_period;
@@ -136,15 +134,15 @@ class Solver {
   ModelStatistics statistics_;
   SolverData data_;
   std::vector<IntVar*> active_variables_;
-  std::unordered_map<IntVar*, int> extracted_occurrences_;
-  std::unordered_set<IntegerVariable*> implied_variables_;
+  absl::flat_hash_map<IntVar*, int> extracted_occurrences_;
+  absl::flat_hash_set<IntegerVariable*> implied_variables_;
   std::string search_name_;
   IntVar* objective_var_;
   OptimizeVar* objective_monitor_;
   // Default Search Phase (to get stats).
   DecisionBuilder* default_phase_;
   // Stored solutions.
-  std::vector<std::unordered_map<IntegerVariable*, int64>> stored_values_;
+  std::vector<absl::flat_hash_map<IntegerVariable*, int64>> stored_values_;
   operations_research::Solver* solver_;
 };
 }  // namespace fz

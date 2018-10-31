@@ -13,14 +13,12 @@
 
 #include "ortools/data/rcpsp_parser.h"
 
+#include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
-#include "ortools/base/numbers.h"
-#include "ortools/base/split.h"
-#include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/data/rcpsp.pb.h"
-
-using ::absl::delimiter::AnyOf;
 
 namespace operations_research {
 namespace data {
@@ -41,9 +39,9 @@ bool RcpspParser::ParseFile(const std::string& file_name) {
     return false;
   }
 
-  const bool is_rcpsp_max = strings::EndsWith(file_name, ".sch") ||
-                            strings::EndsWith(file_name, ".SCH");
-  const bool is_patterson = strings::EndsWith(file_name, ".rcp");
+  const bool is_rcpsp_max =
+      absl::EndsWith(file_name, ".sch") || absl::EndsWith(file_name, ".SCH");
+  const bool is_patterson = absl::EndsWith(file_name, ".rcp");
   load_status_ = HEADER_SECTION;
 
   for (const std::string& line : FileLines(file_name)) {
@@ -79,11 +77,11 @@ void RcpspParser::SetNumDeclaredTasks(int t) {
 }
 
 void RcpspParser::ProcessRcpspLine(const std::string& line) {
-  if (strings::StartsWith(line, "***")) return;
-  if (strings::StartsWith(line, "---")) return;
+  if (absl::StartsWith(line, "***")) return;
+  if (absl::StartsWith(line, "---")) return;
 
   const std::vector<std::string> words =
-      absl::StrSplit(line, AnyOf(" :\t\r"), absl::SkipEmpty());
+      absl::StrSplit(line, absl::ByAnyChar(" :\t\r"), absl::SkipEmpty());
 
   if (words.empty()) return;
 
@@ -256,7 +254,7 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
 
 void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
   const std::vector<std::string> words =
-      absl::StrSplit(line, AnyOf(" :\t[]\r"), absl::SkipEmpty());
+      absl::StrSplit(line, absl::ByAnyChar(" :\t[]\r"), absl::SkipEmpty());
 
   switch (load_status_) {
     case NOT_STARTED: {
@@ -485,7 +483,7 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
 
 void RcpspParser::ProcessPattersonLine(const std::string& line) {
   const std::vector<std::string> words =
-      absl::StrSplit(line, AnyOf(" :\t[]\r"), absl::SkipEmpty());
+      absl::StrSplit(line, absl::ByAnyChar(" :\t[]\r"), absl::SkipEmpty());
 
   if (words.empty()) return;
 

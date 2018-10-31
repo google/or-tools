@@ -18,7 +18,7 @@
 // generalized: we have N cards, each with K different symbols, and
 // there are N different symbols overall.
 //
-// This is a feasability problem. We transform that into an
+// This is a feasibility problem. We transform that into an
 // optimization problem where we penalize cards whose intersection is
 // of cardinality different from 1. A feasible solution of the
 // original problem is a solution with a zero cost.
@@ -32,11 +32,11 @@
 #include <algorithm>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/random.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
 
@@ -640,7 +640,8 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   std::vector<std::vector<IntVar*> > card_symbol_vars(num_cards);
   std::vector<IntVar*> all_card_symbol_vars;
   for (int card_index = 0; card_index < num_cards; ++card_index) {
-    solver.MakeBoolVarArray(num_symbols, StringPrintf("card_%i_", card_index),
+    solver.MakeBoolVarArray(num_symbols,
+                            absl::StrFormat("card_%i_", card_index),
                             &card_symbol_vars[card_index]);
     for (int symbol_index = 0; symbol_index < num_symbols; ++symbol_index) {
       all_card_symbol_vars.push_back(

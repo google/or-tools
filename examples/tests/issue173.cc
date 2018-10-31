@@ -19,7 +19,7 @@ void SolveLP() {
 }
 
 void BreakLoop() {
-  for (int i = 0; i < 50000; i++) {
+  for (int i = 0; i < 500; i++) {
     SolveLP();
   }
 }

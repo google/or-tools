@@ -11,14 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
+import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class Diet {
 
@@ -26,29 +25,22 @@ public class Diet {
     System.loadLibrary("jniortools");
   }
 
-
-  /**
-   *
-   * Solves the Diet problem.
-   * See http://www.hakank.org/google_or_tools/diet1.py
-   *
-   */
+  /** Solves the Diet problem. See http://www.hakank.org/google_or_tools/diet1.py */
   private static void solve() {
 
     Solver solver = new Solver("Diet");
 
     int n = 4;
-    int[] price  = { 50, 20, 30, 80}; // in cents
+    int[] price = {50, 20, 30, 80}; // in cents
 
     // requirements for each nutrition type
-    int[] limits = {500,  6, 10,  8};
+    int[] limits = {500, 6, 10, 8};
 
     // nutritions for each product
-    int[] calories  = {400, 200, 150, 500};
+    int[] calories = {400, 200, 150, 500};
     int[] chocolate = {3, 2, 0, 0};
-    int[] sugar     = {2, 2, 4, 4};
-    int[] fat       = {2, 4, 1, 5};
-
+    int[] sugar = {2, 2, 4, 4};
+    int[] fat = {2, 4, 1, 5};
 
     //
     // Variables
@@ -60,18 +52,13 @@ public class Diet {
     //
     // Constraints
     //
-    solver.addConstraint(
-        solver.makeScalProdGreaterOrEqual(x, calories, limits[0]));
+    solver.addConstraint(solver.makeScalProdGreaterOrEqual(x, calories, limits[0]));
 
-    solver.addConstraint(
-        solver.makeScalProdGreaterOrEqual(x,chocolate, limits[1]));
+    solver.addConstraint(solver.makeScalProdGreaterOrEqual(x, chocolate, limits[1]));
 
-    solver.addConstraint(
-        solver.makeScalProdGreaterOrEqual(x, sugar, limits[2]));
+    solver.addConstraint(solver.makeScalProdGreaterOrEqual(x, sugar, limits[2]));
 
-    solver.addConstraint(
-        solver.makeScalProdGreaterOrEqual(x, fat, limits[3]));
-
+    solver.addConstraint(solver.makeScalProdGreaterOrEqual(x, fat, limits[3]));
 
     //
     // Objective
@@ -81,14 +68,12 @@ public class Diet {
     //
     // Search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.CHOOSE_PATH,
-                                          solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.makePhase(x, solver.CHOOSE_PATH, solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db, obj);
     while (solver.nextSolution()) {
       System.out.println("cost: " + cost.value());
       System.out.print("x: ");
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.println();
@@ -101,7 +86,6 @@ public class Diet {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

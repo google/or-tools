@@ -15,8 +15,8 @@
 
 #include <cmath>
 #include <limits>
+#include "absl/strings/str_cat.h"
 #include "ortools/base/accurate_sum.h"
-#include "ortools/base/join.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
 
@@ -32,21 +32,18 @@ std::string FindErrorInMPVariable(const MPVariableProto& variable) {
       variable.lower_bound() == kInfinity ||
       variable.upper_bound() == -kInfinity ||
       variable.lower_bound() > variable.upper_bound()) {
-    return absl::StrCat("Infeasible bounds: [",
-                        absl::LegacyPrecision(variable.lower_bound()), ", ",
-                        absl::LegacyPrecision(variable.upper_bound()), "]");
+    return absl::StrCat("Infeasible bounds: [", (variable.lower_bound()), ", ",
+                        (variable.upper_bound()), "]");
   }
   if (variable.is_integer() &&
       ceil(variable.lower_bound()) > floor(variable.upper_bound())) {
-    return absl::StrCat("Infeasible bounds for integer variable: [",
-                        absl::LegacyPrecision(variable.lower_bound()), ", ",
-                        absl::LegacyPrecision(variable.upper_bound()), "]",
-                        " translate to the empty set");
+    return absl::StrCat(
+        "Infeasible bounds for integer variable: [", (variable.lower_bound()),
+        ", ", (variable.upper_bound()), "]", " translate to the empty set");
   }
   if (!std::isfinite(variable.objective_coefficient())) {
-    return absl::StrCat(
-        "Invalid objective_coefficient: ",
-        absl::LegacyPrecision(variable.objective_coefficient()));
+    return absl::StrCat("Invalid objective_coefficient: ",
+                        (variable.objective_coefficient()));
   }
   return std::string();
 }
@@ -61,9 +58,8 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
       constraint.lower_bound() == kInfinity ||
       constraint.upper_bound() == -kInfinity ||
       constraint.lower_bound() > constraint.upper_bound()) {
-    return absl::StrCat("Infeasible bounds: [",
-                        absl::LegacyPrecision(constraint.lower_bound()), ", ",
-                        absl::LegacyPrecision(constraint.upper_bound()), "]");
+    return absl::StrCat("Infeasible bounds: [", (constraint.lower_bound()),
+                        ", ", (constraint.upper_bound()), "]");
   }
 
   // TODO(user): clarify explicitly, at least in a comment, whether we want
@@ -84,8 +80,7 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
     }
     const double coeff = constraint.coefficient(i);
     if (!std::isfinite(coeff)) {
-      return absl::StrCat("coefficient(", i, ")=", absl::LegacyPrecision(coeff),
-                          " is invalid");
+      return absl::StrCat("coefficient(", i, ")=", (coeff), " is invalid");
     }
   }
 
@@ -127,8 +122,7 @@ std::string FindErrorInSolutionHint(
     }
     var_in_hint[var_index] = true;
     if (!std::isfinite(solution_hint.var_value(i))) {
-      return absl::StrCat("var_value(", i, ")=",
-                          absl::LegacyPrecision(solution_hint.var_value(i)),
+      return absl::StrCat("var_value(", i, ")=", (solution_hint.var_value(i)),
                           " is not a finite number");
     }
   }
@@ -146,7 +140,7 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
 
   if (!std::isfinite(model.objective_offset())) {
     return absl::StrCat("Invalid objective_offset: ",
-                        absl::LegacyPrecision(model.objective_offset()));
+                        (model.objective_offset()));
   }
   const int num_vars = model.variable_size();
   const int num_cts = model.constraint_size();
@@ -232,11 +226,9 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
     if (!IsSmallerWithinTolerance(value, ub, tolerance) ||
         !IsSmallerWithinTolerance(lb, value, tolerance)) {
       return absl::StrCat("Variable '", model.variable(var_index).name(),
-                          "' is set to ", absl::LegacyPrecision(value),
-                          " which is not in the variable bounds [",
-                          absl::LegacyPrecision(lb), ", ",
-                          absl::LegacyPrecision(ub), "] modulo a tolerance of ",
-                          absl::LegacyPrecision(tolerance), ".");
+                          "' is set to ", (value),
+                          " which is not in the variable bounds [", (lb), ", ",
+                          (ub), "] modulo a tolerance of ", (tolerance), ".");
     }
   }
 
@@ -254,10 +246,8 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
         !IsSmallerWithinTolerance(lb, activity.Value(), tolerance)) {
       return absl::StrCat(
           "Constraint '", model.constraint(cst_index).name(), "' has activity ",
-          absl::LegacyPrecision(activity.Value()),
-          " which is not in the constraint bounds [", absl::LegacyPrecision(lb),
-          ", ", absl::LegacyPrecision(ub), "] modulo a tolerance of ",
-          absl::LegacyPrecision(tolerance), ".");
+          (activity.Value()), " which is not in the constraint bounds [", (lb),
+          ", ", (ub), "] modulo a tolerance of ", (tolerance), ".");
     }
   }
 

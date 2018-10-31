@@ -14,7 +14,7 @@
 #include "ortools/glop/markowitz.h"
 
 #include <limits>
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_format.h"
 #include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {

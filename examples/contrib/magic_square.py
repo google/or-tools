@@ -26,7 +26,7 @@ import sys
 from ortools.constraint_solver import pywrapcp
 
 
-def main(n=4):
+def main(n, limit):
   # Create the solver.
   solver = pywrapcp.Solver("n-queens")
 
@@ -91,6 +91,8 @@ def main(n=4):
 
     print()
     num_solutions += 1
+    if num_solutions > limit:
+      break
   solver.EndSearch()
 
   print()
@@ -101,7 +103,11 @@ def main(n=4):
 
 
 n = 4
+limit=100
 if __name__ == "__main__":
   if len(sys.argv) > 1:
     n = int(sys.argv[1])
-  main(n)
+  if len(sys.argv) > 2:
+    limit = int(sys.argv[2])
+
+  main(n, limit)

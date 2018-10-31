@@ -45,72 +45,71 @@
 import com.google.ortools.linearsolver.*;
 
 public class CoinsGridMIP {
-	static {
-		System.loadLibrary("jniortools");
-	}
+  static {
+    System.loadLibrary("jniortools");
+  }
 
-	private static MPSolver createSolver (String solverType) {
-		return new MPSolver("MIPDiet",
-				MPSolver.OptimizationProblemType.valueOf(solverType));
-	}
+  private static MPSolver createSolver(String solverType) {
+    return new MPSolver("MIPDiet", MPSolver.OptimizationProblemType.valueOf(solverType));
+  }
 
-	private static void solve(String solverType) {
-		MPSolver solver = createSolver(solverType);
+  private static void solve(String solverType) {
+    MPSolver solver = createSolver(solverType);
 
-		/** invariants */
-		int n = 31;
-		int c = 14;
+    /** invariants */
+    int n = 31;
+    int c = 14;
 
-		/** variables */
-		MPVariable[][] x = new MPVariable[n][n];
-		for (int i = 0; i < n; i ++) {
-			x[i] = solver.makeBoolVarArray(n);
-		}
+    /** variables */
+    MPVariable[][] x = new MPVariable[n][n];
+    for (int i = 0; i < n; i++) {
+      x[i] = solver.makeBoolVarArray(n);
+    }
 
-		/** constraints & objective */
-		MPConstraint[] constraints = new MPConstraint[2 * n];
-		MPObjective obj = solver.objective();
+    /** constraints & objective */
+    MPConstraint[] constraints = new MPConstraint[2 * n];
+    MPObjective obj = solver.objective();
 
-		for (int i = 0; i < n; i ++) {
-			constraints[2*i] = solver.makeConstraint(c, c);
-			constraints[2*i + 1] = solver.makeConstraint(c, c);
+    for (int i = 0; i < n; i++) {
+      constraints[2 * i] = solver.makeConstraint(c, c);
+      constraints[2 * i + 1] = solver.makeConstraint(c, c);
 
-			for (int j = 0; j < n; j ++) {
-				constraints[2*i].setCoefficient(x[i][j], 1);
-				constraints[2*i + 1].setCoefficient(x[j][i], 1);
+      for (int j = 0; j < n; j++) {
+        constraints[2 * i].setCoefficient(x[i][j], 1);
+        constraints[2 * i + 1].setCoefficient(x[j][i], 1);
 
-				obj.setCoefficient(x[i][j], (i-j) * (j-i));
-			}
-		}
+        obj.setCoefficient(x[i][j], (i - j) * (j - i));
+      }
+    }
 
-		solver.solve();
+    solver.solve();
 
-		for (int i = 0; i < n; i ++) {
-			for (int j = 0; j < n; j ++) {
-				System.out.print((int) x[i][j].solutionValue() + " ");
-			}
-			System.out.println();
-		}
-	}
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        System.out.print((int) x[i][j].solutionValue() + " ");
+      }
+      System.out.println();
+    }
+  }
 
-	public static void main(String[] args) {
-		try {
-			System.out.println("---- Integer programming example with SCIP (recommended) ----");
-			solve("SCIP_MIXED_INTEGER_PROGRAMMING");
-		} catch (java.lang.IllegalArgumentException e) {
-			System.err.println("Bad solver type: " + e);
-		}
-		try {
-			System.out.println("---- Integer programming example with CBC ----");
-			solve("CBC_MIXED_INTEGER_PROGRAMMING");
-		} catch (java.lang.IllegalArgumentException e) {
-			System.err.println("Bad solver type: " + e);
-		}
-		try {
-			System.out.println("---- Integer programming example with GLPK ----");
-			solve("GLPK_MIXED_INTEGER_PROGRAMMING");
-		} catch (java.lang.IllegalArgumentException e) {
-			System.err.println("Bad solver type: " + e);
-		}
-	}
+  public static void main(String[] args) {
+    try {
+      System.out.println("---- Integer programming example with SCIP (recommended) ----");
+      solve("SCIP_MIXED_INTEGER_PROGRAMMING");
+    } catch (java.lang.IllegalArgumentException e) {
+      System.err.println("Bad solver type: " + e);
+    }
+    try {
+      System.out.println("---- Integer programming example with CBC ----");
+      solve("CBC_MIXED_INTEGER_PROGRAMMING");
+    } catch (java.lang.IllegalArgumentException e) {
+      System.err.println("Bad solver type: " + e);
+    }
+    try {
+      System.out.println("---- Integer programming example with GLPK ----");
+      solve("GLPK_MIXED_INTEGER_PROGRAMMING");
+    } catch (java.lang.IllegalArgumentException e) {
+      System.err.println("Bad solver type: " + e);
+    }
+  }
 }

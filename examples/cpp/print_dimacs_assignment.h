@@ -21,10 +21,10 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 
@@ -46,13 +46,13 @@ void PrintDimacsAssignmentProblem(
   CHECK_OK(file::Open(output_filename, "w", &output, file::Defaults()));
   const GraphType& graph(assignment.Graph());
   std::string output_line =
-      StringPrintf("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
+      absl::StrFormat("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
   CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
 
   for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
            node_it(assignment);
        node_it.Ok(); node_it.Next()) {
-    output_line = StringPrintf("n %d\n", node_it.Index() + 1);
+    output_line = absl::StrFormat("n %d\n", node_it.Index() + 1);
     CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
   }
 
@@ -61,8 +61,8 @@ void PrintDimacsAssignmentProblem(
   for (typename GraphType::ArcIterator arc_it(assignment.Graph()); arc_it.Ok();
        arc_it.Next()) {
     ArcIndex arc = arc_it.Index();
-    output_line = StringPrintf("a %d %d %lld\n", graph.Tail(arc) + 1,
-                               graph.Head(arc) + 1, assignment.ArcCost(arc));
+    output_line = absl::StrFormat("a %d %d %d\n", graph.Tail(arc) + 1,
+                                  graph.Head(arc) + 1, assignment.ArcCost(arc));
     CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
   }
 }

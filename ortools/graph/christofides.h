@@ -20,8 +20,7 @@
 #ifndef OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 #define OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 
-#include <unordered_map>
-
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/eulerian_path.h"
@@ -104,7 +103,7 @@ std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
   // and constraints ensuring that each node appears in exactly one selected
   // arc. The objective is to minimize the sum of the weights of selected arcs.
   // It is assumed the graph is symmetrical.
-  std::unordered_map<ArcIndex, ArcIndex> variable_indices;
+  absl::flat_hash_map<ArcIndex, ArcIndex> variable_indices;
   for (NodeIndex node : graph.AllNodes()) {
     // Creating arc-selection Boolean variable.
     for (const ArcIndex arc : graph.OutgoingArcs(node)) {

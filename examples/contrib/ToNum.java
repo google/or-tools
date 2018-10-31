@@ -10,13 +10,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class ToNum {
 
@@ -24,31 +23,24 @@ public class ToNum {
     System.loadLibrary("jniortools");
   }
 
-
   /**
+   * toNum(solver, a, num, base)
    *
-   *  toNum(solver, a, num, base)
-   *
-   *  channelling between the array a and the number num
-   *
+   * <p>channelling between the array a and the number num
    */
   private static void toNum(Solver solver, IntVar[] a, IntVar num, int base) {
     int len = a.length;
 
     IntVar[] tmp = new IntVar[len];
-    for(int i = 0; i < len; i++) {
-      tmp[i] = solver.makeProd(a[i], (int)Math.pow(base,(len-i-1))).var();
+    for (int i = 0; i < len; i++) {
+      tmp[i] = solver.makeProd(a[i], (int) Math.pow(base, (len - i - 1))).var();
     }
-    solver.addConstraint(
-        solver.makeEquality(solver.makeSum(tmp).var(), num));
+    solver.addConstraint(solver.makeEquality(solver.makeSum(tmp).var(), num));
   }
 
-
   /**
-   *
-   * Implements toNum: channeling between a number and an array.
-   * See http://www.hakank.org/google_or_tools/toNum.py
-   *
+   * Implements toNum: channeling between a number and an array. See
+   * http://www.hakank.org/google_or_tools/toNum.py
    */
   private static void solve() {
 
@@ -57,20 +49,16 @@ public class ToNum {
     int n = 5;
     int base = 10;
 
-
     //
     // variables
     //
-    IntVar[] x =  solver.makeIntVarArray(n, 0, base - 1, "x");
-    IntVar num = solver.makeIntVar(0, (int)Math.pow(base, n) - 1 , "num");
-
-
+    IntVar[] x = solver.makeIntVarArray(n, 0, base - 1, "x");
+    IntVar num = solver.makeIntVar(0, (int) Math.pow(base, n) - 1, "num");
 
     //
     // constraints
     //
     solver.addConstraint(solver.makeAllDifferent(x));
-
 
     toNum(solver, x, num, base);
 
@@ -78,13 +66,10 @@ public class ToNum {
     // second digit should be 7
     // solver.addConstraint(solver.makeEquality(x[1], 7));
 
-
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.CHOOSE_FIRST_UNBOUND,
-                                          solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.makePhase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE);
 
     solver.newSearch(db);
 
@@ -93,7 +78,7 @@ public class ToNum {
     //
     while (solver.nextSolution()) {
       System.out.print("num: " + num.value() + ": ");
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.println();
@@ -106,7 +91,6 @@ public class ToNum {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

@@ -507,6 +507,13 @@ def collect_valid_slabs(capacities, colors, widths, loss_array, all_colors):
     print('Collect Valid Slabs...DONE')
     return collector.all_solutions()
 
+  num_orders = len(orders)
+  num_capacities = len(capacities)
+  all_slabs = range(num_slabs)
+  all_colors = range(num_colors)
+  all_orders = range(len(orders))
+  print('Solving steel mill with %i orders, %i slabs, and %i capacities' %
+        (num_orders, num_slabs, num_capacities - 1))
 
 def steel_mill_slab_with_valid_slabs(problem, break_symmetries, output_proto):
     """Solves the Steel Mill Slab Problem."""

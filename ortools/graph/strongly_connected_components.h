@@ -63,7 +63,7 @@
 //   It will be called with the connected components of the given graph as they
 //   are found (In the reverse topological order).
 //
-// More pratical details on the algorithm:
+// More practical details on the algorithm:
 // - It deals properly with self-loop and duplicate nodes.
 // - It is really fast! and work in O(nodes + edges).
 // - Its memory usage is also bounded by O(nodes + edges) but in practice it

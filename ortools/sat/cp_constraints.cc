@@ -14,8 +14,8 @@
 #include "ortools/sat/cp_constraints.h"
 
 #include <algorithm>
-#include <unordered_map>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/map_util.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"

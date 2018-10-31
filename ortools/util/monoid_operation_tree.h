@@ -17,9 +17,9 @@
 #include <algorithm>
 #include <string>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 
 namespace operations_research {
 
@@ -215,7 +215,7 @@ std::string MonoidOperationTree<T>::DebugString() const {
       ++layer;
     }
     absl::StrAppendFormat(&out, "Position %d: %s\n", i,
-                          nodes_[i].DebugString().c_str());
+                          nodes_[i].DebugString());
   }
   return out;
 }

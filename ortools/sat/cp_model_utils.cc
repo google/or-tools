@@ -13,7 +13,7 @@
 
 #include "ortools/sat/cp_model_utils.h"
 
-#include <unordered_set>
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/stl_util.h"
 
 namespace operations_research {
@@ -22,7 +22,7 @@ namespace sat {
 namespace {
 
 template <typename IntList>
-void AddIndices(const IntList& indices, std::unordered_set<int>* output) {
+void AddIndices(const IntList& indices, absl::flat_hash_set<int>* output) {
   output->insert(indices.begin(), indices.end());
 }
 

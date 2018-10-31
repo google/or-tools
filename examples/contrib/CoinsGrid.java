@@ -10,15 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
-import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.constraintsolver.OptimizeVar;
-
+import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class CoinsGrid {
 
@@ -26,12 +24,7 @@ public class CoinsGrid {
     System.loadLibrary("jniortools");
   }
 
-  /**
-   *
-   * Solves the Coins Grid problem.
-   * See http://www.hakank.org/google_or_tools/coins_grid.py
-   *
-   */
+  /** Solves the Coins Grid problem. See http://www.hakank.org/google_or_tools/coins_grid.py */
   private static void solve() {
     Solver solver = new Solver("CoinsGrid");
 
@@ -47,8 +40,8 @@ public class CoinsGrid {
     IntVar[][] x = new IntVar[n][n];
     IntVar[] x_flat = new IntVar[n * n];
 
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
         x[i][j] = solver.makeIntVar(0, 1, "x[" + i + "," + j + "]");
         x_flat[i * n + j] = x[i][j];
       }
@@ -59,10 +52,10 @@ public class CoinsGrid {
     //
 
     // sum row/columns == c
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
       IntVar[] col = new IntVar[n];
-      for(int j = 0; j < n; j++) {
+      for (int j = 0; j < n; j++) {
         row[j] = x[i][j];
         col[j] = x[j][i];
       }
@@ -72,10 +65,9 @@ public class CoinsGrid {
 
     // quadratic horizonal distance
     IntVar[] obj_tmp = new IntVar[n * n];
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        obj_tmp[i * n + j] =
-          solver.makeProd(x[i][j],(i - j) * (i - j)).var();
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        obj_tmp[i * n + j] = solver.makeProd(x[i][j], (i - j) * (i - j)).var();
       }
     }
     IntVar obj_var = solver.makeSum(obj_tmp).var();
@@ -88,9 +80,8 @@ public class CoinsGrid {
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x_flat,
-                                          solver.CHOOSE_FIRST_UNBOUND,
-                                          solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.makePhase(x_flat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE);
 
     solver.newSearch(db, obj);
 
@@ -99,8 +90,8 @@ public class CoinsGrid {
     //
     while (solver.nextSolution()) {
       System.out.println("obj_var: " + obj_var.value());
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
           System.out.print(x[i][j].value() + " ");
         }
         System.out.println();

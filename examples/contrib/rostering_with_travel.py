@@ -45,8 +45,8 @@ def SolveRosteringWithTravel():
       job_performed.append(performed_on_m)
 
       # Create an optional copy of interval to be executed on a machine
-      location0 = model.NewIntVar(
-        jobs[i][3], jobs[i][3], 'location_%i_on_m%i' % (i, m))
+      location0 = model.NewIntVar(jobs[i][3], jobs[i][3],
+                                  'location_%i_on_m%i' % (i, m))
       start0 = model.NewIntVar(jobs[i][1], horizon, 'start_%i_on_m%i' % (i, m))
       end0 = model.NewIntVar(0, jobs[i][2], 'end_%i_on_m%i' % (i, m))
       interval0 = model.NewOptionalIntervalVar(

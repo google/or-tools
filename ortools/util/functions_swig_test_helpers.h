@@ -42,6 +42,10 @@ class FunctionSwigTestHelpers {
     return fun(x, y);
   }
 
+  static int64 NoOpIntToInt64(std::function<int64(int)> fun, int x) {
+    return fun(x);
+  }
+
   static int64 NoOpIntPairToInt64(std::function<int64(int, int)> fun, int x,
                                   int y) {
     return fun(x, y);

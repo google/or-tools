@@ -15,7 +15,7 @@
 #define OR_TOOLS_BASE_STATUS_H_
 
 #include <string>
-#include "ortools/base/join.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/base/logging.h"
 
 namespace util {
@@ -45,6 +45,7 @@ struct Status {
   }
 
   std::string error_message() const { return error_message_; }
+  std::string message() const { return error_message(); }
 
   void IgnoreError() const {}
 

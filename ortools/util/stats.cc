@@ -14,10 +14,9 @@
 #include "ortools/util/stats.h"
 
 #include <cmath>
-#include "ortools/base/stringprintf.h"
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/port/sysinfo.h"
 #include "ortools/port/utf8.h"
 
@@ -206,10 +205,9 @@ void TimeDistribution::AddTimeInCycles(double cycles) {
 
 std::string TimeDistribution::ValueAsString() const {
   return absl::StrFormat(
-      "%8llu [%8s, %8s] %8s %8s %8s\n", num_, PrintCyclesAsTime(min_).c_str(),
-      PrintCyclesAsTime(max_).c_str(), PrintCyclesAsTime(Average()).c_str(),
-      PrintCyclesAsTime(StdDeviation()).c_str(),
-      PrintCyclesAsTime(sum_).c_str());
+      "%8u [%8s, %8s] %8s %8s %8s\n", num_, PrintCyclesAsTime(min_),
+      PrintCyclesAsTime(max_), PrintCyclesAsTime(Average()),
+      PrintCyclesAsTime(StdDeviation()), PrintCyclesAsTime(sum_));
 }
 
 void RatioDistribution::Add(double value) {
@@ -218,7 +216,7 @@ void RatioDistribution::Add(double value) {
 }
 
 std::string RatioDistribution::ValueAsString() const {
-  return absl::StrFormat("%8llu [%7.2lf%%, %7.2lf%%] %7.2lf%% %7.2lf%%\n", num_,
+  return absl::StrFormat("%8u [%7.2f%%, %7.2f%%] %7.2f%% %7.2f%%\n", num_,
                          100.0 * min_, 100.0 * max_, 100.0 * Average(),
                          100.0 * StdDeviation());
 }
@@ -226,7 +224,7 @@ std::string RatioDistribution::ValueAsString() const {
 void DoubleDistribution::Add(double value) { AddToDistribution(value); }
 
 std::string DoubleDistribution::ValueAsString() const {
-  return absl::StrFormat("%8llu [%8.1e, %8.1e] %8.1e %8.1e\n", num_, min_, max_,
+  return absl::StrFormat("%8u [%8.1e, %8.1e] %8.1e %8.1e\n", num_, min_, max_,
                          Average(), StdDeviation());
 }
 
@@ -235,7 +233,7 @@ void IntegerDistribution::Add(int64 value) {
 }
 
 std::string IntegerDistribution::ValueAsString() const {
-  return absl::StrFormat("%8llu [%8.lf, %8.lf] %8.2lf %8.2lf %8.lf\n", num_, min_,
+  return absl::StrFormat("%8u [%8.f, %8.f] %8.2f %8.2f %8.f\n", num_, min_,
                          max_, Average(), StdDeviation(), sum_);
 }
 

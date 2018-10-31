@@ -11,13 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class NQueens2 {
 
@@ -25,13 +24,7 @@ public class NQueens2 {
     System.loadLibrary("jniortools");
   }
 
-
-  /**
-   *
-   * Solves the N Queens problem.
-   * See http://www.hakank.org/google_or_tools/nqueens2.py
-   *
-   */
+  /** Solves the N Queens problem. See http://www.hakank.org/google_or_tools/nqueens2.py */
   private static void solve(int n, int num, int print) {
 
     Solver solver = new Solver("NQueens");
@@ -41,7 +34,7 @@ public class NQueens2 {
     //
     // variables
     //
-    IntVar[] q = solver.makeIntVarArray(n, 0, n-1, "q");
+    IntVar[] q = solver.makeIntVarArray(n, 0, n - 1, "q");
 
     //
     // constraints
@@ -50,7 +43,7 @@ public class NQueens2 {
 
     IntVar[] q1 = new IntVar[n];
     IntVar[] q2 = new IntVar[n];
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       q1[i] = solver.makeSum(q[i], i).var();
       q2[i] = solver.makeSum(q[i], -i).var();
     }
@@ -60,14 +53,13 @@ public class NQueens2 {
     //
     // Solve
     //
-    DecisionBuilder db = solver.makePhase(q,
-                                          solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                                          solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db =
+        solver.makePhase(q, solver.CHOOSE_MIN_SIZE_LOWEST_MAX, solver.ASSIGN_CENTER_VALUE);
     solver.newSearch(db);
     int c = 0;
     while (solver.nextSolution()) {
       if (print != 0) {
-        for(int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++) {
           System.out.print(q[i].value() + " ");
         }
         System.out.println();
@@ -103,7 +95,6 @@ public class NQueens2 {
     if (args.length > 2) {
       print = Integer.parseInt(args[2]);
     }
-
 
     NQueens2.solve(n, num, print);
   }

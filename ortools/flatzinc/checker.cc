@@ -14,9 +14,9 @@
 #include "ortools/flatzinc/checker.h"
 
 #include <algorithm>
-#include <unordered_map>
-#include <unordered_set>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/map_util.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/flatzinc/model.h"
@@ -68,7 +68,7 @@ int64 EvalAt(const Argument& arg, int pos,
 bool CheckAllDifferentInt(
     const Constraint& ct,
     const std::function<int64(IntegerVariable*)>& evaluator) {
-  std::unordered_set<int64> visited;
+  absl::flat_hash_set<int64> visited;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64 value = EvalAt(ct.arguments[0], i, evaluator);
     if (gtl::ContainsKey(visited, value)) {
@@ -83,7 +83,7 @@ bool CheckAllDifferentInt(
 bool CheckAlldifferentExcept0(
     const Constraint& ct,
     const std::function<int64(IntegerVariable*)>& evaluator) {
-  std::unordered_set<int64> visited;
+  absl::flat_hash_set<int64> visited;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64 value = EvalAt(ct.arguments[0], i, evaluator);
     if (value != 0 && gtl::ContainsKey(visited, value)) {
@@ -260,7 +260,7 @@ bool CheckCircuit(const Constraint& ct,
     }
   }
 
-  std::unordered_set<int64> visited;
+  absl::flat_hash_set<int64> visited;
   int64 current = 0;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64 next = EvalAt(ct.arguments[0], current, evaluator) + shift;
@@ -337,7 +337,7 @@ bool CheckCumulative(const Constraint& ct,
   const int size = Size(ct.arguments[0]);
   CHECK_EQ(size, Size(ct.arguments[1]));
   CHECK_EQ(size, Size(ct.arguments[2]));
-  std::unordered_map<int64, int64> usage;
+  absl::flat_hash_map<int64, int64> usage;
   for (int i = 0; i < size; ++i) {
     const int64 start = EvalAt(ct.arguments[0], i, evaluator);
     const int64 duration = EvalAt(ct.arguments[1], i, evaluator);
@@ -395,7 +395,7 @@ std::vector<int64> ComputeGlobalCardinalityCards(
     const Constraint& ct,
     const std::function<int64(IntegerVariable*)>& evaluator) {
   std::vector<int64> cards(Size(ct.arguments[1]), 0);
-  std::unordered_map<int64, int> positions;
+  absl::flat_hash_map<int64, int> positions;
   for (int i = 0; i < ct.arguments[1].values.size(); ++i) {
     const int64 value = ct.arguments[1].values[i];
     CHECK(!gtl::ContainsKey(positions, value));
@@ -899,7 +899,7 @@ bool CheckNetworkFlowCost(
 bool CheckNvalue(const Constraint& ct,
                  const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 count = Eval(ct.arguments[0], evaluator);
-  std::unordered_set<int64> all_values;
+  absl::flat_hash_set<int64> all_values;
   for (int i = 0; i < Size(ct.arguments[1]); ++i) {
     all_values.insert(EvalAt(ct.arguments[1], i, evaluator));
   }
@@ -962,8 +962,8 @@ bool CheckSlidingSum(const Constraint& ct,
 bool CheckSort(const Constraint& ct,
                const std::function<int64(IntegerVariable*)>& evaluator) {
   CHECK_EQ(Size(ct.arguments[0]), Size(ct.arguments[1]));
-  std::unordered_map<int64, int> init_count;
-  std::unordered_map<int64, int> sorted_count;
+  absl::flat_hash_map<int64, int> init_count;
+  absl::flat_hash_map<int64, int> sorted_count;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     init_count[EvalAt(ct.arguments[0], i, evaluator)]++;
     sorted_count[EvalAt(ct.arguments[1], i, evaluator)]++;
@@ -982,7 +982,7 @@ bool CheckSort(const Constraint& ct,
 
 bool CheckSubCircuit(const Constraint& ct,
                      const std::function<int64(IntegerVariable*)>& evaluator) {
-  std::unordered_set<int64> visited;
+  absl::flat_hash_set<int64> visited;
   // Find inactive nodes (pointing to themselves).
   int64 current = -1;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
@@ -1031,7 +1031,7 @@ bool CheckSymmetricAllDifferent(
   return true;
 }
 
-using CallMap = std::unordered_map<
+using CallMap = absl::flat_hash_map<
     std::string, std::function<bool(const Constraint& ct,
                                     std::function<int64(IntegerVariable*)>)>>;
 

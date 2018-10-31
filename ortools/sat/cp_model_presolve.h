@@ -25,7 +25,7 @@ namespace sat {
 
 struct PresolveOptions {
   bool log_info = true;
-  SatParameters* parameters = nullptr;
+  SatParameters parameters;
   TimeLimit* time_limit = nullptr;
 };
 

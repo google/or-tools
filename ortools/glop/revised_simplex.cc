@@ -21,11 +21,11 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/glop/initial_basis.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -445,16 +445,15 @@ std::string RevisedSimplex::GetPrettySolverStats() const {
   return absl::StrFormat(
       "Problem status                               : %s\n"
       "Solving time                                 : %-6.4g\n"
-      "Number of iterations                         : %llu\n"
+      "Number of iterations                         : %u\n"
       "Time for solvability (first phase)           : %-6.4g\n"
-      "Number of iterations for solvability         : %llu\n"
+      "Number of iterations for solvability         : %u\n"
       "Time for optimization                        : %-6.4g\n"
-      "Number of iterations for optimization        : %llu\n"
+      "Number of iterations for optimization        : %u\n"
       "Stop after first basis                       : %d\n",
-      GetProblemStatusString(problem_status_).c_str(), total_time_,
-      num_iterations_, feasibility_time_, num_feasibility_iterations_,
-      optimization_time_, num_optimization_iterations_,
-      FLAGS_simplex_stop_after_first_basis);
+      GetProblemStatusString(problem_status_), total_time_, num_iterations_,
+      feasibility_time_, num_feasibility_iterations_, optimization_time_,
+      num_optimization_iterations_, FLAGS_simplex_stop_after_first_basis);
 }
 
 double RevisedSimplex::DeterministicTime() const {
@@ -2946,12 +2945,12 @@ std::string RevisedSimplex::SimpleVariableInfo(ColIndex col) const {
   VariableType variable_type = variables_info_.GetTypeRow()[col];
   VariableStatus variable_status = variables_info_.GetStatusRow()[col];
   absl::StrAppendFormat(&output, "%d (%s) = %s, %s, %s, [%s,%s]", col.value(),
-                variable_name_[col].c_str(),
-                StringifyWithFlags(variable_values_.Get(col)).c_str(),
-                GetVariableStatusString(variable_status).c_str(),
-                GetVariableTypeString(variable_type).c_str(),
-                StringifyWithFlags(lower_bound_[col]).c_str(),
-                StringifyWithFlags(upper_bound_[col]).c_str());
+                        variable_name_[col],
+                        StringifyWithFlags(variable_values_.Get(col)),
+                        GetVariableStatusString(variable_status),
+                        GetVariableTypeString(variable_type),
+                        StringifyWithFlags(lower_bound_[col]),
+                        StringifyWithFlags(upper_bound_[col]));
   return output;
 }
 

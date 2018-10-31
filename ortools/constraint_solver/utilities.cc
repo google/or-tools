@@ -12,15 +12,15 @@
 // limitations under the License.
 
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
@@ -419,7 +419,7 @@ class PrintModelVisitor : public ModelVisitor {
         if (j != 0) {
           array.append(", ");
         }
-        StringAppendF(&array, "%lld", values.Value(i, j));
+        absl::StrAppendFormat(&array, "%d", values.Value(i, j));
       }
       array.append("]");
     }
@@ -429,7 +429,7 @@ class PrintModelVisitor : public ModelVisitor {
 
   void VisitIntegerExpressionArgument(const std::string& arg_name,
                                       IntExpr* const argument) override {
-    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
+    set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
     Decrease();
@@ -450,7 +450,7 @@ class PrintModelVisitor : public ModelVisitor {
   // Visit interval argument.
   void VisitIntervalArgument(const std::string& arg_name,
                              IntervalVar* const argument) override {
-    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
+    set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
     Decrease();
@@ -470,7 +470,7 @@ class PrintModelVisitor : public ModelVisitor {
   // Visit sequence argument.
   void VisitSequenceArgument(const std::string& arg_name,
                              SequenceVar* const argument) override {
-    set_prefix(StringPrintf("%s: ", arg_name.c_str()));
+    set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
     Decrease();
@@ -690,9 +690,9 @@ class ModelStatisticsVisitor : public ModelVisitor {
     extension_types_[extension_type]++;
   }
 
-  std::unordered_map<std::string, int> constraint_types_;
-  std::unordered_map<std::string, int> expression_types_;
-  std::unordered_map<std::string, int> extension_types_;
+  absl::flat_hash_map<std::string, int> constraint_types_;
+  absl::flat_hash_map<std::string, int> expression_types_;
+  absl::flat_hash_map<std::string, int> extension_types_;
   int num_constraints_;
   int num_variables_;
   int num_expressions_;
@@ -700,7 +700,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   int num_intervals_;
   int num_sequences_;
   int num_extensions_;
-  std::unordered_set<const BaseObject*> already_visited_;
+  absl::flat_hash_set<const BaseObject*> already_visited_;
 };
 
 // ---------- Variable Degree Visitor ---------
@@ -708,7 +708,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
 class VariableDegreeVisitor : public ModelVisitor {
  public:
   explicit VariableDegreeVisitor(
-      std::unordered_map<const IntVar*, int>* const map)
+      absl::flat_hash_map<const IntVar*, int>* const map)
       : map_(map) {}
 
   ~VariableDegreeVisitor() override {}
@@ -800,7 +800,7 @@ class VariableDegreeVisitor : public ModelVisitor {
     object->Accept(this);
   }
 
-  std::unordered_map<const IntVar*, int>* const map_;
+  absl::flat_hash_map<const IntVar*, int>* const map_;
 };
 }  // namespace
 
@@ -813,7 +813,7 @@ ModelVisitor* Solver::MakeStatisticsModelVisitor() {
 }
 
 ModelVisitor* Solver::MakeVariableDegreeVisitor(
-    std::unordered_map<const IntVar*, int>* const map) {
+    absl::flat_hash_map<const IntVar*, int>* const map) {
   return RevAlloc(new VariableDegreeVisitor(map));
 }
 

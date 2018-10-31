@@ -54,9 +54,8 @@ def main():
 
   for i in range(num_nurses):
     for j in range(num_shifts):
-      solver.Add(
-              works_shift[(i, j)] ==
-              solver.Max([shifts[(i, k)] == j for k in range(num_days)]))
+      solver.Add(works_shift[(
+          i, j)] == solver.Max([shifts[(i, k)] == j for k in range(num_days)]))
 
   # For each shift (other than 0), at most 2 nurses are assigned to that shift
   # during the week.

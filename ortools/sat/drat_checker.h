@@ -17,10 +17,10 @@
 #include <memory>
 #include <vector>
 
-#include <unordered_set>
+#include "absl/container/flat_hash_set.h"
+#include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/span.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
@@ -49,7 +49,7 @@ class DratChecker {
   // Adds a clause of the problem that must be checked. The problem clauses must
   // be added first, before any infered clause. The given clause must not
   // contain a literal and its negation. Must not be called after Check().
-  void AddProblemClause(absl::Span<Literal> clause);
+  void AddProblemClause(absl::Span<const Literal> clause);
 
   // Adds a clause which is infered from the problem clauses and the previously
   // infered clauses (that are have not been deleted). Infered clauses must be
@@ -57,12 +57,12 @@ class DratChecker {
   // Tautology (RAT) property for literal l must start with this literal. The
   // given clause must not contain a literal and its negation. Must not be
   // called after Check().
-  void AddInferedClause(absl::Span<Literal> clause);
+  void AddInferedClause(absl::Span<const Literal> clause);
 
   // Deletes a problem or infered clause. The order of the literals does not
   // matter. In particular, it can be different from the order that was used
   // when the clause was added. Must not be called after Check().
-  void DeleteClause(absl::Span<Literal> clause);
+  void DeleteClause(absl::Span<const Literal> clause);
 
   // Checks that the infered clauses form a DRAT proof that the problem clauses
   // are UNSAT. For this the last added infered clause must be the empty clause
@@ -170,13 +170,13 @@ class DratChecker {
   };
 
   // Adds a clause and returns its index.
-  ClauseIndex AddClause(absl::Span<Literal> clause);
+  ClauseIndex AddClause(absl::Span<const Literal> clause);
 
   // Removes the last clause added to 'clauses_'.
   void RemoveLastClause();
 
   // Returns the literals of the given clause in increasing order.
-  absl::Span<Literal> Literals(const Clause& clause) const;
+  absl::Span<const Literal> Literals(const Clause& clause) const;
 
   // Initializes the data structures used to check the DRAT proof.
   void Init();
@@ -189,7 +189,8 @@ class DratChecker {
   // deleted clauses whose index is strictly less than 'num_clauses'. If so,
   // marks the clauses actually used in this process as needed to check to DRAT
   // proof.
-  bool HasRupProperty(ClauseIndex num_clauses, absl::Span<Literal> clause);
+  bool HasRupProperty(ClauseIndex num_clauses,
+                      absl::Span<const Literal> clause);
 
   // Assigns 'literal' to true in 'assignment_' (and pushes it to 'assigned_'),
   // records its source clause 'source_clause_index' in 'assignment_source_',
@@ -228,7 +229,7 @@ class DratChecker {
   // adding a clause to clauses_, this set can be used to find if the same
   // clause was previously added (i.e if a find using the new clause index
   // returns a previous index) and not yet deleted.
-  std::unordered_set<ClauseIndex, ClauseHash, ClauseEquiv> clause_set_;
+  absl::flat_hash_set<ClauseIndex, ClauseHash, ClauseEquiv> clause_set_;
 
   // All the literals used in 'clauses_'.
   std::vector<Literal> literals_;
@@ -296,7 +297,7 @@ class DratChecker {
 
 // Returns true if the given clause contains the given literal. This works in
 // O(clause.size()).
-bool ContainsLiteral(absl::Span<Literal> clause, Literal literal);
+bool ContainsLiteral(absl::Span<const Literal> clause, Literal literal);
 
 // Returns true if 'complementary_literal' is the unique complementary literal
 // in the two given clauses. If so the resolvent of these clauses (i.e. their
@@ -305,7 +306,8 @@ bool ContainsLiteral(absl::Span<Literal> clause, Literal literal);
 // 'other_clause' must contain its negation. 'assignment' must have at least as
 // many variables as each clause, and they must all be unassigned. They are
 // still unassigned upon return.
-bool Resolve(absl::Span<Literal> clause, absl::Span<Literal> other_clause,
+bool Resolve(absl::Span<const Literal> clause,
+             absl::Span<const Literal> other_clause,
              Literal complementary_literal, VariablesAssignment* assignment,
              std::vector<Literal>* resolvent);
 

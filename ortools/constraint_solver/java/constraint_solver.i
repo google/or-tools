@@ -350,7 +350,7 @@ class SolverToVoid {
 %rename (makeLess) operations_research::Solver::MakeLess;
 %rename (makeLessOrEqual) operations_research::Solver::MakeLessOrEqual;
 %rename (makeLimit) operations_research::Solver::MakeLimit;
-%rename (makeLocalSearchObjectiveFilter) operations_research::Solver::MakeLocalSearchObjectiveFilter;
+%rename (makeSumObjectiveFilter) operations_research::Solver::MakeSumObjectiveFilter;
 %rename (makeLocalSearchPhase) operations_research::Solver::MakeLocalSearchPhase;
 %rename (makeLocalSearchPhaseParameters) operations_research::Solver::MakeLocalSearchPhaseParameters;
 %rename (makeLubyRestart) operations_research::Solver::MakeLubyRestart;
@@ -741,6 +741,10 @@ WRAP_STD_FUNCTION_JAVA(
     LongLongToLong,
     "com/google/ortools/constraintsolver/",
     int64, Long, int64, int64)
+WRAP_STD_FUNCTION_JAVA(
+    IntToLong,
+    "com/google/ortools/constraintsolver/",
+    int64, Long, int)
 WRAP_STD_FUNCTION_JAVA(
     IntIntToLong,
     "com/google/ortools/constraintsolver/",

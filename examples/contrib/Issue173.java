@@ -17,11 +17,9 @@ public class Issue173 {
   }
 
   private static void solveLP() {
-    MPSolver solver = new MPSolver(
-        "test",
-        MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
-    MPVariable x = solver.makeNumVar(Double.NEGATIVE_INFINITY,
-                                     Double.POSITIVE_INFINITY, "x");
+    MPSolver solver =
+        new MPSolver("test", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    MPVariable x = solver.makeNumVar(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, "x");
 
     final MPObjective objective = solver.objective();
     objective.setMaximization();

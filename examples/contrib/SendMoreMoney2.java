@@ -10,11 +10,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class SendMoreMoney2 {
 
@@ -40,19 +39,14 @@ public class SendMoreMoney2 {
     int len = a.length;
     int c = 1;
     int[] t = new int[len];
-    for(int i = len-1; i >= 0; i--) {
+    for (int i = len - 1; i >= 0; i--) {
       t[i] = c;
       c *= 10;
     }
     return sol.makeScalProd(a, t);
   }
 
-
-  /**
-   *
-   * Solves the SEND+MORE=MONEY problem with different approaches.
-   *
-   */
+  /** Solves the SEND+MORE=MONEY problem with different approaches. */
   private static void solve(int alt) {
 
     sol = new Solver("SendMoreMoney");
@@ -88,32 +82,32 @@ public class SendMoreMoney2 {
      *
      */
 
-
     if (alt == 0) {
       //
       // First, a version approach which is just too noisy.
       //
       sol.addConstraint(
           sol.makeEquality(
-              sol.makeSum(sol.makeSum(
-                  sol.makeProd(s, 1000),
-                  sol.makeSum(sol.makeProd(e, 100),
-                              sol.makeSum(sol.makeProd(n, 10),
-                                          sol.makeProd(d, 1)))),
+              sol.makeSum(
+                      sol.makeSum(
+                          sol.makeProd(s, 1000),
                           sol.makeSum(
-                              sol.makeProd(m, 1000),
-                              sol.makeSum(sol.makeProd(o, 100),
-                                          sol.makeSum(sol.makeProd(r, 10),
-                                                      sol.makeProd(e, 1))))
-                          ).var(),
-              sol.makeSum(sol.makeProd(m, 10000),
+                              sol.makeProd(e, 100),
+                              sol.makeSum(sol.makeProd(n, 10), sol.makeProd(d, 1)))),
+                      sol.makeSum(
+                          sol.makeProd(m, 1000),
                           sol.makeSum(
-                              sol.makeProd(o, 1000),
-                              sol.makeSum(
-                                  sol.makeProd(n, 100),
-                                  sol.makeSum(
-                                      sol.makeProd(e, 10),
-                                      sol.makeProd(y, 1))))).var()));
+                              sol.makeProd(o, 100),
+                              sol.makeSum(sol.makeProd(r, 10), sol.makeProd(e, 1)))))
+                  .var(),
+              sol.makeSum(
+                      sol.makeProd(m, 10000),
+                      sol.makeSum(
+                          sol.makeProd(o, 1000),
+                          sol.makeSum(
+                              sol.makeProd(n, 100),
+                              sol.makeSum(sol.makeProd(e, 10), sol.makeProd(y, 1)))))
+                  .var()));
 
     } else if (alt == 1) {
 
@@ -125,8 +119,10 @@ public class SendMoreMoney2 {
       //
       sol.addConstraint(
           sol.makeEquality(
-              sol.makeSum(p(s, 1000, p(e, 100, p(n, 10, p(d, 1)))),
-                          p(m, 1000, p(o, 100, p(r, 10, p(e, 1))))).var(),
+              sol.makeSum(
+                      p(s, 1000, p(e, 100, p(n, 10, p(d, 1)))),
+                      p(m, 1000, p(o, 100, p(r, 10, p(e, 1)))))
+                  .var(),
               p(m, 10000, p(o, 1000, p(n, 100, p(e, 10, p(y, 1))))).var()));
 
     } else if (alt == 2) {
@@ -137,40 +133,33 @@ public class SendMoreMoney2 {
       sol.addConstraint(
           sol.makeEquality(
               sol.makeSum(
-                  sol.makeScalProd(new IntVar[] {s, e, n, d},
-                                   new int[] {1000, 100, 10, 1}),
-                  sol.makeScalProd(new IntVar[] {m, o, r, e},
-                                   new int[] {1000, 100, 10, 1})).var(),
-              sol.makeScalProd(new IntVar[] {m, o, n, e, y},
-                               new int[] {10000, 1000, 100, 10, 1}).var()));
+                      sol.makeScalProd(new IntVar[] {s, e, n, d}, new int[] {1000, 100, 10, 1}),
+                      sol.makeScalProd(new IntVar[] {m, o, r, e}, new int[] {1000, 100, 10, 1}))
+                  .var(),
+              sol.makeScalProd(new IntVar[] {m, o, n, e, y}, new int[] {10000, 1000, 100, 10, 1})
+                  .var()));
 
     } else if (alt == 3) {
-
 
       //
       // alternative 3: same approach as 2, with some helper methods
       //
       sol.addConstraint(
-          sol.makeEquality(sol.makeSum(sp(new IntVar[] {s, e, n, d}),
-                                       sp(new IntVar[] {m, o, r, e})).var(),
-                           sp(new IntVar[] {m, o, n, e, y}).var()));
+          sol.makeEquality(
+              sol.makeSum(sp(new IntVar[] {s, e, n, d}), sp(new IntVar[] {m, o, r, e})).var(),
+              sp(new IntVar[] {m, o, n, e, y}).var()));
 
     } else if (alt == 4) {
 
       //
       // Alternative 4, using explicit variables
       //
-      IntExpr send = sol.makeScalProd(new IntVar[] {s, e, n, d},
-                                      new int[] {1000, 100, 10, 1});
-      IntExpr more = sol.makeScalProd(new IntVar[] {m, o, r, e},
-                                      new int[] {1000, 100, 10, 1});
-      IntExpr money = sol.makeScalProd(new IntVar[] {m, o, n, e, y},
-                                       new int[] {10000, 1000, 100, 10, 1});
-      sol.addConstraint(
-          sol.makeEquality(sol.makeSum(send, more).var(), money.var()));
-
+      IntExpr send = sol.makeScalProd(new IntVar[] {s, e, n, d}, new int[] {1000, 100, 10, 1});
+      IntExpr more = sol.makeScalProd(new IntVar[] {m, o, r, e}, new int[] {1000, 100, 10, 1});
+      IntExpr money =
+          sol.makeScalProd(new IntVar[] {m, o, n, e, y}, new int[] {10000, 1000, 100, 10, 1});
+      sol.addConstraint(sol.makeEquality(sol.makeSum(send, more).var(), money.var()));
     }
-
 
     // s > 0
     sol.addConstraint(sol.makeGreater(s, 0));
@@ -182,12 +171,10 @@ public class SendMoreMoney2 {
     //
     // Search
     //
-    DecisionBuilder db = sol.makePhase(x,
-                                       sol.INT_VAR_DEFAULT,
-                                       sol.INT_VALUE_DEFAULT);
+    DecisionBuilder db = sol.makePhase(x, sol.INT_VAR_DEFAULT, sol.INT_VALUE_DEFAULT);
     sol.newSearch(db);
     while (sol.nextSolution()) {
-      for(int i = 0; i < 8; i++) {
+      for (int i = 0; i < 8; i++) {
         System.out.print(x[i].toString() + " ");
       }
       System.out.println();
@@ -202,7 +189,6 @@ public class SendMoreMoney2 {
     System.out.println("Failures: " + sol.failures());
     System.out.println("Branches: " + sol.branches());
     System.out.println("Wall time: " + sol.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

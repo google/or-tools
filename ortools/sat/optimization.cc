@@ -24,13 +24,14 @@
 #include <string>
 #include <utility>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stringprintf.h"
+#include "ortools/base/random.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/linear_solver/linear_solver.h"
@@ -74,7 +75,7 @@ std::string CnfObjectiveLine(const LinearBooleanProblem& problem,
                              Coefficient objective) {
   const double scaled_objective =
       AddOffsetAndScaleObjectiveValue(problem, objective);
-  return absl::StrFormat("o %lld", static_cast<int64>(scaled_objective));
+  return absl::StrFormat("o %d", static_cast<int64>(scaled_objective));
 }
 
 struct LiteralWithCoreIndex {
@@ -246,6 +247,7 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
 
 void MinimizeCoreWithPropagation(SatSolver* solver,
                                  std::vector<Literal>* core) {
+  if (solver->IsModelUnsat()) return;
   std::set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(core->begin(), core->end());
 
@@ -260,7 +262,8 @@ void MinimizeCoreWithPropagation(SatSolver* solver,
         moved_last, solver->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
     solver->Backtrack(target_level);
-    while (solver->CurrentDecisionLevel() < candidate.size()) {
+    while (!solver->IsModelUnsat() &&
+           solver->CurrentDecisionLevel() < candidate.size()) {
       const Literal decision = candidate[solver->CurrentDecisionLevel()];
       if (solver->Assignment().LiteralIsTrue(decision)) {
         candidate.erase(candidate.begin() + solver->CurrentDecisionLevel());
@@ -371,7 +374,7 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
     solver->Backtrack(0);
 
     // Print the search progress.
-    logger.Log(absl::StrFormat("c iter:%d core:%zu", iter, core.size()));
+    logger.Log(absl::StrFormat("c iter:%d core:%u", iter, core.size()));
 
     // Special case for a singleton core.
     if (core.size() == 1) {
@@ -531,9 +534,9 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
       *std::max_element(costs.begin(), costs.end());
 
   // Print the number of variables with a non-zero cost.
-  logger.Log(absl::StrFormat("c #weights:%zu #vars:%d #constraints:%d",
-                          assumptions.size(), problem.num_variables(),
-                          problem.constraints_size()));
+  logger.Log(absl::StrFormat("c #weights:%u #vars:%d #constraints:%d",
+                             assumptions.size(), problem.num_variables(),
+                             problem.constraints_size()));
 
   for (int iter = 0;; ++iter) {
     // This is called "hardening" in the literature.
@@ -560,7 +563,7 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
       }
     }
     if (!to_delete.empty()) {
-      logger.Log(absl::StrFormat("c fixed %zu assumptions, %d with cost > %lld",
+      logger.Log(absl::StrFormat("c fixed %u assumptions, %d with cost > %d",
                                  to_delete.size(), num_above_threshold,
                                  hardening_threshold.value()));
       DeleteVectorIndices(to_delete, &assumptions);
@@ -637,10 +640,9 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
     lower_bound += min_cost;
 
     // Print the search progress.
-    logger.Log(
-        absl::StrFormat("c iter:%d core:%zu lb:%lld min_cost:%lld strat:%lld",
-                        iter, core.size(), lower_bound.value(),
-                        min_cost.value(), stratified_lower_bound.value()));
+    logger.Log(absl::StrFormat(
+        "c iter:%d core:%u lb:%d min_cost:%d strat:%d", iter, core.size(),
+        lower_bound.value(), min_cost.value(), stratified_lower_bound.value()));
 
     // This simple line helps a lot on the packup-wpms instances!
     //
@@ -816,7 +818,7 @@ SatSolver::Status SolveWithRandomParameters(LogBehavior log,
     solver->SetParameters(parameters);
     solver->ResetDecisionHeuristic();
 
-    const bool use_obj = random.OneIn(4);
+    const bool use_obj = absl::Bernoulli(random, 1.0 / 4);
     if (use_obj) UseObjectiveForSatAssignmentPreference(problem, solver);
 
     const SatSolver::Status result = solver->Solve();
@@ -939,9 +941,9 @@ SatSolver::Status SolveWithCardinalityEncoding(
   }
 
   // Print the number of variables with a non-zero cost.
-  logger.Log(absl::StrFormat("c #weights:%zu #vars:%d #constraints:%d",
-                          nodes.size(), problem.num_variables(),
-                          problem.constraints_size()));
+  logger.Log(absl::StrFormat("c #weights:%u #vars:%d #constraints:%d",
+                             nodes.size(), problem.num_variables(),
+                             problem.constraints_size()));
 
   // Create the sorter network.
   solver->Backtrack(0);
@@ -1003,9 +1005,9 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
   }
 
   // Print the number of variables with a non-zero cost.
-  logger.Log(absl::StrFormat("c #weights:%zu #vars:%d #constraints:%d",
-                          nodes.size(), problem.num_variables(),
-                          problem.constraints_size()));
+  logger.Log(absl::StrFormat("c #weights:%u #vars:%d #constraints:%d",
+                             nodes.size(), problem.num_variables(),
+                             problem.constraints_size()));
 
   // This is used by the "stratified" approach.
   Coefficient stratified_lower_bound(0);
@@ -1029,13 +1031,13 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     const std::string gap_string =
         (upper_bound == kCoefficientMax)
             ? ""
-            : absl::StrFormat(" gap:%lld", (upper_bound - lower_bound).value());
+            : absl::StrFormat(" gap:%d", (upper_bound - lower_bound).value());
     logger.Log(
-        absl::StrFormat("c iter:%d [%s] lb:%lld%s assumptions:%zu depth:%d",
-                        iter, previous_core_info.c_str(),
+        absl::StrFormat("c iter:%d [%s] lb:%d%s assumptions:%u depth:%d", iter,
+                        previous_core_info,
                         lower_bound.value() - offset.value() +
                             static_cast<int64>(problem.objective().offset()),
-                        gap_string.c_str(), nodes.size(), max_depth));
+                        gap_string, nodes.size(), max_depth));
 
     // Solve under the assumptions.
     const SatSolver::Status result =
@@ -1069,7 +1071,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     // The lower bound will be increased by that much.
     const Coefficient min_weight = ComputeCoreMinWeight(nodes, core);
     previous_core_info =
-        absl::StrFormat("core:%zu mw:%lld", core.size(), min_weight.value());
+        absl::StrFormat("core:%u mw:%d", core.size(), min_weight.value());
 
     // Increase stratified_lower_bound according to the parameters.
     if (stratified_lower_bound < min_weight &&
@@ -1099,15 +1101,15 @@ void LogSolveInfo(SatSolver::Status result, const SatSolver& sat_solver,
                              ? "OPTIMAL"
                              : SatStatusString(result).c_str());
   if (objective < kint64max) {
-    printf("objective: %lld\n", objective);
+    absl::PrintF("objective: %d\n", objective);
   } else {
     printf("objective: NA\n");
   }
-  printf("best_bound: %lld\n", best_bound);
+  absl::PrintF("best_bound: %d\n", best_bound);
   printf("booleans: %d\n", sat_solver.NumVariables());
-  printf("conflicts: %lld\n", sat_solver.num_failures());
-  printf("branches: %lld\n", sat_solver.num_branches());
-  printf("propagations: %lld\n", sat_solver.num_propagations());
+  absl::PrintF("conflicts: %d\n", sat_solver.num_failures());
+  absl::PrintF("branches: %d\n", sat_solver.num_branches());
+  absl::PrintF("propagations: %d\n", sat_solver.num_propagations());
   printf("walltime: %f\n", wall_timer.Get());
   printf("usertime: %f\n", user_timer.Get());
   printf("deterministic_time: %f\n", sat_solver.deterministic_time());
@@ -1410,7 +1412,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
   // TODO(user): The core is returned in the same order as the assumptions,
   // so we don't really need this map, we could just do a linear scan to
   // recover which node are part of the core.
-  std::map<LiteralIndex, int> assumption_to_term_index;
+  std::map<LiteralIndex, int> literal_to_term_index;
 
   // Start the algorithm.
   int max_depth = 0;
@@ -1589,7 +1591,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
 
     // Convert integer_assumptions to Literals.
     std::vector<Literal> assumptions;
-    assumption_to_term_index.clear();
+    literal_to_term_index.clear();
     for (int i = 0; i < integer_assumptions.size(); ++i) {
       assumptions.push_back(integer_encoder->GetOrCreateAssociatedLiteral(
           integer_assumptions[i]));
@@ -1597,7 +1599,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       // Tricky: In some rare case, it is possible that the same literal
       // correspond to more that one assumptions. In this case, we can just
       // pick one of them when converting back a core to term indices.
-      assumption_to_term_index[assumptions.back().Index()] = term_indices[i];
+      literal_to_term_index[assumptions.back().Index()] = term_indices[i];
     }
 
     // Solve under the assumptions.
@@ -1634,7 +1636,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       IntegerValue new_var_ub(0);
       int new_depth = 0;
       for (const Literal lit : core) {
-        const int index = gtl::FindOrDie(assumption_to_term_index, lit.Index());
+        const int index = gtl::FindOrDie(literal_to_term_index, lit.Index());
         min_weight = std::min(min_weight, terms[index].weight);
         max_weight = std::max(max_weight, terms[index].weight);
         new_depth = std::max(new_depth, terms[index].depth + 1);
@@ -1654,9 +1656,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       max_depth = std::max(max_depth, new_depth);
       if (log_info) {
         LOG(INFO) << absl::StrFormat(
-            "core:%zu weight:[%lld,%lld] domain:[%lld,%lld] depth:%d",
-            core.size(), min_weight.value(), max_weight.value(),
-            new_var_lb.value(), new_var_ub.value(), new_depth);
+            "core:%u weight:[%d,%d] domain:[%d,%d] depth:%d", core.size(),
+            min_weight.value(), max_weight.value(), new_var_lb.value(),
+            new_var_ub.value(), new_depth);
       }
 
       // We will "transfer" min_weight from all the variables of the core
@@ -1671,7 +1673,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
         std::vector<IntegerVariable> constraint_vars;
         std::vector<int64> constraint_coeffs;
         for (const Literal lit : core) {
-          const int index = gtl::FindOrDie(assumption_to_term_index, lit.Index());
+          const int index = gtl::FindOrDie(literal_to_term_index, lit.Index());
           terms[index].weight -= min_weight;
           constraint_vars.push_back(terms[index].var);
           constraint_coeffs.push_back(1);

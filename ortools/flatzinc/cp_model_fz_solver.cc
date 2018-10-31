@@ -16,15 +16,14 @@
 #include <atomic>
 #include <cmath>
 #include <limits>
-#include <unordered_map>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_split.h"
+#include "absl/synchronization/mutex.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/mutex.h"
-#include "ortools/base/split.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
@@ -93,8 +92,8 @@ struct CpModelProtoWithMapping {
   SatParameters parameters;
 
   // Mapping from flatzinc variables to CpModelProto variables.
-  std::unordered_map<fz::IntegerVariable*, int> fz_var_to_index;
-  std::unordered_map<int64, int> constant_value_to_index;
+  absl::flat_hash_map<fz::IntegerVariable*, int> fz_var_to_index;
+  absl::flat_hash_map<int64, int> constant_value_to_index;
 };
 
 int CpModelProtoWithMapping::LookupConstant(int64 value) {
@@ -224,11 +223,18 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     FillAMinusBInDomain({kint64min, -1}, fz_ct, ct);
   } else if (fz_ct.type == "bool_gt" || fz_ct.type == "int_gt") {
     FillAMinusBInDomain({1, kint64max}, fz_ct, ct);
-  } else if (fz_ct.type == "bool_eq" || fz_ct.type == "int_eq" || 
+  } else if (fz_ct.type == "bool_eq" || fz_ct.type == "int_eq" ||
              fz_ct.type == "bool2int") {
     FillAMinusBInDomain({0, 0}, fz_ct, ct);
-  } else if (fz_ct.type == "bool_ne" || fz_ct.type == "bool_not" ||
-             fz_ct.type == "int_ne") {
+  } else if (fz_ct.type == "bool_ne" || fz_ct.type == "bool_not") {
+    auto* arg = ct->mutable_linear();
+    arg->add_vars(LookupVar(fz_ct.arguments[0]));
+    arg->add_coeffs(1);
+    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    arg->add_coeffs(1);
+    arg->add_domain(1);
+    arg->add_domain(1);
+  } else if (fz_ct.type == "int_ne") {
     FillAMinusBInDomain({kint64min, -1, 1, kint64max}, fz_ct, ct);
   } else if (fz_ct.type == "int_lin_eq") {
     const int64 rhs = fz_ct.arguments[2].values[0];
@@ -276,8 +282,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                             fz_ct.arguments[1].values.end()}),
                         arg);
     } else if (fz_ct.arguments[1].type == fz::Argument::INT_INTERVAL) {
-      FillDomain({{fz_ct.arguments[1].values[0], fz_ct.arguments[1].values[1]}},
-                 arg);
+      FillDomainInProto(
+          Domain(fz_ct.arguments[1].values[0], fz_ct.arguments[1].values[1]),
+          arg);
     } else {
       LOG(FATAL) << "Wrong format";
     }
@@ -330,7 +337,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     arg->add_vars(-LookupVar(fz_ct.arguments[0]) - 1);
   } else if (fz_ct.type == "int_plus") {
     auto* arg = ct->mutable_linear();
-    FillDomain({{0, 0}}, arg);
+    FillDomainInProto(Domain(0, 0), arg);
     arg->add_vars(LookupVar(fz_ct.arguments[0]));
     arg->add_coeffs(1);
     arg->add_vars(LookupVar(fz_ct.arguments[1]));
@@ -357,7 +364,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->set_index(LookupVar(fz_ct.arguments[0]));
       arg->set_target(LookupVar(fz_ct.arguments[2]));
 
-      if (!strings::EndsWith(fz_ct.type, "no_offset")) {
+      if (!absl::EndsWith(fz_ct.type, "no_offset")) {
         // Add a dummy variable at position zero because flatzinc index start at
         // 1.
         // TODO(user): Make sure that zero is not in the index domain...
@@ -367,7 +374,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     } else {
       // Special case added by the presolve (not in flatzinc). We encode this
       // as a table constraint.
-      CHECK(!strings::EndsWith(fz_ct.type, "no_offset"));
+      CHECK(!absl::EndsWith(fz_ct.type, "no_offset"));
       auto* arg = ct->mutable_table();
 
       // the constraint is:
@@ -648,7 +655,7 @@ void CpModelProtoWithMapping::FillReifConstraint(const fz::Constraint& fz_ct,
                                                  ConstraintProto* ct) {
   // Start by adding a non-reified version of the same constraint.
   fz::Constraint copy = fz_ct;
-  if (strings::EndsWith(fz_ct.type, "_reif")) {
+  if (absl::EndsWith(fz_ct.type, "_reif")) {
     copy.type = fz_ct.type.substr(0, fz_ct.type.size() - 5);  // Remove _reif.
   } else {
     copy.type = fz_ct.type;
@@ -881,7 +888,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     if (fz_ct == nullptr || !fz_ct->active) continue;
     ConstraintProto* ct = m.proto.add_constraints();
     ct->set_name(fz_ct->type);
-    if (strings::EndsWith(fz_ct->type, "_reif") ||
+    if (absl::EndsWith(fz_ct->type, "_reif") ||
         fz_ct->type == "array_bool_or" || fz_ct->type == "array_bool_and") {
       m.FillReifConstraint(*fz_ct, ct);
     } else {

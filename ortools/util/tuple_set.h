@@ -34,9 +34,9 @@
 #define OR_TOOLS_UTIL_TUPLE_SET_H_
 
 #include <algorithm>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
@@ -124,7 +124,7 @@ class IntTupleSet {
     // Maps a tuple's fingerprint to the list of tuples with this
     // fingerprint, represented by their start index in the
     // flat_tuples_ vector.
-    std::unordered_map<int64, std::vector<int> > tuple_fprint_to_index_;
+    absl::flat_hash_map<int64, std::vector<int> > tuple_fprint_to_index_;
   };
 
   // Used to represent a light representation of a tuple.
@@ -358,7 +358,7 @@ inline int IntTupleSet::NumDifferentValuesInColumn(int col) const {
   if (col < 0 || col >= data_->Arity()) {
     return 0;
   }
-  std::unordered_set<int64> values;
+  absl::flat_hash_set<int64> values;
   for (int i = 0; i < data_->NumTuples(); ++i) {
     values.insert(data_->Value(i, col));
   }

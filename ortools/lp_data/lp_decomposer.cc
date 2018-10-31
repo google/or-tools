@@ -15,8 +15,8 @@
 
 #include <vector>
 
+#include "absl/synchronization/mutex.h"
 #include "ortools/algorithms/dynamic_partition.h"
-#include "ortools/base/mutex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_utils.h"
 

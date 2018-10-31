@@ -23,17 +23,17 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/span.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
@@ -103,7 +103,7 @@ class SatSolver {
   // be UNSAT.
   //
   // TODO(user): Rename this to AddClause().
-  bool AddProblemClause(absl::Span<Literal> literals);
+  bool AddProblemClause(absl::Span<const Literal> literals);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this
@@ -306,7 +306,7 @@ class SatSolver {
   // Extract the current problem clauses. The Output type must support the two
   // functions:
   //  - void AddBinaryClause(Literal a, Literal b);
-  //  - void AddClause(absl::Span<Literal> clause);
+  //  - void AddClause(absl::Span<const Literal> clause);
   //
   // TODO(user): also copy the removable clauses?
   template <typename Output>
@@ -554,7 +554,7 @@ class SatSolver {
 
   // Returns the maximum trail_index of the literals in the given clause.
   // All the literals must be assigned. Returns -1 if the clause is empty.
-  int ComputeMaxTrailIndex(absl::Span<Literal> clause) const;
+  int ComputeMaxTrailIndex(absl::Span<const Literal> clause) const;
 
   // Computes what is known as the first UIP (Unique implication point) conflict
   // clause starting from the failing clause. For a definition of UIP and a
@@ -921,6 +921,22 @@ inline std::function<void(Model*)> ReifiedBoolOr(
     // All false => r false.
     clause.push_back(r.Negated());
     model->Add(ClauseConstraint(clause));
+  };
+}
+
+// enforcement_literals => clause.
+inline std::function<void(Model*)> EnforcedClause(
+    absl::Span<const Literal> enforcement_literals,
+    absl::Span<const Literal> clause) {
+  return [=](Model* model) {
+    std::vector<Literal> tmp;
+    for (const Literal l : enforcement_literals) {
+      tmp.push_back(l.Negated());
+    }
+    for (const Literal l : clause) {
+      tmp.push_back(l);
+    }
+    model->Add(ClauseConstraint(tmp));
   };
 }
 

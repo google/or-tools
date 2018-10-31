@@ -88,9 +88,6 @@ message ConstraintSolverParameters {
   // Print added constraints.
   bool print_added_constraints = 13;
 
-  // Export model to file.
-  string export_file = 14;
-
   //
   // Control search.
   //
@@ -104,11 +101,8 @@ message ConstraintSolverParameters {
   //
   // Control the implementation of the table constraint.
   //
-  bool use_compact_table = 100;
   bool use_small_table = 101;
-  bool use_sat_table = 102;
-  int32 ac4r_table_threshold = 103;
-  bool use_mdd_table = 104;
+  reserved 100, 102, 103, 104;
 
   //
   // Control the propagation of the cumulative constraint.
@@ -129,4 +123,12 @@ message ConstraintSolverParameters {
   // Control the implementation of the element constraint.
   //
   bool use_element_rmq = 111;
+
+  //
+  // Skip locally optimal pairs of paths in PathOperators. Setting this
+  // parameter to true might skip valid neighbors if there are constraints
+  // linking paths together (such as precedences). In any other case this
+  // should only speed up the search without omitting any neighbors.
+  //
+  bool skip_locally_optimal_paths = 113;
 };

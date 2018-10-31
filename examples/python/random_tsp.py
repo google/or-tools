@@ -22,13 +22,15 @@
    (forbidden arcs).
 """
 
-import random
 import argparse
-from ortools.constraint_solver import pywrapcp
-# You need to import routing_enums_pb2 after pywrapcp!
+from functools import partial
+import random
+
 from ortools.constraint_solver import routing_enums_pb2
+from ortools.constraint_solver import pywrapcp
 
 parser = argparse.ArgumentParser()
+
 parser.add_argument(
     '--tsp_size',
     default=10,
@@ -46,19 +48,16 @@ parser.add_argument(
     help='Number of random forbidden connections.')
 parser.add_argument(
     '--tsp_random_seed', default=0, type=int, help='Random seed.')
-parser.add_argument(
-    '--light_propagation',
-    default=False,
-    type=bool,
-    help='Use light propagation')
 
 # Cost/distance functions.
 
 
-def Distance(i, j):
+def Distance(manager, i, j):
   """Sample function."""
   # Put your distance code here.
-  return i + j
+  node_i = manager.IndexToNode(i)
+  node_j = manager.IndexToNode(j)
+  return node_i + node_j
 
 
 class RandomMatrix(object):
@@ -79,8 +78,9 @@ class RandomMatrix(object):
         else:
           self.matrix[from_node][to_node] = rand.randrange(distance_max)
 
-  def Distance(self, from_node, to_node):
-    return self.matrix[from_node][to_node]
+  def Distance(self, manager, from_index, to_index):
+    return self.matrix[manager.IndexToNode(from_index)][manager.IndexToNode(
+        to_index)]
 
 
 def main(args):
@@ -88,25 +88,26 @@ def main(args):
   if args.tsp_size > 0:
     # TSP of size args.tsp_size
     # Second argument = 1 to build a single tour (it's a TSP).
-    # Nodes are indexed from 0 to parser_tsp_size - 1, by default the start of
+    # Nodes are indexed from 0 to args_tsp_size - 1, by default the start of
     # the route is node 0.
-    routing = pywrapcp.RoutingModel(args.tsp_size, 1, 0)
-
-    search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
+    manager = pywrapcp.RoutingIndexManager(args.tsp_size, 1, 0)
+    routing = pywrapcp.RoutingModel(manager)
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     # Setting first solution heuristic (cheapest addition).
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
 
     # Setting the cost function.
     # Put a callback to the distance accessor here. The callback takes two
-    # arguments (the from and to node inidices) and returns the distance between
-    # these nodes.
-    matrix = RandomMatrix(args.tsp_size, args.tsp_random_seed)
-    matrix_callback = matrix.Distance
+    # arguments (the from and to node indices) and returns the distance between
+    # these indices.
+    cost = 0
     if args.tsp_use_random_matrix:
-      routing.SetArcCostEvaluatorOfAllVehicles(matrix_callback)
+      matrix = RandomMatrix(args.tsp_size, args.tsp_random_seed)
+      cost = routing.RegisterTransitCallback(partial(matrix.Distance, manager))
     else:
-      routing.SetArcCostEvaluatorOfAllVehicles(Distance)
+      cost = routing.RegisterTransitCallback(partial(Distance, manager))
+    routing.SetArcCostEvaluatorOfAllVehicles(cost)
     # Forbid node connections (randomly).
     rand = random.Random()
     rand.seed(args.tsp_random_seed)
@@ -120,9 +121,6 @@ def main(args):
         forbidden_connections += 1
 
     # Solve, returns a solution if any.
-
-
-#    assignment = routing.SolveWithParameters(search_parameters)
     assignment = routing.Solve()
     if assignment:
       # Solution cost.
@@ -141,6 +139,7 @@ def main(args):
       print('No solution found.')
   else:
     print('Specify an instance greater than 0.')
+
 
 if __name__ == '__main__':
   main(parser.parse_args())

@@ -103,6 +103,8 @@ def main(words, word_len, num_answers=20):
     # print E
     print_solution(E, words)
     num_solutions += 1
+    if num_solutions > num_answers:
+      break
 
   solver.EndSearch()
 
@@ -151,10 +153,10 @@ def read_words(word_list, word_len, limit):
   return all_words
 
 
-word_dict = "/usr/share/dict/words"
-word_len = 2
+word_dict = "examples/data/words/list.txt"
+word_len = 4
 limit = 1000000
-num_answers = 20
+num_answers = 5
 
 if __name__ == "__main__":
 

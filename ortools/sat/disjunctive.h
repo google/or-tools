@@ -188,6 +188,7 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
   std::vector<int> non_gray_task_to_event_;
   std::vector<int> event_to_task_;
   std::vector<IntegerValue> event_time_;
+  std::vector<IntegerValue> event_size_;
 
   std::vector<bool> is_gray_;
 };

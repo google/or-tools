@@ -55,19 +55,20 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/tuple_set.h"
 #include "ortools/util/vector_map.h"
@@ -87,8 +88,7 @@ class CPIntervalVariableProto;
 // and subclasses of BaseIntExpr. Variables are stateful objects that
 // provide a rich API (remove values, WhenBound...). On the other hand,
 // subclasses of BaseIntExpr represent range-only stateless objects.
-// That is, std::min(A + B) is recomputed each time as std::min(A) +
-// std::min(B).
+// That is, min(A + B) is recomputed each time as min(A) + min(B).
 //
 // Furthermore, sometimes, the propagation on an expression is not complete,
 // and Min(), Max() are not monotonic with respect to SetMin() and SetMax().
@@ -251,9 +251,9 @@ inline uint64 Hash1(int value) { return Hash1(static_cast<uint32>(value)); }
 
 inline uint64 Hash1(void* const ptr) {
 #if defined(ARCH_K8) || defined(__powerpc64__) || defined(__aarch64__)
-  return Hash1(absl::bit_cast<uint64>(ptr));
+  return Hash1(reinterpret_cast<uint64>(ptr));
 #else
-  return Hash1(absl::bit_cast<uint32>(ptr));
+  return Hash1(reinterpret_cast<uint32>(ptr));
 #endif
 }
 
@@ -318,7 +318,7 @@ class RevImmutableMultiMap {
     return false;
   }
 
-  // Returns one value attached to 'key', or 'defaut_value' if 'key'
+  // Returns one value attached to 'key', or 'default_value' if 'key'
   // is not in the multi-map. The actual value returned if more than one
   // values is attached to the same key is not specified.
   const V& FindWithDefault(const K& key, const V& default_value) const {
@@ -816,6 +816,7 @@ class LocalSearchOperator : public BaseObject {
   ~LocalSearchOperator() override {}
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) = 0;
   virtual void Start(const Assignment* assignment) = 0;
+  virtual void Reset() {}
 };
 
 // ----- Base operator class for operators manipulating variables -----
@@ -840,6 +841,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
       activated_.Set(i, var_handler_.ValueFromAssignent(*assignment, vars_[i],
                                                         i, &values_[i]));
     }
+    prev_values_ = old_values_;
     old_values_ = values_;
     was_activated_.SetContentFromBitsetOfSameSize(activated_);
     OnStart();
@@ -905,6 +907,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
       const int64 size = Size();
       values_.resize(size);
       old_values_.resize(size);
+      prev_values_.resize(size);
       activated_.Resize(size);
       was_activated_.Resize(size);
       changes_.ClearAndResize(size);
@@ -929,6 +932,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
   std::vector<V*> vars_;
   std::vector<Val> values_;
   std::vector<Val> old_values_;
+  std::vector<Val> prev_values_;
   Bitset64<> activated_;
   Bitset64<> was_activated_;
   SparseBitset<> changes_;
@@ -1233,9 +1237,11 @@ class PathOperator : public IntVarLocalSearchOperator {
   // removed.
   PathOperator(const std::vector<IntVar*>& next_vars,
                const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
+               bool skip_locally_optimal_paths,
                std::function<int(int64)> start_empty_path_class);
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
+  void Reset() override;
 
   // TODO(user): Make the following methods protected.
   bool SkipUnchanged(int index) const override;
@@ -1350,11 +1356,13 @@ class PathOperator : public IntVarLocalSearchOperator {
   const int number_of_nexts_;
   const bool ignore_path_vars_;
   int next_base_to_increment_;
+  int num_paths_ = 0;
+  std::vector<int64> start_to_path_;
 
  private:
   void OnStart() override;
   // Called by OnStart() after initializing node information. Should be
-  // overriden instead of OnStart() to avoid calling PathOperator::OnStart
+  // overridden instead of OnStart() to avoid calling PathOperator::OnStart
   // explicitly.
   virtual void OnNodeInitialization() {}
   // Returns true if two nodes are on the same path in the current assignment.
@@ -1385,6 +1393,10 @@ class PathOperator : public IntVarLocalSearchOperator {
   bool just_started_;
   bool first_start_;
   std::function<int(int64)> start_empty_path_class_;
+  bool skip_locally_optimal_paths_;
+  bool optimal_paths_enabled_;
+  std::vector<int> path_basis_;
+  std::vector<bool> optimal_paths_;
 };
 
 // Simple PathOperator wrapper that also stores the current previous nodes,
@@ -1460,7 +1472,52 @@ class LocalSearchFilter : public BaseObject {
   virtual void Synchronize(const Assignment* assignment,
                            const Assignment* delta) = 0;
   virtual bool IsIncremental() const { return false; }
+
+  // DO NOT USE. Objective value from last time Synchronize() was called.
+  virtual int64 GetSynchronizedObjectiveValue() const { return 0LL; }
+  // DO NOT USE. Objective value from the last time Accept() was called and
+  // returned true. If the last Accept() call returned false, returns an
+  // undefined value.
+  virtual int64 GetAcceptedObjectiveValue() const { return 0LL; }
 };
+
+#if !defined(SWIG)
+// Filter manager: when a move is made, filters are executed to decide whether
+// the solution is feasible and compute parts of the new cost. This class
+// schedules filter execution and composes costs as a sum.
+class LocalSearchFilterManager : public LocalSearchFilter {
+ public:
+  LocalSearchFilterManager(const std::vector<LocalSearchFilter*>& filters,
+                           IntVar* objective);
+  std::string DebugString() const override {
+    return "LocalSearchFilterManager";
+  }
+  // Returns true iff all filters return true, and the sum of their accepted
+  // objectives is smaller or equal to the target objective. This target
+  // objective is:
+  // (objective_ == nullptr) ?
+  //   kint64max :
+  //   ((objective_ != delta->Objective()) ?
+  //     objective_.Max() :
+  //     min(objective_.Max(), delta->ObjectiveMax()))
+  bool Accept(const Assignment* delta, const Assignment* deltadelta) override;
+  // Synchronizes all filters to assignment.
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override;
+  bool IsIncremental() const override { return is_incremental_; }
+  int64 GetSynchronizedObjectiveValue() const override {
+    return synchronized_value_;
+  }
+  int64 GetAcceptedObjectiveValue() const override { return accepted_value_; }
+
+ private:
+  std::vector<LocalSearchFilter*> filters_;
+  IntVar* const objective_;
+  bool is_incremental_;
+  int64 synchronized_value_;
+  int64 accepted_value_;
+};
+#endif
 
 // ----- IntVarLocalSearchFilter -----
 
@@ -1527,6 +1584,7 @@ class PropagationMonitor : public SearchMonitor {
  public:
   explicit PropagationMonitor(Solver* const solver);
   ~PropagationMonitor() override;
+  std::string DebugString() const override { return "PropagationMonitor"; }
 
   // Propagation events.
   virtual void BeginConstraintInitialPropagation(
@@ -1593,6 +1651,7 @@ class LocalSearchMonitor : public SearchMonitor {
  public:
   explicit LocalSearchMonitor(Solver* const solver);
   ~LocalSearchMonitor() override;
+  std::string DebugString() const override { return "LocalSearchMonitor"; }
 
   // Local search operator events.
   virtual void BeginOperatorStart() = 0;
@@ -2025,17 +2084,17 @@ class ArgumentHolder {
 
  private:
   std::string type_name_;
-  std::unordered_map<std::string, int64> integer_argument_;
-  std::unordered_map<std::string, std::vector<int64> > integer_array_argument_;
-  std::unordered_map<std::string, IntTupleSet> matrix_argument_;
-  std::unordered_map<std::string, IntExpr*> integer_expression_argument_;
-  std::unordered_map<std::string, IntervalVar*> interval_argument_;
-  std::unordered_map<std::string, SequenceVar*> sequence_argument_;
-  std::unordered_map<std::string, std::vector<IntVar*> >
+  absl::flat_hash_map<std::string, int64> integer_argument_;
+  absl::flat_hash_map<std::string, std::vector<int64> > integer_array_argument_;
+  absl::flat_hash_map<std::string, IntTupleSet> matrix_argument_;
+  absl::flat_hash_map<std::string, IntExpr*> integer_expression_argument_;
+  absl::flat_hash_map<std::string, IntervalVar*> interval_argument_;
+  absl::flat_hash_map<std::string, SequenceVar*> sequence_argument_;
+  absl::flat_hash_map<std::string, std::vector<IntVar*> >
       integer_variable_array_argument_;
-  std::unordered_map<std::string, std::vector<IntervalVar*> >
+  absl::flat_hash_map<std::string, std::vector<IntervalVar*> >
       interval_array_argument_;
-  std::unordered_map<std::string, std::vector<SequenceVar*> >
+  absl::flat_hash_map<std::string, std::vector<SequenceVar*> >
       sequence_array_argument_;
 };
 
@@ -2100,99 +2159,7 @@ class ModelParser : public ModelVisitor {
  private:
   std::vector<ArgumentHolder*> holders_;
 };
-#endif  // SWIG
 
-// ---------- CpModelLoader -----------
-
-// The class CpModelLoader is responsible for reading a protocol
-// buffer representing a CP model and creating the corresponding CP
-// model with the expressions and constraints. It should not be used directly.
-class CpModelLoader {
- public:
-  explicit CpModelLoader(Solver* const solver) : solver_(solver) {}
-  ~CpModelLoader() {}
-
-  Solver* solver() const { return solver_; }
-
-  // Returns stored integer expression.
-  IntExpr* IntegerExpression(int index) const;
-  // Returns the number of stored integer expressions.
-  int NumIntegerExpressions() const { return expressions_.size(); }
-  // Returns stored interval variable.
-  IntervalVar* IntervalVariable(int index) const;
-  // Returns the number of stored interval variables.
-  int NumIntervalVariables() const { return intervals_.size(); }
-
-#if !defined(SWIG)
-  // Internal, do not use.
-
-  // Builds integer expression from proto and stores it. It returns
-  // true upon success.
-  bool BuildFromProto(const CpIntegerExpression& proto);
-  // Builds constraint from proto and returns it.
-  Constraint* BuildFromProto(const CpConstraint& proto);
-  // Builds interval variable from proto and stores it. It returns
-  // true upon success.
-  bool BuildFromProto(const CpIntervalVariable& proto);
-  // Builds sequence variable from proto and stores it. It returns
-  // true upon success.
-  bool BuildFromProto(const CpSequenceVariable& proto);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       int64* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       IntExpr** to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       std::vector<int64>* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       IntTupleSet* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       std::vector<IntVar*>* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       IntervalVar** to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       std::vector<IntervalVar*>* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       SequenceVar** to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       std::vector<SequenceVar*>* to_fill);
-
-  template <class P, class A>
-  bool ScanArguments(const std::string& type, const P& proto, A* to_fill) {
-    const int index = tags_.Index(type);
-    for (int i = 0; i < proto.arguments_size(); ++i) {
-      if (ScanOneArgument(index, proto.arguments(i), to_fill)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  int TagIndex(const std::string& tag) const { return tags_.Index(tag); }
-
-  void AddTag(const std::string& tag) { tags_.Add(tag); }
-
-  // TODO(user): Use.
-  void SetSequenceVariable(int index, SequenceVar* const var) {}
-#endif  // !defined(SWIG)
-
- private:
-  Solver* const solver_;
-  std::vector<IntExpr*> expressions_;
-  std::vector<IntervalVar*> intervals_;
-  std::vector<SequenceVar*> sequences_;
-  VectorMap<std::string> tags_;
-};
-
-#if !defined(SWIG)
 // ----- Utility Class for Callbacks -----
 
 template <class T>
@@ -2226,26 +2193,6 @@ class ArrayWithOffset : public BaseObject {
   const int64 index_max_;
   std::unique_ptr<T[]> values_;
 };
-
-template <class T>
-std::function<T(int64)> MakeFunctionFromProto(CpModelLoader* const builder,
-                                              const CpExtension& proto,
-                                              int tag_index) {
-  DCHECK_EQ(tag_index, proto.type_index());
-  Solver* const solver = builder->solver();
-  int64 index_min = 0;
-  CHECK(builder->ScanArguments(ModelVisitor::kMinArgument, proto, &index_min));
-  int64 index_max = 0;
-  CHECK(builder->ScanArguments(ModelVisitor::kMaxArgument, proto, &index_max));
-  std::vector<int64> values;
-  CHECK(builder->ScanArguments(ModelVisitor::kValuesArgument, proto, &values));
-  ArrayWithOffset<T>* const array =
-      solver->RevAlloc(new ArrayWithOffset<T>(index_min, index_max));
-  for (int i = index_min; i <= index_max; ++i) {
-    array->SetValue(i, values[i - index_min]);
-  }
-  return [array](int64 index) { return array->Evaluate(index); };
-}
 #endif  // SWIG
 
 // This class is a reversible growing array. In can grow in both
@@ -2562,7 +2509,7 @@ class RevPartialSequence {
 
 // This class represents a reversible bitset. It is meant to represent a set of
 // active bits. It does not offer direct access, but just methods that can
-// reversibly substract another bitset, or check if the current active bitset
+// reversibly subtract another bitset, or check if the current active bitset
 // intersects with another bitset.
 class UnsortedNullableRevBitset {
  public:
@@ -2575,7 +2522,7 @@ class UnsortedNullableRevBitset {
   // be called only once.
   void Init(Solver* const solver, const std::vector<uint64>& mask);
 
-  // This method substracts the mask from the active bitset. It returns true if
+  // This method subtracts the mask from the active bitset. It returns true if
   // the active bitset was changed in the process.
   bool RevSubtract(Solver* const solver, const std::vector<uint64>& mask);
 

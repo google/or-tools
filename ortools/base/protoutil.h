@@ -14,30 +14,31 @@
 #ifndef OR_TOOLS_BASE_PROTOUTIL_H_
 #define OR_TOOLS_BASE_PROTOUTIL_H_
 
+#include "absl/time/time.h"
 #include "google/protobuf/duration.pb.h"
 #include "ortools/base/status.h"
 #include "ortools/base/statusor.h"
-#include "ortools/base/time_support.h"
 
 namespace util_time {
 
 inline ::util::StatusOr<google::protobuf::Duration> EncodeGoogleApiProto(
-    base::Duration d) {
+    absl::Duration d) {
   google::protobuf::Duration proto;
-  proto.set_seconds(static_cast<int64>(d));
-  proto.set_nanos(static_cast<int>(d * 1e9) % 1000000000);
+  const int64 d_in_nano = ToInt64Nanoseconds(d);
+  proto.set_seconds(static_cast<int64>(d_in_nano / 1000000000));
+  proto.set_nanos(static_cast<int>(d_in_nano % 1000000000));
   return proto;
 }
 
-inline ::util::Status EncodeGoogleApiProto(base::Duration d,
+inline ::util::Status EncodeGoogleApiProto(absl::Duration d,
                                            google::protobuf::Duration* proto) {
   *proto = EncodeGoogleApiProto(d).ValueOrDie();
   return util::OkStatus();
 }
 
-inline ::util::StatusOr<base::Duration> DecodeGoogleApiProto(
+inline ::util::StatusOr<absl::Duration> DecodeGoogleApiProto(
     const google::protobuf::Duration& proto) {
-  return base::Seconds(proto.seconds() + 1e-9 * proto.nanos());
+  return absl::Seconds(proto.seconds() + 1e-9 * proto.nanos());
 }
 
 }  // namespace util_time

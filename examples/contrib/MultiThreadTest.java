@@ -1,25 +1,24 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.Arrays;
-
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolver.OptimizationProblemType;
 import com.google.ortools.linearsolver.MPSolver.ResultStatus;
 import com.google.ortools.linearsolver.MPVariable;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MultiThreadTest {
 
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
-  private final static boolean verboseOutput = false; // To enable Cbc logging
-
+  private static final boolean verboseOutput = false; // To enable Cbc logging
 
   public static void main(String[] args) throws Exception {
     launchProtocol(10, 8, true);
@@ -27,7 +26,8 @@ public class MultiThreadTest {
     return;
   }
 
-  public static void launchProtocol(int wholeLoopAttmpts, int threadPoolSize, boolean runInParallel) throws Exception {
+  public static void launchProtocol(int wholeLoopAttmpts, int threadPoolSize, boolean runInParallel)
+      throws Exception {
 
     for (int noAttmpt = 0; noAttmpt < wholeLoopAttmpts; noAttmpt++) {
 
@@ -47,30 +47,30 @@ public class MultiThreadTest {
       if (runInParallel) {
         System.out.println("Launching thread pool");
         executor.invokeAll(threadList);
-        for( SolverThread thread : threadList ) {
-            System.out.println(thread.getStatusSolver().toString());
+        for (SolverThread thread : threadList) {
+          System.out.println(thread.getStatusSolver().toString());
         }
       } else {
 
         for (SolverThread thread : threadList) {
           System.out.println("Launching single thread");
-          executor.invokeAll( Arrays.asList(thread) );
+          executor.invokeAll(Arrays.asList(thread));
           System.out.println(thread.getStatusSolver().toString());
         }
       }
 
       System.out.println("Attempt finalized!");
       executor.shutdown();
-
     }
 
     System.out.println("Now exiting multi thread execution");
-
   }
 
   private static MPSolver makeProblem() {
 
-    MPSolver solver = new MPSolver(UUID.randomUUID().toString(), OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    MPSolver solver =
+        new MPSolver(
+            UUID.randomUUID().toString(), OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
 
     double infinity = MPSolver.infinity();
 
@@ -93,16 +93,13 @@ public class MultiThreadTest {
     }
 
     return solver;
-
   }
 
-  private final static class SolverThread implements Callable<MPSolver.ResultStatus> {
+  private static final class SolverThread implements Callable<MPSolver.ResultStatus> {
 
     private MPSolver.ResultStatus statusSolver;
 
-    public SolverThread() {
-
-    }
+    public SolverThread() {}
 
     @Override
     public ResultStatus call() throws Exception {
@@ -110,17 +107,14 @@ public class MultiThreadTest {
       statusSolver = solver.solve();
 
       // Check that the problem has an optimal solution.
-      if ( MPSolver.ResultStatus.OPTIMAL.equals(statusSolver) ) {
+      if (MPSolver.ResultStatus.OPTIMAL.equals(statusSolver)) {
         throw new RuntimeException("Non OPTIMAL status after solve.");
       }
       return statusSolver;
-
     }
 
     public MPSolver.ResultStatus getStatusSolver() {
       return statusSolver;
     }
-
   }
-
 }

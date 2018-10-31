@@ -1,4 +1,4 @@
-// Copyright 2010-2018 Google LLC
+// Copyright 2010-2017 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -21,12 +21,11 @@
 
 #include <map>
 #include <string>
-#include <unordered_map>
 #include <vector>
-#include "ortools/base/file.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_split.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/split.h"
 #include "ortools/base/strtoint.h"
 
 namespace operations_research {
@@ -236,7 +235,7 @@ class ParametersParser {
 void FindComponents(const std::vector<FapConstraint>& constraints,
                     const std::map<int, FapVariable>& variables,
                     const int maximum_variable_id,
-                    std::unordered_map<int, FapComponent>* components);
+                    absl::flat_hash_map<int, FapComponent>* components);
 
 // Function that computes the impact of a constraint.
 int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
@@ -248,7 +247,7 @@ void ParseInstance(const std::string& data_directory, bool find_components,
                    std::map<int, FapVariable>* variables,
                    std::vector<FapConstraint>* constraints,
                    std::string* objective, std::vector<int>* frequencies,
-                   std::unordered_map<int, FapComponent>* components);
+                   absl::flat_hash_map<int, FapComponent>* components);
 
 void ParseFileByLines(const std::string& filename,
                       std::vector<std::string>* lines) {
@@ -603,5 +602,6 @@ void ParseInstance(const std::string& data_directory, bool find_components,
     }
   }
 }
+
 }  // namespace operations_research
 #endif  // OR_TOOLS_EXAMPLES_FAP_PARSER_H_

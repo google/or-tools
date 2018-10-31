@@ -16,10 +16,10 @@
 #include <algorithm>
 #include <memory>
 #include <set>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -49,9 +49,9 @@ std::vector<std::vector<int64>> Transpose(
 }
 
 // Converts the vector representation returned by FullDomainEncoding() to a map.
-std::unordered_map<IntegerValue, Literal> GetEncoding(IntegerVariable var,
-                                                      Model* model) {
-  std::unordered_map<IntegerValue, Literal> encoding;
+absl::flat_hash_map<IntegerValue, Literal> GetEncoding(IntegerVariable var,
+                                                       Model* model) {
+  absl::flat_hash_map<IntegerValue, Literal> encoding;
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   for (const auto& entry : encoder->FullDomainEncoding(var)) {
     encoding[entry.value] = entry.literal;
@@ -60,7 +60,7 @@ std::unordered_map<IntegerValue, Literal> GetEncoding(IntegerVariable var,
 }
 
 void FilterValues(IntegerVariable var, Model* model,
-                  std::unordered_set<int64>* values) {
+                  absl::flat_hash_set<int64>* values) {
   const Domain domain = model->Get<IntegerTrail>()->InitialVariableDomain(var);
   for (auto it = values->begin(); it != values->end();) {
     const int64 v = *it;
@@ -76,12 +76,12 @@ void FilterValues(IntegerVariable var, Model* model,
 // controling if the lines are possible or not. The column has the given values,
 // and the Literal of the column variable can be retrieved using the encoding
 // map.
-void ProcessOneColumn(const std::vector<Literal>& line_literals,
-                      const std::vector<IntegerValue>& values,
-                      const std::unordered_map<IntegerValue, Literal>& encoding,
-                      Model* model) {
+void ProcessOneColumn(
+    const std::vector<Literal>& line_literals,
+    const std::vector<IntegerValue>& values,
+    const absl::flat_hash_map<IntegerValue, Literal>& encoding, Model* model) {
   CHECK_EQ(line_literals.size(), values.size());
-  std::unordered_map<IntegerValue, std::vector<Literal>>
+  absl::flat_hash_map<IntegerValue, std::vector<Literal>>
       value_to_list_of_line_literals;
 
   // If a value is false (i.e not possible), then the tuple with this value
@@ -120,7 +120,7 @@ std::function<void(Model*)> TableConstraint(
     const int n = vars.size();
 
     // Compute the set of possible values for each variable (from the table).
-    std::vector<std::unordered_set<int64>> values_per_var(n);
+    std::vector<absl::flat_hash_set<int64>> values_per_var(n);
     for (const std::vector<int64>& tuple : tuples) {
       for (int i = 0; i < n; ++i) {
         values_per_var[i].insert(tuple[i]);
@@ -203,7 +203,7 @@ std::function<void(Model*)> NegatedTableConstraint(
     const std::vector<std::vector<int64>>& tuples) {
   return [=](Model* model) {
     const int n = vars.size();
-    std::vector<std::unordered_map<int64, Literal>> mapping(n);
+    std::vector<absl::flat_hash_map<int64, Literal>> mapping(n);
     for (int i = 0; i < n; ++i) {
       for (const auto pair : model->Add(FullyEncodeVariable(vars[i]))) {
         mapping[i][pair.value.value()] = pair.literal;
@@ -275,7 +275,7 @@ std::function<void(Model*)> LiteralTableConstraint(
       CHECK_EQ(tuple_size, literal_tuples[i].size());
     }
 
-    std::unordered_map<LiteralIndex, std::vector<LiteralIndex>>
+    absl::flat_hash_map<LiteralIndex, std::vector<LiteralIndex>>
         line_literals_per_literal;
     for (int i = 0; i < num_tuples; ++i) {
       const LiteralIndex selected_index = line_literals[i].Index();
@@ -332,7 +332,7 @@ std::function<void(Model*)> TransitionConstraint(
     }
 
     // Construct a table with the possible values of each vars.
-    std::vector<std::unordered_set<int64>> possible_values(n);
+    std::vector<absl::flat_hash_set<int64>> possible_values(n);
     for (int time = 0; time < n; ++time) {
       const auto domain = integer_trail->InitialVariableDomain(vars[time]);
       for (const std::vector<int64>& transition : automata) {
@@ -378,9 +378,9 @@ std::function<void(Model*)> TransitionConstraint(
     // initial state, and at time n we should be in one of the final states. We
     // don't need to create Booleans at at time when there is just one possible
     // state (like at time zero).
-    std::unordered_map<IntegerValue, Literal> encoding;
-    std::unordered_map<IntegerValue, Literal> in_encoding;
-    std::unordered_map<IntegerValue, Literal> out_encoding;
+    absl::flat_hash_map<IntegerValue, Literal> encoding;
+    absl::flat_hash_map<IntegerValue, Literal> in_encoding;
+    absl::flat_hash_map<IntegerValue, Literal> out_encoding;
     for (int time = 0; time < n; ++time) {
       // All these vector have the same size. We will use them to enforce a
       // local table constraint representing one step of the automata at the

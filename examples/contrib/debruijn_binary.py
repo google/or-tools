@@ -50,8 +50,8 @@ from ortools.constraint_solver import pywrapcp
 
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(s == solver.Sum([(base**(tlen - i - 1)) * t[i]
-                              for i in range(tlen)]))
+  solver.Add(
+      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=2, n=3, m=8):

@@ -17,13 +17,13 @@
 
 namespace operations_research {
 
-::util::Status FileSetContents(absl::string_view file_name,
-                               absl::string_view content) {
+::util::Status PortableFileSetContents(absl::string_view file_name,
+                                       absl::string_view content) {
   return file::SetContents(file_name, content, file::Defaults());
 }
 
-::util::Status FileGetContents(absl::string_view file_name,
-                               std::string* output) {
+::util::Status PortableFileGetContents(absl::string_view file_name,
+                                       std::string* output) {
   return file::GetContents(file_name, output, file::Defaults());
 }
 
@@ -32,7 +32,7 @@ bool PortableTemporaryFile(const char* directory_prefix,
   return false;
 }
 
-::util::Status DeleteFile(absl::string_view file_name) {
+::util::Status PortableDeleteFile(absl::string_view file_name) {
   return file::Delete(file_name, file::Defaults());
 }
 

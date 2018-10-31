@@ -236,10 +236,9 @@ void PrecedencesPropagator::AdjustSizeFor(IntegerVariable i) {
   }
 }
 
-void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
-                                   IntegerValue offset,
-                                   IntegerVariable offset_var,
-                                   absl::Span<Literal> presence_literals) {
+void PrecedencesPropagator::AddArc(
+    IntegerVariable tail, IntegerVariable head, IntegerValue offset,
+    IntegerVariable offset_var, absl::Span<const Literal> presence_literals) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   AdjustSizeFor(tail);
   AdjustSizeFor(head);
@@ -729,7 +728,8 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
 void PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(
     Model* model) {
   VLOG(1) << "Detecting GreaterThanAtLeastOneOf() constraints...";
-  SatSolver* solver = model->GetOrCreate<SatSolver>();
+  auto* solver = model->GetOrCreate<SatSolver>();
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
 
   // Fill the set of incoming conditional arcs for each variables.
   gtl::ITIVector<IntegerVariable, std::vector<ArcIndex>> incoming_arcs_;
@@ -750,6 +750,7 @@ void PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(
   int num_added_constraints = 0;
   for (IntegerVariable target(0); target < incoming_arcs_.size(); ++target) {
     if (incoming_arcs_[target].size() <= 1) continue;
+    if (time_limit->LimitReached()) return;
 
     // Detect set of incoming arcs for which at least one must be present.
     // TODO(user): Find more than one disjoint set of incoming arcs.

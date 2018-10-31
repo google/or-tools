@@ -16,11 +16,7 @@ import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
-/**
- * Linear programming example that shows how to use the API.
- *
- */
-
+/** Linear programming example that shows how to use the API. */
 public class LinearProgramming {
   static {
     System.loadLibrary("jniortools");
@@ -90,9 +86,10 @@ public class LinearProgramming {
 
     // Verify that the solution satisfies all constraints (when using solvers
     // others than GLOP_LINEAR_PROGRAMMING, this is highly recommended!).
-    if (!solver.verifySolution(/*tolerance=*/1e-7, /*logErrors=*/true)) {
-      System.err.println("The solution returned by the solver violated the"
-          + " problem constraints by at least 1e-7");
+    if (!solver.verifySolution(/*tolerance=*/ 1e-7, /*logErrors=*/ true)) {
+      System.err.println(
+          "The solution returned by the solver violated the"
+              + " problem constraints by at least 1e-7");
       return;
     }
 

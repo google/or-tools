@@ -10,13 +10,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class Circuit {
 
@@ -27,11 +26,10 @@ public class Circuit {
   /**
    * circuit(solver, x)
    *
-   * A decomposition of the global constraint circuit, based
-   * on some observation of the orbits in an array.
+   * <p>A decomposition of the global constraint circuit, based on some observation of the orbits in
+   * an array.
    *
-   * Note: The domain of x must be 0..n-1 (not 1..n)
-   * since Java is 0-based.
+   * <p>Note: The domain of x must be 0..n-1 (not 1..n) since Java is 0-based.
    */
   public static void circuit(Solver solver, IntVar[] x) {
 
@@ -43,28 +41,22 @@ public class Circuit {
 
     // put the orbit of x[0] in z[0..n-1]
     solver.addConstraint(solver.makeEquality(z[0], x[0]));
-    for(int i = 1; i < n-1; i++) {
-      solver.addConstraint(
-          solver.makeEquality(z[i],
-              solver.makeElement(x, z[i-1]).var()));
+    for (int i = 1; i < n - 1; i++) {
+      solver.addConstraint(solver.makeEquality(z[i], solver.makeElement(x, z[i - 1]).var()));
     }
 
     // z may not be 0 for i < n-1
-    for(int i = 1; i < n - 1; i++) {
+    for (int i = 1; i < n - 1; i++) {
       solver.addConstraint(solver.makeNonEquality(z[i], 0));
     }
 
     // when i = n-1 it must be 0
     solver.addConstraint(solver.makeEquality(z[n - 1], 0));
-
   }
 
-
   /**
-   *
-   * Implements a (decomposition) of the global constraint circuit.
-   * See http://www.hakank.org/google_or_tools/circuit.py
-   *
+   * Implements a (decomposition) of the global constraint circuit. See
+   * http://www.hakank.org/google_or_tools/circuit.py
    */
   private static void solve(int n) {
 
@@ -75,7 +67,6 @@ public class Circuit {
     //
     IntVar[] x = solver.makeIntVarArray(n, 0, n - 1, "x");
 
-
     //
     // constraints
     //
@@ -84,16 +75,14 @@ public class Circuit {
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.INT_VAR_DEFAULT,
-                                          solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.makePhase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT);
     solver.newSearch(db);
 
     //
     // output
     //
     while (solver.nextSolution()) {
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.println();
@@ -106,7 +95,6 @@ public class Circuit {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

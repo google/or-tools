@@ -35,9 +35,11 @@ bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
   const double initial_deterministic_time = sat_solver->deterministic_time();
   const double limit = initial_deterministic_time + deterministic_time_limit;
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
 
   // For the new direct implication detected.
-  std::set<std::pair<Literal, Literal>> new_binary_clauses;
+  int64 num_new_binary = 0;
+  std::vector<std::pair<Literal, Literal>> new_binary_clauses;
   auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
   const int id = implication_graph->PropagatorId();
 
@@ -47,34 +49,76 @@ bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   std::vector<IntegerLiteral> new_integer_bounds;
 
-  bool limit_reached = false;
+  // To detect literal x that must be true because b => x and not(b) => x.
+  // When probing b, we add all propagated literal to propagated, and when
+  // probing not(b) we check if any are already there.
+  std::vector<Literal> to_fix_at_true;
   const int num_variables = sat_solver->NumVariables();
+  SparseBitset<LiteralIndex> propagated(LiteralIndex(2 * num_variables));
+
+  bool limit_reached = false;
+  int num_probed = 0;
+  const auto& trail = *(model->Get<Trail>());
   for (BooleanVariable b(0); b < num_variables; ++b) {
-    if (sat_solver->deterministic_time() > limit) {
+    const Literal literal(b, true);
+    if (implication_graph->RepresentativeOf(literal) != literal) {
+      continue;
+    }
+    if (time_limit->LimitReached() ||
+        sat_solver->deterministic_time() > limit) {
       limit_reached = true;
       break;
     }
 
     // Propagate b=1 and then b=0.
+    ++num_probed;
     new_integer_bounds.clear();
+    new_binary_clauses.clear();
+    to_fix_at_true.clear();
+    propagated.SparseClearAll();
     for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
       if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
       if (sat_solver->Assignment().LiteralIsAssigned(decision)) continue;
 
-      const int saved_index = sat_solver->LiteralTrail().Index();
+      const int saved_index = trail.Index();
       sat_solver->EnqueueDecisionAndBackjumpOnConflict(decision);
       if (sat_solver->IsModelUnsat()) return false;
+      if (sat_solver->CurrentDecisionLevel() == 0) continue;
+
       integer_trail->AppendNewBounds(&new_integer_bounds);
-      if (sat_solver->CurrentDecisionLevel() > 0) {
-        for (int i = saved_index + 1; i < sat_solver->LiteralTrail().Index();
-             ++i) {
-          const Literal l = sat_solver->LiteralTrail()[i];
-          if (sat_solver->LiteralTrail().AssignmentType(l.Variable()) == id) {
-            continue;
+      for (int i = saved_index + 1; i < trail.Index(); ++i) {
+        const Literal l = trail[i];
+
+        // We mark on the first run (b.IsPositive()) and check on the second.
+        if (decision.IsPositive()) {
+          propagated.Set(l.Index());
+        } else {
+          if (propagated[l.Index()]) {
+            to_fix_at_true.push_back(l);
           }
-          new_binary_clauses.insert({decision.Negated(), l});
         }
+
+        // Anything not propagated by the BinaryImplicationGraph is a "new"
+        // binary clause. This is becaue the BinaryImplicationGraph has the
+        // highest priority of all propagators.
+        if (trail.AssignmentType(l.Variable()) == id) {
+          continue;
+        }
+        new_binary_clauses.push_back({decision.Negated(), l});
       }
+    }
+
+    sat_solver->Backtrack(0);
+
+    // Fix variables that must be true.
+    for (const Literal l : to_fix_at_true) {
+      sat_solver->AddUnitClause(l);
+    }
+
+    // Add the new binary clauses right away.
+    num_new_binary += new_binary_clauses.size();
+    for (auto binary : new_binary_clauses) {
+      sat_solver->AddBinaryClause(binary.first, binary.second);
     }
 
     // We have at most two lower bounds for each variables (one for b==0 and one
@@ -82,10 +126,13 @@ bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
     // generally, the domain of a variable can be intersected with the union
     // of the two propagated domains. This also allow to detect "holes".
     //
+    // TODO(user): More generally, for any clauses (b or not(b) is one), we
+    // could probe all the literal inside, and for any integer variable, we can
+    // take the union of the propagated domain as a new domain.
+    //
     // TODO(user): fix binary variable in the same way? It might not be as
     // useful since probing on such variable will also fix it. But then we might
     // abort probing early, so it might still be good.
-    sat_solver->Backtrack(0);
     std::sort(new_integer_bounds.begin(), new_integer_bounds.end(),
               [](IntegerLiteral a, IntegerLiteral b) { return a.var < b.var; });
 
@@ -142,23 +189,15 @@ bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
     }
   }
 
-  // Adds the newly discovered direct implication for a faster propagation
-  // and so that they can be used for binary equivalence detection.
-  //
-  // TODO(user): do that on the fly for a faster probing? also use hash_map.
-  sat_solver->Backtrack(0);
-  for (const auto binary : new_binary_clauses) {
-    sat_solver->AddBinaryClause(binary.first, binary.second);
-  }
-
   // Display stats.
   const double time_diff =
       sat_solver->deterministic_time() - initial_deterministic_time;
   const int num_fixed = sat_solver->LiteralTrail().Index();
   const int num_newly_fixed = num_fixed - initial_num_fixed;
   VLOG(1) << "Probing deterministic_time: " << time_diff
-          << " wall_time: " << wall_timer.Get()
-          << (limit_reached ? " (Aborted)" : "");
+          << " wall_time: " << wall_timer.Get() << " ("
+          << (limit_reached ? "Aborted " : "") << num_probed << "/"
+          << num_variables << ")";
   VLOG_IF(1, num_newly_fixed > 0)
       << "Probing new fixed binary: " << num_newly_fixed << " (" << num_fixed
       << "/" << num_variables << " overall)";
@@ -166,8 +205,8 @@ bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
       << "Probing new integer holes: " << num_new_holes;
   VLOG_IF(1, num_new_integer_bounds > 0)
       << "Probing new integer bounds: " << num_new_integer_bounds;
-  VLOG_IF(1, !new_binary_clauses.empty())
-      << "Probing new binary clause: " << new_binary_clauses.size();
+  VLOG_IF(1, num_new_binary > 0)
+      << "Probing new binary clause: " << num_new_binary;
 
   return true;
 }

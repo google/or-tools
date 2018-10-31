@@ -10,14 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
+import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class QuasigroupCompletion {
 
@@ -41,21 +40,21 @@ public class QuasigroupCompletion {
    *   3 2 5 4 1
    */
   static int default_n = 5;
-  static int[][] default_problem = {{1, X, X, X, 4},
-                                    {X, 5, X, X, X},
-                                    {4, X, X, 2, X},
-                                    {X, 4, X, X, X},
-                                    {X, X, 5, X, 1}};
-
+  static int[][] default_problem = {
+    {1, X, X, X, 4},
+    {X, 5, X, X, X},
+    {4, X, X, 2, X},
+    {X, 4, X, X, X},
+    {X, X, 5, X, 1}
+  };
 
   // for the actual problem
   static int n;
   static int[][] problem;
 
-
   /**
-   * Solves the Quasigroup Completion problem.
-   * See http://www.hakank.org/google_or_tools/quasigroup_completion.py
+   * Solves the Quasigroup Completion problem. See
+   * http://www.hakank.org/google_or_tools/quasigroup_completion.py
    */
   private static void solve() {
 
@@ -65,22 +64,21 @@ public class QuasigroupCompletion {
     // data
     //
     System.out.println("Problem:");
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
         System.out.print(problem[i][j] + " ");
       }
       System.out.println();
     }
     System.out.println();
 
-
     //
     // Variables
     //
-    IntVar[][] x =  new IntVar[n][n];
+    IntVar[][] x = new IntVar[n][n];
     IntVar[] x_flat = new IntVar[n * n]; // for branching
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
         x[i][j] = solver.makeIntVar(1, n, "x[" + i + "," + j + "]");
         x_flat[i * n + j] = x[i][j];
       }
@@ -89,8 +87,8 @@ public class QuasigroupCompletion {
     //
     // Constraints
     //
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
         if (problem[i][j] > X) {
           solver.addConstraint(solver.makeEquality(x[i][j], problem[i][j]));
         }
@@ -102,46 +100,40 @@ public class QuasigroupCompletion {
     //
 
     // rows
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
-      for(int j = 0; j < n; j++) {
+      for (int j = 0; j < n; j++) {
         row[j] = x[i][j];
       }
-      solver.addConstraint(
-          solver.makeAllDifferent(row));
-
+      solver.addConstraint(solver.makeAllDifferent(row));
     }
 
     // columns
-    for(int j = 0; j < n; j++) {
+    for (int j = 0; j < n; j++) {
       IntVar[] col = new IntVar[n];
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         col[i] = x[i][j];
       }
       solver.addConstraint(solver.makeAllDifferent(col));
     }
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.makePhase(x_flat,
-                                          solver.INT_VAR_SIMPLE,
-                                          solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.makePhase(x_flat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db);
 
     int sol = 0;
     while (solver.nextSolution()) {
       sol++;
       System.out.println("Solution #" + sol + ":");
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
           System.out.print(x[i][j].value() + " ");
         }
         System.out.println();
       }
       System.out.println();
-
     }
     solver.endSearch();
 
@@ -151,29 +143,15 @@ public class QuasigroupCompletion {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   /**
-   * Reads a Quasigroup completion file.
-   * File format:
-   *  # a comment which is ignored
-   *  % a comment which also is ignored
-   *  number of rows (n)
-   *  <
-   *    row number of space separated entries
-   *  >
+   * Reads a Quasigroup completion file. File format: # a comment which is ignored % a comment which
+   * also is ignored number of rows (n) < row number of space separated entries >
    *
-   * "." or "0" means unknown, integer 1..n means known value
+   * <p>"." or "0" means unknown, integer 1..n means known value
    *
-   * Example
-   *   5
-   *    1 . . . 4
-   *   . 5 . . .
-   *   4 . . 2 .
-   *   . 4 . . .
-   *   . . 5 . 1
-   *
+   * <p>Example 5 1 . . . 4 . 5 . . . 4 . . 2 . . 4 . . . . . 5 . 1
    */
   private static void readFile(String file) {
 
@@ -189,7 +167,7 @@ public class QuasigroupCompletion {
         str = str.trim();
 
         // ignore comments
-        if(str.startsWith("#") || str.startsWith("%")) {
+        if (str.startsWith("#") || str.startsWith("%")) {
           continue;
         }
 
@@ -200,7 +178,7 @@ public class QuasigroupCompletion {
         } else {
           // the problem matrix
           String row[] = str.split(" ");
-          for(int i = 0; i < n; i++) {
+          for (int i = 0; i < n; i++) {
             String s = row[i];
             if (s.equals(".")) {
               problem[lineCount - 1][i] = 0;
@@ -211,7 +189,6 @@ public class QuasigroupCompletion {
         }
 
         lineCount++;
-
       } // end while
 
       inr.close();
@@ -219,9 +196,7 @@ public class QuasigroupCompletion {
     } catch (IOException e) {
       System.out.println(e);
     }
-
   } // end readFile
-
 
   public static void main(String[] args) throws Exception {
 

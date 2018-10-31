@@ -15,8 +15,8 @@
 
 #include <algorithm>
 #include <memory>
-#include <unordered_map>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -531,7 +531,7 @@ std::function<void(Model*)> IsOneOf(IntegerVariable var,
     CHECK(!values.empty());
     CHECK_EQ(values.size(), selectors.size());
     std::vector<int64> unique_values;
-    std::unordered_map<int64, std::vector<Literal>> value_to_selector;
+    absl::flat_hash_map<int64, std::vector<Literal>> value_to_selector;
     for (int i = 0; i < values.size(); ++i) {
       unique_values.push_back(values[i].value());
       value_to_selector[values[i].value()].push_back(selectors[i]);

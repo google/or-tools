@@ -18,7 +18,7 @@
 #include <functional>
 #include <vector>
 
-#include "ortools/base/inlined_vector.h"
+#include "absl/container/inlined_vector.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
@@ -87,7 +87,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   void AddPrecedenceWithAllOptions(IntegerVariable i1, IntegerVariable i2,
                                    IntegerValue offset,
                                    IntegerVariable offset_var,
-                                   absl::Span<Literal> presence_literals);
+                                   absl::Span<const Literal> presence_literals);
 
   // Finds all the IntegerVariable that are "after" at least two of the
   // IntegerVariable in vars. Returns a vector of these precedences relation
@@ -153,7 +153,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   void AdjustSizeFor(IntegerVariable i);
   void AddArc(IntegerVariable tail, IntegerVariable head, IntegerValue offset,
               IntegerVariable offset_var,
-              absl::Span<Literal> presence_literals);
+              absl::Span<const Literal> presence_literals);
 
   // Enqueue a new lower bound for the variable arc.head_lb that was deduced
   // from the current value of arc.tail_lb and the offset of this arc.
@@ -304,7 +304,7 @@ inline void PrecedencesPropagator::AddPrecedenceWithVariableOffset(
 
 inline void PrecedencesPropagator::AddPrecedenceWithAllOptions(
     IntegerVariable i1, IntegerVariable i2, IntegerValue offset,
-    IntegerVariable offset_var, absl::Span<Literal> presence_literals) {
+    IntegerVariable offset_var, absl::Span<const Literal> presence_literals) {
   AddArc(i1, i2, offset, offset_var, presence_literals);
 }
 

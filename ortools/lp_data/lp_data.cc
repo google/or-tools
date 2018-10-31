@@ -16,12 +16,12 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
-#include <unordered_map>
 #include <utility>
+#include "absl/container/flat_hash_map.h"
 
-#include "ortools/base/join.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
@@ -201,7 +201,7 @@ RowIndex LinearProgram::CreateNewConstraint() {
 }
 
 ColIndex LinearProgram::FindOrCreateVariable(const std::string& variable_id) {
-  const std::unordered_map<std::string, ColIndex>::iterator it =
+  const absl::flat_hash_map<std::string, ColIndex>::iterator it =
       variable_table_.find(variable_id);
   if (it != variable_table_.end()) {
     return it->second;
@@ -215,7 +215,7 @@ ColIndex LinearProgram::FindOrCreateVariable(const std::string& variable_id) {
 
 RowIndex LinearProgram::FindOrCreateConstraint(
     const std::string& constraint_id) {
-  const std::unordered_map<std::string, RowIndex>::iterator it =
+  const absl::flat_hash_map<std::string, RowIndex>::iterator it =
       constraint_table_.find(constraint_id);
   if (it != constraint_table_.end()) {
     return it->second;
@@ -416,7 +416,7 @@ Fractional LinearProgram::GetObjectiveCoefficientForMinimizationVersion(
 
 std::string LinearProgram::GetDimensionString() const {
   return absl::StrFormat(
-      "%d rows, %d columns, %lld entries", num_constraints().value(),
+      "%d rows, %d columns, %d entries", num_constraints().value(),
       num_variables().value(),
       // static_cast<int64> is needed because the Android port uses int32.
       static_cast<int64>(num_entries().value()));
@@ -436,7 +436,7 @@ std::string LinearProgram::GetObjectiveStatsString() const {
   if (num_non_zeros == 0) {
     return "No objective term. This is a pure feasibility problem.";
   } else {
-    return absl::StrFormat("%lld non-zeros, range [%e, %e]", num_non_zeros,
+    return absl::StrFormat("%d non-zeros, range [%e, %e]", num_non_zeros,
                            min_value, max_value);
   }
 }
@@ -613,14 +613,14 @@ std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
   for (ColIndex col(0); col < variable_values.size(); ++col) {
     if (!output.empty()) absl::StrAppend(&output, ", ");
     absl::StrAppend(&output, GetVariableName(col), " = ",
-                    absl::LegacyPrecision(variable_values[col]));
+                    (variable_values[col]));
   }
   return output;
 }
 
 std::string LinearProgram::GetProblemStats() const {
   return ProblemStatFormatter(
-      "%d,%d,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+      "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
       "%d,%d,%d,%d");
 }
 
@@ -628,7 +628,7 @@ std::string LinearProgram::GetPrettyProblemStats() const {
   return ProblemStatFormatter(
       "Number of rows                               : %d\n"
       "Number of variables in file                  : %d\n"
-      "Number of entries (non-zeros)                : %lld\n"
+      "Number of entries (non-zeros)                : %d\n"
       "Number of entries in the objective           : %d\n"
       "Number of entries in the right-hand side     : %d\n"
       "Number of <= constraints                     : %d\n"
@@ -1053,7 +1053,7 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
   variable_names_.resize(new_index, "");
 
   // Remove the id of the deleted columns and adjust the index of the other.
-  std::unordered_map<std::string, ColIndex>::iterator it =
+  absl::flat_hash_map<std::string, ColIndex>::iterator it =
       variable_table_.begin();
   while (it != variable_table_.end()) {
     const ColIndex col = it->second;
@@ -1208,7 +1208,7 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn& rows_to_delete) {
   matrix_.DeleteRows(new_index, permutation);
 
   // Remove the id of the deleted rows and adjust the index of the other.
-  std::unordered_map<std::string, RowIndex>::iterator it =
+  absl::flat_hash_map<std::string, RowIndex>::iterator it =
       constraint_table_.begin();
   while (it != constraint_table_.end()) {
     const RowIndex row = it->second;
@@ -1257,7 +1257,8 @@ bool LinearProgram::IsValid() const {
   return true;
 }
 
-std::string LinearProgram::ProblemStatFormatter(const char* format) const {
+std::string LinearProgram::ProblemStatFormatter(
+    const absl::string_view format) const {
   int num_objective_non_zeros = 0;
   int num_non_negative_variables = 0;
   int num_boxed_variables = 0;
@@ -1334,17 +1335,23 @@ std::string LinearProgram::ProblemStatFormatter(const char* format) const {
   const int num_non_binary_variables = NonBinaryVariablesList().size();
   const int num_continuous_variables =
       ColToIntIndex(num_variables()) - num_integer_variables;
+  auto format_runtime =
+      absl::ParsedFormat<'d', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd',
+                         'd', 'd', 'd', 'd', 'd', 'd', 'd'>::New(format);
+  CHECK(format_runtime);
   return absl::StrFormat(
-      format, RowToIntIndex(num_constraints()), ColToIntIndex(num_variables()),
-      matrix_.num_entries().value(), num_objective_non_zeros, num_rhs_non_zeros,
-      num_less_than_constraints, num_greater_than_constraints,
-      num_equal_constraints, num_range_constraints, num_non_negative_variables,
-      num_boxed_variables, num_free_variables, num_fixed_variables,
-      num_other_variables, num_integer_variables, num_binary_variables,
-      num_non_binary_variables, num_continuous_variables);
+      *format_runtime, RowToIntIndex(num_constraints()),
+      ColToIntIndex(num_variables()), matrix_.num_entries().value(),
+      num_objective_non_zeros, num_rhs_non_zeros, num_less_than_constraints,
+      num_greater_than_constraints, num_equal_constraints,
+      num_range_constraints, num_non_negative_variables, num_boxed_variables,
+      num_free_variables, num_fixed_variables, num_other_variables,
+      num_integer_variables, num_binary_variables, num_non_binary_variables,
+      num_continuous_variables);
 }
 
-std::string LinearProgram::NonZeroStatFormatter(const char* format) const {
+std::string LinearProgram::NonZeroStatFormatter(
+    const absl::string_view format) const {
   StrictITIVector<RowIndex, EntryIndex> num_entries_in_row(num_constraints(),
                                                            EntryIndex(0));
   StrictITIVector<ColIndex, EntryIndex> num_entries_in_column(num_variables(),
@@ -1367,8 +1374,10 @@ std::string LinearProgram::NonZeroStatFormatter(const char* format) const {
   const double fill_rate = 100.0 * static_cast<double>(num_entries.value()) /
                            static_cast<double>(height * width);
 
+  auto format_runtime =
+      absl::ParsedFormat<'f', 'd', 'f', 'f', 'd', 'f', 'f'>::New(format);
   return absl::StrFormat(
-      format, fill_rate, GetMaxElement(num_entries_in_row).value(),
+      *format_runtime, fill_rate, GetMaxElement(num_entries_in_row).value(),
       Average(num_entries_in_row), StandardDeviation(num_entries_in_row),
       GetMaxElement(num_entries_in_column).value(),
       Average(num_entries_in_column), StandardDeviation(num_entries_in_column));
@@ -1456,14 +1465,14 @@ std::string ProblemSolution::DebugString() const {
   std::string s = "Problem status: " + GetProblemStatusString(status);
   for (ColIndex col(0); col < primal_values.size(); ++col) {
     absl::StrAppendFormat(&s, "\n  Var #%d: %s %g", col.value(),
-                  GetVariableStatusString(variable_statuses[col]).c_str(),
-                  primal_values[col]);
+                          GetVariableStatusString(variable_statuses[col]),
+                          primal_values[col]);
   }
   s += "\n------------------------------";
   for (RowIndex row(0); row < dual_values.size(); ++row) {
     absl::StrAppendFormat(&s, "\n  Constraint #%d: %s %g", row.value(),
-                  GetConstraintStatusString(constraint_statuses[row]).c_str(),
-                  dual_values[row]);
+                          GetConstraintStatusString(constraint_statuses[row]),
+                          dual_values[row]);
   }
   return s;
 }

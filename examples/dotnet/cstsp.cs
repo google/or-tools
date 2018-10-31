@@ -17,11 +17,12 @@ using Google.OrTools.ConstraintSolver;
 
 class Tsp
 {
-  class RandomManhattan : NodeEvaluator2 {
-    public RandomManhattan(int size, int seed)
+  class RandomManhattan : IntIntToLong {
+    public RandomManhattan(RoutingIndexManager manager, int size, int seed)
     {
       this.xs_ = new int[size];
       this.ys_ = new int[size];
+      this.manager_ = manager;
       Random generator = new Random(seed);
       for (int i = 0; i < size; ++i)
       {
@@ -31,30 +32,35 @@ class Tsp
     }
 
     public override long Run(int first_index, int second_index) {
-      return Math.Abs(xs_[first_index] - xs_[second_index]) +
-          Math.Abs(ys_[first_index] - ys_[second_index]);
+      int first_node = manager_.IndexToNode(first_index);
+      int second_node = manager_.IndexToNode(second_index);
+      return Math.Abs(xs_[first_node] - xs_[second_node]) +
+          Math.Abs(ys_[first_node] - ys_[second_node]);
     }
 
     private int[] xs_;
     private int[] ys_;
+    private RoutingIndexManager manager_;
   };
 
-  class ConstantCallback : NodeEvaluator2 {
-    public override long Run(int first_index, int second_index) {
+  class ConstantCallback : IntToLong {
+    public override long Run(int index) {
       return 1;
     }
   };
 
   static void Solve(int size, int forbidden, int seed)
   {
-    RoutingModel routing = new RoutingModel(size, 1, 0);
+    RoutingIndexManager manager = new RoutingIndexManager(size, 1, 0);
+    RoutingModel routing = new RoutingModel(manager);
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
     // has the following signature: ResultCallback2<int64, int64, int64>.
     // The two arguments are the from and to node inidices.
-    RandomManhattan distances = new RandomManhattan(size, seed);
-    routing.SetCost(distances);
+    RandomManhattan distances = new RandomManhattan(manager, size, seed);
+    routing.SetArcCostEvaluatorOfAllVehicles(
+        routing.RegisterTransitCallback(distances));
 
     // Forbid node connections (randomly).
     Random randomizer = new Random();
@@ -70,15 +76,16 @@ class Tsp
     }
 
     // Add dummy dimension to test API.
-    routing.AddDimension(new ConstantCallback(),
-                         size + 1,
-                         size + 1,
-                         true,
-                         "dummy");
+    routing.AddDimension(
+        routing.RegisterUnaryTransitCallback(new ConstantCallback()),
+        size + 1,
+        size + 1,
+        true,
+        "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
     RoutingSearchParameters search_parameters =
-        RoutingModel.DefaultSearchParameters();
+        operations_research_constraint_solver.DefaultRoutingSearchParameters();
     // Setting first solution heuristic (cheapest addition).
     search_parameters.FirstSolutionStrategy =
         FirstSolutionStrategy.Types.Value.PathCheapestArc;

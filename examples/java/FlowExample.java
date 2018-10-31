@@ -14,12 +14,9 @@
 import com.google.ortools.graph.MaxFlow;
 import com.google.ortools.graph.MinCostFlow;
 
-/**
- * Sample showing how to model using the flow solver.
- *
- */
-
+/** Sample showing how to model using the flow solver. */
 public class FlowExample {
+
   static {
     System.loadLibrary("jniortools");
   }
@@ -29,7 +26,11 @@ public class FlowExample {
     final int numSources = 4;
     final int numTargets = 4;
     final int[][] costs = {
-        {90, 75, 75, 80}, {35, 85, 55, 65}, {125, 95, 90, 105}, {45, 110, 95, 115}};
+      {90, 75, 75, 80},
+      {35, 85, 55, 65},
+      {125, 95, 90, 105},
+      {45, 110, 95, 115}
+    };
     final int expectedCost = 275;
     MinCostFlow minCostFlow = new MinCostFlow();
     for (int source = 0; source < numSources; ++source) {
@@ -47,8 +48,13 @@ public class FlowExample {
       System.out.println("total flow = " + totalFlowCost + "/" + expectedCost);
       for (int i = 0; i < minCostFlow.getNumArcs(); ++i) {
         if (minCostFlow.getFlow(i) > 0) {
-          System.out.println("From source " + minCostFlow.getTail(i) + " to target "
-              + minCostFlow.getHead(i) + ": cost " + minCostFlow.getUnitCost(i));
+          System.out.println(
+              "From source "
+                  + minCostFlow.getTail(i)
+                  + " to target "
+                  + minCostFlow.getHead(i)
+                  + ": cost "
+                  + minCostFlow.getUnitCost(i));
         }
       }
     } else {
@@ -69,8 +75,15 @@ public class FlowExample {
     if (maxFlow.solve(0, 5) == MaxFlow.Status.OPTIMAL) {
       System.out.println("Total flow " + maxFlow.getOptimalFlow() + "/" + expectedTotalFlow);
       for (int i = 0; i < maxFlow.getNumArcs(); ++i) {
-        System.out.println("From source " + maxFlow.getTail(i) + " to target " + maxFlow.getHead(i)
-            + ": " + maxFlow.getFlow(i) + " / " + maxFlow.getCapacity(i));
+        System.out.println(
+            "From source "
+                + maxFlow.getTail(i)
+                + " to target "
+                + maxFlow.getHead(i)
+                + ": "
+                + maxFlow.getFlow(i)
+                + " / "
+                + maxFlow.getCapacity(i));
       }
       // TODO(user): Our SWIG configuration does not currently handle these
       // functions correctly in Java:

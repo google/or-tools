@@ -18,7 +18,6 @@
 #include "ortools/base/random.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/model.pb.h"
 #include "ortools/util/string_array.h"
 #include "ortools/flatzinc/sat_constraint.h"
 

@@ -35,9 +35,9 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"  // for CHECK*
-#include "ortools/base/stringprintf.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"

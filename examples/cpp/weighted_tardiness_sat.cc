@@ -15,15 +15,14 @@
 #include <numeric>
 #include <vector>
 
+#include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/numbers.h"
-#include "ortools/base/split.h"
-#include "ortools/base/strtoint.h"
-#include "ortools/base/strutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
@@ -246,7 +245,7 @@ void ParseAndSolve() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  base::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

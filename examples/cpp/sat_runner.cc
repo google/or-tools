@@ -19,18 +19,20 @@
 #include <utility>
 #include <vector>
 
+#include "absl/memory/memory.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "examples/cpp/opb_reader.h"
 #include "examples/cpp/sat_cnf_reader.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
+#include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/boolean_problem.h"
@@ -138,18 +140,18 @@ double GetScaledTrivialBestBound(const LinearBooleanProblem& problem) {
   return AddOffsetAndScaleObjectiveValue(problem, best_bound);
 }
 
-void LoadBooleanProblem(const std::string& filename,
+bool LoadBooleanProblem(const std::string& filename,
                         LinearBooleanProblem* problem, CpModelProto* cp_model) {
-  if (strings::EndsWith(filename, ".opb") ||
-      strings::EndsWith(filename, ".opb.bz2")) {
+  if (absl::EndsWith(filename, ".opb") ||
+      absl::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
     if (!reader.Load(filename, problem)) {
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
-  } else if (strings::EndsWith(filename, ".cnf") ||
-             strings::EndsWith(filename, ".cnf.gz") ||
-             strings::EndsWith(filename, ".wcnf") ||
-             strings::EndsWith(filename, ".wcnf.gz")) {
+  } else if (absl::EndsWith(filename, ".cnf") ||
+             absl::EndsWith(filename, ".cnf.gz") ||
+             absl::EndsWith(filename, ".wcnf") ||
+             absl::EndsWith(filename, ".wcnf.gz")) {
     SatCnfReader reader;
     if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_qmaxsat ||
         FLAGS_core_enc) {
@@ -171,6 +173,7 @@ void LoadBooleanProblem(const std::string& filename,
     LOG(INFO) << "Reading a LinearBooleanProblem.";
     *problem = ReadFileToProtoOrDie<LinearBooleanProblem>(filename);
   }
+  return true;
 }
 
 std::string SolutionString(const LinearBooleanProblem& problem,
@@ -210,7 +213,12 @@ int Run() {
   // Read the problem.
   LinearBooleanProblem problem;
   CpModelProto cp_model;
-  LoadBooleanProblem(FLAGS_input, &problem, &cp_model);
+  if (!LoadBooleanProblem(FLAGS_input, &problem, &cp_model)) {
+    CpSolverResponse response;
+    response.set_status(CpSolverStatus::MODEL_INVALID);
+    LOG(INFO) << CpSolverResponseStats(response);
+    return EXIT_SUCCESS;
+  }
   if (FLAGS_use_cp_model && cp_model.variables_size() == 0) {
     LOG(INFO) << "Converting to CpModelProto ...";
     cp_model = BooleanProblemToCpModelproto(problem);
@@ -231,7 +239,7 @@ int Run() {
     LOG(INFO) << CpSolverResponseStats(response);
 
     if (!FLAGS_output.empty()) {
-      if (strings::EndsWith(FLAGS_output, ".txt")) {
+      if (absl::EndsWith(FLAGS_output, ".txt")) {
         CHECK_OK(file::SetTextProto(FLAGS_output, response, file::Defaults()));
       } else {
         CHECK_OK(
@@ -317,7 +325,7 @@ int Run() {
     }
     if (result == SatSolver::LIMIT_REACHED) {
       if (FLAGS_qmaxsat) {
-        solver.reset(new SatSolver());
+        solver = absl::make_unique<SatSolver>();
         solver->SetParameters(parameters);
         CHECK(LoadBooleanProblem(problem, solver.get()));
         result = SolveWithCardinalityEncoding(STDOUT_LOG, problem, solver.get(),
@@ -381,7 +389,7 @@ int Run() {
       if (result == SatSolver::FEASIBLE) {
         StoreAssignment(solver->Assignment(), problem.mutable_assignment());
       }
-      if (strings::EndsWith(FLAGS_output, ".txt")) {
+      if (absl::EndsWith(FLAGS_output, ".txt")) {
         CHECK_OK(file::SetTextProto(FLAGS_output, problem, file::Defaults()));
       } else {
         CHECK_OK(file::SetBinaryProto(FLAGS_output, problem, file::Defaults()));
@@ -408,9 +416,9 @@ int Run() {
 
   // Print final statistics.
   printf("c booleans: %d\n", solver->NumVariables());
-  printf("c conflicts: %lld\n", solver->num_failures());
-  printf("c branches: %lld\n", solver->num_branches());
-  printf("c propagations: %lld\n", solver->num_propagations());
+  absl::PrintF("c conflicts: %d\n", solver->num_failures());
+  absl::PrintF("c branches: %d\n", solver->num_branches());
+  absl::PrintF("c propagations: %d\n", solver->num_propagations());
   printf("c walltime: %f\n", wall_timer.Get());
   printf("c usertime: %f\n", user_timer.Get());
   printf("c deterministic_time: %f\n", solver->deterministic_time());
@@ -434,9 +442,9 @@ int main(int argc, char** argv) {
   // By default, we want to show how the solver progress. Note that this needs
   // to be set before InitGoogle() which has the nice side-effect of allowing
   // the user to override it.
-  //  base::SetFlag(&FLAGS_vmodule, "*cp_model*=1");
+  absl::SetFlag(&FLAGS_vmodule, "*cp_model*=1");
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  base::SetFlag(&FLAGS_alsologtostderr, true);
+  absl::SetFlag(&FLAGS_alsologtostderr, true);
   return operations_research::sat::Run();
 }

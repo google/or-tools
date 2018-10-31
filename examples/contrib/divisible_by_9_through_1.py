@@ -100,8 +100,8 @@ def my_mod(solver, x, y, r):
 #
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(s == solver.Sum([(base**(tlen - i - 1)) * t[i]
-                              for i in range(tlen)]))
+  solver.Add(
+      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=10):

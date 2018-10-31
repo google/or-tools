@@ -35,8 +35,8 @@
 #define OR_TOOLS_SAT_CP_MODEL_H_
 
 #include <string>
-#include <unordered_map>
-#include "ortools/base/span.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -210,18 +210,18 @@ class LinearExpr {
   void AddTerm(IntVar var, int64 coeff);
 
   // Constructs the sum of a list of variables.
-  static LinearExpr Sum(absl::Span<IntVar> vars);
+  static LinearExpr Sum(absl::Span<const IntVar> vars);
 
   // Constructs the scalar product of variables and coefficients.
-  static LinearExpr ScalProd(absl::Span<IntVar> vars,
-                             absl::Span<int64> coeffs);
+  static LinearExpr ScalProd(absl::Span<const IntVar> vars,
+                             absl::Span<const int64> coeffs);
 
   // Constructs the sum of a list of Booleans.
-  static LinearExpr BooleanSum(absl::Span<BoolVar> vars);
+  static LinearExpr BooleanSum(absl::Span<const BoolVar> vars);
 
   // Constructs the scalar product of Booleans and coefficients.
-  static LinearExpr BooleanScalProd(absl::Span<BoolVar> vars,
-                                    absl::Span<int64> coeffs);
+  static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
+                                    absl::Span<const int64> coeffs);
 
   // Useful for testing.
   const std::vector<IntVar>& variables() const { return variables_; }
@@ -326,9 +326,9 @@ class Constraint {
   // - bool_or, bool_and, linear: fully supported.
   // - interval: only support a single enforcement literal.
   // - other: no support (but can be added on a per-demand basis).
-  Constraint OnlyEnforceIf(absl::Span<BoolVar> literals);
+  Constraint OnlyEnforceIf(absl::Span<const BoolVar> literals);
 
-  // See OnlyEnforceIf(absl::Span<BoolVar> literals).
+  // See OnlyEnforceIf(absl::Span<const BoolVar> literals).
   Constraint OnlyEnforceIf(BoolVar literal);
 
   // Sets the name of the constraint.
@@ -366,7 +366,7 @@ class CircuitConstraint : public Constraint {
 // constraint incrementally.
 class TableConstraint : public Constraint {
  public:
-  void AddTuple(absl::Span<int64> tuple);
+  void AddTuple(absl::Span<const int64> tuple);
 
  private:
   friend class CpModelBuilder;
@@ -465,13 +465,13 @@ class CpModelBuilder {
                                      BoolVar presence);
 
   // Adds the constraint that at least one of the literals must be true.
-  Constraint AddBoolOr(absl::Span<BoolVar> literals);
+  Constraint AddBoolOr(absl::Span<const BoolVar> literals);
 
   // Adds the constraint that all literals must be true.
-  Constraint AddBoolAnd(absl::Span<BoolVar> literals);
+  Constraint AddBoolAnd(absl::Span<const BoolVar> literals);
 
   /// Adds the constraint that a odd number of literal is true.
-  Constraint AddBoolXor(absl::Span<BoolVar> literals);
+  Constraint AddBoolXor(absl::Span<const BoolVar> literals);
 
   // Adds a => b.
   Constraint AddImplication(BoolVar a, BoolVar b) {
@@ -500,15 +500,15 @@ class CpModelBuilder {
   Constraint AddNotEqual(const LinearExpr& left, const LinearExpr& right);
 
   // this constraint forces all variables to have different values.
-  Constraint AddAllDifferent(absl::Span<IntVar> vars);
+  Constraint AddAllDifferent(absl::Span<const IntVar> vars);
 
   // Adds the element constraint: variables[index] == target
   Constraint AddVariableElement(IntVar index,
-                                absl::Span<IntVar> variables,
+                                absl::Span<const IntVar> variables,
                                 IntVar target);
 
   // Adds the element constraint: values[index] == target
-  Constraint AddElement(IntVar index, absl::Span<int64> values,
+  Constraint AddElement(IntVar index, absl::Span<const int64> values,
                         IntVar target);
 
   // Adds a circuit constraint.
@@ -535,7 +535,7 @@ class CpModelBuilder {
   //
   // It returns a table constraint that allows adding tuples incrementally after
   // construction,
-  TableConstraint AddAllowedAssignments(absl::Span<IntVar> vars);
+  TableConstraint AddAllowedAssignments(absl::Span<const IntVar> vars);
 
   // Adds an forbidden assignments constraint.
   //
@@ -545,12 +545,12 @@ class CpModelBuilder {
   //
   // It returns a table constraint that allows adding tuples incrementally after
   // construction,
-  TableConstraint AddForbiddenAssignments(absl::Span<IntVar> vars);
+  TableConstraint AddForbiddenAssignments(absl::Span<const IntVar> vars);
 
   // An inverse constraint enforces that if 'variables[i]' is assigned a value
   // 'j', then inverse_variables[j] is assigned a value 'i'. And vice versa.
-  Constraint AddInverseConstraint(absl::Span<IntVar> variables,
-                                  absl::Span<IntVar> inverse_variables);
+  Constraint AddInverseConstraint(absl::Span<const IntVar> variables,
+                                  absl::Span<const IntVar> inverse_variables);
 
   // Adds a reservoir constraint with optional refill/emptying events.
   //
@@ -593,14 +593,14 @@ class CpModelBuilder {
   // It returns an AutomatonConstraint that allows adding transition
   // incrementally after construction.
   AutomatonConstraint AddAutomaton(
-      absl::Span<IntVar> transition_variables, int starting_state,
-      absl::Span<int> final_states);
+      absl::Span<const IntVar> transition_variables, int starting_state,
+      absl::Span<const int> final_states);
 
   // Adds target == min(vars).
-  Constraint AddMinEquality(IntVar target, absl::Span<IntVar> vars);
+  Constraint AddMinEquality(IntVar target, absl::Span<const IntVar> vars);
 
   // Adds target == max(vars).
-  Constraint AddMaxEquality(IntVar target, absl::Span<IntVar> vars);
+  Constraint AddMaxEquality(IntVar target, absl::Span<const IntVar> vars);
 
   // Adds target = num / denom (integer division rounded towards 0).
   Constraint AddDivisionEquality(IntVar target, IntVar numerator,
@@ -613,11 +613,11 @@ class CpModelBuilder {
   Constraint AddModuloEquality(IntVar target, IntVar var, IntVar mod);
 
   // Adds target == prod(vars).
-  Constraint AddProductEquality(IntVar target, absl::Span<IntVar> vars);
+  Constraint AddProductEquality(IntVar target, absl::Span<const IntVar> vars);
 
   // Adds a constraint than ensures that all present intervals do not overlap
   // in time.
-  Constraint AddNoOverlap(absl::Span<IntervalVar> vars);
+  Constraint AddNoOverlap(absl::Span<const IntervalVar> vars);
 
   // The no_overlap_2d constraint prevents a set of boxes from overlapping.
   NoOverlap2DConstraint AddNoOverlap2D();
@@ -639,13 +639,13 @@ class CpModelBuilder {
 
   // Adds a decision strategy on a list of integer variables.
   void AddDecisionStrategy(
-      absl::Span<IntVar> variables,
+      absl::Span<const IntVar> variables,
       DecisionStrategyProto::VariableSelectionStrategy var_strategy,
       DecisionStrategyProto::DomainReductionStrategy domain_strategy);
 
   // Adds a decision strategy on a list of boolean variables.
   void AddDecisionStrategy(
-      absl::Span<BoolVar> variables,
+      absl::Span<const BoolVar> variables,
       DecisionStrategyProto::VariableSelectionStrategy var_strategy,
       DecisionStrategyProto::DomainReductionStrategy domain_strategy);
 
@@ -672,8 +672,8 @@ class CpModelBuilder {
                        LinearConstraintProto* proto);
 
   CpModelProto cp_model_;
-  std::unordered_map<int64, int> constant_to_index_map_;
-  std::unordered_map<int, int> bool_to_integer_index_map_;
+  absl::flat_hash_map<int64, int> constant_to_index_map_;
+  absl::flat_hash_map<int, int> bool_to_integer_index_map_;
 };
 
 // Solves the current cp_model and returns an instance of CpSolverResponse.

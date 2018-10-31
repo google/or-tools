@@ -15,13 +15,12 @@
 
 #include <cmath>
 
+#include "absl/strings/str_split.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/split.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
 
@@ -133,7 +132,7 @@ void JsspParser::ProcessJsspLine(const std::string& line) {
       break;
     }
     case JOB_COUNT_READ: {
-      CHECK_EQ(words.size(), declared_machine_count_ * 2);
+      CHECK_GE(words.size(), declared_machine_count_ * 2);
       Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
         const int machine_id = atoi32(words[2 * i]);

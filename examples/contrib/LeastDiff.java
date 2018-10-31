@@ -11,11 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class LeastDiff {
 
@@ -23,13 +22,7 @@ public class LeastDiff {
     System.loadLibrary("jniortools");
   }
 
-
-  /**
-   *
-   * Solves the Least Diff problem.
-   * See http://www.hakank.org/google_or_tools/least_diff.py
-   *
-   */
+  /** Solves the Least Diff problem. See http://www.hakank.org/google_or_tools/least_diff.py */
   private static void solve() {
     final int base = 10;
 
@@ -50,15 +43,15 @@ public class LeastDiff {
     IntVar i = solver.makeIntVar(0, base - 1, "i");
     IntVar j = solver.makeIntVar(0, base - 1, "j");
 
-    IntVar[] all = {a,b,c,d,e,f,g,h,i,j};
+    IntVar[] all = {a, b, c, d, e, f, g, h, i, j};
 
     //
     // Constraints
     //
     int[] coeffs = {10000, 1000, 100, 10, 1};
-    IntVar x = solver.makeScalProd(new IntVar[]{a,b,c,d,e}, coeffs).var();
+    IntVar x = solver.makeScalProd(new IntVar[] {a, b, c, d, e}, coeffs).var();
     x.setName("x");
-    IntVar y = solver.makeScalProd(new IntVar[]{f,g,h,i,j}, coeffs).var();
+    IntVar y = solver.makeScalProd(new IntVar[] {f, g, h, i, j}, coeffs).var();
     y.setName("y");
 
     // a > 0
@@ -80,13 +73,10 @@ public class LeastDiff {
     //
     // Search
     //
-    DecisionBuilder db = solver.makePhase(all,
-                                          solver.CHOOSE_PATH,
-                                          solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.makePhase(all, solver.CHOOSE_PATH, solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db, obj);
     while (solver.nextSolution()) {
-      System.out.println("" + x.value() + " - " +
-                         y.value() + " = " + diff.value());
+      System.out.println("" + x.value() + " - " + y.value() + " = " + diff.value());
     }
     solver.endSearch();
 
@@ -96,7 +86,6 @@ public class LeastDiff {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

@@ -18,8 +18,8 @@
 #define OR_TOOLS_FLATZINC_PARSER_UTIL_H_
 
 #include <cmath>
-#include <unordered_map>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/map_util.h"
 #include "ortools/flatzinc/model.h"
 
@@ -27,15 +27,15 @@ namespace operations_research {
 namespace fz {
 // This is the context used during parsing.
 struct ParserContext {
-  std::unordered_map<std::string, int64> integer_map;
-  std::unordered_map<std::string, std::vector<int64>> integer_array_map;
-  std::unordered_map<std::string, double> float_map;
-  std::unordered_map<std::string, std::vector<double>> float_array_map;
-  std::unordered_map<std::string, IntegerVariable*> variable_map;
-  std::unordered_map<std::string, std::vector<IntegerVariable*>>
+  absl::flat_hash_map<std::string, int64> integer_map;
+  absl::flat_hash_map<std::string, std::vector<int64>> integer_array_map;
+  absl::flat_hash_map<std::string, double> float_map;
+  absl::flat_hash_map<std::string, std::vector<double>> float_array_map;
+  absl::flat_hash_map<std::string, IntegerVariable*> variable_map;
+  absl::flat_hash_map<std::string, std::vector<IntegerVariable*>>
       variable_array_map;
-  std::unordered_map<std::string, Domain> domain_map;
-  std::unordered_map<std::string, std::vector<Domain>> domain_array_map;
+  absl::flat_hash_map<std::string, Domain> domain_map;
+  absl::flat_hash_map<std::string, std::vector<Domain>> domain_array_map;
 };
 
 // An optional reference to a variable, or an integer value, used in

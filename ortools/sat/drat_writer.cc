@@ -15,8 +15,8 @@
 
 #include <cstdlib>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #endif  // !__PORTABLE_PLATFORM__
 #include "ortools/base/status.h"
@@ -33,14 +33,16 @@ DratWriter::~DratWriter() {
   }
 }
 
-void DratWriter::AddClause(absl::Span<Literal> clause) { WriteClause(clause); }
+void DratWriter::AddClause(absl::Span<const Literal> clause) {
+  WriteClause(clause);
+}
 
-void DratWriter::DeleteClause(absl::Span<Literal> clause) {
+void DratWriter::DeleteClause(absl::Span<const Literal> clause) {
   buffer_ += "d ";
   WriteClause(clause);
 }
 
-void DratWriter::WriteClause(absl::Span<Literal> clause) {
+void DratWriter::WriteClause(absl::Span<const Literal> clause) {
   for (const Literal literal : clause) {
     absl::StrAppendFormat(&buffer_, "%d ", literal.SignedValue());
   }

@@ -37,17 +37,15 @@ class LocationContainer {
   void AddLocation(int64 x, int64 y) { locations_.push_back(Location(x, y)); }
   void AddRandomLocation(int64 x_max, int64 y_max);
   void AddRandomLocation(int64 x_max, int64 y_max, int duplicates);
-  int64 ManhattanDistance(
-      operations_research::RoutingModel::NodeIndex from,
-      operations_research::RoutingModel::NodeIndex to) const;
-  int64 NegManhattanDistance(
-      operations_research::RoutingModel::NodeIndex from,
-      operations_research::RoutingModel::NodeIndex to) const;
-  int64 ManhattanTime(operations_research::RoutingModel::NodeIndex from,
-                      operations_research::RoutingModel::NodeIndex to) const;
+  int64 ManhattanDistance(RoutingIndexManager::NodeIndex from,
+                          RoutingIndexManager::NodeIndex to) const;
+  int64 NegManhattanDistance(RoutingIndexManager::NodeIndex from,
+                             RoutingIndexManager::NodeIndex to) const;
+  int64 ManhattanTime(RoutingIndexManager::NodeIndex from,
+                      RoutingIndexManager::NodeIndex to) const;
 
-  bool SameLocation(operations_research::RoutingModel::NodeIndex node1,
-                    operations_research::RoutingModel::NodeIndex node2) const;
+  bool SameLocation(RoutingIndexManager::NodeIndex node1,
+                    RoutingIndexManager::NodeIndex node2) const;
   int64 SameLocationFromIndex(int64 node1, int64 node2) const;
 
  private:
@@ -67,23 +65,22 @@ class LocationContainer {
 
   MTRandom randomizer_;
   const int64 speed_;
-  gtl::ITIVector<operations_research::RoutingModel::NodeIndex, Location>
-      locations_;
+  gtl::ITIVector<RoutingIndexManager::NodeIndex, Location> locations_;
 };
 
 // Random demand.
 class RandomDemand {
  public:
-  RandomDemand(int size, operations_research::RoutingModel::NodeIndex depot,
+  RandomDemand(int size, RoutingIndexManager::NodeIndex depot,
                bool use_deterministic_seed);
   void Initialize();
-  int64 Demand(operations_research::RoutingModel::NodeIndex from,
-               operations_research::RoutingModel::NodeIndex to) const;
+  int64 Demand(RoutingIndexManager::NodeIndex from,
+               RoutingIndexManager::NodeIndex to) const;
 
  private:
   std::unique_ptr<int64[]> demand_;
   const int size_;
-  const operations_research::RoutingModel::NodeIndex depot_;
+  const RoutingIndexManager::NodeIndex depot_;
   const bool use_deterministic_seed_;
 };
 
@@ -92,16 +89,15 @@ class ServiceTimePlusTransition {
  public:
   ServiceTimePlusTransition(
       int64 time_per_demand_unit,
-      operations_research::RoutingModel::NodeEvaluator2* demand,
-      operations_research::RoutingModel::NodeEvaluator2* transition_time);
-  int64 Compute(operations_research::RoutingModel::NodeIndex from,
-                operations_research::RoutingModel::NodeIndex to) const;
+      operations_research::RoutingNodeEvaluator2 demand,
+      operations_research::RoutingNodeEvaluator2 transition_time);
+  int64 Compute(RoutingIndexManager::NodeIndex from,
+                RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64 time_per_demand_unit_;
-  std::unique_ptr<operations_research::RoutingModel::NodeEvaluator2> demand_;
-  std::unique_ptr<operations_research::RoutingModel::NodeEvaluator2>
-      transition_time_;
+  operations_research::RoutingNodeEvaluator2 demand_;
+  operations_research::RoutingNodeEvaluator2 transition_time_;
 };
 
 // Stop service time + transition time callback.
@@ -109,21 +105,21 @@ class StopServiceTimePlusTransition {
  public:
   StopServiceTimePlusTransition(
       int64 stop_time, const LocationContainer& location_container,
-      operations_research::RoutingModel::NodeEvaluator2* transition_time);
-  int64 Compute(operations_research::RoutingModel::NodeIndex from,
-                operations_research::RoutingModel::NodeIndex to) const;
+      operations_research::RoutingNodeEvaluator2 transition_time);
+  int64 Compute(RoutingIndexManager::NodeIndex from,
+                RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64 stop_time_;
   const LocationContainer& location_container_;
-  std::unique_ptr<operations_research::RoutingModel::NodeEvaluator2> demand_;
-  std::unique_ptr<operations_research::RoutingModel::NodeEvaluator2>
-      transition_time_;
+  operations_research::RoutingNodeEvaluator2 demand_;
+  operations_research::RoutingNodeEvaluator2 transition_time_;
 };
 
 // Route plan displayer.
 // TODO(user): Move the display code to the routing library.
 void DisplayPlan(
+    const operations_research::RoutingIndexManager& manager,
     const operations_research::RoutingModel& routing,
     const operations_research::Assignment& plan, bool use_same_vehicle_costs,
     int64 max_nodes_per_group, int64 same_vehicle_cost,

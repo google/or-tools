@@ -14,10 +14,10 @@
 #include "ortools/sat/cp_model_search.h"
 
 #include <random>
-#include <unordered_map>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/cleanup.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
 
@@ -41,7 +41,7 @@ struct VarValue {
 };
 
 const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
-    const std::unordered_map<int, std::pair<int64, int64>>&
+    const absl::flat_hash_map<int, std::pair<int64, int64>>&
         var_to_coeff_offset_pair,
     const std::vector<Strategy>& strategies, Model* model) {
   IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
@@ -190,7 +190,7 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
   }
 
   std::vector<Strategy> strategies;
-  std::unordered_map<int, std::pair<int64, int64>> var_to_coeff_offset_pair;
+  absl::flat_hash_map<int, std::pair<int64, int64>> var_to_coeff_offset_pair;
   for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
     strategies.push_back(Strategy());
     Strategy& strategy = strategies.back();
@@ -242,6 +242,10 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
     const LiteralIndex decision = instrumented_strategy();
     if (decision == kNoLiteralIndex) return decision;
 
+    for (const IntegerLiteral i_lit :
+         model->Get<IntegerEncoder>()->GetIntegerLiterals(Literal(decision))) {
+      LOG(INFO) << "decision " << i_lit;
+    }
     const int level = model->Get<Trail>()->CurrentDecisionLevel();
     std::string to_display =
         absl::StrCat("Diff since last call, level=", level, "\n");
@@ -252,9 +256,11 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
           integer_trail->LowerBound(var).value(),
           integer_trail->UpperBound(var).value());
       if (new_domain != old_domains[ref]) {
-        old_domains[ref] = new_domain;
         absl::StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
-                        new_domain.first, ",", new_domain.second, "]\n");
+                        old_domains[ref].first, ",", old_domains[ref].second,
+                        "] -> [", new_domain.first, ",", new_domain.second,
+                        "]\n");
+        old_domains[ref] = new_domain;
       }
     }
     LOG(INFO) << to_display;

@@ -13,8 +13,8 @@
 
 #include <cstddef>
 #include <string>
-#include <unordered_set>
 #include <vector>
+#include "absl/container/flat_hash_set.h"
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -81,7 +81,7 @@ class CollectVariablesVisitor : public ModelParser {
     } else if (type_name.compare(ModelVisitor::kAllowedAssignments) == 0) {
       const IntTupleSet& matrix =
           Top()->FindIntegerMatrixArgumentOrDie(ModelVisitor::kTuplesArgument);
-      std::vector<std::unordered_set<int> > counters(matrix.Arity());
+      std::vector<absl::flat_hash_set<int> > counters(matrix.Arity());
       for (int i = 0; i < matrix.NumTuples(); ++i) {
         for (int j = 0; j < matrix.Arity(); ++j) {
           counters[j].insert(matrix.Value(i, j));
@@ -203,13 +203,13 @@ class CollectVariablesVisitor : public ModelParser {
   std::vector<IntVar*>* const secondaries_;
   std::vector<SequenceVar*>* const sequences_;
   std::vector<IntervalVar*>* const intervals_;
-  // These hash_set can't easily hold const IntVar*, because they
-  // ultimately serve as containers of mutable IntVar.
-  std::unordered_set<IntVar*> primary_set_;
-  std::unordered_set<IntVar*> secondary_set_;
-  std::unordered_set<IntVar*> ignored_set_;
-  std::unordered_set<SequenceVar*> sequence_set_;
-  std::unordered_set<IntervalVar*> interval_set_;
+  // These hash_set can't easily hold const IntVar*, because they ultimately
+  // serve as containers of mutable IntVar.
+  absl::flat_hash_set<IntVar*> primary_set_;
+  absl::flat_hash_set<IntVar*> secondary_set_;
+  absl::flat_hash_set<IntVar*> ignored_set_;
+  absl::flat_hash_set<SequenceVar*> sequence_set_;
+  absl::flat_hash_set<IntervalVar*> interval_set_;
 };
 }  // namespace
 

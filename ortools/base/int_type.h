@@ -147,7 +147,6 @@
 #include <stddef.h>
 #include <iosfwd>
 #include <ostream>  // NOLINT
-#include <unordered_map>
 
 #include "ortools/base/macros.h"
 

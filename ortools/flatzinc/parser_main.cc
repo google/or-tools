@@ -39,7 +39,7 @@ void ParseFile(const std::string& filename, bool presolve) {
 
   std::string problem_name = filename;
   // Remove the .fzn extension.
-  CHECK(strings::EndsWith(problem_name, ".fzn"));
+  CHECK(absl::EndsWith(problem_name, ".fzn"));
   problem_name.resize(problem_name.size() - 4);
   // Remove the leading path if present.
   const size_t found = problem_name.find_last_of("/\\");
@@ -75,8 +75,8 @@ int main(int argc, char** argv) {
   const char kUsage[] =
       "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
       "human-readable format";
-  FLAGS_log_prefix = false;
-  FLAGS_logtostderr = true;
+  absl::SetFlag(&FLAGS_log_prefix, false);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);

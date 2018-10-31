@@ -15,9 +15,9 @@
 #define OR_TOOLS_FLATZINC_SOLVER_DATA_H_
 
 #include <set>
-#include <unordered_map>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/sat_constraint.h"
@@ -36,7 +36,7 @@ class SolverData {
   std::vector<IntVar*> GetOrCreateVariableArray(const Argument& argument);
   IntExpr* Extract(IntegerVariable* var);
   void SetExtracted(IntegerVariable* var, IntExpr* expr);
-  const std::unordered_map<IntegerVariable*, IntExpr*>& extracted_map() const {
+  const absl::flat_hash_map<IntegerVariable*, IntExpr*>& extracted_map() const {
     return extracted_map_;
   }
 
@@ -46,7 +46,7 @@ class SolverData {
   // an AllDifferent constraints.
   void StoreAllDifferent(std::vector<IntegerVariable*> diffs);
 
-  // Queries wether the array diffs appears in an AllDifferent constraint.
+  // Queries whether the array diffs appears in an AllDifferent constraint.
   // Currently, this performs exact matching, therefore a sub-array of an
   // array of all-different variables will not match.
   bool IsAllDifferent(std::vector<IntegerVariable*> diffs) const;
@@ -65,7 +65,7 @@ class SolverData {
  private:
   operations_research::Solver solver_;
   SatPropagator* sat_;
-  std::unordered_map<IntegerVariable*, IntExpr*> extracted_map_;
+  absl::flat_hash_map<IntegerVariable*, IntExpr*> extracted_map_;
 
   // Stores a set of sorted std::vector<IntegerVariables*>.
   // TODO(user, fdid): If it become too slow, switch to an unordered_set, it

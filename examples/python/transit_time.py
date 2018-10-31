@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Display Transit Time
+
    Distances are in meters and time in minutes.
 
    Manhattan average block: 750ft x 264ft -> 228m x 80m

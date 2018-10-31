@@ -10,14 +10,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
+import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class SendMostMoney {
 
@@ -25,18 +24,13 @@ public class SendMostMoney {
     System.loadLibrary("jniortools");
   }
 
-
   /**
-   *
-   * Solves the SEND+MOST=MONEY problem, where
-   * we maximize MONEY.
-   * See http://www.hakank.org/google_or_tools/send_more_money.py
-   *
+   * Solves the SEND+MOST=MONEY problem, where we maximize MONEY. See
+   * http://www.hakank.org/google_or_tools/send_more_money.py
    */
   private static long solve(long MONEY) {
 
     Solver solver = new Solver("SendMostMoney");
-
 
     //
     // data
@@ -57,15 +51,28 @@ public class SendMostMoney {
 
     IntVar[] x = {s, e, n, d, m, o, t, y};
 
-    IntVar[] eq = {s,e,n,d,  m,o,s,t, m,o,n,e,y};
-    int[] coeffs = {1000, 100, 10, 1,         //    S E N D +
-                    1000, 100, 10, 1,         //    M O S T
-                    -10000,-1000, -100,-10,-1 // == M O N E Y
+    IntVar[] eq = {s, e, n, d, m, o, s, t, m, o, n, e, y};
+    int[] coeffs = {
+      1000,
+      100,
+      10,
+      1, //    S E N D +
+      1000,
+      100,
+      10,
+      1, //    M O S T
+      -10000,
+      -1000,
+      -100,
+      -10,
+      -1 // == M O N E Y
     };
     solver.addConstraint(solver.makeScalProdEquality(eq, coeffs, 0));
 
-    IntVar money = solver.makeScalProd(new IntVar[] {m, o, n, e, y},
-                                       new int[] {10000, 1000, 100, 10, 1}).var();
+    IntVar money =
+        solver
+            .makeScalProd(new IntVar[] {m, o, n, e, y}, new int[] {10000, 1000, 100, 10, 1})
+            .var();
 
     //
     // constraints
@@ -86,9 +93,7 @@ public class SendMostMoney {
     //
     // search
     //
-    DecisionBuilder db = solver.makePhase(x,
-                                          solver.CHOOSE_FIRST_UNBOUND,
-                                          solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db = solver.makePhase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE);
 
     if (MONEY == 0) {
       // first round: get the optimal value
@@ -103,7 +108,7 @@ public class SendMostMoney {
     while (solver.nextSolution()) {
       System.out.println("money: " + money.value());
       money_ret = money.value();
-      for(int i = 0; i < x.length; i++) {
+      for (int i = 0; i < x.length; i++) {
         System.out.print(x[i].value() + " ");
       }
       System.out.println();
@@ -118,7 +123,6 @@ public class SendMostMoney {
     System.out.println("Wall time: " + solver.wallTime() + "ms");
 
     return money_ret;
-
   }
 
   public static void main(String[] args) throws Exception {

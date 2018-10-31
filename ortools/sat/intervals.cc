@@ -87,11 +87,15 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
   task_by_increasing_min_end_.resize(num_tasks);
   task_by_decreasing_max_start_.resize(num_tasks);
   task_by_decreasing_max_end_.resize(num_tasks);
+  task_by_increasing_shifted_start_min_.resize(num_tasks);
+  task_by_decreasing_shifted_end_max_.resize(num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
     task_by_increasing_min_start_[t].task_index = t;
     task_by_increasing_min_end_[t].task_index = t;
     task_by_decreasing_max_start_[t].task_index = t;
     task_by_decreasing_max_end_[t].task_index = t;
+    task_by_increasing_shifted_start_min_[t].task_index = t;
+    task_by_decreasing_shifted_end_max_[t].task_index = t;
   }
 }
 
@@ -103,6 +107,8 @@ void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
   std::swap(end_vars_, minus_start_vars_);
   std::swap(task_by_increasing_min_start_, task_by_decreasing_max_end_);
   std::swap(task_by_increasing_min_end_, task_by_decreasing_max_start_);
+  std::swap(task_by_increasing_shifted_start_min_,
+            task_by_decreasing_shifted_end_max_);
 }
 
 const std::vector<SchedulingConstraintHelper::TaskTime>&
@@ -152,6 +158,18 @@ SchedulingConstraintHelper::TaskByDecreasingEndMax() {
   IncrementalSort(task_by_decreasing_max_end_.begin(),
                   task_by_decreasing_max_end_.end(), std::greater<TaskTime>());
   return task_by_decreasing_max_end_;
+}
+
+const std::vector<SchedulingConstraintHelper::TaskTime>&
+SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
+  const int num_tasks = NumTasks();
+  for (int i = 0; i < num_tasks; ++i) {
+    TaskTime& ref = task_by_increasing_shifted_start_min_[i];
+    ref.time = ShiftedStartMin(ref.task_index);
+  }
+  IncrementalSort(task_by_increasing_shifted_start_min_.begin(),
+                  task_by_increasing_shifted_start_min_.end());
+  return task_by_increasing_shifted_start_min_;
 }
 
 // Produces a relaxed reason for StartMax(before) < EndMin(after).

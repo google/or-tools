@@ -28,8 +28,9 @@
 #define OR_TOOLS_BOP_BOP_LS_H_
 
 #include <array>
-#include <unordered_set>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/random.h"
 #include "ortools/bop/bop_base.h"
@@ -404,7 +405,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // Members used by PotentialOneFlipRepairs().
   std::vector<sat::Literal> tmp_potential_repairs_;
   NonOrderedSetHasher<ConstraintIndexWithDirection> constraint_set_hasher_;
-  std::unordered_map<uint64, std::vector<sat::Literal>>
+  absl::flat_hash_map<uint64, std::vector<sat::Literal>>
       hash_to_potential_repairs_;
 
   DISALLOW_COPY_AND_ASSIGN(AssignmentAndConstraintFeasibilityMaintainer);
@@ -612,7 +613,7 @@ class LocalSearchAssignmentIterator {
   // Ideally, this should be related to the maximum number of decision in the
   // LS, but that requires templating the whole LS optimizer.
   bool use_transposition_table_;
-  std::unordered_set<std::array<int32, kStoredMaxDecisions>>
+  absl::flat_hash_set<std::array<int32, kStoredMaxDecisions>>
       transposition_table_;
 
   bool use_potential_one_flip_repairs_;

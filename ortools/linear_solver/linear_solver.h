@@ -146,15 +146,14 @@
 
 #include "ortools/base/commandlineflags.h"
 
-#include <unordered_map>
+#include "absl/container/flat_hash_map.h"
+#include "absl/strings/match.h"
+#include "absl/strings/str_format.h"
+#include "absl/types/optional.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/optional.h"
-#include "ortools/base/port.h"
 #include "ortools/base/status.h"
-#include "ortools/base/stringprintf.h"
-#include "ortools/base/strutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_expr.h"
@@ -534,29 +533,21 @@ class MPSolver {
   void EnableOutput();
   void SuppressOutput();
 
-  void set_time_limit(int64 time_limit_milliseconds) {
-    DCHECK_GE(time_limit_milliseconds, 0);
-    time_limit_ = time_limit_milliseconds;
+  absl::Duration TimeLimit() const { return time_limit_; }
+  void SetTimeLimit(absl::Duration time_limit) {
+    DCHECK_GE(time_limit, absl::ZeroDuration());
+    time_limit_ = time_limit;
   }
 
-  // In milliseconds.
-  int64 time_limit() const { return time_limit_; }
-
-  // In seconds. Note that this returns a double.
-  double time_limit_in_secs() const {
-    // static_cast<double> avoids a warning with -Wreal-conversion. This
-    // helps catching bugs with unwanted conversions from double to ints.
-    return static_cast<double>(time_limit_) / 1000.0;
+  absl::Duration DurationSinceConstruction() const {
+    return absl::Now() - construction_time_;
   }
-
-  // Returns wall_time() in milliseconds since the creation of the solver.
-  int64 wall_time() const { return timer_.GetInMs(); }
 
   // Returns the number of simplex iterations.
   int64 iterations() const;
 
-  // Returns the number of branch-and-bound nodes. Only available for
-  // discrete problems.
+  // Returns the number of branch-and-bound nodes evaluated during the solve.
+  // Only available for discrete problems.
   int64 nodes() const;
 
   // Returns a std::string describing the underlying solver and its version.
@@ -610,7 +601,29 @@ class MPSolver {
   // As of 2018-08-09, only Gurobi supports NextSolution(), see
   // linear_solver_underlying_gurobi_test for an example of how to configure
   // Gurobi for this purpose. The other solvers return false unconditionally.
-  bool NextSolution() MUST_USE_RESULT;
+  ABSL_MUST_USE_RESULT bool NextSolution();
+
+  // DEPRECATED: Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
+  // NOTE: These deprecated functions used the convention time_limit = 0 to mean
+  // "no limit", which now corresponds to time_limit_ = InfiniteDuration().
+  int64 time_limit() const {
+    return time_limit_ == absl::InfiniteDuration()
+               ? 0
+               : absl::ToInt64Milliseconds(time_limit_);
+  }
+  void set_time_limit(int64 time_limit_milliseconds) {
+    SetTimeLimit(time_limit_milliseconds == 0
+                     ? absl::InfiniteDuration()
+                     : absl::Milliseconds(time_limit_milliseconds));
+  }
+  double time_limit_in_secs() const {
+    return static_cast<double>(time_limit()) / 1000.0;
+  }
+
+  // DEPRECATED: Use DurationSinceConstruction() instead.
+  int64 wall_time() const {
+    return absl::ToInt64Milliseconds(DurationSinceConstruction());
+  }
 
   friend class GLPKInterface;
   friend class CLPInterface;
@@ -659,7 +672,7 @@ class MPSolver {
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
-  mutable absl::optional<std::unordered_map<std::string, int> >
+  mutable absl::optional<absl::flat_hash_map<std::string, int> >
       variable_name_to_index_;
   // Whether variables have been extracted to the underlying interface.
   std::vector<bool> variable_is_extracted_;
@@ -667,7 +680,7 @@ class MPSolver {
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  mutable absl::optional<std::unordered_map<std::string, int> >
+  mutable absl::optional<absl::flat_hash_map<std::string, int> >
       constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
@@ -684,10 +697,9 @@ class MPSolver {
   // hint is provided and a std::vector<double> for the hint value.
   std::vector<std::pair<MPVariable*, double> > solution_hint_;
 
-  // Time limit in milliseconds (0 = no limit).
-  int64 time_limit_;
+  absl::Duration time_limit_ = absl::InfiniteDuration();  // Default = No limit.
 
-  WallTimer timer_;
+  const absl::Time construction_time_;
 
   // Permanent storage for SetSolverSpecificParametersAsString().
   std::string solver_specific_parameter_string_;
@@ -722,7 +734,7 @@ class MPObjective {
 
   // Returns a map from variables to their coefficients in the objective. If a
   // variable is not present in the map, then its coefficient is zero.
-  const std::unordered_map<const MPVariable*, double>& terms() const {
+  const absl::flat_hash_map<const MPVariable*, double>& terms() const {
     return coefficients_;
   }
 
@@ -790,13 +802,13 @@ class MPObjective {
   // to several models.
   // At construction, an MPObjective has no terms (which is equivalent
   // on having a coefficient of 0 for all variables), and an offset of 0.
-  explicit MPObjective(MPSolverInterface* const interface)
-      : interface_(interface), coefficients_(1), offset_(0.0) {}
+  explicit MPObjective(MPSolverInterface* const interface_in)
+      : interface_(interface_in), offset_(0.0) {}
 
   MPSolverInterface* const interface_;
 
   // Mapping var -> coefficient.
-  std::unordered_map<const MPVariable*, double> coefficients_;
+  absl::flat_hash_map<const MPVariable*, double> coefficients_;
   // Constant term.
   double offset_;
 
@@ -865,7 +877,7 @@ class MPVariable {
   // is specified in the constructor. A variable cannot belong to
   // several models.
   MPVariable(int index, double lb, double ub, bool integer,
-             const std::string& name, MPSolverInterface* const interface)
+             const std::string& name, MPSolverInterface* const interface_in)
       : index_(index),
         lb_(lb),
         ub_(ub),
@@ -873,7 +885,7 @@ class MPVariable {
         name_(name.empty() ? absl::StrFormat("auto_v_%09d", index) : name),
         solution_value_(0.0),
         reduced_cost_(0.0),
-        interface_(interface) {}
+        interface_(interface_in) {}
 
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
@@ -910,7 +922,7 @@ class MPConstraint {
 
   // Returns a map from variables to their coefficients in the constraint. If a
   // variable is not present in the map, then its coefficient is zero.
-  const std::unordered_map<const MPVariable*, double>& terms() const {
+  const absl::flat_hash_map<const MPVariable*, double>& terms() const {
     return coefficients_;
   }
 
@@ -972,15 +984,14 @@ class MPConstraint {
   // that is specified in the constructor. A constraint cannot belong
   // to several models.
   MPConstraint(int index, double lb, double ub, const std::string& name,
-               MPSolverInterface* const interface)
-      : coefficients_(1),
-        index_(index),
+               MPSolverInterface* const interface_in)
+      : index_(index),
         lb_(lb),
         ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
         is_lazy_(false),
         dual_value_(0.0),
-        interface_(interface) {}
+        interface_(interface_in) {}
 
   void set_dual_value(double dual_value) { dual_value_ = dual_value; }
 
@@ -990,7 +1001,7 @@ class MPConstraint {
   bool ContainsNewVariables();
 
   // Mapping var -> coefficient.
-  std::unordered_map<const MPVariable*, double> coefficients_;
+  absl::flat_hash_map<const MPVariable*, double> coefficients_;
 
   const int index_;  // See index().
 

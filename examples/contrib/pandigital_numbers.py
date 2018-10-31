@@ -72,8 +72,8 @@ from ortools.constraint_solver import pywrapcp
 
 def toNum(solver, t, s, base):
   tlen = len(t)
-  solver.Add(s == solver.Sum([(base**(tlen - i - 1)) * t[i]
-                              for i in range(tlen)]))
+  solver.Add(
+      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
 
 
 def main(base=10, start=1, len1=1, len2=4):

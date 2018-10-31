@@ -28,9 +28,8 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_SAT_CONSTRAINT_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_SAT_CONSTRAINT_H_
 
-#include <unordered_map>
-#include <unordered_set>
-
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -126,8 +125,9 @@ class BooleanVariableManager {
   sat::SatSolver* solver_;
   std::vector<IntVar*> registered_int_vars_;
   std::vector<IntVarLiteralGetter> associated_variables_;
-  std::unordered_map<IntVar*, int> registration_index_map_;
-  gtl::ITIVector<sat::BooleanVariable, std::pair<IntVar*, int64>> variable_meaning_;
+  absl::flat_hash_map<IntVar*, int> registration_index_map_;
+  gtl::ITIVector<sat::BooleanVariable, std::pair<IntVar*, int64>>
+      variable_meaning_;
   DISALLOW_COPY_AND_ASSIGN(BooleanVariableManager);
 };
 
@@ -255,34 +255,6 @@ class SatConstraint : public Constraint {
 
   DISALLOW_COPY_AND_ASSIGN(SatConstraint);
 };
-
-class SatTableConstraint : public Constraint {
- public:
-  // Note that we need to copy the arguments.
-  SatTableConstraint(Solver* s, const std::vector<IntVar*>& vars,
-                     const IntTupleSet& tuples)
-      : Constraint(s), vars_(vars), tuples_(tuples), sat_constraint_(s) {}
-
-  void Post() override;
-  void InitialPropagate() override { sat_constraint_.InitialPropagate(); }
-
- private:
-  const std::vector<IntVar*> vars_;
-  const IntTupleSet tuples_;
-
-  // TODO(user): share this between different constraint. We need to pay
-  // attention and call Post()/InitialPropagate() after all other constraint
-  // have been posted though.
-  SatConstraint sat_constraint_;
-
-  DISALLOW_COPY_AND_ASSIGN(SatTableConstraint);
-};
-
-inline Constraint* BuildSatTableConstraint(Solver* solver,
-                                           const std::vector<IntVar*>& vars,
-                                           const IntTupleSet& tuples) {
-  return solver->RevAlloc(new SatTableConstraint(solver, vars, tuples));
-}
 
 }  // namespace operations_research
 

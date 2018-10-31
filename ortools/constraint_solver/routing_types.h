@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_
 
+#include <functional>
 #include <utility>
 #include <vector>
-#include "ortools/base/callback.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 
@@ -37,12 +37,13 @@ DEFINE_INT_TYPE(RoutingDimensionIndex, int);
 DEFINE_INT_TYPE(RoutingDisjunctionIndex, int);
 DEFINE_INT_TYPE(RoutingVehicleClassIndex, int);
 
-typedef ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>
+typedef std::function<int64(RoutingNodeIndex, RoutingNodeIndex)>
     RoutingNodeEvaluator2;
-typedef std::function<int64(int64, int64)> RoutingTransitEvaluator2;
+typedef std::function<int64(int)> RoutingTransitCallback1;
+typedef std::function<int64(int, int)> RoutingTransitCallback2;
 // NOTE(user): keep the "> >" for SWIG.
-typedef std::pair<std::vector<int64>, std::vector<int64> > RoutingNodePair;
-typedef std::vector<RoutingNodePair> RoutingNodePairs;
+typedef std::pair<std::vector<int64>, std::vector<int64> > RoutingIndexPair;
+typedef std::vector<RoutingIndexPair> RoutingIndexPairs;
 
 }  // namespace operations_research
 

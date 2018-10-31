@@ -17,14 +17,17 @@
 #include <limits>
 #include <string>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/preprocessor.h"
 #include "ortools/glop/status.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
@@ -137,7 +140,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   // sense to detect duplicate constraints and merge bounds.
   {
     int new_size = 0;
-    std::unordered_map<LinearConstraintInternal, int, TermsHash, TermsEquiv>
+    absl::flat_hash_map<LinearConstraintInternal, int, TermsHash, TermsEquiv>
         equiv_constraint;
     for (LinearConstraintInternal& constraint : integer_lp_) {
       std::sort(constraint.terms.begin(), constraint.terms.end());
@@ -368,8 +371,12 @@ bool LinearProgrammingConstraint::Propagate() {
       lp_data_.NotifyThatColumnsAreClean();
       lp_data_.AddSlackVariablesWhereNecessary(false);
       const auto status = simplex_.Solve(lp_data_, time_limit_);
-      CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "
-                         << status.error_message();
+      if (!status.ok()) {
+        LOG(WARNING) << "The LP solver encountered an error: "
+                     << status.error_message();
+        simplex_.ClearStateForNextSolve();
+        return true;
+      }
     }
   }
 

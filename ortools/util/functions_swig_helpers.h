@@ -37,6 +37,12 @@ class LongLongToLong {
   virtual int64 Run(int64, int64) = 0;
 };
 
+class IntToLong {
+ public:
+  virtual ~IntToLong() {}
+  virtual int64 Run(int) = 0;
+};
+
 class IntIntToLong {
  public:
   virtual ~IntIntToLong() {}

@@ -19,7 +19,6 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"
 #include "ortools/bop/bop_ls.h"

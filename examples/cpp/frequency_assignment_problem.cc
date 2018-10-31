@@ -330,7 +330,7 @@ bool ConstraintImpactComparator(FapConstraint constraint1,
 }
 
 int64 ValueEvaluator(
-    std::unordered_map<int64, std::pair<int64, int64>>* value_evaluator_map,
+    absl::flat_hash_map<int64, std::pair<int64, int64>>* value_evaluator_map,
     int64 variable_index, int64 value) {
   CHECK(value_evaluator_map != nullptr);
   // Evaluate the choice. Smaller ranking denotes a better choice.
@@ -343,7 +343,7 @@ int64 ValueEvaluator(
   }
 
   // Update the history of assigned values and their rankings of each variable.
-  std::unordered_map<int64, std::pair<int64, int64>>::iterator it;
+  absl::flat_hash_map<int64, std::pair<int64, int64>>::iterator it;
   int64 new_value = value;
   int64 new_ranking = ranking;
   if ((it = value_evaluator_map->find(variable_index)) !=
@@ -578,7 +578,7 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   ChooseVariableStrategy(&variable_strategy);
   // Choose the value selection strategy.
   DecisionBuilder* db;
-  std::unordered_map<int64, std::pair<int64, int64>> history;
+  absl::flat_hash_map<int64, std::pair<int64, int64>> history;
   if (FLAGS_value_evaluator == "value_evaluator") {
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
     Solver::IndexEvaluator2 index_evaluator2 = [&history](int64 var,
@@ -863,7 +863,7 @@ int main(int argc, char** argv) {
   std::vector<operations_research::FapConstraint> constraints;
   std::string objective;
   std::vector<int> values;
-  std::unordered_map<int, operations_research::FapComponent> components;
+  absl::flat_hash_map<int, operations_research::FapComponent> components;
   operations_research::ParseInstance(FLAGS_directory, FLAGS_find_components,
                                      &variables, &constraints, &objective,
                                      &values, &components);

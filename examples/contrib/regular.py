@@ -105,8 +105,8 @@ def regular(x, Q, S, d, q0, F):
     solver.Add(x[i] <= S)
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-    solver.Add(a[i + 1] == solver.Element(d2_flatten, (
-        (a[i]) * S) + (x[i] - 1)))
+    solver.Add(
+        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
 
 
 #

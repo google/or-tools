@@ -145,8 +145,8 @@ def main(n=3, sol='CBC', use_output_matrix=0):
   if use_output_matrix == 1:
     for i in range_n:
       for j in range_n:
-        solver.Add(square[i, j] == solver.Sum([k * x[i, j, k]
-                                               for k in range_N]))
+        solver.Add(
+            square[i, j] == solver.Sum([k * x[i, j, k] for k in range_N]))
 
   #
   # solution and search

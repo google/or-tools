@@ -70,8 +70,8 @@ class SchoolSchedulingSatSolver(object):
       for section in all_sections:
         course = level * self.num_sections + section
         for subject in all_subjects:
-          required_slots = self.problem.curriculum[self.problem.levels[
-              level], self.problem.subjects[subject]]
+          required_slots = self.problem.curriculum[
+              self.problem.levels[level], self.problem.subjects[subject]]
           self.model.Add(
               sum(self.assignment[course, subject, teacher, slot]
                   for slot in all_slots

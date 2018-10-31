@@ -14,8 +14,7 @@
 #ifndef OR_TOOLS_FLATZINC_SOLVER_UTIL_H_
 #define OR_TOOLS_FLATZINC_SOLVER_UTIL_H_
 
-#include <unordered_set>
-
+#include "absl/container/flat_hash_set.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/flatzinc/model.h"
@@ -80,7 +79,7 @@ void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out);
 // for instances will mark x as computed).
 // If this create cycles, they will be broken later during extraction.
 void MarkComputedVariables(Constraint* ct,
-                           std::unordered_set<IntegerVariable*>* marked);
+                           absl::flat_hash_set<IntegerVariable*>* marked);
 
 }  // namespace fz
 }  // namespace operations_research

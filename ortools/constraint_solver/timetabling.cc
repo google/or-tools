@@ -13,10 +13,10 @@
 
 #include <string>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -47,8 +47,8 @@ class IntervalUnaryRelation : public Constraint {
   void InitialPropagate() override;
 
   std::string DebugString() const override {
-    return StringPrintf("(%s %s %" GG_LL_FORMAT "d)", t_->DebugString().c_str(),
-                        kUnaryNames[rel_], d_);
+    return absl::StrFormat("(%s %s %" GG_LL_FORMAT "d)", t_->DebugString(),
+                           kUnaryNames[rel_], d_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -132,8 +132,8 @@ class IntervalBinaryRelation : public Constraint {
   void InitialPropagate() override;
 
   std::string DebugString() const override {
-    return StringPrintf("(%s %s %s)", t1_->DebugString().c_str(),
-                        kBinaryNames[rel_], t2_->DebugString().c_str());
+    return absl::StrFormat("(%s %s %s)", t1_->DebugString(), kBinaryNames[rel_],
+                           t2_->DebugString());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -308,10 +308,10 @@ void TemporalDisjunction::InitialPropagate() {
 
 std::string TemporalDisjunction::DebugString() const {
   std::string out;
-  SStringPrintf(&out, "TemporalDisjunction(%s, %s", t1_->DebugString().c_str(),
-                t2_->DebugString().c_str());
+  (out = absl::StrFormat("TemporalDisjunction(%s, %s", t1_->DebugString(),
+                         t2_->DebugString()));
   if (alt_ != nullptr) {
-    StringAppendF(&out, " => %s", alt_->DebugString().c_str());
+    absl::StrAppendFormat(&out, " => %s", alt_->DebugString());
   }
   out += ") ";
   return out;

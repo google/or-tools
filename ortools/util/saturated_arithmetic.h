@@ -16,7 +16,7 @@
 
 #include "ortools/base/integral_types.h"
 
-#include "ortools/base/casts.h"
+#include "absl/base/casts.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {

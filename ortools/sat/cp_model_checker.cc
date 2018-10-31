@@ -15,12 +15,12 @@
 
 #include <algorithm>
 #include <memory>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_cat.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/port/proto_utils.h"
@@ -49,7 +49,7 @@ bool DomainInProtoIsValid(const ProtoWithDomain& proto) {
   for (int i = 0; i < proto.domain_size(); i += 2) {
     domain.push_back({proto.domain(i), proto.domain(i + 1)});
   }
-  return IntervalsAreSortedAndDisjoint(domain);
+  return IntervalsAreSortedAndNonAdjacent(domain);
 }
 
 bool VariableReferenceIsValid(const CpModelProto& model, int reference) {
@@ -379,7 +379,7 @@ class ConstraintChecker {
   }
 
   bool AllDiffConstraintIsFeasible(const ConstraintProto& ct) {
-    std::unordered_set<int64> values;
+    absl::flat_hash_set<int64> values;
     for (const int v : ct.all_diff().vars()) {
       if (gtl::ContainsKey(values, Value(v))) return false;
       values.insert(Value(v));
@@ -459,7 +459,7 @@ class ConstraintChecker {
     // TODO(user, fdid): Improve complexity for large durations.
     const int64 capacity = Value(ct.cumulative().capacity());
     const int num_intervals = ct.cumulative().intervals_size();
-    std::unordered_map<int64, int64> usage;
+    absl::flat_hash_map<int64, int64> usage;
     for (int i = 0; i < num_intervals; ++i) {
       const ConstraintProto interval_constraint =
           model.constraints(ct.cumulative().intervals(i));
@@ -499,7 +499,7 @@ class ConstraintChecker {
 
   bool AutomataConstraintIsFeasible(const ConstraintProto& ct) {
     // Build the transition table {tail, label} -> head.
-    std::unordered_map<std::pair<int64, int64>, int64> transition_map;
+    absl::flat_hash_map<std::pair<int64, int64>, int64> transition_map;
     const int num_transitions = ct.automata().transition_tail().size();
     for (int i = 0; i < num_transitions; ++i) {
       transition_map[{ct.automata().transition_tail(i),

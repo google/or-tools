@@ -76,16 +76,26 @@ target_include_directories(${PROJECT_NAME} INTERFACE
   $<INSTALL_INTERFACE:include>
   )
 target_link_libraries(${PROJECT_NAME} PUBLIC
+  ZLIB::ZLIB
+  absl::base
+  absl::container
+  absl::hash
+  absl::memory
+  absl::meta
+  absl::str_format
+  absl::strings
+  absl::synchronization
+  absl::types
   gflags::gflags glog::glog
-  ZLIB::ZLIB protobuf::libprotobuf
+  protobuf::libprotobuf
   Cbc::CbcSolver Cbc::OsiCbc Cbc::ClpSolver Cbc::OsiClp
   Threads::Threads)
 if(WIN32)
-  target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
-  target_compile_definitions(${PROJECT_NAME} PUBLIC __WIN32__)
+	target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
+target_compile_definitions(${PROJECT_NAME} PUBLIC __WIN32__)
 endif()
 target_compile_definitions(${PROJECT_NAME}
-  PUBLIC USE_BOP USE_GLOP USE_CBC USE_CLP)
+	PUBLIC	USE_BOP USE_GLOP USE_CBC USE_CLP)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 

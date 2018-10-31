@@ -1,0 +1,683 @@
+diff --git a/CMake/AbseilHelpers.cmake b/CMake/AbseilHelpers.cmake
+index 0c93417..46d7ba4 100644
+--- a/CMake/AbseilHelpers.cmake
++++ b/CMake/AbseilHelpers.cmake
+@@ -36,80 +36,150 @@ set(ABSL_IDE_FOLDER Abseil)
+ # libraries are installed under CMAKE_INSTALL_FULL_LIBDIR by default
+ #
+ function(absl_library)
++  set(options
++    DISABLE_INSTALL # keep that in case we want to support installation one day
++  )
++  set(oneValueArgs
++    TARGET
++    EXPORT_NAME
++  )
++  set(multiValueArgs
++    SOURCES
++    PUBLIC_HEADER
++    INTERNAL_PUBLIC_HEADER
++    INTERNAL_STR_PUBLIC_HEADER
++    INTERNAL_CCTZ_PUBLIC_HEADER
++    PUBLIC_INCLUDE_DIRS
++    PUBLIC_LIBRARIES
++    PRIVATE_LIBRARIES
++    PRIVATE_COMPILE_FLAGS
++    PRIVATE_INCLUDE_DIRS
++  )
+   cmake_parse_arguments(ABSL_LIB
+-    "DISABLE_INSTALL" # keep that in case we want to support installation one day
+-    "TARGET;EXPORT_NAME"
+-    "SOURCES;PUBLIC_LIBRARIES;PRIVATE_COMPILE_FLAGS"
++    "${options}"
++    "${oneValueArgs}"
++    "${multiValueArgs}"
+     ${ARGN}
+   )
+ 
+   set(_NAME ${ABSL_LIB_TARGET})
+   string(TOUPPER ${_NAME} _UPPER_NAME)
+ 
+-  add_library(${_NAME} STATIC ${ABSL_LIB_SOURCES})
++  add_library(${_NAME} ${ABSL_LIB_SOURCES})
+ 
+   target_compile_options(${_NAME} PRIVATE ${ABSL_COMPILE_CXXFLAGS} ${ABSL_LIB_PRIVATE_COMPILE_FLAGS})
+   target_link_libraries(${_NAME} PUBLIC ${ABSL_LIB_PUBLIC_LIBRARIES})
++  target_link_libraries(${_NAME} PRIVATE ${ABSL_LIB_PRIVATE_LIBRARIES})
+   target_include_directories(${_NAME}
+-    PUBLIC ${ABSL_COMMON_INCLUDE_DIRS} ${ABSL_LIB_PUBLIC_INCLUDE_DIRS}
+-    PRIVATE ${ABSL_LIB_PRIVATE_INCLUDE_DIRS}
++    PUBLIC
++      $<BUILD_INTERFACE:${ABSL_COMMON_INCLUDE_DIRS}>
++      $<BUILD_INTERFACE:${ABSL_LIB_PUBLIC_INCLUDE_DIRS}>
++      $<INSTALL_INTERFACE:include>
++    PRIVATE
++      $<BUILD_INTERFACE:${ABSL_LIB_PRIVATE_INCLUDE_DIRS}>
+   )
+   # Add all Abseil targets to a a folder in the IDE for organization.
+   set_property(TARGET ${_NAME} PROPERTY FOLDER ${ABSL_IDE_FOLDER})
++  # Set the list of public headers to install
++  set_property(TARGET ${_NAME} PROPERTY PUBLIC_HEADER "${ABSL_LIB_PUBLIC_HEADER}")
+ 
+   if(ABSL_LIB_EXPORT_NAME)
+     add_library(absl::${ABSL_LIB_EXPORT_NAME} ALIAS ${_NAME})
+   endif()
++  if(NOT ${ABSL_LIB_DISABLE_INSTALL})
++    install(TARGETS ${_NAME}
++      EXPORT ${PROJECT_NAME}-targets
++      PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/absl/${ABSL_LIB_EXPORT_NAME}
++      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++    )
++    install(FILES
++      ${ABSL_LIB_INTERNAL_PUBLIC_HEADER}
++      DESTINATION include/absl/${ABSL_LIB_EXPORT_NAME}/internal
++    )
++    install(FILES
++      ${ABSL_LIB_INTERNAL_STR_PUBLIC_HEADER}
++      DESTINATION include/absl/${ABSL_LIB_EXPORT_NAME}/internal/str_format
++    )
++    install(FILES
++      ${ABSL_LIB_INTERNAL_CCTZ_PUBLIC_HEADER}
++      DESTINATION
++      include/absl/${ABSL_LIB_EXPORT_NAME}/internal/cctz/include/cctz
++    )
++  endif()
+ endfunction()
+ 
+-
+-
+ #
+ # header only virtual target creation
+ #
+ function(absl_header_library)
++  set(options
++    DISABLE_INSTALL # keep that in case we want to support installation one day
++  )
++  set(oneValueArgs
++    TARGET
++    EXPORT_NAME
++  )
++  set(multiValueArgs
++    PUBLIC_HEADER
++    INTERNAL_PUBLIC_HEADER
++    PUBLIC_INCLUDE_DIRS
++    PUBLIC_LIBRARIES
++    PRIVATE_COMPILE_FLAGS
++  )
+   cmake_parse_arguments(ABSL_HO_LIB
+-    "DISABLE_INSTALL"
+-    "EXPORT_NAME;TARGET"
+-    "PUBLIC_LIBRARIES;PRIVATE_COMPILE_FLAGS;PUBLIC_INCLUDE_DIRS;PRIVATE_INCLUDE_DIRS"
++    "${options}"
++    "${oneValueArgs}"
++    "${multiValueArgs}"
+     ${ARGN}
+   )
+ 
+   set(_NAME ${ABSL_HO_LIB_TARGET})
+ 
+-  set(__dummy_header_only_lib_file "${CMAKE_CURRENT_BINARY_DIR}/${_NAME}_header_only_dummy.cc")
+-
+-  if(NOT EXISTS ${__dummy_header_only_lib_file})
+-    file(WRITE ${__dummy_header_only_lib_file}
+-      "/* generated file for header-only cmake target */
+-
+-      namespace absl {
+-
+-       // single meaningless symbol
+-       void ${_NAME}__header_fakesym() {}
+-      }  // namespace absl
+-      "
+-    )
+-  endif()
+-
+-
+-  add_library(${_NAME} ${__dummy_header_only_lib_file})
+-  target_link_libraries(${_NAME} PUBLIC ${ABSL_HO_LIB_PUBLIC_LIBRARIES})
++  add_library(${_NAME} INTERFACE)
++  target_link_libraries(${_NAME} INTERFACE ${ABSL_HO_LIB_PUBLIC_LIBRARIES})
+   target_include_directories(${_NAME}
+-    PUBLIC ${ABSL_COMMON_INCLUDE_DIRS} ${ABSL_HO_LIB_PUBLIC_INCLUDE_DIRS}
+-    PRIVATE ${ABSL_HO_LIB_PRIVATE_INCLUDE_DIRS}
++    INTERFACE
++      $<BUILD_INTERFACE:${ABSL_COMMON_INCLUDE_DIRS}>
++      $<BUILD_INTERFACE:${ABSL_HO_LIB_PUBLIC_INCLUDE_DIRS}>
++      $<INSTALL_INTERFACE:include>
+   )
+ 
+-  # Add all Abseil targets to a a folder in the IDE for organization.
+-  set_property(TARGET ${_NAME} PROPERTY FOLDER ${ABSL_IDE_FOLDER})
++  # Folder property is not allowed for interface library
++  #set_property(TARGET ${_NAME} PROPERTY FOLDER ${ABSL_IDE_FOLDER})
++  # Public headers is not allowed for interface library
++  # see: https://gitlab.kitware.com/cmake/cmake/issues/15234
++  #set_property(TARGET ${_NAME} PROPERTY PUBLIC_HEADER "${ABSL_HO_LIB_PUBLIC_HEADER}")
+ 
+   if(ABSL_HO_LIB_EXPORT_NAME)
+     add_library(absl::${ABSL_HO_LIB_EXPORT_NAME} ALIAS ${_NAME})
+   endif()
+-
++  if(NOT ${ABSL_HO_LIB_DISABLE_INSTALL})
++    install(TARGETS ${_NAME}
++      EXPORT ${PROJECT_NAME}-targets
++      #PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/absl/${_NAME}
++    )
++    install(FILES
++      ${ABSL_HO_LIB_PUBLIC_HEADER}
++      DESTINATION include/absl/${ABSL_HO_LIB_EXPORT_NAME}
++    )
++    install(FILES
++      ${ABSL_HO_LIB_INTERNAL_PUBLIC_HEADER}
++      DESTINATION include/absl/${ABSL_HO_LIB_EXPORT_NAME}/internal
++    )
++  endif()
+ endfunction()
+ 
+ 
++#
++# create a library in the absl namespace for testing purpose
++#
++function(absl_test_library)
++  if(ABSL_RUN_TESTS)
++    absl_library(${ARGN})
++  endif(ABSL_RUN_TESTS)
++endfunction()
++
+ #
+ # create an abseil unit_test and add it to the executed test list
+ #
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9a7e103..a19164c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -96,3 +96,12 @@ if(BUILD_TESTING)
+ endif()
+ 
+ add_subdirectory(absl)
++
++set(CMAKE_INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
++install(EXPORT ${PROJECT_NAME}-targets
++  NAMESPACE absl::
++  DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
++  )
++install(FILES CMake/${PROJECT_NAME}-config.cmake
++  DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
++  )
+diff --git a/absl/algorithm/CMakeLists.txt b/absl/algorithm/CMakeLists.txt
+index fdf45c5..3404fc3 100644
+--- a/absl/algorithm/CMakeLists.txt
++++ b/absl/algorithm/CMakeLists.txt
+@@ -34,6 +34,8 @@ list(APPEND ALGORITHM_TEST_SRC
+ absl_header_library(
+   TARGET
+     absl_algorithm
++  PUBLIC_HEADER
++    ${ALGORITHM_PUBLIC_HEADERS}
+   EXPORT_NAME
+     algorithm
+ )
+diff --git a/absl/base/CMakeLists.txt b/absl/base/CMakeLists.txt
+index 04a6eb3..6fb78b4 100644
+--- a/absl/base/CMakeLists.txt
++++ b/absl/base/CMakeLists.txt
+@@ -55,6 +55,10 @@ list(APPEND BASE_INTERNAL_HEADERS
+   "internal/tsan_mutex_interface.h"
+   "internal/unaligned_access.h"
+   "internal/unscaledcycleclock.h"
++  "internal/spinlock_akaros.inc"
++  "internal/spinlock_linux.inc"
++  "internal/spinlock_posix.inc"
++  "internal/spinlock_win32.inc"
+ )
+ 
+ 
+@@ -76,6 +80,10 @@ absl_library(
+     absl_base
+   SOURCES
+     ${BASE_SRC}
++  PUBLIC_HEADER
++    ${BASE_PUBLIC_HEADERS}
++  INTERNAL_PUBLIC_HEADER
++    ${BASE_INTERNAL_HEADERS}
+   PUBLIC_LIBRARIES
+     absl_dynamic_annotations
+     absl_spinlock_wait
+@@ -162,6 +170,8 @@ absl_library(
+     ${MALLOC_INTERNAL_SRC}
+   PUBLIC_LIBRARIES
+     absl_dynamic_annotations
++  PRIVATE_LIBRARIES
++    absl::base
+ )
+ 
+ 
+diff --git a/absl/container/CMakeLists.txt b/absl/container/CMakeLists.txt
+index 9e40690..677d07e 100644
+--- a/absl/container/CMakeLists.txt
++++ b/absl/container/CMakeLists.txt
+@@ -33,6 +33,7 @@ list(APPEND CONTAINER_INTERNAL_HEADERS
+   "internal/hash_policy_testing.h"
+   "internal/hash_policy_traits.h"
+   "internal/hashtable_debug.h"
++  "internal/hashtable_debug_hooks.h"
+   "internal/layout.h"
+   "internal/node_hash_policy.h"
+   "internal/raw_hash_map.h"
+@@ -53,6 +54,10 @@ absl_library(
+     absl_container
+   SOURCES
+     "internal/raw_hash_set.cc"
++  PUBLIC_HEADER
++    ${CONTAINER_PUBLIC_HEADERS}
++  INTERNAL_PUBLIC_HEADER
++    ${CONTAINER_INTERNAL_HEADERS}
+   EXPORT_NAME
+     container
+ )
+@@ -69,9 +74,9 @@ list(APPEND TEST_INSTANCE_TRACKER_LIB_SRC
+ )
+ 
+ 
+-absl_library(
++absl_test_library(
+   TARGET
+-    test_instance_tracker_lib
++    absl_test_instance_tracker_lib
+   SOURCES
+     ${TEST_INSTANCE_TRACKER_LIB_SRC}
+   PUBLIC_LIBRARIES
+@@ -82,7 +87,7 @@ absl_library(
+ 
+ # test fixed_array_test
+ set(FIXED_ARRAY_TEST_SRC "fixed_array_test.cc")
+-set(FIXED_ARRAY_TEST_PUBLIC_LIBRARIES absl::base absl_throw_delegate test_instance_tracker_lib)
++set(FIXED_ARRAY_TEST_PUBLIC_LIBRARIES absl::base absl_throw_delegate absl_test_instance_tracker_lib)
+ 
+ absl_test(
+   TARGET
+@@ -128,7 +133,7 @@ absl_test(
+ 
+ # test inlined_vector_test
+ set(INLINED_VECTOR_TEST_SRC "inlined_vector_test.cc")
+-set(INLINED_VECTOR_TEST_PUBLIC_LIBRARIES absl::base absl_throw_delegate test_instance_tracker_lib)
++set(INLINED_VECTOR_TEST_PUBLIC_LIBRARIES absl::base absl_throw_delegate absl_test_instance_tracker_lib)
+ 
+ absl_test(
+   TARGET
+@@ -153,7 +158,8 @@ absl_test(
+ 
+ # test test_instance_tracker_test
+ set(TEST_INSTANCE_TRACKER_TEST_SRC "internal/test_instance_tracker_test.cc")
+-set(TEST_INSTANCE_TRACKER_TEST_PUBLIC_LIBRARIES absl::base absl_throw_delegate test_instance_tracker_lib)
++set(TEST_INSTANCE_TRACKER_TEST_PUBLIC_LIBRARIES absl::base absl_throw_delegate
++  absl_test_instance_tracker_lib)
+ 
+ 
+ absl_test(
+@@ -172,5 +178,5 @@ absl_test(
+   SOURCES
+     "internal/raw_hash_set_test.cc"
+   PUBLIC_LIBRARIES
+-    absl::base absl::hash absl_throw_delegate test_instance_tracker_lib
++    absl::base absl::hash absl_throw_delegate absl_test_instance_tracker_lib
+ )
+diff --git a/absl/container/internal/raw_hash_map.h b/absl/container/internal/raw_hash_map.h
+index 1edc007..05270ef 100644
+--- a/absl/container/internal/raw_hash_map.h
++++ b/absl/container/internal/raw_hash_map.h
+@@ -39,11 +39,14 @@ class raw_hash_map : public raw_hash_set<Policy, Hash, Eq, Alloc> {
+   using MappedConstReference = decltype(P::value(
+       std::addressof(std::declval<typename raw_hash_map::const_reference>())));
+ 
++  using KeyArgImpl = container_internal::KeyArg<IsTransparent<Eq>::value &&
++                                                IsTransparent<Hash>::value>;
++
+  public:
+   using key_type = typename Policy::key_type;
+   using mapped_type = typename Policy::mapped_type;
+-  template <typename K>
+-  using key_arg = typename raw_hash_map::raw_hash_set::template key_arg<K>;
++  template <class K>
++  using key_arg = typename KeyArgImpl::template type<K, key_type>;
+ 
+   static_assert(!std::is_reference<key_type>::value, "");
+   // TODO(alkis): remove this assertion and verify that reference mapped_type is
+diff --git a/absl/debugging/CMakeLists.txt b/absl/debugging/CMakeLists.txt
+index 4af2ec8..44ba7ef 100644
+--- a/absl/debugging/CMakeLists.txt
++++ b/absl/debugging/CMakeLists.txt
+@@ -19,6 +19,9 @@ list(APPEND DEBUGGING_PUBLIC_HEADERS
+   "leak_check.h"
+   "stacktrace.h"
+   "symbolize.h"
++  "symbolize_elf.inc"
++  "symbolize_unimplemented.inc"
++  "symbolize_win32.inc"
+ )
+ 
+ # TODO(cohenjon) The below is all kinds of wrong.  Make this match what we do in
+@@ -31,6 +34,13 @@ list(APPEND DEBUGGING_INTERNAL_HEADERS
+   "internal/stacktrace_config.h"
+   "internal/symbolize.h"
+   "internal/vdso_support.h"
++  "internal/stacktrace_aarch64-inl.inc"
++  "internal/stacktrace_arm-inl.inc"
++  "internal/stacktrace_generic-inl.inc"
++  "internal/stacktrace_powerpc-inl.inc"
++  "internal/stacktrace_unimplemented-inl.inc"
++  "internal/stacktrace_win32-inl.inc"
++  "internal/stacktrace_x86-inl.inc"
+ )
+ 
+ list(APPEND DEBUGGING_INTERNAL_SRC
+@@ -108,6 +118,8 @@ absl_library(
+     absl_examine_stack
+   SOURCES
+     ${EXAMINE_STACK_SRC}
++  PUBLIC_LIBRARIES
++    absl::symbolize
+   EXPORT_NAME
+     examine_stack
+ )
+@@ -134,6 +146,10 @@ absl_library(
+ absl_header_library(
+   TARGET
+     absl_debugging
++  PUBLIC_HEADER
++    ${DEBUGGING_PUBLIC_HEADERS}
++  INTERNAL_PUBLIC_HEADER
++    ${DEBUGGING_INTERNAL_HEADERS}
+   PUBLIC_LIBRARIES
+     absl_stacktrace absl_leak_check
+   EXPORT_NAME
+diff --git a/absl/hash/CMakeLists.txt b/absl/hash/CMakeLists.txt
+index 474092f..e10a447 100644
+--- a/absl/hash/CMakeLists.txt
++++ b/absl/hash/CMakeLists.txt
+@@ -31,13 +31,17 @@ list(APPEND HASH_SRC
+   ${HASH_INTERNAL_HEADERS}
+ )
+ 
+-set(HASH_PUBLIC_LIBRARIES absl::hash absl::container absl::strings absl::str_format absl::utility)
++set(HASH_PUBLIC_LIBRARIES absl::container absl::strings absl::str_format absl::utility)
+ 
+ absl_library(
+   TARGET
+     absl_hash
+   SOURCES
+     ${HASH_SRC}
++  PUBLIC_HEADER
++    ${HASH_PUBLIC_HEADERS}
++  INTERNAL_PUBLIC_HEADER
++    ${HASH_INTERNAL_HEADERS}
+   PUBLIC_LIBRARIES
+     ${HASH_PUBLIC_LIBRARIES}
+   EXPORT_NAME
+diff --git a/absl/memory/CMakeLists.txt b/absl/memory/CMakeLists.txt
+index 5958f5c..bcaf3fa 100644
+--- a/absl/memory/CMakeLists.txt
++++ b/absl/memory/CMakeLists.txt
+@@ -22,6 +22,8 @@ list(APPEND MEMORY_PUBLIC_HEADERS
+ absl_header_library(
+   TARGET
+     absl_memory
++  PUBLIC_HEADER
++    ${MEMORY_PUBLIC_HEADERS}
+   EXPORT_NAME
+     memory
+ )
+diff --git a/absl/meta/CMakeLists.txt b/absl/meta/CMakeLists.txt
+index adb0ceb..e24eef5 100644
+--- a/absl/meta/CMakeLists.txt
++++ b/absl/meta/CMakeLists.txt
+@@ -32,6 +32,8 @@ list(APPEND TYPE_TRAITS_TEST_SRC
+ absl_header_library(
+   TARGET
+     absl_meta
++  PUBLIC_HEADER
++    ${META_PUBLIC_HEADERS}
+   PUBLIC_LIBRARIES
+     absl::base
+   EXPORT_NAME
+diff --git a/absl/numeric/CMakeLists.txt b/absl/numeric/CMakeLists.txt
+index 3360b2e..20744f6 100644
+--- a/absl/numeric/CMakeLists.txt
++++ b/absl/numeric/CMakeLists.txt
+@@ -16,6 +16,8 @@
+ 
+ list(APPEND NUMERIC_PUBLIC_HEADERS
+   "int128.h"
++  "int128_have_intrinsic.inc"
++  "int128_no_intrinsic.inc"
+ )
+ 
+ 
+@@ -39,6 +41,8 @@ absl_library(
+ absl_header_library(
+   TARGET
+     absl_numeric
++  PUBLIC_HEADER
++    ${NUMERIC_PUBLIC_HEADERS}
+   PUBLIC_LIBRARIES
+     absl::int128
+   EXPORT_NAME
+diff --git a/absl/strings/CMakeLists.txt b/absl/strings/CMakeLists.txt
+index f3e4162..05b9145 100644
+--- a/absl/strings/CMakeLists.txt
++++ b/absl/strings/CMakeLists.txt
+@@ -22,6 +22,7 @@ list(APPEND STRINGS_PUBLIC_HEADERS
+   "match.h"
+   "numbers.h"
+   "str_cat.h"
++  "str_format.h"
+   "string_view.h"
+   "strip.h"
+   "str_join.h"
+@@ -30,7 +31,6 @@ list(APPEND STRINGS_PUBLIC_HEADERS
+   "substitute.h"
+ )
+ 
+-
+ list(APPEND STRINGS_INTERNAL_HEADERS
+   "internal/char_map.h"
+   "internal/charconv_bigint.h"
+@@ -44,7 +44,15 @@ list(APPEND STRINGS_INTERNAL_HEADERS
+   "internal/utf8.h"
+ )
+ 
+-
++list(APPEND STRINGS_INTERNAL_STR_HEADERS
++  "internal/str_format/arg.h"
++  "internal/str_format/bind.h"
++  "internal/str_format/checker.h"
++  "internal/str_format/extension.h"
++  "internal/str_format/float_conversion.h"
++  "internal/str_format/output.h"
++  "internal/str_format/parser.h"
++)
+ 
+ # add string library
+ list(APPEND STRINGS_SRC
+@@ -74,6 +82,12 @@ absl_library(
+     absl_strings
+   SOURCES
+     ${STRINGS_SRC}
++  PUBLIC_HEADER
++    ${STRINGS_PUBLIC_HEADERS}
++  INTERNAL_PUBLIC_HEADER
++    ${STRINGS_INTERNAL_HEADERS}
++  INTERNAL_STR_PUBLIC_HEADER
++  ${STRINGS_INTERNAL_STR_HEADERS}
+   PUBLIC_LIBRARIES
+     ${STRINGS_PUBLIC_LIBRARIES}
+   EXPORT_NAME
+@@ -85,7 +99,7 @@ absl_header_library(
+   TARGET
+     absl_str_format
+   PUBLIC_LIBRARIES
+-    str_format_internal
++    absl_str_format_internal
+   EXPORT_NAME
+     str_format
+ )
+@@ -93,7 +107,7 @@ absl_header_library(
+ # str_format_internal
+ absl_library(
+   TARGET
+-    str_format_internal
++    absl_str_format_internal
+   SOURCES
+     "internal/str_format/arg.cc"
+     "internal/str_format/bind.cc"
+@@ -109,7 +123,7 @@ absl_library(
+     "internal/str_format/output.h"
+     "internal/str_format/parser.h"
+   PUBLIC_LIBRARIES
+-    str_format_extension_internal
++    absl_str_format_extension_internal
+     absl::strings
+     absl::base
+     absl::numeric
+@@ -120,7 +134,7 @@ absl_library(
+ # str_format_extension_internal
+ absl_library(
+   TARGET
+-    str_format_extension_internal
++    absl_str_format_extension_internal
+   SOURCES
+     "internal/str_format/extension.cc"
+     "internal/str_format/extension.h"
+diff --git a/absl/synchronization/CMakeLists.txt b/absl/synchronization/CMakeLists.txt
+index de0d7b7..d1e7802 100644
+--- a/absl/synchronization/CMakeLists.txt
++++ b/absl/synchronization/CMakeLists.txt
+@@ -29,6 +29,7 @@ list(APPEND SYNCHRONIZATION_INTERNAL_HEADERS
+   "internal/per_thread_sem.h"
+   "internal/thread_pool.h"
+   "internal/waiter.h"
++  "internal/mutex_nonprod.inc"
+ )
+ 
+ 
+@@ -52,6 +53,10 @@ absl_library(
+     absl_synchronization
+   SOURCES
+     ${SYNCHRONIZATION_SRC}
++  PUBLIC_HEADER
++    ${SYNCHRONIZATION_PUBLIC_HEADERS}
++  INTERNAL_PUBLIC_HEADER
++    ${SYNCHRONIZATION_INTERNAL_HEADERS}
+   PUBLIC_LIBRARIES
+     ${SYNCHRONIZATION_PUBLIC_LIBRARIES}
+   EXPORT_NAME
+diff --git a/absl/time/CMakeLists.txt b/absl/time/CMakeLists.txt
+index 53216cd..7124bc8 100644
+--- a/absl/time/CMakeLists.txt
++++ b/absl/time/CMakeLists.txt
+@@ -23,6 +23,12 @@ list(APPEND TIME_PUBLIC_HEADERS
+ 
+ list(APPEND TIME_INTERNAL_HEADERS
+   "internal/test_util.h"
++  "internal/get_current_time_chrono.inc"
++  "internal/get_current_time_posix.inc"
++  "internal/zoneinfo.inc"
++)
++
++list(APPEND TIME_INTERNAL_CCTZ_HEADERS
+   "internal/cctz/include/cctz/civil_time.h"
+   "internal/cctz/include/cctz/civil_time_detail.h"
+   "internal/cctz/include/cctz/time_zone.h"
+@@ -54,6 +60,7 @@ list(APPEND TIME_SRC
+   "internal/cctz/src/zone_info_source.cc"
+   ${TIME_PUBLIC_HEADERS}
+   ${TIME_INTERNAL_HEADERS}
++  ${TIME_INTERNAL_CCTZ_HEADERS}
+ )
+ set(TIME_PUBLIC_LIBRARIES absl::base absl::stacktrace absl::int128 absl::strings)
+ 
+@@ -62,6 +69,12 @@ absl_library(
+     absl_time
+   SOURCES
+     ${TIME_SRC}
++  PUBLIC_HEADER
++    ${TIME_PUBLIC_HEADERS}
++  INTERNAL_PUBLIC_HEADER
++    ${TIME_INTERNAL_HEADERS}
++    INTERNAL_CCTZ_PUBLIC_HEADER
++    ${TIME_INTERNAL_CCTZ_HEADERS}
+   PUBLIC_LIBRARIES
+     ${TIME_PUBLIC_LIBRARIES}
+   EXPORT_NAME
+diff --git a/absl/types/CMakeLists.txt b/absl/types/CMakeLists.txt
+index 2f2e3a7..e2b0518 100644
+--- a/absl/types/CMakeLists.txt
++++ b/absl/types/CMakeLists.txt
+@@ -18,11 +18,34 @@ list(APPEND TYPES_PUBLIC_HEADERS
+   "any.h"
+   "bad_any_cast.h"
+   "bad_optional_access.h"
++  "bad_variant_access.h"
+   "optional.h"
+   "span.h"
+   "variant.h"
+ )
+ 
++list(APPEND TYPES_INTERNAL_HEADERS
++  "internal/variant.h"
++)
++
++# type header library to install header files
++absl_header_library(
++  TARGET
++    absl_types
++  PUBLIC_HEADER
++    ${TYPES_PUBLIC_HEADERS}
++  INTERNAL_PUBLIC_HEADER
++    ${TYPES_INTERNAL_HEADERS}
++  PUBLIC_LIBRARIES
++    absl::any
++    absl::span
++    absl::bad_any_cast
++    absl::optional
++    absl::bad_optional_access
++    absl::variant
++  EXPORT_NAME
++    types
++)
+ 
+ # any library
+ absl_header_library(
+@@ -123,7 +146,8 @@ absl_library(
+ 
+ # test any_test
+ set(ANY_TEST_SRC "any_test.cc")
+-set(ANY_TEST_PUBLIC_LIBRARIES absl::base absl::throw_delegate absl::any absl::bad_any_cast test_instance_tracker_lib)
++set(ANY_TEST_PUBLIC_LIBRARIES absl::base absl::throw_delegate absl::any
++  absl::bad_any_cast absl_test_instance_tracker_lib)
+ 
+ absl_test(
+   TARGET
+@@ -169,7 +193,8 @@ absl_test(
+ 
+ # test span_test
+ set(SPAN_TEST_SRC "span_test.cc")
+-set(SPAN_TEST_PUBLIC_LIBRARIES absl::base absl::strings absl::throw_delegate absl::span test_instance_tracker_lib)
++set(SPAN_TEST_PUBLIC_LIBRARIES absl::base absl::strings absl::throw_delegate
++  absl::span absl_test_instance_tracker_lib)
+ 
+ absl_test(
+   TARGET
+diff --git a/absl/utility/CMakeLists.txt b/absl/utility/CMakeLists.txt
+index dc3a631..3357dbd 100644
+--- a/absl/utility/CMakeLists.txt
++++ b/absl/utility/CMakeLists.txt
+@@ -22,6 +22,8 @@ list(APPEND UTILITY_PUBLIC_HEADERS
+ absl_header_library(
+   TARGET
+     absl_utility
++  PUBLIC_HEADER
++    ${UTILITY_PUBLIC_HEADERS}
+   PUBLIC_LIBRARIES
+     absl::base
+   EXPORT_NAME

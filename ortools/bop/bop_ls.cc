@@ -13,8 +13,8 @@
 
 #include "ortools/bop/bop_ls.h"
 
-#include "ortools/base/memory.h"
-#include "ortools/base/stringprintf.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/str_format.h"
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
 

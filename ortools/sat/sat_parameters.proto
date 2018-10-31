@@ -21,7 +21,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 110
+// NEXT TAG: 111
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -550,6 +550,9 @@ message SatParameters {
 
   // Whether we presolve the cp_model before solving it.
   optional bool cp_model_presolve = 86 [default = true];
+
+  // How much effort do we spend on probing. 0 disables it completely.
+  optional int32 cp_model_probing_level = 110 [default = 2];
 
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];

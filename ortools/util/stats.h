@@ -71,7 +71,7 @@
 #include <map>
 #include <string>
 #ifdef HAS_PERF_SUBSYSTEM
-#include "absl/ortools/base/str_replace.h"
+#include "absl/strings/str_replace.h"
 #include "exegesis/exegesis/itineraries/perf_subsystem.h"
 #include "ortools/util/time_limit.h"
 #endif  // HAS_PERF_SUBSYSTEM

@@ -170,8 +170,8 @@ bool LiteralWatchers::Propagate(Trail* trail) {
   return true;
 }
 
-absl::Span<Literal> LiteralWatchers::Reason(const Trail& trail,
-                                            int trail_index) const {
+absl::Span<const Literal> LiteralWatchers::Reason(const Trail& trail,
+                                                  int trail_index) const {
   return reasons_[trail_index]->PropagationReason();
 }
 
@@ -352,7 +352,7 @@ void BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b,
 }
 
 void BinaryImplicationGraph::AddAtMostOne(
-    absl::Span<Literal> at_most_one) {
+    absl::Span<const Literal> at_most_one) {
   if (at_most_one.empty()) return;
   for (const Literal a : at_most_one) {
     for (const Literal b : at_most_one) {
@@ -410,8 +410,8 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
   return true;
 }
 
-absl::Span<Literal> BinaryImplicationGraph::Reason(const Trail& trail,
-                                                   int trail_index) const {
+absl::Span<const Literal> BinaryImplicationGraph::Reason(
+    const Trail& trail, int trail_index) const {
   return {&reasons_[trail_index], 1};
 }
 
@@ -805,7 +805,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction() {
     }
     const int diff = direct_implications.size() - new_size;
     direct_implications.resize(new_size);
-    //direct_implications.shrink_to_fit();
+    direct_implications.shrink_to_fit();
     num_redundant_implications_ += diff;
     num_implications_ -= diff;
 
@@ -863,7 +863,7 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
   int num_removed = 0;
   int num_added = 0;
 
-  std::unordered_set<std::vector<Literal>, VectorHash> max_cliques;
+  absl::flat_hash_set<std::vector<Literal>, VectorHash> max_cliques;
   gtl::ITIVector<LiteralIndex, std::vector<int>> max_cliques_containing(
       implications_.size());
 
@@ -943,7 +943,7 @@ void BinaryImplicationGraph::MarkDescendants(Literal root) {
 }
 
 std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
-    const absl::Span<Literal> at_most_one) {
+    const absl::Span<const Literal> at_most_one) {
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
 
   // Optim.

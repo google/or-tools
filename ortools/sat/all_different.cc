@@ -16,8 +16,8 @@
 #include <algorithm>
 #include <map>
 #include <memory>
-#include <unordered_set>
 
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"

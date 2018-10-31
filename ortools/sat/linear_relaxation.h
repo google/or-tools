@@ -16,6 +16,7 @@
 
 #include <vector>
 
+#include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
@@ -67,6 +68,19 @@ void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
 void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
                                                 const Model& model,
                                                 LinearRelaxation* relaxation);
+
+// Appends linear constraints to the relaxation. This also handles the
+// relaxation of linear constraints with enforcement literals.
+// A linear constraint lb <= ax <= ub with enforcement literals {ei} is relaxed
+// as following.
+// lb <= (Sum Negated(ei) * (lb - implied_lb)) + ax <= inf
+// -inf <= (Sum Negated(ei) * (ub - implied_ub)) + ax <= ub
+// Where implied_lb and implied_ub are trivial lower and upper bounds of the
+// constraint.
+void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,
+                                      const int linearization_level,
+                                      const Model& model,
+                                      LinearRelaxation* relaxation);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -40,6 +40,7 @@
 %feature("director") operations_research::swig_util::LongToLong;
 %feature("director") operations_research::swig_util::LongLongToLong;
 %feature("director") operations_research::swig_util::IntIntToLong;
+%feature("director") operations_research::swig_util::IntToLong;
 %feature("director") operations_research::swig_util::LongLongLongToLong;
 %feature("director") operations_research::swig_util::LongToBoolean;
 %feature("director") operations_research::swig_util::VoidToString;

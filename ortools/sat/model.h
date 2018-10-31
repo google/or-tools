@@ -77,8 +77,6 @@ class Model {
   //
   // IMPORTANT: the Model* constructors function shouldn't form a cycle between
   // each other, otherwise this will crash the program.
-  //
-  // TODO(user): Rename to GetOrCreateSingleton().
   template <typename T>
   T* GetOrCreate() {
     const size_t type_id = gtl::FastTypeId<T>();

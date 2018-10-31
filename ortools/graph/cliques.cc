@@ -15,10 +15,10 @@
 
 #include <algorithm>
 #include <memory>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/hash.h"
 
 namespace operations_research {
@@ -217,7 +217,7 @@ class FindAndEliminate {
   std::function<bool(int, int)> graph_;
   int node_count_;
   std::function<bool(const std::vector<int>&)> callback_;
-  std::unordered_set<std::pair<int, int> > visited_;
+  absl::flat_hash_set<std::pair<int, int>> visited_;
 };
 }  // namespace
 

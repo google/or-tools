@@ -26,10 +26,9 @@
 #ifndef OR_TOOLS_UTIL_FILELINEITER_H_
 #define OR_TOOLS_UTIL_FILELINEITER_H_
 
+#include "absl/strings/match.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/base/strutil.h"
 
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {

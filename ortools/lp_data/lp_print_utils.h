@@ -18,8 +18,8 @@
 
 #include <string>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/lp_data/lp_types.h"
 
 namespace operations_research {

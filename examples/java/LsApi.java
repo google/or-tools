@@ -24,10 +24,7 @@ import com.google.ortools.constraintsolver.SearchMonitor;
 import com.google.ortools.constraintsolver.SolutionCollector;
 import com.google.ortools.constraintsolver.Solver;
 
-/**
- * Sample showing how to model using the constraint programming solver.
- *
- */
+/** Sample showing how to model using the constraint programming solver. */
 public class LsApi {
   static {
     System.loadLibrary("jniortools");

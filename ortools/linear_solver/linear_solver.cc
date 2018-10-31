@@ -30,13 +30,14 @@
 
 #include "ortools/port/file.h"
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/synchronization/mutex.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/canonical_errors.h"
-#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/mutex.h"
+//#include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -406,8 +407,7 @@ MPSolver::MPSolver(const std::string& name,
                    OptimizationProblemType problem_type)
     : name_(name),
       problem_type_(DetourProblemType(problem_type)),
-      time_limit_(0.0) {
-  timer_.Restart();
+      construction_time_(absl::Now()) {
   interface_.reset(BuildSolverInterface(this));
   if (FLAGS_linear_solver_enable_verbose_output) {
     EnableOutput();
@@ -491,7 +491,7 @@ bool MPSolver::ParseSolverType(absl::string_view solver,
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
   if (!variable_name_to_index_) GenerateVariableNameIndex();
 
-  std::unordered_map<std::string, int>::const_iterator it =
+  absl::flat_hash_map<std::string, int>::const_iterator it =
       variable_name_to_index_->find(var_name);
   if (it == variable_name_to_index_->end()) return nullptr;
   return variables_[it->second];
@@ -662,13 +662,8 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     return;
   }
   if (model_request.has_solver_time_limit_seconds()) {
-    double time_limit_ms = model_request.solver_time_limit_seconds() * 1000.0;
-    if (time_limit_ms <
-        static_cast<double>(std::numeric_limits<int64>::max())) {
-      // static_cast<int64> avoids a warning with -Wreal-conversion. This
-      // helps catching bugs with unwanted conversions from double to ints.
-      solver.set_time_limit(static_cast<int64>(time_limit_ms));
-    }
+    solver.SetTimeLimit(
+        absl::Seconds(model_request.solver_time_limit_seconds()));
   }
   solver.SetSolverSpecificParametersAsString(
       model_request.solver_specific_parameters());
@@ -703,7 +698,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   // This step is needed as long as the variable indices are given by the
   // underlying solver at the time of model extraction.
   // TODO(user): remove this step.
-  std::unordered_map<const MPVariable*, int> var_to_index;
+  absl::flat_hash_map<const MPVariable*, int> var_to_index;
   for (int j = 0; j < variables_.size(); ++j) {
     var_to_index[variables_[j]] = j;
   }
@@ -1030,9 +1025,9 @@ std::string PrettyPrintVar(const MPVariable& var) {
     if (lb > ub) {
       return prefix + "∅";
     } else if (lb == ub) {
-      return absl::StrFormat("%s{ %lld }", prefix.c_str(), lb);
+      return absl::StrFormat("%s{ %d }", prefix.c_str(), lb);
     } else {
-      return absl::StrFormat("%s{ %lld, %lld }", prefix.c_str(), lb, ub);
+      return absl::StrFormat("%s{ %d, %d }", prefix.c_str(), lb, ub);
     }
   }
   // Special case: single (non-infinite) real value.
@@ -1297,7 +1292,7 @@ void MPSolver::SetHint(std::vector<std::pair<MPVariable*, double> > hint) {
 
 void MPSolver::GenerateVariableNameIndex() const {
   if (variable_name_to_index_) return;
-  variable_name_to_index_ = std::unordered_map<std::string, int>();
+  variable_name_to_index_ = absl::flat_hash_map<std::string, int>();
   for (const MPVariable* const var : variables_) {
     gtl::InsertOrDie(&*variable_name_to_index_, var->name(), var->index());
   }
@@ -1305,7 +1300,7 @@ void MPSolver::GenerateVariableNameIndex() const {
 
 void MPSolver::GenerateConstraintNameIndex() const {
   if (constraint_name_to_index_) return;
-  constraint_name_to_index_ = std::unordered_map<std::string, int>();
+  constraint_name_to_index_ = absl::flat_hash_map<std::string, int>();
   for (const MPConstraint* const cst : constraints_) {
     gtl::InsertOrDie(&*constraint_name_to_index_, cst->name(), cst->index());
   }
@@ -1513,13 +1508,13 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
                       extension.c_str());
   bool no_error_so_far = true;
   if (no_error_so_far) {
-    no_error_so_far = FileSetContents(filename, parameters).ok();
+    no_error_so_far = PortableFileSetContents(filename, parameters).ok();
   }
   if (no_error_so_far) {
     no_error_so_far = ReadParameterFile(filename);
     // We need to clean up the file even if ReadParameterFile() returned
     // false. In production we can continue even if the deletion failed.
-    if (!DeleteFile(filename).ok()) {
+    if (!PortableDeleteFile(filename).ok()) {
       LOG(DFATAL) << "Couldn't delete temporary parameters file: " << filename;
     }
   }

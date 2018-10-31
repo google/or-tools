@@ -11,13 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class MagicSquare {
 
@@ -25,13 +24,7 @@ public class MagicSquare {
     System.loadLibrary("jniortools");
   }
 
-
-  /**
-   *
-   * Solves the Magic Square problem.
-   * See http://www.hakank.org/google_or_tools/magic_square.py
-   *
-   */
+  /** Solves the Magic Square problem. See http://www.hakank.org/google_or_tools/magic_square.py */
   private static void solve(int n, int num) {
 
     Solver solver = new Solver("MagicSquare");
@@ -44,7 +37,7 @@ public class MagicSquare {
     IntVar[][] x = new IntVar[n][n];
 
     // for the branching
-    IntVar[] x_flat = new IntVar[n*n];
+    IntVar[] x_flat = new IntVar[n * n];
 
     //
     // constraints
@@ -55,9 +48,9 @@ public class MagicSquare {
 
     IntVar[] diag1 = new IntVar[n];
     IntVar[] diag2 = new IntVar[n];
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
-      for(int j = 0; j < n; j++) {
+      for (int j = 0; j < n; j++) {
         x[i][j] = solver.makeIntVar(1, n * n, "x[" + i + "," + j + "]");
         x_flat[i * n + j] = x[i][j];
         row[j] = x[i][j];
@@ -73,9 +66,9 @@ public class MagicSquare {
     solver.addConstraint(solver.makeSumEquality(diag2, s));
 
     // sum columns to s
-    for(int j = 0; j < n; j++) {
+    for (int j = 0; j < n; j++) {
       IntVar[] col = new IntVar[n];
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         col[i] = x[i][j];
       }
       solver.addConstraint(solver.makeSumEquality(col, s));
@@ -87,18 +80,16 @@ public class MagicSquare {
     // symmetry breaking: upper left is 1
     // solver.addConstraint(solver.makeEquality(x[0][0], 1));
 
-
     //
     // Solve
     //
-    DecisionBuilder db = solver.makePhase(x_flat,
-                                          solver.CHOOSE_FIRST_UNBOUND,
-                                          solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db =
+        solver.makePhase(x_flat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_CENTER_VALUE);
     solver.newSearch(db);
     int c = 0;
     while (solver.nextSolution()) {
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
           System.out.print(x[i][j].value() + " ");
         }
         System.out.println();
@@ -117,7 +108,6 @@ public class MagicSquare {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
   public static void main(String[] args) throws Exception {

@@ -16,13 +16,13 @@
 
 #include <functional>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/match.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringpiece_utils.h"
 #include "ortools/flatzinc/model.h"
 
 namespace operations_research {
@@ -55,7 +55,7 @@ class Presolver {
   void CleanUpModelForTheCpSolver(Model* model, bool use_sat);
 
   // This method is public for tests.
-  void PresolveOneConstraint(Constraint* ct);
+  void PresolveOneConstraint(int index, Constraint* ct);
 
  private:
   enum RuleStatus {
@@ -178,15 +178,15 @@ class Presolver {
   bool IntersectVarWithSingleton(IntegerVariable* var, int64 value);
   bool IntersectVarWithInterval(IntegerVariable* var, int64 imin, int64 imax);
   bool RemoveValue(IntegerVariable* var, int64 value);
-  void AddConstraintToMapping(Constraint* ct);
-  void RemoveConstraintFromMapping(Constraint* ct);
+  void AddConstraintToMapping(int index, Constraint* ct);
+  void RemoveConstraintFromMapping(int index, Constraint* ct);
 
   // Mark changed variables.
   void MarkChangedVariable(IntegerVariable* var);
 
   // This method wraps each rule, calls it and log its effect.
   void ApplyRule(
-      Constraint* ct, const std::string& rule_name,
+      int index, Constraint* ct, const std::string& rule_name,
       const std::function<RuleStatus(Constraint* ct, std::string*)>& rule);
 
   // The presolver will discover some equivalence classes of variables [two
@@ -197,45 +197,45 @@ class Presolver {
   // of 'from' with 'to', rather than the opposite.
   void AddVariableSubstition(IntegerVariable* from, IntegerVariable* to);
   IntegerVariable* FindRepresentativeOfVar(IntegerVariable* var);
-  std::unordered_map<const IntegerVariable*, IntegerVariable*>
+  absl::flat_hash_map<const IntegerVariable*, IntegerVariable*>
       var_representative_map_;
+  std::vector<IntegerVariable*> var_representative_vector_;
 
   // Stores abs_map_[x] = y if x = abs(y).
-  std::unordered_map<const IntegerVariable*, IntegerVariable*> abs_map_;
+  absl::flat_hash_map<const IntegerVariable*, IntegerVariable*> abs_map_;
 
   // Stores affine_map_[x] = a * y + b.
-  std::unordered_map<const IntegerVariable*, AffineMapping> affine_map_;
+  absl::flat_hash_map<const IntegerVariable*, AffineMapping> affine_map_;
 
   // Stores array2d_index_map_[z] = a * x + y + b.
-  std::unordered_map<const IntegerVariable*, Array2DIndexMapping>
+  absl::flat_hash_map<const IntegerVariable*, Array2DIndexMapping>
       array2d_index_map_;
 
   // Stores x == (y - z).
-  std::unordered_map<const IntegerVariable*,
-                     std::pair<IntegerVariable*, IntegerVariable*>>
+  absl::flat_hash_map<const IntegerVariable*,
+                      std::pair<IntegerVariable*, IntegerVariable*>>
       difference_map_;
 
   // Stores (x == y) == b
-  std::unordered_map<const IntegerVariable*,
-                     std::unordered_map<IntegerVariable*, IntegerVariable*>>
+  absl::flat_hash_map<const IntegerVariable*,
+                      absl::flat_hash_map<IntegerVariable*, IntegerVariable*>>
       int_eq_reif_map_;
 
   // Stores all variables defined in the search annotations.
-  std::unordered_set<const IntegerVariable*> decision_variables_;
+  absl::flat_hash_set<const IntegerVariable*> decision_variables_;
 
-  // For all variables, stores all constraints it appears in.
-  std::unordered_map<const IntegerVariable*, std::unordered_set<Constraint*>>
-      var_to_constraints_;
+  // For all variables, stores all indices of constraints it appears in.
+  absl::flat_hash_map<const IntegerVariable*, std::set<int>>
+      var_to_constraint_indices_;
 
   // Count applications of presolve rules. Use a sorted map for reporting
   // purposes.
   std::map<std::string, int> successful_rules_;
 
   // Store changed objects.
-  std::unordered_set<IntegerVariable*> changed_variables_;
+  absl::flat_hash_set<IntegerVariable*> changed_variables_;
   std::vector<IntegerVariable*> changed_variables_vector_;
-  std::unordered_set<Constraint*> changed_constraints_;
-  std::vector<Constraint*> changed_constraints_vector_;
+  std::set<int> changed_constraints_;
 };
 }  // namespace fz
 }  // namespace operations_research

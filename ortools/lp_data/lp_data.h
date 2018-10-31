@@ -27,9 +27,9 @@
 #include <algorithm>  // for max
 #include <map>
 #include <string>  // for std::string
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>  // for vector
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
@@ -548,11 +548,11 @@ class LinearProgram {
 
   // A helper function to format problem statistics. Used by GetProblemStats()
   // and GetPrettyProblemStats().
-  std::string ProblemStatFormatter(const char* format) const;
+  std::string ProblemStatFormatter(const absl::string_view format) const;
 
   // A helper function to format non-zero statistics. Used by GetNonZeroStats()
   // and GetPrettyNonZeroStats().
-  std::string NonZeroStatFormatter(const char* format) const;
+  std::string NonZeroStatFormatter(const absl::string_view format) const;
 
   // Resizes all row vectors to include index 'row'.
   void ResizeRowsIfNeeded(RowIndex row);
@@ -596,10 +596,10 @@ class LinearProgram {
   mutable std::vector<ColIndex> non_binary_variables_list_;
 
   // Map used to find the index of a variable based on its id.
-  std::unordered_map<std::string, ColIndex> variable_table_;
+  absl::flat_hash_map<std::string, ColIndex> variable_table_;
 
   // Map used to find the index of a constraint based on its id.
-  std::unordered_map<std::string, RowIndex> constraint_table_;
+  absl::flat_hash_map<std::string, RowIndex> constraint_table_;
 
   // Offset of the objective, i.e. value of the objective when all variables
   // are set to zero.

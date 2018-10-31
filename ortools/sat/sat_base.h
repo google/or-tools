@@ -22,14 +22,13 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/port.h"
-#include "ortools/base/span.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
 
@@ -111,7 +110,7 @@ inline std::ostream& operator<<(std::ostream& os, Literal literal) {
 }
 
 inline std::ostream& operator<<(std::ostream& os,
-                                absl::Span<Literal> literals) {
+                                absl::Span<const Literal> literals) {
   for (const Literal literal : literals) {
     os << literal.DebugString() << ",";
   }
@@ -284,7 +283,7 @@ class Trail {
   // already assigned to false, then MutableConflict() will be set appropriately
   // and this will return false otherwise this will enqueue the literal and
   // returns true.
-  bool EnqueueWithStoredReason(Literal true_literal) MUST_USE_RESULT {
+  ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(Literal true_literal) {
     if (assignment_.LiteralIsTrue(true_literal)) return true;
     if (assignment_.LiteralIsFalse(true_literal)) {
       *MutableConflict() = reasons_repository_[Index()];
@@ -305,7 +304,7 @@ class Trail {
   // Note that this shouldn't be called on a variable at level zero, because we
   // don't cleanup the reason data for these variables but the underlying
   // clauses may have been deleted.
-  absl::Span<Literal> Reason(BooleanVariable var) const;
+  absl::Span<const Literal> Reason(BooleanVariable var) const;
 
   // Returns the "type" of an assignment (see AssignmentType). Note that this
   // function never returns kSameReasonAs or kCachedReason, it instead returns
@@ -359,7 +358,7 @@ class Trail {
   }
 
   // Returns the last conflict.
-  absl::Span<Literal> FailingClause() const { return conflict_; }
+  absl::Span<const Literal> FailingClause() const { return conflict_; }
 
   // Specific SatClause interface so we can update the conflict clause activity.
   // Note that MutableConflict() automatically sets this to nullptr, so we can
@@ -430,7 +429,7 @@ class Trail {
   // variables, the memory address of the vectors (kept in reasons_) are still
   // valid.
   mutable std::deque<std::vector<Literal>> reasons_repository_;
-  mutable gtl::ITIVector<BooleanVariable, absl::Span<Literal>> reasons_;
+  mutable gtl::ITIVector<BooleanVariable, absl::Span<const Literal>> reasons_;
   mutable gtl::ITIVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().
@@ -484,8 +483,8 @@ class SatPropagator {
   // The returned Span has to be valid until the literal is untrailed. A client
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
-  virtual absl::Span<Literal> Reason(const Trail& trail,
-                                     int trail_index) const {
+  virtual absl::Span<const Literal> Reason(const Trail& trail,
+                                           int trail_index) const {
     LOG(FATAL) << "Not implemented.";
     return {};
   }
@@ -576,7 +575,7 @@ inline int Trail::AssignmentType(BooleanVariable var) const {
   return type != AssignmentType::kCachedReason ? type : old_type_[var];
 }
 
-inline absl::Span<Literal> Trail::Reason(BooleanVariable var) const {
+inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   // Special case for AssignmentType::kSameReasonAs to avoid a recursive call.
   var = ReferenceVarWithSameReason(var);
 

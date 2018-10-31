@@ -11,14 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import java.io.*;
-import java.util.*;
-import java.text.*;
-
+import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
-import com.google.ortools.constraintsolver.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class Minesweeper {
 
@@ -34,27 +33,23 @@ public class Minesweeper {
   //
   static int default_r = 8;
   static int default_c = 8;
-  static int[][] default_game =  {{2, 3, X, 2, 2, X, 2, 1},
-                                  {X, X, 4, X, X, 4, X, 2},
-                                  {X, X, X, X, X, X, 4, X},
-                                  {X, 5, X, 6, X, X, X, 2},
-                                  {2, X, X, X, 5, 5, X, 2},
-                                  {1, 3, 4, X, X, X, 4, X},
-                                  {0, 1, X, 4, X, X, X, 3},
-                                  {0, 1, 2, X, 2, 3, X, 2}};
+  static int[][] default_game = {
+    {2, 3, X, 2, 2, X, 2, 1},
+    {X, X, 4, X, X, 4, X, 2},
+    {X, X, X, X, X, X, 4, X},
+    {X, 5, X, 6, X, X, X, 2},
+    {2, X, X, X, 5, 5, X, 2},
+    {1, 3, 4, X, X, X, 4, X},
+    {0, 1, X, 4, X, X, X, 3},
+    {0, 1, 2, X, 2, 3, X, 2}
+  };
 
   // for the actual problem
   static int r;
   static int c;
   static int[][] game;
 
-
-  /**
-   *
-   * Solves the Minesweeper problems.
-   * See http://www.hakank.org/google_or_tools/minesweeper.py
-   *
-   */
+  /** Solves the Minesweeper problems. See http://www.hakank.org/google_or_tools/minesweeper.py */
   private static void solve() {
 
     Solver solver = new Solver("Minesweeper");
@@ -65,8 +60,8 @@ public class Minesweeper {
     // data
     //
     System.out.println("Problem:");
-    for(int i = 0; i < r; i++) {
-      for(int j = 0; j < c; j++) {
+    for (int i = 0; i < r; i++) {
+      for (int j = 0; j < c; j++) {
         if (game[i][j] > X) {
           System.out.print(game[i][j] + " ");
         } else {
@@ -77,14 +72,13 @@ public class Minesweeper {
     }
     System.out.println();
 
-
     //
     // Variables
     //
-    IntVar[][] mines =  new IntVar[r][c];
+    IntVar[][] mines = new IntVar[r][c];
     IntVar[] mines_flat = new IntVar[r * c]; // for branching
-    for(int i = 0; i < r; i++) {
-      for(int j = 0; j < c; j++) {
+    for (int i = 0; i < r; i++) {
+      for (int j = 0; j < c; j++) {
         mines[i][j] = solver.makeIntVar(0, 1, "mines[" + i + ", " + j + "]");
         mines_flat[i * c + j] = mines[i][j];
       }
@@ -93,34 +87,28 @@ public class Minesweeper {
     //
     // Constraints
     //
-    for(int i = 0; i < r; i++) {
-      for(int j = 0; j < c; j++) {
+    for (int i = 0; i < r; i++) {
+      for (int j = 0; j < c; j++) {
         if (game[i][j] >= 0) {
-          solver.addConstraint(
-              solver.makeEquality(mines[i][j], 0));
+          solver.addConstraint(solver.makeEquality(mines[i][j], 0));
 
           // this cell is the sum of all its neighbours
           ArrayList<IntVar> neighbours = new ArrayList<IntVar>();
-          for(int a: S) {
-            for(int b: S) {
-              if (i + a >= 0 &&
-                  j + b >= 0 &&
-                  i + a < r &&
-                  j + b < c) {
+          for (int a : S) {
+            for (int b : S) {
+              if (i + a >= 0 && j + b >= 0 && i + a < r && j + b < c) {
                 neighbours.add(mines[i + a][j + b]);
               }
             }
           }
           solver.addConstraint(
-              solver.makeSumEquality(
-                  neighbours.toArray(new IntVar[1]), game[i][j]));
+              solver.makeSumEquality(neighbours.toArray(new IntVar[1]), game[i][j]));
         }
 
         if (game[i][j] > X) {
           // This cell cannot be a mine since it
           // has some value assigned to it
-          solver.addConstraint(
-              solver.makeEquality(mines[i][j], 0));
+          solver.addConstraint(solver.makeEquality(mines[i][j], 0));
         }
       }
     }
@@ -128,23 +116,21 @@ public class Minesweeper {
     //
     // Search
     //
-    DecisionBuilder db = solver.makePhase(mines_flat,
-                                          solver.INT_VAR_SIMPLE,
-                                          solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.makePhase(mines_flat, solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db);
 
     int sol = 0;
     while (solver.nextSolution()) {
       sol++;
       System.out.println("Solution #" + sol + ":");
-      for(int i = 0; i < r; i++) {
-        for(int j = 0; j < c; j++) {
+      for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
           System.out.print(mines[i][j].value() + " ");
         }
         System.out.println();
       }
       System.out.println();
-
     }
     solver.endSearch();
 
@@ -154,35 +140,16 @@ public class Minesweeper {
     System.out.println("Failures: " + solver.failures());
     System.out.println("Branches: " + solver.branches());
     System.out.println("Wall time: " + solver.wallTime() + "ms");
-
   }
 
-
   /**
+   * Reads a minesweeper file. File format: # a comment which is ignored % a comment which also is
+   * ignored number of rows number of columns < row number of neighbours lines... >
    *
-   * Reads a minesweeper file.
-   * File format:
-   *  # a comment which is ignored
-   *  % a comment which also is ignored
-   *  number of rows
-   *  number of columns
-   *  <
-   *    row number of neighbours lines...
-   *  >
+   * <p>0..8 means number of neighbours, "." mean unknown (may be a mine)
    *
-   * 0..8 means number of neighbours, "." mean unknown (may be a mine)
-   *
-   * Example (from minesweeper0.txt)
-   * # Problem from Gecode/examples/minesweeper.cc  problem 0
-   * 6
-   * 6
-   * ..2.3.
-   * 2.....
-   * ..24.3
-   * 1.34..
-   * .....3
-   * .3.3..
-   *
+   * <p>Example (from minesweeper0.txt) # Problem from Gecode/examples/minesweeper.cc problem 0 6 6
+   * ..2.3. 2..... ..24.3 1.34.. .....3 .3.3..
    */
   private static void readFile(String file) {
 
@@ -198,7 +165,7 @@ public class Minesweeper {
         str = str.trim();
 
         // ignore comments
-        if(str.startsWith("#") || str.startsWith("%")) {
+        if (str.startsWith("#") || str.startsWith("%")) {
           continue;
         }
 
@@ -211,18 +178,17 @@ public class Minesweeper {
         } else {
           // the problem matrix
           String row[] = str.split("");
-          for(int j = 1; j <= c; j++) {
+          for (int j = 1; j <= c; j++) {
             String s = row[j];
             if (s.equals(".")) {
-              game[lineCount-2][j-1] = -1;
+              game[lineCount - 2][j - 1] = -1;
             } else {
-              game[lineCount-2][j-1] = Integer.parseInt(s);
+              game[lineCount - 2][j - 1] = Integer.parseInt(s);
             }
           }
         }
 
         lineCount++;
-
       } // end while
 
       inr.close();
@@ -230,10 +196,7 @@ public class Minesweeper {
     } catch (IOException e) {
       System.out.println(e);
     }
-
   } // end readFile
-
-
 
   public static void main(String[] args) throws Exception {
 

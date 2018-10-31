@@ -63,10 +63,12 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   ///   positions and computes the Manhattan distance between the two
   ///   positions of two different indices.
   /// </summary>
-  class Manhattan : NodeEvaluator2 {
-    public Manhattan(Position[] locations, int coefficient) {
+  class Manhattan : IntIntToLong {
+    public Manhattan(RoutingIndexManager manager,
+                     Position[] locations, int coefficient) {
       this.locations_ = locations;
       this.coefficient_ = coefficient;
+      this.manager_ = manager;
     }
 
     public override long Run(int first_index, int second_index) {
@@ -74,28 +76,31 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
           second_index >= locations_.Length) {
         return 0;
       }
-      return (Math.Abs(locations_[first_index].x_ -
-                       locations_[second_index].x_) +
-              Math.Abs(locations_[first_index].y_ -
-                       locations_[second_index].y_)) * coefficient_;
+      int first_node = manager_.IndexToNode(first_index);
+      int second_node = manager_.IndexToNode(second_index);
+      return (Math.Abs(locations_[first_node].x_ -
+                       locations_[second_node].x_) +
+              Math.Abs(locations_[first_node].y_ -
+                       locations_[second_node].y_)) * coefficient_;
     }
 
     private Position[] locations_;
     private int coefficient_;
+    private RoutingIndexManager manager_;
   };
 
   /// <summary>
   ///   A callback that computes the volume of a demand stored in an
   ///   integer array.
   /// </summary>
-  class Demand : NodeEvaluator2 {
+  class Demand : IntToLong {
     public Demand(int[] order_demands) {
       this.order_demands_ = order_demands;
     }
 
-    public override long Run(int first_index, int second_index) {
-      if (first_index < order_demands_.Length) {
-        return order_demands_[first_index];
+    public override long Run(int index) {
+      if (index < order_demands_.Length) {
+        return order_demands_[index];
       }
       return 0;
     }
@@ -228,41 +233,49 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     // Finalizing model
     int number_of_locations = locations_.Length;
 
-    RoutingModel model =
-        new RoutingModel(number_of_locations, number_of_vehicles,
-                         vehicle_starts_, vehicle_ends_);
+    RoutingIndexManager manager =
+        new RoutingIndexManager(number_of_locations, number_of_vehicles,
+                                vehicle_starts_, vehicle_ends_);
+    RoutingModel model = new RoutingModel(manager);
 
     // Setting up dimensions
     const int big_number = 100000;
-    NodeEvaluator2 manhattan_callback = new Manhattan(locations_, 1);
+    IntIntToLong manhattan_callback = new Manhattan(manager, locations_, 1);
     model.AddDimension(
-        manhattan_callback, big_number, big_number, false, "time");
-    NodeEvaluator2 demand_callback = new Demand(order_demands_);
-    model.AddDimension(demand_callback, 0, vehicle_capacity_, true, "capacity");
+        model.RegisterTransitCallback(manhattan_callback),
+        big_number, big_number, false, "time");
+    RoutingDimension time_dimension = model.GetDimensionOrDie("time");
+
+    IntToLong demand_callback = new Demand(order_demands_);
+    model.AddDimension(model.RegisterUnaryTransitCallback(demand_callback),
+                       0, vehicle_capacity_, true, "capacity");
+    RoutingDimension capacity_dimension = model.GetDimensionOrDie("capacity");
 
     // Setting up vehicles
-    NodeEvaluator2[] cost_callbacks = new NodeEvaluator2[number_of_vehicles];
+    IntIntToLong[] cost_callbacks = new IntIntToLong[number_of_vehicles];
     for (int vehicle = 0; vehicle < number_of_vehicles; ++vehicle) {
       int cost_coefficient = vehicle_cost_coefficients_[vehicle];
-      NodeEvaluator2 manhattan_cost_callback =
-          new Manhattan(locations_, cost_coefficient);
+      IntIntToLong manhattan_cost_callback =
+          new Manhattan(manager, locations_, cost_coefficient);
       cost_callbacks[vehicle] = manhattan_cost_callback;
-      model.SetVehicleCost(vehicle, manhattan_cost_callback);
-      model.CumulVar(model.End(vehicle), "time").SetMax(
+      int manhattan_cost_index =
+          model.RegisterTransitCallback(manhattan_cost_callback);
+      model.SetArcCostEvaluatorOfVehicle(manhattan_cost_index, vehicle);
+      time_dimension.CumulVar(model.End(vehicle)).SetMax(
           vehicle_end_time_[vehicle]);
     }
 
     // Setting up orders
     for (int order = 0; order < number_of_orders; ++order) {
-      model.CumulVar(order, "time").SetRange(order_time_windows_[order].start_,
-                                             order_time_windows_[order].end_);
-      int[] orders = {order};
+      time_dimension.CumulVar(order).SetRange(order_time_windows_[order].start_,
+                                              order_time_windows_[order].end_);
+      long[] orders = {order};
       model.AddDisjunction(orders, order_penalties_[order]);
     }
 
     // Solving
     RoutingSearchParameters search_parameters =
-        RoutingModel.DefaultSearchParameters();
+        operations_research_constraint_solver.DefaultRoutingSearchParameters();
     search_parameters.FirstSolutionStrategy =
         FirstSolutionStrategy.Types.Value.AllUnperformed;
 
@@ -298,14 +311,14 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
           for (;
                !model.IsEnd(order);
                order = solution.Value(model.NextVar(order))) {
-            IntVar local_load = model.CumulVar(order, "capacity");
-            IntVar local_time = model.CumulVar(order, "time");
+            IntVar local_load = capacity_dimension.CumulVar(order);
+            IntVar local_time = time_dimension.CumulVar(order);
             route += order + " Load(" + solution.Value(local_load) + ") " +
                 "Time(" + solution.Min(local_time) + ", " +
                 solution.Max(local_time) + ") -> ";
           }
-          IntVar load = model.CumulVar(order, "capacity");
-          IntVar time = model.CumulVar(order, "time");
+          IntVar load = capacity_dimension.CumulVar(order);
+          IntVar time = time_dimension.CumulVar(order);
           route += order + " Load(" + solution.Value(load) + ") " +
               "Time(" + solution.Min(time) + ", " + solution.Max(time) + ")";
         }
