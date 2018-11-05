@@ -22,6 +22,7 @@
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 #include "scip/src/lpi/lpi.h"
+#include "scip/src/scip/pub_message.h"
 
 // We can't be inside the operations_research::glop namespace, because we are
 // defining extern methods referenced by the SCIP code.
@@ -1514,11 +1515,12 @@ SCIP_RETCODE SCIPlpiGetRealpar(SCIP_LPI* lpi,      // LP interface structure
     case SCIP_LPPAR_DUALFEASTOL:
       *dval = lpi->parameters->dual_feasibility_tolerance();
       break;
-    case SCIP_LPPAR_LOBJLIM:
-      *dval = lpi->parameters->objective_lower_limit();
-      break;
-    case SCIP_LPPAR_UOBJLIM:
-      *dval = lpi->parameters->objective_upper_limit();
+    case SCIP_LPPAR_OBJLIM:
+      if (lpi->linear_program->IsMaximizationProblem()) {
+        *dval = lpi->parameters->objective_lower_limit();
+      } else {
+        *dval = lpi->parameters->objective_upper_limit();
+      }
       break;
     case SCIP_LPPAR_LPTILIM:
       *dval = lpi->parameters->max_time_in_seconds();
@@ -1547,12 +1549,12 @@ SCIP_RETCODE SCIPlpiSetRealpar(SCIP_LPI* lpi,      // LP interface structure
       lpi->parameters->set_dual_feasibility_tolerance(dval);
       VLOG(1) << "type=" << type << " SCIP_LPPAR_DUALFEASTOL " << dval;
       break;
-    case SCIP_LPPAR_LOBJLIM:
-      lpi->parameters->set_objective_lower_limit(dval);
-      VLOG(1) << "type=" << type << " SCIP_LPPAR_LOBJLIM " << dval;
-      break;
-    case SCIP_LPPAR_UOBJLIM:
-      lpi->parameters->set_objective_upper_limit(dval);
+    case SCIP_LPPAR_OBJLIM:
+      if (lpi->linear_program->IsMaximizationProblem()) {
+        lpi->parameters->set_objective_lower_limit(dval);
+      } else {
+        lpi->parameters->set_objective_upper_limit(dval);
+      }
       VLOG(1) << "type=" << type << " SCIP_LPPAR_UOBJLIM " << dval;
       break;
     case SCIP_LPPAR_LPTILIM:

@@ -59,7 +59,6 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
-%unignore operations_research::sat::SolutionCallback::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback::~SolutionCallback;
 %unignore operations_research::sat::SolutionCallback::BestObjectiveBound;
 %feature("nodirector") operations_research::sat::SolutionCallback::BestObjectiveBound;

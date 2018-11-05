@@ -115,6 +115,11 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
 
+  // TODO(user): we could use up to kint64max here, but our code is not as
+  // defensive as it should be regarding integer overflow. So we use the
+  // precision of a double.
+  const int64 kScalingTarget = 1LL << 53;
+
   // Add the constraints. We scale each of them individually.
   for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {
     if (mp_constraint.lower_bound() == -kInfinity &&
@@ -137,11 +142,8 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
       lower_bounds.push_back(var_proto.domain(0));
       upper_bounds.push_back(var_proto.domain(var_proto.domain_size() - 1));
     }
-
-    // TODO(user): we could use kint64max directly here if our constraint
-    // propagation code was a bit more careful about integer overflow.
     GetBestScalingOfDoublesToInt64(coefficients, lower_bounds, upper_bounds,
-                                   kint64max / 2, &scaling_factor,
+                                   kScalingTarget, &scaling_factor,
                                    &relative_coeff_error, &scaled_sum_error);
     const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
     max_relative_coeff_error =
@@ -191,9 +193,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
           << max_scaled_sum_error;
   VLOG(1) << "Maximum constraint scaling factor: " << max_scaling_factor;
 
-  // Add the objective. We use kint64max / 2 because the objective_var will
-  // also be added to the objective constraint.
-  const int64 kMaxObjective = kint64max / 2;
+  // Add the objective.
   coefficients.clear();
   lower_bounds.clear();
   upper_bounds.clear();
@@ -207,7 +207,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   }
   if (!coefficients.empty() || mp_model.objective_offset() != 0.0) {
     GetBestScalingOfDoublesToInt64(coefficients, lower_bounds, upper_bounds,
-                                   kMaxObjective, &scaling_factor,
+                                   kScalingTarget, &scaling_factor,
                                    &relative_coeff_error, &scaled_sum_error);
     const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
     max_relative_coeff_error =

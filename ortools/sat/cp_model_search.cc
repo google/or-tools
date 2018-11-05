@@ -16,6 +16,7 @@
 #include <random>
 #include <unordered_map>
 
+#include "ortools/base/cleanup.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
@@ -276,15 +277,20 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
   new_params.set_random_seed(params.random_seed() + worker_id);
   if (cp_model.has_objective()) {
     switch (worker_id) {
-      case 0: {  // Use default parameters and fixed search.
-        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-        *name = "fixed";
-        break;
-      }
-      case 1: {  // Use default parameters and automatic search.
+      case 0: {  // Use default parameters and automatic search.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(1);
         *name = "auto";
+        break;
+      }
+      case 1: {  // Use default parameters and fixed search if there is one.
+        if (cp_model.search_strategy_size() > 0) {
+          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+          *name = "fixed";
+        } else {  // Use LP_SEARCH if not.
+          new_params.set_search_branching(SatParameters::LP_SEARCH);
+          *name = "lp_br";
+        }
         break;
       }
       case 2: {  // Remove LP relaxation.
@@ -350,27 +356,35 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 //                Should we cumul conflicts, branches... ?
 bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
                                CpSolverResponse* best) {
+  // In all cases, we always update the best objective bound similarly.
+  const double current_best_bound = response.best_objective_bound();
+  const double previous_best_bound = best->best_objective_bound();
+  const double new_best_objective_bound =
+      maximize ? std::min(previous_best_bound, current_best_bound)
+               : std::max(previous_best_bound, current_best_bound);
+  const auto cleanup = ::operations_research::util::MakeCleanup(
+      [&best, new_best_objective_bound]() {
+        if (best->status() != OPTIMAL) {
+          best->set_best_objective_bound(new_best_objective_bound);
+        } else {
+          best->set_best_objective_bound(best->objective_value());
+        }
+      });
+
   switch (response.status()) {
     case CpSolverStatus::FEASIBLE: {
       const bool is_improving =
           maximize ? response.objective_value() > best->objective_value()
                    : response.objective_value() < best->objective_value();
-      const double current_best_bound = response.best_objective_bound();
-      const double previous_best_bound = best->best_objective_bound();
-      const double new_best_objective_bound =
-          maximize ? std::min(previous_best_bound, current_best_bound)
-                   : std::max(previous_best_bound, current_best_bound);
       // TODO(user): return OPTIMAL if objective is tight.
       if (is_improving) {
         // Overwrite solution and fix best_objective_bound.
         *best = response;
-        best->set_best_objective_bound(new_best_objective_bound);
         return true;
       }
       if (new_best_objective_bound != previous_best_bound) {
         // The new solution has a worse objective value, but a better
         // best_objective_bound.
-        best->set_best_objective_bound(new_best_objective_bound);
         return true;
       }
       return false;
@@ -390,7 +404,6 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
         // found has a FEASIBLE status, it is indeed optimal, and
         // should be marked as thus.
         best->set_status(CpSolverStatus::OPTIMAL);
-        best->set_best_objective_bound(best->objective_value());
         return false;
       }
       break;
@@ -409,7 +422,6 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
         // synchronization has forced the solver to exit with a sub-optimal
         // solution, believing it was optimal.
         best->set_status(CpSolverStatus::OPTIMAL);
-        best->set_best_objective_bound(best->objective_value());
         return false;
       }
       break;
@@ -423,13 +435,9 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
           // Update objective_value and best_objective_bound.
           best->set_objective_value(
               std::max(best->objective_value(), response.objective_value()));
-          best->set_best_objective_bound(std::min(
-              best->best_objective_bound(), response.best_objective_bound()));
         } else {
           best->set_objective_value(
               std::min(best->objective_value(), response.objective_value()));
-          best->set_best_objective_bound(std::max(
-              best->best_objective_bound(), response.best_objective_bound()));
         }
       }
       return false;

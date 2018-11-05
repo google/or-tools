@@ -283,8 +283,8 @@ void TimeTablingPerTask::ReverseProfile() {
 
 bool TimeTablingPerTask::SweepAllTasks(bool is_forward) {
   // Tasks with a lower or equal demand will not be pushed.
-  const IntegerValue demand_threshold =
-      CapSub(CapacityMax(), profile_max_height_);
+  const IntegerValue demand_threshold(
+      CapSub(CapacityMax().value(), profile_max_height_.value()));
 
   // Select the correct members depending on the direction.
   int& num_tasks =

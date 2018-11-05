@@ -20,16 +20,16 @@
 namespace operations_research {
 namespace glop {
 
-Status::Status() : error_code_(NO_ERROR), error_message_() {}
+Status::Status() : error_code_(GLOP_OK), error_message_() {}
 
 Status::Status(ErrorCode error_code, std::string error_message)
     : error_code_(error_code),
-      error_message_(error_code == NO_ERROR ? "" : std::move(error_message)) {}
+      error_message_(error_code == GLOP_OK ? "" : std::move(error_message)) {}
 
 std::string GetErrorCodeString(Status::ErrorCode error_code) {
   switch (error_code) {
-    case Status::NO_ERROR:
-      return "NO_ERROR";
+    case Status::GLOP_OK:
+      return "GLOP_OK";
     case Status::ERROR_LU:
       return "ERROR_LU";
     case Status::ERROR_BOUND:

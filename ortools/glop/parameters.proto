@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 58
+// next id = 59
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -245,6 +245,10 @@ message GlopParameters {
   // don't move the primal/dual values within their bounds and leave them
   // untouched.
   optional bool provide_strong_optimal_guarantee = 24 [default = true];
+
+  // If true, the internal API will change the return status to imprecise if the
+  // solution does not respect the internal tolerances.
+  optional bool change_status_to_imprecise = 58 [default = true];
 
   // When the solution of phase II is imprecise, we re-run the phase II with the
   // opposite algorithm from that imprecise solution (i.e., if primal or dual

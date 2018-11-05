@@ -18,7 +18,7 @@ end). Creating an interval constraint will enforce that start + size == end.
 size, and end.Then we create an interval constraint using these three variables.
 
 We give two code snippets the demonstrate how to build these objects in Python,
-C++, and C\#.
+C++, Java, and C\#.
 
 ### Python code
 
@@ -49,43 +49,23 @@ IntervalSample()
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
 
 void IntervalSample() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
   const int kHorizon = 100;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain horizon(0, kHorizon);
+  const IntVar start_var = cp_model.NewIntVar(horizon).WithName("start");
+  const IntVar duration_var = cp_model.NewConstant(10);
+  const IntVar end_var = cp_model.NewIntVar(horizon).WithName("end");
 
-  auto new_constant = [&new_variable](int64 v) { return new_variable(v, v); };
-
-  auto new_interval = [&cp_model](int start, int duration, int end) {
-    const int index = cp_model.constraints_size();
-    IntervalConstraintProto* const interval =
-        cp_model.add_constraints()->mutable_interval();
-    interval->set_start(start);
-    interval->set_size(duration);
-    interval->set_end(end);
-    return index;
-  };
-
-  const int start_var = new_variable(0, kHorizon);
-  const int duration_var = new_constant(10);
-  const int end_var = new_variable(0, kHorizon);
-  const int interval_var = new_interval(start_var, duration_var, end_var);
+  const IntervalVar interval_var =
+      cp_model.NewIntervalVar(start_var, duration_var, end_var)
+          .WithName("interval");
   LOG(INFO) << "start_var = " << start_var
             << ", duration_var = " << duration_var << ", end_var = " << end_var
             << ", interval_var = " << interval_var;
@@ -190,47 +170,27 @@ OptionalIntervalSample()
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
 
 void OptionalIntervalSample() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
   const int kHorizon = 100;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain horizon(0, kHorizon);
+  const IntVar start_var = cp_model.NewIntVar(horizon).WithName("start");
+  const IntVar duration_var = cp_model.NewConstant(10);
+  const IntVar end_var = cp_model.NewIntVar(horizon).WithName("end");
+  const BoolVar presence_var = cp_model.NewBoolVar().WithName("presence");
 
-  auto new_constant = [&new_variable](int64 v) { return new_variable(v, v); };
+  const IntervalVar interval_var =
+      cp_model
+          .NewOptionalIntervalVar(start_var, duration_var, end_var,
+                                  presence_var)
+          .WithName("interval");
 
-  auto new_optional_interval = [&cp_model](int start, int duration, int end,
-                                           int presence) {
-    const int index = cp_model.constraints_size();
-    ConstraintProto* const ct = cp_model.add_constraints();
-    ct->add_enforcement_literal(presence);
-    IntervalConstraintProto* const interval = ct->mutable_interval();
-    interval->set_start(start);
-    interval->set_size(duration);
-    interval->set_end(end);
-    return index;
-  };
-
-  const int start_var = new_variable(0, kHorizon);
-  const int duration_var = new_constant(10);
-  const int end_var = new_variable(0, kHorizon);
-  const int presence_var = new_variable(0, 1);
-  const int interval_var =
-      new_optional_interval(start_var, duration_var, end_var, presence_var);
   LOG(INFO) << "start_var = " << start_var
             << ", duration_var = " << duration_var << ", end_var = " << end_var
             << ", presence_var = " << presence_var
@@ -379,115 +339,70 @@ NoOverlapSample()
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
 
 void NoOverlapSample() {
-  CpModelProto cp_model;
-  const int kHorizon = 21;  // 3 weeks.
+  CpModelBuilder cp_model;
+  const int64 kHorizon = 21;  // 3 weeks.
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
-
-  auto new_constant = [&new_variable](int64 v) { return new_variable(v, v); };
-
-  auto new_interval = [&cp_model](int start, int duration, int end) {
-    const int index = cp_model.constraints_size();
-    IntervalConstraintProto* const interval =
-        cp_model.add_constraints()->mutable_interval();
-    interval->set_start(start);
-    interval->set_size(duration);
-    interval->set_end(end);
-    return index;
-  };
-
-  auto new_fixed_interval = [&cp_model, &new_constant](int64 start,
-                                                       int64 duration) {
-    const int index = cp_model.constraints_size();
-    IntervalConstraintProto* const interval =
-        cp_model.add_constraints()->mutable_interval();
-    interval->set_start(new_constant(start));
-    interval->set_size(new_constant(duration));
-    interval->set_end(new_constant(start + duration));
-    return index;
-  };
-
-  auto add_no_overlap = [&cp_model](const std::vector<int>& intervals) {
-    NoOverlapConstraintProto* const no_overlap =
-        cp_model.add_constraints()->mutable_no_overlap();
-    for (const int i : intervals) {
-      no_overlap->add_intervals(i);
-    }
-  };
-
-  auto add_precedence = [&cp_model](int before, int after) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    lin->add_vars(after);
-    lin->add_coeffs(1L);
-    lin->add_vars(before);
-    lin->add_coeffs(-1L);
-    lin->add_domain(0);
-    lin->add_domain(kint64max);
-  };
-
+  const Domain horizon(0, kHorizon);
   // Task 0, duration 2.
-  const int start_0 = new_variable(0, kHorizon);
-  const int duration_0 = new_constant(2);
-  const int end_0 = new_variable(0, kHorizon);
-  const int task_0 = new_interval(start_0, duration_0, end_0);
+  const IntVar start_0 = cp_model.NewIntVar(horizon);
+  const IntVar duration_0 = cp_model.NewConstant(2);
+  const IntVar end_0 = cp_model.NewIntVar(horizon);
+  const IntervalVar task_0 =
+      cp_model.NewIntervalVar(start_0, duration_0, end_0);
 
   // Task 1, duration 4.
-  const int start_1 = new_variable(0, kHorizon);
-  const int duration_1 = new_constant(4);
-  const int end_1 = new_variable(0, kHorizon);
-  const int task_1 = new_interval(start_1, duration_1, end_1);
+  const IntVar start_1 = cp_model.NewIntVar(horizon);
+  const IntVar duration_1 = cp_model.NewConstant(4);
+  const IntVar end_1 = cp_model.NewIntVar(horizon);
+  const IntervalVar task_1 =
+      cp_model.NewIntervalVar(start_1, duration_1, end_1);
 
   // Task 2, duration 3.
-  const int start_2 = new_variable(0, kHorizon);
-  const int duration_2 = new_constant(3);
-  const int end_2 = new_variable(0, kHorizon);
-  const int task_2 = new_interval(start_2, duration_2, end_2);
+  const IntVar start_2 = cp_model.NewIntVar(horizon);
+  const IntVar duration_2 = cp_model.NewConstant(3);
+  const IntVar end_2 = cp_model.NewIntVar(horizon);
+  const IntervalVar task_2 =
+      cp_model.NewIntervalVar(start_2, duration_2, end_2);
 
   // Week ends.
-  const int weekend_0 = new_fixed_interval(5, 2);
-  const int weekend_1 = new_fixed_interval(12, 2);
-  const int weekend_2 = new_fixed_interval(19, 2);
+  const IntervalVar weekend_0 =
+      cp_model.NewIntervalVar(cp_model.NewConstant(5), cp_model.NewConstant(2),
+                              cp_model.NewConstant(7));
+  const IntervalVar weekend_1 =
+      cp_model.NewIntervalVar(cp_model.NewConstant(12), cp_model.NewConstant(2),
+                              cp_model.NewConstant(14));
+  const IntervalVar weekend_2 =
+      cp_model.NewIntervalVar(cp_model.NewConstant(19), cp_model.NewConstant(2),
+                              cp_model.NewConstant(21));
 
   // No Overlap constraint.
-  add_no_overlap({task_0, task_1, task_2, weekend_0, weekend_1, weekend_2});
+  cp_model.AddNoOverlap(
+      {task_0, task_1, task_2, weekend_0, weekend_1, weekend_2});
 
   // Makespan.
-  const int makespan = new_variable(0, kHorizon);
-  add_precedence(end_0, makespan);
-  add_precedence(end_1, makespan);
-  add_precedence(end_2, makespan);
-  CpObjectiveProto* const obj = cp_model.mutable_objective();
-  obj->add_vars(makespan);
-  obj->add_coeffs(1);  // Minimization.
+  IntVar makespan = cp_model.NewIntVar(horizon);
+  cp_model.AddLessOrEqual(end_0, makespan);
+  cp_model.AddLessOrEqual(end_1, makespan);
+  cp_model.AddLessOrEqual(end_2, makespan);
+
+  cp_model.Minimize(makespan);
 
   // Solving part.
   Model model;
-  LOG(INFO) << CpModelStats(cp_model);
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::OPTIMAL) {
     LOG(INFO) << "Optimal Schedule Length: " << response.objective_value();
-    LOG(INFO) << "Task 0 starts at " << response.solution(start_0);
-    LOG(INFO) << "Task 1 starts at " << response.solution(start_1);
-    LOG(INFO) << "Task 2 starts at " << response.solution(start_2);
+    LOG(INFO) << "Task 0 starts at " << SolutionIntegerValue(response, start_0);
+    LOG(INFO) << "Task 1 starts at " << SolutionIntegerValue(response, start_1);
+    LOG(INFO) << "Task 2 starts at " << SolutionIntegerValue(response, start_2);
   }
 }
 
@@ -812,187 +727,87 @@ RankingSample()
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
 
 void RankingSample() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
   const int kHorizon = 100;
   const int kNumTasks = 4;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  auto add_task_ranking = [&cp_model](const std::vector<IntVar>& starts,
+                                      const std::vector<BoolVar>& presences,
+                                      const std::vector<IntVar>& ranks) {
+    const int num_tasks = starts.size();
 
-  auto new_constant = [&new_variable](int64 v) { return new_variable(v, v); };
-
-  auto is_fixed_to_true = [&cp_model](int v) {
-    return cp_model.variables(v).domain(0) == cp_model.variables(v).domain(1) &&
-           cp_model.variables(v).domain_size() == 2;
-  };
-
-  auto new_optional_interval = [&cp_model, &is_fixed_to_true](
-                                   int start, int duration, int end,
-                                   int presence) {
-    const int index = cp_model.constraints_size();
-    ConstraintProto* const ct = cp_model.add_constraints();
-    if (!is_fixed_to_true(presence)) {
-      ct->add_enforcement_literal(presence);
-    }
-    IntervalConstraintProto* const interval = ct->mutable_interval();
-    interval->set_start(start);
-    interval->set_size(duration);
-    interval->set_end(end);
-    return index;
-  };
-
-  auto add_no_overlap = [&cp_model](const std::vector<int>& intervals) {
-    NoOverlapConstraintProto* const no_overlap =
-        cp_model.add_constraints()->mutable_no_overlap();
-    for (const int i : intervals) {
-      no_overlap->add_intervals(i);
-    }
-  };
-
-  auto add_strict_precedence = [&cp_model](int before, int after) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    lin->add_vars(after);
-    lin->add_coeffs(1L);
-    lin->add_vars(before);
-    lin->add_coeffs(-1L);
-    lin->add_domain(1);
-    lin->add_domain(kint64max);
-  };
-
-  auto add_conditional_precedence_with_delay = [&cp_model, &is_fixed_to_true](
-                                                   int before, int after,
-                                                   int literal, int64 delay) {
-    ConstraintProto* const ct = cp_model.add_constraints();
-    if (!is_fixed_to_true(literal)) {
-      ct->add_enforcement_literal(literal);
-    }
-    LinearConstraintProto* const lin = ct->mutable_linear();
-    lin->add_vars(after);
-    lin->add_coeffs(1L);
-    lin->add_vars(before);
-    lin->add_coeffs(-1L);
-    lin->add_domain(delay);
-    lin->add_domain(kint64max);
-  };
-
-  auto add_conditional_precedence = [&add_conditional_precedence_with_delay](
-                                        int before, int after, int literal) {
-    add_conditional_precedence_with_delay(before, after, literal, 0);
-  };
-
-  auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
-    BoolArgumentProto* const bool_or =
-        cp_model.add_constraints()->mutable_bool_or();
-    for (const int lit : literals) {
-      bool_or->add_literals(lit);
-    }
-  };
-
-  auto add_implication = [&cp_model](int a, int b) {
-    ConstraintProto* const ct = cp_model.add_constraints();
-    ct->add_enforcement_literal(a);
-    ct->mutable_bool_and()->add_literals(b);
-  };
-
-  auto add_task_ranking =
-      [&cp_model, &new_variable, &add_conditional_precedence, &is_fixed_to_true,
-       &add_implication, &add_bool_or](const std::vector<int>& starts,
-                                       const std::vector<int>& presences,
-                                       const std::vector<int>& ranks) {
-        const int num_tasks = starts.size();
-
-        // Creates precedence variables between pairs of intervals.
-        std::vector<std::vector<int>> precedences(num_tasks);
-        for (int i = 0; i < num_tasks; ++i) {
-          precedences[i].resize(num_tasks);
-          for (int j = 0; j < num_tasks; ++j) {
-            if (i == j) {
-              precedences[i][i] = presences[i];
-            } else {
-              const int prec = new_variable(0, 1);
-              precedences[i][j] = prec;
-              add_conditional_precedence(starts[i], starts[j], prec);
-            }
-          }
+    // Creates precedence variables between pairs of intervals.
+    std::vector<std::vector<BoolVar>> precedences(num_tasks);
+    for (int i = 0; i < num_tasks; ++i) {
+      precedences[i].resize(num_tasks);
+      for (int j = 0; j < num_tasks; ++j) {
+        if (i == j) {
+          precedences[i][i] = presences[i];
+        } else {
+          BoolVar prec = cp_model.NewBoolVar();
+          precedences[i][j] = prec;
+          cp_model.AddLessOrEqual(starts[i], starts[j]).OnlyEnforceIf(prec);
         }
+      }
+    }
 
-        // Treats optional intervals.
-        for (int i = 0; i < num_tasks - 1; ++i) {
-          for (int j = i + 1; j < num_tasks; ++j) {
-            std::vector<int> tmp_array = {precedences[i][j], precedences[j][i]};
-            if (!is_fixed_to_true(presences[i])) {
-              tmp_array.push_back(NegatedRef(presences[i]));
-              // Makes sure that if i is not performed, all precedences are
-              // false.
-              add_implication(NegatedRef(presences[i]),
-                              NegatedRef(precedences[i][j]));
-              add_implication(NegatedRef(presences[i]),
-                              NegatedRef(precedences[j][i]));
-            }
-            if (!is_fixed_to_true(presences[j])) {
-              tmp_array.push_back(NegatedRef(presences[j]));
-              // Makes sure that if j is not performed, all precedences are
-              // false.
-              add_implication(NegatedRef(presences[j]),
-                              NegatedRef(precedences[i][j]));
-              add_implication(NegatedRef(presences[i]),
-                              NegatedRef(precedences[j][i]));
-            }
-            //  The following bool_or will enforce that for any two intervals:
-            //    i precedes j or j precedes i or at least one interval is not
-            //        performed.
-            add_bool_or(tmp_array);
-            // Redundant constraint: it propagates early that at most one
-            // precedence is true.
-            add_implication(precedences[i][j], NegatedRef(precedences[j][i]));
-            add_implication(precedences[j][i], NegatedRef(precedences[i][j]));
-          }
-        }
-        // Links precedences and ranks.
-        for (int i = 0; i < num_tasks; ++i) {
-          LinearConstraintProto* const lin =
-              cp_model.add_constraints()->mutable_linear();
-          lin->add_vars(ranks[i]);
-          lin->add_coeffs(1);
-          for (int j = 0; j < num_tasks; ++j) {
-            lin->add_vars(precedences[j][i]);
-            lin->add_coeffs(-1);
-          }
-          lin->add_domain(-1);
-          lin->add_domain(-1);
-        }
-      };
+    // Treats optional intervals.
+    for (int i = 0; i < num_tasks - 1; ++i) {
+      for (int j = i + 1; j < num_tasks; ++j) {
+        // Makes sure that if i is not performed, all precedences are
+        // false.
+        cp_model.AddImplication(Not(presences[i]), Not(precedences[i][j]));
+        cp_model.AddImplication(Not(presences[i]), Not(precedences[j][i]));
+        // Makes sure that if j is not performed, all precedences are
+        // false.
+        cp_model.AddImplication(Not(presences[j]), Not(precedences[i][j]));
+        cp_model.AddImplication(Not(presences[i]), Not(precedences[j][i]));
+        //  The following bool_or will enforce that for any two intervals:
+        //    i precedes j or j precedes i or at least one interval is not
+        //        performed.
+        cp_model.AddBoolOr({precedences[i][j], precedences[j][i],
+                            Not(presences[i]), Not(presences[j])});
+        // Redundant constraint: it propagates early that at most one
+        // precedence is true.
+        cp_model.AddImplication(precedences[i][j], Not(precedences[j][i]));
+        cp_model.AddImplication(precedences[j][i], Not(precedences[i][j]));
+      }
+    }
+    // Links precedences and ranks.
+    for (int i = 0; i < num_tasks; ++i) {
+      LinearExpr sum_of_predecessors(-1);
+      for (int j = 0; j < num_tasks; ++j) {
+        sum_of_predecessors.AddVar(precedences[j][i]);
+      }
+      cp_model.AddEquality(ranks[i], sum_of_predecessors);
+    }
+  };
 
-  std::vector<int> starts;
-  std::vector<int> ends;
-  std::vector<int> intervals;
-  std::vector<int> presences;
-  std::vector<int> ranks;
+  std::vector<IntVar> starts;
+  std::vector<IntVar> ends;
+  std::vector<IntervalVar> intervals;
+  std::vector<BoolVar> presences;
+  std::vector<IntVar> ranks;
+
+  const Domain horizon(0, kHorizon);
+  const Domain possible_ranks(-1, kNumTasks - 1);
 
   for (int t = 0; t < kNumTasks; ++t) {
-    const int start = new_variable(0, kHorizon);
-    const int duration = new_constant(t + 1);
-    const int end = new_variable(0, kHorizon);
-    const int presence =
-        t < kNumTasks / 2 ? new_constant(1) : new_variable(0, 1);
-    const int interval = new_optional_interval(start, duration, end, presence);
-    const int rank = new_variable(-1, kNumTasks - 1);
+    const IntVar start = cp_model.NewIntVar(horizon);
+    const IntVar duration = cp_model.NewConstant(t + 1);
+    const IntVar end = cp_model.NewIntVar(horizon);
+    const BoolVar presence =
+        t < kNumTasks / 2 ? cp_model.TrueVar() : cp_model.NewBoolVar();
+    const IntervalVar interval =
+        cp_model.NewOptionalIntervalVar(start, duration, end, presence);
+    const IntVar rank = cp_model.NewIntVar(possible_ranks);
+
     starts.push_back(start);
     ends.push_back(end);
     intervals.push_back(interval);
@@ -1001,47 +816,44 @@ void RankingSample() {
   }
 
   // Adds NoOverlap constraint.
-  add_no_overlap(intervals);
+  cp_model.AddNoOverlap(intervals);
 
   // Ranks tasks.
   add_task_ranking(starts, presences, ranks);
 
   // Adds a constraint on ranks.
-  add_strict_precedence(ranks[0], ranks[1]);
+  cp_model.AddLessThan(ranks[0], ranks[1]);
 
   // Creates makespan variables.
-  const int makespan = new_variable(0, kHorizon);
+  const IntVar makespan = cp_model.NewIntVar(horizon);
   for (int t = 0; t < kNumTasks; ++t) {
-    add_conditional_precedence(ends[t], makespan, presences[t]);
+    cp_model.AddLessOrEqual(ends[t], makespan).OnlyEnforceIf(presences[t]);
   }
 
   // Create objective: minimize 2 * makespan - 7 * sum of presences.
   // That is you gain 7 by interval performed, but you pay 2 by day of delays.
-  CpObjectiveProto* const obj = cp_model.mutable_objective();
-  obj->add_vars(makespan);
-  obj->add_coeffs(2);
+  LinearExpr objective;
+  objective.AddTerm(makespan, 2);
   for (int t = 0; t < kNumTasks; ++t) {
-    obj->add_vars(presences[t]);
-    obj->add_coeffs(-7);
+    objective.AddTerm(presences[t], -7);
   }
+  cp_model.Minimize(objective);
 
   // Solving part.
-  Model model;
-  LOG(INFO) << CpModelStats(cp_model);
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = Solve(cp_model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::OPTIMAL) {
     LOG(INFO) << "Optimal cost: " << response.objective_value();
-    LOG(INFO) << "Makespan: " << response.solution(makespan);
+    LOG(INFO) << "Makespan: " << SolutionIntegerValue(response, makespan);
     for (int t = 0; t < kNumTasks; ++t) {
-      if (response.solution(presences[t])) {
+      if (SolutionBooleanValue(response, presences[t])) {
         LOG(INFO) << "task " << t << " starts at "
-                  << response.solution(starts[t]) << " with rank "
-                  << response.solution(ranks[t]);
+                  << SolutionIntegerValue(response, starts[t]) << " with rank "
+                  << SolutionIntegerValue(response, ranks[t]);
       } else {
         LOG(INFO) << "task " << t << " is not performed and ranked at "
-                  << response.solution(ranks[t]);
+                  << SolutionIntegerValue(response, ranks[t]);
       }
     }
   }

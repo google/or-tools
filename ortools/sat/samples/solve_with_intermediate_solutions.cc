@@ -11,71 +11,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
 namespace operations_research {
 namespace sat {
 
-void MinimalSatPrintIntermediateSolutions() {
-  CpModelProto cp_model;
+void SolveWithIntermediateSolutions() {
+  CpModelBuilder cp_model;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
 
-  auto add_different = [&cp_model](const int left_var, const int right_var) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    lin->add_vars(left_var);
-    lin->add_coeffs(1);
-    lin->add_vars(right_var);
-    lin->add_coeffs(-1);
-    lin->add_domain(kint64min);
-    lin->add_domain(-1);
-    lin->add_domain(1);
-    lin->add_domain(kint64max);
-  };
+  cp_model.AddNotEqual(x, y);
 
-  auto maximize = [&cp_model](const std::vector<int>& vars,
-                              const std::vector<int64>& coeffs) {
-    CpObjectiveProto* const obj = cp_model.mutable_objective();
-    for (const int v : vars) {
-      obj->add_vars(v);
-    }
-    for (const int64 c : coeffs) {
-      obj->add_coeffs(-c);  // Maximize.
-    }
-    obj->set_scaling_factor(-1.0);  // Maximize.
-  };
-
-  const int kNumVals = 3;
-  const int x = new_variable(0, kNumVals - 1);
-  const int y = new_variable(0, kNumVals - 1);
-  const int z = new_variable(0, kNumVals - 1);
-
-  add_different(x, y);
-
-  maximize({x, y, z}, {1, 2, 3});
+  cp_model.Maximize(LinearExpr::ScalProd({x, y, z}, {1, 2, 3}));
 
   Model model;
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     LOG(INFO) << "Solution " << num_solutions;
     LOG(INFO) << "  objective value = " << r.objective_value();
-    LOG(INFO) << "  x = " << r.solution(x);
-    LOG(INFO) << "  y = " << r.solution(y);
-    LOG(INFO) << "  z = " << r.solution(z);
+    LOG(INFO) << "  x = " << SolutionIntegerValue(r, x);
+    LOG(INFO) << "  y = " << SolutionIntegerValue(r, y);
+    LOG(INFO) << "  z = " << SolutionIntegerValue(r, z);
     num_solutions++;
   }));
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
 
@@ -83,7 +47,7 @@ void MinimalSatPrintIntermediateSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::MinimalSatPrintIntermediateSolutions();
+  operations_research::sat::SolveWithIntermediateSolutions();
 
   return EXIT_SUCCESS;
 }

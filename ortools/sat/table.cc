@@ -147,6 +147,14 @@ std::function<void(Model*)> TableConstraint(
       }
     }
 
+    if (new_tuples.empty()) {
+      model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+      return;
+    }
+
+    // Remove duplicates if any.
+    gtl::STLSortAndRemoveDuplicates(&new_tuples);
+
     // Create one Boolean variable per tuple to indicate if it can still be
     // selected or not. Note that we don't enforce exactly one tuple to be
     // selected because these variables are just used by this constraint, so
@@ -155,10 +163,18 @@ std::function<void(Model*)> TableConstraint(
     // TODO(user): If a value in one column is unique, we don't need to create a
     // new BooleanVariable corresponding to this line since we can use the one
     // corresponding to this value in that column.
+    //
+    // Note that if there is just one tuple, there is no need to create such
+    // variables since they are not used.
     std::vector<Literal> tuple_literals;
     tuple_literals.reserve(new_tuples.size());
-    for (int i = 0; i < new_tuples.size(); ++i) {
+    if (new_tuples.size() == 2) {
       tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
+      tuple_literals.emplace_back(tuple_literals[0].Negated());
+    } else if (new_tuples.size() > 2) {
+      for (int i = 0; i < new_tuples.size(); ++i) {
+        tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
+      }
     }
 
     // Fully encode the variables using all the values appearing in the tuples.

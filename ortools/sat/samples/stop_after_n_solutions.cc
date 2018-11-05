@@ -13,9 +13,7 @@
 
 
 #include <atomic>
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"
@@ -24,21 +22,12 @@ namespace operations_research {
 namespace sat {
 
 void StopAfterNSolutions() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
-
-  const int kNumVals = 3;
-  const int x = new_variable(0, kNumVals - 1);
-  const int y = new_variable(0, kNumVals - 1);
-  const int z = new_variable(0, kNumVals - 1);
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
 
   Model model;
 
@@ -55,16 +44,16 @@ void StopAfterNSolutions() {
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     LOG(INFO) << "Solution " << num_solutions;
-    LOG(INFO) << "  x = " << r.solution(x);
-    LOG(INFO) << "  y = " << r.solution(y);
-    LOG(INFO) << "  z = " << r.solution(z);
+    LOG(INFO) << "  x = " << SolutionIntegerValue(r, x);
+    LOG(INFO) << "  y = " << SolutionIntegerValue(r, y);
+    LOG(INFO) << "  z = " << SolutionIntegerValue(r, z);
     num_solutions++;
     if (num_solutions >= kSolutionLimit) {
       stopped = true;
       LOG(INFO) << "Stop search after " << kSolutionLimit << " solutions.";
     }
   }));
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
   CHECK_EQ(num_solutions, kSolutionLimit);
 }

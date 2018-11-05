@@ -239,12 +239,13 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
     return GetFalseLiteral();
   }
 
-  const IntegerLiteral new_lit = Canonicalize(i_lit).first;
-  if (new_lit.var < encoding_by_var_.size()) {
-    const std::map<IntegerValue, Literal>& encoding =
-        encoding_by_var_[new_lit.var];
-    const auto it = encoding.find(new_lit.bound);
-    if (it != encoding.end()) return it->second;
+  const auto canonicalization = Canonicalize(i_lit);
+  const IntegerLiteral new_lit = canonicalization.first;
+  if (LiteralIsAssociated(new_lit)) {
+    return Literal(GetAssociatedLiteral(new_lit));
+  }
+  if (LiteralIsAssociated(canonicalization.second)) {
+    return Literal(GetAssociatedLiteral(canonicalization.second)).Negated();
   }
 
   ++num_created_variables_;
@@ -298,19 +299,6 @@ void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
 void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
                                                   IntegerVariable var,
                                                   IntegerValue value) {
-  const std::pair<IntegerVariable, IntegerValue> key{var, value};
-  if (gtl::ContainsKey(equality_to_associated_literal_, key)) {
-    // If this key is already associated, make the two literals equal.
-    const Literal representative = equality_to_associated_literal_[key];
-    if (representative != literal) {
-      sat_solver_->AddBinaryClause(literal, representative.Negated());
-      sat_solver_->AddBinaryClause(literal.Negated(), representative);
-    }
-    return;
-  }
-  equality_to_associated_literal_[key] = literal;
-  equality_to_associated_literal_[{NegationOf(var), -value}] = literal;
-
   // Detect literal view. Note that the same literal can be associated to more
   // than one variable, and thus already have a view. We don't change it in
   // this case.
@@ -331,6 +319,20 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
       literal_view_[literal.Index()] = NegationOf(var);
     }
   }
+
+  const std::pair<IntegerVariable, IntegerValue> key{var, value};
+  if (gtl::ContainsKey(equality_to_associated_literal_, key)) {
+    // If this key is already associated, make the two literals equal.
+    const Literal representative = equality_to_associated_literal_[key];
+    if (representative != literal) {
+      DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
+      sat_solver_->AddBinaryClause(literal, representative.Negated());
+      sat_solver_->AddBinaryClause(literal.Negated(), representative);
+    }
+    return;
+  }
+  equality_to_associated_literal_[key] = literal;
+  equality_to_associated_literal_[{NegationOf(var), -value}] = literal;
 
   // Fix literal for value outside the domain or for singleton domain.
   if (!domain.Contains(value.value())) {
@@ -390,6 +392,7 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
   } else {
     const Literal associated(GetAssociatedLiteral(i_lit));
     if (associated != literal) {
+      DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
       sat_solver_->AddBinaryClause(literal, associated.Negated());
       sat_solver_->AddBinaryClause(literal.Negated(), associated);
     }
@@ -586,28 +589,27 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   CHECK(Enqueue(IntegerLiteral::LowerOrEqual(var, IntegerValue(domain.Max())),
                 {}, {}));
 
-  // If the variable is fully encoded, set to false excluded literals.
-  if (encoder_->VariableIsFullyEncoded(var)) {
-    int i = 0;
-    int num_fixed = 0;
-    const auto encoding = encoder_->FullDomainEncoding(var);
-    const auto intervals = domain.intervals();
-    for (const auto pair : encoding) {
-      while (i < intervals.size() && pair.value > intervals[i].end) ++i;
-      if (i == intervals.size() || pair.value < intervals[i].start) {
-        // Set the literal to false;
-        ++num_fixed;
-        if (trail_->Assignment().LiteralIsTrue(pair.literal)) return false;
-        if (!trail_->Assignment().LiteralIsFalse(pair.literal)) {
-          trail_->EnqueueWithUnitReason(pair.literal.Negated());
-        }
+  // Set to false excluded literals.
+  int i = 0;
+  int num_fixed = 0;
+  const auto encoding = encoder_->PartialDomainEncoding(var);
+  const auto intervals = domain.intervals();
+  for (const auto pair : encoding) {
+    while (i < intervals.size() && pair.value > intervals[i].end) ++i;
+    if (i == intervals.size() || pair.value < intervals[i].start) {
+      // Set the literal to false;
+      ++num_fixed;
+      if (trail_->Assignment().LiteralIsTrue(pair.literal)) return false;
+      if (!trail_->Assignment().LiteralIsFalse(pair.literal)) {
+        trail_->EnqueueWithUnitReason(pair.literal.Negated());
       }
     }
-    if (num_fixed > 0) {
-      VLOG(1) << "Domain intersection removed " << num_fixed << " values "
-              << "(out of " << encoding.size() << ").";
-    }
   }
+  if (num_fixed > 0) {
+    VLOG(1) << "Domain intersection removed " << num_fixed << " values "
+            << "(out of " << encoding.size() << ").";
+  }
+
   return true;
 }
 
@@ -694,7 +696,12 @@ void IntegerTrail::RelaxLinearReason(
       if (best_i != -1 && indices[i] < indices[best_i]) continue;
       const TrailEntry& entry = integer_trail_[indices[i]];
       const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
-      if (coeffs[i] * (entry.bound - previous_entry.bound) > slack) continue;
+
+      // Note that both terms of the product are positive.
+      if (CapProd(coeffs[i].value(),
+                  (entry.bound - previous_entry.bound).value()) > slack) {
+        continue;
+      }
       best_i = i;
     }
     if (best_i == -1) return;
@@ -705,6 +712,16 @@ void IntegerTrail::RelaxLinearReason(
     (*reason)[best_i].bound = previous_entry.bound;
     slack -= coeffs[best_i] * (entry.bound - previous_entry.bound);
   }
+}
+
+void IntegerTrail::RemoveLevelZeroBounds(
+    std::vector<IntegerLiteral>* reason) const {
+  int new_size = 0;
+  for (const IntegerLiteral literal : *reason) {
+    if (literal.bound <= LevelZeroBound(literal.var)) continue;
+    (*reason)[new_size++] = literal;
+  }
+  reason->resize(new_size);
 }
 
 bool IntegerTrail::EnqueueAssociatedLiteral(
@@ -955,11 +972,12 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
     vars_[i_lit.var].current_bound = i_lit.bound;
     integer_trail_[i_lit.var.value()].bound = i_lit.bound;
 
-    // We also update the initial domain.
-    CHECK(UpdateInitialDomain(
+    // We also update the initial domain. If this fail, since we are at level
+    // zero, we don't care about the reason.
+    trail_->MutableConflict()->clear();
+    return UpdateInitialDomain(
         i_lit.var,
-        Domain(LowerBound(i_lit.var).value(), UpperBound(i_lit.var).value())));
-    return true;
+        Domain(LowerBound(i_lit.var).value(), UpperBound(i_lit.var).value()));
   }
   DCHECK_GT(trail_->CurrentDecisionLevel(), 0);
 
@@ -1232,6 +1250,20 @@ void IntegerTrail::EnqueueLiteral(Literal literal,
   bounds_reason_buffer_.insert(bounds_reason_buffer_.end(),
                                integer_reason.begin(), integer_reason.end());
   trail_->Enqueue(literal, propagator_id_);
+}
+
+// TODO(user): Implement a dense version if there is more trail entries
+// than variables!
+void IntegerTrail::AppendNewBounds(std::vector<IntegerLiteral>* output) const {
+  tmp_marked_.ClearAndResize(IntegerVariable(vars_.size()));
+  for (int i = vars_.size(); i < integer_trail_.size(); ++i) {
+    const TrailEntry& entry = integer_trail_[i];
+    if (entry.var == kNoIntegerVariable) continue;
+    if (tmp_marked_[entry.var]) continue;
+
+    tmp_marked_.Set(entry.var);
+    output->push_back(IntegerLiteral::GreaterOrEqual(entry.var, entry.bound));
+  }
 }
 
 GenericLiteralWatcher::GenericLiteralWatcher(Model* model)

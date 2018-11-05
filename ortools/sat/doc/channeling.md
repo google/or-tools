@@ -106,9 +106,7 @@ ChannelingSample()
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -117,66 +115,37 @@ namespace sat {
 
 void ChannelingSample() {
   // Model.
-  CpModelProto cp_model;
-
-  // Helpers.
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
-
-  // literal => (lb <= sum(vars) <= ub).
-  auto add_half_reified_sum = [&cp_model](const std::vector<int>& vars,
-                                          int64 lb, int64 ub, int literal) {
-    ConstraintProto* const ct = cp_model.add_constraints();
-    ct->add_enforcement_literal(literal);
-    LinearConstraintProto* const lin = ct->mutable_linear();
-    for (const int v : vars) {
-      lin->add_vars(v);
-      lin->add_coeffs(1);
-    }
-    lin->add_domain(lb);
-    lin->add_domain(ub);
-  };
+  CpModelBuilder cp_model;
 
   // Main variables.
-  const int x = new_variable(0, 10);
-  const int y = new_variable(0, 10);
-  const int b = new_variable(0, 1);
+  const IntVar x = cp_model.NewIntVar({0, 10});
+  const IntVar y = cp_model.NewIntVar({0, 10});
+  const BoolVar b = cp_model.NewBoolVar();
 
-  // Implements b == (x >= 5).
-  add_half_reified_sum({x}, 5, kint64max, b);
-  add_half_reified_sum({x}, kint64min, 4, NegatedRef(b));
+  // b == (x >= 5).
+  cp_model.AddGreaterOrEqual(x, 5).OnlyEnforceIf(b);
+  cp_model.AddLessThan(x, 5).OnlyEnforceIf(Not(b));
 
   // b implies (y == 10 - x).
-  add_half_reified_sum({x, y}, 10, 10, b);
+  cp_model.AddEquality(LinearExpr::Sum({x, y}), 10).OnlyEnforceIf(b);
   // not(b) implies y == 0.
-  add_half_reified_sum({y}, 0, 0, NegatedRef(b));
+  cp_model.AddEquality(y, 0).OnlyEnforceIf(Not(b));
 
   // Search for x values in increasing order.
-  DecisionStrategyProto* const strategy = cp_model.add_search_strategy();
-  strategy->add_variables(x);
-  strategy->set_variable_selection_strategy(
-      DecisionStrategyProto::CHOOSE_FIRST);
-  strategy->set_domain_reduction_strategy(
-      DecisionStrategyProto::SELECT_MIN_VALUE);
+  cp_model.AddDecisionStrategy({x}, DecisionStrategyProto::CHOOSE_FIRST,
+                               DecisionStrategyProto::SELECT_MIN_VALUE);
 
-  // Solving part.
   Model model;
-
   SatParameters parameters;
   parameters.set_search_branching(SatParameters::FIXED_SEARCH);
   parameters.set_enumerate_all_solutions(true);
   model.Add(NewSatParameters(parameters));
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
-    LOG(INFO) << "x=" << r.solution(x) << " y=" << r.solution(y)
-              << " b=" << r.solution(b);
+    LOG(INFO) << "x=" << SolutionIntegerValue(r, x)
+              << " y=" << SolutionIntegerValue(r, y)
+              << " b=" << SolutionBooleanValue(r, b);
   }));
-  SolveCpModel(cp_model, &model);
+  SolveWithModel(cp_model, &model);
 }
 
 }  // namespace sat
@@ -416,10 +385,7 @@ BinpackingProblem()
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
@@ -435,115 +401,58 @@ void BinpackingProblem() {
   const int num_items = items.size();
 
   // Model.
-  CpModelProto cp_model;
-
-  // Helpers.
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
-
-  auto add_linear_constraint = [&cp_model](const std::vector<int>& vars,
-                                           const std::vector<int64>& coeffs,
-                                           int64 lb, int64 ub) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    for (const int v : vars) {
-      lin->add_vars(v);
-    }
-    for (const int64 c : coeffs) {
-      lin->add_coeffs(c);
-    }
-    lin->add_domain(lb);
-    lin->add_domain(ub);
-  };
-
-  auto add_reified_variable_bounds = [&cp_model](int var, int64 lb, int64 ub,
-                                                 int lit) {
-    ConstraintProto* const ct = cp_model.add_constraints();
-    ct->add_enforcement_literal(lit);
-    LinearConstraintProto* const lin = ct->mutable_linear();
-    lin->add_vars(var);
-    lin->add_coeffs(1);
-    lin->add_domain(lb);
-    lin->add_domain(ub);
-  };
-
-  auto maximize = [&cp_model](const std::vector<int>& vars) {
-    CpObjectiveProto* const obj = cp_model.mutable_objective();
-    for (const int v : vars) {
-      obj->add_vars(v);
-      obj->add_coeffs(-1);  // Maximize.
-    }
-    obj->set_scaling_factor(-1.0);  // Maximize.
-  };
+  CpModelBuilder cp_model;
 
   // Main variables.
-  std::vector<std::vector<int>> x(num_items);
+  std::vector<std::vector<IntVar>> x(num_items);
   for (int i = 0; i < num_items; ++i) {
     const int num_copies = items[i][1];
     for (int b = 0; b < kNumBins; ++b) {
-      x[i].push_back(new_variable(0, num_copies));
+      x[i].push_back(cp_model.NewIntVar({0, num_copies}));
     }
   }
 
   // Load variables.
-  std::vector<int> load(kNumBins);
+  std::vector<IntVar> load(kNumBins);
   for (int b = 0; b < kNumBins; ++b) {
-    load[b] = new_variable(0, kBinCapacity);
+    load[b] = cp_model.NewIntVar({0, kBinCapacity});
   }
 
   // Slack variables.
-  std::vector<int> slack(kNumBins);
+  std::vector<BoolVar> slacks(kNumBins);
   for (int b = 0; b < kNumBins; ++b) {
-    slack[b] = new_variable(0, 1);
+    slacks[b] = cp_model.NewBoolVar();
   }
 
   // Links load and x.
   for (int b = 0; b < kNumBins; ++b) {
-    std::vector<int> vars;
-    std::vector<int64> coeffs;
-    vars.push_back(load[b]);
-    coeffs.push_back(-1);
+    LinearExpr expr;
     for (int i = 0; i < num_items; ++i) {
-      vars.push_back(x[i][b]);
-      coeffs.push_back(items[i][0]);
+      expr.AddTerm(x[i][b], items[i][0]);
     }
-    add_linear_constraint(vars, coeffs, 0, 0);
+    cp_model.AddEquality(expr, load[b]);
   }
 
   // Place all items.
   for (int i = 0; i < num_items; ++i) {
-    std::vector<int> vars;
-    std::vector<int64> coeffs;
-    for (int b = 0; b < kNumBins; ++b) {
-      vars.push_back(x[i][b]);
-      coeffs.push_back(1);
-    }
-    add_linear_constraint(vars, coeffs, items[i][1], items[i][1]);
+    cp_model.AddEquality(LinearExpr::Sum(x[i]), items[i][1]);
   }
 
   // Links load and slack through an equivalence relation.
   const int safe_capacity = kBinCapacity - kSlackCapacity;
   for (int b = 0; b < kNumBins; ++b) {
     // slack[b] => load[b] <= safe_capacity.
-    add_reified_variable_bounds(load[b], kint64min, safe_capacity, slack[b]);
+    cp_model.AddLessOrEqual(load[b], safe_capacity).OnlyEnforceIf(slacks[b]);
     // not(slack[b]) => load[b] > safe_capacity.
-    add_reified_variable_bounds(load[b], safe_capacity + 1, kint64max,
-                                NegatedRef(slack[b]));
+    cp_model.AddGreaterThan(load[b], safe_capacity)
+        .OnlyEnforceIf(Not(slacks[b]));
   }
 
   // Maximize sum of slacks.
-  maximize(slack);
+  cp_model.Maximize(LinearExpr::BooleanSum(slacks));
 
   // Solving part.
-  Model model;
-  LOG(INFO) << CpModelStats(cp_model);
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = Solve(cp_model);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 

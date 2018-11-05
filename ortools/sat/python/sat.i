@@ -54,7 +54,6 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
-%unignore operations_research::sat::SolutionCallback::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback::~SolutionCallback;
 %unignore operations_research::sat::SolutionCallback::BestObjectiveBound;
 %feature("nodirector") operations_research::sat::SolutionCallback::BestObjectiveBound;

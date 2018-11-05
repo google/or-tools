@@ -49,44 +49,35 @@ SimpleSolve()
 
 ### C++ solver code
 
-Calling SolveCpModel() will return a CpSolverResponse protobuf that contains the
+Calling Solve() method will return a CpSolverResponse protobuf that contains the
 solve status, the values for each variable in the model if solve was successful,
 and some metrics.
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
 
 void SimpleSolve() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
 
-  // Trivial model with just one variable and no constraint.
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
 
-  const int x = new_variable(0, 3);
+  cp_model.AddNotEqual(x, y);
 
   // Solving part.
-  Model model;
-  LOG(INFO) << CpModelStats(cp_model);
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = Solve(cp_model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.
-    const int64 value_x = response.solution(x);
-    LOG(INFO) << "x = " << value_x;
+    LOG(INFO) << "x = " << SolutionIntegerValue(response, x);
+    LOG(INFO) << "y = " << SolutionIntegerValue(response, y);
+    LOG(INFO) << "z = " << SolutionIntegerValue(response, z);
   }
 }
 
@@ -232,9 +223,7 @@ MinimalCpSatWithTimeLimit()
 ### Specifying the time limit in C++
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -242,19 +231,14 @@ namespace operations_research {
 namespace sat {
 
 void SolveWithTimeLimit() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
 
-  // Trivial model with just one variable and no constraint.
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
 
-  const int x = new_variable(0, 3);
+  cp_model.AddNotEqual(x, y);
 
   // Solving part.
   Model model;
@@ -265,14 +249,13 @@ void SolveWithTimeLimit() {
   model.Add(NewSatParameters(parameters));
 
   // Solve.
-  LOG(INFO) << CpModelStats(cp_model);
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
-    // Get the value of x in the solution.
-    const int64 value_x = response.solution(x);
-    LOG(INFO) << "value_x = " << value_x;
+    LOG(INFO) << "  x = " << SolutionIntegerValue(response, x);
+    LOG(INFO) << "  y = " << SolutionIntegerValue(response, y);
+    LOG(INFO) << "  z = " << SolutionIntegerValue(response, z);
   }
 }
 
@@ -438,71 +421,35 @@ MinimalCpSatPrintIntermediateSolutions()
 ### C++ code
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
 namespace operations_research {
 namespace sat {
 
-void MinimalSatPrintIntermediateSolutions() {
-  CpModelProto cp_model;
+void SolveWithIntermediateSolutions() {
+  CpModelBuilder cp_model;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
 
-  auto add_different = [&cp_model](const int left_var, const int right_var) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    lin->add_vars(left_var);
-    lin->add_coeffs(1);
-    lin->add_vars(right_var);
-    lin->add_coeffs(-1);
-    lin->add_domain(kint64min);
-    lin->add_domain(-1);
-    lin->add_domain(1);
-    lin->add_domain(kint64max);
-  };
+  cp_model.AddNotEqual(x, y);
 
-  auto maximize = [&cp_model](const std::vector<int>& vars,
-                              const std::vector<int64>& coeffs) {
-    CpObjectiveProto* const obj = cp_model.mutable_objective();
-    for (const int v : vars) {
-      obj->add_vars(v);
-    }
-    for (const int64 c : coeffs) {
-      obj->add_coeffs(-c);  // Maximize.
-    }
-    obj->set_scaling_factor(-1.0);  // Maximize.
-  };
-
-  const int kNumVals = 3;
-  const int x = new_variable(0, kNumVals - 1);
-  const int y = new_variable(0, kNumVals - 1);
-  const int z = new_variable(0, kNumVals - 1);
-
-  add_different(x, y);
-
-  maximize({x, y, z}, {1, 2, 3});
+  cp_model.Maximize(LinearExpr::ScalProd({x, y, z}, {1, 2, 3}));
 
   Model model;
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     LOG(INFO) << "Solution " << num_solutions;
     LOG(INFO) << "  objective value = " << r.objective_value();
-    LOG(INFO) << "  x = " << r.solution(x);
-    LOG(INFO) << "  y = " << r.solution(y);
-    LOG(INFO) << "  z = " << r.solution(z);
+    LOG(INFO) << "  x = " << SolutionIntegerValue(r, x);
+    LOG(INFO) << "  y = " << SolutionIntegerValue(r, y);
+    LOG(INFO) << "  z = " << SolutionIntegerValue(r, z);
     num_solutions++;
   }));
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
 
@@ -510,7 +457,7 @@ void MinimalSatPrintIntermediateSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::MinimalSatPrintIntermediateSolutions();
+  operations_research::sat::SolveWithIntermediateSolutions();
 
   return EXIT_SUCCESS;
 }
@@ -715,46 +662,22 @@ SolveAllSolutions()
 To search for all solutions, a parameter of the SAT solver must be changed.
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
 
-void MinimalSatSearchForAllSolutions() {
-  CpModelProto cp_model;
+void SearchAllSolutions() {
+  CpModelBuilder cp_model;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
 
-  auto add_different = [&cp_model](const int left_var, const int right_var) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    lin->add_vars(left_var);
-    lin->add_coeffs(1);
-    lin->add_vars(right_var);
-    lin->add_coeffs(-1);
-    lin->add_domain(kint64min);
-    lin->add_domain(-1);
-    lin->add_domain(1);
-    lin->add_domain(kint64max);
-  };
-
-  const int kNumVals = 3;
-  const int x = new_variable(0, kNumVals - 1);
-  const int y = new_variable(0, kNumVals - 1);
-  const int z = new_variable(0, kNumVals - 1);
-
-  add_different(x, y);
+  cp_model.AddNotEqual(x, y);
 
   Model model;
 
@@ -766,12 +689,12 @@ void MinimalSatSearchForAllSolutions() {
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     LOG(INFO) << "Solution " << num_solutions;
-    LOG(INFO) << "  x = " << r.solution(x);
-    LOG(INFO) << "  y = " << r.solution(y);
-    LOG(INFO) << "  z = " << r.solution(z);
+    LOG(INFO) << "  x = " << SolutionIntegerValue(r, x);
+    LOG(INFO) << "  y = " << SolutionIntegerValue(r, y);
+    LOG(INFO) << "  z = " << SolutionIntegerValue(r, z);
     num_solutions++;
   }));
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
 
@@ -779,7 +702,7 @@ void MinimalSatSearchForAllSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::MinimalSatSearchForAllSolutions();
+  operations_research::sat::SearchAllSolutions();
 
   return EXIT_SUCCESS;
 }
@@ -985,9 +908,7 @@ limit, and setting that bool to true.
 ```cpp
 
 #include <atomic>
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"
@@ -996,21 +917,12 @@ namespace operations_research {
 namespace sat {
 
 void StopAfterNSolutions() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
-
-  const int kNumVals = 3;
-  const int x = new_variable(0, kNumVals - 1);
-  const int y = new_variable(0, kNumVals - 1);
-  const int z = new_variable(0, kNumVals - 1);
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
 
   Model model;
 
@@ -1027,16 +939,16 @@ void StopAfterNSolutions() {
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     LOG(INFO) << "Solution " << num_solutions;
-    LOG(INFO) << "  x = " << r.solution(x);
-    LOG(INFO) << "  y = " << r.solution(y);
-    LOG(INFO) << "  z = " << r.solution(z);
+    LOG(INFO) << "  x = " << SolutionIntegerValue(r, x);
+    LOG(INFO) << "  y = " << SolutionIntegerValue(r, y);
+    LOG(INFO) << "  z = " << SolutionIntegerValue(r, z);
     num_solutions++;
     if (num_solutions >= kSolutionLimit) {
       stopped = true;
       LOG(INFO) << "Stop search after " << kSolutionLimit << " solutions.";
     }
   }));
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
   CHECK_EQ(num_solutions, kSolutionLimit);
 }

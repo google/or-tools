@@ -47,33 +47,19 @@ CodeSample()
 ## C++ code samples
 
 The interface to the C++ CP-SAT solver is implemented through the
-**CpModelProto** class described in
-*ortools/sat/cp_model.proto*.
-
-We provide some inline helper methods to simplify variable and constraint
-creation.
+**CpModelBuilder** class described in *ortools/sat/cp_model.h*.
+This class is just a helper to fill in the cp_model protobuf.
 
 ```cpp
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
 
 void CodeSample() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
 
-  auto new_boolean_variable = [&cp_model]() {
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(0);
-    var->add_domain(1);
-    return index;
-  };
-
-  const int x = new_boolean_variable();
+  const IntVar x = cp_model.NewBoolVar().WithName("x");
   LOG(INFO) << x;
 }
 }  // namespace sat

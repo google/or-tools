@@ -338,7 +338,11 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
            *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
         lp_heuristics.push_back(ct->LPReducedCostAverageBranching());
       }
-      if (lp_heuristics.empty()) break;  // Fall back to automatic search.
+      if (lp_heuristics.empty()) {  // Revert to automatic search.
+        return SolveProblemWithPortfolioSearch(
+            {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
+            {SatSolverRestartPolicy(model)}, model);
+      }
       auto portfolio = CompleteHeuristics(
           lp_heuristics,
           SequentialSearch({SatSolverHeuristic(model), next_decision}));

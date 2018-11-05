@@ -35,6 +35,8 @@ from ortools.sat import pywrapsat
 
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
+INT32_MAX = 2147483647
+INT32_MIN = -2147483648
 
 # Cp Solver status (exported to avoid importing cp_model_cp2).
 UNKNOWN = cp_model_pb2.UNKNOWN

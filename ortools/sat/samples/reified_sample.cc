@@ -11,52 +11,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
 
 void ReifiedSample() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
 
-  auto new_boolean_variable = [&cp_model]() {
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(0);
-    var->add_domain(1);
-    return index;
-  };
-
-  auto add_bool_or = [&cp_model](const std::vector<int>& literals) {
-    BoolArgumentProto* const bool_or =
-        cp_model.add_constraints()->mutable_bool_or();
-    for (const int lit : literals) {
-      bool_or->add_literals(lit);
-    }
-  };
-
-  auto add_reified_bool_and = [&cp_model](const std::vector<int>& literals,
-                                          const int literal) {
-    ConstraintProto* const ct = cp_model.add_constraints();
-    ct->add_enforcement_literal(literal);
-    for (const int lit : literals) {
-      ct->mutable_bool_and()->add_literals(lit);
-    }
-  };
-
-  const int x = new_boolean_variable();
-  const int y = new_boolean_variable();
-  const int b = new_boolean_variable();
+  const BoolVar x = cp_model.NewBoolVar();
+  const BoolVar y = cp_model.NewBoolVar();
+  const BoolVar b = cp_model.NewBoolVar();
 
   // First version using a half-reified bool and.
-  add_reified_bool_and({x, NegatedRef(y)}, b);
+  cp_model.AddBoolAnd({x, Not(y)}).OnlyEnforceIf(b);
 
-  // Second version using bool or.
-  add_bool_or({NegatedRef(b), x});
-  add_bool_or({NegatedRef(b), NegatedRef(y)});
+  // Second version using implications.
+  cp_model.AddImplication(b, x);
+  cp_model.AddImplication(b, Not(y));
+
+  // Third version using bool or.
+  cp_model.AddBoolOr({Not(b), x});
+  cp_model.AddBoolOr({Not(b), Not(y)});
 }
 
 }  // namespace sat

@@ -68,26 +68,6 @@ const IntegerValue kMaxIntegerValue(
     std::numeric_limits<IntegerValue::ValueType>::max() - 1);
 const IntegerValue kMinIntegerValue(-kMaxIntegerValue);
 
-// IntegerValue version of the function in saturated_arithmetic.h
-//
-// The functions are not "sticky" to the min/max possible values so it is up to
-// us to properly use them so that we never get an overflow and then go back to
-// a feasible value. Hence the DCHECK().
-inline IntegerValue CapAdd(IntegerValue a, IntegerValue b) {
-  DCHECK(a >= kMinIntegerValue || b <= 0) << "Adding wrong sign to overflow.";
-  DCHECK(a <= kMaxIntegerValue || b >= 0) << "Adding wrong sign to overflow.";
-  DCHECK(b >= kMinIntegerValue || a <= 0) << "Adding wrong sign to overflow.";
-  DCHECK(b <= kMaxIntegerValue || a >= 0) << "Adding wrong sign to overflow.";
-  return IntegerValue(operations_research::CapAdd(a.value(), b.value()));
-}
-inline IntegerValue CapSub(IntegerValue a, IntegerValue b) {
-  DCHECK(a >= kMinIntegerValue || b >= 0) << "Adding wrong sign to overflow.";
-  DCHECK(a <= kMaxIntegerValue || b <= 0) << "Adding wrong sign to overflow.";
-  DCHECK(b >= kMinIntegerValue || a >= 0) << "Adding wrong sign to overflow.";
-  DCHECK(b <= kMaxIntegerValue || a <= 0) << "Adding wrong sign to overflow.";
-  return IntegerValue(operations_research::CapSub(a.value(), b.value()));
-}
-
 // Index of an IntegerVariable.
 //
 // Each time we create an IntegerVariable we also create its negation. This is
@@ -101,6 +81,10 @@ inline IntegerVariable NegationOf(IntegerVariable i) {
 
 inline bool VariableIsPositive(IntegerVariable i) {
   return (i.value() & 1) == 0;
+}
+
+inline IntegerVariable PositiveVariable(IntegerVariable i) {
+  return IntegerVariable(i.value() & (~1));
 }
 
 // Returns the vector of the negated variables.
@@ -522,6 +506,10 @@ class IntegerTrail : public SatPropagator {
   IntegerLiteral LowerBoundAsLiteral(IntegerVariable i) const;
   IntegerLiteral UpperBoundAsLiteral(IntegerVariable i) const;
 
+  // Returns the current value (if known) of an IntegerLiteral.
+  bool IntegerLiteralIsTrue(IntegerLiteral l) const;
+  bool IntegerLiteralIsFalse(IntegerLiteral l) const;
+
   // Advanced usage. Given the reason for
   // (Sum_i coeffs[i] * reason[i].var >= current_lb) initially in reason,
   // this function relaxes the reason given that we only need the explanation of
@@ -537,9 +525,18 @@ class IntegerTrail : public SatPropagator {
   // and produce the reason directly.
   //
   // TODO(user): change API so that this work is performed during the conflict
-  // analysis. Note that we could be smarter there.
-  void RelaxLinearReason(IntegerValue slack, absl::Span<IntegerValue> coeffs,
+  // analysis where we can be smarter in how we relax the reason. Note however
+  // that this function is mainly used when we have a conflict, so this is not
+  // really high priority.
+  //
+  // TODO(user): Test that the code work in the presence of integer overflow.
+  void RelaxLinearReason(IntegerValue slack,
+                         absl::Span<IntegerValue> coeffs,
                          std::vector<IntegerLiteral>* reason) const;
+
+  // Removes from the reasons the literal that are always true.
+  // This is mainly useful for experiments/testing.
+  void RemoveLevelZeroBounds(std::vector<IntegerLiteral>* reason) const;
 
   // Enqueue new information about a variable bound. Calling this with a less
   // restrictive bound than the current one will have no effect.
@@ -642,6 +639,11 @@ class IntegerTrail : public SatPropagator {
 
   int Index() const { return integer_trail_.size(); }
 
+  // Inspects the trail and output all the non-level zero bounds (one per
+  // variables) to the output. The algo is sparse if there is only a few
+  // propagations on the trail.
+  void AppendNewBounds(std::vector<IntegerLiteral>* output) const;
+
  private:
   // Used for DHECKs to validate the reason given to the public functions above.
   // Tests that all Literal are false. Tests that all IntegerLiteral are true.
@@ -677,7 +679,7 @@ class IntegerTrail : public SatPropagator {
   void AppendLiteralsReason(int trail_index,
                             std::vector<Literal>* output) const;
 
-  // Returns some debuging info.
+  // Returns some debugging info.
   std::string DebugString();
 
   // Information for each internal variable about its current bound.
@@ -744,6 +746,9 @@ class IntegerTrail : public SatPropagator {
   mutable std::vector<IntegerVariable> tmp_to_clear_;
   mutable gtl::ITIVector<IntegerVariable, int> tmp_var_to_trail_index_in_queue_;
   mutable SparseBitset<BooleanVariable> added_variables_;
+
+  // Temporary data used by AppendNewBounds().
+  mutable SparseBitset<IntegerVariable> tmp_marked_;
 
   // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
   // lazily. This vector indicates the correspondence between a literal that
@@ -966,6 +971,14 @@ inline IntegerLiteral IntegerTrail::UpperBoundAsLiteral(
   return IntegerLiteral::LowerOrEqual(i, UpperBound(i));
 }
 
+inline bool IntegerTrail::IntegerLiteralIsTrue(IntegerLiteral l) const {
+  return l.bound <= LowerBound(l.var);
+}
+
+inline bool IntegerTrail::IntegerLiteralIsFalse(IntegerLiteral l) const {
+  return l.bound > UpperBound(l.var);
+}
+
 inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,
                                                 int watch_index) {
   if (l.Index() >= literal_to_watcher_.size()) {
@@ -1058,6 +1071,7 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
     }
 
     encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(1));
+    DCHECK_NE(encoder->GetLiteralView(lit), kNoIntegerVariable);
     return var;
   };
 }

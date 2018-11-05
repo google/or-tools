@@ -153,6 +153,11 @@ inline uint64 Hash(uint64 num, uint64 c) {
   return c;
 }
 
+inline uint64 Hash(uint64 a, uint64 b, uint64 c) {
+  operations_research::mix(a, b, c);
+  return c;
+}
+
 }  // namespace util_hash
 
 #endif  // OR_TOOLS_BASE_HASH_H_

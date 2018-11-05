@@ -15,7 +15,6 @@
 #define OR_TOOLS_GLOP_STATUS_H_
 
 #include <string>
-#include "ortools/base/port.h"
 
 namespace operations_research {
 namespace glop {
@@ -27,7 +26,7 @@ class Status {
   // Possible kinds of errors.
   enum ErrorCode {
     // Not an error. Returned on success.
-    NO_ERROR = 0,
+    GLOP_OK = 0,
 
     // The LU factorization of the current basis couldn't be computed.
     ERROR_LU = 1,
@@ -57,7 +56,7 @@ class Status {
   // Accessors.
   ErrorCode error_code() const { return error_code_; }
   const std::string& error_message() const { return error_message_; }
-  bool ok() const { return error_code_ == NO_ERROR; }
+  bool ok() const { return error_code_ == GLOP_OK; }
 
  private:
   ErrorCode error_code_;

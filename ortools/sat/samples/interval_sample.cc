@@ -11,43 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/cp_model.h"
 
 namespace operations_research {
 namespace sat {
 
 void IntervalSample() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
   const int kHorizon = 100;
 
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain horizon(0, kHorizon);
+  const IntVar start_var = cp_model.NewIntVar(horizon).WithName("start");
+  const IntVar duration_var = cp_model.NewConstant(10);
+  const IntVar end_var = cp_model.NewIntVar(horizon).WithName("end");
 
-  auto new_constant = [&new_variable](int64 v) { return new_variable(v, v); };
-
-  auto new_interval = [&cp_model](int start, int duration, int end) {
-    const int index = cp_model.constraints_size();
-    IntervalConstraintProto* const interval =
-        cp_model.add_constraints()->mutable_interval();
-    interval->set_start(start);
-    interval->set_size(duration);
-    interval->set_end(end);
-    return index;
-  };
-
-  const int start_var = new_variable(0, kHorizon);
-  const int duration_var = new_constant(10);
-  const int end_var = new_variable(0, kHorizon);
-  const int interval_var = new_interval(start_var, duration_var, end_var);
+  const IntervalVar interval_var =
+      cp_model.NewIntervalVar(start_var, duration_var, end_var)
+          .WithName("interval");
   LOG(INFO) << "start_var = " << start_var
             << ", duration_var = " << duration_var << ", end_var = " << end_var
             << ", interval_var = " << interval_var;

@@ -11,9 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
@@ -21,19 +19,14 @@ namespace operations_research {
 namespace sat {
 
 void SolveWithTimeLimit() {
-  CpModelProto cp_model;
+  CpModelBuilder cp_model;
 
-  // Trivial model with just one variable and no constraint.
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
+  const Domain domain(0, 2);
+  const IntVar x = cp_model.NewIntVar(domain).WithName("x");
+  const IntVar y = cp_model.NewIntVar(domain).WithName("y");
+  const IntVar z = cp_model.NewIntVar(domain).WithName("z");
 
-  const int x = new_variable(0, 3);
+  cp_model.AddNotEqual(x, y);
 
   // Solving part.
   Model model;
@@ -44,14 +37,13 @@ void SolveWithTimeLimit() {
   model.Add(NewSatParameters(parameters));
 
   // Solve.
-  LOG(INFO) << CpModelStats(cp_model);
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
-    // Get the value of x in the solution.
-    const int64 value_x = response.solution(x);
-    LOG(INFO) << "value_x = " << value_x;
+    LOG(INFO) << "  x = " << SolutionIntegerValue(response, x);
+    LOG(INFO) << "  y = " << SolutionIntegerValue(response, y);
+    LOG(INFO) << "  z = " << SolutionIntegerValue(response, z);
   }
 }
 
