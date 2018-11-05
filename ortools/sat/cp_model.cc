@@ -33,7 +33,7 @@ BoolVar BoolVar::WithName(const std::string& name) {
 
 std::string BoolVar::DebugString() const {
   if (index_ < 0) {
-    return absl::StrFormat("Not(%s)", Not().DebugString());
+    return absl::StrFormat("Not(%s)", Not().DebugString().c_str());
   } else {
     std::string output;
     const IntegerVariableProto& var_proto = cp_model_->variables(index_);
@@ -45,7 +45,7 @@ std::string BoolVar::DebugString() const {
       if (var_proto.name().empty()) {
         absl::StrAppendFormat(&output, "BoolVar%i(", index_);
       } else {
-        absl::StrAppendFormat(&output, "%s(", var_proto.name());
+        absl::StrAppendFormat(&output, "%s(", var_proto.name().c_str());
       }
       if (var_proto.domain(0) == var_proto.domain(1)) {
         output.append(var_proto.domain(0) == 0 ? "false)" : "true)");
@@ -85,7 +85,7 @@ IntVar::IntVar(const BoolVar& var) {
 std::string IntVar::DebugString() const {
   if (index_ < 0) {
     return absl::StrFormat("Not(%s)",
-                           IntVar(NegatedRef(index_), cp_model_).DebugString());
+                           IntVar(NegatedRef(index_), cp_model_).DebugString().c_str());
   }
   const IntegerVariableProto& var_proto = cp_model_->variables(index_);
   // Special case for constant variables without names.
