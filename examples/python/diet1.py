@@ -44,12 +44,12 @@
   http://www.hakank.org/google_or_tools/
 """
 from __future__ import print_function
-from ortools.constraint_solver import pywrapcp
+from ortools.sat.python import cp_model
 
 
 def main(unused_argv):
   # Create the solver.
-  solver = pywrapcp.Solver("Diet")
+  model = cp_model.CpModel()
 
   #
   # data
@@ -67,43 +67,34 @@ def main(unused_argv):
   #
   # declare variables
   #
-  x = [solver.IntVar(0, 100, "x%d" % i) for i in range(n)]
-  cost = solver.IntVar(0, 10000, "cost")
+  x = [model.NewIntVar(0, 100, "x%d" % i) for i in range(n)]
+  cost = model.NewIntVar(0, 10000, "cost")
 
   #
   # constraints
   #
-  solver.Add(solver.Sum([x[i] * calories[i] for i in range(n)]) >= limits[0])
-  solver.Add(solver.Sum([x[i] * chocolate[i] for i in range(n)]) >= limits[1])
-  solver.Add(solver.Sum([x[i] * sugar[i] for i in range(n)]) >= limits[2])
-  solver.Add(solver.Sum([x[i] * fat[i] for i in range(n)]) >= limits[3])
+  model.Add(sum(x[i] * calories[i] for i in range(n)) >= limits[0])
+  model.Add(sum(x[i] * chocolate[i] for i in range(n)) >= limits[1])
+  model.Add(sum(x[i] * sugar[i] for i in range(n)) >= limits[2])
+  model.Add(sum(x[i] * fat[i] for i in range(n)) >= limits[3])
 
   # objective
-  objective = solver.Minimize(cost, 1)
+  model.Minimize(cost)
 
-  #
-  # solution
-  #
-  solution = solver.Assignment()
-  solution.AddObjective(cost)
-  solution.Add(x)
+  # Solve model.
+  solver = cp_model.CpSolver()
+  status = solver.Solve(model)
 
-  # last solution since it's a minimization problem
-  collector = solver.LastSolutionCollector(solution)
-  search_log = solver.SearchLog(100, cost)
-  solver.Solve(
-      solver.Phase(x + [cost], solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE),
-      [objective, search_log, collector])
-
-  # get the first (and only) solution
-
-  print("cost:", collector.ObjectiveValue(0))
-  print([("abcdefghij" [i], collector.Value(0, x[i])) for i in range(n)])
-  print()
-  print("failures:", solver.Failures())
-  print("branches:", solver.Branches())
-  print("WallTime:", solver.WallTime())
-  print()
+  # Output solution.
+  if status == cp_model.OPTIMAL:
+    print("cost:", solver.ObjectiveValue())
+    print([("abcdefghij" [i], solver.Value(x[i])) for i in range(n)])
+    print()
+    print('  - status          : %s' % solver.StatusName(status))
+    print('  - conflicts       : %i' % solver.NumConflicts())
+    print('  - branches        : %i' % solver.NumBranches())
+    print('  - wall time       : %f ms' % solver.WallTime())
+    print()
 
 
 if __name__ == "__main__":
