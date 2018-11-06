@@ -473,8 +473,14 @@ test_dotnet_tests: \
  rdotnet_testsat.cs \
  rdotnet_test_sat_model.cs
 
+.PHONY: check_dotnet_examples # Build and Run few C++ Examples (located in examples/cpp)
+check_dotnet_examples: \
+ rdotnet_SimpleProgram.cs \
+ rdotnet_SimpleProgram.fs
+
 .PHONY: test_dotnet_examples # Build and Run all .Net Examples (located in examples/dotnet)
 test_dotnet_examples: \
+ check_dotnet_examples \
  test_dotnet_examples_csharp \
  test_dotnet_examples_fsharp
 

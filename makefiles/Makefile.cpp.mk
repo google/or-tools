@@ -428,6 +428,7 @@ test_cc_tests: \
 
 .PHONY: check_cc_examples # Build and Run few C++ Examples (located in examples/cpp)
 check_cc_examples: \
+ rcc_simple_program \
  rcc_linear_programming \
  rcc_stigler_diet \
  rcc_constraint_programming_cp \
