@@ -17,7 +17,7 @@ open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
 
 let SimpleProgram =
-  let svr = Solver.CreateSolver("SimpleProgram", "LinearProgramming.GLOP")
+  let svr = Solver.CreateSolver("SimpleProgram", LinearProgramming.GLOP.ToString())
 
   // Create the variable x and y.
   let x = svr.MakeNumVar(0.0, 1.0, "x")
@@ -28,10 +28,13 @@ let SimpleProgram =
   objective.SetCoefficient(y, 1.0)
   objective.SetMaximization()
   // Call the solver and display the results.
-  svr.Solve()
+  svr.Solve() |> ignore
   printfn "Solution:"
   printfn "x = %f" (x.SolutionValue())
   printfn "y = %f" (y.SolutionValue())
 
-SimpleProgram
+[<EntryPoint>]
+let main =
+  SimpleProgram
+  exit 0
 // [END program]
