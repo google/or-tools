@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="SimpleProgram.fs" />
+    <Compile Include="SimpleProgramFSharp.fs" />
     <PackageReference Include="Google.OrTools.FSharp" Version="6.9.*" />
   </ItemGroup>
 </Project>

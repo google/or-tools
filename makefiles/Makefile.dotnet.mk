@@ -476,7 +476,7 @@ test_dotnet_tests: \
 .PHONY: check_dotnet_examples # Build and Run few C++ Examples (located in examples/cpp)
 check_dotnet_examples: \
  rdotnet_SimpleProgram.cs \
- rdotnet_SimpleProgram.fs
+ rdotnet_SimpleProgramFSharp.fs
 
 .PHONY: test_dotnet_examples # Build and Run all .Net Examples (located in examples/dotnet)
 test_dotnet_examples: \
