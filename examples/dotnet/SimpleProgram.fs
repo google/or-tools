@@ -24,8 +24,8 @@ let SimpleProgram =
   let y = svr.MakeNumVar(0.0, 2.0, "y")
   // Create the objective function, x + y.
   let objective = svr.Objective()
-  objective.SetCoefficient(x, 1)
-  objective.SetCoefficient(y, 1)
+  objective.SetCoefficient(x, 1.0)
+  objective.SetCoefficient(y, 1.0)
   objective.SetMaximization()
   // Call the solver and display the results.
   svr.Solve()
