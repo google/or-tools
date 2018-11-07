@@ -399,5 +399,5 @@ int main(int argc, char** argv) {
   CHECK_GE(FLAGS_num_teams, 2) << "At least 2 teams";
   CHECK_LT(FLAGS_num_teams, 16) << "The model does not scale beyond 14 teams";
   operations_research::SportsScheduling(FLAGS_num_teams);
-  return 0;
+  return EXIT_SUCCESS;
 }

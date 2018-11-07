@@ -84,5 +84,5 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
   operations_research::SolveMinCostFlow();
-  return 0;
+  return EXIT_SUCCESS;
 }

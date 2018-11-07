@@ -756,5 +756,5 @@ int main(int argc, char** argv) {
   const int kCards = kSymbolsPerCard * (kSymbolsPerCard - 1) + 1;
   const int kSymbols = kCards;
   operations_research::SolveDobble(kCards, kSymbols, kSymbolsPerCard);
-  return 0;
+  return EXIT_SUCCESS;
 }

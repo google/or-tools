@@ -882,5 +882,5 @@ int main(int argc, char** argv) {
       component_id++;
     }
   }
-  return 0;
+  return EXIT_SUCCESS;
 }

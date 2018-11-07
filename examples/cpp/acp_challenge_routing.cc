@@ -305,5 +305,5 @@ int main(int argc, char** argv) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
   operations_research::Solve(FLAGS_input, FLAGS_solution);
-  return 0;
+  return EXIT_SUCCESS;
 }

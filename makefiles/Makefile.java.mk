@@ -328,6 +328,7 @@ test_java_tests: \
 
 .PHONY: check_java_examples # Build and Run few Java Examples (located in examples/java)
 check_java_examples: \
+ rjava_SimpleProgram \
  rjava_LinearProgramming \
  rjava_IntegerProgramming \
  rjava_Tsp \

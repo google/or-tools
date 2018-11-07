@@ -150,5 +150,5 @@ int main(int argc, char** argv) {
   } else {
     LOG(INFO) << "No solution found.";
   }
-  return 0;
+  return EXIT_SUCCESS;
 }

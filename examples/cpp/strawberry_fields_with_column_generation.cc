@@ -636,5 +636,5 @@ int main(int argc, char** argv) {
         operations_research::kInstances[FLAGS_colgen_instance];
     operations_research::SolveInstance(instance, solver_type);
   }
-  return 0;
+  return EXIT_SUCCESS;
 }

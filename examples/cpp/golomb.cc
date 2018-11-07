@@ -100,5 +100,5 @@ int main(int argc, char** argv) {
       operations_research::GolombRuler(n);
     }
   }
-  return 0;
+  return EXIT_SUCCESS;
 }

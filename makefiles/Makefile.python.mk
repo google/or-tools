@@ -488,6 +488,7 @@ rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 
 .PHONY: check_python_examples # Build and Run few Python Examples (located in examples/python)
 check_python_examples: \
+ rpy_simple_program \
  rpy_linear_programming \
  rpy_stigler_diet
 # rpy_constraint_programming_cp \

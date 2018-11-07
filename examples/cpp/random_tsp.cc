@@ -163,5 +163,5 @@ void Tsp() {
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::Tsp();
-  return 0;
+  return EXIT_SUCCESS;
 }

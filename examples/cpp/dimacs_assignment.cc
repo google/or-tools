@@ -167,7 +167,7 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
   }
   delete assignment;
   delete graph;
-  return 0;
+  return EXIT_SUCCESS;
 }
 }  // namespace operations_research
 

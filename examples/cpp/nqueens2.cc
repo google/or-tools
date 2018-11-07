@@ -71,5 +71,5 @@ int main(int argc, char** argv) {
       operations_research::NQueens(n);
     }
   }
-  return 0;
+  return EXIT_SUCCESS;
 }

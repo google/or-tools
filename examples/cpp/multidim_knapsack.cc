@@ -350,5 +350,5 @@ int main(int argc, char** argv) {
   operations_research::MultiDimKnapsackData data;
   data.Load(FLAGS_data_file);
   operations_research::SolveKnapsack(&data);
-  return 0;
+  return EXIT_SUCCESS;
 }
