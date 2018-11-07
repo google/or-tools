@@ -489,7 +489,7 @@ rpy_%: $(CONTRIB_EX_DIR)/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Ssat$Ssamples$S$*.py $(ARGS)
 
-.PHONY: check_python_examples # Build and Run few Python Examples (located in examples/python)
+.PHONY: check_python_examples # Build and Run few Python Examples (located in examples/python and examples/contrib)
 check_python_examples: \
  rpy_simple_program \
  rpy_linear_programming \
@@ -540,7 +540,7 @@ test_python_samples: \
  rpy_solve_with_time_limit \
  rpy_stop_after_n_solutions
 
-.PHONY: test_python_examples # Run all Python Examples (located in examples/python)
+.PHONY: test_python_examples # Run all Python Examples (located in examples/python and examples/contrib)
 test_python_examples: \
  rpy_3_jugs_mip \
  rpy_3_jugs_regular \
@@ -705,8 +705,8 @@ test_python_examples: \
  rpy_xkcd \
  rpy_young_tableaux \
  rpy_zebra
-	$(MAKE) run SOURCE=examples/python/coins_grid.py ARGS="5 2"
-	$(MAKE) run SOURCE=examples/python/hidato.py ARGS="3 3"
+	$(MAKE) run SOURCE=examples/contrib/coins_grid.py ARGS="5 2"
+	$(MAKE) run SOURCE=examples/contrib/hidato.py ARGS="3 3"
 #	$(MAKE) rpy_cvrptw_plot # error: py3 failure, missing numpy.
 #	$(MAKE) rpy_nontransitive_dice # error: too long
 # warning: nurse_sat take 18s
