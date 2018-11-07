@@ -156,5 +156,5 @@ int main(int argc, char** argv) {
       operations_research::MagicSquare(n);
     }
   }
-  return 0;
+  return EXIT_SUCCESS;
 }

@@ -401,5 +401,5 @@ int main() {
   operations_research::SlitherLink(medium);
   std::cout << "Big problem" << std::endl;
   operations_research::SlitherLink(big);
-  return 0;
+  return EXIT_SUCCESS;
 }

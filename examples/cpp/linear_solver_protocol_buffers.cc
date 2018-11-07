@@ -101,5 +101,5 @@ void RunAllExamples() {
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RunAllExamples();
-  return 0;
+  return EXIT_SUCCESS;
 }

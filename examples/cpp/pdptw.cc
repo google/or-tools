@@ -310,5 +310,5 @@ int main(int argc, char** argv) {
   if (!operations_research::LoadAndSolve(FLAGS_pdp_file)) {
     LOG(INFO) << "Error solving " << FLAGS_pdp_file;
   }
-  return 0;
+  return EXIT_SUCCESS;
 }

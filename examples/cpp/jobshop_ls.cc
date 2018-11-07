@@ -222,5 +222,5 @@ int main(int argc, char** argv) {
   operations_research::JobShopData data;
   data.Load(FLAGS_data_file);
   operations_research::JobshopLs(data);
-  return 0;
+  return EXIT_SUCCESS;
 }

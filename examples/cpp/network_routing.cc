@@ -927,5 +927,5 @@ int main(int argc, char** argv) {
   solver.Init(data, FLAGS_extra_hops, FLAGS_max_paths);
   LOG(INFO) << "Final cost = "
             << solver.LnsSolve(FLAGS_time_limit, FLAGS_fail_limit);
-  return 0;
+  return EXIT_SUCCESS;
 }

@@ -408,5 +408,5 @@ int main(int argc, char** argv) {
                             FLAGS_scale_factor, FLAGS_seed);
   }
   operations_research::EtJobShop(data);
-  return 0;
+  return EXIT_SUCCESS;
 }

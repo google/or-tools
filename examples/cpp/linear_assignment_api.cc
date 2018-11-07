@@ -69,5 +69,5 @@ int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::AssignmentOn4x4Matrix();
   operations_research::AnotherAssignment();
-  return 0;
+  return EXIT_SUCCESS;
 }

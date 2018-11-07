@@ -243,7 +243,7 @@ int Run() {
     // really use it for any other purpose, we comply.
     if (response.status() == CpSolverStatus::FEASIBLE) return 10;
     if (response.status() == CpSolverStatus::INFEASIBLE) return 20;
-    return 0;
+    return EXIT_SUCCESS;
   }
 
   if (FLAGS_strict_validity) {
@@ -419,7 +419,7 @@ int Run() {
   // really use it for any other purpose, we comply.
   if (result == SatSolver::FEASIBLE) return 10;
   if (result == SatSolver::INFEASIBLE) return 20;
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 }  // namespace

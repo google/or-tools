@@ -201,5 +201,5 @@ int main(int argc, char** argv) {
   operations_research::SolveProblem(operations_research::LNS);
   operations_research::SolveProblem(operations_research::LS);
   operations_research::SolveProblem(operations_research::LS_WITH_FILTER);
-  return 0;
+  return EXIT_SUCCESS;
 }

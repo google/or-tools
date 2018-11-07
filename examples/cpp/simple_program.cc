@@ -35,6 +35,6 @@ int main() {
   cout << "x = " << x->solution_value() << endl;
   cout << "y = " << y->solution_value() << endl;
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 // [END program]
