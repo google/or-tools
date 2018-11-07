@@ -616,7 +616,7 @@ test_dotnet_examples_csharp: \
  rdotnet_xkcd.cs \
  rdotnet_young_tableaux.cs \
  rdotnet_zebra.cs
-	$(MAKE) run SOURCE=examples/dotnet/coins_grid.cs ARGS="5 2"
+	$(MAKE) run SOURCE=examples/contrib/coins_grid.cs ARGS="5 2"
 #	$(MAKE) rdotnet_nontransitive_dice # too long
 #	$(MAKE) rdotnet_partition # too long
 #	$(MAKE) rdotnet_secret_santa # too long
