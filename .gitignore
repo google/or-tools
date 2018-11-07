@@ -64,5 +64,7 @@ ortools/**/samples/bin
 ortools/**/samples/obj
 examples/tests/bin
 examples/tests/obj
+examples/contrib/bin
+examples/contrib/obj
 examples/dotnet/bin
 examples/dotnet/obj

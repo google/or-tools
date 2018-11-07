@@ -449,12 +449,26 @@ rdotnet_%.cs: \
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
 	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
 
+rdotnet_%.cs: \
+ $(CONTRIB_EX_DIR)/%.cs \
+ $(CONTRIB_EX_DIR)/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG) FORCE
+	"$(DOTNET_BIN)" build $(CONTRIB_EX_PATH)$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project $(CONTRIB_EX_PATH)$S$*.csproj -- $(ARGS)
+
 rdotnet_%.fs: \
  $(DOTNET_EX_DIR)/%.fs \
  $(DOTNET_EX_DIR)/%.fsproj \
  $(DOTNET_ORTOOLS_FSHARP_NUPKG) FORCE
 	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
 	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
+
+rdotnet_%.fs: \
+ $(CONTRIB_EX_DIR)/%.fs \
+ $(CONTRIB_EX_DIR)/%.fsproj \
+ $(DOTNET_ORTOOLS_FSHARP_NUPKG) FORCE
+	"$(DOTNET_BIN)" build $(CONTRIB_EX_PATH)$S$*.fsproj
+	"$(DOTNET_BIN)" run --no-build --project $(CONTRIB_EX_PATH)$S$*.fsproj -- $(ARGS)
 
 rdotnet_%.cs: \
  ortools/sat/samples/%.cs \
@@ -686,6 +700,8 @@ clean_dotnet:
 	-$(DEL) $(BIN_DIR)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).*
 	-$(DELREC) $(DOTNET_EX_PATH)$Sbin
 	-$(DELREC) $(DOTNET_EX_PATH)$Sobj
+	-$(DELREC) $(CONTRIB_EX_PATH)$Sbin
+	-$(DELREC) $(CONTRIB_EX_PATH)$Sobj
 	-$(DELREC) $(TEST_PATH)$Sbin
 	-$(DELREC) $(TEST_PATH)$Sobj
 	-$(DELREC) ortools$Ssat$Ssamples$Sbin

@@ -30,6 +30,9 @@ JAVA_EX_PATH = $(subst /,$S,$(JAVA_EX_DIR))
 PACKAGE_DIR = $(OR_ROOT)packages
 DOTNET_EX_DIR  = $(OR_ROOT)examples/dotnet
 DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
+# Contrib examples directoru
+CONTRIB_EX_DIR = $(OR_ROOT)examples/contrib
+CONTRIB_EX_PATH = $(subst /,$S,$(CONTRIB_EX_DIR))
 
 O = o
 ifeq ($(PLATFORM),LINUX)
