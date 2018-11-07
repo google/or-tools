@@ -16,12 +16,12 @@
 // https://publications.csiro.au/rpr/download?pid=csiro:EP104071&dsid=DS2)/
 //
 // Data files are in
-//    /cns/li-d/home/operations-research/shift_minization_scheduling
+//    examples/data/shift_scheduling/minization
 //
 // The problem is the following:
 //   - There is a list of jobs. Each job has a start date and an end date. They
 //     must all be performed.
-//   - There is a set of workers. Each worker can perform on or more jobs among
+//   - There is a set of workers. Each worker can perform one or more jobs among
 //     a subset of job. One worker cannot perform two jobs that overlaps.
 //   - The objective it to minimize the number of active workers, while
 //     performing all the jobs.
@@ -37,13 +37,8 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/split.h"
 #include "ortools/base/strtoint.h"
-#include "ortools/sat/cp_constraints.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/optimization.h"
-#include "ortools/sat/precedences.h"
-#include "ortools/sat/sat_solver.h"
 
 DEFINE_string(input, "", "Input file.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");
@@ -179,28 +174,27 @@ void LoadAndSolve(const std::string& file_name) {
   ShiftMinimizationParser parser;
   CHECK(parser.LoadFile(file_name));
 
-  Model model;
-  model.Add(NewSatParameters(FLAGS_params));
+  CpModelBuilder cp_model;
 
   const int num_workers = parser.possible_jobs_per_worker().size();
   const std::vector<ShiftMinimizationParser::Job>& jobs = parser.jobs();
   const int num_jobs = jobs.size();
 
-  std::vector<Literal> active_workers(num_workers);
-  std::vector<std::vector<Literal>> worker_job_literals(num_workers);
-  std::vector<std::vector<Literal>> selected_workers_per_job(num_jobs);
+  std::vector<BoolVar> active_workers(num_workers);
+  std::vector<std::vector<BoolVar>> worker_job_vars(num_workers);
+  std::vector<std::vector<BoolVar>> possible_workers_per_job(num_jobs);
 
   for (int w = 0; w < num_workers; ++w) {
     // Status variables for workers, are they active or not?
-    active_workers[w] = Literal(model.Add(NewBooleanVariable()), true);
+    active_workers[w] = cp_model.NewBoolVar();
 
-    // Job-Worker literal. worker_job_literals[w][i] is true iff worker w
+    // Job-Worker variable. worker_job_vars[w][i] is true iff worker w
     // performs it's ith possible job.
     const std::vector<int>& possible = parser.possible_jobs_per_worker()[w];
     for (int p : possible) {
-      worker_job_literals[w].push_back(
-          Literal(model.Add(NewBooleanVariable()), true));
-      selected_workers_per_job[p].push_back(worker_job_literals[w].back());
+      const BoolVar var = cp_model.NewBoolVar();
+      worker_job_vars[w].push_back(var);
+      possible_workers_per_job[p].push_back(var);
     }
 
     // Add conflicts on overlapping jobs for the same worker.
@@ -209,15 +203,18 @@ void LoadAndSolve(const std::string& file_name) {
         const int job1 = possible[i];
         const int job2 = possible[j];
         if (Overlaps(jobs[job1], jobs[job2])) {
-          const Literal l1 = worker_job_literals[w][i];
-          const Literal l2 = worker_job_literals[w][j];
-          model.Add(ClauseConstraint({l1.Negated(), l2.Negated()}));
+          const BoolVar v1 = worker_job_vars[w][i];
+          const BoolVar v2 = worker_job_vars[w][j];
+          cp_model.AddBoolOr({Not(v1), Not(v2)});
         }
       }
     }
 
     // Maintain active_workers variable.
-    model.Add(ReifiedBoolOr(worker_job_literals[w], active_workers[w]));
+    cp_model.AddBoolOr(worker_job_vars[w]).OnlyEnforceIf(active_workers[w]);
+    for (const BoolVar& var : worker_job_vars[w]) {
+      cp_model.AddImplication(var, active_workers[w]);
+    }
   }
 
   // All jobs must be performed.
@@ -225,7 +222,7 @@ void LoadAndSolve(const std::string& file_name) {
     // this does not enforce that at most one worker performs one job.
     // It should not change the solution cost.
     // TODO(user): Checks if sum() == 1 improves the solving speed.
-    model.Add(ClauseConstraint(selected_workers_per_job[j]));
+    cp_model.AddBoolOr(possible_workers_per_job[j]);
   }
 
   // Redundant constraint:
@@ -234,14 +231,12 @@ void LoadAndSolve(const std::string& file_name) {
   //   active jobs.
   std::set<int> time_points;
   std::set<std::vector<int>> visited_job_lists;
-  std::map<std::vector<Literal>, Literal> active_literal_cache;
 
   for (int j = 0; j < num_jobs; ++j) {
     time_points.insert(parser.jobs()[j].start);
     time_points.insert(parser.jobs()[j].end);
   }
 
-  int num_reused_literals = 0;
   int num_count_constraints = 0;
   int max_intersection_size = 0;
 
@@ -261,69 +256,41 @@ void LoadAndSolve(const std::string& file_name) {
     if (gtl::ContainsKey(visited_job_lists, intersecting_jobs)) continue;
     visited_job_lists.insert(intersecting_jobs);
 
-    // Collect the relevant literals, and regroup them per worker.
-    std::map<int, std::vector<Literal>> active_literals_per_workers;
+    // Collect the relevant worker job vars.
+    std::vector<BoolVar> overlapping_worker_jobs;
     for (int j : intersecting_jobs) {
       for (const auto& p : parser.possible_assignments_per_job()[j]) {
-        const Literal lit = worker_job_literals[p.worker_id][p.job_index];
-        active_literals_per_workers[p.worker_id].push_back(lit);
+        const BoolVar var = worker_job_vars[p.worker_id][p.job_index];
+        overlapping_worker_jobs.push_back(var);
       }
-    }
-
-    // Create the worker activity variables.
-    std::vector<Literal> active_worker_literals;
-    for (const auto& it : active_literals_per_workers) {
-      Literal active;
-      if (gtl::ContainsKey(active_literal_cache, it.second)) {
-        active = active_literal_cache[it.second];
-        num_reused_literals++;
-      } else {
-        active = Literal(model.Add(NewBooleanVariable()), true);
-        model.Add(Implication(active, active_workers[it.first]));
-        model.Add(ReifiedBoolOr(it.second, active));
-        active_literal_cache[it.second] = active;
-      }
-
-      active_worker_literals.push_back(active);
     }
 
     // Add the count constraints: We have as many active workers as jobs.
-    num_count_constraints++;
     const int num_jobs = intersecting_jobs.size();
+    cp_model.AddEquality(LinearExpr::BooleanSum(overlapping_worker_jobs),
+                         num_jobs);
+    // Book keeping.
     max_intersection_size = std::max(max_intersection_size, num_jobs);
-    model.Add(
-        CardinalityConstraint(num_jobs, num_jobs, active_worker_literals));
+    num_count_constraints++;
   }
 
   LOG(INFO) << "Added " << num_count_constraints
             << " count constraints while processing " << time_points.size()
             << " time points.";
-  LOG(INFO) << "This has created " << active_literal_cache.size()
-            << " active worker literals, and reused them "
-            << num_reused_literals << " times.";
   LOG(INFO) << "Lower bound = " << max_intersection_size;
 
   // Objective.
-  std::vector<int> weights(num_workers, 1);
-  std::vector<IntegerVariable> worker_vars(num_workers);
-  for (int w = 0; w < num_workers; ++w) {
-    worker_vars[w] =
-        model.Add(NewIntegerVariableFromLiteral(active_workers[w]));
-  }
-  const IntegerVariable objective_var =
-      model.Add(NewIntegerVariable(max_intersection_size, num_workers));
-  weights.push_back(-1);
-  worker_vars.push_back(objective_var);
+  const IntVar objective_var =
+      cp_model.NewIntVar(Domain(max_intersection_size, num_workers));
+  cp_model.AddEquality(LinearExpr::BooleanSum(active_workers), objective_var);
+  cp_model.Minimize(objective_var);
 
-  model.Add(FixedWeightedSum(worker_vars, weights, 0));
+  // Solve.
+  Model model;
+  model.Add(NewSatParameters(FLAGS_params));
 
-  MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-      /*log_info=*/true, objective_var, nullptr,
-      /*feasible_solution_observer=*/
-      [&](const Model& model) {
-        LOG(INFO) << "Cost " << model.Get(Value(objective_var));
-      },
-      &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  LOG(INFO) << CpSolverResponseStats(response);
 }
 }  // namespace sat
 }  // namespace operations_research

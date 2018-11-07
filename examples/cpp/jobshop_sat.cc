@@ -26,9 +26,8 @@
 #include "ortools/base/timer.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
 #include "ortools/data/jobshop_scheduling_parser.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 
 DEFINE_string(input, "", "Jobshop data file name.");
@@ -38,6 +37,7 @@ DEFINE_bool(use_optional_variables, true,
             "interval or not.");
 DEFINE_bool(display_model, false, "Display jobshop proto before solving.");
 DEFINE_bool(display_sat_model, false, "Display sat proto before solving.");
+
 using operations_research::data::jssp::Job;
 using operations_research::data::jssp::JobPrecedence;
 using operations_research::data::jssp::JsspInputProblem;
@@ -97,122 +97,7 @@ void Solve(const JsspInputProblem& problem) {
     LOG(INFO) << problem.DebugString();
   }
 
-  CpModelProto cp_model;
-  cp_model.set_name("jobshop_scheduling");
-
-  // Helpers.
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    CHECK_LE(lb, ub);
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* const var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
-
-  auto new_constant = [&cp_model, &new_variable](int64 v) {
-    return new_variable(v, v);
-  };
-
-  auto new_interval = [&cp_model](int start, int duration, int end) {
-    const int index = cp_model.constraints_size();
-    ConstraintProto* const ct = cp_model.add_constraints();
-    ct->mutable_interval()->set_start(start);
-    ct->mutable_interval()->set_size(duration);
-    ct->mutable_interval()->set_end(end);
-    return index;
-  };
-
-  auto new_optional_interval = [&cp_model](int start, int duration, int end,
-                                           int presence) {
-    const int index = cp_model.constraints_size();
-    ConstraintProto* const ct = cp_model.add_constraints();
-    ct->add_enforcement_literal(presence);
-    ct->mutable_interval()->set_start(start);
-    ct->mutable_interval()->set_size(duration);
-    ct->mutable_interval()->set_end(end);
-    return index;
-  };
-
-  auto add_precedence_with_delay = [&cp_model](int before, int after,
-                                               int64 min_delay) {
-    LinearConstraintProto* const lin =
-        cp_model.add_constraints()->mutable_linear();
-    lin->add_vars(after);
-    lin->add_coeffs(1L);
-    lin->add_vars(before);
-    lin->add_coeffs(-1L);
-    lin->add_domain(min_delay);
-    lin->add_domain(kint64max);
-  };
-
-  auto add_precedence = [&cp_model, &add_precedence_with_delay](int before,
-                                                                int after) {
-    return add_precedence_with_delay(before, after, 0L);
-  };
-
-  auto add_conditional_equality = [&cp_model](int left, int right, int lit) {
-    ConstraintProto* const ct = cp_model.add_constraints();
-    ct->add_enforcement_literal(lit);
-    LinearConstraintProto* const lin = ct->mutable_linear();
-    lin->add_vars(left);
-    lin->add_coeffs(1L);
-    lin->add_vars(right);
-    lin->add_coeffs(-1L);
-    lin->add_domain(0L);
-    lin->add_domain(0);
-  };
-
-  auto add_conditional_precedence_with_offset =
-      [&cp_model](int before, int after, int lit, int64 offset) {
-        ConstraintProto* const ct = cp_model.add_constraints();
-        ct->add_enforcement_literal(lit);
-        LinearConstraintProto* const lin = ct->mutable_linear();
-        lin->add_vars(after);
-        lin->add_coeffs(1L);
-        lin->add_vars(before);
-        lin->add_coeffs(-1L);
-        lin->add_domain(offset);
-        lin->add_domain(kint64max);
-      };
-
-  auto add_sum_equal_one = [&cp_model](const std::vector<int>& vars) {
-    LinearConstraintProto* lin = cp_model.add_constraints()->mutable_linear();
-    for (const int v : vars) {
-      lin->add_vars(v);
-      lin->add_coeffs(1L);
-    }
-    lin->add_domain(1L);
-    lin->add_domain(1L);
-  };
-
-  auto new_lateness_var = [&cp_model, &new_variable](int var, int64 due_date,
-                                                     int64 horizon) {
-    CHECK_LE(due_date, horizon);
-    if (due_date == 0) {  // Short cut.
-      return var;
-    }
-
-    // shifted_var = var - due_date.
-    const int shifted_var = new_variable(-due_date, horizon - due_date);
-    LinearConstraintProto* arg = cp_model.add_constraints()->mutable_linear();
-    arg->add_vars(shifted_var);
-    arg->add_coeffs(1);
-    arg->add_vars(var);
-    arg->add_coeffs(-1);
-    arg->add_domain(-due_date);
-    arg->add_domain(-due_date);
-
-    // lateness_var = max(shifted_var, 0).
-    const int lateness_var = new_variable(0, horizon - due_date);
-    const int zero_var = new_variable(0, 0);
-    IntegerArgumentProto* const int_max =
-        cp_model.add_constraints()->mutable_int_max();
-    int_max->set_target(lateness_var);
-    int_max->add_vars(shifted_var);
-    int_max->add_vars(zero_var);
-    return lateness_var;
-  };
+  CpModelBuilder cp_model;
 
   const int num_jobs = problem.jobs_size();
   const int num_machines = problem.machines_size();
@@ -221,27 +106,24 @@ void Solve(const JsspInputProblem& problem) {
   std::vector<int> starts;
   std::vector<int> ends;
 
-  const int makespan = new_variable(0, horizon);
+  Domain all_horizon(0, horizon);
 
-  DecisionStrategyProto* const heuristic = cp_model.add_search_strategy();
-  heuristic->set_domain_reduction_strategy(
-      DecisionStrategyProto::SELECT_MIN_VALUE);
-  heuristic->set_variable_selection_strategy(
-      DecisionStrategyProto::CHOOSE_LOWEST_MIN);
+  const IntVar makespan = cp_model.NewIntVar(all_horizon);
 
-  CpObjectiveProto* const obj = cp_model.mutable_objective();
-
-  std::vector<std::vector<int>> machine_to_intervals(num_machines);
+  std::vector<std::vector<IntervalVar>> machine_to_intervals(num_machines);
   std::vector<std::vector<int>> machine_to_jobs(num_machines);
-  std::vector<std::vector<int>> machine_to_starts(num_machines);
-  std::vector<std::vector<int>> machine_to_ends(num_machines);
-  std::vector<std::vector<int>> machine_to_presences(num_machines);
-  std::vector<int> job_starts(num_jobs);
-  std::vector<int> job_ends(num_jobs);
+  std::vector<std::vector<IntVar>> machine_to_starts(num_machines);
+  std::vector<std::vector<IntVar>> machine_to_ends(num_machines);
+  std::vector<std::vector<BoolVar>> machine_to_presences(num_machines);
+  std::vector<IntVar> job_starts(num_jobs);
+  std::vector<IntVar> job_ends(num_jobs);
+  int64 objective_offset = 0;
+  std::vector<IntVar> objective_vars;
+  std::vector<int64> objective_coeffs;
 
   for (int j = 0; j < num_jobs; ++j) {
     const Job& job = problem.jobs(j);
-    int previous_end = -1;
+    IntVar previous_end;
     const int64 hard_start =
         job.has_earliest_start() ? job.earliest_start().value() : 0L;
     const int64 hard_end =
@@ -260,12 +142,14 @@ void Solve(const JsspInputProblem& problem) {
         min_duration = std::min<int64>(min_duration, task.duration(i));
         max_duration = std::max<int64>(max_duration, task.duration(i));
       }
-      const int start = new_variable(hard_start, hard_end);
-      const int duration = new_variable(min_duration, max_duration);
-      const int end = new_variable(hard_start, hard_end);
-      const int interval = new_interval(start, duration, end);
+      const IntVar start = cp_model.NewIntVar(Domain(hard_start, hard_end));
+      const IntVar duration =
+          cp_model.NewIntVar(Domain(min_duration, max_duration));
+      const IntVar end = cp_model.NewIntVar(Domain(hard_start, hard_end));
+      const IntervalVar interval =
+          cp_model.NewIntervalVar(start, duration, end);
 
-      // Stores starts and ends of jobs for precedences.
+      // Store starts and ends of jobs for precedences.
       if (t == 0) {
         job_starts[j] = start;
       }
@@ -274,13 +158,10 @@ void Solve(const JsspInputProblem& problem) {
       }
 
       // Chain the task belonging to the same job.
-      if (previous_end != -1) {
-        add_precedence(previous_end, start);
+      if (t > 0) {
+        cp_model.AddLessOrEqual(previous_end, start);
       }
       previous_end = end;
-
-      // Add start to the heuristic.
-      heuristic->add_variables(start);
 
       if (num_alternatives == 1) {
         const int m = task.machine(0);
@@ -288,31 +169,34 @@ void Solve(const JsspInputProblem& problem) {
         machine_to_jobs[m].push_back(j);
         machine_to_starts[m].push_back(start);
         machine_to_ends[m].push_back(end);
-        machine_to_presences[m].push_back(new_constant(1));
+        machine_to_presences[m].push_back(cp_model.TrueVar());
         if (task.cost_size() > 0) {
-          obj->set_offset(obj->offset() + task.cost(0));
+          objective_offset += task.cost(0);
         }
       } else {
-        std::vector<int> presences;
+        std::vector<BoolVar> presences;
         for (int a = 0; a < num_alternatives; ++a) {
-          const int presence = new_variable(0, 1);
-          const int local_start = FLAGS_use_optional_variables
-                                      ? new_variable(hard_start, hard_end)
-                                      : start;
-          const int local_duration = new_constant(task.duration(a));
-          const int local_end = FLAGS_use_optional_variables
-                                    ? new_variable(hard_start, hard_end)
-                                    : end;
-          const int local_interval = new_optional_interval(
+          const BoolVar presence = cp_model.NewBoolVar();
+          const IntVar local_start =
+              FLAGS_use_optional_variables
+                  ? cp_model.NewIntVar(Domain(hard_start, hard_end))
+                  : start;
+          const IntVar local_duration = cp_model.NewConstant(task.duration(a));
+          const IntVar local_end =
+              FLAGS_use_optional_variables
+                  ? cp_model.NewIntVar(Domain(hard_start, hard_end))
+                  : end;
+          const IntervalVar local_interval = cp_model.NewOptionalIntervalVar(
               local_start, local_duration, local_end, presence);
 
           // Link local and global variables.
           if (FLAGS_use_optional_variables) {
-            add_conditional_equality(start, local_start, presence);
-            add_conditional_equality(end, local_end, presence);
+            cp_model.AddEquality(start, local_start).OnlyEnforceIf(presence);
+            cp_model.AddEquality(end, local_end).OnlyEnforceIf(presence);
 
             // TODO(user): Experiment with the following implication.
-            add_conditional_equality(duration, local_duration, presence);
+            cp_model.AddEquality(duration, local_duration)
+                .OnlyEnforceIf(presence);
           }
 
           // Record relevant variables for later use.
@@ -325,39 +209,38 @@ void Solve(const JsspInputProblem& problem) {
 
           // Add cost if present.
           if (task.cost_size() > 0) {
-            obj->add_vars(presence);
-            obj->add_coeffs(task.cost(a));
+            objective_vars.push_back(presence);
+            objective_coeffs.push_back(task.cost(a));
           }
           // Collect presence variables.
           presences.push_back(presence);
         }
-        add_sum_equal_one(presences);
+        // Exactly one alternative interval is present.
+        cp_model.AddEquality(LinearExpr::BooleanSum(presences), 1);
       }
     }
 
     // The makespan will be greater than the end of each job.
     if (problem.makespan_cost_per_time_unit() != 0L) {
-      add_precedence(previous_end, makespan);
+      cp_model.AddLessOrEqual(previous_end, makespan);
     }
 
     // Earliness costs are not supported.
     CHECK_EQ(0L, job.earliness_cost_per_time_unit());
     // Lateness cost.
     if (job.lateness_cost_per_time_unit() != 0L) {
-      const int lateness_var =
-          new_lateness_var(previous_end, job.late_due_date(), horizon);
-      obj->add_vars(lateness_var);
-      obj->add_coeffs(job.lateness_cost_per_time_unit());
+      const IntVar lateness_var = cp_model.NewIntVar(all_horizon);
+      cp_model.AddGreaterOrEqual(
+          lateness_var,
+          LinearExpr(previous_end).AddConstant(-job.late_due_date()));
+      objective_vars.push_back(lateness_var);
+      objective_coeffs.push_back(job.lateness_cost_per_time_unit());
     }
   }
 
   // Add one no_overlap constraint per machine.
   for (int m = 0; m < num_machines; ++m) {
-    NoOverlapConstraintProto* const no_overlap =
-        cp_model.add_constraints()->mutable_no_overlap();
-    for (const int i : machine_to_intervals[m]) {
-      no_overlap->add_intervals(i);
-    }
+    cp_model.AddNoOverlap(machine_to_intervals[m]);
 
     if (problem.machines(m).has_transition_time_matrix()) {
       const TransitionTimeMatrix& transitions =
@@ -366,33 +249,29 @@ void Solve(const JsspInputProblem& problem) {
 
       // Create circuit constraint on a machine.
       // Node 0 and num_intervals + 1 are source and sink.
-      CircuitConstraintProto* const circuit =
-          cp_model.add_constraints()->mutable_circuit();
+      CircuitConstraint circuit = cp_model.AddCircuitConstraint();
       for (int i = 0; i < num_intervals; ++i) {
         const int job_i = machine_to_jobs[m][i];
         // Source to nodes.
-        circuit->add_tails(0);
-        circuit->add_heads(i + 1);
-        circuit->add_literals(new_variable(0, 1));
+        circuit.AddArc(0, i + 1, cp_model.NewBoolVar());
         // Node to sink.
-        circuit->add_tails(i + 1);
-        circuit->add_heads(0);
-        circuit->add_literals(new_variable(0, 1));
+        circuit.AddArc(i + 1, 0, cp_model.NewBoolVar());
         // Node to node.
         for (int j = 0; j < num_intervals; ++j) {
-          circuit->add_tails(i + 1);
-          circuit->add_heads(j + 1);
           if (i == j) {
-            circuit->add_literals(NegatedRef(machine_to_presences[m][i]));
+            circuit.AddArc(i + 1, i + 1, Not(machine_to_presences[m][i]));
           } else {
             const int job_j = machine_to_jobs[m][j];
             const int64 transition =
                 transitions.transition_time(job_i * num_jobs + job_j);
-            const int lit = new_variable(0, 1);
-            circuit->add_literals(lit);
-            add_conditional_precedence_with_offset(machine_to_ends[m][i],
-                                                   machine_to_starts[m][j], lit,
-                                                   transition);
+            const BoolVar lit = cp_model.NewBoolVar();
+            const IntVar start = machine_to_starts[m][j];
+            const IntVar end = machine_to_ends[m][i];
+            circuit.AddArc(i + 1, j + 1, lit);
+            // Push the new start with an extra transition.
+            cp_model
+                .AddLessOrEqual(LinearExpr(end).AddConstant(transition), start)
+                .OnlyEnforceIf(lit);
           }
         }
       }
@@ -401,34 +280,42 @@ void Solve(const JsspInputProblem& problem) {
 
   // Add job precedences.
   for (const JobPrecedence& precedence : problem.precedences()) {
-    add_precedence_with_delay(job_ends[precedence.first_job_index()],
-                              job_starts[precedence.second_job_index()],
-                              precedence.min_delay());
+    const IntVar start = job_starts[precedence.second_job_index()];
+    const IntVar end = job_ends[precedence.first_job_index()];
+    cp_model.AddLessOrEqual(LinearExpr(end).AddConstant(precedence.min_delay()),
+                            start);
   }
 
   // Add objective.
   if (problem.makespan_cost_per_time_unit() != 0L) {
-    obj->add_coeffs(problem.makespan_cost_per_time_unit());
-    obj->add_vars(makespan);
+    objective_coeffs.push_back(problem.makespan_cost_per_time_unit());
+    objective_vars.push_back(makespan);
   }
+  cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs)
+                        .AddConstant(objective_offset));
   if (problem.has_scaling_factor()) {
-    obj->set_scaling_factor(problem.scaling_factor().value());
+    cp_model.SetObjectiveScaling(problem.scaling_factor().value());
   }
+
+  // Decision strategy.
+  cp_model.AddDecisionStrategy(job_starts,
+                               DecisionStrategyProto::CHOOSE_LOWEST_MIN,
+                               DecisionStrategyProto::SELECT_MIN_VALUE);
 
   LOG(INFO) << "#machines:" << num_machines;
   LOG(INFO) << "#jobs:" << num_jobs;
   LOG(INFO) << "horizon:" << horizon;
 
   if (FLAGS_display_sat_model) {
-    LOG(INFO) << cp_model.DebugString();
+    LOG(INFO) << cp_model.Proto().DebugString();
   }
 
-  LOG(INFO) << CpModelStats(cp_model);
+  LOG(INFO) << CpModelStats(cp_model.Proto());
 
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
 
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 

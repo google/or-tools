@@ -686,6 +686,16 @@ void CpModelBuilder::Maximize(const LinearExpr& expr) {
   cp_model_.mutable_objective()->set_scaling_factor(-1.0);
 }
 
+void CpModelBuilder::SetObjectiveScaling(double scaling) {
+  CHECK(cp_model_.has_objective());
+  const double current_scaling = cp_model_.objective().scaling_factor();
+  if (current_scaling >= 0.0) {
+    cp_model_.mutable_objective()->set_scaling_factor(scaling);
+  } else {
+    cp_model_.mutable_objective()->set_scaling_factor(-scaling);
+  }
+}
+
 void CpModelBuilder::AddDecisionStrategy(
     absl::Span<IntVar> variables,
     DecisionStrategyProto::VariableSelectionStrategy var_strategy,
@@ -725,6 +735,22 @@ int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr) {
     result += r.solution(expr.variables()[i].index_) * expr.coefficients()[i];
   }
   return result;
+}
+
+int64 SolutionIntegerMin(const CpSolverResponse& r, IntVar x) {
+  if (r.solution_size() > 0) {
+    return r.solution(x.index_);
+  } else {
+    return r.solution_lower_bounds(x.index_);
+  }
+}
+
+int64 SolutionIntegerMax(const CpSolverResponse& r, IntVar x) {
+  if (r.solution_size() > 0) {
+    return r.solution(x.index_);
+  } else {
+    return r.solution_upper_bounds(x.index_);
+  }
 }
 
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x) {

@@ -145,6 +145,8 @@ class IntVar {
   friend class ReservoirConstraint;
   friend int64 SolutionIntegerValue(const CpSolverResponse& r,
                                     const LinearExpr& expr);
+  friend int64 SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
+  friend int64 SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
 
   IntVar(int index, CpModelProto* cp_model);
 
@@ -628,6 +630,10 @@ class CpModelBuilder {
   // Adds a linear maximization objective.
   void Maximize(const LinearExpr& expr);
 
+  // Sets scaling of the objective. (must be called after Minimize() of
+  // Maximize()). 'scaling' must be > 0.0.
+  void SetObjectiveScaling(double scaling);
+
   // Adds a decision strategy on a list of integer variables.
   void AddDecisionStrategy(
       absl::Span<IntVar> variables,
@@ -676,6 +682,12 @@ CpSolverResponse SolveWithModel(CpModelBuilder cp_model, Model* model);
 
 // Evaluates the value of an linear expression in a solver response.
 int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
+
+// Returns the min of an integer variable in a solution.
+int64 SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
+
+// Returns the max of an integer variable in a solution.
+int64 SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
 
 // Returns the value of a Boolean literal (a Boolean variable or its negation)
 // in a solver response.

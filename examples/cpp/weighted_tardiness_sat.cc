@@ -23,9 +23,9 @@
 #include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
 #include "ortools/base/strutil.h"
+#include "ortools/base/strtoint.h"
 #include "ortools/base/timer.h"
-#include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
 DEFINE_string(input, "examples/data/weighted_tardiness/wt40.txt",
@@ -39,8 +39,9 @@ namespace operations_research {
 namespace sat {
 
 // Solve a single machine problem with weighted tardiness cost.
-void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
-           const std::vector<int>& weights) {
+void Solve(const std::vector<int64>& durations,
+           const std::vector<int64>& due_dates,
+           const std::vector<int64>& weights) {
   const int num_tasks = durations.size();
   CHECK_EQ(due_dates.size(), num_tasks);
   CHECK_EQ(weights.size(), num_tasks);
@@ -56,14 +57,14 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   // An simple heuristic solution: We choose the tasks from last to first, and
   // always take the one with smallest cost.
   std::vector<bool> is_taken(num_tasks, false);
-  int heuristic_bound = 0;
-  int end = horizon;
+  int64 heuristic_bound = 0;
+  int64 end = horizon;
   for (int i = 0; i < num_tasks; ++i) {
     int next_task = -1;
     int64 next_cost;
     for (int j = 0; j < num_tasks; ++j) {
       if (is_taken[j]) continue;
-      const int64 cost = weights[j] * std::max(0, end - due_dates[j]);
+      const int64 cost = weights[j] * std::max(0LL, end - due_dates[j]);
       if (next_task == -1 || cost < next_cost) {
         next_task = j;
         next_cost = cost;
@@ -79,48 +80,29 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   LOG(INFO) << "Trival cost bound = " << heuristic_bound;
 
   // Create the model.
-  CpModelProto cp_model;
-  cp_model.set_name("weighted_tardiness");
-  auto new_variable = [&cp_model](int64 lb, int64 ub) {
-    const int index = cp_model.variables_size();
-    IntegerVariableProto* var = cp_model.add_variables();
-    var->add_domain(lb);
-    var->add_domain(ub);
-    return index;
-  };
-  auto new_interval = [&cp_model](int start, int duration, int end) {
-    const int index = cp_model.constraints_size();
-    ConstraintProto* ct = cp_model.add_constraints();
-    ct->mutable_interval()->set_start(start);
-    ct->mutable_interval()->set_size(duration);
-    ct->mutable_interval()->set_end(end);
-    return index;
-  };
+  CpModelBuilder cp_model;
 
-  std::vector<int> tasks_interval(num_tasks);
-  std::vector<int> tasks_start(num_tasks);
-  std::vector<int> tasks_duration(num_tasks);
-  std::vector<int> tasks_end(num_tasks);
-  std::vector<int> tardiness_vars(num_tasks);
+  std::vector<IntervalVar> task_intervals(num_tasks);
+  std::vector<IntVar> task_starts(num_tasks);
+  std::vector<IntVar> task_durations(num_tasks);
+  std::vector<IntVar> task_ends(num_tasks);
+  std::vector<IntVar> tardiness_vars(num_tasks);
+
   for (int i = 0; i < num_tasks; ++i) {
-    tasks_start[i] = new_variable(0, horizon - durations[i]);
-    tasks_duration[i] = new_variable(durations[i], durations[i]);
-    tasks_end[i] = new_variable(durations[i], horizon);
-    tasks_interval[i] =
-        new_interval(tasks_start[i], tasks_duration[i], tasks_end[i]);
+    task_starts[i] = cp_model.NewIntVar(Domain(0, horizon - durations[i]));
+    task_durations[i] = cp_model.NewConstant(durations[i]);
+    task_ends[i] = cp_model.NewIntVar(Domain(durations[i], horizon));
+    task_intervals[i] = cp_model.NewIntervalVar(
+        task_starts[i], task_durations[i], task_ends[i]);
     if (due_dates[i] == 0) {
-      tardiness_vars[i] = tasks_end[i];
+      tardiness_vars[i] = task_ends[i];
     } else {
-      tardiness_vars[i] = new_variable(0, std::max(0, horizon - due_dates[i]));
+      tardiness_vars[i] =
+          cp_model.NewIntVar(Domain(0, std::max(0LL, horizon - due_dates[i])));
 
       // tardiness_vars >= end - due_date
-      LinearConstraintProto* arg = cp_model.add_constraints()->mutable_linear();
-      arg->add_vars(tardiness_vars[i]);
-      arg->add_coeffs(1);
-      arg->add_vars(tasks_end[i]);
-      arg->add_coeffs(-1);
-      arg->add_domain(-due_dates[i]);
-      arg->add_domain(kint64max);
+      cp_model.AddGreaterOrEqual(tardiness_vars[i],
+                                 LinearExpr(end).AddConstant(-due_dates[i]));
     }
   }
 
@@ -128,27 +110,11 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   // consequence, in the values returned by the solution observer for the
   // non-fully instantiated variable will be the variable lower bounds after
   // propagation.
-  {
-    DecisionStrategyProto* strategy = cp_model.add_search_strategy();
-    for (int i = 0; i < num_tasks; ++i) strategy->add_variables(tasks_start[i]);
+  cp_model.AddDecisionStrategy(task_starts,
+                               DecisionStrategyProto::CHOOSE_HIGHEST_MAX,
+                               DecisionStrategyProto::SELECT_MAX_VALUE);
 
-    // Experiments showed that the heuristic of choosing first the task that
-    // comes last works a lot better. This make sense because these are the task
-    // with the most influence on the cost.
-    strategy->set_variable_selection_strategy(
-        DecisionStrategyProto::CHOOSE_HIGHEST_MAX);
-    strategy->set_domain_reduction_strategy(
-        DecisionStrategyProto::SELECT_MAX_VALUE);
-  }
-
-  // Disjunction between all the task intervals
-  {
-    ConstraintProto* ct = cp_model.add_constraints();
-    NoOverlapConstraintProto* arg = ct->mutable_no_overlap();
-    for (const int interval : tasks_interval) {
-      arg->add_intervals(interval);
-    }
-  }
+  cp_model.AddNoOverlap(task_intervals);
 
   // TODO(user): We can't set an objective upper bound with the current cp_model
   // interface, so we can't use heuristic or FLAGS_upper_bound here. The best is
@@ -163,11 +129,7 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   //
   // Note however than for big problem, this will drastically augment the time
   // to get a first feasible solution (but then the heuristic gave one to us).
-  CpObjectiveProto* objective = cp_model.mutable_objective();
-  for (int i = 0; i < num_tasks; ++i) {
-    objective->add_vars(tardiness_vars[i]);
-    objective->add_coeffs(weights[i]);
-  }
+  cp_model.Minimize(LinearExpr::ScalProd(tardiness_vars, weights));
 
   // Optional preprocessing: add precedences that don't change the optimal
   // solution value.
@@ -190,14 +152,7 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
         }
 
         ++num_added_precedences;
-        ConstraintProto* ct = cp_model.add_constraints();
-        LinearConstraintProto* arg = ct->mutable_linear();
-        arg->add_vars(tasks_start[j]);
-        arg->add_coeffs(1);
-        arg->add_vars(tasks_end[i]);
-        arg->add_coeffs(-1);
-        arg->add_domain(0);
-        arg->add_domain(kint64max);
+        cp_model.AddLessOrEqual(task_ends[i], task_starts[j]);
       }
     }
   }
@@ -215,25 +170,11 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
     // variables. This is because in the core based approach, the tardiness
     // variable might be fixed before the end date, and we just have a >=
     // relation.
-    auto min_value = [&r](int v) {
-      if (r.solution_size() > 0) {
-        return r.solution(v);
-      } else {
-        return r.solution_lower_bounds(v);
-      }
-    };
-    auto max_value = [&r](int v) {
-      if (r.solution_size() > 0) {
-        return r.solution(v);
-      } else {
-        return r.solution_upper_bounds(v);
-      }
-    };
 
     int64 objective = 0;
     for (int i = 0; i < num_tasks; ++i) {
-      CHECK_EQ(min_value(tasks_end[i]), max_value(tasks_end[i]));
-      const int64 end = min_value(tasks_end[i]);
+      const int64 end = SolutionIntegerMin(r, task_ends[i]);
+      CHECK_EQ(end, SolutionIntegerMax(r, task_ends[i]));
       objective += weights[i] * std::max<int64>(0ll, end - due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
@@ -242,29 +183,32 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
     std::vector<int> sorted_tasks(num_tasks);
     std::iota(sorted_tasks.begin(), sorted_tasks.end(), 0);
     std::sort(sorted_tasks.begin(), sorted_tasks.end(), [&](int v1, int v2) {
-      CHECK_EQ(min_value(tasks_start[v1]), max_value(tasks_start[v1]));
-      CHECK_EQ(min_value(tasks_start[v2]), max_value(tasks_start[v2]));
-      return min_value(tasks_start[v1]) < min_value(tasks_start[v2]);
+      CHECK_EQ(SolutionIntegerMin(r, task_starts[v1]),
+               SolutionIntegerMax(r, task_starts[v1]));
+      CHECK_EQ(SolutionIntegerMin(r, task_starts[v2]),
+               SolutionIntegerMax(r, task_starts[v2]));
+      return SolutionIntegerMin(r, task_starts[v1]) <
+             SolutionIntegerMin(r, task_starts[v2]);
     });
     std::string solution = "0";
     int end = 0;
     for (const int i : sorted_tasks) {
-      const int64 cost = weights[i] * min_value(tardiness_vars[i]);
+      const int64 cost = weights[i] * SolutionIntegerMin(r, tardiness_vars[i]);
       absl::StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
         absl::StrAppend(&solution, "\033[1;31m(+", cost, ") \033[0m");
       }
-      absl::StrAppend(&solution, "|", min_value(tasks_end[i]));
-      CHECK_EQ(end, min_value(tasks_start[i]));
+      absl::StrAppend(&solution, "|", SolutionIntegerMin(r, task_ends[i]));
+      CHECK_EQ(end, SolutionIntegerMin(r, task_starts[i]));
       end += durations[i];
-      CHECK_EQ(end, min_value(tasks_end[i]));
+      CHECK_EQ(end, SolutionIntegerMin(r, task_ends[i]));
     }
     LOG(INFO) << "solution: " << solution;
   }));
 
-  LOG(INFO) << CpModelStats(cp_model);
-  const CpSolverResponse response = SolveCpModel(cp_model, &model);
+  // Solve.
+  const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
@@ -274,8 +218,7 @@ void ParseAndSolve() {
   for (const std::string& line : FileLines(FLAGS_input)) {
     entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
     for (const std::string& entry : entries) {
-      numbers.push_back(0);
-      strings::safe_strto32(entry, &numbers.back());
+      numbers.push_back(atoi32(entry));
     }
   }
 
@@ -289,11 +232,11 @@ void ParseAndSolve() {
 
   // The order in a wt file is: duration, tardiness weights and then due_dates.
   int index = (FLAGS_n - 1) * instance_size;
-  std::vector<int> durations;
+  std::vector<int64> durations;
   for (int j = 0; j < FLAGS_size; ++j) durations.push_back(numbers[index++]);
-  std::vector<int> weights;
+  std::vector<int64> weights;
   for (int j = 0; j < FLAGS_size; ++j) weights.push_back(numbers[index++]);
-  std::vector<int> due_dates;
+  std::vector<int64> due_dates;
   for (int j = 0; j < FLAGS_size; ++j) due_dates.push_back(numbers[index++]);
 
   Solve(durations, due_dates, weights);
