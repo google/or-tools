@@ -532,11 +532,13 @@ test_python_samples: \
  rpy_code_sample \
  rpy_interval_sample \
  rpy_literal_sample \
+ rpy_minimal_jobshop \
  rpy_no_overlap_sample \
  rpy_optional_interval_sample \
  rpy_rabbits_and_pheasants \
  rpy_ranking_sample \
  rpy_reified_sample \
+ rpy_simple_lp_program \
  rpy_simple_solve \
  rpy_solve_all_solutions \
  rpy_solve_with_intermediate_solutions \
