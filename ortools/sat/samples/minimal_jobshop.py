@@ -29,20 +29,20 @@ def main():
   # [END model]
 
   # [START data]
-  machines_count = 3
-  jobs_count = 3
-  all_machines = range(0, machines_count)
-  all_jobs = range(0, jobs_count)
-  # Define data.
-  machines = [[0, 1, 2], [0, 2, 1], [1, 2]]
+  jobs_data = [  # task = (machine_id, processing_time).
+      [(0, 3), (1, 2), (2, 2)],  # Job0
+      [(0, 2), (2, 1), (1, 4)],  # Job1
+      [(1, 4), (2, 3)]  # Job2
+  ]
 
-  processing_times = [[3, 2, 2], [2, 1, 4], [4, 3]]
+  machines_count = 1 + max(task[0] for job in jobs_data for task in job)
+  all_machines = range(machines_count)
+  jobs_count = len(jobs_data)
+  all_jobs = range(jobs_count)
   # [END data]
 
   # Compute horizon.
-  horizon = 0
-  for job in all_jobs:
-    horizon += sum(processing_times[job])
+  horizon = sum(task[1] for job in jobs_data for task in job)
 
   # [START variables]
   task_type = collections.namedtuple('task_type', 'start end interval')
@@ -52,13 +52,13 @@ def main():
   # Create jobs.
   all_tasks = {}
   for job in all_jobs:
-    for index in range(0, len(machines[job])):
-      start_var = model.NewIntVar(0, horizon, 'start_%i_%i' % (job, index))
-      duration = processing_times[job][index]
-      end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (job, index))
+    for task_id, task in enumerate(jobs_data[job]):
+      start_var = model.NewIntVar(0, horizon, 'start_%i_%i' % (job, task_id))
+      duration = task[1]
+      end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (job, task_id))
       interval_var = model.NewIntervalVar(start_var, duration, end_var,
-                                          'interval_%i_%i' % (job, index))
-      all_tasks[(job, index)] = task_type(
+                                          'interval_%i_%i' % (job, task_id))
+      all_tasks[job, task_id] = task_type(
           start=start_var, end=end_var, interval=interval_var)
   # [END variables]
 
@@ -67,16 +67,16 @@ def main():
   for machine in all_machines:
     intervals = []
     for job in all_jobs:
-      for index in range(0, len(machines[job])):
-        if machines[job][index] == machine:
-          intervals.append(all_tasks[(job, index)].interval)
+      for task_id, task in enumerate(jobs_data[job]):
+        if task[0] == machine:
+          intervals.append(all_tasks[job, task_id].interval)
     model.AddNoOverlap(intervals)
 
   # Add precedence contraints.
   for job in all_jobs:
-    for index in range(0, len(machines[job]) - 1):
+    for task_id in range(0, len(jobs_data[job]) - 1):
       model.Add(
-          all_tasks[(job, index + 1)].start >= all_tasks[(job, index)].end)
+          all_tasks[job, task_id + 1].start >= all_tasks[job, task_id].end)
   # [END constraints]
 
   # [START objective]
@@ -84,7 +84,7 @@ def main():
   obj_var = model.NewIntVar(0, horizon, 'makespan')
   model.AddMaxEquality(
       obj_var,
-      [all_tasks[(job, len(machines[job]) - 1)].end for job in all_jobs])
+      [all_tasks[(job, len(jobs_data[job]) - 1)].end for job in all_jobs])
   model.Minimize(obj_var)
   # [END objective]
 
@@ -101,15 +101,15 @@ def main():
     print()
 
     # Create one list of assigned tasks per machine.
-    assigned_jobs = [[] for _ in range(machines_count)]
+    assigned_jobs = [[] for _ in all_machines]
     for job in all_jobs:
-      for index in range(len(machines[job])):
-        machine = machines[job][index]
+      for task_id, task in enumerate(jobs_data[job]):
+        machine = task[0]
         assigned_jobs[machine].append(
             assigned_task_type(
-                start=solver.Value(all_tasks[(job, index)].start),
+                start=solver.Value(all_tasks[job, task_id].start),
                 job=job,
-                index=index))
+                index=task_id))
 
     disp_col_width = 10
     sol_line = ''
@@ -128,7 +128,7 @@ def main():
         # Add spaces to output to align columns.
         sol_line_tasks += name + ' ' * (disp_col_width - len(name))
         start = assigned_task.start
-        duration = processing_times[assigned_task.job][assigned_task.index]
+        duration = jobs_data[assigned_task.job][assigned_task.index][1]
 
         sol_tmp = '[%i,%i]' % (start, start + duration)
         # Add spaces to output to align columns.
