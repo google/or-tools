@@ -489,6 +489,9 @@ rpy_%: $(CONTRIB_EX_DIR)/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Ssat$Ssamples$S$*.py $(ARGS)
 
+rpy_%: ortools/linear_solver/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Slinear_solver$Ssamples$S$*.py $(ARGS)
+
 .PHONY: check_python_examples # Build and Run few Python Examples (located in examples/python and examples/contrib)
 check_python_examples: \
  rpy_simple_program \

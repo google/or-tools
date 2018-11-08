@@ -1,9 +1,12 @@
 from __future__ import print_function
 
+import collections
+
 # Import Python wrapper for or-tools CP-SAT solver.
 from ortools.sat.python import cp_model
 
 def main():
+  """Minimal jobshop problem."""
   # Create the model.
   model = cp_model.CpModel()
 
@@ -12,92 +15,100 @@ def main():
   all_machines = range(0, machines_count)
   all_jobs = range(0, jobs_count)
   # Define data.
-  machines = [[0, 1, 2],
-              [0, 2, 1],
-              [1, 2]]
+  machines = [[0, 1, 2], [0, 2, 1], [1, 2]]
 
-  processing_times = [[3, 2, 2],
-                      [2, 1, 4],
-                      [4, 3]]
-
+  processing_times = [[3, 2, 2], [2, 1, 4], [4, 3]]
   # Computes horizon.
   horizon = 0
-  for i in all_jobs:
-    horizon += sum(processing_times[i])
+  for job in all_jobs:
+    horizon += sum(processing_times[job])
+
+  task_type = collections.namedtuple('task_type', 'start end interval')
+  assigned_task_type = collections.namedtuple('assigned_task_type',
+                                              'start job index')
 
   # Creates jobs.
   all_tasks = {}
-  all_starts = {}
-  all_ends = {}
-  for i in all_jobs:
-    for j in range(0, len(machines[i])):
-      suffix = '%i_%i' % (i, j)
-      start = model.NewIntVar(0, horizon, 'start' + suffix)
-      end = model.NewIntVar(0, horizon, 'end' + suffix)
-      interval = model.NewIntervalVar(start, processing_times[i][j], end,
-                                      'Job' + suffix)
-      all_starts[i, j] = start
-      all_ends[i, j] = end
-      all_tasks[i, j] = interval
+  for job in all_jobs:
+    for index in range(0, len(machines[job])):
+      start_var = model.NewIntVar(0, horizon, 'start_%i_%i' % (job, index))
+      duration = processing_times[job][index]
+      end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (job, index))
+      interval_var = model.NewIntervalVar(start_var, duration, end_var,
+                                          'interval_%i_%i' % (job, index))
+      all_tasks[(job, index)] = task_type(
+          start=start_var, end=end_var, interval=interval_var)
 
   # Creates sequence variables and add disjunctive constraints.
-  machines_jobs = {}
-  for i in all_machines:
-
-    machines_jobs[i] = []
-    for j in all_jobs:
-      for k in range(0, len(machines[j])):
-        if machines[j][k] == i:
-          machines_jobs[i].append(all_tasks[j, k])
-    model.AddNoOverlap(machines_jobs[i])
+  for machine in all_machines:
+    intervals = []
+    for job in all_jobs:
+      for index in range(0, len(machines[job])):
+        if machines[job][index] == machine:
+          intervals.append(all_tasks[(job, index)].interval)
+    model.AddNoOverlap(intervals)
 
   # Add precedence contraints.
-  for i in all_jobs:
-    for j in range(0, len(machines[i]) - 1):
-      model.Add(all_starts[i, j + 1] >= all_ends[i, j])
+  for job in all_jobs:
+    for index in range(0, len(machines[job]) - 1):
+      model.Add(
+          all_tasks[(job, index + 1)].start >= all_tasks[(job, index)].end)
 
-  # Set the objective.
-  makespan = model.NewIntVar(0, horizon, 'makespan')
-  model.AddMaxEquality(makespan,
-                       [all_ends[i, len(machines[i]) - 1] for i in all_jobs])
-  model.Minimize(makespan)
+  # Makespan objective.
+  obj_var = model.NewIntVar(0, horizon, 'makespan')
+  model.AddMaxEquality(
+      obj_var,
+      [all_tasks[(job, len(machines[job]) - 1)].end for job in all_jobs])
+  model.Minimize(obj_var)
 
   # Solve model.
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  # Output solution.
-  disp_col_width = 10
   if status == cp_model.OPTIMAL:
-    print("\nOptimal Schedule Length:", solver.ObjectiveValue(), "\n")
-    sol_line = ""
-    sol_line_tasks = ""
-    print("Optimal Schedule", "\n")
+    # Print out makespan.
+    print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
+    print()
 
-    for i in all_machines:
-      jobs =
-      sol_line += "Machine " + str(i) + ": "
-      sol_line_tasks += "Machine " + str(i) + ": "
-      sequence = collector.ForwardSequence(0, seq)
-      seq_size = len(sequence)
+    # Create one list of assigned tasks per machine.
+    assigned_jobs = [[] for _ in range(machines_count)]
+    for job in all_jobs:
+      for index in range(len(machines[job])):
+        machine = machines[job][index]
+        assigned_jobs[machine].append(
+            assigned_task_type(
+                start=solver.Value(all_tasks[(job, index)].start),
+                job=job,
+                index=index))
 
-      for j in range(0, seq_size):
-        t = seq.Interval(sequence[j]);
-         # Add spaces to output to align columns.
-        sol_line_tasks +=  t.Name() + " " * (disp_col_width - len(t.Name()))
+    disp_col_width = 10
+    sol_line = ''
+    sol_line_tasks = ''
 
-      for j in range(0, seq_size):
-        t = seq.Interval(sequence[j]);
-        sol_tmp = "[" + str(collector.Value(0, t.StartExpr().Var())) + ","
-        sol_tmp += str(collector.Value(0, t.EndExpr().Var())) + "] "
+    print('Optimal Schedule', '\n')
+
+    for machine in all_machines:
+      # Sort by starting time.
+      assigned_jobs[machine].sort()
+      sol_line += 'Machine ' + str(machine) + ': '
+      sol_line_tasks += 'Machine ' + str(machine) + ': '
+
+      for assigned_task in assigned_jobs[machine]:
+        name = 'job_%i_%i' % (assigned_task.job, assigned_task.index)
         # Add spaces to output to align columns.
-        sol_line += sol_tmp + " " * (disp_col_width - len(sol_tmp))
+        sol_line_tasks += name + ' ' * (disp_col_width - len(name))
+        start = assigned_task.start
+        duration = processing_times[assigned_task.job][assigned_task.index]
 
-      sol_line += "\n"
-      sol_line_tasks += "\n"
+        sol_tmp = '[%i,%i]' % (start, start + duration)
+        # Add spaces to output to align columns.
+        sol_line += sol_tmp + ' ' * (disp_col_width - len(sol_tmp))
+
+      sol_line += '\n'
+      sol_line_tasks += '\n'
 
     print(sol_line_tasks)
-    print("Time Intervals for Tasks\n")
+    print('Time Intervals for task_types\n')
     print(sol_line)
 
 
