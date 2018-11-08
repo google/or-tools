@@ -9,12 +9,12 @@ keep up-to-date with the latest frameworks.
 Wherever you have or-tools installed, be sure to `PackageReference` the `Google.OrTools`
 from the project file.
 
-## Execution
+# Execution
 Running the examples will involve building them, then running them.   
 You can run the following command:
 ```shell
-dotnet build examples/dotnet/<example>.csproj
-dotnet run --no-build --project examples/dotnet/<example>.csproj
+dotnet build <example>.csproj
+dotnet run --no-build --project <example>.csproj
 ```
 
 # Note on Google.OrTools.FSharp
@@ -34,7 +34,7 @@ Two input formats are allowed:
 Running the examples will involve building them, then running them.   
 You can run the following command:
 ```shell
-dotnet build examples/dotnet/<example>.fsproj
-dotnet run --no-build --project examples/dotnet/<example>.fsproj
+dotnet build <example>.fsproj
+dotnet run --no-build --project <example>.fsproj
 ```
 
