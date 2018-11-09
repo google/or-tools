@@ -90,7 +90,7 @@ done
 ###############
 ##  Samples  ##
 ###############
-for FILE in ortools/sat/samples/*.cs; do
+for FILE in ortools/*/samples/*.cs; do
   # if no files found do nothing
   [ -e "$FILE" ] || continue
   PROJ="${FILE%.cs}.csproj";
