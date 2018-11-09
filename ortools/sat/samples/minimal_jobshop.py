@@ -138,7 +138,7 @@ def main():
       sol_line_tasks += '\n'
 
     print(sol_line_tasks)
-    print('Time Intervals for task_types\n')
+    print('Task Time Intervals\n')
     print(sol_line)
     # [END solution_printing]
 

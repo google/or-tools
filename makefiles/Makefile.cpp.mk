@@ -29,8 +29,8 @@ endif
 
 # Main target
 .PHONY: cc # Build C++ OR-Tools library.
-.PHONY: check_cc # Quick check only running few C++ OR-Tools examples.
-.PHONY: test_cc # Run all C++ OR-Tools examples.
+.PHONY: check_cc # Quick check only running C++ OR-Tools samples targets.
+.PHONY: test_cc # Run all C++ OR-Tools test targets.
 .PHONY: test_fz # Run all Flatzinc OR-Tools examples.
 ifndef HAS_CCC
 cc:
@@ -41,13 +41,9 @@ test_cc: cc
 test_fz: cc
 else
 cc: $(OR_TOOLS_LIBS)
-check_cc: check_cc_examples
-test_cc: \
- test_cc_tests \
- test_cc_samples \
- test_cc_examples
-test_fz: \
- test_fz_examples
+check_cc: check_cc_pimpl
+test_cc: test_cc_pimpl
+test_fz: test_fz_pimpl
 BUILT_LANGUAGES += C++
 endif
 
@@ -407,6 +403,9 @@ $(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 $(OBJ_DIR)/%.$O: $(CONTRIB_EX_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CONTRIB_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
+$(OBJ_DIR)/%.$O: ortools/linear_solver/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c ortools$Slinear_solver$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
 $(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
@@ -416,22 +415,33 @@ $(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
 rcc_%: $(BIN_DIR)/%$E FORCE
 	$(BIN_DIR)$S$*$E $(ARGS)
 
-.PHONY: test_cc_tests # Build and Run all C++ tests (located in examples/tests)
-test_cc_tests: \
- rcc_ac4r_table_test \
- rcc_boolean_test \
- rcc_bug_fz1 \
- rcc_cpp11_test \
- rcc_forbidden_intervals_test \
- rcc_gcc_test \
- rcc_issue57 \
- rcc_min_max_test \
- rcc_visitor_test
-#	$(MAKE) rcc_issue173 # error: too long
+.PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
+test_cc_sat_samples: \
+ rcc_binpacking_problem \
+ rcc_bool_or_sample \
+ rcc_channeling_sample \
+ rcc_code_sample \
+ rcc_interval_sample \
+ rcc_literal_sample \
+ rcc_no_overlap_sample \
+ rcc_optional_interval_sample \
+ rcc_rabbits_and_pheasants \
+ rcc_ranking_sample \
+ rcc_reified_sample \
+ rcc_simple_solve \
+ rcc_solve_all_solutions \
+ rcc_solve_with_intermediate_solutions \
+ rcc_solve_with_time_limit \
+ rcc_stop_after_n_solutions
 
-.PHONY: check_cc_examples # Build and Run few C++ Examples (located in examples/cpp)
-check_cc_examples: \
- rcc_simple_program \
+.PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
+test_cc_linear_solver_samples: \
+ rcc_simple_lp_program
+
+.PHONY: check_cc_pimpl
+check_cc_pimpl: \
+ test_cc_sat_samples \
+ test_cc_linear_solver_samples \
  rcc_linear_programming \
  rcc_stigler_diet \
  rcc_constraint_programming_cp \
@@ -445,8 +455,24 @@ check_cc_examples: \
  rcc_nurses_cp \
  rcc_job_shop_cp ;
 
-.PHONY: test_cc_examples # Build and Run all C++ Examples (located in examples/cpp)
-test_cc_examples: check_cc_examples \
+.PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
+test_cc_tests: \
+ rcc_ac4r_table_test \
+ rcc_boolean_test \
+ rcc_bug_fz1 \
+ rcc_cpp11_test \
+ rcc_forbidden_intervals_test \
+ rcc_gcc_test \
+ rcc_issue57 \
+ rcc_min_max_test \
+ rcc_visitor_test
+#	$(MAKE) rcc_issue173 # error: too long
+
+.PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in ortools/examples/contrib)
+test_cc_contrib: ;
+
+.PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
+test_cc_cpp: \
  rcc_costas_array \
  rcc_cryptarithm \
  rcc_cvrp_disjoint_tw \
@@ -502,27 +528,15 @@ test_cc_examples: check_cc_examples \
 #	$(MAKE) run SOURCE=examples/cpp/shift_minimization_sat.cc  # Port to new API.
 #	$(MAKE) run SOURCE=examples/cpp/solve.cc  # Need data file
 
-.PHONY: test_cc_samples # Build and Run all C++ Samples (located in ortools/*/samples)
-test_cc_samples: \
- rcc_binpacking_problem \
- rcc_bool_or_sample \
- rcc_channeling_sample \
- rcc_code_sample \
- rcc_interval_sample \
- rcc_literal_sample \
- rcc_no_overlap_sample \
- rcc_optional_interval_sample \
- rcc_rabbits_and_pheasants \
- rcc_ranking_sample \
- rcc_reified_sample \
- rcc_simple_solve \
- rcc_solve_all_solutions \
- rcc_solve_with_intermediate_solutions \
- rcc_solve_with_time_limit \
- rcc_stop_after_n_solutions
+.PHONY: test_cc_pimpl
+test_cc_pimpl: \
+ check_cc_pimpl \
+ test_cc_tests \
+ test_cc_contrib \
+ test_cc_cpp
 
-.PHONY: test_fz_examples # Build and Run few Flatzinc Samples (located in examples/flatzinc)
-test_fz_examples: \
+.PHONY: test_fz_pimpl
+test_fz_pimpl: \
  rfz_golomb \
  rfz_alpha
 

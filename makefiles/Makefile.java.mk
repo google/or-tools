@@ -41,11 +41,8 @@ check_java: java
 test_java: java
 else
 java: $(JAVA_OR_TOOLS_LIBS)
-check_java: check_java_examples
-test_java: \
- test_java_tests \
- test_java_samples \
- test_java_examples
+check_java: check_java_pimpl
+test_java: test_java_pimpl
 BUILT_LANGUAGES +=, Java
 endif
 
@@ -320,6 +317,13 @@ $(CLASS_DIR)/%: $(SRC_DIR)/ortools/sat/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  ortools$Ssat$Ssamples$S$*.java
 
+$(CLASS_DIR)/%: $(SRC_DIR)/ortools/linear_solver/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
+	-$(DELREC) $(CLASS_DIR)$S$*
+	-$(MKDIR_P) $(CLASS_DIR)$S$*
+	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+ -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ ortools$Slinear_solver$Ssamples$S$*.java
+
 $(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	-$(DEL) $(LIB_DIR)$S$*.jar
 	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
@@ -329,24 +333,47 @@ rjava_%: $(LIB_DIR)/%$J FORCE
  -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $* $(ARGS)
 
-.PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
-test_java_tests: \
- rjava_TestLp
+.PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
+test_java_sat_samples: \
+ rjava_BinPackingProblem \
+ rjava_BoolOrSample \
+ rjava_ChannelingSample \
+ rjava_CodeSample \
+ rjava_IntervalSample \
+ rjava_LiteralSample \
+ rjava_NoOverlapSample \
+ rjava_OptionalIntervalSample \
+ rjava_RabbitsAndPheasants \
+ rjava_RankingSample \
+ rjava_ReifiedSample \
+ rjava_SimpleSolve \
+ rjava_SolveAllSolutions \
+ rjava_SolveWithIntermediateSolutions \
+ rjava_SolveWithTimeLimit \
+ rjava_StopAfterNSolutions
 
-.PHONY: check_java_examples # Build and Run few Java Examples (located in examples/java)
-check_java_examples: \
- rjava_SimpleProgram \
+.PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
+test_java_linear_solver_samples: \
+ rjava_SimpleLpProgram
+
+.PHONY: check_java_pimpl
+check_java_pimpl: \
+ test_java_sat_samples \
+ test_java_linear_solver_samples \
  rjava_LinearProgramming \
  rjava_IntegerProgramming \
  rjava_Tsp \
  rjava_Vrp \
  rjava_Knapsack
 
-.PHONY: test_java_examples # Build and Run all Java Examples (located in examples/java)
-test_java_examples: check_java_examples \
+.PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
+test_java_tests: \
+ rjava_TestLp
+
+.PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)
+test_java_contrib: \
  rjava_AllDifferentExcept0 \
  rjava_AllInterval \
- rjava_CapacitatedVehicleRoutingProblemWithTimeWindows \
  rjava_Circuit \
  rjava_CoinsGridMIP \
  rjava_ColoringMIP \
@@ -356,12 +383,9 @@ test_java_examples: check_java_examples \
  rjava_Diet \
  rjava_DietMIP \
  rjava_DivisibleBy9Through1 \
- rjava_FlowExample \
  rjava_GolombRuler \
  rjava_KnapsackMIP \
  rjava_LeastDiff \
- rjava_LinearAssignmentAPI \
- rjava_LsApi \
  rjava_MagicSquare \
  rjava_Map2 \
  rjava_Map \
@@ -371,7 +395,6 @@ test_java_examples: check_java_examples \
  rjava_NQueens \
  rjava_Partition \
  rjava_QuasigroupCompletion \
- rjava_RabbitsPheasants \
  rjava_SendMoreMoney2 \
  rjava_SendMoreMoney \
  rjava_SendMostMoney \
@@ -392,24 +415,25 @@ test_java_examples: check_java_examples \
  rjava_Xkcd \
  rjava_YoungTableaux
 
-.PHONY: test_java_samples # Build and Run all Java Samples (located in ortools/*/samples)
-test_java_samples: \
- rjava_BinPackingProblem \
- rjava_BoolOrSample \
- rjava_ChannelingSample \
- rjava_CodeSample \
- rjava_IntervalSample \
- rjava_LiteralSample \
- rjava_NoOverlapSample \
- rjava_OptionalIntervalSample \
- rjava_RabbitsAndPheasants \
- rjava_RankingSample \
- rjava_ReifiedSample \
- rjava_SimpleSolve \
- rjava_SolveAllSolutions \
- rjava_SolveWithIntermediateSolutions \
- rjava_SolveWithTimeLimit \
- rjava_StopAfterNSolutions
+.PHONY: test_java_java # Build and Run all Java Examples (located in ortools/examples/java)
+test_java_java: \
+ rjava_CapacitatedVehicleRoutingProblemWithTimeWindows \
+ rjava_FlowExample \
+ rjava_IntegerProgramming \
+ rjava_Knapsack \
+ rjava_LinearAssignmentAPI \
+ rjava_LinearProgramming \
+ rjava_LsApi \
+ rjava_RabbitsPheasants \
+ rjava_Tsp \
+ rjava_Vrp
+
+.PHONY: test_java_pimpl
+test_java_pimpl: \
+ check_java_pimpl \
+ test_java_tests \
+ test_java_contrib \
+ test_java_java
 
 ################
 ##  Cleaning  ##
