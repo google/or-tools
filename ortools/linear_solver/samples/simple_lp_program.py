@@ -1,4 +1,4 @@
-# Copyright 2010-2017 Google
+# Copyright 2010-2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,18 +20,20 @@ from ortools.linear_solver import pywraplp
 
 def main():
   # Create the linear solver with the GLOP backend.
-  solver = pywraplp.Solver('simple_lp_program',
-                           pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+  solver = pywraplp.Solver(
+      'simple_lp_program',
+      pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+
   # Create the variables x and y.
   x = solver.NumVar(0, 1, 'x')
   y = solver.NumVar(0, 2, 'y')
 
-  # Create a linear constraint.
+  # Create a linear constraint, 0 <= x + y <= 2.
   ct = solver.Constraint(0, 2, 'ct')
   ct.SetCoefficient(x, 1)
   ct.SetCoefficient(y, 1)
 
-  # Create the objective function, x + y.
+  # Create the objective function, 3 * x + y.
   objective = solver.Objective()
   objective.SetCoefficient(x, 3)
   objective.SetCoefficient(y, 1)

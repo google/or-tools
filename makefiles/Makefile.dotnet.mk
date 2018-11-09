@@ -37,16 +37,9 @@ dotnet:
 check_dotnet: dotnet
 test_dotnet: dotnet
 else
-dotnet: \
- dotnet_csharp \
- dotnet_fsharp
-check_dotnet: check_dotnet_examples
-test_dotnet: \
- test_dotnet_csharp \
- test_dotnet_fsharp \
- test_dotnet_tests \
- test_donet_samples \
- test_dotnet_examples
+dotnet: dotnet_csharp dotnet_fsharp
+check_dotnet: check_dotnet_pimpl
+test_dotnet: test_dotnet_pimpl
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 endif
 
@@ -477,6 +470,42 @@ rdotnet_%.cs: \
 	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
 	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
 
+rdotnet_%.cs: \
+ ortools/linear_solver/samples/%.cs \
+ ortools/linear_solver/samples/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG) FORCE
+	"$(DOTNET_BIN)" build ortools$Slinear_solver$Ssamples$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project ortools$Slinear_solver$Ssamples$S$*.csproj -- $(ARGS)
+
+.PHONY: test_donet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
+test_dotnet_samples: \
+ rdotnet_binpacking_problem.cs \
+ rdotnet_bool_or_sample.cs \
+ rdotnet_channeling_sample.cs \
+ rdotnet_code_sample.cs \
+ rdotnet_interval_sample.cs \
+ rdotnet_literal_sample.cs \
+ rdotnet_no_overlap_sample.cs \
+ rdotnet_optional_interval_sample.cs \
+ rdotnet_rabbits_and_pheasants.cs \
+ rdotnet_ranking_sample.cs \
+ rdotnet_reified_sample.cs \
+ rdotnet_simple_solve.cs \
+ rdotnet_solve_all_solutions.cs \
+ rdotnet_solve_with_intermediate_solutions.cs \
+ rdotnet_solve_with_time_limit.cs \
+ rdotnet_stop_after_n_solutions.cs
+
+.PHONY: test_donet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
+test_dotnet_linear_solver_samples: \
+ rdotnet_SimpleLpProgram
+
+.PHONY: check_dotnet_pimpl
+check_dotnet_pimpl: \
+ test_donet_sat_samples \
+ test_donet_linear_solver_samples \
+ rdotnet_SimpleProgramFSharp.fs
+
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
 test_dotnet_tests: \
  rdotnet_issue18.cs \
@@ -487,18 +516,7 @@ test_dotnet_tests: \
  rdotnet_testsat.cs \
  rdotnet_test_sat_model.cs
 
-.PHONY: check_dotnet_examples # Build and Run few C++ Examples (located in examples/cpp)
-check_dotnet_examples: \
- rdotnet_SimpleProgram.cs \
- rdotnet_SimpleProgramFSharp.fs
-
-.PHONY: test_dotnet_examples # Build and Run all .Net Examples (located in examples/dotnet)
-test_dotnet_examples: \
- check_dotnet_examples \
- test_dotnet_examples_csharp \
- test_dotnet_examples_fsharp
-
-.PHONY: test_dotnet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet)
+.PHONY: test_dotnet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet and examples/contrib)
 test_dotnet_examples_csharp: \
  rdotnet_3_jugs_regular.cs \
  rdotnet_alldifferent_except_0.cs \
@@ -622,7 +640,7 @@ test_dotnet_examples_csharp: \
 #	$(MAKE) rdotnet_secret_santa # too long
 # $(MAKE) rdotnet_word_square # depends on /usr/share/dict/words
 
-.PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet)
+.PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet and examples/contrib)
 test_dotnet_examples_fsharp: \
  rdotnet_fsintegerprogramming.fs \
  rdotnet_fslinearprogramming.fs \
@@ -640,24 +658,12 @@ test_dotnet_examples_fsharp: \
  rdotnet_fsvolsay3-lpSolve.fs \
  rdotnet_fsvolsay.fs
 
-.PHONY: test_donet_samples # Build and Run all .Net Samples (located in ortools/*/samples)
-test_dotnet_samples: \
- rdotnet_binpacking_problem.cs \
- rdotnet_bool_or_sample.cs \
- rdotnet_channeling_sample.cs \
- rdotnet_code_sample.cs \
- rdotnet_interval_sample.cs \
- rdotnet_literal_sample.cs \
- rdotnet_no_overlap_sample.cs \
- rdotnet_optional_interval_sample.cs \
- rdotnet_rabbits_and_pheasants.cs \
- rdotnet_ranking_sample.cs \
- rdotnet_reified_sample.cs \
- rdotnet_simple_solve.cs \
- rdotnet_solve_all_solutions.cs \
- rdotnet_solve_with_intermediate_solutions.cs \
- rdotnet_solve_with_time_limit.cs \
- rdotnet_stop_after_n_solutions.cs
+.PHONY: test_dotnet_pimpl
+test_dotnet_pimpl: \
+ check_dotnet_pimpl \
+ test_dotnet_tests \
+ test_dotnet_examples_csharp \
+ test_dotnet_examples_fsharp
 
 ################
 ##  Cleaning  ##
@@ -706,6 +712,8 @@ clean_dotnet:
 	-$(DELREC) $(TEST_PATH)$Sobj
 	-$(DELREC) ortools$Ssat$Ssamples$Sbin
 	-$(DELREC) ortools$Ssat$Ssamples$Sobj
+	-$(DELREC) ortools$Slinear_solver$Ssamples$Sbin
+	-$(DELREC) ortools$Slinear_solver$Ssamples$Sobj
 	-$(DELREC) $(TEMP_DOTNET_DIR)
 	-@"$(DOTNET_BIN)" nuget locals all --clear
 

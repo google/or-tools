@@ -54,24 +54,17 @@ PYTHON_OR_TOOLS_LIBS = \
 
 # Main target
 .PHONY: python # Build Python OR-Tools.
-.PHONY: check_python # Quick check only running few Python OR-Tools examples.
-.PHONY: test_python # Test Python OR-Tools using various examples.
+.PHONY: check_python # Quick check only running Python OR-Tools samples.
+.PHONY: test_python # Run all Python OR-Tools test targets.
 ifneq ($(PYTHON_EXECUTABLE),)
 python: $(PYTHON_OR_TOOLS_LIBS)
-
-check_python: check_python_examples
-
-test_python: \
- test_python_tests \
- test_python_samples \
- test_python_examples
-
+check_python: check_python_pimpl
+test_python: test_python_pimpl
 BUILT_LANGUAGES +=, Python$(PYTHON_VERSION)
 else
 python:
 	@echo PYTHON_EXECUTABLE = "${PYTHON_EXECUTABLE}"
 	$(warning Cannot find '$(PYTHON_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
-
 check_python: python
 test_python: python
 endif
@@ -492,12 +485,36 @@ rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 rpy_%: ortools/linear_solver/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Slinear_solver$Ssamples$S$*.py $(ARGS)
 
-.PHONY: check_python_examples # Build and Run few Python Examples (located in examples/python and examples/contrib)
-check_python_examples: \
- rpy_simple_program \
+.PHONY: test_python_sat_samples # Run all Python Sat Samples (located in ortools/sat/samples)
+test_python_sat_samples: \
+ rpy_binpacking_problem \
+ rpy_bool_or_sample \
+ rpy_channeling_sample \
+ rpy_code_sample \
+ rpy_interval_sample \
+ rpy_literal_sample \
+ rpy_minimal_jobshop \
+ rpy_no_overlap_sample \
+ rpy_optional_interval_sample \
+ rpy_rabbits_and_pheasants \
+ rpy_ranking_sample \
+ rpy_reified_sample \
+ rpy_simple_solve \
+ rpy_solve_all_solutions \
+ rpy_solve_with_intermediate_solutions \
+ rpy_solve_with_time_limit \
+ rpy_stop_after_n_solutions
+
+.PHONY: test_python_linear_solver_samples # Run all Python LP Samples (located in ortools/linear_solver/samples)
+test_python_linear_solver_samples: \
+ rpy_simple_lp_program
+
+.PHONY: check_python_pimpl
+check_python_pimpl: \
+ test_python_sat_samples \
+ test_python_linear_solver_samples \
  rpy_linear_programming \
  rpy_stigler_diet
-# rpy_constraint_programming_cp \
 # rpy_constraint_programming_sat \
 # rpy_rabbits_pheasants_cp \
 # rpy_rabbits_pheasants_sat \
@@ -524,52 +541,23 @@ test_python_tests: \
  rpy_test_cp_api \
  rpy_test_lp_api
 
-.PHONY: test_python_samples # Run all Python Samples (located in ortools/*/python)
-test_python_samples: \
- rpy_binpacking_problem \
- rpy_bool_or_sample \
- rpy_channeling_sample \
- rpy_code_sample \
- rpy_interval_sample \
- rpy_literal_sample \
- rpy_minimal_jobshop \
- rpy_no_overlap_sample \
- rpy_optional_interval_sample \
- rpy_rabbits_and_pheasants \
- rpy_ranking_sample \
- rpy_reified_sample \
- rpy_simple_lp_program \
- rpy_simple_solve \
- rpy_solve_all_solutions \
- rpy_solve_with_intermediate_solutions \
- rpy_solve_with_time_limit \
- rpy_stop_after_n_solutions
-
-.PHONY: test_python_examples # Run all Python Examples (located in examples/python and examples/contrib)
-test_python_examples: \
+.PHONY: test_python_contrib # Run all Python Contrib (located in examples/python and examples/contrib)
+test_python_contrib: \
  rpy_3_jugs_mip \
  rpy_3_jugs_regular \
  rpy_alldifferent_except_0 \
  rpy_all_interval \
  rpy_alphametic \
- rpy_appointments \
  rpy_a_round_of_golf \
  rpy_assignment6_mip \
  rpy_assignment \
- rpy_assignment_sat \
- rpy_assignment_with_constraints \
- rpy_assignment_with_constraints_sat \
  rpy_bacp \
- rpy_balance_group_sat \
  rpy_blending \
  rpy_broken_weights \
  rpy_bus_schedule \
  rpy_car \
  rpy_check_dependencies \
- rpy_chemical_balance_lp \
- rpy_chemical_balance_sat \
  rpy_circuit \
- rpy_code_samples_sat \
  rpy_coins3 \
  rpy_coins_grid_mip \
  rpy_coloring_ip \
@@ -577,14 +565,11 @@ test_python_examples: \
  rpy_contiguity_regular \
  rpy_costas_array \
  rpy_covering_opl \
- rpy_cp_is_fun_sat \
  rpy_crew \
  rpy_crossword2 \
  rpy_crypta \
  rpy_crypto \
  rpy_curious_set_of_integers \
- rpy_cvrp \
- rpy_cvrptw \
  rpy_debruijn_binary \
  rpy_diet1_b \
  rpy_diet1_mip \
@@ -597,35 +582,22 @@ test_python_examples: \
  rpy_eq10 \
  rpy_eq20 \
  rpy_fill_a_pix \
- rpy_flexible_job_shop_sat \
  rpy_furniture_moving \
  rpy_futoshiki \
  rpy_game_theory_taha \
- rpy_gate_scheduling_sat \
- rpy_golomb8 \
  rpy_grocery \
- rpy_hidato_sat \
- rpy_hidato_table \
- rpy_integer_programming \
- rpy_jobshop_ft06_distance \
- rpy_jobshop_ft06 \
- rpy_jobshop_ft06_sat \
  rpy_just_forgotten \
  rpy_kakuro \
  rpy_kenken2 \
  rpy_killer_sudoku \
  rpy_knapsack_cp \
  rpy_knapsack_mip \
- rpy_knapsack \
  rpy_labeled_dice \
  rpy_langford \
  rpy_least_diff \
  rpy_least_square \
  rpy_lectures \
- rpy_linear_assignment_api \
- rpy_linear_programming \
  rpy_magic_sequence_sat \
- rpy_magic_sequence_distribute \
  rpy_magic_square_and_cards \
  rpy_magic_square_mip \
  rpy_magic_square \
@@ -642,10 +614,8 @@ test_python_examples: \
  rpy_nqueens2 \
  rpy_nqueens3 \
  rpy_nqueens \
- rpy_nqueens_sat \
  rpy_nurse_rostering \
  rpy_nurses_cp \
- rpy_nurses_sat \
  rpy_olympic \
  rpy_organize_day \
  rpy_pandigital_numbers \
@@ -654,11 +624,8 @@ test_python_examples: \
  rpy_p_median \
  rpy_post_office_problem2 \
  rpy_production \
- rpy_pyflow_example \
  rpy_pyls_api \
  rpy_quasigroup_completion \
- rpy_rabbit_pheasant \
- rpy_rcpsp_sat \
  rpy_regular \
  rpy_regular_table2 \
  rpy_regular_table \
@@ -668,7 +635,6 @@ test_python_examples: \
  rpy_scheduling_speakers \
  rpy_secret_santa2 \
  rpy_send_more_money_any_base \
- rpy_sendmore \
  rpy_send_most_money \
  rpy_seseman_b \
  rpy_seseman \
@@ -680,44 +646,86 @@ test_python_examples: \
  rpy_set_covering_skiena \
  rpy_set_partition \
  rpy_sicherman_dice \
- rpy_simple_meeting \
- rpy_single_machine_scheduling_with_setup_release_due_dates_sat \
  rpy_ski_assignment \
  rpy_slitherlink \
  rpy_stable_marriage \
  rpy_steel_lns \
- rpy_steel_mill_slab_sat \
  rpy_steel \
  rpy_stigler \
  rpy_strimko2 \
  rpy_subset_sum \
- rpy_sudoku \
  rpy_survo_puzzle \
  rpy_toNum \
  rpy_traffic_lights \
- rpy_transit_time \
- rpy_tsp \
- rpy_vendor_scheduling \
  rpy_volsay2 \
  rpy_volsay3 \
  rpy_volsay \
- rpy_vrpgs \
- rpy_vrp \
  rpy_wedding_optimal_chart \
- rpy_wedding_optimal_chart_sat \
  rpy_who_killed_agatha \
- rpy_worker_schedule_sat \
  rpy_xkcd \
- rpy_young_tableaux \
- rpy_zebra
+ rpy_young_tableaux
 	$(MAKE) run SOURCE=examples/contrib/coins_grid.py ARGS="5 2"
 	$(MAKE) run SOURCE=examples/contrib/hidato.py ARGS="3 3"
-#	$(MAKE) rpy_cvrptw_plot # error: py3 failure, missing numpy.
 #	$(MAKE) rpy_nontransitive_dice # error: too long
 # warning: nurse_sat take 18s
 #	$(MAKE) rpy_school_scheduling_sat # error: too long
 #	$(MAKE) rpy_secret_santa # error: too long
 #	$(MAKE) rpy_word_square # Not working on window since it rely on /usr/share/dict/words
+
+.PHONY: test_python_python # Build and Run all Python Examples (located in ortools/examples/python)
+test_python_python: \
+ rpy_appointments \
+ rpy_assignment_sat \
+ rpy_assignment_with_constraints \
+ rpy_assignment_with_constraints_sat \
+ rpy_balance_group_sat \
+ rpy_chemical_balance_lp \
+ rpy_chemical_balance_sat \
+ rpy_code_samples_sat \
+ rpy_constraint_programming_cp \
+ rpy_cp_is_fun_sat \
+ rpy_cvrp \
+ rpy_cvrptw \
+ rpy_flexible_job_shop_sat \
+ rpy_gate_scheduling_sat \
+ rpy_golomb8 \
+ rpy_hidato_sat \
+ rpy_hidato_table \
+ rpy_integer_programming \
+ rpy_jobshop_ft06_distance \
+ rpy_jobshop_ft06 \
+ rpy_jobshop_ft06_sat \
+ rpy_knapsack \
+ rpy_linear_assignment_api \
+ rpy_linear_programming \
+ rpy_magic_sequence_distribute \
+ rpy_nqueens_sat \
+ rpy_nurses_sat \
+ rpy_pyflow_example \
+ rpy_rabbit_pheasant \
+ rpy_rcpsp_sat \
+ rpy_sendmore \
+ rpy_simple_meeting \
+ rpy_single_machine_scheduling_with_setup_release_due_dates_sat \
+ rpy_steel_mill_slab_sat \
+ rpy_stigler_diet \
+ rpy_sudoku \
+ rpy_transit_time \
+ rpy_tsp \
+ rpy_vendor_scheduling \
+ rpy_vrpgs \
+ rpy_vrp \
+ rpy_wedding_optimal_chart_sat \
+ rpy_worker_schedule_sat \
+ rpy_zebra
+#	$(MAKE) rpy_cvrptw_plot # error: py3 failure, missing numpy.
+
+.PHONY: test_python_pimpl
+test_python_pimpl: \
+ check_python_pimpl \
+ test_python_tests \
+ test_python_contrib \
+ test_python_python
 
 ################
 ##  Cleaning  ##
