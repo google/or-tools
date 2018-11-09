@@ -1873,7 +1873,12 @@ CpSolverResponse SolveCpModelWithLNS(
         {
           CpModelProto mapping_proto;
           std::vector<int> postsolve_mapping;
-          PresolveCpModel(&local_problem, &mapping_proto, &postsolve_mapping);
+          PresolveOptions options;
+          options.log_info = VLOG_IS_ON(2);
+          options.parameters = local_model.GetOrCreate<SatParameters>();
+          options.time_limit = local_model.GetOrCreate<TimeLimit>();
+          PresolveCpModel(options, &local_problem, &mapping_proto,
+                          &postsolve_mapping);
           local_response = SolveCpModelInternal(
               local_problem, true, [](const CpSolverResponse& response) {},
               &local_model);
@@ -2180,12 +2185,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Presolve?
   std::function<void(CpSolverResponse * response)> postprocess_solution;
-  if (params.cp_model_presolve() && !params.enumerate_all_solutions()) {
+  if (params.cp_model_presolve()) {
     // Do the actual presolve.
     CpModelProto mapping_proto;
     std::vector<int> postsolve_mapping;
-    PresolveCpModel(VLOG_IS_ON(1), &new_model, &mapping_proto,
-                    &postsolve_mapping);
+    PresolveOptions options;
+    options.log_info = VLOG_IS_ON(1);
+    options.parameters = model->GetOrCreate<SatParameters>();
+    options.time_limit = model->GetOrCreate<TimeLimit>();
+    PresolveCpModel(options, &new_model, &mapping_proto, &postsolve_mapping);
     VLOG(1) << CpModelStats(new_model);
     postprocess_solution = [&model_proto, mapping_proto,
                             postsolve_mapping](CpSolverResponse* response) {

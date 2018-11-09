@@ -94,8 +94,9 @@ struct PresolveContext {
   }
 
   // Returns true if this ref only appear in one constraint.
-  bool IsUnique(int ref) const {
-    return var_to_constraints[PositiveRef(ref)].size() == 1;
+  bool VariableIsUniqueAndRemovable(int ref) const {
+    return var_to_constraints[PositiveRef(ref)].size() == 1 &&
+           !enumerate_all_solutions;
   }
 
   Domain DomainOf(int ref) const {
@@ -343,6 +344,10 @@ struct PresolveContext {
   // Initially false, and set to true on the first inconsistency.
   bool is_unsat = false;
 
+  // Indicate if we are enumerating all solutions. This disable some presolve
+  // rules.
+  bool enumerate_all_solutions = false;
+
   // Just used to display statistics on the presolve rules that were used.
   std::unordered_map<std::string, int> stats_by_rule_name;
 
@@ -390,7 +395,7 @@ bool PresolveEnforcementLiteral(ConstraintProto* ct, PresolveContext* context) {
     if (context->LiteralIsFalse(literal)) {
       context->UpdateRuleStats("false enforcement literal");
       return RemoveConstraint(ct, context);
-    } else if (context->IsUnique(literal)) {
+    } else if (context->VariableIsUniqueAndRemovable(literal)) {
       // We can simply set it to false and ignore the constraint in this case.
       context->UpdateRuleStats("enforcement literal not used");
       context->SetLiteralToFalse(literal);
@@ -433,7 +438,7 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
     // We can just set the variable to true in this case since it is not
     // used in any other constraint (note that we artifically bump the
     // objective var usage by 1).
-    if (context->IsUnique(literal)) {
+    if (context->VariableIsUniqueAndRemovable(literal)) {
       context->UpdateRuleStats("bool_or: singleton");
       context->SetLiteralToTrue(literal);
       return RemoveConstraint(ct, context);
@@ -506,7 +511,7 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
       changed = true;
       continue;
     }
-    if (context->IsUnique(literal)) {
+    if (context->VariableIsUniqueAndRemovable(literal)) {
       changed = true;
       context->SetLiteralToTrue(literal);
       continue;
@@ -855,7 +860,7 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
       //
       // TODO(user): In some case, we could still remove var, but we also need
       // to not keep the affine relationship around in the constraint count.
-      if (context->IsUnique(var) &&
+      if (context->VariableIsUniqueAndRemovable(var) &&
           context->affine_relations.ClassSize(var) == 1) {
         bool success;
         const auto term_domain =
@@ -1334,8 +1339,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("element: reduced target domain");
   }
 
-  const bool unique_index =
-      context->IsUnique(index_ref) || context->IsFixed(index_ref);
+  const bool unique_index = context->VariableIsUniqueAndRemovable(index_ref) ||
+                            context->IsFixed(index_ref);
   if (all_constants && unique_index) {
     // This constraint is just here to reduce the domain of the target! We can
     // add it to the mapping_model to reconstruct the index value during
@@ -1346,7 +1351,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   const bool unique_target =
-      context->IsUnique(target_ref) || context->IsFixed(target_ref);
+      context->VariableIsUniqueAndRemovable(target_ref) ||
+      context->IsFixed(target_ref);
   if (all_included_in_target_domain && unique_target) {
     context->UpdateRuleStats("element: trivial index domain reduction");
     *(context->mapping_model->add_constraints()) = *ct;
@@ -1921,7 +1927,9 @@ void Probe(PresolveContext* context) {
 }
 
 void PresolvePureSatPart(PresolveContext* context) {
-  if (context->is_unsat) return;
+  // TODO(user, lperron): Reenable some SAT presolve with
+  // enumerate_all_solutions set to true.
+  if (context->is_unsat || context->enumerate_all_solutions) return;
 
   const int num_variables = context->working_model->variables_size();
   SatPostsolver postsolver(num_variables);
@@ -2507,17 +2515,74 @@ void PresolveToFixPoint(PresolveContext* context) {
   }
 }
 
+void RemoveUnusedEquivalentVariables(PresolveContext* context) {
+  if (context->is_unsat || context->enumerate_all_solutions) return;
+
+  // Remove all affine constraints (they will be re-added later if
+  // needed) in the presolved model.
+  for (int c = 0; c < context->working_model->constraints_size(); ++c) {
+    ConstraintProto* ct = context->working_model->mutable_constraints(c);
+    if (gtl::ContainsKey(context->affine_constraints, ct)) {
+      ct->Clear();
+      context->UpdateConstraintVariableUsage(c);
+      continue;
+    }
+  }
+
+  // Add back the affine relations to the presolved model or to the mapping
+  // model, depending where they are needed.
+  //
+  // TODO(user): unfortunately, for now, this duplicates the interval relations
+  // with a fixed size.
+  int num_affine_relations = 0;
+  for (int var = 0; var < context->working_model->variables_size(); ++var) {
+    if (context->IsFixed(var)) continue;
+
+    const AffineRelation::Relation r = context->GetAffineRelation(var);
+    if (r.representative == var) continue;
+
+    // We can get rid of this variable, only if:
+    // - it is not used elsewhere.
+    // - whatever the value of the representative, we can always find a value
+    //   for this variable.
+    CpModelProto* proto;
+    if (context->var_to_constraints[var].empty()) {
+      // Make sure that domain(representative) is tight.
+      const Domain implied = context->DomainOf(var)
+                                 .AdditionWith({-r.offset, -r.offset})
+                                 .InverseMultiplicationBy(r.coeff);
+      if (context->IntersectDomainWith(r.representative, implied)) {
+        LOG(WARNING) << "Domain of " << r.representative
+                     << " was not fully propagated using the affine relation "
+                     << "(representative =" << r.representative
+                     << ", coeff = " << r.coeff << ", offset = " << r.offset
+                     << ")";
+      }
+      proto = context->mapping_model;
+    } else {
+      proto = context->working_model;
+      ++num_affine_relations;
+    }
+
+    ConstraintProto* ct = proto->add_constraints();
+    auto* arg = ct->mutable_linear();
+    arg->add_vars(var);
+    arg->add_coeffs(1);
+    arg->add_vars(r.representative);
+    arg->add_coeffs(-r.coeff);
+    arg->add_domain(r.offset);
+    arg->add_domain(r.offset);
+  }
+
+  // Update the variable usage.
+  context->UpdateNewConstraintsVariableUsage();
+}
+
 }  // namespace.
 
 // =============================================================================
 // Public API.
 // =============================================================================
-
-void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
-                     std::vector<int>* postsolve_mapping) {
-  return PresolveCpModel(VLOG_IS_ON(1), presolved_model, mapping_model,
-                         postsolve_mapping);
-}
 
 // The presolve works as follow:
 //
@@ -2534,12 +2599,16 @@ void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
 // - All the variables domain will be copied to the mapping_model.
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
-void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
-                     CpModelProto* mapping_model,
+void PresolveCpModel(const PresolveOptions& options,
+                     CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping) {
   PresolveContext context;
   context.working_model = presolved_model;
   context.mapping_model = mapping_model;
+  if (options.parameters != nullptr) {
+    context.enumerate_all_solutions =
+        options.parameters->enumerate_all_solutions();
+  }
 
   // We copy the search strategy to the mapping_model.
   for (const auto& decision_strategy : presolved_model->search_strategy()) {
@@ -2573,6 +2642,7 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
   // TODO(user): Expose parameters to control this.
   Probe(&context);
   PresolveToFixPoint(&context);
+  RemoveUnusedEquivalentVariables(&context);
 
   // Run SAT specific presolve on the pure-SAT part of the problem.
   // Note that because this can only remove/fix variable not used in the other
@@ -2615,17 +2685,6 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
   // Regroup no-overlaps into max-cliques.
   MergeNoOverlapConstraints(&context);
 
-  // Remove all affine constraints (they will be re-added later if
-  // needed) in the presolved model.
-  for (int c = 0; c < presolved_model->constraints_size(); ++c) {
-    ConstraintProto* ct = presolved_model->mutable_constraints(c);
-    if (gtl::ContainsKey(context.affine_constraints, ct)) {
-      ct->Clear();
-      context.UpdateConstraintVariableUsage(c);
-      continue;
-    }
-  }
-
   if (context.working_model->has_objective()) {
     ExpandObjective(&context);
   }
@@ -2634,56 +2693,6 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
   // consistent and shouldn't be used. We do use var_to_constraints.size()
   // though.
   DCHECK(context.ConstraintVariableUsageIsConsistent());
-
-  // Add back the affine relations to the presolved model or to the mapping
-  // model, depending where they are needed.
-  //
-  // TODO(user): unfortunately, for now, this duplicates the interval relations
-  // with a fixed size.
-  int num_affine_relations = 0;
-  for (int var = 0; var < presolved_model->variables_size(); ++var) {
-    if (context.IsFixed(var)) continue;
-
-    const AffineRelation::Relation r = context.GetAffineRelation(var);
-    if (r.representative == var) continue;
-
-    // We can get rid of this variable, only if:
-    // - it is not used elsewhere.
-    // - whatever the value of the representative, we can always find a value
-    //   for this variable.
-    CpModelProto* proto;
-    if (context.var_to_constraints[var].empty()) {
-      // Make sure that domain(representative) is tight.
-      const Domain implied = context.DomainOf(var)
-                                 .AdditionWith({-r.offset, -r.offset})
-                                 .InverseMultiplicationBy(r.coeff);
-      if (context.IntersectDomainWith(r.representative, implied)) {
-        LOG(WARNING) << "Domain of " << r.representative
-                     << " was not fully propagated using the affine relation "
-                     << "(representative =" << r.representative
-                     << ", coeff = " << r.coeff << ", offset = " << r.offset
-                     << ")";
-      }
-      proto = context.mapping_model;
-    } else {
-      // This is needed for the corner cases where 2 variables in affine
-      // relation with the same representative are present but no one use
-      // the representative. This makes sure the code below will not try to
-      // delete the representative.
-      context.var_to_constraints[r.representative].insert(-1);
-      proto = context.working_model;
-      ++num_affine_relations;
-    }
-
-    ConstraintProto* ct = proto->add_constraints();
-    auto* arg = ct->mutable_linear();
-    arg->add_vars(var);
-    arg->add_coeffs(1);
-    arg->add_vars(r.representative);
-    arg->add_coeffs(-r.coeff);
-    arg->add_domain(r.offset);
-    arg->add_domain(r.offset);
-  }
 
   // Remove all empty constraints. Note that we need to remap the interval
   // references.
@@ -2780,10 +2789,9 @@ void PresolveCpModel(bool log_info, CpModelProto* presolved_model,
   ApplyVariableMapping(mapping, presolved_model);
 
   // Stats and checks.
-  if (log_info) {
+  if (VLOG_IS_ON(1)) {
     LOG(INFO) << "- " << context.affine_relations.NumRelations()
-              << " affine relations were detected. " << num_affine_relations
-              << " were kept.";
+              << " affine relations were detected.";
     LOG(INFO) << "- " << context.var_equiv_relations.NumRelations()
               << " variable equivalence relations were detected.";
     std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),

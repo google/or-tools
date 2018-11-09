@@ -686,14 +686,10 @@ void CpModelBuilder::Maximize(const LinearExpr& expr) {
   cp_model_.mutable_objective()->set_scaling_factor(-1.0);
 }
 
-void CpModelBuilder::SetObjectiveScaling(double scaling) {
+void CpModelBuilder::ScaleObjectiveBy(double scaling) {
   CHECK(cp_model_.has_objective());
-  const double current_scaling = cp_model_.objective().scaling_factor();
-  if (current_scaling >= 0.0) {
-    cp_model_.mutable_objective()->set_scaling_factor(scaling);
-  } else {
-    cp_model_.mutable_objective()->set_scaling_factor(-scaling);
-  }
+  cp_model_.mutable_objective()->set_scaling_factor(
+      scaling * cp_model_.objective().scaling_factor());
 }
 
 void CpModelBuilder::AddDecisionStrategy(

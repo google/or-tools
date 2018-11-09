@@ -106,7 +106,7 @@ void Solve(const JsspInputProblem& problem) {
   std::vector<int> starts;
   std::vector<int> ends;
 
-  Domain all_horizon(0, horizon);
+  const Domain all_horizon(0, horizon);
 
   const IntVar makespan = cp_model.NewIntVar(all_horizon);
 
@@ -117,6 +117,7 @@ void Solve(const JsspInputProblem& problem) {
   std::vector<std::vector<BoolVar>> machine_to_presences(num_machines);
   std::vector<IntVar> job_starts(num_jobs);
   std::vector<IntVar> job_ends(num_jobs);
+  std::vector<IntVar> task_starts;
   int64 objective_offset = 0;
   std::vector<IntVar> objective_vars;
   std::vector<int64> objective_coeffs;
@@ -156,6 +157,7 @@ void Solve(const JsspInputProblem& problem) {
       if (t == job.tasks_size() - 1) {
         job_ends[j] = end;
       }
+      task_starts.push_back(start);
 
       // Chain the task belonging to the same job.
       if (t > 0) {
@@ -227,14 +229,24 @@ void Solve(const JsspInputProblem& problem) {
 
     // Earliness costs are not supported.
     CHECK_EQ(0L, job.earliness_cost_per_time_unit());
+    const int64 lateness_penalty = job.lateness_cost_per_time_unit();
     // Lateness cost.
-    if (job.lateness_cost_per_time_unit() != 0L) {
-      const IntVar lateness_var = cp_model.NewIntVar(all_horizon);
-      cp_model.AddGreaterOrEqual(
-          lateness_var,
-          LinearExpr(previous_end).AddConstant(-job.late_due_date()));
-      objective_vars.push_back(lateness_var);
-      objective_coeffs.push_back(job.lateness_cost_per_time_unit());
+    if (lateness_penalty != 0L) {
+      const int64 due_date = job.late_due_date();
+      if (due_date == 0) {
+        objective_vars.push_back(previous_end);
+        objective_coeffs.push_back(lateness_penalty);
+      } else {
+        const IntVar shifted_var =
+            cp_model.NewIntVar(Domain(-due_date, horizon - due_date));
+        cp_model.AddEquality(shifted_var,
+                             LinearExpr(previous_end).AddConstant(-due_date));
+        const IntVar lateness_var = cp_model.NewIntVar(all_horizon);
+        cp_model.AddMaxEquality(lateness_var,
+                                {cp_model.NewConstant(0), shifted_var});
+        objective_vars.push_back(lateness_var);
+        objective_coeffs.push_back(lateness_penalty);
+      }
     }
   }
 
@@ -294,11 +306,11 @@ void Solve(const JsspInputProblem& problem) {
   cp_model.Minimize(LinearExpr::ScalProd(objective_vars, objective_coeffs)
                         .AddConstant(objective_offset));
   if (problem.has_scaling_factor()) {
-    cp_model.SetObjectiveScaling(problem.scaling_factor().value());
+    cp_model.ScaleObjectiveBy(problem.scaling_factor().value());
   }
 
   // Decision strategy.
-  cp_model.AddDecisionStrategy(job_starts,
+  cp_model.AddDecisionStrategy(task_starts,
                                DecisionStrategyProto::CHOOSE_LOWEST_MIN,
                                DecisionStrategyProto::SELECT_MIN_VALUE);
 

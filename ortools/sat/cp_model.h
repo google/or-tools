@@ -632,7 +632,7 @@ class CpModelBuilder {
 
   // Sets scaling of the objective. (must be called after Minimize() of
   // Maximize()). 'scaling' must be > 0.0.
-  void SetObjectiveScaling(double scaling);
+  void ScaleObjectiveBy(double scaling);
 
   // Adds a decision strategy on a list of integer variables.
   void AddDecisionStrategy(
