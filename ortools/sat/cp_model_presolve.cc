@@ -2782,7 +2782,10 @@ void PresolveCpModel(const PresolveOptions& options,
   postsolve_mapping->clear();
   std::vector<int> mapping(presolved_model->variables_size(), -1);
   for (int i = 0; i < presolved_model->variables_size(); ++i) {
-    if (context.var_to_constraints[i].empty()) continue;
+    if (context.var_to_constraints[i].empty() &&
+        !context.enumerate_all_solutions) {
+      continue;
+    }
     mapping[i] = postsolve_mapping->size();
     postsolve_mapping->push_back(i);
   }
