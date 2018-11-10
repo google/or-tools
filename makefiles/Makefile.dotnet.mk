@@ -483,6 +483,7 @@ test_dotnet_samples: \
  rdotnet_bool_or_sample.cs \
  rdotnet_channeling_sample.cs \
  rdotnet_code_sample.cs \
+ rdotnet_CpIsFun.cs \
  rdotnet_interval_sample.cs \
  rdotnet_literal_sample.cs \
  rdotnet_no_overlap_sample.cs \

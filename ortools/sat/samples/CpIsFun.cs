@@ -50,22 +50,22 @@ public class CpIsFun
   // Solve the CP+IS+FUN==TRUE cryptarithm.
   static void Solve()
   {
-    int kBase = 10;
-
     // Constraint programming engine
     CpModel model = new CpModel();
 
     // [START variables]
-    IntVar c = model.NewIntVar(1, 9, "C");
-    IntVar p = model.NewIntVar(0, 9, "P");
-    IntVar i = model.NewIntVar(1, 9, "I");
-    IntVar s = model.NewIntVar(0, 9, "S");
-    IntVar f = model.NewIntVar(1, 9, "F");
-    IntVar u = model.NewIntVar(0, 9, "U");
-    IntVar n = model.NewIntVar(0, 9, "N");
-    IntVar t = model.NewIntVar(1, 9, "T");
-    IntVar r = model.NewIntVar(0, 9, "R");
-    IntVar e = model.NewIntVar(0, 9, "E");
+    int kBase = 10;
+
+    IntVar c = model.NewIntVar(1, kBase - 1, "C");
+    IntVar p = model.NewIntVar(0, kBase - 1, "P");
+    IntVar i = model.NewIntVar(1, kBase - 1, "I");
+    IntVar s = model.NewIntVar(0, kBase - 1, "S");
+    IntVar f = model.NewIntVar(1, kBase - 1, "F");
+    IntVar u = model.NewIntVar(0, kBase - 1, "U");
+    IntVar n = model.NewIntVar(0, kBase - 1, "N");
+    IntVar t = model.NewIntVar(1, kBase - 1, "T");
+    IntVar r = model.NewIntVar(0, kBase - 1, "R");
+    IntVar e = model.NewIntVar(0, kBase - 1, "E");
 
     // We need to group variables in a list to use the constraint AllDifferent.
     IntVar[] letters = new IntVar[] {c, p, i, s, f, u, n, t, r, e};

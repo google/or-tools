@@ -339,6 +339,7 @@ test_java_sat_samples: \
  rjava_BoolOrSample \
  rjava_ChannelingSample \
  rjava_CodeSample \
+ rjava_CpIsFun \
  rjava_IntervalSample \
  rjava_LiteralSample \
  rjava_NoOverlapSample \
