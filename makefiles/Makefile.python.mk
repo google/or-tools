@@ -491,6 +491,7 @@ test_python_sat_samples: \
  rpy_bool_or_sample \
  rpy_channeling_sample \
  rpy_code_sample \
+ rpy_cp_is_fun \
  rpy_interval_sample \
  rpy_literal_sample \
  rpy_minimal_jobshop \

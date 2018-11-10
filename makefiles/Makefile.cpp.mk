@@ -421,6 +421,7 @@ test_cc_sat_samples: \
  rcc_bool_or_sample \
  rcc_channeling_sample \
  rcc_code_sample \
+ rcc_cp_is_fun \
  rcc_interval_sample \
  rcc_literal_sample \
  rcc_no_overlap_sample \

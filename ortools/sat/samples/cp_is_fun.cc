@@ -32,9 +32,9 @@ void CPIsFun() {
   // Instantiate the solver.
   CpModelBuilder cp_model;
 
+  // [START variables]
   const int64 kBase = 10;
 
-  // [START variables]
   // Define decision variables.
   Domain digit(0, kBase - 1);
   Domain non_zero_digit(1, kBase - 1);
@@ -64,17 +64,10 @@ void CPIsFun() {
   LOG(INFO) << cp_model.Proto().DebugString();
   // [END constraints]
 
-  // [START solve]
+  // [START solution_printing]
   Model model;
-
-  // Tell the solver to enumerate all solutions.
-  SatParameters parameters;
-  parameters.set_enumerate_all_solutions(true);
-  model.Add(NewSatParameters(parameters));
-
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
-    LOG(INFO) << "Solution " << num_solutions;
     LOG(INFO) << "C=" << SolutionIntegerValue(response, c) << " "
               << "P=" << SolutionIntegerValue(response, p) << " "
               << "I=" << SolutionIntegerValue(response, i) << " "
@@ -87,10 +80,18 @@ void CPIsFun() {
               << "E=" << SolutionIntegerValue(response, e);
     num_solutions++;
   }));
+  // [END solution_printing]
+
+  // [START solve]
+  // Tell the solver to enumerate all solutions.
+  SatParameters parameters;
+  parameters.set_enumerate_all_solutions(true);
+  model.Add(NewSatParameters(parameters));
+
   const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
+  // [END solve]
 }
-// [END solve]
 
 }  // namespace sat
 }  // namespace operations_research
