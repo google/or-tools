@@ -23,9 +23,7 @@ import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 
 class Tsp {
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
   static class RandomManhattan extends NodeEvaluator2 {
     public RandomManhattan(int size, int seed) {
@@ -55,8 +53,7 @@ class Tsp {
     }
   }
 
-  static void solve(int size, int forbidden, int seed)
-  {
+  static void solve(int size, int forbidden, int seed) {
     RoutingModel routing = new RoutingModel(size, 1, 0);
 
     // Setting the cost function.
@@ -80,19 +77,16 @@ class Tsp {
     }
 
     // Add dummy dimension to test API.
-    routing.addDimension(
-        new ConstantCallback(),
-        size + 1,
-        size + 1,
-        true,
-        "dummy");
+    routing.addDimension(new ConstantCallback(), size + 1, size + 1, true,
+                         "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
     RoutingSearchParameters search_parameters =
         RoutingSearchParameters.newBuilder()
-        .mergeFrom(RoutingModel.defaultSearchParameters())
-        .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
-        .build();
+            .mergeFrom(RoutingModel.defaultSearchParameters())
+            .setFirstSolutionStrategy(
+                FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .build();
 
     Assignment solution = routing.solveWithParameters(search_parameters);
     if (solution != null) {
@@ -101,8 +95,7 @@ class Tsp {
       // Inspect solution.
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       int route_number = 0;
-      for (long node = routing.start(route_number);
-           !routing.isEnd(node);
+      for (long node = routing.start(route_number); !routing.isEnd(node);
            node = solution.value(routing.nextVar(node))) {
         System.out.print("" + node + " -> ");
       }

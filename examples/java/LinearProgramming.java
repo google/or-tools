@@ -24,7 +24,7 @@ import com.google.ortools.linearsolver.MPVariable;
 public class LinearProgramming {
   static { System.loadLibrary("jniortools"); }
 
-  private static MPSolver createSolver (String solverType) {
+  private static MPSolver createSolver(String solverType) {
     try {
       return new MPSolver("LinearProgrammingExample",
                           MPSolver.OptimizationProblemType.valueOf(solverType));
@@ -95,10 +95,12 @@ public class LinearProgramming {
       return;
     }
 
-    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.wallTime() +
+                       " milliseconds");
 
     // The objective value of the solution.
-    System.out.println("Optimal objective value = " + solver.objective().value());
+    System.out.println("Optimal objective value = " +
+                       solver.objective().value());
 
     // The value of each variable in the solution.
     System.out.println("x1 = " + x1.solutionValue());
@@ -108,7 +110,8 @@ public class LinearProgramming {
     final double[] activities = solver.computeConstraintActivities();
 
     System.out.println("Advanced usage:");
-    System.out.println("Problem solved in " + solver.iterations() + " iterations");
+    System.out.println("Problem solved in " + solver.iterations() +
+                       " iterations");
     System.out.println("x1: reduced cost = " + x1.reducedCost());
     System.out.println("x2: reduced cost = " + x2.reducedCost());
     System.out.println("x3: reduced cost = " + x3.reducedCost());
@@ -121,7 +124,8 @@ public class LinearProgramming {
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println("---- Linear programming example with GLOP (recommended) ----");
+    System.out.println(
+        "---- Linear programming example with GLOP (recommended) ----");
     runLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING", true);
     System.out.println("---- Linear programming example with CLP ----");
     runLinearProgrammingExample("CLP_LINEAR_PROGRAMMING", false);

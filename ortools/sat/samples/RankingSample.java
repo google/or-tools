@@ -20,15 +20,16 @@ import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
 
-// This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
-// integer variables and enforces the following constraint:
+// This code takes a list of interval variables in a noOverlap constraint, and a
+// parallel list of integer variables and enforces the following constraint:
 //   - rank[i] == -1 iff interval[i] is not active.
 //   - rank[i] == number of active intervals that precede interval[i].
 public class RankingSample {
 
   static { System.loadLibrary("jniortools"); }
 
-  static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks) {
+  static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences,
+                        IntVar[] ranks) {
     int numTasks = starts.length;
 
     // Creates precedence variables between pairs of intervals.
@@ -41,7 +42,8 @@ public class RankingSample {
           IntVar prec = model.newBoolVar(String.format("%d before %d", i, j));
           precedences[i][j] = prec;
           // Ensure that task i precedes task j if prec is true.
-          model.addLessOrEqualWithOffset(starts[i], starts[j], 1).onlyEnforceIf(prec);
+          model.addLessOrEqualWithOffset(starts[i], starts[j], 1)
+              .onlyEnforceIf(prec);
         }
       }
     }
@@ -64,9 +66,10 @@ public class RankingSample {
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.
         model.addBoolOr(list.toArray(new Literal[0]));
-        // For efficiency, we add a redundant constraint declaring that only one of i precedes j and
-        // j precedes i are true. This will speed up the solve because the reason of this
-        // propagation is shorter that using interval bounds is true.
+        // For efficiency, we add a redundant constraint declaring that only one
+        // of i precedes j and j precedes i are true. This will speed up the
+        // solve because the reason of this propagation is shorter that using
+        // interval bounds is true.
         model.addImplication(precedences[i][j], precedences[j][i].not());
         model.addImplication(precedences[j][i], precedences[i][j].not());
       }
@@ -77,7 +80,7 @@ public class RankingSample {
       IntVar[] vars = new IntVar[numTasks + 1];
       int[] coefs = new int[numTasks + 1];
       for (int j = 0; j < numTasks; ++j) {
-        vars[j] = (IntVar) precedences[j][i];
+        vars[j] = (IntVar)precedences[j][i];
         coefs[j] = 1;
       }
       vars[numTasks] = ranks[i];
@@ -106,13 +109,13 @@ public class RankingSample {
       int duration = t + 1;
       ends[t] = model.newIntVar(0, horizon, "end_" + t);
       if (t < numTasks / 2) {
-        intervals[t] = model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
+        intervals[t] =
+            model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
         presences[t] = trueVar;
       } else {
         presences[t] = model.newBoolVar("presence_" + t);
-        intervals[t] =
-            model.newOptionalIntervalVar(
-                starts[t], duration, ends[t], presences[t], "o_interval_" + t);
+        intervals[t] = model.newOptionalIntervalVar(
+            starts[t], duration, ends[t], presences[t], "o_interval_" + t);
       }
 
       // The rank will be -1 iff the task is not performed.
@@ -133,17 +136,17 @@ public class RankingSample {
     for (int t = 0; t < numTasks; ++t) {
       model.addLessOrEqual(ends[t], makespan).onlyEnforceIf(presences[t]);
     }
-    // The objective function is a mix of a fixed gain per task performed, and a fixed cost for each
-    // additional day of activity.
-    // The solver will balance both cost and gain and minimize makespan * per-day-penalty - number
-    // of tasks performed * per-task-gain.
+    // The objective function is a mix of a fixed gain per task performed, and a
+    // fixed cost for each additional day of activity. The solver will balance
+    // both cost and gain and minimize makespan * per-day-penalty - number of
+    // tasks performed * per-task-gain.
     //
-    // On this problem, as the fixed cost is less that the duration of the last interval, the solver
-    // will not perform the last interval.
+    // On this problem, as the fixed cost is less that the duration of the last
+    // interval, the solver will not perform the last interval.
     IntVar[] objectiveVars = new IntVar[numTasks + 1];
     int[] objectiveCoefs = new int[numTasks + 1];
     for (int t = 0; t < numTasks; ++t) {
-      objectiveVars[t] = (IntVar) presences[t];
+      objectiveVars[t] = (IntVar)presences[t];
       objectiveCoefs[t] = -7;
     }
     objectiveVars[numTasks] = makespan;
@@ -159,12 +162,11 @@ public class RankingSample {
       System.out.println("Makespan: " + solver.value(makespan));
       for (int t = 0; t < numTasks; ++t) {
         if (solver.booleanValue(presences[t])) {
-          System.out.printf(
-              "Task %d starts at %d with rank %d%n",
-              t, solver.value(starts[t]), solver.value(ranks[t]));
+          System.out.printf("Task %d starts at %d with rank %d%n", t,
+                            solver.value(starts[t]), solver.value(ranks[t]));
         } else {
-          System.out.printf(
-              "Task %d in not performed and ranked at %d%n", t, solver.value(ranks[t]));
+          System.out.printf("Task %d in not performed and ranked at %d%n", t,
+                            solver.value(ranks[t]));
         }
       }
     } else {

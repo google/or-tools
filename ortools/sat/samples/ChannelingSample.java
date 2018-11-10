@@ -51,26 +51,25 @@ public class ChannelingSample {
     CpSolver solver = new CpSolver();
 
     // Forces the solver to follow the decision strategy exactly.
-    solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
+    solver.getParameters().setSearchBranching(
+        SatParameters.SearchBranching.FIXED_SEARCH);
 
     // Solves the problem with the printer callback.
-    solver.searchAllSolutions(
-        model,
-        new CpSolverSolutionCallback() {
-          public CpSolverSolutionCallback init(IntVar[] variables) {
-            variableArray = variables;
-            return this;
-          }
+    solver.searchAllSolutions(model, new CpSolverSolutionCallback() {
+      public CpSolverSolutionCallback init(IntVar[] variables) {
+        variableArray = variables;
+        return this;
+      }
 
-          @Override
-          public void onSolutionCallback() {
-            for (IntVar v : variableArray) {
-              System.out.printf("%s=%d ", v.getName(), value(v));
-            }
-            System.out.println();
-          }
+      @Override
+      public void onSolutionCallback() {
+        for (IntVar v : variableArray) {
+          System.out.printf("%s=%d ", v.getName(), value(v));
+        }
+        System.out.println();
+      }
 
-          private IntVar[] variableArray;
-        }.init(new IntVar[] {x, y, b}));
+      private IntVar[] variableArray;
+    }.init(new IntVar[] {x, y, b}));
   }
 }

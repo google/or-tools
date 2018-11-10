@@ -22,12 +22,10 @@ import java.util.logging.Logger;
  *
  */
 public class RabbitsPheasants {
-  private static Logger logger = Logger.getLogger(RabbitsPheasants.class.getName());
+  private static Logger logger =
+      Logger.getLogger(RabbitsPheasants.class.getName());
 
-  static {
-    System.loadLibrary("jniortools");
-  }
-
+  static { System.loadLibrary("jniortools"); }
 
   /**
    * Solves the rabbits + pheasants problem.  We are seing 20 heads
@@ -43,12 +41,15 @@ public class RabbitsPheasants {
     Solver solver = new Solver("RabbitsPheasants", parameters);
     IntVar rabbits = solver.makeIntVar(0, 100, "rabbits");
     IntVar pheasants = solver.makeIntVar(0, 100, "pheasants");
-    solver.addConstraint(solver.makeEquality(solver.makeSum(rabbits, pheasants), 20));
     solver.addConstraint(
-        solver.makeEquality(
-            solver.makeSum(solver.makeProd(rabbits, 4), solver.makeProd(pheasants, 2)), 56));
+        solver.makeEquality(solver.makeSum(rabbits, pheasants), 20));
+    solver.addConstraint(
+        solver.makeEquality(solver.makeSum(solver.makeProd(rabbits, 4),
+                                           solver.makeProd(pheasants, 2)),
+                            56));
     DecisionBuilder db =
-        solver.makePhase(rabbits, pheasants, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+        solver.makePhase(rabbits, pheasants, Solver.CHOOSE_FIRST_UNBOUND,
+                         Solver.ASSIGN_MIN_VALUE);
     solver.newSearch(db);
     solver.nextSolution();
     logger.info(rabbits.toString());

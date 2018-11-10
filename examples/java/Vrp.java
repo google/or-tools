@@ -24,37 +24,29 @@ class DataProblem {
   private int[][] locations_;
 
   public DataProblem() {
-    locations_ = new int[][] {
-      {4, 4},
-        {2, 0}, {8, 0},
-        {0, 1}, {1, 1},
-        {5, 2}, {7, 2},
-        {3, 3}, {6, 3},
-        {5, 5}, {8, 5},
-        {1, 6}, {2, 6},
-        {3, 7}, {6, 7},
-        {0, 8}, {7, 8}
-    };
+    locations_ = new int[][] {{4, 4}, {2, 0}, {8, 0}, {0, 1}, {1, 1}, {5, 2},
+                              {7, 2}, {3, 3}, {6, 3}, {5, 5}, {8, 5}, {1, 6},
+                              {2, 6}, {3, 7}, {6, 7}, {0, 8}, {7, 8}};
 
     // Compute locations in meters using the block dimension defined as follow
     // Manhattan average block: 750ft x 264ft -> 228m x 80m
     // here we use: 114m x 80m city block
     // src: https://nyti.ms/2GDoRIe "NY Times: Know Your distance"
-    int[] cityBlock = {228/2, 80};
-    for (int i=0; i < locations_.length; i++) {
+    int[] cityBlock = {228 / 2, 80};
+    for (int i = 0; i < locations_.length; i++) {
       locations_[i][0] = locations_[i][0] * cityBlock[0];
       locations_[i][1] = locations_[i][1] * cityBlock[1];
     }
   }
 
   /// @brief Gets the number of vehicles.
-  public int getVehicleNumber() { return 4;}
+  public int getVehicleNumber() { return 4; }
   /// @brief Gets the locations.
-  public int[][] getLocations() { return locations_;}
+  public int[][] getLocations() { return locations_; }
   /// @brief Gets the number of locations.
-  public int getLocationNumber() { return locations_.length;}
+  public int getLocationNumber() { return locations_.length; }
   /// @brief Gets the depot NodeIndex.
-  public int getDepot() { return 0;}
+  public int getDepot() { return 0; }
 }
 
 /// @brief Manhattan distance implemented as a callback.
@@ -72,9 +64,10 @@ class ManhattanDistance extends NodeEvaluator2 {
         if (fromNode == toNode)
           distances_[fromNode][toNode] = 0;
         else
-          distances_[fromNode][toNode] =
-            abs(data.getLocations()[toNode][0] - data.getLocations()[fromNode][0]) +
-            abs(data.getLocations()[toNode][1] - data.getLocations()[fromNode][1]);
+          distances_[fromNode][toNode] = abs(data.getLocations()[toNode][0] -
+                                             data.getLocations()[fromNode][0]) +
+                                         abs(data.getLocations()[toNode][1] -
+                                             data.getLocations()[fromNode][1]);
       }
     }
   }
@@ -87,19 +80,16 @@ class ManhattanDistance extends NodeEvaluator2 {
 }
 
 class Vrp {
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
   /// @brief Add Global Span constraint.
   static void addDistanceDimension(RoutingModel routing, DataProblem data) {
     String distance = "Distance";
-    routing.addDimension(
-        new ManhattanDistance(data),
-        0,  // null slack
-        3000, // maximum distance per vehicle
-        true, // start cumul to zero
-        distance);
+    routing.addDimension(new ManhattanDistance(data),
+                         0,    // null slack
+                         3000, // maximum distance per vehicle
+                         true, // start cumul to zero
+                         distance);
     RoutingDimension distanceDimension = routing.getDimensionOrDie(distance);
     // Try to minimize the max distance among vehicles.
     // /!\ It doesn't mean the standard deviation is minimized
@@ -107,20 +97,15 @@ class Vrp {
   }
 
   /// @brief Print the solution
-  static void printSolution(
-      DataProblem data,
-      RoutingModel routing,
-      Assignment solution)
-  {
+  static void printSolution(DataProblem data, RoutingModel routing,
+                            Assignment solution) {
     // Solution cost.
     System.out.println("Objective : " + solution.objectiveValue());
     // Inspect solution.
-    for (int i=0; i < data.getVehicleNumber(); ++i) {
+    for (int i = 0; i < data.getVehicleNumber(); ++i) {
       System.out.println("Route for Vehicle " + i + ":");
       long distance = 0;
-      for (long index = routing.start(i);
-          !routing.isEnd(index);)
-      {
+      for (long index = routing.start(i); !routing.isEnd(index);) {
         System.out.print(routing.indexToNode(index) + " -> ");
 
         long previousIndex = index;
@@ -139,9 +124,7 @@ class Vrp {
 
     // Create Routing Model
     RoutingModel routing = new RoutingModel(
-        data.getLocationNumber(),
-        data.getVehicleNumber(),
-        data.getDepot());
+        data.getLocationNumber(), data.getVehicleNumber(), data.getDepot());
 
     // Setting the cost function.
     // [todo]: protect callback from the GC
@@ -151,17 +134,16 @@ class Vrp {
 
     // Setting first solution heuristic (cheapest addition).
     RoutingSearchParameters search_parameters =
-      RoutingSearchParameters.newBuilder()
-      .mergeFrom(RoutingModel.defaultSearchParameters())
-      .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
-      .build();
+        RoutingSearchParameters.newBuilder()
+            .mergeFrom(RoutingModel.defaultSearchParameters())
+            .setFirstSolutionStrategy(
+                FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .build();
 
     Assignment solution = routing.solveWithParameters(search_parameters);
     printSolution(data, routing, solution);
   }
 
   /// @brief Entry point of the program.
-  public static void main(String[] args) throws Exception {
-    solve();
-  }
+  public static void main(String[] args) throws Exception { solve(); }
 }

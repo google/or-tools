@@ -20,7 +20,8 @@ public class StopAfterNSolutions {
 
   static { System.loadLibrary("jniortools"); }
 
-  static class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
+  static class VarArraySolutionPrinterWithLimit
+      extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithLimit(IntVar[] variables, int limit) {
       variableArray = variables;
       solutionLimit = limit;
@@ -28,7 +29,8 @@ public class StopAfterNSolutions {
 
     @Override
     public void onSolutionCallback() {
-      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount, wallTime());
+      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount,
+                        wallTime());
       for (IntVar v : variableArray) {
         System.out.printf("  %s = %d%n", v.getName(), value(v));
       }
@@ -39,9 +41,7 @@ public class StopAfterNSolutions {
       }
     }
 
-    public int getSolutionCount() {
-      return solutionCount;
-    }
+    public int getSolutionCount() { return solutionCount; }
 
     private int solutionCount;
     private final IntVar[] variableArray;

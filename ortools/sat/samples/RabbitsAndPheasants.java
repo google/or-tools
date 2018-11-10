@@ -17,8 +17,8 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
 /**
- * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many rabbits and
- * pheasants are there?
+ * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many
+ * rabbits and pheasants are there?
  */
 public class RabbitsAndPheasants {
 
@@ -40,7 +40,8 @@ public class RabbitsAndPheasants {
     CpSolverStatus status = solver.solve(model);
 
     if (status == CpSolverStatus.FEASIBLE) {
-      System.out.println(solver.value(r) + " rabbits, and " + solver.value(p) + " pheasants");
+      System.out.println(solver.value(r) + " rabbits, and " + solver.value(p) +
+                         " pheasants");
     }
   }
 }

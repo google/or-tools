@@ -27,16 +27,15 @@ public class SolveAllSolutions {
 
     @Override
     public void onSolutionCallback() {
-      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount, wallTime());
+      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount,
+                        wallTime());
       for (IntVar v : variableArray) {
         System.out.printf("  %s = %d%n", v.getName(), value(v));
       }
       solutionCount++;
     }
 
-    public int getSolutionCount() {
-      return solutionCount;
-    }
+    public int getSolutionCount() { return solutionCount; }
 
     private int solutionCount;
     private final IntVar[] variableArray;
@@ -56,7 +55,8 @@ public class SolveAllSolutions {
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] {x, y, z});
+    VarArraySolutionPrinter cb =
+        new VarArraySolutionPrinter(new IntVar[] {x, y, z});
     solver.searchAllSolutions(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");

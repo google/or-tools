@@ -24,12 +24,12 @@ import com.google.ortools.linearsolver.MPVariable;
 public class IntegerProgramming {
   static { System.loadLibrary("jniortools"); }
 
-  private static MPSolver createSolver (String solverType) {
+  private static MPSolver createSolver(String solverType) {
     try {
       return new MPSolver("IntegerProgrammingExample",
                           MPSolver.OptimizationProblemType.valueOf(solverType));
     } catch (java.lang.IllegalArgumentException e) {
-	    System.err.println("Bad solver type: " + e);
+      System.err.println("Bad solver type: " + e);
       return null;
     }
   }
@@ -71,22 +71,25 @@ public class IntegerProgramming {
       return;
     }
 
-    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+    System.out.println("Problem solved in " + solver.wallTime() +
+                       " milliseconds");
 
     // The objective value of the solution.
-    System.out.println("Optimal objective value = " + solver.objective().value());
+    System.out.println("Optimal objective value = " +
+                       solver.objective().value());
 
     // The value of each variable in the solution.
     System.out.println("x1 = " + x1.solutionValue());
     System.out.println("x2 = " + x2.solutionValue());
 
     System.out.println("Advanced usage:");
-    System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
+    System.out.println("Problem solved in " + solver.nodes() +
+                       " branch-and-bound nodes");
   }
 
-
   public static void main(String[] args) throws Exception {
-    System.out.println("---- Integer programming example with SCIP (recommended) ----");
+    System.out.println(
+        "---- Integer programming example with SCIP (recommended) ----");
     runIntegerProgrammingExample("SCIP_MIXED_INTEGER_PROGRAMMING");
     System.out.println("---- Integer programming example with CBC ----");
     runIntegerProgrammingExample("CBC_MIXED_INTEGER_PROGRAMMING");

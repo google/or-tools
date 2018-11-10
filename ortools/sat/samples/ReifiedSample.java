@@ -16,14 +16,16 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 /**
- * Reification is the action of associating a Boolean variable to a constraint. This boolean
- * enforces or prohibits the constraint according to the value the Boolean variable is fixed to.
+ * Reification is the action of associating a Boolean variable to a constraint.
+ * This boolean enforces or prohibits the constraint according to the value the
+ * Boolean variable is fixed to.
  *
- * <p>Half-reification is defined as a simple implication: If the Boolean variable is true, then the
- * constraint holds, instead of an complete equivalence.
+ * <p>Half-reification is defined as a simple implication: If the Boolean
+ * variable is true, then the constraint holds, instead of an complete
+ * equivalence.
  *
- * <p>The SAT solver offers half-reification. To implement full reification, two half-reified
- * constraints must be used.
+ * <p>The SAT solver offers half-reification. To implement full reification, two
+ * half-reified constraints must be used.
  */
 public class ReifiedSample {
 

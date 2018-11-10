@@ -34,9 +34,7 @@ public class CpIsFun {
       solutionCount++;
     }
 
-    public int getSolutionCount() {
-      return solutionCount;
-    }
+    public int getSolutionCount() { return solutionCount; }
 
     private int solutionCount;
     private final IntVar[] variableArray;
@@ -70,7 +68,9 @@ public class CpIsFun {
     // CP + IS + FUN = TRUE
     model.addScalProdEqual(new IntVar[] {c, p, i, s, f, u, n, t, r, u, e},
                            new long[] {base, 1, base, 1, base * base, base, 1,
-                                       -base * base * base, -base * base, -base, -1}, 0);
+                                       -base * base * base, -base * base, -base,
+                                       -1},
+                           0);
     // [END constraints]
 
     // [START solve]
@@ -83,7 +83,7 @@ public class CpIsFun {
     System.out.println("Statistics");
     System.out.println("  - conflicts : " + solver.numConflicts());
     System.out.println("  - branches  : " + solver.numBranches());
-    System.out.println("  - wall time : " + solver.wallTime() + " s");   
+    System.out.println("  - wall time : " + solver.wallTime() + " s");
     System.out.println("  - solutions : " + cb.getSolutionCount());
   }
 }
