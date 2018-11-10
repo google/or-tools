@@ -21,16 +21,15 @@ import com.google.ortools.graph.LinearSumAssignment;
  */
 
 public class LinearAssignmentAPI {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   private static void runAssignmentOn4x4Matrix() {
     final int numSources = 4;
     final int numTargets = 4;
-    final int[][] cost = {{90, 76, 75, 80},
-                          {35, 85, 55, 65},
-                          {125, 95, 90, 105},
-                          {45, 110, 95, 115}};
+    final int[][] cost = {
+        {90, 76, 75, 80}, {35, 85, 55, 65}, {125, 95, 90, 105}, {45, 110, 95, 115}};
     final int expectedCost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0];
 
     LinearSumAssignment assignment = new LinearSumAssignment();
@@ -41,12 +40,10 @@ public class LinearAssignmentAPI {
     }
 
     if (assignment.solve() == LinearSumAssignment.Status.OPTIMAL) {
-      System.out.println("Total cost = " + assignment.getOptimalCost() + "/" +
-                         expectedCost);
+      System.out.println("Total cost = " + assignment.getOptimalCost() + "/" + expectedCost);
       for (int node = 0; node < assignment.getNumNodes(); ++node) {
-        System.out.println("Left node " + node + " assigned to right node " +
-                           assignment.getRightMate(node) + " with cost " +
-                           assignment.getAssignmentCost(node));
+        System.out.println("Left node " + node + " assigned to right node "
+            + assignment.getRightMate(node) + " with cost " + assignment.getAssignmentCost(node));
       }
     } else {
       System.out.println("No solution found.");

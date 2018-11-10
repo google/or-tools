@@ -23,7 +23,9 @@ import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 
 class Tsp {
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   static class RandomManhattan extends NodeEvaluator2 {
     public RandomManhattan(int size, int seed) {
@@ -38,8 +40,8 @@ class Tsp {
 
     @Override
     public long run(int firstIndex, int secondIndex) {
-      return Math.abs(xs[firstIndex] - xs[secondIndex]) +
-          Math.abs(ys[firstIndex] - ys[secondIndex]);
+      return Math.abs(xs[firstIndex] - xs[secondIndex])
+          + Math.abs(ys[firstIndex] - ys[secondIndex]);
     }
 
     private int[] xs;
@@ -77,15 +79,13 @@ class Tsp {
     }
 
     // Add dummy dimension to test API.
-    routing.addDimension(new ConstantCallback(), size + 1, size + 1, true,
-                         "dummy");
+    routing.addDimension(new ConstantCallback(), size + 1, size + 1, true, "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
     RoutingSearchParameters search_parameters =
         RoutingSearchParameters.newBuilder()
             .mergeFrom(RoutingModel.defaultSearchParameters())
-            .setFirstSolutionStrategy(
-                FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();
 
     Assignment solution = routing.solveWithParameters(search_parameters);

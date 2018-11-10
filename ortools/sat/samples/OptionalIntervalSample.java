@@ -17,8 +17,9 @@ import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.Literal;
 
 public class OptionalIntervalSample {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     CpModel model = new CpModel();
@@ -28,8 +29,8 @@ public class OptionalIntervalSample {
     // Java code supports IntVar or integer constants in intervals.
     int duration = 10;
     Literal presence = model.newBoolVar("presence");
-    IntervalVar interval = model.newOptionalIntervalVar(
-        startVar, duration, endVar, presence, "interval");
+    IntervalVar interval =
+        model.newOptionalIntervalVar(startVar, duration, endVar, presence, "interval");
 
     System.out.println(interval);
   }

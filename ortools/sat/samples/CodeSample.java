@@ -15,8 +15,9 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 
 public class CodeSample {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     // Creates the model.

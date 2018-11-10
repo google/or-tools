@@ -16,8 +16,9 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 
 public class IntervalSample {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     CpModel model = new CpModel();
@@ -26,8 +27,7 @@ public class IntervalSample {
     IntVar endVar = model.newIntVar(0, horizon, "end");
     // Java code supports IntVar or integer constants in intervals.
     int duration = 10;
-    IntervalVar interval =
-        model.newIntervalVar(startVar, duration, endVar, "interval");
+    IntervalVar interval = model.newIntervalVar(startVar, duration, endVar, "interval");
 
     System.out.println(interval);
   }

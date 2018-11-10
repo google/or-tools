@@ -17,8 +17,9 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
 public class SolveWithTimeLimit {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     // Create the model.

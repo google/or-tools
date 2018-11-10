@@ -21,8 +21,9 @@ import com.google.ortools.sat.IntVar;
  * rabbits and pheasants are there?
  */
 public class RabbitsAndPheasants {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     // Creates the model.
@@ -40,8 +41,7 @@ public class RabbitsAndPheasants {
     CpSolverStatus status = solver.solve(model);
 
     if (status == CpSolverStatus.FEASIBLE) {
-      System.out.println(solver.value(r) + " rabbits, and " + solver.value(p) +
-                         " pheasants");
+      System.out.println(solver.value(r) + " rabbits, and " + solver.value(p) + " pheasants");
     }
   }
 }

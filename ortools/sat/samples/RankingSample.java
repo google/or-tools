@@ -25,11 +25,11 @@ import java.util.List;
 //   - rank[i] == -1 iff interval[i] is not active.
 //   - rank[i] == number of active intervals that precede interval[i].
 public class RankingSample {
+  static {
+    System.loadLibrary("jniortools");
+  }
 
-  static { System.loadLibrary("jniortools"); }
-
-  static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences,
-                        IntVar[] ranks) {
+  static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks) {
     int numTasks = starts.length;
 
     // Creates precedence variables between pairs of intervals.
@@ -42,8 +42,7 @@ public class RankingSample {
           IntVar prec = model.newBoolVar(String.format("%d before %d", i, j));
           precedences[i][j] = prec;
           // Ensure that task i precedes task j if prec is true.
-          model.addLessOrEqualWithOffset(starts[i], starts[j], 1)
-              .onlyEnforceIf(prec);
+          model.addLessOrEqualWithOffset(starts[i], starts[j], 1).onlyEnforceIf(prec);
         }
       }
     }
@@ -80,7 +79,7 @@ public class RankingSample {
       IntVar[] vars = new IntVar[numTasks + 1];
       int[] coefs = new int[numTasks + 1];
       for (int j = 0; j < numTasks; ++j) {
-        vars[j] = (IntVar)precedences[j][i];
+        vars[j] = (IntVar) precedences[j][i];
         coefs[j] = 1;
       }
       vars[numTasks] = ranks[i];
@@ -109,8 +108,7 @@ public class RankingSample {
       int duration = t + 1;
       ends[t] = model.newIntVar(0, horizon, "end_" + t);
       if (t < numTasks / 2) {
-        intervals[t] =
-            model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
+        intervals[t] = model.newIntervalVar(starts[t], duration, ends[t], "interval_" + t);
         presences[t] = trueVar;
       } else {
         presences[t] = model.newBoolVar("presence_" + t);
@@ -146,7 +144,7 @@ public class RankingSample {
     IntVar[] objectiveVars = new IntVar[numTasks + 1];
     int[] objectiveCoefs = new int[numTasks + 1];
     for (int t = 0; t < numTasks; ++t) {
-      objectiveVars[t] = (IntVar)presences[t];
+      objectiveVars[t] = (IntVar) presences[t];
       objectiveCoefs[t] = -7;
     }
     objectiveVars[numTasks] = makespan;
@@ -162,11 +160,11 @@ public class RankingSample {
       System.out.println("Makespan: " + solver.value(makespan));
       for (int t = 0; t < numTasks; ++t) {
         if (solver.booleanValue(presences[t])) {
-          System.out.printf("Task %d starts at %d with rank %d%n", t,
-                            solver.value(starts[t]), solver.value(ranks[t]));
+          System.out.printf("Task %d starts at %d with rank %d%n", t, solver.value(starts[t]),
+              solver.value(ranks[t]));
         } else {
-          System.out.printf("Task %d in not performed and ranked at %d%n", t,
-                            solver.value(ranks[t]));
+          System.out.printf(
+              "Task %d in not performed and ranked at %d%n", t, solver.value(ranks[t]));
         }
       }
     } else {

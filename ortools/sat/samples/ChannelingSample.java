@@ -19,8 +19,9 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
 public class ChannelingSample {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     // Model.
@@ -42,8 +43,7 @@ public class ChannelingSample {
     model.addEquality(y, 0).onlyEnforceIf(b.not());
 
     // Searches for x values in increasing order.
-    model.addDecisionStrategy(
-        new IntVar[] {x},
+    model.addDecisionStrategy(new IntVar[] {x},
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
@@ -51,8 +51,7 @@ public class ChannelingSample {
     CpSolver solver = new CpSolver();
 
     // Forces the solver to follow the decision strategy exactly.
-    solver.getParameters().setSearchBranching(
-        SatParameters.SearchBranching.FIXED_SEARCH);
+    solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
 
     // Solves the problem with the printer callback.
     solver.searchAllSolutions(model, new CpSolverSolutionCallback() {

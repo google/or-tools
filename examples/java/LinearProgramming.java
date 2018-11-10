@@ -22,19 +22,20 @@ import com.google.ortools.linearsolver.MPVariable;
  */
 
 public class LinearProgramming {
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   private static MPSolver createSolver(String solverType) {
     try {
-      return new MPSolver("LinearProgrammingExample",
-                          MPSolver.OptimizationProblemType.valueOf(solverType));
+      return new MPSolver(
+          "LinearProgrammingExample", MPSolver.OptimizationProblemType.valueOf(solverType));
     } catch (java.lang.IllegalArgumentException e) {
       return null;
     }
   }
 
-  private static void runLinearProgrammingExample(String solverType,
-                                                  boolean printModel) {
+  private static void runLinearProgrammingExample(String solverType, boolean printModel) {
     MPSolver solver = createSolver(solverType);
     if (solver == null) {
       System.out.println("Could not create solver " + solverType);
@@ -91,16 +92,14 @@ public class LinearProgramming {
     // others than GLOP_LINEAR_PROGRAMMING, this is highly recommended!).
     if (!solver.verifySolution(/*tolerance=*/1e-7, /*logErrors=*/true)) {
       System.err.println("The solution returned by the solver violated the"
-                         + " problem constraints by at least 1e-7");
+          + " problem constraints by at least 1e-7");
       return;
     }
 
-    System.out.println("Problem solved in " + solver.wallTime() +
-                       " milliseconds");
+    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
 
     // The objective value of the solution.
-    System.out.println("Optimal objective value = " +
-                       solver.objective().value());
+    System.out.println("Optimal objective value = " + solver.objective().value());
 
     // The value of each variable in the solution.
     System.out.println("x1 = " + x1.solutionValue());
@@ -110,8 +109,7 @@ public class LinearProgramming {
     final double[] activities = solver.computeConstraintActivities();
 
     System.out.println("Advanced usage:");
-    System.out.println("Problem solved in " + solver.iterations() +
-                       " iterations");
+    System.out.println("Problem solved in " + solver.iterations() + " iterations");
     System.out.println("x1: reduced cost = " + x1.reducedCost());
     System.out.println("x2: reduced cost = " + x2.reducedCost());
     System.out.println("x3: reduced cost = " + x3.reducedCost());
@@ -124,8 +122,7 @@ public class LinearProgramming {
   }
 
   public static void main(String[] args) throws Exception {
-    System.out.println(
-        "---- Linear programming example with GLOP (recommended) ----");
+    System.out.println("---- Linear programming example with GLOP (recommended) ----");
     runLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING", true);
     System.out.println("---- Linear programming example with CLP ----");
     runLinearProgrammingExample("CLP_LINEAR_PROGRAMMING", false);

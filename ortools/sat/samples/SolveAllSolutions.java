@@ -17,8 +17,9 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
 public class SolveAllSolutions {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   static class VarArraySolutionPrinter extends CpSolverSolutionCallback {
     public VarArraySolutionPrinter(IntVar[] variables) {
@@ -27,15 +28,16 @@ public class SolveAllSolutions {
 
     @Override
     public void onSolutionCallback() {
-      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount,
-                        wallTime());
+      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount, wallTime());
       for (IntVar v : variableArray) {
         System.out.printf("  %s = %d%n", v.getName(), value(v));
       }
       solutionCount++;
     }
 
-    public int getSolutionCount() { return solutionCount; }
+    public int getSolutionCount() {
+      return solutionCount;
+    }
 
     private int solutionCount;
     private final IntVar[] variableArray;
@@ -55,8 +57,7 @@ public class SolveAllSolutions {
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, y, z});
+    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] {x, y, z});
     solver.searchAllSolutions(model, cb);
 
     System.out.println(cb.getSolutionCount() + " solutions found.");

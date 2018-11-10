@@ -17,8 +17,9 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
 public class CpIsFun {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   static class VarArraySolutionPrinter extends CpSolverSolutionCallback {
     public VarArraySolutionPrinter(IntVar[] variables) {
@@ -34,7 +35,9 @@ public class CpIsFun {
       solutionCount++;
     }
 
-    public int getSolutionCount() { return solutionCount; }
+    public int getSolutionCount() {
+      return solutionCount;
+    }
 
     private int solutionCount;
     private final IntVar[] variableArray;
@@ -67,10 +70,9 @@ public class CpIsFun {
 
     // CP + IS + FUN = TRUE
     model.addScalProdEqual(new IntVar[] {c, p, i, s, f, u, n, t, r, u, e},
-                           new long[] {base, 1, base, 1, base * base, base, 1,
-                                       -base * base * base, -base * base, -base,
-                                       -1},
-                           0);
+        new long[] {
+            base, 1, base, 1, base * base, base, 1, -base * base * base, -base * base, -base, -1},
+        0);
     // [END constraints]
 
     // [START solve]

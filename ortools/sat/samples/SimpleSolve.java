@@ -18,8 +18,9 @@ import com.google.ortools.sat.IntVar;
 
 /** Solve a simple problem with three variables and one different constraint. */
 public class SimpleSolve {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     // Create the model.

@@ -17,19 +17,18 @@ import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
 public class SolveWithIntermediateSolutions {
+  static {
+    System.loadLibrary("jniortools");
+  }
 
-  static { System.loadLibrary("jniortools"); }
-
-  static class VarArraySolutionPrinterWithObjective
-      extends CpSolverSolutionCallback {
+  static class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
       variableArray = variables;
     }
 
     @Override
     public void onSolutionCallback() {
-      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount,
-                        wallTime());
+      System.out.printf("Solution #%d: time = %.02f s%n", solutionCount, wallTime());
       System.out.printf("  objective value = %f%n", objectiveValue());
       for (IntVar v : variableArray) {
         System.out.printf("  %s = %d%n", v.getName(), value(v));
@@ -37,7 +36,9 @@ public class SolveWithIntermediateSolutions {
       solutionCount++;
     }
 
-    public int getSolutionCount() { return solutionCount; }
+    public int getSolutionCount() {
+      return solutionCount;
+    }
 
     private int solutionCount;
     private final IntVar[] variableArray;

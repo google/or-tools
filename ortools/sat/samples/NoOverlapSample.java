@@ -22,8 +22,9 @@ import com.google.ortools.sat.IntervalVar;
  * day as early as possible.
  */
 public class NoOverlapSample {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     CpModel model = new CpModel();
@@ -57,8 +58,7 @@ public class NoOverlapSample {
     // overlap. In this example, as we use 3 fixed intervals that span over
     // weekends, this constraint makes sure that all tasks are executed on
     // weekdays.
-    model.addNoOverlap(
-        new IntervalVar[] {task0, task1, task2, weekend0, weekend1, weekend2});
+    model.addNoOverlap(new IntervalVar[] {task0, task1, task2, weekend0, weekend1, weekend2});
 
     // Makespan objective.
     IntVar obj = model.newIntVar(0, horizon, "makespan");

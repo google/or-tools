@@ -16,8 +16,9 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 public class LiteralSample {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     CpModel model = new CpModel();

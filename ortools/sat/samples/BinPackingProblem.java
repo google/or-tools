@@ -17,8 +17,9 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
 public class BinPackingProblem {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     // Data.
@@ -81,8 +82,7 @@ public class BinPackingProblem {
       //  slack[b] => load[b] <= safeCapacity.
       model.addLessOrEqual(load[b], safeCapacity).onlyEnforceIf(slacks[b]);
       // not(slack[b]) => load[b] > safeCapacity.
-      model.addGreaterOrEqual(load[b], safeCapacity + 1)
-          .onlyEnforceIf(slacks[b].not());
+      model.addGreaterOrEqual(load[b], safeCapacity + 1).onlyEnforceIf(slacks[b].not());
     }
 
     // Maximize sum of slacks.
@@ -93,8 +93,7 @@ public class BinPackingProblem {
     CpSolverStatus status = solver.solve(model);
     System.out.println("Solve status: " + status);
     if (status == CpSolverStatus.OPTIMAL) {
-      System.out.printf("Optimal objective value: %f%n",
-                        solver.objectiveValue());
+      System.out.printf("Optimal objective value: %f%n", solver.objectiveValue());
       for (int b = 0; b < numBins; ++b) {
         System.out.printf("load_%d = %d%n", b, solver.value(load[b]));
         for (int i = 0; i < numItems; ++i) {

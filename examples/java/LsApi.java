@@ -29,11 +29,14 @@ import com.google.ortools.constraintsolver.Solver;
  *
  */
 public class LsApi {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   static class OneVarLns extends BaseLns {
-    public OneVarLns(IntVar[] vars) { super(vars); }
+    public OneVarLns(IntVar[] vars) {
+      super(vars);
+    }
 
     @Override
     public void initFragments() {
@@ -127,11 +130,10 @@ public class LsApi {
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
     IntVar sumVar = solver.makeSum(vars).var();
     OptimizeVar obj = solver.makeMinimize(sumVar, 1);
-    DecisionBuilder db = solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     OneVarLns oneVarLns = new OneVarLns(vars);
-    LocalSearchPhaseParameters lsParams =
-        solver.makeLocalSearchPhaseParameters(oneVarLns, db);
+    LocalSearchPhaseParameters lsParams = solver.makeLocalSearchPhaseParameters(oneVarLns, db);
     DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
     collector.addObjective(sumVar);
@@ -146,11 +148,10 @@ public class LsApi {
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
     IntVar sumVar = solver.makeSum(vars).var();
     OptimizeVar obj = solver.makeMinimize(sumVar, 1);
-    DecisionBuilder db = solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     MoveOneVar moveOneVar = new MoveOneVar(vars);
-    LocalSearchPhaseParameters lsParams =
-        solver.makeLocalSearchPhaseParameters(moveOneVar, db);
+    LocalSearchPhaseParameters lsParams = solver.makeLocalSearchPhaseParameters(moveOneVar, db);
     DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
     collector.addObjective(sumVar);
@@ -165,8 +166,8 @@ public class LsApi {
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
     IntVar sumVar = solver.makeSum(vars).var();
     OptimizeVar obj = solver.makeMinimize(sumVar, 1);
-    DecisionBuilder db = solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     MoveOneVar moveOneVar = new MoveOneVar(vars);
     SumFilter filter = new SumFilter(vars);
     IntVarLocalSearchFilter[] filters = new IntVarLocalSearchFilter[1];

@@ -28,8 +28,9 @@ import com.google.ortools.sat.Literal;
  * half-reified constraints must be used.
  */
 public class ReifiedSample {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     CpModel model = new CpModel();
