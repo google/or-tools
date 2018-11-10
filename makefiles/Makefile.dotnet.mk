@@ -498,7 +498,7 @@ test_dotnet_samples: \
 
 .PHONY: test_donet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
 test_dotnet_linear_solver_samples: \
- rdotnet_SimpleLpProgram
+ rdotnet_SimpleLpProgram.cs
 
 .PHONY: check_dotnet_pimpl
 check_dotnet_pimpl: \
