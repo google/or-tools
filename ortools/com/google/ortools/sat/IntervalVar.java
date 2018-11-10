@@ -31,13 +31,8 @@ public class IntervalVar {
     this.intervalBuilder.setEnd(endIndex);
   }
 
-  IntervalVar(
-      CpModelProto.Builder builder,
-      int startIndex,
-      int sizeIndex,
-      int endIndex,
-      int isPresentIndex,
-      String name) {
+  IntervalVar(CpModelProto.Builder builder, int startIndex, int sizeIndex, int endIndex,
+      int isPresentIndex, String name) {
     this.modelBuilder = builder;
     this.constraintIndex = modelBuilder.getConstraintsCount();
     ConstraintProto.Builder ct = modelBuilder.addConstraintsBuilder();

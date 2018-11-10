@@ -37,7 +37,6 @@ import com.google.ortools.sat.TableConstraintProto;
  * <p>Proposes a factory to create all modeling objects understood by the SAT solver.
  */
 public class CpModel {
-
   static class CpModelException extends Exception {
     public CpModelException(String methodName, String msg) {
       // Call constructor of parent Exception
@@ -494,8 +493,7 @@ public class CpModel {
     int numVars = variables.length;
     for (int t = 0; t < tuplesList.length; ++t) {
       if (tuplesList[t].length != numVars) {
-        throw new WrongLength(
-            "addAllowedAssignments",
+        throw new WrongLength("addAllowedAssignments",
             "tuple " + t + " does not have the same length as the variables");
       }
       for (int i = 0; i < tuplesList[t].length; ++i) {
@@ -520,8 +518,7 @@ public class CpModel {
     int numVars = variables.length;
     for (int t = 0; t < tuplesList.length; ++t) {
       if (tuplesList[t].length != numVars) {
-        throw new WrongLength(
-            "addAllowedAssignments",
+        throw new WrongLength("addAllowedAssignments",
             "tuple " + t + " does not have the same length as the variables");
       }
       for (int i = 0; i < tuplesList[t].length; ++i) {
@@ -595,9 +592,8 @@ public class CpModel {
    * @return an instance of the Constraint class
    * @throws WrongLength if one transition does not have a length of 3
    */
-  public Constraint addAutomaton(
-      IntVar[] transitionVariables, long startingState, long[] finalStates, long[][] transitions)
-      throws WrongLength {
+  public Constraint addAutomaton(IntVar[] transitionVariables, long startingState,
+      long[] finalStates, long[][] transitions) throws WrongLength {
     Constraint ct = new Constraint(modelBuilder);
     AutomataConstraintProto.Builder automaton = ct.builder().getAutomataBuilder();
     for (IntVar var : transitionVariables) {
@@ -721,9 +717,8 @@ public class CpModel {
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if times, demands, or actives have different length
    */
-  public Constraint addReservoirConstraintWithActive(
-      IntVar[] times, long[] demands, IntVar[] actives, long minLevel, long maxLevel)
-      throws MismatchedArrayLengths {
+  public Constraint addReservoirConstraintWithActive(IntVar[] times, long[] demands,
+      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
     if (times.length != demands.length) {
       throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
     }
@@ -752,9 +747,8 @@ public class CpModel {
    *
    * @see #addReservoirConstraintWithActive(IntVar[], long[], actives, long, long) Reservoir
    */
-  public Constraint addReservoirConstraintWithActive(
-      IntVar[] times, int[] demands, IntVar[] actives, long minLevel, long maxLevel)
-      throws MismatchedArrayLengths {
+  public Constraint addReservoirConstraintWithActive(IntVar[] times, int[] demands,
+      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
     return addReservoirConstraintWithActive(
         times, toLongArray(demands), actives, minLevel, maxLevel);
   }
@@ -882,12 +876,8 @@ public class CpModel {
 
   /** Creates a fixed interval from its start and its size. */
   public IntervalVar newFixedInterval(long start, long size, String name) {
-    return new IntervalVar(
-        modelBuilder,
-        indexFromConstant(start),
-        indexFromConstant(size),
-        indexFromConstant(start + size),
-        name);
+    return new IntervalVar(modelBuilder, indexFromConstant(start), indexFromConstant(size),
+        indexFromConstant(start + size), name);
   }
 
   /**
@@ -909,13 +899,8 @@ public class CpModel {
    */
   public IntervalVar newOptionalIntervalVar(
       IntVar start, IntVar size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(
-        modelBuilder,
-        start.getIndex(),
-        size.getIndex(),
-        end.getIndex(),
-        isPresent.getIndex(),
-        name);
+    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), end.getIndex(),
+        isPresent.getIndex(), name);
   }
 
   /**
@@ -925,13 +910,8 @@ public class CpModel {
    */
   public IntervalVar newOptionalIntervalVar(
       IntVar start, IntVar size, long end, Literal isPresent, String name) {
-    return new IntervalVar(
-        modelBuilder,
-        start.getIndex(),
-        size.getIndex(),
-        indexFromConstant(end),
-        isPresent.getIndex(),
-        name);
+    return new IntervalVar(modelBuilder, start.getIndex(), size.getIndex(), indexFromConstant(end),
+        isPresent.getIndex(), name);
   }
 
   /**
@@ -941,25 +921,15 @@ public class CpModel {
    */
   public IntervalVar newOptionalIntervalVar(
       IntVar start, long size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(
-        modelBuilder,
-        start.getIndex(),
-        indexFromConstant(size),
-        end.getIndex(),
-        isPresent.getIndex(),
-        name);
+    return new IntervalVar(modelBuilder, start.getIndex(), indexFromConstant(size), end.getIndex(),
+        isPresent.getIndex(), name);
   }
 
   /** Creates an optional interval with a fixed start. */
   public IntervalVar newOptionalIntervalVar(
       long start, IntVar size, IntVar end, Literal isPresent, String name) {
-    return new IntervalVar(
-        modelBuilder,
-        indexFromConstant(start),
-        size.getIndex(),
-        end.getIndex(),
-        isPresent.getIndex(),
-        name);
+    return new IntervalVar(modelBuilder, indexFromConstant(start), size.getIndex(), end.getIndex(),
+        isPresent.getIndex(), name);
   }
 
   /**
@@ -969,13 +939,8 @@ public class CpModel {
    */
   public IntervalVar newOptionalFixedInterval(
       long start, long size, Literal isPresent, String name) {
-    return new IntervalVar(
-        modelBuilder,
-        indexFromConstant(start),
-        indexFromConstant(size),
-        indexFromConstant(start + size),
-        isPresent.getIndex(),
-        name);
+    return new IntervalVar(modelBuilder, indexFromConstant(start), indexFromConstant(size),
+        indexFromConstant(start + size), isPresent.getIndex(), name);
   }
 
   /**
@@ -1190,8 +1155,7 @@ public class CpModel {
   // DecisionStrategy
 
   /** Adds {@code DecisionStrategy(variables, varStr, domStr)}. */
-  public void addDecisionStrategy(
-      IntVar[] variables,
+  public void addDecisionStrategy(IntVar[] variables,
       DecisionStrategyProto.VariableSelectionStrategy varStr,
       DecisionStrategyProto.DomainReductionStrategy domStr) {
     DecisionStrategyProto.Builder ds = modelBuilder.addSearchStrategyBuilder();

@@ -37,9 +37,8 @@ public class CpSolver {
 
   /** Solves a problem and passes each solution found to the callback. */
   public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
-    solveResponse =
-        SatHelper.solveWithParametersAndSolutionCallback(
-            model.model(), solveParameters.build(), cb);
+    solveResponse = SatHelper.solveWithParametersAndSolutionCallback(
+        model.model(), solveParameters.build(), cb);
     return solveResponse.getStatus();
   }
 
@@ -55,9 +54,8 @@ public class CpSolver {
    */
   public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
     solveParameters.setEnumerateAllSolutions(true);
-    solveResponse =
-        SatHelper.solveWithParametersAndSolutionCallback(
-            model.model(), solveParameters.build(), cb);
+    solveResponse = SatHelper.solveWithParametersAndSolutionCallback(
+        model.model(), solveParameters.build(), cb);
     solveParameters.setEnumerateAllSolutions(true);
     return solveResponse.getStatus();
   }
