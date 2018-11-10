@@ -61,7 +61,6 @@ void CPIsFun() {
                            {kBase, 1, kBase, 1, kBase * kBase, kBase, 1}),
       LinearExpr::ScalProd({t, r, u, e},
                            {kBase * kBase * kBase, kBase * kBase, kBase, 1}));
-  LOG(INFO) << cp_model.Proto().DebugString();
   // [END constraints]
 
   // [START solution_printing]
