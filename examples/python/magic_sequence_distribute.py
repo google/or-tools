@@ -23,23 +23,23 @@ from ortools.constraint_solver import pywrapcp
 
 
 def main():
-  # Create the solver.
-  solver = pywrapcp.Solver('magic sequence')
+    # Create the solver.
+    solver = pywrapcp.Solver('magic sequence')
 
-  size = 100
-  all_values = list(range(0, size))
-  all_vars = [solver.IntVar(0, size, 'vars_%d' % i) for i in all_values]
+    size = 100
+    all_values = list(range(0, size))
+    all_vars = [solver.IntVar(0, size, 'vars_%d' % i) for i in all_values]
 
-  solver.Add(solver.Distribute(all_vars, all_values, all_vars))
-  solver.Add(solver.Sum(all_vars) == size)
+    solver.Add(solver.Distribute(all_vars, all_values, all_vars))
+    solver.Add(solver.Sum(all_vars) == size)
 
-  solver.NewSearch(
-      solver.Phase(all_vars, solver.CHOOSE_FIRST_UNBOUND,
-                   solver.ASSIGN_MIN_VALUE))
-  solver.NextSolution()
-  print(all_vars)
-  solver.EndSearch()
+    solver.NewSearch(
+        solver.Phase(all_vars, solver.CHOOSE_FIRST_UNBOUND,
+                     solver.ASSIGN_MIN_VALUE))
+    solver.NextSolution()
+    print(all_vars)
+    solver.EndSearch()
 
 
 if __name__ == '__main__':
-  main()
+    main()

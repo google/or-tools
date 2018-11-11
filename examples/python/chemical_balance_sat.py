@@ -48,8 +48,7 @@ max_set = [
     int(
         math.ceil(
             min(max_quantities[q][1] * 1000 / chemical_set[s][q + 1]
-                for q in all_products
-                if chemical_set[s][q + 1] != 0)))
+                for q in all_products if chemical_set[s][q + 1] != 0)))
     for s in all_sets
 ]
 
@@ -58,12 +57,12 @@ set_vars = [model.NewIntVar(0, max_set[s], "set_%i" % s) for s in all_sets]
 epsilon = model.NewIntVar(0, 10000000, "epsilon")
 
 for p in all_products:
-  model.Add(
-      sum(int(chemical_set[s][p + 1] * 10) * set_vars[s]
-          for s in all_sets) <= int(max_quantities[p][1] * 10000))
-  model.Add(
-      sum(int(chemical_set[s][p + 1] * 10) * set_vars[s]
-          for s in all_sets) >= int(max_quantities[p][1] * 10000) - epsilon)
+    model.Add(
+        sum(int(chemical_set[s][p + 1] * 10) * set_vars[s]
+            for s in all_sets) <= int(max_quantities[p][1] * 10000))
+    model.Add(
+        sum(int(chemical_set[s][p + 1] * 10) * set_vars[s]
+            for s in all_sets) >= int(max_quantities[p][1] * 10000) - epsilon)
 
 model.Minimize(epsilon)
 
@@ -75,14 +74,14 @@ print("Status = %s" % solver.StatusName(status))
 print("Optimal objective value = %f" % (solver.ObjectiveValue() / 10000.0))
 
 for s in all_sets:
-  print(
-      "  %s = %f" % (chemical_set[s][0], solver.Value(set_vars[s]) / 1000.0),
-      end=" ")
-  print()
+    print(
+        "  %s = %f" % (chemical_set[s][0], solver.Value(set_vars[s]) / 1000.0),
+        end=" ")
+    print()
 for p in all_products:
-  name = max_quantities[p][0]
-  max_quantity = max_quantities[p][1]
-  quantity = sum(
-      solver.Value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
-      for s in all_sets)
-  print("%s: %f out of %f" % (name, quantity, max_quantity))
+    name = max_quantities[p][0]
+    max_quantity = max_quantities[p][1]
+    quantity = sum(
+        solver.Value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
+        for s in all_sets)
+    print("%s: %f out of %f" % (name, quantity, max_quantity))

@@ -22,35 +22,37 @@ from ortools.graph import pywrapgraph
 
 
 def RunAssignmentOn4x4Matrix():
-  """Test linear sum assignment on a 4x4 matrix.
+    """Test linear sum assignment on a 4x4 matrix.
   """
-  num_sources = 4
-  num_targets = 4
-  cost = [[90, 76, 75, 80], [35, 85, 55, 65], [125, 95, 90, 105],
-          [45, 110, 95, 115]]
-  expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
+    num_sources = 4
+    num_targets = 4
+    cost = [[90, 76, 75, 80], [35, 85, 55, 65], [125, 95, 90, 105],
+            [45, 110, 95, 115]]
+    expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
 
-  assignment = pywrapgraph.LinearSumAssignment()
-  for source in range(0, num_sources):
-    for target in range(0, num_targets):
-      assignment.AddArcWithCost(source, target, cost[source][target])
+    assignment = pywrapgraph.LinearSumAssignment()
+    for source in range(0, num_sources):
+        for target in range(0, num_targets):
+            assignment.AddArcWithCost(source, target, cost[source][target])
 
-  solve_status = assignment.Solve()
-  if solve_status == assignment.OPTIMAL:
-    print('Successful solve.')
-    print('Total cost', assignment.OptimalCost(), '/', expected_cost)
-    for i in range(0, assignment.NumNodes()):
-      print('Left node %d assigned to right node %d with cost %d.' %
-            (i, assignment.RightMate(i), assignment.AssignmentCost(i)))
-  elif solve_status == assignment.INFEASIBLE:
-    print('No perfect matching exists.')
-  elif solve_status == assignment.POSSIBLE_OVERFLOW:
-    print('Some input costs are too large and may cause an integer overflow.')
+    solve_status = assignment.Solve()
+    if solve_status == assignment.OPTIMAL:
+        print('Successful solve.')
+        print('Total cost', assignment.OptimalCost(), '/', expected_cost)
+        for i in range(0, assignment.NumNodes()):
+            print('Left node %d assigned to right node %d with cost %d.' %
+                  (i, assignment.RightMate(i), assignment.AssignmentCost(i)))
+    elif solve_status == assignment.INFEASIBLE:
+        print('No perfect matching exists.')
+    elif solve_status == assignment.POSSIBLE_OVERFLOW:
+        print(
+            'Some input costs are too large and may cause an integer overflow.'
+        )
 
 
 def main():
-  RunAssignmentOn4x4Matrix()
+    RunAssignmentOn4x4Matrix()
 
 
 if __name__ == '__main__':
-  main()
+    main()

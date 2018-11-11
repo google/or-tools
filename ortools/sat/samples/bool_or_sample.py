@@ -20,12 +20,12 @@ from ortools.sat.python import cp_model
 
 
 def BoolOrSample():
-  model = cp_model.CpModel()
+    model = cp_model.CpModel()
 
-  x = model.NewBoolVar('x')
-  y = model.NewBoolVar('y')
+    x = model.NewBoolVar('x')
+    y = model.NewBoolVar('y')
 
-  model.AddBoolOr([x, y.Not()])
+    model.AddBoolOr([x, y.Not()])
 
 
 BoolOrSample()

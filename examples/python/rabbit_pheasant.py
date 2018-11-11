@@ -24,34 +24,34 @@ from ortools.constraint_solver import solver_parameters_pb2
 
 
 def main():
-  parameters = pywrapcp.Solver.DefaultSolverParameters()
-  parameters.trace_search = True
+    parameters = pywrapcp.Solver.DefaultSolverParameters()
+    parameters.trace_search = True
 
-  # Create the solver.
-  solver = pywrapcp.Solver('rabbit+pheasant', parameters)
+    # Create the solver.
+    solver = pywrapcp.Solver('rabbit+pheasant', parameters)
 
-  # Create the variables.
-  pheasant = solver.IntVar(0, 100, 'pheasant')
-  rabbit = solver.IntVar(0, 100, 'rabbit')
+    # Create the variables.
+    pheasant = solver.IntVar(0, 100, 'pheasant')
+    rabbit = solver.IntVar(0, 100, 'rabbit')
 
-  # Create the constraints.
-  solver.Add(pheasant + rabbit == 20)
-  solver.Add(pheasant * 2 + rabbit * 4 == 56)
+    # Create the constraints.
+    solver.Add(pheasant + rabbit == 20)
+    solver.Add(pheasant * 2 + rabbit * 4 == 56)
 
-  # Create the search phase.
-  db = solver.Phase([rabbit, pheasant], solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+    # Create the search phase.
+    db = solver.Phase([rabbit, pheasant], solver.INT_VAR_DEFAULT,
+                      solver.INT_VALUE_DEFAULT)
 
-  # And solve.
-  solver.NewSearch(db)
-  solver.NextSolution()
+    # And solve.
+    solver.NewSearch(db)
+    solver.NextSolution()
 
-  # Display output.
-  print(pheasant)
-  print(rabbit)
-  solver.EndSearch()
-  print(solver)
+    # Display output.
+    print(pheasant)
+    print(rabbit)
+    solver.EndSearch()
+    print(solver)
 
 
 if __name__ == '__main__':
-  main()
+    main()

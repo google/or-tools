@@ -20,11 +20,11 @@ from ortools.sat.python import cp_model
 
 
 def LiteralSample():
-  model = cp_model.CpModel()
-  x = model.NewBoolVar('x')
-  not_x = x.Not()
-  print(x)
-  print(not_x)
+    model = cp_model.CpModel()
+    x = model.NewBoolVar('x')
+    not_x = x.Not()
+    print(x)
+    print(not_x)
 
 
 LiteralSample()

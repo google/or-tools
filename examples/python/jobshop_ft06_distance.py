@@ -25,81 +25,80 @@ from ortools.constraint_solver import pywrapcp
 
 
 class Dist:
+    def __init__(self):
+        pass
 
-  def __init__(self):
-    pass
-
-  def distance(self, x, y):
-    return abs(x - y)
+    def distance(self, x, y):
+        return abs(x - y)
 
 
 def main():
-  # Creates the solver.
-  solver = pywrapcp.Solver('jobshop ft06')
+    # Creates the solver.
+    solver = pywrapcp.Solver('jobshop ft06')
 
-  machines_count = 6
-  jobs_count = 6
-  all_machines = range(0, machines_count)
-  all_jobs = range(0, jobs_count)
+    machines_count = 6
+    jobs_count = 6
+    all_machines = range(0, machines_count)
+    all_jobs = range(0, jobs_count)
 
-  durations = [[1, 3, 6, 7, 3, 6], [8, 5, 10, 10, 10, 4], [5, 4, 8, 9, 1, 7],
-               [5, 5, 5, 3, 8, 9], [9, 3, 5, 4, 3, 1], [3, 3, 9, 10, 4, 1]]
+    durations = [[1, 3, 6, 7, 3, 6], [8, 5, 10, 10, 10, 4], [5, 4, 8, 9, 1, 7],
+                 [5, 5, 5, 3, 8, 9], [9, 3, 5, 4, 3, 1], [3, 3, 9, 10, 4, 1]]
 
-  machines = [[2, 0, 1, 3, 5, 4], [1, 2, 4, 5, 0, 3], [2, 3, 5, 0, 1, 4],
-              [1, 0, 2, 3, 4, 5], [2, 1, 4, 5, 0, 3], [1, 3, 5, 0, 4, 2]]
+    machines = [[2, 0, 1, 3, 5, 4], [1, 2, 4, 5, 0, 3], [2, 3, 5, 0, 1, 4],
+                [1, 0, 2, 3, 4, 5], [2, 1, 4, 5, 0, 3], [1, 3, 5, 0, 4, 2]]
 
-  # Computes horizon dynamically.
-  horizon = sum([sum(durations[i]) for i in all_jobs])
+    # Computes horizon dynamically.
+    horizon = sum([sum(durations[i]) for i in all_jobs])
 
-  # Creates jobs.
-  all_tasks = {}
-  for i in all_jobs:
-    for j in all_machines:
-      all_tasks[(i, j)] = solver.FixedDurationIntervalVar(
-          0, horizon, durations[i][j], False, 'Job_%i_%i' % (i, j))
+    # Creates jobs.
+    all_tasks = {}
+    for i in all_jobs:
+        for j in all_machines:
+            all_tasks[(i, j)] = solver.FixedDurationIntervalVar(
+                0, horizon, durations[i][j], False, 'Job_%i_%i' % (i, j))
 
-  # Creates sequence variables and add disjuctive constraints.
-  all_sequences = {}
-  all_transitions = []
-  for i in all_machines:
-    machines_jobs = []
-    for j in all_jobs:
-      for k in all_machines:
-        if machines[j][k] == i:
-          machines_jobs.append(all_tasks[(j, k)])
-    disj = solver.DisjunctiveConstraint(machines_jobs, 'machine %i' % i)
-    distance_obj = Dist()
-    distance_callback = distance_obj.distance
-    # Store all instances of the distance callbacks to have the same
-    # life cycle as the solver.
-    all_transitions.append(distance_callback)
-    disj.SetTransitionTime(distance_callback)
-    all_sequences[i] = disj.SequenceVar()
-    solver.Add(disj)
+    # Creates sequence variables and add disjuctive constraints.
+    all_sequences = {}
+    all_transitions = []
+    for i in all_machines:
+        machines_jobs = []
+        for j in all_jobs:
+            for k in all_machines:
+                if machines[j][k] == i:
+                    machines_jobs.append(all_tasks[(j, k)])
+        disj = solver.DisjunctiveConstraint(machines_jobs, 'machine %i' % i)
+        distance_obj = Dist()
+        distance_callback = distance_obj.distance
+        # Store all instances of the distance callbacks to have the same
+        # life cycle as the solver.
+        all_transitions.append(distance_callback)
+        disj.SetTransitionTime(distance_callback)
+        all_sequences[i] = disj.SequenceVar()
+        solver.Add(disj)
 
-  # Makespan objective.
-  obj_var = solver.Max(
-      [all_tasks[(i, machines_count - 1)].EndExpr() for i in all_jobs])
-  objective = solver.Minimize(obj_var, 1)
+    # Makespan objective.
+    obj_var = solver.Max(
+        [all_tasks[(i, machines_count - 1)].EndExpr() for i in all_jobs])
+    objective = solver.Minimize(obj_var, 1)
 
-  # Precedences inside a job.
-  for i in all_jobs:
-    for j in range(0, machines_count - 1):
-      solver.Add(all_tasks[(i, j + 1)].StartsAfterEnd(all_tasks[(i, j)]))
+    # Precedences inside a job.
+    for i in all_jobs:
+        for j in range(0, machines_count - 1):
+            solver.Add(all_tasks[(i, j + 1)].StartsAfterEnd(all_tasks[(i, j)]))
 
-  # Creates search phases.
-  vars_phase = solver.Phase([obj_var], solver.CHOOSE_FIRST_UNBOUND,
-                            solver.ASSIGN_MIN_VALUE)
-  sequence_phase = solver.Phase([all_sequences[i] for i in all_machines],
-                                solver.SEQUENCE_DEFAULT)
-  main_phase = solver.Compose([sequence_phase, vars_phase])
+    # Creates search phases.
+    vars_phase = solver.Phase([obj_var], solver.CHOOSE_FIRST_UNBOUND,
+                              solver.ASSIGN_MIN_VALUE)
+    sequence_phase = solver.Phase([all_sequences[i] for i in all_machines],
+                                  solver.SEQUENCE_DEFAULT)
+    main_phase = solver.Compose([sequence_phase, vars_phase])
 
-  # Creates the search log.
-  search_log = solver.SearchLog(100, obj_var)
+    # Creates the search log.
+    search_log = solver.SearchLog(100, obj_var)
 
-  # Solves the problem.
-  solver.Solve(main_phase, [search_log, objective])
+    # Solves the problem.
+    solver.Solve(main_phase, [search_log, objective])
 
 
 if __name__ == '__main__':
-  main()
+    main()

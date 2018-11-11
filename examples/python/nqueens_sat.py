@@ -18,81 +18,82 @@ from ortools.sat.python import cp_model
 
 
 class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
-  """Print intermediate solutions."""
+    """Print intermediate solutions."""
 
-  def __init__(self, queens):
-    cp_model.CpSolverSolutionCallback.__init__(self)
-    self.__queens = queens
-    self.__solution_count = 0
-    self.__start_time = time.time()
+    def __init__(self, queens):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__queens = queens
+        self.__solution_count = 0
+        self.__start_time = time.time()
 
-  def SolutionCount(self):
-    return self.__solution_count
+    def SolutionCount(self):
+        return self.__solution_count
 
-  def OnSolutionCallback(self):
-    current_time = time.time()
-    print('Solution %i, time = %f s' % (self.__solution_count,
-                                        current_time - self.__start_time))
-    self.__solution_count += 1
+    def OnSolutionCallback(self):
+        current_time = time.time()
+        print('Solution %i, time = %f s' % (self.__solution_count,
+                                            current_time - self.__start_time))
+        self.__solution_count += 1
 
-    all_queens = range(len(self.__queens))
-    for i in all_queens:
-      for j in all_queens:
-        if self.Value(self.__queens[j]) == i:
-          # There is a queen in column j, row i.
-          print('Q', end=' ')
-        else:
-          print('_', end=' ')
-      print()
-    print()
+        all_queens = range(len(self.__queens))
+        for i in all_queens:
+            for j in all_queens:
+                if self.Value(self.__queens[j]) == i:
+                    # There is a queen in column j, row i.
+                    print('Q', end=' ')
+                else:
+                    print('_', end=' ')
+            print()
+        print()
 
 
 def main(board_size):
-  # Creates the solver.
-  model = cp_model.CpModel()
-  # Creates the variables.
-  # The array index is the column, and the value is the row.
-  queens = [
-      model.NewIntVar(0, board_size - 1, 'x%i' % i) for i in range(board_size)
-  ]
-  # Creates the constraints.
+    # Creates the solver.
+    model = cp_model.CpModel()
+    # Creates the variables.
+    # The array index is the column, and the value is the row.
+    queens = [
+        model.NewIntVar(0, board_size - 1, 'x%i' % i)
+        for i in range(board_size)
+    ]
+    # Creates the constraints.
 
-  # All rows must be different.
-  model.AddAllDifferent(queens)
+    # All rows must be different.
+    model.AddAllDifferent(queens)
 
-  # All columns must be different because the indices of queens are all
-  # different.
+    # All columns must be different because the indices of queens are all
+    # different.
 
-  # No two queens can be on the same diagonal.
-  diag1 = []
-  diag2 = []
-  for i in range(board_size):
-    q1 = model.NewIntVar(0, 2 * board_size, 'diag1_%i' % i)
-    q2 = model.NewIntVar(-board_size, board_size, 'diag2_%i' % i)
-    diag1.append(q1)
-    diag2.append(q2)
-    model.Add(q1 == queens[i] + i)
-    model.Add(q2 == queens[i] - i)
-  model.AddAllDifferent(diag1)
-  model.AddAllDifferent(diag2)
+    # No two queens can be on the same diagonal.
+    diag1 = []
+    diag2 = []
+    for i in range(board_size):
+        q1 = model.NewIntVar(0, 2 * board_size, 'diag1_%i' % i)
+        q2 = model.NewIntVar(-board_size, board_size, 'diag2_%i' % i)
+        diag1.append(q1)
+        diag2.append(q2)
+        model.Add(q1 == queens[i] + i)
+        model.Add(q2 == queens[i] - i)
+    model.AddAllDifferent(diag1)
+    model.AddAllDifferent(diag2)
 
-  ### Solve model.
-  solver = cp_model.CpSolver()
-  solution_printer = NQueenSolutionPrinter(queens)
-  status = solver.SearchForAllSolutions(model, solution_printer)
+    ### Solve model.
+    solver = cp_model.CpSolver()
+    solution_printer = NQueenSolutionPrinter(queens)
+    status = solver.SearchForAllSolutions(model, solution_printer)
 
-  print()
-  print('Statistics')
-  print('  - conflicts       : %i' % solver.NumConflicts())
-  print('  - branches        : %i' % solver.NumBranches())
-  print('  - wall time       : %f ms' % solver.WallTime())
-  print('  - solutions found : %i' % solution_printer.SolutionCount())
+    print()
+    print('Statistics')
+    print('  - conflicts       : %i' % solver.NumConflicts())
+    print('  - branches        : %i' % solver.NumBranches())
+    print('  - wall time       : %f ms' % solver.WallTime())
+    print('  - solutions found : %i' % solution_printer.SolutionCount())
 
 
 # By default, solve the 8x8 problem.
 board_size = 8
 
 if __name__ == '__main__':
-  if len(sys.argv) > 1:
-    board_size = int(sys.argv[1])
-  main(board_size)
+    if len(sys.argv) > 1:
+        board_size = int(sys.argv[1])
+    main(board_size)

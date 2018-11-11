@@ -20,23 +20,24 @@ from ortools.sat.python import cp_model
 
 
 def RabbitsAndPheasants():
-  """Solves the rabbits + pheasants problem."""
-  model = cp_model.CpModel()
+    """Solves the rabbits + pheasants problem."""
+    model = cp_model.CpModel()
 
-  r = model.NewIntVar(0, 100, 'r')
-  p = model.NewIntVar(0, 100, 'p')
+    r = model.NewIntVar(0, 100, 'r')
+    p = model.NewIntVar(0, 100, 'p')
 
-  # 20 heads.
-  model.Add(r + p == 20)
-  # 56 legs.
-  model.Add(4 * r + 2 * p == 56)
+    # 20 heads.
+    model.Add(r + p == 20)
+    # 56 legs.
+    model.Add(4 * r + 2 * p == 56)
 
-  # Solves and prints out the solution.
-  solver = cp_model.CpSolver()
-  status = solver.Solve(model)
+    # Solves and prints out the solution.
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
 
-  if status == cp_model.FEASIBLE:
-    print('%i rabbits and %i pheasants' % (solver.Value(r), solver.Value(p)))
+    if status == cp_model.FEASIBLE:
+        print(
+            '%i rabbits and %i pheasants' % (solver.Value(r), solver.Value(p)))
 
 
 RabbitsAndPheasants()

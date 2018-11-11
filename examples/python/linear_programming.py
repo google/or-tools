@@ -17,63 +17,66 @@
 from __future__ import print_function
 from ortools.linear_solver import pywraplp
 
+
 def main():
-  """Entry point of the program"""
-  # Instantiate a Glop solver, naming it LinearExample.
-  solver = pywraplp.Solver('LinearExample', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+    """Entry point of the program"""
+    # Instantiate a Glop solver, naming it LinearExample.
+    solver = pywraplp.Solver('LinearExample',
+                             pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
 
-  # Create the two variables and let them take on any value.
-  x = solver.NumVar(-solver.infinity(), solver.infinity(), 'x')
-  y = solver.NumVar(-solver.infinity(), solver.infinity(), 'y')
+    # Create the two variables and let them take on any value.
+    x = solver.NumVar(-solver.infinity(), solver.infinity(), 'x')
+    y = solver.NumVar(-solver.infinity(), solver.infinity(), 'y')
 
-  # Objective function: Maximize 3x + 4y.
-  objective = solver.Objective()
-  objective.SetCoefficient(x, 3)
-  objective.SetCoefficient(y, 4)
-  objective.SetMaximization()
+    # Objective function: Maximize 3x + 4y.
+    objective = solver.Objective()
+    objective.SetCoefficient(x, 3)
+    objective.SetCoefficient(y, 4)
+    objective.SetMaximization()
 
-  # Constraint 0: x + 2y <= 14.
-  constraint0 = solver.Constraint(-solver.infinity(), 14)
-  constraint0.SetCoefficient(x, 1)
-  constraint0.SetCoefficient(y, 2)
+    # Constraint 0: x + 2y <= 14.
+    constraint0 = solver.Constraint(-solver.infinity(), 14)
+    constraint0.SetCoefficient(x, 1)
+    constraint0.SetCoefficient(y, 2)
 
-  # Constraint 1: 3x - y >= 0.
-  constraint1 = solver.Constraint(0, solver.infinity())
-  constraint1.SetCoefficient(x, 3)
-  constraint1.SetCoefficient(y, -1)
+    # Constraint 1: 3x - y >= 0.
+    constraint1 = solver.Constraint(0, solver.infinity())
+    constraint1.SetCoefficient(x, 3)
+    constraint1.SetCoefficient(y, -1)
 
-  # Constraint 2: x - y <= 2.
-  constraint2 = solver.Constraint(-solver.infinity(), 2)
-  constraint2.SetCoefficient(x, 1)
-  constraint2.SetCoefficient(y, -1)
+    # Constraint 2: x - y <= 2.
+    constraint2 = solver.Constraint(-solver.infinity(), 2)
+    constraint2.SetCoefficient(x, 1)
+    constraint2.SetCoefficient(y, -1)
 
-  print('Number of variables =', solver.NumVariables())
-  print('Number of constraints =', solver.NumConstraints())
+    print('Number of variables =', solver.NumVariables())
+    print('Number of constraints =', solver.NumConstraints())
 
-  # Solve the system.
-  status = solver.Solve()
-  # Check that the problem has an optimal solution.
-  if status != pywraplp.Solver.OPTIMAL:
-    print("The problem does not have an optimal solution!")
-    exit(1)
+    # Solve the system.
+    status = solver.Solve()
+    # Check that the problem has an optimal solution.
+    if status != pywraplp.Solver.OPTIMAL:
+        print("The problem does not have an optimal solution!")
+        exit(1)
 
-  print('Solution:')
-  print('x =', x.solution_value())
-  print('y =', y.solution_value())
-  print('Optimal objective value =', objective.Value())
-  print('')
-  print('Advanced usage:')
-  print('Problem solved in ', solver.wall_time(), ' milliseconds')
-  print('Problem solved in ', solver.iterations(), ' iterations')
-  print('x: reduced cost =', x.reduced_cost())
-  print('y: reduced cost =', y.reduced_cost())
-  activities = solver.ComputeConstraintActivities()
-  print('constraint0: dual value =', constraint0.dual_value(),
-        ' activities =', activities[constraint0.index()])
-  print('constraint1: dual value =', constraint1.dual_value(),
-        ' activities =', activities[constraint1.index()])
-  print('constraint2: dual value =', constraint2.dual_value(),
-        ' activities =', activities[constraint2.index()])
+    print('Solution:')
+    print('x =', x.solution_value())
+    print('y =', y.solution_value())
+    print('Optimal objective value =', objective.Value())
+    print('')
+    print('Advanced usage:')
+    print('Problem solved in ', solver.wall_time(), ' milliseconds')
+    print('Problem solved in ', solver.iterations(), ' iterations')
+    print('x: reduced cost =', x.reduced_cost())
+    print('y: reduced cost =', y.reduced_cost())
+    activities = solver.ComputeConstraintActivities()
+    print('constraint0: dual value =', constraint0.dual_value(),
+          ' activities =', activities[constraint0.index()])
+    print('constraint1: dual value =', constraint1.dual_value(),
+          ' activities =', activities[constraint1.index()])
+    print('constraint2: dual value =', constraint2.dual_value(),
+          ' activities =', activities[constraint2.index()])
+
 
 if __name__ == '__main__':
-  main()
+    main()

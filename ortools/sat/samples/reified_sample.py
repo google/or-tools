@@ -20,23 +20,23 @@ from ortools.sat.python import cp_model
 
 
 def ReifiedSample():
-  """Showcase creating a reified constraint."""
-  model = cp_model.CpModel()
+    """Showcase creating a reified constraint."""
+    model = cp_model.CpModel()
 
-  x = model.NewBoolVar('x')
-  y = model.NewBoolVar('y')
-  b = model.NewBoolVar('b')
+    x = model.NewBoolVar('x')
+    y = model.NewBoolVar('y')
+    b = model.NewBoolVar('b')
 
-  # First version using a half-reified bool and.
-  model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
+    # First version using a half-reified bool and.
+    model.AddBoolAnd([x, y.Not()]).OnlyEnforceIf(b)
 
-  # Second version using implications.
-  model.AddImplication(b, x)
-  model.AddImplication(b, y.Not())
+    # Second version using implications.
+    model.AddImplication(b, x)
+    model.AddImplication(b, y.Not())
 
-  # Third version using bool or.
-  model.AddBoolOr([b.Not(), x])
-  model.AddBoolOr([b.Not(), y.Not()])
+    # Third version using bool or.
+    model.AddBoolOr([b.Not(), x])
+    model.AddBoolOr([b.Not(), y.Not()])
 
 
 ReifiedSample()

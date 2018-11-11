@@ -43,10 +43,8 @@ all_sets = range(num_sets)
 # Model
 
 max_set = [
-    min(max_quantities[q][1] / chemical_set[s][q + 1]
-        for q in all_products
-        if chemical_set[s][q + 1] != 0.0)
-    for s in all_sets
+    min(max_quantities[q][1] / chemical_set[s][q + 1] for q in all_products
+        if chemical_set[s][q + 1] != 0.0) for s in all_sets
 ]
 
 solver = pywraplp.Solver("chemical_set_lp",
@@ -57,12 +55,12 @@ set_vars = [solver.NumVar(0, max_set[s], "set_%i" % s) for s in all_sets]
 epsilon = solver.NumVar(0, 1000, "epsilon")
 
 for p in all_products:
-  solver.Add(
-      sum(chemical_set[s][p + 1] * set_vars[s]
-          for s in all_sets) <= max_quantities[p][1])
-  solver.Add(
-      sum(chemical_set[s][p + 1] * set_vars[s]
-          for s in all_sets) >= max_quantities[p][1] - epsilon)
+    solver.Add(
+        sum(chemical_set[s][p + 1] * set_vars[s]
+            for s in all_sets) <= max_quantities[p][1])
+    solver.Add(
+        sum(chemical_set[s][p + 1] * set_vars[s]
+            for s in all_sets) >= max_quantities[p][1] - epsilon)
 
 solver.Minimize(epsilon)
 
@@ -82,12 +80,13 @@ print(("Problem solved in %f milliseconds" % solver.wall_time()))
 print(("Optimal objective value = %f" % solver.Objective().Value()))
 
 for s in all_sets:
-  print(
-      "  %s = %f" % (chemical_set[s][0], set_vars[s].solution_value()), end=" ")
-  print()
+    print(
+        "  %s = %f" % (chemical_set[s][0], set_vars[s].solution_value()),
+        end=" ")
+    print()
 for p in all_products:
-  name = max_quantities[p][0]
-  max_quantity = max_quantities[p][1]
-  quantity = sum(
-      set_vars[s].solution_value() * chemical_set[s][p + 1] for s in all_sets)
-  print("%s: %f out of %f" % (name, quantity, max_quantity))
+    name = max_quantities[p][0]
+    max_quantity = max_quantities[p][1]
+    quantity = sum(set_vars[s].solution_value() * chemical_set[s][p + 1]
+                   for s in all_sets)
+    print("%s: %f out of %f" % (name, quantity, max_quantity))

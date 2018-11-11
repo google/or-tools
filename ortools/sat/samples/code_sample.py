@@ -20,9 +20,9 @@ from ortools.sat.python import cp_model
 
 
 def CodeSample():
-  model = cp_model.CpModel()
-  x = model.NewBoolVar('x')
-  print(x)
+    model = cp_model.CpModel()
+    x = model.NewBoolVar('x')
+    print(x)
 
 
 CodeSample()
