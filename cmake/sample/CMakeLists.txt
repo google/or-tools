@@ -10,10 +10,10 @@ set_target_properties(sample PROPERTIES VERSION ${PROJECT_VERSION})
 target_link_libraries(sample PRIVATE ortools::ortools)
 
 if(BUILD_TESTING)
-	add_test(NAME sample_UT COMMAND sample)
+  add_test(NAME sample_UT COMMAND sample)
 endif()
 
 include(GNUInstallDirs)
 install(TARGETS sample
-	EXPORT SampleTargets
-	DESTINATION ${CMAKE_INSTALL_BINDIR})
+  EXPORT SampleTargets
+  DESTINATION ${CMAKE_INSTALL_BINDIR})

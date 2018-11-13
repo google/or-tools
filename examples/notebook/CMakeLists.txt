@@ -3,5 +3,5 @@ if (NOT BUILD_PYTHON)
 endif()
 
 install(DIRECTORY .
-	DESTINATION ${CMAKE_INSTALL_DATADIR}/ortools/examples/notebook
-	FILES_MATCHING PATTERN "*.ipynb")
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/ortools/examples/notebook
+  FILES_MATCHING PATTERN "*.ipynb")
