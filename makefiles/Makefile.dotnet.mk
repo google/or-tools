@@ -477,25 +477,25 @@ rdotnet_%.cs: \
 	"$(DOTNET_BIN)" build ortools$Slinear_solver$Ssamples$S$*.csproj
 	"$(DOTNET_BIN)" run --no-build --project ortools$Slinear_solver$Ssamples$S$*.csproj -- $(ARGS)
 
-.PHONY: test_donet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
-test_dotnet_samples: \
- rdotnet_binpacking_problem.cs \
- rdotnet_bool_or_sample.cs \
- rdotnet_channeling_sample.cs \
- rdotnet_code_sample.cs \
+.PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
+test_dotnet_sat_samples: \
+ rdotnet_BinPackingProblem.cs \
+ rdotnet_BoolOrSample.cs \
+ rdotnet_ChannelingSample.cs \
+ rdotnet_CodeSample.cs \
  rdotnet_CpIsFun.cs \
- rdotnet_interval_sample.cs \
- rdotnet_literal_sample.cs \
- rdotnet_no_overlap_sample.cs \
- rdotnet_optional_interval_sample.cs \
- rdotnet_rabbits_and_pheasants.cs \
- rdotnet_ranking_sample.cs \
- rdotnet_reified_sample.cs \
- rdotnet_simple_solve.cs \
- rdotnet_solve_all_solutions.cs \
- rdotnet_solve_with_intermediate_solutions.cs \
- rdotnet_solve_with_time_limit.cs \
- rdotnet_stop_after_n_solutions.cs
+ rdotnet_IntervalSample.cs \
+ rdotnet_LiteralSample.cs \
+ rdotnet_NoOverlapSample.cs \
+ rdotnet_OptionalIntervalSample.cs \
+ rdotnet_RabbitsAndPheasants.cs \
+ rdotnet_RankingSample.cs \
+ rdotnet_ReifiedSample.cs \
+ rdotnet_SimpleSolve.cs \
+ rdotnet_SolveAllSolutions.cs \
+ rdotnet_SolveWithIntermediateSolutions.cs \
+ rdotnet_SolveWithTimeLimit.cs \
+ rdotnet_StopAfterNSolutions.cs
 
 .PHONY: test_donet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
 test_dotnet_linear_solver_samples: \
