@@ -19,7 +19,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def MinimalCpSatWithTimeLimit():
+def SolveWithTimeLimitSampleSat():
     """Minimal CP-SAT example to showcase calling the solver."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -45,4 +45,4 @@ def MinimalCpSatWithTimeLimit():
         print('z = %i' % solver.Value(z))
 
 
-MinimalCpSatWithTimeLimit()
+SolveWithTimeLimitSampleSat()

@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void RabbitsAndPheasants() {
+void RabbitsAndPheasantsSat() {
   CpModelBuilder cp_model;
 
   const Domain all_animals(0, 20);
@@ -40,7 +40,7 @@ void RabbitsAndPheasants() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::RabbitsAndPheasants();
+  operations_research::sat::RabbitsAndPheasantsSat();
 
   return EXIT_SUCCESS;
 }

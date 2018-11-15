@@ -14,9 +14,9 @@
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class OptionalIntervalSampleSat
 {
-  static void OptionalIntervalSample()
+  static void Main()
   {
     CpModel model = new CpModel();
     int horizon = 100;
@@ -27,10 +27,5 @@ public class CodeSamplesSat
     IntVar presence_var = model.NewBoolVar("presence");
     IntervalVar interval = model.NewOptionalIntervalVar(
         start_var, duration, end_var, presence_var, "interval");
-  }
-
-  static void Main()
-  {
-    OptionalIntervalSample();
   }
 }

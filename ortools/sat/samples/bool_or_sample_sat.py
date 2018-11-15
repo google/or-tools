@@ -19,7 +19,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def BoolOrSample():
+def BoolOrSampleSat():
     model = cp_model.CpModel()
 
     x = model.NewBoolVar('x')
@@ -28,4 +28,4 @@ def BoolOrSample():
     model.AddBoolOr([x, y.Not()])
 
 
-BoolOrSample()
+BoolOrSampleSat()

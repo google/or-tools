@@ -16,7 +16,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
-public class SolveWithIntermediateSolutions {
+public class SolveAndPrintIntermediateSolutionsSampleSat {
   static {
     System.loadLibrary("jniortools");
   }

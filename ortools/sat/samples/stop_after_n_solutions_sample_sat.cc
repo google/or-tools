@@ -21,7 +21,7 @@
 namespace operations_research {
 namespace sat {
 
-void StopAfterNSolutions() {
+void StopAfterNSolutionsSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -62,7 +62,7 @@ void StopAfterNSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::StopAfterNSolutions();
+  operations_research::sat::StopAfterNSolutionsSampleSat();
 
   return EXIT_SUCCESS;
 }

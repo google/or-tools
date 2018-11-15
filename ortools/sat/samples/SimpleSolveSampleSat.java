@@ -11,13 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /** Solve a simple problem with three variables and one different constraint. */
-public class SimpleSolve {
+public class SimpleSolveSampleSat {
   static {
     System.loadLibrary("jniortools");
   }

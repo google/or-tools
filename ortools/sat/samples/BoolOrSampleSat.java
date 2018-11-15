@@ -15,7 +15,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
-public class BoolOrSample {
+public class BoolOrSampleSat {
   static {
     System.loadLibrary("jniortools");
   }

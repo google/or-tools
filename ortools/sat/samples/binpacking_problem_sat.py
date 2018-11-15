@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Solves a binpacking problem."""
+"""Solves a binpacking problem using the CP-SAT solver."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -19,8 +19,8 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def BinpackingProblem():
-    """Solves a bin-packing problem."""
+def BinpackingProblemSat():
+    """Solves a bin-packing problem using the CP-SAT solver."""
     # Data.
     bin_capacity = 100
     slack_capacity = 20
@@ -78,4 +78,4 @@ def BinpackingProblem():
     print('  - wall time : %f s' % solver.WallTime())
 
 
-BinpackingProblem()
+BinpackingProblemSat()

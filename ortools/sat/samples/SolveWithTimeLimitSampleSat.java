@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
-public class SolveWithTimeLimit {
+public class SolveWithTimeLimitSampleSat {
   static {
     System.loadLibrary("jniortools");
   }

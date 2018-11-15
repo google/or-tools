@@ -53,9 +53,9 @@ public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback
   private int solution_limit_;
 }
 
-public class CodeSamplesSat
+public class StopAfterNSolutionsSampleSat
 {
-  static void StopAfterNSolutions()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -73,10 +73,5 @@ public class CodeSamplesSat
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
           cb.SolutionCount()));
-  }
-
-  static void Main()
-  {
-    StopAfterNSolutions();
   }
 }

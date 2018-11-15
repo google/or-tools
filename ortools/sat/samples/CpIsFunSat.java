@@ -11,16 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
-public class CpIsFun {
+public class CpIsFunSat {
   static {
     System.loadLibrary("jniortools");
   }
 
+  // [START solution_printing]
   static class VarArraySolutionPrinter extends CpSolverSolutionCallback {
     public VarArraySolutionPrinter(IntVar[] variables) {
       variableArray = variables;
@@ -42,6 +44,7 @@ public class CpIsFun {
     private int solutionCount;
     private final IntVar[] variableArray;
   }
+  // [END solution_printing]
 
   public static void main(String[] args) throws Exception {
     // Create the model.
@@ -89,3 +92,4 @@ public class CpIsFun {
     System.out.println("  - solutions : " + cb.getSolutionCount());
   }
 }
+// [END program]

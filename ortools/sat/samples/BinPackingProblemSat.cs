@@ -14,9 +14,9 @@
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class BinPackingProblemSat
 {
-  static void BinpackingProblem()
+  static void Main()
   {
     // Data.
     int bin_capacity = 100;
@@ -119,10 +119,5 @@ public class CodeSamplesSat
                                     solver.NumBranches()));
     Console.WriteLine(String.Format("  - wall time : {0} s",
                                     solver.WallTime()));
-  }
-
-  static void Main()
-  {
-    BinpackingProblem();
   }
 }

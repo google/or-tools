@@ -17,7 +17,7 @@
 namespace operations_research {
 namespace sat {
 
-void SolveWithIntermediateSolutions() {
+void SolveAndPrintIntermediateSolutionsSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -47,7 +47,7 @@ void SolveWithIntermediateSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SolveWithIntermediateSolutions();
+  operations_research::sat::SolveAndPrintIntermediateSolutionsSampleSat();
 
   return EXIT_SUCCESS;
 }

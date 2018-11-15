@@ -37,7 +37,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def SolveAllSolutions():
+def SearchForAllSolutionsSampleSat():
     """Showcases calling the solver to search for all solutions."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -57,4 +57,4 @@ def SolveAllSolutions():
     print('Number of solutions found: %i' % solution_printer.SolutionCount())
 
 
-SolveAllSolutions()
+SearchForAllSolutionsSampleSat()

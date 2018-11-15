@@ -19,7 +19,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def ReifiedSample():
+def ReifiedSampleSat():
     """Showcase creating a reified constraint."""
     model = cp_model.CpModel()
 
@@ -39,4 +39,4 @@ def ReifiedSample():
     model.AddBoolOr([b.Not(), y.Not()])
 
 
-ReifiedSample()
+ReifiedSampleSat()

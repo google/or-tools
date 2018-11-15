@@ -15,7 +15,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 
-public class IntervalSample {
+public class IntervalSampleSat {
   static {
     System.loadLibrary("jniortools");
   }

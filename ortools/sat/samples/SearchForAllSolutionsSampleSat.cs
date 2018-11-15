@@ -45,9 +45,9 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
 }
 
 
-public class CodeSamplesSat
+public class SearchForAllSolutionsSampleSat
 {
-  static void MinimalCpSatAllSolutions()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -68,10 +68,5 @@ public class CodeSamplesSat
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
                                     cb.SolutionCount()));
-  }
-
-  static void Main()
-  {
-    MinimalCpSatAllSolutions();
   }
 }

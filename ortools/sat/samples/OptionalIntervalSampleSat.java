@@ -16,7 +16,7 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.Literal;
 
-public class OptionalIntervalSample {
+public class OptionalIntervalSampleSat {
   static {
     System.loadLibrary("jniortools");
   }

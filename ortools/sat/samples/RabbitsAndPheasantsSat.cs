@@ -14,9 +14,9 @@
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class RabbitsAndPheasantsSat
 {
-  static void RabbitsAndPheasants()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -37,10 +37,5 @@ public class CodeSamplesSat
       Console.WriteLine(solver.Value(r) + " rabbits, and " +
                         solver.Value(p) + " pheasants");
     }
-  }
-
-  static void Main()
-  {
-    RabbitsAndPheasants();
   }
 }

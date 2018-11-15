@@ -53,7 +53,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def RabbitsAndPheasants():
+def RabbitsAndPheasantsSat():
   """Solves the rabbits + pheasants problem."""
   model = cp_model.CpModel()
 
@@ -73,7 +73,7 @@ def RabbitsAndPheasants():
     print('%i rabbits and %i pheasants' % (solver.Value(r), solver.Value(p)))
 
 
-RabbitsAndPheasants()
+RabbitsAndPheasantsSat()
 ```
 
 ### C++ code
@@ -84,7 +84,7 @@ RabbitsAndPheasants()
 namespace operations_research {
 namespace sat {
 
-void RabbitsAndPheasants() {
+void RabbitsAndPheasantsSat() {
   CpModelBuilder cp_model;
 
   const Domain all_animals(0, 20);
@@ -108,7 +108,7 @@ void RabbitsAndPheasants() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::RabbitsAndPheasants();
+  operations_research::sat::RabbitsAndPheasantsSat();
 
   return EXIT_SUCCESS;
 }
@@ -126,7 +126,7 @@ import com.google.ortools.sat.IntVar;
  * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many rabbits and
  * pheasants are there?
  */
-public class RabbitsAndPheasants {
+public class RabbitsAndPheasantsSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -158,9 +158,9 @@ public class RabbitsAndPheasants {
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class RabbitsAndPheasantsSat
 {
-  static void RabbitsAndPheasants()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -181,11 +181,6 @@ public class CodeSamplesSat
       Console.WriteLine(solver.Value(r) + " rabbits, and " +
                         solver.Value(p) + " pheasants");
     }
-  }
-
-  static void Main()
-  {
-    RabbitsAndPheasants();
   }
 }
 ```

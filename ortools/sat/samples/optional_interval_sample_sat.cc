@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void OptionalIntervalSample() {
+void OptionalIntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
 
@@ -42,7 +42,7 @@ void OptionalIntervalSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::OptionalIntervalSample();
+  operations_research::sat::OptionalIntervalSampleSat();
 
   return EXIT_SUCCESS;
 }

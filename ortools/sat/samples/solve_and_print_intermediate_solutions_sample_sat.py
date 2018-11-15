@@ -40,7 +40,7 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def MinimalCpSatPrintIntermediateSolutions():
+def SolveAndPrintIntermediateSolutionsSampleSat():
     """Showcases printing intermediate solutions found during search."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -62,4 +62,4 @@ def MinimalCpSatPrintIntermediateSolutions():
     print('Number of solutions found: %i' % solution_printer.SolutionCount())
 
 
-MinimalCpSatPrintIntermediateSolutions()
+SolveAndPrintIntermediateSolutionsSampleSat()

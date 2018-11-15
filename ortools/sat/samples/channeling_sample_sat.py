@@ -37,7 +37,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-def ChannelingSample():
+def ChannelingSampleSat():
     """Demonstrates how to link integer constraints together."""
 
     # Model.
@@ -73,4 +73,4 @@ def ChannelingSample():
     solver.SearchForAllSolutions(model, solution_printer)
 
 
-ChannelingSample()
+ChannelingSampleSat()

@@ -14,9 +14,9 @@
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class NoOverlapSampleSat
 {
-  static void NoOverlapSample()
+  static void Main()
   {
     CpModel model = new CpModel();
     // Three weeks.
@@ -68,10 +68,5 @@ public class CodeSamplesSat
       Console.WriteLine("Task 1 starts at " + solver.Value(start_1));
       Console.WriteLine("Task 2 starts at " + solver.Value(start_2));
     }
-  }
-
-  static void Main()
-  {
-    NoOverlapSample();
   }
 }

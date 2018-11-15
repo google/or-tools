@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+// [START program]
 using System;
 using Google.OrTools.Sat;
 
@@ -45,10 +47,10 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
 }
 // [END solution_printing]
 
-public class CpIsFun
+public class CpIsFunSat
 {
   // Solve the CP+IS+FUN==TRUE cryptarithm.
-  static void Solve()
+  static void Main()
   {
     // Constraint programming engine
     CpModel model = new CpModel();
@@ -93,9 +95,5 @@ public class CpIsFun
     Console.WriteLine($"  - wall time : {solver.WallTime()} s");
     Console.WriteLine($"  - number of solutions found: {cb.SolutionCount()}");
   }
-
-  static void Main()
-  {
-    Solve();
-  }
 }
+// [END program]

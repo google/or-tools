@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void BinpackingProblem() {
+void BinpackingProblemSat() {
   // Data.
   const int kBinCapacity = 100;
   const int kSlackCapacity = 20;
@@ -86,7 +86,7 @@ void BinpackingProblem() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::BinpackingProblem();
+  operations_research::sat::BinpackingProblemSat();
 
   return EXIT_SUCCESS;
 }

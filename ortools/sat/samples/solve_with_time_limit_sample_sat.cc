@@ -18,7 +18,7 @@
 namespace operations_research {
 namespace sat {
 
-void SolveWithTimeLimit() {
+void SolveWithTimeLimitSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -51,7 +51,7 @@ void SolveWithTimeLimit() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SolveWithTimeLimit();
+  operations_research::sat::SolveWithTimeLimitSampleSat();
 
   return EXIT_SUCCESS;
 }

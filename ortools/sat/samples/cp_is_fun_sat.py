@@ -45,13 +45,14 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         # [END solution_printing]
 
 
-def CPIsFun():
+def CPIsFunSat():
     """Solve the CP+IS+FUN==TRUE cryptarithm."""
     # Constraint programming engine
     model = cp_model.CpModel()
 
     # [START variables]
     base = 10
+
     c = model.NewIntVar(1, base - 1, 'C')
     p = model.NewIntVar(0, base - 1, 'P')
     i = model.NewIntVar(1, base - 1, 'I')
@@ -96,5 +97,5 @@ def CPIsFun():
 
 
 if __name__ == '__main__':
-    CPIsFun()
+    CPIsFunSat()
     # [END probram]

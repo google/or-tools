@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void BoolOrSample() {
+void BoolOrSampleSat() {
   CpModelBuilder cp_model;
 
   const BoolVar x = cp_model.NewBoolVar();
@@ -28,7 +28,7 @@ void BoolOrSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::BoolOrSample();
+  operations_research::sat::BoolOrSampleSat();
 
   return EXIT_SUCCESS;
 }

@@ -11,14 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.DecisionStrategyProto;
-import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.SatParameters;
 
-public class ChannelingSample {
+public class ChannelingSampleSat {
   static {
     System.loadLibrary("jniortools");
   }

@@ -19,7 +19,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def SimpleSolve():
+def SimpleSolveSampleSat():
     """Minimal CP-SAT example to showcase calling the solver."""
     # Creates the model.
     model = cp_model.CpModel()
@@ -41,4 +41,4 @@ def SimpleSolve():
         print('z = %i' % solver.Value(z))
 
 
-SimpleSolve()
+SimpleSolveSampleSat()

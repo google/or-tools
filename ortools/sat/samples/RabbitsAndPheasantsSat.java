@@ -11,16 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
 /**
- * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many
- * rabbits and pheasants are there?
+ * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many rabbits and
+ * pheasants are there?
  */
-public class RabbitsAndPheasants {
+public class RabbitsAndPheasantsSat {
   static {
     System.loadLibrary("jniortools");
   }

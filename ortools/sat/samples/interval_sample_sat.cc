@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void IntervalSample() {
+void IntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
 
@@ -37,7 +37,7 @@ void IntervalSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::IntervalSample();
+  operations_research::sat::IntervalSampleSat();
 
   return EXIT_SUCCESS;
 }

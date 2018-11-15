@@ -54,34 +54,32 @@ def RankTasks(model, starts, presences, ranks):
             if presences[i] != 1:
                 tmp_array.append(presences[i].Not())
                 # Makes sure that if i is not performed, all precedences are false.
-                model.AddImplication(presences[i].Not(),
-                                     precedences[(i, j)].Not())
-                model.AddImplication(presences[i].Not(),
-                                     precedences[(j, i)].Not())
+                model.AddImplication(presences[i].Not(), precedences[(i,
+                                                                      j)].Not())
+                model.AddImplication(presences[i].Not(), precedences[(j,
+                                                                      i)].Not())
             if presences[j] != 1:
                 tmp_array.append(presences[j].Not())
                 # Makes sure that if j is not performed, all precedences are false.
-                model.AddImplication(presences[j].Not(),
-                                     precedences[(i, j)].Not())
-                model.AddImplication(presences[j].Not(),
-                                     precedences[(j, i)].Not())
+                model.AddImplication(presences[j].Not(), precedences[(i,
+                                                                      j)].Not())
+                model.AddImplication(presences[j].Not(), precedences[(j,
+                                                                      i)].Not())
             # The following bool_or will enforce that for any two intervals:
             #    i precedes j or j precedes i or at least one interval is not
             #        performed.
             model.AddBoolOr(tmp_array)
             # Redundant constraint: it propagates early that at most one precedence
             # is true.
-            model.AddImplication(precedences[(i, j)], precedences[(j,
-                                                                   i)].Not())
-            model.AddImplication(precedences[(j, i)], precedences[(i,
-                                                                   j)].Not())
+            model.AddImplication(precedences[(i, j)], precedences[(j, i)].Not())
+            model.AddImplication(precedences[(j, i)], precedences[(i, j)].Not())
 
     # Links precedences and ranks.
     for i in all_tasks:
         model.Add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
 
 
-def RankingSample():
+def RankingSampleSat():
     """Ranks tasks in a NoOverlap constraint."""
 
     model = cp_model.CpModel()
@@ -157,4 +155,4 @@ def RankingSample():
         print('Solver exited with nonoptimal status: %i' % status)
 
 
-RankingSample()
+RankingSampleSat()

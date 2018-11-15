@@ -19,7 +19,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def LiteralSample():
+def LiteralSampleSat():
     model = cp_model.CpModel()
     x = model.NewBoolVar('x')
     not_x = x.Not()
@@ -27,4 +27,4 @@ def LiteralSample():
     print(not_x)
 
 
-LiteralSample()
+LiteralSampleSat()

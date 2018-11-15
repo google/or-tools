@@ -14,9 +14,9 @@
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class SolveWithTimeLimitSampleSat
 {
-  static void MinimalCpSatWithTimeLimit()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -43,10 +43,5 @@ public class CodeSamplesSat
       Console.WriteLine("y = " + solver.Value(y));
       Console.WriteLine("z = " + solver.Value(z));
     }
-  }
-
-  static void Main()
-  {
-    MinimalCpSatWithTimeLimit();
   }
 }

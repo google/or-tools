@@ -22,7 +22,7 @@ import collections
 from ortools.sat.python import cp_model
 
 
-def main():
+def MinimalJobshopSat():
     """Minimal jobshop problem."""
     # Create the model.
     model = cp_model.CpModel()
@@ -58,8 +58,7 @@ def main():
             duration = task[1]
             end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (job, task_id))
             interval_var = model.NewIntervalVar(
-                start_var, duration, end_var,
-                'interval_%i_%i' % (job, task_id))
+                start_var, duration, end_var, 'interval_%i_%i' % (job, task_id))
             all_tasks[job, task_id] = task_type(
                 start=start_var, end=end_var, interval=interval_var)
     # [END variables]
@@ -145,5 +144,5 @@ def main():
         # [END solution_printing]
 
 
-if __name__ == '__main__':
-    main()
+MinimalJobshopSat()
+# [END program]

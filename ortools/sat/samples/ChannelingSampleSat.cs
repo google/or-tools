@@ -35,9 +35,9 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class CodeSamplesSat
+public class ChannelingSampleSat
 {
-  static void ChannelingSample()
+  static void Main()
   {
     // Model.
     CpModel model = new CpModel();
@@ -72,10 +72,5 @@ public class CodeSamplesSat
     VarArraySolutionPrinter cb =
         new VarArraySolutionPrinter(new IntVar[] {x, y, b});
     solver.SearchAllSolutions(model, cb);
-  }
-
-  static void Main()
-  {
-    ChannelingSample();
   }
 }

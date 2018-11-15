@@ -19,7 +19,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def RabbitsAndPheasants():
+def RabbitsAndPheasantsSat():
     """Solves the rabbits + pheasants problem."""
     model = cp_model.CpModel()
 
@@ -40,4 +40,4 @@ def RabbitsAndPheasants():
             '%i rabbits and %i pheasants' % (solver.Value(r), solver.Value(p)))
 
 
-RabbitsAndPheasants()
+RabbitsAndPheasantsSat()

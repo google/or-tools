@@ -22,7 +22,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def SimpleSolve():
+def SimpleSolveSampleSat():
   """Minimal CP-SAT example to showcase calling the solver."""
   # Creates the model.
   model = cp_model.CpModel()
@@ -44,7 +44,7 @@ def SimpleSolve():
     print('z = %i' % solver.Value(z))
 
 
-SimpleSolve()
+SimpleSolveSampleSat()
 ```
 
 ### C++ solver code
@@ -59,7 +59,7 @@ and some metrics.
 namespace operations_research {
 namespace sat {
 
-void SimpleSolve() {
+void SimpleSolveSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -85,7 +85,7 @@ void SimpleSolve() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SimpleSolve();
+  operations_research::sat::SimpleSolveSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -102,7 +102,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
 /** Solve a simple problem with three variables and one different constraint. */
-public class SimpleSolve {
+public class SimpleSolveSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -140,9 +140,9 @@ model.
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class SimpleSolveSat
 {
-  static void SimpleSolve()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -166,11 +166,6 @@ public class CodeSamplesSat
       Console.WriteLine("z = " + solver.Value(z));
     }
   }
-
-  static void Main()
-  {
-    SimpleSolve();
-  }
 }
 ```
 
@@ -191,7 +186,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def MinimalCpSatWithTimeLimit():
+def SolveWithTimeLimitSampleSat():
   """Minimal CP-SAT example to showcase calling the solver."""
   # Creates the model.
   model = cp_model.CpModel()
@@ -217,7 +212,7 @@ def MinimalCpSatWithTimeLimit():
     print('z = %i' % solver.Value(z))
 
 
-MinimalCpSatWithTimeLimit()
+SolveWithTimeLimitSampleSat()
 ```
 
 ### Specifying the time limit in C++
@@ -230,7 +225,7 @@ MinimalCpSatWithTimeLimit()
 namespace operations_research {
 namespace sat {
 
-void SolveWithTimeLimit() {
+void SolveWithTimeLimitSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -263,7 +258,7 @@ void SolveWithTimeLimit() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SolveWithTimeLimit();
+  operations_research::sat::SolveWithTimeLimitSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -277,7 +272,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
-public class SolveWithTimeLimit {
+public class SolveWithTimeLimitSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -315,9 +310,9 @@ Parameters must be passed as string to the solver.
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class SolveWithTimeLimitSampleSat
 {
-  static void MinimalCpSatWithTimeLimit()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -344,11 +339,6 @@ public class CodeSamplesSat
       Console.WriteLine("y = " + solver.Value(y));
       Console.WriteLine("z = " + solver.Value(z));
     }
-  }
-
-  static void Main()
-  {
-    MinimalCpSatWithTimeLimit();
   }
 }
 ```
@@ -393,7 +383,7 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
     return self.__solution_count
 
 
-def MinimalCpSatPrintIntermediateSolutions():
+def SolveAndPrintIntermediateSolutionsSampleSat():
   """Showcases printing intermediate solutions found during search."""
   # Creates the model.
   model = cp_model.CpModel()
@@ -415,7 +405,7 @@ def MinimalCpSatPrintIntermediateSolutions():
   print('Number of solutions found: %i' % solution_printer.SolutionCount())
 
 
-MinimalCpSatPrintIntermediateSolutions()
+SolveAndPrintIntermediateSolutionsSampleSat()
 ```
 
 ### C++ code
@@ -427,7 +417,7 @@ MinimalCpSatPrintIntermediateSolutions()
 namespace operations_research {
 namespace sat {
 
-void SolveWithIntermediateSolutions() {
+void SolveAndPrintIntermediateSolutionsSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -457,7 +447,7 @@ void SolveWithIntermediateSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SolveWithIntermediateSolutions();
+  operations_research::sat::SolveAndPrintIntermediateSolutionsSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -471,7 +461,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
-public class SolveWithIntermediateSolutions {
+public class SolveAndPrintIntermediateSolutionsSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -560,9 +550,9 @@ public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class CodeSamplesSat
+public class SolveAndPrintIntermediateSolutionsSampleSat
 {
-  static void MinimalCpSatPrintIntermediateSolutions()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -586,11 +576,6 @@ public class CodeSamplesSat
     solver.SolveWithSolutionCallback(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
           cb.SolutionCount()));
-  }
-
-  static void Main()
-  {
-    MinimalCpSatPrintIntermediateSolutions();
   }
 }
 ```
@@ -634,7 +619,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     return self.__solution_count
 
 
-def SolveAllSolutions():
+def SearchForAllSolutionsSampleSat():
   """Showcases calling the solver to search for all solutions."""
   # Creates the model.
   model = cp_model.CpModel()
@@ -654,7 +639,7 @@ def SolveAllSolutions():
   print('Number of solutions found: %i' % solution_printer.SolutionCount())
 
 
-SolveAllSolutions()
+SearchForAllSolutionsSampleSat()
 ```
 
 ### C++ code
@@ -669,7 +654,7 @@ To search for all solutions, a parameter of the SAT solver must be changed.
 namespace operations_research {
 namespace sat {
 
-void SearchAllSolutions() {
+void SearchAllSolutionsSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -702,7 +687,7 @@ void SearchAllSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SearchAllSolutions();
+  operations_research::sat::SearchAllSolutionsSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -716,7 +701,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
-public class SolveAllSolutions {
+public class SearchForAllSolutionsSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -803,9 +788,9 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
 }
 
 
-public class CodeSamplesSat
+public class SearchForAllSolutionsSampleSat
 {
-  static void MinimalCpSatAllSolutions()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -826,11 +811,6 @@ public class CodeSamplesSat
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
                                     cb.SolutionCount()));
-  }
-
-  static void Main()
-  {
-    MinimalCpSatAllSolutions();
   }
 }
 ```
@@ -878,7 +858,7 @@ class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
     return self.__solution_count
 
 
-def StopAfterNSolutions():
+def StopAfterNSolutionsSampleSat():
   """Showcases calling the solver to search for small number of solutions."""
   # Creates the model.
   model = cp_model.CpModel()
@@ -897,7 +877,7 @@ def StopAfterNSolutions():
   assert solution_printer.SolutionCount() == 5
 
 
-StopAfterNSolutions()
+StopAfterNSolutionsSampleSat()
 ```
 
 ### C++ code
@@ -916,7 +896,7 @@ limit, and setting that bool to true.
 namespace operations_research {
 namespace sat {
 
-void StopAfterNSolutions() {
+void StopAfterNSolutionsSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -957,7 +937,7 @@ void StopAfterNSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::StopAfterNSolutions();
+  operations_research::sat::StopAfterNSolutionsSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -974,7 +954,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
-public class StopAfterNSolutions {
+public class StopAfterNSolutionsSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -1078,9 +1058,9 @@ public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback
   private int solution_limit_;
 }
 
-public class CodeSamplesSat
+public class StopAfterNSolutionsSampleSat
 {
-  static void StopAfterNSolutions()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -1098,11 +1078,6 @@ public class CodeSamplesSat
     solver.SearchAllSolutions(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
           cb.SolutionCount()));
-  }
-
-  static void Main()
-  {
-    StopAfterNSolutions();
   }
 }
 ```

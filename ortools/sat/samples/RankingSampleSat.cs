@@ -15,7 +15,7 @@ using System;
 using System.Collections.Generic;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class RankingSampleSat
 {
   static void RankTasks(CpModel model,
                         IntVar[] starts,
@@ -72,7 +72,7 @@ public class CodeSamplesSat
     }
   }
 
-  static void RankingSample()
+  static void Main()
   {
     CpModel model = new CpModel();
     // Three weeks.
@@ -154,10 +154,5 @@ public class CodeSamplesSat
       Console.WriteLine(
           String.Format("Solver exited with nonoptimal status: {0}", status));
     }
-  }
-
-  static void Main()
-  {
-    RankingSample();
   }
 }

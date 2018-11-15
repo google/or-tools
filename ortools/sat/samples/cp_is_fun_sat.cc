@@ -28,7 +28,7 @@
 namespace operations_research {
 namespace sat {
 
-void CPIsFun() {
+void CPIsFunSat() {
   // Instantiate the solver.
   CpModelBuilder cp_model;
 
@@ -67,6 +67,7 @@ void CPIsFun() {
   Model model;
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
+    LOG(INFO) << "Solution " << num_solutions;
     LOG(INFO) << "C=" << SolutionIntegerValue(response, c) << " "
               << "P=" << SolutionIntegerValue(response, p) << " "
               << "I=" << SolutionIntegerValue(response, i) << " "
@@ -97,7 +98,8 @@ void CPIsFun() {
 
 // ----- MAIN -----
 int main(int argc, char** argv) {
-  operations_research::sat::CPIsFun();
-  return 0;
+  operations_research::sat::CPIsFunSat();
+
+  return EXIT_SUCCESS;
 }
 // [END program]

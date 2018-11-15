@@ -44,9 +44,9 @@ public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class CodeSamplesSat
+public class SolveAndPrintIntermediateSolutionsSampleSat
 {
-  static void MinimalCpSatPrintIntermediateSolutions()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
@@ -70,10 +70,5 @@ public class CodeSamplesSat
     solver.SolveWithSolutionCallback(model, cb);
     Console.WriteLine(String.Format("Number of solutions found: {0}",
           cb.SolutionCount()));
-  }
-
-  static void Main()
-  {
-    MinimalCpSatPrintIntermediateSolutions();
   }
 }

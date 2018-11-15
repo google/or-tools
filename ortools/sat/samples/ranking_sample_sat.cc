@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void RankingSample() {
+void RankingSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
   const int kNumTasks = 4;
@@ -147,7 +147,7 @@ void RankingSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::RankingSample();
+  operations_research::sat::RankingSampleSat();
 
   return EXIT_SUCCESS;
 }

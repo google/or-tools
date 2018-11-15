@@ -18,7 +18,7 @@
 namespace operations_research {
 namespace sat {
 
-void ChannelingSample() {
+void ChannelingSampleSat() {
   // Model.
   CpModelBuilder cp_model;
 
@@ -57,7 +57,7 @@ void ChannelingSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::ChannelingSample();
+  operations_research::sat::ChannelingSampleSat();
 
   return EXIT_SUCCESS;
 }

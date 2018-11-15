@@ -18,7 +18,7 @@
 namespace operations_research {
 namespace sat {
 
-void SearchAllSolutions() {
+void SearchAllSolutionsSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -51,7 +51,7 @@ void SearchAllSolutions() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SearchAllSolutions();
+  operations_research::sat::SearchAllSolutionsSampleSat();
 
   return EXIT_SUCCESS;
 }

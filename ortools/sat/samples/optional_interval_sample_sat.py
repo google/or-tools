@@ -19,8 +19,9 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def OptionalIntervalSample():
+def OptionalIntervalSampleSat():
     model = cp_model.CpModel()
+
     horizon = 100
     start_var = model.NewIntVar(0, horizon, 'start')
     duration = 10  # Python cp/sat code accept integer variables or constants.
@@ -28,8 +29,9 @@ def OptionalIntervalSample():
     presence_var = model.NewBoolVar('presence')
     interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var,
                                                 presence_var, 'interval')
+
     print('start = %s, duration = %i, end = %s, presence = %s, interval = %s' %
           (start_var, duration, end_var, presence_var, interval_var))
 
 
-OptionalIntervalSample()
+OptionalIntervalSampleSat()

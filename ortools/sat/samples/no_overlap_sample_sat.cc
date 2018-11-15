@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void NoOverlapSample() {
+void NoOverlapSampleSat() {
   CpModelBuilder cp_model;
   const int64 kHorizon = 21;  // 3 weeks.
 
@@ -82,7 +82,7 @@ void NoOverlapSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::NoOverlapSample();
+  operations_research::sat::NoOverlapSampleSat();
 
   return EXIT_SUCCESS;
 }

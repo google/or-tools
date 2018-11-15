@@ -14,9 +14,9 @@
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class ReifiedSampleSat
 {
-  static void ReifiedSample()
+  static void Main()
   {
     CpModel model = new CpModel();
 
@@ -34,9 +34,5 @@ public class CodeSamplesSat
     // Third version using bool or.
     model.AddBoolOr(new ILiteral[] {b.Not(), x});
     model.AddBoolOr(new ILiteral[] {b.Not(), y.Not()});
-  }
-
-  static void Main() {
-    ReifiedSample();
   }
 }

@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void SimpleSolve() {
+void SimpleSolveSampleSat() {
   CpModelBuilder cp_model;
 
   const Domain domain(0, 2);
@@ -42,7 +42,7 @@ void SimpleSolve() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SimpleSolve();
+  operations_research::sat::SimpleSolveSampleSat();
 
   return EXIT_SUCCESS;
 }

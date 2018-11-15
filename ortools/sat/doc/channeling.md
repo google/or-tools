@@ -64,7 +64,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     return self.__solution_count
 
 
-def ChannelingSample():
+def ChannelingSampleSat():
   """Demonstrates how to link integer constraints together."""
 
   # Model.
@@ -100,7 +100,7 @@ def ChannelingSample():
   solver.SearchForAllSolutions(model, solution_printer)
 
 
-ChannelingSample()
+ChannelingSampleSat()
 ```
 
 ### C++ code
@@ -113,7 +113,7 @@ ChannelingSample()
 namespace operations_research {
 namespace sat {
 
-void ChannelingSample() {
+void ChannelingSampleSat() {
   // Model.
   CpModelBuilder cp_model;
 
@@ -152,7 +152,7 @@ void ChannelingSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::ChannelingSample();
+  operations_research::sat::ChannelingSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -168,7 +168,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
-public class ChannelingSample {
+public class ChannelingSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -253,9 +253,9 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class CodeSamplesSat
+public class ChannelingSampleSat
 {
-  static void ChannelingSample()
+  static void Main()
   {
     // Model.
     CpModel model = new CpModel();
@@ -291,11 +291,6 @@ public class CodeSamplesSat
         new VarArraySolutionPrinter(new IntVar[] {x, y, b});
     solver.SearchAllSolutions(model, cb);
   }
-
-  static void Main()
-  {
-    ChannelingSample();
-  }
 }
 ```
 
@@ -311,7 +306,7 @@ following code samples.
 ### Python code
 
 ```python
-"""Solves a binpacking problem."""
+"""Solves a binpacking problem using the CP-SAT solver."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -320,8 +315,8 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def BinpackingProblem():
-  """Solves a bin-packing problem."""
+def BinpackingProblemSat():
+  """Solves a bin-packing problem using the CP-SAT solver."""
   # Data.
   bin_capacity = 100
   slack_capacity = 20
@@ -379,7 +374,7 @@ def BinpackingProblem():
   print('  - wall time : %f s' % solver.WallTime())
 
 
-BinpackingProblem()
+BinpackingProblemSat()
 ```
 
 ### C++ code
@@ -390,7 +385,7 @@ BinpackingProblem()
 namespace operations_research {
 namespace sat {
 
-void BinpackingProblem() {
+void BinpackingProblemSat() {
   // Data.
   const int kBinCapacity = 100;
   const int kSlackCapacity = 20;
@@ -460,7 +455,7 @@ void BinpackingProblem() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::BinpackingProblem();
+  operations_research::sat::BinpackingProblemSat();
 
   return EXIT_SUCCESS;
 }
@@ -474,7 +469,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
-public class BinPackingProblem {
+public class BinPackingProblemSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -572,9 +567,9 @@ public class BinPackingProblem {
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class BinPackingProblemSat
 {
-  static void BinpackingProblem()
+  static void Main()
   {
     // Data.
     int bin_capacity = 100;
@@ -677,11 +672,6 @@ public class CodeSamplesSat
                                     solver.NumBranches()));
     Console.WriteLine(String.Format("  - wall time : {0} s",
                                     solver.WallTime()));
-  }
-
-  static void Main()
-  {
-    BinpackingProblem();
   }
 }
 ```
