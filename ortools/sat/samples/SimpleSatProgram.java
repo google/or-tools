@@ -14,7 +14,7 @@
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 
-public class CodeSample {
+public class SimpleSatProgram {
   static {
     System.loadLibrary("jniortools");
   }
