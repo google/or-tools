@@ -497,14 +497,14 @@ test_dotnet_sat_samples: \
  rdotnet_SolveWithTimeLimit.cs \
  rdotnet_StopAfterNSolutions.cs
 
-.PHONY: test_donet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
+.PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
 test_dotnet_linear_solver_samples: \
  rdotnet_SimpleLpProgram.cs
 
 .PHONY: check_dotnet_pimpl
 check_dotnet_pimpl: \
- test_donet_sat_samples \
- test_donet_linear_solver_samples \
+ test_dotnet_sat_samples \
+ test_dotnet_linear_solver_samples \
  rdotnet_SimpleProgramFSharp.fs
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
