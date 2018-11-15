@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="StopAfterNSolutions.cs" />
+    <Compile Include="BinPackingProblemSat.cs" />
     <PackageReference Include="Google.OrTools" Version="6.9.*" />
   </ItemGroup>
 </Project>

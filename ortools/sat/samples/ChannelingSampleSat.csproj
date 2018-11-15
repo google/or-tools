@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="ReifiedSample.cs" />
+    <Compile Include="ChannelingSampleSat.cs" />
     <PackageReference Include="Google.OrTools" Version="6.9.*" />
   </ItemGroup>
 </Project>

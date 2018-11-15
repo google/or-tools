@@ -417,23 +417,23 @@ rcc_%: $(BIN_DIR)/%$E FORCE
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \
- rcc_binpacking_problem \
- rcc_bool_or_sample \
- rcc_channeling_sample \
- rcc_code_sample \
- rcc_cp_is_fun \
- rcc_interval_sample \
- rcc_literal_sample \
- rcc_no_overlap_sample \
- rcc_optional_interval_sample \
- rcc_rabbits_and_pheasants \
- rcc_ranking_sample \
- rcc_reified_sample \
- rcc_simple_solve \
- rcc_solve_all_solutions \
- rcc_solve_with_intermediate_solutions \
- rcc_solve_with_time_limit \
- rcc_stop_after_n_solutions
+ rcc_binpacking_problem_sat \
+ rcc_bool_or_sample_sat \
+ rcc_channeling_sample_sat \
+ rcc_cp_is_fun_sat \
+ rcc_interval_sample_sat \
+ rcc_literal_sample_sat \
+ rcc_no_overlap_sample_sat \
+ rcc_optional_interval_sample_sat \
+ rcc_rabbits_and_pheasants_sat \
+ rcc_ranking_sample_sat \
+ rcc_reified_sample_sat \
+ rcc_search_for_all_solutions_sample_sat \
+ rcc_simple_sat_program \
+ rcc_simple_solve_sample_sat \
+ rcc_solve_and_print_intermediate_solutions_sample_sat \
+ rcc_solve_with_time_limit_sample_sat \
+ rcc_stop_after_n_solutions_sample_sat
 
 .PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
 test_cc_linear_solver_samples: \

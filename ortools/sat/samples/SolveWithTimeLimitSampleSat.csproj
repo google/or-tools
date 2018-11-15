@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="NoOverlapSample.cs" />
+    <Compile Include="SolveWithTimeLimitSampleSat.cs" />
     <PackageReference Include="Google.OrTools" Version="6.9.*" />
   </ItemGroup>
 </Project>

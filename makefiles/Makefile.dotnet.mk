@@ -479,23 +479,23 @@ rdotnet_%.cs: \
 
 .PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
 test_dotnet_sat_samples: \
- rdotnet_BinPackingProblem.cs \
- rdotnet_BoolOrSample.cs \
- rdotnet_ChannelingSample.cs \
- rdotnet_CodeSample.cs \
- rdotnet_CpIsFun.cs \
- rdotnet_IntervalSample.cs \
- rdotnet_LiteralSample.cs \
- rdotnet_NoOverlapSample.cs \
- rdotnet_OptionalIntervalSample.cs \
- rdotnet_RabbitsAndPheasants.cs \
- rdotnet_RankingSample.cs \
- rdotnet_ReifiedSample.cs \
- rdotnet_SimpleSolve.cs \
- rdotnet_SolveAllSolutions.cs \
- rdotnet_SolveWithIntermediateSolutions.cs \
- rdotnet_SolveWithTimeLimit.cs \
- rdotnet_StopAfterNSolutions.cs
+ rdotnet_BinPackingProblemSat.cs \
+ rdotnet_BoolOrSampleSat.cs \
+ rdotnet_ChannelingSampleSat.cs \
+ rdotnet_CpIsFunSat.cs \
+ rdotnet_IntervalSampleSat.cs \
+ rdotnet_LiteralSampleSat.cs \
+ rdotnet_NoOverlapSampleSat.cs \
+ rdotnet_OptionalIntervalSampleSat.cs \
+ rdotnet_RabbitsAndPheasantsSat.cs \
+ rdotnet_RankingSampleSat.cs \
+ rdotnet_ReifiedSampleSat.cs \
+ rdotnet_SearchForAllSolutionsSampleSat.cs \
+ rdotnet_SimpleSatProgram.cs \
+ rdotnet_SimpleSolveSampleSat.cs \
+ rdotnet_SolveAndPrintIntermediateSolutionsSampleSat.cs \
+ rdotnet_SolveWithTimeLimitSampleSat.cs \
+
 
 .PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
 test_dotnet_linear_solver_samples: \

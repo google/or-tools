@@ -335,23 +335,23 @@ rjava_%: $(LIB_DIR)/%$J FORCE
 
 .PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
 test_java_sat_samples: \
- rjava_BinPackingProblem \
- rjava_BoolOrSample \
- rjava_ChannelingSample \
- rjava_CodeSample \
- rjava_CpIsFun \
- rjava_IntervalSample \
- rjava_LiteralSample \
- rjava_NoOverlapSample \
- rjava_OptionalIntervalSample \
- rjava_RabbitsAndPheasants \
- rjava_RankingSample \
- rjava_ReifiedSample \
- rjava_SimpleSolve \
- rjava_SolveAllSolutions \
- rjava_SolveWithIntermediateSolutions \
- rjava_SolveWithTimeLimit \
- rjava_StopAfterNSolutions
+ rjava_BinPackingProblemSat \
+ rjava_BoolOrSampleSat \
+ rjava_ChannelingSampleSat \
+ rjava_CpIsFunSat \
+ rjava_IntervalSampleSat \
+ rjava_LiteralSampleSat \
+ rjava_NoOverlapSampleSat \
+ rjava_OptionalIntervalSampleSat \
+ rjava_RabbitsAndPheasantsSat \
+ rjava_RankingSampleSat \
+ rjava_ReifiedSampleSat \
+ rjava_SearchForAllSolutionsSampleSat \
+ rjava_SimpleSatProgram \
+ rjava_SimpleSolveSampleSat \
+ rjava_SolveAndPrintIntermediateSolutionsSampleSat \
+ rjava_SolveWithTimeLimitSampleSat \
+ rjava_StopAfterNSolutionsSampleSat
 
 .PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
 test_java_linear_solver_samples: \

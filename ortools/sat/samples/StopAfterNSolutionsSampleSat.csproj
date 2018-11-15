@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="IntervalSample.cs" />
+    <Compile Include="StopAfterNSolutionsSampleSat.cs" />
     <PackageReference Include="Google.OrTools" Version="6.9.*" />
   </ItemGroup>
 </Project>

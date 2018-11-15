@@ -487,24 +487,24 @@ rpy_%: ortools/linear_solver/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 
 .PHONY: test_python_sat_samples # Run all Python Sat Samples (located in ortools/sat/samples)
 test_python_sat_samples: \
- rpy_binpacking_problem \
- rpy_bool_or_sample \
- rpy_channeling_sample \
- rpy_code_sample \
- rpy_cp_is_fun \
- rpy_interval_sample \
- rpy_literal_sample \
- rpy_minimal_jobshop \
- rpy_no_overlap_sample \
- rpy_optional_interval_sample \
- rpy_rabbits_and_pheasants \
- rpy_ranking_sample \
- rpy_reified_sample \
- rpy_simple_solve \
- rpy_solve_all_solutions \
- rpy_solve_with_intermediate_solutions \
- rpy_solve_with_time_limit \
- rpy_stop_after_n_solutions
+ rpy_binpacking_problem_sat \
+ rpy_bool_or_sample_sat \
+ rpy_channeling_sample_sat \
+ rpy_cp_is_fun_sat \
+ rpy_interval_sample_sat \
+ rpy_literal_sample_sat \
+ rpy_minimal_jobshop_sat \
+ rpy_no_overlap_sample_sat \
+ rpy_optional_interval_sample_sat \
+ rpy_rabbits_and_pheasants_sat \
+ rpy_ranking_sample_sat \
+ rpy_reified_sample_sat \
+ rpy_simple_sat_program \
+ rpy_simple_solve_sample_sat \
+ rpy_search_for_all_solutions_sample_sat \
+ rpy_solve_and_print_intermediate_solutions_sample_sat \
+ rpy_solve_with_time_limit_sample_sat \
+ rpy_stop_after_n_solutions_sample_sat
 
 .PHONY: test_python_linear_solver_samples # Run all Python LP Samples (located in ortools/linear_solver/samples)
 test_python_linear_solver_samples: \
