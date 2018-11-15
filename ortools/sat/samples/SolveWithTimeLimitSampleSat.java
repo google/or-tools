@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
+/** Solves a problem with a time limit. */
 public class SolveWithTimeLimitSampleSat {
   static {
     System.loadLibrary("jniortools");

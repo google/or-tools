@@ -15,6 +15,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 
+/** Code sample to demonstrates how to build an interval. */
 public class IntervalSampleSat {
   static {
     System.loadLibrary("jniortools");

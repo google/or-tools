@@ -19,10 +19,10 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def CodeSample():
+def SimpleSatProgram():
     model = cp_model.CpModel()
     x = model.NewBoolVar('x')
     print(x)
 
 
-CodeSample()
+SimpleSatProgram()

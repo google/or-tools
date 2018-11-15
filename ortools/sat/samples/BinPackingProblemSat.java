@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 
+/** Solves a bin packing problem with the CP-SAT solver. */
 public class BinPackingProblemSat {
   static {
     System.loadLibrary("jniortools");

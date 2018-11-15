@@ -14,6 +14,7 @@
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 
+/** Creates a single Boolean variable. */
 public class SimpleSatProgram {
   static {
     System.loadLibrary("jniortools");

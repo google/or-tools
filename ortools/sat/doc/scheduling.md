@@ -90,6 +90,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 
+/** Code sample to demonstrates how to build an interval. */
 public class IntervalSampleSat {
 
   static { System.loadLibrary("jniortools"); }
@@ -149,6 +150,7 @@ from ortools.sat.python import cp_model
 
 
 def OptionalIntervalSampleSat():
+  """Build an optional interval."""
   model = cp_model.CpModel()
 
   horizon = 100
@@ -214,6 +216,7 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.Literal;
 
+/** Code sample to demonstrates how to build an optional interval. */
 public class OptionalIntervalSampleSat {
 
   static { System.loadLibrary("jniortools"); }
@@ -870,14 +873,18 @@ import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
 
-// This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
-// integer variables and enforces the following constraint:
-//   - rank[i] == -1 iff interval[i] is not active.
-//   - rank[i] == number of active intervals that precede interval[i].
+/** Code sample to demonstrates how to rank intervals. */
 public class RankingSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
+  /**
+   * This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
+   * integer variables and enforces the following constraint
+   *
+   *  - rank[i] == -1 iff interval[i] is not active.
+   *  - rank[i] == number of active intervals that precede interval[i].
+   */
   static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks) {
     int numTasks = starts.length;
 

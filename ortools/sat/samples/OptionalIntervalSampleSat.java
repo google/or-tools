@@ -16,6 +16,7 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.Literal;
 
+/** Code sample to demonstrates how to build an optional interval. */
 public class OptionalIntervalSampleSat {
   static {
     System.loadLibrary("jniortools");

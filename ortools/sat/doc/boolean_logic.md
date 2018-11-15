@@ -71,6 +71,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
+/** Code sample to demonstrate Boolean variable and literals. */
 public class LiteralSampleSat {
 
   static { System.loadLibrary("jniortools"); }
@@ -170,6 +171,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
+/** Code sample to demonstrates a simple Boolean constraint. */
 public class BoolOrSampleSat {
 
   static { System.loadLibrary("jniortools"); }

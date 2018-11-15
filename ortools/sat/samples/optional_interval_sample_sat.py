@@ -20,6 +20,7 @@ from ortools.sat.python import cp_model
 
 
 def OptionalIntervalSampleSat():
+    """Build an optional interval."""
     model = cp_model.CpModel()
 
     horizon = 100

@@ -16,7 +16,7 @@
 namespace operations_research {
 namespace sat {
 
-void CodeSample() {
+void SimpleSatProgram() {
   CpModelBuilder cp_model;
 
   const IntVar x = cp_model.NewBoolVar().WithName("x");
@@ -26,7 +26,7 @@ void CodeSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::CodeSample();
+  operations_research::sat::SimpleSatProgram();
 
   return EXIT_SUCCESS;
 }

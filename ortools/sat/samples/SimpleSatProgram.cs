@@ -14,18 +14,13 @@
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class SimpleSatProgram
 {
-  static void CodeSample()
+  static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the Boolean variable.
     IntVar x = model.NewBoolVar("x");
-  }
-
-  static void Main()
-  {
-    CodeSample();
   }
 }

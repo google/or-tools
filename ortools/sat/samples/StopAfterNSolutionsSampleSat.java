@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
+/** Code sample that solves a model and displays a small number of solutions. */
 public class StopAfterNSolutionsSampleSat {
   static {
     System.loadLibrary("jniortools");

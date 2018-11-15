@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
+/** Solves an optimization problem and displays all intermediate solutions. */
 public class SolveAndPrintIntermediateSolutionsSampleSat {
   static {
     System.loadLibrary("jniortools");

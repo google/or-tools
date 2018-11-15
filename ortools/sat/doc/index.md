@@ -35,13 +35,13 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def SimpleSatProblem():
+def SimpleSatProgram():
   model = cp_model.CpModel()
   x = model.NewBoolVar('x')
   print(x)
 
 
-SimpleSatProblem()
+SimpleSatProgram()
 ```
 
 ## C++ code samples
@@ -56,7 +56,7 @@ This class is just a helper to fill in the cp_model protobuf.
 namespace operations_research {
 namespace sat {
 
-void SimpleSatProblem() {
+void SimpleSatProgram() {
   CpModelBuilder cp_model;
 
   const IntVar x = cp_model.NewBoolVar().WithName("x");
@@ -66,7 +66,7 @@ void SimpleSatProblem() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::SimpleSatProblem();
+  operations_research::sat::SimpleSatProgram();
 
   return EXIT_SUCCESS;
 }
@@ -81,7 +81,8 @@ The Java code implements the same interface as the Python code, with a
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 
-public class SimpleSatProblem {
+/** Creates a single Boolean variable. */
+public class SimpleSatProgram {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -105,7 +106,7 @@ The C\# code implements the same interface as the Python code, with a
 using System;
 using Google.OrTools.Sat;
 
-public class SimpleSatProblem
+public class SimpleSatProgram
 {
   static void Main()
   {

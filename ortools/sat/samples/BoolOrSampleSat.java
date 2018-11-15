@@ -15,6 +15,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
+/** Code sample to demonstrates a simple Boolean constraint. */
 public class BoolOrSampleSat {
   static {
     System.loadLibrary("jniortools");

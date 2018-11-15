@@ -101,7 +101,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
-/** Solve a simple problem with three variables and one different constraint. */
+/** Minimal CP-SAT example to showcase calling the solver. */
 public class SimpleSolveSampleSat {
 
   static { System.loadLibrary("jniortools"); }
@@ -140,7 +140,7 @@ model.
 using System;
 using Google.OrTools.Sat;
 
-public class SimpleSolveSat
+public class SimpleSolveSampleSat
 {
   static void Main()
   {
@@ -272,6 +272,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
+/** Solves a problem with a time limit. */
 public class SolveWithTimeLimitSampleSat {
 
   static { System.loadLibrary("jniortools"); }
@@ -461,6 +462,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
+/** Solves an optimization problem and displays all intermediate solutions. */
 public class SolveAndPrintIntermediateSolutionsSampleSat {
 
   static { System.loadLibrary("jniortools"); }
@@ -701,6 +703,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
+/** Code sample that solves a model and displays all solutions. */
 public class SearchForAllSolutionsSampleSat {
 
   static { System.loadLibrary("jniortools"); }
@@ -954,6 +957,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
+/** Code sample that solves a model and displays a small number of solutions. */
 public class StopAfterNSolutionsSampleSat {
 
   static { System.loadLibrary("jniortools"); }

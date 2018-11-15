@@ -168,6 +168,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
+/** Link integer constraints together. */
 public class ChannelingSampleSat {
 
   static { System.loadLibrary("jniortools"); }
@@ -469,6 +470,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 
+/** Solves a bin packing problem with the CP-SAT solver. */
 public class BinPackingProblemSat {
 
   static { System.loadLibrary("jniortools"); }

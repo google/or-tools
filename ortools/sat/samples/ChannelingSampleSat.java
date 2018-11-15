@@ -18,6 +18,7 @@ import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.SatParameters;
 
+/** Link integer constraints together. */
 public class ChannelingSampleSat {
   static {
     System.loadLibrary("jniortools");

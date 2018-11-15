@@ -15,6 +15,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
+/** Code sample to demonstrate Boolean variable and literals. */
 public class LiteralSampleSat {
   static {
     System.loadLibrary("jniortools");

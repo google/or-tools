@@ -14,7 +14,7 @@
 using System;
 using Google.OrTools.Sat;
 
-public class SimpleSolveSat
+public class SimpleSolveSampleSat
 {
   static void Main()
   {

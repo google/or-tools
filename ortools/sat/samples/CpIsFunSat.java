@@ -17,6 +17,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 
+/** Cryptarithmetic puzzle. */
 public class CpIsFunSat {
   static {
     System.loadLibrary("jniortools");
