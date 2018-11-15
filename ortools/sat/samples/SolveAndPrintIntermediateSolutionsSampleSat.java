@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -22,6 +23,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
     System.loadLibrary("jniortools");
   }
 
+  // [START print_solution]
   static class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
       variableArray = variables;
@@ -44,28 +46,42 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
     private int solutionCount;
     private final IntVar[] variableArray;
   }
+  // [END print_solution]
 
   public static void main(String[] args) throws Exception {
     // Create the model.
+    // [START model]
     CpModel model = new CpModel();
+    // [END model]
+
     // Create the variables.
+    // [START variables]
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
+    // [END variables]
+
     // Create the constraint.
+    // [START constraints]
     model.addDifferent(x, y);
+    // [END constraints]
 
     // Maximize a linear combination of variables.
+    // [START objective]
     model.maximizeScalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3});
+    // [END objective]
 
     // Create a solver and solve the model.
+    // [START solve]
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinterWithObjective cb =
         new VarArraySolutionPrinterWithObjective(new IntVar[] {x, y, z});
     solver.solveWithSolutionCallback(model, cb);
+    // [END solve]
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
   }
 }
+// [END program]

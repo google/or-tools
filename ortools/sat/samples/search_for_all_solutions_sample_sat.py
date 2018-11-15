@@ -12,6 +12,7 @@
 # limitations under the License.
 """Code sample that solves a model and displays all solutions."""
 
+# [START program]
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -19,6 +20,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
+# [START print_solution]
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
@@ -35,26 +37,39 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def SolutionCount(self):
         return self.__solution_count
+        # [END print_solution]
 
 
 def SearchForAllSolutionsSampleSat():
     """Showcases calling the solver to search for all solutions."""
     # Creates the model.
+    # [START model]
     model = cp_model.CpModel()
+    # [END model]
+
     # Creates the variables.
+    # [START variables]
     num_vals = 3
     x = model.NewIntVar(0, num_vals - 1, 'x')
     y = model.NewIntVar(0, num_vals - 1, 'y')
     z = model.NewIntVar(0, num_vals - 1, 'z')
+    # [END variables]
+
     # Create the constraints.
+    # [START constraints]
     model.Add(x != y)
+    # [END constraints]
 
     # Create a solver and solve.
+    # [START solve]
     solver = cp_model.CpSolver()
     solution_printer = VarArraySolutionPrinter([x, y, z])
     status = solver.SearchForAllSolutions(model, solution_printer)
+    # [END solve]
+
     print('Status = %s' % solver.StatusName(status))
     print('Number of solutions found: %i' % solution_printer.SolutionCount())
 
 
 SearchForAllSolutionsSampleSat()
+# [END program]

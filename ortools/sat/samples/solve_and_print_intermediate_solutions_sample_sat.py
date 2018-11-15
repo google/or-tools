@@ -12,6 +12,7 @@
 # limitations under the License.
 """Solves an optimization problem and displays all intermediate solutions."""
 
+# [START program]
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,6 +21,7 @@ from ortools.sat.python import cp_model
 
 
 # You need to subclass the cp_model.CpSolverSolutionCallback class.
+# [START print_solution]
 class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
@@ -38,28 +40,43 @@ class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def SolutionCount(self):
         return self.__solution_count
+        # [END print_solution]
 
 
 def SolveAndPrintIntermediateSolutionsSampleSat():
     """Showcases printing intermediate solutions found during search."""
     # Creates the model.
+    # [START model]
     model = cp_model.CpModel()
+    # [END model]
+
     # Creates the variables.
+    # [START variables]
     num_vals = 3
     x = model.NewIntVar(0, num_vals - 1, 'x')
     y = model.NewIntVar(0, num_vals - 1, 'y')
     z = model.NewIntVar(0, num_vals - 1, 'z')
+    # [END variables]
+
     # Creates the constraints.
+    # [START constraints]
     model.Add(x != y)
+    # [END constraints]
+
+    # [START objective]
     model.Maximize(x + 2 * y + 3 * z)
+    # [END objective]
 
     # Creates a solver and solves.
+    # [START solve]
     solver = cp_model.CpSolver()
     solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
     status = solver.SolveWithSolutionCallback(model, solution_printer)
+    # [END solve]
 
     print('Status = %s' % solver.StatusName(status))
     print('Number of solutions found: %i' % solution_printer.SolutionCount())
 
 
 SolveAndPrintIntermediateSolutionsSampleSat()
+# [END program]

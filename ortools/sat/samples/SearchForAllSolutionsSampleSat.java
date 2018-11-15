@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -22,6 +23,7 @@ public class SearchForAllSolutionsSampleSat {
     System.loadLibrary("jniortools");
   }
 
+  // [START print_solution]
   static class VarArraySolutionPrinter extends CpSolverSolutionCallback {
     public VarArraySolutionPrinter(IntVar[] variables) {
       variableArray = variables;
@@ -43,24 +45,36 @@ public class SearchForAllSolutionsSampleSat {
     private int solutionCount;
     private final IntVar[] variableArray;
   }
+  // [END print_solution]
 
   public static void main(String[] args) throws Exception {
     // Create the model.
+    // [START model]
     CpModel model = new CpModel();
+    // [END model]
+
     // Create the variables.
+    // [START variables]
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
+    // [END variables]
+
     // Create the constraints.
+    // [START constraints]
     model.addDifferent(x, y);
+    // [END constraints]
 
     // Create a solver and solve the model.
+    // [START solve]
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] {x, y, z});
     solver.searchAllSolutions(model, cb);
+    // [END solve]
 
     System.out.println(cb.getSolutionCount() + " solutions found.");
   }
 }
+// [END program]

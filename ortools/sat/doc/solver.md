@@ -26,11 +26,13 @@ def SimpleSolveSampleSat():
   """Minimal CP-SAT example to showcase calling the solver."""
   # Creates the model.
   model = cp_model.CpModel()
+
   # Creates the variables.
   num_vals = 3
   x = model.NewIntVar(0, num_vals - 1, 'x')
   y = model.NewIntVar(0, num_vals - 1, 'y')
   z = model.NewIntVar(0, num_vals - 1, 'z')
+
   # Creates the constraints.
   model.Add(x != y)
 
@@ -109,12 +111,14 @@ public class SimpleSolveSampleSat {
   public static void main(String[] args) throws Exception {
     // Create the model.
     CpModel model = new CpModel();
+
     // Create the variables.
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
+
     // Create the constraints.
     model.addDifferent(x, y);
 
@@ -146,12 +150,14 @@ public class SimpleSolveSampleSat
   {
     // Creates the model.
     CpModel model = new CpModel();
+
     // Creates the variables.
     int num_vals = 3;
 
     IntVar x = model.NewIntVar(0, num_vals - 1, "x");
     IntVar y = model.NewIntVar(0, num_vals - 1, "y");
     IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+
     // Creates the constraints.
     model.Add(x != y);
 
@@ -388,13 +394,16 @@ def SolveAndPrintIntermediateSolutionsSampleSat():
   """Showcases printing intermediate solutions found during search."""
   # Creates the model.
   model = cp_model.CpModel()
+
   # Creates the variables.
   num_vals = 3
   x = model.NewIntVar(0, num_vals - 1, 'x')
   y = model.NewIntVar(0, num_vals - 1, 'y')
   z = model.NewIntVar(0, num_vals - 1, 'z')
+
   # Creates the constraints.
   model.Add(x != y)
+
   model.Maximize(x + 2 * y + 3 * z)
 
   # Creates a solver and solves.
@@ -440,7 +449,9 @@ void SolveAndPrintIntermediateSolutionsSampleSat() {
     LOG(INFO) << "  z = " << SolutionIntegerValue(r, z);
     num_solutions++;
   }));
+
   const CpSolverResponse response = SolveWithModel(cp_model, &model);
+
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
 
@@ -493,12 +504,14 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
   public static void main(String[] args) throws Exception {
     // Create the model.
     CpModel model = new CpModel();
+
     // Create the variables.
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
+
     // Create the constraint.
     model.addDifferent(x, y);
 
@@ -558,6 +571,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
   {
     // Creates the model.
     CpModel model = new CpModel();
+
     // Creates the variables.
     int num_vals = 3;
 
@@ -576,6 +590,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
     VarArraySolutionPrinterWithObjective cb =
       new VarArraySolutionPrinterWithObjective(new IntVar[] { x, y, z });
     solver.SolveWithSolutionCallback(model, cb);
+
     Console.WriteLine(String.Format("Number of solutions found: {0}",
           cb.SolutionCount()));
   }
@@ -625,11 +640,13 @@ def SearchForAllSolutionsSampleSat():
   """Showcases calling the solver to search for all solutions."""
   # Creates the model.
   model = cp_model.CpModel()
+
   # Creates the variables.
   num_vals = 3
   x = model.NewIntVar(0, num_vals - 1, 'x')
   y = model.NewIntVar(0, num_vals - 1, 'y')
   z = model.NewIntVar(0, num_vals - 1, 'z')
+
   # Create the constraints.
   model.Add(x != y)
 
@@ -637,6 +654,7 @@ def SearchForAllSolutionsSampleSat():
   solver = cp_model.CpSolver()
   solution_printer = VarArraySolutionPrinter([x, y, z])
   status = solver.SearchForAllSolutions(model, solution_printer)
+
   print('Status = %s' % solver.StatusName(status))
   print('Number of solutions found: %i' % solution_printer.SolutionCount())
 
@@ -668,11 +686,6 @@ void SearchAllSolutionsSampleSat() {
 
   Model model;
 
-  // Tell the solver to enumerate all solutions.
-  SatParameters parameters;
-  parameters.set_enumerate_all_solutions(true);
-  model.Add(NewSatParameters(parameters));
-
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     LOG(INFO) << "Solution " << num_solutions;
@@ -681,7 +694,13 @@ void SearchAllSolutionsSampleSat() {
     LOG(INFO) << "  z = " << SolutionIntegerValue(r, z);
     num_solutions++;
   }));
+
+  // Tell the solver to enumerate all solutions.
+  SatParameters parameters;
+  parameters.set_enumerate_all_solutions(true);
+  model.Add(NewSatParameters(parameters));
   const CpSolverResponse response = SolveWithModel(cp_model, &model);
+
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
 
@@ -733,12 +752,14 @@ public class SearchForAllSolutionsSampleSat {
   public static void main(String[] args) throws Exception {
     // Create the model.
     CpModel model = new CpModel();
+
     // Create the variables.
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
+
     // Create the constraints.
     model.addDifferent(x, y);
 
@@ -790,13 +811,13 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-
 public class SearchForAllSolutionsSampleSat
 {
   static void Main()
   {
     // Creates the model.
     CpModel model = new CpModel();
+
     // Creates the variables.
     int num_vals = 3;
 
@@ -812,6 +833,7 @@ public class SearchForAllSolutionsSampleSat
     VarArraySolutionPrinter cb =
         new VarArraySolutionPrinter(new IntVar[] { x, y, z });
     solver.SearchAllSolutions(model, cb);
+
     Console.WriteLine(String.Format("Number of solutions found: {0}",
                                     cb.SolutionCount()));
   }

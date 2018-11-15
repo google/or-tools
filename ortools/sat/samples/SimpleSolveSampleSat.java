@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
@@ -24,19 +25,29 @@ public class SimpleSolveSampleSat {
 
   public static void main(String[] args) throws Exception {
     // Create the model.
+    // [START model]
     CpModel model = new CpModel();
+    // [END model]
+
     // Create the variables.
+    // [START variables]
     int numVals = 3;
 
     IntVar x = model.newIntVar(0, numVals - 1, "x");
     IntVar y = model.newIntVar(0, numVals - 1, "y");
     IntVar z = model.newIntVar(0, numVals - 1, "z");
+    // [END variables]
+
     // Create the constraints.
+    // [START constraints]
     model.addDifferent(x, y);
+    // [END constraints]
 
     // Create a solver and solve the model.
+    // [START solve]
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.solve(model);
+    // [END solve]
 
     if (status == CpSolverStatus.FEASIBLE) {
       System.out.println("x = " + solver.value(x));
@@ -45,3 +56,4 @@ public class SimpleSolveSampleSat {
     }
   }
 }
+// [END program]
