@@ -22,5 +22,6 @@ public class SimpleSatProgram
     CpModel model = new CpModel();
     // Creates the Boolean variable.
     IntVar x = model.NewBoolVar("x");
+    Console.WriteLine(x);
   }
 }
