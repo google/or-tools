@@ -310,12 +310,19 @@ $(CLASS_DIR)/%: $(CONTRIB_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(CONTRIB_EX_PATH)$S$*.java
 
-$(CLASS_DIR)/%: $(SRC_DIR)/ortools/sat/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
+$(CLASS_DIR)/%: $(SRC_DIR)/ortools/algorithms/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
 	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- ortools$Ssat$Ssamples$S$*.java
+ ortools$Salgorithms$Ssamples$S$*.java
+
+$(CLASS_DIR)/%: $(SRC_DIR)/ortools/graph/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
+	-$(DELREC) $(CLASS_DIR)$S$*
+	-$(MKDIR_P) $(CLASS_DIR)$S$*
+	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+ -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ ortools$Sgraph$Ssamples$S$*.java
 
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/linear_solver/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
@@ -323,6 +330,13 @@ $(CLASS_DIR)/%: $(SRC_DIR)/ortools/linear_solver/samples/%.java $(JAVA_OR_TOOLS_
 	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  ortools$Slinear_solver$Ssamples$S$*.java
+
+$(CLASS_DIR)/%: $(SRC_DIR)/ortools/sat/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
+	-$(DELREC) $(CLASS_DIR)$S$*
+	-$(MKDIR_P) $(CLASS_DIR)$S$*
+	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+ -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ ortools$Ssat$Ssamples$S$*.java
 
 $(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	-$(DEL) $(LIB_DIR)$S$*.jar
@@ -332,6 +346,16 @@ rjava_%: $(LIB_DIR)/%$J FORCE
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
  -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $* $(ARGS)
+
+.PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
+test_java_algorithms_samples: \
+
+.PHONY: test_java_graph_samples # Build and Run all Java Graph Samples (located in ortools/graph/samples)
+test_java_graph_samples: \
+
+.PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
+test_java_linear_solver_samples: \
+ rjava_SimpleLpProgram
 
 .PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
 test_java_sat_samples: \
@@ -352,14 +376,13 @@ test_java_sat_samples: \
  rjava_SolveWithTimeLimitSampleSat \
  rjava_StopAfterNSolutionsSampleSat
 
-.PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
-test_java_linear_solver_samples: \
- rjava_SimpleLpProgram
-
 .PHONY: check_java_pimpl
 check_java_pimpl: \
- test_java_sat_samples \
+ test_java_algorithms_samples \
+ test_java_graph_samples \
  test_java_linear_solver_samples \
+ test_java_sat_samples \
+ \
  rjava_LinearProgramming \
  rjava_IntegerProgramming \
  rjava_Tsp \

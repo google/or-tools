@@ -464,11 +464,18 @@ rdotnet_%.fs: \
 	"$(DOTNET_BIN)" run --no-build --project $(CONTRIB_EX_PATH)$S$*.fsproj -- $(ARGS)
 
 rdotnet_%.cs: \
- ortools/sat/samples/%.cs \
- ortools/sat/samples/%.csproj \
+ ortools/algorithms/samples/%.cs \
+ ortools/algorithms/samples/%.csproj \
  $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
+	"$(DOTNET_BIN)" build ortools$Salgorithms$Ssamples$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project ortools$Salgorithms$Ssamples$S$*.csproj -- $(ARGS)
+
+rdotnet_%.cs: \
+ ortools/graph/samples/%.cs \
+ ortools/graph/samples/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG) FORCE
+	"$(DOTNET_BIN)" build ortools$Sgraph$Ssamples$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project ortools$Sgraph$Ssamples$S$*.csproj -- $(ARGS)
 
 rdotnet_%.cs: \
  ortools/linear_solver/samples/%.cs \
@@ -476,6 +483,23 @@ rdotnet_%.cs: \
  $(DOTNET_ORTOOLS_NUPKG) FORCE
 	"$(DOTNET_BIN)" build ortools$Slinear_solver$Ssamples$S$*.csproj
 	"$(DOTNET_BIN)" run --no-build --project ortools$Slinear_solver$Ssamples$S$*.csproj -- $(ARGS)
+
+rdotnet_%.cs: \
+ ortools/sat/samples/%.cs \
+ ortools/sat/samples/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG) FORCE
+	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
+
+.PHONY: test_dotnet_algorithms_samples # Build and Run all .Net LP Samples (located in ortools/algorithms/samples)
+test_dotnet_algorithms_samples: \
+
+.PHONY: test_dotnet_graph_samples # Build and Run all .Net LP Samples (located in ortools/graph/samples)
+test_dotnet_graph_samples: \
+
+.PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
+test_dotnet_linear_solver_samples: \
+ rdotnet_SimpleLpProgram.cs
 
 .PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
 test_dotnet_sat_samples: \
@@ -496,15 +520,13 @@ test_dotnet_sat_samples: \
  rdotnet_SolveWithTimeLimitSampleSat.cs \
  rdotnet_StopAfterNSolutionsSampleSat.cs
 
-
-.PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
-test_dotnet_linear_solver_samples: \
- rdotnet_SimpleLpProgram.cs
-
 .PHONY: check_dotnet_pimpl
 check_dotnet_pimpl: \
- test_dotnet_sat_samples \
+ test_dotnet_algorithms_samples \
+ test_dotnet_graph_samples \
  test_dotnet_linear_solver_samples \
+ test_dotnet_sat_samples \
+ \
  rdotnet_SimpleProgramFSharp.fs
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)

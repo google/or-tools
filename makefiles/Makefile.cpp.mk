@@ -403,6 +403,12 @@ $(OBJ_DIR)/%.$O: $(CC_EX_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 $(OBJ_DIR)/%.$O: $(CONTRIB_EX_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(CONTRIB_EX_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
+$(OBJ_DIR)/%.$O: ortools/algorithms/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c ortools$Salgorithms$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+$(OBJ_DIR)/%.$O: ortools/graph/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c ortools$Sgraph$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
 $(OBJ_DIR)/%.$O: ortools/linear_solver/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c ortools$Slinear_solver$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
@@ -414,6 +420,16 @@ $(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
 
 rcc_%: $(BIN_DIR)/%$E FORCE
 	$(BIN_DIR)$S$*$E $(ARGS)
+
+.PHONY: test_cc_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
+test_cc_algorithms_samples: \
+
+.PHONY: test_cc_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)
+test_cc_graph_samples: \
+
+.PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
+test_cc_linear_solver_samples: \
+ rcc_simple_lp_program
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \
@@ -434,14 +450,13 @@ test_cc_sat_samples: \
  rcc_solve_with_time_limit_sample_sat \
  rcc_stop_after_n_solutions_sample_sat
 
-.PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
-test_cc_linear_solver_samples: \
- rcc_simple_lp_program
-
 .PHONY: check_cc_pimpl
 check_cc_pimpl: \
- test_cc_sat_samples \
+ test_cc_algorithms_samples \
+ test_cc_graph_samples \
  test_cc_linear_solver_samples \
+ test_cc_sat_samples \
+ \
  rcc_linear_programming \
  rcc_stigler_diet \
  rcc_constraint_programming_cp \
