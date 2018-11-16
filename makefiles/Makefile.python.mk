@@ -479,11 +479,27 @@ rpy_%: $(PYTHON_EX_DIR)/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 rpy_%: $(CONTRIB_EX_DIR)/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" $(CONTRIB_EX_PATH)$S$*.py $(ARGS)
 
-rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
-	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Ssat$Ssamples$S$*.py $(ARGS)
+rpy_%: ortools/algorithms/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Salgorithms$Ssamples$S$*.py $(ARGS)
+
+rpy_%: ortools/graph/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Sgraph$Ssamples$S$*.py $(ARGS)
 
 rpy_%: ortools/linear_solver/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Slinear_solver$Ssamples$S$*.py $(ARGS)
+
+rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Ssat$Ssamples$S$*.py $(ARGS)
+
+.PHONY: test_python_algorithms_samples # Run all Python Algorithms Samples (located in ortools/algorithms/samples)
+test_python_algorithms_samples: \
+
+.PHONY: test_python_graph_samples # Run all Python Graph Samples (located in ortools/graph/samples)
+test_python_graph_samples: \
+
+.PHONY: test_python_linear_solver_samples # Run all Python LP Samples (located in ortools/linear_solver/samples)
+test_python_linear_solver_samples: \
+ rpy_simple_lp_program
 
 .PHONY: test_python_sat_samples # Run all Python Sat Samples (located in ortools/sat/samples)
 test_python_sat_samples: \
@@ -505,14 +521,13 @@ test_python_sat_samples: \
  rpy_solve_with_time_limit_sample_sat \
  rpy_stop_after_n_solutions_sample_sat
 
-.PHONY: test_python_linear_solver_samples # Run all Python LP Samples (located in ortools/linear_solver/samples)
-test_python_linear_solver_samples: \
- rpy_simple_lp_program
-
 .PHONY: check_python_pimpl
 check_python_pimpl: \
- test_python_sat_samples \
+ test_python_algorithms_samples \
+ test_python_graph_samples \
  test_python_linear_solver_samples \
+ test_python_sat_samples \
+ \
  rpy_linear_programming \
  rpy_stigler_diet
 # rpy_constraint_programming_sat \
