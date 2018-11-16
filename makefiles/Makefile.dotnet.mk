@@ -494,6 +494,7 @@ test_dotnet_sat_samples: \
  rdotnet_SimpleSatProgram.cs \
  rdotnet_SolveAndPrintIntermediateSolutionsSampleSat.cs \
  rdotnet_SolveWithTimeLimitSampleSat.cs \
+ rdotnet_StopAfterNSolutionsSampleSat.cs
 
 
 .PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
