@@ -492,7 +492,6 @@ test_dotnet_sat_samples: \
  rdotnet_ReifiedSampleSat.cs \
  rdotnet_SearchForAllSolutionsSampleSat.cs \
  rdotnet_SimpleSatProgram.cs \
- rdotnet_SimpleSolveSampleSat.cs \
  rdotnet_SolveAndPrintIntermediateSolutionsSampleSat.cs \
  rdotnet_SolveWithTimeLimitSampleSat.cs \
 

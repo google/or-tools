@@ -500,7 +500,6 @@ test_python_sat_samples: \
  rpy_ranking_sample_sat \
  rpy_reified_sample_sat \
  rpy_simple_sat_program \
- rpy_simple_solve_sample_sat \
  rpy_search_for_all_solutions_sample_sat \
  rpy_solve_and_print_intermediate_solutions_sample_sat \
  rpy_solve_with_time_limit_sample_sat \

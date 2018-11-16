@@ -348,7 +348,6 @@ test_java_sat_samples: \
  rjava_ReifiedSampleSat \
  rjava_SearchForAllSolutionsSampleSat \
  rjava_SimpleSatProgram \
- rjava_SimpleSolveSampleSat \
  rjava_SolveAndPrintIntermediateSolutionsSampleSat \
  rjava_SolveWithTimeLimitSampleSat \
  rjava_StopAfterNSolutionsSampleSat

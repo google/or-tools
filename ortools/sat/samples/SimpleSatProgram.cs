@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 using System;
 using Google.OrTools.Sat;
 
@@ -19,8 +20,36 @@ public class SimpleSatProgram
   static void Main()
   {
     // Creates the model.
+    // [START model]
     CpModel model = new CpModel();
-    // Creates the Boolean variable.
-    IntVar x = model.NewBoolVar("x");
+    // [END model]
+
+    // Creates the variables.
+    // [START variables]
+    int num_vals = 3;
+
+    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+    // [END variables]
+
+    // Creates the constraints.
+    // [START constraints]
+    model.Add(x != y);
+    // [END constraints]
+
+    // Creates a solver and solves the model.
+    // [START solve]
+    CpSolver solver = new CpSolver();
+    CpSolverStatus status = solver.Solve(model);
+    // [END solve]
+
+    if (status == CpSolverStatus.Feasible)
+    {
+      Console.WriteLine("x = " + solver.Value(x));
+      Console.WriteLine("y = " + solver.Value(y));
+      Console.WriteLine("z = " + solver.Value(z));
+    }
   }
 }
+// [END program]
