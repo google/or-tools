@@ -651,6 +651,7 @@ class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__start_time = time.time()
 
     def OnSolutionCallback(self):
+        """Called at each new solution."""
         current_time = time.time()
         objective = self.ObjectiveValue()
         print('Solution %i, time = %f s, objective = [%i, %i]' %
