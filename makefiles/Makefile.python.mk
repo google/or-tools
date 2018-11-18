@@ -681,6 +681,7 @@ test_python_contrib: \
  rpy_young_tableaux
 	$(MAKE) run SOURCE=examples/contrib/coins_grid.py ARGS="5 2"
 	$(MAKE) run SOURCE=examples/contrib/hidato.py ARGS="3 3"
+#	$(MAKE) rpy_cvrptw_plot # error: py3 failure, missing numpy.
 #	$(MAKE) rpy_nontransitive_dice # error: too long
 # warning: nurse_sat take 18s
 #	$(MAKE) rpy_school_scheduling_sat # error: too long
@@ -733,7 +734,8 @@ test_python_python: \
  rpy_wedding_optimal_chart_sat \
  rpy_worker_schedule_sat \
  rpy_zebra
-#	$(MAKE) rpy_cvrptw_plot # error: py3 failure, missing numpy.
+	$(MAKE) run SOURCE= examples/python/shift_scheduling_sat ARGS="--params max_time_in_seconds:10.0" \
+
 
 .PHONY: test_python_pimpl
 test_python_pimpl: \
