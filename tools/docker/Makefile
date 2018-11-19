@@ -116,6 +116,7 @@ docker_ubuntu-18.04: export/ubuntu-18.04/docker.tar
 # before the image is built...
 export/%/docker.tar: %.Dockerfile ../Makefile.cc.java.dotnet ../../makefiles ../../ortools | export/%
 	-docker image rm -f or-tools_$*:devel 2>/dev/null
+	cp or-tools.snk export/$*/
 	$(DOCKER_BUILD_CMD) \
  -f $< \
  --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
