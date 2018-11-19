@@ -89,15 +89,16 @@ def solve_zebra():
     model.Add(milk == 3)
     model.Add(norwegian == 1)
 
-    distance_fox_chesterfields = model.NewIntVar(-4, 4, '')
+    distance_fox_chesterfields = model.NewIntVar(-4, 4,
+                                                 'distance_fox_chesterfields')
     model.Add(distance_fox_chesterfields == fox - chesterfields)
     model.AddAbsEquality(1, distance_fox_chesterfields)
-    distance_horse_kools = model.NewIntVar(-4, 4, '')
+    distance_horse_kools = model.NewIntVar(-4, 4, 'distance_horse_kools')
     model.Add(distance_horse_kools == horse - kools)
     model.AddAbsEquality(1, distance_horse_kools)
     model.Add(lucky_strike == fruit_juice)
     model.Add(japanese == parliaments)
-    distance_norwegian_blue = model.NewIntVar(-4, 4, '')
+    distance_norwegian_blue = model.NewIntVar(-4, 4, 'distance_norwegian_blue')
     model.Add(distance_norwegian_blue == norwegian - blue)
     model.AddAbsEquality(1, distance_norwegian_blue)
 
