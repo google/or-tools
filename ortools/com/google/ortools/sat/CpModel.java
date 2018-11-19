@@ -793,6 +793,16 @@ public class CpModel {
     return ct;
   }
 
+  /** Adds {@code target == Abs(var)}. */
+  public Constraint addAbsEquality(IntVar target, IntVar var) {
+    Constraint ct = new Constraint(modelBuilder);
+    IntegerArgumentProto.Builder intMax = ct.builder().getIntMaxBuilder();
+    intMax.setTarget(target.getIndex());
+    intMax.addVars(var.getIndex());
+    intMax.addVars(-var.getIndex() - 1);
+    return ct;
+  }
+
   /** Adds {@code target == var % mod}. */
   public Constraint addModuloEquality(IntVar target, IntVar var, IntVar mod) {
     Constraint ct = new Constraint(modelBuilder);

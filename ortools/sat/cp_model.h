@@ -606,6 +606,9 @@ class CpModelBuilder {
   Constraint AddDivisionEquality(IntVar target, IntVar numerator,
                                  IntVar denominator);
 
+  // Adds target == abs(var).
+  Constraint AddAbsEquality(IntVar target, IntVar var);
+
   // Adds target = var % mod.
   Constraint AddModuloEquality(IntVar target, IntVar var, IntVar mod);
 

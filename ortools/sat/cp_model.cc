@@ -624,6 +624,15 @@ Constraint CpModelBuilder::AddDivisionEquality(IntVar target, IntVar numerator,
   return Constraint(proto);
 }
 
+Constraint CpModelBuilder::AddAbsEquality(IntVar target, IntVar var) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  proto->mutable_int_max()->set_target(GetOrCreateIntegerIndex(target.index_));
+  proto->mutable_int_max()->add_vars(GetOrCreateIntegerIndex(var.index_));
+  proto->mutable_int_max()->add_vars(
+      NegatedRef(GetOrCreateIntegerIndex(var.index_)));
+  return Constraint(proto);
+}
+
 Constraint CpModelBuilder::AddModuloEquality(IntVar target, IntVar var,
                                              IntVar mod) {
   ConstraintProto* const proto = cp_model_.add_constraints();

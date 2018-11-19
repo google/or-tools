@@ -632,6 +632,17 @@ public class CpModel
     return ct;
   }
 
+  public Constraint AddAbsEquality(IntVar target, IntVar var)
+  {
+    Constraint ct = new Constraint(model_);
+    IntegerArgumentProto args = new IntegerArgumentProto();
+    args.Vars.Add(var.Index);
+    args.Vars.Add(-var.Index - 1);
+    args.Target = target.Index;
+    ct.Proto.IntMax = args;
+    return ct;
+  }
+
   public Constraint AddModuloEquality<T, V, M>(T target, V v, M m)
   {
     Constraint ct = new Constraint(model_);

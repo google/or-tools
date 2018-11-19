@@ -1031,6 +1031,15 @@ class CpModel(object):
         model_ct.int_div.target = self.GetOrMakeIndex(target)
         return ct
 
+    def AddAbsEquality(self, target, var):
+        """Adds target == Abs(var)."""
+        ct = Constraint(self.__model.constraints)
+        model_ct = self.__model.constraints[ct.Index()]
+        index = self.GetOrMakeIndex(var)
+        model_ct.int_max.vars.extend([index, -index - 1])
+        model_ct.int_max.target = self.GetOrMakeIndex(target)
+        return ct
+
     def AddModuloEquality(self, target, var, mod):
         """Adds target = var % mod."""
         ct = Constraint(self.__model.constraints)
