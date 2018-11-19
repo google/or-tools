@@ -28,7 +28,8 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
 
-def main():
+def tasks_and_workers_assignment_sat():
+    """Solve the assignment problem."""
     model = cp_model.CpModel()
 
     # CP-SAT solver is integer only.
@@ -115,5 +116,4 @@ def main():
                   (solver.Value(averages[j]) * 1.0 / scaling))
 
 
-if __name__ == '__main__':
-    main()
+tasks_and_workers_assignment_sat()
