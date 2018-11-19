@@ -734,7 +734,7 @@ test_python_python: \
  rpy_vrp \
  rpy_wedding_optimal_chart_sat \
  rpy_worker_schedule_sat \
- rpy_zebra
+ rpy_zebra_sat
 	$(MAKE) run SOURCE=examples/python/shift_scheduling_sat ARGS="--params max_time_in_seconds:10.0" \
 
 
