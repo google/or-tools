@@ -15,7 +15,7 @@
 from ortools.sat.python import cp_model
 
 
-class SolutionPrinter(cp_model.CpSolverSolutionCallback):
+class ObjectivePrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
     def __init__(self):
@@ -97,8 +97,8 @@ def tasks_and_workers_assignment_sat():
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = 60 * 60 * 2
-    solution_printer = SolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
+    objective_printer = ObjectivePrinter()
+    status = solver.SolveWithSolutionCallback(model, objective_printer)
     print(solver.ResponseStats())
 
     if status == cp_model.OPTIMAL:
