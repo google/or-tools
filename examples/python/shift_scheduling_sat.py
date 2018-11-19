@@ -17,9 +17,9 @@ from __future__ import print_function
 import argparse
 import time
 
-from ortools.sat.python import cp_model
-
 from google.protobuf import text_format
+
+from ortools.sat.python import cp_model
 
 Parser = argparse.ArgumentParser()
 Parser.add_argument(
@@ -48,6 +48,7 @@ class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
     def SolutionCount(self):
+        """Returns the number of solutions found."""
         return self.__solution_count
 
 
@@ -456,6 +457,7 @@ def solve_shift_scheduling(params, output_proto):
 
 
 def main(args):
+    """Main."""
     solve_shift_scheduling(args.params, args.output_proto)
 
 
