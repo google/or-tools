@@ -73,11 +73,12 @@ def solve_zebra():
     parliaments = model.NewIntVar(1, 5, 'parliaments')
 
     model.AddAllDifferent([red, green, yellow, blue, ivory])
-    model.AddAllDifferent([englishman, spaniard, japanese, ukrainian, norwegian])
+    model.AddAllDifferent(
+        [englishman, spaniard, japanese, ukrainian, norwegian])
     model.AddAllDifferent([dog, snails, fox, zebra, horse])
     model.AddAllDifferent([tea, coffee, water, milk, fruit_juice])
     model.AddAllDifferent(
-            [parliaments, kools, chesterfields, lucky_strike, old_gold])
+        [parliaments, kools, chesterfields, lucky_strike, old_gold])
 
     model.Add(englishman == red)
     model.Add(spaniard == dog)
@@ -89,18 +90,20 @@ def solve_zebra():
     model.Add(milk == 3)
     model.Add(norwegian == 1)
 
-    distance_fox_chesterfields = model.NewIntVar(-4, 4,
-                                                 'distance_fox_chesterfields')
-    model.Add(distance_fox_chesterfields == fox - chesterfields)
-    model.AddAbsEquality(1, distance_fox_chesterfields)
-    distance_horse_kools = model.NewIntVar(-4, 4, 'distance_horse_kools')
-    model.Add(distance_horse_kools == horse - kools)
-    model.AddAbsEquality(1, distance_horse_kools)
+    diff_fox_chesterfields = model.NewIntVar(-4, 4, 'diff_fox_chesterfields')
+    model.Add(diff_fox_chesterfields == fox - chesterfields)
+    model.AddAbsEquality(1, diff_fox_chesterfields)
+
+    diff_horse_kools = model.NewIntVar(-4, 4, 'diff_horse_kools')
+    model.Add(diff_horse_kools == horse - kools)
+    model.AddAbsEquality(1, diff_horse_kools)
+
     model.Add(lucky_strike == fruit_juice)
     model.Add(japanese == parliaments)
-    distance_norwegian_blue = model.NewIntVar(-4, 4, 'distance_norwegian_blue')
-    model.Add(distance_norwegian_blue == norwegian - blue)
-    model.AddAbsEquality(1, distance_norwegian_blue)
+    
+    diff_norwegian_blue = model.NewIntVar(-4, 4, 'diff_norwegian_blue')
+    model.Add(diff_norwegian_blue == norwegian - blue)
+    model.AddAbsEquality(1, diff_norwegian_blue)
 
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
@@ -108,8 +111,12 @@ def solve_zebra():
 
     if status == cp_model.FEASIBLE:
         people = [englishman, spaniard, japanese, ukrainian, norwegian]
-        water_drinker = [p for p in people if solver.Value(p) == solver.Value(water)][0]
-        zebra_owner = [p for p in people if solver.Value(p) == solver.Value(zebra)][0]
+        water_drinker = [
+            p for p in people if solver.Value(p) == solver.Value(water)
+        ][0]
+        zebra_owner = [
+            p for p in people if solver.Value(p) == solver.Value(zebra)
+        ][0]
         print('The', water_drinker.Name(), 'drinks water.')
         print('The', zebra_owner.Name(), 'owns the zebra.')
     else:
