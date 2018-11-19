@@ -100,7 +100,7 @@ def solve_zebra():
 
     model.Add(lucky_strike == fruit_juice)
     model.Add(japanese == parliaments)
-    
+
     diff_norwegian_blue = model.NewIntVar(-4, 4, 'diff_norwegian_blue')
     model.Add(diff_norwegian_blue == norwegian - blue)
     model.AddAbsEquality(1, diff_norwegian_blue)
