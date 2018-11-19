@@ -45,6 +45,10 @@ RUN wget "https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+# Copy the snk key
+COPY or-tools.snk /root/or-tools.snk
+ENV DOTNET_SNK=/root/or-tools.snk
+
 ################
 ##  OR-TOOLS  ##
 ################
