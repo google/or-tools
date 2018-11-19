@@ -726,6 +726,7 @@ test_python_python: \
  rpy_steel_mill_slab_sat \
  rpy_stigler_diet \
  rpy_sudoku \
+ rpy_tasks_and_workers_assignment_sat \
  rpy_transit_time \
  rpy_tsp \
  rpy_vendor_scheduling \
