@@ -561,7 +561,7 @@ rfz_%: fz $(FZ_EX_DIR)/%.fzn
 ################
 ##  Cleaning  ##
 ################
-CC_SAMPLES :=  $(wildcard ortools/sat/samples/*.cc)
+CC_SAMPLES :=  $(wildcard ortools/*/samples/*.cc)
 CC_SAMPLES :=  $(notdir $(CC_SAMPLES))
 CC_SAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_SAMPLES))))
 
