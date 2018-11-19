@@ -1,9 +1,11 @@
+# Introduction
 This file describes how to use OR-Tools in python with the binary archives.
 
-OR-Tools is located at https://developers.google.com/optimization
+OR-Tools online documetation is
+[here](https://developers.google.com/optimization)
 
-Full installation instructions are located at:
-  https://developers.google.com/optimization/introduction/installing/binary
+Full installation instructions are located
+[here](https://developers.google.com/optimization/install/python/)
 
 These modules have been tested under:
   - Ubuntu 14.04 and up, CentOS 7, Debian 9.
@@ -11,25 +13,33 @@ These modules have been tested under:
   - Microsoft Windows with Visual Studio 2015 and 2017 (64-bit)
 
 Upon decompressing the archive, you will get the following structure:
-
+```
 or-tools/
-  LICENSE-2.0.txt      <- Apache License
-  README               <- This file
-  data/                <- Data for the examples
-  examples/
-  examples/python      <- Python examples
-  examples/notebook    <- Jupyter/IPython notebooks
+  [LICENSE-2.0.txt](LICENSE-2.0.txt)     <- Apache License
+  [README.md](README.md)                 <- This file
+  [examples/data/](examples/data)        <- Data for the examples
+  [examples/python](examples/python)     <- Python examples
+  [examples/notebook](examples/notebook) <- Jupyter/IPython notebooks
+```
 
-To install the package :
-  1/Make sure python and pip are installed
+# Installation
+To install the package:
+1. Make sure python and pip are installed
 
-  2/Make sure pip is up to date:
-    pip -V should return 9.0.1
-    otherwise, run: pip install --upgrade pip
+2. Make sure pip is up to date:
+```shell
+python -m pip -V
+```
+should return 9.0.1  otherwise, run: `python -m pip install --upgrade --user pip`
 
-  3/Fetch ortools from Pypi:
-    pip install --upgrade ortools
-    It should pull the latest version of or-tools.
+3. Fetch `ortools` from Pypi:
+```shell
+python -m pip install --upgrade --user ortools
+```
+It should pull the latest version of OR-Tools.
 
-  4/Run a first example:
-    python examples/python/hidato_table.py
+# Run Examples
+To run a first example:
+```shell
+python examples/python/hidato_table.py
+```
