@@ -87,31 +87,31 @@ def add_sequence_constraint(model, works, hard_min, soft_min, min_cost,
                             soft_max, hard_max, max_cost, basename):
     """Sequence constraint on true variables with soft and hard bounds.
 
-  This constraint look at every maximal contiguous sequence of variables
-  assigned to true. If forbids sequence of length < hard_min or > hard_max.
-  Then it creates penalty terms if the length is < soft_min or > soft_max.
+    This constraint look at every maximal contiguous sequence of variables
+    assigned to true. If forbids sequence of length < hard_min or > hard_max.
+    Then it creates penalty terms if the length is < soft_min or > soft_max.
 
-  Args:
-    model: the sequence constraint is built on this model.
-    works: a list of Boolean variables.
-    hard_min: any sequence of true variables must have a length of at least
-      hard_min.
-    soft_min: any sequence should have a length of at least soft_min, or a
-      linear penalty on the delta will be added to the objective.
-    min_cost: the coefficient of the linear penalty if the length is less than
-      soft_min.
-    soft_max: any sequence should have a length of at most soft_max, or a linear
-      penalty on the delta will be added to the objective.
-    hard_max: any sequence of true variables must have a length of at most
-      hard_max.
-    max_cost: the coefficient of the linear penalty if the length is more than
-      soft_max.
-    basename: a base name for penalty literals.
+    Args:
+        model: the sequence constraint is built on this model.
+        works: a list of Boolean variables.
+        hard_min: any sequence of true variables must have a length of at least
+            hard_min.
+        soft_min: any sequence should have a length of at least soft_min, or a
+            linear penalty on the delta will be added to the objective.
+        min_cost: the coefficient of the linear penalty if the length is less
+            than soft_min.
+        soft_max: any sequence should have a length of at most soft_max, or a
+            linear penalty on the delta will be added to the objective.
+        hard_max: any sequence of true variables must have a length of at most
+            hard_max.
+        max_cost: the coefficient of the linear penalty if the length is more
+            than soft_max.
+        basename: a base name for penalty literals.
 
-  Returns:
-    a tuple (variables_list, coefficient_list) containing the different
-    penalties created by the sequence constraint.
-  """
+    Returns:
+        a tuple (variables_list, coefficient_list) containing the different
+        penalties created by the sequence constraint.
+    """
     cost_literals = []
     cost_coefficients = []
 
@@ -161,31 +161,31 @@ def add_weekly_sum_constraint(model, works, hard_min, soft_min, min_cost,
                               soft_max, hard_max, max_cost, basename):
     """Sum constraint with soft and hard bounds.
 
-  This constraint counts the variables assigned to true from works.
-  If forbids sum < hard_min or > hard_max.
-  Then it creates penalty terms if the sum is < soft_min or > soft_max.
+    This constraint counts the variables assigned to true from works.
+    If forbids sum < hard_min or > hard_max.
+    Then it creates penalty terms if the sum is < soft_min or > soft_max.
 
-  Args:
-    model: the sequence constraint is built on this model.
-    works: a list of Boolean variables.
-    hard_min: any sequence of true variables must have a sum of at least
-      hard_min.
-    soft_min: any sequence should have a sum of at least soft_min, or a linear
-      penalty on the delta will be added to the objective.
-    min_cost: the coefficient of the linear penalty if the sum is less than
-      soft_min.
-    soft_max: any sequence should have a sum of at most soft_max, or a linear
-      penalty on the delta will be added to the objective.
-    hard_max: any sequence of true variables must have a sum of at most
-      hard_max.
-    max_cost: the coefficient of the linear penalty if the sum is more than
-      soft_max.
-    basename: a base name for penalty variables.
+    Args:
+        model: the sequence constraint is built on this model.
+        works: a list of Boolean variables.
+        hard_min: any sequence of true variables must have a sum of at least
+            hard_min.
+        soft_min: any sequence should have a sum of at least soft_min, or a
+            linear penalty on the delta will be added to the objective.
+        min_cost: the coefficient of the linear penalty if the sum is less than
+            soft_min.
+        soft_max: any sequence should have a sum of at most soft_max, or a
+            linear penalty on the delta will be added to the objective.
+        hard_max: any sequence of true variables must have a sum of at most
+            hard_max.
+        max_cost: the coefficient of the linear penalty if the sum is more than
+            soft_max.
+        basename: a base name for penalty variables.
 
-  Returns:
-    a tuple (variables_list, coefficient_list) containing the different
-    penalties created by the sequence constraint.
-  """
+    Returns:
+        a tuple (variables_list, coefficient_list) containing the different
+        penalties created by the sequence constraint.
+    """
     cost_variables = []
     cost_coefficients = []
     sum_var = model.NewIntVar(hard_min, hard_max, '')
