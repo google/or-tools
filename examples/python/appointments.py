@@ -10,12 +10,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Generates possible daily schedules for workers."""
 
 from __future__ import print_function
 from __future__ import division
 
 import argparse
-from ortools.constraint_solver import pywrapcp
+from ortools.sat.python import cp_model
 from ortools.linear_solver import pywraplp
 
 PARSER = argparse.ArgumentParser()
@@ -29,37 +30,52 @@ PARSER.add_argument(
     '--num_workers', default=98, type=int, help='Maximum number of workers.')
 
 
+class AllSolutionCollector(cp_model.CpSolverSolutionCallback):
+    """Stores all solutions."""
+
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__collect = []
+
+    def OnSolutionCallback(self):
+        """Collect a new combination."""
+        combination = [self.Value(v) for v in self.__variables]
+        self.__collect.append(combination)
+
+    def combinations(self):
+        """Returns all collected combinations."""
+        return self.__collect
+
+
 def find_combinations(durations, load_min, load_max, commute_time):
     """This methods find all valid combinations of appointments.
 
-  This methods find all combinations of appointments such that the sum of
-  durations + commute times is between load_min and load_max.
+    This methods find all combinations of appointments such that the sum of
+    durations + commute times is between load_min and load_max.
 
-  Args:
-    durations: The durations of all appointments.
-    load_min: The min number of worked minutes for a valid selection.
-    load_max: The max number of worked minutes for a valid selection.
-    commute_time: The commute time between two appointments in minutes.
+    Args:
+        durations: The durations of all appointments.
+        load_min: The min number of worked minutes for a valid selection.
+        load_max: The max number of worked minutes for a valid selection.
+        commute_time: The commute time between two appointments in minutes.
 
-  Returns:
-    A matrix where each line is a valid combinations of appointments.
-  """
-    solver = pywrapcp.Solver('FindCombinations')
+    Returns:
+        A matrix where each line is a valid combinations of appointments.
+    """
+    model = cp_model.CpModel()
     variables = [
-        solver.IntVar(0, load_max // (i + commute_time)) for i in durations
+        model.NewIntVar(0, load_max // (duration + commute_time), '')
+        for duration in durations
     ]
-    lengths = [i + commute_time for i in durations]
-    solver.Add(solver.ScalProd(variables, lengths) >= load_min)
-    solver.Add(solver.ScalProd(variables, lengths) <= load_max)
-    db = solver.Phase(variables, solver.CHOOSE_FIRST_UNBOUND,
-                      solver.ASSIGN_MIN_VALUE)
-    results = []
-    solver.NewSearch(db)
-    while solver.NextSolution():
-        combination = [v.Value() for v in variables]
-        results.append(combination)
-    solver.EndSearch()
-    return results
+    terms = [(variables[i], duration + commute_time)
+             for i, duration in enumerate(durations)]
+    model.AddLinearConstraintWithBounds(terms, [load_min, load_max])
+
+    solver = cp_model.CpSolver()
+    solution_collector = AllSolutionCollector(variables)
+    solver.SearchForAllSolutions(model, solution_collector)
+    return solution_collector.combinations()
 
 
 def select(combinations, loads, max_number_of_workers):
@@ -84,12 +100,11 @@ def select(combinations, loads, max_number_of_workers):
     ] for index in range(num_vars)]
 
     # Maintain the achieved variables.
-    for i in range(len(transposed)):
+    for i, coefs in enumerate(transposed):
         ct = solver.Constraint(0.0, 0.0)
         ct.SetCoefficient(achieved[i], -1)
-        coefs = transposed[i]
-        for j in range(len(coefs)):
-            ct.SetCoefficient(variables[j], coefs[j])
+        for j, coef in enumerate(coefs):
+            ct.SetCoefficient(variables[j], coef)
 
     # Simple bound.
     solver.Add(solver.Sum(variables) <= max_number_of_workers)
@@ -131,6 +146,7 @@ def get_optimal_schedule(demand, args):
 
 
 def main(args):
+    """Solve the assignment problem."""
     demand = [(40, 'A1', 90), (30, 'A2', 120), (25, 'A3', 180)]
     print('appointments: ')
     for a in demand:
