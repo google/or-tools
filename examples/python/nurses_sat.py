@@ -28,7 +28,7 @@ class NursesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solutions = set(sols)
         self.__solution_count = 0
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         self.__solution_count += 1
         if self.__solution_count in self.__solutions:
             print('Solution #%i' % self.__solution_count)
@@ -40,7 +40,7 @@ class NursesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
                             print('  Nurse #%i is working shift #%i' % (n, s))
             print()
 
-    def SolutionCount(self):
+    def solution_count(self):
         return self.__solution_count
 
 
@@ -126,7 +126,7 @@ def main():
     print('  - conflicts       : %i' % solver.NumConflicts())
     print('  - branches        : %i' % solver.NumBranches())
     print('  - wall time       : %f ms' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.SolutionCount())
+    print('  - solutions found : %i' % solution_printer.solution_count())
 
 
 if __name__ == '__main__':

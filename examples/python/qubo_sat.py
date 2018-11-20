@@ -650,7 +650,7 @@ class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
         self.__start_time = time.time()
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         """Called at each new solution."""
         current_time = time.time()
         objective = self.ObjectiveValue()
@@ -659,7 +659,7 @@ class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
                objective, self.BestObjectiveBound()))
         self.__solution_count += 1
 
-    def SolutionCount(self):
+    def solution_count(self):
         return self.__solution_count
 
 def solve_qubo():
@@ -706,7 +706,7 @@ def solve_qubo():
     print('  - conflicts       : %i' % solver.NumConflicts())
     print('  - branches        : %i' % solver.NumBranches())
     print('  - wall time       : %f ms' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.SolutionCount())
+    print('  - solutions found : %i' % solution_printer.solution_count())
 
 
 if __name__ == '__main__':

@@ -34,13 +34,13 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__variables = variables
         self.__solution_count = 0
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
             print('%s=%i' % (v, self.Value(v)), end=' ')
         print()
 
-    def SolutionCount(self):
+    def solution_count(self):
         return self.__solution_count
         # [END solution_printing]
 
@@ -93,7 +93,7 @@ def CPIsFunSat():
     print('  - conflicts       : %i' % solver.NumConflicts())
     print('  - branches        : %i' % solver.NumBranches())
     print('  - wall time       : %f ms' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.SolutionCount())
+    print('  - solutions found : %i' % solution_printer.solution_count())
 
 
 if __name__ == '__main__':

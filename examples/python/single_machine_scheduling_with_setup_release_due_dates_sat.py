@@ -45,7 +45,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         cp_model.CpSolverSolutionCallback.__init__(self)
         self.__solution_count = 0
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         print('Solution %i, time = %f s, objective = %i' %
               (self.__solution_count, self.WallTime(), self.ObjectiveValue()))
         self.__solution_count += 1

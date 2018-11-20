@@ -37,7 +37,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__all_items = all_items
         self.__item_in_group = item_in_group
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         print('Solution %i' % self.__solution_count)
         self.__solution_count += 1
 
@@ -60,9 +60,6 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
                 color = self.__colors[item]
                 print(' (%i, %i, %i)' % (item, value, color), end='')
             print(']')
-
-    def SolutionCount(self):
-        return self.__solution_count
 
 
 def main():

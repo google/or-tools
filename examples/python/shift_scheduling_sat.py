@@ -21,13 +21,13 @@ from google.protobuf import text_format
 
 from ortools.sat.python import cp_model
 
-Parser = argparse.ArgumentParser()
-Parser.add_argument(
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument(
     '--output_proto',
     default="",
     help='Output file to write the cp_model'
     'proto to.')
-Parser.add_argument('--params', default="", help='Sat solver parameters.')
+PARSER.add_argument('--params', default="", help='Sat solver parameters.')
 
 
 class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -38,7 +38,7 @@ class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
         self.__start_time = time.time()
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         """Called on each new solution."""
         current_time = time.time()
         objective = self.ObjectiveValue()
@@ -47,7 +47,7 @@ class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
                objective, self.BestObjectiveBound()))
         self.__solution_count += 1
 
-    def SolutionCount(self):
+    def solution_count(self):
         """Returns the number of solutions found."""
         return self.__solution_count
 
@@ -453,7 +453,7 @@ def solve_shift_scheduling(params, output_proto):
     print('  - conflicts       : %i' % solver.NumConflicts())
     print('  - branches        : %i' % solver.NumBranches())
     print('  - wall time       : %f ms' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.SolutionCount())
+    print('  - solutions found : %i' % solution_printer.solution_count())
 
 
 def main(args):
@@ -462,4 +462,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(Parser.parse_args())
+    main(PARSER.parse_args())

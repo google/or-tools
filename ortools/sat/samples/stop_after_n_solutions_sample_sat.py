@@ -28,7 +28,7 @@ class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
         self.__solution_limit = limit
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         self.__solution_count += 1
         for v in self.__variables:
             print('%s=%i' % (v, self.Value(v)), end=' ')
@@ -37,7 +37,7 @@ class VarArraySolutionPrinterWithLimit(cp_model.CpSolverSolutionCallback):
             print('Stop search after %i solutions' % self.__solution_limit)
             self.StopSearch()
 
-    def SolutionCount(self):
+    def solution_count(self):
         return self.__solution_count
 
 
@@ -56,8 +56,8 @@ def StopAfterNSolutionsSampleSat():
     solution_printer = VarArraySolutionPrinterWithLimit([x, y, z], 5)
     status = solver.SearchForAllSolutions(model, solution_printer)
     print('Status = %s' % solver.StatusName(status))
-    print('Number of solutions found: %i' % solution_printer.SolutionCount())
-    assert solution_printer.SolutionCount() == 5
+    print('Number of solutions found: %i' % solution_printer.solution_count())
+    assert solution_printer.solution_count() == 5
 
 
 StopAfterNSolutionsSampleSat()

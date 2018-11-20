@@ -36,7 +36,7 @@ PARSER.add_argument(
     help='Output file to write the cp_model proto to.')
 
 
-def BuildProblem(problem_id):
+def build_problem(problem_id):
     """Build problem data."""
     if problem_id == 0:
         capacities = [
@@ -270,7 +270,7 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__all_slabs = range(len(assign[0]))
         self.__start_time = time.time()
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         current_time = time.time()
         objective = sum(self.Value(l) for l in self.__loss)
         print('Solution %i, time = %f s, objective = %i' %
@@ -299,7 +299,7 @@ class SolutionPrinterWithObjective(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
         self.__start_time = time.time()
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         current_time = time.time()
         print('Solution %i, time = %f s, objective = %i' %
               (self.__solution_count, current_time - self.__start_time,
@@ -307,10 +307,10 @@ class SolutionPrinterWithObjective(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
 
-def SteelMillSlab(problem, break_symmetries, output_proto):
+def steel_mill_slab(problem, break_symmetries, output_proto):
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
+    (num_slabs, capacities, num_colors, orders) = build_problem(problem)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
@@ -458,15 +458,15 @@ class AllSolutionsCollector(cp_model.CpSolverSolutionCallback):
         self.__solutions = []
         self.__variables = variables
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         solution = [self.Value(v) for v in self.__variables]
         self.__solutions.append(tuple(solution))
 
-    def AllSolutions(self):
+    def all_solutions(self):
         return self.__solutions
 
 
-def CollectValidSlabs(capacities, colors, widths, loss_array, all_colors):
+def collect_valid_slabs(capacities, colors, widths, loss_array, all_colors):
     """Collect valid columns (assign, loss) for one slab."""
     max_capacity = max(capacities)
     all_orders = range(len(colors))
@@ -505,13 +505,13 @@ def CollectValidSlabs(capacities, colors, widths, loss_array, all_colors):
     collector = AllSolutionsCollector(assign + [loss, load])
     solver.SearchForAllSolutions(model, collector)
     print('Collect Valid Slabs...DONE')
-    return collector.AllSolutions()
+    return collector.all_solutions()
 
 
-def SteelMillSlabWithValidSlabs(problem, break_symmetries, output_proto):
+def steel_mill_slab_with_valid_slabs(problem, break_symmetries, output_proto):
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
+    (num_slabs, capacities, num_colors, orders) = build_problem(problem)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
@@ -543,8 +543,8 @@ def SteelMillSlabWithValidSlabs(problem, break_symmetries, output_proto):
     ]
     losses = [model.NewIntVar(0, max_loss, 'loss_%i' % s) for s in all_slabs]
 
-    unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
-                                             loss_array, all_colors)
+    unsorted_valid_slabs = collect_valid_slabs(capacities, colors, widths,
+                                               loss_array, all_colors)
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
@@ -646,14 +646,13 @@ def SteelMillSlabWithValidSlabs(problem, break_symmetries, output_proto):
         print('No solution')
 
 
-def SteelMillSlabWithColumnGeneration(problem, output_proto):
+def steel_mill_slab_with_column_generation(problem, output_proto):
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
+    (num_slabs, capacities, num_colors, orders) = build_problem(problem)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
-    all_slabs = range(num_slabs)
     all_colors = range(num_colors)
     all_orders = range(len(orders))
     print('Solving steel mill with %i orders, %i slabs, and %i capacities' %
@@ -671,8 +670,8 @@ def SteelMillSlabWithColumnGeneration(problem, output_proto):
     ### Model problem.
 
     # Generate all valid slabs (columns)
-    unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
-                                             loss_array, all_colors)
+    unsorted_valid_slabs = collect_valid_slabs(capacities, colors, widths,
+                                               loss_array, all_colors)
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
@@ -722,14 +721,13 @@ def SteelMillSlabWithColumnGeneration(problem, output_proto):
         print('No solution')
 
 
-def SteelMillSlabWithMipColumnGeneration(problem):
+def steel_mill_slab_with_mip_column_generation(problem):
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
+    (num_slabs, capacities, num_colors, orders) = build_problem(problem)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
-    all_slabs = range(num_slabs)
     all_colors = range(num_colors)
     all_orders = range(len(orders))
     print('Solving steel mill with %i orders, %i slabs, and %i capacities' %
@@ -748,8 +746,8 @@ def SteelMillSlabWithMipColumnGeneration(problem):
 
     # Generate all valid slabs (columns)
     start = time.time()
-    unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
-                                             loss_array, all_colors)
+    unsorted_valid_slabs = collect_valid_slabs(capacities, colors, widths,
+                                               loss_array, all_colors)
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
@@ -792,14 +790,14 @@ def SteelMillSlabWithMipColumnGeneration(problem):
 def main(args):
     '''Main function'''
     if args.solver == 'sat':
-        SteelMillSlab(args.problem, args.break_symmetries, args.output_proto)
+        steel_mill_slab(args.problem, args.break_symmetries, args.output_proto)
     elif args.solver == 'sat_table':
-        SteelMillSlabWithValidSlabs(args.problem, args.break_symmetries,
-                                    args.output_proto)
+        steel_mill_slab_with_valid_slabs(args.problem, args.break_symmetries,
+                                         args.output_proto)
     elif args.solver == 'sat_column':
-        SteelMillSlabWithColumnGeneration(args.problem, args.output_proto)
+        steel_mill_slab_with_column_generation(args.problem, args.output_proto)
     else:  # 'mip_column'
-        SteelMillSlabWithMipColumnGeneration(args.problem)
+        steel_mill_slab_with_mip_column_generation(args.problem)
 
 
 if __name__ == '__main__':

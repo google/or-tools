@@ -26,10 +26,10 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
         self.__start_time = time.time()
 
-    def SolutionCount(self):
+    def solution_count(self):
         return self.__solution_count
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         current_time = time.time()
         print('Solution %i, time = %f s' % (self.__solution_count,
                                             current_time - self.__start_time))
@@ -87,7 +87,7 @@ def main(board_size):
     print('  - conflicts       : %i' % solver.NumConflicts())
     print('  - branches        : %i' % solver.NumBranches())
     print('  - wall time       : %f ms' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.SolutionCount())
+    print('  - solutions found : %i' % solution_printer.solution_count())
 
 
 # By default, solve the 8x8 problem.

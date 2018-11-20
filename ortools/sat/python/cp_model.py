@@ -1374,6 +1374,11 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     and Value() methods.
     """
 
+    def OnSolutionCallback(self):
+        """Proxy to the same method with different naming convention."""
+        self.on_solution_callback()
+
+
     def BooleanValue(self, lit):
         """Returns the boolean value of a boolean literal.
 

@@ -38,7 +38,7 @@ class AllSolutionCollector(cp_model.CpSolverSolutionCallback):
         self.__variables = variables
         self.__collect = []
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         """Collect a new combination."""
         combination = [self.Value(v) for v in self.__variables]
         self.__collect.append(combination)

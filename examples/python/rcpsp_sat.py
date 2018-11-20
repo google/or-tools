@@ -24,15 +24,15 @@ from google.protobuf import text_format
 from ortools.data import pywraprcpsp
 from ortools.sat.python import cp_model
 
-Parser = argparse.ArgumentParser()
-Parser.add_argument(
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument(
     '--input', default="", help='Input file to parse and solve.')
-Parser.add_argument(
+PARSER.add_argument(
     '--output_proto',
     default="",
     help='Output file to write the cp_model'
     'proto to.')
-Parser.add_argument('--params', default="", help='Sat solver parameters.')
+PARSER.add_argument('--params', default="", help='Sat solver parameters.')
 
 
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -43,7 +43,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
         self.__start_time = time.time()
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         current_time = time.time()
         objective = self.ObjectiveValue()
         print('Solution %i, time = %f s, objective = %i' %
@@ -52,7 +52,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count += 1
 
 
-def SolveRcpsp(problem, proto_file, params):
+def solve_rcpsp(problem, proto_file, params):
     """Parse and solve a given RCPSP problem in proto format."""
 
     # Determine problem type.
@@ -286,8 +286,8 @@ def SolveRcpsp(problem, proto_file, params):
 def main(args):
     rcpsp_parser = pywraprcpsp.RcpspParser()
     rcpsp_parser.ParseFile(args.input)
-    SolveRcpsp(rcpsp_parser.Problem(), args.output_proto, args.params)
+    solve_rcpsp(rcpsp_parser.Problem(), args.output_proto, args.params)
 
 
 if __name__ == '__main__':
-    main(Parser.parse_args())
+    main(PARSER.parse_args())

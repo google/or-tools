@@ -33,7 +33,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__hours_stat = hours_stat
         self.__min_vendors = min_vendors
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         """Called at each new solution."""
         self.__solution_count += 1
         print('Solution %i: ', self.__solution_count)
@@ -50,7 +50,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
             print()
         print()
 
-    def SolutionCount(self):
+    def solution_count(self):
         """Returns the number of solution found."""
         return self.__solution_count
 
@@ -137,8 +137,8 @@ def main():
     print('  - conflicts : %i' % solver.NumConflicts())
     print('  - branches  : %i' % solver.NumBranches())
     print('  - wall time : %f s' % solver.WallTime())
-    print(
-        '  - number of solutions found: %i' % solution_printer.SolutionCount())
+    print('  - number of solutions found: %i' % 
+          solution_printer.solution_count())
 
 
 if __name__ == '__main__':

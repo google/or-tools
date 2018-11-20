@@ -53,7 +53,7 @@ class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
         self.__num_tables = num_tables
         self.__num_guests = num_guests
 
-    def OnSolutionCallback(self):
+    def on_solution_callback(self):
         current_time = time.time()
         objective = self.ObjectiveValue()
         print("Solution %i, time = %f s, objective = %i" %
@@ -67,7 +67,7 @@ class WeddingChartPrinter(cp_model.CpSolverSolutionCallback):
                 if self.Value(self.__seats[(t, g)]):
                     print("  " + self.__names[g])
 
-    def NumSolutions(self):
+    def num_solutions(self):
         return self.__solution_count
 
 
@@ -116,7 +116,7 @@ def BuildData():
     return num_tables, table_capacity, min_known_neighbors, C, names
 
 
-def SolveWithDiscreteModel():
+def solve_with_discrete_model():
     num_tables, table_capacity, min_known_neighbors, C, names = BuildData()
 
     num_guests = len(C)
@@ -203,12 +203,7 @@ def SolveWithDiscreteModel():
     print("  - conflicts    : %i" % solver.NumConflicts())
     print("  - branches     : %i" % solver.NumBranches())
     print("  - wall time    : %f ms" % solver.WallTime())
-    print("  - num solutions: %i" % solution_printer.NumSolutions())
+    print("  - num solutions: %i" % solution_printer.num_solutions())
 
 
-def main():
-    SolveWithDiscreteModel()
-
-
-if __name__ == "__main__":
-    main()
+solve_with_discrete_model()
