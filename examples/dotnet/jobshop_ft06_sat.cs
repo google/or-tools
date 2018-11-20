@@ -33,7 +33,7 @@ public class JobshopFt06Sat
     public IntervalVar interval;
   }
 
-  static void Solve()
+  static void Main()
   {
     int[,] durations = new int[,] { {1, 3, 6, 7, 3, 6},
                                     {8, 5, 10, 10, 10, 4},
@@ -130,9 +130,5 @@ public class JobshopFt06Sat
 
     // Statistics.
     Console.WriteLine(solver.ResponseStats());
-  }
-
-  static void Main() {
-    Solve();
   }
 }

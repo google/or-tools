@@ -28,7 +28,7 @@ using Google.OrTools.Sat;
 
 public class GateSchedulingSat
 {
-  static void Solve()
+  static void Main()
   {
     CpModel model = new CpModel();
 
@@ -145,9 +145,5 @@ public class GateSchedulingSat
     Console.WriteLine("  - conflicts       : " + solver.NumConflicts());
     Console.WriteLine("  - branches        : " + solver.NumBranches());
     Console.WriteLine("  - wall time       : " + solver.WallTime() + " ms");
-  }
-
-  static void Main() {
-    Solve();
   }
 }

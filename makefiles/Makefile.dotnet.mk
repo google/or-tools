@@ -568,7 +568,6 @@ test_dotnet_examples_csharp: \
  rdotnet_cscvrptw.cs \
  rdotnet_csflow.cs \
  rdotnet_csintegerprogramming.cs \
- rdotnet_csjobshop.cs \
  rdotnet_csknapsack.cs \
  rdotnet_cslinearprogramming.cs \
  rdotnet_csls_api.cs \
@@ -587,11 +586,12 @@ test_dotnet_examples_csharp: \
  rdotnet_furniture_moving.cs \
  rdotnet_furniture_moving_intervals.cs \
  rdotnet_futoshiki.cs \
- rdotnet_gate_scheduling_sat.cs \
+ rdotnet_GateSchedulingSat.cs \
  rdotnet_golomb_ruler.cs \
  rdotnet_grocery.cs \
  rdotnet_hidato_table.cs \
  rdotnet_jobshop_ft06_sat.cs \
+ rdotnet_JobshopSat.cs \
  rdotnet_just_forgotten.cs \
  rdotnet_kakuro.cs \
  rdotnet_kenken2.cs \
@@ -641,14 +641,13 @@ test_dotnet_examples_csharp: \
  rdotnet_set_partition.cs \
  rdotnet_sicherman_dice.cs \
  rdotnet_ski_assignment.cs \
- rdotnet_slow_scheduling.cs \
+ rdotnet_SpeakerSchedulingSat.cs \
  rdotnet_stable_marriage.cs \
  rdotnet_strimko2.cs \
  rdotnet_subset_sum.cs \
  rdotnet_sudoku.cs \
  rdotnet_survo_puzzle.cs \
  rdotnet_TaskScheduling.cs \
- rdotnet_techtalk_scheduling.cs \
  rdotnet_to_num.cs \
  rdotnet_traffic_lights.cs \
  rdotnet_tsp.cs \
