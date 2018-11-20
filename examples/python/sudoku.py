@@ -13,12 +13,13 @@
 """This model implements a sudoku solver."""
 
 from __future__ import print_function
-from ortools.constraint_solver import pywrapcp
+
+from ortools.sat.python import cp_model
 
 
-def main():
-    # Create the solver.
-    solver = pywrapcp.Solver('sudoku')
+def solve_sudoku():
+    # Create the model.
+    model = cp_model.CpModel()
 
     cell_size = 3
     line_size = cell_size**2
@@ -34,15 +35,15 @@ def main():
     grid = {}
     for i in line:
         for j in line:
-            grid[(i, j)] = solver.IntVar(1, line_size, 'grid %i %i' % (i, j))
+            grid[(i, j)] = model.NewIntVar(1, line_size, 'grid %i %i' % (i, j))
 
     # AllDifferent on rows.
     for i in line:
-        solver.Add(solver.AllDifferent([grid[(i, j)] for j in line]))
+        model.AddAllDifferent([grid[(i, j)] for j in line])
 
     # AllDifferent on columns.
     for j in line:
-        solver.Add(solver.AllDifferent([grid[(i, j)] for i in line]))
+        model.AddAllDifferent([grid[(i, j)] for i in line])
 
     # AllDifferent on cells.
     for i in cell:
@@ -53,32 +54,20 @@ def main():
                     one_cell.append(grid[(i * cell_size + di,
                                           j * cell_size + dj)])
 
-            solver.Add(solver.AllDifferent(one_cell))
+            model.AddAllDifferent(one_cell)
 
     # Initial values.
     for i in line:
         for j in line:
             if initial_grid[i][j]:
-                solver.Add(grid[(i, j)] == initial_grid[i][j])
+                model.Add(grid[(i, j)] == initial_grid[i][j])
 
-    # Regroup all variables into a list.
-    all_vars = [grid[(i, j)] for i in line for j in line]
-
-    # Create search phases.
-    vars_phase = solver.Phase(all_vars, solver.INT_VAR_SIMPLE,
-                              solver.INT_VALUE_SIMPLE)
-
-    solution = solver.Assignment()
-    solution.Add(all_vars)
-    collector = solver.FirstSolutionCollector(solution)
-
-    # And solve.
-    solver.Solve(vars_phase, [collector])
-
-    if collector.SolutionCount() == 1:
+    # Solve and print out the solution.
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    if status == cp_model.FEASIBLE:
         for i in line:
-            print([int(collector.Value(0, grid[(i, j)])) for j in line])
+            print([solver.Value(grid[(i, j)]) for j in line])
 
 
-if __name__ == '__main__':
-    main()
+solve_sudoku()
