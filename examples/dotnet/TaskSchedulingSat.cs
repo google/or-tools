@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Sat;
 
-namespace OrToolsConstraint {
 class Job {
   public Job(List<Task> tasks) {
     AlternativeTasks = tasks;
@@ -34,15 +33,7 @@ class Task {
   }
 }
 
-class Prefix : VoidToString
-{
-  public override string Run()
-  {
-    return "[TaskScheduling] ";
-  }
-}
-
-class TaskScheduling {
+class TaskSchedulingSat {
   public static List<Job> myJobList = new List<Job>();
   public static Dictionary<long, List<IntervalVar>> tasksToEquipment =
       new Dictionary<long, List<IntervalVar>>();
@@ -136,15 +127,15 @@ class TaskScheduling {
     return c;
   }
 
-  static void Main(string[] args) {
+  static void Main() {
     InitTaskList();
     int taskCount = GetTaskCount();
 
-    Solver solver = new Solver("ResourceConstraintScheduling");
+    CpModel model = new CpModel();
 
     IntervalVar[] tasks = new IntervalVar[taskCount];
     IntVar[] taskChoosed = new IntVar[taskCount];
-    IntVar[] makeSpan = new IntVar[GetEndTaskCount()];
+    IntVar[] allEnds = new IntVar[GetEndTaskCount()];
 
     int endJobCounter = 0;
     foreach (Job j in myJobList) {
@@ -152,50 +143,33 @@ class TaskScheduling {
       int i = 0;
       foreach (Task t in j.AlternativeTasks) {
         long ti = taskIndexes[t.Name];
-        taskChoosed[ti] = solver.MakeIntVar(0, 1, t.Name + "_choose");
+        taskChoosed[ti] = model.NewBoolVar(t.Name + "_choose");
         tmp[i++] = taskChoosed[ti];
-        tasks[ti] = solver.MakeFixedDurationIntervalVar(
-            0, 100000, t.Duration, false, t.Name + "_interval");
+        IntVar start = model.NewIntVar(0, 10000, t.Name + "_start");
+        IntVar end = model.NewIntVar(0, 10000, t.Name + "_end");
+        tasks[ti] = model.NewIntervalVar(start, t.Duration, end, t.Name + "_interval");
         if (j.Successor == null)
-          makeSpan[endJobCounter++] = tasks[ti].EndExpr().Var();
+          allEnds[endJobCounter++] = end;
         if (!tasksToEquipment.ContainsKey(t.Equipment))
           tasksToEquipment[t.Equipment] = new List<IntervalVar>();
         tasksToEquipment[t.Equipment].Add(tasks[ti]);
       }
-      solver.Add(IntVarArrayHelper.Sum(tmp) == 1);
+      model.Add(tmp.Sum() == 1);
     }
 
-    List<SequenceVar> all_seq = new List<SequenceVar>();
     foreach (KeyValuePair<long, List<IntervalVar>> pair in tasksToEquipment) {
-      DisjunctiveConstraint dc = solver.MakeDisjunctiveConstraint(
-          pair.Value.ToArray(), pair.Key.ToString());
-      solver.Add(dc);
-      all_seq.Add(dc.SequenceVar());
+      model.AddNoOverlap(pair.Value.ToArray());
     }
 
-    IntVar objective_var = solver.MakeMax(makeSpan).Var();
-    OptimizeVar objective_monitor = solver.MakeMinimize(objective_var, 1);
+    IntVar makespan = model.NewIntVar(0, 100000, "makespan");
+    model.AddMaxEquality(makespan, allEnds);
+    model.Minimize(makespan);
 
-    DecisionBuilder sequence_phase =
-        solver.MakePhase(all_seq.ToArray(), Solver.SEQUENCE_DEFAULT);
-    DecisionBuilder objective_phase =
-        solver.MakePhase(objective_var, Solver.CHOOSE_FIRST_UNBOUND,
-                         Solver.ASSIGN_MIN_VALUE);
-    DecisionBuilder main_phase = solver.Compose(sequence_phase, objective_phase);
-
-    const int kLogFrequency = 1000000;
-    VoidToString prefix = new Prefix();
-    SearchMonitor search_log =
-        solver.MakeSearchLog(kLogFrequency, objective_monitor, prefix);
-
-    SolutionCollector collector = solver.MakeLastSolutionCollector();
-    collector.Add(all_seq.ToArray());
-    collector.AddObjective(objective_var);
-
-    if (solver.Solve(main_phase, search_log, objective_monitor, null, collector))
-      Console.Out.WriteLine("Optimal solution = " + collector.ObjectiveValue(0));
-    else
-      Console.Out.WriteLine("No solution.");
+    // Create the solver.
+    CpSolver solver = new CpSolver();
+    // Solve the problem.
+    solver.Solve(model);
+    Console.WriteLine(solver.ResponseStats());
   }
 }
-}
+

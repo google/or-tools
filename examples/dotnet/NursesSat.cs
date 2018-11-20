@@ -68,7 +68,7 @@ public class NurseSolutionObserver : CpSolverSolutionCallback
 
 public class NursesSat
 {
-  static void Solve()
+  static void Main()
   {
     // Data.
     int num_nurses = 4;
@@ -211,9 +211,5 @@ public class NursesSat
     Console.WriteLine("  - branches        : " + solver.NumBranches());
     Console.WriteLine("  - wall time       : " + solver.WallTime() + " ms");
     Console.WriteLine("  - #solutions      : " + cb.SolutionCount());
-  }
-
-  static void Main() {
-    Solve();
   }
 }

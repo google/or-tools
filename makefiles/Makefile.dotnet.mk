@@ -647,7 +647,7 @@ test_dotnet_examples_csharp: \
  rdotnet_subset_sum.cs \
  rdotnet_sudoku.cs \
  rdotnet_survo_puzzle.cs \
- rdotnet_TaskScheduling.cs \
+ rdotnet_TaskSchedulingSat.cs \
  rdotnet_to_num.cs \
  rdotnet_traffic_lights.cs \
  rdotnet_tsp.cs \

@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csfz", "csfz.csproj", "{FC7
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csintegerprogramming", "csintegerprogramming.csproj", "{DADE23EF-1101-4809-84D9-2DDEC3062808}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csjobshop", "csjobshop.csproj", "{95CF2603-1E49-457A-8A6E-92E9BCF725CE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobshopSat", "JobshopSat.csproj", "{95CF2603-1E49-457A-8A6E-92E9BCF725CE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csknapsack", "csknapsack.csproj", "{AD880B2B-E474-4F71-8DFD-BFEF0A45F9FC}"
 EndProject
@@ -23,17 +23,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csrabbitspheasants", "csrab
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cstsp", "cstsp.csproj", "{939551F5-571E-4AD8-BB17-7F3AE264A382}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gate_scheduling_sat", "gate_scheduling_sat.csproj", "{3ECE933E-1121-457F-A203-C2F4CE8B8D5A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GateSchedulingSat", "GateSchedulingSat.csproj", "{3ECE933E-1121-457F-A203-C2F4CE8B8D5A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "jobshop_ft06_sat", "jobshop_ft06_sat.csproj", "{C5A6F829-3D0D-4D95-9B95-4A3DE60F7BEE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobshopFt06Sat", "JobshopFt06Sat.csproj", "{C5A6F829-3D0D-4D95-9B95-4A3DE60F7BEE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nurses_sat", "nurses_sat.csproj", "{FCC6C379-9D74-41E1-8EE2-378BD313FFE0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NursesSat", "NursesSat.csproj", "{FCC6C379-9D74-41E1-8EE2-378BD313FFE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "slow_scheduling", "slow_scheduling.csproj", "{78E2AB93-3756-46D0-964F-B8EC0008CB18}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulingSat", "TaskSchedulingSat.csproj", "{37F04E33-FF84-41E4-ACD1-C96B6200969D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskScheduling", "TaskScheduling.csproj", "{37F04E33-FF84-41E4-ACD1-C96B6200969D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "techtalk_scheduling", "techtalk_scheduling.csproj", "{8D227FCD-C447-46BC-9434-6D9DFAB5D62D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeakerSchedulingSat", "SpeakerSchedulingSat.csproj", "{8D227FCD-C447-46BC-9434-6D9DFAB5D62D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tsp", "tsp.csproj", "{245BD34B-F063-48F9-A485-3AAB7306D676}"
 EndProject

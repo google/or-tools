@@ -173,7 +173,7 @@ class JobshopSat
     model.Minimize(makespan);
 
 
-    // Createe the solver.
+    // Create the solver.
     CpSolver solver = new CpSolver();
     // Set the time limit.
     if (timeLimitInSeconds > 0)
