@@ -692,24 +692,19 @@ test_python_contrib: \
 test_python_python: \
  rpy_appointments \
  rpy_assignment_sat \
- rpy_assignment_with_constraints \
  rpy_assignment_with_constraints_sat \
  rpy_balance_group_sat \
  rpy_chemical_balance_lp \
  rpy_chemical_balance_sat \
- rpy_code_samples_sat \
  rpy_constraint_programming_cp \
- rpy_cp_is_fun_sat \
  rpy_cvrp \
  rpy_cvrptw \
  rpy_flexible_job_shop_sat \
  rpy_gate_scheduling_sat \
  rpy_golomb8 \
  rpy_hidato_sat \
- rpy_hidato_table \
  rpy_integer_programming \
- rpy_jobshop_ft06_distance \
- rpy_jobshop_ft06 \
+ rpy_jobshop_ft06_distance_sat \
  rpy_jobshop_ft06_sat \
  rpy_knapsack \
  rpy_linear_assignment_api \
@@ -718,10 +713,7 @@ test_python_python: \
  rpy_nqueens_sat \
  rpy_nurses_sat \
  rpy_pyflow_example \
- rpy_rabbit_pheasant \
  rpy_rcpsp_sat \
- rpy_sendmore \
- rpy_simple_meeting \
  rpy_single_machine_scheduling_with_setup_release_due_dates_sat \
  rpy_steel_mill_slab_sat \
  rpy_stigler_diet \
@@ -729,13 +721,13 @@ test_python_python: \
  rpy_tasks_and_workers_assignment_sat \
  rpy_transit_time \
  rpy_tsp \
- rpy_vendor_scheduling \
+ rpy_vendor_scheduling_sat \
  rpy_vrpgs \
  rpy_vrp \
  rpy_wedding_optimal_chart_sat \
  rpy_worker_schedule_sat \
  rpy_zebra_sat
-	$(MAKE) run SOURCE=examples/python/shift_scheduling_sat ARGS="--params max_time_in_seconds:10.0" \
+	$(MAKE) run SOURCE=examples/python/shift_scheduling_sat.py ARGS="--params max_time_in_seconds:10.0" \
 
 
 .PHONY: test_python_pimpl

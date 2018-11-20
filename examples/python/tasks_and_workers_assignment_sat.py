@@ -12,6 +12,8 @@
 # limitations under the License.
 """Tasks and workers to group assignment to average sum(cost) / #workers"""
 
+from __future__ import print_function
+
 from ortools.sat.python import cp_model
 
 

@@ -10,12 +10,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Solves the Hidato problem with the CP-SAT solver."""
+
+from __future__ import print_function
 
 from ortools.sat.python import cp_model
 from ortools.sat.python import visualization
 
 
-def BuildPairs(rows, cols):
+def build_pairs(rows, cols):
     """Build closeness pairs for consecutive numbers.
 
   Build set of allowed pairs such that two consecutive numbers touch
@@ -34,7 +37,7 @@ def BuildPairs(rows, cols):
                 and (dx != 0 or dy != 0))]
 
 
-def PrintSolution(positions, rows, cols):
+def print_solution(positions, rows, cols):
     """Print a current solution."""
     # Create empty board.
     board = []
@@ -46,10 +49,10 @@ def PrintSolution(positions, rows, cols):
         board[position // cols][position % cols] = k + 1
     # Print the board.
     print('Solution')
-    PrintMatrix(board)
+    print_matrix(board)
 
 
-def PrintMatrix(game):
+def print_matrix(game):
     """Pretty print of a matrix."""
     rows = len(game)
     cols = len(game[0])
@@ -63,7 +66,8 @@ def PrintMatrix(game):
         print(line)
 
 
-def BuildPuzzle(problem):
+def build_puzzle(problem):
+    """Build the problem from its index."""
     #
     # models, a 0 indicates an open cell which number is not yet known.
     #
@@ -105,7 +109,7 @@ def BuildPuzzle(problem):
     return puzzle
 
 
-def SolveHidato(puzzle, index):
+def solve_hidato(puzzle, index):
     """Solve the given hidato table."""
     # Create the model.
     model = cp_model.CpModel()
@@ -117,7 +121,7 @@ def SolveHidato(puzzle, index):
         print('----- Solving problem %i -----' % index)
         print('')
         print(('Initial game (%i x %i)' % (r, c)))
-        PrintMatrix(puzzle)
+        print_matrix(puzzle)
 
     #
     # declare variables
@@ -141,7 +145,7 @@ def SolveHidato(puzzle, index):
 
     # Consecutive numbers much touch each other in the grid.
     # We use an allowed assignment constraint to model it.
-    close_tuples = BuildPairs(r, c)
+    close_tuples = build_pairs(r, c)
     for k in range(0, r * c - 1):
         model.AddAllowedAssignments([positions[k], positions[k + 1]],
                                     close_tuples)
@@ -156,12 +160,11 @@ def SolveHidato(puzzle, index):
     if status == cp_model.FEASIBLE:
         if visualization.RunFromIPython():
             output = visualization.SvgWrapper(10, r, 40.0)
-            for i in range(len(positions)):
-                val = solver.Value(positions[i])
+            for i, var in enumerate(positions):
+                val = solver.Value(var)
                 x = val % c
                 y = val // c
                 color = 'white' if puzzle[y][x] == 0 else 'lightgreen'
-                value = solver.Value(positions[i])
                 output.AddRectangle(x, r - y - 1, 1, 1, color, 'black',
                                     str(i + 1))
 
@@ -169,7 +172,7 @@ def SolveHidato(puzzle, index):
                 'Puzzle %i solved in %f s' % (index, solver.WallTime()))
             output.Display()
         else:
-            PrintSolution(
+            print_solution(
                 [solver.Value(x) for x in positions],
                 r,
                 c,
@@ -180,10 +183,5 @@ def SolveHidato(puzzle, index):
             print('  - wall time : %f ms' % solver.WallTime())
 
 
-def main():
-    for i in range(1, 7):
-        SolveHidato(BuildPuzzle(i), i)
-
-
-if __name__ == '__main__':
-    main()
+for pb in range(1, 7):
+    solve_hidato(build_puzzle(pb), pb)
