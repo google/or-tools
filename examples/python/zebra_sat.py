@@ -39,6 +39,8 @@ from ortools.sat.python import cp_model
 
 # pylint: disable=too-many-statements
 def solve_zebra():
+    """Solves the zebra problem."""
+
     # Create the model.
     model = cp_model.CpModel()
 
