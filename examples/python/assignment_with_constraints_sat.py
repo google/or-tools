@@ -10,13 +10,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Solve an assignment problem with combination constraints on workers."""
 
 from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
 
-def main():
+def solve_assignment():
+    """Solve the assignment problem."""
     # Data.
     cost = [[90, 76, 75, 70, 50, 74], [35, 85, 55, 65, 48, 101],
             [125, 95, 90, 105, 59, 120], [45, 110, 95, 115, 104, 83],
@@ -60,24 +62,25 @@ def main():
 
     model = cp_model.CpModel()
     # Variables
-    total_cost = model.NewIntVar(0, 1000, 'total_cost')
-    x = [[model.NewBoolVar('x[%i,%i]' % (i, j)) for j in all_tasks]
-         for i in all_workers]
+    selected = [[model.NewBoolVar('x[%i,%i]' % (i, j)) for j in all_tasks]
+                for i in all_workers]
     works = [model.NewBoolVar('works[%i]' % i) for i in all_workers]
 
     # Constraints
 
-    # Link x and workers.
+    # Link selected and workers.
     for i in range(num_workers):
-        model.AddMaxEquality(works[i], x[i])
+        model.AddMaxEquality(works[i], selected[i])
 
     # Each task is assigned to at least one worker.
     for j in all_tasks:
-        model.Add(sum(x[i][j] for i in all_workers) >= 1)
+        model.Add(sum(selected[i][j] for i in all_workers) >= 1)
 
     # Total task size for each worker is at most total_size_max
     for i in all_workers:
-        model.Add(sum(sizes[j] * x[i][j] for j in all_tasks) <= total_size_max)
+        model.Add(
+            sum(sizes[j] * selected[i][j]
+                for j in all_tasks) <= total_size_max)
 
     # Group constraints.
     model.AddAllowedAssignments([works[0], works[1], works[2], works[3]],
@@ -87,10 +90,10 @@ def main():
     model.AddAllowedAssignments([works[8], works[9], works[10], works[11]],
                                 group3)
 
-    # Total cost
-    model.Add(total_cost == sum(
-        x[i][j] * cost[i][j] for j in all_tasks for i in all_workers))
-    model.Minimize(total_cost)
+    # Objective
+    model.Minimize(
+        sum(selected[i][j] * cost[i][j] for j in all_tasks
+            for i in all_workers))
 
     # Solve and output solution.
     solver = cp_model.CpSolver()
@@ -101,7 +104,7 @@ def main():
         print()
         for i in all_workers:
             for j in all_tasks:
-                if solver.Value(x[i][j]) == 1:
+                if solver.BooleanValue(selected[i][j]):
                     print('Worker ', i, ' assigned to task ', j, '  Cost = ',
                           cost[i][j])
 
@@ -113,5 +116,4 @@ def main():
     print('  - wall time : %f ms' % solver.WallTime())
 
 
-if __name__ == '__main__':
-    main()
+solve_assignment()
