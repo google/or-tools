@@ -725,7 +725,7 @@ test_python_python: \
  rpy_single_machine_scheduling_with_setup_release_due_dates_sat \
  rpy_steel_mill_slab_sat \
  rpy_stigler_diet \
- rpy_sudoku \
+ rpy_sudoku_sat \
  rpy_tasks_and_workers_assignment_sat \
  rpy_transit_time \
  rpy_tsp \
