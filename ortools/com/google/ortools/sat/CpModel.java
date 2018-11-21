@@ -1181,6 +1181,12 @@ public class CpModel {
     return SatHelper.modelStats(model());
   }
 
+    /** Returns a non empty string if the model is invalid. */
+    public String validate() {
+      return SatHelper.validateModel(model());
+    }
+  
+
   // Helpers
 
   long[] toLongArray(int[] values) {

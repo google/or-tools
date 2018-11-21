@@ -51,6 +51,7 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
 %unignore operations_research::sat::SatHelper::ModelStats;
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
+%unignore operations_research::sat::SatHelper::ValidateModel;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;

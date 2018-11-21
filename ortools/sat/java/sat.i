@@ -50,6 +50,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (solveWithParametersAndSolutionCallback) operations_research::sat::SatHelper::SolveWithParametersAndSolutionCallback;
 %rename (modelStats) operations_research::sat::SatHelper::ModelStats;
 %rename (solverResponseStats) operations_research::sat::SatHelper::SolverResponseStats;
+%rename (validateModel) operations_research::sat::SatHelper::ValidateModel;
 
 // We use directors for the solution callback.
 %feature("director") operations_research::sat::SolutionCallback;

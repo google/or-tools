@@ -1314,6 +1314,10 @@ class CpModel(object):
         """Returns some statistics on the model as a string."""
         return pywrapsat.SatHelper.ModelStats(self.__model)
 
+    def Validate(self):
+        """Returns a non empty string is the model is not valid."""
+        return pywrapsat.SatHelper.ValidateModel(self.__model)        
+
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]

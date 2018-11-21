@@ -17,6 +17,7 @@
 #include <atomic>
 
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -177,6 +178,12 @@ class SatHelper {
       const operations_research::sat::CpSolverResponse& response) {
     return CpSolverResponseStats(response);
   }
+
+  // Returns a non empty string the the model is not valid.
+  static std::string ValidateModel(const operations_research::sat::CpModelProto& model_proto) {
+    return ValidateCpModel(model_proto);
+  }
+
 };
 
 }  // namespace sat

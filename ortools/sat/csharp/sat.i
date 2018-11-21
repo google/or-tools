@@ -56,6 +56,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %unignore operations_research::sat::SatHelper::SolveWithStringParametersAndSolutionCallback;
 %unignore operations_research::sat::SatHelper::ModelStats;
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
+%unignore operations_research::sat::SatHelper::ValidateModel;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
