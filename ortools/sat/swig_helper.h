@@ -179,7 +179,7 @@ class SatHelper {
     return CpSolverResponseStats(response);
   }
 
-  // Returns a non empty string the the model is not valid.
+  // Returns a non empty string the model is not valid.
   static std::string ValidateModel(const operations_research::sat::CpModelProto& model_proto) {
     return ValidateCpModel(model_proto);
   }
