@@ -545,16 +545,34 @@ test_dotnet_tests: \
 
 .PHONY: test_dotnet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet and examples/contrib)
 test_dotnet_examples_csharp: \
+ rdotnet_GateSchedulingSat.cs \
+ rdotnet_JobshopFt06Sat.cs \
+ rdotnet_JobshopSat.cs \
+ rdotnet_NursesSat.cs \
+ rdotnet_SpeakerSchedulingSat.cs \
+ rdotnet_TaskSchedulingSat.cs \
+ rdotnet_cscvrptw.cs \
+ rdotnet_csflow.cs \
+ rdotnet_csfz.cs \
+ rdotnet_csintegerprogramming.cs \
+ rdotnet_csknapsack.cs \
+ rdotnet_cslinearprogramming.cs \
+ rdotnet_csls_api.cs \
+ rdotnet_csrabbitspheasants.cs \
+ rdotnet_cstsp.cs \
+ rdotnet_tsp.cs \
+ rdotnet_vrp.cs \
+\
  rdotnet_3_jugs_regular.cs \
- rdotnet_alldifferent_except_0.cs \
- rdotnet_all_interval.cs \
  rdotnet_a_puzzle.cs \
  rdotnet_a_round_of_golf.cs \
+ rdotnet_all_interval.cs \
+ rdotnet_alldifferent_except_0.cs \
  rdotnet_assignment.cs \
  rdotnet_broken_weights.cs \
  rdotnet_bus_schedule.cs \
- rdotnet_circuit2.cs \
  rdotnet_circuit.cs \
+ rdotnet_circuit2.cs \
  rdotnet_coins3.cs \
  rdotnet_combinatorial_auction2.cs \
  rdotnet_contiguity_regular.cs \
@@ -565,17 +583,9 @@ test_dotnet_examples_csharp: \
  rdotnet_crossword.cs \
  rdotnet_crypta.cs \
  rdotnet_crypto.cs \
- rdotnet_cscvrptw.cs \
- rdotnet_csflow.cs \
- rdotnet_csintegerprogramming.cs \
- rdotnet_csknapsack.cs \
- rdotnet_cslinearprogramming.cs \
- rdotnet_csls_api.cs \
- rdotnet_csrabbitspheasants.cs \
- rdotnet_cstsp.cs \
+ rdotnet_csdiet.cs \
  rdotnet_curious_set_of_integers.cs \
  rdotnet_debruijn.cs \
- rdotnet_csdiet.cs \
  rdotnet_discrete_tomography.cs \
  rdotnet_divisible_by_9_through_1.cs \
  rdotnet_dudeney.cs \
@@ -586,12 +596,9 @@ test_dotnet_examples_csharp: \
  rdotnet_furniture_moving.cs \
  rdotnet_furniture_moving_intervals.cs \
  rdotnet_futoshiki.cs \
- rdotnet_GateSchedulingSat.cs \
  rdotnet_golomb_ruler.cs \
  rdotnet_grocery.cs \
  rdotnet_hidato_table.cs \
- rdotnet_jobshop_ft06_sat.cs \
- rdotnet_JobshopSat.cs \
  rdotnet_just_forgotten.cs \
  rdotnet_kakuro.cs \
  rdotnet_kenken2.cs \
@@ -601,10 +608,10 @@ test_dotnet_examples_csharp: \
  rdotnet_least_diff.cs \
  rdotnet_lectures.cs \
  rdotnet_magic_sequence.cs \
- rdotnet_magic_square_and_cards.cs \
  rdotnet_magic_square.cs \
- rdotnet_map2.cs \
+ rdotnet_magic_square_and_cards.cs \
  rdotnet_map.cs \
+ rdotnet_map2.cs \
  rdotnet_marathon2.cs \
  rdotnet_max_flow_taha.cs \
  rdotnet_max_flow_winston1.cs \
@@ -613,15 +620,14 @@ test_dotnet_examples_csharp: \
  rdotnet_nqueens.cs \
  rdotnet_nurse_rostering_regular.cs \
  rdotnet_nurse_rostering_transition.cs \
- rdotnet_nurses_sat.cs \
  rdotnet_olympic.cs \
  rdotnet_organize_day.cs \
  rdotnet_organize_day_intervals.cs \
+ rdotnet_p_median.cs \
  rdotnet_pandigital_numbers.cs \
  rdotnet_perfect_square_sequence.cs \
  rdotnet_photo_problem.cs \
  rdotnet_place_number_puzzle.cs \
- rdotnet_p_median.cs \
  rdotnet_post_office_problem2.cs \
  rdotnet_quasigroup_completion.cs \
  rdotnet_regex.cs \
@@ -641,17 +647,13 @@ test_dotnet_examples_csharp: \
  rdotnet_set_partition.cs \
  rdotnet_sicherman_dice.cs \
  rdotnet_ski_assignment.cs \
- rdotnet_SpeakerSchedulingSat.cs \
  rdotnet_stable_marriage.cs \
  rdotnet_strimko2.cs \
  rdotnet_subset_sum.cs \
  rdotnet_sudoku.cs \
  rdotnet_survo_puzzle.cs \
- rdotnet_TaskSchedulingSat.cs \
  rdotnet_to_num.cs \
  rdotnet_traffic_lights.cs \
- rdotnet_tsp.cs \
- rdotnet_vrp.cs \
  rdotnet_volsay.cs \
  rdotnet_volsay2.cs \
  rdotnet_volsay3.cs \
@@ -668,17 +670,18 @@ test_dotnet_examples_csharp: \
 
 .PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet and examples/contrib)
 test_dotnet_examples_fsharp: \
- rdotnet_fsintegerprogramming.fs \
- rdotnet_fslinearprogramming.fs \
- rdotnet_fsdiet.fs \
- rdotnet_fsequality.fs \
- rdotnet_fsequality-inequality.fs \
- rdotnet_fsinteger-linear-program.fs \
- rdotnet_fsknapsack.fs \
- rdotnet_fsnetwork-max-flow.fs \
- rdotnet_fsnetwork-max-flow-lpSolve.fs \
- rdotnet_fsnetwork-min-cost-flow.fs \
+ rdotnet_SimpleProgramFSharp.fs \
  rdotnet_fsProgram.fs \
+ rdotnet_fsdiet.fs \
+ rdotnet_fsequality-inequality.fs \
+ rdotnet_fsequality.fs \
+ rdotnet_fsinteger-linear-program.fs \
+ rdotnet_fsintegerprogramming.fs \
+ rdotnet_fsknapsack.fs \
+ rdotnet_fslinearprogramming.fs \
+ rdotnet_fsnetwork-max-flow-lpSolve.fs \
+ rdotnet_fsnetwork-max-flow.fs \
+ rdotnet_fsnetwork-min-cost-flow.fs \
  rdotnet_fsrabbit-pheasant.fs \
  rdotnet_fsvolsay3.fs \
  rdotnet_fsvolsay3-lpSolve.fs \
