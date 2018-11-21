@@ -109,6 +109,12 @@ archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)
 $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S*
 	$(MAKE) install_cc prefix=$(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sinclude
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin/cbc*
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin/clp*
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin/gflags*
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin/protoc*
+	-$(DELREC) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare/doc
 	$(COPY) $(FLATZINC_PATH) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) $(BIN_DIR)$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$S$(FZ_EXE)
 	$(COPY) $(BIN_DIR)$Sparser_main$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sparser-or-tools$E
