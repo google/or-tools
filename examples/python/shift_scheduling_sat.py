@@ -15,11 +15,10 @@
 from __future__ import print_function
 
 import argparse
-import time
-
-from google.protobuf import text_format
 
 from ortools.sat.python import cp_model
+
+from google.protobuf import text_format
 
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument(
@@ -30,48 +29,23 @@ PARSER.add_argument(
 PARSER.add_argument('--params', default="", help='Sat solver parameters.')
 
 
-class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions objective and time."""
+def negated_bounded_span(works, start, length):
+    """Filters an isolated sub-sequence of variables assined to True.
 
-    def __init__(self):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__solution_count = 0
-        self.__start_time = time.time()
+  Extract the span of Boolean variables [start, start + length), negate them,
+  and if there is variables to the left/right of this span, surround the span by
+  them in non negated form.
 
-    def on_solution_callback(self):
-        """Called on each new solution."""
-        current_time = time.time()
-        objective = self.ObjectiveValue()
-        print('Solution %i, time = %f s, objective = [%i, %i]' %
-              (self.__solution_count, current_time - self.__start_time,
-               objective, self.BestObjectiveBound()))
-        self.__solution_count += 1
+  Args:
+    works: a list of variables to extract the span from.
+    start: the start to the span.
+    length: the length of the span.
 
-    def solution_count(self):
-        """Returns the number of solutions found."""
-        return self.__solution_count
-
-
-def negated_bounded_span(works, start, length, right):
-    """Filters a sub-sequence of works with left and right borders.
-
-    This methods will create an array of variables that will match a span of
-    works variables assigned to one starting at 'start' with the given length.
-
-    If right is True, it will also checks that the a variable assigned to False
-    terminates the span.
-
-    Args:
-        works: a list of variables to extract the span from.
-        start: the start to the span.
-        length: the end of the span.
-        right: indicates if we need to check termination of the span.
-
-    Returns:
-        a list of variables which conjunction will be false if the sub-list is
-        assigned to True, and correctly bounded by variables assigned to False,
-        or by the start or end of works.
-    """
+  Returns:
+    a list of variables which conjunction will be false if the sub-list is
+    assigned to True, and correctly bounded by variables assigned to False,
+    or by the start or end of works.
+  """
     sequence = []
     # Left border (start of works, or works[start - 1])
     if start > 0:
@@ -79,56 +53,55 @@ def negated_bounded_span(works, start, length, right):
     for i in range(length):
         sequence.append(works[start + i].Not())
     # Right border (end of works or works[start + length])
-    if start + length < len(works) and right:
+    if start + length < len(works):
         sequence.append(works[start + length])
     return sequence
 
 
-def add_sequence_constraint(model, works, hard_min, soft_min, min_cost,
-                            soft_max, hard_max, max_cost, basename):
+def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
+                                 soft_max, hard_max, max_cost, prefix):
     """Sequence constraint on true variables with soft and hard bounds.
 
-    This constraint look at every maximal contiguous sequence of variables
-    assigned to true. If forbids sequence of length < hard_min or > hard_max.
-    Then it creates penalty terms if the length is < soft_min or > soft_max.
+  This constraint look at every maximal contiguous sequence of variables
+  assigned to true. If forbids sequence of length < hard_min or > hard_max.
+  Then it creates penalty terms if the length is < soft_min or > soft_max.
 
-    Args:
-        model: the sequence constraint is built on this model.
-        works: a list of Boolean variables.
-        hard_min: any sequence of true variables must have a length of at least
-            hard_min.
-        soft_min: any sequence should have a length of at least soft_min, or a
-            linear penalty on the delta will be added to the objective.
-        min_cost: the coefficient of the linear penalty if the length is less
-            than soft_min.
-        soft_max: any sequence should have a length of at most soft_max, or a
-            linear penalty on the delta will be added to the objective.
-        hard_max: any sequence of true variables must have a length of at most
-            hard_max.
-        max_cost: the coefficient of the linear penalty if the length is more
-            than soft_max.
-        basename: a base name for penalty literals.
+  Args:
+    model: the sequence constraint is built on this model.
+    works: a list of Boolean variables.
+    hard_min: any sequence of true variables must have a length of at least
+      hard_min.
+    soft_min: any sequence should have a length of at least soft_min, or a
+      linear penalty on the delta will be added to the objective.
+    min_cost: the coefficient of the linear penalty if the length is less than
+      soft_min.
+    soft_max: any sequence should have a length of at most soft_max, or a linear
+      penalty on the delta will be added to the objective.
+    hard_max: any sequence of true variables must have a length of at most
+      hard_max.
+    max_cost: the coefficient of the linear penalty if the length is more than
+      soft_max.
+    prefix: a base name for penalty literals.
 
-    Returns:
-        a tuple (variables_list, coefficient_list) containing the different
-        penalties created by the sequence constraint.
-    """
+  Returns:
+    a tuple (variables_list, coefficient_list) containing the different
+    penalties created by the sequence constraint.
+  """
     cost_literals = []
     cost_coefficients = []
 
     # Forbid sequences that are too short.
     for length in range(1, hard_min):
         for start in range(len(works) - length - 1):
-            model.AddBoolOr(negated_bounded_span(works, start, length, True))
+            model.AddBoolOr(negated_bounded_span(works, start, length))
 
     # Penalize sequences that are below the soft limit.
     if min_cost > 0:
         for length in range(hard_min, soft_min):
             for start in range(len(works) - length - 1):
-                span = negated_bounded_span(works, start, length, True)
-                name = basename + ': under_span(start=%i, length=%i)' % (
-                    start, length)
-                lit = model.NewBoolVar(name)
+                span = negated_bounded_span(works, start, length)
+                name = ': under_span(start=%i, length=%i)' % (start, length)
+                lit = model.NewBoolVar(prefix + name)
                 span.append(lit)
                 model.AddBoolOr(span)
                 cost_literals.append(lit)
@@ -140,16 +113,14 @@ def add_sequence_constraint(model, works, hard_min, soft_min, min_cost,
     if max_cost > 0:
         for length in range(soft_max + 1, hard_max + 1):
             for start in range(len(works) - length - 1):
-                span = negated_bounded_span(works, start, length, False)
-                name = basename + ': over_span(start=%i, length=%i)' % (start,
-                                                                        length)
-                lit = model.NewBoolVar(name)
+                span = negated_bounded_span(works, start, length)
+                name = ': over_span(start=%i, length=%i)' % (start, length)
+                lit = model.NewBoolVar(prefix + name)
                 span.append(lit)
                 model.AddBoolOr(span)
                 cost_literals.append(lit)
-                # We will penalize all sequences with length > soft_max.
-                # Thus we count the penalty once per possible length.
-                cost_coefficients.append(max_cost)
+                # Cost paid is max_cost * excess length.
+                cost_coefficients.append(max_cost * (length - soft_max))
 
     # Just forbid any sequence of true variables with length hard_max + 1
     for start in range(len(works) - hard_max - 1):
@@ -158,35 +129,35 @@ def add_sequence_constraint(model, works, hard_min, soft_min, min_cost,
     return cost_literals, cost_coefficients
 
 
-def add_weekly_sum_constraint(model, works, hard_min, soft_min, min_cost,
-                              soft_max, hard_max, max_cost, basename):
+def add_soft_sum_constraint(model, works, hard_min, soft_min, min_cost,
+                            soft_max, hard_max, max_cost, prefix):
     """Sum constraint with soft and hard bounds.
 
-    This constraint counts the variables assigned to true from works.
-    If forbids sum < hard_min or > hard_max.
-    Then it creates penalty terms if the sum is < soft_min or > soft_max.
+  This constraint counts the variables assigned to true from works.
+  If forbids sum < hard_min or > hard_max.
+  Then it creates penalty terms if the sum is < soft_min or > soft_max.
 
-    Args:
-        model: the sequence constraint is built on this model.
-        works: a list of Boolean variables.
-        hard_min: any sequence of true variables must have a sum of at least
-            hard_min.
-        soft_min: any sequence should have a sum of at least soft_min, or a
-            linear penalty on the delta will be added to the objective.
-        min_cost: the coefficient of the linear penalty if the sum is less than
-            soft_min.
-        soft_max: any sequence should have a sum of at most soft_max, or a
-            linear penalty on the delta will be added to the objective.
-        hard_max: any sequence of true variables must have a sum of at most
-            hard_max.
-        max_cost: the coefficient of the linear penalty if the sum is more than
-            soft_max.
-        basename: a base name for penalty variables.
+  Args:
+    model: the sequence constraint is built on this model.
+    works: a list of Boolean variables.
+    hard_min: any sequence of true variables must have a sum of at least
+      hard_min.
+    soft_min: any sequence should have a sum of at least soft_min, or a linear
+      penalty on the delta will be added to the objective.
+    min_cost: the coefficient of the linear penalty if the sum is less than
+      soft_min.
+    soft_max: any sequence should have a sum of at most soft_max, or a linear
+      penalty on the delta will be added to the objective.
+    hard_max: any sequence of true variables must have a sum of at most
+      hard_max.
+    max_cost: the coefficient of the linear penalty if the sum is more than
+      soft_max.
+    prefix: a base name for penalty variables.
 
-    Returns:
-        a tuple (variables_list, coefficient_list) containing the different
-        penalties created by the sequence constraint.
-    """
+  Returns:
+    a tuple (variables_list, coefficient_list) containing the different
+    penalties created by the sequence constraint.
+  """
     cost_variables = []
     cost_coefficients = []
     sum_var = model.NewIntVar(hard_min, hard_max, '')
@@ -195,9 +166,10 @@ def add_weekly_sum_constraint(model, works, hard_min, soft_min, min_cost,
 
     # Penalize sums below the soft_min target.
     if soft_min > hard_min and min_cost > 0:
-        delta = model.NewIntVar(-7, 7, '')
+        delta = model.NewIntVar(-len(works), len(works), '')
         model.Add(delta == soft_min - sum_var)
-        excess = model.NewIntVar(0, 7, basename + ': under_sum')
+        # TODO(user): Compare efficiency with only excess >= soft_min - sum_var.
+        excess = model.NewIntVar(0, 7, prefix + ': under_sum')
         model.AddMaxEquality(excess, [delta, 0])
         cost_variables.append(excess)
         cost_coefficients.append(min_cost)
@@ -206,7 +178,7 @@ def add_weekly_sum_constraint(model, works, hard_min, soft_min, min_cost,
     if soft_max < hard_max and max_cost > 0:
         delta = model.NewIntVar(-7, 7, '')
         model.Add(delta == sum_var - soft_max)
-        excess = model.NewIntVar(0, 7, basename + ': over_sum')
+        excess = model.NewIntVar(0, 7, prefix + ': over_sum')
         model.AddMaxEquality(excess, [delta, 0])
         cost_variables.append(excess)
         cost_coefficients.append(max_cost)
@@ -221,38 +193,36 @@ def solve_shift_scheduling(params, output_proto):
     num_weeks = 3
     shifts = ['O', 'M', 'A', 'N']
 
-    # Fixed assignment: (employee, day, shift).
+    # Fixed assignment: (employee, shift, day).
     # This fixes the first 2 days of the schedule.
     fixed_assignments = [
         (0, 0, 0),
         (1, 0, 0),
-        (2, 0, 1),
-        (3, 0, 1),
-        (4, 0, 2),
-        (5, 0, 2),
-        (6, 0, 2),
-        (7, 0, 3),
+        (2, 1, 0),
+        (3, 1, 0),
+        (4, 2, 0),
+        (5, 2, 0),
+        (6, 2, 3),
+        (7, 3, 0),
         (0, 1, 1),
         (1, 1, 1),
-        (2, 1, 2),
-        (3, 1, 2),
-        (4, 1, 2),
-        (5, 1, 0),
-        (6, 1, 0),
-        (7, 1, 3),
+        (2, 2, 1),
+        (3, 2, 1),
+        (4, 2, 1),
+        (5, 0, 1),
+        (6, 0, 1),
+        (7, 3, 1),
     ]
 
-    # Request: (employee, day, shift, weight)
-    positive_requests = [
+    # Request: (employee, shift, day, weight)
+    # A negative weight indicates that the employee desire this assignment.
+    requests = [
         # Employee 3 wants the first Saturday off.
-        (3, 5, 0, 2),
+        (3, 0, 5, -2),
         # Employee 5 wants a night shift on the second Thursday.
-        (5, 10, 3, 2)
-    ]
-
-    negative_requests = [
+        (5, 3, 10, -2),
         # Employee 2 does not want a night shift on the third Friday.
-        (2, 4, 3, 4)
+        (2, 3, 4, 4)
     ]
 
     # Shift constraints on continuous sequence :
@@ -303,7 +273,6 @@ def solve_shift_scheduling(params, output_proto):
     num_days = num_weeks * 7
     num_shifts = len(shifts)
 
-    # Create model.
     model = cp_model.CpModel()
 
     work = {}
@@ -324,24 +293,20 @@ def solve_shift_scheduling(params, output_proto):
             model.Add(sum(work[e, s, d] for s in range(num_shifts)) == 1)
 
     # Fixed assignments.
-    for e, d, s in fixed_assignments:
+    for e, s, d in fixed_assignments:
         model.Add(work[e, s, d] == 1)
 
     # Employee requests
-    for e, d, s, w in positive_requests:
+    for e, s, d, w in requests:
         obj_bool_vars.append(work[e, s, d])
-        obj_bool_coeffs.append(-w)  # We gain 'w' is the shift is selected.
-
-    for e, d, s, w in negative_requests:
-        obj_bool_vars.append(work[e, s, d])
-        obj_bool_coeffs.append(w)  # We loose 'w' is the shift is selected.
+        obj_bool_coeffs.append(w)
 
     # Shift constraints
     for ct in shift_constraints:
         shift, hard_min, soft_min, min_cost, soft_max, hard_max, max_cost = ct
         for e in range(num_employees):
             works = [work[e, shift, d] for d in range(num_days)]
-            variables, coeffs = add_sequence_constraint(
+            variables, coeffs = add_soft_sequence_constraint(
                 model, works, hard_min, soft_min, min_cost, soft_max, hard_max,
                 max_cost,
                 'shift_constraint(employee %i, shift %i)' % (e, shift))
@@ -354,7 +319,7 @@ def solve_shift_scheduling(params, output_proto):
         for e in range(num_employees):
             for w in range(num_weeks):
                 works = [work[e, shift, d + w * 7] for d in range(7)]
-                variables, coeffs = add_weekly_sum_constraint(
+                variables, coeffs = add_soft_sum_constraint(
                     model, works, hard_min, soft_min, min_cost, soft_max,
                     hard_max, max_cost,
                     'weekly_sum_constraint(employee %i, shift %i, week %i)' %
@@ -415,7 +380,7 @@ def solve_shift_scheduling(params, output_proto):
     solver = cp_model.CpSolver()
     if params:
         text_format.Merge(params, solver.parameters)
-    solution_printer = ObjectiveSolutionPrinter()
+    solution_printer = cp_model.ObjectiveSolutionPrinter()
     status = solver.SolveWithSolutionCallback(model, solution_printer)
 
     # Print solution.
@@ -453,7 +418,6 @@ def solve_shift_scheduling(params, output_proto):
     print('  - conflicts       : %i' % solver.NumConflicts())
     print('  - branches        : %i' % solver.NumBranches())
     print('  - wall time       : %f ms' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.solution_count())
 
 
 def main(args):

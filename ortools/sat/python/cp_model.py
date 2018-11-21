@@ -22,6 +22,7 @@ from __future__ import print_function
 
 import collections
 import numbers
+import time
 from six import iteritems
 
 from ortools.sat import cp_model_pb2
@@ -1315,8 +1316,8 @@ class CpModel(object):
         return pywrapsat.SatHelper.ModelStats(self.__model)
 
     def Validate(self):
-        """Returns a non empty string is the model is not valid."""
-        return pywrapsat.SatHelper.ValidateModel(self.__model)        
+        """Returns a string explaining the issue is the model is not valid."""
+        return pywrapsat.SatHelper.ValidateModel(self.__model)
 
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
@@ -1346,8 +1347,7 @@ def EvaluateLinearExpression(expression, solution):
         elif isinstance(expr, IntVar):
             value += coef * solution.solution[expr.Index()]
         elif isinstance(expr, _NotBooleanVariable):
-            raise TypeError(
-                'Cannot interpret literals in a linear expression.')
+            raise TypeError('Cannot interpret literals in a linear expression.')
     return value
 
 
@@ -1365,81 +1365,6 @@ def EvaluateBooleanExpression(literal, solution):
     else:
         raise TypeError(
             'Cannot interpret %s as a boolean expression.' % literal)
-
-
-class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
-    """Solution callback.
-
-    This class implements a callback that will be called at each new solution
-    found during search.
-
-    The method OnSolutionCallback() will be called by the solver, and must be
-    implemented. The current solution can be queried using the BooleanValue()
-    and Value() methods.
-    """
-
-    def OnSolutionCallback(self):
-        """Proxy to the same method with different naming convention."""
-        self.on_solution_callback()
-
-
-    def BooleanValue(self, lit):
-        """Returns the boolean value of a boolean literal.
-
-        Args:
-            lit: A boolean variable or its negation.
-
-        Returns:
-            The boolean value of the literal in the solution.
-
-        Raises:
-            RuntimeError: if 'lit' is not a boolean variable or its negation.
-        """
-        if not self.Response().solution:
-            raise RuntimeError('Solve() has not be called.')
-        if isinstance(lit, numbers.Integral):
-            return bool(lit)
-        elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
-            index = lit.Index()
-            return self.SolutionBooleanValue(index)
-        else:
-            raise TypeError(
-                'Cannot interpret %s as a boolean expression.' % lit)
-
-    def Value(self, expression):
-        """Evaluates an linear expression in the current solution.
-
-        Args:
-            expression: a linear expression of the model.
-
-        Returns:
-            An integer value equal to the evaluation of the linear expression
-            against the current solution.
-
-        Raises:
-            RuntimeError: if 'expression' is not a LinearExpression.
-        """
-        if not self.Response().solution:
-            raise RuntimeError('Solve() has not be called.')
-        if isinstance(expression, numbers.Integral):
-            return expression
-        value = 0
-        to_process = [(expression, 1)]
-        while to_process:
-            expr, coef = to_process.pop()
-            if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
-            elif isinstance(expr, _SumArray):
-                for e in expr.Array():
-                    to_process.append((e, coef))
-                    value += expr.Constant() * coef
-            elif isinstance(expr, IntVar):
-                value += coef * self.SolutionIntegerValue(expr.Index())
-            elif isinstance(expr, _NotBooleanVariable):
-                raise TypeError(
-                    'Cannot interpret literals in a linear expression.')
-        return value
 
 
 class CpSolver(object):
@@ -1544,3 +1469,95 @@ class CpSolver(object):
     def ResponseStats(self):
         """Returns some statistics on the solution found as a string."""
         return pywrapsat.SatHelper.SolverResponseStats(self.__solution)
+
+
+class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
+    """Solution callback.
+
+  This class implements a callback that will be called at each new solution
+  found during search.
+
+  The method OnSolutionCallback() will be called by the solver, and must be
+  implemented. The current solution can be queried using the BooleanValue()
+  and Value() methods.
+  """
+
+    def OnSolutionCallback(self):
+        """Proxy to the same method in snake case."""
+        self.on_solution_callback()
+
+    def BooleanValue(self, lit):
+        """Returns the boolean value of a boolean literal.
+
+    Args:
+        lit: A boolean variable or its negation.
+
+    Returns:
+        The boolean value of the literal in the solution.
+
+    Raises:
+        RuntimeError: if 'lit' is not a boolean variable or its negation.
+    """
+        if not self.Response().solution:
+            raise RuntimeError('Solve() has not be called.')
+        if isinstance(lit, numbers.Integral):
+            return bool(lit)
+        elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
+            index = lit.Index()
+            return self.SolutionBooleanValue(index)
+        else:
+            raise TypeError(
+                'Cannot interpret %s as a boolean expression.' % lit)
+
+    def Value(self, expression):
+        """Evaluates an linear expression in the current solution.
+
+    Args:
+        expression: a linear expression of the model.
+
+    Returns:
+        An integer value equal to the evaluation of the linear expression
+        against the current solution.
+
+    Raises:
+        RuntimeError: if 'expression' is not a LinearExpression.
+    """
+        if not self.Response().solution:
+            raise RuntimeError('Solve() has not be called.')
+        if isinstance(expression, numbers.Integral):
+            return expression
+        value = 0
+        to_process = [(expression, 1)]
+        while to_process:
+            expr, coef = to_process.pop()
+            if isinstance(expr, _ProductCst):
+                to_process.append((expr.Expression(),
+                                   coef * expr.Coefficient()))
+            elif isinstance(expr, _SumArray):
+                for e in expr.Array():
+                    to_process.append((e, coef))
+                    value += expr.Constant() * coef
+            elif isinstance(expr, IntVar):
+                value += coef * self.SolutionIntegerValue(expr.Index())
+            elif isinstance(expr, _NotBooleanVariable):
+                raise TypeError(
+                    'Cannot interpret literals in a linear expression.')
+        return value
+
+
+class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
+    """Print intermediate solutions objective and time."""
+
+    def __init__(self):
+        CpSolverSolutionCallback.__init__(self)
+        self.__solution_count = 0
+        self.__start_time = time.time()
+
+    def on_solution_callback(self):
+        """Called on each new solution."""
+        current_time = time.time()
+        objective = self.ObjectiveValue()
+        print('Solution %i, time = %f s, objective = [%i, %i]' %
+              (self.__solution_count, current_time - self.__start_time,
+               objective, self.BestObjectiveBound()))
+        self.__solution_count += 1

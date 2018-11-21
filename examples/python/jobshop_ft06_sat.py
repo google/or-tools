@@ -10,18 +10,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""ft06 jobshop using the CP-SAT solver."""
+"""This model implements a simple jobshop named ft06.
 
+A jobshop is a standard scheduling problem when you must sequence a
+series of task_types on a set of machines. Each job contains one task_type per
+machine. The order of execution and the length of each job on each
+machine is task_type dependent.
+
+The objective is to minimize the maximum completion time of all
+jobs. This is called the makespan.
+"""
 from __future__ import print_function
 
 import collections
-from ortools.sat.python import cp_model
+
 from ortools.sat.python import visualization
+from ortools.sat.python import cp_model
 
 
-def main():
+def jobshop_ft06():
     """Solves the ft06 jobshop."""
-    # Creates the model.
+    # Creates the solver.
     model = cp_model.CpModel()
 
     machines_count = 6
@@ -38,7 +47,7 @@ def main():
     # Computes horizon dynamically.
     horizon = sum([sum(durations[i]) for i in all_jobs])
 
-    Task = collections.namedtuple('Task', 'start end interval')
+    task_type = collections.namedtuple('task_type', 'start end interval')
 
     # Creates jobs.
     all_tasks = {}
@@ -49,7 +58,7 @@ def main():
             end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (i, j))
             interval_var = model.NewIntervalVar(start_var, duration, end_var,
                                                 'interval_%i_%i' % (i, j))
-            all_tasks[(i, j)] = Task(
+            all_tasks[(i, j)] = task_type(
                 start=start_var, end=end_var, interval=interval_var)
 
     # Create disjuctive constraints.
@@ -89,5 +98,4 @@ def main():
             print('Optimal makespan: %i' % solver.ObjectiveValue())
 
 
-if __name__ == '__main__':
-    main()
+jobshop_ft06()

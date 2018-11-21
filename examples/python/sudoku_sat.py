@@ -18,6 +18,7 @@ from ortools.sat.python import cp_model
 
 
 def solve_sudoku():
+    """Solves the sudoku problem with the CP-SAT solver."""
     # Create the model.
     model = cp_model.CpModel()
 
@@ -67,7 +68,7 @@ def solve_sudoku():
     status = solver.Solve(model)
     if status == cp_model.FEASIBLE:
         for i in line:
-            print([solver.Value(grid[(i, j)]) for j in line])
+            print([int(solver.Value(grid[(i, j)])) for j in line])
 
 
 solve_sudoku()

@@ -12,6 +12,7 @@
 # limitations under the License.
 """Collection of helpers to visualize cp_model solutions in colab."""
 
+# pylint: disable=g-import-not-at-top
 import random
 try:
     from IPython.display import display

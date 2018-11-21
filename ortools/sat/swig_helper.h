@@ -179,11 +179,12 @@ class SatHelper {
     return CpSolverResponseStats(response);
   }
 
-  // Returns a non empty string the model is not valid.
-  static std::string ValidateModel(const operations_research::sat::CpModelProto& model_proto) {
+  // Returns a non empty std::string explaining the issue if the model is not
+  // valid.
+  static std::string ValidateModel(
+      const operations_research::sat::CpModelProto& model_proto) {
     return ValidateCpModel(model_proto);
   }
-
 };
 
 }  // namespace sat
