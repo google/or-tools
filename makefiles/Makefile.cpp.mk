@@ -489,7 +489,6 @@ test_cc_contrib: ;
 .PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
 test_cc_cpp: \
  rcc_costas_array \
- rcc_cryptarithm \
  rcc_cvrp_disjoint_tw \
  rcc_cvrptw \
  rcc_cvrptw_with_breaks \
@@ -529,9 +528,6 @@ test_cc_cpp: \
 	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_sat.cc \
  ARGS="--input=examples/data/jobshop/ft06"
-	$(MAKE) run \
- SOURCE=examples/cpp/multidim_knapsack.cc \
- ARGS="--data_file examples/data/multidim_knapsack/PB1.DAT"
 	$(MAKE) run \
  SOURCE=examples/cpp/network_routing.cc \
  ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
