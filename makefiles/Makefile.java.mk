@@ -355,7 +355,8 @@ test_java_graph_samples: \
 
 .PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
 test_java_linear_solver_samples: \
- rjava_SimpleLpProgram
+ rjava_SimpleLpProgram \
+ rjava_SimpleMipProgram
 
 .PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
 test_java_sat_samples: \

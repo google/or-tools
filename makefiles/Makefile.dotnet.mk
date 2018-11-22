@@ -503,7 +503,8 @@ test_dotnet_graph_samples: \
 
 .PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
 test_dotnet_linear_solver_samples: \
- rdotnet_SimpleLpProgram.cs
+ rdotnet_SimpleLpProgram.cs \
+ rdotnet_SimpleMipProgram.cs
 
 .PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
 test_dotnet_sat_samples: \

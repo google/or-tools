@@ -429,7 +429,8 @@ test_cc_graph_samples: \
 
 .PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
 test_cc_linear_solver_samples: \
- rcc_simple_lp_program
+ rcc_simple_lp_program \
+ rcc_simple_mip_program
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \
