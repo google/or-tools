@@ -69,7 +69,6 @@ ifeq ($(SYSTEM),unix)
   PRE_LIB = -Llib -Llib64
   CBC_LNK = -lCbcSolver -lCbc -lOsiCbc -lCgl -lClpSolver -lClp -lOsiClp -lOsi -lCoinUtils
   OR_TOOLS_LNK = $(PRE_LIB) -lprotobuf -lglog -lgflags $(CBC_LNK) -lortools
-  DIMACS_LNK = $(PRE_LIB) -ldimacs -lglog -lgflags $(CBC_LNK) -lortools
   FAP_LNK = $(PRE_LIB) -lfap -lglog -lgflags $(CBC_LNK) -lortools
   OBJ_OUT = -o #
   EXE_OUT = -o #
@@ -127,7 +126,6 @@ ifeq ($(SYSTEM),win)
   LDFLAGS = psapi.lib ws2_32.lib
   LIB_PREFIX =
   OR_TOOLS_LNK = lib\\ortools.lib
-  DIMACS_LNK = lib\\dimacs.lib lib\\ortools.lib
   FAP_LNK = lib\\fap.lib lib\\ortools.lib
   OBJ_OUT = /Fo
   EXE_OUT = /Fe
@@ -153,7 +151,6 @@ ifeq ($(SYSTEM),win)
 endif # SYSTEM == win
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools$L
-DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs$L
 FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap$L
 
 .PHONY: all
@@ -316,9 +313,6 @@ $(OBJ_DIR)/%$O: $(CPP_EX_DIR)/%.cc | $(OBJ_DIR)
 $(BIN_DIR)/%$E: $(OBJ_DIR)/%$O
 	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$S$*$O $(OR_TOOLS_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
 
-$(BIN_DIR)/dimacs_assignment$E: $(OBJ_DIR)/dimacs_assignment$O
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Sdimacs_assignment$O $(DIMACS_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
-
 $(BIN_DIR)/frequency_assignment_problem$E: $(OBJ_DIR)/frequency_assignment_problem$O
 	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Sfrequency_assignment_problem$O $(FAP_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
 
@@ -329,7 +323,6 @@ detect_cc:
 	@echo CXXFLAGS = $(CXXFLAGS)
 	@echo LDFLAGS = $(LDFLAGS)
 	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
-	@echo DIMACS_LNK = $(DIMACS_LNK)
 	@echo FAP_LNK = $(FAP_LNK)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(

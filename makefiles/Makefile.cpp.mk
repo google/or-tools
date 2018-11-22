@@ -292,36 +292,6 @@ endif
 ##################################
 ##  CPP Tests/Examples/Samples  ##
 ##################################
-# DIMACS Assignment challenge problem format library
-DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
-DIMACS_PATH = $(subst /,$S,$(DIMACS_LIBS))
-DIMACS_DEPS = \
-	$(CC_EX_DIR)/parse_dimacs_assignment.h \
-	$(CC_EX_DIR)/print_dimacs_assignment.h \
-	$(GRAPH_DEPS)
-DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
-ifeq ($(PLATFORM),MACOSX)
-DIMACS_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)dimacs.$L #
-endif
-dimacslibs: $(DIMACS_LIBS)
-
-DIMACS_OBJS = $(OBJ_DIR)/parse_dimacs_assignment.$O $(OBJ_DIR)/print_dimacs_assignment.$O
-
-$(DIMACS_LIBS): $(OR_TOOLS_LIBS) $(DIMACS_OBJS) | $(LIB_DIR)
-	$(LINK_CMD) \
- $(DIMACS_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L \
- $(DIMACS_OBJS) \
- $(OR_TOOLS_LNK) \
- $(OR_TOOLS_LDFLAGS)
-
-# DIMACS examples
-$(OBJ_DIR)/dimacs_assignment.$O: $(CC_EX_DIR)/dimacs_assignment.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sdimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
-
-$(BIN_DIR)/dimacs_assignment$E: $(OBJ_DIR)/dimacs_assignment.$O $(DIMACS_LIBS) | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sdimacs_assignment.$O $(DIMACS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
-
 # Frequency Assignment Problem (FAP) challenge problem format library
 FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
 FAP_PATH = $(subst /,$S,$(FAP_LIBS))

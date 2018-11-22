@@ -32,8 +32,10 @@
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 
-DECLARE_bool(assignment_maximize_cost);
-DECLARE_bool(assignment_optimize_layout);
+DEFINE_bool(assignment_maximize_cost, false,
+            "Negate costs so a max-cost assignment is found.");
+DEFINE_bool(assignment_optimize_layout, true,
+            "Optimize graph layout for speed.");
 
 namespace operations_research {
 
