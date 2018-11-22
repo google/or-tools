@@ -292,42 +292,6 @@ endif
 ##################################
 ##  CPP Tests/Examples/Samples  ##
 ##################################
-# Specific libraries for examples
-# CVRP(TW) common library
-CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$L
-CVRPTW_PATH = $(subst /,$S,$(CVRPTW_LIBS))
-CVRPTW_DEPS = \
-	$(CC_EX_DIR)/cvrptw_lib.h \
-	$(CP_DEPS)
-CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
-ifeq ($(PLATFORM),MACOSX)
-CVRPTW_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)cvrptw_lib.$L #
-endif
-cvrptwlibs: $(CVRPTW_LIBS)
-
-CVRPTW_OBJS = $(OBJ_DIR)/cvrptw_lib.$O
-$(CVRPTW_OBJS): \
- $(CC_EX_DIR)/cvrptw_lib.cc \
- $(CC_EX_DIR)/cvrptw_lib.h \
- $(CP_DEPS) \
- | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
-
-$(CVRPTW_LIBS): $(CVRPTW_OBJS) $(OR_TOOLS_LIBS) | $(LIB_DIR)
-	$(LINK_CMD) \
- $(CVRPTW_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L \
- $(CVRPTW_OBJS) \
- $(OR_TOOLS_LNK) \
- $(OR_TOOLS_LDFLAGS)
-
-# CVRP(TW) examples
-$(OBJ_DIR)/cvrp%.$O: $(CC_EX_DIR)/cvrp%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Scvrp$*.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrp$*.$O
-
-$(BIN_DIR)/cvrp%$E: $(OBJ_DIR)/cvrp%.$O $(CVRPTW_LIBS) | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrp$*.$O $(CVRPTW_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp$*$E
-
 # DIMACS Assignment challenge problem format library
 DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs.$L
 DIMACS_PATH = $(subst /,$S,$(DIMACS_LIBS))

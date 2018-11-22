@@ -128,7 +128,6 @@ ifeq ($(SYSTEM),win)
   LDFLAGS = psapi.lib ws2_32.lib
   LIB_PREFIX =
   OR_TOOLS_LNK = lib\\ortools.lib
-  CVRPTW_LNK = lib\\cvrptw_lib.lib lib\\ortools.lib
   DIMACS_LNK = lib\\dimacs.lib lib\\ortools.lib
   FAP_LNK = lib\\fap.lib lib\\ortools.lib
   OBJ_OUT = /Fo
@@ -318,24 +317,6 @@ $(OBJ_DIR)/%$O: $(CPP_EX_DIR)/%.cc | $(OBJ_DIR)
 
 $(BIN_DIR)/%$E: $(OBJ_DIR)/%$O
 	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$S$*$O $(OR_TOOLS_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
-
-$(BIN_DIR)/cvrp_disjoint_tw$E: $(OBJ_DIR)/cvrp_disjoint_tw$O
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Scvrp_disjoint_tw$O $(CVRPTW_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp_disjoint_tw$E
-
-$(BIN_DIR)/cvrptw$E: $(OBJ_DIR)/cvrptw$O
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Scvrptw$O $(CVRPTW_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
-
-$(BIN_DIR)/cvrptw_with_breaks$E: $(OBJ_DIR)/cvrptw_with_breaks$O
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Scvrptw_with_breaks$O $(CVRPTW_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_breaks$E
-
-$(BIN_DIR)/cvrptw_with_refueling$E: $(OBJ_DIR)/cvrptw_with_refueling$O
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Scvrptw_with_refueling$O $(CVRPTW_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
-
-$(BIN_DIR)/cvrptw_with_resources$E: $(OBJ_DIR)/cvrptw_with_resources$O
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Scvrptw_with_resources$O $(CVRPTW_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
-
-$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E: $(OBJ_DIR)/cvrptw_with_stop_times_and_resources$O
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Scvrptw_with_stop_times_and_resources$O $(CVRPTW_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
 
 $(BIN_DIR)/dimacs_assignment$E: $(OBJ_DIR)/dimacs_assignment$O
 	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Sdimacs_assignment$O $(DIMACS_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
