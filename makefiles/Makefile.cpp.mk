@@ -549,16 +549,16 @@ rfz_%: fz $(FZ_EX_DIR)/%.fzn
 ################
 ##  Cleaning  ##
 ################
-CC_SAMPLES :=  $(wildcard ortools/*/samples/*.cc)
-CC_SAMPLES :=  $(notdir $(CC_SAMPLES))
+CC_SAMPLES := $(wildcard ortools/*/samples/*.cc)
+CC_SAMPLES := $(notdir $(CC_SAMPLES))
 CC_SAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_SAMPLES))))
 
-CC_EXAMPLES :=  $(wildcard $(CC_EX_DIR)/*.cc)
-CC_EXAMPLES :=  $(notdir $(CC_EXAMPLES))
+CC_EXAMPLES := $(wildcard $(CC_EX_DIR)/*.cc)
+CC_EXAMPLES := $(notdir $(CC_EXAMPLES))
 CC_EXAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_EXAMPLES))))
 
-CC_TESTS :=  $(wildcard $(TEST_DIR)/*.cc)
-CC_TESTS :=  $(notdir $(CC_TESTS))
+CC_TESTS := $(wildcard $(TEST_DIR)/*.cc)
+CC_TESTS := $(notdir $(CC_TESTS))
 CC_TESTS := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_TESTS))))
 
 .PHONY: clean_cc # Clean C++ output from previous build.
