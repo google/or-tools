@@ -3,8 +3,8 @@ FROM ubuntu:18.04
 #############
 ##  SETUP  ##
 #############
-RUN apt update \
-&& apt install -y -q \
+RUN apt update -qq \
+&& apt install -yq \
  git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
  lsb-release \
 && apt clean \
@@ -32,14 +32,12 @@ RUN apt-get update -qq \
 
 # Dotnet Install
 RUN apt-get update -qq \
-&& apt-get install -yq gpg apt-transport-https \
-&& wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
-&& mv microsoft.asc.gpg /etc/apt/trusted.gpg.d/ \
-&& wget -q https://packages.microsoft.com/config/ubuntu/18.04/prod.list \
-&& mv prod.list /etc/apt/sources.list.d/microsoft-prod.list \
+&& apt-get install -yq apt-transport-https \
+&& wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb \
+&& dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
-&& apt-get install -y -q dotnet-sdk-2.1 \
-&& apt clean \
+&& apt-get install -yq dotnet-sdk-2.1 \
+&& apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV TZ=America/Los_Angeles

@@ -1,10 +1,10 @@
-FROM ubuntu:17.10
+FROM ubuntu:18.10
 
 #############
 ##  SETUP  ##
 #############
-RUN apt update \
-&& apt install -y -q \
+RUN apt update -qq \
+&& apt install -yq \
  git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
  lsb-release \
 && apt clean \
@@ -33,7 +33,7 @@ RUN apt-get update -qq \
 # Dotnet Install
 RUN apt-get update -qq \
 && apt-get install -yq apt-transport-https \
-&& wget -q https://packages.microsoft.com/config/ubuntu/17.10/packages-microsoft-prod.deb \
+&& wget -q https://packages.microsoft.com/config/ubuntu/18.10/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
 && apt-get install -yq dotnet-sdk-2.1 \
