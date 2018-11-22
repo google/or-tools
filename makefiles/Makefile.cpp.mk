@@ -512,20 +512,11 @@ test_cc_cpp: \
  SOURCE=examples/cpp/dimacs_assignment.cc \
  ARGS=examples/data/dimacs/assignment/small.asn
 	$(MAKE) run \
- SOURCE=examples/cpp/flexible_jobshop.cc \
- ARGS="--data_file examples/data/flexible_jobshop/hurink_data/edata/la01.fjs"
-	$(MAKE) run \
  SOURCE=examples/cpp/golomb.cc \
  ARGS="--size=5"
 	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_earlytardy.cc \
  ARGS="--machine_count=6 --job_count=6"
-	$(MAKE) run \
- SOURCE=examples/cpp/jobshop.cc \
- ARGS="--data_file=examples/data/jobshop/ft06"
-	$(MAKE) run \
- SOURCE=examples/cpp/jobshop_ls.cc \
- ARGS="--data_file=examples/data/jobshop/ft06"
 	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_sat.cc \
  ARGS="--input=examples/data/jobshop/ft06"
