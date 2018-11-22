@@ -496,34 +496,34 @@ rdotnet_%.cs: \
 	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
 
 .PHONY: test_dotnet_algorithms_samples # Build and Run all .Net LP Samples (located in ortools/algorithms/samples)
-test_dotnet_algorithms_samples: \
+test_dotnet_algorithms_samples: ;
 
 .PHONY: test_dotnet_graph_samples # Build and Run all .Net LP Samples (located in ortools/graph/samples)
-test_dotnet_graph_samples: \
+test_dotnet_graph_samples: ;
 
 .PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
-test_dotnet_linear_solver_samples: \
- rdotnet_SimpleLpProgram.cs \
- rdotnet_SimpleMipProgram.cs
+test_dotnet_linear_solver_samples:
+	$(MAKE) run SOURCE=ortools/linear_solver/samples/SimpleLpProgram.cs
+	$(MAKE) run SOURCE=ortools/linear_solver/samples/SimpleMipProgram.cs
 
 .PHONY: test_dotnet_sat_samples # Build and Run all .Net SAT Samples (located in ortools/sat/samples)
-test_dotnet_sat_samples: \
- rdotnet_BinPackingProblemSat.cs \
- rdotnet_BoolOrSampleSat.cs \
- rdotnet_ChannelingSampleSat.cs \
- rdotnet_CpIsFunSat.cs \
- rdotnet_IntervalSampleSat.cs \
- rdotnet_LiteralSampleSat.cs \
- rdotnet_NoOverlapSampleSat.cs \
- rdotnet_OptionalIntervalSampleSat.cs \
- rdotnet_RabbitsAndPheasantsSat.cs \
- rdotnet_RankingSampleSat.cs \
- rdotnet_ReifiedSampleSat.cs \
- rdotnet_SearchForAllSolutionsSampleSat.cs \
- rdotnet_SimpleSatProgram.cs \
- rdotnet_SolveAndPrintIntermediateSolutionsSampleSat.cs \
- rdotnet_SolveWithTimeLimitSampleSat.cs \
- rdotnet_StopAfterNSolutionsSampleSat.cs
+test_dotnet_sat_samples:
+	$(MAKE) run SOURCE=ortools/sat/samples/BinPackingProblemSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/BoolOrSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/ChannelingSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/CpIsFunSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/IntervalSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/LiteralSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/NoOverlapSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/OptionalIntervalSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/RabbitsAndPheasantsSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/RankingSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/ReifiedSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/SearchForAllSolutionsSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/SimpleSatProgram.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/SolveAndPrintIntermediateSolutionsSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/SolveWithTimeLimitSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/StopAfterNSolutionsSampleSat.cs
 
 .PHONY: check_dotnet_pimpl
 check_dotnet_pimpl: \
@@ -535,14 +535,14 @@ check_dotnet_pimpl: \
  rdotnet_SimpleProgramFSharp.fs
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
-test_dotnet_tests: \
- rdotnet_issue18.cs \
- rdotnet_issue22.cs \
- rdotnet_issue33.cs \
- rdotnet_testcp.cs \
- rdotnet_testlp.cs \
- rdotnet_testsat.cs \
- rdotnet_test_sat_model.cs
+test_dotnet_tests:
+	$(MAKE) run SOURCE=examples/tests/issue18.cs
+	$(MAKE) run SOURCE=examples/tests/issue22.cs
+	$(MAKE) run SOURCE=examples/tests/issue33.cs
+	$(MAKE) run SOURCE=examples/tests/testcp.cs
+	$(MAKE) run SOURCE=examples/tests/testlp.cs
+	$(MAKE) run SOURCE=examples/tests/testsat.cs
+	$(MAKE) run SOURCE=examples/tests/test_sat_model.cs
 
 .PHONY: test_dotnet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet and examples/contrib)
 test_dotnet_examples_csharp: \
@@ -554,7 +554,6 @@ test_dotnet_examples_csharp: \
  rdotnet_TaskSchedulingSat.cs \
  rdotnet_cscvrptw.cs \
  rdotnet_csflow.cs \
- rdotnet_csfz.cs \
  rdotnet_csintegerprogramming.cs \
  rdotnet_csknapsack.cs \
  rdotnet_cslinearprogramming.cs \
@@ -664,10 +663,11 @@ test_dotnet_examples_csharp: \
  rdotnet_young_tableaux.cs \
  rdotnet_zebra.cs
 	$(MAKE) run SOURCE=examples/contrib/coins_grid.cs ARGS="5 2"
-#	$(MAKE) rdotnet_nontransitive_dice # too long
-#	$(MAKE) rdotnet_partition # too long
-#	$(MAKE) rdotnet_secret_santa # too long
-# $(MAKE) rdotnet_word_square # depends on /usr/share/dict/words
+#	$(MAKE) rdotnet_csfz.cs # Flatzinc needed
+#	$(MAKE) rdotnet_nontransitive_dice.cs # too long
+#	$(MAKE) rdotnet_partition.cs # too long
+#	$(MAKE) rdotnet_secret_santa.cs # too long
+# $(MAKE) rdotnet_word_square.cs # depends on /usr/share/dict/words
 
 .PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet and examples/contrib)
 test_dotnet_examples_fsharp: \
@@ -740,10 +740,14 @@ clean_dotnet:
 	-$(DELREC) $(CONTRIB_EX_PATH)$Sobj
 	-$(DELREC) $(TEST_PATH)$Sbin
 	-$(DELREC) $(TEST_PATH)$Sobj
-	-$(DELREC) ortools$Ssat$Ssamples$Sbin
-	-$(DELREC) ortools$Ssat$Ssamples$Sobj
+	-$(DELREC) ortools$Salgorithms$Ssamples$Sbin
+	-$(DELREC) ortools$Salgorithms$Ssamples$Sobj
+	-$(DELREC) ortools$Sgraph$Ssamples$Sbin
+	-$(DELREC) ortools$Sgraph$Ssamples$Sobj
 	-$(DELREC) ortools$Slinear_solver$Ssamples$Sbin
 	-$(DELREC) ortools$Slinear_solver$Ssamples$Sobj
+	-$(DELREC) ortools$Ssat$Ssamples$Sbin
+	-$(DELREC) ortools$Ssat$Ssamples$Sobj
 	-$(DELREC) $(TEMP_DOTNET_DIR)
 	-@"$(DOTNET_BIN)" nuget locals all --clear
 
