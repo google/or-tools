@@ -19,12 +19,14 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
 public class SimpleLpProgram {
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     // Create the linear solver with the GLOP backend.
-    MPSolver solver = new MPSolver("SimpleLpProgram",
-        MPSolver.OptimizationProblemType.valueOf("GLOP_LINEAR_PROGRAMMING"));
+    MPSolver solver = new MPSolver(
+        "SimpleLpProgram", MPSolver.OptimizationProblemType.valueOf("GLOP_LINEAR_PROGRAMMING"));
 
     // Create the variables x and y.
     MPVariable x = solver.makeNumVar(0.0, 1.0, "x");
