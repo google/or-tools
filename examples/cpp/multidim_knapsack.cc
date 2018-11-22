@@ -299,12 +299,12 @@ void SolveKnapsack(MultiDimKnapsackData* const data) {
     SearchMonitor* const search_log = solver.MakeSearchLog(1000000, objective);
     monitors.push_back(search_log);
   }
-  DecisionBuilder* const db =
-      solver.MakePhase(assign,
-                       [data](int64 var, int64 value) {
-                         return EvaluateItem(*data, var, value);
-                       },
-                       Solver::CHOOSE_STATIC_GLOBAL_BEST);
+  DecisionBuilder* const db = solver.MakePhase(
+      assign,
+      [data](int64 var, int64 value) {
+        return EvaluateItem(*data, var, value);
+      },
+      Solver::CHOOSE_STATIC_GLOBAL_BEST);
   if (FLAGS_time_limit_in_ms != 0) {
     LOG(INFO) << "adding time limit of " << FLAGS_time_limit_in_ms << " ms";
     SearchLimit* const limit = solver.MakeLimit(

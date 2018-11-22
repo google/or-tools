@@ -106,7 +106,9 @@ void MagicSquare(int grid_size) {
           DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT;
       break;
     }
-    default: { LOG(FATAL) << "Should not be here"; }
+    default: {
+      LOG(FATAL) << "Should not be here";
+    }
   }
   parameters.value_selection_schema =
       FLAGS_select_max_impact_value ? DefaultPhaseParameters::SELECT_MAX_IMPACT

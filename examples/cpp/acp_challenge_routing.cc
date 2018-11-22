@@ -98,7 +98,9 @@ class AcpData {
         }
         break;
       }
-      default: { LOG(ERROR) << "Should not be here"; }
+      default: {
+        LOG(ERROR) << "Should not be here";
+      }
     }
   }
 

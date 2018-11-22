@@ -471,9 +471,10 @@ class NetworkRoutingSolver {
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
       paths.clear();
       const Demand& demand = demands_array_[demand_index];
-      CHECK(DijkstraShortestPath(num_nodes_, demand.source, demand.destination,
-                                 [this](int x, int y) { return HasArc(x, y); },
-                                 kDisconnectedDistance, &paths));
+      CHECK(DijkstraShortestPath(
+          num_nodes_, demand.source, demand.destination,
+          [this](int x, int y) { return HasArc(x, y); }, kDisconnectedDistance,
+          &paths));
       all_min_path_lengths_.push_back(paths.size() - 1);
     }
 

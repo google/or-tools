@@ -18,48 +18,48 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
-  void RunConstraintProgrammingExample() {
-    // Instantiate the solver.
-    Solver solver("RabbitsPheasantsExample");
+void RunConstraintProgrammingExample() {
+  // Instantiate the solver.
+  Solver solver("RabbitsPheasantsExample");
 
-    // Define decision variables.
-    IntVar* const rabbits = solver.MakeIntVar(0, 20, "rabbits");
-    IntVar* const pheasants = solver.MakeIntVar(0, 20, "pheasants");
+  // Define decision variables.
+  IntVar* const rabbits = solver.MakeIntVar(0, 20, "rabbits");
+  IntVar* const pheasants = solver.MakeIntVar(0, 20, "pheasants");
 
-    // Define constraints.
-    IntExpr* const heads = solver.MakeSum(rabbits, pheasants);
-    Constraint* const c0 = solver.MakeEquality(heads, 20);
-    solver.AddConstraint(c0);
+  // Define constraints.
+  IntExpr* const heads = solver.MakeSum(rabbits, pheasants);
+  Constraint* const c0 = solver.MakeEquality(heads, 20);
+  solver.AddConstraint(c0);
 
-    IntExpr* const legs = solver.MakeSum(solver.MakeProd(rabbits, 4), solver.MakeProd(pheasants, 2));
-    Constraint* const c1 = solver.MakeEquality(legs, 56);
-    solver.AddConstraint(c1);
+  IntExpr* const legs = solver.MakeSum(solver.MakeProd(rabbits, 4),
+                                       solver.MakeProd(pheasants, 2));
+  Constraint* const c1 = solver.MakeEquality(legs, 56);
+  solver.AddConstraint(c1);
 
-    DecisionBuilder* const db = solver.MakePhase(
-        rabbits, pheasants,
-        Solver::CHOOSE_FIRST_UNBOUND,
-        Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db =
+      solver.MakePhase(rabbits, pheasants, Solver::CHOOSE_FIRST_UNBOUND,
+                       Solver::ASSIGN_MIN_VALUE);
 
-    bool has_result = solver.Solve(db);
-    // Check that the problem has a solution.
-    if (has_result != true) {
-      LOG(FATAL) << "The problem does not have a solution!";
-    }
-    int count = 0;
-    while (solver.NextSolution()) {
-      count++;
-      LOG(INFO) << "Solution " << count << ":";
-      LOG(INFO) << "rabbits = " << rabbits->Value();
-      LOG(INFO) << "pheasants = " << rabbits->Value();
-    }
-    LOG(INFO) << "Number of solutions: " << count;
-    LOG(INFO) << "";
-    LOG(INFO) << "Advanced usage:";
-    LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
+  bool has_result = solver.Solve(db);
+  // Check that the problem has a solution.
+  if (has_result != true) {
+    LOG(FATAL) << "The problem does not have a solution!";
   }
+  int count = 0;
+  while (solver.NextSolution()) {
+    count++;
+    LOG(INFO) << "Solution " << count << ":";
+    LOG(INFO) << "rabbits = " << rabbits->Value();
+    LOG(INFO) << "pheasants = " << rabbits->Value();
+  }
+  LOG(INFO) << "Number of solutions: " << count;
+  LOG(INFO) << "";
+  LOG(INFO) << "Advanced usage:";
+  LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
+}
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
   operations_research::RunConstraintProgrammingExample();
