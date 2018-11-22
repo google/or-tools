@@ -69,7 +69,6 @@ ifeq ($(SYSTEM),unix)
   PRE_LIB = -Llib -Llib64
   CBC_LNK = -lCbcSolver -lCbc -lOsiCbc -lCgl -lClpSolver -lClp -lOsiClp -lOsi -lCoinUtils
   OR_TOOLS_LNK = $(PRE_LIB) -lprotobuf -lglog -lgflags $(CBC_LNK) -lortools
-  CVRPTW_LNK = $(PRE_LIB) -lcvrptw_lib -lprotobuf -lglog -lgflags $(CBC_LNK) -lortools
   DIMACS_LNK = $(PRE_LIB) -ldimacs -lglog -lgflags $(CBC_LNK) -lortools
   FAP_LNK = $(PRE_LIB) -lfap -lglog -lgflags $(CBC_LNK) -lortools
   OBJ_OUT = -o #
@@ -154,7 +153,6 @@ ifeq ($(SYSTEM),win)
 endif # SYSTEM == win
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools$L
-CVRPTW_LIBS = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib$L
 DIMACS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)dimacs$L
 FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap$L
 
@@ -331,7 +329,6 @@ detect_cc:
 	@echo CXXFLAGS = $(CXXFLAGS)
 	@echo LDFLAGS = $(LDFLAGS)
 	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
-	@echo CVRPTW_LNK = $(CVRPTW_LNK)
 	@echo DIMACS_LNK = $(DIMACS_LNK)
 	@echo FAP_LNK = $(FAP_LNK)
 ifeq ($(SYSTEM),win)
