@@ -11,9 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <deque>
+// Solve the Slitherlink problem:
+//    see https://en.wikipedia.org/wiki/Slitherlink
+
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "ortools/base/stringprintf.h"
