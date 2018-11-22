@@ -500,7 +500,7 @@ test_cc_cpp: \
  rcc_linear_assignment_api \
  rcc_linear_solver_protocol_buffers \
  rcc_ls_api \
- rcc_magic_square \
+ rcc_magic_square_sat \
  rcc_mps_driver \
  rcc_nqueens \
  rcc_random_tsp \
