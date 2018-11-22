@@ -43,8 +43,8 @@ void NQueens(int size) {
       s.AddConstraint(s.MakeNonEquality(queens[i], queens[j]));
       s.AddConstraint(
           s.MakeNonEquality(s.MakeSum(queens[i], i), s.MakeSum(queens[j], j)));
-      s.AddConstraint(s.MakeNonEquality(
-          s.MakeSum(queens[i], -i), s.MakeSum(queens[j], -j)));
+      s.AddConstraint(s.MakeNonEquality(s.MakeSum(queens[i], -i),
+                                        s.MakeSum(queens[j], -j)));
     }
   }
   std::vector<SearchMonitor*> monitors;

@@ -11,83 +11,76 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Integer programming example that shows how to use the API.
-
-#include "ortools/base/logging.h"
+// Mixed Integer programming example that shows how to use the API.
+// [START program]
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
-void RunIntegerProgrammingExample(
-    MPSolver::OptimizationProblemType optimization_problem_type) {
-  MPSolver solver("IntegerProgrammingExample", optimization_problem_type);
+void simple_mip_program() {
+  // [START solver]
+  // Create the mip solver with the CBC backend.
+  MPSolver solver("simple_mip_program",
+                  MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  // [END solver]
+
+  // [START variables]
   const double infinity = solver.infinity();
   // x and y are integer non-negative variables.
   MPVariable* const x = solver.MakeIntVar(0.0, infinity, "x");
   MPVariable* const y = solver.MakeIntVar(0.0, infinity, "y");
 
+  LOG(INFO) << "Number of variables = " << solver.NumVariables();
+  // [END variables]
+
+  // [START constraints]
+  // x + 7 * y <= 17.5.
+  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 17.5, "c0");
+  c0->SetCoefficient(x, 1);
+  c0->SetCoefficient(y, 7);
+
+  // x <= 3.5.
+  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 3.5, "c1");
+  c1->SetCoefficient(x, 1);
+  c1->SetCoefficient(y, 0);
+
+  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
+  // [END constraints]
+
+  // [START objective]
   // Maximize x + 10 * y.
   MPObjective* const objective = solver.MutableObjective();
   objective->SetCoefficient(x, 1);
   objective->SetCoefficient(y, 10);
   objective->SetMaximization();
+  // [END objective]
 
-  // x + 7 * y <= 17.5.
-  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 17.5);
-  c0->SetCoefficient(x, 1);
-  c0->SetCoefficient(y, 7);
-
-  // x <= 3.5
-  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 3.5);
-  c1->SetCoefficient(x, 1);
-  c1->SetCoefficient(y, 0);
-
-  LOG(INFO) << "Number of variables = " << solver.NumVariables();
-  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
-
+  // [START solve]
   const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
     LOG(FATAL) << "The problem does not have an optimal solution!";
   }
+  // [END solve]
+
+  // [START print_solution]
   LOG(INFO) << "Solution:";
   LOG(INFO) << "x = " << x->solution_value();
   LOG(INFO) << "y = " << y->solution_value();
   LOG(INFO) << "Optimal objective value = " << objective->Value();
-  LOG(INFO) << "";
-  LOG(INFO) << "Advanced usage:";
+  // [END print_solution]
+
+  // [START advanced]
+  LOG(INFO) << "\nAdvanced usage:";
   LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
   LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
   LOG(INFO) << "Problem solved in " << solver.nodes()
             << " branch-and-bound nodes";
-}
-
-void RunAllExamples() {
-#if defined(USE_CBC)
-  LOG(INFO) << "---- Integer programming example with CBC ----";
-  RunIntegerProgrammingExample(MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-#endif
-#if defined(USE_GLPK)
-  LOG(INFO) << "---- Integer programming example with GLPK ----";
-  RunIntegerProgrammingExample(MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
-#endif
-#if defined(USE_SCIP)
-  LOG(INFO) << "---- Integer programming example with SCIP ----";
-  RunIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
-#endif
-#if defined(USE_GUROBI)
-  LOG(INFO) << "---- Integer programming example with Gurobi ----";
-  RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
-#endif  // USE_GUROBI
-#if defined(USE_CPLEX)
-  LOG(INFO) << "---- Integer programming example with CPLEX ----";
-  RunIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
-#endif  // USE_CPLEX
+  // [END advanced]
 }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
-  operations_research::RunAllExamples();
+  operations_research::simple_mip_program();
   return EXIT_SUCCESS;
 }
+// [END program]

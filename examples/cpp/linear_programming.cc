@@ -18,60 +18,61 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
-  void RunLinearProgrammingExample() {
-    MPSolver solver("LinearProgrammingExample", MPSolver::GLOP_LINEAR_PROGRAMMING);
-    const double infinity = solver.infinity();
-    // x and y are continuous non-negative variables.
-    MPVariable* const x = solver.MakeNumVar(0.0, infinity, "x");
-    MPVariable* const y = solver.MakeNumVar(0.0, infinity, "y");
+void RunLinearProgrammingExample() {
+  MPSolver solver("LinearProgrammingExample",
+                  MPSolver::GLOP_LINEAR_PROGRAMMING);
+  const double infinity = solver.infinity();
+  // x and y are continuous non-negative variables.
+  MPVariable* const x = solver.MakeNumVar(0.0, infinity, "x");
+  MPVariable* const y = solver.MakeNumVar(0.0, infinity, "y");
 
-    // Objectif function: Maximize 3x + 4y.
-    MPObjective* const objective = solver.MutableObjective();
-    objective->SetCoefficient(x, 3);
-    objective->SetCoefficient(y, 4);
-    objective->SetMaximization();
+  // Objectif function: Maximize 3x + 4y.
+  MPObjective* const objective = solver.MutableObjective();
+  objective->SetCoefficient(x, 3);
+  objective->SetCoefficient(y, 4);
+  objective->SetMaximization();
 
-    // x + 2y <= 14.
-    MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 14.0);
-    c0->SetCoefficient(x, 1);
-    c0->SetCoefficient(y, 2);
+  // x + 2y <= 14.
+  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 14.0);
+  c0->SetCoefficient(x, 1);
+  c0->SetCoefficient(y, 2);
 
-    // 3x - y >= 0.
-    MPConstraint* const c1 = solver.MakeRowConstraint(0.0, infinity);
-    c1->SetCoefficient(x, 3);
-    c1->SetCoefficient(y, -1);
+  // 3x - y >= 0.
+  MPConstraint* const c1 = solver.MakeRowConstraint(0.0, infinity);
+  c1->SetCoefficient(x, 3);
+  c1->SetCoefficient(y, -1);
 
-    // x - y <= 2.
-    MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 2.0);
-    c2->SetCoefficient(x, 1);
-    c2->SetCoefficient(y, -1);
+  // x - y <= 2.
+  MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 2.0);
+  c2->SetCoefficient(x, 1);
+  c2->SetCoefficient(y, -1);
 
-    LOG(INFO) << "Number of variables = " << solver.NumVariables();
-    LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
+  LOG(INFO) << "Number of variables = " << solver.NumVariables();
+  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
-    const MPSolver::ResultStatus result_status = solver.Solve();
-    // Check that the problem has an optimal solution.
-    if (result_status != MPSolver::OPTIMAL) {
-      LOG(FATAL) << "The problem does not have an optimal solution!";
-    }
-    LOG(INFO) << "Solution:";
-    LOG(INFO) << "x = " << x->solution_value();
-    LOG(INFO) << "y = " << y->solution_value();
-    LOG(INFO) << "Optimal objective value = " << objective->Value();
-    LOG(INFO) << "";
-    LOG(INFO) << "Advanced usage:";
-    LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
-    LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
-    LOG(INFO) << "x: reduced cost = " << x->reduced_cost();
-    LOG(INFO) << "y: reduced cost = " << y->reduced_cost();
-    const std::vector<double> activities = solver.ComputeConstraintActivities();
-    LOG(INFO) << "c0: dual value = " << c0->dual_value()
-      << " activity = " << activities[c0->index()];
-    LOG(INFO) << "c1: dual value = " << c1->dual_value()
-      << " activity = " << activities[c1->index()];
-    LOG(INFO) << "c2: dual value = " << c2->dual_value()
-      << " activity = " << activities[c2->index()];
+  const MPSolver::ResultStatus result_status = solver.Solve();
+  // Check that the problem has an optimal solution.
+  if (result_status != MPSolver::OPTIMAL) {
+    LOG(FATAL) << "The problem does not have an optimal solution!";
   }
+  LOG(INFO) << "Solution:";
+  LOG(INFO) << "x = " << x->solution_value();
+  LOG(INFO) << "y = " << y->solution_value();
+  LOG(INFO) << "Optimal objective value = " << objective->Value();
+  LOG(INFO) << "";
+  LOG(INFO) << "Advanced usage:";
+  LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
+  LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
+  LOG(INFO) << "x: reduced cost = " << x->reduced_cost();
+  LOG(INFO) << "y: reduced cost = " << y->reduced_cost();
+  const std::vector<double> activities = solver.ComputeConstraintActivities();
+  LOG(INFO) << "c0: dual value = " << c0->dual_value()
+            << " activity = " << activities[c0->index()];
+  LOG(INFO) << "c1: dual value = " << c1->dual_value()
+            << " activity = " << activities[c1->index()];
+  LOG(INFO) << "c2: dual value = " << c2->dual_value()
+            << " activity = " << activities[c2->index()];
+}
 }  // namespace operations_research
 
 int main(int argc, char** argv) {

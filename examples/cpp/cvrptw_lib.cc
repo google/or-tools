@@ -182,8 +182,7 @@ void DisplayPlan(
     for (int64 order = 0; order < routing.Size(); ++order) {
       if (routing.IsStart(order) || routing.IsEnd(order)) continue;
       ++group_size;
-      visited.insert(
-          plan.Value(routing.VehicleVar(order)));
+      visited.insert(plan.Value(routing.VehicleVar(order)));
       if (group_size == max_nodes_per_group) {
         if (visited.size() > 1) {
           group_same_vehicle_cost += (visited.size() - 1) * same_vehicle_cost;
@@ -214,12 +213,12 @@ void DisplayPlan(
         operations_research::IntVar* const slack_var =
             routing.IsEnd(order) ? nullptr : time_dimension.SlackVar(order);
         if (slack_var != nullptr && plan.Contains(slack_var)) {
-          StringAppendF(
-              &plan_output,
-              "%lld Load(%lld) Time(%lld, %lld) Slack(%lld, %lld)",
-              routing.IndexToNode(order).value(),
-              plan.Value(load_var), plan.Min(time_var), plan.Max(time_var),
-              plan.Min(slack_var), plan.Max(slack_var));
+          StringAppendF(&plan_output,
+                        "%lld Load(%lld) Time(%lld, %lld) Slack(%lld, %lld)",
+                        routing.IndexToNode(order).value(),
+                        plan.Value(load_var), plan.Min(time_var),
+                        plan.Max(time_var), plan.Min(slack_var),
+                        plan.Max(slack_var));
         } else {
           StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld)",
                         routing.IndexToNode(order).value(),
