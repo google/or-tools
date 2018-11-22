@@ -505,6 +505,7 @@ test_cc_cpp: \
  rcc_mps_driver \
  rcc_nqueens \
  rcc_random_tsp \
+ rcc_slitherlink_sat \
  rcc_strawberry_fields_with_column_generation \
  rcc_weighted_tardiness_sat
 	$(MAKE) run \
@@ -535,12 +536,11 @@ test_cc_cpp: \
  SOURCE=examples/cpp/network_routing.cc \
  ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
 	$(MAKE) run \
- SOURCE=examples/cpp/sports_scheduling.cc \
- ARGS="--num_teams=8 --time_limit=10000"
+ SOURCE=examples/cpp/sports_scheduling_sat.cc \
+ ARGS="--params max_time_in_seconds:10.0"
 #	$(MAKE) run SOURCE=examples/cpp/frequency_assignment_problem.cc  # Need data file
-#	$(MAKE) run SOURCE=examples/cpp/model_util.cc  # Need data file
 #	$(MAKE) run SOURCE=examples/cpp/pdptw.cc ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
-#	$(MAKE) run SOURCE=examples/cpp/shift_minimization_sat.cc  # Port to new API.
+	$(MAKE) run SOURCE=examples/cpp/shift_minimization_sat.cc  ARGS="--input examples/data/shift_scheduling/minimization/data_1_23_40_66.dat"
 #	$(MAKE) run SOURCE=examples/cpp/solve.cc  # Need data file
 
 .PHONY: test_cc_pimpl
