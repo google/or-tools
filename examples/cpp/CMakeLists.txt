@@ -14,8 +14,6 @@ endif()
 get_filename_component(PARENT_SOURCE_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
 
 foreach(EXECUTABLE
-  job_shop_cp
-  ls_api
   costas_array
   cvrp_disjoint_tw
   cvrptw
