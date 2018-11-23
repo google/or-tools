@@ -28,6 +28,7 @@ foreach(EXECUTABLE
   golomb
   integer_programming
   jobshop_sat
+  knapsack
   linear_assignment_api
   linear_programming
   linear_solver_protocol_buffers
@@ -35,7 +36,6 @@ foreach(EXECUTABLE
   max_flow
   min_cost_flow
   mps_driver
-  multidim_knapsack
   network_routing
   nqueens
   random_tsp
@@ -75,6 +75,7 @@ foreach(TEST
     #jobshop_earlytardy
     #jobshop_ls
     #jobshop_sat
+    knapsack
     linear_assignment_api
     linear_programming
     linear_solver_protocol_buffers
@@ -82,7 +83,6 @@ foreach(TEST
     magic_square
     #model_util
     mps_driver
-    #multidim_knapsack
     #network_routing
     nqueens
     #pdptw
