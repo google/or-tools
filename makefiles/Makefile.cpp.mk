@@ -367,21 +367,19 @@ test_cc_sat_samples: \
 check_cc_pimpl: \
  test_cc_algorithms_samples \
  test_cc_graph_samples \
+ test_cc_constraint_solver_samples \
  test_cc_linear_solver_samples \
  test_cc_sat_samples \
  \
  rcc_linear_programming \
  rcc_stigler_diet \
  rcc_constraint_programming_cp \
- rcc_rabbits_pheasants_cp \
  rcc_integer_programming \
  rcc_tsp \
  rcc_vrp \
  rcc_knapsack \
  rcc_max_flow \
- rcc_min_cost_flow \
- rcc_nurses_cp \
- rcc_job_shop_cp ;
+ rcc_min_cost_flow ;
 
 .PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
 test_cc_tests: \
