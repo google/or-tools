@@ -106,6 +106,7 @@ archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)
 	-$(COPY) ortools$Srouting$Ssamples$S*.fs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) ortools$Ssat$Ssamples$S*.cs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) ortools$Ssat$Ssamples$S*.fs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	-$(SED) -i -e 's/..\/..\/..\/packages/..\/..\/packages/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet$S*.*proj
 
 $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S*
