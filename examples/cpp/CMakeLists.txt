@@ -58,7 +58,6 @@ endforeach()
 
 foreach(TEST
     costas_array
-    cryptarithm
     cvrp_disjoint_tw
     cvrptw
     #cvrptw_with_breaks # Too long
@@ -76,8 +75,7 @@ foreach(TEST
     linear_assignment_api
     linear_programming
     linear_solver_protocol_buffers
-    ls_api
-    magic_square
+    magic_square_sat
     #model_util
     mps_driver
     #network_routing
