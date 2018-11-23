@@ -260,6 +260,7 @@ install_glog: dependencies/install/lib/glog.lib
 
 dependencies/install/lib/glog.lib: dependencies/sources/glog-$(GLOG_TAG) install_gflags
 	cd dependencies\sources\glog-$(GLOG_TAG) && \
+  set MAKEFLAGS= && \
   "$(CMAKE)" -H. -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH=..\..\install \
     -DCMAKE_BUILD_TYPE=Release \
