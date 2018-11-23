@@ -209,10 +209,10 @@ endif
 ##  C++  ##
 ###########
 EXE = \
-$(BIN_DIR)/rabbits_pheasants_cp$E \
+$(BIN_DIR)/simple_ls_program$E \
+$(BIN_DIR)/rabbits_and_pheasants_cp$E \
 $(BIN_DIR)/nurses_cp$E \
-$(BIN_DIR)/job_shop_cp$E \
-$(BIN_DIR)/ls_api$E \
+$(BIN_DIR)/minimal_jobshop_cp$E \
 \
 $(BIN_DIR)/constraint_programming_cp$E \
 $(BIN_DIR)/costas_array$E \
@@ -261,14 +261,14 @@ test_cc: detect_cc
 	$(MAKE) run SOURCE=examples/cpp/simple_lp_program.cc
 	$(MAKE) run SOURCE=examples/cpp/simple_mip_program.cc
 	$(MAKE) run SOURCE=examples/cpp/simple_sat_program.cc
-	$(MAKE) run SOURCE=examples/cpp/rabbits_pheasants_cp.cc
+	$(MAKE) run SOURCE=examples/cpp/simple_ls_program.cc
 	$(MAKE) run SOURCE=examples/cpp/tsp.cc
 	$(MAKE) run SOURCE=examples/cpp/vrp.cc
 	$(MAKE) run SOURCE=examples/cpp/knapsack.cc
 	$(MAKE) run SOURCE=examples/cpp/max_flow.cc
 	$(MAKE) run SOURCE=examples/cpp/min_cost_flow.cc
 	$(MAKE) run SOURCE=examples/cpp/nurses_cp.cc
-	$(MAKE) run SOURCE=examples/cpp/job_shop_cp.cc
+	$(MAKE) run SOURCE=examples/cpp/minimal_jobshop_cp.cc
 
 ##################
 ##  C++ SOURCE  ##
@@ -396,9 +396,9 @@ java test_java:
 else
 java: $(JAR)
 test_java: detect_java
-	$(MAKE) run SOURCE=examples/java/LinearProgramming.java
-	$(MAKE) run SOURCE=examples/java/IntegerProgramming.java
-	$(MAKE) run SOURCE=examples/java/RabbitsPheasants.java
+	$(MAKE) run SOURCE=examples/java/SimpleLpProgram.java
+	$(MAKE) run SOURCE=examples/java/SimpleMipProgram.java
+	$(MAKE) run SOURCE=examples/java/SimpleSatProgram.java
 	$(MAKE) run SOURCE=examples/java/Tsp.java
 	$(MAKE) run SOURCE=examples/java/Vrp.java
 	$(MAKE) run SOURCE=examples/java/Knapsack.java
@@ -603,12 +603,12 @@ dotnet:
 #	$(MAKE) run SOURCE=examples/dotnet/word_square.cs # depends on /usr/share/dict/words
 
 test_dotnet: detect_dotnet
-	$(MAKE) run SOURCE=examples/dotnet/cslinearprogramming.cs
-	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/SimpleLpProgram.cs
+	$(MAKE) run SOURCE=examples/dotnet/SimpleMipProgram.cs
 	$(MAKE) run SOURCE=examples/dotnet/tsp.cs
 	$(MAKE) run SOURCE=examples/dotnet/vrp.cs
-	$(MAKE) run SOURCE=examples/dotnet/assignment.cs
-	$(MAKE) run SOURCE=examples/dotnet/nurses_sat.cs
+	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
 
 ###################
 ##  .NET SOURCE  ##

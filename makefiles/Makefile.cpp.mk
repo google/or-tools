@@ -311,8 +311,14 @@ $(OBJ_DIR)/%.$O: ortools/graph/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 $(OBJ_DIR)/%.$O: ortools/linear_solver/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c ortools$Slinear_solver$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
+$(OBJ_DIR)/%.$O: ortools/constraint_solver/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c ortools$Sconstraint_solver$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
 $(OBJ_DIR)/%.$O: ortools/sat/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c ortools$Ssat$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
+
+$(OBJ_DIR)/%.$O: ortools/routing/samples/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -c ortools$Srouting$Ssamples$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
 
 $(BIN_DIR)/%$E: $(OBJ_DIR)/%.$O $(OR_TOOLS_LIBS) | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$S$*.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
@@ -330,6 +336,13 @@ test_cc_graph_samples: \
 test_cc_linear_solver_samples: \
  rcc_simple_lp_program \
  rcc_simple_mip_program
+
+.PHONY: test_cc_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
+test_cc_constraint_solver_samples: \
+ rcc_simple_ls_program \
+ rcc_rabbits_and_pheasants_cp \
+ rcc_minimal_jobshop_cp \
+ rcc_nurses_cp
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \
