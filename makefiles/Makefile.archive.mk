@@ -53,11 +53,8 @@ endif
 #	-$(DELREC) $(TEMP_ARCHIVE_DIR)
 
 .PHONY: archive_cc # Add C++ OR-Tools to archive.
-archive_cc: cc $(CVRPTW_LIBS) $(DIMACS_LIBS) $(FAP_LIBS) | $(TEMP_ARCHIVE_DIR)
+archive_cc: cc | $(TEMP_ARCHIVE_DIR)
 	$(MAKE) install_cc prefix=$(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)
-	$(COPY) $(CVRPTW_PATH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Slib
-	$(COPY) $(DIMACS_PATH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Slib
-	$(COPY) $(FAP_PATH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Slib
 	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) $(CC_EX_PATH)$S*.h  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) $(CC_EX_PATH)$S*.cc $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp

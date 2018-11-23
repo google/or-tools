@@ -69,7 +69,6 @@ ifeq ($(SYSTEM),unix)
   PRE_LIB = -Llib -Llib64
   CBC_LNK = -lCbcSolver -lCbc -lOsiCbc -lCgl -lClpSolver -lClp -lOsiClp -lOsi -lCoinUtils
   OR_TOOLS_LNK = $(PRE_LIB) -lprotobuf -lglog -lgflags $(CBC_LNK) -lortools
-  FAP_LNK = $(PRE_LIB) -lfap -lglog -lgflags $(CBC_LNK) -lortools
   OBJ_OUT = -o #
   EXE_OUT = -o #
   O = .o
@@ -126,7 +125,6 @@ ifeq ($(SYSTEM),win)
   LDFLAGS = psapi.lib ws2_32.lib
   LIB_PREFIX =
   OR_TOOLS_LNK = lib\\ortools.lib
-  FAP_LNK = lib\\fap.lib lib\\ortools.lib
   OBJ_OUT = /Fo
   EXE_OUT = /Fe
   O = .obj
@@ -151,7 +149,6 @@ ifeq ($(SYSTEM),win)
 endif # SYSTEM == win
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools$L
-FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap$L
 
 .PHONY: all
 all: detect cc java dotnet test
@@ -313,9 +310,6 @@ $(OBJ_DIR)/%$O: $(CPP_EX_DIR)/%.cc | $(OBJ_DIR)
 $(BIN_DIR)/%$E: $(OBJ_DIR)/%$O
 	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$S$*$O $(OR_TOOLS_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$S$*$E
 
-$(BIN_DIR)/frequency_assignment_problem$E: $(OBJ_DIR)/frequency_assignment_problem$O
-	$(CXX) $(CXXFLAGS) $(OBJ_DIR)$Sfrequency_assignment_problem$O $(FAP_LNK) $(LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
-
 .PHONY: detect_cc
 detect_cc:
 	@echo CXX = $(CXX)
@@ -323,7 +317,6 @@ detect_cc:
 	@echo CXXFLAGS = $(CXXFLAGS)
 	@echo LDFLAGS = $(LDFLAGS)
 	@echo OR_TOOLS_LNK = $(OR_TOOLS_LNK)
-	@echo FAP_LNK = $(FAP_LNK)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

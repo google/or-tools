@@ -292,41 +292,6 @@ endif
 ##################################
 ##  CPP Tests/Examples/Samples  ##
 ##################################
-# Frequency Assignment Problem (FAP) challenge problem format library
-FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$L
-FAP_PATH = $(subst /,$S,$(FAP_LIBS))
-FAP_DEPS = \
-	$(CC_EX_DIR)/fap_model_printer.h \
-	$(CC_EX_DIR)/fap_parser.h \
-	$(CC_EX_DIR)/fap_utilities.h \
-	$(CP_DEPS) \
-	$(LP_DEPS)
-FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
-ifeq ($(PLATFORM),MACOSX)
-FAP_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fap.$L #
-endif
-faplibs: $(FAP_LIBS)
-
-FAP_OBJS = \
-	$(OBJ_DIR)/fap_model_printer.$O \
-	$(OBJ_DIR)/fap_parser.$O \
-	$(OBJ_DIR)/fap_utilities.$O
-
-$(FAP_LIBS): $(OR_TOOLS_LIBS) $(FAP_OBJS) | $(LIB_DIR)
-	$(LINK_CMD) \
- $(FAP_LDFLAGS) \
- $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fap.$L \
- $(FAP_OBJS) \
- $(OR_TOOLS_LNK) \
- $(OR_TOOLS_LDFLAGS)
-
-# FAP examples
-$(OBJ_DIR)/frequency_assignment_problem.$O: $(CC_EX_DIR)/frequency_assignment_problem.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(CC_EX_PATH)$Sfrequency_assignment_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sfrequency_assignment_problem.$O
-
-$(BIN_DIR)/frequency_assignment_problem$E: $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LIBS) | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
-
 # Generic Command
 $(OBJ_DIR)/%.$O: $(TEST_DIR)/%.cc $(OR_TOOLS_LIBS) | $(OBJ_DIR)
 	$(CCC) $(CFLAGS) -c $(TEST_PATH)$S$*.cc $(OBJ_OUT)$(OBJ_DIR)$S$*.$O
