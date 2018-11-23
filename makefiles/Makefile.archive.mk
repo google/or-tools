@@ -64,6 +64,7 @@ archive_cc: cc | $(TEMP_ARCHIVE_DIR)
 	-$(COPY) ortools$Salgorithms$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) ortools$Sgraph$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) ortools$Slinear_solver$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
+	-$(COPY) ortools$Sconstraint_solver$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) ortools$Srouting$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) ortools$Ssat$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 
@@ -79,6 +80,7 @@ archive_java: java | $(TEMP_ARCHIVE_DIR)
 	-$(COPY) ortools$Salgorithms$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 	-$(COPY) ortools$Sgraph$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 	-$(COPY) ortools$Slinear_solver$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	-$(COPY) ortools$Sconstraint_solver$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 	-$(COPY) ortools$Srouting$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 	-$(COPY) ortools$Ssat$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 
@@ -98,10 +100,13 @@ archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)
 	-$(COPY) ortools$Sgraph$Ssamples$S*.fs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) ortools$Slinear_solver$Ssamples$S*.cs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) ortools$Slinear_solver$Ssamples$S*.fs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	-$(COPY) ortools$Sconstraint_solver$Ssamples$S*.cs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	-$(COPY) ortools$Sconstraint_solver$Ssamples$S*.fs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) ortools$Srouting$Ssamples$S*.cs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) ortools$Srouting$Ssamples$S*.fs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) ortools$Ssat$Ssamples$S*.cs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) ortools$Ssat$Ssamples$S*.fs*  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
+	-$(SED) -i -e 's/..\/..\/..\/packages/..\/..\/packages/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet$S*.*proj
 
 $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	-$(DELREC) $(TEMP_FZ_DIR)$S*

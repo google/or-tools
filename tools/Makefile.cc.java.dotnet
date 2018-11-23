@@ -237,7 +237,6 @@ $(BIN_DIR)/magic_square_sat$E \
 $(BIN_DIR)/max_flow$E \
 $(BIN_DIR)/min_cost_flow$E \
 $(BIN_DIR)/mps_driver$E \
-$(BIN_DIR)/multidim_knapsack$E \
 $(BIN_DIR)/network_routing$E \
 $(BIN_DIR)/nqueens$E \
 $(BIN_DIR)/random_tsp$E \
@@ -465,13 +464,22 @@ dotnet test_dotnet:
 	exit 127
 else
 dotnet:
+	$(MAKE) run SOURCE=examples/dotnet/3_jugs_regular.cs
+# Linear Solver
+	$(MAKE) run SOURCE=examples/dotnet/SimpleLpProgram.cs
+	$(MAKE) run SOURCE=examples/dotnet/SimpleMipProgram.cs
+# Sat
+	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/JobshopFt06Sat.cs
+	$(MAKE) run SOURCE=examples/dotnet/GateSchedulingSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/TaskSchedulingSat.cs
+# Misc
 	$(MAKE) run SOURCE=examples/dotnet/cslinearprogramming.cs
 	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming.cs
 	$(MAKE) run SOURCE=examples/dotnet/tsp.cs
 	$(MAKE) run SOURCE=examples/dotnet/vrp.cs
 	$(MAKE) run SOURCE=examples/dotnet/assignment.cs
-	$(MAKE) run SOURCE=examples/dotnet/nurses_sat.cs
-	$(MAKE) run SOURCE=examples/dotnet/3_jugs_regular.cs
 	$(MAKE) run SOURCE=examples/dotnet/alldifferent_except_0.cs
 	$(MAKE) run SOURCE=examples/dotnet/all_interval.cs
 	$(MAKE) run SOURCE=examples/dotnet/a_puzzle.cs
@@ -493,7 +501,6 @@ dotnet:
 	$(MAKE) run SOURCE=examples/dotnet/crypto.cs
 	$(MAKE) run SOURCE=examples/dotnet/cscvrptw.cs
 	$(MAKE) run SOURCE=examples/dotnet/csflow.cs
-	$(MAKE) run SOURCE=examples/dotnet/csjobshop.cs
 	$(MAKE) run SOURCE=examples/dotnet/csknapsack.cs
 	$(MAKE) run SOURCE=examples/dotnet/csls_api.cs
 	$(MAKE) run SOURCE=examples/dotnet/csrabbitspheasants.cs
@@ -511,11 +518,9 @@ dotnet:
 	$(MAKE) run SOURCE=examples/dotnet/furniture_moving.cs
 	$(MAKE) run SOURCE=examples/dotnet/furniture_moving_intervals.cs
 	$(MAKE) run SOURCE=examples/dotnet/futoshiki.cs
-	$(MAKE) run SOURCE=examples/dotnet/gate_scheduling_sat.cs
 	$(MAKE) run SOURCE=examples/dotnet/golomb_ruler.cs
 	$(MAKE) run SOURCE=examples/dotnet/grocery.cs
 	$(MAKE) run SOURCE=examples/dotnet/hidato_table.cs
-	$(MAKE) run SOURCE=examples/dotnet/jobshop_ft06_sat.cs
 	$(MAKE) run SOURCE=examples/dotnet/just_forgotten.cs
 	$(MAKE) run SOURCE=examples/dotnet/kakuro.cs
 	$(MAKE) run SOURCE=examples/dotnet/kenken2.cs
@@ -567,14 +572,11 @@ dotnet:
 	$(MAKE) run SOURCE=examples/dotnet/set_partition.cs
 	$(MAKE) run SOURCE=examples/dotnet/sicherman_dice.cs
 	$(MAKE) run SOURCE=examples/dotnet/ski_assignment.cs
-	$(MAKE) run SOURCE=examples/dotnet/slow_scheduling.cs
 	$(MAKE) run SOURCE=examples/dotnet/stable_marriage.cs
 	$(MAKE) run SOURCE=examples/dotnet/strimko2.cs
 	$(MAKE) run SOURCE=examples/dotnet/subset_sum.cs
 	$(MAKE) run SOURCE=examples/dotnet/sudoku.cs
 	$(MAKE) run SOURCE=examples/dotnet/survo_puzzle.cs
-	$(MAKE) run SOURCE=examples/dotnet/TaskScheduling.cs
-	$(MAKE) run SOURCE=examples/dotnet/techtalk_scheduling.cs
 	$(MAKE) run SOURCE=examples/dotnet/to_num.cs
 	$(MAKE) run SOURCE=examples/dotnet/traffic_lights.cs
 	$(MAKE) run SOURCE=examples/dotnet/volsay.cs
