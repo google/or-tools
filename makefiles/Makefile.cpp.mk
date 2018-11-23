@@ -427,9 +427,6 @@ test_cc_cpp: \
  SOURCE=examples/cpp/golomb.cc \
  ARGS="--size=5"
 	$(MAKE) run \
- SOURCE=examples/cpp/jobshop_earlytardy.cc \
- ARGS="--machine_count=6 --job_count=6"
-	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_sat.cc \
  ARGS="--input=examples/data/jobshop/ft06"
 	$(MAKE) run \

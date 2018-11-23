@@ -71,9 +71,6 @@ foreach(TEST
     #frequency_assignment_problem
     golomb
     integer_programming
-    #jobshop
-    #jobshop_earlytardy
-    #jobshop_ls
     #jobshop_sat
     knapsack
     linear_assignment_api

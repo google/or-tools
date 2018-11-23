@@ -30,6 +30,8 @@ class JsspParser {
     FLEXIBLE,
     SDST,
     TARDINESS,
+    PSS,
+    EARLY_TARDY,
   };
 
   enum ParserState {
@@ -44,17 +46,9 @@ class JsspParser {
     JOBS_READ,
     SSD_READ,
     MACHINE_READ,
-    ERROR,
+    PARSING_ERROR,
     DONE
   };
-
-  JsspParser()
-      : declared_machine_count_(-1),
-        declared_job_count_(-1),
-        current_job_index_(0),
-        current_machine_index_(0),
-        problem_type_(UNDEFINED),
-        parser_state_(START) {}
 
   ~JsspParser() {}
 
@@ -71,17 +65,20 @@ class JsspParser {
   void ProcessFlexibleLine(const std::string& line);
   void ProcessSdstLine(const std::string& line);
   void ProcessTardinessLine(const std::string& line);
+  void ProcessPssLine(const std::string& line);
+  void ProcessEarlyTardyLine(const std::string& line);
 
   void SetJobs(int job_count);
   void SetMachines(int machine_count);
 
   JsspInputProblem problem_;
-  int declared_machine_count_;
-  int declared_job_count_;
-  int current_job_index_;
-  int current_machine_index_;
-  ProblemType problem_type_;
-  ParserState parser_state_;
+  int declared_machine_count_ = -1;
+  int declared_job_count_ = -1;
+  int current_job_index_ = 0;
+  int current_machine_index_ = 0;
+  int transition_index_ = 0;
+  ProblemType problem_type_ = UNDEFINED;
+  ParserState parser_state_ = START;
 };
 
 }  // namespace jssp

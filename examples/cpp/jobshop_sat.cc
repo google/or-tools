@@ -228,8 +228,6 @@ void Solve(const JsspInputProblem& problem) {
       cp_model.AddLessOrEqual(previous_end, makespan);
     }
 
-    // Earliness costs are not supported.
-    CHECK_EQ(0L, job.earliness_cost_per_time_unit());
     const int64 lateness_penalty = job.lateness_cost_per_time_unit();
     // Lateness cost.
     if (lateness_penalty != 0L) {
@@ -247,6 +245,22 @@ void Solve(const JsspInputProblem& problem) {
                                 {cp_model.NewConstant(0), shifted_var});
         objective_vars.push_back(lateness_var);
         objective_coeffs.push_back(lateness_penalty);
+      }
+    }
+    const int64 earliness_penalty = job.earliness_cost_per_time_unit();
+    // Earliness cost.
+    if (earliness_penalty != 0L) {
+      const int64 due_date = job.early_due_date();
+      if (due_date > 0) {
+        const IntVar shifted_var =
+            cp_model.NewIntVar(Domain(due_date - horizon, due_date));
+        cp_model.AddEquality(LinearExpr::Sum({shifted_var, previous_end}),
+                             due_date);
+        const IntVar earliness_var = cp_model.NewIntVar(all_horizon);
+        cp_model.AddMaxEquality(earliness_var,
+                                {cp_model.NewConstant(0), shifted_var});
+        objective_vars.push_back(earliness_var);
+        objective_coeffs.push_back(earliness_penalty);
       }
     }
   }
@@ -330,6 +344,32 @@ void Solve(const JsspInputProblem& problem) {
 
   const CpSolverResponse response = SolveWithModel(cp_model, &model);
   LOG(INFO) << CpSolverResponseStats(response);
+
+  // Check cost, recompute it from scratch.
+  int64 final_cost = 0;
+  if (problem.makespan_cost_per_time_unit() != 0) {
+    int64 makespan = 0;
+    for (IntVar v : job_ends) {
+      makespan = std::max(makespan, SolutionIntegerValue(response, v));
+    }
+    final_cost += makespan * problem.makespan_cost_per_time_unit();
+  }
+
+  for (int i = 0; i < job_ends.size(); ++i) {
+    const int64 early_due_date = problem.jobs(i).early_due_date();
+    const int64 late_due_date = problem.jobs(i).late_due_date();
+    const int64 early_penalty = problem.jobs(i).earliness_cost_per_time_unit();
+    const int64 late_penalty = problem.jobs(i).lateness_cost_per_time_unit();
+    const int64 end = SolutionIntegerValue(response, job_ends[i]);
+    if (end < early_due_date && early_penalty != 0) {
+      final_cost += (early_due_date - end) * early_penalty;
+    }
+    if (end > late_due_date && late_penalty != 0) {
+      final_cost += (end - late_due_date) * late_penalty;
+    }
+  }
+  // TODO(user): Support alternative cost in check.
+  CHECK_EQ(response.objective_value(), final_cost);
 }
 
 }  // namespace sat
