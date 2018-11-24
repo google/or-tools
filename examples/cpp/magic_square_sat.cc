@@ -69,7 +69,11 @@ void MagicSquare(int size) {
   builder.AddEquality(LinearExpr::Sum(diag1), sum);
   builder.AddEquality(LinearExpr::Sum(diag2), sum);
   
-  const CpSolverResponse response = Solve(builder);
+  Model model;
+  model.Add(NewSatParameters(FLAGS_params));
+
+  const CpSolverResponse response = SolveWithModel(builder, &model);
+
   if (response.status() == CpSolverStatus::FEASIBLE) {
     for (int n = 0; n < size; ++n) {
       std::string output;
