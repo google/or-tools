@@ -14,7 +14,7 @@ endif()
 get_filename_component(PARENT_SOURCE_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
 
 foreach(EXECUTABLE
-  costas_array
+  costas_array_sat
   cvrp_disjoint_tw
   cvrptw
   cvrptw_with_breaks
@@ -57,7 +57,7 @@ endforeach()
 
 
 foreach(TEST
-    costas_array
+    costas_array_sat
     cvrp_disjoint_tw
     cvrptw
     #cvrptw_with_breaks # Too long
@@ -76,7 +76,6 @@ foreach(TEST
     linear_programming
     linear_solver_protocol_buffers
     magic_square_sat
-    #model_util
     mps_driver
     #network_routing
     nqueens
@@ -84,7 +83,7 @@ foreach(TEST
     #rcpsp_sat
     #shift_minimization_sat
     #solve
-    #sports_scheduling # Too long
+    #sports_scheduling_sat # Too long
     #strawberry_fields_with_column_generation # Too long
     tsp
     vrp

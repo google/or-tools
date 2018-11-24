@@ -399,7 +399,7 @@ test_cc_contrib: ;
 
 .PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
 test_cc_cpp: \
- rcc_costas_array \
+ rcc_costas_array_sat \
  rcc_cvrp_disjoint_tw \
  rcc_cvrptw \
  rcc_cvrptw_with_breaks \
