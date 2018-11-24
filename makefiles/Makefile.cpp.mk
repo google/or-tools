@@ -421,7 +421,7 @@ test_cc_cpp: \
  SOURCE=examples/cpp/dimacs_assignment.cc \
  ARGS=examples/data/dimacs/assignment/small.asn
 	$(MAKE) run \
- SOURCE=examples/cpp/golomb.cc \
+ SOURCE=examples/cpp/golomb_sat.cc \
  ARGS="--size=5"
 	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_sat.cc \

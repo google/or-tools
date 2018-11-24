@@ -25,7 +25,7 @@ foreach(EXECUTABLE
   dobble_ls
   flow_api
   frequency_assignment_problem
-  golomb
+  golomb_sat
   integer_programming
   jobshop_sat
   knapsack
@@ -68,7 +68,7 @@ foreach(TEST
     #dobble_ls # Too long
     flow_api
     #frequency_assignment_problem
-    golomb
+    golomb_sat
     integer_programming
     #jobshop_sat
     knapsack
