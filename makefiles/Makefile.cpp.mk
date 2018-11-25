@@ -427,7 +427,7 @@ test_cc_cpp: \
  SOURCE=examples/cpp/jobshop_sat.cc \
  ARGS="--input=examples/data/jobshop/ft06"
 	$(MAKE) run \
- SOURCE=examples/cpp/network_routing.cc \
+ SOURCE=examples/cpp/network_routing_sat.cc \
  ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
 	$(MAKE) run \
  SOURCE=examples/cpp/sports_scheduling_sat.cc \

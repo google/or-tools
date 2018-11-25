@@ -36,7 +36,7 @@ foreach(EXECUTABLE
   max_flow
   min_cost_flow
   mps_driver
-  network_routing
+  network_routing_sat
   nqueens
   random_tsp
   pdptw
@@ -77,7 +77,7 @@ foreach(TEST
     linear_solver_protocol_buffers
     magic_square_sat
     mps_driver
-    #network_routing
+    #network_routing_sat
     nqueens
     #pdptw
     #rcpsp_sat
