@@ -41,12 +41,6 @@ template <typename GraphType>
 void PrintDimacsAssignmentProblem(
     const LinearSumAssignment<GraphType>& assignment,
     const TailArrayManager<GraphType>& tail_array_manager,
-    const std::string& output_filename);
-
-template <typename GraphType>
-void PrintDimacsAssignmentProblem(
-    const LinearSumAssignment<GraphType>& assignment,
-    const TailArrayManager<GraphType>& tail_array_manager,
     const std::string& output_filename) {
   File* output;
   CHECK_OK(file::Open(output_filename, "w", &output, file::Defaults()));

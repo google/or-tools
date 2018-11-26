@@ -1444,9 +1444,8 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
 
   // Check that the table is not complete or just here to exclude a few tuples.
   double prod = 1.0;
-  const double kMaxProductOfSize = 10000000.0;
   for (int j = 0; j < num_vars; ++j) prod *= new_domains[j].size();
-  if (prod < kMaxProductOfSize && prod == new_tuples.size()) {
+  if (prod == new_tuples.size()) {
     context->UpdateRuleStats("table: all tuples!");
     return RemoveConstraint(ct, context);
   }
@@ -1454,7 +1453,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   // Convert to the negated table if we gain a lot of entries by doing so.
   // Note however that currently the negated table do not propagate as much as
   // it could.
-  if (prod < kMaxProductOfSize && prod < new_tuples.size() > 0.7 * prod) {
+  if (new_tuples.size() > 0.7 * prod) {
     // Enumerate all tuples.
     std::vector<std::vector<int64>> var_to_values(num_vars);
     for (int j = 0; j < num_vars; ++j) {
