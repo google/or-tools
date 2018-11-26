@@ -215,7 +215,7 @@ $(BIN_DIR)/nurses_cp$E \
 $(BIN_DIR)/minimal_jobshop_cp$E \
 \
 $(BIN_DIR)/constraint_programming_cp$E \
-$(BIN_DIR)/costas_array$E \
+$(BIN_DIR)/costas_array_sat$E \
 $(BIN_DIR)/cvrp_disjoint_tw$E \
 $(BIN_DIR)/cvrptw$E \
 $(BIN_DIR)/cvrptw_with_breaks$E \
@@ -226,7 +226,7 @@ $(BIN_DIR)/dimacs_assignment$E \
 $(BIN_DIR)/dobble_ls$E \
 $(BIN_DIR)/flow_api$E \
 $(BIN_DIR)/frequency_assignment_problem$E \
-$(BIN_DIR)/golomb$E \
+$(BIN_DIR)/golomb_sat$E \
 $(BIN_DIR)/integer_programming$E \
 $(BIN_DIR)/jobshop_sat$E \
 $(BIN_DIR)/knapsack$E \
