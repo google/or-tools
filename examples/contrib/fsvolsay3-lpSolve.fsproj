@@ -14,6 +14,6 @@
 
   <ItemGroup>
     <Compile Include="fsvolsay3-lpSolve.fs" />
-    <PackageReference Include="Google.OrTools.FSharp" Version="6.9.*" />
+    <PackageReference Include="Google.OrTools.FSharp" Version="6.10.*" />
   </ItemGroup>
 </Project>
