@@ -328,14 +328,19 @@ rcc_%: $(BIN_DIR)/%$E FORCE
 
 .PHONY: test_cc_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
 test_cc_algorithms_samples: \
+ rcc_simple_knapsack_program
 
 .PHONY: test_cc_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)
 test_cc_graph_samples: \
+ rcc_simple_max_flow_program \
+ rcc_simple_min_cost_flow_program
 
 .PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
 test_cc_linear_solver_samples: \
  rcc_simple_lp_program \
- rcc_simple_mip_program
+ rcc_simple_mip_program \
+ rcc_linear_programming_example \
+ rcc_integer_programming_example
 
 .PHONY: test_cc_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
 test_cc_constraint_solver_samples: \

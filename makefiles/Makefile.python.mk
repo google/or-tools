@@ -493,14 +493,19 @@ rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 
 .PHONY: test_python_algorithms_samples # Run all Python Algorithms Samples (located in ortools/algorithms/samples)
 test_python_algorithms_samples: \
+ rpy_simple_knapsack_program
 
 .PHONY: test_python_graph_samples # Run all Python Graph Samples (located in ortools/graph/samples)
 test_python_graph_samples: \
+ rpy_simple_max_flow_program \
+ rpy_simple_min_cost_flow_program
 
 .PHONY: test_python_linear_solver_samples # Run all Python LP Samples (located in ortools/linear_solver/samples)
 test_python_linear_solver_samples: \
  rpy_simple_lp_program \
- rpy_simple_mip_program
+ rpy_simple_mip_program \
+ rpy_linear_programming_example \
+ rpy_integer_programming_example
 
 .PHONY: test_python_sat_samples # Run all Python Sat Samples (located in ortools/sat/samples)
 test_python_sat_samples: \

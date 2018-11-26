@@ -500,6 +500,8 @@ test_dotnet_algorithms_samples: ;
 
 .PHONY: test_dotnet_graph_samples # Build and Run all .Net LP Samples (located in ortools/graph/samples)
 test_dotnet_graph_samples: ;
+	$(MAKE) run SOURCE=ortools/graph/samples/SimpleMaxFlowProgram.cs
+	$(MAKE) run SOURCE=ortools/graph/samples/SimpleMinCostFlowProgram.cs
 
 .PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
 test_dotnet_linear_solver_samples:
