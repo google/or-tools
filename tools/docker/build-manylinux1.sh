@@ -56,7 +56,7 @@ function export_manylinux_wheel {
     # We need to force this target, otherwise the protobuf stub will be missing
     # (for the makefile, it exists even if previously generated for another
     # platform)
-    make -B install_python_modules  # regenerates Makefile.local
+    rm -f Makefile.local  # regenerates Makefile.local
     # We need to clean first to avoid to use previous python swig object file
     make clean_python
     make python
@@ -137,7 +137,7 @@ TESTS=(
 # Main
 # Force the use of wheel 0.31.1 since 0.32 is broken
 # cf pypa/auditwheel#102
-/opt/_internal/cpython-3.6.6/bin/python -m pip install wheel==0.31.1
+#/opt/_internal/cpython-3.6.6/bin/python -m pip install wheel==0.31.1
 
 mkdir -p "${BUILD_ROOT}"
 mkdir -p "${EXPORT_ROOT}"
