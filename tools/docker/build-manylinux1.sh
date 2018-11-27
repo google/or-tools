@@ -115,14 +115,14 @@ read -r -a SKIP <<< "$SKIP_PLATFORMS"
 # Python scripts to be used as tests for the installed wheel. This list of files
 # has been taken from the 'test_python' make target.
 TESTS=(
-    "${SRC_ROOT}/examples/python/hidato_table.py"
+    "${SRC_ROOT}/ortools/algorithms/samples/simple_knapsack_program.py"
+    "${SRC_ROOT}/ortools/graph/samples/simple_max_flow_program.py"
+    "${SRC_ROOT}/ortools/graph/samples/simple_min_cost_flow_program.py"
+    "${SRC_ROOT}/ortools/linear_solver/samples/simple_lp_program.py"
+    "${SRC_ROOT}/ortools/linear_solver/samples/simple_mip_program.py"
+    "${SRC_ROOT}/ortools/sat/samples/simple_sat_program.py"
     "${SRC_ROOT}/examples/python/tsp.py"
-    "${SRC_ROOT}/examples/python/pyflow_example.py"
-    "${SRC_ROOT}/examples/python/knapsack.py"
-    "${SRC_ROOT}/examples/python/linear_programming.py"
-    "${SRC_ROOT}/examples/python/integer_programming.py"
-    "${SRC_ROOT}/examples/tests/test_cp_api.py"
-    "${SRC_ROOT}/examples/tests/test_lp_api.py"
+    "${SRC_ROOT}/examples/python/vrp.py"
 )
 
 (
