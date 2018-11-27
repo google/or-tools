@@ -257,15 +257,15 @@ cc test_cc:
 else
 cc: $(EXE)
 test_cc: detect_cc
+	$(MAKE) run SOURCE=examples/cpp/simple_knapsack_program.cc
+	$(MAKE) run SOURCE=examples/cpp/simple_max_flow_program.cc
+	$(MAKE) run SOURCE=examples/cpp/simple_min_cost_flow_program.cc
 	$(MAKE) run SOURCE=examples/cpp/simple_lp_program.cc
 	$(MAKE) run SOURCE=examples/cpp/simple_mip_program.cc
 	$(MAKE) run SOURCE=examples/cpp/simple_sat_program.cc
 	$(MAKE) run SOURCE=examples/cpp/simple_ls_program.cc
 	$(MAKE) run SOURCE=examples/cpp/tsp.cc
 	$(MAKE) run SOURCE=examples/cpp/vrp.cc
-	$(MAKE) run SOURCE=examples/cpp/knapsack.cc
-	$(MAKE) run SOURCE=examples/cpp/max_flow.cc
-	$(MAKE) run SOURCE=examples/cpp/min_cost_flow.cc
 	$(MAKE) run SOURCE=examples/cpp/nurses_cp.cc
 	$(MAKE) run SOURCE=examples/cpp/minimal_jobshop_cp.cc
 
