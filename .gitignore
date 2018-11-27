@@ -68,3 +68,6 @@ examples/contrib/bin
 examples/contrib/obj
 examples/dotnet/bin
 examples/dotnet/obj
+
+# Release key
+tools/docker/or-tools.snk
