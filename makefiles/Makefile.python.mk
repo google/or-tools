@@ -197,14 +197,6 @@ $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: \
 	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
 
-$(GEN_DIR)/ortools/constraint_solver/model_pb2.py: \
- $(SRC_DIR)/ortools/constraint_solver/model.proto \
- $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
- $(PROTOBUF_PYTHON_DESC) \
- | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
- $(SRC_DIR)$Sortools$Sconstraint_solver$Smodel.proto
-
 $(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/assignment.proto \
  $(PROTOBUF_PYTHON_DESC) \
@@ -243,13 +235,11 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
  $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h \
  $(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h \
  $(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py \
- $(GEN_DIR)/ortools/constraint_solver/model_pb2.py \
  $(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py \
  $(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py \
  $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py \
  $(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
- $(GEN_DIR)/ortools/constraint_solver/model.pb.h \
  $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
  $(CP_LIB_OBJS) \
  $(PROTOBUF_PYTHON_DESC) \

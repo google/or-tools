@@ -53,93 +53,96 @@ parser.add_argument(
 
 
 def Distance(manager, i, j):
-  """Sample function."""
-  # Put your distance code here.
-  node_i = manager.IndexToNode(i)
-  node_j = manager.IndexToNode(j)
-  return node_i + node_j
+    """Sample function."""
+    # Put your distance code here.
+    node_i = manager.IndexToNode(i)
+    node_j = manager.IndexToNode(j)
+    return node_i + node_j
 
 
 class RandomMatrix(object):
-  """Random matrix."""
+    """Random matrix."""
 
-  def __init__(self, size, seed):
-    """Initialize random matrix."""
+    def __init__(self, size, seed):
+        """Initialize random matrix."""
 
-    rand = random.Random()
-    rand.seed(seed)
-    distance_max = 100
-    self.matrix = {}
-    for from_node in range(size):
-      self.matrix[from_node] = {}
-      for to_node in range(size):
-        if from_node == to_node:
-          self.matrix[from_node][to_node] = 0
-        else:
-          self.matrix[from_node][to_node] = rand.randrange(distance_max)
+        rand = random.Random()
+        rand.seed(seed)
+        distance_max = 100
+        self.matrix = {}
+        for from_node in range(size):
+            self.matrix[from_node] = {}
+            for to_node in range(size):
+                if from_node == to_node:
+                    self.matrix[from_node][to_node] = 0
+                else:
+                    self.matrix[from_node][to_node] = rand.randrange(
+                        distance_max)
 
-  def Distance(self, manager, from_index, to_index):
-    return self.matrix[manager.IndexToNode(from_index)][manager.IndexToNode(
-        to_index)]
+    def Distance(self, manager, from_index, to_index):
+        return self.matrix[manager.IndexToNode(from_index)][
+            manager.IndexToNode(to_index)]
 
 
 def main(args):
-  # Create routing model
-  if args.tsp_size > 0:
-    # TSP of size args.tsp_size
-    # Second argument = 1 to build a single tour (it's a TSP).
-    # Nodes are indexed from 0 to args_tsp_size - 1, by default the start of
-    # the route is node 0.
-    manager = pywrapcp.RoutingIndexManager(args.tsp_size, 1, 0)
-    routing = pywrapcp.RoutingModel(manager)
-    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-    # Setting first solution heuristic (cheapest addition).
-    search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+    # Create routing model
+    if args.tsp_size > 0:
+        # TSP of size args.tsp_size
+        # Second argument = 1 to build a single tour (it's a TSP).
+        # Nodes are indexed from 0 to args_tsp_size - 1, by default the start of
+        # the route is node 0.
+        manager = pywrapcp.RoutingIndexManager(args.tsp_size, 1, 0)
+        routing = pywrapcp.RoutingModel(manager)
+        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        # Setting first solution heuristic (cheapest addition).
+        search_parameters.first_solution_strategy = (
+            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
 
-    # Setting the cost function.
-    # Put a callback to the distance accessor here. The callback takes two
-    # arguments (the from and to node indices) and returns the distance between
-    # these indices.
-    cost = 0
-    if args.tsp_use_random_matrix:
-      matrix = RandomMatrix(args.tsp_size, args.tsp_random_seed)
-      cost = routing.RegisterTransitCallback(partial(matrix.Distance, manager))
-    else:
-      cost = routing.RegisterTransitCallback(partial(Distance, manager))
-    routing.SetArcCostEvaluatorOfAllVehicles(cost)
-    # Forbid node connections (randomly).
-    rand = random.Random()
-    rand.seed(args.tsp_random_seed)
-    forbidden_connections = 0
-    while forbidden_connections < args.tsp_random_forbidden_connections:
-      from_node = rand.randrange(args.tsp_size - 1)
-      to_node = rand.randrange(args.tsp_size - 1) + 1
-      if routing.NextVar(from_node).Contains(to_node):
-        print('Forbidding connection ' + str(from_node) + ' -> ' + str(to_node))
-        routing.NextVar(from_node).RemoveValue(to_node)
-        forbidden_connections += 1
+        # Setting the cost function.
+        # Put a callback to the distance accessor here. The callback takes two
+        # arguments (the from and to node indices) and returns the distance between
+        # these indices.
+        cost = 0
+        if args.tsp_use_random_matrix:
+            matrix = RandomMatrix(args.tsp_size, args.tsp_random_seed)
+            cost = routing.RegisterTransitCallback(
+                partial(matrix.Distance, manager))
+        else:
+            cost = routing.RegisterTransitCallback(partial(Distance, manager))
+        routing.SetArcCostEvaluatorOfAllVehicles(cost)
+        # Forbid node connections (randomly).
+        rand = random.Random()
+        rand.seed(args.tsp_random_seed)
+        forbidden_connections = 0
+        while forbidden_connections < args.tsp_random_forbidden_connections:
+            from_node = rand.randrange(args.tsp_size - 1)
+            to_node = rand.randrange(args.tsp_size - 1) + 1
+            if routing.NextVar(from_node).Contains(to_node):
+                print('Forbidding connection ' + str(from_node) + ' -> ' +
+                      str(to_node))
+                routing.NextVar(from_node).RemoveValue(to_node)
+                forbidden_connections += 1
 
-    # Solve, returns a solution if any.
-    assignment = routing.Solve()
-    if assignment:
-      # Solution cost.
-      print(assignment.ObjectiveValue())
-      # Inspect solution.
-      # Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
-      route_number = 0
-      node = routing.Start(route_number)
-      route = ''
-      while not routing.IsEnd(node):
-        route += str(node) + ' -> '
-        node = assignment.Value(routing.NextVar(node))
-      route += '0'
-      print(route)
+        # Solve, returns a solution if any.
+        assignment = routing.Solve()
+        if assignment:
+            # Solution cost.
+            print(assignment.ObjectiveValue())
+            # Inspect solution.
+            # Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
+            route_number = 0
+            node = routing.Start(route_number)
+            route = ''
+            while not routing.IsEnd(node):
+                route += str(node) + ' -> '
+                node = assignment.Value(routing.NextVar(node))
+            route += '0'
+            print(route)
+        else:
+            print('No solution found.')
     else:
-      print('No solution found.')
-  else:
-    print('Specify an instance greater than 0.')
+        print('Specify an instance greater than 0.')
 
 
 if __name__ == '__main__':
-  main(parser.parse_args())
+    main(parser.parse_args())

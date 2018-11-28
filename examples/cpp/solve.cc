@@ -35,7 +35,7 @@
 DEFINE_string(input, "", "REQUIRED: Input file name.");
 DEFINE_string(solver, "glop",
               "The solver to use: bop, cbc, clp, glop, glpk_lp, glpk_mip, "
-              "gurobi_lp, gurobi_mip, scip, knapsack, sat.");
+              "gurobi_lp, gurobi_mip, scip, knapsack.");
 
 DEFINE_string(params_file, "",
               "Solver specific parameters file. "

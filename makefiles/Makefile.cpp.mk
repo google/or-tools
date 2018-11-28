@@ -408,12 +408,10 @@ check_cc_pimpl: \
 
 .PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
 test_cc_tests: \
- rcc_ac4r_table_test \
  rcc_boolean_test \
  rcc_bug_fz1 \
  rcc_cpp11_test \
  rcc_forbidden_intervals_test \
- rcc_gcc_test \
  rcc_issue57 \
  rcc_min_max_test \
  rcc_visitor_test

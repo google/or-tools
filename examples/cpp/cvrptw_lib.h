@@ -19,9 +19,9 @@
 #include <memory>
 #include <set>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/random.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/routing.h"
 
 namespace operations_research {
@@ -261,7 +261,7 @@ void DisplayPlan(
     const operations_research::RoutingDimension& capacity_dimension,
     const operations_research::RoutingDimension& time_dimension) {
   // Display plan cost.
-  std::string plan_output = StringPrintf("Cost %lld\n", plan.ObjectiveValue());
+  std::string plan_output = absl::StrFormat("Cost %d\n", plan.ObjectiveValue());
 
   // Display dropped orders.
   std::string dropped;
@@ -269,9 +269,9 @@ void DisplayPlan(
     if (routing.IsStart(order) || routing.IsEnd(order)) continue;
     if (plan.Value(routing.NextVar(order)) == order) {
       if (dropped.empty()) {
-        StringAppendF(&dropped, " %d", routing.IndexToNode(order).value());
+        absl::StringAppendFormat(&dropped, " %d", routing.IndexToNode(order).value());
       } else {
-        StringAppendF(&dropped, ", %d", routing.IndexToNode(order).value());
+        absl::StringAppendFormat(&dropped, ", %d", routing.IndexToNode(order).value());
       }
     }
   }
@@ -305,7 +305,7 @@ void DisplayPlan(
   for (int route_number = 0; route_number < routing.vehicles();
        ++route_number) {
     int64 order = routing.Start(route_number);
-    StringAppendF(&plan_output, "Route %d: ", route_number);
+    absl::StringAppendFormat(&plan_output, "Route %d: ", route_number);
     if (routing.IsEnd(plan.Value(routing.NextVar(order)))) {
       plan_output += "Empty\n";
     } else {
@@ -317,14 +317,14 @@ void DisplayPlan(
         operations_research::IntVar* const slack_var =
             routing.IsEnd(order) ? nullptr : time_dimension.SlackVar(order);
         if (slack_var != nullptr && plan.Contains(slack_var)) {
-          StringAppendF(&plan_output,
-                        "%lld Load(%lld) Time(%lld, %lld) Slack(%lld, %lld)",
+          absl::StringAppendFormat(&plan_output,
+                        "%d Load(%d) Time(%d, %d) Slack(%d, %d)",
                         routing.IndexToNode(order).value(),
                         plan.Value(load_var), plan.Min(time_var),
                         plan.Max(time_var), plan.Min(slack_var),
                         plan.Max(slack_var));
         } else {
-          StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld)",
+          absl::StringAppendFormat(&plan_output, "%d Load(%d) Time(%d, %d)",
                         routing.IndexToNode(order).value(),
                         plan.Value(load_var), plan.Min(time_var),
                         plan.Max(time_var));

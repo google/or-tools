@@ -27,7 +27,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def LiteralSample():
+def LiteralSampleSat():
   model = cp_model.CpModel()
   x = model.NewBoolVar('x')
   not_x = x.Not()
@@ -35,7 +35,7 @@ def LiteralSample():
   print(not_x)
 
 
-LiteralSample()
+LiteralSampleSat()
 ```
 
 ### C++ code
@@ -46,7 +46,7 @@ LiteralSample()
 namespace operations_research {
 namespace sat {
 
-void LiteralSample() {
+void LiteralSampleSat() {
   CpModelBuilder cp_model;
 
   const BoolVar x = cp_model.NewBoolVar().WithName("x");
@@ -58,7 +58,7 @@ void LiteralSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::LiteralSample();
+  operations_research::sat::LiteralSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -71,7 +71,8 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
-public class LiteralSample {
+/** Code sample to demonstrate Boolean variable and literals. */
+public class LiteralSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -90,17 +91,13 @@ public class LiteralSample {
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class LiteralSampleSat
 {
-  static void LiteralSample()
+  static void Main()
   {
     CpModel model = new CpModel();
     IntVar x = model.NewBoolVar("x");
     ILiteral not_x = x.Not();
-  }
-
-  static void Main() {
-    LiteralSample();
   }
 }
 ```
@@ -129,7 +126,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def BoolOrSample():
+def BoolOrSampleSat():
   model = cp_model.CpModel()
 
   x = model.NewBoolVar('x')
@@ -138,7 +135,7 @@ def BoolOrSample():
   model.AddBoolOr([x, y.Not()])
 
 
-BoolOrSample()
+BoolOrSampleSat()
 ```
 
 ### C++ code
@@ -149,7 +146,7 @@ BoolOrSample()
 namespace operations_research {
 namespace sat {
 
-void BoolOrSample() {
+void BoolOrSampleSat() {
   CpModelBuilder cp_model;
 
   const BoolVar x = cp_model.NewBoolVar();
@@ -161,7 +158,7 @@ void BoolOrSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::BoolOrSample();
+  operations_research::sat::BoolOrSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -174,7 +171,8 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
-public class BoolOrSample {
+/** Code sample to demonstrates a simple Boolean constraint. */
+public class BoolOrSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -193,19 +191,16 @@ public class BoolOrSample {
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class BoolOrSampleSat
 {
-  static void BoolOrSample()
-  {
-    CpModel model = new CpModel();
-    IntVar x = model.NewBoolVar("x");
-    IntVar y = model.NewBoolVar("y");
-    model.AddBoolOr(new ILiteral[] { x, y.Not() });
-  }
-
   static void Main()
   {
-    BoolOrSample();
+    CpModel model = new CpModel();
+
+    IntVar x = model.NewBoolVar("x");
+    IntVar y = model.NewBoolVar("y");
+
+    model.AddBoolOr(new ILiteral[] { x, y.Not() });
   }
 }
 ```
@@ -239,7 +234,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def ReifiedSample():
+def ReifiedSampleSat():
   """Showcase creating a reified constraint."""
   model = cp_model.CpModel()
 
@@ -259,7 +254,7 @@ def ReifiedSample():
   model.AddBoolOr([b.Not(), y.Not()])
 
 
-ReifiedSample()
+ReifiedSampleSat()
 ```
 
 ### C++ code
@@ -270,7 +265,7 @@ ReifiedSample()
 namespace operations_research {
 namespace sat {
 
-void ReifiedSample() {
+void ReifiedSampleSat() {
   CpModelBuilder cp_model;
 
   const BoolVar x = cp_model.NewBoolVar();
@@ -293,7 +288,7 @@ void ReifiedSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::ReifiedSample();
+  operations_research::sat::ReifiedSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -316,7 +311,7 @@ import com.google.ortools.sat.Literal;
  * <p>The SAT solver offers half-reification. To implement full reification, two half-reified
  * constraints must be used.
  */
-public class ReifiedSample {
+public class ReifiedSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -347,9 +342,9 @@ public class ReifiedSample {
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class ReifiedSampleSat
 {
-  static void ReifiedSample()
+  static void Main()
   {
     CpModel model = new CpModel();
 
@@ -367,10 +362,6 @@ public class CodeSamplesSat
     // Third version using bool or.
     model.AddBoolOr(new ILiteral[] {b.Not(), x});
     model.AddBoolOr(new ILiteral[] {b.Not(), y.Not()});
-  }
-
-  static void Main() {
-    ReifiedSample();
   }
 }
 ```

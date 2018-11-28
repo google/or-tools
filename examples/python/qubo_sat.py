@@ -642,6 +642,7 @@ RAW_DATA = [
     ]
 ]
 
+
 class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
 
@@ -661,6 +662,7 @@ class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
 
     def solution_count(self):
         return self.__solution_count
+
 
 def solve_qubo():
     """Solve the Qubo problem."""
@@ -687,11 +689,12 @@ def solve_qubo():
                 var = model.NewBoolVar('')
                 model.AddBoolOr([x_i.Not(), x_j.Not(), var])
                 model.AddBoolOr([var.Not(), x_i])
-                model.AddBoolOr([var.Not(), x_j])                
+                model.AddBoolOr([var.Not(), x_j])
                 obj_vars.append(var)
                 obj_coeffs.append(coeff)
 
-    model.Minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+    model.Minimize(
+        sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
     print(model.ModelStats())
 
     ### Solve model.

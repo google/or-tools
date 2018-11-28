@@ -137,7 +137,7 @@ def main():
     print('  - conflicts : %i' % solver.NumConflicts())
     print('  - branches  : %i' % solver.NumBranches())
     print('  - wall time : %f s' % solver.WallTime())
-    print('  - number of solutions found: %i' % 
+    print('  - number of solutions found: %i' %
           solution_printer.solution_count())
 
 

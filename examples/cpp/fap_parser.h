@@ -1,4 +1,4 @@
-// Copyright 2010-2017 Google
+// Copyright 2010-2018 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -602,6 +602,5 @@ void ParseInstance(const std::string& data_directory, bool find_components,
     }
   }
 }
-
 }  // namespace operations_research
 #endif  // OR_TOOLS_EXAMPLES_FAP_PARSER_H_

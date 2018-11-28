@@ -32,18 +32,20 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def IntervalSample():
+def IntervalSampleSat():
   model = cp_model.CpModel()
+
   horizon = 100
   start_var = model.NewIntVar(0, horizon, 'start')
   duration = 10  # Python cp/sat code accept integer variables or constants.
   end_var = model.NewIntVar(0, horizon, 'end')
   interval_var = model.NewIntervalVar(start_var, duration, end_var, 'interval')
+
   print('start = %s, duration = %i, end = %s, interval = %s' %
         (start_var, duration, end_var, interval_var))
 
 
-IntervalSample()
+IntervalSampleSat()
 ```
 
 ### C++ code
@@ -54,7 +56,7 @@ IntervalSample()
 namespace operations_research {
 namespace sat {
 
-void IntervalSample() {
+void IntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
 
@@ -75,7 +77,7 @@ void IntervalSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::IntervalSample();
+  operations_research::sat::IntervalSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -88,7 +90,8 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 
-public class IntervalSample {
+/** Code sample to demonstrates how to build an interval. */
+public class IntervalSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -112,9 +115,9 @@ public class IntervalSample {
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class IntervalSampleSat
 {
-  static void IntervalSample()
+  static void Main()
   {
     CpModel model = new CpModel();
     int horizon = 100;
@@ -124,11 +127,6 @@ public class CodeSamplesSat
     IntVar end_var = model.NewIntVar(0, horizon, "end");
     IntervalVar interval =
         model.NewIntervalVar(start_var, duration, end_var, "interval");
-  }
-
-  static void Main()
-  {
-    IntervalSample();
   }
 }
 ```
@@ -151,8 +149,10 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def OptionalIntervalSample():
+def OptionalIntervalSampleSat():
+  """Build an optional interval."""
   model = cp_model.CpModel()
+
   horizon = 100
   start_var = model.NewIntVar(0, horizon, 'start')
   duration = 10  # Python cp/sat code accept integer variables or constants.
@@ -160,11 +160,12 @@ def OptionalIntervalSample():
   presence_var = model.NewBoolVar('presence')
   interval_var = model.NewOptionalIntervalVar(start_var, duration, end_var,
                                               presence_var, 'interval')
+
   print('start = %s, duration = %i, end = %s, presence = %s, interval = %s' %
         (start_var, duration, end_var, presence_var, interval_var))
 
 
-OptionalIntervalSample()
+OptionalIntervalSampleSat()
 ```
 
 ### C++ code
@@ -175,7 +176,7 @@ OptionalIntervalSample()
 namespace operations_research {
 namespace sat {
 
-void OptionalIntervalSample() {
+void OptionalIntervalSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
 
@@ -201,7 +202,7 @@ void OptionalIntervalSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::OptionalIntervalSample();
+  operations_research::sat::OptionalIntervalSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -215,7 +216,8 @@ import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 import com.google.ortools.sat.Literal;
 
-public class OptionalIntervalSample {
+/** Code sample to demonstrates how to build an optional interval. */
+public class OptionalIntervalSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -241,9 +243,9 @@ public class OptionalIntervalSample {
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class OptionalIntervalSampleSat
 {
-  static void OptionalIntervalSample()
+  static void Main()
   {
     CpModel model = new CpModel();
     int horizon = 100;
@@ -254,11 +256,6 @@ public class CodeSamplesSat
     IntVar presence_var = model.NewBoolVar("presence");
     IntervalVar interval = model.NewOptionalIntervalVar(
         start_var, duration, end_var, presence_var, "interval");
-  }
-
-  static void Main()
-  {
-    OptionalIntervalSample();
   }
 }
 ```
@@ -284,7 +281,7 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-def NoOverlapSample():
+def NoOverlapSampleSat():
   """No overlap sample with fixed activities."""
   model = cp_model.CpModel()
   horizon = 21  # 3 weeks.
@@ -333,7 +330,7 @@ def NoOverlapSample():
     print('Solver exited with nonoptimal status: %i' % status)
 
 
-NoOverlapSample()
+NoOverlapSampleSat()
 ```
 
 ### C++ code
@@ -344,7 +341,7 @@ NoOverlapSample()
 namespace operations_research {
 namespace sat {
 
-void NoOverlapSample() {
+void NoOverlapSampleSat() {
   CpModelBuilder cp_model;
   const int64 kHorizon = 21;  // 3 weeks.
 
@@ -410,7 +407,7 @@ void NoOverlapSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::NoOverlapSample();
+  operations_research::sat::NoOverlapSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -429,7 +426,7 @@ import com.google.ortools.sat.IntervalVar;
  * We want to schedule 3 tasks on 3 weeks excluding weekends, making the final day as early as
  * possible.
  */
-public class NoOverlapSample {
+public class NoOverlapSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
@@ -491,9 +488,9 @@ public class NoOverlapSample {
 using System;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class NoOverlapSampleSat
 {
-  static void NoOverlapSample()
+  static void Main()
   {
     CpModel model = new CpModel();
     // Three weeks.
@@ -545,11 +542,6 @@ public class CodeSamplesSat
       Console.WriteLine("Task 1 starts at " + solver.Value(start_1));
       Console.WriteLine("Task 2 starts at " + solver.Value(start_2));
     }
-  }
-
-  static void Main()
-  {
-    NoOverlapSample();
   }
 }
 ```
@@ -646,7 +638,7 @@ def RankTasks(model, starts, presences, ranks):
     model.Add(ranks[i] == sum(precedences[(j, i)] for j in all_tasks) - 1)
 
 
-def RankingSample():
+def RankingSampleSat():
   """Ranks tasks in a NoOverlap constraint."""
 
   model = cp_model.CpModel()
@@ -721,7 +713,7 @@ def RankingSample():
     print('Solver exited with nonoptimal status: %i' % status)
 
 
-RankingSample()
+RankingSampleSat()
 ```
 
 ### C++ code
@@ -732,7 +724,7 @@ RankingSample()
 namespace operations_research {
 namespace sat {
 
-void RankingSample() {
+void RankingSampleSat() {
   CpModelBuilder cp_model;
   const int kHorizon = 100;
   const int kNumTasks = 4;
@@ -863,7 +855,7 @@ void RankingSample() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::sat::RankingSample();
+  operations_research::sat::RankingSampleSat();
 
   return EXIT_SUCCESS;
 }
@@ -881,14 +873,18 @@ import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
 
-// This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
-// integer variables and enforces the following constraint:
-//   - rank[i] == -1 iff interval[i] is not active.
-//   - rank[i] == number of active intervals that precede interval[i].
-public class RankingSample {
+/** Code sample to demonstrates how to rank intervals. */
+public class RankingSampleSat {
 
   static { System.loadLibrary("jniortools"); }
 
+  /**
+   * This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
+   * integer variables and enforces the following constraint
+   *
+   * <p>- rank[i] == -1 iff interval[i] is not active. - rank[i] == number of active intervals that
+   * precede interval[i].
+   */
   static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks) {
     int numTasks = starts.length;
 
@@ -1042,7 +1038,7 @@ using System;
 using System.Collections.Generic;
 using Google.OrTools.Sat;
 
-public class CodeSamplesSat
+public class RankingSampleSat
 {
   static void RankTasks(CpModel model,
                         IntVar[] starts,
@@ -1099,7 +1095,7 @@ public class CodeSamplesSat
     }
   }
 
-  static void RankingSample()
+  static void Main()
   {
     CpModel model = new CpModel();
     // Three weeks.
@@ -1181,11 +1177,6 @@ public class CodeSamplesSat
       Console.WriteLine(
           String.Format("Solver exited with nonoptimal status: {0}", status));
     }
-  }
-
-  static void Main()
-  {
-    RankingSample();
   }
 }
 ```

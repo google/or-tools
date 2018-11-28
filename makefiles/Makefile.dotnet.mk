@@ -99,14 +99,6 @@ $(GEN_DIR)/ortools/constraint_solver/SolverParameters.pb.cs: \
  --csharp_opt=file_extension=.pb.cs \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
 
-$(GEN_DIR)/ortools/constraint_solver/Model.pb.cs: \
- $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto \
- | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(SRC_DIR) \
- --csharp_out=$(GEN_PATH)$Sortools$Sconstraint_solver \
- --csharp_opt=file_extension=.pb.cs \
- $(SRC_DIR)$Sortools$Sconstraint_solver$Smodel.proto
-
 $(GEN_DIR)/ortools/constraint_solver/RoutingParameters.pb.cs: \
  $(SRC_DIR)/ortools/constraint_solver/routing_parameters.proto \
  | $(GEN_DIR)/ortools/constraint_solver
@@ -138,6 +130,14 @@ $(GEN_DIR)/ortools/sat/SatParameters.pb.cs: \
  --csharp_out=$(GEN_PATH)$Sortools$Ssat \
  --csharp_opt=file_extension=.pb.cs \
  $(SRC_DIR)$Sortools$Ssat$Ssat_parameters.proto
+
+$(GEN_DIR)/ortools/util/OptionalBoolean.pb.cs: \
+ $(SRC_DIR)/ortools/util/optional_boolean.proto \
+ | $(GEN_DIR)/ortools/util
+	$(PROTOC) --proto_path=$(SRC_DIR) \
+ --csharp_out=$(GEN_PATH)$Sortools$Sutil \
+ --csharp_opt=file_extension=.pb.cs \
+ $(SRC_DIR)$Sortools$Sutil$Soptional_boolean.proto
 
 # Auto-generated rid dependent source code
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
@@ -317,12 +317,12 @@ $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(SRC_DIR)/ortools/sat/csharp/CpModel.cs \
  $(SRC_DIR)/ortools/util/csharp/NestedArrayHelper.cs \
  $(SRC_DIR)/ortools/util/csharp/ProtoHelper.cs \
- $(GEN_DIR)/ortools/constraint_solver/Model.pb.cs \
  $(GEN_DIR)/ortools/constraint_solver/SearchLimit.pb.cs \
  $(GEN_DIR)/ortools/constraint_solver/SolverParameters.pb.cs \
  $(GEN_DIR)/ortools/constraint_solver/RoutingParameters.pb.cs \
  $(GEN_DIR)/ortools/constraint_solver/RoutingEnums.pb.cs \
  $(GEN_DIR)/ortools/sat/CpModel.pb.cs \
+ $(GEN_DIR)/ortools/util/OptionalBoolean.pb.cs \
  | $(DOTNET_ORTOOLS_SNK) $(PACKAGE_DIR)
 	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj
 	"$(DOTNET_BIN)" pack ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj
