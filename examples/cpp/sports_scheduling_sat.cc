@@ -41,9 +41,9 @@
 // This aggregated variable will be useful to state constraints of the model
 // and to do search on it.
 
+#include "absl/strings/str_cat.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/join.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 

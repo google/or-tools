@@ -30,7 +30,6 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
@@ -81,7 +80,7 @@ void GolombRuler(int size) {
 
   // Search strategy.
   cp_model.AddDecisionStrategy(ticks, DecisionStrategyProto::CHOOSE_FIRST,
-                               DecisionStrategyProto::SELECT_MIN_VALUE);  
+                               DecisionStrategyProto::SELECT_MIN_VALUE);
 
   Model model;
   SatParameters parameters;
@@ -92,7 +91,7 @@ void GolombRuler(int size) {
                                                         &parameters))
         << FLAGS_params;
   }
-  model.Add(NewSatParameters(parameters));  
+  model.Add(NewSatParameters(parameters));
   const CpSolverResponse response = SolveWithModel(cp_model, &model);
 
   if (response.status() == CpSolverStatus::OPTIMAL) {

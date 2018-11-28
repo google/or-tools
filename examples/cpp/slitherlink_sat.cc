@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/stringprintf.h"
+#include "absl/strings/str_format.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
@@ -63,7 +63,7 @@ void PrintSolution(const std::vector<std::vector<int>> &data,
       const int sum = data[i][j];
       first_line += h_arc ? " -----" : "      ";
       second_line += v_arc ? "|" : " ";
-      second_line += sum == -1 ? "     " : StringPrintf("  %d  ", sum).c_str();
+      second_line += sum == -1 ? "     " : absl::StrFormat("  %d  ", sum).c_str();
       third_line += v_arc ? "|     " : "      ";
     }
     const bool termination = v_arcs[num_columns][i];

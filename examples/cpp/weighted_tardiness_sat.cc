@@ -217,7 +217,8 @@ void ParseAndSolve() {
   for (const std::string& line : FileLines(FLAGS_input)) {
     entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
     for (const std::string& entry : entries) {
-      numbers.push_back(atoi32(entry));
+      numbers.push_back(0);
+      CHECK(absl::SimpleAtoi(entry, &numbers.back()));
     }
   }
 

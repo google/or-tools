@@ -14,8 +14,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
@@ -68,7 +68,7 @@ void MagicSquare(int size) {
   // Sum on diagonals.
   builder.AddEquality(LinearExpr::Sum(diag1), sum);
   builder.AddEquality(LinearExpr::Sum(diag2), sum);
-  
+
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
 
@@ -78,22 +78,22 @@ void MagicSquare(int size) {
     for (int n = 0; n < size; ++n) {
       std::string output;
       for (int m = 0; m < size; ++m) {
-        StringAppendF(&output, "%3lld ",
-                      SolutionIntegerValue(response, square[n][m]));
+        absl::StrAppendFormat(&output, "%3d ",
+                              SolutionIntegerValue(response, square[n][m]));
       }
       LOG(INFO) << output;
-    } 
+    }
   } else {
     LOG(INFO) << "No solution found!";
   }
-  LOG(INFO) << CpSolverResponseStats(response);  
+  LOG(INFO) << CpSolverResponseStats(response);
 }
 
 } // namespace sat
 } // namespace sat
 
 int main(int argc, char **argv) {
-  base::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::sat::MagicSquare(FLAGS_size);
   return EXIT_SUCCESS;

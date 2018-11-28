@@ -32,13 +32,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/random.h"
-#include "ortools/base/stringprintf.h"
 #include "ortools/graph/shortestpaths.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
@@ -282,7 +282,7 @@ class NetworkRoutingDataBuilder {
                 NetworkRoutingData *const data) {
     const int size = num_backbones + num_clients;
 
-    const std::string name = StringPrintf(
+    const std::string name = absl::StrFormat(
         "mp_c%i_b%i_d%i.t%i-%i.cd%i-%i.bd%i-%i.mc%i.fc%i.s%i", num_clients,
         num_backbones, num_demands, traffic_min, traffic_max, min_client_degree,
         max_client_degree, min_backbone_degree, max_backbone_degree,

@@ -24,6 +24,7 @@
 #include <vector>
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_split.h"
+#include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/strtoint.h"
@@ -419,7 +420,7 @@ void ParametersParser::Parse() {
 void FindComponents(const std::vector<FapConstraint>& constraints,
                     const std::map<int, FapVariable>& variables,
                     const int maximum_variable_id,
-                    std::unordered_map<int, FapComponent>* components) {
+                    absl::flat_hash_map<int, FapComponent>* components) {
   std::vector<int> in_component(maximum_variable_id + 1, -1);
   int constraint_index = 0;
   for (const FapConstraint& constraint : constraints) {
@@ -529,7 +530,7 @@ void ParseInstance(const std::string& data_directory, bool find_components,
                    std::map<int, FapVariable>* variables,
                    std::vector<FapConstraint>* constraints,
                    std::string* objective, std::vector<int>* frequencies,
-                   std::unordered_map<int, FapComponent>* components) {
+                   absl::flat_hash_map<int, FapComponent>* components) {
   CHECK(variables != nullptr);
   CHECK(constraints != nullptr);
   CHECK(objective != nullptr);
