@@ -429,12 +429,10 @@ test_cc_cpp: \
  rcc_cvrptw_with_refueling \
  rcc_cvrptw_with_resources \
  rcc_cvrptw_with_stop_times_and_resources \
- rcc_dobble_ls \
  rcc_flow_api \
  rcc_linear_assignment_api \
  rcc_linear_solver_protocol_buffers \
  rcc_magic_square_sat \
- rcc_mps_driver \
  rcc_nqueens \
  rcc_random_tsp \
  rcc_slitherlink_sat \
@@ -444,11 +442,17 @@ test_cc_cpp: \
  SOURCE=examples/cpp/dimacs_assignment.cc \
  ARGS=examples/data/dimacs/assignment/small.asn
 	$(MAKE) run \
+ SOURCE=examples/cpp/dobble_ls.cc \
+ ARGS="--time_limit_in_ms=10000"
+	$(MAKE) run \
  SOURCE=examples/cpp/golomb_sat.cc \
  ARGS="--size=5"
 	$(MAKE) run \
  SOURCE=examples/cpp/jobshop_sat.cc \
  ARGS="--input=examples/data/jobshop/ft06"
+	$(MAKE) run \
+ SOURCE=examples/cpp/mps_driver.cc \
+ ARGS="--input examples/data/tests/test.mps"
 	$(MAKE) run \
  SOURCE=examples/cpp/network_routing_sat.cc \
  ARGS="--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"
@@ -458,7 +462,9 @@ test_cc_cpp: \
 #	$(MAKE) run SOURCE=examples/cpp/frequency_assignment_problem.cc  # Need data file
 #	$(MAKE) run SOURCE=examples/cpp/pdptw.cc ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
 	$(MAKE) run SOURCE=examples/cpp/shift_minimization_sat.cc  ARGS="--input examples/data/shift_scheduling/minimization/data_1_23_40_66.dat"
-#	$(MAKE) run SOURCE=examples/cpp/solve.cc  # Need data file
+	$(MAKE) run \
+ SOURCE=examples/cpp/solve.cc \
+ ARGS="--input examples/data/tests/test2.mps"
 
 .PHONY: test_cc_pimpl
 test_cc_pimpl: \
