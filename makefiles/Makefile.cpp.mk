@@ -422,7 +422,19 @@ test_cc_contrib: ;
 
 .PHONY: test_cc_cpp # Build and Run all C++ Examples (located in ortools/examples/cpp)
 test_cc_cpp: \
-# rcc_mps_driver \
+ rcc_costas_array_sat \
+ rcc_cvrp_disjoint_tw \
+ rcc_cvrptw \
+ rcc_cvrptw_with_breaks \
+ rcc_cvrptw_with_refueling \
+ rcc_cvrptw_with_resources \
+ rcc_cvrptw_with_stop_times_and_resources \
+ rcc_dobble_ls \
+ rcc_flow_api \
+ rcc_linear_assignment_api \
+ rcc_linear_solver_protocol_buffers \
+ rcc_magic_square_sat \
+ rcc_mps_driver \
  rcc_nqueens \
  rcc_random_tsp \
  rcc_slitherlink_sat \
