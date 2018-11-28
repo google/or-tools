@@ -46,8 +46,7 @@ def RunAssignmentOn4x4Matrix():
         print('No perfect matching exists.')
     elif solve_status == assignment.POSSIBLE_OVERFLOW:
         print(
-            'Some input costs are too large and may cause an integer overflow.'
-        )
+            'Some input costs are too large and may cause an integer overflow.')
 
 
 def main():

@@ -198,8 +198,7 @@ def main(args):
         name_suffix = '_%i' % job_id
         start = model.NewIntVar(release_date, due_date, 's' + name_suffix)
         end = model.NewIntVar(release_date, due_date, 'e' + name_suffix)
-        interval = model.NewIntervalVar(start, duration, end,
-                                        'i' + name_suffix)
+        interval = model.NewIntervalVar(start, duration, end, 'i' + name_suffix)
         starts.append(start)
         ends.append(end)
         intervals.append(interval)
@@ -235,8 +234,8 @@ def main(args):
                 model.Add(starts[j] == ends[i] +
                           setup_times[i + 1][j]).OnlyEnforceIf(lit)
             else:
-                model.Add(starts[j] >= ends[i] +
-                          setup_times[i + 1][j]).OnlyEnforceIf(lit)
+                model.Add(starts[j] >=
+                          ends[i] + setup_times[i + 1][j]).OnlyEnforceIf(lit)
 
     model.AddCircuit(arcs)
 
@@ -269,9 +268,9 @@ def main(args):
     solver.SolveWithSolutionCallback(model, solution_printer)
     print(solver.ResponseStats())
     for job_id in all_jobs:
-        print(
-            'job %i starts at %i end ends at %i' %
-            (job_id, solver.Value(starts[job_id]), solver.Value(ends[job_id])))
+        print('job %i starts at %i end ends at %i' %
+              (job_id, solver.Value(starts[job_id]),
+               solver.Value(ends[job_id])))
 
 
 if __name__ == '__main__':

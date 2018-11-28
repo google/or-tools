@@ -80,8 +80,8 @@ def SolveAndPrint(solver, variable_list):
 
 
 def Announce(solver, api_type):
-    print(('---- Integer programming example with ' + solver + ' (' + api_type
-           + ') -----'))
+    print(('---- Integer programming example with ' + solver + ' (' + api_type +
+           ') -----'))
 
 
 def RunAllIntegerExampleNaturalLanguageAPI():

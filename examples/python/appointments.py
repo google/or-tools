@@ -133,11 +133,10 @@ def get_optimal_schedule(demand, args):
     """Computes the optimal schedule for the appointment selection problem."""
     combinations = find_combinations([a[2] for a in demand], args.load_min,
                                      args.load_max, args.commute_time)
-    print(
-        'found %d possible combinations of appointements' % len(combinations))
+    print('found %d possible combinations of appointements' % len(combinations))
 
-    cost, selection = select(combinations, [a[0] for a in demand],
-                             args.num_workers)
+    cost, selection = select(combinations, [a[0]
+                                            for a in demand], args.num_workers)
     output = [(selection[i], [(combinations[i][t], demand[t][1])
                               for t in range(len(demand))
                               if combinations[i][t] != 0])
@@ -152,8 +151,7 @@ def main(args):
     for a in demand:
         print('   %d * %s : %d min' % (a[0], a[1], a[2]))
     print('commute time = %d' % args.commute_time)
-    print(
-        'accepted total duration = [%d..%d]' % (args.load_min, args.load_max))
+    print('accepted total duration = [%d..%d]' % (args.load_min, args.load_max))
     print('%d workers' % args.num_workers)
     cost, selection = get_optimal_schedule(demand, args)
     print('Optimal solution as a cost of %d' % cost)

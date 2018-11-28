@@ -308,8 +308,8 @@ def solve_shift_scheduling(params, output_proto):
             works = [work[e, shift, d] for d in range(num_days)]
             variables, coeffs = add_soft_sequence_constraint(
                 model, works, hard_min, soft_min, min_cost, soft_max, hard_max,
-                max_cost,
-                'shift_constraint(employee %i, shift %i)' % (e, shift))
+                max_cost, 'shift_constraint(employee %i, shift %i)' % (e,
+                                                                       shift))
             obj_bool_vars.extend(variables)
             obj_bool_coeffs.extend(coeffs)
 
@@ -367,9 +367,9 @@ def solve_shift_scheduling(params, output_proto):
     # Objective
     model.Minimize(
         sum(obj_bool_vars[i] * obj_bool_coeffs[i]
-            for i in range(len(obj_bool_vars))) + sum(
-                obj_int_vars[i] * obj_int_coeffs[i]
-                for i in range(len(obj_int_vars))))
+            for i in range(len(obj_bool_vars)))
+        + sum(obj_int_vars[i] * obj_int_coeffs[i]
+              for i in range(len(obj_int_vars))))
 
     if output_proto:
         print('Writing proto to %s' % output_proto)

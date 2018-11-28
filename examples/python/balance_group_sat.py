@@ -102,8 +102,8 @@ def main():
     item_in_group = {}
     for i in all_items:
         for g in all_groups:
-            item_in_group[(i, g)] = model.NewBoolVar(
-                'item %d in group %d' % (i, g))
+            item_in_group[(i, g)] = model.NewBoolVar('item %d in group %d' %
+                                                     (i, g))
 
     # Each group must have the same size.
     for g in all_groups:

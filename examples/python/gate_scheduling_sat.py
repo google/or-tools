@@ -51,8 +51,7 @@ def main():
         start = model.NewIntVar(0, horizon, 'start_%i' % i)
         duration = jobs[i][0]
         end = model.NewIntVar(0, horizon, 'end_%i' % i)
-        interval = model.NewIntervalVar(start, duration, end,
-                                        'interval_%i' % i)
+        interval = model.NewIntervalVar(start, duration, end, 'interval_%i' % i)
         starts.append(start)
         intervals.append(interval)
         ends.append(end)
@@ -114,8 +113,7 @@ def main():
             d_y = jobs[i][1]
             s_y = performed_machine * (max_length - d_y)
             output.AddRectangle(start, s_y, d_x, d_y,
-                                color_manager.RandomColor(), 'black',
-                                'j%i' % i)
+                                color_manager.RandomColor(), 'black', 'j%i' % i)
 
         output.AddXScale()
         output.AddYScale()
@@ -126,8 +124,8 @@ def main():
         for i in all_jobs:
             performed_machine = 1 - solver.Value(performed[i])
             start = solver.Value(starts[i])
-            print('  - Job %i starts at %i on machine %i' %
-                  (i, start, performed_machine))
+            print('  - Job %i starts at %i on machine %i' % (i, start,
+                                                             performed_machine))
         print('Statistics')
         print('  - conflicts : %i' % solver.NumConflicts())
         print('  - branches  : %i' % solver.NumBranches())

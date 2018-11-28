@@ -63,9 +63,10 @@ def MinCostFlow():
         print('Total flow', min_cost_flow.OptimalCost(), '/', expected_cost)
         for i in range(0, min_cost_flow.NumArcs()):
             if min_cost_flow.Flow(i) > 0:
-                print('From source %d to target %d: cost %d' % (
-                    min_cost_flow.Tail(i), min_cost_flow.Head(i) - num_sources,
-                    min_cost_flow.UnitCost(i)))
+                print('From source %d to target %d: cost %d' %
+                      (min_cost_flow.Tail(i),
+                       min_cost_flow.Head(i) - num_sources,
+                       min_cost_flow.UnitCost(i)))
     else:
         print('There was an issue with the min cost flow input.')
 

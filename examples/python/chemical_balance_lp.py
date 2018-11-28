@@ -30,9 +30,9 @@ max_quantities = [["N_Total", 1944], ["P2O5", 1166.4], ["K2O", 1822.5],
                   ["CaO", 1458], ["MgO", 486], ["Fe", 9.7], ["B", 2.4]]
 
 chemical_set = [["A", 0, 0, 510, 540, 0, 0, 0], ["B", 110, 0, 0, 0, 160, 0, 0],
-                ["C", 61, 149, 384, 0, 30, 1, 0.2],
-                ["D", 148, 70, 245, 0, 15, 1, 0.2],
-                ["E", 160, 158, 161, 0, 10, 1, 0.2]]
+                ["C", 61, 149, 384, 0, 30, 1,
+                 0.2], ["D", 148, 70, 245, 0, 15, 1,
+                        0.2], ["E", 160, 158, 161, 0, 10, 1, 0.2]]
 
 num_products = len(max_quantities)
 all_products = range(num_products)
@@ -87,6 +87,6 @@ for s in all_sets:
 for p in all_products:
     name = max_quantities[p][0]
     max_quantity = max_quantities[p][1]
-    quantity = sum(set_vars[s].solution_value() * chemical_set[s][p + 1]
-                   for s in all_sets)
+    quantity = sum(
+        set_vars[s].solution_value() * chemical_set[s][p + 1] for s in all_sets)
     print("%s: %f out of %f" % (name, quantity, max_quantity))

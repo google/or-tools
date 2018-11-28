@@ -102,8 +102,8 @@ def jobshop_ft06_distance():
                 # We add the reified precedence to link the literal with the
                 # times of the two tasks.
                 min_distance = distance_between_jobs(j1, j2)
-                model.Add(job_starts[j2] >= job_ends[j1] +
-                          min_distance).OnlyEnforceIf(lit)
+                model.Add(job_starts[j2] >=
+                          job_ends[j1] + min_distance).OnlyEnforceIf(lit)
 
         model.AddCircuit(arcs)
 

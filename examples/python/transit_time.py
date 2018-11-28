@@ -147,8 +147,8 @@ class DataProblem():
 #######################
 def manhattan_distance(position_1, position_2):
     """Computes the Manhattan distance between two points"""
-    return (abs(position_1[0] - position_2[0]) +
-            abs(position_1[1] - position_2[1]))
+    return (
+        abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
 
 
 class CreateTimeEvaluator(object):
@@ -165,9 +165,8 @@ class CreateTimeEvaluator(object):
         if from_node == to_node:
             travel_time = 0
         else:
-            travel_time = manhattan_distance(
-                data.locations[from_node],
-                data.locations[to_node]) / data.vehicle.speed
+            travel_time = manhattan_distance(data.locations[
+                from_node], data.locations[to_node]) / data.vehicle.speed
         return travel_time
 
     def __init__(self, data):
@@ -181,8 +180,8 @@ class CreateTimeEvaluator(object):
                     self._total_time[from_node][to_node] = 0
                 else:
                     self._total_time[from_node][to_node] = int(
-                        self.service_time(data, from_node) +
-                        self.travel_time(data, from_node, to_node))
+                        self.service_time(data, from_node) + self.travel_time(
+                            data, from_node, to_node))
 
     def time_evaluator(self, from_node, to_node):
         """Returns the total time between the two nodes"""
@@ -209,8 +208,7 @@ def main():
     # Print Transit Time
     time_evaluator = CreateTimeEvaluator(data).time_evaluator
     print('Route 0:')
-    print_transit_time([[0, 5], [5, 8], [8, 6], [6, 2], [2, 0]],
-                       time_evaluator)
+    print_transit_time([[0, 5], [5, 8], [8, 6], [6, 2], [2, 0]], time_evaluator)
 
     print('Route 1:')
     print_transit_time([[0, 9], [9, 14], [14, 16], [16, 10], [10, 0]],
@@ -221,8 +219,7 @@ def main():
                        time_evaluator)
 
     print('Route 3:')
-    print_transit_time([[0, 7], [7, 4], [4, 3], [3, 1], [1, 0]],
-                       time_evaluator)
+    print_transit_time([[0, 7], [7, 4], [4, 3], [3, 1], [1, 0]], time_evaluator)
 
 
 if __name__ == '__main__':

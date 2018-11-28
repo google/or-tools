@@ -70,12 +70,15 @@ def main():
     print('x: reduced cost =', x.reduced_cost())
     print('y: reduced cost =', y.reduced_cost())
     activities = solver.ComputeConstraintActivities()
-    print('constraint0: dual value =', constraint0.dual_value(),
-          ' activities =', activities[constraint0.index()])
-    print('constraint1: dual value =', constraint1.dual_value(),
-          ' activities =', activities[constraint1.index()])
-    print('constraint2: dual value =', constraint2.dual_value(),
-          ' activities =', activities[constraint2.index()])
+    print('constraint0: dual value =',
+          constraint0.dual_value(), ' activities =',
+          activities[constraint0.index()])
+    print('constraint1: dual value =',
+          constraint1.dual_value(), ' activities =',
+          activities[constraint1.index()])
+    print('constraint2: dual value =',
+          constraint2.dual_value(), ' activities =',
+          activities[constraint2.index()])
 
 
 if __name__ == '__main__':

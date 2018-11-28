@@ -76,8 +76,8 @@ def create_data_model():
 #######################
 def manhattan_distance(position_1, position_2):
     """Computes the Manhattan distance between two points"""
-    return (abs(position_1[0] - position_2[0]) +
-            abs(position_1[1] - position_2[1]))
+    return (
+        abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
 
 
 def create_distance_evaluator(data):

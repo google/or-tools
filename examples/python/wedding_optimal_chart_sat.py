@@ -88,23 +88,23 @@ def BuildData():
 
     # Connection matrix: who knows who, and how strong
     # is the relation
-    C = [[1, 50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [1, 1, 1, 50, 1, 1, 1, 1, 10, 0, 0, 0, 0, 0, 0, 0, 0],
-         [1, 1, 50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [1, 1, 1, 1, 1, 50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [1, 1, 1, 1, 50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [1, 1, 1, 1, 1, 1, 1, 50, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [1, 1, 1, 1, 1, 1, 50, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [1, 1, 10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 50, 1, 1, 1, 1, 1, 1],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1, 1, 1, 1, 1, 1, 1],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]]
+    C = [[1, 50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+          0], [50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+               0], [1, 1, 1, 50, 1, 1, 1, 1, 10, 0, 0, 0, 0, 0, 0, 0,
+                    0], [1, 1, 50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+         [1, 1, 1, 1, 1, 50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+          0], [1, 1, 1, 1, 50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+               0], [1, 1, 1, 1, 1, 1, 1, 50, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+         [1, 1, 1, 1, 1, 1, 50, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+          0], [1, 1, 10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+               0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 50, 1, 1, 1, 1, 1, 1],
+         [0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1, 1, 1, 1, 1, 1,
+          1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
+               1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [
+                   0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1
+               ], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [
+                   0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1
+               ], [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]]
 
     # Names of the guests. B: Bride side, G: Groom side
     names = [
@@ -133,8 +133,8 @@ def solve_with_discrete_model():
     seats = {}
     for t in all_tables:
         for g in all_guests:
-            seats[(t, g)] = model.NewBoolVar(
-                "guest %i seats on table %i" % (g, t))
+            seats[(t, g)] = model.NewBoolVar("guest %i seats on table %i" % (g,
+                                                                             t))
 
     colocated = {}
     for g1 in range(num_guests - 1):
@@ -151,8 +151,9 @@ def solve_with_discrete_model():
 
     # Objective
     model.Maximize(
-        sum(C[g1][g2] * colocated[g1, g2] for g1 in range(num_guests - 1)
-            for g2 in range(g1 + 1, num_guests) if C[g1][g2] > 0))
+        sum(C[g1][g2] * colocated[g1, g2]
+            for g1 in range(num_guests - 1) for g2 in range(g1 + 1, num_guests)
+            if C[g1][g2] > 0))
 
     #
     # Constraints
@@ -186,17 +187,17 @@ def solve_with_discrete_model():
     # Min known neighbors rule.
     for t in all_tables:
         model.Add(
-            sum(same_table[(g1, g2, t)] for g1 in range(num_guests - 1)
-                for g2 in range(g1 + 1, num_guests)
-                for t in all_tables if C[g1][g2] > 0) >= min_known_neighbors)
+            sum(same_table[(g1, g2, t)]
+                for g1 in range(num_guests - 1)
+                for g2 in range(g1 + 1, num_guests) for t in all_tables
+                if C[g1][g2] > 0) >= min_known_neighbors)
 
     # Symmetry breaking. First guest seats on the first table.
     model.Add(seats[(0, 0)] == 1)
 
     ### Solve model.
     solver = cp_model.CpSolver()
-    solution_printer = WeddingChartPrinter(seats, names, num_tables,
-                                           num_guests)
+    solution_printer = WeddingChartPrinter(seats, names, num_tables, num_guests)
     solver.SolveWithSolutionCallback(model, solution_printer)
 
     print("Statistics")

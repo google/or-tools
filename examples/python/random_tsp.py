@@ -80,8 +80,8 @@ class RandomMatrix(object):
                         distance_max)
 
     def Distance(self, manager, from_index, to_index):
-        return self.matrix[manager.IndexToNode(from_index)][
-            manager.IndexToNode(to_index)]
+        return self.matrix[manager.IndexToNode(from_index)][manager.IndexToNode(
+            to_index)]
 
 
 def main(args):

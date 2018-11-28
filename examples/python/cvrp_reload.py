@@ -114,8 +114,8 @@ def create_data_model():
 #######################
 def manhattan_distance(position_1, position_2):
     """Computes the Manhattan distance between two points"""
-    return (abs(position_1[0] - position_2[0]) +
-            abs(position_1[1] - position_2[1]))
+    return (
+        abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
 
 
 def create_distance_evaluator(data):
@@ -198,9 +198,8 @@ def create_time_evaluator(data):
         if from_node == to_node:
             travel_time = 0
         else:
-            travel_time = manhattan_distance(
-                data['locations'][from_node],
-                data['locations'][to_node]) / data['vehicle_speed']
+            travel_time = manhattan_distance(data['locations'][from_node], data[
+                'locations'][to_node]) / data['vehicle_speed']
         return travel_time
 
     _total_time = {}
@@ -212,8 +211,8 @@ def create_time_evaluator(data):
                 _total_time[from_node][to_node] = 0
             else:
                 _total_time[from_node][to_node] = int(
-                    service_time(data, from_node) +
-                    travel_time(data, from_node, to_node))
+                    service_time(data, from_node) + travel_time(
+                        data, from_node, to_node))
 
     def time_evaluator(manager, from_node, to_node):
         """Returns the total time between the two nodes"""
@@ -279,7 +278,8 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
             load_var = capacity_dimension.CumulVar(index)
             time_var = time_dimension.CumulVar(index)
             plan_output += ' {0} Load({1}) Time({2},{3}) ->'.format(
-                manager.IndexToNode(index), assignment.Value(load_var),
+                manager.IndexToNode(index),
+                assignment.Value(load_var),
                 assignment.Min(time_var), assignment.Max(time_var))
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
@@ -288,7 +288,8 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
         load_var = capacity_dimension.CumulVar(index)
         time_var = time_dimension.CumulVar(index)
         plan_output += ' {0} Load({1}) Time({2},{3})\n'.format(
-            manager.IndexToNode(index), assignment.Value(load_var),
+            manager.IndexToNode(index),
+            assignment.Value(load_var),
             assignment.Min(time_var), assignment.Max(time_var))
         plan_output += 'Distance of the route: {}m\n'.format(distance)
         plan_output += 'Load of the route: {}\n'.format(

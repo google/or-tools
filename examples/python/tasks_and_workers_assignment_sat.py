@@ -78,8 +78,7 @@ def tasks_and_workers_assignment_sat():
         model.Add(n == sum(x[i, j] for i in all_workers))
         c = model.NewIntVar(0, sum_of_costs * scaling,
                             'sum_of_costs_of_group_%i' % j)
-        model.Add(c == sum(
-            y[k, j] * task_cost[k] * scaling for k in all_tasks))
+        model.Add(c == sum(y[k, j] * task_cost[k] * scaling for k in all_tasks))
         a = model.NewIntVar(0, sum_of_costs * scaling,
                             'average_cost_of_group_%i' % j)
         model.AddDivisionEquality(a, c, n)

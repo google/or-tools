@@ -81,8 +81,7 @@ def solve_rcpsp(problem, proto_file, params):
 
     horizon = problem.deadline if problem.deadline != -1 else problem.horizon
     if horizon == -1:  # Naive computation.
-        horizon = sum(
-            max(r.duration for r in t.recipes) for t in problem.tasks)
+        horizon = sum(max(r.duration for r in t.recipes) for t in problem.tasks)
         if problem.is_rcpsp_max:
             for t in problem.tasks:
                 for sd in t.successor_delays:
@@ -116,8 +115,7 @@ def solve_rcpsp(problem, proto_file, params):
         if len(task.recipes) == 1:
             # Create interval.
             recipe = task.recipes[0]
-            task_starts[t] = model.NewIntVar(0, horizon,
-                                             'start_of_task_%i' % t)
+            task_starts[t] = model.NewIntVar(0, horizon, 'start_of_task_%i' % t)
             task_ends[t] = model.NewIntVar(0, horizon, 'end_of_task_%i' % t)
             interval = model.NewIntervalVar(task_starts[t], recipe.duration,
                                             task_ends[t], 'interval_%i' % t)
@@ -173,8 +171,7 @@ def solve_rcpsp(problem, proto_file, params):
                         presences_per_resource[res].append(is_present)
 
             # Create the master interval for the task.
-            task_starts[t] = model.NewIntVar(0, horizon,
-                                             'start_of_task_%i' % t)
+            task_starts[t] = model.NewIntVar(0, horizon, 'start_of_task_%i' % t)
             task_ends[t] = model.NewIntVar(0, horizon, 'end_of_task_%i' % t)
             duration = model.NewIntVar(min_size, max_size,
                                        'duration_of_task_%i' % t)
@@ -187,8 +184,7 @@ def solve_rcpsp(problem, proto_file, params):
                 model.Add(
                     task_starts[t] == starts_per_task[t][r]).OnlyEnforceIf(p)
                 model.Add(task_ends[t] == ends_per_task[t][r]).OnlyEnforceIf(p)
-                model.Add(
-                    duration == task.recipes[r].duration).OnlyEnforceIf(p)
+                model.Add(duration == task.recipes[r].duration).OnlyEnforceIf(p)
             model.Add(sum(presences_per_task[t]) == 1)
 
     # Create makespan variable
@@ -261,9 +257,8 @@ def solve_rcpsp(problem, proto_file, params):
     # Objective.
     if problem.is_resource_investment:
         objective = model.NewIntVar(0, max_cost, 'capacity_costs')
-        model.Add(objective == sum(
-            problem.resources[i].unit_cost * capacities[i]
-            for i in range(len(capacities))))
+        model.Add(objective == sum(problem.resources[i].unit_cost * capacities[
+            i] for i in range(len(capacities))))
     else:
         objective = makespan
 

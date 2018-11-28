@@ -92,10 +92,10 @@ class Customers():
             self.extents = extents  #: The lower left and upper right points
             #: Location[lat,lon]: the centre point of the area.
             self.center = Location(
-                extents['urcrnrlat'] -
-                0.5 * (extents['urcrnrlat'] - extents['llcrnrlat']),
-                extents['urcrnrlon'] -
-                0.5 * (extents['urcrnrlon'] - extents['llcrnrlon']))
+                extents['urcrnrlat'] - 0.5 *
+                (extents['urcrnrlat'] - extents['llcrnrlat']),
+                extents['urcrnrlon'] - 0.5 *
+                (extents['urcrnrlon'] - extents['llcrnrlon']))
         else:
             #: Location[lat,lon]: the centre point of the area.
             (clat, clon) = self.center = Location(center[0], center[1])
@@ -103,14 +103,12 @@ class Customers():
             circ_earth = np.pi * rad_earth
             #: The lower left and upper right points
             self.extents = {
-                'llcrnrlon':
-                (clon -
-                 180 * box_size / (circ_earth * np.cos(np.deg2rad(clat)))),
+                'llcrnrlon': (clon - 180 * box_size /
+                              (circ_earth * np.cos(np.deg2rad(clat)))),
                 'llcrnrlat':
                 clat - 180 * box_size / circ_earth,
-                'urcrnrlon':
-                (clon +
-                 180 * box_size / (circ_earth * np.cos(np.deg2rad(clat)))),
+                'urcrnrlon': (clon + 180 * box_size /
+                              (circ_earth * np.cos(np.deg2rad(clat)))),
                 'urcrnrlat':
                 clat + 180 * box_size / circ_earth
             }

@@ -53,8 +53,7 @@ def main(board_size):
     # Creates the variables.
     # The array index is the column, and the value is the row.
     queens = [
-        model.NewIntVar(0, board_size - 1, 'x%i' % i)
-        for i in range(board_size)
+        model.NewIntVar(0, board_size - 1, 'x%i' % i) for i in range(board_size)
     ]
     # Creates the constraints.
 

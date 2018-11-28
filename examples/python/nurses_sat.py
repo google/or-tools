@@ -63,8 +63,8 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d,
-                        s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d, s))
+                shifts[(n, d, s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d,
+                                                                          s))
 
     # Makes assignments different on each day, that is each shift is assigned at
     # most one nurse. As we have the same number of nurses and shifts, then each
@@ -88,8 +88,8 @@ def main():
     works_shift = {}
     for n in all_nurses:
         for s in all_shifts:
-            works_shift[(n,
-                         s)] = model.NewBoolVar('works_shift_n%is%i' % (n, s))
+            works_shift[(n, s)] = model.NewBoolVar('works_shift_n%is%i' % (n,
+                                                                           s))
             model.AddMaxEquality(works_shift[(n, s)],
                                  [shifts[(n, d, s)] for d in all_days])
 
