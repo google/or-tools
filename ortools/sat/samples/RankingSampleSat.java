@@ -29,9 +29,10 @@ public class RankingSampleSat {
   /**
    * This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
    * integer variables and enforces the following constraint
-   *
-   *  - rank[i] == -1 iff interval[i] is not active.
-   *  - rank[i] == number of active intervals that precede interval[i].
+   * <ul>
+   * <li>rank[i] == -1 iff interval[i] is not active.
+   * <li>rank[i] == number of active intervals that precede interval[i].
+   * </ul>
    */
   static void rankTasks(CpModel model, IntVar[] starts, Literal[] presences, IntVar[] ranks) {
     int numTasks = starts.length;
