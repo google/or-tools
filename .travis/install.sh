@@ -26,13 +26,13 @@ function installmono() {
 
 function installdotnetsdk(){
   # Installs for Ubuntu Trusty distro
-  curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg &&
-    sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg &&
-    sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-trusty-prod trusty main" > /etc/apt/sources.list.d/dotnetdev.list' &&
-    # Install dotnet sdk 2.1
-  sudo apt-get install apt-transport-https &&
-    sudo apt-get update -qq &&
-    sudo apt-get install -yqq dotnet-sdk-2.1
+  sudo apt-get update -qq
+  sudo apt-get install -yq apt-transport-https
+  wget -q https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
+  sudo dpkg -i packages-microsoft-prod.deb
+  # Install dotnet sdk 2.1
+  sudo apt-get update -qq
+  sudo apt-get install -yqq dotnet-sdk-2.1
 }
 
 ################
