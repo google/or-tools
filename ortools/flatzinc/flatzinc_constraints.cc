@@ -152,7 +152,7 @@ class FixedModulo : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("(%s %% %s == %d)",
+    return absl::StrFormat("(%s %% %s == %" GG_LL_FORMAT "d)",
                            var_->DebugString(), mod_->DebugString(), residual_);
   }
 
@@ -303,7 +303,8 @@ class IsBooleanSumInRange : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("Sum([%s]) in [%d..%d] == %s",
+    return absl::StrFormat("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
+                           "d] == %s",
                            JoinDebugStringPtr(vars_, ", "), range_min_,
                            range_max_, target_->DebugString());
   }
@@ -422,7 +423,7 @@ class BooleanSumInRange : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat(
-        "Sum([%s]) in [%d..%d]",
+        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
         JoinDebugStringPtr(vars_, ", "), range_min_, range_max_);
   }
 

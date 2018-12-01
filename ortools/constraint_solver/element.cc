@@ -1323,7 +1323,7 @@ std::string StringifyEvaluatorBare(const Solver::Int64ToIntVar& evaluator,
     if (i != range_start) {
       out += ", ";
     }
-    out += absl::StrFormat("%d -> %s", i,
+    out += absl::StrFormat("%" GG_LL_FORMAT "d -> %s", i,
                            evaluator(i)->DebugString());
   }
   return out;
@@ -1390,7 +1390,7 @@ std::string IntExprArrayElementCt::DebugString() const {
   int64 size = vars_.size();
   if (size > 10) {
     return absl::StrFormat(
-        "IntExprArrayElement(var array of size %d, %s) == %s",
+        "IntExprArrayElement(var array of size %" GG_LL_FORMAT "d, %s) == %s",
         size, index_->DebugString(), target_var_->DebugString());
   } else {
     return absl::StrFormat("IntExprArrayElement([%s], %s) == %s",
@@ -1459,7 +1459,7 @@ class IntExprArrayElementCstCt : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat(
-        "IntExprArrayElement([%s], %s) == %d",
+        "IntExprArrayElement([%s], %s) == %" GG_LL_FORMAT "d",
         JoinDebugStringPtr(vars_, ", "), index_->DebugString(), target_);
   }
 
@@ -1551,7 +1551,7 @@ class IntExprIndexOfCt : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("IntExprIndexOf([%s], %s) == %d",
+    return absl::StrFormat("IntExprIndexOf([%s], %s) == %" GG_LL_FORMAT "d",
                            JoinDebugStringPtr(vars_, ", "),
                            index_->DebugString(), target_);
   }
@@ -1752,7 +1752,7 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    const std::string name = absl::StrFormat("Index(%s, %d)",
+    const std::string name = absl::StrFormat("Index(%s, %" GG_LL_FORMAT "d)",
                                              JoinNamePtr(vars, ", "), value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));

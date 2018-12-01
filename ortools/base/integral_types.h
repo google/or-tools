@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_BASE_INTEGRAL_TYPES_H_
 #define OR_TOOLS_BASE_INTEGRAL_TYPES_H_
 
-#include <cstdint>
+#include <iostream>  // NOLINT
 
 // Detect 64 bit.
 #undef ARCH_K8
@@ -32,7 +32,11 @@ typedef signed char schar;
 typedef signed char int8;
 typedef short int16;  // NOLINT
 typedef int int32;
-typedef int64_t int64;
+#ifdef COMPILER_MSVC
+typedef __int64 int64;  // NOLINT
+#else
+typedef long long int64;            // NOLINT
+#endif /* COMPILER_MSVC */
 
 // NOTE: unsigned types are DANGEROUS in loops and other arithmetical
 // places.  Use the signed types unless your variable represents a bit
@@ -43,7 +47,11 @@ typedef int64_t int64;
 typedef unsigned char uint8;
 typedef unsigned short uint16;  // NOLINT
 typedef unsigned int uint32;
-typedef uint64_t uint64;
+#ifdef COMPILER_MSVC
+typedef unsigned __int64 uint64;
+#else
+typedef unsigned long long uint64;  // NOLINT
+#endif /* COMPILER_MSVC */
 
 // A type to represent a Unicode code-point value. As of Unicode 4.0,
 // such values require up to 21 bits.
@@ -70,15 +78,25 @@ typedef long sword_t;  // NOLINT
 // and different size specifiers in format strings
 #undef GG_LONGLONG
 #undef GG_ULONGLONG
+#undef GG_LL_FORMAT
 
 #ifdef COMPILER_MSVC /* if Visual C++ */
 
 // VC++ long long suffixes
 #define GG_LONGLONG(x) x##I64
 #define GG_ULONGLONG(x) x##UI64
+
+// Length modifier in printf format std::string for int64's (e.g. within %d)
+#define GG_LL_FORMAT "I64"  // As in printf("%I64d", ...)
+#define GG_LL_FORMAT_W L"I64"
+
 #else /* not Visual C++ */
+
 #define GG_LONGLONG(x) x##LL
 #define GG_ULONGLONG(x) x##ULL
+#define GG_LL_FORMAT "ll"  // As in "%lld". Note that "q" is poor form also.
+#define GG_LL_FORMAT_W L"ll"
+
 #endif  // COMPILER_MSVC
 
 static const uint8 kuint8max = static_cast<uint8>(0xFF);
@@ -96,5 +114,23 @@ static const int64 kint64min =
     static_cast<int64>(GG_LONGLONG(0x8000000000000000));
 static const int64 kint64max =
     static_cast<int64>(GG_LONGLONG(0x7FFFFFFFFFFFFFFF));
+
+#ifdef STLPORT
+#include <cstdio>
+// int64 output not present in STL port.
+inline std::ostream& operator<<(std::ostream& os, int64 i) {
+  char buffer[20];
+  snprintf(buffer, sizeof(buffer), "%lld", i);
+  os << buffer;
+  return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, uint64 i) {
+  char buffer[20];
+  snprintf(buffer, sizeof(buffer), "%llu", i);
+  os << buffer;
+  return os;
+}
+#endif  // STLPORT
 
 #endif  // OR_TOOLS_BASE_INTEGRAL_TYPES_H_
