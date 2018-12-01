@@ -372,7 +372,7 @@ std::string Domain::DebugString() const {
     if (values.empty()) {
       return "int";
     } else {
-      return absl::StrFormat("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
+      return absl::StrFormat("[%d..%d]",
                              values[0], values[1]);
     }
   } else if (values.size() == 1) {
@@ -448,9 +448,9 @@ Argument Argument::FromDomain(const Domain& domain) {
 std::string Argument::DebugString() const {
   switch (type) {
     case INT_VALUE:
-      return absl::StrFormat("% " GG_LL_FORMAT "d", values[0]);
+      return absl::StrFormat("% d", values[0]);
     case INT_INTERVAL:
-      return absl::StrFormat("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
+      return absl::StrFormat("[%d..%d]",
                              values[0], values[1]);
     case INT_LIST:
       return absl::StrFormat("[%s]", absl::StrJoin(values, ", "));
@@ -619,7 +619,7 @@ bool IntegerVariable::Merge(const std::string& other_name,
 
 std::string IntegerVariable::DebugString() const {
   if (!domain.is_interval && domain.values.size() == 1) {
-    return absl::StrFormat("% " GG_LL_FORMAT "d", domain.values.back());
+    return absl::StrFormat("% d", domain.values.back());
   } else {
     return absl::StrFormat(
         "%s(%s%s%s)%s", name, domain.DebugString(),
@@ -787,7 +787,7 @@ std::string Annotation::DebugString() const {
       return absl::StrFormat("%s(%s)", id, JoinDebugString(annotations, ", "));
     }
     case INTERVAL: {
-      return absl::StrFormat("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
+      return absl::StrFormat("%d..%d",
                              interval_min, interval_max);
     }
     case INT_VALUE: {
@@ -815,7 +815,7 @@ std::string Annotation::DebugString() const {
 // ----- SolutionOutputSpecs -----
 
 std::string SolutionOutputSpecs::Bounds::DebugString() const {
-  return absl::StrFormat("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min_value,
+  return absl::StrFormat("%d..%d", min_value,
                          max_value);
 }
 

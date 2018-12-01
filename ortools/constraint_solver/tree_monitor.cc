@@ -370,14 +370,14 @@ class TreeNode {
         // Use %d .. %d format.
         visualization_writer->AddAttribute(
             "domain",
-            absl::StrFormat("%" GG_LL_FORMAT "d .. %" GG_LL_FORMAT "d",
+            absl::StrFormat("%d .. %d",
                             current[0], current.back()));
       } else {
         // Use list of integers
         std::string domain;
 
         for (int j = 0; j < current.size(); ++j) {
-          absl::StrAppendFormat(&domain, " %" GG_LL_FORMAT "d", current[j]);
+          absl::StrAppendFormat(&domain, " %d", current[j]);
         }
 
         visualization_writer->AddAttribute(

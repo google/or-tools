@@ -572,7 +572,7 @@ class AllDifferentExcept : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
+    return absl::StrFormat("AllDifferentExcept([%s], %d",
                            JoinDebugStringPtr(vars_, ", "), escape_value_);
   }
 
@@ -664,7 +664,7 @@ class NullIntersectArrayExcept : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat(
-        "NullIntersectArray([%s], [%s], escape = %" GG_LL_FORMAT "d",
+        "NullIntersectArray([%s], [%s], escape = %d",
         JoinDebugStringPtr(first_vars_, ", "),
         JoinDebugStringPtr(second_vars_, ", "), escape_value_);
   }

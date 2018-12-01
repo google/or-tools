@@ -133,7 +133,7 @@ class MtOptimizeVar : public OptimizeVar {
       if (verbose_) {
         report_->Log(
             thread_id_,
-            absl::StrFormat("Polling improved objective %" GG_LL_FORMAT "d",
+            absl::StrFormat("Polling improved objective %d",
                             polled_best));
       }
       best_ = polled_best;
@@ -238,7 +238,7 @@ void MultiThreadReporting::OnOptimizeSolution(
           if (verbose_) {
             LogNoLock(
                 thread_id,
-                absl::StrFormat("solution found with value %" GG_LL_FORMAT "d",
+                absl::StrFormat("solution found with value %d",
                                 value));
           }
           if (ShouldPrintAllSolutions() || MaxNumSolutions() > 1) {
@@ -257,7 +257,7 @@ void MultiThreadReporting::OnOptimizeSolution(
           if (verbose_) {
             LogNoLock(
                 thread_id,
-                absl::StrFormat("solution found with value %" GG_LL_FORMAT "d",
+                absl::StrFormat("solution found with value %d",
                                 value));
           }
           if (ShouldPrintAllSolutions() || MaxNumSolutions() > 1) {
@@ -298,7 +298,7 @@ void MultiThreadReporting::OnSearchEnd(int thread_id, bool interrupted) {
   if (!last_solution_.empty()) {
     if (verbose_) {
       LogNoLock(last_thread_,
-                absl::StrFormat("solution found with value %" GG_LL_FORMAT "d",
+                absl::StrFormat("solution found with value %d",
                                 best_objective_));
     }
     Print(thread_id, last_solution_);

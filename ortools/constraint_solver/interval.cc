@@ -605,7 +605,7 @@ class RangeVar : public IntExpr {
   std::string DebugString() const override {
     std::string out = absl::StrCat(min_.Value());
     if (!Bound()) {
-      absl::StrAppendFormat(&out, " .. %" GG_LL_FORMAT "d", max_.Value());
+      absl::StrAppendFormat(&out, " .. %d", max_.Value());
     }
     return out;
   }
@@ -964,7 +964,7 @@ std::string FixedDurationIntervalVar::DebugString() const {
       out = "IntervalVar(start = ";
     }
     absl::StrAppendFormat(
-        &out, "%s, duration = %" GG_LL_FORMAT "d, performed = %s)",
+        &out, "%s, duration = %d, performed = %s)",
         start_.DebugString(), duration_, performed_.DebugString());
     return out;
   }
@@ -1158,7 +1158,7 @@ std::string FixedDurationPerformedIntervalVar::DebugString() const {
     out = "IntervalVar(start = ";
   }
   absl::StrAppendFormat(&out,
-                        "%s, duration = %" GG_LL_FORMAT "d, performed = true)",
+                        "%s, duration = %d, performed = true)",
                         start_.DebugString(), duration_);
   return out;
 }
@@ -1315,13 +1315,13 @@ std::string StartVarPerformedIntervalVar::DebugString() const {
   } else {
     out = "IntervalVar(start = ";
   }
-  absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d", start_var_->Min());
+  absl::StrAppendFormat(&out, "%d", start_var_->Min());
   if (!start_var_->Bound()) {
-    absl::StrAppendFormat(&out, " .. %" GG_LL_FORMAT "d", start_var_->Max());
+    absl::StrAppendFormat(&out, " .. %d", start_var_->Max());
   }
 
   absl::StrAppendFormat(
-      &out, ", duration = %" GG_LL_FORMAT "d, performed = true)", duration_);
+      &out, ", duration = %d, performed = true)", duration_);
   return out;
 }
 
@@ -1553,7 +1553,7 @@ std::string StartVarIntervalVar::DebugString() const {
       out = "IntervalVar(start = ";
     }
     absl::StrAppendFormat(
-        &out, "%s, duration = %" GG_LL_FORMAT "d, performed = %s)",
+        &out, "%s, duration = %d, performed = %s)",
         start_->DebugString(), duration_, performed_->DebugString());
     return out;
   }
@@ -1737,8 +1737,7 @@ std::string FixedInterval::DebugString() const {
     out = "IntervalVar(start = ";
   }
   absl::StrAppendFormat(&out,
-                        "%" GG_LL_FORMAT "d, duration = %" GG_LL_FORMAT
-                        "d, performed = true)",
+                        "%d, duration = %d, performed = true)",
                         start_, duration_);
   return out;
 }
@@ -2093,8 +2092,7 @@ class FixedDurationIntervalVarStartSyncedOnStart
       : FixedDurationSyncedIntervalVar(
             t, duration, offset,
             absl::StrFormat(
-                "IntervalStartSyncedOnStart(%s, duration = %" GG_LL_FORMAT
-                "d, offset = %" GG_LL_FORMAT "d)",
+                "IntervalStartSyncedOnStart(%s, duration = %d, offset = %d)",
                 t->name(), duration, offset)) {}
   ~FixedDurationIntervalVarStartSyncedOnStart() override {}
   int64 StartMin() const override { return CapAdd(t_->StartMin(), offset_); }
@@ -2138,8 +2136,7 @@ class FixedDurationIntervalVarStartSyncedOnStart
   }
   std::string DebugString() const override {
     return absl::StrFormat(
-        "IntervalStartSyncedOnStart(%s, duration = %" GG_LL_FORMAT
-        "d, offset = %" GG_LL_FORMAT "d)",
+        "IntervalStartSyncedOnStart(%s, duration = %d, offset = %d)",
         t_->DebugString(), duration_, offset_);
   }
 };
@@ -2154,8 +2151,7 @@ class FixedDurationIntervalVarStartSyncedOnEnd
       : FixedDurationSyncedIntervalVar(
             t, duration, offset,
             absl::StrFormat(
-                "IntervalStartSyncedOnEnd(%s, duration = %" GG_LL_FORMAT
-                "d, offset = %" GG_LL_FORMAT "d)",
+                "IntervalStartSyncedOnEnd(%s, duration = %d, offset = %d)",
                 t->name(), duration, offset)) {}
   ~FixedDurationIntervalVarStartSyncedOnEnd() override {}
   int64 StartMin() const override { return CapAdd(t_->EndMin(), offset_); }
@@ -2200,8 +2196,7 @@ class FixedDurationIntervalVarStartSyncedOnEnd
   }
   std::string DebugString() const override {
     return absl::StrFormat(
-        "IntervalStartSyncedOnEnd(%s, duration = %" GG_LL_FORMAT
-        "d, offset = %" GG_LL_FORMAT "d)",
+        "IntervalStartSyncedOnEnd(%s, duration = %d, offset = %d)",
         t_->DebugString(), duration_, offset_);
   }
 };

@@ -1268,11 +1268,9 @@ Presolver::RuleStatus Presolver::PresolveArrayIntElement(Constraint* ct,
 
       if (last_index < ct->arguments[0].Var()->domain.Max() ||
           first_index > ct->arguments[0].Var()->domain.Min()) {
-        absl::StrAppendFormat(log,
-                              "filter index to [%" GG_LL_FORMAT
-                              "d..%" GG_LL_FORMAT
-                              "d] and reduce array to size %" GG_LL_FORMAT "d",
-                              first_index, last_index, last_index);
+        absl::StrAppendFormat(
+            log, "filter index to [%d..%d] and reduce array to size %d",
+            first_index, last_index, last_index);
         IntersectVarWithInterval(ct->arguments[0].Var(), first_index,
                                  last_index);
         ct->arguments[1].values.resize(last_index);
@@ -1547,7 +1545,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
         const int64 bound = rhs / coef;
         if (bound < var->domain.Max()) {
           absl::StrAppendFormat(log,
-                                ", intersect %s with [0..%" GG_LL_FORMAT "d]",
+                                ", intersect %s with [0..%d]",
                                 var->DebugString(), bound);
           IntersectVarWithInterval(var, 0, bound);
         }
@@ -1561,7 +1559,7 @@ Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
     const int64 bound = (rhs + coef - 1) / coef;
     if (bound > var->domain.Min()) {
       absl::StrAppendFormat(
-          log, ", intersect %s with [%" GG_LL_FORMAT "d .. INT_MAX]",
+          log, ", intersect %s with [%d .. INT_MAX]",
           var->DebugString(), bound);
       IntersectVarWithInterval(var, bound, kint64max);
       return CONSTRAINT_ALWAYS_TRUE;

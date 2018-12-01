@@ -126,7 +126,7 @@ class AtMost : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("AtMost(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
+    return absl::StrFormat("AtMost(%s, %d, %d)",
                            JoinDebugStringPtr(vars_, ", "), value_, max_count_);
   }
 

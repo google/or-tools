@@ -3664,13 +3664,13 @@ std::string RoutingModel::DebugOutputAssignment(
       for (;;) {
         const IntVar* vehicle_var = VehicleVar(index);
         absl::StrAppendFormat(&output,
-                              "%" GG_LL_FORMAT "d Vehicle(%" GG_LL_FORMAT "d) ",
+                              "%d Vehicle(%d) ",
                               index, solution_assignment.Value(vehicle_var));
         for (const RoutingDimension* const dimension : dimensions_) {
           if (gtl::ContainsKey(dimension_names, dimension->name())) {
             const IntVar* const var = dimension->CumulVar(index);
             absl::StrAppendFormat(
-                &output, "%s(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d) ",
+                &output, "%s(%d..%d) ",
                 dimension->name(), solution_assignment.Min(var),
                 solution_assignment.Max(var));
           }

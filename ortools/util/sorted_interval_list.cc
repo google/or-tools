@@ -22,8 +22,8 @@
 namespace operations_research {
 
 std::string ClosedInterval::DebugString() const {
-  if (start == end) return absl::StrFormat("[%" GG_LL_FORMAT "d]", start);
-  return absl::StrFormat("[%" GG_LL_FORMAT "d,%" GG_LL_FORMAT "d]", start, end);
+  if (start == end) return absl::StrFormat("[%d]", start);
+  return absl::StrFormat("[%d,%d]", start, end);
 }
 
 bool IntervalsAreSortedAndNonAdjacent(

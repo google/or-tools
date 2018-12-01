@@ -115,7 +115,7 @@ struct CumulativeTask {
   void WhenAnything(Demon* const demon) { interval->WhenAnything(demon); }
 
   std::string DebugString() const {
-    return absl::StrFormat("Task{ %s, demand: %" GG_LL_FORMAT "d }",
+    return absl::StrFormat("Task{ %s, demand: %d }",
                            interval->DebugString(), demand);
   }
 
@@ -1137,7 +1137,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
         const int64 duration_min = var->DurationMin();
         time_slacks_[i + 1] = s->MakeIntVar(
             duration_min, horizon,
-            absl::StrFormat("time_slacks(%" GG_LL_FORMAT "d)", i + 1));
+            absl::StrFormat("time_slacks(%d)", i + 1));
         // TODO(user): Check SafeStartExpr();
         time_cumuls_[i + 1] = var->SafeStartExpr(var->StartMin())->Var();
         if (var->DurationMax() != duration_min) {
@@ -1147,7 +1147,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
       } else {
         time_slacks_[i + 1] = s->MakeIntVar(
             0, horizon,
-            absl::StrFormat("time_slacks(%" GG_LL_FORMAT "d)", i + 1));
+            absl::StrFormat("time_slacks(%d)", i + 1));
         time_cumuls_[i + 1] = s->MakeIntConst(horizon);
       }
     }

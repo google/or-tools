@@ -1411,38 +1411,34 @@ std::string SatSolver::StatusString(Status status) const {
          absl::StrFormat("  time: %fs\n", time_in_s) +
          absl::StrFormat("  memory: %s\n", MemoryUsage()) +
          absl::StrFormat(
-             "  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
+             "  num failures: %d  (%.0f /sec)\n",
              counters_.num_failures,
              static_cast<double>(counters_.num_failures) / time_in_s) +
          absl::StrFormat(
-             "  num branches: %" GG_LL_FORMAT "d (%.0f /sec)\n",
+             "  num branches: %d (%.0f /sec)\n",
              counters_.num_branches,
              static_cast<double>(counters_.num_branches) / time_in_s) +
-         absl::StrFormat("  num propagations: %" GG_LL_FORMAT
-                         "d  (%.0f /sec)\n",
+         absl::StrFormat("  num propagations: %d  (%.0f /sec)\n",
                          num_propagations(),
                          static_cast<double>(num_propagations()) / time_in_s) +
-         absl::StrFormat("  num binary propagations: %" GG_LL_FORMAT "d\n",
+         absl::StrFormat("  num binary propagations: %d\n",
                          binary_implication_graph_->num_propagations()) +
-         absl::StrFormat("  num binary inspections: %" GG_LL_FORMAT "d\n",
+         absl::StrFormat("  num binary inspections: %d\n",
                          binary_implication_graph_->num_inspections()) +
          absl::StrFormat(
-             "  num binary redundant implications: %" GG_LL_FORMAT "d\n",
+             "  num binary redundant implications: %d\n",
              binary_implication_graph_->num_redundant_implications()) +
-         absl::StrFormat("  num classic minimizations: %" GG_LL_FORMAT
-                         "d"
-                         "  (literals removed: %" GG_LL_FORMAT "d)\n",
+         absl::StrFormat("  num classic minimizations: %d"
+                         "  (literals removed: %d)\n",
                          counters_.num_minimizations,
                          counters_.num_literals_removed) +
-         absl::StrFormat("  num binary minimizations: %" GG_LL_FORMAT
-                         "d"
-                         "  (literals removed: %" GG_LL_FORMAT "d)\n",
+         absl::StrFormat("  num binary minimizations: %d"
+                         "  (literals removed: %d)\n",
                          binary_implication_graph_->num_minimization(),
                          binary_implication_graph_->num_literals_removed()) +
-         absl::StrFormat("  num inspected clauses: %" GG_LL_FORMAT "d\n",
+         absl::StrFormat("  num inspected clauses: %d\n",
                          clauses_propagator_.num_inspected_clauses()) +
-         absl::StrFormat("  num inspected clause_literals: %" GG_LL_FORMAT
-                         "d\n",
+         absl::StrFormat("  num inspected clause_literals: %d\n",
                          clauses_propagator_.num_inspected_clause_literals()) +
          absl::StrFormat(
              "  num learned literals: %d  (avg: %.1f /clause)\n",
@@ -1477,8 +1473,7 @@ std::string SatSolver::StatusString(Status status) const {
 std::string SatSolver::RunningStatisticsString() const {
   const double time_in_s = timer_.Get();
   return absl::StrFormat(
-      "%6.2fs, mem:%s, fails:%" GG_LL_FORMAT
-      "d, "
+      "%6.2fs, mem:%s, fails:%d, "
       "depth:%d, clauses:%lld, tmp:%lld, bin:%llu, restarts:%d, vars:%d",
       time_in_s, MemoryUsage(), counters_.num_failures, CurrentDecisionLevel(),
       clauses_propagator_.num_clauses() -
