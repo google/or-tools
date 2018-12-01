@@ -78,7 +78,8 @@ ProblemState::ProblemState(const LinearBooleanProblem& problem)
   const LinearObjective& objective = problem.objective();
   lower_bound_ = 0;
   for (int i = 0; i < objective.coefficients_size(); ++i) {
-    lower_bound_ += std::min(0LL, objective.coefficients(i));
+    // Fix template version for or-tools.
+    lower_bound_ += std::min<int64>(0LL, objective.coefficients(i));
   }
   upper_bound_ = solution_.IsFeasible() ? solution_.GetCost() : kint64max;
 }
