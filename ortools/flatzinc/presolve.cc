@@ -1962,14 +1962,14 @@ Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
   if (ct->arguments[0].IsVariable()) {
     absl::flat_hash_set<int64> all_values = GetValueSet(ct->arguments[2]);
     const std::vector<int64>& array = ct->arguments[1].values;
-    const int array_size = array.size();
+    const int64 array_size = array.size();
     if (!all_values.empty()) {
       const Domain& domain = ct->arguments[0].Var()->domain;
       std::vector<int64> to_keep;
       bool remove_some = false;
       if (domain.is_interval) {
-        for (int64 v = std::max<int64>(1, domain.values[0]);
-             v <= std::min<int64>(array_size, domain.values[1]); ++v) {
+        for (int64 v = std::max(1LL, domain.values[0]);
+             v <= std::min(array_size, domain.values[1]); ++v) {
           const int64 value = array[v - 1];
           if (gtl::ContainsKey(all_values, value)) {
             to_keep.push_back(v);
@@ -2106,11 +2106,11 @@ Presolver::RuleStatus Presolver::PresolveSimplifyExprElement(Constraint* ct,
   if (ct->arguments[0].IsVariable()) {
     const Domain& domain = ct->arguments[0].Var()->domain;
     std::vector<int64> to_keep;
-    const int array_size = ct->arguments[1].variables.size();
+    const int64 array_size = ct->arguments[1].variables.size();
     bool remove_some = false;
     if (domain.is_interval) {
       for (int64 v = std::max<int64>(1, domain.values[0]);
-           v <= std::min<int64>(array_size, domain.values[1]); ++v) {
+           v <= std::min(array_size, domain.values[1]); ++v) {
         if (OverlapsAt(ct->arguments[1], v - 1, ct->arguments[2])) {
           to_keep.push_back(v);
         } else {
