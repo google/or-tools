@@ -413,8 +413,7 @@ test_cc_tests: \
  rcc_cpp11_test \
  rcc_forbidden_intervals_test \
  rcc_issue57 \
- rcc_min_max_test \
- rcc_visitor_test
+ rcc_min_max_test
 #	$(MAKE) rcc_issue173 # error: too long
 
 .PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in ortools/examples/contrib)
