@@ -637,7 +637,7 @@ int IntegerTrail::NumConstantVariables() const {
 int IntegerTrail::FindLowestTrailIndexThatExplainBound(
     IntegerLiteral i_lit) const {
   DCHECK_LE(i_lit.bound, vars_[i_lit.var].current_bound);
-  if (i_lit.bound <= LevelZeroBound(i_lit.var)) return -1;
+  if (i_lit.bound <= LevelZeroLowerBound(i_lit.var)) return -1;
   int trail_index = vars_[i_lit.var].current_trail_index;
 
   // Check the validity of the cached index and use it if possible. This caching
@@ -718,7 +718,7 @@ void IntegerTrail::RemoveLevelZeroBounds(
     std::vector<IntegerLiteral>* reason) const {
   int new_size = 0;
   for (const IntegerLiteral literal : *reason) {
-    if (literal.bound <= LevelZeroBound(literal.var)) continue;
+    if (literal.bound <= LevelZeroLowerBound(literal.var)) continue;
     (*reason)[new_size++] = literal;
   }
   reason->resize(new_size);
@@ -854,7 +854,7 @@ bool IntegerTrail::ReasonIsValid(
       }
     }
     for (const IntegerLiteral i_lit : integer_reason) {
-      if (LevelZeroBound(i_lit.var) < i_lit.bound) {
+      if (LevelZeroLowerBound(i_lit.var) < i_lit.bound) {
         num_literal_assigned_after_root_node++;
       }
     }

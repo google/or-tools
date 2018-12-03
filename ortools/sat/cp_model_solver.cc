@@ -29,7 +29,6 @@
 #include "ortools/base/file.h"
 #endif  // __PORTABLE_PLATFORM__
 
-#include "ortools/base/integral_types.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -38,6 +37,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status.h"
@@ -573,7 +573,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto, const Model& model,
     }
     response->set_objective_value(ScaleObjectiveValue(obj, objective_value));
     response->set_best_objective_bound(ScaleObjectiveValue(
-        obj, integer_trail->LevelZeroBound(objective_var).value()));
+        obj, integer_trail->LevelZeroLowerBound(objective_var).value()));
   } else {
     response->clear_objective_value();
     response->clear_best_objective_bound();
@@ -1016,9 +1016,11 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   // Dispatch every constraint to its LinearProgrammingConstraint.
   std::map<int, LinearProgrammingConstraint*> representative_to_lp_constraint;
   std::vector<LinearProgrammingConstraint*> lp_constraints;
+  std::map<int, std::vector<LinearConstraint>> id_to_constraints;
   for (int i = 0; i < num_lp_constraints; i++) {
     const int id = components.GetClassRepresentative(get_constraint_index(i));
     if (components_to_size[id] <= 1) continue;
+    id_to_constraints[id].push_back(relaxation.linear_constraints[i]);
     if (!gtl::ContainsKey(representative_to_lp_constraint, id)) {
       auto* lp = m->Create<LinearProgrammingConstraint>();
       representative_to_lp_constraint[id] = lp;
@@ -1026,15 +1028,8 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     }
 
     // Load the constraint.
-    LinearProgrammingConstraint* lp = representative_to_lp_constraint[id];
-    const auto lp_constraint =
-        lp->CreateNewConstraint(relaxation.linear_constraints[i].lb,
-                                relaxation.linear_constraints[i].ub);
-    for (int j = 0; j < relaxation.linear_constraints[i].vars.size(); ++j) {
-      lp->SetCoefficient(lp_constraint,
-                         relaxation.linear_constraints[i].vars[j],
-                         relaxation.linear_constraints[i].coeffs[j]);
-    }
+    gtl::FindOrDie(representative_to_lp_constraint, id)
+        ->AddLinearConstraint(relaxation.linear_constraints[i]);
   }
 
   // Dispatch every cut generator to its LinearProgrammingConstraint.
@@ -1049,6 +1044,8 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     LinearProgrammingConstraint* lp = representative_to_lp_constraint[id];
     lp->AddCutGenerator(std::move(relaxation.cut_generators[i]));
   }
+
+  const SatParameters& params = *(m->GetOrCreate<SatParameters>());
 
   // Add the objective.
   std::map<int, std::vector<std::pair<IntegerVariable, int64>>>

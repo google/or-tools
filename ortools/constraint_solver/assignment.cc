@@ -96,10 +96,9 @@ void IntVarElement::WriteToProto(
 std::string IntVarElement::DebugString() const {
   if (Activated()) {
     if (min_ == max_) {
-      return absl::StrFormat("(%" GG_LL_FORMAT "d)", min_);
+      return absl::StrFormat("(%d)", min_);
     } else {
-      return absl::StrFormat("(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d)", min_,
-                             max_);
+      return absl::StrFormat("(%d..%d)", min_, max_);
     }
   } else {
     return "(...)";
@@ -201,19 +200,17 @@ void IntervalVarElement::WriteToProto(
 std::string IntervalVarElement::DebugString() const {
   if (Activated()) {
     std::string out;
-    absl::StrAppendFormat(&out, "(start = %" GG_LL_FORMAT "d", start_min_);
+    absl::StrAppendFormat(&out, "(start = %d", start_min_);
     if (start_max_ != start_min_) {
-      absl::StrAppendFormat(&out, "..%" GG_LL_FORMAT "d", start_max_);
+      absl::StrAppendFormat(&out, "..%d", start_max_);
     }
-    absl::StrAppendFormat(&out, ", duration = %" GG_LL_FORMAT "d",
-                          duration_min_);
+    absl::StrAppendFormat(&out, ", duration = %d", duration_min_);
     if (duration_max_ != duration_min_) {
-      absl::StrAppendFormat(&out, "..%" GG_LL_FORMAT "d", duration_max_);
+      absl::StrAppendFormat(&out, "..%d", duration_max_);
     }
-    absl::StrAppendFormat(&out, ", status = %" GG_LL_FORMAT "d",
-                          performed_min_);
+    absl::StrAppendFormat(&out, ", status = %d", performed_min_);
     if (performed_max_ != performed_min_) {
-      absl::StrAppendFormat(&out, "..%" GG_LL_FORMAT "d", performed_max_);
+      absl::StrAppendFormat(&out, "..%d", performed_max_);
     }
     out.append(")");
     return out;

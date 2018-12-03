@@ -28,6 +28,7 @@
 #include "ortools/graph/minimum_spanning_tree.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 
@@ -67,6 +68,16 @@ class ChristofidesPathSolver {
  private:
   // Runs the Christofides algorithm.
   void Solve();
+
+  // Safe addition operator to avoid overflows when possible.
+  // template <typename T>
+  // T SafeAdd(T a, T b) {
+  //   return a + b;
+  // }
+  //template <>
+  int64 SafeAdd(int64 a, int64 b) {
+    return CapAdd(a, b);
+  }
 
   // Matching algorithm to use.
   MatchingAlgorithm matching_;
@@ -288,10 +299,12 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   for (const NodeIndex node : BuildEulerianTourFromNode(egraph, 0)) {
     if (touched[node]) continue;
     touched[node] = true;
-    tsp_cost_ += tsp_path_.empty() ? 0 : costs_(tsp_path_.back(), node);
+    tsp_cost_ = SafeAdd(tsp_cost_,
+                        tsp_path_.empty() ? 0 : costs_(tsp_path_.back(), node));
     tsp_path_.push_back(node);
   }
-  tsp_cost_ += tsp_path_.empty() ? 0 : costs_(tsp_path_.back(), 0);
+  tsp_cost_ =
+      SafeAdd(tsp_cost_, tsp_path_.empty() ? 0 : costs_(tsp_path_.back(), 0));
   tsp_path_.push_back(0);
   solved_ = true;
 }

@@ -1534,17 +1534,17 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
         // TODO(user): Add some conflict limit? and/or come up with an algo that
         // dynamically turn this on or not depending on the situation?
         const IntegerVariable var = terms[index].var;
-        const IntegerValue lb = integer_trail->LowerBound(var);
-        IntegerValue best = terms[index].cover_ub;
+        IntegerValue best =
+            std::min(terms[index].cover_ub, integer_trail->UpperBound(var));
 
         // Note(user): this can happen in some corner case because each time we
         // find a solution, we constrain the objective to be smaller than it, so
         // it is possible that a previous best is now infeasible.
-        if (best <= lb) continue;
+        if (best <= integer_trail->LowerBound(var)) continue;
 
         // Simple linear scan algorithm to find the optimal of var.
         some_cover_opt = true;
-        while (best > lb) {
+        while (best > integer_trail->LowerBound(var)) {
           const Literal a = integer_encoder->GetOrCreateAssociatedLiteral(
               IntegerLiteral::LowerOrEqual(var, best - 1));
           result =
@@ -1561,8 +1561,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
           }
 
           if (log_info) {
-            LOG(INFO) << "cover_opt var:" << var << " domain:[" << lb << ","
-                      << best << "]";
+            LOG(INFO) << "cover_opt var:" << var << " domain:["
+                      << integer_trail->LevelZeroLowerBound(var) << "," << best
+                      << "]";
           }
           if (!process_solution()) {
             result = SatSolver::INFEASIBLE;

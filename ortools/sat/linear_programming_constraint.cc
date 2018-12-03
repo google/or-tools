@@ -39,31 +39,6 @@ using glop::RowIndex;
 const double LinearProgrammingConstraint::kCpEpsilon = 1e-4;
 const double LinearProgrammingConstraint::kLpEpsilon = 1e-6;
 
-namespace {
-
-double ToDouble(IntegerValue value) {
-  const double kInfinity = std::numeric_limits<double>::infinity();
-  if (value >= kMaxIntegerValue) return kInfinity;
-  if (value <= kMinIntegerValue) return -kInfinity;
-  return static_cast<double>(value.value());
-}
-
-// TODO(user): Also used in sorted_interval_lists.h remove duplication.
-int64 CeilRatio(int64 value, int64 positive_coeff) {
-  CHECK_GT(positive_coeff, 0);
-  const int64 result = value / positive_coeff;
-  const int64 adjust = static_cast<int64>(result * positive_coeff < value);
-  return result + adjust;
-}
-int64 FloorRatio(int64 value, int64 positive_coeff) {
-  CHECK_GT(positive_coeff, 0);
-  const int64 result = value / positive_coeff;
-  const int64 adjust = static_cast<int64>(result * positive_coeff > value);
-  return result - adjust;
-}
-
-}  // namespace
-
 // TODO(user): make SatParameters singleton too, otherwise changing them after
 // a constraint was added will have no effect on this class.
 LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
@@ -80,41 +55,40 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
   simplex_.SetParameters(parameters);
 }
 
-LinearProgrammingConstraint::ConstraintIndex
-LinearProgrammingConstraint::CreateNewConstraint(IntegerValue lb,
-                                                 IntegerValue ub) {
+void LinearProgrammingConstraint::AddLinearConstraint(
+    const LinearConstraint& ct) {
   DCHECK(!lp_constraint_is_registered_);
-  const int index = integer_lp_.size();
-  integer_lp_.push_back(LinearConstraintInternal());
-  integer_lp_.back().lb = lb;
-  integer_lp_.back().ub = ub;
-  return ConstraintIndex(index);
+  constraint_manager_.Add(ct);
+
+  // We still create the mirror variable right away though.
+  //
+  // TODO(user): clean this up? Note that it is important that the variable
+  // in lp_data_ never changes though, so we can restart from the current
+  // lp solution and be incremental (even if the constraints changed).
+  for (const IntegerVariable var : ct.vars) {
+    GetOrCreateMirrorVariable(PositiveVariable(var));
+  }
 }
 
 glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
     IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
   if (!gtl::ContainsKey(mirror_lp_variable_, positive_variable)) {
-    const glop::ColIndex col = lp_data_.CreateNewVariable();
-    DCHECK_EQ(col, integer_variables_.size());
+    const glop::ColIndex col(integer_variables_.size());
     mirror_lp_variable_[positive_variable] = col;
     integer_variables_.push_back(positive_variable);
     lp_solution_.push_back(std::numeric_limits<double>::infinity());
     lp_reduced_cost_.push_back(0.0);
     (*dispatcher_)[positive_variable] = this;
+
+    const int index = std::max(positive_variable.value(),
+                               NegationOf(positive_variable).value());
+    if (index >= last_lp_solution_.size()) {
+      last_lp_solution_.resize(index + 1, 0.0);
+    }
     return col;
   }
   return mirror_lp_variable_[positive_variable];
-}
-
-void LinearProgrammingConstraint::SetCoefficient(ConstraintIndex ct,
-                                                 IntegerVariable ivar,
-                                                 IntegerValue coefficient) {
-  CHECK(!lp_constraint_is_registered_);
-  IntegerVariable pos_var = VariableIsPositive(ivar) ? ivar : NegationOf(ivar);
-  if (ivar != pos_var) coefficient = -coefficient;
-  const glop::ColIndex col = GetOrCreateMirrorVariable(pos_var);
-  integer_lp_[ct.value()].terms.push_back({col, coefficient});
 }
 
 void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
@@ -125,42 +99,46 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
   if (ivar != pos_var) coeff = -coeff;
 
   const glop::ColIndex col = GetOrCreateMirrorVariable(pos_var);
-  lp_data_.SetObjectiveCoefficient(col, ToDouble(coeff));
   integer_objective_.push_back({col, coeff});
 }
 
-void LinearProgrammingConstraint::RegisterWith(Model* model) {
-  DCHECK(!lp_constraint_is_registered_);
-  lp_constraint_is_registered_ = true;
-  model->GetOrCreate<LinearProgrammingConstraintCollection>()->push_back(this);
-
-  std::sort(integer_objective_.begin(), integer_objective_.end());
-
-  // Because sometimes we split a == constraint in two (>= and <=), it makes
-  // sense to detect duplicate constraints and merge bounds.
-  {
-    int new_size = 0;
-    absl::flat_hash_map<LinearConstraintInternal, int, TermsHash, TermsEquiv>
-        equiv_constraint;
-    for (LinearConstraintInternal& constraint : integer_lp_) {
-      std::sort(constraint.terms.begin(), constraint.terms.end());
-      if (gtl::ContainsKey(equiv_constraint, constraint)) {
-        const int index = equiv_constraint[constraint];
-        integer_lp_[index].lb = std::max(integer_lp_[index].lb, constraint.lb);
-        integer_lp_[index].ub = std::min(integer_lp_[index].ub, constraint.ub);
-        continue;
+// TODO(user): As the search progress, some variables might get fixed. Exploit
+// this to reduce the number of variables in the LP and in the
+// ConstraintManager? We might also detect during the search that two variable
+// are equivalent.
+void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
+  // Fill integer_lp_.
+  integer_lp_.clear();
+  for (const LinearConstraint* ct :
+       constraint_manager_.GetLp(last_lp_solution_)) {
+    integer_lp_.push_back(LinearConstraintInternal());
+    LinearConstraintInternal& new_ct = integer_lp_.back();
+    new_ct.lb = ct->lb;
+    new_ct.ub = ct->ub;
+    const int size = ct->vars.size();
+    for (int i = 0; i < size; ++i) {
+      // We only use positive variable inside this class.
+      IntegerVariable var = ct->vars[i];
+      IntegerValue coeff = ct->coeffs[i];
+      if (!VariableIsPositive(var)) {
+        var = NegationOf(var);
+        coeff = -coeff;
       }
-      equiv_constraint[constraint] = new_size;
-      integer_lp_[new_size++] = constraint;
+      new_ct.terms.push_back({GetOrCreateMirrorVariable(var), coeff});
     }
-    if (new_size < integer_lp_.size()) {
-      VLOG(1) << "Merged " << integer_lp_.size() - new_size << " constraints.";
-    }
-    integer_lp_.resize(new_size);
+
+    // Important to keep lp_data_ "clean".
+    std::sort(new_ct.terms.begin(), new_ct.terms.end());
   }
 
-  // Copy the integer_lp_ into lp_data_. Note that the objective is already
-  // copied.
+  // Copy the integer_lp_ into lp_data_.
+  lp_data_.Clear();
+  for (int i = 0; i < integer_variables_.size(); ++i) {
+    CHECK_EQ(glop::ColIndex(i), lp_data_.CreateNewVariable());
+  }
+  for (const auto entry : integer_objective_) {
+    lp_data_.SetObjectiveCoefficient(entry.first, ToDouble(entry.second));
+  }
   for (const LinearConstraintInternal& ct : integer_lp_) {
     const ConstraintIndex row = lp_data_.CreateNewConstraint();
     lp_data_.SetConstraintBounds(row, ToDouble(ct.lb), ToDouble(ct.ub));
@@ -170,6 +148,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   }
 
   // Scale lp_data_.
+  scaler_.Clear();
   Scale(&lp_data_, &scaler_, glop::GlopParameters::DEFAULT);
   lp_data_.ScaleObjective();
 
@@ -183,7 +162,18 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   UpdateBoundsOfLpVariables();
   bound_scaling_factor_ = lp_data_.ScaleBounds();
 
+  lp_data_.NotifyThatColumnsAreClean();
   lp_data_.AddSlackVariablesWhereNecessary(false);
+  VLOG(1) << "LP relaxation: " << lp_data_.GetDimensionString() << ".";
+}
+
+void LinearProgrammingConstraint::RegisterWith(Model* model) {
+  DCHECK(!lp_constraint_is_registered_);
+  lp_constraint_is_registered_ = true;
+  model->GetOrCreate<LinearProgrammingConstraintCollection>()->push_back(this);
+
+  std::sort(integer_objective_.begin(), integer_objective_.end());
+  CreateLpFromConstraintManager();
 
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   const int watcher_id = watcher->Register(this);
@@ -272,6 +262,27 @@ void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
   }
 }
 
+bool LinearProgrammingConstraint::SolveLp() {
+  const auto status = simplex_.Solve(lp_data_, time_limit_);
+  if (!status.ok()) {
+    LOG(WARNING) << "The LP solver encountered an error: "
+                 << status.error_message();
+    simplex_.ClearStateForNextSolve();
+    return false;
+  }
+
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    const int num_vars = integer_variables_.size();
+    for (int i = 0; i < num_vars; i++) {
+      const glop::Fractional value =
+          GetVariableValueAtCpScale(glop::ColIndex(i));
+      last_lp_solution_[integer_variables_[i]] = value;
+      last_lp_solution_[NegationOf(integer_variables_[i])] = -value;
+    }
+  }
+  return true;
+}
+
 bool LinearProgrammingConstraint::Propagate() {
   UpdateBoundsOfLpVariables();
 
@@ -305,78 +316,42 @@ bool LinearProgrammingConstraint::Propagate() {
 
   simplex_.SetParameters(parameters);
   simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
-  const auto status = simplex_.Solve(lp_data_, time_limit_);
-  if (!status.ok()) {
-    LOG(WARNING) << "The LP solver encountered an error: "
-                 << status.error_message();
-    simplex_.ClearStateForNextSolve();
-    return true;
-  }
+  if (!SolveLp()) return true;
 
-  // Add cuts and resolve.
-  // TODO(user): for the cuts, we scale back and forth, is this really needed?
-  if (!cut_generators_.empty() && num_cuts_ < sat_parameters_.max_num_cuts() &&
-      (trail_->CurrentDecisionLevel() == 0 ||
-       !sat_parameters_.only_add_cuts_at_level_zero()) &&
-      (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
-       simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE)) {
-    int num_new_cuts = 0;
-    for (const CutGenerator& generator : cut_generators_) {
-      std::vector<double> local_solution;
-      for (const IntegerVariable var : generator.vars) {
-        if (VariableIsPositive(var)) {
-          const auto index = gtl::FindOrDie(mirror_lp_variable_, var);
-          local_solution.push_back(GetVariableValueAtCpScale(index));
-        } else {
-          const auto index =
-              gtl::FindOrDie(mirror_lp_variable_, NegationOf(var));
-          local_solution.push_back(-GetVariableValueAtCpScale(index));
+  // Modify the LP?
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    // Add cuts?
+    if (!cut_generators_.empty() &&
+        num_cuts_ < sat_parameters_.max_num_cuts() &&
+        !constraint_manager_.LpShouldBeChanged() &&
+        (trail_->CurrentDecisionLevel() == 0 ||
+         !sat_parameters_.only_add_cuts_at_level_zero())) {
+      int num_new_cuts = 0;
+      for (const CutGenerator& generator : cut_generators_) {
+        // TODO(user): Change api so cuts can directly be added to the manager
+        // and we don't need this intermediate vector.
+        std::vector<LinearConstraint> cuts =
+            generator.generate_cuts(last_lp_solution_);
+
+        // Add the cuts to the manager.
+        for (const LinearConstraint& cut : cuts) {
+          ++num_new_cuts;
+          constraint_manager_.Add(cut);
         }
       }
-      std::vector<LinearConstraint> cuts =
-          generator.generate_cuts(local_solution);
-      if (cuts.empty()) continue;
-
-      // Add the cuts to the LP!
-      if (num_new_cuts == 0) lp_data_.DeleteSlackVariables();
-      for (const LinearConstraint& cut : cuts) {
-        ++num_new_cuts;
-        const glop::RowIndex row = lp_data_.CreateNewConstraint();
-        lp_data_.SetConstraintBounds(row, ToDouble(cut.lb), ToDouble(cut.ub));
-        integer_lp_.push_back(LinearConstraintInternal());
-        integer_lp_.back().lb = cut.lb;
-        integer_lp_.back().ub = cut.ub;
-        for (int i = 0; i < cut.vars.size(); ++i) {
-          const glop::ColIndex col = GetOrCreateMirrorVariable(cut.vars[i]);
-
-          // The returned coefficients correspond to variables at the CP scale,
-          // so we need to divide them by CpToLpScalingFactor() which is the
-          // same as multiplying by LpToCpScalingFactor().
-          //
-          // TODO(user): we should still multiply this row by a row_scale so
-          // that its maximum magnitude is one.
-          lp_data_.SetCoefficient(
-              row, col, ToDouble(cut.coeffs[i]) * LpToCpScalingFactor(col));
-          integer_lp_.back().terms.push_back({col, cut.coeffs[i]});
-        }
-        std::sort(integer_lp_.back().terms.begin(),
-                  integer_lp_.back().terms.end());
+      if (num_new_cuts > 0) {
+        VLOG(1) << "#cuts " << num_cuts_;
+        num_cuts_ += num_new_cuts;
       }
     }
 
-    // Resolve if we added some cuts.
-    if (num_new_cuts > 0) {
-      num_cuts_ += num_new_cuts;
-      VLOG(1) << "#cuts " << num_cuts_;
-      lp_data_.NotifyThatColumnsAreClean();
-      lp_data_.AddSlackVariablesWhereNecessary(false);
-      const auto status = simplex_.Solve(lp_data_, time_limit_);
-      if (!status.ok()) {
-        LOG(WARNING) << "The LP solver encountered an error: "
-                     << status.error_message();
-        simplex_.ClearStateForNextSolve();
-        return true;
-      }
+    // Resolve?
+    //
+    // Note that we might want to change the LP again after this, but we will
+    // wait for the next Propagate() call to do so.
+    if (constraint_manager_.LpShouldBeChanged()) {
+      CreateLpFromConstraintManager();
+      if (!SolveLp()) return true;
     }
   }
 
@@ -460,6 +435,7 @@ bool LinearProgrammingConstraint::Propagate() {
     const int num_vars = integer_variables_.size();
     for (int i = 0; i < num_vars; i++) {
       lp_solution_[i] = GetVariableValueAtCpScale(glop::ColIndex(i));
+      last_lp_solution_[integer_variables_[i]] = lp_solution_[i];
 
       // The reduced cost need to be divided by LpToCpScalingFactor().
       lp_reduced_cost_[i] = simplex_.GetReducedCost(glop::ColIndex(i)) *
@@ -766,8 +742,7 @@ IntegerValue LinearProgrammingConstraint::ExactLpReasonning() {
     return kMinIntegerValue;  // Overflow.
   }
 
-  IntegerValue exact_objective_lb(
-      CeilRatio(scaled_objective_lb.value(), obj_scale.value()));
+  IntegerValue exact_objective_lb(CeilRatio(scaled_objective_lb, obj_scale));
   if (exact_objective_lb > objective_ub) {
     // We will have a conflict, so we can can relax more!
     exact_objective_lb = objective_ub + 1;
@@ -789,8 +764,8 @@ IntegerValue LinearProgrammingConstraint::ExactLpReasonning() {
 
         // Any change by more than this will make scaled_objective_lb go past
         // the objective upper bound
-        const IntegerValue allowed_change(
-            FloorRatio(feasibility_slack.value(), std::abs(coeff.value())));
+        const IntegerValue allowed_change(FloorRatio(
+            feasibility_slack, IntegerValue(std::abs(coeff.value()))));
         CHECK_GE(allowed_change, 0);
         if (coeff > 0) {
           const IntegerValue new_ub =
@@ -951,7 +926,7 @@ namespace {
 void AddIncomingAndOutgoingCutsIfNeeded(
     int num_nodes, const std::vector<int>& s, const std::vector<int>& tails,
     const std::vector<int>& heads, const std::vector<IntegerVariable>& vars,
-    const std::vector<double>& lp_solution, int64 rhs_lower_bound,
+    const std::vector<double>& var_lp_values, int64 rhs_lower_bound,
     std::vector<LinearConstraint>* cuts) {
   LinearConstraint incoming;
   LinearConstraint outgoing;
@@ -967,12 +942,12 @@ void AddIncomingAndOutgoingCutsIfNeeded(
     const bool in = gtl::ContainsKey(subset, heads[i]);
     if (out && in) continue;
     if (out) {
-      sum_outgoing += lp_solution[i];
+      sum_outgoing += var_lp_values[i];
       outgoing.vars.push_back(vars[i]);
       outgoing.coeffs.push_back(IntegerValue(1));
     }
     if (in) {
-      sum_incoming += lp_solution[i];
+      sum_incoming += var_lp_values[i];
       incoming.vars.push_back(vars[i]);
       incoming.coeffs.push_back(IntegerValue(1));
     }
@@ -993,13 +968,13 @@ void AddIncomingAndOutgoingCutsIfNeeded(
     if (gtl::ContainsKey(subset, tails[i])) {
       num_optional_nodes_in++;
       if (optional_loop_in == -1 ||
-          lp_solution[i] < lp_solution[optional_loop_in]) {
+          var_lp_values[i] < var_lp_values[optional_loop_in]) {
         optional_loop_in = i;
       }
     } else {
       num_optional_nodes_out++;
       if (optional_loop_out == -1 ||
-          lp_solution[i] < lp_solution[optional_loop_out]) {
+          var_lp_values[i] < var_lp_values[optional_loop_out]) {
         optional_loop_out = i;
       }
     }
@@ -1009,12 +984,12 @@ void AddIncomingAndOutgoingCutsIfNeeded(
     // When all optionals of one side are excluded in lp solution, no cut.
     if (num_optional_nodes_in == subset.size() &&
         (optional_loop_in == -1 ||
-         lp_solution[optional_loop_in] > 1.0 - 1e-6)) {
+         var_lp_values[optional_loop_in] > 1.0 - 1e-6)) {
       return;
     }
     if (num_optional_nodes_out == num_nodes - subset.size() &&
         (optional_loop_out == -1 ||
-         lp_solution[optional_loop_out] > 1.0 - 1e-6)) {
+         var_lp_values[optional_loop_out] > 1.0 - 1e-6)) {
       return;
     }
 
@@ -1022,22 +997,22 @@ void AddIncomingAndOutgoingCutsIfNeeded(
     if (num_optional_nodes_in == subset.size()) {
       incoming.vars.push_back(vars[optional_loop_in]);
       incoming.coeffs.push_back(IntegerValue(1));
-      sum_incoming += lp_solution[optional_loop_in];
+      sum_incoming += var_lp_values[optional_loop_in];
 
       outgoing.vars.push_back(vars[optional_loop_in]);
       outgoing.coeffs.push_back(IntegerValue(1));
-      sum_outgoing += lp_solution[optional_loop_in];
+      sum_outgoing += var_lp_values[optional_loop_in];
     }
 
     // There is no mandatory node out of subset, add optional_loop_out.
     if (num_optional_nodes_out == num_nodes - subset.size()) {
       incoming.vars.push_back(vars[optional_loop_out]);
       incoming.coeffs.push_back(IntegerValue(1));
-      sum_incoming += lp_solution[optional_loop_out];
+      sum_incoming += var_lp_values[optional_loop_out];
 
       outgoing.vars.push_back(vars[optional_loop_out]);
       outgoing.coeffs.push_back(IntegerValue(1));
-      sum_outgoing += lp_solution[optional_loop_out];
+      sum_outgoing += var_lp_values[optional_loop_out];
     }
   }
 
@@ -1059,39 +1034,43 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     const std::vector<IntegerVariable>& vars) {
   CutGenerator result;
   result.vars = vars;
-  result.generate_cuts = [num_nodes, tails, heads,
-                          vars](const std::vector<double>& lp_solution) {
-    int num_arcs_in_lp_solution = 0;
-    std::vector<std::vector<int>> graph(num_nodes);
-    for (int i = 0; i < lp_solution.size(); ++i) {
-      // TODO(user): a more advanced algorithm consist of adding the arcs
-      // in the decreasing order of their lp_solution, and for each strongly
-      // connected components S along the way, try to add the corresponding
-      // cuts. We can stop as soon as there is only two components left, after
-      // adding the corresponding cut.
-      if (lp_solution[i] > 1e-6) {
-        ++num_arcs_in_lp_solution;
-        graph[tails[i]].push_back(heads[i]);
-      }
-    }
-    std::vector<LinearConstraint> cuts;
-    std::vector<std::vector<int>> components;
-    FindStronglyConnectedComponents(num_nodes, graph, &components);
-    if (components.size() == 1) return cuts;
+  result.generate_cuts =
+      [num_nodes, tails, heads,
+       vars](const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+        int num_arcs_in_lp_solution = 0;
+        std::vector<double> var_lp_values;
+        std::vector<std::vector<int>> graph(num_nodes);
+        for (int i = 0; i < vars.size(); ++i) {
+          var_lp_values.push_back(lp_values[vars[i]]);
 
-    VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
-            << " sccs:" << components.size();
-    for (const std::vector<int>& component : components) {
-      if (component.size() == 1) continue;
-      AddIncomingAndOutgoingCutsIfNeeded(num_nodes, component, tails, heads,
-                                         vars, lp_solution,
-                                         /*rhs_lower_bound=*/1, &cuts);
+          // TODO(user): a more advanced algorithm consist of adding the arcs
+          // in the decreasing order of their lp_values, and for each strongly
+          // connected components S along the way, try to add the corresponding
+          // cuts. We can stop as soon as there is only two components left,
+          // after adding the corresponding cut.
+          if (lp_values[vars[i]] > 1e-6) {
+            ++num_arcs_in_lp_solution;
+            graph[tails[i]].push_back(heads[i]);
+          }
+        }
+        std::vector<LinearConstraint> cuts;
+        std::vector<std::vector<int>> components;
+        FindStronglyConnectedComponents(num_nodes, graph, &components);
+        if (components.size() == 1) return cuts;
 
-      // In this case, the cuts for each component are the same.
-      if (components.size() == 2) break;
-    }
-    return cuts;
-  };
+        VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
+                << " sccs:" << components.size();
+        for (const std::vector<int>& component : components) {
+          if (component.size() == 1) continue;
+          AddIncomingAndOutgoingCutsIfNeeded(num_nodes, component, tails, heads,
+                                             vars, var_lp_values,
+                                             /*rhs_lower_bound=*/1, &cuts);
+
+          // In this case, the cuts for each component are the same.
+          if (components.size() == 2) break;
+        }
+        return cuts;
+      };
   return result;
 }
 
@@ -1107,48 +1086,50 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
 
   CutGenerator result;
   result.vars = vars;
-  result.generate_cuts = [num_nodes, tails, heads, total_demands, demands,
-                          capacity,
-                          vars](const std::vector<double>& lp_solution) {
-    int num_arcs_in_lp_solution = 0;
-    std::vector<std::vector<int>> graph(num_nodes);
-    for (int i = 0; i < lp_solution.size(); ++i) {
-      if (lp_solution[i] > 1e-6) {
-        ++num_arcs_in_lp_solution;
-        graph[tails[i]].push_back(heads[i]);
-      }
-    }
-    std::vector<LinearConstraint> cuts;
-    std::vector<std::vector<int>> components;
-    FindStronglyConnectedComponents(num_nodes, graph, &components);
-    if (components.size() == 1) return cuts;
+  result.generate_cuts =
+      [num_nodes, tails, heads, total_demands, demands, capacity,
+       vars](const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+        int num_arcs_in_lp_solution = 0;
+        std::vector<double> var_lp_values;
+        std::vector<std::vector<int>> graph(num_nodes);
+        for (int i = 0; i < vars.size(); ++i) {
+          var_lp_values.push_back(lp_values[vars[i]]);
+          if (lp_values[vars[i]] > 1e-6) {
+            ++num_arcs_in_lp_solution;
+            graph[tails[i]].push_back(heads[i]);
+          }
+        }
+        std::vector<LinearConstraint> cuts;
+        std::vector<std::vector<int>> components;
+        FindStronglyConnectedComponents(num_nodes, graph, &components);
+        if (components.size() == 1) return cuts;
 
-    VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
-            << " sccs:" << components.size();
-    for (const std::vector<int>& component : components) {
-      if (component.size() == 1) continue;
+        VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
+                << " sccs:" << components.size();
+        for (const std::vector<int>& component : components) {
+          if (component.size() == 1) continue;
 
-      bool contain_depot = false;
-      int64 component_demand = 0;
-      for (const int node : component) {
-        if (node == 0) contain_depot = true;
-        component_demand += demands[node];
-      }
-      const int min_num_vehicles =
-          contain_depot
-              ? (total_demands - component_demand + capacity - 1) / capacity
-              : (component_demand + capacity - 1) / capacity;
-      CHECK_GE(min_num_vehicles, 1);
+          bool contain_depot = false;
+          int64 component_demand = 0;
+          for (const int node : component) {
+            if (node == 0) contain_depot = true;
+            component_demand += demands[node];
+          }
+          const int min_num_vehicles =
+              contain_depot
+                  ? (total_demands - component_demand + capacity - 1) / capacity
+                  : (component_demand + capacity - 1) / capacity;
+          CHECK_GE(min_num_vehicles, 1);
 
-      AddIncomingAndOutgoingCutsIfNeeded(
-          num_nodes, component, tails, heads, vars, lp_solution,
-          /*rhs_lower_bound=*/min_num_vehicles, &cuts);
+          AddIncomingAndOutgoingCutsIfNeeded(
+              num_nodes, component, tails, heads, vars, var_lp_values,
+              /*rhs_lower_bound=*/min_num_vehicles, &cuts);
 
-      // In this case, the cuts for each component are the same.
-      if (components.size() == 2) break;
-    }
-    return cuts;
-  };
+          // In this case, the cuts for each component are the same.
+          if (components.size() == 2) break;
+        }
+        return cuts;
+      };
   return result;
 }
 

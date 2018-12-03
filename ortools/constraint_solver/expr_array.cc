@@ -1985,7 +1985,7 @@ class BooleanScalProdLessConstant : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("BooleanScalProd([%s], [%s]) <= %" GG_LL_FORMAT "d)",
+    return absl::StrFormat("BooleanScalProd([%s], [%s]) <= %d)",
                            JoinDebugStringPtr(vars_, ", "),
                            absl::StrJoin(coefs_, ", "), upper_bound_);
   }
@@ -2351,10 +2351,9 @@ class PositiveBooleanScalProdEqCst : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat(
-        "PositiveBooleanScalProd([%s], [%s]) == %" GG_LL_FORMAT "d",
-        JoinDebugStringPtr(vars_, ", "), absl::StrJoin(coefs_, ", "),
-        constant_);
+    return absl::StrFormat("PositiveBooleanScalProd([%s], [%s]) == %d",
+                           JoinDebugStringPtr(vars_, ", "),
+                           absl::StrJoin(coefs_, ", "), constant_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {

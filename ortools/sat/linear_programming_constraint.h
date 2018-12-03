@@ -19,160 +19,20 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/int_type.h"
-#include "ortools/base/hash.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/matrix_scaler.h"
+#include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
-
-// One linear constraint on a set of Integer variables.
-// Important: there should be no duplicate variables.
-//
-// We also assume that we never have integer overflow when evaluating such
-// constraint. This should be enforced by the checker for user given
-// cosntraints, and we must enforce it ourselves for the newly created
-// constraint. We requires:
-//  -  sum_i max(0, max(c_i * lb_i, c_i * ub_i)) < kMaxIntegerValue.
-//  -  sum_i min(0, min(c_i * lb_i, c_i * ub_i)) > kMinIntegerValue
-// so that in whichever order we compute the sum, we have no overflow. Note
-// that this condition invoves the bounds of the variables.
-//
-// TODO(user): Add DCHECKs for the no-overflow property? but we need access
-// to the variable bounds.
-struct LinearConstraint {
-  IntegerValue lb;
-  IntegerValue ub;
-  std::vector<IntegerVariable> vars;
-  std::vector<IntegerValue> coeffs;
-
-  std::string DebugString() const {
-    std::string result;
-    if (lb.value() > kMinIntegerValue) {
-      absl::StrAppend(&result, lb.value(), " <= ");
-    }
-    for (int i = 0; i < vars.size(); ++i) {
-      const IntegerValue coeff =
-          VariableIsPositive(vars[i]) ? coeffs[i] : -coeffs[i];
-      absl::StrAppend(&result, coeff.value(), "*X", vars[i].value() / 2, " ");
-    }
-    if (ub.value() < kMaxIntegerValue) {
-      absl::StrAppend(&result, "<= ", ub.value());
-    }
-    return result;
-  }
-};
-
-// Allow to build a LinearConstraint while making sure there is no duplicate
-// variables.
-//
-// TODO(user): Storing all coeff in the vector then sorting and merging
-// duplicates might be more efficient. Change if required.
-class LinearConstraintBuilder {
- public:
-  // We support "sticky" kMinIntegerValue for lb and kMaxIntegerValue for ub
-  // for one-sided constraints.
-  LinearConstraintBuilder(const Model* model, IntegerValue lb, IntegerValue ub)
-      : assignment_(model->Get<Trail>()->Assignment()),
-        encoder_(*model->Get<IntegerEncoder>()),
-        lb_(lb),
-        ub_(ub) {}
-
-  int size() const { return terms_.size(); }
-  bool IsEmpty() const { return terms_.empty(); }
-
-  // Adds var * coeff to the constraint.
-  void AddTerm(IntegerVariable var, IntegerValue coeff) {
-    // We can either add var or NegationOf(var), and we always choose the
-    // positive one.
-    if (VariableIsPositive(var)) {
-      terms_[var] += coeff;
-      if (terms_[var] == 0) terms_.erase(var);
-    } else {
-      const IntegerVariable minus_var = NegationOf(var);
-      terms_[minus_var] -= coeff;
-      if (terms_[minus_var] == 0) terms_.erase(minus_var);
-    }
-  }
-
-  // Add literal * coeff to the constaint. Returns false and do nothing if the
-  // given literal didn't have an integer view.
-  ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff) {
-    if (assignment_.LiteralIsTrue(lit)) {
-      if (lb_ > kMinIntegerValue) lb_ -= coeff;
-      if (ub_ < kMaxIntegerValue) ub_ -= coeff;
-      return true;
-    }
-    if (assignment_.LiteralIsFalse(lit)) {
-      return true;
-    }
-
-    bool has_direct_view = encoder_.GetLiteralView(lit) != kNoIntegerVariable;
-    bool has_opposite_view =
-        encoder_.GetLiteralView(lit.Negated()) != kNoIntegerVariable;
-
-    // If a literal has both views, we want to always keep the same
-    // representative: the smallest IntegerVariable. Note that AddTerm() will
-    // also make sure to use the associated positive variable.
-    if (has_direct_view && has_opposite_view) {
-      if (encoder_.GetLiteralView(lit) <=
-          encoder_.GetLiteralView(lit.Negated())) {
-        has_direct_view = true;
-        has_opposite_view = false;
-      } else {
-        has_direct_view = false;
-        has_opposite_view = true;
-      }
-    }
-    if (has_direct_view) {
-      AddTerm(encoder_.GetLiteralView(lit), coeff);
-      return true;
-    }
-    if (has_opposite_view) {
-      AddTerm(encoder_.GetLiteralView(lit.Negated()), -coeff);
-      if (lb_ > kMinIntegerValue) lb_ -= coeff;
-      if (ub_ < kMaxIntegerValue) ub_ -= coeff;
-      return true;
-    }
-    return false;
-  }
-
-  LinearConstraint Build() {
-    LinearConstraint result;
-    result.lb = lb_;
-    result.ub = ub_;
-    for (const auto entry : terms_) {
-      result.vars.push_back(entry.first);
-      result.coeffs.push_back(entry.second);
-    }
-    return result;
-  }
-
- private:
-  const VariablesAssignment& assignment_;
-  const IntegerEncoder& encoder_;
-  IntegerValue lb_;
-  IntegerValue ub_;
-  IntegerValue offset_;
-  std::map<IntegerVariable, IntegerValue> terms_;
-};
-
-// A "cut" generator on a set of IntegerVariable. The generate_cuts() function
-// will be called with the value of these variables in the current LP optimal
-// solution and can return a list of extra constraints to add to the relaxation
-// in terms of the same variables.
-struct CutGenerator {
-  std::vector<IntegerVariable> vars;
-  std::function<std::vector<LinearConstraint>(
-      const std::vector<double>& lp_solution)>
-      generate_cuts;
-};
 
 // A SAT constraint that enforces a set of linear inequality constraints on
 // integer variables using an LP solver.
@@ -187,21 +47,10 @@ struct CutGenerator {
 // it should be done by redundant constraints, as reduced cost propagation
 // may miss some filtering.
 //
-// Workflow: create a LinearProgrammingConstraint instance, make linear
-// inequality constraints, call RegisterWith() to finalize the set of linear
-// constraints. A linear constraint a x + b y + c z <= k, with x y z
-// IntegerVariables, can be created by calling:
-// auto ct = lp->CreateNewConstraint(kMinIntegerValue, k);
-// lp->SetCoefficient(ct, x, a);
-// lp->SetCoefficient(ct, y, b);
-// lp->SetCoefficient(ct, z, c);
-// lp->RegisterWith();  // No new modifications allowed after this.
-//
 // Note that this constraint works with double floating-point numbers, so one
 // could be worried that it may filter too much in case of precision issues.
-// However, the underlying LP solver reports infeasibility only if the problem
-// is still infeasible by relaxing the bounds by some small relative value.
-// Thus the constraint will tend to filter less than it could, not the opposite.
+// However, by default, we interpret the LP result by recomputing everything
+// in integer arithmetic, so we are exact.
 class LinearProgrammingDispatcher;
 class LinearProgrammingConstraint : public PropagatorInterface,
                                     ReversibleInterface {
@@ -210,19 +59,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   explicit LinearProgrammingConstraint(Model* model);
 
-  // User API, see header description.
-  ConstraintIndex CreateNewConstraint(IntegerValue lb, IntegerValue ub);
-
-  // This function only accept positive integer variable. It is easy enough to
-  // always satify this precondition by calling it with a negated variable and
-  // coefficient if needed.
-  //
-  // TODO(user): Allow Literals to appear in linear constraints.
-  // TODO(user): Calling SetCoefficient() twice on the same
-  // (constraint, variable) pair will overwrite coefficients where accumulating
-  // them might be desired, this is a common mistake, change API.
-  void SetCoefficient(ConstraintIndex ct, IntegerVariable ivar,
-                      IntegerValue coefficient);
+  // Add a new linear constraint to this LP.
+  void AddLinearConstraint(const LinearConstraint& ct);
 
   // Set the coefficient of the variable in the objective. Calling it twice will
   // overwrite the previous value.
@@ -255,6 +93,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   void SetLevel(int level) override;
 
   int NumVariables() const { return integer_variables_.size(); }
+  const std::vector<IntegerVariable>& integer_variables() const {
+    return integer_variables_;
+  }
   std::string DimensionString() const { return lp_data_.GetDimensionString(); }
 
   // Returns a LiteralIndex guided by the underlying LP constraints.
@@ -293,6 +134,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::function<LiteralIndex()> LPReducedCostAverageBranching();
 
  private:
+  // Reinitialize the LP from a potentially new set of constraints.
+  // This fills all data structure and properly rescale the underlying LP.
+  void CreateLpFromConstraintManager();
+
+  // Solve the LP, returns false if something went wrong in the LP solver.
+  bool SolveLp();
+
   // The factor to multiply a CP variable value to get the value in the LP side.
   glop::Fractional CpToLpScalingFactor(glop::ColIndex col) const;
   glop::Fractional LpToCpScalingFactor(glop::ColIndex col) const;
@@ -373,6 +221,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Same but at the LP scale.
   static const double kLpEpsilon;
 
+  // Class responsible for managing all possible constraints that may be part
+  // of the LP.
+  LinearConstraintManager constraint_manager_;
+
   // Initial problem in integer form.
   // We always sort the inner vectors by increasing glop::ColIndex.
   struct LinearConstraintInternal {
@@ -382,24 +234,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   };
   LinearExpression integer_objective_;
   std::vector<LinearConstraintInternal> integer_lp_;
-
-  // Custom Hash/Equiv function on a LinearConstraintInternal to detect
-  // constraint with exactly the same terms (once sorted).
-  struct TermsHash {
-    std::size_t operator()(const LinearConstraintInternal& ct) const {
-      size_t hash = 0;
-      for (const std::pair<glop::ColIndex, IntegerValue>& term : ct.terms) {
-        hash = util_hash::Hash(term.first.value(), term.second.value(), hash);
-      }
-      return hash;
-    }
-  };
-  struct TermsEquiv {
-    bool operator()(const LinearConstraintInternal& a,
-                    const LinearConstraintInternal& b) const {
-      return a.terms == b.terms;
-    }
-  };
 
   // Underlying LP solver API.
   glop::LinearProgram lp_data_;
@@ -446,6 +280,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   double lp_objective_;
   std::vector<double> lp_solution_;
   std::vector<double> lp_reduced_cost_;
+
+  // Same as lp_solution_ but this vector is indexed differently.
+  gtl::ITIVector<IntegerVariable, double> last_lp_solution_;
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;

@@ -209,9 +209,11 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
         VLOG(2) << "Integer LP solution at level:" << old_level
                 << " obj:" << old_obj;
       }
-      for (IntegerLiteral l : encoder->GetIntegerLiterals(Literal(decision))) {
+      for (const IntegerLiteral l :
+           encoder->GetIntegerLiterals(Literal(decision))) {
         const IntegerVariable positive_var =
             VariableIsPositive(l.var) ? l.var : NegationOf(l.var);
+        if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
         LinearProgrammingConstraint* lp =
             gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
         if (lp != nullptr) {

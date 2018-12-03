@@ -1323,8 +1323,7 @@ std::string StringifyEvaluatorBare(const Solver::Int64ToIntVar& evaluator,
     if (i != range_start) {
       out += ", ";
     }
-    out += absl::StrFormat("%" GG_LL_FORMAT "d -> %s", i,
-                           evaluator(i)->DebugString());
+    out += absl::StrFormat("%d -> %s", i, evaluator(i)->DebugString());
   }
   return out;
 }
@@ -1390,8 +1389,8 @@ std::string IntExprArrayElementCt::DebugString() const {
   int64 size = vars_.size();
   if (size > 10) {
     return absl::StrFormat(
-        "IntExprArrayElement(var array of size %" GG_LL_FORMAT "d, %s) == %s",
-        size, index_->DebugString(), target_var_->DebugString());
+        "IntExprArrayElement(var array of size %d, %s) == %s", size,
+        index_->DebugString(), target_var_->DebugString());
   } else {
     return absl::StrFormat("IntExprArrayElement([%s], %s) == %s",
                            JoinDebugStringPtr(vars_, ", "),
@@ -1458,9 +1457,9 @@ class IntExprArrayElementCstCt : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat(
-        "IntExprArrayElement([%s], %s) == %" GG_LL_FORMAT "d",
-        JoinDebugStringPtr(vars_, ", "), index_->DebugString(), target_);
+    return absl::StrFormat("IntExprArrayElement([%s], %s) == %d",
+                           JoinDebugStringPtr(vars_, ", "),
+                           index_->DebugString(), target_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1551,7 +1550,7 @@ class IntExprIndexOfCt : public Constraint {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("IntExprIndexOf([%s], %s) == %" GG_LL_FORMAT "d",
+    return absl::StrFormat("IntExprIndexOf([%s], %s) == %d",
                            JoinDebugStringPtr(vars_, ", "),
                            index_->DebugString(), target_);
   }
@@ -1752,8 +1751,8 @@ IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    const std::string name = absl::StrFormat("Index(%s, %" GG_LL_FORMAT "d)",
-                                             JoinNamePtr(vars, ", "), value);
+    const std::string name =
+        absl::StrFormat("Index(%s, %d)", JoinNamePtr(vars, ", "), value);
     IntVar* const index = MakeIntVar(0, vars.size() - 1, name);
     AddConstraint(MakeIndexOfConstraint(vars, index, value));
     model_cache_->InsertVarArrayConstantExpression(

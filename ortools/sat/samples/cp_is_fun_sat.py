@@ -76,8 +76,8 @@ def CPIsFunSat():
     model.AddAllDifferent(letters)
 
     # CP + IS + FUN = TRUE
-    model.Add(c * base + p + i * base + s + f * base * base + u * base + n ==
-              t * base * base * base + r * base * base + u * base + e)
+    model.Add(c * base + p + i * base + s + f * base * base + u * base +
+              n == t * base * base * base + r * base * base + u * base + e)
     # [END constraints]
 
     # [START solve]

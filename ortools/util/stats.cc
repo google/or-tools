@@ -35,7 +35,7 @@ std::string MemoryUsage() {
   } else if (mem > kDisplayThreshold * kKiloByte) {
     return absl::StrFormat("%2lf KB", mem * 1.0 / kKiloByte);
   } else {
-    return absl::StrFormat("%" GG_LL_FORMAT "d", mem);
+    return absl::StrFormat("%d", mem);
   }
 }
 

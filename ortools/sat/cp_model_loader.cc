@@ -544,8 +544,14 @@ void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
   }
 
   // Exclude the values that can never be "matched" by coeff2 * var2.
+  // We need the std::sort() to be deterministic!
+  std::vector<Literal> implied_false;
   for (const auto entry : term1_value_to_literal) {
-    m->Add(EnforcedClause(enforcement_literal, {entry.second.Negated()}));
+    implied_false.push_back(entry.second);
+  }
+  std::sort(implied_false.begin(), implied_false.end());
+  for (const Literal l : implied_false) {
+    m->Add(EnforcedClause(enforcement_literal, {l.Negated()}));
   }
 }
 

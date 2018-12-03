@@ -1555,14 +1555,16 @@ class GlobalVehicleBreaksConstraint : public Constraint {
   // adjust to usage and eventually no more dynamic allocation will be made.
   class TaskTranslator {
    public:
-    TaskTranslator(IntVar* start, int64 duration_min)
-        : start_(start), duration_min_(duration_min) {}
+    TaskTranslator(IntVar* start, int64 duration_min, int64 group_delay)
+        : start_(start),
+          duration_min_(duration_min),
+          group_delay_(group_delay) {}
     explicit TaskTranslator(IntervalVar* interval) : interval_(interval) {}
     TaskTranslator() {}
 
     void SetStartMin(int64 value) {
       if (start_ != nullptr) {
-        start_->SetMin(value);
+        start_->SetMin(CapAdd(group_delay_, value));
       } else if (interval_ != nullptr) {
         interval_->SetStartMin(value);
       }
@@ -1578,6 +1580,7 @@ class GlobalVehicleBreaksConstraint : public Constraint {
    private:
     IntVar* start_ = nullptr;
     int64 duration_min_;
+    int64 group_delay_;
     IntervalVar* interval_ = nullptr;
   };
 
@@ -1741,9 +1744,16 @@ class RoutingDimension {
   // [CumulVar(node), CumulVar(node) + node_visit_transits[node]), i.e. the
   // break interval must either end before CumulVar(node) or start after
   // CumulVar(node) + node_visit_transits[node].
+  // In the case where the route entails some group delay on a visit, the break
+  // cannot overlap that delay either, so the time window it cannot overlap is
+  // [CumulVar(node) - delay, CumulVar(node) + node_visit_transits[node]).
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   std::vector<int64> node_visit_transits);
 #if !defined(SWIGPYTHON)
+  void SetBreakIntervalsOfVehicle(
+      std::vector<IntervalVar*> breaks, int vehicle,
+      std::vector<int64> node_visit_transits,
+      std::function<int64(int64 from_index, int64 to_index)> group_delay);
   // Returns true if the vehicle has break intervals.
   bool VehicleHasBreakIntervals(int vehicle) const;
   // Returns the break intervals set by SetBreakIntervalsOfVehicle().
@@ -1812,6 +1822,11 @@ class RoutingDimension {
 #endif  // SWIG
   int64 global_span_cost_coefficient() const {
     return global_span_cost_coefficient_;
+  }
+
+  int64 GetGroupDelay(int vehicle, int64 from_index, int64 to_index) const {
+    DCHECK_LT(vehicle, vehicle_group_delays_.size());
+    return vehicle_group_delays_[vehicle](from_index, to_index);
   }
 
  private:
@@ -1892,6 +1907,8 @@ class RoutingDimension {
   // clang-format off
   std::vector<std::vector<IntervalVar*> > vehicle_break_intervals_;
   std::vector<std::vector<int64> > vehicle_node_visit_transits_;
+  std::vector<std::function<int64(int64 from_index, int64 to_index)> >
+      vehicle_group_delays_;
   // clang-format on
 
   std::vector<IntVar*> slacks_;

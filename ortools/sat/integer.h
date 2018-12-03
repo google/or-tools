@@ -66,6 +66,31 @@ const IntegerValue kMaxIntegerValue(
     std::numeric_limits<IntegerValue::ValueType>::max() - 1);
 const IntegerValue kMinIntegerValue(-kMaxIntegerValue);
 
+inline double ToDouble(IntegerValue value) {
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  if (value >= kMaxIntegerValue) return kInfinity;
+  if (value <= kMinIntegerValue) return -kInfinity;
+  return static_cast<double>(value.value());
+}
+
+inline IntegerValue CeilRatio(IntegerValue dividend,
+                              IntegerValue positive_divisor) {
+  CHECK_GT(positive_divisor, 0);
+  const IntegerValue result = dividend / positive_divisor;
+  const IntegerValue adjust =
+      static_cast<IntegerValue>(result * positive_divisor < dividend);
+  return result + adjust;
+}
+
+inline IntegerValue FloorRatio(IntegerValue dividend,
+                               IntegerValue positive_divisor) {
+  CHECK_GT(positive_divisor, 0);
+  const IntegerValue result = dividend / positive_divisor;
+  const IntegerValue adjust =
+      static_cast<IntegerValue>(result * positive_divisor > dividend);
+  return result - adjust;
+}
+
 // Index of an IntegerVariable.
 //
 // Each time we create an IntegerVariable we also create its negation. This is
@@ -496,11 +521,6 @@ class IntegerTrail : public SatPropagator {
   IntegerValue LowerBound(IntegerVariable i) const;
   IntegerValue UpperBound(IntegerVariable i) const;
 
-  // Returns the value of the lower bound before the last Enqueue() that changed
-  // it. Note that PreviousLowerBound() == LowerBound() iff this is the level
-  // zero bound.
-  IntegerValue PreviousLowerBound(IntegerVariable i) const;
-
   // Returns the integer literal that represent the current lower/upper bound of
   // the given integer variable.
   IntegerLiteral LowerBoundAsLiteral(IntegerVariable i) const;
@@ -509,6 +529,10 @@ class IntegerTrail : public SatPropagator {
   // Returns the current value (if known) of an IntegerLiteral.
   bool IntegerLiteralIsTrue(IntegerLiteral l) const;
   bool IntegerLiteralIsFalse(IntegerLiteral l) const;
+
+  // Returns globally valid lower/upper bound on the given integer variable.
+  IntegerValue LevelZeroLowerBound(IntegerVariable var) const;
+  IntegerValue LevelZeroUpperBound(IntegerVariable var) const;
 
   // Advanced usage. Given the reason for
   // (Sum_i coeffs[i] * reason[i].var >= current_lb) initially in reason,
@@ -617,13 +641,6 @@ class IntegerTrail : public SatPropagator {
     conflict->clear();
     MergeReasonInto(integer_reason, conflict);
     return false;
-  }
-
-  // Returns a lower bound on the given var that will always be valid.
-  IntegerValue LevelZeroBound(IntegerVariable var) const {
-    // The level zero bounds are stored at the beginning of the trail and they
-    // also serves as sentinels. Their index match the variables index.
-    return integer_trail_[var.value()].bound;
   }
 
   // Returns true if the variable lower bound is still the one from level zero.
@@ -951,12 +968,6 @@ inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {
   return vars_[i].current_bound;
 }
 
-inline IntegerValue IntegerTrail::PreviousLowerBound(IntegerVariable i) const {
-  const int index = vars_[i].current_trail_index;
-  if (index < vars_.size()) return LowerBound(i);
-  return integer_trail_[integer_trail_[index].prev_trail_index].bound;
-}
-
 inline IntegerValue IntegerTrail::UpperBound(IntegerVariable i) const {
   return -vars_[NegationOf(i)].current_bound;
 }
@@ -977,6 +988,18 @@ inline bool IntegerTrail::IntegerLiteralIsTrue(IntegerLiteral l) const {
 
 inline bool IntegerTrail::IntegerLiteralIsFalse(IntegerLiteral l) const {
   return l.bound > UpperBound(l.var);
+}
+
+// The level zero bounds are stored at the beginning of the trail and they also
+// serves as sentinels. Their index match the variables index.
+inline IntegerValue IntegerTrail::LevelZeroLowerBound(
+    IntegerVariable var) const {
+  return integer_trail_[var.value()].bound;
+}
+
+inline IntegerValue IntegerTrail::LevelZeroUpperBound(
+    IntegerVariable var) const {
+  return -integer_trail_[NegationOf(var).value()].bound;
 }
 
 inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,
