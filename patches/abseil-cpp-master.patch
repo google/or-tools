@@ -188,10 +188,24 @@ index 0c93417..46d7ba4 100644
  # create an abseil unit_test and add it to the executed test list
  #
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 9a7e103..a19164c 100644
+index 9a7e103..353dbb3 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -96,3 +96,12 @@ if(BUILD_TESTING)
+@@ -23,6 +23,13 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMake)
+ 
+ include(GNUInstallDirs)
+ include(AbseilHelpers)
++if(UNIX)
++  if(NOT APPLE)
++    set(CMAKE_INSTALL_RPATH "$ORIGIN")
++  else()
++    set(CMAKE_INSTALL_RPATH "@loader_path")
++  endif()
++endif()
+ 
+ 
+ # config options
+@@ -96,3 +103,12 @@ if(BUILD_TESTING)
  endif()
  
  add_subdirectory(absl)
