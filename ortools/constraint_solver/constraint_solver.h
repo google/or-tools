@@ -2254,43 +2254,6 @@ class Solver {
   // this happens at a leaf the corresponding solution will be rejected.
   SearchLimit* MakeCustomLimit(std::function<bool()> limiter);
 
-  // ----- Tree Monitor -----
-  // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is written to files
-  // file_tree and file_visualization as the search finishes.
-  SearchMonitor* MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                 const std::string& file_tree,
-                                 const std::string& file_visualization);
-
-  // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is written to files
-  // file_config, file_tree and file_visualization as the search
-  // finishes.
-  SearchMonitor* MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                 const std::string& file_config,
-                                 const std::string& file_tree,
-                                 const std::string& file_visualization);
-
-#if !defined(SWIG)
-  // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is copied to tree_xml
-  // and visualization_xml as the search finishes. The tree monitor does
-  // not take ownership of either std::string.
-  SearchMonitor* MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                 std::string* const tree_xml,
-                                 std::string* const visualization_xml);
-
-  // Creates a tree monitor that outputs a detailed overview of the
-  // decision phase in cpviz format. The XML data is copied to config_xml,
-  // tree_xml and visualization_xml as the search finishes. The tree monitor
-  // does not take ownership of these strings.
-  SearchMonitor* MakeTreeMonitor(const std::vector<IntVar*>& vars,
-                                 std::string* const config_xml,
-                                 std::string* const tree_xml,
-                                 std::string* const visualization_xml);
-
-#endif  // #if !defined(SWIG)
-
   // TODO(user): DEPRECATE API of MakeSearchLog(.., IntVar* var,..).
 
   // ----- Search Log -----

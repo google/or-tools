@@ -143,7 +143,6 @@ UTIL_DEPS = \
  $(SRC_DIR)/ortools/util/tuple_set.h \
  $(SRC_DIR)/ortools/util/vector_map.h \
  $(SRC_DIR)/ortools/util/vector_or_function.h \
- $(SRC_DIR)/ortools/util/xml_helper.h \
  $(SRC_DIR)/ortools/util/zvector.h \
  $(GEN_DIR)/ortools/util/optional_boolean.pb.h
 
@@ -161,7 +160,6 @@ UTIL_LIB_OBJS = \
  $(OBJ_DIR)/util/sorted_interval_list.$O \
  $(OBJ_DIR)/util/stats.$O \
  $(OBJ_DIR)/util/time_limit.$O \
- $(OBJ_DIR)/util/xml_helper.$O \
  $(OBJ_DIR)/util/optional_boolean.pb.$O
 
 objs/util/bitset.$O: ortools/util/bitset.cc ortools/util/bitset.h \
@@ -242,10 +240,6 @@ objs/util/time_limit.$O: ortools/util/time_limit.cc \
  ortools/base/macros.h ortools/base/timer.h ortools/base/basictypes.h \
  ortools/util/running_stat.h | $(OBJ_DIR)/util
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Stime_limit.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Stime_limit.$O
-
-objs/util/xml_helper.$O: ortools/util/xml_helper.cc \
- ortools/util/xml_helper.h ortools/base/macros.h | $(OBJ_DIR)/util
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Sxml_helper.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sxml_helper.$O
 
 ortools/util/optional_boolean.proto: ;
 
@@ -2640,7 +2634,6 @@ CP_LIB_OBJS = \
  $(OBJ_DIR)/constraint_solver/table.$O \
  $(OBJ_DIR)/constraint_solver/timetabling.$O \
  $(OBJ_DIR)/constraint_solver/trace.$O \
- $(OBJ_DIR)/constraint_solver/tree_monitor.$O \
  $(OBJ_DIR)/constraint_solver/utilities.$O \
  $(OBJ_DIR)/constraint_solver/visitor.$O \
  $(OBJ_DIR)/constraint_solver/assignment.pb.$O \
@@ -3314,21 +3307,6 @@ objs/constraint_solver/trace.$O: ortools/constraint_solver/trace.cc \
  ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Strace.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Strace.$O
 
-objs/constraint_solver/tree_monitor.$O: \
- ortools/constraint_solver/tree_monitor.cc ortools/base/file.h \
- ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/status.h ortools/base/hash.h \
- ortools/base/basictypes.h ortools/base/map_util.h \
- ortools/base/stl_util.h ortools/constraint_solver/constraint_solver.h \
- ortools/base/commandlineflags.h ortools/base/random.h \
- ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
- ortools/util/piecewise_linear_function.h \
- ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
- ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
- ortools/util/xml_helper.h | $(OBJ_DIR)/constraint_solver
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Stree_monitor.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Stree_monitor.$O
-
 objs/constraint_solver/utilities.$O: \
  ortools/constraint_solver/utilities.cc ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/integral_types.h \
@@ -3443,4 +3421,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
