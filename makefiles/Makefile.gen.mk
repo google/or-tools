@@ -2599,7 +2599,6 @@ CP_DEPS = \
 CP_LIB_OBJS = \
  $(OBJ_DIR)/constraint_solver/alldiff_cst.$O \
  $(OBJ_DIR)/constraint_solver/assignment.$O \
- $(OBJ_DIR)/constraint_solver/collect_variables.$O \
  $(OBJ_DIR)/constraint_solver/constraint_solver.$O \
  $(OBJ_DIR)/constraint_solver/constraints.$O \
  $(OBJ_DIR)/constraint_solver/count_cst.$O \
@@ -2671,21 +2670,6 @@ objs/constraint_solver/assignment.$O: \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Sassignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sassignment.$O
-
-objs/constraint_solver/collect_variables.$O: \
- ortools/constraint_solver/collect_variables.cc \
- ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/stl_util.h \
- ortools/constraint_solver/constraint_solver.h \
- ortools/base/commandlineflags.h ortools/base/hash.h \
- ortools/base/basictypes.h ortools/base/map_util.h ortools/base/random.h \
- ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
- ortools/util/piecewise_linear_function.h \
- ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
- ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
- ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h | $(OBJ_DIR)/constraint_solver
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Scollect_variables.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Scollect_variables.$O
 
 objs/constraint_solver/constraint_solver.$O: \
  ortools/constraint_solver/constraint_solver.cc \

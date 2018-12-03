@@ -936,28 +936,6 @@ class Solver {
   void Fail();
 
 #if !defined(SWIG)
-  // Collects decision variables.
-  // All decision variables will be collected in 4 groups:
-  //   - Main integer decision variables.
-  //   - Secondary integer variables (that are derived integer variables that
-  //     should be fixed like times of tasks after the order has been fixed).
-  //   - Sequence variables.
-  //   - Interval variables.
-  //
-  // From these 4 groups, one could write a decision builder:
-  // solver.Compose(
-  //     solver.MakeDefaultPhase(primary_integer_variables),
-  //     solver.MakePhase(sequence_variables, Solver::SEQUENCE_DEFAULT),
-  //     solver.MakePhase(interval_variables, Solver::INTERVAL_DEFAULT),
-  //     solver.MakePhase(secondary_integer_variables, Solver::INT_VAR_DEFAULT);
-  bool CollectDecisionVariables(
-      std::vector<IntVar*>* const primary_integer_variables,
-      std::vector<IntVar*>* const secondary_integer_variables,
-      std::vector<SequenceVar*>* const sequence_variables,
-      std::vector<IntervalVar*>* const interval_variables);
-#endif  // SWIG
-
-#if !defined(SWIG)
   // When SaveValue() is not the best way to go, one can create a reversible
   // action that will be called upon backtrack. The "fast" parameter
   // indicates whether we need restore all values saved through SaveValue()
