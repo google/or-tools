@@ -2589,7 +2589,6 @@ CP_DEPS = \
  $(SRC_DIR)/ortools/constraint_solver/routing_neighborhoods.h \
  $(SRC_DIR)/ortools/constraint_solver/routing_parameters.h \
  $(SRC_DIR)/ortools/constraint_solver/routing_types.h \
- $(SRC_DIR)/ortools/constraint_solver/sat_constraint.h \
  $(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
  $(GEN_DIR)/ortools/constraint_solver/demon_profiler.pb.h \
  $(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
@@ -2626,7 +2625,6 @@ CP_LIB_OBJS = \
  $(OBJ_DIR)/constraint_solver/routing_neighborhoods.$O \
  $(OBJ_DIR)/constraint_solver/routing_parameters.$O \
  $(OBJ_DIR)/constraint_solver/routing_search.$O \
- $(OBJ_DIR)/constraint_solver/sat_constraint.$O \
  $(OBJ_DIR)/constraint_solver/sched_constraints.$O \
  $(OBJ_DIR)/constraint_solver/sched_expr.$O \
  $(OBJ_DIR)/constraint_solver/sched_search.$O \
@@ -3172,30 +3170,6 @@ objs/constraint_solver/routing_search.$O: \
  ortools/port/proto_utils.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_search.$O
 
-objs/constraint_solver/sat_constraint.$O: \
- ortools/constraint_solver/sat_constraint.cc \
- ortools/constraint_solver/sat_constraint.h ortools/base/hash.h \
- ortools/base/basictypes.h ortools/base/integral_types.h \
- ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
- ortools/constraint_solver/constraint_solver.h \
- ortools/base/commandlineflags.h ortools/base/random.h \
- ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
- ortools/util/piecewise_linear_function.h \
- ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
- ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
- ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
- ortools/sat/sat_solver.h ortools/base/int_type.h \
- ortools/base/int_type_indexed_vector.h ortools/sat/clause.h \
- ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
- ortools/sat/sat_base.h ortools/sat/model.h ortools/base/typeid.h \
- ortools/sat/drat_writer.h ortools/base/file.h ortools/base/status.h \
- ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
- ortools/util/stats.h ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/util/running_stat.h ortools/sat/sat_decision.h \
- ortools/util/integer_pq.h ortools/util/time_limit.h | $(OBJ_DIR)/constraint_solver
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Ssat_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssat_constraint.$O
-
 objs/constraint_solver/sched_constraints.$O: \
  ortools/constraint_solver/sched_constraints.cc \
  ortools/base/integral_types.h ortools/base/logging.h \
@@ -3267,7 +3241,7 @@ objs/constraint_solver/table.$O: ortools/constraint_solver/table.cc \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
  ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
- ortools/constraint_solver/sat_constraint.h ortools/sat/sat_solver.h \
+ ortools/sat/sat_solver.h \
  ortools/base/int_type.h ortools/base/int_type_indexed_vector.h \
  ortools/sat/clause.h ortools/sat/drat_proof_handler.h \
  ortools/sat/drat_checker.h ortools/sat/sat_base.h ortools/sat/model.h \
