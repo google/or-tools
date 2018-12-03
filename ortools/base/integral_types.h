@@ -23,7 +23,7 @@
 #elif defined(__APPLE__) && defined(__GNUC__)
 #define ARCH_K8  // We only support 64 bit on Mac OS X.
 #elif defined(__GNUC__) && defined(__LP64__) && !defined(__aarch64__)
-#define ARCH_K8  // Linux x64
+#define ARCH_K8  // Linux x86_64
 #endif
 
 #ifndef SWIG

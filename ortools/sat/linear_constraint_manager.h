@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/hash.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 
