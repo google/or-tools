@@ -19,7 +19,7 @@ UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
-GFLAGS_TAG = 2.2.1
+GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.3.5
 PROTOBUF_TAG = 3.6.1
 ABSL_TAG = master
