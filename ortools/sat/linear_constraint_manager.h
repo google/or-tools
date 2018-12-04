@@ -48,33 +48,43 @@ class LinearConstraintManager {
   // and merge the bounds of constraints with the same terms.
   void Add(const LinearConstraint& ct);
 
-  // Basic heuristic to decides if we should change the LP by removing/adding
-  // constraints.
-  bool LpShouldBeChanged();
+  // Heuristic to decides what LP is best solved next. The given lp_solution
+  // should usually be the optimal solution of the LP returned by GetLp() before
+  // this call, but is just used as an heuristic.
+  //
+  // Returns true iff LpConstraints() will return a different LP than before.
+  bool ChangeLp(const gtl::ITIVector<IntegerVariable, double>& lp_solution);
 
-  // Returns a list of constraints that should form the next LP to solve.
-  // The given lp_solution should be the optimal solution of the LP returned
-  // by the last call to GetLp().
-  //
-  // Note: The first time this is called, lp_solution will be ignored as there
-  // is no previous call to GetLp().
-  //
-  // Important: The returned pointers are only valid until the next Add() call.
-  std::vector<const LinearConstraint*> GetLp(
-      const gtl::ITIVector<IntegerVariable, double>& lp_solution);
+  // This can be called initially to add all the current constraint to the LP
+  // returned by GetLp().
+  void AddAllConstraintsToLp();
+
+  // All the constraints managed by this class.
+  DEFINE_INT_TYPE(ConstraintIndex, int32);
+  const gtl::ITIVector<ConstraintIndex, LinearConstraint>& AllConstraints()
+      const {
+    return constraints_;
+  }
+
+  // The set of constraints indices in AllConstraints() that should be part
+  // of the next LP to solve.
+  const std::vector<ConstraintIndex>& LpConstraints() const {
+    return lp_constraints_;
+  }
 
  private:
   // The set of variables that appear in at least one constraint.
   std::set<IntegerVariable> used_variables_;
 
-  // Set at true by Add() and at false by GetLp().
-  bool some_constraint_changed_ = true;
+  // Set at true by Add() and at false by ChangeLp().
+  bool some_lp_constraint_bounds_changed_ = false;
 
-  // The list of constraint and whether each of them where added by the last
-  // call the GetLp().
-  int num_constraints_in_lp_ = 0;
-  std::vector<bool> constraint_in_lp_;
-  std::vector<LinearConstraint> constraints_;
+  // The global list of constraint.
+  gtl::ITIVector<ConstraintIndex, LinearConstraint> constraints_;
+
+  // The subset of constraints currently in the lp.
+  gtl::ITIVector<ConstraintIndex, bool> constraint_is_in_lp_;
+  std::vector<ConstraintIndex> lp_constraints_;
 
   // For each constraint "terms", equiv_constraints_ indicates the index of a
   // constraint with the same terms in constraints_. This way, when a

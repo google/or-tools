@@ -166,6 +166,15 @@ struct ConnectedComponentsTypeHelper {
 // Each entry in components now contains all the nodes in a single
 // connected component.
 //
+// Usage with flat_hash_set:
+//   using ConnectedComponentType = flat_hash_set<MyNodeType>;
+//   ConnectedComponentsFinder<ConnectedComponentType::key_type,
+//                             ConnectedComponentType::hasher>
+//   cc;
+//   ...
+//   std::vector<ConnectedComponentType> components;
+//   cc.FindConnectedComponents(&components);
+//
 // If you want to, you can continue adding nodes and edges after calling
 // FindConnectedComponents, then call it again later.
 //

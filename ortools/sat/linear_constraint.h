@@ -65,6 +65,14 @@ struct LinearConstraint {
     }
     return result;
   }
+
+  bool operator==(const LinearConstraint other) const {
+    if (this->lb != other.lb) return false;
+    if (this->ub != other.ub) return false;
+    if (this->vars != other.vars) return false;
+    if (this->coeffs != other.coeffs) return false;
+    return true;
+  }
 };
 
 // Allow to build a LinearConstraint while making sure there is no duplicate
@@ -160,6 +168,11 @@ class LinearConstraintBuilder {
   IntegerValue offset_;
   std::map<IntegerVariable, IntegerValue> terms_;
 };
+
+// Returns the activity of the given constraint. That is the current value of
+// the linear terms.
+double ComputeActivity(const LinearConstraint& constraint,
+                       const gtl::ITIVector<IntegerVariable, double>& values);
 
 }  // namespace sat
 }  // namespace operations_research

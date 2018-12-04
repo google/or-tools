@@ -56,13 +56,18 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
   const Terms terms = CanonicalizeConstraintAndGetTerms(&canonicalized);
 
   if (gtl::ContainsKey(equiv_constraints_, terms)) {
-    const int index = gtl::FindOrDieNoPrint(equiv_constraints_, terms);
+    const ConstraintIndex index(
+        gtl::FindOrDieNoPrint(equiv_constraints_, terms));
     if (canonicalized.lb > constraints_[index].lb) {
-      some_constraint_changed_ = true;
+      if (constraint_is_in_lp_[index]) {
+        some_lp_constraint_bounds_changed_ = true;
+      }
       constraints_[index].lb = canonicalized.lb;
     }
     if (canonicalized.ub < constraints_[index].ub) {
-      some_constraint_changed_ = true;
+      if (constraint_is_in_lp_[index]) {
+        some_lp_constraint_bounds_changed_ = true;
+      }
       constraints_[index].ub = canonicalized.ub;
     }
     ++num_merged_constraints_;
@@ -71,35 +76,50 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
       used_variables_.insert(var);
     }
     equiv_constraints_[terms] = constraints_.size();
-    constraint_in_lp_.push_back(false);
+    constraint_is_in_lp_.push_back(false);
     constraints_.push_back(std::move(canonicalized));
-    some_constraint_changed_ = true;
   }
 }
 
-bool LinearConstraintManager::LpShouldBeChanged() {
-  if (some_constraint_changed_) return true;
-
-  // TODO(user): for now we limit the total number of constraint in the LP
-  // to be twice the total number of variables.
-  const size_t max_num_constraints = used_variables_.size() * 2;
-  return num_constraints_in_lp_ <
-         std::min(constraints_.size(), max_num_constraints);
-}
-
-// TODO(user): Implement, for now we just return all the constraint we know
-// about. We could at least only return an "increasing" list of constraint, but
-// never add the one currently satisfied by the given solution.
-std::vector<const LinearConstraint*> LinearConstraintManager::GetLp(
+bool LinearConstraintManager::ChangeLp(
     const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
-  std::vector<const LinearConstraint*> result;
-  for (int i = 0; i < constraints_.size(); ++i) {
-    constraint_in_lp_[i] = true;
-    result.push_back(&constraints_[i]);
+  const int old_num_constraints = lp_constraints_.size();
+
+  // We keep any constraints that is already present, and otherwise, we add the
+  // ones that are currently not satisfied by at least "tolerance".
+  const double tolerance = 1e-6;
+  for (ConstraintIndex i(0); i < constraints_.size(); ++i) {
+    if (constraint_is_in_lp_[i]) continue;
+
+    const double activity = ComputeActivity(constraints_[i], lp_solution);
+    if (activity > ToDouble(constraints_[i].ub) + tolerance ||
+        activity < ToDouble(constraints_[i].lb) - tolerance) {
+      constraint_is_in_lp_[i] = true;
+
+      // Note that it is important for LP incremental solving that the old
+      // constraints stays at the same position in this list (and thus in the
+      // returned GetLp()).
+      lp_constraints_.push_back(i);
+    }
   }
-  num_constraints_in_lp_ = result.size();
-  some_constraint_changed_ = false;
-  return result;
+
+  // The LP changed only if we added new constraints or if the bounds of some
+  // constraints already in the LP changed because of parallel constraints
+  // merging during Add().
+  if (some_lp_constraint_bounds_changed_ ||
+      lp_constraints_.size() > old_num_constraints) {
+    some_lp_constraint_bounds_changed_ = false;
+    return true;
+  }
+  return false;
+}
+
+void LinearConstraintManager::AddAllConstraintsToLp() {
+  for (ConstraintIndex i(0); i < constraints_.size(); ++i) {
+    if (constraint_is_in_lp_[i]) continue;
+    constraint_is_in_lp_[i] = true;
+    lp_constraints_.push_back(i);
+  }
 }
 
 }  // namespace sat

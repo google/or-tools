@@ -83,8 +83,8 @@ glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
 
     const int index = std::max(positive_variable.value(),
                                NegationOf(positive_variable).value());
-    if (index >= last_lp_solution_.size()) {
-      last_lp_solution_.resize(index + 1, 0.0);
+    if (index >= expanded_lp_solution_.size()) {
+      expanded_lp_solution_.resize(index + 1, 0.0);
     }
     return col;
   }
@@ -109,17 +109,18 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
 void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Fill integer_lp_.
   integer_lp_.clear();
-  for (const LinearConstraint* ct :
-       constraint_manager_.GetLp(last_lp_solution_)) {
+  const auto& all_constraints = constraint_manager_.AllConstraints();
+  for (const auto index : constraint_manager_.LpConstraints()) {
+    const LinearConstraint& ct = all_constraints[index];
     integer_lp_.push_back(LinearConstraintInternal());
     LinearConstraintInternal& new_ct = integer_lp_.back();
-    new_ct.lb = ct->lb;
-    new_ct.ub = ct->ub;
-    const int size = ct->vars.size();
+    new_ct.lb = ct.lb;
+    new_ct.ub = ct.ub;
+    const int size = ct.vars.size();
     for (int i = 0; i < size; ++i) {
       // We only use positive variable inside this class.
-      IntegerVariable var = ct->vars[i];
-      IntegerValue coeff = ct->coeffs[i];
+      IntegerVariable var = ct.vars[i];
+      IntegerValue coeff = ct.coeffs[i];
       if (!VariableIsPositive(var)) {
         var = NegationOf(var);
         coeff = -coeff;
@@ -164,7 +165,9 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
 
   lp_data_.NotifyThatColumnsAreClean();
   lp_data_.AddSlackVariablesWhereNecessary(false);
-  VLOG(1) << "LP relaxation: " << lp_data_.GetDimensionString() << ".";
+  VLOG(1) << "LP relaxation: " << lp_data_.GetDimensionString() << ". "
+          << constraint_manager_.AllConstraints().size()
+          << " Managed constraints.";
 }
 
 void LinearProgrammingConstraint::RegisterWith(Model* model) {
@@ -172,7 +175,14 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   lp_constraint_is_registered_ = true;
   model->GetOrCreate<LinearProgrammingConstraintCollection>()->push_back(this);
 
+  // Note fdid, this is not really needed by should lead to better cache
+  // locality.
   std::sort(integer_objective_.begin(), integer_objective_.end());
+
+  // Set the LP to its initial content.
+  if (!sat_parameters_.add_lp_constraints_lazily()) {
+    constraint_manager_.AddAllConstraintsToLp();
+  }
   CreateLpFromConstraintManager();
 
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
@@ -201,6 +211,21 @@ void LinearProgrammingConstraint::SetLevel(int level) {
   if (lp_solution_is_set_ && level < lp_solution_level_) {
     lp_solution_is_set_ = false;
   }
+
+  // Special case for level zero, we "reload" any previously known optimal
+  // solution from that level.
+  //
+  // TODO(user): Keep all optimal solution in the current branch?
+  if (level == 0 && !level_zero_lp_solution_.empty()) {
+    lp_solution_is_set_ = true;
+    lp_solution_ = level_zero_lp_solution_;
+    lp_solution_level_ = 0;
+    for (int i = 0; i < lp_solution_.size(); i++) {
+      expanded_lp_solution_[integer_variables_[i]] = lp_solution_[i];
+      expanded_lp_solution_[NegationOf(integer_variables_[i])] =
+          -lp_solution_[i];
+    }
+  }
 }
 
 void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
@@ -210,11 +235,12 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
   cut_generators_.push_back(std::move(generator));
 }
 
-// Check whether the change breaks the current LP solution.
-// Call Propagate() only if it does.
 bool LinearProgrammingConstraint::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
   if (!lp_solution_is_set_) return Propagate();
+
+  // Check whether the change breaks the current LP solution. If it does, call
+  // Propagate() on the current LP.
   for (const int index : watch_indices) {
     const double lb =
         ToDouble(integer_trail_->LowerBound(integer_variables_[index]));
@@ -223,6 +249,10 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
     const double value = lp_solution_[index];
     if (value < lb - kCpEpsilon || value > ub + kCpEpsilon) return Propagate();
   }
+
+  // TODO(user): The saved lp solution is still valid given the current variable
+  // bounds, so the LP optimal didn't change. However we might still want to add
+  // new cuts or new lazy constraints?
   return true;
 }
 
@@ -272,12 +302,19 @@ bool LinearProgrammingConstraint::SolveLp() {
   }
 
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    lp_solution_is_set_ = true;
+    lp_solution_level_ = trail_->CurrentDecisionLevel();
     const int num_vars = integer_variables_.size();
     for (int i = 0; i < num_vars; i++) {
       const glop::Fractional value =
           GetVariableValueAtCpScale(glop::ColIndex(i));
-      last_lp_solution_[integer_variables_[i]] = value;
-      last_lp_solution_[NegationOf(integer_variables_[i])] = -value;
+      lp_solution_[i] = value;
+      expanded_lp_solution_[integer_variables_[i]] = value;
+      expanded_lp_solution_[NegationOf(integer_variables_[i])] = -value;
+    }
+
+    if (lp_solution_level_ == 0) {
+      level_zero_lp_solution_ = lp_solution_;
     }
   }
   return true;
@@ -318,40 +355,46 @@ bool LinearProgrammingConstraint::Propagate() {
   simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
   if (!SolveLp()) return true;
 
-  // Modify the LP?
+  // Add new constraints to the LP and resolve?
+  //
+  // TODO(user): We might want to do that more than once. Currently we rely on
+  // this beeing called again on the next IncrementalPropagate() call, but that
+  // might not always happen at level zero.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
-    // Add cuts?
-    if (!cut_generators_.empty() &&
-        num_cuts_ < sat_parameters_.max_num_cuts() &&
-        !constraint_manager_.LpShouldBeChanged() &&
-        (trail_->CurrentDecisionLevel() == 0 ||
-         !sat_parameters_.only_add_cuts_at_level_zero())) {
-      int num_new_cuts = 0;
-      for (const CutGenerator& generator : cut_generators_) {
-        // TODO(user): Change api so cuts can directly be added to the manager
-        // and we don't need this intermediate vector.
-        std::vector<LinearConstraint> cuts =
-            generator.generate_cuts(last_lp_solution_);
-
-        // Add the cuts to the manager.
-        for (const LinearConstraint& cut : cuts) {
-          ++num_new_cuts;
-          constraint_manager_.Add(cut);
-        }
-      }
-      if (num_new_cuts > 0) {
-        VLOG(1) << "#cuts " << num_cuts_;
-        num_cuts_ += num_new_cuts;
-      }
-    }
-
-    // Resolve?
-    //
-    // Note that we might want to change the LP again after this, but we will
-    // wait for the next Propagate() call to do so.
-    if (constraint_manager_.LpShouldBeChanged()) {
+    // First add any new lazy constraints or cuts that where previsouly
+    // generated and are now cutting the current solution.
+    if (constraint_manager_.ChangeLp(expanded_lp_solution_)) {
       CreateLpFromConstraintManager();
       if (!SolveLp()) return true;
+    } else {
+      // Try to add cuts.
+      if (!cut_generators_.empty() &&
+          num_cuts_ < sat_parameters_.max_num_cuts() &&
+          (trail_->CurrentDecisionLevel() == 0 ||
+           !sat_parameters_.only_add_cuts_at_level_zero())) {
+        int num_new_cuts = 0;
+        for (const CutGenerator& generator : cut_generators_) {
+          // TODO(user): Change api so cuts can directly be added to the manager
+          // and we don't need this intermediate vector.
+          std::vector<LinearConstraint> cuts =
+              generator.generate_cuts(expanded_lp_solution_);
+
+          // Add the cuts to the manager.
+          for (const LinearConstraint& cut : cuts) {
+            ++num_new_cuts;
+            constraint_manager_.Add(cut);
+          }
+        }
+        if (num_new_cuts > 0) {
+          VLOG(1) << "#cuts " << num_cuts_;
+          num_cuts_ += num_new_cuts;
+
+          if (constraint_manager_.ChangeLp(expanded_lp_solution_)) {
+            CreateLpFromConstraintManager();
+            if (!SolveLp()) return true;
+          }
+        }
+      }
     }
   }
 
@@ -425,18 +468,15 @@ bool LinearProgrammingConstraint::Propagate() {
     }
   }
 
-  // Copy current LP solution.
+  // Copy more info about the current solution.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
-    const double objective_scale = lp_data_.objective_scaling_factor();
-    lp_solution_is_set_ = true;
-    lp_solution_level_ = trail_->CurrentDecisionLevel();
+    CHECK(lp_solution_is_set_);
+
     lp_objective_ = simplex_.GetObjectiveValue();
     lp_solution_is_integer_ = true;
     const int num_vars = integer_variables_.size();
+    const double objective_scale = lp_data_.objective_scaling_factor();
     for (int i = 0; i < num_vars; i++) {
-      lp_solution_[i] = GetVariableValueAtCpScale(glop::ColIndex(i));
-      last_lp_solution_[integer_variables_[i]] = lp_solution_[i];
-
       // The reduced cost need to be divided by LpToCpScalingFactor().
       lp_reduced_cost_[i] = simplex_.GetReducedCost(glop::ColIndex(i)) *
                             CpToLpScalingFactor(glop::ColIndex(i)) *

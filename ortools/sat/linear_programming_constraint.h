@@ -281,8 +281,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<double> lp_solution_;
   std::vector<double> lp_reduced_cost_;
 
+  // If non-empty, this is the last known optimal lp solution at root-node. If
+  // the variable bounds changed, or cuts where added, it is possible that this
+  // solution is no longer optimal though.
+  std::vector<double> level_zero_lp_solution_;
+
   // Same as lp_solution_ but this vector is indexed differently.
-  gtl::ITIVector<IntegerVariable, double> last_lp_solution_;
+  gtl::ITIVector<IntegerVariable, double> expanded_lp_solution_;
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;

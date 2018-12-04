@@ -21,7 +21,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 112
+// NEXT TAG: 113
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -499,6 +499,12 @@ message SatParameters {
   optional int32 max_num_cuts = 91 [default = 1000];
   optional bool only_add_cuts_at_level_zero = 92 [default = false];
   optional bool add_knapsack_cuts = 111 [default = false];
+
+  // If true, we start by an empty LP, and only add constraints not satisfied
+  // by the current LP solution batch by batch. A constraint that is only added
+  // like this is known as a "lazy" constraint in the literature, except that we
+  // currently consider all constraints as lazy here.
+  optional bool add_lp_constraints_lazily = 112 [default = false];
 
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {
