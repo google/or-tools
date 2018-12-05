@@ -99,12 +99,12 @@ if [ "${BUILDER}" == cmake ];then
     export PATH="${HOME}"/swig/bin:"${PATH}"
     pyenv global system 3.6
     checkenv
-    cmake -H. -Bbuild
+    cmake -H. -Bbuild || true
     cmake --build build --target all -- --jobs=4
     cmake --build build --target test -- CTEST_OUTPUT_ON_FAILURE=1
   elif [ "${TRAVIS_OS_NAME}" == osx ];then
     checkenv
-    cmake -H. -Bbuild
+    cmake -H. -Bbuild || true
     cmake --build build --target all -- --jobs=4
     cmake --build build --target test -- CTEST_OUTPUT_ON_FAILURE=1
   fi
