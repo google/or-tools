@@ -67,7 +67,7 @@ message(STATUS "Build .Net Binding: ${BUILD_DOTNET}")
 
 # Add OR Tools Dependencies as CMake subproject if missing
 if(BUILD_DEPS)
-  add_subdirectory(cmake/external)
+  add_subdirectory(cmake/external external)
 endif()
 
 if(BUILD_CXX)
