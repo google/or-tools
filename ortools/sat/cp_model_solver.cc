@@ -1421,6 +1421,7 @@ CpSolverResponse SolveCpModelInternal(
           ObjectiveSynchronizationHelper* helper =
               model->GetOrCreate<ObjectiveSynchronizationHelper>();
           const double current_best_bound = helper->get_external_best_bound();
+          const double current_objective_value = helper->get_external_bound();
           if ((helper->scaling_factor >= 0 &&
                new_best_bound > current_best_bound) ||
               (helper->scaling_factor < 0 &&
@@ -1428,10 +1429,8 @@ CpSolverResponse SolveCpModelInternal(
             lb_response.clear_solution();
             lb_response.clear_solution_lower_bounds();
             lb_response.clear_solution_upper_bounds();
-            lb_response.set_solution_info(absl::StrCat(
-                "num_bool:", model->Get<SatSolver>()->NumVariables(), " ",
-                solution_info));
             lb_response.set_status(CpSolverStatus::UNKNOWN);
+            lb_response.set_objective_value(current_objective_value);
             lb_response.set_best_objective_bound(new_best_bound);
             external_solution_observer(lb_response);
           }
