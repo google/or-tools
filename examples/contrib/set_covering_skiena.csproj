@@ -15,6 +15,6 @@
 
   <ItemGroup>
     <Compile Include="set_covering_skiena.cs" />
-    <PackageReference Include="Google.OrTools" Version="6.10.*" />
+    <PackageReference Include="Google.OrTools" Version="7.0.*" />
   </ItemGroup>
 </Project>

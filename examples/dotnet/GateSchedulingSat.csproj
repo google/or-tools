@@ -15,6 +15,6 @@
 
   <ItemGroup>
     <Compile Include="GateSchedulingSat.cs" />
-    <PackageReference Include="Google.OrTools" Version="6.10.*" />
+    <PackageReference Include="Google.OrTools" Version="7.0.*" />
   </ItemGroup>
 </Project>
