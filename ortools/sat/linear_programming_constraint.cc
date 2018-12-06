@@ -386,8 +386,8 @@ bool LinearProgrammingConstraint::Propagate() {
           }
         }
         if (num_new_cuts > 0) {
-          VLOG(1) << "#cuts " << num_cuts_;
           num_cuts_ += num_new_cuts;
+          VLOG(1) << "#cuts " << num_cuts_;
 
           if (constraint_manager_.ChangeLp(expanded_lp_solution_)) {
             CreateLpFromConstraintManager();
@@ -429,9 +429,12 @@ bool LinearProgrammingConstraint::Propagate() {
       // A difference of 1 happens relatively often, so we just display when
       // there is more. Note that when we are over the objective upper bound,
       // we relax new_lb for a better reason, so we ignore this case.
-      if (new_lb <= integer_trail_->UpperBound(objective_cp_) &&
-          std::abs((approximate_new_lb - new_lb).value()) > 1) {
-        VLOG(1) << "LP exact objective diff " << approximate_new_lb - new_lb;
+      if (new_lb <= kMinIntegerValue) {
+        VLOG(2) << "Overflow during exact LP reasoning.";
+      } else if (new_lb <= integer_trail_->UpperBound(objective_cp_) &&
+                 std::abs((approximate_new_lb - new_lb).value()) > 1) {
+        VLOG(2) << "LP objective lower bound approx = " << approximate_new_lb;
+        VLOG(2) << "                         exact  = " << new_lb;
       }
     } else {
       FillReducedCostsReason();

@@ -62,10 +62,12 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
                                 Model* model);
 
-// Wait until this function returns with the objective value of the current
-// best solution.
-void SetObjectiveSynchronizationFunction(std::function<double()> f,
-                                         Model* model);
+// Sets two funtions to query the state of the shared objective.
+//   - f will wait and return the best objective value.
+//   - g will wait and return the best objective 'best bound'.
+void SetObjectiveSynchronizationFunctions(std::function<double()> f,
+                                          std::function<double()> g,
+                                          Model* model);
 
 // Allows to change the default parameters with
 //   model->Add(NewSatParameters(parameters_as_string_or_proto))

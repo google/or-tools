@@ -906,6 +906,17 @@ class GenericLiteralWatcher : public SatPropagator {
   // Returns the number of registered propagators.
   int NumPropagators() const { return in_queue_.size(); }
 
+  // Set a callback for new variable bounds at level 0.
+  //
+  // This will be called (only at level zero) with the list
+  // of IntegerVariable with changed lower bounds. Note that it
+  // might be called more than once during the same propagation
+  // cycle if we fix variables in "stages".
+  void RegisterLevelZeroModifiedVariablesCallback(
+      const std::function<void(const std::vector<IntegerVariable>&)> cb) {
+    level_zero_modified_variable_callback_ = cb;
+  }
+
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.
@@ -936,6 +947,9 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<std::vector<int>> id_to_watch_indices_;
   std::vector<int> id_to_priority_;
   std::vector<int> id_to_idempotence_;
+
+  std::function<void(const std::vector<IntegerVariable>&)>
+      level_zero_modified_variable_callback_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };
