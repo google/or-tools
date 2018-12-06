@@ -189,7 +189,7 @@ ifeq ($(PLATFORM),MACOSX)
   DYNAMIC_LD = clang++ -dynamiclib -undefined dynamic_lookup \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
- -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION) \
+ -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR) \
  -compatibility_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
   DYNAMIC_LDFLAGS = -Wl,-rpath,\"@loader_path\"
 
@@ -228,7 +228,7 @@ ifeq ($(PLATFORM),MACOSX)
   LINK_CMD = clang++ -dynamiclib \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
- -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION) \
+ -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR) \
  -compatibility_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
   PRE_LIB = -L$(OR_ROOT)lib -l
   POST_LIB =
