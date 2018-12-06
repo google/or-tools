@@ -19,7 +19,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Google.OrTools" Version="7.0.*" />
+    <PackageReference Include="Google.OrTools" Version="7.0-*" />
   </ItemGroup>
 
 </Project>
