@@ -2757,10 +2757,14 @@ bool RoutingModel::AppendAssignmentIfFeasible(
   return false;
 }
 
-void RoutingModel::LogSolution(const std::string& description,
+void RoutingModel::LogSolution(const RoutingSearchParameters& parameters,
+                               const std::string& description,
                                int64 solution_cost, int64 start_time_ms) {
   const std::string memory_str = MemoryUsage();
-  LOG(INFO) << description << " (" << solution_cost
+  const double cost_scaling_factor = parameters.log_cost_scaling_factor();
+  LOG(INFO) << description << " ("
+            << (cost_scaling_factor != 1.0 ? solution_cost / cost_scaling_factor
+                                           : solution_cost)
             << ", time = " << (solver_->wall_time() - start_time_ms)
             << " ms, memory used = " << memory_str << ")";
 }
@@ -2789,7 +2793,7 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
     if (IsMatchingModel() && SolveMatchingModel(&matching) &&
         AppendAssignmentIfFeasible(matching, &solution_pool)) {
       if (parameters.log_search()) {
-        LogSolution("Min-Cost Flow Solution",
+        LogSolution(parameters, "Min-Cost Flow Solution",
                     solution_pool.back()->ObjectiveValue(), start_time_ms);
       }
       solution_found = true;
@@ -2801,7 +2805,7 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
       MakeAllUnperformed(this, &unperformed);
       if (AppendAssignmentIfFeasible(unperformed, &solution_pool) &&
           parameters.log_search()) {
-        LogSolution("All Unperformed Solution",
+        LogSolution(parameters, "All Unperformed Solution",
                     solution_pool.back()->ObjectiveValue(), start_time_ms);
       }
       const int64 elapsed_time_ms = solver_->wall_time() - start_time_ms;
@@ -4585,7 +4589,10 @@ void RoutingModel::SetupTrace(
     const RoutingSearchParameters& search_parameters) {
   if (search_parameters.log_search()) {
     const int kLogPeriod = 10000;
-    monitors_.push_back(solver_->MakeSearchLog(kLogPeriod, cost_));
+    Solver::SearchLogParameters params;
+    params.branch_period = kLogPeriod;
+    params.scaling_factor = search_parameters.log_cost_scaling_factor();
+    monitors_.push_back(solver_->MakeSearchLog(params));
   }
 }
 

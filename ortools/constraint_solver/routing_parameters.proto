@@ -346,6 +346,8 @@ message RoutingSearchParameters {
   // search neighbors accepted, the total memory used and the percentage of the
   // search done.
   bool log_search = 13;
+  // In logs, cost values will be unscaled by this factor.
+  double log_cost_scaling_factor = 22;
 }
 
 // Parameters which have to be set when creating a RoutingModel.

@@ -1250,7 +1250,8 @@ class RoutingModel {
       std::vector<std::unique_ptr<Assignment>>* assignments);
 #endif
   // Log a solution.
-  void LogSolution(const std::string& description, int64 solution_cost,
+  void LogSolution(const RoutingSearchParameters& parameters,
+                   const std::string& description, int64 solution_cost,
                    int64 start_time_ms);
   // See CompactAssignment. Checks the final solution if
   // check_compact_assignement is true.

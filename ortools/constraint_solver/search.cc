@@ -53,12 +53,14 @@ namespace operations_research {
 // ---------- Search Log ---------
 
 SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
+                     double scaling_factor,
                      std::function<std::string()> display_callback, int period)
     : SearchMonitor(s),
       period_(period),
       timer_(new WallTimer),
       var_(var),
       obj_(obj),
+      scaling_factor_(scaling_factor),
       display_callback_(std::move(display_callback)),
       nsol_(0),
       tick_(0LL),
@@ -103,25 +105,32 @@ bool SearchLog::AtSolution() {
   std::string obj_str = "";
   int64 current = 0;
   bool objective_updated = false;
+  const auto scaled_str = [this](int64 value) {
+    if (scaling_factor_ != 1.0) {
+      return absl::StrCat(value, " (", value / scaling_factor_, ")");
+    } else {
+      return absl::StrCat(value);
+    }
+  };
   if (obj_ != nullptr) {
     current = obj_->Var()->Value();
     obj_str = obj_->Print();
     objective_updated = true;
   } else if (var_ != nullptr) {
     current = var_->Value();
-    absl::StrAppendFormat(&obj_str, "%d, ", current);
+    absl::StrAppend(&obj_str, scaled_str(current), ", ");
     objective_updated = true;
   }
   if (objective_updated) {
     if (current >= objective_min_) {
-      absl::StrAppendFormat(&obj_str, "objective minimum = %d, ",
-                            objective_min_);
+      absl::StrAppend(&obj_str,
+                      "objective minimum = ", scaled_str(objective_min_), ", ");
     } else {
       objective_min_ = current;
     }
     if (current <= objective_max_) {
-      absl::StrAppendFormat(&obj_str, "objective maximum = %d, ",
-                            objective_max_);
+      absl::StrAppend(&obj_str,
+                      "objective maximum = ", scaled_str(objective_max_), ", ");
     } else {
       objective_max_ = current;
     }
@@ -259,37 +268,45 @@ std::string SearchLog::MemoryUsage() {
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period) {
   return RevAlloc(
-      new SearchLog(this, nullptr, nullptr, nullptr, branch_period));
+      new SearchLog(this, nullptr, nullptr, 1.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var) {
-  return RevAlloc(new SearchLog(this, nullptr, var, nullptr, branch_period));
+  return RevAlloc(
+      new SearchLog(this, nullptr, var, 1.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, nullptr,
+  return RevAlloc(new SearchLog(this, nullptr, nullptr, 1.0,
                                 std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, IntVar* const var,
     std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, var, std::move(display_callback),
-                                branch_period));
+  return RevAlloc(new SearchLog(this, nullptr, var, 1.0,
+                                std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period,
                                      OptimizeVar* const opt_var) {
   return RevAlloc(
-      new SearchLog(this, opt_var, nullptr, nullptr, branch_period));
+      new SearchLog(this, opt_var, nullptr, 1.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, OptimizeVar* const opt_var,
     std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, opt_var, nullptr,
+  return RevAlloc(new SearchLog(this, opt_var, nullptr, 1.0,
                                 std::move(display_callback), branch_period));
+}
+
+SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
+  return RevAlloc(new SearchLog(this, parameters.objective, parameters.variable,
+                                parameters.scaling_factor,
+                                std::move(parameters.display_callback),
+                                parameters.branch_period));
 }
 
 // ---------- Search Trace ----------
