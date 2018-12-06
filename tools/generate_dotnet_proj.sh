@@ -44,7 +44,7 @@ ${LANG_VERSION}
 
   <ItemGroup>
     <Compile Include="$SRC" />
-    <PackageReference Include="${OR_TOOLS_PKG}" Version="${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.*" />
+    <PackageReference Include="${OR_TOOLS_PKG}" Version="${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}-*" />
   </ItemGroup>
 </Project>
 EOL
