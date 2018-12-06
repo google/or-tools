@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobshopSat", "JobshopSat.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NursesSat", "NursesSat.csproj", "{9DFA95DD-A78D-41FA-9527-FD610E9A3EFC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShiftSchedulingSat", "ShiftSchedulingSat.csproj", "{D309FF10-3D42-446A-8402-62A941C0783A}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeakerSchedulingSat", "SpeakerSchedulingSat.csproj", "{3175CB54-187D-45E4-A500-668BE8EA601F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulingSat", "TaskSchedulingSat.csproj", "{BD62083D-52CF-4128-AED8-DD996E364893}"
@@ -45,9 +47,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{4A059795-058D-42BF-A6B8-922A0F9A39C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -254,5 +253,23 @@ Global
 		{921FA31F-F200-4144-8925-7F93F5BC7062}.Release|x64.Build.0 = Release|Any CPU
 		{921FA31F-F200-4144-8925-7F93F5BC7062}.Release|x86.ActiveCfg = Release|Any CPU
 		{921FA31F-F200-4144-8925-7F93F5BC7062}.Release|x86.Build.0 = Release|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Debug|x64.Build.0 = Debug|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Debug|x86.Build.0 = Debug|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Release|x64.ActiveCfg = Release|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Release|x64.Build.0 = Release|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Release|x86.ActiveCfg = Release|Any CPU
+		{D309FF10-3D42-446A-8402-62A941C0783A}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1EC87329-F064-4536-BC91-56ECFC597AA2}
 	EndGlobalSection
 EndGlobal
