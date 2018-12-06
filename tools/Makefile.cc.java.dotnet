@@ -68,7 +68,31 @@ ifeq ($(SYSTEM),unix)
   LIB_PREFIX = lib
   PRE_LIB = -Llib -Llib64
   CBC_LNK = -lCbcSolver -lCbc -lOsiCbc -lCgl -lClpSolver -lClp -lOsiClp -lOsi -lCoinUtils
-  OR_TOOLS_LNK = $(PRE_LIB) -lprotobuf -lglog -lgflags $(CBC_LNK) -lortools
+  ABSL_LNK = \
+-labsl_bad_any_cast \
+-labsl_bad_optional_access \
+-labsl_base \
+-labsl_container \
+-labsl_dynamic_annotations \
+-labsl_examine_stack \
+-labsl_failure_signal_handler \
+-labsl_hash \
+-labsl_int128 \
+-labsl_leak_check \
+-labsl_malloc_internal \
+-labsl_optional \
+-labsl_spinlock_wait \
+-labsl_stack_consumption \
+-labsl_stacktrace \
+-labsl_strings \
+-labsl_str_format_extension_internal \
+-labsl_str_format_internal \
+-labsl_symbolize \
+-labsl_synchronization \
+-labsl_throw_delegate \
+-labsl_time \
+-labsl_variant
+  OR_TOOLS_LNK = $(PRE_LIB) $(ABSL_LNK) -lprotobuf -lglog -lgflags $(CBC_LNK) -lortools
   OBJ_OUT = -o #
   EXE_OUT = -o #
   O = .o
