@@ -552,6 +552,7 @@ test_dotnet_examples_csharp: \
  rdotnet_JobshopFt06Sat.cs \
  rdotnet_JobshopSat.cs \
  rdotnet_NursesSat.cs \
+ rdotnet_ShiftSchedulingSat.cs \
  rdotnet_SpeakerSchedulingSat.cs \
  rdotnet_TaskSchedulingSat.cs \
  rdotnet_cscvrptw.cs \
