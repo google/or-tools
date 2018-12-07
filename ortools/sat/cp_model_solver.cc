@@ -342,6 +342,12 @@ std::string Summarize(const std::string& input) {
                       input.substr(input.size() - half, half));
 }
 
+// Stores information on the worker in the parallel context.
+struct WorkerInfo {
+  std::string worker_name;
+  WallTimer* global_timer = nullptr;
+};
+
 }  // namespace.
 
 // =============================================================================
@@ -1409,29 +1415,48 @@ CpSolverResponse SolveCpModelInternal(
   };
 
   CpSolverResponse lb_response;
+  response.set_status(CpSolverStatus::UNKNOWN);
+
   if (watch_objective_lower_bound) {
+    const ObjectiveSynchronizationHelper* const helper =
+        model->GetOrCreate<ObjectiveSynchronizationHelper>();
+    const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
+    CHECK(helper != nullptr);
+    CHECK(worker_info != nullptr);
+
     const auto broadcast_lower_bound =
-        [&model_proto, &fill_response_statistics, external_solution_observer,
-         &lb_response, objective_var, &solution_info,
+        [&model_proto, external_solution_observer, &lb_response, objective_var,
+         helper, worker_info, &wall_timer,
          model](const std::vector<IntegerVariable>& modified_vars) {
           auto* integer_trail = model->Get<IntegerTrail>();
           const CpObjectiveProto& obj = model_proto.objective();
           const double new_best_bound = ScaleObjectiveValue(
               obj, integer_trail->LevelZeroLowerBound(objective_var).value());
-          ObjectiveSynchronizationHelper* helper =
-              model->GetOrCreate<ObjectiveSynchronizationHelper>();
           const double current_best_bound = helper->get_external_best_bound();
           const double current_objective_value = helper->get_external_bound();
-          if ((helper->scaling_factor >= 0 &&
+
+          if ((helper->scaling_factor >= 0 &&  // Unset -> = 0.0 -> minimize.
                new_best_bound > current_best_bound) ||
               (helper->scaling_factor < 0 &&
                new_best_bound < current_best_bound)) {
-            lb_response.clear_solution();
-            lb_response.clear_solution_lower_bounds();
-            lb_response.clear_solution_upper_bounds();
-            lb_response.set_status(CpSolverStatus::UNKNOWN);
+            DCHECK_EQ(0, lb_response.solution_size());
+            DCHECK_EQ(0, lb_response.solution_lower_bounds_size());
+            DCHECK_EQ(0, lb_response.solution_upper_bounds_size());
+            DCHECK_EQ(lb_response.status(), CpSolverStatus::UNKNOWN);
             lb_response.set_objective_value(current_objective_value);
             lb_response.set_best_objective_bound(new_best_bound);
+
+            if (current_objective_value >= new_best_bound) {
+              VLOG(1) << absl::StrFormat("#LB    %6.2fs  obj:[%0.0f,%0.0f]  %s",
+                                         wall_timer.Get(), new_best_bound,
+                                         current_objective_value,
+                                         worker_info->worker_name);
+            } else {
+              VLOG(1) << absl::StrFormat(
+                  "#UB    %6.2fs  obj:[%0.0f,%0.0f]  %s",
+                  worker_info->global_timer->Get(), current_objective_value,
+                  new_best_bound, worker_info->worker_name);
+            }
             external_solution_observer(lb_response);
           }
         };
@@ -1969,7 +1994,7 @@ CpSolverResponse SolveCpModelWithLNS(
 CpSolverResponse SolveCpModelParallel(
     const CpModelProto& model_proto,
     const std::function<void(const CpSolverResponse&)>& observer,
-    Model* model) {
+    WallTimer* global_timer, Model* model) {
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   const int random_seed = params.random_seed();
   CHECK(!params.enumerate_all_solutions());
@@ -2063,7 +2088,7 @@ CpSolverResponse SolveCpModelParallel(
           params, model_proto, worker_id, &worker_name);
 
       const auto solution_observer = [maximize, worker_name, &mutex,
-                                      &best_response, &observer, &model_proto,
+                                      &best_response, &observer,
                                       &first_solution_found_or_search_finished](
                                          const CpSolverResponse& r) {
         absl::MutexLock lock(&mutex);
@@ -2071,16 +2096,15 @@ CpSolverResponse SolveCpModelParallel(
         // Check is the new solution is actually improving upon the best
         // solution found so far.
         if (MergeOptimizationSolution(r, maximize, &best_response)) {
+          // Checks that r is not a pure best-bound improving solution.
+          CHECK(r.status() == CpSolverStatus::FEASIBLE);
+
           best_response.set_solution_info(
               absl::StrCat(worker_name, " ", r.solution_info()));
-          CHECK(SolutionIsFeasible(
-              model_proto,
-              std::vector<int64>(r.solution().begin(), r.solution().end())));
           observer(best_response);
+
           // We have potentially displayed the improving solution, and updated
           // the best_response. We can awaken sleeping LNS threads.
-          //
-          CHECK(r.status() == CpSolverStatus::FEASIBLE);
           if (!first_solution_found_or_search_finished.HasBeenNotified()) {
             first_solution_found_or_search_finished.Notify();
           }
@@ -2090,13 +2114,20 @@ CpSolverResponse SolveCpModelParallel(
       pool.Schedule([&model_proto, solution_observer, solution_synchronization,
                      objective_synchronization, objective_bound_synchronization,
                      stopped, local_params, worker_id, &mutex, &best_response,
-                     num_search_workers, random_seed,
+                     num_search_workers, random_seed, global_timer,
                      &first_solution_found_or_search_finished, maximize,
                      worker_name]() {
         Model local_model;
         local_model.Add(NewSatParameters(local_params));
         local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
             stopped);
+
+        // Stores the name of the worker in the model.
+        WorkerInfo* worker_info = local_model.GetOrCreate<WorkerInfo>();
+        worker_info->worker_name = worker_name;
+        // Stores the global timer used in logs.
+        worker_info->global_timer = global_timer;
+
         SetSynchronizationFunction(std::move(solution_synchronization),
                                    &local_model);
         SetObjectiveSynchronizationFunctions(
@@ -2283,7 +2314,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // We ignore the multithreading parameter in this case.
 #else   // __PORTABLE_PLATFORM__
   if (params.num_search_workers() > 1) {
-    response = SolveCpModelParallel(new_model, observer_function, model);
+    response =
+        SolveCpModelParallel(new_model, observer_function, &timer, model);
 #endif  // __PORTABLE_PLATFORM__
   } else if (params.use_lns() && new_model.has_objective() &&
              !params.enumerate_all_solutions()) {

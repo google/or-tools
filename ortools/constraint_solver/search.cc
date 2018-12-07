@@ -107,7 +107,7 @@ bool SearchLog::AtSolution() {
   bool objective_updated = false;
   const auto scaled_str = [this](int64 value) {
     if (scaling_factor_ != 1.0) {
-      return absl::StrCat(value, " (", value / scaling_factor_, ")");
+      return absl::StrFormat("%d (%.8lf)", value, value / scaling_factor_);
     } else {
       return absl::StrCat(value);
     }

@@ -2762,11 +2762,14 @@ void RoutingModel::LogSolution(const RoutingSearchParameters& parameters,
                                int64 solution_cost, int64 start_time_ms) {
   const std::string memory_str = MemoryUsage();
   const double cost_scaling_factor = parameters.log_cost_scaling_factor();
-  LOG(INFO) << description << " ("
-            << (cost_scaling_factor != 1.0 ? solution_cost / cost_scaling_factor
-                                           : solution_cost)
-            << ", time = " << (solver_->wall_time() - start_time_ms)
-            << " ms, memory used = " << memory_str << ")";
+  const std::string cost_string =
+      cost_scaling_factor == 1.0
+          ? absl::StrCat(solution_cost)
+          : absl::StrFormat("%d (%.8lf)", solution_cost,
+                            solution_cost / cost_scaling_factor);
+  LOG(INFO) << absl::StrFormat(
+      "%s (%s, time = %d ms, memory used = %s)", description, cost_string,
+      solver_->wall_time() - start_time_ms, memory_str);
 }
 
 const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
