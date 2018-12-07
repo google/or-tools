@@ -595,7 +595,7 @@ Constraint* Solver::MakeIsDifferentCstCt(IntExpr* const var, int64 value,
     return MakeIsLessOrEqualCstCt(var, value - 1, boolvar);
   }
   if (var->IsVar() && !var->Var()->Contains(value)) {
-    return MakeEquality(boolvar, 1LL);
+    return MakeEquality(boolvar, GG_LONGLONG(1));
   }
   if (var->Bound() && var->Min() == value) {
     return MakeEquality(boolvar, Zero());

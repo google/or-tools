@@ -63,7 +63,7 @@ void Solve(const std::vector<int64>& durations,
     int64 next_cost;
     for (int j = 0; j < num_tasks; ++j) {
       if (is_taken[j]) continue;
-      const int64 cost = weights[j] * std::max(0LL, end - due_dates[j]);
+      const int64 cost = weights[j] * std::max<int64>(0, end - due_dates[j]);
       if (next_task == -1 || cost < next_cost) {
         next_task = j;
         next_cost = cost;
@@ -97,7 +97,7 @@ void Solve(const std::vector<int64>& durations,
       tardiness_vars[i] = task_ends[i];
     } else {
       tardiness_vars[i] =
-          cp_model.NewIntVar(Domain(0, std::max(0LL, horizon - due_dates[i])));
+          cp_model.NewIntVar(Domain(0, std::max<int64>(0, horizon - due_dates[i])));
 
       // tardiness_vars >= end - due_date
       cp_model.AddGreaterOrEqual(tardiness_vars[i],

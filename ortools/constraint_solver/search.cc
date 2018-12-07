@@ -63,7 +63,7 @@ SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
       scaling_factor_(scaling_factor),
       display_callback_(std::move(display_callback)),
       nsol_(0),
-      tick_(0LL),
+      tick_(0),
       objective_min_(kint64max),
       objective_max_(kint64min),
       min_right_depth_(kint32max),
@@ -231,7 +231,7 @@ void SearchLog::Maintain() {
 void SearchLog::BeginInitialPropagation() { tick_ = timer_->GetInMs(); }
 
 void SearchLog::EndInitialPropagation() {
-  const int64 delta = std::max(timer_->GetInMs() - tick_, int64{0});
+  const int64 delta = std::max<int64>(timer_->GetInMs() - tick_, 0);
   const std::string buffer = absl::StrFormat(
       "Root node processed (time = %d ms, constraints = %d, %s)", delta,
       solver()->constraints(), MemoryUsage());
@@ -1177,7 +1177,7 @@ int64 SelectRandomValue(const IntVar* v, int64 id) {
       CHECK_LE(index, 0);
     }
   }
-  return 0LL;
+  return 0;
 }
 
 // ----- Select center -----
@@ -1202,7 +1202,7 @@ int64 SelectCenterValue(const IntVar* v, int64 id) {
       return mid + i;
     }
   }
-  return 0LL;
+  return 0;
 }
 
 // ----- Select center -----
@@ -1489,7 +1489,7 @@ int64 StaticEvaluatorSelector::ChooseVariable() {
     }
     // Sort is stable here given the tie-breaking rules in comp_.
     std::sort(elements_.begin(), elements_.end(), comp_);
-    solver_->SaveAndSetValue(&first_, 0LL);
+    solver_->SaveAndSetValue(&first_, GG_LONGLONG(0));
   }
   for (int64 i = first_; i < elements_.size(); ++i) {
     const Element& element = elements_[i];
@@ -2989,7 +2989,8 @@ void TabuSearch::ApplyDecision(Decision* const d) {
     IntVar* const tabu = s->MakeBoolVar();
     s->AddConstraint(s->MakeIsGreaterOrEqualCstCt(
         s->MakeSum(tabu_vars)->Var(), tabu_vars.size() * tabu_factor_, tabu));
-    s->AddConstraint(s->MakeGreaterOrEqual(s->MakeSum(aspiration, tabu), 1LL));
+    s->AddConstraint(
+        s->MakeGreaterOrEqual(s->MakeSum(aspiration, tabu), GG_LONGLONG(1)));
   }
 
   // Go downhill to the next local optimum
@@ -3282,7 +3283,7 @@ void GuidedLocalSearchPenaltiesTable::Increment(const Arc& arc) {
   std::vector<int64>& first_penalties = penalties_[arc.first];
   const int64 second = arc.second;
   if (second >= first_penalties.size()) {
-    first_penalties.resize(second + 1, 0LL);
+    first_penalties.resize(second + 1, 0);
   }
   ++first_penalties[second];
   has_values_ = true;
@@ -3299,7 +3300,7 @@ int64 GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
   const std::vector<int64>& first_penalties = penalties_[arc.first];
   const int64 second = arc.second;
   if (second >= first_penalties.size()) {
-    return 0LL;
+    return 0;
   } else {
     return first_penalties[second];
   }
@@ -3335,9 +3336,9 @@ void GuidedLocalSearchPenaltiesMap::Reset() {
 
 int64 GuidedLocalSearchPenaltiesMap::Value(const Arc& arc) const {
   if (penalized_.Get(arc.first)) {
-    return gtl::FindWithDefault(penalties_, arc, 0LL);
+    return gtl::FindWithDefault(penalties_, arc, 0);
   }
-  return 0LL;
+  return 0;
 }
 
 class GuidedLocalSearch : public Metaheuristic {

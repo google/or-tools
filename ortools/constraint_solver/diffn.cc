@@ -62,8 +62,8 @@ class Diffn : public Constraint {
     delayed_demon_ = MakeDelayedConstraintDemon0(s, this, &Diffn::PropagateAll,
                                                  "PropagateAll");
     if (solver()->parameters().diffn_use_cumulative() &&
-        IsArrayInRange(x_, 0LL, kint64max) &&
-        IsArrayInRange(y_, 0LL, kint64max)) {
+        IsArrayInRange<int64>(x_, 0, kint64max) &&
+        IsArrayInRange<int64>(y_, 0, kint64max)) {
       Constraint* ct1 = nullptr;
       Constraint* ct2 = nullptr;
       {

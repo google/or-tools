@@ -336,9 +336,9 @@ class IntExprElement : public BaseIntExprElement {
     DCHECK_LT(index, values_.size());
     return values_[index];
   }
-  int64 ExprMin() const override { return std::max(int64{0}, expr_->Min()); }
+  int64 ExprMin() const override { return std::max<int64>(0, expr_->Min()); }
   int64 ExprMax() const override {
-    return std::min(static_cast<int64>(values_.size()) - 1, expr_->Max());
+    return std::min<int64>(values_.size() - 1, expr_->Max());
   }
 
  private:
@@ -381,10 +381,9 @@ class RangeMinimumQueryExprElement : public BaseIntExpr {
   }
 
  private:
-  int64 IndexMin() const { return std::max(int64{0}, index_->Min()); }
+  int64 IndexMin() const { return std::max<int64>(0, index_->Min()); }
   int64 IndexMax() const {
-    return std::min(static_cast<int64>(min_rmq_.array().size()) - 1,
-                    index_->Max());
+    return std::min<int64>(min_rmq_.array().size() - 1, index_->Max());
   }
 
   IntVar* const index_;
@@ -504,15 +503,14 @@ IncreasingIntExprElement::IncreasingIntExprElement(
 }
 
 int64 IncreasingIntExprElement::Min() const {
-  const int64 expression_min = std::max(int64{0}, index_->Min());
+  const int64 expression_min = std::max<int64>(0, index_->Min());
   return (expression_min < values_.size() ? values_[expression_min]
                                           : kint64max);
 }
 
 void IncreasingIntExprElement::SetMin(int64 m) {
-  const int64 index_min = std::max(int64{0}, index_->Min());
-  const int64 index_max =
-      std::min(static_cast<int64>(values_.size()) - 1LL, index_->Max());
+  const int64 index_min = std::max<int64>(0, index_->Min());
+  const int64 index_max = std::min<int64>(values_.size() - 1, index_->Max());
 
   if (index_min > index_max || m > values_[index_max]) {
     solver()->Fail();
@@ -526,12 +524,12 @@ void IncreasingIntExprElement::SetMin(int64 m) {
 
 int64 IncreasingIntExprElement::Max() const {
   const int64 expression_max =
-      std::min(static_cast<int64>(values_.size()) - 1LL, index_->Max());
+      std::min<int64>(values_.size() - 1, index_->Max());
   return (expression_max >= 0 ? values_[expression_max] : kint64max);
 }
 
 void IncreasingIntExprElement::SetMax(int64 m) {
-  int64 index_min = std::max(int64{0}, index_->Min());
+  int64 index_min = std::max<int64>(0, index_->Min());
   if (m < values_[index_min]) {
     solver()->Fail();
   }
@@ -546,9 +544,8 @@ void IncreasingIntExprElement::SetRange(int64 mi, int64 ma) {
   if (mi > ma) {
     solver()->Fail();
   }
-  const int64 index_min = std::max(int64{0}, index_->Min());
-  const int64 index_max =
-      std::min(static_cast<int64>(values_.size()) - 1LL, index_->Max());
+  const int64 index_min = std::max<int64>(0, index_->Min());
+  const int64 index_max = std::min<int64>(values_.size() - 1, index_->Max());
 
   if (mi > ma || ma < values_[index_min] || mi > values_[index_max]) {
     solver()->Fail();
@@ -581,14 +578,14 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
     std::vector<int64> ones;
     int first_zero = -1;
     for (int i = 0; i < values.size(); ++i) {
-      if (values[i] == 1LL) {
+      if (values[i] == 1) {
         ones.push_back(i);
       } else {
         first_zero = i;
       }
     }
     if (ones.size() == 1) {
-      DCHECK_EQ(1LL, values[ones.back()]);
+      DCHECK_EQ(GG_LONGLONG(1), values[ones.back()]);
       solver->AddConstraint(solver->MakeBetweenCt(index, 0, values.size() - 1));
       return solver->MakeIsEqualCstVar(index, ones.back());
     } else if (ones.size() == values.size() - 1) {
@@ -1251,7 +1248,7 @@ void IntExprEvaluatorElementCt::InitialPropagate() { Propagate(); }
 
 void IntExprEvaluatorElementCt::Propagate() {
   const int64 emin = std::max(range_start_, index_->Min());
-  const int64 emax = std::min(range_end_ - 1LL, index_->Max());
+  const int64 emax = std::min<int64>(range_end_ - 1, index_->Max());
   const int64 vmin = target_var_->Min();
   const int64 vmax = target_var_->Max();
   if (emin == emax) {

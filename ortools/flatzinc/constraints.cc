@@ -2152,7 +2152,7 @@ void ExtractIntLinLeReif(fz::SolverData* data, fz::Constraint* ct) {
         // Special case. this is or(vars) = not(boolvar).
         PostIsBooleanSumInRange(data->Sat(), solver, vars, 0, 0, boolvar);
       } else if (rhs < 0 && AreAllPositive(coeffs) &&
-                 IsArrayInRange(vars, 0LL, kint64max)) {
+                 IsArrayInRange<int64>(vars, 0, kint64max)) {
         // Trivial failure.
         boolvar->SetValue(0);
         FZVLOG << "  - set target to 0" << FZENDL;

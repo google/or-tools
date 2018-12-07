@@ -4754,11 +4754,11 @@ void RoutingDimension::InitializeCumuls() {
   const int64 min_capacity = *capacity_range.first;
   CHECK_GE(min_capacity, 0);
   const int64 max_capacity = *capacity_range.second;
-  solver->MakeIntVarArray(size, 0LL, max_capacity, name_, &cumuls_);
+  solver->MakeIntVarArray(size, 0, max_capacity, name_, &cumuls_);
   forbidden_intervals_.resize(size);
   capacity_vars_.clear();
   if (min_capacity != max_capacity) {
-    solver->MakeIntVarArray(size, 0LL, kint64max, &capacity_vars_);
+    solver->MakeIntVarArray(size, 0, kint64max, &capacity_vars_);
     for (int i = 0; i < size; ++i) {
       IntVar* const capacity_var = capacity_vars_[i];
       if (i < model_->Size()) {
@@ -5068,13 +5068,12 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   tasks_.forbidden_intervals.clear();
   task_translators_.clear();
   // Translate route to tasks: visits are nonpreemptible, transits are.
-  int64 group_delay = 0LL;
+  int64 group_delay = 0;
   current = model_->Start(vehicle);
   while (true) {
     // Tasks from visits.
     const bool node_is_last = current == model_->End(vehicle);
-    const int64 visit_duration =
-        node_is_last ? 0LL : node_visit_transit[current];
+    const int64 visit_duration = node_is_last ? 0 : node_visit_transit[current];
     tasks_.start_min.push_back(
         CapSub(dimension_->CumulVar(current)->Min(), group_delay));
     tasks_.duration_min.push_back(CapAdd(group_delay, visit_duration));
@@ -5092,12 +5091,12 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
     tasks_.start_min.push_back(
         CapAdd(CapAdd(tasks_.start_min.back(), group_delay), visit_duration));
     group_delay =
-        next_is_bound ? dimension_->GetGroupDelay(vehicle, current, next) : 0LL;
+        next_is_bound ? dimension_->GetGroupDelay(vehicle, current, next) : 0;
     DCHECK_GE(group_delay, 0);
-    tasks_.duration_min.push_back(
-        std::max(0LL, CapSub(CapSub(dimension_->FixedTransitVar(current)->Min(),
-                                    visit_duration),
-                             group_delay)));
+    tasks_.duration_min.push_back(std::max<int64>(
+        0, CapSub(CapSub(dimension_->FixedTransitVar(current)->Min(),
+                         visit_duration),
+                  group_delay)));
     DCHECK_GE(tasks_.duration_min.back(), 0);
     tasks_.end_max.push_back(
         CapSub(dimension_->CumulVar(next)->Max(), group_delay));
@@ -5360,7 +5359,7 @@ void RoutingDimension::CloseModel(bool use_light_propagation) {
     IntVar* const fixed_transit = fixed_transits_[i];
     const auto transit_vehicle_evaluator = [this, i](int64 to,
                                                      int64 eval_index) {
-      return eval_index >= 0 ? transit_evaluator(eval_index)(i, to) : 0LL;
+      return eval_index >= 0 ? transit_evaluator(eval_index)(i, to) : 0;
     };
     if (use_light_propagation) {
       if (class_evaluators_.size() == 1) {
@@ -5671,7 +5670,7 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
     std::vector<int64> node_visit_transits) {
   SetBreakIntervalsOfVehicle(std::move(breaks), vehicle,
                              std::move(node_visit_transits),
-                             [](int64, int64) { return 0LL; });
+                             [](int64, int64) { return 0; });
 }
 
 void RoutingDimension::SetBreakIntervalsOfVehicle(
@@ -5688,7 +5687,7 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
     vehicle_node_visit_transits_.resize(model_->vehicles());
     vehicle_break_intervals_.resize(model_->vehicles());
     vehicle_group_delays_.resize(model_->vehicles(),
-                                 [](int64, int64) { return 0LL; });
+                                 [](int64, int64) { return 0; });
   }
   DCHECK_EQ(0, vehicle_node_visit_transits_[vehicle].size());
   vehicle_node_visit_transits_[vehicle] = std::move(node_visit_transits);
@@ -5813,8 +5812,8 @@ void RoutingDimension::SetupSlackAndDependentTransitCosts(
           solver
               ->MakeElement(
                   [this](int index) {
-                    return IthElementOrValue<0LL>(
-                        vehicle_span_cost_coefficients_, index);
+                    return IthElementOrValue<0>(vehicle_span_cost_coefficients_,
+                                                index);
                   },
                   model_->VehicleVar(var_index))
               ->Var();
