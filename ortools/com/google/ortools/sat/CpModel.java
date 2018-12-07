@@ -717,9 +717,8 @@ public class CpModel {
    * @return an instance of the Constraint class
    * @throws MismatchedArrayLengths if times, demands, or actives have different length
    */
-  public Constraint addReservoirConstraintWithActive(
-      IntVar[] times, long[] demands, IntVar[] actives, long minLevel, long maxLevel)
-      throws MismatchedArrayLengths {
+  public Constraint addReservoirConstraintWithActive(IntVar[] times, long[] demands,
+      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
     if (times.length != demands.length) {
       throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
     }
@@ -748,9 +747,8 @@ public class CpModel {
    *
    * @see #addReservoirConstraintWithActive(IntVar[], long[], actives, long, long) Reservoir
    */
-  public Constraint addReservoirConstraintWithActive(
-      IntVar[] times, int[] demands, IntVar[] actives, long minLevel, long maxLevel)
-      throws MismatchedArrayLengths {
+  public Constraint addReservoirConstraintWithActive(IntVar[] times, int[] demands,
+      IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {
     return addReservoirConstraintWithActive(
         times, toLongArray(demands), actives, minLevel, maxLevel);
   }

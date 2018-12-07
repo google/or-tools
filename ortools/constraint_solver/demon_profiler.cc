@@ -256,14 +256,12 @@ class DemonProfiler : public PropagationMonitor {
   // Exports collected data as human-readable text.
   void PrintOverview(Solver* const solver, const std::string& filename) {
     const char* const kConstraintFormat =
-        "  - Constraint: %s\n                failures=%" GG_LL_FORMAT
-        "d, initial propagation runtime=%" GG_LL_FORMAT
-        "d us, demons=%d, demon invocations=%" GG_LL_FORMAT
-        "d, total demon runtime=%" GG_LL_FORMAT "d us\n";
+        "  - Constraint: %s\n                failures=%d, initial propagation "
+        "runtime=%d us, demons=%d, demon invocations=%d, total demon "
+        "runtime=%d us\n";
     const char* const kDemonFormat =
-        "  --- Demon: %s\n             invocations=%" GG_LL_FORMAT
-        "d, failures=%" GG_LL_FORMAT "d, total runtime=%" GG_LL_FORMAT
-        "d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
+        "  --- Demon: %s\n             invocations=%d, failures=%d, total "
+        "runtime=%d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
     File* file;
     const std::string model =
         absl::StrFormat("Model %s:\n", solver->model_name());

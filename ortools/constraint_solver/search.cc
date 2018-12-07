@@ -53,12 +53,14 @@ namespace operations_research {
 // ---------- Search Log ---------
 
 SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
+                     double scaling_factor,
                      std::function<std::string()> display_callback, int period)
     : SearchMonitor(s),
       period_(period),
       timer_(new WallTimer),
       var_(var),
       obj_(obj),
+      scaling_factor_(scaling_factor),
       display_callback_(std::move(display_callback)),
       nsol_(0),
       tick_(0LL),
@@ -91,9 +93,8 @@ void SearchLog::ExitSearch() {
     ms = 1;
   }
   const std::string buffer = absl::StrFormat(
-      "End search (time = %" GG_LL_FORMAT "d ms, branches = %" GG_LL_FORMAT
-      "d, failures = %" GG_LL_FORMAT "d, %s, speed = %" GG_LL_FORMAT
-      "d branches/s)",
+      "End search (time = %d ms, branches = %d, failures = %d, %s, speed = %d "
+      "branches/s)",
       ms, branches, solver()->failures(), MemoryUsage(), branches * 1000 / ms);
   OutputLine(buffer);
 }
@@ -104,35 +105,40 @@ bool SearchLog::AtSolution() {
   std::string obj_str = "";
   int64 current = 0;
   bool objective_updated = false;
+  const auto scaled_str = [this](int64 value) {
+    if (scaling_factor_ != 1.0) {
+      return absl::StrCat(value, " (", value / scaling_factor_, ")");
+    } else {
+      return absl::StrCat(value);
+    }
+  };
   if (obj_ != nullptr) {
     current = obj_->Var()->Value();
     obj_str = obj_->Print();
     objective_updated = true;
   } else if (var_ != nullptr) {
     current = var_->Value();
-    absl::StrAppendFormat(&obj_str, "%" GG_LL_FORMAT "d, ", current);
+    absl::StrAppend(&obj_str, scaled_str(current), ", ");
     objective_updated = true;
   }
   if (objective_updated) {
     if (current >= objective_min_) {
-      absl::StrAppendFormat(
-          &obj_str, "objective minimum = %" GG_LL_FORMAT "d, ", objective_min_);
+      absl::StrAppend(&obj_str,
+                      "objective minimum = ", scaled_str(objective_min_), ", ");
     } else {
       objective_min_ = current;
     }
     if (current <= objective_max_) {
-      absl::StrAppendFormat(
-          &obj_str, "objective maximum = %" GG_LL_FORMAT "d, ", objective_max_);
+      absl::StrAppend(&obj_str,
+                      "objective maximum = ", scaled_str(objective_max_), ", ");
     } else {
       objective_max_ = current;
     }
   }
   std::string log;
   absl::StrAppendFormat(&log,
-                        "Solution #%d (%stime = %" GG_LL_FORMAT
-                        "d ms, branches = %" GG_LL_FORMAT
-                        "d,"
-                        " failures = %" GG_LL_FORMAT "d, depth = %d",
+                        "Solution #%d (%stime = %d ms, branches = %d,"
+                        " failures = %d, depth = %d",
                         nsol_++, obj_str, timer_->GetInMs(),
                         solver()->branches(), solver()->failures(), depth);
   if (!solver()->SearchContext().empty()) {
@@ -140,10 +146,8 @@ bool SearchLog::AtSolution() {
   }
   if (solver()->neighbors() != 0) {
     absl::StrAppendFormat(&log,
-                          ", neighbors = %" GG_LL_FORMAT
-                          "d, filtered neighbors = %" GG_LL_FORMAT
-                          "d,"
-                          " accepted neighbors = %" GG_LL_FORMAT "d",
+                          ", neighbors = %d, filtered neighbors = %d,"
+                          " accepted neighbors = %d",
                           solver()->neighbors(), solver()->filtered_neighbors(),
                           solver()->accepted_neighbors());
   }
@@ -164,17 +168,13 @@ void SearchLog::BeginFail() { Maintain(); }
 
 void SearchLog::NoMoreSolutions() {
   std::string buffer = absl::StrFormat(
-      "Finished search tree (time = %" GG_LL_FORMAT
-      "d ms, branches = %" GG_LL_FORMAT
-      "d,"
-      " failures = %" GG_LL_FORMAT "d",
+      "Finished search tree (time = %d ms, branches = %d,"
+      " failures = %d",
       timer_->GetInMs(), solver()->branches(), solver()->failures());
   if (solver()->neighbors() != 0) {
     absl::StrAppendFormat(&buffer,
-                          ", neighbors = %" GG_LL_FORMAT
-                          "d, filtered neighbors = %" GG_LL_FORMAT
-                          "d,"
-                          " accepted neigbors = %" GG_LL_FORMAT "d",
+                          ", neighbors = %d, filtered neighbors = %d,"
+                          " accepted neigbors = %d",
                           solver()->neighbors(), solver()->filtered_neighbors(),
                           solver()->accepted_neighbors());
   }
@@ -196,10 +196,9 @@ void SearchLog::RefuteDecision(Decision* const decision) {
 }
 
 void SearchLog::OutputDecision() {
-  std::string buffer = absl::StrFormat(
-      "%" GG_LL_FORMAT "d branches, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
-      "d failures",
-      solver()->branches(), timer_->GetInMs(), solver()->failures());
+  std::string buffer =
+      absl::StrFormat("%d branches, %d ms, %d failures", solver()->branches(),
+                      timer_->GetInMs(), solver()->failures());
   if (min_right_depth_ != kint32max && max_depth_ != 0) {
     const int depth = solver()->SearchDepth();
     absl::StrAppendFormat(&buffer, ", tree pos=%d/%d/%d minref=%d max=%d",
@@ -211,9 +210,8 @@ void SearchLog::OutputDecision() {
   if (obj_ != nullptr && objective_min_ != kint64max &&
       objective_max_ != kint64min) {
     absl::StrAppendFormat(&buffer,
-                          ", objective minimum = %" GG_LL_FORMAT
-                          "d"
-                          ", objective maximum = %" GG_LL_FORMAT "d",
+                          ", objective minimum = %d"
+                          ", objective maximum = %d",
                           objective_min_, objective_max_);
   }
   const int progress = solver()->TopProgressPercent();
@@ -234,10 +232,9 @@ void SearchLog::BeginInitialPropagation() { tick_ = timer_->GetInMs(); }
 
 void SearchLog::EndInitialPropagation() {
   const int64 delta = std::max(timer_->GetInMs() - tick_, int64{0});
-  const std::string buffer =
-      absl::StrFormat("Root node processed (time = %" GG_LL_FORMAT
-                      "d ms, constraints = %d, %s)",
-                      delta, solver()->constraints(), MemoryUsage());
+  const std::string buffer = absl::StrFormat(
+      "Root node processed (time = %d ms, constraints = %d, %s)", delta,
+      solver()->constraints(), MemoryUsage());
   OutputLine(buffer);
 }
 
@@ -265,43 +262,51 @@ std::string SearchLog::MemoryUsage() {
     return absl::StrFormat("memory used = %2lf KB",
                            memory_usage * 1.0 / kKiloByte);
   } else {
-    return absl::StrFormat("memory used = %" GG_LL_FORMAT "d", memory_usage);
+    return absl::StrFormat("memory used = %d", memory_usage);
   }
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period) {
   return RevAlloc(
-      new SearchLog(this, nullptr, nullptr, nullptr, branch_period));
+      new SearchLog(this, nullptr, nullptr, 1.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var) {
-  return RevAlloc(new SearchLog(this, nullptr, var, nullptr, branch_period));
+  return RevAlloc(
+      new SearchLog(this, nullptr, var, 1.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, nullptr,
+  return RevAlloc(new SearchLog(this, nullptr, nullptr, 1.0,
                                 std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, IntVar* const var,
     std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, var, std::move(display_callback),
-                                branch_period));
+  return RevAlloc(new SearchLog(this, nullptr, var, 1.0,
+                                std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period,
                                      OptimizeVar* const opt_var) {
   return RevAlloc(
-      new SearchLog(this, opt_var, nullptr, nullptr, branch_period));
+      new SearchLog(this, opt_var, nullptr, 1.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, OptimizeVar* const opt_var,
     std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, opt_var, nullptr,
+  return RevAlloc(new SearchLog(this, opt_var, nullptr, 1.0,
                                 std::move(display_callback), branch_period));
+}
+
+SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
+  return RevAlloc(new SearchLog(this, parameters.objective, parameters.variable,
+                                parameters.scaling_factor,
+                                std::move(parameters.display_callback),
+                                parameters.branch_period));
 }
 
 // ---------- Search Trace ----------
@@ -1524,8 +1529,7 @@ AssignOneVariableValue::AssignOneVariableValue(IntVar* const v, int64 val)
     : var_(v), value_(val) {}
 
 std::string AssignOneVariableValue::DebugString() const {
-  return absl::StrFormat("[%s == %" GG_LL_FORMAT "d]", var_->DebugString(),
-                         value_);
+  return absl::StrFormat("[%s == %d]", var_->DebugString(), value_);
 }
 
 void AssignOneVariableValue::Apply(Solver* const s) { var_->SetValue(value_); }
@@ -1563,8 +1567,7 @@ AssignOneVariableValueOrFail::AssignOneVariableValueOrFail(IntVar* const v,
     : var_(v), value_(value) {}
 
 std::string AssignOneVariableValueOrFail::DebugString() const {
-  return absl::StrFormat("[%s == %" GG_LL_FORMAT "d]", var_->DebugString(),
-                         value_);
+  return absl::StrFormat("[%s == %d]", var_->DebugString(), value_);
 }
 
 void AssignOneVariableValueOrFail::Apply(Solver* const s) {
@@ -1605,11 +1608,9 @@ SplitOneVariable::SplitOneVariable(IntVar* const v, int64 val,
 
 std::string SplitOneVariable::DebugString() const {
   if (start_with_lower_half_) {
-    return absl::StrFormat("[%s <= %" GG_LL_FORMAT "d]", var_->DebugString(),
-                           value_);
+    return absl::StrFormat("[%s <= %d]", var_->DebugString(), value_);
   } else {
-    return absl::StrFormat("[%s >= %" GG_LL_FORMAT "d]", var_->DebugString(),
-                           value_);
+    return absl::StrFormat("[%s >= %d]", var_->DebugString(), value_);
   }
 }
 
@@ -1680,8 +1681,8 @@ AssignVariablesValues::AssignVariablesValues(const std::vector<IntVar*>& vars,
 std::string AssignVariablesValues::DebugString() const {
   std::string out;
   for (int i = 0; i < vars_.size(); ++i) {
-    absl::StrAppendFormat(&out, "[%s == %" GG_LL_FORMAT "d]",
-                          vars_[i]->DebugString(), values_[i]);
+    absl::StrAppendFormat(&out, "[%s == %d]", vars_[i]->DebugString(),
+                          values_[i]);
   }
   return out;
 }
@@ -2728,8 +2729,7 @@ bool OptimizeVar::AtSolution() {
 }
 
 std::string OptimizeVar::Print() const {
-  return absl::StrFormat("objective value = %" GG_LL_FORMAT "d, ",
-                         var_->Value());
+  return absl::StrFormat("objective value = %d, ", var_->Value());
 }
 
 std::string OptimizeVar::DebugString() const {
@@ -2739,9 +2739,8 @@ std::string OptimizeVar::DebugString() const {
   } else {
     out = "MinimizeVar(";
   }
-  absl::StrAppendFormat(
-      &out, "%s, step = %" GG_LL_FORMAT "d, best = %" GG_LL_FORMAT "d)",
-      var_->DebugString(), step_, best_);
+  absl::StrAppendFormat(&out, "%s, step = %d, best = %d)", var_->DebugString(),
+                        step_, best_);
   return out;
 }
 
@@ -3981,13 +3980,11 @@ void RegularLimit::UpdateLimits(int64 time, int64 branches, int64 failures,
 }
 
 std::string RegularLimit::DebugString() const {
-  return absl::StrFormat("RegularLimit(crossed = %i, wall_time = %" GG_LL_FORMAT
-                         "d, "
-                         "branches = %" GG_LL_FORMAT
-                         "d, failures = %" GG_LL_FORMAT
-                         "d, solutions = %" GG_LL_FORMAT "d cumulative = %s",
-                         crossed(), wall_time_, branches_, failures_,
-                         solutions_, (cumulative_ ? "true" : "false"));
+  return absl::StrFormat(
+      "RegularLimit(crossed = %i, wall_time = %d, "
+      "branches = %d, failures = %d, solutions = %d cumulative = %s",
+      crossed(), wall_time_, branches_, failures_, solutions_,
+      (cumulative_ ? "true" : "false"));
 }
 
 bool RegularLimit::CheckTime() { return TimeDelta() >= wall_time_; }

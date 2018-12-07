@@ -47,8 +47,8 @@ class IntervalUnaryRelation : public Constraint {
   void InitialPropagate() override;
 
   std::string DebugString() const override {
-    return absl::StrFormat("(%s %s %" GG_LL_FORMAT "d)", t_->DebugString(),
-                           kUnaryNames[rel_], d_);
+    return absl::StrFormat("(%s %s %d)", t_->DebugString(), kUnaryNames[rel_],
+                           d_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {

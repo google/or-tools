@@ -88,7 +88,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "solution_limit: 0x7fffffffffffffff "             // kint64max
       "lns_time_limit: { seconds:0 nanos:100000000 } "  // 0.1s
       "use_full_propagation: false "
-      "log_search: false";
+      "log_search: false "
+      "log_cost_scaling_factor: 1.0";
   RoutingSearchParameters parameters;
   if (!google::protobuf::TextFormat::ParseFromString(kSearchParameters,
                                                      &parameters)) {
@@ -213,6 +214,10 @@ std::string FindErrorInRoutingSearchParameters(
           search_parameters.local_search_metaheuristic())) {
     return StrCat("Invalid metaheuristic: ",
                   search_parameters.local_search_metaheuristic());
+  }
+
+  if (search_parameters.log_cost_scaling_factor() == 0) {
+    return "log_cost_scaling_factor must be non-null";
   }
 
   return "";  // = Valid (No error).

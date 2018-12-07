@@ -2499,11 +2499,13 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
       if (PresolveLinear(ct, context)) {
         context->UpdateConstraintVariableUsage(c);
       }
+      if (context->is_unsat) return false;
       if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
         const int old_num_enforcement_literals = ct->enforcement_literal_size();
         ExtractEnforcementLiteralFromLinearConstraint(ct, context);
         if (ct->enforcement_literal_size() > old_num_enforcement_literals) {
           PresolveLinear(ct, context);
+          if (context->is_unsat) return false;
           context->UpdateConstraintVariableUsage(c);
         }
       }
@@ -2532,7 +2534,7 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
   }
 }
 
-void PresolveToFixPoint(PresolveContext* context) {
+void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
   if (context->is_unsat) return;
 
   // This is used for constraint having unique variables in them (i.e. not
@@ -2545,7 +2547,9 @@ void PresolveToFixPoint(PresolveContext* context) {
   std::deque<int> queue(context->working_model->constraints_size());
   std::iota(queue.begin(), queue.end(), 0);
   while (!queue.empty() && !context->is_unsat) {
+    if (time_limit != nullptr && time_limit->LimitReached()) break;
     while (!queue.empty() && !context->is_unsat) {
+      if (time_limit != nullptr && time_limit->LimitReached()) break;
       const int c = queue.front();
       in_queue[c] = false;
       queue.pop_front();
@@ -2765,13 +2769,15 @@ void PresolveCpModel(const PresolveOptions& options,
   }
 
   // Main propagation loop.
-  PresolveToFixPoint(&context);
+  PresolveToFixPoint(&context, options.time_limit);
 
   // Runs the probing.
   // TODO(user): do that and the pure-SAT part below more than once.
   if (options.parameters.cp_model_probing_level() > 0) {
-    Probe(options.time_limit, &context);
-    PresolveToFixPoint(&context);
+    if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
+      Probe(options.time_limit, &context);
+      PresolveToFixPoint(&context, options.time_limit);
+    }
   }
 
   RemoveUnusedEquivalentVariables(&context);
@@ -2782,7 +2788,9 @@ void PresolveCpModel(const PresolveOptions& options,
   //
   // TODO(user): expose the parameters here so we can use
   // cp_model_use_sat_presolve().
-  PresolvePureSatPart(&context);
+  if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
+    PresolvePureSatPart(&context);
+  }
 
   // Extract redundant at most one constraint form the linear ones.
   //

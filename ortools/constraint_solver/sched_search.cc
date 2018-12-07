@@ -61,11 +61,11 @@ std::string SequenceVar::DebugString() const {
   int ranked = 0;
   int not_ranked = 0;
   ComputeStatistics(&ranked, &not_ranked, &unperformed);
-  return absl::StrFormat("%s(horizon = %" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                         "d, duration = %" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                         "d, not ranked = %d, ranked = %d, nexts = [%s])",
-                         name(), hmin, hmax, dmin, dmax, not_ranked, ranked,
-                         JoinDebugStringPtr(nexts_, ", "));
+  return absl::StrFormat(
+      "%s(horizon = %d..%d, duration = %d..%d, not ranked = %d, ranked = %d, "
+      "nexts = [%s])",
+      name(), hmin, hmax, dmin, dmax, not_ranked, ranked,
+      JoinDebugStringPtr(nexts_, ", "));
 }
 
 void SequenceVar::Accept(ModelVisitor* const visitor) const {
@@ -408,8 +408,8 @@ class ScheduleOrPostpone : public Decision {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("ScheduleOrPostpone(%s at %" GG_LL_FORMAT "d)",
-                           var_->DebugString(), est_.Value());
+    return absl::StrFormat("ScheduleOrPostpone(%s at %d)", var_->DebugString(),
+                           est_.Value());
   }
 
  private:
@@ -518,8 +518,8 @@ class ScheduleOrExpedite : public Decision {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("ScheduleOrExpedite(%s at %" GG_LL_FORMAT "d)",
-                           var_->DebugString(), est_.Value());
+    return absl::StrFormat("ScheduleOrExpedite(%s at %d)", var_->DebugString(),
+                           est_.Value());
   }
 
  private:

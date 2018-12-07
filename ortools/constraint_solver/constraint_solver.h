@@ -2237,7 +2237,6 @@ class Solver {
   // ----- Search Log -----
   // The SearchMonitors below will display a periodic search log
   // on LOG(INFO) every branch_period branches explored.
-
   SearchMonitor* MakeSearchLog(int branch_period);
 
   // At each solution, this monitor also display the var value.
@@ -2255,13 +2254,29 @@ class Solver {
 
   // OptimizeVar Search Logs
   // At each solution, this monitor will also display the 'opt_var' value.
-
   SearchMonitor* MakeSearchLog(int branch_period, OptimizeVar* const opt_var);
 
   // Creates a search monitor that will also print the result of the
   // display callback.
   SearchMonitor* MakeSearchLog(int branch_period, OptimizeVar* const opt_var,
                                std::function<std::string()> display_callback);
+
+  // Creates a search monitor from logging parameters.
+  struct SearchLogParameters {
+    // SearchMonitors will display a periodic search log every branch_period
+    // branches explored.
+    int branch_period = 1;
+    // SearchMonitors will display values of objective or variable (both cannot
+    // be used together).
+    OptimizeVar* objective = nullptr;
+    IntVar* variable = nullptr;
+    // Objective or var values are unscaled by this factor when displayed.
+    double scaling_factor = 1.0;
+    // SearchMonitors will display the result of display_callback at each new
+    // solution found.
+    std::function<std::string()> display_callback;
+  };
+  SearchMonitor* MakeSearchLog(SearchLogParameters parameters);
 
   // ----- Search Trace ------
 

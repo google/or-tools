@@ -209,9 +209,11 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
         VLOG(2) << "Integer LP solution at level:" << old_level
                 << " obj:" << old_obj;
       }
-      for (IntegerLiteral l : encoder->GetIntegerLiterals(Literal(decision))) {
+      for (const IntegerLiteral l :
+           encoder->GetIntegerLiterals(Literal(decision))) {
         const IntegerVariable positive_var =
             VariableIsPositive(l.var) ? l.var : NegationOf(l.var);
+        if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
         LinearProgrammingConstraint* lp =
             gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
         if (lp != nullptr) {
@@ -417,23 +419,46 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     // TODO(user): Maybe do not check this at each decision.
     if (synchronize_objective) {
       const double external_bound = helper->get_external_bound();
-      if (std::isfinite(external_bound)) {
-        IntegerValue best_bound(helper->UnscaledObjective(external_bound));
-        IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-        if (best_bound <= integer_trail->UpperBound(helper->objective_var)) {
-          if (!solver->RestoreSolverToAssumptionLevel()) {
-            return solver->UnsatStatus();
-          }
-          DCHECK_EQ(solver->CurrentDecisionLevel(), 0);
-          if (!integer_trail->Enqueue(
-                  IntegerLiteral::LowerOrEqual(helper->objective_var,
-                                               best_bound - 1),
-                  {}, {})) {
-            return SatSolver::INFEASIBLE;
-          }
-          if (!solver->FinishPropagation()) {
-            return solver->UnsatStatus();
-          }
+      CHECK(helper->get_external_best_bound != nullptr);
+      const double external_best_bound = helper->get_external_best_bound();
+      IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+      IntegerValue current_objective_upper_bound(
+          integer_trail->UpperBound(helper->objective_var));
+      IntegerValue current_objective_lower_bound(
+          integer_trail->LowerBound(helper->objective_var));
+      const bool has_new_upper_bound = std::isfinite(external_bound);
+      const bool has_new_lower_bound = std::isfinite(external_best_bound);
+      IntegerValue new_objective_upper_bound(
+          has_new_upper_bound ? helper->UnscaledObjective(external_bound) : 0);
+      IntegerValue new_objective_lower_bound(
+          has_new_lower_bound ? helper->UnscaledObjective(external_best_bound)
+                              : 0);
+      if ((has_new_upper_bound &&
+           new_objective_upper_bound <= current_objective_upper_bound) ||
+          (has_new_lower_bound &&
+           new_objective_lower_bound > current_objective_lower_bound)) {
+        if (!solver->RestoreSolverToAssumptionLevel()) {
+          return solver->UnsatStatus();
+        }
+        DCHECK_EQ(solver->CurrentDecisionLevel(), 0);
+        if (has_new_upper_bound &&
+            new_objective_upper_bound <= current_objective_upper_bound &&
+            !integer_trail->Enqueue(
+                IntegerLiteral::LowerOrEqual(helper->objective_var,
+                                             new_objective_upper_bound - 1),
+                {}, {})) {
+          return SatSolver::INFEASIBLE;
+        }
+        if (has_new_lower_bound &&
+            new_objective_lower_bound > current_objective_lower_bound &&
+            !integer_trail->Enqueue(
+                IntegerLiteral::GreaterOrEqual(helper->objective_var,
+                                               new_objective_lower_bound),
+                {}, {})) {
+          return SatSolver::INFEASIBLE;
+        }
+        if (!solver->FinishPropagation()) {
+          return solver->UnsatStatus();
         }
       }
     }

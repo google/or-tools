@@ -35,7 +35,7 @@ SWIG_BINARY = $(WINDOWS_SWIG_BINARY)
 # tags of dependencies to checkout.
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
-GFLAGS_TAG = 2.2.1
+GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.3.5
 PROTOBUF_TAG = 3.6.1
 ABSL_TAG = master

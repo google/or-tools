@@ -257,13 +257,8 @@ void PiecewiseSegment::AddConstantToY(int64 constant) {
 
 std::string PiecewiseSegment::DebugString() const {
   std::string result = absl::StrFormat(
-      "PiecewiseSegment(<start: (%" GG_LL_FORMAT "d, %" GG_LL_FORMAT
-      "d), "
-      "end: (%" GG_LL_FORMAT "d, %" GG_LL_FORMAT
-      "d), "
-      "reference: (%" GG_LL_FORMAT "d, %" GG_LL_FORMAT
-      "d), "
-      "slope = %" GG_LL_FORMAT "d>)",
+      "PiecewiseSegment(<start: (%d, %d), end: (%d, %d), "
+      "reference: (%d, %d), slope = %d>)",
       start_x_, Value(start_x_), end_x_, Value(end_x_), reference_x_,
       reference_y_, slope_);
   return result;

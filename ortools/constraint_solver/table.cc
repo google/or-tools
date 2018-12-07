@@ -63,8 +63,7 @@ struct AffineTransformation {  // y == a*x + b.
   }
 
   std::string DebugString() const {
-    return absl::StrFormat("(%" GG_LL_FORMAT "d * x + %" GG_LL_FORMAT "d)", a,
-                           b);
+    return absl::StrFormat("(%d * x + %d)", a, b);
   }
 };
 
@@ -1225,8 +1224,8 @@ class TransitionConstraint : public Constraint {
 
   std::string DebugString() const override {
     return absl::StrFormat(
-        "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
-        "d, final = [%s])",
+        "TransitionConstraint([%s], %d transitions, initial = %d, final = "
+        "[%s])",
         JoinDebugStringPtr(vars_, ", "), transition_table_.NumTuples(),
         initial_state_, absl::StrJoin(final_states_, ", "));
   }

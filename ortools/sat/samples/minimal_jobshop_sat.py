@@ -53,8 +53,8 @@ def MinimalJobshopSat():
     all_tasks = {}
     for job in all_jobs:
         for task_id, task in enumerate(jobs_data[job]):
-            start_var = model.NewIntVar(0, horizon, 'start_%i_%i' % (job,
-                                                                     task_id))
+            start_var = model.NewIntVar(0, horizon,
+                                        'start_%i_%i' % (job, task_id))
             duration = task[1]
             end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (job, task_id))
             interval_var = model.NewIntervalVar(
@@ -76,8 +76,8 @@ def MinimalJobshopSat():
     # Add precedence contraints.
     for job in all_jobs:
         for task_id in range(0, len(jobs_data[job]) - 1):
-            model.Add(all_tasks[job, task_id + 1].start >=
-                      all_tasks[job, task_id].end)
+            model.Add(all_tasks[job, task_id +
+                                1].start >= all_tasks[job, task_id].end)
     # [END constraints]
 
     # [START objective]

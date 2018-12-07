@@ -2016,6 +2016,7 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
   tasks_.is_preemptible.clear();
   tasks_.forbidden_intervals.clear();
   bool has_forbidden_intervals = false;
+  int64 group_delay = 0LL;
   int64 current = path_start;
   while (true) {
     // Add tasks from visits.
@@ -2024,8 +2025,9 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
         node_is_last
             ? 0LL
             : dimension_.GetNodeVisitTransitsOfVehicle(vehicle)[current];
-    tasks_.start_min.push_back(dimension_.CumulVar(current)->Min());
-    tasks_.duration_min.push_back(visit_duration);
+    tasks_.start_min.push_back(
+        CapSub(dimension_.CumulVar(current)->Min(), group_delay));
+    tasks_.duration_min.push_back(CapAdd(group_delay, visit_duration));
     tasks_.end_max.push_back(
         CapAdd(dimension_.CumulVar(current)->Max(), visit_duration));
     tasks_.is_preemptible.push_back(false);
@@ -2037,10 +2039,15 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
 
     // Add tasks from transits.
     const int next = GetNext(current);
-    tasks_.start_min.push_back(CapAdd(tasks_.start_min.back(), visit_duration));
-    tasks_.duration_min.push_back(CapSub(
-        dimension_.transit_evaluator(vehicle)(current, next), visit_duration));
-    tasks_.end_max.push_back(dimension_.CumulVar(next)->Max());
+    tasks_.start_min.push_back(
+        CapAdd(CapAdd(tasks_.start_min.back(), group_delay), visit_duration));
+    group_delay = dimension_.GetGroupDelay(vehicle, current, next);
+    tasks_.duration_min.push_back(
+        CapSub(CapSub(dimension_.transit_evaluator(vehicle)(current, next),
+                      visit_duration),
+               group_delay));
+    tasks_.end_max.push_back(
+        CapSub(dimension_.CumulVar(next)->Max(), group_delay));
     tasks_.is_preemptible.push_back(true);
     tasks_.forbidden_intervals.push_back(nullptr);
 

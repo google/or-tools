@@ -1462,11 +1462,8 @@ std::string Solver::DebugString() const {
   }
   absl::StrAppendFormat(
       &out,
-      ", branches = %" GG_LL_FORMAT "d, fails = %" GG_LL_FORMAT
-      "d, decisions = %" GG_LL_FORMAT "d, delayed demon runs = %" GG_LL_FORMAT
-      "d, var demon runs = %" GG_LL_FORMAT
-      "d, normal demon runs = %" GG_LL_FORMAT "d, Run time = %" GG_LL_FORMAT
-      "d ms)",
+      ", branches = %d, fails = %d, decisions = %d, delayed demon runs = %d, "
+      "var demon runs = %d, normal demon runs = %d, Run time = %d ms)",
       branches_, fails_, decisions_, demon_runs_[DELAYED_PRIORITY],
       demon_runs_[VAR_PRIORITY], demon_runs_[NORMAL_PRIORITY], wall_time());
   return out;

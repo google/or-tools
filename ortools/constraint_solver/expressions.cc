@@ -451,7 +451,7 @@ class DomainIntVar : public IntVar {
                                         ? variable_->name()
                                         : variable_->DebugString();
           const std::string bname =
-              absl::StrFormat("Watch<%s == %" GG_LL_FORMAT "d>", vname, value);
+              absl::StrFormat("Watch<%s == %d>", vname, value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
           watchers_.UnsafeRevInsert(value, boolvar);
           if (posted_.Switched()) {
@@ -685,7 +685,7 @@ class DomainIntVar : public IntVar {
                                         ? variable_->name()
                                         : variable_->DebugString();
           const std::string bname =
-              absl::StrFormat("Watch<%s == %" GG_LL_FORMAT "d>", vname, value);
+              absl::StrFormat("Watch<%s == %d>", vname, value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
           RevInsert(index, boolvar);
           if (posted_.Switched()) {
@@ -940,7 +940,7 @@ class DomainIntVar : public IntVar {
                                         ? variable_->name()
                                         : variable_->DebugString();
           const std::string bname =
-              absl::StrFormat("Watch<%s >= %" GG_LL_FORMAT "d>", vname, value);
+              absl::StrFormat("Watch<%s >= %d>", vname, value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
           watchers_.UnsafeRevInsert(value, boolvar);
           if (posted_.Switched()) {
@@ -1180,7 +1180,7 @@ class DomainIntVar : public IntVar {
                                         ? variable_->name()
                                         : variable_->DebugString();
           const std::string bname =
-              absl::StrFormat("Watch<%s >= %" GG_LL_FORMAT "d>", vname, value);
+              absl::StrFormat("Watch<%s >= %d>", vname, value);
           IntVar* const boolvar = solver()->MakeBoolVar(bname);
           RevInsert(value - offset_, boolvar);
           if (posted_.Switched()) {
@@ -1725,9 +1725,7 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   std::string DebugString() const override {
     std::string out;
-    absl::StrAppendFormat(
-        &out, "SimpleBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d : ", omin_,
-        omax_);
+    absl::StrAppendFormat(&out, "SimpleBitSet(%d..%d : ", omin_, omax_);
     for (int i = 0; i < bsize_; ++i) {
       absl::StrAppendFormat(&out, "%x", bits_[i]);
     }
@@ -1763,15 +1761,11 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         } else {
           if (cumul) {
             if (v == start_cumul + 1) {
-              absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d ", start_cumul);
+              absl::StrAppendFormat(&out, "%d ", start_cumul);
             } else if (v == start_cumul + 2) {
-              absl::StrAppendFormat(&out,
-                                    "%" GG_LL_FORMAT "d %" GG_LL_FORMAT "d ",
-                                    start_cumul, v - 1);
+              absl::StrAppendFormat(&out, "%d %d ", start_cumul, v - 1);
             } else {
-              absl::StrAppendFormat(&out,
-                                    "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d ",
-                                    start_cumul, v - 1);
+              absl::StrAppendFormat(&out, "%d..%d ", start_cumul, v - 1);
             }
             cumul = false;
           }
@@ -1779,17 +1773,15 @@ class SimpleBitSet : public DomainIntVar::BitSet {
       }
       if (cumul) {
         if (max == start_cumul + 1) {
-          absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d %" GG_LL_FORMAT "d",
-                                start_cumul, max);
+          absl::StrAppendFormat(&out, "%d %d", start_cumul, max);
         } else {
-          absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
-                                start_cumul, max);
+          absl::StrAppendFormat(&out, "%d..%d", start_cumul, max);
         }
       } else {
-        absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d", max);
+        absl::StrAppendFormat(&out, "%d", max);
       }
     } else {
-      absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d", min);
+      absl::StrAppendFormat(&out, "%d", min);
     }
     return out;
   }
@@ -1943,9 +1935,7 @@ class SmallBitSet : public DomainIntVar::BitSet {
   uint64 Size() const override { return size_.Value(); }
 
   std::string DebugString() const override {
-    return absl::StrFormat("SmallBitSet(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
-                           "d : %llx)",
-                           omin_, omax_, bits_);
+    return absl::StrFormat("SmallBitSet(%d..%d : %llx)", omin_, omax_, bits_);
   }
 
   void DelayRemoveValue(int64 val) override {
@@ -1980,15 +1970,11 @@ class SmallBitSet : public DomainIntVar::BitSet {
         } else {
           if (cumul) {
             if (v == start_cumul + 1) {
-              absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d ", start_cumul);
+              absl::StrAppendFormat(&out, "%d ", start_cumul);
             } else if (v == start_cumul + 2) {
-              absl::StrAppendFormat(&out,
-                                    "%" GG_LL_FORMAT "d %" GG_LL_FORMAT "d ",
-                                    start_cumul, v - 1);
+              absl::StrAppendFormat(&out, "%d %d ", start_cumul, v - 1);
             } else {
-              absl::StrAppendFormat(&out,
-                                    "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d ",
-                                    start_cumul, v - 1);
+              absl::StrAppendFormat(&out, "%d..%d ", start_cumul, v - 1);
             }
             cumul = false;
           }
@@ -1996,17 +1982,15 @@ class SmallBitSet : public DomainIntVar::BitSet {
       }
       if (cumul) {
         if (max == start_cumul + 1) {
-          absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d %" GG_LL_FORMAT "d",
-                                start_cumul, max);
+          absl::StrAppendFormat(&out, "%d %d", start_cumul, max);
         } else {
-          absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
-                                start_cumul, max);
+          absl::StrAppendFormat(&out, "%d..%d", start_cumul, max);
         }
       } else {
-        absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d", max);
+        absl::StrAppendFormat(&out, "%d", max);
       }
     } else {
-      absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d", min);
+      absl::StrAppendFormat(&out, "%d", min);
     }
     return out;
   }
@@ -2493,12 +2477,11 @@ std::string DomainIntVar::DebugString() const {
     out = "DomainIntVar(";
   }
   if (min_.Value() == max_.Value()) {
-    absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d", min_.Value());
+    absl::StrAppendFormat(&out, "%d", min_.Value());
   } else if (bits_ != nullptr) {
     out.append(bits_->pretty_DebugString(min_.Value(), max_.Value()));
   } else {
-    absl::StrAppendFormat(&out, "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
-                          min_.Value(), max_.Value());
+    absl::StrAppendFormat(&out, "%d..%d", min_.Value(), max_.Value());
   }
   out += ")";
   return out;
@@ -2624,9 +2607,9 @@ class IntConst : public IntVar {
     std::string out;
     if (solver()->HasName(this)) {
       const std::string& var_name = name();
-      absl::StrAppendFormat(&out, "%s(%" GG_LL_FORMAT "d)", var_name, value_);
+      absl::StrAppendFormat(&out, "%s(%d)", var_name, value_);
     } else {
-      absl::StrAppendFormat(&out, "IntConst(%" GG_LL_FORMAT "d)", value_);
+      absl::StrAppendFormat(&out, "IntConst(%d)", value_);
     }
     return out;
   }
@@ -2690,11 +2673,9 @@ class PlusCstVar : public IntVar {
 
   std::string DebugString() const override {
     if (HasName()) {
-      return absl::StrFormat("%s(%s + %" GG_LL_FORMAT "d)", name(),
-                             var_->DebugString(), cst_);
+      return absl::StrFormat("%s(%s + %d)", name(), var_->DebugString(), cst_);
     } else {
-      return absl::StrFormat("(%s + %" GG_LL_FORMAT "d)", var_->DebugString(),
-                             cst_);
+      return absl::StrFormat("(%s + %d)", var_->DebugString(), cst_);
     }
   }
 
@@ -3005,8 +2986,7 @@ std::string SubCstIntVar::DebugString() const {
   if (cst_ == 1 && var_->VarType() == BOOLEAN_VAR) {
     return absl::StrFormat("Not(%s)", var_->DebugString());
   } else {
-    return absl::StrFormat("(%" GG_LL_FORMAT "d - %s)", cst_,
-                           var_->DebugString());
+    return absl::StrFormat("(%d - %s)", cst_, var_->DebugString());
   }
 }
 
@@ -3016,7 +2996,7 @@ std::string SubCstIntVar::name() const {
   } else if (cst_ == 1 && var_->VarType() == BOOLEAN_VAR) {
     return absl::StrFormat("Not(%s)", var_->name());
   } else {
-    return absl::StrFormat("(%" GG_LL_FORMAT "d - %s)", cst_, var_->name());
+    return absl::StrFormat("(%d - %s)", cst_, var_->name());
   }
 }
 
@@ -3182,8 +3162,7 @@ class TimesCstIntVar : public IntVar {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("(%s * %" GG_LL_FORMAT "d)", var_->DebugString(),
-                           cst_);
+    return absl::StrFormat("(%s * %d)", var_->DebugString(), cst_);
   }
 
   int VarType() const override { return VAR_TIMES_CST; }
@@ -3745,11 +3724,10 @@ class PlusIntCstExpr : public BaseIntExpr {
   void SetMax(int64 m) override { expr_->SetMax(CapSub(m, value_)); }
   bool Bound() const override { return (expr_->Bound()); }
   std::string name() const override {
-    return absl::StrFormat("(%s + %" GG_LL_FORMAT "d)", expr_->name(), value_);
+    return absl::StrFormat("(%s + %d)", expr_->name(), value_);
   }
   std::string DebugString() const override {
-    return absl::StrFormat("(%s + %" GG_LL_FORMAT "d)", expr_->DebugString(),
-                           value_);
+    return absl::StrFormat("(%s + %d)", expr_->DebugString(), value_);
   }
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
   IntVar* CastToVar() override;
@@ -3919,11 +3897,10 @@ class SubIntCstExpr : public BaseIntExpr {
   void SetMax(int64 m) override { expr_->SetMin(CapSub(value_, m)); }
   bool Bound() const override { return (expr_->Bound()); }
   std::string name() const override {
-    return absl::StrFormat("(%" GG_LL_FORMAT "d - %s)", value_, expr_->name());
+    return absl::StrFormat("(%d - %s)", value_, expr_->name());
   }
   std::string DebugString() const override {
-    return absl::StrFormat("(%" GG_LL_FORMAT "d - %s)", value_,
-                           expr_->DebugString());
+    return absl::StrFormat("(%d - %s)", value_, expr_->DebugString());
   }
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
   IntVar* CastToVar() override;
@@ -4002,12 +3979,11 @@ class TimesIntCstExpr : public BaseIntExpr {
   bool Bound() const override { return (expr_->Bound()); }
 
   std::string name() const override {
-    return absl::StrFormat("(%s * %" GG_LL_FORMAT "d)", expr_->name(), value_);
+    return absl::StrFormat("(%s * %d)", expr_->name(), value_);
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("(%s * %" GG_LL_FORMAT "d)", expr_->DebugString(),
-                           value_);
+    return absl::StrFormat("(%s * %d)", expr_->DebugString(), value_);
   }
 
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
@@ -4738,13 +4714,11 @@ class DivPosIntCstExpr : public BaseIntExpr {
   }
 
   std::string name() const override {
-    return absl::StrFormat("(%s div %" GG_LL_FORMAT "d)", expr_->name(),
-                           value_);
+    return absl::StrFormat("(%s div %d)", expr_->name(), value_);
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("(%s div %" GG_LL_FORMAT "d)", expr_->DebugString(),
-                           value_);
+    return absl::StrFormat("(%s div %d)", expr_->DebugString(), value_);
   }
 
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
@@ -5387,13 +5361,11 @@ class BasePower : public BaseIntExpr {
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
 
   std::string name() const override {
-    return absl::StrFormat("IntPower(%s, %" GG_LL_FORMAT "d)", expr_->name(),
-                           pow_);
+    return absl::StrFormat("IntPower(%s, %d)", expr_->name(), pow_);
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("IntPower(%s, %" GG_LL_FORMAT "d)",
-                           expr_->DebugString(), pow_);
+    return absl::StrFormat("IntPower(%s, %d)", expr_->DebugString(), pow_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -5660,13 +5632,12 @@ class MinCstIntExpr : public BaseIntExpr {
   }
 
   std::string name() const override {
-    return absl::StrFormat("MinCstIntExpr(%s, %" GG_LL_FORMAT "d)",
-                           expr_->name(), value_);
+    return absl::StrFormat("MinCstIntExpr(%s, %d)", expr_->name(), value_);
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("MinCstIntExpr(%s, %" GG_LL_FORMAT "d)",
-                           expr_->DebugString(), value_);
+    return absl::StrFormat("MinCstIntExpr(%s, %d)", expr_->DebugString(),
+                           value_);
   }
 
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
@@ -5770,13 +5741,12 @@ class MaxCstIntExpr : public BaseIntExpr {
   }
 
   std::string name() const override {
-    return absl::StrFormat("MaxCstIntExpr(%s, %" GG_LL_FORMAT "d)",
-                           expr_->name(), value_);
+    return absl::StrFormat("MaxCstIntExpr(%s, %d)", expr_->name(), value_);
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("MaxCstIntExpr(%s, %" GG_LL_FORMAT "d)",
-                           expr_->DebugString(), value_);
+    return absl::StrFormat("MaxCstIntExpr(%s, %d)", expr_->DebugString(),
+                           value_);
   }
 
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
@@ -5884,15 +5854,13 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
 
   std::string name() const override {
     return absl::StrFormat(
-        "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %" GG_LL_FORMAT
-        "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
+        "ConvexPiecewiseExpr(%s, ec = %d, ed = %d, ld = %d, lc = %d)",
         expr_->name(), early_cost_, early_date_, late_date_, late_cost_);
   }
 
   std::string DebugString() const override {
     return absl::StrFormat(
-        "ConvexPiecewiseExpr(%s, ec = %" GG_LL_FORMAT "d, ed = %" GG_LL_FORMAT
-        "d, ld = %" GG_LL_FORMAT "d, lc = %" GG_LL_FORMAT "d)",
+        "ConvexPiecewiseExpr(%s, ec = %d, ed = %d, ld = %d, lc = %d)",
         expr_->DebugString(), early_cost_, early_date_, late_date_, late_cost_);
   }
 
@@ -5969,14 +5937,12 @@ class SemiContinuousExpr : public BaseIntExpr {
   }
 
   std::string name() const override {
-    return absl::StrFormat("SemiContinuous(%s, fixed_charge = %" GG_LL_FORMAT
-                           "d, step = %" GG_LL_FORMAT "d)",
+    return absl::StrFormat("SemiContinuous(%s, fixed_charge = %d, step = %d)",
                            expr_->name(), fixed_charge_, step_);
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("SemiContinuous(%s, fixed_charge = %" GG_LL_FORMAT
-                           "d, step = %" GG_LL_FORMAT "d)",
+    return absl::StrFormat("SemiContinuous(%s, fixed_charge = %d, step = %d)",
                            expr_->DebugString(), fixed_charge_, step_);
   }
 
@@ -6040,15 +6006,13 @@ class SemiContinuousStepOneExpr : public BaseIntExpr {
   }
 
   std::string name() const override {
-    return absl::StrFormat(
-        "SemiContinuousStepOne(%s, fixed_charge = %" GG_LL_FORMAT "d)",
-        expr_->name(), fixed_charge_);
+    return absl::StrFormat("SemiContinuousStepOne(%s, fixed_charge = %d)",
+                           expr_->name(), fixed_charge_);
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat(
-        "SemiContinuousStepOne(%s, fixed_charge = %" GG_LL_FORMAT "d)",
-        expr_->DebugString(), fixed_charge_);
+    return absl::StrFormat("SemiContinuousStepOne(%s, fixed_charge = %d)",
+                           expr_->DebugString(), fixed_charge_);
   }
 
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
@@ -6108,15 +6072,13 @@ class SemiContinuousStepZeroExpr : public BaseIntExpr {
   }
 
   std::string name() const override {
-    return absl::StrFormat(
-        "SemiContinuousStepZero(%s, fixed_charge = %" GG_LL_FORMAT "d)",
-        expr_->name(), fixed_charge_);
+    return absl::StrFormat("SemiContinuousStepZero(%s, fixed_charge = %d)",
+                           expr_->name(), fixed_charge_);
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat(
-        "SemiContinuousStepZero(%s, fixed_charge = %" GG_LL_FORMAT "d)",
-        expr_->DebugString(), fixed_charge_);
+    return absl::StrFormat("SemiContinuousStepZero(%s, fixed_charge = %d)",
+                           expr_->DebugString(), fixed_charge_);
   }
 
   void WhenRange(Demon* d) override { expr_->WhenRange(d); }
@@ -6263,7 +6225,7 @@ class ExprWithEscapeValue : public BaseIntExpr {
   }
 
   std::string DebugString() const override {
-    return absl::StrFormat("ConditionExpr(%s, %s, %" GG_LL_FORMAT "d)",
+    return absl::StrFormat("ConditionExpr(%s, %s, %d)",
                            condition_->DebugString(),
                            expression_->DebugString(), unperformed_value_);
   }

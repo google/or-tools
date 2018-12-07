@@ -3,41 +3,41 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cscvrptw", "cscvrptw.csproj", "{4A059795-058D-42BF-A6B8-922A0F9A39C3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cscvrptw", "cscvrptw.csproj", "{A6E213B7-2AC0-4759-B3D5-BB0FDD714915}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csflow", "csflow.csproj", "{63FC51D4-C5E3-4EF0-84BE-A11D6176B54A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csflow", "csflow.csproj", "{F623C1BE-13CC-4342-A32A-8CD881A199D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csfz", "csfz.csproj", "{D3BD3816-AF4F-44DC-A75D-56492550E53B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csfz", "csfz.csproj", "{C5BF397A-03AC-4FC2-95D5-942CD52BD6FD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csintegerprogramming", "csintegerprogramming.csproj", "{B3A1ADA7-1DE7-4065-97B9-26E85360DE04}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csintegerprogramming", "csintegerprogramming.csproj", "{0DC1F4BE-4160-4A2B-8780-7551BBE34BE2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csknapsack", "csknapsack.csproj", "{3AD280FB-35EA-4CF4-9452-F90BEA18649E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csknapsack", "csknapsack.csproj", "{E100DAEA-85F1-4450-A385-D796EB676630}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cslinearprogramming", "cslinearprogramming.csproj", "{FABFC6A2-2CC4-4A07-810A-E77DEE6F436E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cslinearprogramming", "cslinearprogramming.csproj", "{B34DA790-9540-4204-B9D4-1B7B7F6327E7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csls_api", "csls_api.csproj", "{9E03C995-2794-4C82-B164-2DB90A077262}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csls_api", "csls_api.csproj", "{58A793AC-54C1-4DC4-9FC3-7448F8C4DB19}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csrabbitspheasants", "csrabbitspheasants.csproj", "{D776D661-577D-46FB-A09F-97597A80CC4D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csrabbitspheasants", "csrabbitspheasants.csproj", "{16022C04-2A33-4A95-9B41-F390F4AC0355}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cstsp", "cstsp.csproj", "{2FC5ADD5-81E1-4EB0-B6F9-5158129BFAC7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cstsp", "cstsp.csproj", "{51E8911B-F773-4A18-A8B7-2BCC48114AAB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GateSchedulingSat", "GateSchedulingSat.csproj", "{87B880DA-44AF-4DB1-8E97-A7977A99B679}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GateSchedulingSat", "GateSchedulingSat.csproj", "{682A4597-1CD1-48C0-BC1D-8ED2496C0B9C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobshopFt06Sat", "JobshopFt06Sat.csproj", "{15524DD4-2EA3-468C-A5BF-F5AD8440278E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobshopFt06Sat", "JobshopFt06Sat.csproj", "{8E94B0B6-493F-4214-858F-81AFA18416E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobshopSat", "JobshopSat.csproj", "{7E9DEE69-E38A-486B-BB0C-B2124F3E2F3F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JobshopSat", "JobshopSat.csproj", "{ED4158FF-7E32-4C4A-A3AB-20DC162CAB6E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NursesSat", "NursesSat.csproj", "{9DFA95DD-A78D-41FA-9527-FD610E9A3EFC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NursesSat", "NursesSat.csproj", "{8525EA38-48C0-4D64-A1DE-FE54F5287B4F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShiftSchedulingSat", "ShiftSchedulingSat.csproj", "{D309FF10-3D42-446A-8402-62A941C0783A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeakerSchedulingSat", "SpeakerSchedulingSat.csproj", "{3175CB54-187D-45E4-A500-668BE8EA601F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeakerSchedulingSat", "SpeakerSchedulingSat.csproj", "{E3114C14-B906-4FC8-A5B4-A815E70575B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulingSat", "TaskSchedulingSat.csproj", "{BD62083D-52CF-4128-AED8-DD996E364893}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulingSat", "TaskSchedulingSat.csproj", "{768FEDB1-45A7-4051-847F-2D9B4C0E2FA3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tsp", "tsp.csproj", "{8D696773-89A1-4790-93DE-D57C45E61515}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tsp", "tsp.csproj", "{4BBD7983-D698-4638-B690-9D27BC44CD64}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vrp", "vrp.csproj", "{921FA31F-F200-4144-8925-7F93F5BC7062}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vrp", "vrp.csproj", "{DA83621B-14F2-4D26-8DD2-4E79D684DFA7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

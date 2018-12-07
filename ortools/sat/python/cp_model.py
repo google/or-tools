@@ -721,6 +721,7 @@ class CpModel(object):
             for v in t:
                 cp_model_helper.AssertIsInt64(v)
             model_ct.table.values.extend(t)
+        return ct
 
     def AddForbiddenAssignments(self, variables, tuples_list):
         """Adds AddForbiddenAssignments(variables, [tuples_list]).
@@ -749,8 +750,9 @@ class CpModel(object):
                 'array')
 
         index = len(self.__model.constraints)
-        self.AddAllowedAssignments(variables, tuples_list)
+        ct = self.AddAllowedAssignments(variables, tuples_list)
         self.__model.constraints[index].table.negated = True
+        return ct
 
     def AddAutomaton(self, transition_variables, starting_state, final_states,
                      transition_triples):
@@ -823,6 +825,7 @@ class CpModel(object):
             model_ct.automata.transition_tail.append(t[0])
             model_ct.automata.transition_label.append(t[1])
             model_ct.automata.transition_head.append(t[2])
+        return ct
 
     def AddInverse(self, variables, inverse_variables):
         """Adds Inverse(variables, inverse_variables).

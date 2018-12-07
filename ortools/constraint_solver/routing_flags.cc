@@ -264,6 +264,7 @@ void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   parameters->set_use_full_propagation(!FLAGS_routing_use_light_propagation);
   parameters->set_log_search(FLAGS_routing_trace);
+  parameters->set_log_cost_scaling_factor(1.0);
   parameters->set_relocate_expensive_chain_num_arcs_to_consider(
       FLAGS_routing_relocate_expensive_chain_num_arcs_to_consider);
 }

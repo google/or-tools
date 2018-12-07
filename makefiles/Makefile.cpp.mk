@@ -413,8 +413,7 @@ test_cc_tests: \
  rcc_cpp11_test \
  rcc_forbidden_intervals_test \
  rcc_issue57 \
- rcc_min_max_test \
- rcc_visitor_test
+ rcc_min_max_test
 #	$(MAKE) rcc_issue173 # error: too long
 
 .PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in ortools/examples/contrib)
@@ -622,6 +621,10 @@ ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) $(subst /,$S,$(_PROTOBUF_LIB_DIR))$Slibproto* "$(DESTDIR)$(prefix)$Slib"
 	$(COPYREC) dependencies$Sinstall$Sbin$Sprotoc "$(DESTDIR)$(prefix)$Sbin"
 endif
+ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sabsl "$(DESTDIR)$(prefix)$Sinclude"
+	$(COPYREC) dependencies$Sinstall$Slib$Slibabsl* "$(DESTDIR)$(prefix)$Slib"
+endif
 ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude"
 	$(COPYREC) dependencies$Sinstall$Slib$SlibCbc* "$(DESTDIR)$(prefix)$Slib"
@@ -647,6 +650,10 @@ endif
 ifeq ($(WINDOWS_PROTOBUF_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude$Sgoogle" /E
+endif
+ifeq ($(WINDOWS_ABSL_DIR),$(OR_ROOT)dependencies/install)
+	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sabsl"
+	$(COPYREC) dependencies$Sinstall$Sinclude$Sabsl "$(DESTDIR)$(prefix)$Sinclude$Sabsl"
 endif
 ifeq ($(WINDOWS_CBC_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Scoin"

@@ -1154,31 +1154,10 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   // scenarios of warm-start depending on how did the problem change and which
   // simplex algorithm is used (primal or dual).
   bool solve_from_scratch = true;
-  if (!solution_state_.IsEmpty()) {
-    if (solution_state_has_been_set_externally_) {
-      // If an external basis has been provided we need to perform more work,
-      // e.g., factorize and validate it.
-      InitializeVariableStatusesForWarmStart(solution_state_, ColIndex(0));
-      basis_.assign(num_rows_, kInvalidCol);
-      RowIndex row(0);
-      for (ColIndex col : variables_info_.GetIsBasicBitRow()) {
-        basis_[row] = col;
-        ++row;
-      }
-      // TODO(user): If the basis is incomplete, we could complete it with
-      // better slack variables than is done by InitializeFirstBasis() by
-      // using a partial LU decomposition (see markowitz.h).
-      dual_edge_norms_.Clear();
-      dual_pricing_vector_.clear();
-      if (InitializeFirstBasis(basis_).ok()) {
-        primal_edge_norms_.Clear();
-        reduced_costs_.ClearAndRemoveCostShifts();
-        solve_from_scratch = false;
-      } else {
-        LOG(WARNING) << "RevisedSimplex is not using the externally provided "
-                        "basis because it is not factorizable.";
-      }
-    } else if (!parameters_.use_dual_simplex()) {
+
+  // Try to perform a "quick" warm-start with no matrix factorization involved.
+  if (!solution_state_.IsEmpty() && !solution_state_has_been_set_externally_) {
+    if (!parameters_.use_dual_simplex()) {
       // With primal simplex, always clear dual norms and dual pricing.
       // Incrementality is supported only if only change to the matrix and
       // bounds is adding new columns (objective may change), and that all
@@ -1198,6 +1177,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
             col_ref += num_new_cols;
           }
         }
+
         // Make sure the primal edge norm are recomputed from scratch.
         // TODO(user): only the norms of the new columns actually need to be
         // computed.
@@ -1236,6 +1216,36 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
           solve_from_scratch = false;
         }
       }
+    }
+  }
+
+  // If we couldn't perform a "quick" warm start above, we can at least try to
+  // reuse the variable statuses.
+  if (solve_from_scratch && !solution_state_.IsEmpty()) {
+    // If an external basis has been provided or if the matrix changed, we need
+    // to perform more work, e.g., factorize the proposed basis and validate it.
+    InitializeVariableStatusesForWarmStart(solution_state_, ColIndex(0));
+    basis_.assign(num_rows_, kInvalidCol);
+    RowIndex row(0);
+    for (ColIndex col : variables_info_.GetIsBasicBitRow()) {
+      basis_[row] = col;
+      ++row;
+    }
+
+    basis_factorization_.Clear();
+    reduced_costs_.ClearAndRemoveCostShifts();
+    primal_edge_norms_.Clear();
+    dual_edge_norms_.Clear();
+    dual_pricing_vector_.clear();
+
+    // TODO(user): If the basis is incomplete, we could complete it with
+    // better slack variables than is done by InitializeFirstBasis() by
+    // using a partial LU decomposition (see markowitz.h).
+    if (InitializeFirstBasis(basis_).ok()) {
+      solve_from_scratch = false;
+    } else {
+      VLOG(1) << "RevisedSimplex is not using the warm start "
+                 "basis because it is not factorizable.";
     }
   }
 

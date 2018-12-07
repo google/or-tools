@@ -22,8 +22,8 @@
 #define ARCH_K8
 #elif defined(__APPLE__) && defined(__GNUC__)
 #define ARCH_K8  // We only support 64 bit on Mac OS X.
-#elif defined(__GNUC__) && defined(__LP64__)  && !defined(__aarch64__)
-#define ARCH_K8  // Linux x64
+#elif defined(__GNUC__) && defined(__LP64__) && !defined(__aarch64__)
+#define ARCH_K8  // Linux x86_64
 #endif
 
 #ifndef SWIG
@@ -65,7 +65,7 @@ typedef signed int char32;
 // unsigned int, but our 64-bit architectures use the LP64 model
 // (http://www.opengroup.org/public/tech/aspen/lp64_wp.htm), hence
 // their ints are only 32 bits. We want to use the same fundamental
-// type on all archs if possible to preserve *printf() compatability.
+// type on all archs if possible to preserve *printf() compatibility.
 typedef unsigned long uword_t;  // NOLINT
 
 // A signed natural machine word. In general you want to use "int"
@@ -81,22 +81,11 @@ typedef long sword_t;  // NOLINT
 #undef GG_LL_FORMAT
 
 #ifdef COMPILER_MSVC /* if Visual C++ */
-
-// VC++ long long suffixes
 #define GG_LONGLONG(x) x##I64
 #define GG_ULONGLONG(x) x##UI64
-
-// Length modifier in printf format std::string for int64's (e.g. within %d)
-#define GG_LL_FORMAT "I64"  // As in printf("%I64d", ...)
-#define GG_LL_FORMAT_W L"I64"
-
 #else /* not Visual C++ */
-
 #define GG_LONGLONG(x) x##LL
 #define GG_ULONGLONG(x) x##ULL
-#define GG_LL_FORMAT "ll"  // As in "%lld". Note that "q" is poor form also.
-#define GG_LL_FORMAT_W L"ll"
-
 #endif  // COMPILER_MSVC
 
 static const uint8 kuint8max = static_cast<uint8>(0xFF);

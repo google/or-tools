@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include <atomic>
-#include <fstream>
 #include <string>
 #include <vector>
 

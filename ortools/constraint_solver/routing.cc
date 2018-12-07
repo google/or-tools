@@ -2757,10 +2757,14 @@ bool RoutingModel::AppendAssignmentIfFeasible(
   return false;
 }
 
-void RoutingModel::LogSolution(const std::string& description,
+void RoutingModel::LogSolution(const RoutingSearchParameters& parameters,
+                               const std::string& description,
                                int64 solution_cost, int64 start_time_ms) {
   const std::string memory_str = MemoryUsage();
-  LOG(INFO) << description << " (" << solution_cost
+  const double cost_scaling_factor = parameters.log_cost_scaling_factor();
+  LOG(INFO) << description << " ("
+            << (cost_scaling_factor != 1.0 ? solution_cost / cost_scaling_factor
+                                           : solution_cost)
             << ", time = " << (solver_->wall_time() - start_time_ms)
             << " ms, memory used = " << memory_str << ")";
 }
@@ -2789,7 +2793,7 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
     if (IsMatchingModel() && SolveMatchingModel(&matching) &&
         AppendAssignmentIfFeasible(matching, &solution_pool)) {
       if (parameters.log_search()) {
-        LogSolution("Min-Cost Flow Solution",
+        LogSolution(parameters, "Min-Cost Flow Solution",
                     solution_pool.back()->ObjectiveValue(), start_time_ms);
       }
       solution_found = true;
@@ -2801,7 +2805,7 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
       MakeAllUnperformed(this, &unperformed);
       if (AppendAssignmentIfFeasible(unperformed, &solution_pool) &&
           parameters.log_search()) {
-        LogSolution("All Unperformed Solution",
+        LogSolution(parameters, "All Unperformed Solution",
                     solution_pool.back()->ObjectiveValue(), start_time_ms);
       }
       const int64 elapsed_time_ms = solver_->wall_time() - start_time_ms;
@@ -3663,16 +3667,14 @@ std::string RoutingModel::DebugOutputAssignment(
       int64 index = Start(vehicle);
       for (;;) {
         const IntVar* vehicle_var = VehicleVar(index);
-        absl::StrAppendFormat(&output,
-                              "%" GG_LL_FORMAT "d Vehicle(%" GG_LL_FORMAT "d) ",
-                              index, solution_assignment.Value(vehicle_var));
+        absl::StrAppendFormat(&output, "%d Vehicle(%d) ", index,
+                              solution_assignment.Value(vehicle_var));
         for (const RoutingDimension* const dimension : dimensions_) {
           if (gtl::ContainsKey(dimension_names, dimension->name())) {
             const IntVar* const var = dimension->CumulVar(index);
-            absl::StrAppendFormat(
-                &output, "%s(%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d) ",
-                dimension->name(), solution_assignment.Min(var),
-                solution_assignment.Max(var));
+            absl::StrAppendFormat(&output, "%s(%d..%d) ", dimension->name(),
+                                  solution_assignment.Min(var),
+                                  solution_assignment.Max(var));
           }
         }
         if (IsEnd(index)) break;
@@ -4587,7 +4589,10 @@ void RoutingModel::SetupTrace(
     const RoutingSearchParameters& search_parameters) {
   if (search_parameters.log_search()) {
     const int kLogPeriod = 10000;
-    monitors_.push_back(solver_->MakeSearchLog(kLogPeriod, cost_));
+    Solver::SearchLogParameters params;
+    params.branch_period = kLogPeriod;
+    params.scaling_factor = search_parameters.log_cost_scaling_factor();
+    monitors_.push_back(solver_->MakeSearchLog(params));
   }
 }
 
@@ -5060,33 +5065,41 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   tasks_.forbidden_intervals.clear();
   task_translators_.clear();
   // Translate route to tasks: visits are nonpreemptible, transits are.
+  int64 group_delay = 0LL;
   current = model_->Start(vehicle);
   while (true) {
     // Tasks from visits.
     const bool node_is_last = current == model_->End(vehicle);
     const int64 visit_duration =
         node_is_last ? 0LL : node_visit_transit[current];
-    tasks_.start_min.push_back(dimension_->CumulVar(current)->Min());
-    tasks_.duration_min.push_back(visit_duration);
+    tasks_.start_min.push_back(
+        CapSub(dimension_->CumulVar(current)->Min(), group_delay));
+    tasks_.duration_min.push_back(CapAdd(group_delay, visit_duration));
     tasks_.end_max.push_back(
         CapAdd(dimension_->CumulVar(current)->Max(), visit_duration));
     tasks_.is_preemptible.push_back(false);
     task_translators_.emplace_back(dimension_->CumulVar(current),
-                                   visit_duration);
+                                   visit_duration, group_delay);
     if (node_is_last) break;
 
     // Tasks from transits.
-    const int next = model_->NextVar(current)->Bound()
-                         ? model_->NextVar(current)->Min()
-                         : model_->End(vehicle);
-    tasks_.start_min.push_back(tasks_.start_min.back() + visit_duration);
+    const bool next_is_bound = model_->NextVar(current)->Bound();
+    const int next =
+        next_is_bound ? model_->NextVar(current)->Min() : model_->End(vehicle);
+    tasks_.start_min.push_back(
+        CapAdd(CapAdd(tasks_.start_min.back(), group_delay), visit_duration));
+    group_delay =
+        next_is_bound ? dimension_->GetGroupDelay(vehicle, current, next) : 0LL;
+    DCHECK_GE(group_delay, 0);
     tasks_.duration_min.push_back(
-        std::max(visit_duration, dimension_->FixedTransitVar(current)->Min()) -
-        visit_duration);
-    tasks_.end_max.push_back(dimension_->CumulVar(next)->Max());
+        std::max(0LL, CapSub(CapSub(dimension_->FixedTransitVar(current)->Min(),
+                                    visit_duration),
+                             group_delay)));
+    DCHECK_GE(tasks_.duration_min.back(), 0);
+    tasks_.end_max.push_back(
+        CapSub(dimension_->CumulVar(next)->Max(), group_delay));
     tasks_.is_preemptible.push_back(true);
     task_translators_.emplace_back();  // Dummy translator, prunes nothing.
-
     current = next;
   }
   tasks_.num_chain_tasks = tasks_.start_min.size();
@@ -5625,17 +5638,43 @@ void RoutingDimension::SetupGlobalSpanCost(
     }
     IntVar* const min_start_cumul = solver->MakeMin(start_cumuls)->Var();
     model_->AddVariableMaximizedByFinalizer(min_start_cumul);
-    IntVar* const end_range =
-        solver->MakeDifference(max_end_cumul, min_start_cumul)->Var();
-    end_range->SetMin(0);
-    cost_elements->push_back(
-        solver->MakeProd(end_range, global_span_cost_coefficient_)->Var());
+    // If there is a single vehicle, model the cost as the sum of its transits
+    // to avoid slow (infinite) propagation loops.
+    // TODO(user): Avoid slow propagation in the path constraints.
+    if (model_->vehicles() == 1) {
+      for (int var_index = 0; var_index < model_->Size(); ++var_index) {
+        model_->AddVariableMinimizedByFinalizer(slacks_[var_index]);
+        cost_elements->push_back(
+            solver
+                ->MakeProd(solver->MakeProd(
+                               solver->MakeSum(transits_[var_index],
+                                               dependent_transits_[var_index]),
+                               global_span_cost_coefficient_),
+                           model_->ActiveVar(var_index))
+                ->Var());
+      }
+    } else {
+      IntVar* const end_range =
+          solver->MakeDifference(max_end_cumul, min_start_cumul)->Var();
+      end_range->SetMin(0);
+      cost_elements->push_back(
+          solver->MakeProd(end_range, global_span_cost_coefficient_)->Var());
+    }
   }
 }
 
 void RoutingDimension::SetBreakIntervalsOfVehicle(
     std::vector<IntervalVar*> breaks, int vehicle,
     std::vector<int64> node_visit_transits) {
+  SetBreakIntervalsOfVehicle(std::move(breaks), vehicle,
+                             std::move(node_visit_transits),
+                             [](int64, int64) { return 0LL; });
+}
+
+void RoutingDimension::SetBreakIntervalsOfVehicle(
+    std::vector<IntervalVar*> breaks, int vehicle,
+    std::vector<int64> node_visit_transits,
+    std::function<int64(int64 from_index, int64 to_index)> group_delay) {
   for (IntervalVar* const interval : breaks) {
     model_->AddIntervalToAssignment(interval);
     model_->AddVariableMinimizedByFinalizer(interval->SafeStartExpr(0)->Var());
@@ -5645,10 +5684,13 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
   if (vehicle_node_visit_transits_.empty()) {
     vehicle_node_visit_transits_.resize(model_->vehicles());
     vehicle_break_intervals_.resize(model_->vehicles());
+    vehicle_group_delays_.resize(model_->vehicles(),
+                                 [](int64, int64) { return 0LL; });
   }
   DCHECK_EQ(0, vehicle_node_visit_transits_[vehicle].size());
   vehicle_node_visit_transits_[vehicle] = std::move(node_visit_transits);
   vehicle_break_intervals_[vehicle] = std::move(breaks);
+  vehicle_group_delays_[vehicle] = std::move(group_delay);
 }
 
 bool RoutingDimension::VehicleHasBreakIntervals(int vehicle) const {

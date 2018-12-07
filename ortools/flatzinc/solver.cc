@@ -95,7 +95,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
       return absl::StrFormat("%s = %s;", output.name,
                              value == 1 ? "true" : "false");
     } else {
-      return absl::StrFormat("%s = %" GG_LL_FORMAT "d;", output.name, value);
+      return absl::StrFormat("%s = %d;", output.name, value);
     }
   } else {
     const int bound_size = output.bounds.size();
@@ -103,9 +103,8 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
         absl::StrFormat("%s = array%dd(", output.name, bound_size);
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
-        result.append(absl::StrFormat(
-            "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
-            output.bounds[i].min_value, output.bounds[i].max_value));
+        result.append(absl::StrFormat("%d..%d, ", output.bounds[i].min_value,
+                                      output.bounds[i].max_value));
       } else {
         result.append("{},");
       }
@@ -853,41 +852,38 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
       search_status = "==========";
       proven = true;
     }
+    solver_status.append(absl::StrFormat("%%%%  total runtime:        %d ms\n",
+                                         solve_time + build_time));
     solver_status.append(
-        absl::StrFormat("%%%%  total runtime:        %" GG_LL_FORMAT "d ms\n",
-                        solve_time + build_time));
-    solver_status.append(absl::StrFormat(
-        "%%%%  build time:           %" GG_LL_FORMAT "d ms\n", build_time));
-    solver_status.append(absl::StrFormat(
-        "%%%%  solve time:           %" GG_LL_FORMAT "d ms\n", solve_time));
+        absl::StrFormat("%%%%  build time:           %d ms\n", build_time));
+    solver_status.append(
+        absl::StrFormat("%%%%  solve time:           %d ms\n", solve_time));
     solver_status.append(
         absl::StrFormat("%%%%  solutions:            %d\n", num_solutions));
     solver_status.append(absl::StrFormat("%%%%  constraints:          %d\n",
                                          solver_->constraints()));
     solver_status.append(absl::StrFormat(
-        "%%%%  normal propagations:  %" GG_LL_FORMAT "d\n",
+        "%%%%  normal propagations:  %d\n",
         solver_->demon_runs(operations_research::Solver::NORMAL_PRIORITY)));
     solver_status.append(absl::StrFormat(
-        "%%%%  delayed propagations: %" GG_LL_FORMAT "d\n",
+        "%%%%  delayed propagations: %d\n",
         solver_->demon_runs(operations_research::Solver::DELAYED_PRIORITY)));
-    solver_status.append(
-        absl::StrFormat("%%%%  branches:             %" GG_LL_FORMAT "d\n",
-                        solver_->branches()));
-    solver_status.append(
-        absl::StrFormat("%%%%  failures:             %" GG_LL_FORMAT "d\n",
-                        solver_->failures()));
+    solver_status.append(absl::StrFormat("%%%%  branches:             %d\n",
+                                         solver_->branches()));
+    solver_status.append(absl::StrFormat("%%%%  failures:             %d\n",
+                                         solver_->failures()));
     solver_status.append(
         absl::StrFormat("%%%%  memory:               %s\n", MemoryUsage()));
     const int64 best = report->BestSolution();
     if (model_.objective() != nullptr) {
       if (!model_.maximize() && num_solutions > 0) {
-        solver_status.append(absl::StrFormat(
-            "%%%%  min objective:        %" GG_LL_FORMAT "d%s\n", best,
-            (proven ? " (proven)" : "")));
+        solver_status.append(
+            absl::StrFormat("%%%%  min objective:        %d%s\n", best,
+                            (proven ? " (proven)" : "")));
       } else if (num_solutions > 0) {
-        solver_status.append(absl::StrFormat(
-            "%%%%  max objective:        %" GG_LL_FORMAT "d%s\n", best,
-            (proven ? " (proven)" : "")));
+        solver_status.append(
+            absl::StrFormat("%%%%  max objective:        %d%s\n", best,
+                            (proven ? " (proven)" : "")));
       }
     }
 
@@ -913,9 +909,7 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
         "%%  name, status, obj, solns, s_time, b_time, br, "
         "fails, cts, demon, delayed, mem, search\n");
     solver_status.append(absl::StrFormat(
-        "%%%%  csv: %s, %s, %s, %d, %" GG_LL_FORMAT "d ms, %" GG_LL_FORMAT
-        "d ms, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d, %d, %" GG_LL_FORMAT
-        "d, %" GG_LL_FORMAT "d, %s, %s",
+        "%%%%  csv: %s, %s, %s, %d, %d ms, %d ms, %d, %d, %d, %d, %d, %s, %s",
         model_.name(), status_string, obj_string, num_solutions, solve_time,
         build_time, solver_->branches(), solver_->failures(),
         solver_->constraints(),
