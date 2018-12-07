@@ -350,7 +350,6 @@ public class ShiftSchedulingSat
             Console.WriteLine($"  - conflicts       : {solver.NumConflicts()}");
             Console.WriteLine($"  - branches        : {solver.NumBranches()}");
             Console.WriteLine($"  - wall time       : {solver.WallTime()}");
-            Console.ReadKey();
         }
     }
 
