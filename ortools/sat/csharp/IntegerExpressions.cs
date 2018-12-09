@@ -483,7 +483,7 @@ public class NotBooleanVariable : IntegerExpression, ILiteral
     return boolvar_;
   }
 
-  public string ShortString()
+  public override string ShortString()
   {
     return String.Format("Not({0})", boolvar_.ShortString());
   }
