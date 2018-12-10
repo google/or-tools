@@ -1473,7 +1473,7 @@ std::string SatSolver::RunningStatisticsString() const {
   const double time_in_s = timer_.Get();
   return absl::StrFormat(
       "%6.2fs, mem:%s, fails:%d, "
-      "depth:%d, clauses:%lld, tmp:%lld, bin:%llu, restarts:%d, vars:%d",
+      "depth:%d, clauses:%d, tmp:%d, bin:%u, restarts:%d, vars:%d",
       time_in_s, MemoryUsage(), counters_.num_failures, CurrentDecisionLevel(),
       clauses_propagator_.num_clauses() -
           clauses_propagator_.num_removable_clauses(),
