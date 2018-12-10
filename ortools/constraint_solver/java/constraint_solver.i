@@ -13,14 +13,14 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-%include "enumsimple.swg"
-%include "exception.i"
+%include <enumsimple.swg>
+%include <exception.i>
+%include <stdint.i>
 
 %include "ortools/base/base.i"
 %include "ortools/util/java/tuple_set.i"
 %include "ortools/util/java/vector.i"
 %include "ortools/util/java/functions.i"
-
 %include "ortools/util/java/proto.i"
 
 // Remove swig warnings
@@ -51,6 +51,9 @@ struct FailureProtect {
   void JumpBack() { longjmp(exception_buffer, 1); }
 };
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .i

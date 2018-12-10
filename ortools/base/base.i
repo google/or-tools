@@ -25,24 +25,11 @@
 
 %include <typemaps.i>
 %include <exception.i>
-
-// Add a char* cast to the SWIG 1.3.21 typemaps to remove a compiler warning.
-%typemap(constcode) long long {
-  PyObject *object = PyLong_FromLongLong($value);
-  if (object) {
-    int rc = PyDict_SetItemString(d, (char*) "$symname", object);
-    Py_DECREF(object);
-  }
-}
-%typemap(constcode) unsigned long long {
-  PyObject *object = PyLong_FromUnsignedLongLong($value);
-  if (object) {
-    int rc = PyDict_SetItemString(d, (char*) "$symname", object);
-    Py_DECREF(object);
-  }
-}
+%include <stdint.i>
+%include <std_string.i>
 
 %{
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>
@@ -61,7 +48,6 @@
 // type names.  Google typedefs are placed at the very end along with
 // the necessary %apply macros.  See COPY_TYPEMAPS below for details.
 
-%include "std_string.i"
 
 // Support for those popular buffer-pointer/length input pairs
 %typemap(in) (void *INPUT, unsigned int LENGTH) (Py_ssize_t len) {
@@ -144,8 +130,8 @@ LIST_OUTPUT_TYPEMAP(int, PyInt_FromLong);
 LIST_OUTPUT_TYPEMAP(unsigned int, PyLong_FromUnsignedLong);
 LIST_OUTPUT_TYPEMAP(long, PyInt_FromLong);
 LIST_OUTPUT_TYPEMAP(unsigned long, PyLong_FromUnsignedLong);
-LIST_OUTPUT_TYPEMAP(long long, PyLong_FromLongLong);
-LIST_OUTPUT_TYPEMAP(unsigned long long, PyLong_FromUnsignedLongLong);
+LIST_OUTPUT_TYPEMAP(int64, PyLong_FromLongLong);
+LIST_OUTPUT_TYPEMAP(uint64, PyLong_FromUnsignedLongLong);
 LIST_OUTPUT_TYPEMAP(std::string, SwigString_FromString);
 LIST_OUTPUT_TYPEMAP(char *, PyBytes_FromString);
 LIST_OUTPUT_TYPEMAP(double, PyFloat_FromDouble);
@@ -179,19 +165,12 @@ typedef oldtype newtype;
 %apply std::vector<oldtype> * OUTPUT { std::vector<newtype> * OUTPUT };
 %enddef
 
-COPY_TYPEMAPS(signed char, schar);
-COPY_TYPEMAPS(short, int16);
-COPY_TYPEMAPS(unsigned short, uint16);
 COPY_TYPEMAPS(int, int32);
 COPY_TYPEMAPS(unsigned int, uint32);
-COPY_TYPEMAPS(long long, int64);
-COPY_TYPEMAPS(unsigned long long, uint64);
+COPY_TYPEMAPS(int64_t, int64);
+COPY_TYPEMAPS(uint64_t, uint64);
 
 COPY_TYPEMAPS(unsigned int, size_t);
-COPY_TYPEMAPS(unsigned int, mode_t);
-COPY_TYPEMAPS(long, time_t);
-COPY_TYPEMAPS(uint64, Fprint);
-
 #undef COPY_TYPEMAPS
 
 %apply (void * INPUT, unsigned int LENGTH)
@@ -242,7 +221,9 @@ COPY_TYPEMAPS(uint64, Fprint);
 #endif  // SWIGPYTHON
 
 #ifdef SWIGJAVA
+// Add a char* cast to the SWIG 1.3.21 typemaps to remove a compiler warning.
 %{
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>
@@ -252,6 +233,7 @@ COPY_TYPEMAPS(uint64, Fprint);
 #include "ortools/base/basictypes.h"
 %}
 
+%include <stdint.i>
 %include <std_string.i>
 
 %apply const std::string & {std::string &};
@@ -356,11 +338,10 @@ COPY_TYPEMAPS(uint64, Fprint);
 typedef oldtype newtype;
 %enddef
 
-COPY_TYPEMAPS(signed char, schar);
-COPY_TYPEMAPS(int, int32);
-COPY_TYPEMAPS(unsigned int, uint32);
-COPY_TYPEMAPS(long long, int64);
-COPY_TYPEMAPS(unsigned long long, uint64);
+typedef int int32;
+typedef unsigned int uint32;
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 #undef COPY_TYPEMAPS
 #endif  // SWIGJAVA
@@ -368,6 +349,7 @@ COPY_TYPEMAPS(unsigned long long, uint64);
 #ifdef SWIGCSHARP
 %include "enumsimple.swg"
 %{
+#include <cstdint>
 #include <map>
 #include <set>
 #include <string>
@@ -378,19 +360,15 @@ COPY_TYPEMAPS(unsigned long long, uint64);
 %}
 
 %include <std_string.i>
+%include <stdint.i>
 
 %apply const std::string & {std::string &};
 %apply const std::string & {std::string *};
 
-%define COPY_TYPEMAPS(oldtype, newtype)
-typedef oldtype newtype;
-%enddef
-
-COPY_TYPEMAPS(signed char, schar);
-COPY_TYPEMAPS(int, int32);
-COPY_TYPEMAPS(unsigned int, uint32);
-COPY_TYPEMAPS(long long, int64);
-COPY_TYPEMAPS(unsigned long long, uint64);
+typedef int int32;
+typedef unsigned int uint32;
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 #undef COPY_TYPEMAPS
 #endif  // SWIGCSHARP

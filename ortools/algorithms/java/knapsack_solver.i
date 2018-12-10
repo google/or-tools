@@ -18,14 +18,18 @@
 //
 // TODO(user): test all lines marked "untested".
 
-%include "ortools/base/base.i"
-%include "enums.swg"
+%include <enums.swg>
+%include <stdint.i>
 
+%include "ortools/base/base.i"
 %import "ortools/util/java/vector.i"
 
 %{
 #include "ortools/algorithms/knapsack_solver.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 %ignoreall
 %unignore operations_research;

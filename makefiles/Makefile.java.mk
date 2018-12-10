@@ -98,6 +98,10 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_java_wrap.cc: \
  -module main \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sconstraintsolver \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Sjava$Srouting.i
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_java_wrap.cc
+	$(SED) -i -e 's/< long long,long long >/< int64, int64 >/g' \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_java_wrap.cc
 
 $(OBJ_DIR)/swig/constraint_solver_java_wrap.$O: \
  $(GEN_DIR)/ortools/constraint_solver/constraint_solver_java_wrap.cc \

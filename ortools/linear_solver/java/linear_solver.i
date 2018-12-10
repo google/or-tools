@@ -25,9 +25,10 @@
 //
 // TODO(user): unit test all the APIs that are currently marked with 'no test'.
 
-%include "ortools/base/base.i"
+%include <enums.swg>  // For native Java enum support.
+%include <stdint.i>
 
-%include "enums.swg"  // For native Java enum support.
+%include "ortools/base/base.i"
 
 // We prefer our in-house vector wrapper to std_vector.i, because it
 // converts to and from native java arrays.
@@ -42,6 +43,9 @@ class MPModelProto;
 class MPModelRequest;
 class MPSolutionResponse;
 }  // namespace operations_research
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 %{
 #include "ortools/linear_solver/linear_solver.h"

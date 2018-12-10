@@ -22,6 +22,7 @@ using System.Collections;
 %include <stdint.i>
 %include <exception.i>
 %include <std_vector.i>
+
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/tuple_set.i"
 %include "ortools/util/csharp/functions.i"
@@ -143,9 +144,9 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 // files end up being compiled into the same .dll, we must name the
 // vector template differently.
 %template(CpIntVector) std::vector<int>;
-%template(CpInt64Vector) std::vector<int64_t>;
+%template(CpInt64Vector) std::vector<int64>;
 %template(CpIntVectorVector) std::vector<std::vector<int> >;
-%template(CpInt64VectorVector) std::vector<std::vector<int64_t> >;
+%template(CpInt64VectorVector) std::vector<std::vector<int64> >;
 
 %define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
 SWIG_STD_VECTOR_ENHANCED(operations_research::CTYPE*);
