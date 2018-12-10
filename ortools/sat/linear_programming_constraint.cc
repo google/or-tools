@@ -48,7 +48,9 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
       trail_(model->GetOrCreate<Trail>()),
       model_heuristics_(model->GetOrCreate<SearchHeuristicsVector>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
-      dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()) {
+      dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
+      expanded_lp_solution_(
+          *model->GetOrCreate<LinearProgrammingConstraintLpSolution>()) {
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
   parameters.set_use_dual_simplex(true);

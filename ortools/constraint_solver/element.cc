@@ -338,7 +338,8 @@ class IntExprElement : public BaseIntExprElement {
   }
   int64 ExprMin() const override { return std::max<int64>(0, expr_->Min()); }
   int64 ExprMax() const override {
-    return std::min<int64>(values_.size() - 1, expr_->Max());
+    return values_.empty() ? 0
+                           : std::min<int64>(values_.size() - 1, expr_->Max());
   }
 
  private:

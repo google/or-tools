@@ -1267,6 +1267,7 @@ void IntegerTrail::AppendNewBounds(std::vector<IntegerLiteral>* output) const {
 
 GenericLiteralWatcher::GenericLiteralWatcher(Model* model)
     : SatPropagator("GenericLiteralWatcher"),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       rev_int_repository_(model->GetOrCreate<RevIntRepository>()) {
   // TODO(user): This propagator currently needs to be last because it is the
@@ -1325,7 +1326,19 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
 
   // Note that the priority may be set to -1 inside the loop in order to restart
   // at zero.
+  int test_limit = 0;
   for (int priority = 0; priority < queue_by_priority_.size(); ++priority) {
+    // We test the time limit from time to time. This is in order to return in
+    // case of slow propagation.
+    //
+    // TODO(user): The queue will not be emptied, but I am not sure the solver
+    // will be left in an usable state. Fix if it become needed to resume
+    // the solve from the last time it was interupted.
+    if (test_limit > 100) {
+      test_limit = 0;
+      if (time_limit_->LimitReached()) break;
+    }
+
     std::deque<int>& queue = queue_by_priority_[priority];
     while (!queue.empty()) {
       const int id = queue.front();
@@ -1383,29 +1396,25 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
         UpdateCallingNeeds(trail);
       }
 
-      // If the propagator pushed an integer bound, we revert to priority = 0.
-      if (integer_trail_->num_enqueues() > old_integer_timestamp) {
-        priority = -1;  // Because of the ++priority in the for loop.
-      }
-
-      // If the propagator pushed a literal, we have two options.
+      // If the propagator pushed a literal, we exit in order to rerun all SAT
+      // only propagators first. Note that since a literal was pushed we are
+      // guaranteed to be called again, and we will resume from priority 0.
       if (trail->Index() > old_boolean_timestamp) {
         // Important: for now we need to re-run the clauses propagator each time
         // we push a new literal because some propagator like the arc consistent
         // all diff relies on this.
         //
-        // However, on some problem, it seems to work better to not do that. One
-        // possible reason is that the reason of a "natural" propagation might
-        // be better than one we learned.
-        const bool run_sat_propagators_at_higher_priority = true;
-        if (run_sat_propagators_at_higher_priority) {
-          // We exit in order to rerun all SAT only propagators first. Note that
-          // since a literal was pushed we are guaranteed to be called again,
-          // and we will resume from priority 0.
-          return true;
-        } else {
-          priority = -1;
-        }
+        // TODO(user): However, on some problem, it seems to work better to not
+        // do that. One possible reason is that the reason of a "natural"
+        // propagation might be better than one we learned.
+        return true;
+      }
+
+      // If the propagator pushed an integer bound, we revert to priority = 0.
+      if (integer_trail_->num_enqueues() > old_integer_timestamp) {
+        ++test_limit;
+        priority = -1;  // Because of the ++priority in the for loop.
+        break;
       }
     }
   }

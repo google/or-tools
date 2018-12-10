@@ -113,7 +113,7 @@ struct ObjectiveSynchronizationHelper {
   double scaling_factor = 1.0;
   double offset = 0.0;
   IntegerVariable objective_var = kNoIntegerVariable;
-  std::function<double()> get_external_bound = nullptr;
+  std::function<double()> get_external_best_objective = nullptr;
   std::function<double()> get_external_best_bound = nullptr;
 
   int64 UnscaledObjective(double value) const {

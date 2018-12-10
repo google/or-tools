@@ -63,11 +63,9 @@ void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
                                 Model* model);
 
 // Sets two funtions to query the state of the shared objective.
-//   - f will wait and return the best objective value.
-//   - g will wait and return the best objective 'best bound'.
-void SetObjectiveSynchronizationFunctions(std::function<double()> f,
-                                          std::function<double()> g,
-                                          Model* model);
+void SetObjectiveSynchronizationFunctions(
+    std::function<double()> objective_best_solution,
+    std::function<double()> objective_best_bound, Model* model);
 
 // Allows to change the default parameters with
 //   model->Add(NewSatParameters(parameters_as_string_or_proto))

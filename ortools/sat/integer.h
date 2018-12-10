@@ -922,6 +922,7 @@ class GenericLiteralWatcher : public SatPropagator {
   // called.
   void UpdateCallingNeeds(Trail* trail);
 
+  TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   RevIntRepository* rev_int_repository_;
 

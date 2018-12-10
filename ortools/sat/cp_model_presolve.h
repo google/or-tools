@@ -50,7 +50,12 @@ struct PresolveOptions {
 // TODO(user): Identify disconnected components and returns a vector of
 // presolved model? If we go this route, it may be nicer to store the indices
 // inside the model. We can add a IntegerVariableProto::initial_index;
-void PresolveCpModel(const PresolveOptions& options,
+//
+// Returns false if a non-recoverable error was encountered.
+//
+// TODO(user): Make sure this can never run into this case provided that the
+// initial model is valid!
+bool PresolveCpModel(const PresolveOptions& options,
                      CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping);
 

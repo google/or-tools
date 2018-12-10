@@ -391,7 +391,7 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
       model->Get<ObjectiveSynchronizationHelper>();
   const bool synchronize_objective =
       solver->AssumptionLevel() == 0 && helper != nullptr &&
-      helper->get_external_bound != nullptr &&
+      helper->get_external_best_objective != nullptr &&
       helper->objective_var != kNoIntegerVariable;
 
   // Note that it is important to do the level-zero propagation if it wasn't
@@ -418,7 +418,7 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     // Check external objective, and restart if a better one is supplied.
     // TODO(user): Maybe do not check this at each decision.
     if (synchronize_objective) {
-      const double external_bound = helper->get_external_bound();
+      const double external_bound = helper->get_external_best_objective();
       CHECK(helper->get_external_best_bound != nullptr);
       const double external_best_bound = helper->get_external_best_bound();
       IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();

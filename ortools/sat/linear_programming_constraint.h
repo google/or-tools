@@ -34,6 +34,19 @@
 namespace operations_research {
 namespace sat {
 
+// Stores for each IntegerVariable its temporary LP solution.
+//
+// This is shared between all LinearProgrammingConstraint because in the corner
+// case where we have many different LinearProgrammingConstraint and a lot of
+// variable, we could theoretically use up a quadratic amount of memory
+// otherwise.
+//
+// TODO(user): find a better way?
+struct LinearProgrammingConstraintLpSolution
+    : public gtl::ITIVector<IntegerVariable, double> {
+  LinearProgrammingConstraintLpSolution() {}
+};
+
 // A SAT constraint that enforces a set of linear inequality constraints on
 // integer variables using an LP solver.
 //
@@ -287,7 +300,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<double> level_zero_lp_solution_;
 
   // Same as lp_solution_ but this vector is indexed differently.
-  gtl::ITIVector<IntegerVariable, double> expanded_lp_solution_;
+  LinearProgrammingConstraintLpSolution& expanded_lp_solution_;
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;

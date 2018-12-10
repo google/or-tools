@@ -2217,14 +2217,6 @@ void ExpandObjective(PresolveContext* context) {
     }
   }
 
-  // Convert the objective linear expression to a map for ease of use below.
-  std::map<int, int64> objective_map;
-  for (int i = 0; i < context->working_model->objective().vars_size(); ++i) {
-    const int ref = context->working_model->objective().vars(i);
-    const int64 coeff = context->working_model->objective().coeffs(i);
-    objective_map[PositiveRef(ref)] = RefIsPositive(ref) ? coeff : -coeff;
-  }
-
   // To avoid a bad complexity, we need to compute the number of relevant
   // constraints for each variables.
   const int num_variables = context->working_model->variables_size();
@@ -2248,22 +2240,39 @@ void ExpandObjective(PresolveContext* context) {
     }
   }
 
+  // Convert the objective linear expression to a map for ease of use below.
+  std::map<int, int64> objective_map;
+  std::set<int> var_to_process;
+  for (int i = 0; i < context->working_model->objective().vars_size(); ++i) {
+    const int ref = context->working_model->objective().vars(i);
+    const int64 coeff = context->working_model->objective().coeffs(i);
+    objective_map[PositiveRef(ref)] = RefIsPositive(ref) ? coeff : -coeff;
+    if (var_to_num_relevant_constraints[PositiveRef(ref)] != 0) {
+      var_to_process.insert(PositiveRef(ref));
+    }
+  }
+
   // We currently never expand a variable more than once.
   int num_expansions = 0;
   absl::flat_hash_set<int> processed_vars;
   while (!relevant_constraints.empty()) {
     // Find a not yet expanded var.
     int objective_var = -1;
-    for (const auto& entry : objective_map) {
-      const int var = entry.first;
-      if (processed_vars.count(var)) continue;
-      if (var_to_num_relevant_constraints[var] == 0) continue;
+    while (!var_to_process.empty()) {
+      const int var = *var_to_process.begin();
+      CHECK(!processed_vars.count(var));
+      if (var_to_num_relevant_constraints[var] == 0) {
+        processed_vars.insert(var);
+        var_to_process.erase(var);
+        continue;
+      }
       objective_var = var;
       break;
     }
     if (objective_var == -1) break;
     CHECK(RefIsPositive(objective_var));
     processed_vars.insert(objective_var);
+    var_to_process.erase(objective_var);
 
     int expanded_linear_index = -1;
     int64 objective_coeff_in_expanded_constraint;
@@ -2342,10 +2351,14 @@ void ExpandObjective(PresolveContext* context) {
         if (!RefIsPositive(ref)) coeff = -coeff;
         if (!gtl::ContainsKey(objective_map, var)) {
           context->var_to_constraints[var].insert(-1);
+          if (!gtl::ContainsKey(processed_vars, var)) {
+            var_to_process.insert(var);
+          }
         }
         objective_map[var] += coeff;
         if (objective_map[var] == 0.0) {
           objective_map.erase(var);
+          var_to_process.erase(var);
           context->var_to_constraints[var].erase(-1);
         }
       }
@@ -2735,7 +2748,7 @@ void RemoveUnusedEquivalentVariables(PresolveContext* context) {
 // - All the variables domain will be copied to the mapping_model.
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
-void PresolveCpModel(const PresolveOptions& options,
+bool PresolveCpModel(const PresolveOptions& options,
                      CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping) {
   PresolveContext context;
@@ -2819,7 +2832,7 @@ void PresolveCpModel(const PresolveOptions& options,
     // Set presolved_model to the simplest UNSAT problem (empty clause).
     presolved_model->Clear();
     presolved_model->add_constraints()->mutable_bool_or();
-    return;
+    return true;
   }
 
   // Regroup no-overlaps into max-cliques.
@@ -2948,8 +2961,14 @@ void PresolveCpModel(const PresolveOptions& options,
       }
     }
   }
-  CHECK_EQ("", ValidateCpModel(*presolved_model));
-  CHECK_EQ("", ValidateCpModel(*mapping_model));
+
+  // One possible error that is difficult to avoid here: because of our
+  // objective expansion, we might detect a possible overflow...
+  //
+  // TODO(user): We could abort the expansion when this happen.
+  if (!ValidateCpModel(*presolved_model).empty()) return false;
+  if (!ValidateCpModel(*mapping_model).empty()) return false;
+  return true;
 }
 
 void ApplyVariableMapping(const std::vector<int>& mapping,

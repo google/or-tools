@@ -2153,7 +2153,8 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   int index = 1;
   for (int i = 1; i < conflict->size(); ++i) {
     const BooleanVariable var = (*conflict)[i].Variable();
-    if (trail_->Info(var).trail_index <=
+    if (time_limit_->LimitReached() ||
+        trail_->Info(var).trail_index <=
             min_trail_index_per_level_[DecisionLevel(var)] ||
         !CanBeInferedFromConflictVariables(var)) {
       // Mark the conflict variable as independent. Note that is_marked_[var]
