@@ -248,6 +248,14 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
  -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc \
  -module pywrapcp \
  $(SRC_DIR)/ortools/constraint_solver$Spython$Srouting.i
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc
+	$(SED) -i -e 's/< long long,long long >/< int64, int64 >/g' \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc
+	$(SED) -i -e 's/< long long,std::allocator/< int64, std::allocator/g' \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc
+	$(SED) -i -e 's/,long long,/,int64,/g' \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc
 
 $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc: \
  $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py
