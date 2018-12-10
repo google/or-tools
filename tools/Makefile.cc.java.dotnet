@@ -262,7 +262,7 @@ $(BIN_DIR)/magic_square_sat$E \
 $(BIN_DIR)/max_flow$E \
 $(BIN_DIR)/min_cost_flow$E \
 $(BIN_DIR)/mps_driver$E \
-$(BIN_DIR)/network_routing$E \
+$(BIN_DIR)/network_routing_sat$E \
 $(BIN_DIR)/nqueens$E \
 $(BIN_DIR)/random_tsp$E \
 $(BIN_DIR)/pdptw$E \
