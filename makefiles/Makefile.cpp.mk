@@ -641,23 +641,23 @@ ifeq ($(WINDOWS_ZLIB_DIR),$(OR_ROOT)dependencies/install)
 endif
 ifeq ($(WINDOWS_GFLAGS_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
+	$(COPYREC) /Y dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
 endif
 ifeq ($(WINDOWS_GLOG_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sglog"
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude$Sglog"
+	$(COPYREC) /Y dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude$Sglog"
 endif
 ifeq ($(WINDOWS_PROTOBUF_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude$Sgoogle" /E
+	$(COPYREC) /Y dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude$Sgoogle" /E
 endif
 ifeq ($(WINDOWS_ABSL_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sabsl"
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sabsl "$(DESTDIR)$(prefix)$Sinclude$Sabsl"
+	$(COPYREC) /Y dependencies$Sinstall$Sinclude$Sabsl "$(DESTDIR)$(prefix)$Sinclude$Sabsl"
 endif
 ifeq ($(WINDOWS_CBC_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Scoin"
-	$(COPYREC) dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude$Scoin"
+	$(COPYREC) /Y dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude$Scoin"
 endif
 
 install_doc:
