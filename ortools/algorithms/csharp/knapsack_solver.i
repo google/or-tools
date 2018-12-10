@@ -13,6 +13,9 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+%include <stdint.i>
+%include <std_vector.i>
+
 %include "ortools/base/base.i"
 
 /* allow partial c# classes */
@@ -23,7 +26,8 @@
 #include "ortools/algorithms/knapsack_solver.h"
 %}
 
-%include "std_vector.i"
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 // See the comment in
 // ../../constraint_solver/csharp/constraint_solver.i about naming

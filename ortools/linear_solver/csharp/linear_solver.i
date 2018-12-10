@@ -28,13 +28,19 @@
 // - examples/csharp/cslinearprogramming.cs
 // - examples/csharp/csintegerprogramming.cs
 
+
+%include <stdint.i>
+%include <std_vector.i>
+
 %include "ortools/base/base.i"
-%include "std_vector.i"
 
 %{
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration

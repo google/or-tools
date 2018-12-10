@@ -17,6 +17,8 @@ using System.Runtime.InteropServices;
 using System.Collections;
 %}
 
+%include <stdint.i>
+
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/proto.i"
 
@@ -25,6 +27,9 @@ using System.Collections;
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 %module(directors="1") operations_research_sat
 

@@ -19,11 +19,14 @@ using System.Runtime.InteropServices;
 using System.Collections;
 %}
 
-%include "exception.i"
-%include "std_vector.i"
+%include <stdint.i>
+%include <exception.i>
+%include <std_vector.i>
+%include "ortools/base/base.i"
 %include "ortools/util/csharp/tuple_set.i"
 %include "ortools/util/csharp/functions.i"
 %include "ortools/util/csharp/proto.i"
+
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -77,6 +80,9 @@ struct FailureProtect {
   }
 };
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
@@ -137,9 +143,9 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 // files end up being compiled into the same .dll, we must name the
 // vector template differently.
 %template(CpIntVector) std::vector<int>;
-%template(CpInt64Vector) std::vector<int64>;
+%template(CpInt64Vector) std::vector<int64_t>;
 %template(CpIntVectorVector) std::vector<std::vector<int> >;
-%template(CpInt64VectorVector) std::vector<std::vector<int64> >;
+%template(CpInt64VectorVector) std::vector<std::vector<int64_t> >;
 
 %define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
 SWIG_STD_VECTOR_ENHANCED(operations_research::CTYPE*);

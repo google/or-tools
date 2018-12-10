@@ -22,6 +22,8 @@
 // - examples/csharp/assignment.cs
 // - examples/csharp/csflow.cs
 
+%include <stdint.i>
+
 %include "ortools/base/base.i"
 
 %import "ortools/graph/ebert_graph.h"
@@ -32,6 +34,9 @@
 #include "ortools/graph/min_cost_flow.h"
 %}
 
+typedef int64_t int64;
+typedef uint64_t uint64;
+
 // ############ max_flow.h ############
 
 %ignoreall
@@ -39,7 +44,7 @@
 %unignore operations_research;
 %rename (MaxFlow) operations_research::SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::SimpleMaxFlow;
-// %unignore operations_research::SimpleMaxFlow::~SimpleMaxFlow;
+%unignore operations_research::SimpleMaxFlow::~SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::AddArcWithCapacity;
 %unignore operations_research::SimpleMaxFlow::Solve;
 %unignore operations_research::SimpleMaxFlow::NumNodes;

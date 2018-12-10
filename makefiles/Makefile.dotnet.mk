@@ -195,6 +195,11 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
 	$(SED) -i -e 's/CSharp_Constraint/CSharp_CpConstraint/g' \
  $(GEN_PATH)$Sortools$Sconstraint_solver$S*cs \
  $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc
+	$(SED) -i -e 's/< long long,long long >/< int64, int64 >/g' \
+ $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc
+
 
 $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O: \
  $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc \
@@ -216,6 +221,9 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc: \
  -dllimport "$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
  -outdir $(GEN_PATH)$Sortools$Salgorithms \
  $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
+	$(SED) -i -e 's/< long long >/< int64_t >/g' \
+		$(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc
+
 
 $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O: \
  $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc \
