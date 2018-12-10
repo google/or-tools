@@ -17,13 +17,17 @@
 // - examples/python/knapsack.py
 // - ./pywrapknapsack_solver_test.py
 
-%include "ortools/base/base.i"
+%include <stdint.i>
 
+%include "ortools/base/base.i"
 %import "ortools/util/python/vector.i"
 
 %{
 #include "ortools/algorithms/knapsack_solver.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 %ignoreall
 %unignore operations_research;

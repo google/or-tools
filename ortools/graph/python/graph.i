@@ -26,6 +26,8 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
+%include <stdint.i>
+
 %include "ortools/base/base.i"
 
 %import "ortools/graph/ebert_graph.h"
@@ -41,6 +43,9 @@
 #include "ortools/graph/min_cost_flow.h"
 #include "ortools/graph/shortestpaths.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 // ############ max_flow.h ############
 
@@ -124,6 +129,7 @@
 // class, and we rename it "LinearSumAssignment".
 %rename(LinearSumAssignment) operations_research::SimpleLinearSumAssignment;
 %unignore operations_research::SimpleLinearSumAssignment::SimpleLinearSumAssignment;
+%unignore operations_research::SimpleLinearSumAssignment::~SimpleLinearSumAssignment;
 %unignore operations_research::SimpleLinearSumAssignment::AddArcWithCost;
 %unignore operations_research::SimpleLinearSumAssignment::NumNodes;
 %unignore operations_research::SimpleLinearSumAssignment::NumArcs;  // untested

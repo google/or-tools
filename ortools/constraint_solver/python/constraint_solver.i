@@ -31,8 +31,9 @@
 // - examples/python/sudoku.py
 // - examples/python/zebra.py
 
-%include "ortools/base/base.i"
+%include <stdint.i>
 
+%include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
 
 // PY_CONVERT_HELPER_* macros.
@@ -73,6 +74,9 @@ struct FailureProtect {
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 // We need to fully support C++ inheritance, because it is heavily used by the
 // exposed C++ classes. Eg:
@@ -2236,4 +2240,3 @@ class PyConstraint(Constraint):
 
 
 }  // %pythoncode
-

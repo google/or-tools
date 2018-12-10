@@ -13,6 +13,7 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+%include <stdint.i>
 %include "ortools/base/base.i"
 
 %include "ortools/constraint_solver/python/constraint_solver.i"

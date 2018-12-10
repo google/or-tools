@@ -92,7 +92,7 @@ namespace operations_research {
 %enddef  // PY_LIST_OUTPUT_TYPEMAP
 
 PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
-PY_LIST_OUTPUT_TYPEMAP(long long, SwigPyIntOrLong_Check, PyInt_FromLong);
+PY_LIST_OUTPUT_TYPEMAP(int64, SwigPyIntOrLong_Check, PyInt_FromLong);
 PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 
 // Add conversion list(tuple(int)) -> std::vector<std::vector>.
@@ -167,5 +167,5 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 }
 %enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
-PY_LIST_LIST_INPUT_TYPEMAP(long long, SwigPyIntOrLong_Check);
+PY_LIST_LIST_INPUT_TYPEMAP(int64, SwigPyIntOrLong_Check);
 }  // namespace operations_research

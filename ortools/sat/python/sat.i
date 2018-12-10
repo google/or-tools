@@ -13,6 +13,8 @@
 
 // This .i file exposes the sat cp_model API.
 
+%include <stdint.i>
+
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
 
@@ -24,6 +26,9 @@
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 %module(directors="1") operations_research_sat
 
@@ -87,4 +92,3 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
-

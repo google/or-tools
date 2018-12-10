@@ -28,8 +28,9 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
-%include "ortools/base/base.i"
+%include <stdint.i>
 
+%include "ortools/base/base.i"
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -43,6 +44,9 @@ class MPSolutionResponse;
 %{
 #include "ortools/linear_solver/linear_solver.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 namespace operations_research {
 
