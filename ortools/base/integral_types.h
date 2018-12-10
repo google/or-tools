@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_INTEGRAL_TYPES_H_
 #define OR_TOOLS_BASE_INTEGRAL_TYPES_H_
 
+#include <cstdint>
 #include <iostream>  // NOLINT
 
 // Detect 64 bit.
@@ -26,53 +27,15 @@
 #define ARCH_K8  // Linux x86_64
 #endif
 
-#ifndef SWIG
-// Standard typedefs
-typedef signed char schar;
 typedef signed char int8;
 typedef short int16;  // NOLINT
 typedef int int32;
-#ifdef COMPILER_MSVC
-typedef __int64 int64;  // NOLINT
-#else
-typedef long long int64;            // NOLINT
-#endif /* COMPILER_MSVC */
-
-// NOTE: unsigned types are DANGEROUS in loops and other arithmetical
-// places.  Use the signed types unless your variable represents a bit
-// pattern (eg a hash value) or you really need the extra bit.  Do NOT
-// use 'unsigned' to express "this value should always be positive";
-// use assertions for this.
+typedef int64_t int64;
 
 typedef unsigned char uint8;
 typedef unsigned short uint16;  // NOLINT
 typedef unsigned int uint32;
-#ifdef COMPILER_MSVC
-typedef unsigned __int64 uint64;
-#else
-typedef unsigned long long uint64;  // NOLINT
-#endif /* COMPILER_MSVC */
-
-// A type to represent a Unicode code-point value. As of Unicode 4.0,
-// such values require up to 21 bits.
-// (For type-checking on pointers, make this explicitly signed,
-// and it should always be the signed version of whatever int32 is.)
-typedef signed int char32;
-
-//  A type to represent a natural machine word (for e.g. efficiently
-// scanning through memory for checksums or index searching). Don't use
-// this for storing normal integers. Ideally this would be just
-// unsigned int, but our 64-bit architectures use the LP64 model
-// (http://www.opengroup.org/public/tech/aspen/lp64_wp.htm), hence
-// their ints are only 32 bits. We want to use the same fundamental
-// type on all archs if possible to preserve *printf() compatibility.
-typedef unsigned long uword_t;  // NOLINT
-
-// A signed natural machine word. In general you want to use "int"
-// rather than "sword_t"
-typedef long sword_t;  // NOLINT
-
-#endif /* SWIG */
+typedef uint64_t uint64;
 
 // long long macros to be used because gcc and vc++ use different suffixes,
 // and different size specifiers in format strings
@@ -80,13 +43,8 @@ typedef long sword_t;  // NOLINT
 #undef GG_ULONGLONG
 #undef GG_LL_FORMAT
 
-#ifdef COMPILER_MSVC /* if Visual C++ */
-#define GG_LONGLONG(x) x##I64
-#define GG_ULONGLONG(x) x##UI64
-#else /* not Visual C++ */
-#define GG_LONGLONG(x) x##LL
-#define GG_ULONGLONG(x) x##ULL
-#endif  // COMPILER_MSVC
+#define GG_LONGLONG(x) INT64_C(x)
+#define GG_ULONGLONG(x) UINT64_C(x)
 
 static const uint8 kuint8max = static_cast<uint8>(0xFF);
 static const uint16 kuint16max = static_cast<uint16>(0xFFFF);
