@@ -641,6 +641,7 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
 
   // Scale the lp_multipliers to the CP world (still Fractional though).
   std::vector<std::pair<RowIndex, Fractional>> cp_multipliers;
+  Fractional max_cp_multi = 0.0;
   Fractional min_cp_multi = glop::kInfinity;
   const Fractional global_scaling =
       bound_scaling_factor_ / lp_data_.objective_scaling_factor();
@@ -663,6 +664,7 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
         (1e6 / magnitude_diff) / std::abs(cp_multi);
     *scaling = std::max(*scaling, wanted_scaling);
 
+    max_cp_multi = std::max(std::abs(cp_multi), max_cp_multi);
     min_cp_multi = std::min(std::abs(cp_multi), min_cp_multi);
     cp_multipliers.push_back({row, cp_multi});
   }
@@ -671,6 +673,11 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
   // an lp_multi of 1.0 and a cp_multi of 1.0.
   if (take_objective_into_account) {
     *scaling = std::max(*scaling, 1e6 / lp_multipliers_norm);
+  }
+
+  // Make sure the scaled coeff are not too big.
+  if (max_cp_multi > 0.0) {
+    *scaling = std::min(*scaling, 1e12 / max_cp_multi);
   }
 
   // Scale the multipliers by *scaling.
@@ -759,6 +766,9 @@ IntegerValue LinearProgrammingConstraint::ExactLpReasonning() {
   // The "objective constraint" behave like if the unscaled cp multiplier was
   // 1.0, so we will multiply it by this number and add it to reduced_costs.
   const IntegerValue obj_scale(std::round(scaling));
+  if (obj_scale == 0) {
+    return kMinIntegerValue;  // Overflow.
+  }
   if (!AddLinearExpressionMultiple(obj_scale, integer_objective_,
                                    &reduced_costs)) {
     return kMinIntegerValue;  // Overflow.

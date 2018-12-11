@@ -23,17 +23,14 @@
 // rename.  For example, an operator< in a class without a rename.
 // 362 is similar to 503 but for operator=.
 
-%include <typemaps.i>
-%include <exception.i>
-%include <stdint.i>
-%include <std_string.i>
+%include "typemaps.i"
+%include "exception.i"
+%include "stdint.i"
+%include "std_string.i"
 
 %{
 #include <cstdint>
-#include <map>
-#include <set>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "ortools/base/basictypes.h"
@@ -67,50 +64,24 @@ COPY_TYPEMAPS(uint64_t, uint64);
 
 #endif  // SWIGPYTHON
 
-#ifdef SWIGJAVA
+#if defined(SWIGJAVA) || defined(SWIGCSHARP)
 %{
 #include <cstdint>
-#include <map>
-#include <set>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "ortools/base/basictypes.h"
 %}
 
-%include <stdint.i>
-%include <std_string.i>
+%include "stdint.i"
+%include "std_string.i"
 
 typedef int int32;
 typedef unsigned int uint32;
 typedef int64_t int64;
 typedef uint64_t uint64;
 
-#endif  // SWIGJAVA
-
-#ifdef SWIGCSHARP
-%include "enumsimple.swg"
-%{
-#include <cstdint>
-#include <map>
-#include <set>
-#include <string>
-#include <unordered_set>
-#include <vector>
-
-#include "ortools/base/basictypes.h"
-%}
-
-%include <std_string.i>
-%include <stdint.i>
-
-typedef int int32;
-typedef unsigned int uint32;
-typedef int64_t int64;
-typedef uint64_t uint64;
-
-#endif  // SWIGCSHARP
+#endif  // defined(SWIGJAVA) || defined(SWIGCSHARP)
 
 // SWIG macros for explicit API declaration.
 // Usage:

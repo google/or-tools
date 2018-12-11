@@ -1489,7 +1489,7 @@ int64 StaticEvaluatorSelector::ChooseVariable() {
     }
     // Sort is stable here given the tie-breaking rules in comp_.
     std::sort(elements_.begin(), elements_.end(), comp_);
-    solver_->SaveAndSetValue(&first_, GG_LONGLONG(0));
+    solver_->SaveAndSetValue<int64>(&first_, 0);
   }
   for (int64 i = first_; i < elements_.size(); ++i) {
     const Element& element = elements_[i];

@@ -57,10 +57,10 @@ public class CsLinearProgramming
     Console.WriteLine("Number of variables = " + solver.NumVariables());
     Console.WriteLine("Number of constraints = " + solver.NumConstraints());
 
-    int resultStatus = solver.Solve();
+    Solver.ResultStatus resultStatus = solver.Solve();
 
     // Check that the problem has an optimal solution.
-    if (resultStatus != Solver.OPTIMAL) {
+    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem does not have an optimal solution!");
       return;
     }
@@ -120,10 +120,10 @@ public class CsLinearProgramming
       Console.WriteLine(model);
     }
 
-    int resultStatus = solver.Solve();
+    Solver.ResultStatus resultStatus = solver.Solve();
 
     // Check that the problem has an optimal solution.
-    if (resultStatus != Solver.OPTIMAL) {
+    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem does not have an optimal solution!");
       return;
     }

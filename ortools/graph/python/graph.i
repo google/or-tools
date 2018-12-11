@@ -26,11 +26,11 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
-%include <stdint.i>
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 
-%include "ortools/util/python/vector.i"
+%import "ortools/util/python/vector.i"
 
 %import "ortools/graph/ebert_graph.h"
 

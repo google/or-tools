@@ -13,8 +13,9 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-%include <stdint.i>
-%include <std_vector.i>
+%include "enums.swg"
+%include "stdint.i"
+%include "std_vector.i"
 
 %include "ortools/base/base.i"
 

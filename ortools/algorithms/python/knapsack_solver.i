@@ -17,7 +17,7 @@
 // - examples/python/knapsack.py
 // - ./pywrapknapsack_solver_test.py
 
-%include <stdint.i>
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 %import "ortools/util/python/vector.i"

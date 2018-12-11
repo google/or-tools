@@ -74,8 +74,12 @@ void SatSolver::SetNumVariables(int num_variables) {
   trail_->Resize(num_variables);
   decision_policy_->IncreaseNumVariables(num_variables);
   pb_constraints_.Resize(num_variables);
-  decisions_.resize(num_variables);
   same_reason_identifier_.Resize(num_variables);
+
+  // The +1 is a bit tricky, it is because in
+  // EnqueueDecisionAndBacktrackOnConflict() we artificially enqueue the
+  // decision before checking if it is not already assigned.
+  decisions_.resize(num_variables + 1);
 }
 
 int64 SatSolver::num_branches() const { return counters_.num_branches; }
@@ -815,6 +819,7 @@ int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
   CHECK(PropagationIsDone());
 
   if (is_model_unsat_) return kUnsatTrailIndex;
+  DCHECK_LT(CurrentDecisionLevel(), decisions_.size());
   decisions_[CurrentDecisionLevel()].literal = true_literal;
   int first_propagation_index = trail_->Index();
   ReapplyDecisionsUpTo(CurrentDecisionLevel(), &first_propagation_index);
@@ -1472,8 +1477,8 @@ std::string SatSolver::StatusString(Status status) const {
 std::string SatSolver::RunningStatisticsString() const {
   const double time_in_s = timer_.Get();
   return absl::StrFormat(
-      "%6.2fs, mem:%s, fails:%d, "
-      "depth:%d, clauses:%d, tmp:%d, bin:%u, restarts:%d, vars:%d",
+      "%6.2fs, mem:%s, fails:%d, depth:%d, clauses:%d, tmp:%d, bin:%u, "
+      "restarts:%d, vars:%d",
       time_in_s, MemoryUsage(), counters_.num_failures, CurrentDecisionLevel(),
       clauses_propagator_.num_clauses() -
           clauses_propagator_.num_removable_clauses(),

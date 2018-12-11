@@ -25,15 +25,16 @@
 //
 // TODO(user): unit test all the APIs that are currently marked with 'no test'.
 
-%include <enums.swg>  // For native Java enum support.
-%include <stdint.i>
+%include "enums.swg"  // For native Java enum support.
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 
 // We prefer our in-house vector wrapper to std_vector.i, because it
 // converts to and from native java arrays.
-%include "ortools/util/java/vector.i"
+%import "ortools/util/java/vector.i"
 
+%include "ortools/util/java/proto.i"
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -54,6 +55,7 @@ typedef uint64_t uint64;
 %typemap(javaimports) SWIGTYPE %{
 import java.lang.reflect.*;
 %}
+
 
 %extend operations_research::MPSolver {
   std::string exportModelAsLpFormat(bool obfuscated) {

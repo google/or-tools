@@ -57,11 +57,11 @@ public class SimpleMinCostFlowProgram
 
     // [START solve]
     // Find the min cost flow.
-    int solveStatus = minCostFlow.Solve();
+    MinCostFlow.Status solveStatus = minCostFlow.Solve();
     // [END solve]
 
     // [START print_solution]
-    if (solveStatus == MinCostFlow.OPTIMAL)
+    if (solveStatus == MinCostFlow.Status.OPTIMAL)
     {
       Console.WriteLine("Minimum cost: " + minCostFlow.OptimalCost());
       Console.WriteLine("");

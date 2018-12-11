@@ -29,7 +29,8 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
-%include <stdint.i>
+%include "enums.swg"
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 

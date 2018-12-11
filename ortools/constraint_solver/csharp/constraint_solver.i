@@ -19,15 +19,15 @@ using System.Runtime.InteropServices;
 using System.Collections;
 %}
 
-%include <stdint.i>
-%include <exception.i>
-%include <std_vector.i>
+%include "enumsimple.swg"
+%include "stdint.i"
+%include "exception.i"
+%include "std_vector.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/tuple_set.i"
 %include "ortools/util/csharp/functions.i"
 %include "ortools/util/csharp/proto.i"
-
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -58,7 +58,6 @@ class SearchLimitParameters;
 #include <string>
 #include <vector>
 
-#include "ortools/base/callback.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"

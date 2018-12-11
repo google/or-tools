@@ -31,7 +31,7 @@
 // - examples/python/sudoku.py
 // - examples/python/zebra.py
 
-%include <stdint.i>
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
@@ -2240,3 +2240,4 @@ class PyConstraint(Constraint):
 
 
 }  // %pythoncode
+

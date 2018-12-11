@@ -18,8 +18,8 @@
 //
 // TODO(user): test all lines marked "untested".
 
-%include <enums.swg>
-%include <stdint.i>
+%include "enums.swg"
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 %import "ortools/util/java/vector.i"

@@ -150,7 +150,7 @@ module FSharp =
       | MultidimensionSCIP ->
           MultidimensionSCIP.Id
 
-    let solver = new KnapsackSolver(algorithm, name)
+    let solver = new KnapsackSolver(enum<KnapsackSolver.SolverType>(algorithm), name)
 
     // transform lists to compatible structures for C++ Solver
     let profits = new KInt64Vector( List.toArray profits )
@@ -234,7 +234,9 @@ module FSharp =
       | LP lp -> lp.Id
       | IP ip -> ip.Id
 
-    let solver = new Solver(solverOptions.SolverName, algorithm)
+    let solverType = enum<Solver.OptimizationProblemType>(algorithm)
+
+    let solver = new Solver(solverOptions.SolverName, solverType)
 
     // Detect errors on required parameters
     if (solverOptions.ConstraintMatrix.IsNone && solverOptions.ConstraintVectorUpperBound.IsNone && solverOptions.ConstraintVectorLowerBound.IsNone)
@@ -343,7 +345,7 @@ module FSharp =
     let resultStatus = solver.Solve();
 
     match resultStatus with
-    | status when status <> Solver.OPTIMAL ->
+    | status when status <> Solver.ResultStatus.OPTIMAL ->
         printfn "The problem does not have an optimal solution!"
         exit 0
     | _ ->
@@ -355,4 +357,3 @@ module FSharp =
       printfn "%-10s: %f " (sprintf "var[%i]" i) ((solver.LookupVariableOrNull(sprintf "var[%i]" i)).SolutionValue())
 
     solver
-

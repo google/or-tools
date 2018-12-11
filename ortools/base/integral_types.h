@@ -41,7 +41,6 @@ typedef uint64_t uint64;
 // and different size specifiers in format strings
 #undef GG_LONGLONG
 #undef GG_ULONGLONG
-#undef GG_LL_FORMAT
 
 #define GG_LONGLONG(x) INT64_C(x)
 #define GG_ULONGLONG(x) UINT64_C(x)

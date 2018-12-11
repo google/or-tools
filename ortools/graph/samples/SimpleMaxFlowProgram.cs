@@ -45,11 +45,11 @@ public class SimpleMaxFlowProgram
 
     // [START solve]
     // Find the maximum flow between node 0 and node 4.
-    int solveStatus = maxFlow.Solve(0, 4);
+    MaxFlow.Status solveStatus = maxFlow.Solve(0, 4);
     // [END solve]
 
     // [START print_solution]
-    if (solveStatus == MaxFlow.OPTIMAL)
+    if (solveStatus == MaxFlow.Status.OPTIMAL)
     {
       Console.WriteLine("Max. flow: " + maxFlow.OptimalFlow());
       Console.WriteLine("");

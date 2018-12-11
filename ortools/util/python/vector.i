@@ -29,11 +29,7 @@
 // Note(user): for an unknown reason, using the (handy) method PyObjAs()
 // defined in base/swig/python-swig.cc seems to cause issues, so we can't
 // use a generic, templated type checker.
-  // Get const std::vector<string>& "in" typemap.
-%include "python/std_vector.i"
-%include "python/std_map.i"
-%include "python/std_set.i"
-%include "python/std_list.i"
+  // Get const std::vector<std::string>& "in" typemap.
 
 %define PY_LIST_OUTPUT_TYPEMAP(type, checker, py_converter)
 %typecheck(SWIG_TYPECHECK_POINTER) const std::vector<type>&,
@@ -71,14 +67,12 @@
 }
 %typemap(in,numinputs=0)
  std::vector<type>* OUTPUT (std::vector<type> temp),
- std::unordered_set<type>* OUTPUT (std::unordered_set<type> temp),
  std::set<type>* OUTPUT (std::set<type> temp) {
   $1 = &temp;
 }
 %typemap(argout)
      std::vector<type>* OUTPUT,
-     std::set<type>* OUTPUT,
-     std::unordered_set<type>* OUTPUT {
+     std::set<type>* OUTPUT {
   %append_output(list_output_helper($1, &py_converter));
 }
 %typemap(out) std::vector<type> {
@@ -87,9 +81,6 @@
 %typemap(out) std::vector<type>*, const std::vector<type>& {
   $result = vector_output_helper($1, &py_converter);
 }
-
-%apply std::vector<type>* OUTPUT { std::vector<type>* OUTPUT }
-%apply std::set<type>* OUTPUT { std::set<type>* OUTPUT }
 
 %enddef  // PY_LIST_OUTPUT_TYPEMAP
 
@@ -164,9 +155,6 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
   }
 }
 
-%apply const std::vector<std::vector<type> >& {
-  const std::vector<std::vector<type> >&
-}
 %enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
 PY_LIST_LIST_INPUT_TYPEMAP(int64, SwigPyIntOrLong_Check);

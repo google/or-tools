@@ -17,8 +17,8 @@
 // Normally we'd simply use %include "std_vector.i" with the %template
 // directive (see http://www.swig.org/Doc1.3/Library.html#Library_nn15), but
 // in google3 we can't, because exceptions are forbidden.
-//
-// TODO(user): move to base/swig/java.
+
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 
@@ -26,6 +26,9 @@
 #include <vector>
 #include "ortools/base/integral_types.h"
 %}
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 %define VECTOR_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE)
 %typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}

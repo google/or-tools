@@ -41,7 +41,7 @@ public class CsTestLp
   {
     Console.WriteLine("Running TestVarOperator");
     Solver solver = new Solver("TestVarOperator",
-                               Solver.CLP_LINEAR_PROGRAMMING);
+                               Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
     Variable x = solver.MakeNumVar(0.0, 100.0, "x");
     Constraint ct1 = solver.Add(x >= 1);
     Constraint ct2 = solver.Add(x <= 1);
@@ -73,7 +73,7 @@ public class CsTestLp
   {
     Console.WriteLine("Running TestVarAddition");
     Solver solver = new Solver("TestVarAddition",
-                               Solver.CLP_LINEAR_PROGRAMMING);
+                               Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
     Variable x = solver.MakeNumVar(0.0, 100.0, "x");
     Variable y = solver.MakeNumVar(0.0, 100.0, "y");
     Constraint ct1 = solver.Add(x + y == 1);
@@ -95,7 +95,7 @@ public class CsTestLp
   {
     Console.WriteLine("Running TestVarMultiplication");
     Solver solver = new Solver("TestVarMultiplication",
-                                   Solver.CLP_LINEAR_PROGRAMMING);
+                                   Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
     Variable x = solver.MakeNumVar(0.0, 100.0, "x");
     Variable y = solver.MakeNumVar(0.0, 100.0, "y");
     Constraint ct1 = solver.Add(3 * x == 1);
@@ -121,7 +121,7 @@ public class CsTestLp
   {
     Console.WriteLine("Running TestBinaryOperations");
     Solver solver = new Solver("TestBinaryOperations",
-                               Solver.CLP_LINEAR_PROGRAMMING);
+                               Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
     Variable x = solver.MakeNumVar(0.0, 100.0, "x");
     Variable y = solver.MakeNumVar(0.0, 100.0, "y");
     Constraint ct1 = solver.Add(x == y);
@@ -147,7 +147,7 @@ public class CsTestLp
   {
     Console.WriteLine("Running TestInequalities");
     Solver solver = new Solver("TestInequalities",
-                               Solver.CLP_LINEAR_PROGRAMMING);
+                               Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
     Variable x = solver.MakeNumVar(0.0, 100.0, "x");
     Variable y = solver.MakeNumVar(0.0, 100.0, "y");
     Constraint ct1 = solver.Add(2 * (x + 3) + 5 * (y + x -1) >= 3);
@@ -175,7 +175,7 @@ public class CsTestLp
   static void TestSumArray()
   {
     Console.WriteLine("Running TestSumArray");
-    Solver solver = new Solver("TestSumArray", Solver.CLP_LINEAR_PROGRAMMING);
+    Solver solver = new Solver("TestSumArray", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
     Variable[] x = solver.MakeBoolVarArray(10, "x");
     Constraint ct1 = solver.Add(x.Sum() == 3);
     CheckDoubleEq(ct1.GetCoefficient(x[0]), 1.0, "test1");
@@ -191,7 +191,7 @@ public class CsTestLp
   static void TestObjective()
   {
     Console.WriteLine("Running TestObjective");
-    Solver solver = new Solver("TestObjective", Solver.CLP_LINEAR_PROGRAMMING);
+    Solver solver = new Solver("TestObjective", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
     Variable x = solver.MakeNumVar(0.0, 100.0, "x");
     Variable y = solver.MakeNumVar(0.0, 100.0, "y");
     solver.Maximize(x);

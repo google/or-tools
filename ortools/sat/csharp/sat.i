@@ -17,7 +17,7 @@ using System.Runtime.InteropServices;
 using System.Collections;
 %}
 
-%include <stdint.i>
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/proto.i"

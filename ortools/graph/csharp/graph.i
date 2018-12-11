@@ -22,7 +22,8 @@
 // - examples/csharp/assignment.cs
 // - examples/csharp/csflow.cs
 
-%include <stdint.i>
+%include "enums.swg"
+%include "stdint.i"
 
 %include "ortools/base/base.i"
 

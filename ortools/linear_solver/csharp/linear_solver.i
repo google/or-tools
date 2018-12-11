@@ -28,9 +28,9 @@
 // - examples/csharp/cslinearprogramming.cs
 // - examples/csharp/csintegerprogramming.cs
 
-
-%include <stdint.i>
-%include <std_vector.i>
+%include "enums.swg"
+%include "stdint.i"
+%include "std_vector.i"
 
 %include "ortools/base/base.i"
 
