@@ -1125,7 +1125,7 @@ void ExtractEnforcementLiteralFromLinearConstraint(ConstraintProto* ct,
   for (int i = 0; i < arg.vars_size(); ++i) {
     // Only work with binary variables.
     //
-    // TODO(user, krunalp): This could be generalized to non-binary variable
+    // TODO(user): This could be generalized to non-binary variable
     // but that would require introducing the encoding "literal <=> integer
     // variable at is min/max" and using this literal in the enforcement list.
     // It is thus a bit more involved, and might not be as useful.
