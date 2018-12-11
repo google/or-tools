@@ -30,8 +30,8 @@ public class Volsay3 {
    *  http://www.hakank.org/or-tools/volsay3.py
    */
   private static void Solve() {
-    Solver solver = new Solver("Volsay3",
-                               Solver.CLP_LINEAR_PROGRAMMING);
+    Solver solver = new Solver(
+    	   "Volsay3", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
 
     int num_products = 2;
     IEnumerable<int> PRODUCTS = Enumerable.Range(0, num_products);
@@ -69,7 +69,7 @@ public class Volsay3 {
                      ToArray().Sum()
                     );
 
-    if (solver.Solve() != Solver.OPTIMAL) {
+    if (solver.Solve() != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem don't have an optimal solution.");
       return;
     }

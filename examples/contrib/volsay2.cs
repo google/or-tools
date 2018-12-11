@@ -29,8 +29,8 @@ public class Volsay2 {
    *  http://www.hakank.org/or-tools/volsay2.py
    */
   private static void Solve() {
-    Solver solver = new Solver("Volsay2",
-                               Solver.CLP_LINEAR_PROGRAMMING);
+    Solver solver = new Solver(
+    	   "Volsay2", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
 
     int num_products = 2;
     IEnumerable<int> PRODUCTS = Enumerable.Range(0, num_products);
@@ -56,9 +56,9 @@ public class Volsay2 {
 
     Console.WriteLine("NumConstraints: {0}", solver.NumConstraints());
 
-    int resultStatus = solver.Solve();
+    Solver.ResultStatus resultStatus = solver.Solve();
 
-    if (resultStatus != Solver.OPTIMAL) {
+    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem don't have an optimal solution.");
       return;
     }

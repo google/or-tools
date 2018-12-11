@@ -27,7 +27,8 @@ public class Volsay {
    * Also see http://www.hakank.org/or-tools/volsay.py
    */
   private static void Solve() {
-    Solver solver = new Solver("Volsay", Solver.CLP_LINEAR_PROGRAMMING);
+    Solver solver = new Solver(
+    	   "Volsay", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
 
     //
     // Variables
@@ -40,9 +41,9 @@ public class Volsay {
 
     solver.Maximize(40 * Gas + 50 * Chloride);
 
-    int resultStatus = solver.Solve();
+    Solver.ResultStatus resultStatus = solver.Solve();
 
-    if (resultStatus != Solver.OPTIMAL) {
+    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem don't have an optimal solution.");
       return;
     }
