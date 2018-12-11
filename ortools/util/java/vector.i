@@ -99,10 +99,8 @@ typedef uint64_t uint64;
   return $jnicall;
 }
 
-%apply const std::vector<CType>& { const std::vector<CType>& }
-%apply std::vector<CType> { std::vector<CType> }
-
 %enddef  // VECTOR_AS_JAVA_ARRAY
+
 VECTOR_AS_JAVA_ARRAY(int, int, Int);
 VECTOR_AS_JAVA_ARRAY(int64, long, Long);
 VECTOR_AS_JAVA_ARRAY(double, double, Double);
@@ -134,8 +132,4 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
     jenv->DeleteLocalRef(inner_array);
   }
   $1 = &result;
-}
-
-%apply const std::vector<std::vector<int64> >& {
-  const std::vector<std::vector<int64> >&
 }
