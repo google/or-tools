@@ -31,6 +31,7 @@
 %include <stdint.i>
 
 %include "ortools/base/base.i"
+%include "ortools/util/python/vector.i"
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration

@@ -16,7 +16,6 @@
 
 %import "ortools/base/integral_types.h"
 
-namespace operations_research {
 // --------- std::vector<data> wrapping ----------
 
 // We can't just reuse the google.i code (see LIST_OUTPUT_TYPEMAP in that
@@ -30,6 +29,12 @@ namespace operations_research {
 // Note(user): for an unknown reason, using the (handy) method PyObjAs()
 // defined in base/swig/python-swig.cc seems to cause issues, so we can't
 // use a generic, templated type checker.
+  // Get const std::vector<string>& "in" typemap.
+%include "python/std_vector.i"
+%include "python/std_map.i"
+%include "python/std_set.i"
+%include "python/std_list.i"
+
 %define PY_LIST_OUTPUT_TYPEMAP(type, checker, py_converter)
 %typecheck(SWIG_TYPECHECK_POINTER) const std::vector<type>&,
                                    std::vector<type>,
@@ -70,7 +75,10 @@ namespace operations_research {
  std::set<type>* OUTPUT (std::set<type> temp) {
   $1 = &temp;
 }
-%typemap(argout) std::vector<type>* OUTPUT, std::set<type>* OUTPUT, std::unordered_set<type>* OUTPUT {
+%typemap(argout)
+     std::vector<type>* OUTPUT,
+     std::set<type>* OUTPUT,
+     std::unordered_set<type>* OUTPUT {
   %append_output(list_output_helper($1, &py_converter));
 }
 %typemap(out) std::vector<type> {
@@ -79,12 +87,6 @@ namespace operations_research {
 %typemap(out) std::vector<type>*, const std::vector<type>& {
   $result = vector_output_helper($1, &py_converter);
 }
-
-
-%apply const std::vector<type>& { const std::vector<type>& }
-%apply const std::vector<type>* { const std::vector<type>* }
-%apply std::vector<type>* { std::vector<type>* }
-%apply std::vector<type> { std::vector<type> }
 
 %apply std::vector<type>* OUTPUT { std::vector<type>* OUTPUT }
 %apply std::set<type>* OUTPUT { std::set<type>* OUTPUT }
@@ -168,4 +170,3 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 %enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
 PY_LIST_LIST_INPUT_TYPEMAP(int64, SwigPyIntOrLong_Check);
-}  // namespace operations_research
