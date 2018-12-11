@@ -365,7 +365,11 @@ dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 ABSL_INC = -I$(UNIX_ABSL_DIR)/include
 ABSL_SWIG = $(ABSL_INC)
 STATIC_ABSL_LNK = $(UNIX_ABSL_DIR)/lib/libabsl.a
-DYNAMIC_ABSL_LNK = -L$(UNIX_ABSL_DIR)/lib \
+_ABSL_LIB_DIR = $(dir $(wildcard \
+ $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L \
+ $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L@ \
+ $(UNIX_ABSL_DIR)/lib/*/libabsl_base.$L))
+DYNAMIC_ABSL_LNK = -L$(_ABSL_LIB_DIR) \
 -labsl_bad_any_cast \
 -labsl_bad_optional_access \
 -labsl_base \
