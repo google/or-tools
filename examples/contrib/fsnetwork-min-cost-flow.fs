@@ -46,5 +46,4 @@ match solveStatus with
 | x when x = MinimumCostFlowResult.Optimal.Id ->
   printfn "Total computed flow cost = %i, expected = %i" (minCostFlow.OptimalCost()) expectedCost
 | _ ->
-  printfn "Solving the min cost flow problem failed. Solver status: %i" solveStatus
-
+  printfn "Solving the min cost flow problem failed. Solver status: %s" (solveStatus.ToString("g"))

@@ -57,6 +57,4 @@ match solveStatus with
     for i=1 to numArcs do
       printfn "Arc %i (%i -> %i), capacity=%i, computed=%i, expected=%i" i (maxFlow.Head(i-1)) (maxFlow.Tail(i-1)) (maxFlow.Capacity(i-1)) (maxFlow.Flow(i-1)) (expectedFlows.[i-1])
 | _ ->
-  printfn "Solving the max flow problem failed. Solver status: %i" solveStatus
-
-
+  printfn "Solving the max flow problem failed. Solver status: %s" (solveStatus.ToString("g"))

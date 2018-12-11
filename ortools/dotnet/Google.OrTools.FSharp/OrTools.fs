@@ -4,6 +4,7 @@ module FSharp =
 
   open System
   open Google.OrTools.Algorithms
+  open Google.OrTools.Graph
   open Google.OrTools.LinearSolver
 
   type Goal =
@@ -12,7 +13,7 @@ module FSharp =
     /// Minimize the Objective Function
     | Minimize
 
-  /// Linear Programming Algorithm
+  /// Linear Programming Algorithms
   type LinearProgramming =
     /// Coin-Or (Recommended default)
     | CLP
@@ -41,7 +42,7 @@ module FSharp =
       | GUROBI -> 6
       | CPLEX -> 10
 
-  /// Integer Programming Algoritm
+  /// Integer Programming Algorithms
   type IntegerProgramming =
       /// Solving Constraint Integer Programs (Recommended default)
       | SCIP
@@ -86,10 +87,10 @@ module FSharp =
     | BadResult
     member this.Id =
         match this with
-        | Optimal -> 0
-        | IntegerOverflow -> 1
-        | BadInput -> 2
-        | BadResult -> 3
+        | Optimal -> MaxFlow.Status.OPTIMAL
+        | IntegerOverflow -> MaxFlow.Status.POSSIBLE_OVERFLOW
+        | BadInput -> MaxFlow.Status.BAD_INPUT
+        | BadResult -> MaxFlow.Status.BAD_RESULT
 
   /// Minimum Cost Flow Result
   type MinimumCostFlowResult =
@@ -102,13 +103,13 @@ module FSharp =
     | BadCostRange
     member this.Id =
       match this with
-      | NotSolved -> 0
-      | Optimal -> 1
-      | Feasible -> 2
-      | Infeasible -> 3
-      | Unbalanced -> 4
-      | BadResult -> 5
-      | BadCostRange -> 6
+      | NotSolved -> MinCostFlowBase.Status.NOT_SOLVED
+      | Optimal -> MinCostFlowBase.Status.OPTIMAL
+      | Feasible -> MinCostFlowBase.Status.FEASIBLE
+      | Infeasible -> MinCostFlowBase.Status.INFEASIBLE
+      | Unbalanced -> MinCostFlowBase.Status.UNBALANCED
+      | BadResult -> MinCostFlowBase.Status.BAD_RESULT
+      | BadCostRange -> MinCostFlowBase.Status.BAD_COST_RANGE
 
 
   /// Knapsack Solver Algorithm

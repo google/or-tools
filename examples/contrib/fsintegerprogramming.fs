@@ -37,7 +37,7 @@ let solver solverType =
 
   // Check that the problem has an optimal solution.
   match resultStatus with
-  | status when status <> Solver.OPTIMAL ->
+  | status when status <> Solver.ResultStatus.OPTIMAL ->
       printfn "The problem does not have an optimal solution!"
       exit 0
   | _ ->

@@ -18,7 +18,8 @@ open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
 
 let solver (solverType:LinearProgramming) =
-  let svr = new Solver("Volsay", solverType.Id);
+  let svr = new Solver(
+      "Volsay", enum<Solver.OptimizationProblemType>(solverType.Id));
 
   let gas = svr.MakeNumVar(0.0, 100000.0, "Gas")
   let chloride = svr.MakeNumVar(0.0, 100000.0, "Cloride")
@@ -37,7 +38,7 @@ let solver (solverType:LinearProgramming) =
 
   // Check that the problem has an optimal solution.
   match resultStatus with
-  | status when status <> Solver.OPTIMAL ->
+  | status when status <> Solver.ResultStatus.OPTIMAL ->
       printfn "The problem does not have an optimal solution!"
       exit 0
   | _ ->

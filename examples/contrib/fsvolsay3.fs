@@ -18,7 +18,8 @@ open Google.OrTools.LinearSolver
 
 
 let solver (solverType:LinearProgramming) =
-  let svr = new Solver("Volsay3", solverType.Id);
+  let svr = new Solver(
+      "Volsay3", enum<Solver.OptimizationProblemType>(solverType.Id));
 
   let products = ["Gas"; "Chloride"]
   let components = ["nitrogen"; "hydrogen"; "chlorine"]
@@ -53,7 +54,7 @@ let solver (solverType:LinearProgramming) =
   let resultStatus = svr.Solve();
 
   match resultStatus with
-  | status when status <> Solver.OPTIMAL ->
+  | status when status <> Solver.ResultStatus.OPTIMAL ->
       printfn "The problem does not have an optimal solution!"
       exit 0
   | _ ->
