@@ -36,8 +36,8 @@ public class CsFlow
     int sink = numNodes - 1;
     Console.WriteLine("Solving max flow with " + numNodes + " nodes, and " +
                       numArcs + " arcs, source=" + source + ", sink=" + sink);
-    int solveStatus = maxFlow.Solve(source, sink);
-    if (solveStatus == MaxFlow.OPTIMAL)
+    MaxFlow.Status solveStatus = maxFlow.Solve(source, sink);
+    if (solveStatus == MaxFlow.Status.OPTIMAL)
     {
       long totalFlow = maxFlow.OptimalFlow();
       Console.WriteLine("total computed flow " + totalFlow +
@@ -86,8 +86,8 @@ public class CsFlow
     }
     Console.WriteLine("Solving min cost flow with " + numSources +
                       " sources, and " + numTargets + " targets.");
-    int solveStatus = minCostFlow.Solve();
-    if (solveStatus == MinCostFlow.OPTIMAL)
+    MinCostFlow.Status solveStatus = minCostFlow.Solve();
+    if (solveStatus == MinCostFlow.Status.OPTIMAL)
     {
       Console.WriteLine("total computed flow cost = " +
                         minCostFlow.OptimalCost() +
