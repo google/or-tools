@@ -40,7 +40,7 @@ namespace operations_research {
 class RoutingIndexManager {
  public:
   typedef RoutingNodeIndex NodeIndex;
-  static const int64 kUnassigned;
+  static const int kUnassigned;
 
   // Creates a NodeIndex to variable index mapping for a problem containing
   // 'num_nodes', 'num_vehicles' and the given starts and ends for each vehicle.
@@ -57,8 +57,8 @@ class RoutingIndexManager {
   int num_nodes() const { return num_nodes_; }
   int num_vehicles() const { return num_vehicles_; }
   int num_indices() const { return index_to_node_.size(); }
-  int64 GetStartIndex(int vehicle) const { return vehicle_to_start_[vehicle]; }
-  int64 GetEndIndex(int vehicle) const { return vehicle_to_end_[vehicle]; }
+  int GetStartIndex(int vehicle) const { return vehicle_to_start_[vehicle]; }
+  int GetEndIndex(int vehicle) const { return vehicle_to_end_[vehicle]; }
   int NodeToIndex(NodeIndex node) const {
     DCHECK_GE(node.value(), 0);
     DCHECK_LT(node.value(), node_to_index_.size());
@@ -85,8 +85,8 @@ class RoutingIndexManager {
 
   std::vector<NodeIndex> index_to_node_;
   gtl::ITIVector<NodeIndex, int> node_to_index_;
-  std::vector<int64> vehicle_to_start_;
-  std::vector<int64> vehicle_to_end_;
+  std::vector<int> vehicle_to_start_;
+  std::vector<int> vehicle_to_end_;
   int num_nodes_;
   int num_vehicles_;
   int num_unique_depots_;
