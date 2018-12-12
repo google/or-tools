@@ -21,7 +21,7 @@ namespace {
 // Compute set of disjunctions involved in a pickup and delivery pair.
 template <typename Disjunctions>
 void AddDisjunctionsFromNodes(const RoutingModel& model,
-                              const std::vector<int64>& nodes,
+                              const std::vector<int>& nodes,
                               Disjunctions* disjunctions) {
   for (int64 node : nodes) {
     for (const auto disjunction : model.GetDisjunctionIndices(node)) {

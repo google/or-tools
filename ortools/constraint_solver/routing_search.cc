@@ -182,9 +182,9 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
          i < active_per_disjunction_.size(); ++i) {
       active_per_disjunction_[i] = 0;
       inactive_per_disjunction_[i] = 0;
-      const std::vector<int64>& disjunction_indices =
+      const std::vector<int>& disjunction_indices =
           routing_model_.GetDisjunctionIndices(i);
-      for (const int64 index : disjunction_indices) {
+      for (const int index : disjunction_indices) {
         const bool index_synced = IsVarSynced(index);
         if (index_synced) {
           if (Value(index) != index) {

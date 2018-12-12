@@ -156,7 +156,7 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
 
-#include <stddef.h>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <queue>
@@ -536,7 +536,7 @@ class RoutingModel {
   // performed, and therefore p == 0.
   // Note: passing a vector with a single index will model an optional index
   // with a penalty cost if it is not visited.
-  DisjunctionIndex AddDisjunction(const std::vector<int64>& indices,
+  DisjunctionIndex AddDisjunction(const std::vector<int>& indices,
                                   int64 penalty = kNoPenalty,
                                   int64 max_cardinality = 1);
   // Returns the indices of the disjunctions to which an index belongs.
@@ -561,8 +561,7 @@ class RoutingModel {
 #if !defined(SWIGPYTHON)
   // Returns the variable indices of the nodes in the disjunction of index
   // 'index'.
-  const std::vector<int64>& GetDisjunctionIndices(
-      DisjunctionIndex index) const {
+  const std::vector<int>& GetDisjunctionIndices(DisjunctionIndex index) const {
     return disjunctions_[index].indices;
   }
 #endif  // !defined(SWIGPYTHON)
@@ -592,7 +591,7 @@ class RoutingModel {
   // Adds a soft contraint to force a set of variable indices to be on the same
   // vehicle. If all nodes are not on the same vehicle, each extra vehicle used
   // adds 'cost' to the cost function.
-  void AddSoftSameVehicleConstraint(const std::vector<int64>& indices,
+  void AddSoftSameVehicleConstraint(const std::vector<int>& indices,
                                     int64 cost);
 
   // Sets the vehicles which can visit a given node. If the node is in a
@@ -624,7 +623,7 @@ class RoutingModel {
   //     routing.AddPickupAndDelivery(index1, index2);
   //
   // TODO(user): Remove this when model introspection detects linked nodes.
-  void AddPickupAndDelivery(int64 pickup, int64 delivery);
+  void AddPickupAndDelivery(int pickup, int delivery);
   // Same as AddPickupAndDelivery but notifying that the performed node from
   // the disjunction of index 'pickup_disjunction' is on the same route as the
   // performed node from the disjunction of index 'delivery_disjunction'.
@@ -1148,7 +1147,7 @@ class RoutingModel {
   // when unperformed).
   template <typename T>
   struct ValuedNodes {
-    std::vector<int64> indices;
+    std::vector<int> indices;
     T value;
   };
   struct DisjunctionValues {
@@ -1210,8 +1209,8 @@ class RoutingModel {
   // Returns nullptr if no penalty cost, otherwise returns penalty variable.
   IntVar* CreateDisjunction(DisjunctionIndex disjunction);
   // Sets up pickup and delivery sets.
-  void AddPickupAndDeliverySetsInternal(const std::vector<int64>& pickups,
-                                        const std::vector<int64>& deliveries);
+  void AddPickupAndDeliverySetsInternal(const std::vector<int>& pickups,
+                                        const std::vector<int>& deliveries);
   // Returns the cost variable related to the soft same vehicle constraint of
   // index 'vehicle_index'.
   IntVar* CreateSameVehicleCost(int vehicle_index);

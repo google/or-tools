@@ -269,7 +269,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     for (int order = 0; order < number_of_orders; ++order) {
       time_dimension.CumulVar(order).SetRange(order_time_windows_[order].start_,
                                               order_time_windows_[order].end_);
-      long[] orders = {order};
+      int[] orders = {order};
       model.AddDisjunction(orders, order_penalties_[order]);
     }
 

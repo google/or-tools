@@ -1353,7 +1353,7 @@ void RoutingModel::ComputeVehicleClasses() {
 }
 
 RoutingModel::DisjunctionIndex RoutingModel::AddDisjunction(
-    const std::vector<int64>& indices, int64 penalty, int64 max_cardinality) {
+    const std::vector<int>& indices, int64 penalty, int64 max_cardinality) {
   CHECK_GE(max_cardinality, 1);
   for (int i = 0; i < indices.size(); ++i) {
     CHECK_NE(kUnassigned, indices[i]);
@@ -1361,7 +1361,7 @@ RoutingModel::DisjunctionIndex RoutingModel::AddDisjunction(
 
   const DisjunctionIndex disjunction_index(disjunctions_.size());
   disjunctions_.push_back({indices, {penalty, max_cardinality}});
-  for (const int64 index : indices) {
+  for (const int index : indices) {
     index_to_disjunctions_[index].push_back(disjunction_index);
   }
   return disjunction_index;
@@ -1371,7 +1371,7 @@ std::vector<std::pair<int64, int64>>
 RoutingModel::GetPerfectBinaryDisjunctions() const {
   std::vector<std::pair<int64, int64>> var_index_pairs;
   for (const Disjunction& disjunction : disjunctions_) {
-    const std::vector<int64>& var_indices = disjunction.indices;
+    const std::vector<int>& var_indices = disjunction.indices;
     if (var_indices.size() != 2) continue;
     const int64 v0 = var_indices[0];
     const int64 v1 = var_indices[1];
@@ -1402,7 +1402,7 @@ void RoutingModel::IgnoreDisjunctionsAlreadyForcedToZero() {
 }
 
 IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
-  const std::vector<int64>& indices = disjunctions_[disjunction].indices;
+  const std::vector<int>& indices = disjunctions_[disjunction].indices;
   const int indices_size = indices.size();
   std::vector<IntVar*> disjunction_vars(indices_size);
   for (int i = 0; i < indices_size; ++i) {
@@ -1427,11 +1427,11 @@ IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
   }
 }
 
-void RoutingModel::AddSoftSameVehicleConstraint(
-    const std::vector<int64>& indices, int64 cost) {
+void RoutingModel::AddSoftSameVehicleConstraint(const std::vector<int>& indices,
+                                                int64 cost) {
   if (!indices.empty()) {
     ValuedNodes<int64> same_vehicle_cost;
-    for (const int64 index : indices) {
+    for (const int index : indices) {
       same_vehicle_cost.indices.push_back(index);
     }
     same_vehicle_cost.value = cost;
@@ -1448,7 +1448,7 @@ void RoutingModel::SetAllowedVehiclesForIndex(const std::vector<int>& vehicles,
   }
 }
 
-void RoutingModel::AddPickupAndDelivery(int64 pickup, int64 delivery) {
+void RoutingModel::AddPickupAndDelivery(int pickup, int delivery) {
   AddPickupAndDeliverySetsInternal({pickup}, {delivery});
   pickup_delivery_disjunctions_.push_back({kNoDisjunction, kNoDisjunction});
 }
@@ -1463,7 +1463,7 @@ void RoutingModel::AddPickupAndDeliverySets(
 }
 
 void RoutingModel::AddPickupAndDeliverySetsInternal(
-    const std::vector<int64>& pickups, const std::vector<int64>& deliveries) {
+    const std::vector<int>& pickups, const std::vector<int>& deliveries) {
   if (pickups.empty() || deliveries.empty()) {
     return;
   }
@@ -1509,8 +1509,7 @@ int RoutingModel::GetNumOfSingletonNodes() const {
 }
 
 IntVar* RoutingModel::CreateSameVehicleCost(int vehicle_index) {
-  const std::vector<int64>& indices =
-      same_vehicle_costs_[vehicle_index].indices;
+  const std::vector<int>& indices = same_vehicle_costs_[vehicle_index].indices;
   CHECK(!indices.empty());
   std::vector<IntVar*> vehicle_counts;
   solver_->MakeIntVarArray(vehicle_vars_.size() + 1, 0, indices.size() + 1,

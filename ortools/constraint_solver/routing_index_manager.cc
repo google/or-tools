@@ -120,9 +120,9 @@ void RoutingIndexManager::Initialize(
   }
 }
 
-std::vector<int64> RoutingIndexManager::NodesToIndices(
+std::vector<int> RoutingIndexManager::NodesToIndices(
     const std::vector<NodeIndex>& nodes) const {
-  std::vector<int64> indices;
+  std::vector<int> indices;
   indices.reserve(nodes.size());
   for (const NodeIndex node : nodes) {
     const int64 index = NodeToIndex(node);

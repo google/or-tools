@@ -64,7 +64,7 @@ class RoutingIndexManager {
     DCHECK_LT(node.value(), node_to_index_.size());
     return node_to_index_[node];
   }
-  std::vector<int64> NodesToIndices(const std::vector<NodeIndex>& nodes) const;
+  std::vector<int> NodesToIndices(const std::vector<NodeIndex>& nodes) const;
   NodeIndex IndexToNode(int index) const {
     DCHECK_GE(index, 0);
     DCHECK_LT(index, index_to_node_.size());

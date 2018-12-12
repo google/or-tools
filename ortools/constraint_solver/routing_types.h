@@ -42,7 +42,7 @@ typedef std::function<int64(RoutingNodeIndex, RoutingNodeIndex)>
 typedef std::function<int64(int)> RoutingTransitCallback1;
 typedef std::function<int64(int, int)> RoutingTransitCallback2;
 // NOTE(user): keep the "> >" for SWIG.
-typedef std::pair<std::vector<int64>, std::vector<int64> > RoutingIndexPair;
+typedef std::pair<std::vector<int>, std::vector<int> > RoutingIndexPair;
 typedef std::vector<RoutingIndexPair> RoutingIndexPairs;
 
 }  // namespace operations_research
