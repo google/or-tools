@@ -142,22 +142,20 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 // CastOp defines how to cast the output of CallStaticLongMethod to CType*;
 // its first argument is CType, its second is the output of
 // CallStaticLongMethod.
-%define CONVERT_VECTOR(CType, JavaType)
+%define CONVERT_VECTOR(CType, JavaType, Module)
 %typemap(jni) const std::vector<CType*>& "jobjectArray"
 %typemap(jtype) const std::vector<CType*>& "JavaType[]"
 %typemap(jstype) const std::vector<CType*>& "JavaType[]"
 %typemap(javain) const std::vector<CType*>& "$javainput"
 %typemap(in) const std::vector<CType*>& (std::vector<CType*> temp_result) {
   jclass object_class =
-    jenv->FindClass("com/google/ortools/"
-                    "constraintsolver/JavaType");
+      jenv->FindClass("com/google/ortools/Module/JavaType");
   if (nullptr == object_class)
     return $null;
   jmethodID method_id =
       jenv->GetStaticMethodID(object_class,
                               "getCPtr",
-                              "(Lcom/google/ortools/"
-                              "constraintsolver/JavaType;)J");
+                              "(Lcom/google/ortools/Module/JavaType;)J");
   assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
@@ -168,7 +166,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 }
 %typemap(out) const std::vector<CType*>& {
   jclass object_class =
-      jenv->FindClass("com/google/ortools/constraintsolver/JavaType");
+      jenv->FindClass("com/google/ortools/Module/JavaType");
   $result = jenv->NewObjectArray($1->size(), object_class, 0);
   if (nullptr != object_class) {
     jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
@@ -190,15 +188,13 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 %typemap(javain) std::vector<CType*> "$javainput"
 %typemap(in) std::vector<CType*> (std::vector<CType*> temp_result) {
   jclass object_class =
-    jenv->FindClass("com/google/ortools/"
-                    "constraintsolver/JavaType");
+      jenv->FindClass("com/google/ortools/Module/JavaType");
   if (nullptr == object_class)
     return $null;
   jmethodID method_id =
       jenv->GetStaticMethodID(object_class,
                               "getCPtr",
-                              "(Lcom/google/ortools/"
-                              "constraintsolver/JavaType;)J");
+                              "(Lcom/google/ortools/Module/JavaType;)J");
   assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
@@ -209,7 +205,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 }
 %typemap(out) std::vector<CType*> {
   jclass object_class =
-      jenv->FindClass("com/google/ortools/constraintsolver/JavaType");
+      jenv->FindClass("com/google/ortools/Module/JavaType");
   $result = jenv->NewObjectArray($1->size(), object_class, 0);
   if (nullptr != object_class) {
     jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
