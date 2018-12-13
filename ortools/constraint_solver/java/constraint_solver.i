@@ -571,75 +571,16 @@ class SolverToVoid {
 %rename (value) operations_research::IntVarLocalSearchFilter::Value;
 %rename (var) operations_research::IntVarLocalSearchFilter::Var;  // Inherited.
 
+CONVERT_VECTOR(operations_research::IntVar, IntVar);
+CONVERT_VECTOR(operations_research::SearchMonitor, SearchMonitor);
+CONVERT_VECTOR(operations_research::DecisionBuilder, DecisionBuilder);
+CONVERT_VECTOR(operations_research::IntervalVar, IntervalVar);
+CONVERT_VECTOR(operations_research::SequenceVar, SequenceVar);
+CONVERT_VECTOR(operations_research::LocalSearchOperator, LocalSearchOperator);
+CONVERT_VECTOR(operations_research::LocalSearchFilter, LocalSearchFilter);
+CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker);
+
 namespace operations_research {
-
-// Typemaps to represent const std::vector<CType*>& arguments as arrays of
-// JavaType, where CType is not a primitive type.
-// TODO(user): See if it makes sense to move this
-// ortools/util/vector.i.
-
-// CastOp defines how to cast the output of CallStaticLongMethod to CType*;
-// its first argument is CType, its second is the output of
-// CallStaticLongMethod.
-%define CONVERT_VECTOR_WITH_CAST(CType, JavaType, CastOp)
-%typemap(jni) const std::vector<CType*>& "jobjectArray"
-%typemap(jtype) const std::vector<CType*>& "JavaType[]"
-%typemap(jstype) const std::vector<CType*>& "JavaType[]"
-%typemap(javain) const std::vector<CType*>& "$javainput"
-%typemap(in) const std::vector<CType*>& (std::vector<CType*> result) {
-  jclass object_class =
-    jenv->FindClass("com/google/ortools/"
-                    "constraintsolver/JavaType");
-  if (nullptr == object_class)
-    return $null;
-  jmethodID method_id =
-      jenv->GetStaticMethodID(object_class,
-                              "getCPtr",
-                              "(Lcom/google/ortools/"
-                              "constraintsolver/JavaType;)J");
-  assert(method_id != nullptr);
-  for (int i = 0; i < jenv->GetArrayLength($input); i++) {
-    jobject elem = jenv->GetObjectArrayElement($input, i);
-    jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
-    result.push_back(CastOp(CType, ptr_value));
-  }
-  $1 = &result;
-}
-%typemap(out) const std::vector<CType*>& {
-  jclass object_class =
-      jenv->FindClass("com/google/ortools/constraintsolver/JavaType");
-  $result = jenv->NewObjectArray($1->size(), object_class, 0);
-  if (nullptr != object_class) {
-    jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
-    for (int i = 0; i < $1->size(); ++i) {
-      jlong obj_ptr = 0;
-      *((operations_research::CType **)&obj_ptr) = (*$1)[i];
-      jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
-      jenv->SetObjectArrayElement($result, i, elem);
-    }
-  }
-}
-%typemap(javaout) const std::vector<CType*> & {
-  return $jnicall;
-}
-%enddef
-
-%define REINTERPRET_CAST(CType, ptr)
-reinterpret_cast<operations_research::CType*>(ptr)
-%enddef
-
-%define CONVERT_VECTOR(CType, JavaType)
-CONVERT_VECTOR_WITH_CAST(CType, JavaType, REINTERPRET_CAST);
-%enddef
-
-CONVERT_VECTOR(IntVar, IntVar);
-CONVERT_VECTOR(SearchMonitor, SearchMonitor);
-CONVERT_VECTOR(DecisionBuilder, DecisionBuilder);
-CONVERT_VECTOR(IntervalVar, IntervalVar);
-CONVERT_VECTOR(SequenceVar, SequenceVar);
-CONVERT_VECTOR(LocalSearchOperator, LocalSearchOperator);
-CONVERT_VECTOR(LocalSearchFilter, LocalSearchFilter);
-CONVERT_VECTOR(SymmetryBreaker, SymmetryBreaker);
 
 %typemap(javacode) Solver %{
   /**
