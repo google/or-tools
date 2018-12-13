@@ -21,7 +21,7 @@
 
 namespace operations_research {
 
-const int64 RoutingIndexManager::kUnassigned = -1;
+const int RoutingIndexManager::kUnassigned = -1;
 
 RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
                                          NodeIndex depot)
@@ -125,7 +125,7 @@ std::vector<int> RoutingIndexManager::NodesToIndices(
   std::vector<int> indices;
   indices.reserve(nodes.size());
   for (const NodeIndex node : nodes) {
-    const int64 index = NodeToIndex(node);
+    const int index = NodeToIndex(node);
     CHECK_NE(kUnassigned, index);
     indices.push_back(index);
   }
