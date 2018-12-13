@@ -3,9 +3,13 @@
 [![Build
 Status](https://travis-ci.org/google/or-tools.svg?branch=master)](https://travis-ci.org/google/or-tools)
 [![Build status](https://ci.appveyor.com/api/projects/status/9hyykkcm8sh3ua6x?svg=true)](https://ci.appveyor.com/project/lperron/or-tools-98u1n)
-[![PyPI version](https://badge.fury.io/py/ortools.svg)](https://badge.fury.io/py/ortools)
-[![NuGet version](https://badge.fury.io/nu/Google.OrTools.svg)](https://badge.fury.io/nu/Google.OrTools)
+
+[![PyPI version](https://badge.fury.io/py/ortools.svg)](https://pypi.org/project/ortools/)
+[![PyPI download](https://img.shields.io/pypi/dm/ortools.svg)](https://pypi.org/project/ortools/#files)
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/google/or-tools/master)
+
+[![NuGet version](https://badge.fury.io/nu/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
+[![NuGet download](https://img.shields.io/nuget/dt/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
 
 Google's software suite for combinatorial optimization.
 
