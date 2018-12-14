@@ -515,6 +515,7 @@ test_python_sat_samples: \
  rpy_literal_sample_sat \
  rpy_minimal_jobshop_sat \
  rpy_no_overlap_sample_sat \
+ rpy_nurses_sat \
  rpy_optional_interval_sample_sat \
  rpy_rabbits_and_pheasants_sat \
  rpy_ranking_sample_sat \
@@ -551,7 +552,6 @@ check_python_pimpl: \
 # rpy_min_cost_flow \
 # rpy_assignment \
 # rpy_nurses_cp \
-# rpy_nurses_sat \
 # rpy_job_shop_cp \
 # rpy_job_shop_sat
 
@@ -715,7 +715,6 @@ test_python_python: \
  rpy_linear_programming \
  rpy_magic_sequence_distribute \
  rpy_nqueens_sat \
- rpy_nurses_sat \
  rpy_pyflow_example \
  rpy_rcpsp_sat \
  rpy_single_machine_scheduling_with_setup_release_due_dates_sat \
