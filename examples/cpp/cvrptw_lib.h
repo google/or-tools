@@ -26,6 +26,9 @@
 
 namespace operations_research {
 
+typedef std::function<int64(RoutingNodeIndex, RoutingNodeIndex)>
+    RoutingNodeEvaluator2;
+
 // Random seed generator.
 int32 GetSeed(bool deterministic);
 

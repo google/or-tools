@@ -221,7 +221,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
       timeDimension
           .cumulVar(order)
           .setRange(orderTimeWindows.get(order).first, orderTimeWindows.get(order).second);
-      int[] orderIndices = {manager.nodeToIndex(order)};
+      long[] orderIndices = {manager.nodeToIndex(order)};
       model.addDisjunction(orderIndices, orderPenalties.get(order));
     }
 

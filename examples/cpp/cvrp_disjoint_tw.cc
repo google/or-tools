@@ -148,13 +148,13 @@ int main(int argc, char** argv) {
   const RoutingIndexManager::NodeIndex kFirstNodeAfterDepot(1);
   for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
        order < manager.num_nodes(); ++order) {
-    std::vector<int> orders(1, manager.NodeToIndex(order));
+    std::vector<int64> orders(1, manager.NodeToIndex(order));
     routing.AddDisjunction(orders, kPenalty);
   }
 
   // Adding same vehicle constraint costs for consecutive nodes.
   if (FLAGS_vrp_use_same_vehicle_costs) {
-    std::vector<int> group;
+    std::vector<int64> group;
     for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
          order < manager.num_nodes(); ++order) {
       group.push_back(manager.NodeToIndex(order));

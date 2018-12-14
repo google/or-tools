@@ -29,7 +29,7 @@
 // Note(user): for an unknown reason, using the (handy) method PyObjAs()
 // defined in base/swig/python-swig.cc seems to cause issues, so we can't
 // use a generic, templated type checker.
-  // Get const std::vector<std::string>& "in" typemap.
+// Get const std::vector<std::string>& "in" typemap.
 
 %define PY_LIST_OUTPUT_TYPEMAP(type, checker, py_converter)
 %typecheck(SWIG_TYPECHECK_POINTER) const std::vector<type>&,

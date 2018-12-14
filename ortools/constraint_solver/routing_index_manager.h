@@ -40,7 +40,7 @@ namespace operations_research {
 class RoutingIndexManager {
  public:
   typedef RoutingNodeIndex NodeIndex;
-  static const int kUnassigned;
+  static const int64 kUnassigned;
 
   // Creates a NodeIndex to variable index mapping for a problem containing
   // 'num_nodes', 'num_vehicles' and the given starts and ends for each vehicle.
@@ -57,15 +57,15 @@ class RoutingIndexManager {
   int num_nodes() const { return num_nodes_; }
   int num_vehicles() const { return num_vehicles_; }
   int num_indices() const { return index_to_node_.size(); }
-  int GetStartIndex(int vehicle) const { return vehicle_to_start_[vehicle]; }
-  int GetEndIndex(int vehicle) const { return vehicle_to_end_[vehicle]; }
-  int NodeToIndex(NodeIndex node) const {
+  int64 GetStartIndex(int vehicle) const { return vehicle_to_start_[vehicle]; }
+  int64 GetEndIndex(int vehicle) const { return vehicle_to_end_[vehicle]; }
+  int64 NodeToIndex(NodeIndex node) const {
     DCHECK_GE(node.value(), 0);
     DCHECK_LT(node.value(), node_to_index_.size());
     return node_to_index_[node];
   }
-  std::vector<int> NodesToIndices(const std::vector<NodeIndex>& nodes) const;
-  NodeIndex IndexToNode(int index) const {
+  std::vector<int64> NodesToIndices(const std::vector<NodeIndex>& nodes) const;
+  NodeIndex IndexToNode(int64 index) const {
     DCHECK_GE(index, 0);
     DCHECK_LT(index, index_to_node_.size());
     return index_to_node_[index];
@@ -74,7 +74,7 @@ class RoutingIndexManager {
   // complete.
   int num_unique_depots() const { return num_unique_depots_; }
   std::vector<NodeIndex> GetIndexToNodeMap() const { return index_to_node_; }
-  gtl::ITIVector<NodeIndex, int> GetNodeToIndexMap() const {
+  gtl::ITIVector<NodeIndex, int64> GetNodeToIndexMap() const {
     return node_to_index_;
   }
 
@@ -84,9 +84,9 @@ class RoutingIndexManager {
       const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
 
   std::vector<NodeIndex> index_to_node_;
-  gtl::ITIVector<NodeIndex, int> node_to_index_;
-  std::vector<int> vehicle_to_start_;
-  std::vector<int> vehicle_to_end_;
+  gtl::ITIVector<NodeIndex, int64> node_to_index_;
+  std::vector<int64> vehicle_to_start_;
+  std::vector<int64> vehicle_to_end_;
   int num_nodes_;
   int num_vehicles_;
   int num_unique_depots_;

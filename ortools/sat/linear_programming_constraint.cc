@@ -675,9 +675,10 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
     *scaling = std::max(*scaling, 1e6 / lp_multipliers_norm);
   }
 
-  // Make sure the scaled coeff are not too big.
+  // Make sure the scaled coeff are not too big so that they can fit on
+  // an IntegerValue. Since 1<<63 is around 9.2e18, we use 1e18 here.
   if (max_cp_multi > 0.0) {
-    *scaling = std::min(*scaling, 1e12 / max_cp_multi);
+    *scaling = std::min(*scaling, 1e18 / max_cp_multi);
   }
 
   // Scale the multipliers by *scaling.

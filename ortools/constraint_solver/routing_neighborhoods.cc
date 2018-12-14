@@ -151,7 +151,7 @@ MakePairInactiveOperator::MakePairInactiveOperator(
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
                                     std::move(start_empty_path_class)) {
-  int max_pair_index = -1;
+  int64 max_pair_index = -1;
   for (const auto& index_pair : index_pairs) {
     max_pair_index = std::max(max_pair_index, index_pair.first[0]);
     max_pair_index = std::max(max_pair_index, index_pair.second[0]);
@@ -189,7 +189,7 @@ PairRelocateOperator::PairRelocateOperator(
     index_max = std::max(index_max, var->Max());
   }
   is_first_.resize(index_max + 1, false);
-  int max_pair_index = -1;
+  int64 max_pair_index = -1;
   // TODO(user): Support pairs with disjunctions.
   for (const auto& index_pair : index_pairs) {
     max_pair_index = std::max(max_pair_index, index_pair.first[0]);
@@ -283,7 +283,7 @@ LightPairRelocateOperator::LightPairRelocateOperator(
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 2,
                                     std::move(start_empty_path_class)) {
-  int max_pair_index = -1;
+  int64 max_pair_index = -1;
   // TODO(user): Support pairs with disjunctions.
   for (const auto& index_pair : index_pairs) {
     max_pair_index = std::max(max_pair_index, index_pair.first[0]);
@@ -332,7 +332,7 @@ PairExchangeOperator::PairExchangeOperator(
     index_max = std::max(index_max, var->Max());
   }
   is_first_.resize(index_max + 1, false);
-  int max_pair_index = -1;
+  int64 max_pair_index = -1;
   // TODO(user): Support pairs with disjunctions.
   for (const auto& index_pair : index_pairs) {
     max_pair_index = std::max(max_pair_index, index_pair.first[0]);
@@ -415,7 +415,7 @@ PairExchangeRelocateOperator::PairExchangeRelocateOperator(
     index_max = std::max(index_max, var->Max());
   }
   is_first_.resize(index_max + 1, false);
-  int max_pair_index = -1;
+  int64 max_pair_index = -1;
   // TODO(user): Support pairs with disjunctions.
   for (const auto& index_pair : index_pairs) {
     max_pair_index = std::max(max_pair_index, index_pair.first[0]);
@@ -673,7 +673,7 @@ IndexPairSwapActiveOperator::IndexPairSwapActiveOperator(
     : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
                                     std::move(start_empty_path_class)),
       inactive_node_(0) {
-  int max_pair_index = -1;
+  int64 max_pair_index = -1;
   // TODO(user): Support pairs with disjunctions.
   for (const auto& index_pair : index_pairs) {
     max_pair_index = std::max(max_pair_index, index_pair.first[0]);
