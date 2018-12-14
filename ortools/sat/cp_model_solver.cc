@@ -1099,7 +1099,9 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   }
 
   const IntegerVariable main_objective_var =
-      GetOrCreateVariableGreaterOrEqualToSumOf(top_level_cp_terms, m);
+      model_proto.has_objective()
+          ? GetOrCreateVariableGreaterOrEqualToSumOf(top_level_cp_terms, m)
+          : kNoIntegerVariable;
 
   // Register LP constraints. Note that this needs to be done after all the
   // constraints have been added.

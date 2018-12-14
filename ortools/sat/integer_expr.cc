@@ -135,51 +135,33 @@ bool IntegerSumLE::Propagate() {
   // We can only propagate more if all the enforcement literals are true.
   if (num_unassigned_enforcement_literal > 0) return true;
 
-  // The integer_reason_ will only be filled on the first push.
-  bool first_push = true;
-
   // The lower bound of all the variables minus one can be used to update the
   // upper bound of the last one.
-  int trail_index_with_same_reason = -1;
   for (int i = rev_num_fixed_vars_; i < vars_.size(); ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue var_slack =
         integer_trail_->UpperBound(var) - integer_trail_->LowerBound(var);
     if (var_slack * coeff > slack) {
-      if (first_push) {
-        first_push = false;
-        FillIntegerReason();
-      }
-
-      // We need to remove the entry index from the reason temporarily.
-      IntegerLiteral saved;
-      const int index = index_in_integer_reason_[i];
-      if (index >= 0) {
-        saved = integer_reason_[index];
-        integer_reason_[index] = integer_reason_.back();
-        integer_reason_.pop_back();
-      } else if (trail_index_with_same_reason == -1) {
-        // All the push for which index < 0 share the same reason, so we save
-        // the index of the first push so that we do not need to copy the reason
-        // of the next ones.
-        trail_index_with_same_reason = integer_trail_->Index();
-      }
-
       const IntegerValue new_ub =
           integer_trail_->LowerBound(var) + slack / coeff;
-      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub),
-                                   literal_reason_, integer_reason_,
-                                   index >= 0 ? integer_trail_->Index()
-                                              : trail_index_with_same_reason)) {
+      if (!integer_trail_->Enqueue(
+              IntegerLiteral::LowerOrEqual(var, new_ub),
+              /*lazy_reason=*/[this](IntegerLiteral i_lit, int trail_index,
+                                     std::vector<Literal>* literal_reason,
+                                     std::vector<int>* trail_indices_reason) {
+                *literal_reason = literal_reason_;
+                trail_indices_reason->clear();
+                for (const IntegerVariable var : vars_) {
+                  if (PositiveVariable(var) == PositiveVariable(i_lit.var)) {
+                    continue;
+                  }
+                  const int index = integer_trail_->FindTrailIndexOfVarBefore(
+                      var, trail_index);
+                  if (index >= 0) trail_indices_reason->push_back(index);
+                }
+              })) {
         return false;
-      }
-
-      // Restore integer_reason_. Note that this is not needed if we returned
-      // false above.
-      if (index >= 0) {
-        integer_reason_.push_back(saved);
-        std::swap(integer_reason_[index], integer_reason_.back());
       }
     }
   }
