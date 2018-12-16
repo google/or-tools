@@ -971,6 +971,14 @@ class GenericLiteralWatcher : public SatPropagator {
     level_zero_modified_variable_callback_ = cb;
   }
 
+  // Sets a callbacks that will be called during the Propagate() method at level 0.
+  // 
+  // THis is used to check for external bounds in a parallel context.
+  void RegisterLevelZeroImportExternalBoundsCallback(
+      const std::function<bool()>& cb) {
+    level_zero_import_external_bounds_callback_ = cb;
+  }
+
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.
@@ -1005,6 +1013,7 @@ class GenericLiteralWatcher : public SatPropagator {
 
   std::function<void(const std::vector<IntegerVariable>&)>
       level_zero_modified_variable_callback_ = nullptr;
+  std::function<bool()> level_zero_import_external_bounds_callback_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };

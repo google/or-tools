@@ -1395,8 +1395,7 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   }
 
   if (trail->CurrentDecisionLevel() == 0 &&
-      level_zero_modified_variable_callback_ != nullptr &&
-      !modified_vars_.PositionsSetAtLeastOnce().empty()) {
+      level_zero_modified_variable_callback_ != nullptr) {
     level_zero_modified_variable_callback_(
         modified_vars_.PositionsSetAtLeastOnce());
   }
@@ -1407,6 +1406,13 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
 bool GenericLiteralWatcher::Propagate(Trail* trail) {
   const int level = trail->CurrentDecisionLevel();
   UpdateCallingNeeds(trail);
+
+  // Checks for external bounds. Usually in the multi-thread context.
+  if (trail->CurrentDecisionLevel() == 0 &&
+      level_zero_import_external_bounds_callback_ != nullptr &&
+      !level_zero_import_external_bounds_callback_()) {
+    return false;
+  }
 
   // Note that the priority may be set to -1 inside the loop in order to restart
   // at zero.
