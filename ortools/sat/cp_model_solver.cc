@@ -1202,7 +1202,7 @@ void RegisterVariableBoundsLevelZeroWatcher(
     const CpModelProto* model_proto,
     const std::function<void(const CpSolverResponse&)>&
         external_solution_observer,
-    IntegerVariable objective_var, 
+    IntegerVariable objective_var,
     SharedBoundsManager* shared_bounds_manager, Model* model) {
   const auto broadcast_lower_bound =
       [model_proto, external_solution_observer, objective_var,
@@ -1302,7 +1302,7 @@ void RegisterVariableBoundsLevelZeroWatcher(
           worker_info->worker_id, &model_variables, &new_lower_bounds,
           &new_upper_bounds);
       for (int i = 0; i < model_variables.size(); ++i) {
-        // This can happen if a boolean variables is force to have an
+        // This can happen if a boolean variables is forced to have an
         // integer view in one thread, and not in another thread.
         if (!mapping->IsInteger(model_variables[i])) continue;
         const IntegerVariable var = mapping->Integer(model_variables[i]);
@@ -1318,7 +1318,7 @@ void RegisterVariableBoundsLevelZeroWatcher(
         if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub),
                                     {}, {})) {
           return false;
-        }        
+        }
       }
       return true;
     };
@@ -1332,7 +1332,7 @@ CpSolverResponse SolveCpModelInternal(
     const CpModelProto& model_proto, bool is_real_solve,
     const std::function<void(const CpSolverResponse&)>&
         external_solution_observer,
-    bool watch_objective_lower_bound, 
+    bool watch_objective_lower_bound,
     SharedBoundsManager* shared_bounds_manager, Model* model) {
   // Timing.
   WallTimer wall_timer;
@@ -2204,10 +2204,10 @@ CpSolverResponse SolveCpModelParallel(
     return best_response;
   };
 
-  SharedBoundsManager shared_bounds_manager(num_search_workers, 
+  SharedBoundsManager shared_bounds_manager(num_search_workers,
       model_proto.variables_size());
   {
-    
+
     ThreadPool pool("Parallel_search", num_search_workers);
     pool.StartWorkers();
 
