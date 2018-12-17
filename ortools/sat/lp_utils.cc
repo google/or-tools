@@ -75,12 +75,33 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     IntegerVariableProto* cp_var = cp_model->add_variables();
     cp_var->set_name(mp_var.name());
 
+    // Deal with the corner case of a domain far away from zero.
+    //
+    // TODO(user): We should deal with these case by shifting the domain so
+    // that it includes zero instead of just fixing the variable. But that is a
+    // bit of work as it requires some postsolve.
+    if (mp_var.lower_bound() > kMaxVariableBound) {
+      // Fix var to its lower bound.
+      ++num_truncated_bounds;
+      const int64 value = static_cast<int64>(std::round(mp_var.lower_bound()));
+      cp_var->add_domain(value);
+      cp_var->add_domain(value);
+      continue;
+    } else if (mp_var.upper_bound() < -kMaxVariableBound) {
+      // Fix var to its upper_bound.
+      ++num_truncated_bounds;
+      const int64 value = static_cast<int64>(std::round(mp_var.upper_bound()));
+      cp_var->add_domain(value);
+      cp_var->add_domain(value);
+      continue;
+    }
+
     // Note that we must process the lower bound first.
     for (const bool lower : {true, false}) {
       const double bound = lower ? mp_var.lower_bound() : mp_var.upper_bound();
       if (std::abs(bound) >= kMaxVariableBound) {
-        if (std::abs(bound) != kInfinity) ++num_truncated_bounds;
-        cp_var->add_domain(lower ? -kMaxVariableBound : kMaxVariableBound);
+        ++num_truncated_bounds;
+        cp_var->add_domain(bound < 0 ? -kMaxVariableBound : kMaxVariableBound);
         continue;
       }
 

@@ -504,7 +504,7 @@ message SatParameters {
   // by the current LP solution batch by batch. A constraint that is only added
   // like this is known as a "lazy" constraint in the literature, except that we
   // currently consider all constraints as lazy here.
-  optional bool add_lp_constraints_lazily = 112 [default = false];
+  optional bool add_lp_constraints_lazily = 112 [default = true];
 
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {

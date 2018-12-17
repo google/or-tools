@@ -13,12 +13,15 @@
 
 #include "ortools/sat/cuts.h"
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
 #include <memory>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

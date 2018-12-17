@@ -727,7 +727,7 @@ void IntegerTrail::RelaxLinearReason(
   }
 
   const int num_vars = vars_.size();
-  while (slack != 0) {
+  while (slack > 0) {
     int best_i = -1;
     for (int i = 0; i < size; ++i) {
       if (indices[i] < num_vars) continue;  // level zero.
@@ -750,6 +750,48 @@ void IntegerTrail::RelaxLinearReason(
     (*reason)[best_i].bound = previous_entry.bound;
     slack -= coeffs[best_i] * (entry.bound - previous_entry.bound);
   }
+}
+
+void IntegerTrail::RelaxLinearReason(IntegerValue slack,
+                                     absl::Span<const IntegerValue> coeffs,
+                                     std::vector<int>* trail_indices) const {
+  CHECK_GE(slack, 0);
+  if (slack == 0) return;
+  const int size = trail_indices->size();
+  const int num_vars = vars_.size();
+  while (slack > 0) {
+    int best_i = -1;
+    for (int i = 0; i < size; ++i) {
+      if ((*trail_indices)[i] < num_vars) continue;  // level zero.
+      if (best_i != -1 && (*trail_indices)[i] < (*trail_indices)[best_i]) {
+        continue;
+      }
+      const TrailEntry& entry = integer_trail_[(*trail_indices)[i]];
+      const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
+
+      // Note that both terms of the product are positive.
+      if (CapProd(coeffs[i].value(),
+                  (entry.bound - previous_entry.bound).value()) > slack) {
+        continue;
+      }
+      best_i = i;
+    }
+    if (best_i == -1) break;
+
+    const TrailEntry& entry = integer_trail_[(*trail_indices)[best_i]];
+    const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
+    (*trail_indices)[best_i] = entry.prev_trail_index;
+    slack -= coeffs[best_i] * (entry.bound - previous_entry.bound);
+  }
+
+  // Remove level zero indices.
+  int new_size = 0;
+  for (const int index : *trail_indices) {
+    if (index >= num_vars) {
+      (*trail_indices)[new_size++] = index;
+    }
+  }
+  trail_indices->resize(new_size);
 }
 
 void IntegerTrail::RemoveLevelZeroBounds(
@@ -1395,7 +1437,8 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   }
 
   if (trail->CurrentDecisionLevel() == 0 &&
-      level_zero_modified_variable_callback_ != nullptr) {
+      level_zero_modified_variable_callback_ != nullptr &&
+      !modified_vars_.PositionsSetAtLeastOnce().empty()) {
     level_zero_modified_variable_callback_(
         modified_vars_.PositionsSetAtLeastOnce());
   }
@@ -1409,8 +1452,8 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
 
   // Checks for external bounds. Usually in the multi-thread context.
   if (trail->CurrentDecisionLevel() == 0 &&
-      level_zero_import_external_bounds_callback_ != nullptr &&
-      !level_zero_import_external_bounds_callback_()) {
+      level_zero_propagate_callback_ != nullptr &&
+      !level_zero_propagate_callback_()) {
     return false;
   }
 

@@ -135,7 +135,7 @@ bool IntegerSumLE::Propagate() {
   // We can only propagate more if all the enforcement literals are true.
   if (num_unassigned_enforcement_literal > 0) return true;
 
-  // The lower bound of all the variables minus one can be used to update the
+  // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   for (int i = rev_num_fixed_vars_; i < vars_.size(); ++i) {
     const IntegerVariable var = vars_[i];
@@ -143,22 +143,37 @@ bool IntegerSumLE::Propagate() {
     const IntegerValue var_slack =
         integer_trail_->UpperBound(var) - integer_trail_->LowerBound(var);
     if (var_slack * coeff > slack) {
-      const IntegerValue new_ub =
-          integer_trail_->LowerBound(var) + slack / coeff;
+      const IntegerValue div = slack / coeff;
+      const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
+      const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
       if (!integer_trail_->Enqueue(
               IntegerLiteral::LowerOrEqual(var, new_ub),
-              /*lazy_reason=*/[this](IntegerLiteral i_lit, int trail_index,
-                                     std::vector<Literal>* literal_reason,
-                                     std::vector<int>* trail_indices_reason) {
+              /*lazy_reason=*/[this, propagation_slack](
+                                  IntegerLiteral i_lit, int trail_index,
+                                  std::vector<Literal>* literal_reason,
+                                  std::vector<int>* trail_indices_reason) {
                 *literal_reason = literal_reason_;
                 trail_indices_reason->clear();
-                for (const IntegerVariable var : vars_) {
+                lazy_reason_coeffs_.clear();
+                const int size = vars_.size();
+                for (int i = 0; i < size; ++i) {
+                  const IntegerVariable var = vars_[i];
                   if (PositiveVariable(var) == PositiveVariable(i_lit.var)) {
                     continue;
                   }
                   const int index = integer_trail_->FindTrailIndexOfVarBefore(
                       var, trail_index);
-                  if (index >= 0) trail_indices_reason->push_back(index);
+                  if (index >= 0) {
+                    trail_indices_reason->push_back(index);
+                    if (propagation_slack > 0) {
+                      lazy_reason_coeffs_.push_back(coeffs_[i]);
+                    }
+                  }
+                }
+                if (propagation_slack > 0) {
+                  integer_trail_->RelaxLinearReason(propagation_slack,
+                                                    lazy_reason_coeffs_,
+                                                    trail_indices_reason);
                 }
               })) {
         return false;

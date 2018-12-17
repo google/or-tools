@@ -1102,6 +1102,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/simplification.h \
  $(SRC_DIR)/ortools/sat/swig_helper.h \
  $(SRC_DIR)/ortools/sat/symmetry.h \
+ $(SRC_DIR)/ortools/sat/synchronization.h \
  $(SRC_DIR)/ortools/sat/table.h \
  $(SRC_DIR)/ortools/sat/theta_tree.h \
  $(SRC_DIR)/ortools/sat/timetable_edgefinding.h \
@@ -1154,6 +1155,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/sat_solver.$O \
  $(OBJ_DIR)/sat/simplification.$O \
  $(OBJ_DIR)/sat/symmetry.$O \
+ $(OBJ_DIR)/sat/synchronization.$O \
  $(OBJ_DIR)/sat/table.$O \
  $(OBJ_DIR)/sat/theta_tree.$O \
  $(OBJ_DIR)/sat/timetable.$O \
@@ -1415,7 +1417,8 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/sat/linear_constraint_manager.h ortools/sat/linear_relaxation.h \
  ortools/sat/lns.h ortools/sat/optimization.h \
  ortools/gen/ortools/sat/boolean_problem.pb.h ortools/sat/probing.h \
- ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h | $(OBJ_DIR)/sat
+ ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
+ ortools/sat/synchronization.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_solver.$O
 
 objs/sat/cp_model_symmetries.$O: ortools/sat/cp_model_symmetries.cc \
@@ -1958,6 +1961,13 @@ objs/sat/symmetry.$O: ortools/sat/symmetry.cc ortools/sat/symmetry.h \
  ortools/base/typeid.h ortools/util/bitset.h ortools/base/basictypes.h \
  ortools/util/stats.h ortools/base/timer.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssymmetry.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssymmetry.$O
+
+objs/sat/synchronization.$O: ortools/sat/synchronization.cc \
+ ortools/sat/synchronization.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/macros.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/util/bitset.h \
+ ortools/base/basictypes.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssynchronization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssynchronization.$O
 
 objs/sat/table.$O: ortools/sat/table.cc ortools/sat/table.h \
  ortools/base/integral_types.h ortools/sat/integer.h ortools/base/hash.h \

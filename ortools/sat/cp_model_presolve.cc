@@ -1343,6 +1343,36 @@ bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
           copy.coeffs(i) > 0 ? NegatedRef(copy.vars(i)) : copy.vars(i));
     }
     return true;
+  } else if (!HasEnforcementLiteral(*ct) && domain.intervals().size() == 1 &&
+             min_sum < domain.Min() && min_sum + min_coeff >= domain.Min() &&
+             min_sum + 2 * min_coeff > domain.Max() &&
+             min_sum + max_coeff <= domain.Max()) {
+    context->UpdateRuleStats("linear: positive equal one");
+    ConstraintProto* at_least_one = context->working_model->add_constraints();
+    ConstraintProto* at_most_one = context->working_model->add_constraints();
+    for (int i = 0; i < num_vars; ++i) {
+      at_least_one->mutable_bool_or()->add_literals(
+          arg.coeffs(i) > 0 ? arg.vars(i) : NegatedRef(arg.vars(i)));
+      at_most_one->mutable_at_most_one()->add_literals(
+          arg.coeffs(i) > 0 ? arg.vars(i) : NegatedRef(arg.vars(i)));
+    }
+    context->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct, context);
+  } else if (!HasEnforcementLiteral(*ct) && domain.intervals().size() == 1 &&
+             max_sum > domain.Max() && max_sum - min_coeff <= domain.Max() &&
+             max_sum - 2 * min_coeff < domain.Min() &&
+             max_sum - max_coeff >= domain.Min()) {
+    context->UpdateRuleStats("linear: negative equal one");
+    ConstraintProto* at_least_one = context->working_model->add_constraints();
+    ConstraintProto* at_most_one = context->working_model->add_constraints();
+    for (int i = 0; i < num_vars; ++i) {
+      at_least_one->mutable_bool_or()->add_literals(
+          arg.coeffs(i) > 0 ? NegatedRef(arg.vars(i)) : arg.vars(i));
+      at_most_one->mutable_at_most_one()->add_literals(
+          arg.coeffs(i) > 0 ? NegatedRef(arg.vars(i)) : arg.vars(i));
+    }
+    context->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct, context);
   }
 
   // Expand small expression into clause.

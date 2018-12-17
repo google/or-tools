@@ -69,6 +69,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -1202,17 +1203,18 @@ void RegisterVariableBoundsLevelZeroWatcher(
     const CpModelProto* model_proto,
     const std::function<void(const CpSolverResponse&)>&
         external_solution_observer,
-    IntegerVariable objective_var,
-    SharedBoundsManager* shared_bounds_manager, Model* model) {
+    IntegerVariable objective_var, SharedBoundsManager* shared_bounds_manager,
+    Model* model) {
   const auto broadcast_lower_bound =
-      [model_proto, external_solution_observer, objective_var,
-       model, shared_bounds_manager](const std::vector<IntegerVariable>& modified_vars) {
+      [model_proto, external_solution_observer, objective_var, model,
+       shared_bounds_manager](
+          const std::vector<IntegerVariable>& modified_vars) {
         auto* integer_trail = model->Get<IntegerTrail>();
         const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
         CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
 
-        if (worker_info->parallel_mode) {
-          CHECK(shared_bounds_manager != nullptr);
+        // Share bounds of modified variables.
+        if (worker_info->parallel_mode && shared_bounds_manager != nullptr) {
           std::vector<int> model_variables;
           std::vector<int64> new_lower_bounds;
           std::vector<int64> new_upper_bounds;
@@ -1221,25 +1223,27 @@ void RegisterVariableBoundsLevelZeroWatcher(
             const IntegerVariable positive_var = PositiveVariable(var);
             const int model_var =
                 mapping->GetProtoVariableFromIntegerVariable(positive_var);
-            if (gtl::ContainsKey(visited_variables, model_var)) {
+            if (model_var == -1 ||
+                gtl::ContainsKey(visited_variables, model_var)) {
               continue;
             } else {
               visited_variables.insert(model_var);
             }
-            if (model_var == -1) continue;
-            const IntegerVariableProto &var_proto =
+            const IntegerVariableProto& var_proto =
                 model_proto->variables(model_var);
             const int64 new_lb =
                 integer_trail->LevelZeroLowerBound(positive_var).value();
             const int64 new_ub =
                 integer_trail->LevelZeroUpperBound(positive_var).value();
+            // TODO(user): We could imagine an API based on atomic<int64>
+            // that could preemptively check if this new bounds are improving.
             model_variables.push_back(model_var);
             new_lower_bounds.push_back(new_lb);
             new_upper_bounds.push_back(new_ub);
             if (!var_proto.name().empty()) {
               VLOG(3) << worker_info->worker_name << " write "
-                        << var_proto.name() << "(" << model_var
-                        << ")[" << new_lb << ", " << new_ub << "]";
+                      << var_proto.name() << "(" << model_var << ")[" << new_lb
+                      << ", " << new_ub << "]";
             } else {
               VLOG(3) << worker_info->worker_name << " write anonymous_var("
                       << model_var << ")[" << new_lb << ", " << new_ub << "]";
@@ -1261,7 +1265,7 @@ void RegisterVariableBoundsLevelZeroWatcher(
         const double current_objective_value =
             helper->get_external_best_objective();
 
-        // TODO(lperron): Unit test this lambda.
+        // TODO(user): Unit test this lambda.
         if ((helper->scaling_factor >= 0 &&  // Unset -> = 0.0 -> minimize.
              new_best_bound > current_best_bound) ||
             (helper->scaling_factor < 0 &&
@@ -1289,42 +1293,42 @@ void RegisterVariableBoundsLevelZeroWatcher(
   model->GetOrCreate<GenericLiteralWatcher>()
       ->RegisterLevelZeroModifiedVariablesCallback(broadcast_lower_bound);
 
-  if (shared_bounds_manager != nullptr) {
-    const auto& import_lower_bounds = [model_proto, shared_bounds_manager, model]() {
-      auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-      const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
-      CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
-      CHECK(worker_info->parallel_mode);
-      std::vector<int> model_variables;
-      std::vector<int64> new_lower_bounds;
-      std::vector<int64> new_upper_bounds;
-      shared_bounds_manager->GetChangedBounds(
-          worker_info->worker_id, &model_variables, &new_lower_bounds,
-          &new_upper_bounds);
-      for (int i = 0; i < model_variables.size(); ++i) {
-        // This can happen if a boolean variables is forced to have an
-        // integer view in one thread, and not in another thread.
-        if (!mapping->IsInteger(model_variables[i])) continue;
-        const IntegerVariable var = mapping->Integer(model_variables[i]);
-        const IntegerValue new_lb(new_lower_bounds[i]);
-        const IntegerValue new_ub(new_upper_bounds[i]);
-        VLOG(3) << worker_info->worker_name << " read "
-                << model_proto->variables(model_variables[i]).name() << "["
-                << new_lb << ", " << new_ub << "]";
-        if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, new_lb),
-                                    {}, {})) {
-          return false;
-        }
-        if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub),
-                                    {}, {})) {
-          return false;
-        }
+  if (shared_bounds_manager == nullptr) return;
+  const auto& import_lower_bounds = [model_proto, shared_bounds_manager,
+                                     model]() {
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
+    CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
+    CHECK(worker_info->parallel_mode);
+    std::vector<int> model_variables;
+    std::vector<int64> new_lower_bounds;
+    std::vector<int64> new_upper_bounds;
+    shared_bounds_manager->GetChangedBounds(worker_info->worker_id,
+                                            &model_variables, &new_lower_bounds,
+                                            &new_upper_bounds);
+    for (int i = 0; i < model_variables.size(); ++i) {
+      // This can happen if a boolean variables is forced to have an
+      // integer view in one thread, and not in another thread.
+      if (!mapping->IsInteger(model_variables[i])) continue;
+      const IntegerVariable var = mapping->Integer(model_variables[i]);
+      const IntegerValue new_lb(new_lower_bounds[i]);
+      const IntegerValue new_ub(new_upper_bounds[i]);
+      VLOG(3) << worker_info->worker_name << " read "
+              << model_proto->variables(model_variables[i]).name() << "["
+              << new_lb << ", " << new_ub << "]";
+      if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, new_lb),
+                                  {}, {})) {
+        return false;
       }
-      return true;
-    };
-    model->GetOrCreate<GenericLiteralWatcher>()
-        ->RegisterLevelZeroImportExternalBoundsCallback(import_lower_bounds);
-  }
+      if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
+                                  {})) {
+        return false;
+      }
+    }
+    return true;
+  };
+  model->GetOrCreate<GenericLiteralWatcher>()
+      ->RegisterLevelZeroPropagateCallback(import_lower_bounds);
 }
 // Because we also use this function for postsolve, we call it with
 // is_real_solve set to true and avoid doing non-useful work in this case.
@@ -1751,10 +1755,10 @@ void PostsolveResponse(const CpModelProto& model_proto,
     params.set_linearization_level(0);
     postsolve_model.Add(operations_research::sat::NewSatParameters(params));
   }
-  const CpSolverResponse postsolve_response =
-      SolveCpModelInternal(mapping_proto, false, [](const CpSolverResponse&) {},
-                           /*watch_objective_lower_bound=*/false,
-                           /*shared_bounds_manager=*/nullptr, &postsolve_model);
+  const CpSolverResponse postsolve_response = SolveCpModelInternal(
+      mapping_proto, false, [](const CpSolverResponse&) {},
+      /*watch_objective_lower_bound=*/false,
+      /*shared_bounds_manager=*/nullptr, &postsolve_model);
   CHECK_EQ(postsolve_response.status(), CpSolverStatus::FEASIBLE);
 
   // We only copy the solution from the postsolve_response to the response.
@@ -2174,14 +2178,15 @@ CpSolverResponse SolveCpModelParallel(
         const SatParameters local_params = DiversifySearchParameters(
             params, model_proto, worker_id, &worker_name);
         pool.Schedule([&model_proto, stopped, local_params, &best_response,
-                       &mutex, worker_name, worker_id]() {
+                       &mutex, worker_name]() {
           Model local_model;
           local_model.Add(NewSatParameters(local_params));
           local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
               stopped);
           const CpSolverResponse local_response = SolveCpModelInternal(
               model_proto, true, [](const CpSolverResponse& response) {},
-              /*watch_objective_lower_bound=*/false, /*shared_bounds_manager=*/nullptr, &local_model);
+              /*watch_objective_lower_bound=*/false,
+              /*shared_bounds_manager=*/nullptr, &local_model);
 
           absl::MutexLock lock(&mutex);
           if (best_response.status() == CpSolverStatus::UNKNOWN) {
@@ -2213,9 +2218,8 @@ CpSolverResponse SolveCpModelParallel(
   };
 
   SharedBoundsManager shared_bounds_manager(num_search_workers,
-      model_proto.variables_size());
+                                            model_proto.variables_size());
   {
-
     ThreadPool pool("Parallel_search", num_search_workers);
     pool.StartWorkers();
 
@@ -2252,8 +2256,8 @@ CpSolverResponse SolveCpModelParallel(
                      objective_synchronization, objective_bound_synchronization,
                      stopped, local_params, worker_id, &mutex, &best_response,
                      num_search_workers, random_seed, global_timer,
-                     &first_solution_found_or_search_finished, & shared_bounds_manager, maximize,
-                     worker_name]() {
+                     &first_solution_found_or_search_finished,
+                     &shared_bounds_manager, maximize, worker_name]() {
         Model local_model;
         local_model.Add(NewSatParameters(local_params));
         local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
@@ -2281,9 +2285,10 @@ CpSolverResponse SolveCpModelParallel(
               model_proto, solution_observer, num_search_workers,
               worker_id + random_seed, &local_model);
         } else {
-          thread_response = SolveCpModelInternal(
-              model_proto, true, solution_observer,
-              /*watch_objective_lower_bound=*/true, &shared_bounds_manager, &local_model);
+          thread_response =
+              SolveCpModelInternal(model_proto, true, solution_observer,
+                                   /*watch_objective_lower_bound=*/true,
+                                   &shared_bounds_manager, &local_model);
         }
 
         // Process final solution. Decide which worker has the 'best'
@@ -2470,10 +2475,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     response = SolveCpModelWithLNS(new_model, observer_function, 1, random_seed,
                                    model);
   } else {
-    response = SolveCpModelInternal(
-        new_model, /*is_real_solve=*/true, observer_function,
-        /*watch_objective_lower_bound=*/true, /*shared_bounds_manager=*/nullptr,
-        model);
+    response = SolveCpModelInternal(new_model, /*is_real_solve=*/true,
+                                    observer_function,
+                                    /*watch_objective_lower_bound=*/true,
+                                    /*shared_bounds_manager=*/nullptr, model);
   }
 
   postprocess_solution(&response);

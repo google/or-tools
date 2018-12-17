@@ -886,8 +886,9 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
       GetSparseRepresentation(dense_new_constraint);
   const IntegerValue implied_lb = GetImpliedLowerBound(new_constraint);
   if (implied_lb <= new_constraint_ub) {
-    VLOG(1) << "LP exact dual ray not infeasible by "
-            << (new_constraint_ub - implied_lb).value() / scaling;
+    VLOG(1) << "LP exact dual ray not infeasible,"
+            << " implied_lb: " << implied_lb.value() / scaling
+            << " ub: " << new_constraint_ub.value() / scaling;
     return false;
   }
   const IntegerValue slack = (implied_lb - new_constraint_ub) - 1;
