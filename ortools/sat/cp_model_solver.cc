@@ -1823,13 +1823,21 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   for (const ConstraintProto& ct : model_proto.constraints()) {
     switch (ct.constraint_case()) {
       case ConstraintProto::ConstraintCase::kBoolAnd: {
-        // a => b
-        const Literal not_a = get_literal(ct.enforcement_literal(0)).Negated();
-        for (const int ref : ct.bool_and().literals()) {
-          const Literal b = get_literal(ref);
-          solver->AddProblemClause({not_a, b});
-          if (drat_proof_handler != nullptr) {
-            drat_proof_handler->AddProblemClause({not_a, b});
+        if (ct.enforcement_literal_size() == 0) {
+          for (const int ref : ct.bool_and().literals()) {
+            const Literal b = get_literal(ref);
+            solver->AddUnitClause(b);
+          }
+        } else {
+          // a => b
+          const Literal not_a =
+              get_literal(ct.enforcement_literal(0)).Negated();
+          for (const int ref : ct.bool_and().literals()) {
+            const Literal b = get_literal(ref);
+            solver->AddProblemClause({not_a, b});
+            if (drat_proof_handler != nullptr) {
+              drat_proof_handler->AddProblemClause({not_a, b});
+            }
           }
         }
         break;
