@@ -68,12 +68,15 @@ namespace operations_research {
           std::vector<int64>(
             data.GetLocations().size(),
             0LL));
-      for (std::size_t fromNode = 0; fromNode < data.GetLocations().size(); fromNode++) {
-        for (std::size_t toNode = 0; toNode < data.GetLocations().size(); toNode++) {
+      const int size = data.GetLocations().size();
+      for (int fromNode = 0; fromNode < size; fromNode++) {
+        for (int toNode = 0; toNode < size; toNode++) {
           if (fromNode != toNode)
             distances_[fromNode][toNode] =
-              std::abs(data.GetLocations()[toNode][0] - data.GetLocations()[fromNode][0]) +
-              std::abs(data.GetLocations()[toNode][1] - data.GetLocations()[fromNode][1]);
+              std::abs(data.GetLocations()[toNode][0] -
+                       data.GetLocations()[fromNode][0]) +
+              std::abs(data.GetLocations()[toNode][1] -
+                       data.GetLocations()[fromNode][1]);
         }
       }
     }
@@ -147,8 +150,8 @@ namespace operations_research {
     // Define weight of each edge
     ManhattanDistance distance(data);
     const int vehicle_cost = routing.RegisterTransitCallback(
-        [&distance, &manager](int64 fromNode, int64 toNode) -> int64 {
-        return distance(manager.IndexToNode(fromNode), manager.IndexToNode(toNode));
+        [&distance, &manager](int64 fromIndex, int64 toIndex) -> int64 {
+        return distance(manager.IndexToNode(fromIndex), manager.IndexToNode(toIndex));
         });
     routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
     AddDistanceDimension(data, vehicle_cost, &routing);

@@ -14,7 +14,7 @@ import static java.lang.Math.abs;
 
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.IntIntToLong;
+import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
@@ -66,7 +66,7 @@ class DataProblem {
 /// @details It uses an array of positions and computes
 /// the Manhattan distance between the two positions of
 /// two different indices.
-class ManhattanDistance extends IntIntToLong {
+class ManhattanDistance extends LongLongToLong {
   private int[][] distances;
   private RoutingIndexManager indexManager;
 
@@ -87,7 +87,7 @@ class ManhattanDistance extends IntIntToLong {
 
   @Override
   /// @brief Returns the manhattan distance between the two nodes.
-  public long run(int fromIndex, int toIndex) {
+  public long run(long fromIndex, long toIndex) {
     int fromNode = indexManager.indexToNode(fromIndex);
     int toNode = indexManager.indexToNode(toIndex);
     return distances[fromNode][toNode];
@@ -147,7 +147,7 @@ class Vrp {
 
     // Setting the cost function.
     // [todo]: protect callback from the GC
-    IntIntToLong distanceEvaluator = new ManhattanDistance(data, manager);
+    LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
     int distanceIndex = routing.registerTransitCallback(distanceEvaluator);
     routing.setArcCostEvaluatorOfAllVehicles(distanceIndex);
     addDistanceDimension(routing, data, distanceIndex);

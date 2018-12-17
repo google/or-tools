@@ -62,7 +62,7 @@ public class TSP {
   ///   positions and computes the Manhattan distance between the two
   ///   positions of two different indices.
   /// </summary>
-  class ManhattanDistance : IntIntToLong {
+  class ManhattanDistance : LongLongToLong {
     private int[,] distances_;
     private RoutingIndexManager manager_;
 
@@ -88,7 +88,7 @@ public class TSP {
     /// <summary>
     ///   Returns the manhattan distance between the two nodes
     /// </summary>
-    public override long Run(int FromIndex, int ToIndex) {
+    public override long Run(long FromIndex, long ToIndex) {
       int FromNode = manager_.IndexToNode(FromIndex);
       int ToNode = manager_.IndexToNode(ToIndex);
       return distances_[FromNode, ToNode];
@@ -133,7 +133,7 @@ public class TSP {
     RoutingModel routing = new RoutingModel(manager);
 
     // Define weight of each edge
-    IntIntToLong distanceEvaluator = new ManhattanDistance(data, manager);
+    LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
     //protect callbacks from the GC
     GC.KeepAlive(distanceEvaluator);
     routing.SetArcCostEvaluatorOfAllVehicles(

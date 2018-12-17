@@ -59,13 +59,13 @@ class RoutingSearchParameters;
     operations_research::TransitCallback1);
 
 %extend operations_research::RoutingModel {
-  int RegisterTransitCallback(swig_util::IntIntToLong* callback) {
-    return $self->RegisterTransitCallback([callback](int i, int j) {
+  int RegisterTransitCallback(swig_util::LongLongToLong* callback) {
+    return $self->RegisterTransitCallback([callback](int64 i, int64 j) {
         return callback->Run(i, j);
       });
   }
-  int RegisterUnaryTransitCallback(swig_util::IntToLong* callback) {
-    return $self->RegisterUnaryTransitCallback([callback](int i) {
+  int RegisterUnaryTransitCallback(swig_util::LongToLong* callback) {
+    return $self->RegisterUnaryTransitCallback([callback](int64 i) {
         return callback->Run(i);
       });
   }

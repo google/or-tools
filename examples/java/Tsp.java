@@ -14,8 +14,8 @@
 // limitations under the License.
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.IntIntToLong;
-import com.google.ortools.constraintsolver.IntToLong;
+import com.google.ortools.constraintsolver.LongLongToLong;
+import com.google.ortools.constraintsolver.LongToLong;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
@@ -29,7 +29,7 @@ class Tsp {
     System.loadLibrary("jniortools");
   }
 
-  static class RandomManhattan extends IntIntToLong {
+  static class RandomManhattan extends LongLongToLong {
     public RandomManhattan(RoutingIndexManager manager, int size, int seed) {
       this.xs = new int[size];
       this.ys = new int[size];
@@ -42,7 +42,7 @@ class Tsp {
     }
 
     @Override
-    public long run(int firstIndex, int secondIndex) {
+    public long run(long firstIndex, long secondIndex) {
       int firstNode = indexManager.indexToNode(firstIndex);
       int secondNode = indexManager.indexToNode(secondIndex);
       return Math.abs(xs[firstNode] - xs[secondNode]) + Math.abs(ys[firstNode] - ys[secondNode]);
@@ -53,9 +53,9 @@ class Tsp {
     private RoutingIndexManager indexManager;
   }
 
-  static class ConstantCallback extends IntToLong {
+  static class ConstantCallback extends LongToLong {
     @Override
-    public long run(int index) {
+    public long run(long index) {
       return 1;
     }
   }
@@ -68,7 +68,7 @@ class Tsp {
     // Put a permanent callback to the distance accessor here. The callback
     // has the following signature: ResultCallback2<int64, int64, int64>.
     // The two arguments are the from and to node inidices.
-    IntIntToLong distances = new RandomManhattan(manager, size, seed);
+    LongLongToLong distances = new RandomManhattan(manager, size, seed);
     routing.setArcCostEvaluatorOfAllVehicles(routing.registerTransitCallback(distances));
 
     // Forbid node connections (randomly).

@@ -26,7 +26,8 @@
 
 namespace operations_research {
 
-  typedef std::function<int64(int, int)> IntPairToLong;
+typedef std::function<int64(RoutingNodeIndex, RoutingNodeIndex)>
+    RoutingNodeEvaluator2;
 
 // Random seed generator.
 int32 GetSeed(bool deterministic);
@@ -91,15 +92,15 @@ class ServiceTimePlusTransition {
  public:
   ServiceTimePlusTransition(
       int64 time_per_demand_unit,
-      operations_research::RoutingNodeEvaluator2 demand,
-      operations_research::RoutingNodeEvaluator2 transition_time);
+      RoutingNodeEvaluator2 demand,
+      RoutingNodeEvaluator2 transition_time);
   int64 Compute(RoutingIndexManager::NodeIndex from,
                 RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64 time_per_demand_unit_;
-  operations_research::RoutingNodeEvaluator2 demand_;
-  operations_research::RoutingNodeEvaluator2 transition_time_;
+  RoutingNodeEvaluator2 demand_;
+  RoutingNodeEvaluator2 transition_time_;
 };
 
 // Stop service time + transition time callback.
@@ -107,15 +108,15 @@ class StopServiceTimePlusTransition {
  public:
   StopServiceTimePlusTransition(
       int64 stop_time, const LocationContainer& location_container,
-      operations_research::RoutingNodeEvaluator2 transition_time);
+      RoutingNodeEvaluator2 transition_time);
   int64 Compute(RoutingIndexManager::NodeIndex from,
                 RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64 stop_time_;
   const LocationContainer& location_container_;
-  operations_research::RoutingNodeEvaluator2 demand_;
-  operations_research::RoutingNodeEvaluator2 transition_time_;
+  RoutingNodeEvaluator2 demand_;
+  RoutingNodeEvaluator2 transition_time_;
 };
 
 // Route plan displayer.
