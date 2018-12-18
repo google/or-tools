@@ -145,6 +145,7 @@ class SpeakerScheduling
 
     // Creates the solver and solve.
     CpSolver solver = new CpSolver();
+    solver.StringParameters = "num_search_workers:8";
     CpSolverStatus status = solver.Solve(model);
 
     if (status == CpSolverStatus.Optimal)
