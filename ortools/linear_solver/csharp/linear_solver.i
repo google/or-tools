@@ -209,13 +209,53 @@ class MPSolutionResponse;
 %unignore operations_research::MPObjective::BestBound;
 
 // MPSolverParameters API. For expert users only.
-%unignore operations_research::MPSolverParameters;
-%unignore operations_research::MPSolverParameters::MPSolverParameters;
-%unignore operations_research::MPSolverParameters::DoubleParam;
-%unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;
-%unignore operations_research::MPSolverParameters::GetDoubleParam;
-%unignore operations_research::MPSolverParameters::SetDoubleParam;
-%unignore operations_research::MPSolverParameters::kDefaultPrimalTolerance;
+// TODO(user): unit test all of it.
+
+%unignore operations_research::MPSolverParameters;  // no test
+%unignore operations_research::MPSolverParameters::MPSolverParameters;  // no test
+
+// Expose the MPSolverParameters::DoubleParam enum.
+%unignore operations_research::MPSolverParameters::DoubleParam;  // no test
+%unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;  // no test
+%unignore operations_research::MPSolverParameters::PRIMAL_TOLERANCE;  // no test
+%unignore operations_research::MPSolverParameters::DUAL_TOLERANCE;  // no test
+%unignore operations_research::MPSolverParameters::GetDoubleParam;  // no test
+%unignore operations_research::MPSolverParameters::SetDoubleParam;  // no test
+%unignore operations_research::MPSolverParameters::kDefaultRelativeMipGap;  // no test
+%unignore operations_research::MPSolverParameters::kDefaultPrimalTolerance;  // no test
+%unignore operations_research::MPSolverParameters::kDefaultDualTolerance;  // no test
+
+// Expose the MPSolverParameters::IntegerParam enum.
+%unignore operations_research::MPSolverParameters::IntegerParam;  // no test
+%unignore operations_research::MPSolverParameters::PRESOLVE;  // no test
+%unignore operations_research::MPSolverParameters::LP_ALGORITHM;  // no test
+%unignore operations_research::MPSolverParameters::INCREMENTALITY;  // no test
+%unignore operations_research::MPSolverParameters::SCALING;  // no test
+%unignore operations_research::MPSolverParameters::GetIntegerParam;  // no test
+%unignore operations_research::MPSolverParameters::SetIntegerParam;  // no test
+
+// Expose the MPSolverParameters::PresolveValues enum.
+%unignore operations_research::MPSolverParameters::PresolveValues;  // no test
+%unignore operations_research::MPSolverParameters::PRESOLVE_OFF;  // no test
+%unignore operations_research::MPSolverParameters::PRESOLVE_ON;  // no test
+%unignore operations_research::MPSolverParameters::kDefaultPresolve;  // no test
+
+// Expose the MPSolverParameters::LpAlgorithmValues enum.
+%unignore operations_research::MPSolverParameters::LpAlgorithmValues;  // no test
+%unignore operations_research::MPSolverParameters::DUAL;  // no test
+%unignore operations_research::MPSolverParameters::PRIMAL;  // no test
+%unignore operations_research::MPSolverParameters::BARRIER;  // no test
+
+// Expose the MPSolverParameters::IncrementalityValues enum.
+%unignore operations_research::MPSolverParameters::IncrementalityValues;  // no test
+%unignore operations_research::MPSolverParameters::INCREMENTALITY_OFF;  // no test
+%unignore operations_research::MPSolverParameters::INCREMENTALITY_ON;  // no test
+%unignore operations_research::MPSolverParameters::kDefaultIncrementality;  // no test
+
+// Expose the MPSolverParameters::ScalingValues enum.
+%unignore operations_research::MPSolverParameters::ScalingValues;  // no test
+%unignore operations_research::MPSolverParameters::SCALING_OFF;  // no test
+%unignore operations_research::MPSolverParameters::SCALING_ON;  // no test
 
 %include "ortools/linear_solver/linear_solver.h"
 
