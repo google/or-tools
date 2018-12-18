@@ -12,7 +12,7 @@
 // limitations under the License.
 
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.AssignmentIntContainer;
+import com.google.ortools.constraintsolver.IntContainer;
 import com.google.ortools.constraintsolver.BaseLns;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -100,7 +100,7 @@ public class LsApi {
 
     @Override
     public boolean accept(Assignment delta, Assignment unusedDeltadelta) {
-      AssignmentIntContainer solutionDelta = delta.intVarContainer();
+      IntContainer solutionDelta = delta.intVarContainer();
       int solutionDeltaSize = solutionDelta.size();
 
       for (int i = 0; i < solutionDeltaSize; ++i) {
