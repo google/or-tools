@@ -886,5 +886,7 @@ namespace operations_research {
 %template(RevInteger) Rev<int64>;
 %template(RevBool) Rev<bool>;
 typedef Assignment::AssignmentContainer AssignmentContainer;
-%template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
+%template(IntContainer) AssignmentContainer<IntVar, IntVarElement>;
+%template(IntervalContainer) AssignmentContainer<IntervalVar, IntervalVarElement>;
+%template(SequenceContainer) AssignmentContainer<SequenceVar, SequenceVarElement>;
 }

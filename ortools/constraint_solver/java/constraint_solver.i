@@ -225,7 +225,7 @@ class SolverToVoid {
 %rename (empty) operations_research::AssignmentContainer::Empty;
 %rename (copy) operations_research::AssignmentContainer::Copy;
 %rename (contains) operations_research::AssignmentContainer::Contains;
-%rename (MutableElement) operations_research::AssignmentContainer::MutableElement;
+%rename (mutableElement) operations_research::AssignmentContainer::MutableElement;
 // No MutableElementOrNull
 %rename (element) operations_research::AssignmentContainer::Element;
 // No ElementPtrOrNull
@@ -754,5 +754,7 @@ namespace operations_research {
 %template(RevInteger) Rev<int>;
 %template(RevLong) Rev<int64>;
 %template(RevBool) Rev<bool>;
-%template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
+%template(IntContainer) AssignmentContainer<IntVar, IntVarElement>;
+%template(IntervalContainer) AssignmentContainer<IntervalVar, IntervalVarElement>;
+%template(SequenceContainer) AssignmentContainer<SequenceVar,SequenceVarElement>;
 }  // namespace operations_research
