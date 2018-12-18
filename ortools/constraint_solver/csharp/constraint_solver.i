@@ -622,7 +622,7 @@ namespace operations_research {
   LocalSearchOperator* ConcatenateOperators(
       const std::vector<LocalSearchOperator*>& ops,
       swig_util::IntIntToLong* evaluator) {
-    return $self->ConcatenateOperators(ops, [evaluator](int i, int j) {
+    return $self->ConcatenateOperators(ops, [evaluator](int i, int64 j) {
         return evaluator->Run(i, j); });
   }
   SearchMonitor* MakeSearchLog(

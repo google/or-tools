@@ -96,8 +96,8 @@ void Solve(const std::vector<int64>& durations,
     if (due_dates[i] == 0) {
       tardiness_vars[i] = task_ends[i];
     } else {
-      tardiness_vars[i] =
-          cp_model.NewIntVar(Domain(0, std::max<int64>(0, horizon - due_dates[i])));
+      tardiness_vars[i] = cp_model.NewIntVar(
+          Domain(0, std::max<int64>(0, horizon - due_dates[i])));
 
       // tardiness_vars >= end - due_date
       cp_model.AddGreaterOrEqual(tardiness_vars[i],

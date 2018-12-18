@@ -1964,8 +1964,7 @@ objs/sat/symmetry.$O: ortools/sat/symmetry.cc ortools/sat/symmetry.h \
 
 objs/sat/synchronization.$O: ortools/sat/synchronization.cc \
  ortools/sat/synchronization.h ortools/base/integral_types.h \
- ortools/base/logging.h ortools/base/macros.h \
- ortools/gen/ortools/sat/cp_model.pb.h ortools/util/bitset.h \
+ ortools/base/logging.h ortools/base/macros.h ortools/util/bitset.h \
  ortools/base/basictypes.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssynchronization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssynchronization.$O
 
@@ -2665,6 +2664,7 @@ CP_DEPS = \
  $(SRC_DIR)/ortools/constraint_solver/routing_flags.h \
  $(SRC_DIR)/ortools/constraint_solver/routing.h \
  $(SRC_DIR)/ortools/constraint_solver/routing_index_manager.h \
+ $(SRC_DIR)/ortools/constraint_solver/routing_lp_scheduling.h \
  $(SRC_DIR)/ortools/constraint_solver/routing_neighborhoods.h \
  $(SRC_DIR)/ortools/constraint_solver/routing_parameters.h \
  $(SRC_DIR)/ortools/constraint_solver/routing_types.h \
@@ -2700,6 +2700,7 @@ CP_LIB_OBJS = \
  $(OBJ_DIR)/constraint_solver/routing_flags.$O \
  $(OBJ_DIR)/constraint_solver/routing_flow.$O \
  $(OBJ_DIR)/constraint_solver/routing_index_manager.$O \
+ $(OBJ_DIR)/constraint_solver/routing_lp_scheduling.$O \
  $(OBJ_DIR)/constraint_solver/routing_neighborhoods.$O \
  $(OBJ_DIR)/constraint_solver/routing_parameters.$O \
  $(OBJ_DIR)/constraint_solver/routing_search.$O \
@@ -3060,6 +3061,7 @@ objs/constraint_solver/routing.$O: ortools/constraint_solver/routing.cc \
  ortools/util/range_query_function.h ortools/base/protoutil.h \
  ortools/base/statusor.h ortools/base/stl_util.h \
  ortools/base/thorough_hash.h \
+ ortools/constraint_solver/routing_lp_scheduling.h \
  ortools/constraint_solver/routing_neighborhoods.h \
  ortools/constraint_solver/routing_parameters.h \
  ortools/graph/connectivity.h ortools/graph/linear_assignment.h \
@@ -3131,9 +3133,10 @@ objs/constraint_solver/routing_flow.$O: \
  ortools/base/status.h ortools/gen/ortools/sat/sat_parameters.pb.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/range_query_function.h ortools/graph/min_cost_flow.h \
- ortools/graph/ebert_graph.h ortools/util/permutation.h \
- ortools/util/zvector.h | $(OBJ_DIR)/constraint_solver
+ ortools/util/range_query_function.h \
+ ortools/constraint_solver/routing_lp_scheduling.h \
+ ortools/graph/min_cost_flow.h ortools/graph/ebert_graph.h \
+ ortools/util/permutation.h ortools/util/zvector.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_flow.$O
 
 objs/constraint_solver/routing_index_manager.$O: \
@@ -3144,6 +3147,55 @@ objs/constraint_solver/routing_index_manager.$O: \
  ortools/base/integral_types.h ortools/constraint_solver/routing_types.h \
  ortools/base/map_util.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_index_manager.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_index_manager.$O
+
+objs/constraint_solver/routing_lp_scheduling.$O: \
+ ortools/constraint_solver/routing_lp_scheduling.cc \
+ ortools/constraint_solver/routing_lp_scheduling.h \
+ ortools/constraint_solver/routing.h \
+ ortools/base/adjustable_priority_queue-inl.h \
+ ortools/base/adjustable_priority_queue.h ortools/base/basictypes.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/base/macros.h ortools/base/commandlineflags.h \
+ ortools/base/hash.h ortools/base/int_type_indexed_vector.h \
+ ortools/base/int_type.h ortools/constraint_solver/constraint_solver.h \
+ ortools/base/map_util.h ortools/base/random.h ortools/base/sysinfo.h \
+ ortools/base/timer.h \
+ ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
+ ortools/util/piecewise_linear_function.h \
+ ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
+ ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
+ ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
+ ortools/constraint_solver/routing_index_manager.h \
+ ortools/constraint_solver/routing_types.h \
+ ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
+ ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h ortools/glop/lp_solver.h \
+ ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
+ ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
+ ortools/glop/lu_factorization.h ortools/glop/markowitz.h \
+ ortools/glop/status.h ortools/lp_data/lp_types.h \
+ ortools/lp_data/sparse.h ortools/lp_data/permutation.h \
+ ortools/util/return_macros.h ortools/lp_data/sparse_column.h \
+ ortools/lp_data/sparse_vector.h ortools/graph/iterators.h \
+ ortools/util/stats.h ortools/glop/rank_one_update.h \
+ ortools/lp_data/lp_utils.h ortools/base/accurate_sum.h \
+ ortools/glop/dual_edge_norms.h ortools/lp_data/lp_data.h \
+ ortools/util/fp_utils.h ortools/glop/entering_variable.h \
+ ortools/glop/primal_edge_norms.h ortools/glop/update_row.h \
+ ortools/glop/variables_info.h ortools/glop/reduced_costs.h \
+ ortools/util/random_engine.h ortools/glop/variable_values.h \
+ ortools/lp_data/lp_print_utils.h ortools/lp_data/sparse_row.h \
+ ortools/util/time_limit.h ortools/util/running_stat.h \
+ ortools/lp_data/matrix_scaler.h ortools/graph/graph.h \
+ ortools/sat/theta_tree.h ortools/sat/integer.h ortools/sat/model.h \
+ ortools/base/typeid.h ortools/sat/sat_base.h ortools/sat/sat_solver.h \
+ ortools/sat/clause.h ortools/sat/drat_proof_handler.h \
+ ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
+ ortools/base/status.h ortools/gen/ortools/sat/sat_parameters.pb.h \
+ ortools/sat/pb_constraint.h ortools/sat/restart.h \
+ ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
+ ortools/util/range_query_function.h | $(OBJ_DIR)/constraint_solver
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_lp_scheduling.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_lp_scheduling.$O
 
 objs/constraint_solver/routing_neighborhoods.$O: \
  ortools/constraint_solver/routing_neighborhoods.cc \
@@ -3224,10 +3276,11 @@ objs/constraint_solver/routing_search.$O: \
  ortools/base/status.h ortools/gen/ortools/sat/sat_parameters.pb.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/range_query_function.h ortools/graph/christofides.h \
- ortools/graph/eulerian_path.h ortools/graph/minimum_spanning_tree.h \
- ortools/graph/connectivity.h ortools/util/vector_or_function.h \
- ortools/linear_solver/linear_solver.h \
+ ortools/util/range_query_function.h \
+ ortools/constraint_solver/routing_lp_scheduling.h \
+ ortools/graph/christofides.h ortools/graph/eulerian_path.h \
+ ortools/graph/minimum_spanning_tree.h ortools/graph/connectivity.h \
+ ortools/util/vector_or_function.h ortools/linear_solver/linear_solver.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/constraint_solver

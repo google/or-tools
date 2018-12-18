@@ -27,6 +27,7 @@
 #include "ortools/base/small_map.h"
 #include "ortools/base/small_ordered_set.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"

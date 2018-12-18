@@ -158,9 +158,12 @@ int main(int argc, char** argv) {
   // First, fill service time vector.
   std::vector<int64> service_times(routing.Size());
   for (int node = 0; node < routing.Size(); node++) {
-    const RoutingIndexManager::NodeIndex index(node);
-    service_times[node] = kTimePerDemandUnit * demand.Demand(index, index);
-    if (node >= routing.nodes()) service_times[node] = 0;
+    if (node >= routing.nodes()) {
+      service_times[node] = 0;
+    } else {
+      const RoutingIndexManager::NodeIndex index(node);
+      service_times[node] = kTimePerDemandUnit * demand.Demand(index, index);
+    }
   }
   const std::vector<std::vector<int>> break_data = {
       {/*start_min*/ 11, /*start_max*/ 13, /*duration*/ 2400},

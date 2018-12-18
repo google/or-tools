@@ -12,7 +12,7 @@
 // limitations under the License.
 
 #include "ortools/constraint_solver/routing.h"
-
+#include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/graph/min_cost_flow.h"
 
 namespace operations_research {

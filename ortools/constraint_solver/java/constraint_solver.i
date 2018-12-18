@@ -571,16 +571,21 @@ class SolverToVoid {
 %rename (value) operations_research::IntVarLocalSearchFilter::Value;
 %rename (var) operations_research::IntVarLocalSearchFilter::Var;  // Inherited.
 
-CONVERT_VECTOR(operations_research::IntVar, IntVar, constraintsolver);
-CONVERT_VECTOR(operations_research::SearchMonitor, SearchMonitor, constraintsolver);
-CONVERT_VECTOR(operations_research::DecisionBuilder, DecisionBuilder, constraintsolver);
-CONVERT_VECTOR(operations_research::IntervalVar, IntervalVar, constraintsolver);
-CONVERT_VECTOR(operations_research::SequenceVar, SequenceVar, constraintsolver);
-CONVERT_VECTOR(operations_research::LocalSearchOperator, LocalSearchOperator, constraintsolver);
-CONVERT_VECTOR(operations_research::LocalSearchFilter, LocalSearchFilter, constraintsolver);
-CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker, constraintsolver);
-
 namespace operations_research {
+
+%define CONVERT_VECTOR(CType, JavaType)
+CONVERT_VECTOR_WITH_CAST(CType, JavaType, REINTERPRET_CAST,
+    com/google/ortools/constraintsolver);
+%enddef
+
+CONVERT_VECTOR(operations_research::IntVar, IntVar);
+CONVERT_VECTOR(operations_research::SearchMonitor, SearchMonitor);
+CONVERT_VECTOR(operations_research::DecisionBuilder, DecisionBuilder);
+CONVERT_VECTOR(operations_research::IntervalVar, IntervalVar);
+CONVERT_VECTOR(operations_research::SequenceVar, SequenceVar);
+CONVERT_VECTOR(operations_research::LocalSearchOperator, LocalSearchOperator);
+CONVERT_VECTOR(operations_research::LocalSearchFilter, LocalSearchFilter);
+CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker);
 
 %typemap(javacode) Solver %{
   /**
