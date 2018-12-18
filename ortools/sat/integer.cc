@@ -755,17 +755,18 @@ void IntegerTrail::RelaxLinearReason(
 void IntegerTrail::RelaxLinearReason(IntegerValue slack,
                                      absl::Span<const IntegerValue> coeffs,
                                      std::vector<int>* trail_indices) const {
-  CHECK_GE(slack, 0);
-  if (slack == 0) return;
+  DCHECK_GT(slack, 0);
   const int size = trail_indices->size();
   const int num_vars = vars_.size();
   while (slack > 0) {
     int best_i = -1;
     for (int i = 0; i < size; ++i) {
       if ((*trail_indices)[i] < num_vars) continue;  // level zero.
+      if (coeffs[i] > slack) continue;
       if (best_i != -1 && (*trail_indices)[i] < (*trail_indices)[best_i]) {
         continue;
       }
+
       const TrailEntry& entry = integer_trail_[(*trail_indices)[i]];
       const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
 
@@ -923,11 +924,11 @@ bool IntegerTrail::ReasonIsValid(
         num_literal_assigned_after_root_node++;
       }
     }
-    LOG_IF(WARNING, num_literal_assigned_after_root_node == 0)
-        << "Propagating a literal with no reason at a positive level!\n"
-        << "level:" << integer_search_levels_.size() << " "
-        << ReasonDebugString(literal_reason, integer_reason) << "\n"
-        << DebugString();
+    DLOG_IF(WARNING, num_literal_assigned_after_root_node == 0)
+         << "Propagating a literal with no reason at a positive level!\n"
+         << "level:" << integer_search_levels_.size() << " "
+         << ReasonDebugString(literal_reason, integer_reason) << "\n"
+         << DebugString();
   }
 
   return true;

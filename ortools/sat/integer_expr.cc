@@ -51,8 +51,6 @@ IntegerSumLE::IntegerSumLE(const std::vector<Literal>& enforcement_literals,
     literal_reason_.push_back(literal.Negated());
   }
 
-  index_in_integer_reason_.resize(vars_.size());
-
   // Initialize the reversible numbers.
   rev_num_fixed_vars_ = 0;
   rev_lb_fixed_vars_ = IntegerValue(0);
@@ -60,13 +58,13 @@ IntegerSumLE::IntegerSumLE(const std::vector<Literal>& enforcement_literals,
 
 void IntegerSumLE::FillIntegerReason() {
   integer_reason_.clear();
-  for (int i = 0; i < vars_.size(); ++i) {
+  reason_coeffs_.clear();
+  const int num_vars = vars_.size();
+  for (int i = 0; i < num_vars; ++i) {
     const IntegerVariable var = vars_[i];
-    if (integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
-      index_in_integer_reason_[i] = -1;
-    } else {
-      index_in_integer_reason_[i] = integer_reason_.size();
+    if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
       integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+      reason_coeffs_.push_back(coeffs_[i]);
     }
   }
 }
@@ -93,7 +91,8 @@ bool IntegerSumLE::Propagate() {
 
   // Compute the new lower bound and update the reversible structures.
   IntegerValue lb_unfixed_vars = IntegerValue(0);
-  for (int i = rev_num_fixed_vars_; i < vars_.size(); ++i) {
+  const int num_vars = vars_.size();
+  for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue lb = integer_trail_->LowerBound(var);
@@ -114,12 +113,8 @@ bool IntegerSumLE::Propagate() {
   const IntegerValue slack = upper_bound_ - new_lb;
   if (slack < 0) {
     FillIntegerReason();
-    std::vector<IntegerValue> coeffs;
-    for (int i = 0; i < vars_.size(); ++i) {
-      if (index_in_integer_reason_[i] == -1) continue;
-      coeffs.push_back(coeffs_[i]);
-    }
-    integer_trail_->RelaxLinearReason(-slack - 1, coeffs, &integer_reason_);
+    integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs_,
+                                      &integer_reason_);
 
     if (num_unassigned_enforcement_literal == 1) {
       // Propagate the only non-true literal to false.
@@ -137,7 +132,7 @@ bool IntegerSumLE::Propagate() {
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
-  for (int i = rev_num_fixed_vars_; i < vars_.size(); ++i) {
+  for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue var_slack =
@@ -154,7 +149,7 @@ bool IntegerSumLE::Propagate() {
                                   std::vector<int>* trail_indices_reason) {
                 *literal_reason = literal_reason_;
                 trail_indices_reason->clear();
-                lazy_reason_coeffs_.clear();
+                reason_coeffs_.clear();
                 const int size = vars_.size();
                 for (int i = 0; i < size; ++i) {
                   const IntegerVariable var = vars_[i];
@@ -166,14 +161,13 @@ bool IntegerSumLE::Propagate() {
                   if (index >= 0) {
                     trail_indices_reason->push_back(index);
                     if (propagation_slack > 0) {
-                      lazy_reason_coeffs_.push_back(coeffs_[i]);
+                      reason_coeffs_.push_back(coeffs_[i]);
                     }
                   }
                 }
                 if (propagation_slack > 0) {
-                  integer_trail_->RelaxLinearReason(propagation_slack,
-                                                    lazy_reason_coeffs_,
-                                                    trail_indices_reason);
+                  integer_trail_->RelaxLinearReason(
+                      propagation_slack, reason_coeffs_, trail_indices_reason);
                 }
               })) {
         return false;

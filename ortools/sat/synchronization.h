@@ -20,7 +20,6 @@
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
