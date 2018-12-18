@@ -225,7 +225,7 @@ class SolverToVoid {
 %rename (empty) operations_research::AssignmentContainer::Empty;
 %rename (copy) operations_research::AssignmentContainer::Copy;
 %rename (contains) operations_research::AssignmentContainer::Contains;
-%rename (MutableElement) operations_research::AssignmentContainer::MutableElement;
+%rename (mutableElement) operations_research::AssignmentContainer::MutableElement;
 // No MutableElementOrNull
 %rename (element) operations_research::AssignmentContainer::Element;
 // No ElementPtrOrNull
