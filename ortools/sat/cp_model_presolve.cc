@@ -1260,14 +1260,15 @@ bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
     if (coeff > 0) {
       max_sum += coeff;
       min_coeff = std::min(min_coeff, coeff);
-      max_coeff = std::min(max_coeff, coeff);
+      max_coeff = std::max(max_coeff, coeff);
     } else {
       // We replace the Boolean ref, by a ref to its negation (1 - x).
       min_sum += coeff;
       min_coeff = std::min(min_coeff, -coeff);
-      max_coeff = std::min(max_coeff, -coeff);
+      max_coeff = std::max(max_coeff, -coeff);
     }
   }
+  CHECK_LE(min_coeff, max_coeff);
 
   // Detect clauses, reified ands, at_most_one.
   //

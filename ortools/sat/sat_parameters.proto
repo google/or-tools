@@ -594,10 +594,10 @@ message SatParameters {
   optional int32 num_search_workers = 100 [default = 0];
 
   // Allows objective sharing between workers.
-  optional bool share_objective_bounds_between_workers = 113 [default = true];
+  optional bool share_objective_bounds = 113 [default = true];
 
   // Allows sharing of the bounds of modified variables at level 0.
-  optional bool share_level_0_modified_bounds = 114 [default = false];
+  optional bool share_level_zero_bounds = 114 [default = false];
 
   // LNS parameters.
   optional bool use_lns = 101 [default = false];

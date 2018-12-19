@@ -489,5 +489,14 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
       {}, FirstUnassignedVarAtItsMinHeuristic(all_variables, model), model);
 }
 
+// Logging helper.
+void LogNewSolution(const std::string& event_or_solution_count,
+                    double time_in_seconds, double obj_lb, double obj_ub,
+                    const std::string& solution_info) {
+  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  obj:[%0.0f,%0.0f]  %s",
+                               event_or_solution_count, time_in_seconds, obj_lb,
+                               obj_ub, solution_info);
+}
+
 }  // namespace sat
 }  // namespace operations_research

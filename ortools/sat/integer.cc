@@ -1451,12 +1451,13 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
   const int level = trail->CurrentDecisionLevel();
   UpdateCallingNeeds(trail);
 
-  // Checks for external bounds. Usually in the multi-thread context.
+  // Call the level zero callback if defined.
   if (trail->CurrentDecisionLevel() == 0 &&
       level_zero_propagate_callback_ != nullptr &&
       !level_zero_propagate_callback_()) {
     return false;
   }
+  UpdateCallingNeeds(trail);
 
   // Note that the priority may be set to -1 inside the loop in order to restart
   // at zero.

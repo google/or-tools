@@ -20,6 +20,10 @@
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
@@ -34,10 +38,10 @@ class SharedBoundsManager {
   // Reports a set of locally improved variable bounds to the shared bounds
   // manager. The manager will compare these bounds changes against its
   // global state, and incorporate the improving ones.
-  void ReportPotentialNewBounds(const std::vector<int>& variables,
+  void ReportPotentialNewBounds(int worker_id,
+                                const std::vector<int>& variables,
                                 const std::vector<int64>& new_lower_bounds,
-                                const std::vector<int64>& new_upper_bounds,
-                                int worker_id, const std::string& worker_name);
+                                const std::vector<int64>& new_upper_bounds);
 
   // When called, returns the set of bounds improvements since
   // the last time this method was called by the same worker.
@@ -53,6 +57,21 @@ class SharedBoundsManager {
   std::vector<int64> upper_bounds_;
   absl::Mutex mutex_;
 };
+
+void RegisterVariableBoundsLevelZeroWatcher(
+    const CpModelProto* model_proto,
+    const std::function<void(const CpSolverResponse&)>&
+        external_solution_observer,
+    bool log_progress, IntegerVariable objective_var,
+    SharedBoundsManager* shared_bounds_manager, Model* model);
+
+// Stores information on the worker in the parallel context.
+struct WorkerInfo {
+  std::string worker_name;
+  WallTimer* global_timer = nullptr;
+  int worker_id = -1;
+};
+
 }  // namespace sat
 }  // namespace operations_research
 

@@ -62,11 +62,6 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
                                 Model* model);
 
-// Sets two funtions to query the state of the shared objective.
-void SetObjectiveSynchronizationFunctions(
-    std::function<double()> objective_best_solution,
-    std::function<double()> objective_best_bound, Model* model);
-
 // Allows to change the default parameters with
 //   model->Add(NewSatParameters(parameters_as_string_or_proto))
 // before calling SolveCpModel().

@@ -117,6 +117,13 @@ std::vector<int64> AllValuesInDomain(const ProtoWithDomain& proto) {
   return result;
 }
 
+// Scale back a objective value to a double value from the original model.
+inline double ScaleObjectiveValue(const CpObjectiveProto& proto, int64 value) {
+  double result = value + proto.offset();
+  if (proto.scaling_factor() == 0) return result;
+  return proto.scaling_factor() * result;
+}
+
 }  // namespace sat
 }  // namespace operations_research
 
