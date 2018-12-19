@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux1_x86_64:latest
+FROM henriquegemignani/manylinux:x86_64
 
 RUN yum -y update \
 && yum -y install \
