@@ -66,7 +66,7 @@ function export_manylinux_wheel {
     cd temp_python*/ortools
     python setup.py bdist_wheel
     cd dist
-    auditwheel repair ./*.whl -w "$export_root"
+    auditwheel -v repair --plat manylinux2010_x86_64 ./*.whl -w "$export_root"
 }
 
 function test_installed {
