@@ -77,7 +77,8 @@ RUN make cc
 
 ENV EXPORT_ROOT /export
 # The build of Python 2.6.x bindings is known to be broken.
-ENV SKIP_PLATFORMS "cp26-cp26m cp26-cp26mu"
+# Python3.4 include conflict with abseil-cpp dynamic_annotation.h
+ENV SKIP_PLATFORMS "cp26-cp26m cp26-cp26mu cp34-cp34m"
 
 COPY build-manylinux1.sh "$BUILD_ROOT"
 RUN chmod ugo+x "${BUILD_ROOT}/build-manylinux1.sh"
