@@ -8,7 +8,6 @@ RUN yum -y update \
 && yum -y install \
  wget git pkg-config make autoconf libtool zlib-devel gawk gcc-c++ curl subversion \
  redhat-lsb-core pcre-devel which \
- python-devel python-setuptools python-six python-wheel \
  java-1.8.0-openjdk  java-1.8.0-openjdk-devel \
 && yum clean all \
 && rm -rf /var/cache/yum
@@ -69,6 +68,5 @@ RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/o
 WORKDIR /root/or-tools
 RUN make detect && make third_party
 RUN make detect_cc && make cc
-RUN make detect_python && make python
 RUN make detect_java && make java
 RUN make detect_dotnet && make dotnet
