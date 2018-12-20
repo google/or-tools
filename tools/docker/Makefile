@@ -403,28 +403,6 @@ distclean: clean
 	-docker image rm $$(docker image ls --all -q)
 	rm -rf export
 
-#################
-##  DEPRECATED ##
-#################
-.PHONY: images
-images: \
-	ubuntu-14.04-image \
-	ubuntu-16.04-image \
-	ubuntu-18.04-image \
-	ubuntu-18.10-image \
-	centos-7-image \
-	debian-9-image \
-	manylinux1-image
-
-.PHONY: images-no-cache
-images-no-cache: \
-	ubuntu-14.04-image-no-cache \
-	ubuntu-16.04-image-no-cache \
-	ubuntu-18.04-image-no-cache \
-	ubuntu-18.10-image-no-cache \
-	centos-7-image-no-cache \
-	debian-9-image-no-cache
-
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
