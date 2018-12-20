@@ -15,6 +15,7 @@ RUN yum -y update \
  subversion \
  which \
  zlib-devel \
+ unzip zip \
 && yum clean all \
 && rm -rf /var/cache/yum
 
