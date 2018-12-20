@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux1_x86_64:latest
+FROM henriquegemignani/manylinux:x86_64
 
 RUN yum -y update \
 && yum -y install \
@@ -51,6 +51,9 @@ RUN curl --location-trusted \
 && cd .. \
 && rm -rf swig-3.0.12
 
+# Update auditwheel to support manylinux2010
+RUN /opt/_internal/cpython-3.6.7/bin/pip install auditwheel==2.0.0rc1
+
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -74,7 +77,8 @@ RUN make cc
 
 ENV EXPORT_ROOT /export
 # The build of Python 2.6.x bindings is known to be broken.
-ENV SKIP_PLATFORMS "cp26-cp26m cp26-cp26mu"
+# Python3.4 include conflict with abseil-cpp dynamic_annotation.h
+ENV SKIP_PLATFORMS "cp26-cp26m cp26-cp26mu cp34-cp34m"
 
 COPY build-manylinux1.sh "$BUILD_ROOT"
 RUN chmod ugo+x "${BUILD_ROOT}/build-manylinux1.sh"

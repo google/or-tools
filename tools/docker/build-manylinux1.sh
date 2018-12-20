@@ -60,13 +60,11 @@ function export_manylinux_wheel {
     # We need to clean first to avoid to use previous python swig object file
     make clean_python
     make python
-    make test_python
+    #make test_python
     make pypi_archive
     # Build and repair wheels
-    cd temp_python*/ortools
-    python setup.py bdist_wheel
-    cd dist
-    auditwheel repair ./*.whl -w "$export_root"
+    cd temp_python*/ortools/dist
+    auditwheel repair --plat manylinux2010_x86_64 ./*.whl -w "$export_root"
 }
 
 function test_installed {
@@ -190,10 +188,17 @@ do
     # shellcheck source=/dev/null
     source "${BUILD_ROOT}/${PYTAG}-test/bin/activate"
     pip install -U pip setuptools wheel six
+
     # Install wheel and run tests
-    pip install --no-cache-dir "$WHEEL_FILE"
+    # ToDo[corentinl] use pip once manylinux2010 supported
+    #pip install --no-cache-dir "$WHEEL_FILE"
+    unzip "$WHEEL_FILE" -d "${BUILD_ROOT}/${PYTAG}-test"
+    export PYTHONPATH="${BUILD_ROOT}/${PYTAG}-test"
+    pip install -U protobuf
     pip show ortools
+
     test_installed "${TESTS[@]}"
     # Restore environment
+    unset PYTHONPATH
     deactivate
 done

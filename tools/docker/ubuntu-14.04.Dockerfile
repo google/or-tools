@@ -15,14 +15,6 @@ RUN wget "https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3
 && cd swig-3.0.12 && ./configure --prefix=/usr && make -j 4 && make install \
 && cd .. && rm -rf swig-3.0.12
 
-# Python Install
-RUN apt-get update -qq \
-&& apt-get install -yq \
- python-dev python-pip python-wheel python-six \
- python3-dev python3-pip python3-wheel python3-six \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 # Java install
 RUN apt-get update -qq \
 && apt-get install -yq openjdk-7-jdk \
@@ -66,6 +58,5 @@ RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch https://github.com/google/o
 WORKDIR /root/or-tools
 RUN make detect && make third_party
 RUN make detect_cc && make cc
-RUN make detect_python && make python
 RUN make detect_java && make java
 RUN make detect_dotnet && make dotnet
