@@ -597,7 +597,7 @@ message SatParameters {
   optional bool share_objective_bounds = 113 [default = true];
 
   // Allows sharing of the bounds of modified variables at level 0.
-  optional bool share_level_zero_bounds = 114 [default = false];
+  optional bool share_level_zero_bounds = 114 [default = true];
 
   // LNS parameters.
   optional bool use_lns = 101 [default = false];

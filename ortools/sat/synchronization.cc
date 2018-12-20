@@ -235,8 +235,8 @@ void RegisterVariableBoundsLevelZeroWatcher(
     }
     return true;
   };
-  model->GetOrCreate<GenericLiteralWatcher>()
-      ->RegisterLevelZeroPropagateCallback(import_lower_bounds);
+  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
+      import_lower_bounds);
 }
 
 }  // namespace sat

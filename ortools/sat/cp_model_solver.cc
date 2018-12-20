@@ -23,6 +23,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/memory/memory.h"
+
 #if !defined(__PORTABLE_PLATFORM__)
 #include "absl/synchronization/notification.h"
 #include "google/protobuf/text_format.h"
@@ -2076,8 +2078,8 @@ CpSolverResponse SolveCpModelParallel(
 
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (model->GetOrCreate<SatParameters>()->share_level_zero_bounds()) {
-    shared_bounds_manager.reset(new SharedBoundsManager(
-        num_search_workers, model_proto.variables_size()));
+    shared_bounds_manager = absl::make_unique<SharedBoundsManager>(
+        num_search_workers, model_proto.variables_size());
   }
 
   {

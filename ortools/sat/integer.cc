@@ -1451,14 +1451,6 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
   const int level = trail->CurrentDecisionLevel();
   UpdateCallingNeeds(trail);
 
-  // Call the level zero callback if defined.
-  if (trail->CurrentDecisionLevel() == 0 &&
-      level_zero_propagate_callback_ != nullptr &&
-      !level_zero_propagate_callback_()) {
-    return false;
-  }
-  UpdateCallingNeeds(trail);
-
   // Note that the priority may be set to -1 inside the loop in order to restart
   // at zero.
   int test_limit = 0;

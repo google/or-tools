@@ -122,6 +122,11 @@ struct ObjectiveSynchronizationHelper {
   }
 };
 
+// Callbacks that be called when the search goes back to level 0.
+struct LevelZeroCallbackHelper {
+  std::vector<std::function<bool()>> callbacks;
+};
+
 // Prints out a new solution in a fixed format.
 void LogNewSolution(const std::string& event_or_solution_count,
                     double time_in_seconds, double obj_lb, double obj_ub,

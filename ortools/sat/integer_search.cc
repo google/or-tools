@@ -415,8 +415,19 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
       policy_index = (policy_index + 1) % num_policies;
     }
 
+    LevelZeroCallbackHelper* level_zero_callbacks =
+        model->GetOrCreate<LevelZeroCallbackHelper>();
+    for (const auto& cb : level_zero_callbacks->callbacks) {
+      if (!cb) {
+        return solver->UnsatStatus();
+      }
+    }
+
     // Check external objective, and restart if a better one is supplied.
     // TODO(user): Maybe do not check this at each decision.
+    // TODO(user): Split the code in 2:
+    //     - Restart part
+    //     - Bounds application as a level_zero_callbacks.
     if (synchronize_objective) {
       const double external_bound = helper->get_external_best_objective();
       CHECK(helper->get_external_best_bound != nullptr);
@@ -426,31 +437,28 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
           integer_trail->UpperBound(helper->objective_var));
       IntegerValue current_objective_lower_bound(
           integer_trail->LowerBound(helper->objective_var));
-      const bool has_new_upper_bound = std::isfinite(external_bound);
-      const bool has_new_lower_bound = std::isfinite(external_best_bound);
       IntegerValue new_objective_upper_bound(
-          has_new_upper_bound ? helper->UnscaledObjective(external_bound) : 0);
+          std::isfinite(external_bound)
+              ? helper->UnscaledObjective(external_bound) - 1
+              : current_objective_upper_bound.value());
       IntegerValue new_objective_lower_bound(
-          has_new_lower_bound ? helper->UnscaledObjective(external_best_bound)
-                              : 0);
-      if ((has_new_upper_bound &&
-           new_objective_upper_bound <= current_objective_upper_bound) ||
-          (has_new_lower_bound &&
-           new_objective_lower_bound > current_objective_lower_bound)) {
+          std::isfinite(external_best_bound)
+              ? helper->UnscaledObjective(external_best_bound)
+              : current_objective_lower_bound.value());
+      if (new_objective_upper_bound < current_objective_upper_bound ||
+          new_objective_lower_bound > current_objective_lower_bound) {
         if (!solver->RestoreSolverToAssumptionLevel()) {
           return solver->UnsatStatus();
         }
         DCHECK_EQ(solver->CurrentDecisionLevel(), 0);
-        if (has_new_upper_bound &&
-            new_objective_upper_bound <= current_objective_upper_bound &&
+        if (new_objective_upper_bound < current_objective_upper_bound &&
             !integer_trail->Enqueue(
                 IntegerLiteral::LowerOrEqual(helper->objective_var,
-                                             new_objective_upper_bound - 1),
+                                             new_objective_upper_bound),
                 {}, {})) {
           return SatSolver::INFEASIBLE;
         }
-        if (has_new_lower_bound &&
-            new_objective_lower_bound > current_objective_lower_bound &&
+        if (new_objective_lower_bound > current_objective_lower_bound &&
             !integer_trail->Enqueue(
                 IntegerLiteral::GreaterOrEqual(helper->objective_var,
                                                new_objective_lower_bound),

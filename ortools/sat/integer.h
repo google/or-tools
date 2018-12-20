@@ -976,13 +976,6 @@ class GenericLiteralWatcher : public SatPropagator {
     level_zero_modified_variable_callback_ = cb;
   }
 
-  // Sets a callbacks that will be called during by Propagate() when
-  // we are at level 0. If the callback returns false, the model will
-  // be assumed to be UNSAT.
-  void RegisterLevelZeroPropagateCallback(const std::function<bool()>& cb) {
-    level_zero_propagate_callback_ = cb;
-  }
-
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.
@@ -1017,7 +1010,6 @@ class GenericLiteralWatcher : public SatPropagator {
 
   std::function<void(const std::vector<IntegerVariable>&)>
       level_zero_modified_variable_callback_ = nullptr;
-  std::function<bool()> level_zero_propagate_callback_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };
