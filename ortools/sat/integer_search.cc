@@ -415,11 +415,14 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
       policy_index = (policy_index + 1) % num_policies;
     }
 
-    LevelZeroCallbackHelper* level_zero_callbacks =
-        model->GetOrCreate<LevelZeroCallbackHelper>();
-    for (const auto& cb : level_zero_callbacks->callbacks) {
-      if (!cb) {
-        return solver->UnsatStatus();
+    if (solver->CurrentDecisionLevel() == 0) {
+      auto* level_zero_callbacks =
+          model->GetOrCreate<LevelZeroCallbackHelper>();
+      for (const auto& cb : level_zero_callbacks->callbacks) {
+        if (!cb()) {
+          solver->NotifyThatModelIsUnsat();
+          return SatSolver::INFEASIBLE;
+        }
       }
     }
 
@@ -456,6 +459,7 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
                 IntegerLiteral::LowerOrEqual(helper->objective_var,
                                              new_objective_upper_bound),
                 {}, {})) {
+          solver->NotifyThatModelIsUnsat();
           return SatSolver::INFEASIBLE;
         }
         if (new_objective_lower_bound > current_objective_lower_bound &&
@@ -463,10 +467,11 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
                 IntegerLiteral::GreaterOrEqual(helper->objective_var,
                                                new_objective_lower_bound),
                 {}, {})) {
+          solver->NotifyThatModelIsUnsat();
           return SatSolver::INFEASIBLE;
         }
         if (!solver->FinishPropagation()) {
-          return solver->UnsatStatus();
+          return SatSolver::INFEASIBLE;
         }
       }
     }

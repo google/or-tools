@@ -233,6 +233,9 @@ void RegisterVariableBoundsLevelZeroWatcher(
         return false;
       }
     }
+    if (!model->GetOrCreate<SatSolver>()->FinishPropagation()) {
+      return false;
+    }
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(

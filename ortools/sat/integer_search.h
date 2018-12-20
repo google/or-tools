@@ -123,6 +123,7 @@ struct ObjectiveSynchronizationHelper {
 };
 
 // Callbacks that be called when the search goes back to level 0.
+// Callbacks should return false if the propagation fails.
 struct LevelZeroCallbackHelper {
   std::vector<std::function<bool()>> callbacks;
 };
