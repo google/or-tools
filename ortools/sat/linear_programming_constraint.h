@@ -25,6 +25,7 @@
 #include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -168,10 +169,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Use the dual optimal lp values to compute an EXACT lower bound on the
   // objective. Fills its reason and perform reduced cost strenghtening.
-  // Returns the exact objective lower bound.
-  //
-  // TODO(user): Split into subfunctions.
-  IntegerValue ExactLpReasonning();
+  // Returns false in case of conflict.
+  bool ExactLpReasonning();
 
   // Same as FillReducedCostReason() but for the case of a DUAL_UNBOUNDED
   // problem. This exploit the dual ray as a reason for the primal infeasiblity.
@@ -204,6 +203,12 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Compute the implied lower bound of the given linear expression using the
   // current variable bound. Return kMinIntegerValue in case of overflow.
   IntegerValue GetImpliedLowerBound(const LinearExpression& terms) const;
+
+  // Tests for possible overflow in the propagation of the given linear
+  // constraint.
+  bool PossibleOverflow(const std::vector<IntegerVariable>& vars,
+                        const std::vector<IntegerValue>& coeffs,
+                        IntegerValue ub);
 
   // Fills integer_reason_ with the reason for the implied lower bound of the
   // given linear expression. We relax the reason if we have some slack.
@@ -270,6 +275,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Singletons from Model.
   const SatParameters& sat_parameters_;
+  Model* model_;
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   Trail* trail_;
@@ -283,6 +289,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<IntegerLiteral> integer_reason_;
   std::vector<IntegerLiteral> deductions_;
   std::vector<IntegerLiteral> deductions_reason_;
+
+  // Repository of IntegerSumLE that needs to be kept around for the lazy
+  // reasons. Those are new integer constraint that are created each time we
+  // solve the LP to a dual-feasible solution. Propagating these constraints
+  // both improve the objective lower bound but also perform reduced cost
+  // fixing.
+  int rev_optimal_constraints_size_ = 0;
+  std::vector<std::unique_ptr<IntegerSumLE>> optimal_constraints_;
 
   // Last OPTIMAL solution found by a call to the underlying LP solver.
   // On IncrementalPropagate(), if the bound updates do not invalidate this

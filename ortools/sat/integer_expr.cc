@@ -86,8 +86,10 @@ bool IntegerSumLE::Propagate() {
   // unassigned enforcement literal.
   if (num_unassigned_enforcement_literal > 1) return true;
 
-  // Save the current number of fixed variables.
-  rev_integer_value_repository_->SaveState(&rev_lb_fixed_vars_);
+  // Save the current sum of fixed variables.
+  if (is_registered_) {
+    rev_integer_value_repository_->SaveState(&rev_lb_fixed_vars_);
+  }
 
   // Compute the new lower bound and update the reversible structures.
   IntegerValue lb_unfixed_vars = IntegerValue(0);
@@ -135,11 +137,9 @@ bool IntegerSumLE::Propagate() {
   for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue var_slack =
-        integer_trail_->UpperBound(var) - integer_trail_->LowerBound(var);
-    if (var_slack * coeff > slack) {
-      const IntegerValue div = slack / coeff;
-      const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
+    const IntegerValue div = slack / coeff;
+    const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
+    if (new_ub < integer_trail_->UpperBound(var)) {
       const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
       if (!integer_trail_->Enqueue(
               IntegerLiteral::LowerOrEqual(var, new_ub),
@@ -179,6 +179,7 @@ bool IntegerSumLE::Propagate() {
 }
 
 void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
+  is_registered_ = true;
   const int id = watcher->Register(this);
   for (const IntegerVariable& var : vars_) {
     watcher->WatchLowerBound(var, id);

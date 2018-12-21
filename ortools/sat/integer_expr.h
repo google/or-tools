@@ -77,6 +77,7 @@ class IntegerSumLE : public PropagatorInterface {
   RevIntegerValueRepository* rev_integer_value_repository_;
 
   // Reversible sum of the lower bound of the fixed variables.
+  bool is_registered_ = false;
   IntegerValue rev_lb_fixed_vars_;
 
   // Reversible number of fixed variables.

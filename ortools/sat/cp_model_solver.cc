@@ -1178,7 +1178,6 @@ CpSolverResponse SolveCpModelInternal(
     const CpModelProto& model_proto, bool is_real_solve,
     const std::function<void(const CpSolverResponse&)>&
         external_solution_observer,
-    bool watch_objective_lower_bound,
     SharedBoundsManager* shared_bounds_manager, Model* model) {
   // Timing.
   WallTimer wall_timer;
@@ -1401,9 +1400,15 @@ CpSolverResponse SolveCpModelInternal(
     external_solution_observer(response);
   };
 
-  if (watch_objective_lower_bound && model_proto.has_objective()) {
+  // Objective bounds reporting and sharing.
+  ObjectiveSynchronizationHelper* helper =
+      model->GetOrCreate<ObjectiveSynchronizationHelper>();
+  const bool worker_is_in_parallel_search = model->Get<WorkerInfo>() != nullptr;
+
+  if (!model->GetOrCreate<SatParameters>()->use_lns() &&
+      model_proto.has_objective()) {
     // Detect sequential mode, register callbacks in that case.
-    if (model->Get<WorkerInfo>() == nullptr) {  // Sequential mode.
+    if (!worker_is_in_parallel_search) {
       model->GetOrCreate<WorkerInfo>()->global_timer = &wall_timer;
       model->GetOrCreate<WorkerInfo>()->worker_id = 0;
       auto* integer_trail = model->Get<IntegerTrail>();
@@ -1428,15 +1433,31 @@ CpSolverResponse SolveCpModelInternal(
                                   .value());
       };
 
-      ObjectiveSynchronizationHelper* helper =
-          model->GetOrCreate<ObjectiveSynchronizationHelper>();
       helper->get_external_best_objective = std::move(get_objective_value);
       helper->get_external_best_bound = std::move(get_objective_best_bound);
       helper->broadcast_lower_bound = false;
     }
-    RegisterVariableBoundsLevelZeroWatcher(
-        &model_proto, external_solution_observer, VLOG_IS_ON(1), objective_var,
-        shared_bounds_manager, model);
+
+    // Watch improved objective best bounds in regular search, or core based
+    // search. It should be disabled for LNS.
+    RegisterObjectiveBestBoundExport(model_proto, external_solution_observer,
+                                     VLOG_IS_ON(1), objective_var, model);
+  }
+
+  // Import objective bounds.
+  // TODO(user): Support bounds import in LNS and Core based search.
+  if (model->GetOrCreate<SatParameters>()->share_objective_bounds() &&
+      worker_is_in_parallel_search) {
+    RegisterObjectiveBoundsImport(objective_var, model);
+  }
+
+  // Level zero variable bounds sharing.
+  if (shared_bounds_manager != nullptr) {
+    RegisterVariableBoundsLevelZeroExport(model_proto, shared_bounds_manager,
+                                          model);
+
+    RegisterVariableBoundsLevelZeroImport(model_proto, shared_bounds_manager,
+                                          model);
   }
 
   // Load solution hint.
@@ -1606,7 +1627,6 @@ void PostsolveResponse(const CpModelProto& model_proto,
   }
   const CpSolverResponse postsolve_response = SolveCpModelInternal(
       mapping_proto, false, [](const CpSolverResponse&) {},
-      /*watch_objective_lower_bound=*/false,
       /*shared_bounds_manager=*/nullptr, &postsolve_model);
   CHECK_EQ(postsolve_response.status(), CpSolverStatus::FEASIBLE);
 
@@ -1819,7 +1839,6 @@ CpSolverResponse SolveCpModelWithLNS(
   } else {
     response =
         SolveCpModelInternal(model_proto, /*is_real_solve=*/true, observer,
-                             /*watch_objective_lower_bound=*/false,
                              /*shared_bounds_manager=*/nullptr, model);
   }
   if (response.status() != CpSolverStatus::FEASIBLE) {
@@ -1918,7 +1937,6 @@ CpSolverResponse SolveCpModelWithLNS(
           local_response = SolveCpModelInternal(
               local_problem, /*is_real_solve=*/true,
               [](const CpSolverResponse& response) {},
-              /*watch_objective_lower_bound=*/false,
               /*shared_bounds_manager=*/nullptr, &local_model);
           PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
                             &local_response);
@@ -2044,7 +2062,6 @@ CpSolverResponse SolveCpModelParallel(
               stopped);
           const CpSolverResponse local_response = SolveCpModelInternal(
               model_proto, true, [](const CpSolverResponse& response) {},
-              /*watch_objective_lower_bound=*/false,
               /*shared_bounds_manager=*/nullptr, &local_model);
 
           absl::MutexLock lock(&mutex);
@@ -2141,7 +2158,8 @@ CpSolverResponse SolveCpModelParallel(
             std::move(objective_synchronization);
         helper->get_external_best_bound =
             std::move(objective_bound_synchronization);
-        helper->broadcast_lower_bound = true;
+        helper->broadcast_lower_bound =
+            local_model.GetOrCreate<SatParameters>()->share_objective_bounds();
 
         CpSolverResponse thread_response;
         if (local_params.use_lns()) {
@@ -2154,7 +2172,6 @@ CpSolverResponse SolveCpModelParallel(
         } else {
           thread_response =
               SolveCpModelInternal(model_proto, true, solution_observer,
-                                   /*watch_objective_lower_bound=*/true,
                                    shared_bounds_manager.get(), &local_model);
         }
 
@@ -2343,10 +2360,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     const int random_seed = model->GetOrCreate<SatParameters>()->random_seed();
     response = SolveCpModelWithLNS(new_model, observer_function, 1, random_seed,
                                    model);
-  } else {
+  } else {  // Normal sequential run.
     response = SolveCpModelInternal(new_model, /*is_real_solve=*/true,
                                     observer_function,
-                                    /*watch_objective_lower_bound=*/true,
                                     /*shared_bounds_manager=*/nullptr, model);
   }
 

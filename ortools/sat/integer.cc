@@ -1437,11 +1437,12 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
     }
   }
 
-  if (trail->CurrentDecisionLevel() == 0 &&
-      level_zero_modified_variable_callback_ != nullptr &&
-      !modified_vars_.PositionsSetAtLeastOnce().empty()) {
-    level_zero_modified_variable_callback_(
-        modified_vars_.PositionsSetAtLeastOnce());
+  if (trail->CurrentDecisionLevel() == 0) {
+    const std::vector<IntegerVariable>& modified_vars =
+        modified_vars_.PositionsSetAtLeastOnce();
+    for (const auto& callback : level_zero_modified_variable_callback_) {
+      callback(modified_vars);
+    }
   }
 
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());

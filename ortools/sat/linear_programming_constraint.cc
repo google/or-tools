@@ -43,6 +43,7 @@ const double LinearProgrammingConstraint::kLpEpsilon = 1e-6;
 // a constraint was added will have no effect on this class.
 LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
     : sat_parameters_(*(model->GetOrCreate<SatParameters>())),
+      model_(model),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
@@ -207,9 +208,11 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   // Registering it with the trail make sure this class is always in sync when
   // it is used in the decision heuristics.
   integer_trail_->RegisterReversibleClass(this);
+  watcher->RegisterReversibleInt(watcher_id, &rev_optimal_constraints_size_);
 }
 
 void LinearProgrammingConstraint::SetLevel(int level) {
+  optimal_constraints_.resize(rev_optimal_constraints_size_);
   if (lp_solution_is_set_ && level < lp_solution_level_) {
     lp_solution_is_set_ = false;
   }
@@ -255,6 +258,11 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
   // TODO(user): The saved lp solution is still valid given the current variable
   // bounds, so the LP optimal didn't change. However we might still want to add
   // new cuts or new lazy constraints?
+  //
+  // TODO(user): Propagate the last optimal_constraint? Note that we need
+  // to be careful since the reversible int in IntegerSumLE are not registered.
+  // However, because we delete "optimalconstraints" on backtrack, we might not
+  // care.
   return true;
 }
 
@@ -423,24 +431,19 @@ bool LinearProgrammingConstraint::Propagate() {
 
     // TODO(user): Maybe do a bit less computation when we cannot propagate
     // anything.
-    const IntegerValue old_lb = integer_trail_->LowerBound(objective_cp_);
-    IntegerValue new_lb;
     if (sat_parameters_.use_exact_lp_reason()) {
-      new_lb = ExactLpReasonning();
+      if (!ExactLpReasonning()) return false;
 
       // A difference of 1 happens relatively often, so we just display when
-      // there is more. Note that when we are over the objective upper bound,
-      // we relax new_lb for a better reason, so we ignore this case.
-      if (new_lb <= kMinIntegerValue) {
-        VLOG(2) << "Overflow during exact LP reasoning.";
-      } else if (new_lb <= integer_trail_->UpperBound(objective_cp_) &&
-                 std::abs((approximate_new_lb - new_lb).value()) > 1) {
+      // there is more.
+      const IntegerValue propagated_lb =
+          integer_trail_->LowerBound(objective_cp_);
+      if (std::abs((approximate_new_lb - propagated_lb).value()) > 1) {
         VLOG(2) << "LP objective lower bound approx = " << approximate_new_lb;
-        VLOG(2) << "                         exact  = " << new_lb;
+        VLOG(2) << "                         exact  = " << propagated_lb;
       }
     } else {
       FillReducedCostsReason();
-      new_lb = approximate_new_lb;
       const double objective_cp_ub =
           ToDouble(integer_trail_->UpperBound(objective_cp_));
       ReducedCostStrengtheningDeductions(objective_cp_ub -
@@ -450,24 +453,24 @@ bool LinearProgrammingConstraint::Propagate() {
         deductions_reason_.push_back(
             integer_trail_->UpperBoundAsLiteral(objective_cp_));
       }
-    }
 
-    // Push new objective lb.
-    if (old_lb < new_lb) {
-      const IntegerLiteral deduction =
-          IntegerLiteral::GreaterOrEqual(objective_cp_, new_lb);
-      if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
-        return false;
-      }
-    }
-
-    // Push reduced cost strengthening bounds.
-    if (!deductions_.empty()) {
-      const int trail_index_with_same_reason = integer_trail_->Index();
-      for (const IntegerLiteral deduction : deductions_) {
-        if (!integer_trail_->Enqueue(deduction, {}, deductions_reason_,
-                                     trail_index_with_same_reason)) {
+      // Push new objective lb.
+      if (approximate_new_lb > integer_trail_->LowerBound(objective_cp_)) {
+        const IntegerLiteral deduction =
+            IntegerLiteral::GreaterOrEqual(objective_cp_, approximate_new_lb);
+        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
           return false;
+        }
+      }
+
+      // Push reduced cost strengthening bounds.
+      if (!deductions_.empty()) {
+        const int trail_index_with_same_reason = integer_trail_->Index();
+        for (const IntegerLiteral deduction : deductions_) {
+          if (!integer_trail_->Enqueue(deduction, {}, deductions_reason_,
+                                       trail_index_with_same_reason)) {
+            return false;
+          }
         }
       }
     }
@@ -583,6 +586,28 @@ IntegerValue LinearProgrammingConstraint::GetImpliedLowerBound(
     lower_bound = new_lb;
   }
   return lower_bound;
+}
+
+bool LinearProgrammingConstraint::PossibleOverflow(
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<IntegerValue>& coeffs, IntegerValue ub) {
+  IntegerValue lower_bound(0);
+  const int size = vars.size();
+  for (int i = 0; i < size; ++i) {
+    const IntegerVariable var = vars[i];
+    const IntegerValue coeff = coeffs[i];
+    CHECK_NE(coeff, 0);
+    const IntegerValue bound = coeff > 0 ? integer_trail_->LowerBound(var)
+                                         : integer_trail_->UpperBound(var);
+    const int64 prod = CapProd(bound.value(), coeff.value());
+    if (prod == kint64min || prod == kint64max) return true;
+    const int64 new_lb = CapAdd(lower_bound.value(), prod);
+    if (new_lb == kint64min || new_lb == kint64max) return true;
+    lower_bound = new_lb;
+  }
+  const int64 slack = CapAdd(lower_bound.value(), -ub.value());
+  if (slack == kint64min || slack == kint64max) return true;
+  return false;
 }
 
 // TODO(user): combine this with RelaxLinearReason() to avoid the extra
@@ -728,19 +753,17 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
 //
 // Given any INTEGER linear combination of the LP constraints, we can create a
 // new integer constraint that is valid (its computation must not overflow
-// though). Lets call this new_constraint. We can then always write for the
-// objective linear expression:
-//   objective = (objective - new_constraint) + new_constraint
-// And we can compute a lower bound as folllow:
-//   objective >= ImpliedLB(objective - new_constraint) + new_constraint_lb
+// though). Lets call this "linear_combination <= ub". We can then always add to
+// it the inequality "objective_terms <= objective_var", so we get:
+// ImpliedLB(objective_terms + linear_combination) - ub <= objective_var.
 // where ImpliedLB() is computed from the variable current bounds.
 //
 // Now, if we use for the linear combination and approximation of the optimal
-// dual LP values (by scaling them and rounding them to integer), we will get an
-// EXACT objective lower bound that is more or less the same as the inexact
-// bound given by the LP relaxation. This allows to derive exact reasons for any
-// propagation done by this constraint.
-IntegerValue LinearProgrammingConstraint::ExactLpReasonning() {
+// negated dual LP values (by scaling them and rounding them to integer), we
+// will get an EXACT objective lower bound that is more or less the same as the
+// inexact bound given by the LP relaxation. This allows to derive exact reasons
+// for any propagation done by this constraint.
+bool LinearProgrammingConstraint::ExactLpReasonning() {
   // Clear old reason and deductions.
   integer_reason_.clear();
   deductions_.clear();
@@ -757,120 +780,59 @@ IntegerValue LinearProgrammingConstraint::ExactLpReasonning() {
 
   Fractional scaling;
   gtl::ITIVector<ColIndex, IntegerValue> reduced_costs;
-  IntegerValue negative_lb;
+  IntegerValue rc_ub;
   if (!ComputeNewLinearConstraint(/*take_objective_into_account=*/true,
                                   lp_multipliers, &scaling, &reduced_costs,
-                                  &negative_lb)) {
-    return kMinIntegerValue;  // Overflow.
+                                  &rc_ub)) {
+    VLOG(2) << "Overflow during exact LP reasoning.";
+    return true;
   }
 
   // The "objective constraint" behave like if the unscaled cp multiplier was
   // 1.0, so we will multiply it by this number and add it to reduced_costs.
   const IntegerValue obj_scale(std::round(scaling));
   if (obj_scale == 0) {
-    return kMinIntegerValue;  // Overflow.
+    VLOG(2) << "Overflow during exact LP reasoning.";
+    return true;
   }
   if (!AddLinearExpressionMultiple(obj_scale, integer_objective_,
                                    &reduced_costs)) {
-    return kMinIntegerValue;  // Overflow.
+    VLOG(2) << "Overflow during exact LP reasoning.";
+    return true;
   }
 
   // TODO(user): We could correct little imprecision by heuristically computing
   // for each row the best multiple to improve the scaled_objective_lb below
-  // while keeping the reduced_costs of the same sign. This should improve the
+  // while keeping the coefficient of the same sign. This should improve the
   // objective lower bound.
 
-  // Compute the objective lower bound, and the reason for it.
-  const LinearExpression new_constraint =
-      GetSparseRepresentation(reduced_costs);
-  const IntegerValue lb = GetImpliedLowerBound(new_constraint);
-  if (lb == kMinIntegerValue) return kMinIntegerValue;  // Overflow.
-  const IntegerValue scaled_objective_lb(
-      CapAdd(lb.value(), -negative_lb.value()));
-  if (scaled_objective_lb == kint64min || scaled_objective_lb == kint64max) {
-    return kMinIntegerValue;
-  }
-
-  const IntegerValue objective_ub = integer_trail_->UpperBound(objective_cp_);
-  const IntegerValue scaled_objective_ub(
-      CapProd(objective_ub.value(), obj_scale.value()));
-  if (scaled_objective_ub == kint64min || scaled_objective_ub == kint64max) {
-    return kMinIntegerValue;  // Overflow.
-  }
-
-  IntegerValue exact_objective_lb(CeilRatio(scaled_objective_lb, obj_scale));
-  if (exact_objective_lb > objective_ub) {
-    // We will have a conflict, so we can can relax more!
-    exact_objective_lb = objective_ub + 1;
-  } else {
-    // Reduced cost strenghtening.
-    //
-    // Remark: This is nothing else than basic bound propagation of the
-    // new_constraint with the given feasibility_slack between its implied lower
-    // bound and its upper bound.
-    IntegerValue explanation_slack = kMaxIntegerValue;
-    const IntegerValue feasibility_slack = IntegerValue(
-        CapSub(scaled_objective_ub.value(), scaled_objective_lb.value()));
-    CHECK_GE(feasibility_slack, 0);
-    if (feasibility_slack != kint64max) {
-      for (const auto& term : new_constraint) {
-        const IntegerVariable var = integer_variables_[term.first.value()];
-        const IntegerValue coeff = term.second;
-        CHECK_NE(coeff, 0);
-
-        // Any change by more than this will make scaled_objective_lb go past
-        // the objective upper bound
-        const IntegerValue allowed_change(FloorRatio(
-            feasibility_slack, IntegerValue(std::abs(coeff.value()))));
-        CHECK_GE(allowed_change, 0);
-        if (coeff > 0) {
-          const IntegerValue new_ub =
-              integer_trail_->LowerBound(var) + allowed_change;
-          if (new_ub < integer_trail_->UpperBound(var)) {
-            explanation_slack =
-                std::min(explanation_slack,
-                         (allowed_change + 1) * coeff - feasibility_slack - 1);
-            deductions_.push_back(IntegerLiteral::LowerOrEqual(var, new_ub));
-          }
-        } else {  // coeff < 0
-          const IntegerValue new_lb =
-              integer_trail_->UpperBound(var) - allowed_change;
-          if (new_lb > integer_trail_->LowerBound(var)) {
-            explanation_slack =
-                std::min(explanation_slack,
-                         (allowed_change + 1) * -coeff - feasibility_slack - 1);
-            deductions_.push_back(IntegerLiteral::GreaterOrEqual(var, new_lb));
-          }
-        }
-      }
-    }
-
-    if (!deductions_.empty()) {
-      // TODO(user): Instead of taking explanation_slack as the min of the slack
-      // of all deductions, we could use different reason for each push instead.
-      // Experiment! Maybe there is some tradeoff depending on the number of
-      // push.
-      //
-      // TODO(user): The individual reason are even smaller because we can
-      // ignore the term corresponding to the variable we push.
-      //
-      // TODO(user): The proper fix might be to add a lazy reason code
-      // that can reconstruct the relaxed reason on demand from a base one.
-      // So we have better reason, and not more work at propagation time.
-      // Also, this code should be shared with the one in IntegerSumLE since
-      // they are the same, and it will facilitate unit-testing.
-      SetImpliedLowerBoundReason(new_constraint, explanation_slack);
-      deductions_reason_ = integer_reason_;
-      deductions_reason_.push_back(
-          integer_trail_->UpperBoundAsLiteral(objective_cp_));
+  // Create the IntegerSumLE that will allow to propagate the objective and more
+  // generally do the reduced cost fixing.
+  //
+  // TODO(user): Make sure there cannot be any overflow if we want to reuse the
+  // constraint for different lower-bounds of the variables later.
+  std::vector<IntegerVariable> vars;
+  std::vector<IntegerValue> coeffs;
+  for (ColIndex col(0); col < reduced_costs.size(); ++col) {
+    if (reduced_costs[col] != 0) {
+      vars.push_back(integer_variables_[col.value()]);
+      coeffs.push_back(reduced_costs[col]);
     }
   }
+  vars.push_back(objective_cp_);
+  coeffs.push_back(-obj_scale);
 
-  // Relax the lower bound reason.
-  const IntegerValue min_value = (exact_objective_lb - 1) * obj_scale + 1;
-  const IntegerValue slack = scaled_objective_lb - min_value;
-  SetImpliedLowerBoundReason(new_constraint, slack);
-  return exact_objective_lb;
+  // Check for possible overflow in IntegerSumLE::Propagate().
+  if (PossibleOverflow(vars, coeffs, rc_ub)) {
+    VLOG(2) << "Overflow during exact LP reasoning.";
+    return true;
+  }
+
+  IntegerSumLE* cp_constraint =
+      new IntegerSumLE({}, vars, coeffs, rc_ub, model_);
+  optimal_constraints_.emplace_back(cp_constraint);
+  rev_optimal_constraints_size_ = optimal_constraints_.size();
+  return cp_constraint->Propagate();
 }
 
 bool LinearProgrammingConstraint::FillExactDualRayReason() {
