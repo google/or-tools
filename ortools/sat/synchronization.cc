@@ -252,9 +252,8 @@ void RegisterObjectiveBestBoundExport(
           broadcast_objective_lower_bound);
 }
 
-void RegisterObjectiveBoundsImport(IntegerVariable objective_var,
-                                   Model* model) {
-  const auto import_objective_bounds = [objective_var, model]() {
+void RegisterObjectiveBoundsImport(Model* model) {
+  const auto import_objective_bounds = [model]() {
     SatSolver* const solver = model->GetOrCreate<SatSolver>();
     if (solver->AssumptionLevel() != 0) return true;
 

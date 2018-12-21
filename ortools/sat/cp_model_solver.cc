@@ -1448,7 +1448,7 @@ CpSolverResponse SolveCpModelInternal(
   // TODO(user): Support bounds import in LNS and Core based search.
   if (model->GetOrCreate<SatParameters>()->share_objective_bounds() &&
       worker_is_in_parallel_search) {
-    RegisterObjectiveBoundsImport(objective_var, model);
+    RegisterObjectiveBoundsImport(model);
   }
 
   // Level zero variable bounds sharing.

@@ -77,7 +77,7 @@ void RegisterVariableBoundsLevelZeroExport(
 //
 // Currently, standard search works fine with it.
 // LNS search and Core based search do not support it
-void RegisterObjectiveBoundsImport(IntegerVariable objective_var, Model* model);
+void RegisterObjectiveBoundsImport(Model* model);
 
 // Registers a callback that will report improving objective best bound.
 // If synchronization_helper->broadcast_lower_bound is true, it will create a
