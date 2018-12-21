@@ -13,8 +13,8 @@
 """Example of a simple nurse scheduling problem."""
 
 # [START program]
+from __future__ import division
 from __future__ import print_function
-import math
 # [START import]
 from ortools.sat.python import cp_model
 
@@ -83,7 +83,7 @@ def main():
                                                                           s))
     # [END variables]
 
-    # Each shift is assigned to exactly one nurse.
+    # Each shift is assigned to exactly one nurse in the schedule period.
     # [START exactly_one_nurse]
     for d in all_days:
         for s in all_shifts:
@@ -97,23 +97,19 @@ def main():
             model.Add(sum(shifts[(n, d, s)] for s in all_shifts) <= 1)
     # [END at_most_one_shift]
 
-    # works_shift[(n, s)] is 1 if nurse n works shift s at least one day in
-    # the schedule period.
-    works_shift = {}
-    for n in all_nurses:
-        for s in all_shifts:
-            works_shift[(n, s)] = model.NewBoolVar('works_shift_n%is%i' % (n,
-                                                                           s))
-            model.AddMaxEquality(works_shift[(n, s)],
-                                 [shifts[(n, d, s)] for d in all_days])
-
     # [START assign_nurses_evenly]
-    # min_shifts_assigned is the largest integer such that every nurse can be
-    # assigned at least that number of shifts.
-    min_shifts_assigned = int(math.floor(num_shifts * num_days / num_nurses))
+    # min_shifts_per_nurse is the largest integer such that every nurse
+    # can be assigned at least that many shifts. If the number of nurses doesn't
+    # divide the total number of shifts over the schedule period,
+    # some nurses have to work one more shift, for a total of
+    # min_shifts_per_nurse + 1.
+    min_shifts_per_nurse = (num_shifts * num_days) // num_nurses
+    max_shifts_per_nurse = min_shifts_per_nurse + 1
     for n in all_nurses:
-        model.Add(
-            sum(works_shift[(n, s)] for s in all_shifts) >= min_shifts_assigned)
+        num_shifts_worked = sum(
+            shifts[(n, d, s)] for d in all_days for s in all_shifts)
+        model.Add(min_shifts_per_nurse <= num_shifts_worked)
+        model.Add(num_shifts_worked <= max_shifts_per_nurse)
     # [END assign_nurses_evenly]
 
     # Creates the solver and solve.
