@@ -29,8 +29,8 @@ def cover_rectangle(num_squares):
     sizes = []
     x_intervals = []
     y_intervals = []
-    sxs = []
-    sys = []
+    x_starts = []
+    y_starts = []
 
     # Creates intervals for the NoOverlap2D and size variables.
     for i in range(num_squares):
@@ -50,8 +50,8 @@ def cover_rectangle(num_squares):
         x_intervals.append(interval_x)
         y_intervals.append(interval_y)
         sizes.append(size)
-        sxs.append(startx)
-        sys.append(starty)
+        x_starts.append(startx)
+        y_starts.append(starty)
 
     # Main constraint.
     model.AddNoOverlap2D(x_intervals, y_intervals)
@@ -63,13 +63,13 @@ def cover_rectangle(num_squares):
     # Forces the rectangle to be exactly covered.
     model.Add(sum(areas) == size_x * size_y)
 
-    # Symmetry breaking 1: size are ordered.
+    # Symmetry breaking 1: sizes are ordered.
     for i in range(num_squares - 1):
         model.Add(sizes[i] <= sizes[i + 1])
 
     # Symmetry breaking 2: first square in one quadrant.
-    model.Add(sxs[0] < 36)
-    model.Add(sys[0] < 19)
+    model.Add(x_starts[0] < 36)
+    model.Add(y_starts[0] < 19)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
@@ -80,8 +80,8 @@ def cover_rectangle(num_squares):
     if status == cp_model.FEASIBLE:
         display = [[' ' for _ in range(size_x)] for _ in range(size_y)]
         for i in range(num_squares):
-            sol_x = solver.Value(sxs[i])
-            sol_y = solver.Value(sys[i])
+            sol_x = solver.Value(x_starts[i])
+            sol_y = solver.Value(y_starts[i])
             sol_s = solver.Value(sizes[i])
             char = format(i, '01x')
             for j in range(sol_s):
