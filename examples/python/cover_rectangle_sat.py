@@ -58,8 +58,13 @@ def CoverRectangle(num_squares):
 
     model.Add(sum(areas) == size_x * size_y)
 
+    # Symmetry breaking 1: size are ordered.
     for i in range(num_squares - 1):
         model.Add(sizes[i] <= sizes[i + 1])
+
+    # Symmetry breaking 2: first square in one quadrant.
+    model.Add(sxs[0] < 36)
+    model.Add(sys[0] < 19)
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
@@ -86,7 +91,7 @@ def CoverRectangle(num_squares):
     return status == cp_model.FEASIBLE
 
 
-for i in range(15):
+for i in range(1, 15):
     print('Trying with size =', i)
     if CoverRectangle(i):
         break
