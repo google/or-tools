@@ -74,7 +74,7 @@ def cover_rectangle(num_squares):
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
-    print(solver.StatusName(status), solver.WallTime(), 'ms')
+    print('%s found in %0.2fs' % (solver.StatusName(status), solver.WallTime()))
 
     # Prints solution.
     if status == cp_model.FEASIBLE:
