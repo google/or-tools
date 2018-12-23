@@ -10,8 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Fill a 72x37 rectangle by a minimum number of non-overlapping squares.
+"""Fill a 72x37 rectangle by a minimum number of non-overlapping squares."""
 
 from __future__ import print_function
 from __future__ import division
@@ -19,7 +18,8 @@ from __future__ import division
 from ortools.sat.python import cp_model
 
 
-def CoverRectangle(num_squares):
+def cover_rectangle(num_squares):
+    """Try to fill the rectangle with a given number of squares."""
     size_x = 72
     size_y = 37
 
@@ -34,23 +34,23 @@ def CoverRectangle(num_squares):
 
     for i in range(num_squares):
         size = model.NewIntVar(1, size_y, 'size_%i' % i)
-        sx = model.NewIntVar(0, size_x, 'sx_%i' % i)
-        ex = model.NewIntVar(0, size_x, 'ex_%i' % i)
-        sy = model.NewIntVar(0, size_y, 'sy_%i' % i)
-        ey = model.NewIntVar(0, size_y, 'ey_%i' % i)
+        startx = model.NewIntVar(0, size_x, 'sx_%i' % i)
+        endx = model.NewIntVar(0, size_x, 'ex_%i' % i)
+        starty = model.NewIntVar(0, size_y, 'sy_%i' % i)
+        endy = model.NewIntVar(0, size_y, 'ey_%i' % i)
 
-        i_x = model.NewIntervalVar(sx, size, ex, 'x_interval_%i' % i)
-        i_y = model.NewIntervalVar(sy, size, ey, 'y_interval_%i' % i)
+        interval_x = model.NewIntervalVar(startx, size, endx, 'ix_%i' % i)
+        interval_y = model.NewIntervalVar(starty, size, endy, 'iy_%i' % i)
 
         area = model.NewIntVar(1, size_y * size_y, 'area_%i' % i)
         model.AddProdEquality(area, [size, size])
 
         areas.append(area)
-        x_intervals.append(i_x)
-        y_intervals.append(i_y)
+        x_intervals.append(interval_x)
+        y_intervals.append(interval_y)
         sizes.append(size)
-        sxs.append(sx)
-        sys.append(sy)
+        sxs.append(startx)
+        sys.append(starty)
 
     model.AddNoOverlap2D(x_intervals, y_intervals)
     model.AddCumulative(x_intervals, sizes, size_y)
@@ -68,17 +68,16 @@ def CoverRectangle(num_squares):
 
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
-    solver.parameters.num_search_workers = 4
     status = solver.Solve(model)
     print(solver.StatusName(status), solver.WallTime(), 'ms')
 
-    if (status == cp_model.FEASIBLE):
+    if status == cp_model.FEASIBLE:
         display = [[' ' for _ in range(size_x)] for _ in range(size_y)]
         for i in range(num_squares):
             x = solver.Value(sxs[i])
             y = solver.Value(sys[i])
             s = solver.Value(sizes[i])
-            c = format(i, ' 01x')
+            c = format(i, '01x')
             for j in range(s):
                 for k in range(s):
                     if display[y + j][x + k] != ' ':
@@ -87,12 +86,11 @@ def CoverRectangle(num_squares):
                     display[y + j][x + k] = c
 
         for line in range(size_y):
-            print("".join(display[line]))
+            print(' '.join(display[line]))
     return status == cp_model.FEASIBLE
 
 
-for i in range(1, 15):
-    print('Trying with size =', i)
-    if CoverRectangle(i):
+for num in range(1, 15):
+    print('Trying with size =', num)
+    if cover_rectangle(num):
         break
-
