@@ -35,13 +35,13 @@ def cover_rectangle(num_squares):
     # Creates intervals for the NoOverlap2D and size variables.
     for i in range(num_squares):
         size = model.NewIntVar(1, size_y, 'size_%i' % i)
-        startx = model.NewIntVar(0, size_x, 'sx_%i' % i)
-        endx = model.NewIntVar(0, size_x, 'ex_%i' % i)
-        starty = model.NewIntVar(0, size_y, 'sy_%i' % i)
-        endy = model.NewIntVar(0, size_y, 'ey_%i' % i)
+        start_x = model.NewIntVar(0, size_x, 'sx_%i' % i)
+        end_x = model.NewIntVar(0, size_x, 'ex_%i' % i)
+        start_y = model.NewIntVar(0, size_y, 'sy_%i' % i)
+        end_y = model.NewIntVar(0, size_y, 'ey_%i' % i)
 
-        interval_x = model.NewIntervalVar(startx, size, endx, 'ix_%i' % i)
-        interval_y = model.NewIntervalVar(starty, size, endy, 'iy_%i' % i)
+        interval_x = model.NewIntervalVar(start_x, size, end_x, 'ix_%i' % i)
+        interval_y = model.NewIntervalVar(start_y, size, end_y, 'iy_%i' % i)
 
         area = model.NewIntVar(1, size_y * size_y, 'area_%i' % i)
         model.AddProdEquality(area, [size, size])
@@ -50,8 +50,8 @@ def cover_rectangle(num_squares):
         x_intervals.append(interval_x)
         y_intervals.append(interval_y)
         sizes.append(size)
-        x_starts.append(startx)
-        y_starts.append(starty)
+        x_starts.append(start_x)
+        y_starts.append(start_y)
 
     # Main constraint.
     model.AddNoOverlap2D(x_intervals, y_intervals)
@@ -66,6 +66,14 @@ def cover_rectangle(num_squares):
     # Symmetry breaking 1: sizes are ordered.
     for i in range(num_squares - 1):
         model.Add(sizes[i] <= sizes[i + 1])
+
+        # Define same to be true iff sizes[i] == sizes[i + 1]
+        same = model.NewBoolVar('')
+        model.Add(sizes[i] == sizes[i + 1]).OnlyEnforceIf(same)
+        model.Add(sizes[i] < sizes[i + 1]).OnlyEnforceIf(same.Not())
+
+        # Tie break with starts.
+        model.Add(x_starts[i] <= x_starts[i + 1]).OnlyEnforceIf(same)
 
     # Symmetry breaking 2: first square in one quadrant.
     model.Add(x_starts[0] < 36)
