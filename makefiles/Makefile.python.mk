@@ -480,6 +480,9 @@ rpy_%: $(CONTRIB_EX_DIR)/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 rpy_%: ortools/algorithms/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Salgorithms$Ssamples$S$*.py $(ARGS)
 
+rpy_%: ortools/constraint_solver/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
+	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Sconstraint_solver$Ssamples$S$*.py $(ARGS)
+
 rpy_%: ortools/graph/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 	$(SET_PYTHONPATH) "$(PYTHON_EXECUTABLE)" ortools$Sgraph$Ssamples$S$*.py $(ARGS)
 
@@ -492,6 +495,17 @@ rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 .PHONY: test_python_algorithms_samples # Run all Python Algorithms Samples (located in ortools/algorithms/samples)
 test_python_algorithms_samples: \
  rpy_simple_knapsack_program
+
+.PHONY: test_python_constraint_solver_samples # Run all Python CP Samples (located in ortools/constraint_solver/samples)
+test_python_constraint_solver_samples: \
+ rpy_simple_cp_program \
+ rpy_tsp \
+ rpy_vrp \
+ rpy_vrpgs \
+ rpy_cvrp \
+ rpy_cvrp_reload \
+ rpy_cvrptw \
+ rpy_cvrptw_break
 
 .PHONY: test_python_graph_samples # Run all Python Graph Samples (located in ortools/graph/samples)
 test_python_graph_samples: \
@@ -529,31 +543,24 @@ test_python_sat_samples: \
 .PHONY: check_python_pimpl
 check_python_pimpl: \
  test_python_algorithms_samples \
+ test_python_constraint_solver_samples \
  test_python_graph_samples \
  test_python_linear_solver_samples \
  test_python_sat_samples \
  \
- rpy_linear_programming \
  rpy_stigler_diet
-# rpy_constraint_programming_sat \
 # rpy_rabbits_pheasants_cp \
-# rpy_rabbits_pheasants_sat \
 # rpy_cryptarithmetic_cp \
 # rpy_cryptarithmetic_sat \
 # rpy_nqueens_cp \
 # rpy_nqueens_sat \
 # rpy_integer_programming \
-# rpy_tsp \
-# rpy_vrp \
-# rpy_cvrp \
-# rpy_cvrptw \
 # rpy_knapsack \
 # rpy_max_flow \
 # rpy_min_cost_flow \
 # rpy_assignment \
 # rpy_nurses_cp \
 # rpy_job_shop_cp \
-# rpy_job_shop_sat
 
 .PHONY: test_python_tests # Run all Python Tests (located in examples/tests)
 test_python_tests: \
@@ -701,9 +708,6 @@ test_python_python: \
  rpy_balance_group_sat \
  rpy_chemical_balance_lp \
  rpy_chemical_balance_sat \
- rpy_constraint_programming_cp \
- rpy_cvrp \
- rpy_cvrptw \
  rpy_flexible_job_shop_sat \
  rpy_gate_scheduling_sat \
  rpy_golomb8 \
@@ -724,10 +728,7 @@ test_python_python: \
  rpy_sudoku_sat \
  rpy_tasks_and_workers_assignment_sat \
  rpy_transit_time \
- rpy_tsp \
  rpy_vendor_scheduling_sat \
- rpy_vrpgs \
- rpy_vrp \
  rpy_wedding_optimal_chart_sat \
  rpy_worker_schedule_sat \
  rpy_zebra_sat
