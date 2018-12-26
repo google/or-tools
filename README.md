@@ -44,55 +44,53 @@ Java.
 
 This software suite is composed of the following components:
 
-```
-├── Makefile              <- Top-level Makefile
-├── makefiles             <- Subsidiary makefiles
-├── CMakeLists.txt        <- Top-level CMakeLists.txt
-├── cmake                 <- Subsidiary CMake files
-├── ortools               <- Root directory for Source code
-│   ├── base              <- Basic utilities
-│   ├── algorithms        <- Basic algorithms
-│   │   ├── csharp        <- C# wrapper
-│   │   ├── java          <- Java wrapper
-│   │   └── python        <- Python wrapper
-│   ├── util              <- Utilities needed by the constraint solver
-│   ├── constraint_solver <- Constraint solver
-│   │   ├── csharp        <- C# wrapper
-│   │   ├── java          <- Java wrapper
-│   │   └── python        <- Python wrapper
-│   ├── sat               <- Sat solver
-│   │   ├── csharp        <- C# wrapper
-│   │   ├── java          <- Java wrapper
-│   │   └── python        <- Python wrapper
-│   ├── bop               <- Boolean solver based on SAT
-│   ├── linear_solver     <- Linear solver wrapper
-│   │   ├── csharp        <- C# wrapper
-│   │   ├── java          <- Java wrapper
-│   │   └── python        <- Python wrapper
-│   ├── glop              <- Linear solver
-│   ├── lp_data           <- Data structures for linear models
-│   ├── graph             <- Graph algorithms
-│   │   ├── csharp        <- C# wrapper
-│   │   ├── java          <- Java wrapper
-│   │   └── python        <- Python wrapper
-│   ├── flatzinc          <- FlatZinc interpreter
-│   └── com
-│       └── google
-│           └── ortools   <- C# and Java source files
-├── examples              <- Root directory for all examples
-│   ├── data              <- Data files for examples
-│   ├── cpp               <- C++ examples
-│   ├── python            <- Python examples
-│   ├── notebook          <- Jupyter/IPython notebooks
-│   ├── csharp            <- C# examples
-│   ├── fsharp            <- F# examples
-│   ├── com               <- Java examples
-│   ├── flatzinc          <- FlatZinc examples
-│   └── tests             <- Unit tests and bug reports
-├── LICENSE-2.0.txt       <- Apache license
-├── gen                   <- Generated files
-└── tools                 <- Delivery Tools (e.g. Windows GNU binaries, scripts, dockers)
-```
+* [Makefile](Makefile) Top-level for [GNU Make](https://www.gnu.org/software/make/manual/make.html) based build.
+* [makefiles](makefiles) Subsidiary Make files.
+* [CMakeLists.txt](CMakeLists.txt) Top-level for [CMake](https://cmake.org/cmake/help/latest/) based build.
+* [cmake](cmake) Subsidiary CMake files.
+* [bazel](bazel) Subsidiary Bazel files.
+  * [BUILD](bazel/BUILD) Top-level for [Bazel](https://docs.bazel.build/versions/master/bazel-overview.html) based build.
+
+* [ortools](ortools) Root directory for source code.
+  * [base](ortools/base) Basic utilities.
+  * [algorithms](ortools/algorithms) Basic algorithms.
+    * [csharp](ortools/algorithms/csharp) .Net wrapper.
+    * [java](ortools/algorithms/java) Java wrapper.
+    * [python](ortools/algorithms/python) Python wrapper.
+  * [graph](ortools/graph) Graph algorithms.
+    * [csharp](ortools/graph/csharp) .Net wrapper.
+    * [java](ortools/graph/java) Java wrapper.
+    * [python](ortools/graph/python) Python wrapper.
+  * [linear_solver](ortools/linear_solver) Linear solver wrapper.
+    * [csharp](ortools/linear_solver/csharp) .Net wrapper.
+    * [java](ortools/linear_solver/java) Java wrapper.
+    * [python](ortools/linear_solver/python) Python wrapper.
+  * [glop](ortools/glop) Google linear solver.
+  * [lp_data](ortools/lp_data) Data structures for linear models.
+  * [constraint_solver](ortools/constraint_solver) Constraint and Routing solver.
+    * [csharp](ortools/constraint_solver/csharp) .Net wrapper.
+    * [java](ortools/constraint_solver/java) Java wrapper.
+    * [python](ortools/constraint_solver/python) Python wrapper.
+  * [sat](ortools/sat) SAT solver.
+    * [csharp](ortools/sat/csharp) .Net wrapper.
+    * [java](ortools/sat/java) Java wrapper.
+    * [python](ortools/sat/python) Python wrapper.
+  * [bop](ortools/bop) Boolean solver based on SAT.
+  * [util](ortools/util) Utilities needed by the constraint solver
+  * [com/google/ortools](ortools/com/google/ortools) Java source files.
+
+* [examples](examples) Root directory for all examples.
+  * [contrib](examples/contrib) Examples from the community.
+  * [cpp](examples/cpp) C++ examples.
+  * [dotnet](examples/dotnet) .Net examples.
+  * [java](examples/java) Java examples.
+  * [python](examples/python) Python examples.
+  * [notebook](examples/notebook) Jupyter/IPython notebooks.
+  * [flatzinc](examples/flatzinc) FlatZinc examples.
+  * [data](examples/data) Data files for examples.
+  * [tests](examples/tests) Unit tests and bug reports.
+
+* [tools](tools) Delivery Tools (e.g. Windows GNU binaries, scripts, dockers)
 
 ## Installation
 
@@ -101,7 +99,7 @@ This software suite has been tested under:
 - Mac OSX El Capitan with Xcode 7.x (64-bit);
 - Microsoft Windows with Visual Studio 2015 and 2017 (64-bit).
 
-OR-Tools currently builds with a Makefile, but also provides Bazel support.
+OR-Tools currently builds with a Makefile, but also provides Bazel and CMake support.
 
 For installation instructions (both source and binary), please visit
 https://developers.google.com/optimization/introduction/installing.
