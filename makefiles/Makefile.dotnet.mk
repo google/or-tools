@@ -483,6 +483,13 @@ rdotnet_%.cs: \
 	"$(DOTNET_BIN)" run --no-build --project ortools$Salgorithms$Ssamples$S$*.csproj -- $(ARGS)
 
 rdotnet_%.cs: \
+ ortools/constraint_solver/samples/%.cs \
+ ortools/constraint_solver/samples/%.csproj \
+ $(DOTNET_ORTOOLS_NUPKG) FORCE
+	"$(DOTNET_BIN)" build ortools$Sconstraint_solver$Ssamples$S$*.csproj
+	"$(DOTNET_BIN)" run --no-build --project ortools$Sconstraint_solver$Ssamples$S$*.csproj -- $(ARGS)
+
+rdotnet_%.cs: \
  ortools/graph/samples/%.cs \
  ortools/graph/samples/%.csproj \
  $(DOTNET_ORTOOLS_NUPKG) FORCE
@@ -505,6 +512,11 @@ rdotnet_%.cs: \
 
 .PHONY: test_dotnet_algorithms_samples # Build and Run all .Net LP Samples (located in ortools/algorithms/samples)
 test_dotnet_algorithms_samples: ;
+
+.PHONY: test_dotnet_constraint_solver_samples # Build and Run all .Net CP Samples (located in ortools/constraint_solver/samples)
+test_dotnet_constraint_solver_samples:
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/Tsp.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/Vrp.cs
 
 .PHONY: test_dotnet_graph_samples # Build and Run all .Net LP Samples (located in ortools/graph/samples)
 test_dotnet_graph_samples: ;
@@ -538,6 +550,7 @@ test_dotnet_sat_samples:
 .PHONY: check_dotnet_pimpl
 check_dotnet_pimpl: \
  test_dotnet_algorithms_samples \
+ test_dotnet_constraint_solver_samples \
  test_dotnet_graph_samples \
  test_dotnet_linear_solver_samples \
  test_dotnet_sat_samples \
@@ -571,8 +584,6 @@ test_dotnet_examples_csharp: \
  rdotnet_csls_api.cs \
  rdotnet_csrabbitspheasants.cs \
  rdotnet_cstsp.cs \
- rdotnet_tsp.cs \
- rdotnet_vrp.cs \
 \
  rdotnet_3_jugs_regular.cs \
  rdotnet_a_puzzle.cs \

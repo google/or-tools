@@ -493,6 +493,9 @@ dotnet:
 # Linear Solver
 	$(MAKE) run SOURCE=examples/dotnet/SimpleLpProgram.cs
 	$(MAKE) run SOURCE=examples/dotnet/SimpleMipProgram.cs
+# Constraint Solver
+	$(MAKE) run SOURCE=examples/dotnet/Tsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/Vrp.cs
 # Sat
 	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
@@ -502,8 +505,6 @@ dotnet:
 # Misc
 	$(MAKE) run SOURCE=examples/dotnet/cslinearprogramming.cs
 	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming.cs
-	$(MAKE) run SOURCE=examples/dotnet/tsp.cs
-	$(MAKE) run SOURCE=examples/dotnet/vrp.cs
 	$(MAKE) run SOURCE=examples/dotnet/assignment.cs
 	$(MAKE) run SOURCE=examples/dotnet/alldifferent_except_0.cs
 	$(MAKE) run SOURCE=examples/dotnet/all_interval.cs
@@ -632,8 +633,8 @@ dotnet:
 test_dotnet: detect_dotnet
 	$(MAKE) run SOURCE=examples/dotnet/SimpleLpProgram.cs
 	$(MAKE) run SOURCE=examples/dotnet/SimpleMipProgram.cs
-	$(MAKE) run SOURCE=examples/dotnet/tsp.cs
-	$(MAKE) run SOURCE=examples/dotnet/vrp.cs
+	$(MAKE) run SOURCE=examples/dotnet/Tsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/Vrp.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
 
