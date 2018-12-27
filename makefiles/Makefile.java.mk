@@ -331,6 +331,13 @@ $(CLASS_DIR)/%: $(SRC_DIR)/ortools/algorithms/samples/%.java $(JAVA_OR_TOOLS_LIB
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  ortools$Salgorithms$Ssamples$S$*.java
 
+$(CLASS_DIR)/%: $(SRC_DIR)/ortools/constraint_solver/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
+	-$(DELREC) $(CLASS_DIR)$S$*
+	-$(MKDIR_P) $(CLASS_DIR)$S$*
+	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+ -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ ortools$Sconstraint_solver$Ssamples$S$*.java
+
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/graph/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
@@ -364,6 +371,11 @@ rjava_%: $(LIB_DIR)/%$J FORCE
 .PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
 test_java_algorithms_samples: \
 
+.PHONY: test_java_constraint_solver_samples # Build and Run all Java CP Samples (located in ortools/constraint_solver/samples)
+test_java_constraint_solver_samples: \
+ rjava_Tsp \
+ rjava_Vrp \
+
 .PHONY: test_java_graph_samples # Build and Run all Java Graph Samples (located in ortools/graph/samples)
 test_java_graph_samples: \
 
@@ -395,14 +407,13 @@ test_java_sat_samples: \
 .PHONY: check_java_pimpl
 check_java_pimpl: \
  test_java_algorithms_samples \
+ test_java_constraint_solver_samples \
  test_java_graph_samples \
  test_java_linear_solver_samples \
  test_java_sat_samples \
  \
  rjava_LinearProgramming \
  rjava_IntegerProgramming \
- rjava_Tsp \
- rjava_Vrp \
  rjava_Knapsack
 
 .PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
