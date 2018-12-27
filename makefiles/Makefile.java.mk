@@ -373,6 +373,7 @@ test_java_algorithms_samples: \
 
 .PHONY: test_java_constraint_solver_samples # Build and Run all Java CP Samples (located in ortools/constraint_solver/samples)
 test_java_constraint_solver_samples: \
+ rjava_SimpleRoutingProgram \
  rjava_Tsp \
  rjava_Vrp \
 
