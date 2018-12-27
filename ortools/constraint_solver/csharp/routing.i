@@ -77,6 +77,17 @@ class RoutingSearchParameters;
     self->AddVectorDimension(values.data(), capacity,
                              fix_start_cumul_to_zero, name);
   }
+
+ int RegisterTransitCallback(operations_research::TransitCallback c) {
+   return $self->RegisterTransitCallback([c](int64 i, int64 j) {
+       return (*c)(i, j);
+       });
+ }
+ int RegisterUnaryTransitCallback(operations_research::UnaryTransitCallback c) {
+   return $self->RegisterUnaryTransitCallback([c](int64 i) {
+       return (*c)(i);
+       });
+ }
 }
 
 %rename("%(camelcase)s", %$isfunction) "";

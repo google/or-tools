@@ -15,6 +15,9 @@ namespace Google.OrTools.ConstraintSolver {
 using System;
 using System.Collections.Generic;
 
+public delegate long TransitCallback(long FromIndex, long ToIndex);
+public delegate long UnaryTransitCallback(long FromIndex);
+
 public partial class Solver : IDisposable {
   public IntVar[] MakeIntVarArray(int count, long min, long max) {
     IntVar[] array = new IntVar[count];
