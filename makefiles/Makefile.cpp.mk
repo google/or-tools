@@ -368,6 +368,7 @@ test_cc_constraint_solver_samples: \
  rcc_nurses_cp \
  rcc_rabbits_and_pheasants_cp \
  rcc_simple_ls_program \
+ rcc_simple_routing_program \
  rcc_tsp \
  rcc_vrp
 
