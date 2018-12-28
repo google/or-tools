@@ -53,7 +53,6 @@ foreach(EXECUTABLE
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endforeach()
 
-
 foreach(TEST
     costas_array_sat
     cvrp_disjoint_tw
@@ -83,8 +82,6 @@ foreach(TEST
     #solve
     #sports_scheduling_sat # Too long
     #strawberry_fields_with_column_generation # Too long
-    tsp
-    vrp
     #weighted_tardiness_sat
     )
   add_test(NAME cc_${TEST} COMMAND ${TEST})
