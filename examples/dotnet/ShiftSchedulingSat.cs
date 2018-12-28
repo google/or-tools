@@ -546,25 +546,3 @@ public class ShiftSchedulingSat
     }
 }
 
-public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
-{
-    private DateTime _startTime;
-    private int _solutionCount;
-
-    public ObjectiveSolutionPrinter()
-    {
-        _startTime = DateTime.Now;
-    }
-
-    public override void OnSolutionCallback()
-    {
-        var currentTime = DateTime.Now;
-        var objective = ObjectiveValue();
-        var objectiveBound = BestObjectiveBound();
-        var time = currentTime - _startTime;
-
-        Console.WriteLine($"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objectiveBound}, {objective}]");
-
-        _solutionCount++;
-    }
-}

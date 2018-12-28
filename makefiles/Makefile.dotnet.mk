@@ -327,6 +327,7 @@ $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(SRC_DIR)/ortools/sat/csharp/CpSolver.cs \
  $(SRC_DIR)/ortools/sat/csharp/IntegerExpressions.cs \
  $(SRC_DIR)/ortools/sat/csharp/IntervalVariables.cs \
+ $(SRC_DIR)/ortools/sat/csharp/SearchHelpers.cs \
  $(SRC_DIR)/ortools/util/csharp/NestedArrayHelper.cs \
  $(SRC_DIR)/ortools/util/csharp/ProtoHelper.cs \
  $(GEN_DIR)/ortools/constraint_solver/SearchLimit.pb.cs \
