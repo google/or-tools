@@ -65,7 +65,7 @@ namespace operations_research {
     int64 index = routing.Start(0);
     LOG(INFO) << "Route for Vehicle 0:";
     int64 route_distance{0};
-    std::stringstream route;
+    std::ostringstream route;
     while (routing.IsEnd(index) == false) {
       route << manager.IndexToNode(index).value() << " -> ";
       int64 previous_index = index;
@@ -73,8 +73,7 @@ namespace operations_research {
       route_distance += routing.GetArcCostForVehicle(
           previous_index, index, int64{0});
     }
-    route << manager.IndexToNode(index).value();
-    LOG(INFO) << route.str();
+    LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";
     // [END print_solution]
   }
