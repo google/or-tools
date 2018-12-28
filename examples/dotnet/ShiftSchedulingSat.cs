@@ -563,7 +563,7 @@ public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
         var objectiveBound = BestObjectiveBound();
         var time = currentTime - _startTime;
 
-        Console.WriteLine($"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objective}, {objectiveBound}]");
+        Console.WriteLine($"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objectiveBound}, {objective}]");
 
         _solutionCount++;
     }

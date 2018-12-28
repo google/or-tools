@@ -1556,7 +1556,10 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
         """Called on each new solution."""
         current_time = time.time()
         objective = self.ObjectiveValue()
+        best_bound = self.BestObjectiveBound()
+        obj_lb = min(objective, best_bound)
+        obj_ub = max(objective, best_bound)
         print('Solution %i, time = %f s, objective = [%i, %i]' %
               (self.__solution_count, current_time - self.__start_time,
-               objective, self.BestObjectiveBound()))
+               obj_lb, obj_ub))
         self.__solution_count += 1
