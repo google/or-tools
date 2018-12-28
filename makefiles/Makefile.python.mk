@@ -499,6 +499,7 @@ test_python_algorithms_samples: \
 .PHONY: test_python_constraint_solver_samples # Run all Python CP Samples (located in ortools/constraint_solver/samples)
 test_python_constraint_solver_samples: \
  rpy_simple_cp_program \
+ rpy_simple_routing_program \
  rpy_tsp \
  rpy_vrp \
  rpy_vrpgs \
