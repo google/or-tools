@@ -364,10 +364,12 @@ test_cc_linear_solver_samples: \
 
 .PHONY: test_cc_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
 test_cc_constraint_solver_samples: \
- rcc_simple_ls_program \
- rcc_rabbits_and_pheasants_cp \
  rcc_minimal_jobshop_cp \
- rcc_nurses_cp
+ rcc_nurses_cp \
+ rcc_rabbits_and_pheasants_cp \
+ rcc_simple_ls_program \
+ rcc_tsp \
+ rcc_vrp
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \
@@ -391,8 +393,8 @@ test_cc_sat_samples: \
 .PHONY: check_cc_pimpl
 check_cc_pimpl: \
  test_cc_algorithms_samples \
- test_cc_graph_samples \
  test_cc_constraint_solver_samples \
+ test_cc_graph_samples \
  test_cc_linear_solver_samples \
  test_cc_sat_samples \
  \
@@ -400,8 +402,6 @@ check_cc_pimpl: \
  rcc_stigler_diet \
  rcc_constraint_programming_cp \
  rcc_integer_programming \
- rcc_tsp \
- rcc_vrp \
  rcc_knapsack \
  rcc_max_flow \
  rcc_min_cost_flow ;
