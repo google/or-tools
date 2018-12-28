@@ -44,8 +44,6 @@ foreach(EXECUTABLE
   solve
   sports_scheduling_sat
   strawberry_fields_with_column_generation
-  tsp
-  vrp
   weighted_tardiness_sat)
   add_executable(${EXECUTABLE} ${EXECUTABLE}.cc)
   target_include_directories(${EXECUTABLE} PUBLIC ${PARENT_SOURCE_DIR})
