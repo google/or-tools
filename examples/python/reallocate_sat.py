@@ -88,7 +88,7 @@ def main():
         print("  - number of projects = ", num_pr)
         print("  - number of years = ", num_years)
 
-        print('  - input pr')
+        print('  - input production')
         for p in range(num_pr):
             for y in range(num_years):
                 if pr[p][y] == 0:

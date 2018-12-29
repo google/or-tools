@@ -722,6 +722,7 @@ test_python_python: \
  rpy_magic_sequence_distribute \
  rpy_nqueens_sat \
  rpy_pyflow_example \
+ rpy_reallocate_sat \
  rpy_rcpsp_sat \
  rpy_single_machine_scheduling_with_setup_release_due_dates_sat \
  rpy_steel_mill_slab_sat \
