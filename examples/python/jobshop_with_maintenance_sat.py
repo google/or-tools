@@ -62,6 +62,7 @@ def main():
     for m in all_machines:
         model.AddNoOverlap(machine_to_intervals[m])
 
+    # Add deadlines on tasks.
     for j, job in enumerate(jobs):
         for t, task in enumerate(job):
             model.Add(all_tasks[j, t].end <= task[2])
