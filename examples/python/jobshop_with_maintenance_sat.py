@@ -99,10 +99,10 @@ def main():
                         index=t,
                         duration=task[0]))
 
+        # Create per machine output lines.
         sol_line = ''
         sol_line_tasks = ''
 
-        print('Optimal Schedule', '\n')
         for machine in all_machines:
             # Sort by starting time.
             assigned_jobs[machine].sort()
@@ -121,8 +121,10 @@ def main():
             sol_line += '\n'
             sol_line_tasks += '\n'
 
+        # Finally print the solution found.
+        print('Optimal Schedule')
         print(sol_line_tasks)
-        print('Task Time Intervals\n')
+        print('Task Time Intervals')
         print(sol_line)
 
 
