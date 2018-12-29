@@ -47,7 +47,7 @@ def main():
     for p, inner_l in enumerate(pr):
         for y, item in enumerate(inner_l):
             if item != 0:
-                contrib = model.NewIntVar(0, total, "r%d c%d" % (p, y))
+                contrib = model.NewIntVar(0, total, 'r%d c%d' % (p, y))
                 contributions_per_years[y].append(contrib)
                 contributions_per_prs[p].append(contrib)
                 all_contribs[p, y] = contrib
@@ -82,11 +82,11 @@ def main():
 
     # Output solution.
     if status == cp_model.OPTIMAL:
-        print("Data")
-        print("  - total = ", total)
-        print("  - year_average = ", avg)
-        print("  - number of projects = ", num_pr)
-        print("  - number of years = ", num_years)
+        print('Data')
+        print('  - total = ', total)
+        print('  - year_average = ', avg)
+        print('  - number of projects = ', num_pr)
+        print('  - number of years = ', num_years)
 
         print('  - input production')
         for p in range(num_pr):
