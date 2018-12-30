@@ -434,7 +434,7 @@ def steel_mill_slab(problem, break_symmetries, output_proto):
     status = solver.SolveWithSolutionCallback(model, objective_printer)
 
     ### Output the solution.
-    if status == cp_model.OPTIMAL:
+    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         print('Loss = %i, time = %f s, %i conflicts' % (
             solver.ObjectiveValue(), solver.WallTime(), solver.NumConflicts()))
     else:
