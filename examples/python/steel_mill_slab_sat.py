@@ -13,8 +13,11 @@
 """Solves the Stell Mill Slab problem with 4 different techniques."""
 
 from __future__ import print_function
+
 import argparse
+import collections
 import time
+
 from ortools.sat.python import cp_model
 from ortools.linear_solver import pywraplp
 
@@ -272,6 +275,7 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__start_time = time.time()
 
     def on_solution_callback(self):
+        """Called on each new solution."""
         current_time = time.time()
         objective = sum(self.Value(l) for l in self.__loss)
         print('Solution %i, time = %f s, objective = %i' %
@@ -437,74 +441,48 @@ def steel_mill_slab(problem, break_symmetries, output_proto):
         print('No solution')
 
 
-class AllSolutionsCollector(cp_model.CpSolverSolutionCallback):
-    """Collect all solutions callback."""
-
-    def __init__(self, variables):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__solutions = []
-        self.__variables = variables
-
-    def on_solution_callback(self):
-        solution = [self.Value(v) for v in self.__variables]
-        self.__solutions.append(tuple(solution))
-
-    def all_solutions(self):
-        return self.__solutions
-
-
-def collect_valid_slabs(capacities, colors, widths, loss_array, all_colors):
+def collect_valid_slabs_dp(capacities, colors, widths, loss_array):
     """Collect valid columns (assign, loss) for one slab."""
-    max_capacity = max(capacities)
-    all_orders = range(len(colors))
-    orders_per_color = [[o for o in all_orders if colors[o] == c + 1]
-                        for c in all_colors]
-
-    model = cp_model.CpModel()
-    assign = [model.NewBoolVar('assign_%i' % o) for o in all_orders]
-    load = model.NewIntVar(0, max_capacity, 'load')
-
-    color_in_slab = [
-        model.NewBoolVar('color_%i' % (c + 1)) for c in all_colors
-    ]
-
-    # Compute load.
-    model.Add(sum(assign[o] * widths[o] for o in all_orders) == load)
-
-    # Link present_colors and assign.
-    for c in all_colors:
-        for o in orders_per_color[c]:
-            model.AddImplication(assign[o], color_in_slab[c])
-            model.AddImplication(color_in_slab[c].Not(), assign[o].Not())
-        model.AddBoolOr([color_in_slab[c].Not()] +
-                        [assign[o] for o in orders_per_color[c]])
-
-    # At most two colors per slab.
-    model.Add(sum(color_in_slab) <= 2)
-
-    # Compute loss.
-    loss = model.NewIntVar(0, max(loss_array), 'loss')
-    model.AddElement(load, loss_array, loss)
-
-    model.AddDecisionStrategy(assign, cp_model.CHOOSE_FIRST,
-                              cp_model.SELECT_MAX_VALUE)
-
-    ### Solve model and collect columns.
-    print('Collect Valid Slabs...START')
     start_time = time.time()
 
-    solver = cp_model.CpSolver()
+    max_capacity = max(capacities)
 
-    # Add solution callback to store all possible slab templates.
-    collector = AllSolutionsCollector(assign + [loss, load])
+    valid_assignment = collections.namedtuple('valid_assignment',
+                                              'orders load colors')
+    all_valid_assignments = [valid_assignment(orders=[], load=0, colors=[])]
 
-    # Force solver to follow the decision strategy exactly.
-    solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    for order_id in range(len(colors)):
+        new_width = widths[order_id]
+        new_color = colors[order_id]
+        new_assignments = []
+        for assignment in all_valid_assignments:
+            if assignment.load + new_width > max_capacity:
+                continue
+            if len(assignment.
+                   colors) == 2 and not new_color in assignment.colors:
+                continue
+            new_colors = assignment.colors.copy()
+            if not new_color in new_colors:
+                new_colors.append(new_color)
+            new_assignment = valid_assignment(
+                orders=assignment.orders + [order_id],
+                load=assignment.load + new_width,
+                colors=new_colors)
+            new_assignments.append(new_assignment)
+        all_valid_assignments.extend(new_assignments)
 
-    solver.SearchForAllSolutions(model, collector)
-    run_time = time.time() - start_time
-    print('Collect Valid Slabs...DONE in %.2f s' % run_time)
-    return collector.all_solutions()
+    print('%i assignments created in %.2f s' % (len(all_valid_assignments),
+                                                time.time() - start_time))
+    tuples = []
+    for assignment in all_valid_assignments:
+        solution = [0 for _ in range(len(colors))]
+        for i in assignment.orders:
+            solution[i] = 1
+        solution.append(loss_array[assignment.load])
+        solution.append(assignment.load)
+        tuples.append(solution)
+
+    return tuples
 
 
 def steel_mill_slab_with_valid_slabs(problem, break_symmetries, output_proto):
@@ -542,13 +520,12 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries, output_proto):
     ]
     losses = [model.NewIntVar(0, max_loss, 'loss_%i' % s) for s in all_slabs]
 
-    unsorted_valid_slabs = collect_valid_slabs(capacities, colors, widths,
-                                               loss_array, all_colors)
+    unsorted_valid_slabs = collect_valid_slabs_dp(capacities, colors, widths,
+                                                  loss_array)
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
     num_valid_slabs = len(valid_slabs)
-    print('  - %i valid slab combinations' % num_valid_slabs)
 
     for s in all_slabs:
         model.AddAllowedAssignments(
@@ -670,14 +647,14 @@ def steel_mill_slab_with_column_generation(problem, output_proto):
     ### Model problem.
 
     # Generate all valid slabs (columns)
-    unsorted_valid_slabs = collect_valid_slabs(capacities, colors, widths,
-                                               loss_array, all_colors)
+    unsorted_valid_slabs = collect_valid_slabs_dp(capacities, colors, widths,
+                                                  loss_array)
+
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
     num_valid_slabs = len(valid_slabs)
     all_valid_slabs = range(num_valid_slabs)
-    print('  - %i valid slab combinations' % num_valid_slabs)
 
     # create model and decision variables.
     model = cp_model.CpModel()
@@ -746,19 +723,16 @@ def steel_mill_slab_with_mip_column_generation(problem):
     ### Model problem.
 
     # Generate all valid slabs (columns)
-    start = time.time()
-    unsorted_valid_slabs = collect_valid_slabs(capacities, colors, widths,
-                                               loss_array, all_colors)
+    unsorted_valid_slabs = collect_valid_slabs_dp(capacities, colors, widths,
+                                                  loss_array)
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
     num_valid_slabs = len(valid_slabs)
     all_valid_slabs = range(num_valid_slabs)
-    generate = time.time()
-    print('  - %i valid slab combinations generated in %f s' %
-          (num_valid_slabs, generate - start))
 
     # create model and decision variables.
+    start_time = time.time()
     solver = pywraplp.Solver('Steel',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
     selected = [
@@ -784,7 +758,7 @@ def steel_mill_slab_with_mip_column_generation(problem):
     ### Output the solution.
     if status == pywraplp.Solver.OPTIMAL:
         print('Objective value = %f found in %.2f s' %
-              (solver.Objective().Value(), time.time() - generate))
+              (solver.Objective().Value(), time.time() - start_time))
     else:
         print('No solution')
 
