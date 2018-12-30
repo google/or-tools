@@ -458,12 +458,11 @@ def collect_valid_slabs_dp(capacities, colors, widths, loss_array):
         for assignment in all_valid_assignments:
             if assignment.load + new_width > max_capacity:
                 continue
-            if len(assignment.
-                   colors) == 2 and not new_color in assignment.colors:
-                continue
             new_colors = assignment.colors.copy()
             if not new_color in new_colors:
                 new_colors.append(new_color)
+            if len(new_colors) > 2:
+                continue
             new_assignment = valid_assignment(
                 orders=assignment.orders + [order_id],
                 load=assignment.load + new_width,
@@ -525,7 +524,6 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries, output_proto):
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
-    num_valid_slabs = len(valid_slabs)
 
     for s in all_slabs:
         model.AddAllowedAssignments(
@@ -596,17 +594,15 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries, output_proto):
                 model.Add(positions[p[0]] <= positions[p[1]])
 
     # Objective.
-    obj = model.NewIntVar(0, num_slabs * max_loss, 'obj')
-    model.Add(obj == sum(losses))
-    model.Minimize(obj)
+    model.Minimize(sum(losses))
 
     print('Model created')
 
     # Output model proto to file.
     if output_proto:
-        f = open(output_proto, 'w')
-        f.write(str(model.ModelProto()))
-        f.close()
+        output_file = open(output_proto, 'w')
+        output_file.write(str(model.ModelProto()))
+        output_file.close()
 
     ### Solve model.
     solver = cp_model.CpSolver()
@@ -626,11 +622,10 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries, output_proto):
 def steel_mill_slab_with_column_generation(problem, output_proto):
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = build_problem(problem)
+    (num_slabs, capacities, _, orders) = build_problem(problem)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
-    all_colors = range(num_colors)
     all_orders = range(len(orders))
     print('Solving steel mill with %i orders, %i slabs, and %i capacities' %
           (num_orders, num_slabs, num_capacities - 1))
@@ -653,17 +648,16 @@ def steel_mill_slab_with_column_generation(problem, output_proto):
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
-    num_valid_slabs = len(valid_slabs)
-    all_valid_slabs = range(num_valid_slabs)
+    all_valid_slabs = range(len(valid_slabs))
 
     # create model and decision variables.
     model = cp_model.CpModel()
     selected = [model.NewBoolVar('selected_%i' % i) for i in all_valid_slabs]
 
-    for o in all_orders:
+    for order_id in all_orders:
         model.Add(
-            sum(selected[i] for i in all_valid_slabs
-                if valid_slabs[i][o]) == 1)
+            sum(selected[i] for i, slab in enumerate(valid_slabs)
+                if slab[order_id]) == 1)
 
     # Redundant constraint (sum of loads == sum of widths).
     model.Add(
@@ -671,19 +665,16 @@ def steel_mill_slab_with_column_generation(problem, output_proto):
             for i in all_valid_slabs) == sum(widths))
 
     # Objective.
-    max_loss = max(valid_slabs[i][-2] for i in all_valid_slabs)
-    obj = model.NewIntVar(0, num_slabs * max_loss, 'obj')
-    model.Add(obj == sum(
-        selected[i] * valid_slabs[i][-2] for i in all_valid_slabs))
-    model.Minimize(obj)
+    model.Minimize(
+        sum(selected[i] * valid_slabs[i][-2] for i in all_valid_slabs))
 
     print('Model created')
 
     # Output model proto to file.
     if output_proto:
-        f = open(output_proto, 'w')
-        f.write(str(model.ModelProto()))
-        f.close()
+        output_file = open(output_proto, 'w')
+        output_file.write(str(model.ModelProto()))
+        output_file.close()
 
     ### Solve model.
     solver = cp_model.CpSolver()
@@ -702,11 +693,10 @@ def steel_mill_slab_with_column_generation(problem, output_proto):
 def steel_mill_slab_with_mip_column_generation(problem):
     """Solves the Steel Mill Slab Problem."""
     ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = build_problem(problem)
+    (num_slabs, capacities, _, orders) = build_problem(problem)
 
     num_orders = len(orders)
     num_capacities = len(capacities)
-    all_colors = range(num_colors)
     all_orders = range(len(orders))
     print('Solving steel mill with %i orders, %i slabs, and %i capacities' %
           (num_orders, num_slabs, num_capacities - 1))
@@ -728,8 +718,7 @@ def steel_mill_slab_with_mip_column_generation(problem):
     # Sort slab by descending load/loss. Remove duplicates.
     valid_slabs = sorted(
         unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
-    num_valid_slabs = len(valid_slabs)
-    all_valid_slabs = range(num_valid_slabs)
+    all_valid_slabs = range(len(valid_slabs))
 
     # create model and decision variables.
     start_time = time.time()
