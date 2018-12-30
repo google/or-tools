@@ -192,6 +192,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # WINDOWS_GLOG_DIR, WINDOWS_PROTOBUF_DIR, WINDOWS_SWIG_BINARY, >> Makefile.local
 	@echo # WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
 	@echo #   e.g.: WINDOWS_GFLAGS_DIR = "relative_path/to/gflags/dir" >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define absolute paths without trailing "\". E.g. "c:\Installs\SCIP-6.0.0" >> Makefile.local
 
 ############
 ##  ZLIB  ##
