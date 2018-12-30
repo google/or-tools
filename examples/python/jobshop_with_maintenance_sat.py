@@ -20,7 +20,7 @@ import collections
 from ortools.sat.python import cp_model
 
 
-def main():
+def jobshop_with_maintenance():
     """Solves a jobshop with maintenance on one machine."""
     model = cp_model.CpModel()
 
@@ -110,7 +110,7 @@ def main():
                 # Add spaces to output to align columns.
                 sol_line_tasks += '%-10s' % name
                 start = assigned_task.start
-                duration = jobs_data[assigned_task.job][assigned_task.index][1]
+                duration = assigned_task.duration
 
                 sol_tmp = '[%i,%i]' % (start, start + duration)
                 # Add spaces to output to align columns.
@@ -126,5 +126,4 @@ def main():
         print(output)
 
 
-if __name__ == '__main__':
-    main()
+jobshop_with_maintenance()
