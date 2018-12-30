@@ -46,34 +46,38 @@ def jobshop_with_maintenance():
     all_tasks = {}
     machine_to_intervals = collections.defaultdict(list)
 
-    for j, job in enumerate(jobs_data):
-        for t, task in enumerate(job):
-            suffix = '_%i_%i' % (j, t)
+    for job_id, job in enumerate(jobs_data):
+        for task_id, task in enumerate(job):
+            machine = task[0]
+            duration = task[1]
+            suffix = '_%i_%i' % (job_id, task_id)
             start_var = model.NewIntVar(0, horizon, 'start' + suffix)
             end_var = model.NewIntVar(0, horizon, 'end' + suffix)
-            interval_var = model.NewIntervalVar(start_var, task[1], end_var,
+            interval_var = model.NewIntervalVar(start_var, duration, end_var,
                                                 'interval' + suffix)
-            all_tasks[j, t] = task_type(
+            all_tasks[job_id, task_id] = task_type(
                 start=start_var, end=end_var, interval=interval_var)
-            machine_to_intervals[task[0]].append(interval_var)
+            machine_to_intervals[machine].append(interval_var)
 
-    # Add maintenance interval.
+    # Add maintenance interval (machine 0 is not available on time {4, 5, 6, 7}).
     machine_to_intervals[0].append(model.NewIntervalVar(4, 4, 8, 'weekend_0'))
 
     # Create disjuctive constraints.
-    for m in all_machines:
-        model.AddNoOverlap(machine_to_intervals[m])
+    for machine in all_machines:
+        model.AddNoOverlap(machine_to_intervals[machine])
 
     # Precedences inside a job.
-    for j, job in enumerate(jobs_data):
-        for t in range(len(job) - 1):
-            model.Add(all_tasks[j, t + 1].start >= all_tasks[j, t].end)
+    for job_id, job in enumerate(jobs_data):
+        for task_id in range(len(job) - 1):
+            model.Add(all_tasks[job_id, task_id +
+                                1].start >= all_tasks[job_id, task_id].end)
 
     # Makespan objective.
     obj_var = model.NewIntVar(0, horizon, 'makespan')
-    model.AddMaxEquality(
-        obj_var,
-        [all_tasks[j, len(job) - 1].end for j, job in enumerate(jobs_data)])
+    model.AddMaxEquality(obj_var, [
+        all_tasks[job_id, len(job) - 1].end
+        for job_id, job in enumerate(jobs_data)
+    ])
     model.Minimize(obj_var)
 
     # Solve model.
@@ -87,17 +91,17 @@ def jobshop_with_maintenance():
 
         # Create one list of assigned tasks per machine.
         assigned_jobs = collections.defaultdict(list)
-        for j, job in enumerate(jobs_data):
-            for t, task in enumerate(job):
+        for job_id, job in enumerate(jobs_data):
+            for task_id, task in enumerate(job):
                 machine = task[0]
                 assigned_jobs[machine].append(
                     assigned_task_type(
-                        start=solver.Value(all_tasks[j, t].start),
-                        job=j,
-                        index=t,
+                        start=solver.Value(all_tasks[job_id, task_id].start),
+                        job=job_id,
+                        index=task_id,
                         duration=task[1]))
 
-          # Create per machine output lines.
+        # Create per machine output lines.
         output = ''
         for machine in all_machines:
             # Sort by starting time.
