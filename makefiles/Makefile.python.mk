@@ -716,6 +716,7 @@ test_python_python: \
  rpy_integer_programming \
  rpy_jobshop_ft06_distance_sat \
  rpy_jobshop_ft06_sat \
+ rpy_jobshop_with_maintenance_sat \
  rpy_knapsack \
  rpy_linear_assignment_api \
  rpy_linear_programming \
