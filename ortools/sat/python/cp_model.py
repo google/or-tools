@@ -1559,7 +1559,7 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
         best_bound = self.BestObjectiveBound()
         obj_lb = min(objective, best_bound)
         obj_ub = max(objective, best_bound)
-        print('Solution %i, time = %f s, objective = [%i, %i]' %
+        print('Solution %i, time = %.2f s, objective = [%i, %i]' %
               (self.__solution_count, current_time - self.__start_time,
                obj_lb, obj_ub))
         self.__solution_count += 1
