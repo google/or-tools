@@ -22,7 +22,7 @@ from ortools.sat.python import cp_model
 
 def jobshop_with_maintenance():
     """Solves a jobshop with maintenance on one machine."""
-    # Create the model.    
+    # Create the model.
     model = cp_model.CpModel()
 
     jobs_data = [  # task = (machine_id, processing_time).
