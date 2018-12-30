@@ -114,34 +114,32 @@ def MinimalJobshopSat():
 
 
         # Create per machine output lines.
-        sol_line = ''
-        sol_line_tasks = ''
-
+        output = ''
         for machine in all_machines:
             # Sort by starting time.
             assigned_jobs[machine].sort()
-            sol_line += '  - machine ' + str(machine) + ': '
-            sol_line_tasks += '  - machine ' + str(machine) + ': '
+            sol_line_tasks = '  - machine ' + str(machine) + ': '
+            sol_line = '               '
 
             for assigned_task in assigned_jobs[machine]:
                 name = 'job_%i_%i' % (assigned_task.job, assigned_task.index)
                 # Add spaces to output to align columns.
-                sol_line_tasks += '%10s' % name
+                sol_line_tasks += '%-10s' % name
                 start = assigned_task.start
                 duration = jobs_data[assigned_task.job][assigned_task.index][1]
 
                 sol_tmp = '[%i,%i]' % (start, start + duration)
                 # Add spaces to output to align columns.
-                sol_line += '%10s' % sol_tmp
+                sol_line += '%-10s' % sol_tmp
 
             sol_line += '\n'
             sol_line_tasks += '\n'
+            output += sol_line_tasks
+            output += sol_line
 
         # Finally print the solution found.
-        print('Optimal Schedule', '\n')
-        print(sol_line_tasks)
-        print('Task Time Intervals\n')
-        print(sol_line)
+        print('Optimal Schedule')
+        print(output)
         # [END solution_printing]
 
 
