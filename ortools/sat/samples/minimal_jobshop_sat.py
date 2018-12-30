@@ -40,11 +40,13 @@ def minimal_jobshop_sat():
     all_machines = range(machines_count)
     # [END data]
 
-    # Compute horizon.
+    # Computes horizon dynamically as the sum of all durations.
     horizon = sum(task[1] for job in jobs_data for task in job)
 
     # [START variables]
+    # Named tuple to store information about created variables.    
     task_type = collections.namedtuple('task_type', 'start end interval')
+    # Named tuple to manipulate solution information. 
     assigned_task_type = collections.namedtuple('assigned_task_type',
                                                 'start job index duration')
 
@@ -96,10 +98,6 @@ def minimal_jobshop_sat():
 
     if status == cp_model.OPTIMAL:
         # [START solution_printing]
-        # Print out makespan.
-        print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
-        print()
-
         # Create one list of assigned tasks per machine.
         assigned_jobs = collections.defaultdict(list)
         for job_id, job in enumerate(jobs_data):
@@ -117,8 +115,8 @@ def minimal_jobshop_sat():
         for machine in all_machines:
             # Sort by starting time.
             assigned_jobs[machine].sort()
-            sol_line_tasks = '  - machine ' + str(machine) + ': '
-            sol_line = '               '
+            sol_line_tasks = 'Machine ' + str(machine) + ': '
+            sol_line = '           '
 
             for assigned_task in assigned_jobs[machine]:
                 name = 'job_%i_%i' % (assigned_task.job, assigned_task.index)
@@ -137,7 +135,7 @@ def minimal_jobshop_sat():
             output += sol_line
 
         # Finally print the solution found.
-        print('Optimal Schedule')
+        print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
         print(output)
         # [END solution_printing]
 

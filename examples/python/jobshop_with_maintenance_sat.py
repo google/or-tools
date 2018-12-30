@@ -22,6 +22,7 @@ from ortools.sat.python import cp_model
 
 def jobshop_with_maintenance():
     """Solves a jobshop with maintenance on one machine."""
+    # Create the model.    
     model = cp_model.CpModel()
 
     jobs_data = [  # task = (machine_id, processing_time).
@@ -38,7 +39,7 @@ def jobshop_with_maintenance():
 
     # Named tuple to store information about created variables.
     task_type = collections.namedtuple('Task', 'start end interval')
-    # Named tuple to store information about created variables.
+    # Named tuple to manipulate solution information.
     assigned_task_type = collections.namedtuple('assigned_task_type',
                                                 'start job index duration')
 
@@ -62,7 +63,7 @@ def jobshop_with_maintenance():
     # Add maintenance interval (machine 0 is not available on time {4, 5, 6, 7}).
     machine_to_intervals[0].append(model.NewIntervalVar(4, 4, 8, 'weekend_0'))
 
-    # Create disjuctive constraints.
+    # Create and add disjunctive constraints.
     for machine in all_machines:
         model.AddNoOverlap(machine_to_intervals[machine])
 
@@ -86,9 +87,6 @@ def jobshop_with_maintenance():
 
     # Output solution.
     if status == cp_model.OPTIMAL:
-        print('Optimal makespan: %i' % solver.ObjectiveValue())
-        print()
-
         # Create one list of assigned tasks per machine.
         assigned_jobs = collections.defaultdict(list)
         for job_id, job in enumerate(jobs_data):
@@ -106,8 +104,8 @@ def jobshop_with_maintenance():
         for machine in all_machines:
             # Sort by starting time.
             assigned_jobs[machine].sort()
-            sol_line_tasks = '  - machine ' + str(machine) + ': '
-            sol_line = '               '
+            sol_line_tasks = 'Machine ' + str(machine) + ': '
+            sol_line = '           '
 
             for assigned_task in assigned_jobs[machine]:
                 name = 'job_%i_%i' % (assigned_task.job, assigned_task.index)
@@ -126,7 +124,7 @@ def jobshop_with_maintenance():
             output += sol_line
 
         # Finally print the solution found.
-        print('Optimal Schedule')
+        print('Optimal Schedule Length: %i' % solver.ObjectiveValue())
         print(output)
 
 
