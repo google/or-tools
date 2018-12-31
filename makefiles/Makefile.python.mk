@@ -120,7 +120,7 @@ $(OBJ_DIR)/swig/knapsack_solver_python_wrap.$O: \
  $(GEN_DIR)/ortools/algorithms/knapsack_solver_python_wrap.cc \
  $(ALGORITHMS_DEPS) \
  | $(OBJ_DIR)/swig
-	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+	$(CCC) $(CFLAGS) "$(PYTHON_INC)" $(PYTHON3_CFLAGS) \
  -c $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sknapsack_solver_python_wrap.$O
 
@@ -166,7 +166,7 @@ $(OBJ_DIR)/swig/graph_python_wrap.$O: \
  $(GEN_DIR)/ortools/graph/graph_python_wrap.cc \
  $(GRAPH_DEPS) \
  | $(OBJ_DIR)/swig
-	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+	$(CCC) $(CFLAGS) "$(PYTHON_INC)" $(PYTHON3_CFLAGS) \
  -c $(GEN_PATH)/ortools/graph/graph_python_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_python_wrap.$O
 
@@ -264,7 +264,7 @@ $(OBJ_DIR)/swig/constraint_solver_python_wrap.$O: \
  $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc \
  $(CP_DEPS) \
  | $(OBJ_DIR)/swig
-	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+	$(CCC) $(CFLAGS) "$(PYTHON_INC)" $(PYTHON3_CFLAGS) \
  -c $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sconstraint_solver_python_wrap.$O
 
@@ -324,7 +324,7 @@ $(OBJ_DIR)/swig/linear_solver_python_wrap.$O: \
  $(GEN_DIR)/ortools/linear_solver/linear_solver_python_wrap.cc \
  $(LP_DEPS) \
  | $(OBJ_DIR)/swig
-	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+	$(CCC) $(CFLAGS) "$(PYTHON_INC)" $(PYTHON3_CFLAGS) \
  -c $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Slinear_solver_python_wrap.$O
 
@@ -383,7 +383,7 @@ $(OBJ_DIR)/swig/sat_python_wrap.$O: \
  $(GEN_DIR)/ortools/sat/sat_python_wrap.cc \
  $(SAT_DEPS) \
  | $(OBJ_DIR)/swig
-	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+	$(CCC) $(CFLAGS) "$(PYTHON_INC)" $(PYTHON3_CFLAGS) \
  -c $(GEN_PATH)$Sortools$Ssat$Ssat_python_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_python_wrap.$O
 
@@ -434,7 +434,7 @@ $(OBJ_DIR)/swig/rcpsp_python_wrap.$O: \
  $(GEN_DIR)/ortools/data/rcpsp_python_wrap.cc \
  $(DATA_DEPS) \
  | $(OBJ_DIR)/swig
-	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+	$(CCC) $(CFLAGS) "$(PYTHON_INC)" $(PYTHON3_CFLAGS) \
  -c $(GEN_PATH)$Sortools$Sdata$Srcpsp_python_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Srcpsp_python_wrap.$O
 
