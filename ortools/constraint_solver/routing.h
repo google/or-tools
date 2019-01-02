@@ -2432,18 +2432,24 @@ class ComparatorCheapestAdditionFilteredDecisionBuilder
 // are taken into account.
 class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
  public:
-  // If savings_neighbors_ratio > 0 then for each node only this ratio of its
-  // neighbors leading to the smallest arc costs are considered.
-  // Furthermore, if add_reverse_arcs is true, the neighborhood relationships
-  // are always considered symmetrically.
-  // Finally, savings_arc_coefficient is a strictly positive parameter
-  // indicating the coefficient of the arc being considered in the saving
-  // formula.
-  // TODO(user): Add all parameters as struct to the class.
+  struct SavingsParameters {
+    // If neighbors_ratio < 1 then for each node only this ratio of its
+    // neighbors leading to the smallest arc costs are considered.
+    double neighbors_ratio = 1.0;
+    // The number of neighbors considered for each node is also adapted so that
+    // the stored Savings don't use up more than max_memory_usage_bytes bytes.
+    double max_memory_usage_bytes = 6e9;
+    // If add_reverse_arcs is true, the neighborhood relationships are
+    // considered symmetrically.
+    bool add_reverse_arcs = false;
+    // arc_coefficient is a strictly positive parameter indicating the
+    // coefficient of the arc being considered in the Saving formula.
+    double arc_coefficient = 1.0;
+  };
+
   SavingsFilteredDecisionBuilder(
       RoutingModel* model, RoutingIndexManager* manager,
-      double savings_neighbors_ratio, bool add_reverse_arcs,
-      double savings_arc_coefficient,
+      SavingsParameters parameters,
       const std::vector<LocalSearchFilter*>& filters);
   ~SavingsFilteredDecisionBuilder() override;
   bool BuildSolution() override;
@@ -2463,6 +2469,8 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
              std::tie(other.fixed_cost, other.vehicle_class);
     }
   };
+
+  virtual double ExtraSavingsMemoryMultiplicativeFactor() const = 0;
 
   virtual void BuildRoutesFromSavings() = 0;
 
@@ -2510,8 +2518,8 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
       std::vector<std::vector<int64> >* adjacency_lists);
   // clang-format on
 
-  // Computes saving values for all node pairs and vehicle types (see
-  // ComputeVehicleTypes()).
+  // Computes saving values for node pairs (see MaxNumNeighborsPerNode()) and
+  // all vehicle types (see ComputeVehicleTypes()).
   // The saving index attached to each saving value is an index used to
   // store and recover the node pair to which the value is linked (cf. the
   // index conversion methods below).
@@ -2533,11 +2541,16 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
   // for each vehicle class are stored in vehicles_per_vehicle_class_.
   void ComputeVehicleTypes();
 
+  // Computes and returns the maximum number of (closest) neighbors to consider
+  // for each node when computing Savings, based on the neighbors ratio and max
+  // memory usage specified by the savings_params_.
+  int64 MaxNumNeighborsPerNode(int num_vehicle_types) const;
+
   RoutingIndexManager* const manager_;
-  const double savings_neighbors_ratio_;
-  const bool add_reverse_arcs_;
-  const double savings_arc_coefficient_;
+  const SavingsParameters savings_params_;
   int64 size_squared_;
+
+  friend class SavingsFilteredDecisionBuilderTestPeer;
 };
 
 class SequentialSavingsFilteredDecisionBuilder
@@ -2545,12 +2558,9 @@ class SequentialSavingsFilteredDecisionBuilder
  public:
   SequentialSavingsFilteredDecisionBuilder(
       RoutingModel* model, RoutingIndexManager* manager,
-      double savings_neighbors_ratio, bool add_reverse_arcs,
-      double savings_arc_coefficient,
+      SavingsParameters parameters,
       const std::vector<LocalSearchFilter*>& filters)
-      : SavingsFilteredDecisionBuilder(model, manager, savings_neighbors_ratio,
-                                       add_reverse_arcs,
-                                       savings_arc_coefficient, filters) {}
+      : SavingsFilteredDecisionBuilder(model, manager, parameters, filters) {}
   ~SequentialSavingsFilteredDecisionBuilder() override{};
 
  private:
@@ -2559,6 +2569,7 @@ class SequentialSavingsFilteredDecisionBuilder
   // possible from both ends by gradually inserting the best Saving at either
   // end of the route.
   void BuildRoutesFromSavings() override;
+  double ExtraSavingsMemoryMultiplicativeFactor() const override { return 1.0; }
 };
 
 class ParallelSavingsFilteredDecisionBuilder
@@ -2566,12 +2577,9 @@ class ParallelSavingsFilteredDecisionBuilder
  public:
   ParallelSavingsFilteredDecisionBuilder(
       RoutingModel* model, RoutingIndexManager* manager,
-      double savings_neighbors_ratio, bool add_reverse_arcs,
-      double savings_arc_coefficient,
+      SavingsParameters parameters,
       const std::vector<LocalSearchFilter*>& filters)
-      : SavingsFilteredDecisionBuilder(model, manager, savings_neighbors_ratio,
-                                       add_reverse_arcs,
-                                       savings_arc_coefficient, filters) {}
+      : SavingsFilteredDecisionBuilder(model, manager, parameters, filters) {}
   ~ParallelSavingsFilteredDecisionBuilder() override{};
 
  private:
@@ -2586,6 +2594,8 @@ class ParallelSavingsFilteredDecisionBuilder
   //    nodes on their (different) routes, we merge the routes of the two nodes
   //    into one if possible.
   void BuildRoutesFromSavings() override;
+
+  double ExtraSavingsMemoryMultiplicativeFactor() const override { return 2.0; }
 
   // Merges the routes of first_vehicle and second_vehicle onto the vehicle with
   // lower fixed cost. The routes respectively end at before_node and start at

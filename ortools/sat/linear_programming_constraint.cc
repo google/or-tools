@@ -112,6 +112,7 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
 void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Fill integer_lp_.
   integer_lp_.clear();
+  constraint_manager_.SetParameters(sat_parameters_);
   const auto& all_constraints = constraint_manager_.AllConstraints();
   for (const auto index : constraint_manager_.LpConstraints()) {
     const LinearConstraint& ct = all_constraints[index];
@@ -749,6 +750,31 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
   return true;
 }
 
+namespace {
+
+void ComputeAndDivideByGcd(std::vector<IntegerValue>* coeffs,
+                           IntegerValue* ub) {
+  if (coeffs->empty()) return;
+  IntegerValue gcd(std::abs(coeffs->front().value()));
+  const int size = coeffs->size();
+  for (int i = 1; i < size; ++i) {
+    // GCD(gcd, coeff) = GCD(coeff, gcd % coeff);
+    IntegerValue coeff(std::abs((*coeffs)[i].value()));
+    while (coeff != 0) {
+      const IntegerValue r = gcd % coeff;
+      gcd = coeff;
+      coeff = r;
+    }
+    if (gcd == 1) break;
+  }
+  if (gcd > 1) {
+    *ub = CeilRatio(*ub, gcd);
+    for (IntegerValue& coeff : *coeffs) coeff /= gcd;
+  }
+}
+
+}  // namespace
+
 // The "exact" computation go as follow:
 //
 // Given any INTEGER linear combination of the LP constraints, we can create a
@@ -821,6 +847,8 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   }
   vars.push_back(objective_cp_);
   coeffs.push_back(-obj_scale);
+
+  ComputeAndDivideByGcd(&coeffs, &rc_ub);
 
   // Check for possible overflow in IntegerSumLE::Propagate().
   if (PossibleOverflow(vars, coeffs, rc_ub)) {

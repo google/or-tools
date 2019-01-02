@@ -19,9 +19,18 @@
 #include "absl/container/flat_hash_map.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
+
+// Returns sqrt(sum square(coeff)).
+double ComputeL2Norm(const LinearConstraint& constraint);
+
+// Returns the scalar product of given constraint coefficients. This method
+// assumes that the constraint variables are in sorted order.
+double ScalarProduct(const LinearConstraint& constraint1,
+                     const LinearConstraint& constraint2);
 
 // This class holds a list of globally valid linear constraints and has some
 // logic to decide which one should be part of the LP relaxation. We want more
@@ -72,7 +81,11 @@ class LinearConstraintManager {
     return lp_constraints_;
   }
 
+  void SetParameters(const SatParameters& params) { sat_parameters_ = params; }
+
  private:
+  SatParameters sat_parameters_;
+
   // The set of variables that appear in at least one constraint.
   std::set<IntegerVariable> used_variables_;
 
@@ -81,6 +94,7 @@ class LinearConstraintManager {
 
   // The global list of constraint.
   gtl::ITIVector<ConstraintIndex, LinearConstraint> constraints_;
+  gtl::ITIVector<ConstraintIndex, double> constraint_l2_norms_;
 
   // The subset of constraints currently in the lp.
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_in_lp_;

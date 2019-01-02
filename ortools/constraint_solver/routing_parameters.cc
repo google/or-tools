@@ -47,6 +47,7 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "first_solution_strategy: AUTOMATIC "
       "use_unfiltered_first_solution_strategy: false "
       "savings_neighbors_ratio: 1 "
+      "savings_max_memory_usage_bytes: 6e9 "
       "savings_add_reverse_arcs: false "
       "savings_arc_coefficient: 1 "
       "savings_parallel_routes: false "
@@ -146,6 +147,13 @@ std::string FindErrorInRoutingSearchParameters(
     const double ratio = search_parameters.savings_neighbors_ratio();
     if (std::isnan(ratio) || ratio <= 0 || ratio > 1) {
       return StrCat("Invalid savings_neighbors_ratio:", ratio);
+    }
+  }
+  {
+    const double max_memory =
+        search_parameters.savings_max_memory_usage_bytes();
+    if (std::isnan(max_memory) || max_memory <= 0 || max_memory > 1e10) {
+      return StrCat("Invalid savings_max_memory_usage_bytes: ", max_memory);
     }
   }
   {

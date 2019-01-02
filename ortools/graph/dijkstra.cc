@@ -13,6 +13,7 @@
 
 #include <functional>
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -43,6 +44,7 @@ class Element {
 };
 }  // namespace
 
+template <class S>
 class DijkstraSP {
  public:
   static const int64 kInfinity = kint64max / 2;
@@ -55,13 +57,80 @@ class DijkstraSP {
         disconnected_distance_(disconnected_distance),
         predecessor_(new int[node_count]),
         elements_(node_count) {}
-  bool ShortestPath(int end_node, std::vector<int>* nodes);
+
+  bool ShortestPath(int end_node, std::vector<int>* nodes) {
+    Initialize();
+    bool found = false;
+    while (!frontier_.IsEmpty()) {
+      int64 distance;
+      int node = SelectClosestNode(&distance);
+      if (distance == kInfinity) {
+        found = false;
+        break;
+      } else if (node == end_node) {
+        found = true;
+        break;
+      }
+      Update(node);
+    }
+    if (found) {
+      FindPath(end_node, nodes);
+    }
+    return found;
+  }
 
  private:
-  void Initialize();
-  int SelectClosestNode(int64* distance);
-  void Update(int node);
-  void FindPath(int dest, std::vector<int>* nodes);
+  void Initialize() {
+    for (int i = 0; i < node_count_; i++) {
+      elements_[i].set_node(i);
+      if (i == start_node_) {
+        predecessor_[i] = -1;
+        elements_[i].set_distance(0);
+        frontier_.Add(&elements_[i]);
+      } else {
+        elements_[i].set_distance(kInfinity);
+        predecessor_[i] = start_node_;
+        not_visited_.insert(i);
+      }
+    }
+  }
+
+  int SelectClosestNode(int64* distance) {
+    const int node = frontier_.Top()->node();
+    *distance = frontier_.Top()->distance();
+    frontier_.Pop();
+    not_visited_.erase(node);
+    added_to_the_frontier_.erase(node);
+    return node;
+  }
+
+  void Update(int node) {
+    for (const auto& other_node : not_visited_) {
+      const int64 graph_node_i = graph_(node, other_node);
+      if (graph_node_i != disconnected_distance_) {
+        if (added_to_the_frontier_.find(other_node) ==
+            added_to_the_frontier_.end()) {
+          frontier_.Add(&elements_[other_node]);
+          added_to_the_frontier_.insert(other_node);
+        }
+        const int64 other_distance = elements_[node].distance() + graph_node_i;
+        if (elements_[other_node].distance() > other_distance) {
+          elements_[other_node].set_distance(other_distance);
+          frontier_.NoteChangedPriority(&elements_[other_node]);
+          predecessor_[other_node] = node;
+        }
+      }
+    }
+  }
+
+  void FindPath(int dest, std::vector<int>* nodes) {
+    int j = dest;
+    nodes->push_back(j);
+    while (predecessor_[j] != -1) {
+      nodes->push_back(predecessor_[j]);
+      j = predecessor_[j];
+    }
+  }
 
   const int node_count_;
   const int start_node_;
@@ -70,91 +139,25 @@ class DijkstraSP {
   std::unique_ptr<int[]> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
   std::vector<Element> elements_;
-  absl::flat_hash_set<int> not_visited_;
-  absl::flat_hash_set<int> added_to_the_frontier_;
+  S not_visited_;
+  S added_to_the_frontier_;
 };
-
-void DijkstraSP::Initialize() {
-  for (int i = 0; i < node_count_; i++) {
-    elements_[i].set_node(i);
-    if (i == start_node_) {
-      predecessor_[i] = -1;
-      elements_[i].set_distance(0);
-      frontier_.Add(&elements_[i]);
-    } else {
-      elements_[i].set_distance(kInfinity);
-      predecessor_[i] = start_node_;
-      not_visited_.insert(i);
-    }
-  }
-}
-
-int DijkstraSP::SelectClosestNode(int64* distance) {
-  const int node = frontier_.Top()->node();
-  *distance = frontier_.Top()->distance();
-  frontier_.Pop();
-  not_visited_.erase(node);
-  added_to_the_frontier_.erase(node);
-  return node;
-}
-
-void DijkstraSP::Update(int node) {
-  for (absl::flat_hash_set<int>::const_iterator it = not_visited_.begin();
-       it != not_visited_.end(); ++it) {
-    const int other_node = *it;
-    const int64 graph_node_i = graph_(node, other_node);
-    if (graph_node_i != disconnected_distance_) {
-      if (added_to_the_frontier_.find(other_node) ==
-          added_to_the_frontier_.end()) {
-        frontier_.Add(&elements_[other_node]);
-        added_to_the_frontier_.insert(other_node);
-      }
-      const int64 other_distance = elements_[node].distance() + graph_node_i;
-      if (elements_[other_node].distance() > other_distance) {
-        elements_[other_node].set_distance(other_distance);
-        frontier_.NoteChangedPriority(&elements_[other_node]);
-        predecessor_[other_node] = node;
-      }
-    }
-  }
-}
-
-void DijkstraSP::FindPath(int dest, std::vector<int>* nodes) {
-  int j = dest;
-  nodes->push_back(j);
-  while (predecessor_[j] != -1) {
-    nodes->push_back(predecessor_[j]);
-    j = predecessor_[j];
-  }
-}
-
-bool DijkstraSP::ShortestPath(int end_node, std::vector<int>* nodes) {
-  Initialize();
-  bool found = false;
-  while (!frontier_.IsEmpty()) {
-    int64 distance;
-    int node = SelectClosestNode(&distance);
-    if (distance == kInfinity) {
-      found = false;
-      break;
-    } else if (node == end_node) {
-      found = true;
-      break;
-    }
-    Update(node);
-  }
-  if (found) {
-    FindPath(end_node, nodes);
-  }
-  return found;
-}
 
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
                           std::function<int64(int, int)> graph,
                           int64 disconnected_distance,
                           std::vector<int>* nodes) {
-  DijkstraSP bf(node_count, start_node, std::move(graph),
-                disconnected_distance);
+  DijkstraSP<absl::flat_hash_set<int>> bf(
+      node_count, start_node, std::move(graph), disconnected_distance);
+  return bf.ShortestPath(end_node, nodes);
+}
+
+bool StableDijkstraShortestPath(int node_count, int start_node, int end_node,
+                                std::function<int64(int, int)> graph,
+                                int64 disconnected_distance,
+                                std::vector<int>* nodes) {
+  DijkstraSP<std::set<int>> bf(node_count, start_node, std::move(graph),
+                               disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }
 }  // namespace operations_research

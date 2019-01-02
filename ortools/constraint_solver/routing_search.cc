@@ -26,6 +26,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/small_map.h"
 #include "ortools/base/small_ordered_set.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/graph/christofides.h"
@@ -226,8 +227,10 @@ IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
 }
 
 LocalSearchFilterManager::LocalSearchFilterManager(
-    const std::vector<LocalSearchFilter*>& filters, IntVar* objective)
-    : filters_(filters),
+    Solver* const solver, const std::vector<LocalSearchFilter*>& filters,
+    IntVar* objective)
+    : solver_(solver),
+      filters_(filters),
       objective_(objective),
       is_incremental_(false),
       synchronized_value_(kint64min),
@@ -252,9 +255,14 @@ bool LocalSearchFilterManager::Accept(const Assignment* delta,
   }
   accepted_value_ = 0;
   bool ok = true;
+  LocalSearchMonitor* const monitor =
+      (solver_ == nullptr) ? nullptr : solver_->GetLocalSearchMonitor();
   for (LocalSearchFilter* filter : filters_) {
     if (!ok && !filter->IsIncremental()) continue;
-    ok = filter->Accept(delta, deltadelta) && ok;
+    if (monitor != nullptr) monitor->BeginFiltering(filter);
+    const bool accept = filter->Accept(delta, deltadelta);
+    ok &= accept;
+    if (monitor != nullptr) monitor->EndFiltering(filter, !accept);
     if (ok) {
       accepted_value_ =
           CapAdd(accepted_value_, filter->GetAcceptedObjectiveValue());
@@ -2164,7 +2172,7 @@ IntVarFilteredDecisionBuilder::IntVarFilteredDecisionBuilder(
       delta_(solver->MakeAssignment()),
       is_in_delta_(vars_.size(), false),
       empty_(solver->MakeAssignment()),
-      filter_manager_(filters, nullptr),
+      filter_manager_(nullptr, filters, nullptr),
       number_of_decisions_(0),
       number_of_rejects_(0) {
   assignment_->MutableIntVarContainer()->Resize(vars_.size());
@@ -3867,7 +3875,9 @@ class SavingsFilteredDecisionBuilder::SavingsContainer {
       // For each arc, sort the savings by decreasing total cost
       // start-->a-->b-->end.
       // The best saving for each arc is therefore the last of its vector.
-      sorted_savings_.reserve(costs_and_savings_per_arc_.size());
+      sorted_savings_.reserve(vehicle_types_ *
+                              costs_and_savings_per_arc_.size());
+
       for (int arc_index = 0; arc_index < costs_and_savings_per_arc_.size();
            arc_index++) {
         std::vector<std::pair<int64, Saving>>& costs_and_savings =
@@ -3951,11 +3961,11 @@ class SavingsFilteredDecisionBuilder::SavingsContainer {
       index_in_sorted_savings_++;
 
       if (index_in_sorted_savings_ == sorted_savings_.size()) {
-        sorted_savings_ = next_savings_;
+        sorted_savings_.swap(next_savings_);
+        gtl::STLClearObject(&next_savings_);
         index_in_sorted_savings_ = 0;
 
         std::sort(sorted_savings_.begin(), sorted_savings_.end());
-        next_savings_.clear();
         next_saving_type_and_index_for_arc_.clear();
         next_saving_type_and_index_for_arc_.resize(
             costs_and_savings_per_arc_.size(), {-1, -1});
@@ -4182,18 +4192,16 @@ class SavingsFilteredDecisionBuilder::SavingsContainer {
 
 SavingsFilteredDecisionBuilder::SavingsFilteredDecisionBuilder(
     RoutingModel* model, RoutingIndexManager* manager,
-    double savings_neighbors_ratio, bool add_reverse_arcs,
-    double savings_arc_coefficient,
+    SavingsParameters parameters,
     const std::vector<LocalSearchFilter*>& filters)
     : RoutingFilteredDecisionBuilder(model, filters),
       manager_(manager),
-      savings_neighbors_ratio_(savings_neighbors_ratio),
-      add_reverse_arcs_(add_reverse_arcs),
-      savings_arc_coefficient_(savings_arc_coefficient),
+      savings_params_(parameters),
       size_squared_(0) {
-  DCHECK_GT(savings_neighbors_ratio_, 0);
-  DCHECK_LE(savings_neighbors_ratio_, 1);
-  DCHECK_GT(savings_arc_coefficient_, 0);
+  DCHECK_GT(savings_params_.neighbors_ratio, 0);
+  DCHECK_LE(savings_params_.neighbors_ratio, 1);
+  DCHECK_GT(savings_params_.max_memory_usage_bytes, 0);
+  DCHECK_GT(savings_params_.arc_coefficient, 0);
 }
 
 SavingsFilteredDecisionBuilder::~SavingsFilteredDecisionBuilder() {}
@@ -4206,6 +4214,8 @@ bool SavingsFilteredDecisionBuilder::BuildSolution() {
   size_squared_ = size * size;
   ComputeSavings();
   BuildRoutesFromSavings();
+  // Free all the space used to store the Savings in the container.
+  savings_container_.reset();
   MakeUnassignedNodesUnperformed();
   return Commit();
 }
@@ -4222,19 +4232,37 @@ int SavingsFilteredDecisionBuilder::StartNewRouteWithBestVehicleOfType(
     auto& vehicles = vehicles_per_vehicle_class_[vehicle_class];
     CHECK(!vehicles.empty());
 
-    const int vehicle = vehicles.front();
-    const int64 start = model()->Start(vehicle);
-    const int64 end = model()->End(vehicle);
-    SetValue(start, before_node);
-    SetValue(before_node, after_node);
-    SetValue(after_node, end);
-    if (Commit()) {
-      vehicles.pop_front();
-      if (vehicles.empty()) {
-        sorted_classes.erase(vehicle_class_it);
+    auto vehicle_it = vehicles.begin();
+
+    // Find the first vehicle of this class which is compatible with both
+    // before_node and after_node.
+    while (vehicle_it != vehicles.end()) {
+      const int vehicle = *vehicle_it;
+      if (model()->VehicleVar(before_node)->Contains(vehicle) &&
+          model()->VehicleVar(after_node)->Contains(vehicle)) {
+        break;
       }
-      return vehicle;
+      vehicle_it++;
     }
+
+    if (vehicle_it != vehicles.end()) {
+      // Found a compatible vehicle. Try to commit the arc on this vehicle.
+      const int vehicle = *vehicle_it;
+      const int64 start = model()->Start(vehicle);
+      const int64 end = model()->End(vehicle);
+      SetValue(start, before_node);
+      SetValue(before_node, after_node);
+      SetValue(after_node, end);
+      if (Commit()) {
+        vehicles.erase(vehicle_it);
+        if (vehicles.empty()) {
+          sorted_classes.erase(vehicle_class_it);
+        }
+        return vehicle;
+      }
+    }
+    // If no compatible vehicle was found in this class or if we couldn't insert
+    // the arc on one, move on to the next vehicle class.
     vehicle_class_it++;
   }
   // This arc could not be served by any vehicle of this type.
@@ -4308,17 +4336,26 @@ void SavingsFilteredDecisionBuilder::AddSymetricArcsToAdjacencyLists(
 // saving = cost(a-->e) + cost(s-->b) - cost(a-->b)
 // The saving value also considers a coefficient for the cost of the arc
 // a-->b, which results in:
-// saving = cost(a-->e) + cost(s-->b) - [savings_arc_coefficient_ * cost(a-->b)]
+// saving = cost(a-->e) + cost(s-->b) - [arc_coefficient_ * cost(a-->b)]
 // The higher this saving value, the better the arc.
 // Here, the value stored for the savings is -saving, which are therefore
 // considered in decreasing order.
 void SavingsFilteredDecisionBuilder::ComputeSavings() {
   ComputeVehicleTypes();
+  const int num_vehicle_types = sorted_vehicle_classes_per_type_.size();
   const int size = model()->Size();
 
-  const int64 saving_neighbors = std::max(1.0, size * savings_neighbors_ratio_);
+  std::vector<int64> uncontained_non_start_end_nodes;
+  uncontained_non_start_end_nodes.reserve(size);
+  for (int node = 0; node < size; node++) {
+    if (!model()->IsStart(node) && !model()->IsEnd(node) && !Contains(node)) {
+      uncontained_non_start_end_nodes.push_back(node);
+    }
+  }
 
-  const int num_vehicle_types = sorted_vehicle_classes_per_type_.size();
+  const int64 saving_neighbors =
+      std::min(MaxNumNeighborsPerNode(num_vehicle_types),
+               static_cast<int64>(uncontained_non_start_end_nodes.size()));
 
   savings_container_ =
       absl::make_unique<SavingsContainer<Saving>>(this, num_vehicle_types);
@@ -4346,22 +4383,17 @@ void SavingsFilteredDecisionBuilder::ComputeSavings() {
 
     // Compute the neighbors for each non-start/end node not already inserted in
     // the model.
-    for (int before_node = 0; before_node < size; ++before_node) {
-      if (model()->IsStart(before_node) || model()->IsEnd(before_node) ||
-          Contains(before_node)) {
-        continue;
-      }
+    for (int before_node : uncontained_non_start_end_nodes) {
       std::vector<std::pair</*cost*/ int64, /*node*/ int64>> costed_after_nodes;
-      costed_after_nodes.reserve(size);
-      for (int after_node = 0; after_node < size; ++after_node) {
-        if (!model()->IsEnd(after_node) && !model()->IsStart(after_node) &&
-            after_node != before_node && !Contains(after_node)) {
+      costed_after_nodes.reserve(uncontained_non_start_end_nodes.size());
+      for (int after_node : uncontained_non_start_end_nodes) {
+        if (after_node != before_node) {
           costed_after_nodes.push_back(std::make_pair(
               model()->GetArcCostForClass(before_node, after_node, cost_class),
               after_node));
         }
       }
-      if (saving_neighbors < size) {
+      if (saving_neighbors < costed_after_nodes.size()) {
         std::nth_element(costed_after_nodes.begin(),
                          costed_after_nodes.begin() + saving_neighbors,
                          costed_after_nodes.end());
@@ -4374,16 +4406,12 @@ void SavingsFilteredDecisionBuilder::ComputeSavings() {
                        return cost_and_node.second;
                      });
     }
-    if (add_reverse_arcs_) {
+    if (savings_params_.add_reverse_arcs) {
       AddSymetricArcsToAdjacencyLists(&adjacency_lists);
     }
 
     // Build the savings for this vehicle type given the adjacency_lists.
-    for (int before_node = 0; before_node < size; ++before_node) {
-      if (model()->IsStart(before_node) || model()->IsEnd(before_node) ||
-          Contains(before_node)) {
-        continue;
-      }
+    for (int before_node : uncontained_non_start_end_nodes) {
       const int64 before_to_end_cost =
           model()->GetArcCostForClass(before_node, end, cost_class);
       const int64 start_to_before_cost =
@@ -4402,13 +4430,14 @@ void SavingsFilteredDecisionBuilder::ComputeSavings() {
         const int64 after_to_end_cost =
             model()->GetArcCostForClass(after_node, end, cost_class);
 
-        const double weighed_arc_cost_fp = savings_arc_coefficient_ * arc_cost;
-        const int64 weighed_arc_cost =
-            weighed_arc_cost_fp < kint64max
-                ? static_cast<int64>(weighed_arc_cost_fp)
+        const double weighted_arc_cost_fp =
+            savings_params_.arc_coefficient * arc_cost;
+        const int64 weighted_arc_cost =
+            weighted_arc_cost_fp < kint64max
+                ? static_cast<int64>(weighted_arc_cost_fp)
                 : kint64max;
         const int64 saving_value = CapSub(
-            CapAdd(before_to_end_cost, start_to_after_cost), weighed_arc_cost);
+            CapAdd(before_to_end_cost, start_to_after_cost), weighted_arc_cost);
 
         const Saving saving =
             BuildSaving(-saving_value, type, before_node, after_node);
@@ -4421,8 +4450,48 @@ void SavingsFilteredDecisionBuilder::ComputeSavings() {
       }
     }
   }
-
   savings_container_->Sort();
+}
+
+int64 SavingsFilteredDecisionBuilder::MaxNumNeighborsPerNode(
+    int num_vehicle_types) const {
+  const int64 size = model()->Size();
+
+  const int64 num_neighbors_with_ratio =
+      std::max(1.0, size * savings_params_.neighbors_ratio);
+
+  // A single Saving takes 2*8 bytes of memory.
+  // max_memory_usage_in_savings_unit = num_savings * multiplicative_factor,
+  // Where multiplicative_factor is the memory taken (in Savings unit) for each
+  // computed Saving.
+  const double max_memory_usage_in_savings_unit =
+      savings_params_.max_memory_usage_bytes / 16;
+
+  // In the SavingsContainer, for each Saving, the Savings are stored:
+  // - Once in "sorted_savings_per_vehicle_type", and (at most) once in
+  //   "sorted_savings_" --> factor 2
+  // - If num_vehicle_types > 1, they're also stored by arc_index in
+  //   "costs_and_savings_per_arc", along with their int64 cost --> factor 1.5
+  //
+  // On top of that,
+  // - In the sequential version, the Saving* are also stored by in-coming and
+  //   outgoing node (in in/out_savings_ptr), adding another 2*8 bytes per
+  //   Saving --> factor 1.
+  // - In the parallel version, skipped Savings are also stored in
+  //   skipped_savings_starting/ending_at_, resulting in a maximum added factor
+  //   of 2 for each Saving.
+  // These extra factors are given by ExtraSavingsMemoryMultiplicativeFactor().
+  double multiplicative_factor = 2.0 + ExtraSavingsMemoryMultiplicativeFactor();
+  if (num_vehicle_types > 1) {
+    multiplicative_factor += 1.5;
+  }
+  const double num_savings =
+      max_memory_usage_in_savings_unit / multiplicative_factor;
+  const int64 num_neighbors_with_memory_restriction =
+      std::max(1.0, num_savings / (num_vehicle_types * size));
+
+  return std::min(num_neighbors_with_ratio,
+                  num_neighbors_with_memory_restriction);
 }
 
 // SequentialSavingsFilteredDecisionBuilder

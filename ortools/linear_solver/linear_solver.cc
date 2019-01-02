@@ -26,7 +26,6 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
 
 #include "ortools/port/file.h"
 
@@ -300,6 +299,17 @@ void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 
 // ---- Solver-specific parameters ----
 
+util::Status MPSolver::SetNumThreads(int num_threads) {
+  if (num_threads < 1) {
+    return util::InvalidArgumentError("num_threads must be a positive number.");
+  }
+  const util::Status status = interface_->SetNumThreads(num_threads);
+  if (status.ok()) {
+    num_threads_ = num_threads;
+  }
+  return status;
+}
+
 bool MPSolver::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
   solver_specific_parameter_string_ = parameters;
@@ -445,47 +455,78 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   return false;
 }
 
+// TODO(user): post c++ 14, instead use
+//   std::pair<MPSolver::OptimizationProblemType, const absl::string_view>
+// once pair gets a constexpr constructor.
+namespace {
+struct NamedOptimizationProblemType {
+  MPSolver::OptimizationProblemType problem_type;
+  absl::string_view name;
+};
+}  // namespace
+
+constexpr NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
+    {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
+#if defined(USE_GLPK)
+    {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
+#endif
+#if defined(USE_CLP)
+    {MPSolver::CLP_LINEAR_PROGRAMMING, "clp"},
+#endif
+#if defined(USE_GUROBI)
+    {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
+#endif
+#if defined(USE_SCIP)
+    {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
+#endif
+#if defined(USE_CBC)
+    {MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc"},
+#endif
+#if defined(USE_GLPK)
+    {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
+#endif
+#if defined(USE_BOP)
+    {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
+#endif
+#if defined(USE_GUROBI)
+    {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
+#endif
+};
+
 // static
 bool MPSolver::ParseSolverType(absl::string_view solver,
                                MPSolver::OptimizationProblemType* type) {
-  if (solver == "glop") {
-    *type = MPSolver::GLOP_LINEAR_PROGRAMMING;
-#if defined(USE_GLPK)
-  } else if (solver == "glpk_lp") {
-    *type = MPSolver::GLPK_LINEAR_PROGRAMMING;
-#endif
-#if defined(USE_CLP)
-  } else if (solver == "clp") {
-    *type = MPSolver::CLP_LINEAR_PROGRAMMING;
-#endif
-#if defined(USE_GUROBI)
-  } else if (solver == "gurobi_lp") {
-    *type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
-#endif
-#if defined(USE_SCIP)
-  } else if (solver == "scip") {
-    *type = MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_GUROBI)
-  } else if (solver == "cbc") {
-    *type = MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_GLPK)
-  } else if (solver == "glpk_mip") {
-    *type = MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_GUROBI)
-  } else if (solver == "gurobi_mip") {
-    *type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
-#endif
-#if defined(USE_BOP)
-  } else if (solver == "bop") {
-    *type = MPSolver::BOP_INTEGER_PROGRAMMING;
-#endif
-  } else {
-    return false;
+  for (const auto& named_solver : kOptimizationProblemTypeNames) {
+    if (named_solver.name == solver) {
+      *type = named_solver.problem_type;
+      return true;
+    }
   }
-  return true;
+  return false;
+}
+
+const absl::string_view ToString(
+    MPSolver::OptimizationProblemType optimization_problem_type) {
+  for (const auto& named_solver : kOptimizationProblemTypeNames) {
+    if (named_solver.problem_type == optimization_problem_type) {
+      return named_solver.name;
+    }
+  }
+  LOG(FATAL) << "Unrecognized solver type: "
+             << static_cast<int>(optimization_problem_type);
+  return "";
+}
+
+bool AbslParseFlag(const absl::string_view text,
+                   MPSolver::OptimizationProblemType* solver_type,
+                   std::string* error) {
+  DCHECK(solver_type != nullptr);
+  DCHECK(error != nullptr);
+  const bool result = MPSolver::ParseSolverType(text, solver_type);
+  if (!result) {
+    *error = absl::StrCat("Solver type: ", text, " does not exist.");
+  }
+  return result;
 }
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
@@ -1282,7 +1323,8 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
   return exporter.ExportModelAsMpsFormat(fixed_format, obfuscate, model_str);
 }
 
-void MPSolver::SetHint(std::vector<std::pair<MPVariable*, double> > hint) {
+void MPSolver::SetHint(
+    std::vector<std::pair<const MPVariable*, double> > hint) {
   for (const auto& var_value_pair : hint) {
     CHECK(OwnsVariable(var_value_pair.first))
         << "hint variable does not belong to this solver";
@@ -1460,22 +1502,27 @@ void MPSolverInterface::SetMIPParameters(const MPSolverParameters& param) {
 }
 
 void MPSolverInterface::SetUnsupportedDoubleParam(
-    MPSolverParameters::DoubleParam param) const {
+    MPSolverParameters::DoubleParam param) {
   LOG(WARNING) << "Trying to set an unsupported parameter: " << param << ".";
 }
 void MPSolverInterface::SetUnsupportedIntegerParam(
-    MPSolverParameters::IntegerParam param) const {
+    MPSolverParameters::IntegerParam param) {
   LOG(WARNING) << "Trying to set an unsupported parameter: " << param << ".";
 }
 void MPSolverInterface::SetDoubleParamToUnsupportedValue(
-    MPSolverParameters::DoubleParam param, double value) const {
+    MPSolverParameters::DoubleParam param, double value) {
   LOG(WARNING) << "Trying to set a supported parameter: " << param
                << " to an unsupported value: " << value;
 }
 void MPSolverInterface::SetIntegerParamToUnsupportedValue(
-    MPSolverParameters::IntegerParam param, int value) const {
+    MPSolverParameters::IntegerParam param, int value) {
   LOG(WARNING) << "Trying to set a supported parameter: " << param
                << " to an unsupported value: " << value;
+}
+
+util::Status MPSolverInterface::SetNumThreads(int num_threads) {
+  return util::UnimplementedError(
+      absl::StrFormat("SetNumThreads() not supported by %s.", SolverVersion()));
 }
 
 bool MPSolverInterface::SetSolverSpecificParametersAsString(

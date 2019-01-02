@@ -470,6 +470,16 @@ class MPSolver {
                               std::string* model_str) const;
   // ----- Misc -----
 
+  // Sets the number of threads to use by the underlying solver. Returns
+  // OkStatus if the operation was successful. num_threads must be equal
+  // to or greater than 1. Note that the behaviour of this call depends on
+  // the underlying solver. E.g., it may set the exact number of threads or
+  // the max number of threads (check the solver's interface implementation
+  // for details). Also, some solvers may not (yet) support this function,
+  // but still enable multi-threading via SetSolverSpecificParametersAsString().
+  util::Status SetNumThreads(int num_threads);
+  int GetNumThreads() const { return num_threads_; }
+
   // Advanced usage: pass solver specific parameters in text format. The format
   // is solver-specific and is the same as the corresponding solver
   // configuration file format. Returns true if the operation was successful.
@@ -482,7 +492,7 @@ class MPSolver {
     return solver_specific_parameter_string_;
   }
 
-  // Set an hint for solution.
+  // Set a hint for solution.
   //
   // If a feasible or almost-feasible solution to the problem is already known,
   // it may be helpful to pass it to the solver so that it can be used. A solver
@@ -494,9 +504,7 @@ class MPSolver {
   // try to return a solution "close" to this assignment in case of multiple
   // optimal solutions.
   //
-  // As of 2018-08, this is only used by SCIP, BOP, Gurobi, with various
-  // behaviors, and ignored by other solvers. Contact or-core-team@ for details.
-  void SetHint(std::vector<std::pair<MPVariable*, double> > hint);
+  void SetHint(std::vector<std::pair<const MPVariable*, double> > hint);
 
   // Advanced usage: possible basis status values for a variable and the
   // slack variable of a linear constraint.
@@ -695,11 +703,14 @@ class MPSolver {
   //
   // TODO(user): replace by two vectors, a std::vector<bool> to indicate if a
   // hint is provided and a std::vector<double> for the hint value.
-  std::vector<std::pair<MPVariable*, double> > solution_hint_;
+  std::vector<std::pair<const MPVariable*, double> > solution_hint_;
 
   absl::Duration time_limit_ = absl::InfiniteDuration();  // Default = No limit.
 
   const absl::Time construction_time_;
+
+  // Permanent storage for the number of threads.
+  int num_threads_ = 1;
 
   // Permanent storage for SetSolverSpecificParametersAsString().
   std::string solver_specific_parameter_string_;
@@ -711,10 +722,28 @@ class MPSolver {
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
 
+const absl::string_view ToString(
+    MPSolver::OptimizationProblemType optimization_problem_type);
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    MPSolver::OptimizationProblemType optimization_problem_type) {
+  return os << ToString(optimization_problem_type);
+}
+
 inline std::ostream& operator<<(std::ostream& os,
                                 MPSolver::ResultStatus status) {
   return os << ProtoEnumToString<MPSolverResponseStatus>(
              static_cast<MPSolverResponseStatus>(status));
+}
+
+bool AbslParseFlag(absl::string_view text,
+                   MPSolver::OptimizationProblemType* solver_type,
+                   std::string* error);
+
+inline std::string AbslUnparseFlag(
+    MPSolver::OptimizationProblemType solver_type) {
+  return std::string(ToString(solver_type));
 }
 
 // A class to express a linear objective.
@@ -803,7 +832,7 @@ class MPObjective {
   // At construction, an MPObjective has no terms (which is equivalent
   // on having a coefficient of 0 for all variables), and an offset of 0.
   explicit MPObjective(MPSolverInterface* const interface_in)
-      : interface_(interface_in), offset_(0.0) {}
+      : interface_(interface_in), coefficients_(1), offset_(0.0) {}
 
   MPSolverInterface* const interface_;
 
@@ -985,7 +1014,8 @@ class MPConstraint {
   // to several models.
   MPConstraint(int index, double lb, double ub, const std::string& name,
                MPSolverInterface* const interface_in)
-      : index_(index),
+      : coefficients_(1),
+        index_(index),
         lb_(lb),
         ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
@@ -1407,20 +1437,24 @@ class MPSolverInterface {
   // Sets all parameters in the underlying solver.
   virtual void SetParameters(const MPSolverParameters& param) = 0;
   // Sets an unsupported double parameter.
-  void SetUnsupportedDoubleParam(MPSolverParameters::DoubleParam param) const;
+  void SetUnsupportedDoubleParam(MPSolverParameters::DoubleParam param);
   // Sets an unsupported integer parameter.
-  void SetUnsupportedIntegerParam(MPSolverParameters::IntegerParam param) const;
+  virtual void SetUnsupportedIntegerParam(
+      MPSolverParameters::IntegerParam param);
   // Sets a supported double parameter to an unsupported value.
   void SetDoubleParamToUnsupportedValue(MPSolverParameters::DoubleParam param,
-                                        double value) const;
+                                        double value);
   // Sets a supported integer parameter to an unsupported value.
-  void SetIntegerParamToUnsupportedValue(MPSolverParameters::IntegerParam param,
-                                         int value) const;
+  virtual void SetIntegerParamToUnsupportedValue(
+      MPSolverParameters::IntegerParam param, int value);
   // Sets each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value) = 0;
   virtual void SetPrimalTolerance(double value) = 0;
   virtual void SetDualTolerance(double value) = 0;
   virtual void SetPresolveMode(int value) = 0;
+
+  // Sets the number of threads to be used by the solver.
+  virtual util::Status SetNumThreads(int num_threads);
 
   // Pass solver specific parameters in text format. The format is
   // solver-specific and is the same as the corresponding solver configuration

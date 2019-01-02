@@ -1487,7 +1487,8 @@ class LocalSearchFilter : public BaseObject {
 // schedules filter execution and composes costs as a sum.
 class LocalSearchFilterManager : public LocalSearchFilter {
  public:
-  LocalSearchFilterManager(const std::vector<LocalSearchFilter*>& filters,
+  LocalSearchFilterManager(Solver* const solver,
+                           const std::vector<LocalSearchFilter*>& filters,
                            IntVar* objective);
   std::string DebugString() const override {
     return "LocalSearchFilterManager";
@@ -1511,6 +1512,7 @@ class LocalSearchFilterManager : public LocalSearchFilter {
   int64 GetAcceptedObjectiveValue() const override { return accepted_value_; }
 
  private:
+  Solver* const solver_;
   std::vector<LocalSearchFilter*> filters_;
   IntVar* const objective_;
   bool is_incremental_;

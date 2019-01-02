@@ -46,6 +46,13 @@ message RoutingSearchParameters {
   // Ratio (in ]0, 1]) of neighbors to consider for each node when constructing
   // the savings. If unspecified, its value is considered to be 1.0.
   double savings_neighbors_ratio = 14;
+  // The number of neighbors considered for each node in the Savings heuristic
+  // is chosen so that the space used to store the savings doesn't exceed
+  // savings_max_memory_usage_bytes, which must be in ]0, 1e10].
+  // NOTE: If both savings_neighbors_ratio and savings_max_memory_usage_bytes
+  // are specified, the number of neighbors considered for each node will be the
+  // minimum of the two numbers determined by these parameters.
+  double savings_max_memory_usage_bytes = 23;
   // Add savings related to reverse arcs when finding the nearest neighbors
   // of the nodes.
   bool savings_add_reverse_arcs = 15;

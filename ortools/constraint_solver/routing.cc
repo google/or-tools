@@ -4160,8 +4160,11 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                        first_solution_decision_builders_
                            [FirstSolutionStrategy::BEST_INSERTION]);
   // Savings
-  const double savings_neighbors_ratio =
-      search_parameters.savings_neighbors_ratio();
+  SavingsFilteredDecisionBuilder::SavingsParameters savings_parameters;
+  savings_parameters.neighbors_ratio = search_parameters.savings_neighbors_ratio();
+  savings_parameters.max_memory_usage_bytes = search_parameters.savings_max_memory_usage_bytes();
+  savings_parameters.add_reverse_arcs = search_parameters.savings_add_reverse_arcs();
+  savings_parameters.arc_coefficient = search_parameters.savings_arc_coefficient();
   std::vector<LocalSearchFilter*> filters;
   if (!search_parameters.use_unfiltered_first_solution_strategy()) {
     filters = GetOrCreateFeasibilityFilters();
@@ -4170,9 +4173,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   if (search_parameters.savings_parallel_routes()) {
     IntVarFilteredDecisionBuilder* savings_db =
         solver_->RevAlloc(new ParallelSavingsFilteredDecisionBuilder(
-            this, &manager_, savings_neighbors_ratio,
-            search_parameters.savings_add_reverse_arcs(),
-            search_parameters.savings_arc_coefficient(), filters));
+            this, &manager_, savings_parameters, filters));
     if (!search_parameters.use_unfiltered_first_solution_strategy()) {
       first_solution_filtered_decision_builders_
           [FirstSolutionStrategy::SAVINGS] = savings_db;
@@ -4183,15 +4184,11 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
         solver_->Try(
             savings_db,
             solver_->RevAlloc(new ParallelSavingsFilteredDecisionBuilder(
-                this, &manager_, savings_neighbors_ratio,
-                search_parameters.savings_add_reverse_arcs(),
-                search_parameters.savings_arc_coefficient(), filters)));
+                this, &manager_, savings_parameters, filters)));
   } else {
     IntVarFilteredDecisionBuilder* savings_db =
         solver_->RevAlloc(new SequentialSavingsFilteredDecisionBuilder(
-            this, &manager_, savings_neighbors_ratio,
-            search_parameters.savings_add_reverse_arcs(),
-            search_parameters.savings_arc_coefficient(), filters));
+            this, &manager_, savings_parameters, filters));
     if (!search_parameters.use_unfiltered_first_solution_strategy()) {
       first_solution_filtered_decision_builders_
           [FirstSolutionStrategy::SAVINGS] = savings_db;
@@ -4202,9 +4199,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
         solver_->Try(
             savings_db,
             solver_->RevAlloc(new SequentialSavingsFilteredDecisionBuilder(
-                this, &manager_, savings_neighbors_ratio,
-                search_parameters.savings_add_reverse_arcs(),
-                search_parameters.savings_arc_coefficient(), filters)));
+                this, &manager_, savings_parameters, filters)));
   }
   // Sweep
   first_solution_decision_builders_[FirstSolutionStrategy::SWEEP] =
@@ -4261,7 +4256,7 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
                              GetOrCreateLargeNeighborhoodSearchLimit()),
       GetOrCreateLocalSearchLimit(),
       {solver_->RevAlloc(new LocalSearchFilterManager(
-          GetOrCreateLocalSearchFilters(), CostVar()))});
+          solver_.get(), GetOrCreateLocalSearchFilters(), CostVar()))});
 }
 
 DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder(

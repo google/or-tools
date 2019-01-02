@@ -156,6 +156,7 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
   parameters->set_use_unfiltered_first_solution_strategy(
       !FLAGS_routing_use_filtered_first_solutions);
   parameters->set_savings_neighbors_ratio(FLAGS_savings_neighbors_ratio);
+  parameters->set_savings_max_memory_usage_bytes(6e9);
   parameters->set_savings_add_reverse_arcs(FLAGS_savings_add_reverse_arcs);
   parameters->set_savings_arc_coefficient(FLAGS_savings_arc_coefficient);
   parameters->set_cheapest_insertion_farthest_seeds_ratio(

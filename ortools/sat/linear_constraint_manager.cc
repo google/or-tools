@@ -12,6 +12,9 @@
 // limitations under the License.
 
 #include "ortools/sat/linear_constraint_manager.h"
+#include <algorithm>
+#include <cmath>
+#include "ortools/sat/integer.h"
 
 namespace operations_research {
 namespace sat {
@@ -48,12 +51,44 @@ CanonicalizeConstraintAndGetTerms(LinearConstraint* ct) {
 
 }  // namespace
 
+double ComputeL2Norm(const LinearConstraint& constraint) {
+  double sum = 0.0;
+  for (const IntegerValue coeff : constraint.coeffs) {
+    sum += ToDouble(coeff) * ToDouble(coeff);
+  }
+  return std::sqrt(sum);
+}
+
+double ScalarProduct(const LinearConstraint& constraint1,
+                     const LinearConstraint& constraint2) {
+  DCHECK(std::is_sorted(constraint1.vars.begin(), constraint1.vars.end()));
+  DCHECK(std::is_sorted(constraint2.vars.begin(), constraint2.vars.end()));
+  double scalar_product = 0.0;
+  int index_1 = 0;
+  int index_2 = 0;
+  while (index_1 < constraint1.vars.size() &&
+         index_2 < constraint2.vars.size()) {
+    if (constraint1.vars[index_1] == constraint2.vars[index_2]) {
+      scalar_product += ToDouble(constraint1.coeffs[index_1]) *
+                        ToDouble(constraint2.coeffs[index_2]);
+      index_1++;
+      index_2++;
+    } else if (constraint1.vars[index_1] > constraint2.vars[index_2]) {
+      index_2++;
+    } else {
+      index_1++;
+    }
+  }
+  return scalar_product;
+}
+
 // Because sometimes we split a == constraint in two (>= and <=), it makes sense
 // to detect duplicate constraints and merge bounds. This is also relevant if
 // we regenerate identical cuts for some reason.
 void LinearConstraintManager::Add(const LinearConstraint& ct) {
   LinearConstraint canonicalized = ct;
   const Terms terms = CanonicalizeConstraintAndGetTerms(&canonicalized);
+  CHECK(!terms.empty());
 
   if (gtl::ContainsKey(equiv_constraints_, terms)) {
     const ConstraintIndex index(
@@ -75,6 +110,7 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
     for (const IntegerVariable var : canonicalized.vars) {
       used_variables_.insert(var);
     }
+    constraint_l2_norms_.push_back(ComputeL2Norm(canonicalized));
     equiv_constraints_[terms] = constraints_.size();
     constraint_is_in_lp_.push_back(false);
     constraints_.push_back(std::move(canonicalized));
@@ -85,6 +121,8 @@ bool LinearConstraintManager::ChangeLp(
     const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
   const int old_num_constraints = lp_constraints_.size();
 
+  std::vector<ConstraintIndex> new_constraints;
+
   // We keep any constraints that is already present, and otherwise, we add the
   // ones that are currently not satisfied by at least "tolerance".
   const double tolerance = 1e-6;
@@ -94,12 +132,35 @@ bool LinearConstraintManager::ChangeLp(
     const double activity = ComputeActivity(constraints_[i], lp_solution);
     if (activity > ToDouble(constraints_[i].ub) + tolerance ||
         activity < ToDouble(constraints_[i].lb) - tolerance) {
-      constraint_is_in_lp_[i] = true;
+      new_constraints.push_back(i);
+    }
+  }
 
+  std::vector<ConstraintIndex> selected_constraints;
+  for (ConstraintIndex new_constraint : new_constraints) {
+    double orthogonality = 1.0;
+    if (sat_parameters_.min_orthogonality_for_lp_constraints() > 0.0) {
+      for (ConstraintIndex selected_constraint : selected_constraints) {
+        double current_orthogonality =
+            1.0 - (std::abs(ScalarProduct(constraints_[selected_constraint],
+                                          constraints_[new_constraint])) /
+                   (constraint_l2_norms_[selected_constraint] *
+                    constraint_l2_norms_[new_constraint]));
+        orthogonality = std::min(orthogonality, current_orthogonality);
+        if (orthogonality <
+            sat_parameters_.min_orthogonality_for_lp_constraints()) {
+          break;
+        }
+      }
+    }
+    if (orthogonality >=
+        sat_parameters_.min_orthogonality_for_lp_constraints()) {
+      selected_constraints.push_back(new_constraint);
+      constraint_is_in_lp_[new_constraint] = true;
       // Note that it is important for LP incremental solving that the old
       // constraints stays at the same position in this list (and thus in the
       // returned GetLp()).
-      lp_constraints_.push_back(i);
+      lp_constraints_.push_back(new_constraint);
     }
   }
 

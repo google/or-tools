@@ -38,6 +38,17 @@ bool DijkstraShortestPath(int node_count, int start_node, int end_node,
                           std::function<int64(int, int)> graph,
                           int64 disconnected_distance, std::vector<int>* nodes);
 
+// Stable version of the Dijsktra Shortest path with callback based description
+// of the graph.  The callback returns the distance between two nodes, a
+// distance of 'disconnected_distance' indicates no arcs between these
+// two nodes. Ownership of the callback is taken by the function that
+// will delete it in the end.  This function returns true if
+// 'start_node' and 'end_node' are connected, false otherwise.
+bool StableDijkstraShortestPath(int node_count, int start_node, int end_node,
+                                std::function<int64(int, int)> graph,
+                                int64 disconnected_distance,
+                                std::vector<int>* nodes);
+
 // Bellman-Ford Shortest path with callback-based description of the
 // graph.  The callback returns the distance between two nodes, a
 // distance of 'disconnected_distance' indicates no arcs between these

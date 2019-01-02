@@ -20,6 +20,10 @@ inline Status InvalidArgumentError(const std::string& message) {
   return Status(error::INVALID_ARGUMENT, message);
 }
 
+inline Status UnimplementedError(const std::string& message) {
+  return Status(error::NOT_IMPLEMENTED, message);
+}
+
 }  // namespace util
 
 #endif  // OR_TOOLS_BASE_CANONICAL_ERRORS_H_

@@ -158,7 +158,8 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
                    << "Filling the missing positions with zeros...";
     }
     initial_solution.assign(glop::ColIndex(num_vars), glop::Fractional(0.0));
-    for (const std::pair<MPVariable*, double>& p : solver_->solution_hint_) {
+    for (const std::pair<const MPVariable*, double>& p :
+         solver_->solution_hint_) {
       initial_solution[glop::ColIndex(p.first->index())] =
           glop::Fractional(p.second);
     }

@@ -80,6 +80,7 @@ class GurobiInterface : public MPSolverInterface {
   void SetObjectiveOffset(double value) override;
   // Clears the objective from all its terms.
   void ClearObjective() override;
+  bool CheckBestObjectiveBoundExists() const override;
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex or interior-point iterations
@@ -320,6 +321,12 @@ int64 GurobiInterface::nodes() const {
     LOG(DFATAL) << "Number of nodes only available for discrete problems.";
     return kUnknownNumberOfNodes;
   }
+}
+
+bool GurobiInterface::CheckBestObjectiveBoundExists() const {
+  double value;
+  const int error = GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &value);
+  return error == 0;
 }
 
 // Returns the best objective bound. Only available for discrete problems.
@@ -658,7 +665,8 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
                              absl::FormatDuration(timer.GetDuration()));
 
   // Set solution hints if any.
-  for (const std::pair<MPVariable*, double>& p : solver_->solution_hint_) {
+  for (const std::pair<const MPVariable*, double>& p :
+       solver_->solution_hint_) {
     CheckedGurobiCall(
         GRBsetdblattrelement(model_, "Start", p.first->index(), p.second));
   }

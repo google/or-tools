@@ -25,6 +25,7 @@ enum Error {
   INTERNAL = 1,
   INVALID_ARGUMENT = 2,
   DEADLINE_EXCEEDED = 3,
+  NOT_IMPLEMENTED = 4,
 };
 }  // namespace error
 

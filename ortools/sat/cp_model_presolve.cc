@@ -1077,18 +1077,16 @@ Domain FixVariableInLinearConstraint(const int var_index,
   const Domain term_domain(coeff * fixed_value);
   const Domain rhs_domain = ReadDomainFromProto(ct->linear());
   const Domain new_rhs_domain = rhs_domain.AdditionWith(term_domain.Negation());
-  std::vector<std::pair<int, int64>> constraint_entries;
   // Copy coefficients of all variables except the fixed one.
+  int new_size = 0;
   for (int i = 0; i < num_vars; ++i) {
     if (i == var_index) continue;
-    constraint_entries.push_back({arg->vars(i), arg->coeffs(i)});
+    arg->set_vars(new_size, arg->vars(i));
+    arg->set_coeffs(new_size, arg->coeffs(i));
+    ++new_size;
   }
-  arg->clear_coeffs();
-  arg->clear_vars();
-  for (int i = 0; i < constraint_entries.size(); ++i) {
-    arg->add_vars(constraint_entries[i].first);
-    arg->add_coeffs(constraint_entries[i].second);
-  }
+  arg->mutable_vars()->Truncate(new_size);
+  arg->mutable_coeffs()->Truncate(new_size);
   FillDomainInProto(new_rhs_domain, arg);
   return new_rhs_domain;
 }
