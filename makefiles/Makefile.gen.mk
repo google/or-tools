@@ -991,8 +991,8 @@ ALGORITHMS_DEPS = \
  $(SRC_DIR)/ortools/algorithms/dynamic_permutation.h \
  $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h \
  $(SRC_DIR)/ortools/algorithms/hungarian.h \
- $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
  $(SRC_DIR)/ortools/algorithms/knapsack_solver_for_cuts.h \
+ $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.h
 
 ALGORITHMS_LIB_OBJS = \
@@ -1050,6 +1050,16 @@ objs/algorithms/knapsack_solver.$O: ortools/algorithms/knapsack_solver.cc \
  ortools/gen/ortools/util/optional_boolean.pb.h \
  ortools/port/proto_utils.h ortools/util/bitset.h | $(OBJ_DIR)/algorithms
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Sknapsack_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Sknapsack_solver.$O
+
+objs/algorithms/knapsack_solver_for_cuts.$O: \
+ ortools/algorithms/knapsack_solver_for_cuts.cc \
+ ortools/algorithms/knapsack_solver_for_cuts.h ortools/base/int_type.h \
+ ortools/base/macros.h ortools/base/int_type_indexed_vector.h \
+ ortools/base/logging.h ortools/base/integral_types.h \
+ ortools/base/ptr_util.h ortools/util/time_limit.h \
+ ortools/base/commandlineflags.h ortools/base/timer.h \
+ ortools/base/basictypes.h ortools/util/running_stat.h | $(OBJ_DIR)/algorithms
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Sknapsack_solver_for_cuts.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Sknapsack_solver_for_cuts.$O
 
 objs/algorithms/sparse_permutation.$O: \
  ortools/algorithms/sparse_permutation.cc \
@@ -1484,7 +1494,8 @@ objs/sat/cuts.$O: ortools/sat/cuts.cc ortools/sat/cuts.h \
  ortools/util/integer_pq.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/rev.h \
  ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/linear_constraint.h | $(OBJ_DIR)/sat
+ ortools/sat/linear_constraint.h \
+ ortools/algorithms/knapsack_solver_for_cuts.h ortools/base/ptr_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scuts.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scuts.$O
 
 objs/sat/disjunctive.$O: ortools/sat/disjunctive.cc \
@@ -3254,7 +3265,8 @@ objs/constraint_solver/routing_parameters.$O: \
 
 objs/constraint_solver/routing_search.$O: \
  ortools/constraint_solver/routing_search.cc ortools/base/small_map.h \
- ortools/base/small_ordered_set.h ortools/constraint_solver/routing.h \
+ ortools/base/small_ordered_set.h ortools/base/stl_util.h \
+ ortools/constraint_solver/routing.h \
  ortools/base/adjustable_priority_queue-inl.h \
  ortools/base/adjustable_priority_queue.h ortools/base/basictypes.h \
  ortools/base/integral_types.h ortools/base/logging.h \
