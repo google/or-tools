@@ -104,15 +104,15 @@ CCC=cl /EHsc /MD /nologo
 endif
 
 PYTHON_VERSION = $(WINDOWS_PYTHON_VERSION)
-PYTHON_INC=/I$(WINDOWS_PATH_TO_PYTHON)\\include
+PYTHON_INC=/I"$(WINDOWS_PATH_TO_PYTHON)\\include"
 PYTHON_LNK="$(WINDOWS_PATH_TO_PYTHON)\\libs\\python$(PYTHON_VERSION).lib"
 
 # This is needed to find GLPK include files and libraries.
 ifdef WINDOWS_GLPK_DIR
-GLPK_INC = /I$(WINDOWS_GLPK_DIR)\\include /DUSE_GLPK
-GLPK_SWIG = -I$(WINDOWS_GLPK_DIR)/include -DUSE_GLPK
-DYNAMIC_GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
-STATIC_GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
+GLPK_INC = /I"$(WINDOWS_GLPK_DIR)\\include" /DUSE_GLPK
+GLPK_SWIG = -I"$(WINDOWS_GLPK_DIR)/include" -DUSE_GLPK
+DYNAMIC_GLPK_LNK = "$(WINDOWS_GLPK_DIR)\\lib\\glpk.lib"
+STATIC_GLPK_LNK = "$(WINDOWS_GLPK_DIR)\\lib\\glpk.lib"
 endif
 # This is needed to find SCIP include files and libraries.
 ifdef WINDOWS_SCIP_DIR
@@ -125,22 +125,22 @@ ifdef WINDOWS_SCIP_DIR
 endif
 # This is needed to find CPLEX include files and libraries.
 ifdef WINDOWS_CPLEX_DIR
-  CPLEX_INC = /I$(WINDOWS_CPLEX_DIR)\\include /DUSE_CPLEX
-  CPLEX_SWIG = -I$(WINDOWS_CPLEX_DIR)/include -DUSE_CPLEX
-  STATIC_CPLEX_LNK = $(WINDOWS_CPLEX_DIR)\\cplex.lib
+  CPLEX_INC = /I"$(WINDOWS_CPLEX_DIR)\\include" /DUSE_CPLEX
+  CPLEX_SWIG = -I"$(WINDOWS_CPLEX_DIR)/include" -DUSE_CPLEX
+  STATIC_CPLEX_LNK = "$(WINDOWS_CPLEX_DIR)\\cplex.lib"
   DYNAMIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
 endif
 # This is needed to find Gurobi include files and libraries.
 ifdef WINDOWS_GUROBI_DIR
   ifeq ($(PTRLENGTH),64)
-    GUROBI_INC = /I$(WINDOWS_GUROBI_DIR)\win64\include /DUSE_GUROBI
-    GUROBI_SWIG = -I$(WINDOWS_GUROBI_DIR)/win64/include -DUSE_GUROBI
-    DYNAMIC_GUROBI_LNK = $(WINDOWS_GUROBI_DIR)\win64\lib\gurobi$(GUROBI_LIB_VERSION).lib
+    GUROBI_INC = /I"$(WINDOWS_GUROBI_DIR)\win64\include" /DUSE_GUROBI
+    GUROBI_SWIG = -I"$(WINDOWS_GUROBI_DIR)/win64/include" -DUSE_GUROBI
+    DYNAMIC_GUROBI_LNK = "$(WINDOWS_GUROBI_DIR)\win64\lib\gurobi$(GUROBI_LIB_VERSION).lib"
     STATIC_GUROBI_LNK = $(DYNAMIC_GUROBI_LNK)
   else
-    GUROBI_INC = /I$(WINDOWS_GUROBI_DIR)\win32\include /DUSE_GUROBI
-    GUROBI_SWIG = -I$(WINDOWS_GUROBI_DIR)/win32/include -DUSE_GUROBI
-    DYNAMIC_GUROBI_LNK = $(WINDOWS_GUROBI_DIR)\\win32\lib\gurobi$(GUROBI_LIB_VERSION).lib
+    GUROBI_INC = /I"$(WINDOWS_GUROBI_DIR)\win32\include" /DUSE_GUROBI
+    GUROBI_SWIG = -I"$(WINDOWS_GUROBI_DIR)/win32/include" -DUSE_GUROBI
+    DYNAMIC_GUROBI_LNK = "$(WINDOWS_GUROBI_DIR)\\win32\lib\gurobi$(GUROBI_LIB_VERSION).lib"
     STATIC_GUROBI_LNK = $(DYNAMIC_GUROBI_LNK)
   endif
 endif
