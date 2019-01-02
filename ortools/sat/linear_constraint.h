@@ -174,6 +174,16 @@ class LinearConstraintBuilder {
 double ComputeActivity(const LinearConstraint& constraint,
                        const gtl::ITIVector<IntegerVariable, double>& values);
 
+// Computes the GCD of the constraint coefficient, and divide them by it. This
+// also tighten the constraint bounds assumming all the variables are integer.
+void DivideByGCD(LinearConstraint* constraint);
+
+// Removes the entries with a coefficient of zero.
+void RemoveZeroTerms(LinearConstraint* constraint);
+
+// Makes all coefficients positive by transforming a variable to its negation.
+void MakeAllCoefficientsPositive(LinearConstraint* constraint);
+
 }  // namespace sat
 }  // namespace operations_research
 

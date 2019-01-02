@@ -415,6 +415,18 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
   y->SortNonZerosIfNeeded();
 }
 
+void BasisFactorization::TemporaryLeftSolveForUnitRow(ColIndex j,
+                                                      ScatteredRow* y) const {
+  CHECK(IsRefactorized());
+  SCOPED_TIME_STAT(&stats_);
+  RETURN_IF_NULL(y);
+  BumpDeterministicTimeForSolve(1);
+  ClearAndResizeVectorWithNonZeros(RowToColIndex(matrix_.num_rows()), y);
+  lu_factorization_.LeftSolveUForUnitRow(j, y);
+  lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
+  y->SortNonZerosIfNeeded();
+}
+
 void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
                                                     ScatteredColumn* d) const {
   SCOPED_TIME_STAT(&stats_);

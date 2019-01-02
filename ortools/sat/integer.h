@@ -73,6 +73,11 @@ inline double ToDouble(IntegerValue value) {
   return static_cast<double>(value.value());
 }
 
+template <class IntType>
+inline IntType IntTypeAbs(IntType t) {
+  return IntType(std::abs(t.value()));
+}
+
 inline IntegerValue CeilRatio(IntegerValue dividend,
                               IntegerValue positive_divisor) {
   CHECK_GT(positive_divisor, 0);

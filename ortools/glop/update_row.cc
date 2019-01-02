@@ -57,6 +57,14 @@ const ScatteredRow& UpdateRow::GetUnitRowLeftInverse() const {
   return unit_row_left_inverse_;
 }
 
+const ScatteredRow& UpdateRow::ComputeAndGetUnitRowLeftInverse(
+    RowIndex leaving_row) {
+  Invalidate();
+  basis_factorization_.TemporaryLeftSolveForUnitRow(RowToColIndex(leaving_row),
+                                                    &unit_row_left_inverse_);
+  return unit_row_left_inverse_;
+}
+
 void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
   SCOPED_TIME_STAT(&stats_);
   basis_factorization_.LeftSolveForUnitRow(RowToColIndex(leaving_row),

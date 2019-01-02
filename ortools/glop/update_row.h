@@ -92,6 +92,10 @@ class UpdateRow {
     return DeterministicTimeForFpOperations(num_operations_);
   }
 
+  // This returns the asked unit row left inverse. It temporarily invalidate
+  // the class state by calling Invalidate().
+  const ScatteredRow& ComputeAndGetUnitRowLeftInverse(RowIndex leaving_row);
+
  private:
   // Computes the left inverse of the given unit row, and stores it in
   // unit_row_left_inverse_.

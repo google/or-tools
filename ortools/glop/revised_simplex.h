@@ -218,6 +218,10 @@ class RevisedSimplex {
   // class.
   ColIndex GetBasis(RowIndex row) const;
 
+  const ScatteredRow& GetUnitRowLeftInverse(RowIndex row) {
+    return update_row_.ComputeAndGetUnitRowLeftInverse(row);
+  }
+
   // Returns a copy of basis_ vector for outside applications (like cuts) to
   // have the correspondence between rows and columns of the dictionary.
   RowToColMapping GetBasisVector() const { return basis_; }

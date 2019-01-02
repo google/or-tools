@@ -211,6 +211,9 @@ class BasisFactorization {
   // coefficient of value 1.0 at position 'j'.
   void LeftSolveForUnitRow(ColIndex j, ScatteredRow* y) const;
 
+  // Same as LeftSolveForUnitRow() but does not update any internal data.
+  void TemporaryLeftSolveForUnitRow(ColIndex j, ScatteredRow* y) const;
+
   // Right solves the system B.d = a where the input is the initial value of d.
   void RightSolve(ScatteredColumn* d) const;
 
