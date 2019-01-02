@@ -458,7 +458,7 @@ def collect_valid_slabs_dp(capacities, colors, widths, loss_array):
         for assignment in all_valid_assignments:
             if assignment.load + new_width > max_capacity:
                 continue
-            new_colors = assignment.colors.copy()
+            new_colors = list(assignment.colors)
             if not new_color in new_colors:
                 new_colors.append(new_color)
             if len(new_colors) > 2:
