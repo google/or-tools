@@ -1709,8 +1709,8 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
     ct->mutable_cumulative()->mutable_demands()->Truncate(new_size);
   }
 
-  if (HasEnforcementLiteral(*ct)) return false;
-  if (!context->IsFixed(proto.capacity())) return false;
+  if (HasEnforcementLiteral(*ct)) return changed;
+  if (!context->IsFixed(proto.capacity())) return changed;
   const int64 capacity = context->MinOf(proto.capacity());
 
   const int size = proto.intervals_size();
@@ -1735,7 +1735,7 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
     if (context->MinOf(duration_ref) == 0) {
       // The behavior for zero-duration interval is currently not the same in
       // the no-overlap and the cumulative constraint.
-      return false;
+      return changed;
     }
     const int64 demand_min = context->MinOf(demand_ref);
     const int64 demand_max = context->MaxOf(demand_ref);
@@ -1746,12 +1746,12 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
       context->UpdateRuleStats("cumulative: demand_min exceeds capacity");
       if (ct.enforcement_literal().empty()) {
         context->is_unsat = true;
-        return false;
+        return changed;
       } else {
         CHECK_EQ(ct.enforcement_literal().size(), 1);
         context->SetLiteralToFalse(ct.enforcement_literal(0));
       }
-      return false;
+      return changed;
     } else if (demand_max > capacity) {
       if (ct.enforcement_literal().empty()) {
         context->UpdateRuleStats("cumulative: demand_max exceeds capacity.");
@@ -1761,7 +1761,7 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
         // for instance.
         context->UpdateRuleStats(
             "cumulative: demand_max of optional interval exceeds capacity.");
-        return false;
+        return changed;
       }
     }
   }

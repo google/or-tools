@@ -1181,9 +1181,7 @@ CpSolverResponse SolveCpModelInternal(
     SharedBoundsManager* shared_bounds_manager, Model* model) {
   // Timing.
   WallTimer wall_timer;
-  UserTimer user_timer;
   wall_timer.Start();
-  user_timer.Start();
 
   // Initialize a default invalid response.
   CpSolverResponse response;
@@ -1200,7 +1198,6 @@ CpSolverResponse SolveCpModelInternal(
             ? 0
             : model->Get<IntegerTrail>()->num_enqueues());
     response.set_wall_time(wall_timer.Get());
-    response.set_user_time(user_timer.Get());
     response.set_deterministic_time(
         model->Get<TimeLimit>()->GetElapsedDeterministicTime());
   };
@@ -1677,9 +1674,7 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
 
   // Timing.
   WallTimer wall_timer;
-  UserTimer user_timer;
   wall_timer.Start();
-  user_timer.Start();
 
   auto get_literal = [](int ref) {
     if (ref >= 0) return Literal(BooleanVariable(ref), true);
@@ -1791,13 +1786,11 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   response.set_num_binary_propagations(solver->num_propagations());
   response.set_num_integer_propagations(0);
   response.set_wall_time(wall_timer.Get());
-  response.set_user_time(user_timer.Get());
   response.set_deterministic_time(
       model->Get<TimeLimit>()->GetElapsedDeterministicTime());
 
   if (status == SatSolver::INFEASIBLE && drat_proof_handler != nullptr) {
     wall_timer.Restart();
-    user_timer.Restart();
     DratChecker::Status drat_status =
         drat_proof_handler->Check(FLAGS_max_drat_time_in_seconds);
     switch (drat_status) {
@@ -1815,7 +1808,6 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
         break;
     }
     LOG(INFO) << "DRAT wall time: " << wall_timer.Get();
-    LOG(INFO) << "DRAT user time: " << user_timer.Get();
   } else if (drat_proof_handler != nullptr) {
     // Always log a DRAT status to make it easier to extract it from a multirun
     // result with awk.
@@ -2206,8 +2198,10 @@ CpSolverResponse SolveCpModelParallel(
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
-  WallTimer timer;
-  timer.Start();
+  WallTimer wall_timer;
+  UserTimer user_timer;
+  wall_timer.Start();
+  user_timer.Start();
 
   // Validate model_proto.
   // TODO(user): provide an option to skip this step for speed?
@@ -2316,11 +2310,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
   int num_solutions = 0;
   std::function<void(const CpSolverResponse&)> observer_function =
-      [&model_proto, &observers, &num_solutions, &timer,
+      [&model_proto, &observers, &num_solutions, &wall_timer, &user_timer,
        &postprocess_solution](const CpSolverResponse& response) {
         const bool maximize = model_proto.objective().scaling_factor() < 0.0;
         if (VLOG_IS_ON(1)) {
-          LogNewSolution(absl::StrCat(++num_solutions), timer.Get(),
+          LogNewSolution(absl::StrCat(++num_solutions), wall_timer.Get(),
                          maximize ? response.objective_value()
                                   : response.best_objective_bound(),
                          maximize ? response.best_objective_bound()
@@ -2338,6 +2332,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                                 copy.solution().end())));
           }
         }
+
+        copy.set_wall_time(wall_timer.Get());
+        copy.set_user_time(user_timer.Get());
         for (const auto& observer : observers) {
           observer(copy);
         }
@@ -2351,7 +2348,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #else   // __PORTABLE_PLATFORM__
   if (params.num_search_workers() > 1) {
     response =
-        SolveCpModelParallel(new_model, observer_function, &timer, model);
+        SolveCpModelParallel(new_model, observer_function, &wall_timer, model);
 #endif  // __PORTABLE_PLATFORM__
   } else if (params.use_lns() && new_model.has_objective() &&
              !params.enumerate_all_solutions()) {
@@ -2373,8 +2370,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                                 response.solution().end())));
   }
 
-  // Fix the walltime before returning the response.
-  response.set_wall_time(timer.Get());
+  // Fix the timing information before returning the response.
+  response.set_wall_time(wall_timer.Get());
+  response.set_user_time(user_timer.Get());
   return response;
 }
 

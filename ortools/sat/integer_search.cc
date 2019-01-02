@@ -488,7 +488,7 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
 void LogNewSolution(const std::string& event_or_solution_count,
                     double time_in_seconds, double obj_lb, double obj_ub,
                     const std::string& solution_info) {
-  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  obj:[%0.0f,%0.0f]  %s",
+  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  obj:[%g,%g]  %s",
                                event_or_solution_count, time_in_seconds, obj_lb,
                                obj_ub, solution_info);
 }
