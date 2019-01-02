@@ -34,7 +34,7 @@
 // solver.Init(profits, weights, capacity);
 // bool is_solution_optimal = false;
 // std::unique_ptr<TimeLimit> time_limit =
-//     MakeUnique<TimeLimit>(time_limit_seconds); // Set the time limit.
+//     absl::make_unique<TimeLimit>(time_limit_seconds); // Set the time limit.
 // const double profit = solver.Solve(time_limit.get(), &is_solution_optimal);
 // const int number_of_items(profits.size());
 // for (int item_id(0); item_id < number_of_items; ++item_id) {
@@ -48,6 +48,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/memory/memory.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
@@ -55,8 +56,6 @@
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
-
-using ::gtl::MakeUnique;
 
 // ----- KnapsackAssignementForCuts -----
 // KnapsackAssignementForCuts is a small struct used to pair an item with
