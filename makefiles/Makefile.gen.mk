@@ -992,6 +992,7 @@ ALGORITHMS_DEPS = \
  $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h \
  $(SRC_DIR)/ortools/algorithms/hungarian.h \
  $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
+ $(SRC_DIR)/ortools/algorithms/knapsack_solver_for_cuts.h \
  $(SRC_DIR)/ortools/algorithms/sparse_permutation.h
 
 ALGORITHMS_LIB_OBJS = \
@@ -1000,6 +1001,7 @@ ALGORITHMS_LIB_OBJS = \
  $(OBJ_DIR)/algorithms/find_graph_symmetries.$O \
  $(OBJ_DIR)/algorithms/hungarian.$O \
  $(OBJ_DIR)/algorithms/knapsack_solver.$O \
+ $(OBJ_DIR)/algorithms/knapsack_solver_for_cuts.$O \
  $(OBJ_DIR)/algorithms/sparse_permutation.$O
 
 objs/algorithms/dynamic_partition.$O: \
