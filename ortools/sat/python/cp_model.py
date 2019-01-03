@@ -948,7 +948,7 @@ class CpModel(object):
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
         model_ct.reservoir.demands.extend(demands)
-        model_ct.reservoir.actives.extend(actives)
+        model_ct.reservoir.actives.extend([self.GetOrMakeIndex(x) for x in actives])
         model_ct.reservoir.min_level = min_level
         model_ct.reservoir.max_level = max_level
         return ct
