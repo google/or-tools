@@ -465,7 +465,7 @@ struct NamedOptimizationProblemType {
 };
 }  // namespace
 
-constexpr NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
+const NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
     {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
 #if defined(USE_GLPK)
     {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
