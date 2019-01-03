@@ -573,155 +573,154 @@ test_dotnet_tests:
 	$(MAKE) run SOURCE=examples/tests/testsat.cs
 	$(MAKE) run SOURCE=examples/tests/test_sat_model.cs
 
-.PHONY: test_dotnet_examples_csharp # Build and Run all CSharp Examples (located in examples/dotnet and examples/contrib)
-test_dotnet_examples_csharp: \
- rdotnet_GateSchedulingSat.cs \
- rdotnet_JobshopFt06Sat.cs \
- rdotnet_JobshopSat.cs \
- rdotnet_NursesSat.cs \
- rdotnet_ShiftSchedulingSat.cs \
- rdotnet_SpeakerSchedulingSat.cs \
- rdotnet_TaskSchedulingSat.cs \
- rdotnet_cscvrptw.cs \
- rdotnet_csflow.cs \
- rdotnet_csintegerprogramming.cs \
- rdotnet_csknapsack.cs \
- rdotnet_cslinearprogramming.cs \
- rdotnet_csls_api.cs \
- rdotnet_csrabbitspheasants.cs \
- rdotnet_cstsp.cs \
-\
- rdotnet_3_jugs_regular.cs \
- rdotnet_a_puzzle.cs \
- rdotnet_a_round_of_golf.cs \
- rdotnet_all_interval.cs \
- rdotnet_alldifferent_except_0.cs \
- rdotnet_assignment.cs \
- rdotnet_broken_weights.cs \
- rdotnet_bus_schedule.cs \
- rdotnet_circuit.cs \
- rdotnet_circuit2.cs \
- rdotnet_coins3.cs \
- rdotnet_combinatorial_auction2.cs \
- rdotnet_contiguity_regular.cs \
- rdotnet_contiguity_transition.cs \
- rdotnet_costas_array.cs \
- rdotnet_covering_opl.cs \
- rdotnet_crew.cs \
- rdotnet_crossword.cs \
- rdotnet_crypta.cs \
- rdotnet_crypto.cs \
- rdotnet_csdiet.cs \
- rdotnet_curious_set_of_integers.cs \
- rdotnet_debruijn.cs \
- rdotnet_discrete_tomography.cs \
- rdotnet_divisible_by_9_through_1.cs \
- rdotnet_dudeney.cs \
- rdotnet_einav_puzzle2.cs \
- rdotnet_eq10.cs \
- rdotnet_eq20.cs \
- rdotnet_fill_a_pix.cs \
- rdotnet_furniture_moving.cs \
- rdotnet_furniture_moving_intervals.cs \
- rdotnet_futoshiki.cs \
- rdotnet_golomb_ruler.cs \
- rdotnet_grocery.cs \
- rdotnet_hidato_table.cs \
- rdotnet_just_forgotten.cs \
- rdotnet_kakuro.cs \
- rdotnet_kenken2.cs \
- rdotnet_killer_sudoku.cs \
- rdotnet_labeled_dice.cs \
- rdotnet_langford.cs \
- rdotnet_least_diff.cs \
- rdotnet_lectures.cs \
- rdotnet_magic_sequence.cs \
- rdotnet_magic_square.cs \
- rdotnet_magic_square_and_cards.cs \
- rdotnet_map.cs \
- rdotnet_map2.cs \
- rdotnet_marathon2.cs \
- rdotnet_max_flow_taha.cs \
- rdotnet_max_flow_winston1.cs \
- rdotnet_minesweeper.cs \
- rdotnet_mr_smith.cs \
- rdotnet_nqueens.cs \
- rdotnet_nurse_rostering_regular.cs \
- rdotnet_nurse_rostering_transition.cs \
- rdotnet_olympic.cs \
- rdotnet_organize_day.cs \
- rdotnet_organize_day_intervals.cs \
- rdotnet_p_median.cs \
- rdotnet_pandigital_numbers.cs \
- rdotnet_perfect_square_sequence.cs \
- rdotnet_photo_problem.cs \
- rdotnet_place_number_puzzle.cs \
- rdotnet_post_office_problem2.cs \
- rdotnet_quasigroup_completion.cs \
- rdotnet_regex.cs \
- rdotnet_rogo2.cs \
- rdotnet_scheduling_speakers.cs \
- rdotnet_secret_santa2.cs \
- rdotnet_send_more_money2.cs \
- rdotnet_send_more_money.cs \
- rdotnet_send_most_money.cs \
- rdotnet_seseman.cs \
- rdotnet_set_covering2.cs \
- rdotnet_set_covering3.cs \
- rdotnet_set_covering4.cs \
- rdotnet_set_covering.cs \
- rdotnet_set_covering_deployment.cs \
- rdotnet_set_covering_skiena.cs \
- rdotnet_set_partition.cs \
- rdotnet_sicherman_dice.cs \
- rdotnet_ski_assignment.cs \
- rdotnet_stable_marriage.cs \
- rdotnet_strimko2.cs \
- rdotnet_subset_sum.cs \
- rdotnet_sudoku.cs \
- rdotnet_survo_puzzle.cs \
- rdotnet_to_num.cs \
- rdotnet_traffic_lights.cs \
- rdotnet_volsay.cs \
- rdotnet_volsay2.cs \
- rdotnet_volsay3.cs \
- rdotnet_wedding_optimal_chart.cs \
- rdotnet_who_killed_agatha.cs \
- rdotnet_xkcd.cs \
- rdotnet_young_tableaux.cs \
- rdotnet_zebra.cs
+.PHONY: test_dotnet_contrib # Build and Run all .Net Examples (located in examples/contrib)
+test_dotnet_contrib:
+	$(MAKE) run SOURCE=examples/contrib/3_jugs_regular.cs
+	$(MAKE) run SOURCE=examples/contrib/a_puzzle.cs
+	$(MAKE) run SOURCE=examples/contrib/a_round_of_golf.cs
+	$(MAKE) run SOURCE=examples/contrib/all_interval.cs
+	$(MAKE) run SOURCE=examples/contrib/alldifferent_except_0.cs
+	$(MAKE) run SOURCE=examples/contrib/assignment.cs
+	$(MAKE) run SOURCE=examples/contrib/broken_weights.cs
+	$(MAKE) run SOURCE=examples/contrib/bus_schedule.cs
+	$(MAKE) run SOURCE=examples/contrib/circuit.cs
+	$(MAKE) run SOURCE=examples/contrib/circuit2.cs
+	$(MAKE) run SOURCE=examples/contrib/coins3.cs
 	$(MAKE) run SOURCE=examples/contrib/coins_grid.cs ARGS="5 2"
-#	$(MAKE) rdotnet_csfz.cs # Flatzinc needed
-#	$(MAKE) rdotnet_nontransitive_dice.cs # too long
-#	$(MAKE) rdotnet_partition.cs # too long
-#	$(MAKE) rdotnet_secret_santa.cs # too long
-# $(MAKE) rdotnet_word_square.cs # depends on /usr/share/dict/words
+	$(MAKE) run SOURCE=examples/contrib/combinatorial_auction2.cs
+	$(MAKE) run SOURCE=examples/contrib/contiguity_regular.cs
+	$(MAKE) run SOURCE=examples/contrib/contiguity_transition.cs
+	$(MAKE) run SOURCE=examples/contrib/costas_array.cs
+	$(MAKE) run SOURCE=examples/contrib/covering_opl.cs
+	$(MAKE) run SOURCE=examples/contrib/crew.cs
+	$(MAKE) run SOURCE=examples/contrib/crossword.cs
+	$(MAKE) run SOURCE=examples/contrib/crypta.cs
+	$(MAKE) run SOURCE=examples/contrib/crypto.cs
+	$(MAKE) run SOURCE=examples/contrib/csdiet.cs
+	$(MAKE) run SOURCE=examples/contrib/curious_set_of_integers.cs
+	$(MAKE) run SOURCE=examples/contrib/debruijn.cs
+	$(MAKE) run SOURCE=examples/contrib/discrete_tomography.cs
+	$(MAKE) run SOURCE=examples/contrib/divisible_by_9_through_1.cs
+	$(MAKE) run SOURCE=examples/contrib/dudeney.cs
+	$(MAKE) run SOURCE=examples/contrib/einav_puzzle2.cs
+	$(MAKE) run SOURCE=examples/contrib/eq10.cs
+	$(MAKE) run SOURCE=examples/contrib/eq20.cs
+	$(MAKE) run SOURCE=examples/contrib/fill_a_pix.cs
+	$(MAKE) run SOURCE=examples/contrib/furniture_moving.cs
+	$(MAKE) run SOURCE=examples/contrib/furniture_moving_intervals.cs
+	$(MAKE) run SOURCE=examples/contrib/futoshiki.cs
+	$(MAKE) run SOURCE=examples/contrib/golomb_ruler.cs
+	$(MAKE) run SOURCE=examples/contrib/grocery.cs
+	$(MAKE) run SOURCE=examples/contrib/hidato_table.cs
+	$(MAKE) run SOURCE=examples/contrib/just_forgotten.cs
+	$(MAKE) run SOURCE=examples/contrib/kakuro.cs
+	$(MAKE) run SOURCE=examples/contrib/kenken2.cs
+	$(MAKE) run SOURCE=examples/contrib/killer_sudoku.cs
+	$(MAKE) run SOURCE=examples/contrib/labeled_dice.cs
+	$(MAKE) run SOURCE=examples/contrib/langford.cs
+	$(MAKE) run SOURCE=examples/contrib/least_diff.cs
+	$(MAKE) run SOURCE=examples/contrib/lectures.cs
+	$(MAKE) run SOURCE=examples/contrib/magic_sequence.cs
+	$(MAKE) run SOURCE=examples/contrib/magic_square.cs
+	$(MAKE) run SOURCE=examples/contrib/magic_square_and_cards.cs
+	$(MAKE) run SOURCE=examples/contrib/map.cs
+	$(MAKE) run SOURCE=examples/contrib/map2.cs
+	$(MAKE) run SOURCE=examples/contrib/marathon2.cs
+	$(MAKE) run SOURCE=examples/contrib/max_flow_taha.cs
+	$(MAKE) run SOURCE=examples/contrib/max_flow_winston1.cs
+	$(MAKE) run SOURCE=examples/contrib/minesweeper.cs
+	$(MAKE) run SOURCE=examples/contrib/mr_smith.cs
+	$(MAKE) run SOURCE=examples/contrib/nqueens.cs
+	$(MAKE) run SOURCE=examples/contrib/nurse_rostering_regular.cs
+	$(MAKE) run SOURCE=examples/contrib/nurse_rostering_transition.cs
+	$(MAKE) run SOURCE=examples/contrib/olympic.cs
+	$(MAKE) run SOURCE=examples/contrib/organize_day.cs
+	$(MAKE) run SOURCE=examples/contrib/organize_day_intervals.cs
+	$(MAKE) run SOURCE=examples/contrib/p_median.cs
+	$(MAKE) run SOURCE=examples/contrib/pandigital_numbers.cs
+	$(MAKE) run SOURCE=examples/contrib/perfect_square_sequence.cs
+	$(MAKE) run SOURCE=examples/contrib/photo_problem.cs
+	$(MAKE) run SOURCE=examples/contrib/place_number_puzzle.cs
+	$(MAKE) run SOURCE=examples/contrib/post_office_problem2.cs
+	$(MAKE) run SOURCE=examples/contrib/quasigroup_completion.cs
+	$(MAKE) run SOURCE=examples/contrib/regex.cs
+	$(MAKE) run SOURCE=examples/contrib/rogo2.cs
+	$(MAKE) run SOURCE=examples/contrib/scheduling_speakers.cs
+	$(MAKE) run SOURCE=examples/contrib/secret_santa2.cs
+	$(MAKE) run SOURCE=examples/contrib/send_more_money.cs
+	$(MAKE) run SOURCE=examples/contrib/send_more_money2.cs
+	$(MAKE) run SOURCE=examples/contrib/send_most_money.cs
+	$(MAKE) run SOURCE=examples/contrib/seseman.cs
+	$(MAKE) run SOURCE=examples/contrib/set_covering.cs
+	$(MAKE) run SOURCE=examples/contrib/set_covering2.cs
+	$(MAKE) run SOURCE=examples/contrib/set_covering3.cs
+	$(MAKE) run SOURCE=examples/contrib/set_covering4.cs
+	$(MAKE) run SOURCE=examples/contrib/set_covering_deployment.cs
+	$(MAKE) run SOURCE=examples/contrib/set_covering_skiena.cs
+	$(MAKE) run SOURCE=examples/contrib/set_partition.cs
+	$(MAKE) run SOURCE=examples/contrib/sicherman_dice.cs
+	$(MAKE) run SOURCE=examples/contrib/ski_assignment.cs
+	$(MAKE) run SOURCE=examples/contrib/stable_marriage.cs
+	$(MAKE) run SOURCE=examples/contrib/strimko2.cs
+	$(MAKE) run SOURCE=examples/contrib/subset_sum.cs
+	$(MAKE) run SOURCE=examples/contrib/sudoku.cs
+	$(MAKE) run SOURCE=examples/contrib/survo_puzzle.cs
+	$(MAKE) run SOURCE=examples/contrib/to_num.cs
+	$(MAKE) run SOURCE=examples/contrib/traffic_lights.cs
+	$(MAKE) run SOURCE=examples/contrib/volsay.cs
+	$(MAKE) run SOURCE=examples/contrib/volsay2.cs
+	$(MAKE) run SOURCE=examples/contrib/volsay3.cs
+	$(MAKE) run SOURCE=examples/contrib/wedding_optimal_chart.cs
+	$(MAKE) run SOURCE=examples/contrib/who_killed_agatha.cs
+	$(MAKE) run SOURCE=examples/contrib/xkcd.cs
+	$(MAKE) run SOURCE=examples/contrib/young_tableaux.cs
+	$(MAKE) run SOURCE=examples/contrib/zebra.cs
+	$(MAKE) run SOURCE=examples/contrib/fsdiet.fs
+	$(MAKE) run SOURCE=examples/contrib/fsequality-inequality.fs
+	$(MAKE) run SOURCE=examples/contrib/fsequality.fs
+	$(MAKE) run SOURCE=examples/contrib/fsinteger-linear-program.fs
+	$(MAKE) run SOURCE=examples/contrib/fsintegerprogramming.fs
+	$(MAKE) run SOURCE=examples/contrib/fsknapsack.fs
+	$(MAKE) run SOURCE=examples/contrib/fslinearprogramming.fs
+	$(MAKE) run SOURCE=examples/contrib/fsnetwork-max-flow-lpSolve.fs
+	$(MAKE) run SOURCE=examples/contrib/fsnetwork-max-flow.fs
+	$(MAKE) run SOURCE=examples/contrib/fsnetwork-min-cost-flow.fs
+	$(MAKE) run SOURCE=examples/contrib/fsProgram.fs
+	$(MAKE) run SOURCE=examples/contrib/fsrabbit-pheasant.fs
+	$(MAKE) run SOURCE=examples/contrib/fsvolsay.fs
+	$(MAKE) run SOURCE=examples/contrib/fsvolsay3-lpSolve.fs
+	$(MAKE) run SOURCE=examples/contrib/fsvolsay3.fs
+	$(MAKE) run SOURCE=examples/contrib/SimpleProgramFSharp.fs
+#	$(MAKE) run SOURCE=examples/contrib/csfz.cs # Flatzinc needed
+#	$(MAKE) run SOURCE=examples/contrib/nontransitive_dice.cs # too long
+#	$(MAKE) run SOURCE=examples/contrib/partition.cs # too long
+#	$(MAKE) run SOURCE=examples/contrib/secret_santa.cs # too long
+#	$(MAKE) run SOURCE=examples/contrib/word_square.cs # depends on /usr/share/dict/words
 
-.PHONY: test_dotnet_examples_fsharp # Build and Run all FSharp Samples (located in examples/dotnet and examples/contrib)
-test_dotnet_examples_fsharp: \
- rdotnet_SimpleProgramFSharp.fs \
- rdotnet_fsProgram.fs \
- rdotnet_fsdiet.fs \
- rdotnet_fsequality-inequality.fs \
- rdotnet_fsequality.fs \
- rdotnet_fsinteger-linear-program.fs \
- rdotnet_fsintegerprogramming.fs \
- rdotnet_fsknapsack.fs \
- rdotnet_fslinearprogramming.fs \
- rdotnet_fsnetwork-max-flow-lpSolve.fs \
- rdotnet_fsnetwork-max-flow.fs \
- rdotnet_fsnetwork-min-cost-flow.fs \
- rdotnet_fsrabbit-pheasant.fs \
- rdotnet_fsvolsay3.fs \
- rdotnet_fsvolsay3-lpSolve.fs \
- rdotnet_fsvolsay.fs
+.PHONY: test_dotnet_dotnet # Build and Run all .Net Examples (located in examples/dotnet)
+test_dotnet_dotnet:
+	$(MAKE) run SOURCE=examples/dotnet/cscvrptw.cs
+	$(MAKE) run SOURCE=examples/dotnet/csflow.cs
+	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/csknapsack.cs
+	$(MAKE) run SOURCE=examples/dotnet/cslinearprogramming.cs
+	$(MAKE) run SOURCE=examples/dotnet/csls_api.cs
+	$(MAKE) run SOURCE=examples/dotnet/csrabbitspheasants.cs
+	$(MAKE) run SOURCE=examples/dotnet/cstsp.cs
+	$(MAKE) run SOURCE=examples/dotnet/GateSchedulingSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/JobshopFt06Sat.cs
+	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/ShiftSchedulingSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/SpeakerSchedulingSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/TaskSchedulingSat.cs
 
 .PHONY: test_dotnet_pimpl
 test_dotnet_pimpl: \
  check_dotnet_pimpl \
  test_dotnet_tests \
- test_dotnet_examples_csharp \
- test_dotnet_examples_fsharp
+ test_dotnet_contrib \
+ test_dotnet_dotnet
 
 ################
 ##  Cleaning  ##
