@@ -14,23 +14,16 @@ and .Net. Each language have different requirements for the code samples.
 ## Searching for one solution
 
 ### C++ code samples
-```
-<link rel="import" href="../samples/simple_routing_program.cc">
-```
+[simple_routing_program.cc](../samples/simple_routing_program.cc)
+
 ### Python code samples
-```python
-../samples/simple_routing_program.py
-```
+[simple_routing_program.py](../samples/simple_routing_program.py)
 
 ### Java code samples
-```java
-../samples/SimpleRoutingProgram.java
-```
+[SimpleRoutingProgram.java](../samples/SimpleRoutingProgram.java)
 
 ### .Net code samples
-```cs
-../samples/SimpleRoutingProgram.cs
-```
+[SimpleRoutingProgram.cs](../samples/SimpleRoutingProgram.cs)
 
 ## Misc
 Images have been generated using [routing_svg.py](routing_svg.py) through bash script [generate_svg.sh](generate_svg.sh).
