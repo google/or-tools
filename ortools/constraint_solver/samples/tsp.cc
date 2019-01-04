@@ -52,36 +52,25 @@ struct DataProblem {
   const RoutingIndexManager::NodeIndex depot;
 };
 
-/*! @brief Manhattan distance implemented as a callback.
- * @details It uses an array of positions and
- * computes the Manhattan distance between the two positions of two different
- * indices.*/
-class ManhattanDistance {
- private:
-  std::vector<std::vector<int64>> distances_;
-
- public:
-  ManhattanDistance(const DataProblem& data) {
-    // Precompute distance between location to have distance callback in O(1)
-    distances_ = std::vector<std::vector<int64>>(
-        data.num_locations, std::vector<int64>(data.num_locations, 0LL));
-    for (int fromNode = 0; fromNode < data.num_locations; fromNode++) {
-      for (int toNode = 0; toNode < data.num_locations; toNode++) {
-        if (fromNode != toNode)
-          distances_[fromNode][toNode] =
-              std::abs(data.locations[toNode][0] -
-                       data.locations[fromNode][0]) +
-              std::abs(data.locations[toNode][1] - data.locations[fromNode][1]);
-      }
+// [START manhattan_distance_matrix]
+/*! @brief Create Manhattan distance matrix.
+ * @details It uses the data.locations to computes the Manhattan distance
+ * between the two positions of two different indices.*/
+std::vector<std::vector<int64>> GenerateManhattanDistanceMatrix(
+    const DataProblem& data) {
+  std::vector<std::vector<int64>> distances = std::vector<std::vector<int64>>(
+      data.num_locations, std::vector<int64>(data.num_locations, 0LL));
+  for (int fromNode = 0; fromNode < data.num_locations; fromNode++) {
+    for (int toNode = 0; toNode < data.num_locations; toNode++) {
+      if (fromNode != toNode)
+        distances[fromNode][toNode] =
+            std::abs(data.locations[toNode][0] - data.locations[fromNode][0]) +
+            std::abs(data.locations[toNode][1] - data.locations[fromNode][1]);
     }
   }
-
-  //! @brief Returns the manhattan distance between the two nodes.
-  int64 operator()(RoutingIndexManager::NodeIndex FromNode,
-                   RoutingIndexManager::NodeIndex ToNode) {
-    return distances_[FromNode.value()][ToNode.value()];
-  }
-};
+  return distances;
+}
+// [END manhattan_distance_matrix]
 
 //! @brief Print the solution
 //! @param[in] data Data of the problem.
@@ -94,14 +83,14 @@ void PrintSolution(const DataProblem& data, const RoutingIndexManager& manager,
   // Inspect solution.
   int64 index = routing.Start(0);
   LOG(INFO) << "Route for Vehicle 0:";
-  int64 distance = 0LL;
+  int64 distance{0};
   std::stringstream route;
   while (routing.IsEnd(index) == false) {
     route << manager.IndexToNode(index).value() << " -> ";
     int64 previous_index = index;
     index = solution.Value(routing.NextVar(index));
     distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-        previous_index, index, 0LL);
+        previous_index, index, int64{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Distance of the route: " << distance << "m";
@@ -120,13 +109,13 @@ void Solve() {
   RoutingModel routing(manager);
 
   // Define weight of each edge
-  ManhattanDistance distance(data);
-  const int vehicle_cost = routing.RegisterTransitCallback(
-      [&distance, &manager](int64 fromIndex, int64 toIndex) -> int64 {
-        return distance(manager.IndexToNode(fromIndex),
-                        manager.IndexToNode(toIndex));
+  auto distance_matrix = GenerateManhattanDistanceMatrix(data);
+  const int transit_cost = routing.RegisterTransitCallback(
+      [&distance_matrix, &manager](int64 fromIndex, int64 toIndex) -> int64 {
+        return distance_matrix[manager.IndexToNode(fromIndex).value()]
+                              [manager.IndexToNode(toIndex).value()];
       });
-  routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_cost);
 
   // Setting first solution heuristic (cheapest addition).
   RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
@@ -142,5 +131,5 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
   operations_research::Solve();
-  return 0;
+  return EXIT_SUCCESS;
 }
