@@ -32,8 +32,6 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/status.h \
  $(SRC_DIR)/ortools/base/statusor.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
- $(SRC_DIR)/ortools/base/strtoint.h \
- $(SRC_DIR)/ortools/base/strutil.h \
  $(SRC_DIR)/ortools/base/sysinfo.h \
  $(SRC_DIR)/ortools/base/thorough_hash.h \
  $(SRC_DIR)/ortools/base/threadpool.h \
@@ -269,7 +267,7 @@ objs/data/jobshop_scheduling_parser.$O: \
  ortools/gen/ortools/data/jobshop_scheduling.pb.h \
  ortools/base/filelineiter.h ortools/base/file.h \
  ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/status.h ortools/base/strtoint.h \
+ ortools/base/macros.h ortools/base/status.h \
  ortools/base/basictypes.h | $(OBJ_DIR)/data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sjobshop_scheduling_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sjobshop_scheduling_parser.$O
 
@@ -277,7 +275,7 @@ objs/data/rcpsp_parser.$O: ortools/data/rcpsp_parser.cc \
  ortools/data/rcpsp_parser.h ortools/base/integral_types.h \
  ortools/gen/ortools/data/rcpsp.pb.h ortools/base/filelineiter.h \
  ortools/base/file.h ortools/base/logging.h ortools/base/macros.h \
- ortools/base/status.h ortools/base/strtoint.h ortools/base/basictypes.h | $(OBJ_DIR)/data
+ ortools/base/status.h ortools/base/basictypes.h | $(OBJ_DIR)/data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Srcpsp_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Srcpsp_parser.$O
 
 objs/data/set_covering_data.$O: ortools/data/set_covering_data.cc \
@@ -288,7 +286,7 @@ objs/data/set_covering_parser.$O: ortools/data/set_covering_parser.cc \
  ortools/data/set_covering_parser.h ortools/base/integral_types.h \
  ortools/data/set_covering_data.h ortools/base/filelineiter.h \
  ortools/base/file.h ortools/base/logging.h ortools/base/macros.h \
- ortools/base/status.h ortools/base/strtoint.h ortools/base/basictypes.h | $(OBJ_DIR)/data
+ ortools/base/status.h ortools/base/basictypes.h | $(OBJ_DIR)/data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sset_covering_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sset_covering_parser.$O
 
 ortools/data/jobshop_scheduling.proto: ;

@@ -10,9 +10,8 @@
 %{
 #include <string>
 #include "ortools/base/integral_types.h"
-#include "ortools/base/strtoint.h"
+#include "absl/strings/numbers.h"
 #include "ortools/flatzinc/parser.tab.hh"
-using operations_research::atoi64;
 #if defined(_MSC_VER)
 #define YY_NO_UNISTD_H
 #include "io.h"
@@ -50,27 +49,27 @@ using operations_research::atoi64;
   return IVALUE;
 }
 -?[0-9]+ {
-  yylval->integer_value = atoi64(yytext);
+  CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
   return IVALUE;
 }
 -?0x[0-9A-Fa-f]+ {
-  yylval->integer_value = atoi64(yytext);
+  CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
   return IVALUE;
 }
 -?0o[0-7]+ {
-  yylval->integer_value = atoi64(yytext);
+  CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
   return IVALUE;
 }
 -?[0-9]+\.[0-9]+ {
-  yylval->double_value = strtod(yytext,nullptr);
+  CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
   return DVALUE;
 }
 -?[0-9]+\.[0-9]+[Ee][+-]?[0-9]+  {
-  yylval->double_value = strtod(yytext,nullptr);
+  CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
   return DVALUE;
 }
 -?[0-9]+[Ee][+-]?[0-9]+ {
-  yylval->double_value = strtod(yytext,nullptr);
+  CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
   return DVALUE;
 
 }

@@ -63,6 +63,8 @@ class RcpspParser {
   // Sets the number of declared tasks, and initialize data structures
   // accordingly.
   void SetNumDeclaredTasks(int t);
+  int strtoint32(const std::string& word);
+  int64 strtoint64(const std::string& word);
 
   std::string basedata_;
   int64 seed_;

@@ -4,13 +4,11 @@ cc_library(
     name = "base",
     hdrs = [
         "basictypes.h",
-        "casts.h",
         "commandlineflags.h",
         "integral_types.h",
         "logging.h",
         "macros.h",
         "port.h",
-        "strtoint.h",  # Move to a separate library?
     ],
     deps = [
         "@com_github_gflags_gflags//:gflags",
@@ -54,29 +52,6 @@ cc_library(
     name = "encodingutils",
     hdrs = [
         "encodingutils.h",
-    ],
-    deps = [
-        ":base",
-    ],
-)
-
-cc_library(
-    name = "strings",
-    srcs = [
-        "join.cc",
-        "numbers.cc",
-        "split.cc",
-        "string_view.cc",
-        "stringprintf.cc",
-    ],
-    hdrs = [
-        "join.h",
-        "numbers.h",
-        "split.h",
-        "string_view.h",
-        "stringpiece_utils.h",
-        "stringprintf.h",
-        "strutil.h",
     ],
     deps = [
         ":base",

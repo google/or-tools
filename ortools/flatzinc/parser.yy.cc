@@ -499,10 +499,9 @@ static yyconst flex_int32_t yy_rule_can_match_eol[32] = {
 /* Rename yy to orfz_ in public functions. */
 #line 11 "./ortools/flatzinc/parser.lex"
 #include <string>
+#include "absl/strings/numbers.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/flatzinc/parser.tab.hh"
-using operations_research::atoi64;
 #if defined(_MSC_VER)
 #define YY_NO_UNISTD_H
 #include "io.h"
@@ -511,7 +510,7 @@ using operations_research::atoi64;
 /* Rules that parse the bottom-line std::string tokens of a .fz file and
    convert them into YACC tokens, which may carry a value. See the
    LexerInfo struct and the %token declarations in ./parser.yy. */
-#line 559 "./ortools/flatzinc/parser.yy.cc"
+#line 558 "./ortools/flatzinc/parser.yy.cc"
 
 #define INITIAL 0
 
@@ -774,9 +773,9 @@ YY_DECL {
   }
 
   {
-#line 27 "./ortools/flatzinc/parser.lex"
+#line 26 "./ortools/flatzinc/parser.lex"
 
-#line 836 "./ortools/flatzinc/parser.yy.cc"
+#line 835 "./ortools/flatzinc/parser.yy.cc"
 
     while (/*CONSTCOND*/ 1) /* loops until end-of-file is reached */
     {
@@ -838,112 +837,112 @@ YY_DECL {
 
         case 1:
           YY_RULE_SETUP
-#line 28 "./ortools/flatzinc/parser.lex"
+#line 27 "./ortools/flatzinc/parser.lex"
           {
             return ARRAY;
           }
           YY_BREAK
         case 2:
           YY_RULE_SETUP
-#line 29 "./ortools/flatzinc/parser.lex"
+#line 28 "./ortools/flatzinc/parser.lex"
           {
             return BOOL;
           }
           YY_BREAK
         case 3:
           YY_RULE_SETUP
-#line 30 "./ortools/flatzinc/parser.lex"
+#line 29 "./ortools/flatzinc/parser.lex"
           {
             return CONSTRAINT;
           }
           YY_BREAK
         case 4:
           YY_RULE_SETUP
-#line 31 "./ortools/flatzinc/parser.lex"
+#line 30 "./ortools/flatzinc/parser.lex"
           {
             return FLOAT;
           }
           YY_BREAK
         case 5:
           YY_RULE_SETUP
-#line 32 "./ortools/flatzinc/parser.lex"
+#line 31 "./ortools/flatzinc/parser.lex"
           {
             return INT;
           }
           YY_BREAK
         case 6:
           YY_RULE_SETUP
-#line 33 "./ortools/flatzinc/parser.lex"
+#line 32 "./ortools/flatzinc/parser.lex"
           {
             return MAXIMIZE;
           }
           YY_BREAK
         case 7:
           YY_RULE_SETUP
-#line 34 "./ortools/flatzinc/parser.lex"
+#line 33 "./ortools/flatzinc/parser.lex"
           {
             return MINIMIZE;
           }
           YY_BREAK
         case 8:
           YY_RULE_SETUP
-#line 35 "./ortools/flatzinc/parser.lex"
+#line 34 "./ortools/flatzinc/parser.lex"
           {
             return OF;
           }
           YY_BREAK
         case 9:
           YY_RULE_SETUP
-#line 36 "./ortools/flatzinc/parser.lex"
+#line 35 "./ortools/flatzinc/parser.lex"
           {
             return PREDICATE;
           }
           YY_BREAK
         case 10:
           YY_RULE_SETUP
-#line 37 "./ortools/flatzinc/parser.lex"
+#line 36 "./ortools/flatzinc/parser.lex"
           {
             return SATISFY;
           }
           YY_BREAK
         case 11:
           YY_RULE_SETUP
-#line 38 "./ortools/flatzinc/parser.lex"
+#line 37 "./ortools/flatzinc/parser.lex"
           {
             return SET;
           }
           YY_BREAK
         case 12:
           YY_RULE_SETUP
-#line 39 "./ortools/flatzinc/parser.lex"
+#line 38 "./ortools/flatzinc/parser.lex"
           {
             return SOLVE;
           }
           YY_BREAK
         case 13:
           YY_RULE_SETUP
-#line 40 "./ortools/flatzinc/parser.lex"
+#line 39 "./ortools/flatzinc/parser.lex"
           {
             return VAR;
           }
           YY_BREAK
         case 14:
           YY_RULE_SETUP
-#line 41 "./ortools/flatzinc/parser.lex"
+#line 40 "./ortools/flatzinc/parser.lex"
           {
             return DOTDOT;
           }
           YY_BREAK
         case 15:
           YY_RULE_SETUP
-#line 42 "./ortools/flatzinc/parser.lex"
+#line 41 "./ortools/flatzinc/parser.lex"
           {
             return COLONCOLON;
           }
           YY_BREAK
         case 16:
           YY_RULE_SETUP
-#line 44 "./ortools/flatzinc/parser.lex"
+#line 43 "./ortools/flatzinc/parser.lex"
           {
             yylval->integer_value = 1;
             return IVALUE;
@@ -951,7 +950,7 @@ YY_DECL {
           YY_BREAK
         case 17:
           YY_RULE_SETUP
-#line 48 "./ortools/flatzinc/parser.lex"
+#line 47 "./ortools/flatzinc/parser.lex"
           {
             yylval->integer_value = 0;
             return IVALUE;
@@ -959,55 +958,55 @@ YY_DECL {
           YY_BREAK
         case 18:
           YY_RULE_SETUP
-#line 52 "./ortools/flatzinc/parser.lex"
+#line 51 "./ortools/flatzinc/parser.lex"
           {
-            yylval->integer_value = atoi64(yytext);
+            CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
             return IVALUE;
           }
           YY_BREAK
         case 19:
           YY_RULE_SETUP
-#line 56 "./ortools/flatzinc/parser.lex"
+#line 55 "./ortools/flatzinc/parser.lex"
           {
-            yylval->integer_value = atoi64(yytext);
+            CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
             return IVALUE;
           }
           YY_BREAK
         case 20:
           YY_RULE_SETUP
-#line 60 "./ortools/flatzinc/parser.lex"
+#line 59 "./ortools/flatzinc/parser.lex"
           {
-            yylval->integer_value = atoi64(yytext);
+            CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
             return IVALUE;
           }
           YY_BREAK
         case 21:
           YY_RULE_SETUP
-#line 64 "./ortools/flatzinc/parser.lex"
+#line 63 "./ortools/flatzinc/parser.lex"
           {
-            yylval->double_value = strtod(yytext, nullptr);
+            CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
             return DVALUE;
           }
           YY_BREAK
         case 22:
           YY_RULE_SETUP
-#line 68 "./ortools/flatzinc/parser.lex"
+#line 67 "./ortools/flatzinc/parser.lex"
           {
-            yylval->double_value = strtod(yytext, nullptr);
+            CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
             return DVALUE;
           }
           YY_BREAK
         case 23:
           YY_RULE_SETUP
-#line 72 "./ortools/flatzinc/parser.lex"
+#line 71 "./ortools/flatzinc/parser.lex"
           {
-            yylval->double_value = strtod(yytext, nullptr);
+            CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
             return DVALUE;
           }
           YY_BREAK
         case 24:
           YY_RULE_SETUP
-#line 77 "./ortools/flatzinc/parser.lex"
+#line 76 "./ortools/flatzinc/parser.lex"
           {
             yylval->string_value = yytext;
             return IDENTIFIER;
@@ -1015,7 +1014,7 @@ YY_DECL {
           YY_BREAK
         case 25:
           YY_RULE_SETUP
-#line 81 "./ortools/flatzinc/parser.lex"
+#line 80 "./ortools/flatzinc/parser.lex"
           {
             yylval->string_value = yytext;
             return IDENTIFIER;
@@ -1023,7 +1022,7 @@ YY_DECL {
           YY_BREAK
         case 26:
           YY_RULE_SETUP
-#line 85 "./ortools/flatzinc/parser.lex"
+#line 84 "./ortools/flatzinc/parser.lex"
           {
             yylval->string_value = yytext;
             return SVALUE;
@@ -1032,32 +1031,32 @@ YY_DECL {
         case 27:
           /* rule 27 can match eol */
           YY_RULE_SETUP
-#line 86 "./ortools/flatzinc/parser.lex"
+#line 85 "./ortools/flatzinc/parser.lex"
               ;
           YY_BREAK
         case 28:
           YY_RULE_SETUP
-#line 87 "./ortools/flatzinc/parser.lex"
+#line 86 "./ortools/flatzinc/parser.lex"
               ;
           YY_BREAK
         case 29:
           YY_RULE_SETUP
-#line 88 "./ortools/flatzinc/parser.lex"
+#line 87 "./ortools/flatzinc/parser.lex"
               ;
           YY_BREAK
         case 30:
           YY_RULE_SETUP
-#line 89 "./ortools/flatzinc/parser.lex"
+#line 88 "./ortools/flatzinc/parser.lex"
           {
             return yytext[0];
           }
           YY_BREAK
         case 31:
           YY_RULE_SETUP
-#line 90 "./ortools/flatzinc/parser.lex"
+#line 89 "./ortools/flatzinc/parser.lex"
           ECHO;
           YY_BREAK
-#line 1092 "./ortools/flatzinc/parser.yy.cc"
+#line 1091 "./ortools/flatzinc/parser.yy.cc"
         case YY_STATE_EOF(INITIAL):
           yyterminate();
 
@@ -2156,4 +2155,4 @@ void orfz_free(void *ptr, yyscan_t yyscanner) {
 
 #define YYTABLES_NAME "yytables"
 
-#line 90 "./ortools/flatzinc/parser.lex"
+#line 89 "./ortools/flatzinc/parser.lex"

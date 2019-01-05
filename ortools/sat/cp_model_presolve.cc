@@ -2874,7 +2874,9 @@ bool PresolveCpModel(const PresolveOptions& options,
   // TODO(user): Past this point the context.constraint_to_vars[] graph is not
   // consistent and shouldn't be used. We do use var_to_constraints.size()
   // though.
-  DCHECK(context.ConstraintVariableUsageIsConsistent());
+  if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
+    DCHECK(context.ConstraintVariableUsageIsConsistent());
+  }
 
   // Remove all empty constraints. Note that we need to remap the interval
   // references.

@@ -21,6 +21,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "examples/cpp/opb_reader.h"
@@ -33,7 +34,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/status.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
@@ -288,10 +288,16 @@ int Run() {
       LOG(INFO) << "UNSAT when loading the problem.";
     }
   }
-  if (!AddObjectiveConstraint(
-          problem, !FLAGS_lower_bound.empty(),
-          Coefficient(atoi64(FLAGS_lower_bound)), !FLAGS_upper_bound.empty(),
-          Coefficient(atoi64(FLAGS_upper_bound)), solver.get())) {
+  auto strtoint64 = [](const std::string& word) {
+    int64 value;
+    CHECK(absl::SimpleAtoi(word, &value));
+    return value;
+  };
+  if (!AddObjectiveConstraint(problem, !FLAGS_lower_bound.empty(),
+                              Coefficient(strtoint64(FLAGS_lower_bound)),
+                              !FLAGS_upper_bound.empty(),
+                              Coefficient(strtoint64(FLAGS_upper_bound)),
+                              solver.get())) {
     LOG(INFO) << "UNSAT when setting the objective constraint.";
   }
 

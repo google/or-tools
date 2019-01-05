@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -28,7 +29,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 
@@ -193,10 +193,12 @@ class SatCnfReader {
   }
 
   int64 StringPieceAtoi(absl::string_view input) {
+    int64 value;
     // Hack: data() is not null terminated, but we do know that it points
-    // inside a std::string where numbers are separated by " " and since atoi64
-    // will stop at the first invalid char, this works.
-    return atoi64(input.data());  // NOLINT
+    // inside a std::string where numbers are separated by " " and since
+    // SimpleAtoi will stop at the first invalid char, this works.
+    CHECK(absl::SimpleAtoi(input, &value));
+    return value;
   }
 
   void ProcessHeader(const std::string& line) {

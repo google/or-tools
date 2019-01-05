@@ -19,11 +19,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/sat/boolean_problem.pb.h"
 
 namespace operations_research {
@@ -66,7 +66,7 @@ class OpbReader {
 
   void ProcessNewLine(LinearBooleanProblem* problem, const std::string& line) {
     const std::vector<std::string> words =
-        absl::StrSplit(line, ' ', absl::SkipEmpty());
+        absl::StrSplit(line, absl::ByAnyChar(" ;"), absl::SkipEmpty());
     if (words.empty() || words[0].empty() || words[0][0] == '*') {
       return;
     }
@@ -77,11 +77,14 @@ class OpbReader {
         const std::string& word = words[i];
         if (word.empty() || word[0] == ';') continue;
         if (word[0] == 'x') {
-          const int literal = atoi32(word.substr(1));
+          int literal;
+          CHECK(absl::SimpleAtoi(word.substr(1), &literal));
           num_variables_ = std::max(num_variables_, literal);
           objective->add_literals(literal);
         } else {
-          objective->add_coefficients(atoi64(word));
+          int64 value;
+          CHECK(absl::SimpleAtoi(word, &value));
+          objective->add_coefficients(value);
         }
       }
       if (objective->literals_size() != objective->coefficients_size()) {
@@ -96,20 +99,27 @@ class OpbReader {
       CHECK(!word.empty());
       if (word == ">=") {
         CHECK_LT(i + 1, words.size());
-        constraint->set_lower_bound(atoi64(words[i + 1]));
+        int64 value;
+        CHECK(absl::SimpleAtoi(words[i + 1], &value));
+        constraint->set_lower_bound(value);
         break;
       } else if (word == "=") {
         CHECK_LT(i + 1, words.size());
-        constraint->set_upper_bound(atoi64(words[i + 1]));
-        constraint->set_lower_bound(atoi64(words[i + 1]));
+        int64 value;
+        CHECK(absl::SimpleAtoi(words[i + 1], &value));
+        constraint->set_upper_bound(value);
+        constraint->set_lower_bound(value);
         break;
       } else {
         if (word[0] == 'x') {
-          const int literal = atoi32(word.substr(1));
+          int literal;
+          CHECK(absl::SimpleAtoi(word.substr(1), &literal));
           num_variables_ = std::max(num_variables_, literal);
           constraint->add_literals(literal);
         } else {
-          constraint->add_coefficients(atoi64(word));
+          int64 value;
+          CHECK(absl::SimpleAtoi(words[i], &value));
+          constraint->add_coefficients(value);
         }
       }
     }

@@ -31,11 +31,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
@@ -101,6 +101,12 @@ class ShiftMinimizationParser {
  private:
   enum LoadStatus { NOT_STARTED, STARTED, JOBS_SEEN, WORKERS_SEEN };
 
+  int strtoint32(const std::string& word) {
+    int result;
+    CHECK(absl::SimpleAtoi(word, &result));
+    return result;
+  }
+
   void ProcessLine(const std::string& line) {
     if (line.empty() || line[0] == '#') {
       return;
@@ -116,9 +122,9 @@ class ShiftMinimizationParser {
       }
       case STARTED: {
         if (words.size() == 3 && words[0] == "Type") {
-          CHECK_EQ(1, atoi32(words[2]));
+          CHECK_EQ(1, strtoint32(words[2]));
         } else if (words.size() == 3 && words[0] == "Jobs") {
-          declared_num_jobs_ = atoi32(words[2]);
+          declared_num_jobs_ = strtoint32(words[2]);
           possible_assignments_per_job_.resize(declared_num_jobs_);
           load_status_ = JOBS_SEEN;
         } else {
@@ -128,9 +134,9 @@ class ShiftMinimizationParser {
       }
       case JOBS_SEEN: {
         if (words.size() == 2) {
-          jobs_.push_back({atoi32(words[0]), atoi32(words[1])});
+          jobs_.push_back({strtoint32(words[0]), strtoint32(words[1])});
         } else if (words.size() == 3 && words[0] == "Qualifications") {
-          declared_num_workers_ = atoi32(words[2]);
+          declared_num_workers_ = strtoint32(words[2]);
           possible_jobs_per_worker_.resize(declared_num_workers_);
           load_status_ = WORKERS_SEEN;
         } else {
@@ -139,9 +145,9 @@ class ShiftMinimizationParser {
         break;
       }
       case WORKERS_SEEN: {
-        CHECK_EQ(atoi32(words[0]), words.size() - 1);
+        CHECK_EQ(strtoint32(words[0]), words.size() - 1);
         for (int i = 1; i < words.size(); ++i) {
-          const int job = atoi32(words[i]);
+          const int job = strtoint32(words[i]);
           const int pos = possible_jobs_per_worker_[num_workers_read_].size();
           possible_jobs_per_worker_[num_workers_read_].push_back(job);
           possible_assignments_per_job_[job].push_back(

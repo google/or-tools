@@ -23,11 +23,11 @@
 #include <string>
 #include <vector>
 #include "absl/container/flat_hash_map.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/strtoint.h"
 
 namespace operations_research {
 
@@ -232,6 +232,14 @@ class ParametersParser {
   std::vector<int> variable_weights_;
 };
 
+namespace {
+int strtoint32(const string& word) {
+  int result;
+  CHECK(absl::SimpleAtoi(word, &result));
+  return result;
+}
+}  // namespace
+
 // Function that finds the disjoint sub-graphs of the graph of the instance.
 void FindComponents(const std::vector<FapConstraint>& constraints,
                     const std::map<int, FapVariable>& variables,
@@ -276,12 +284,12 @@ void VariableParser::Parse() {
     CHECK_GE(tokens.size(), 2);
 
     FapVariable variable;
-    variable.domain_index = atoi32(tokens[1].c_str());
+    variable.domain_index = strtoint32(tokens[1].c_str());
     if (tokens.size() > 3) {
-      variable.initial_position = atoi32(tokens[2].c_str());
-      variable.mobility_index = atoi32(tokens[3].c_str());
+      variable.initial_position = strtoint32(tokens[2].c_str());
+      variable.mobility_index = strtoint32(tokens[3].c_str());
     }
-    gtl::InsertOrUpdate(&variables_, atoi32(tokens[0].c_str()), variable);
+    gtl::InsertOrUpdate(&variables_, strtoint32(tokens[0].c_str()), variable);
   }
 }
 
@@ -302,12 +310,12 @@ void DomainParser::Parse() {
     }
     CHECK_GE(tokens.size(), 2);
 
-    const int key = atoi32(tokens[0].c_str());
+    const int key = strtoint32(tokens[0].c_str());
 
     std::vector<int> domain;
     domain.clear();
     for (int i = 2; i < tokens.size(); ++i) {
-      domain.push_back(atoi32(tokens[i].c_str()));
+      domain.push_back(strtoint32(tokens[i].c_str()));
     }
 
     if (!domain.empty()) {
@@ -334,14 +342,14 @@ void ConstraintParser::Parse() {
     CHECK_GE(tokens.size(), 5);
 
     FapConstraint constraint;
-    constraint.variable1 = atoi32(tokens[0].c_str());
-    constraint.variable2 = atoi32(tokens[1].c_str());
+    constraint.variable1 = strtoint32(tokens[0].c_str());
+    constraint.variable2 = strtoint32(tokens[1].c_str());
     constraint.type = tokens[2];
     constraint.operation = tokens[3];
-    constraint.value = atoi32(tokens[4].c_str());
+    constraint.value = strtoint32(tokens[4].c_str());
 
     if (tokens.size() > 5) {
-      constraint.weight_index = atoi32(tokens[5].c_str());
+      constraint.weight_index = strtoint32(tokens[5].c_str());
     }
     constraints_.push_back(constraint);
   }
@@ -390,7 +398,7 @@ void ParametersParser::Parse() {
         std::vector<std::string> tokens =
             absl::StrSplit(line, ' ', absl::SkipEmpty());
         CHECK_GE(tokens.size(), 3);
-        coefficients.push_back(atoi32(tokens[2].c_str()));
+        coefficients.push_back(strtoint32(tokens[2].c_str()));
       }
     }
   }
