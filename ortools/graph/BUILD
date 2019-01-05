@@ -81,7 +81,6 @@ cc_library(
         #        "//ortools/base:int_type_indexed_bitmap",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:recordio",
-        "//ortools/base:sparsetable",
         "//ortools/base:strings",
         #        "//ortools/thread",
         #        "//ortools/util/coding:prefixvarint",

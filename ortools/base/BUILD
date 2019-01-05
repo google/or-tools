@@ -256,16 +256,6 @@ cc_library(
 )
 
 cc_library(
-    name = "sparsetable",
-    hdrs = [
-        "sparsetable.h",
-    ],
-    deps = [
-        ":base",
-    ],
-)
-
-cc_library(
     name = "accurate_sum",
     hdrs = [
         "accurate_sum.h",

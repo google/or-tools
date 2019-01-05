@@ -30,7 +30,6 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/recordio.h \
  $(SRC_DIR)/ortools/base/small_map.h \
  $(SRC_DIR)/ortools/base/small_ordered_set.h \
- $(SRC_DIR)/ortools/base/sparsetable.h \
  $(SRC_DIR)/ortools/base/status.h \
  $(SRC_DIR)/ortools/base/statusor.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
@@ -3534,4 +3533,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
