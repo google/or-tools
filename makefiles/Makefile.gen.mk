@@ -263,19 +263,17 @@ DATA_LIB_OBJS = \
 
 objs/data/jobshop_scheduling_parser.$O: \
  ortools/data/jobshop_scheduling_parser.cc \
- ortools/data/jobshop_scheduling_parser.h \
+ ortools/data/jobshop_scheduling_parser.h ortools/base/integral_types.h \
  ortools/gen/ortools/data/jobshop_scheduling.pb.h \
- ortools/base/filelineiter.h ortools/base/file.h \
- ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/status.h \
- ortools/base/basictypes.h | $(OBJ_DIR)/data
+ ortools/base/filelineiter.h ortools/base/file.h ortools/base/logging.h \
+ ortools/base/macros.h ortools/base/status.h | $(OBJ_DIR)/data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sjobshop_scheduling_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sjobshop_scheduling_parser.$O
 
 objs/data/rcpsp_parser.$O: ortools/data/rcpsp_parser.cc \
  ortools/data/rcpsp_parser.h ortools/base/integral_types.h \
  ortools/gen/ortools/data/rcpsp.pb.h ortools/base/filelineiter.h \
  ortools/base/file.h ortools/base/logging.h ortools/base/macros.h \
- ortools/base/status.h ortools/base/basictypes.h | $(OBJ_DIR)/data
+ ortools/base/status.h | $(OBJ_DIR)/data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Srcpsp_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Srcpsp_parser.$O
 
 objs/data/set_covering_data.$O: ortools/data/set_covering_data.cc \
@@ -286,7 +284,7 @@ objs/data/set_covering_parser.$O: ortools/data/set_covering_parser.cc \
  ortools/data/set_covering_parser.h ortools/base/integral_types.h \
  ortools/data/set_covering_data.h ortools/base/filelineiter.h \
  ortools/base/file.h ortools/base/logging.h ortools/base/macros.h \
- ortools/base/status.h ortools/base/basictypes.h | $(OBJ_DIR)/data
+ ortools/base/status.h | $(OBJ_DIR)/data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sset_covering_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sset_covering_parser.$O
 
 ortools/data/jobshop_scheduling.proto: ;
@@ -3524,3 +3522,4 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+
