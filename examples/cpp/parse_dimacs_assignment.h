@@ -25,7 +25,6 @@
 #include <memory>
 #include <string>
 
-#include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/logging.h"

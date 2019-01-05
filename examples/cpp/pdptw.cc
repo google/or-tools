@@ -42,7 +42,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/mathutil.h"

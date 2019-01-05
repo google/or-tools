@@ -5,7 +5,6 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/base_export.h \
  $(SRC_DIR)/ortools/base/basictypes.h \
  $(SRC_DIR)/ortools/base/bitmap.h \
- $(SRC_DIR)/ortools/base/callback.h \
  $(SRC_DIR)/ortools/base/canonical_errors.h \
  $(SRC_DIR)/ortools/base/cleanup.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
@@ -43,7 +42,6 @@ BASE_DEPS = \
 
 BASE_LIB_OBJS = \
  $(OBJ_DIR)/base/bitmap.$O \
- $(OBJ_DIR)/base/callback.$O \
  $(OBJ_DIR)/base/file.$O \
  $(OBJ_DIR)/base/random.$O \
  $(OBJ_DIR)/base/recordio.$O \
@@ -55,11 +53,6 @@ objs/base/bitmap.$O: ortools/base/bitmap.cc ortools/base/bitmap.h \
  ortools/base/basictypes.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/macros.h | $(OBJ_DIR)/base
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Sbitmap.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sbitmap.$O
-
-objs/base/callback.$O: ortools/base/callback.cc ortools/base/callback.h \
- ortools/base/logging.h ortools/base/integral_types.h \
- ortools/base/macros.h | $(OBJ_DIR)/base
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Scallback.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Scallback.$O
 
 objs/base/file.$O: ortools/base/file.cc ortools/base/file.h \
  ortools/base/integral_types.h ortools/base/logging.h \

@@ -132,16 +132,6 @@ cc_library(
 )
 
 cc_library(
-    name = "callback",
-    hdrs = [
-        "callback.h",
-    ],
-    deps = [
-        ":base",
-    ],
-)
-
-cc_library(
     name = "filelinereader",
     srcs = [
         "filelinereader.cc",
