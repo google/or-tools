@@ -368,7 +368,7 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
   const double new_best_objective_bound =
       maximize ? std::min(previous_best_bound, current_best_bound)
                : std::max(previous_best_bound, current_best_bound);
-  const auto cleanup = ::operations_research::util::MakeCleanup(
+  const auto cleanup = ::gtl::MakeCleanup(
       [&best, new_best_objective_bound]() {
         if (best->status() != OPTIMAL) {
           best->set_best_objective_bound(new_best_objective_bound);

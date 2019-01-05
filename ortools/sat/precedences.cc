@@ -625,7 +625,7 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
   // These vector are reset by CleanUpMarkedArcsAndParents() so resize is ok.
   bf_can_be_skipped_.resize(num_nodes, false);
   bf_parent_arc_of_.resize(num_nodes, ArcIndex(-1));
-  const auto cleanup = ::operations_research::util::MakeCleanup(
+  const auto cleanup = ::gtl::MakeCleanup(
       [this]() { CleanUpMarkedArcsAndParents(); });
 
   // The queue initialization is done by InitializeBFQueueWithModifiedNodes().

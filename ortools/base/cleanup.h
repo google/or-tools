@@ -16,8 +16,7 @@
 
 #include <utility>
 
-namespace operations_research {
-namespace util {
+namespace gtl {
 
 template <typename F>
 class Cleanup {
@@ -35,7 +34,6 @@ Cleanup<F> MakeCleanup(F&& f) {
   return Cleanup<F>(std::forward<F>(f));
 }
 
-}  // namespace util
-}  // namespace operations_research
+}  // gtl
 
 #endif  // OR_TOOLS_BASE_CLEANUP_H_
