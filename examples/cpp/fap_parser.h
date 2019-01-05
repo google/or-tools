@@ -233,7 +233,7 @@ class ParametersParser {
 };
 
 namespace {
-int strtoint32(const string& word) {
+int strtoint32(const std::string& word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
