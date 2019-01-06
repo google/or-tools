@@ -17,8 +17,8 @@ from __future__ import division
 
 import argparse
 
-from ortools.sat.python import cp_model
 from google.protobuf import text_format
+from ortools.sat.python import cp_model
 
 #----------------------------------------------------------------------------
 # Command line arguments.
@@ -46,6 +46,7 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
         self.__solution_count = 0
 
     def on_solution_callback(self):
+        """Called after each new solution found."""
         print('Solution %i, time = %f s, objective = %i' %
               (self.__solution_count, self.WallTime(), self.ObjectiveValue()))
         self.__solution_count += 1
