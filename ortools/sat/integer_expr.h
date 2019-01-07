@@ -88,6 +88,7 @@ class IntegerSumLE : public PropagatorInterface {
   // vars_ (resp. coeffs_) are fixed (resp. belong to fixed variables).
   std::vector<IntegerVariable> vars_;
   std::vector<IntegerValue> coeffs_;
+  std::vector<IntegerValue> max_variations_;
 
   std::vector<Literal> literal_reason_;
 

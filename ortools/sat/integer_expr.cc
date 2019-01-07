@@ -37,6 +37,7 @@ IntegerSumLE::IntegerSumLE(const std::vector<Literal>& enforcement_literals,
       coeffs_(coeffs) {
   // TODO(user): deal with this corner case.
   CHECK(!vars_.empty());
+  max_variations_.resize(vars_.size());
 
   // Handle negative coefficients.
   for (int i = 0; i < vars.size(); ++i) {
@@ -98,21 +99,23 @@ bool IntegerSumLE::Propagate() {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
     const IntegerValue lb = integer_trail_->LowerBound(var);
-    if (lb != integer_trail_->UpperBound(var)) {
+    const IntegerValue ub = integer_trail_->UpperBound(var);
+    if (lb != ub) {
+      max_variations_[i] = (ub - lb) * coeff;
       lb_unfixed_vars += lb * coeff;
     } else {
       // Update the set of fixed variables.
       std::swap(vars_[i], vars_[rev_num_fixed_vars_]);
       std::swap(coeffs_[i], coeffs_[rev_num_fixed_vars_]);
+      std::swap(max_variations_[i], max_variations_[rev_num_fixed_vars_]);
       rev_num_fixed_vars_++;
       rev_lb_fixed_vars_ += lb * coeff;
     }
   }
 
-  const IntegerValue new_lb = rev_lb_fixed_vars_ + lb_unfixed_vars;
-
   // Conflict?
-  const IntegerValue slack = upper_bound_ - new_lb;
+  const IntegerValue slack =
+      upper_bound_ - (rev_lb_fixed_vars_ + lb_unfixed_vars);
   if (slack < 0) {
     FillIntegerReason();
     integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs_,
@@ -135,45 +138,43 @@ bool IntegerSumLE::Propagate() {
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
   for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
+    if (max_variations_[i] <= slack) continue;
+
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue domain_size =
-        integer_trail_->UpperBound(var) - integer_trail_->LowerBound(var);
-    if (domain_size * coeff > slack) {
-      const IntegerValue div = slack / coeff;
-      const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
-      const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::LowerOrEqual(var, new_ub),
-              /*lazy_reason=*/[this, propagation_slack](
-                                  IntegerLiteral i_lit, int trail_index,
-                                  std::vector<Literal>* literal_reason,
-                                  std::vector<int>* trail_indices_reason) {
-                *literal_reason = literal_reason_;
-                trail_indices_reason->clear();
-                reason_coeffs_.clear();
-                const int size = vars_.size();
-                for (int i = 0; i < size; ++i) {
-                  const IntegerVariable var = vars_[i];
-                  if (PositiveVariable(var) == PositiveVariable(i_lit.var)) {
-                    continue;
-                  }
-                  const int index = integer_trail_->FindTrailIndexOfVarBefore(
-                      var, trail_index);
-                  if (index >= 0) {
-                    trail_indices_reason->push_back(index);
-                    if (propagation_slack > 0) {
-                      reason_coeffs_.push_back(coeffs_[i]);
-                    }
+    const IntegerValue div = slack / coeff;
+    const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
+    const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(var, new_ub),
+            /*lazy_reason=*/[this, propagation_slack](
+                                IntegerLiteral i_lit, int trail_index,
+                                std::vector<Literal>* literal_reason,
+                                std::vector<int>* trail_indices_reason) {
+              *literal_reason = literal_reason_;
+              trail_indices_reason->clear();
+              reason_coeffs_.clear();
+              const int size = vars_.size();
+              for (int i = 0; i < size; ++i) {
+                const IntegerVariable var = vars_[i];
+                if (PositiveVariable(var) == PositiveVariable(i_lit.var)) {
+                  continue;
+                }
+                const int index =
+                    integer_trail_->FindTrailIndexOfVarBefore(var, trail_index);
+                if (index >= 0) {
+                  trail_indices_reason->push_back(index);
+                  if (propagation_slack > 0) {
+                    reason_coeffs_.push_back(coeffs_[i]);
                   }
                 }
-                if (propagation_slack > 0) {
-                  integer_trail_->RelaxLinearReason(
-                      propagation_slack, reason_coeffs_, trail_indices_reason);
-                }
-              })) {
-        return false;
-      }
+              }
+              if (propagation_slack > 0) {
+                integer_trail_->RelaxLinearReason(
+                    propagation_slack, reason_coeffs_, trail_indices_reason);
+              }
+            })) {
+      return false;
     }
   }
 
