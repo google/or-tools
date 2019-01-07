@@ -124,6 +124,7 @@ public class VRP {
       in Assignment solution) {
     Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
     // Inspect solution.
+    long totalDistance = 0;
     for (int i=0; i < data.GetVehicleNumber(); ++i) {
       Console.WriteLine("Route for Vehicle " + i + ":");
       long distance = 0;
@@ -136,7 +137,9 @@ public class VRP {
       }
       Console.WriteLine("{0}", manager.IndexToNode((int)index));
       Console.WriteLine("Distance of the route: {0}m", distance);
+      totalDistance += distance;
     }
+    Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
   }
 
   /// <summary>
