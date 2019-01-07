@@ -38,21 +38,15 @@ public class TSP {
           {3, 7}, {6, 7},
           {0, 8}, {7, 8}
       };
-
-      // Compute locations in meters using the block dimension defined as follow
-      // Manhattan average block: 750ft x 264ft -> 228m x 80m
-      // here we use: 114m x 80m city block
-      // src: https://nyti.ms/2GDoRIe "NY Times: Know Your distance"
-      int[] cityBlock = {228/2, 80};
+      // Convert locations in meters using a city block dimension of 114m x 80m.
       for (int i=0; i < locations_.GetLength(0); i++) {
-        locations_[i, 0] = locations_[i, 0] * cityBlock[0];
-        locations_[i, 1] = locations_[i, 1] * cityBlock[1];
+        locations_[i, 0] *= 114;
+        locations_[i, 1] *= 80;
       }
     }
 
-    public int GetVehicleNumber() { return 1;}
     public ref readonly int[,] GetLocations() { return ref locations_;}
-    public int GetLocationNumber() { return locations_.GetLength(0);}
+    public int GetVehicleNumber() { return 1;}
     public int GetDepot() { return 0;}
   };
 
@@ -69,10 +63,11 @@ public class TSP {
     public ManhattanDistance(in DataProblem data,
                              in RoutingIndexManager manager) {
       // precompute distance between location to have distance callback in O(1)
-      distances_ = new int[data.GetLocationNumber(), data.GetLocationNumber()];
+      int locationNumber = data.GetLocations().GetLength(0);
+      distances_ = new int[locationNumber, locationNumber];
       manager_ = manager;
-      for (int fromNode = 0; fromNode < data.GetLocationNumber(); fromNode++) {
-        for (int toNode = 0; toNode < data.GetLocationNumber(); toNode++) {
+      for (int fromNode = 0; fromNode < locationNumber; fromNode++) {
+        for (int toNode = 0; toNode < locationNumber; toNode++) {
           if (fromNode == toNode)
             distances_[fromNode, toNode] = 0;
           else
@@ -127,7 +122,7 @@ public class TSP {
 
     // Create Routing Model
     RoutingIndexManager manager = new RoutingIndexManager(
-        data.GetLocationNumber(),
+        data.GetLocations().GetLength(0),
         data.GetVehicleNumber(),
         data.GetDepot());
     RoutingModel routing = new RoutingModel(manager);
