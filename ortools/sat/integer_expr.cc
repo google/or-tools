@@ -137,9 +137,11 @@ bool IntegerSumLE::Propagate() {
   for (int i = rev_num_fixed_vars_; i < num_vars; ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
-    const IntegerValue div = slack / coeff;
-    const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
-    if (new_ub < integer_trail_->UpperBound(var)) {
+    const IntegerValue domain_size =
+        integer_trail_->UpperBound(var) - integer_trail_->LowerBound(var);
+    if (domain_size * coeff > slack) {
+      const IntegerValue div = slack / coeff;
+      const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
       const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
       if (!integer_trail_->Enqueue(
               IntegerLiteral::LowerOrEqual(var, new_ub),
