@@ -376,6 +376,7 @@ test_java_constraint_solver_samples: \
  rjava_SimpleRoutingProgram \
  rjava_Tsp \
  rjava_Vrp \
+ rjava_VrpCapacity \
 
 .PHONY: test_java_graph_samples # Build and Run all Java Graph Samples (located in ortools/graph/samples)
 test_java_graph_samples: \
