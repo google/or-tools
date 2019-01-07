@@ -394,8 +394,7 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
       helper->get_external_best_objective != nullptr &&
       helper->objective_var != kNoIntegerVariable &&
       model->GetOrCreate<SatParameters>()->share_objective_bounds() &&
-      model->GetOrCreate<ObjectiveSynchronizationHelper>()
-          ->broadcast_lower_bound;  // True only in parallel mode.
+      model->GetOrCreate<ObjectiveSynchronizationHelper>()->parallel_mode;
 
   // Note that it is important to do the level-zero propagation if it wasn't
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that

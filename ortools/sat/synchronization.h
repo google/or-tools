@@ -87,12 +87,12 @@ void RegisterObjectiveBestBoundExport(
     const CpModelProto& model_proto,
     const std::function<void(const CpSolverResponse&)>&
         external_solution_observer,
-    bool log_progress, IntegerVariable objective_var, Model* model);
+    bool log_progress, IntegerVariable objective_var, WallTimer* wall_timer,
+    Model* model);
 
 // Stores information on the worker in the parallel context.
 struct WorkerInfo {
   std::string worker_name;
-  WallTimer* global_timer = nullptr;
   int worker_id = -1;
 };
 

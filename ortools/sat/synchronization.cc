@@ -206,10 +206,11 @@ void RegisterObjectiveBestBoundExport(
     const CpModelProto& model_proto,
     const std::function<void(const CpSolverResponse&)>&
         external_solution_observer,
-    bool log_progress, IntegerVariable objective_var, Model* model) {
+    bool log_progress, IntegerVariable objective_var, WallTimer* wall_timer,
+    Model* model) {
   const auto broadcast_objective_lower_bound =
-      [&model_proto, external_solution_observer, objective_var, model,
-       log_progress](const std::vector<IntegerVariable>& modified_vars) {
+      [&model_proto, external_solution_observer, objective_var, wall_timer,
+       model, log_progress](const std::vector<IntegerVariable>& modified_vars) {
         auto* integer_trail = model->Get<IntegerTrail>();
         const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
         const ObjectiveSynchronizationHelper* const helper =
@@ -228,22 +229,17 @@ void RegisterObjectiveBestBoundExport(
              new_best_bound < current_best_bound)) {
           if (log_progress) {
             if (new_best_bound > current_best_bound) {  // minimization.
-              LogNewSolution("ObjLb", worker_info->global_timer->Get(),
-                             new_best_bound, current_objective_value,
-                             worker_info->worker_name);
+              LogNewSolution("ObjLb", wall_timer->Get(), new_best_bound,
+                             current_objective_value, worker_info->worker_name);
             } else {
-              LogNewSolution("ObjUb", worker_info->global_timer->Get(),
+              LogNewSolution("ObjUb", wall_timer->Get(),
                              current_objective_value, new_best_bound,
                              worker_info->worker_name);
             }
           }
-          if (helper->broadcast_lower_bound) {
-            // Broadcast a best bound improving solution.
-            CpSolverResponse lb_response;
-            lb_response.set_status(CpSolverStatus::UNKNOWN);
-            lb_response.set_objective_value(current_objective_value);
-            lb_response.set_best_objective_bound(new_best_bound);
-            external_solution_observer(lb_response);
+          if (helper->set_external_best_bound) {
+            helper->set_external_best_bound(current_objective_value,
+                                            new_best_bound);
           }
         }
       };

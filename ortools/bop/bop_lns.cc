@@ -127,11 +127,10 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
 
   CHECK(sat_solver_ != nullptr);
   const double initial_dt = sat_solver_->deterministic_time();
-  auto advance_dt = ::gtl::MakeCleanup(
-      [initial_dt, this, &time_limit]() {
-        time_limit->AdvanceDeterministicTime(sat_solver_->deterministic_time() -
-                                             initial_dt);
-      });
+  auto advance_dt = ::gtl::MakeCleanup([initial_dt, this, &time_limit]() {
+    time_limit->AdvanceDeterministicTime(sat_solver_->deterministic_time() -
+                                         initial_dt);
+  });
 
   // Set the parameters for this run.
   // TODO(user): Because of this, we actually loose the perfect continuity
@@ -240,8 +239,8 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
   // Set-up a sat_propagator_ cleanup task to catch all the exit cases.
   const double initial_dt = sat_propagator_->deterministic_time();
-  auto sat_propagator_cleanup = ::gtl::MakeCleanup(
-      [initial_dt, this, &learned_info, &time_limit]() {
+  auto sat_propagator_cleanup =
+      ::gtl::MakeCleanup([initial_dt, this, &learned_info, &time_limit]() {
         if (!sat_propagator_->IsModelUnsat()) {
           sat_propagator_->SetAssumptionLevel(0);
           sat_propagator_->RestoreSolverToAssumptionLevel();

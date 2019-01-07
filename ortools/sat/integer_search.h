@@ -115,7 +115,8 @@ struct ObjectiveSynchronizationHelper {
   IntegerVariable objective_var = kNoIntegerVariable;
   std::function<double()> get_external_best_objective = nullptr;
   std::function<double()> get_external_best_bound = nullptr;
-  bool broadcast_lower_bound = false;
+  std::function<void(double, double)> set_external_best_bound = nullptr;
+  bool parallel_mode = false;
 
   int64 UnscaledObjective(double value) const {
     return static_cast<int64>(std::round(value / scaling_factor - offset));

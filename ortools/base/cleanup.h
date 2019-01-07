@@ -34,6 +34,6 @@ Cleanup<F> MakeCleanup(F&& f) {
   return Cleanup<F>(std::forward<F>(f));
 }
 
-}  // gtl
+}  // namespace gtl
 
 #endif  // OR_TOOLS_BASE_CLEANUP_H_
