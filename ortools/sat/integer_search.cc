@@ -135,7 +135,7 @@ std::function<LiteralIndex()> FollowHint(
         // since we know that this variable is not fixed, one of the two
         // alternative must reduce the domain.
         //
-        // TODO(user): De-dup with logic in ExploitIntegerLpSolution.
+        // TODO(user): De-dup with logic in ExploitLpSolution.
         if (value >= lb && value < ub) {
           const Literal le = encoder->GetOrCreateAssociatedLiteral(
               IntegerLiteral::LowerOrEqual(integer_var, value));
@@ -157,7 +157,7 @@ std::function<LiteralIndex()> FollowHint(
   };
 }
 
-std::function<LiteralIndex()> ExploitIntegerLpSolution(
+std::function<LiteralIndex()> ExploitLpSolution(
     std::function<LiteralIndex()> heuristic, Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* trail = model->GetOrCreate<Trail>();
@@ -165,6 +165,7 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
   auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
   auto* lp_constraints =
       model->GetOrCreate<LinearProgrammingConstraintCollection>();
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
 
   // Use the normal heuristic if the LP(s) do not seem to cover enough variables
   // to be relevant.
@@ -193,16 +194,20 @@ std::function<LiteralIndex()> ExploitIntegerLpSolution(
       return kNoLiteralIndex;
     }
 
-    bool all_lp_integers = true;
+    bool lp_solution_is_exploitable = true;
     double obj = 0.0;
+    // TODO(user,user): When we have more than one LP, their set of variable
+    // is always disjoint. So we could still change the polarity if the next
+    // variable we branch on is part of a LP that has a solution.
     for (LinearProgrammingConstraint* lp : *lp_constraints) {
-      if (!lp->HasSolution() || !lp->SolutionIsInteger()) {
-        all_lp_integers = false;
+      if (!lp->HasSolution() ||
+          !(parameters.exploit_all_lp_solution() || lp->SolutionIsInteger())) {
+        lp_solution_is_exploitable = false;
         break;
       }
       obj += lp->SolutionObjectiveValue();
     }
-    if (all_lp_integers) {
+    if (lp_solution_is_exploitable) {
       if (!last_decision_followed_lp || obj != old_obj) {
         old_level = trail->CurrentDecisionLevel();
         old_obj = obj;
@@ -297,8 +302,9 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
       } else {
         search = SequentialSearch({SatSolverHeuristic(model), next_decision});
       }
-      if (parameters.exploit_integer_lp_solution()) {
-        search = ExploitIntegerLpSolution(search, model);
+      if (parameters.exploit_integer_lp_solution() ||
+          parameters.exploit_all_lp_solution()) {
+        search = ExploitLpSolution(search, model);
       }
       return SolveProblemWithPortfolioSearch(
           {search}, {SatSolverRestartPolicy(model)}, model);
@@ -324,7 +330,7 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
           SequentialSearch({SatSolverHeuristic(model), next_decision}));
       if (parameters.exploit_integer_lp_solution()) {
         for (auto& ref : portfolio) {
-          ref = ExploitIntegerLpSolution(ref, model);
+          ref = ExploitLpSolution(ref, model);
         }
       }
       auto default_restart_policy = SatSolverRestartPolicy(model);
@@ -490,6 +496,13 @@ void LogNewSolution(const std::string& event_or_solution_count,
   LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  obj:[%g,%g]  %s",
                                event_or_solution_count, time_in_seconds, obj_lb,
                                obj_ub, solution_info);
+}
+
+void LogNewSatSolution(const std::string& event_or_solution_count,
+                       double time_in_seconds,
+                       const std::string& solution_info) {
+  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
+                               time_in_seconds, solution_info);
 }
 
 }  // namespace sat

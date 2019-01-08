@@ -2321,14 +2321,20 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   std::function<void(const CpSolverResponse&)> observer_function =
       [&model_proto, &observers, &num_solutions, &wall_timer, &user_timer,
        &postprocess_solution](const CpSolverResponse& response) {
-        const bool maximize = model_proto.objective().scaling_factor() < 0.0;
         if (VLOG_IS_ON(1)) {
-          LogNewSolution(absl::StrCat(++num_solutions), wall_timer.Get(),
-                         maximize ? response.objective_value()
-                                  : response.best_objective_bound(),
-                         maximize ? response.best_objective_bound()
-                                  : response.objective_value(),
-                         response.solution_info());
+          if (model_proto.has_objective()) {
+            const bool maximize =
+                model_proto.objective().scaling_factor() < 0.0;
+            LogNewSolution(absl::StrCat(++num_solutions), wall_timer.Get(),
+                           maximize ? response.objective_value()
+                                    : response.best_objective_bound(),
+                           maximize ? response.best_objective_bound()
+                                    : response.objective_value(),
+                           response.solution_info());
+          } else {
+            LogNewSatSolution(absl::StrCat(++num_solutions), wall_timer.Get(),
+                              response.solution_info());
+          }
         }
 
         if (observers.empty()) return;

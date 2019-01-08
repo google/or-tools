@@ -60,10 +60,15 @@ std::function<LiteralIndex()> SequentialSearch(
 // Returns the LiteralIndex advised by the underliying SAT solver.
 std::function<LiteralIndex()> SatSolverHeuristic(Model* model);
 
-// Uses the given heuristics, but when the LP relaxation has an integer
-// solution, use it to change the polarity of the next decision so that the
-// solver will check if this integer LP solution satisfy all the constraints.
-std::function<LiteralIndex()> ExploitIntegerLpSolution(
+// Uses the given heuristics, but when the LP relaxation has a solution, use it
+// to change the polarity of the next decision. This is only done for integer
+// solutions unless 'exploit_all_lp_solution' parameter is set to true. For
+// integer solution the solver will check if this integer LP solution satisfy
+// all the constraints.
+//
+// Note that we only do this if a big enough percentage of the problem variables
+// appear in the LP relaxation.
+std::function<LiteralIndex()> ExploitLpSolution(
     std::function<LiteralIndex()> heuristic, Model* model);
 
 // A restart policy that restarts every k failures.
@@ -129,10 +134,15 @@ struct LevelZeroCallbackHelper {
   std::vector<std::function<bool()>> callbacks;
 };
 
-// Prints out a new solution in a fixed format.
+// Prints out a new optimization solution in a fixed format.
 void LogNewSolution(const std::string& event_or_solution_count,
                     double time_in_seconds, double obj_lb, double obj_ub,
                     const std::string& solution_info);
+
+// Prints out a new satisfiability solution in a fixed format.
+void LogNewSatSolution(const std::string& event_or_solution_count,
+                       double time_in_seconds,
+                       const std::string& solution_info);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -28,6 +28,7 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/fp_utils.h"
 
@@ -191,7 +192,9 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     if (lb == -kInfinity || scaled_lb <= kint64min) {
       arg->add_domain(kint64min);
     } else {
-      arg->add_domain(static_cast<int64>(scaled_lb) / gcd);
+      arg->add_domain(CeilRatio(IntegerValue(static_cast<int64>(scaled_lb)),
+                                IntegerValue(gcd))
+                          .value());
     }
     const Fractional ub = mp_constraint.upper_bound();
     const Fractional scaled_ub =
@@ -199,7 +202,9 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     if (ub == kInfinity || scaled_ub >= kint64max) {
       arg->add_domain(kint64max);
     } else {
-      arg->add_domain(static_cast<int64>(scaled_ub) / gcd);
+      arg->add_domain(FloorRatio(IntegerValue(static_cast<int64>(scaled_ub)),
+                                 IntegerValue(gcd))
+                          .value());
     }
 
     // TODO(user): checks feasibility (contains zero) or support that in the
