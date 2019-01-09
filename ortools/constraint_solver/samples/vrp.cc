@@ -20,12 +20,12 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 
 namespace operations_research {
-  class DataProblem {
+  class DataModel {
     private:
       std::vector<std::vector<int>> locations_;
 
     public:
-      DataProblem() {
+      DataModel() {
         locations_ = {
           {4, 4},
           {2, 0}, {8, 0},
@@ -61,7 +61,7 @@ namespace operations_research {
     private:
       std::vector<std::vector<int64>> distances_;
     public:
-      ManhattanDistance(const DataProblem& data) {
+      ManhattanDistance(const DataModel& data) {
       // Precompute distance between location to have distance callback in O(1)
       distances_ = std::vector<std::vector<int64>>(
           data.GetLocations().size(),
@@ -91,7 +91,7 @@ namespace operations_research {
   //! @param[in] data Data of the problem.
   //! @param[in] callback transit cost callback.
   //! @param[in, out] routing Routing solver used.
-  static void AddDistanceDimension(const DataProblem& data, const int callback, RoutingModel* routing) {
+  static void AddDistanceDimension(const DataModel& data, const int callback, RoutingModel* routing) {
     std::string distance("Distance");
     routing->AddDimension(
         callback,
@@ -111,7 +111,7 @@ namespace operations_research {
   //! @param[in] routing Routing solver used.
   //! @param[in] solution Solution found by the solver.
   void PrintSolution(
-      const DataProblem& data,
+      const DataModel& data,
       const RoutingIndexManager& manager,
       const RoutingModel& routing,
       const Assignment& solution) {
@@ -138,7 +138,7 @@ namespace operations_research {
 
   void Solve() {
     // Instantiate the data problem.
-    DataProblem data;
+    DataModel data;
 
     // Create Routing Index Manager & Routing Model
     RoutingIndexManager manager(

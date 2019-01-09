@@ -18,8 +18,8 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 
 namespace operations_research {
-struct DataProblem {
-  DataProblem()
+struct DataModel {
+  DataModel()
       : locations({{4, 4},
                    {2, 0},
                    {8, 0},
@@ -57,7 +57,7 @@ struct DataProblem {
  * @details It uses the data.locations to computes the Manhattan distance
  * between the two positions of two different indices.*/
 std::vector<std::vector<int64>> GenerateManhattanDistanceMatrix(
-    const DataProblem& data) {
+    const DataModel& data) {
   std::vector<std::vector<int64>> distances = std::vector<std::vector<int64>>(
       data.num_locations, std::vector<int64>(data.num_locations, 0LL));
   for (int fromNode = 0; fromNode < data.num_locations; fromNode++) {
@@ -73,11 +73,10 @@ std::vector<std::vector<int64>> GenerateManhattanDistanceMatrix(
 // [END manhattan_distance_matrix]
 
 //! @brief Print the solution
-//! @param[in] data Data of the problem.
 //! @param[in] manager Index manager used.
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
-void PrintSolution(const DataProblem& data, const RoutingIndexManager& manager,
+void PrintSolution(const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   // Inspect solution.
@@ -101,7 +100,7 @@ void PrintSolution(const DataProblem& data, const RoutingIndexManager& manager,
 
 void Solve() {
   // Instantiate the data problem.
-  DataProblem data;
+  DataModel data;
 
   // Create Routing Index Manager & Routing Model
   RoutingIndexManager manager(data.num_locations, data.num_vehicles,
