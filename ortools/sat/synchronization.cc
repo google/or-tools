@@ -274,12 +274,17 @@ void RegisterObjectiveBoundsImport(Model* model) {
             : current_objective_lower_bound.value());
     if (new_objective_upper_bound < current_objective_upper_bound ||
         new_objective_lower_bound > current_objective_lower_bound) {
+      if (new_objective_upper_bound < new_objective_lower_bound) {
+        return false;
+      }
       VLOG(1) << worker_info->worker_name << " imports objective bounds ["
-              << std::max(new_objective_lower_bound.value(),
-                          current_objective_lower_bound.value())
+              << helper->ScaledObjective(
+                     std::max(new_objective_lower_bound.value(),
+                              current_objective_lower_bound.value()))
               << ", "
-              << std::min(new_objective_upper_bound.value(),
-                          current_objective_upper_bound.value())
+              << helper->ScaledObjective(
+                     std::min(new_objective_upper_bound.value(),
+                              current_objective_upper_bound.value()))
               << "]";
     }
     if (new_objective_upper_bound < current_objective_upper_bound &&

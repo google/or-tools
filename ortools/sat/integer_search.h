@@ -126,6 +126,9 @@ struct ObjectiveSynchronizationHelper {
   int64 UnscaledObjective(double value) const {
     return static_cast<int64>(std::round(value / scaling_factor - offset));
   }
+  double ScaledObjective(int64 value) const {
+    return (value + offset) * scaling_factor;
+  }
 };
 
 // Callbacks that be called when the search goes back to level 0.
