@@ -1797,7 +1797,9 @@ objs/sat/lp_utils.$O: ortools/sat/lp_utils.cc ortools/sat/lp_utils.h \
  ortools/lp_data/lp_print_utils.h ortools/lp_data/sparse_row.h \
  ortools/lp_data/matrix_scaler.h ortools/sat/boolean_problem.h \
  ortools/algorithms/sparse_permutation.h ortools/sat/simplification.h \
- ortools/base/adjustable_priority_queue.h | $(OBJ_DIR)/sat
+ ortools/base/adjustable_priority_queue.h ortools/sat/integer.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slp_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slp_utils.$O
 
 objs/sat/optimization.$O: ortools/sat/optimization.cc \

@@ -96,6 +96,16 @@ inline IntegerValue FloorRatio(IntegerValue dividend,
   return result - adjust;
 }
 
+// Computes result += a * b, and return false iff there is an overflow.
+inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
+  const int64 prod = CapProd(a.value(), b.value());
+  if (prod == kint64min || prod == kint64max) return false;
+  const int64 add = CapAdd(prod, result->value());
+  if (add == kint64min || add == kint64max) return false;
+  *result = IntegerValue(add);
+  return true;
+}
+
 // Index of an IntegerVariable.
 //
 // Each time we create an IntegerVariable we also create its negation. This is
@@ -827,6 +837,15 @@ class IntegerTrail : public SatPropagator {
   mutable std::vector<IntegerVariable> tmp_to_clear_;
   mutable gtl::ITIVector<IntegerVariable, int> tmp_var_to_trail_index_in_queue_;
   mutable SparseBitset<BooleanVariable> added_variables_;
+
+  // Temporary heap used by RelaxLinearReason();
+  struct RelaxHeapEntry {
+    int index;
+    IntegerValue coeff;
+    int64 diff;
+    bool operator<(const RelaxHeapEntry& o) const { return index < o.index; }
+  };
+  mutable std::vector<RelaxHeapEntry> relax_heap_;
 
   // Temporary data used by AppendNewBounds().
   mutable SparseBitset<IntegerVariable> tmp_marked_;

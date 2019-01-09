@@ -709,10 +709,7 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
   }
 }
 
-// We try to relax the reason in a smart way here by minimizing the maximum
-// trail indices of the literals appearing in reason.
-//
-// TODO(user): use priority queue instead of O(n^2) algo.
+// TODO(user): Get rid of this function and only keep the trail index one?
 void IntegerTrail::RelaxLinearReason(
     IntegerValue slack, absl::Span<const IntegerValue> coeffs,
     std::vector<IntegerLiteral>* reason) const {
@@ -726,73 +723,98 @@ void IntegerTrail::RelaxLinearReason(
     indices[i] = vars_[(*reason)[i].var].current_trail_index;
   }
 
-  const int num_vars = vars_.size();
-  while (slack > 0) {
-    int best_i = -1;
-    for (int i = 0; i < size; ++i) {
-      if (indices[i] < num_vars) continue;  // level zero.
-      if (best_i != -1 && indices[i] < indices[best_i]) continue;
-      const TrailEntry& entry = integer_trail_[indices[i]];
-      const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
+  RelaxLinearReason(slack, coeffs, &indices);
 
-      // Note that both terms of the product are positive.
-      if (CapProd(coeffs[i].value(),
-                  (entry.bound - previous_entry.bound).value()) > slack) {
-        continue;
-      }
-      best_i = i;
-    }
-    if (best_i == -1) return;
-
-    const TrailEntry& entry = integer_trail_[indices[best_i]];
-    const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
-    indices[best_i] = entry.prev_trail_index;
-    (*reason)[best_i].bound = previous_entry.bound;
-    slack -= coeffs[best_i] * (entry.bound - previous_entry.bound);
+  reason->clear();
+  for (const int i : indices) {
+    reason->push_back(IntegerLiteral::GreaterOrEqual(integer_trail_[i].var,
+                                                     integer_trail_[i].bound));
   }
 }
 
+// TODO(user): When this is called during a reason computation, we can use
+// the term already part of the reason we are constructed to optimize this
+// further.
 void IntegerTrail::RelaxLinearReason(IntegerValue slack,
                                      absl::Span<const IntegerValue> coeffs,
                                      std::vector<int>* trail_indices) const {
   DCHECK_GT(slack, 0);
-  const int size = trail_indices->size();
-  const int num_vars = vars_.size();
-  while (slack > 0) {
-    int best_i = -1;
-    for (int i = 0; i < size; ++i) {
-      if ((*trail_indices)[i] < num_vars) continue;  // level zero.
-      if (coeffs[i] > slack) continue;
-      if (best_i != -1 && (*trail_indices)[i] < (*trail_indices)[best_i]) {
-        continue;
-      }
+  DCHECK(relax_heap_.empty());
 
-      const TrailEntry& entry = integer_trail_[(*trail_indices)[i]];
-      const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
-
-      // Note that both terms of the product are positive.
-      if (CapProd(coeffs[i].value(),
-                  (entry.bound - previous_entry.bound).value()) > slack) {
-        continue;
-      }
-      best_i = i;
-    }
-    if (best_i == -1) break;
-
-    const TrailEntry& entry = integer_trail_[(*trail_indices)[best_i]];
-    const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
-    (*trail_indices)[best_i] = entry.prev_trail_index;
-    slack -= coeffs[best_i] * (entry.bound - previous_entry.bound);
-  }
-
-  // Remove level zero indices.
+  // We start by filtering *trail_indices:
+  // - remove all level zero entries.
+  // - keep the one that cannot be relaxed.
+  // - move the other one the the relax_heap_ (and creating the heap).
   int new_size = 0;
-  for (const int index : *trail_indices) {
-    if (index >= num_vars) {
+  const int size = coeffs.size();
+  const int num_vars = vars_.size();
+  for (int i = 0; i < size; ++i) {
+    const int index = (*trail_indices)[i];
+
+    // We ignore level zero entries.
+    if (index < num_vars) continue;
+
+    // If the coeff is too large, we cannot relax this entry.
+    const IntegerValue coeff = coeffs[i];
+    if (coeff > slack) {
       (*trail_indices)[new_size++] = index;
+      continue;
     }
+
+    // Note that both terms of the product are positive.
+    const TrailEntry& entry = integer_trail_[index];
+    const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
+    const int64 diff =
+        CapProd(coeff.value(), (entry.bound - previous_entry.bound).value());
+    if (diff > slack) {
+      (*trail_indices)[new_size++] = index;
+      continue;
+    }
+
+    relax_heap_.push_back({index, coeff, diff});
   }
   trail_indices->resize(new_size);
+  std::make_heap(relax_heap_.begin(), relax_heap_.end());
+
+  while (slack > 0 && !relax_heap_.empty()) {
+    const RelaxHeapEntry heap_entry = relax_heap_.front();
+    std::pop_heap(relax_heap_.begin(), relax_heap_.end());
+    relax_heap_.pop_back();
+
+    // The slack might have changed since the entry was added.
+    if (heap_entry.diff > slack) {
+      trail_indices->push_back(heap_entry.index);
+      continue;
+    }
+
+    // Relax, and decide what to do with the new value of index.
+    slack -= heap_entry.diff;
+    const int index = integer_trail_[heap_entry.index].prev_trail_index;
+
+    // Same code as in the first block.
+    if (index < num_vars) continue;
+    if (heap_entry.coeff > slack) {
+      trail_indices->push_back(index);
+      continue;
+    }
+    const TrailEntry& entry = integer_trail_[index];
+    const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
+    const int64 diff = CapProd(heap_entry.coeff.value(),
+                               (entry.bound - previous_entry.bound).value());
+    if (diff > slack) {
+      trail_indices->push_back(index);
+      continue;
+    }
+    relax_heap_.push_back({index, heap_entry.coeff, diff});
+    std::push_heap(relax_heap_.begin(), relax_heap_.end());
+  }
+
+  // If we aborted early because of the slack, we need to push all remaining
+  // indices back into the reason.
+  for (const RelaxHeapEntry& entry : relax_heap_) {
+    trail_indices->push_back(entry.index);
+  }
+  relax_heap_.clear();
 }
 
 void IntegerTrail::RemoveLevelZeroBounds(

@@ -1496,7 +1496,18 @@ CpSolverResponse SolveCpModelInternal(
       CHECK(SolutionIsFeasible(model_proto,
                                std::vector<int64>(response.solution().begin(),
                                                   response.solution().end())));
+      if (!model_proto.has_objective()) {
+        if (parameters.enumerate_all_solutions()) {
+          model->Add(
+              ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
+        } else {
+          return response;
+        }
+      }
+      // TODO(user): Collect objective value in optimization model and
+      // constrain it in the following search.
     }
+    // TODO(user): Remove conflicts used during hint search.
     model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(
         old_conflict_limit);
   }

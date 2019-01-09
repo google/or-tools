@@ -41,6 +41,65 @@ struct CutGenerator {
       generate_cuts;
 };
 
+// Visible for testing. Returns a function f on integers such that:
+// - f is non-decreasing.
+// - f is super-additive: f(a) + f(b) <= f(a + b)
+// - 1 <= f(divisor) <= 2 * max_scaling
+// - For all x, f(x * divisor) = x * f(divisor)
+// - For all x, f(x * divisor + remainder) = x * f(divisor)
+//
+// Preconditions:
+// - 0 <= remainder < divisor.
+// - 1 <= max_scaling.
+//
+// This is used in IntegerRoundingCut() and is responsible for "strengthening"
+// the cut. Just taking f(x) = x / divisor result in the non-strengthened cut
+// and using any function that stricly dominate this one is better.
+//
+// Note(user): I could have used the MIR (Mixed integer rounding function), but
+// I prefered to use the function described in "Strenghtening Chvatal-Gomory
+// cuts and Gomory fractional cuts", Adam N. Letchfrod, Andrea Lodi. This is
+// because it gives better result for small value of max_scaling, and we do not
+// want to have large integer coefficient.
+//
+// TODO(user): Still not clear to me if this can be improved or not.
+std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
+    IntegerValue remainder, IntegerValue divisor, IntegerValue max_scaling);
+
+// Given an upper bounded linear constraint, this function tries to transform it
+// to a valid cut that violate the given LP solution using integer rounding.
+// Note that the returned cut might not always violate the LP solution, in which
+// case it can be discarded.
+//
+// What this does is basically take the integer division of the constraint by an
+// integer. If the coefficients where doubles, this would be the same as scaling
+// the constraint and then rounding. We choose the coefficient of the most
+// fractional variable (rescaled by its coefficient) as the divisor, but there
+// are other possible alternatives.
+//
+// Note that if the constraint is tight under the given lp solution, and if
+// there is a unique variable not at one of its bounds and fractional, then we
+// are guaranteed to generate a cut that violate the current LP solution. This
+// should be the case for Chvatal-Gomory base constraints modulo our loss of
+// precision while doing exact integer computations.
+//
+// Precondition:
+// - We assumes that the given initial constraint is tight using the given lp
+//   values. This could be relaxed, but for now it should always be the case, so
+//   we log a message and abort if not, to ease debugging.
+// - The IntegerVariable of the cuts are not used here. We assumes that the
+//   first three vectors are in one to one correspondance with the initial order
+//   of the variable in the cut.
+//
+// TODO(user): There is a bunch of heuristic involved here, and we could spend
+// more effort tunning them. In particular, one can try many heuristics and keep
+// the best looking cut (or more than one). This is not on the critical code
+// path, so we can spend more effort in finding good cuts.
+void IntegerRoundingCut(std::vector<double> lp_values,
+                        std::vector<IntegerValue> lower_bounds,
+                        std::vector<IntegerValue> upper_bounds,
+                        LinearConstraint* cut);
+
 // If a variable is away from its upper bound by more than value 1.0, then it
 // cannot be part of a cover that will violate the lp solution. This method
 // returns a reduced constraint by removing such variables from the given

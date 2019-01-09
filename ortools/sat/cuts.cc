@@ -552,5 +552,211 @@ CutGenerator CreateKnapsackCoverCutGenerator(
   return result;
 }
 
+namespace {
+
+// Returns 0 if there is none.
+// Note that we normalize the fractionality by its coefficient.
+IntegerValue MagnitudeOfMostFractionalVariable(
+    const std::vector<double>& lp_values, const LinearConstraint& cut) {
+  double best_score = 0;
+  IntegerValue best_magnitude(0);
+  int num_fractional_vars = 0;
+  const int size = lp_values.size();
+  for (int i = 0; i < size; ++i) {
+    const IntegerValue coeff = cut.coeffs[i];
+    const double value = lp_values[i];
+    const double score =
+        std::abs(value - std::round(value)) * ToDouble(IntTypeAbs(coeff));
+    if (score > best_score) {
+      best_score = score;
+      best_magnitude = IntTypeAbs(coeff);
+    }
+    if (std::abs(value - std::round(value)) > 0.01) {
+      ++num_fractional_vars;
+      VLOG(3) << "value: " << value << " coeff: " << coeff
+              << " score:" << score;
+    }
+  }
+  VLOG(2) << "num_fractional_vars: " << num_fractional_vars << "/" << size;
+  return best_magnitude;
+}
+
+}  // namespace
+
+std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
+    IntegerValue remainder, IntegerValue divisor, IntegerValue max_scaling) {
+  const IntegerValue target = CeilRatio(divisor, IntegerValue(2)) - 1;
+  const IntegerValue t = std::max(
+      IntegerValue(1),
+      remainder == 0 ? IntegerValue(1)
+                     : std::min(max_scaling, CeilRatio(target, remainder)));
+  const IntegerValue threshold = std::max(target, t * remainder);
+  return [t, threshold, divisor](IntegerValue coeff) {
+    const IntegerValue ratio = FloorRatio(t * coeff, divisor);
+    const IntegerValue remainder = t * coeff - ratio * divisor;
+    return 2 * ratio + (remainder > threshold ? 1 : 0);
+  };
+}
+
+void IntegerRoundingCut(std::vector<double> lp_values,
+                        std::vector<IntegerValue> lower_bounds,
+                        std::vector<IntegerValue> upper_bounds,
+                        LinearConstraint* cut) {
+  const int size = lp_values.size();
+  CHECK_EQ(lower_bounds.size(), size);
+  CHECK_EQ(upper_bounds.size(), size);
+  CHECK_EQ(cut->vars.size(), size);
+  CHECK_EQ(cut->coeffs.size(), size);
+  CHECK_EQ(cut->lb, kMinIntegerValue);
+
+  // Test the tighteness precondition. Note that we use a big tolerance.
+  // This is not really needed, but if the constraint is not tight, there is
+  // little chance to generate a cut that violate the LP. And given how this
+  // is currently used, it should always be tight.
+  {
+    double activity = 0.0;
+    for (int i = 0; i < size; ++i) {
+      activity += lp_values[i] * ToDouble(cut->coeffs[i]);
+    }
+    if (std::abs(activity - ToDouble(cut->ub)) > 1.0) {
+      VLOG(1) << "Issue, base constraint not tight " << activity
+              << " <= " << ToDouble(cut->ub);
+      *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
+      return;
+    }
+  }
+
+  // Find the magnitude of the most fractional variable, note that we normalize
+  // the fractionality by its coefficient.
+  const IntegerValue divisor =
+      MagnitudeOfMostFractionalVariable(lp_values, *cut);
+  if (divisor == 0) {
+    VLOG(1) << "Issue, no fractional variables.";
+    *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
+    return;
+  }
+
+  // To simplify the code below, we make all coefficients positive.
+  std::vector<bool> change_sign_at_postprocessing(size, false);
+  for (int i = 0; i < size; ++i) {
+    if (cut->coeffs[i] > 0) continue;
+
+    change_sign_at_postprocessing[i] = true;
+
+    cut->coeffs[i] = -cut->coeffs[i];
+    lp_values[i] = -lp_values[i];
+
+    std::swap(lower_bounds[i], upper_bounds[i]);
+    lower_bounds[i] = -lower_bounds[i];
+    upper_bounds[i] = -upper_bounds[i];
+  }
+
+  // Shift each variable using its lower/upper bound so that no variable can
+  // change sign.
+  bool overflow = false;
+  std::vector<IntegerValue> shifts(size, IntegerValue(0));
+  std::vector<bool> var_is_positive_or_zero(size, true);
+  for (int i = 0; i < size && !overflow; ++i) {
+    const IntegerValue coeff = cut->coeffs[i];
+    if (coeff == 0) continue;
+
+    // Note that since we use ToDouble() this code works fine with lb/ub at
+    // min/max integer value.
+    const double value = lp_values[i];
+    const IntegerValue lb = lower_bounds[i];
+    const IntegerValue ub = upper_bounds[i];
+    if (std::abs(value - ToDouble(lb)) < std::abs(value - ToDouble(ub))) {
+      // We want coeff * (X - lb) so the new var is >= 0.
+      var_is_positive_or_zero[i] = true;
+      shifts[i] = lb;
+    } else {
+      // We want coeff * (X - ub) so the new var is <= 0.
+      var_is_positive_or_zero[i] = false;
+      shifts[i] = ub;
+    }
+
+    // coeff * X = coeff * (X - shift) + coeff * shift.
+    if (!AddProductTo(-coeff, shifts[i], &cut->ub)) {
+      overflow = true;
+      break;
+    }
+
+    // Deal with fixed variable, no need to shift back in this case, we can
+    // just remove the term.
+    if (lb == ub) {
+      shifts[i] = IntegerValue(0);
+      cut->coeffs[i] = IntegerValue(0);
+    }
+  }
+  if (overflow) {
+    VLOG(1) << "Issue, overflow.";
+    *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
+    return;
+  }
+
+  // We will adjust coefficient that are close to an exact multiple of divisor
+  // to an exact multiple. This is meant to get rid of small errors that appears
+  // due to rounding error in our exact computation of the initial constraint
+  // given to this class.
+  //
+  // TODO(user): Tune the threshold or use a parameter. Maybe it should depend
+  // on the number of term in the constraint? But the basic idea is that we do
+  // not want to change the rhs_remainder (see below) by too much. So here we
+  // change it at most by: num_terms * 0.0002. Note that in practice we don't
+  // except a lot of terms to be close to a multiple of divisor.
+  const IntegerValue adjust_threshold = divisor / IntegerValue(5000);
+  for (int i = 0; i < size; ++i) {
+    const IntegerValue coeff = cut->coeffs[i];
+    const IntegerValue diff(
+        CapSub(upper_bounds[i].value(), lower_bounds[i].value()));
+    if (var_is_positive_or_zero[i]) {
+      // Adjust coeff of the form k * divisor - epsilon.
+      const IntegerValue remainder =
+          CeilRatio(coeff, divisor) * divisor - coeff;
+      if (CapProd(diff.value(), remainder.value()) > adjust_threshold) continue;
+      cut->ub += remainder * diff;
+      cut->coeffs[i] += remainder;
+    } else {
+      // Adjust coeff of the form k * divisor + epsilon.
+      const IntegerValue remainder =
+          coeff - FloorRatio(coeff, divisor) * divisor;
+      if (CapProd(diff.value(), remainder.value()) > adjust_threshold) continue;
+      cut->ub += remainder * diff;
+      cut->coeffs[i] -= remainder;
+    }
+  }
+
+  // Create the super-additive function f().
+  const IntegerValue rhs_remainder =
+      cut->ub - FloorRatio(cut->ub, divisor) * divisor;
+  const IntegerValue kMaxScaling(4);
+  const auto f =
+      GetSuperAdditiveRoundingFunction(rhs_remainder, divisor, kMaxScaling);
+
+  // Apply f() to the cut.
+  cut->ub = f(cut->ub);
+  for (int i = 0; i < cut->coeffs.size(); ++i) {
+    const IntegerValue coeff = cut->coeffs[i];
+    if (coeff == 0) continue;
+    if (var_is_positive_or_zero[i]) {
+      cut->coeffs[i] = f(coeff);
+    } else {
+      cut->coeffs[i] = -f(-coeff);
+    }
+  }
+
+  // Remove the bound shifts so the constraint is expressed in the original
+  // variables and do some basic post-processing.
+  for (int i = 0; i < size; ++i) {
+    cut->ub = IntegerValue(
+        CapAdd((cut->coeffs[i] * shifts[i]).value(), cut->ub.value()));
+    if (change_sign_at_postprocessing[i]) {
+      cut->coeffs[i] = -cut->coeffs[i];
+    }
+  }
+  RemoveZeroTerms(cut);
+  DivideByGCD(cut);
+}
+
 }  // namespace sat
 }  // namespace operations_research

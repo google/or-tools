@@ -2031,7 +2031,10 @@ void Probe(TimeLimit* global_time_limit, PresolveContext* context) {
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();
   auto* sat_solver = model.GetOrCreate<SatSolver>();
-  sat_solver->Propagate();
+  if (!sat_solver->Propagate()) {
+    context->is_unsat = true;
+    return;
+  }
 
   // Probe.
   //
