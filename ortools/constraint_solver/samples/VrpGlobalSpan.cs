@@ -21,7 +21,7 @@ using Google.OrTools.ConstraintSolver;
 /// <summary>
 ///   Minimal TSP using distance matrix.
 /// </summary>
-public class Vrp {
+public class VrpGlobalSpan {
   // [START data_model]
   class DataModel {
     // Constructor:
@@ -96,6 +96,7 @@ public class Vrp {
         data.GetDistanceMatrix().GetLength(0),
         data.GetVehicleNumber(),
         data.GetDepot());
+
     // [END index_manager]
 
     // Create Routing Model.
@@ -113,6 +114,15 @@ public class Vrp {
     );
     routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
     // [END arc_cost]
+
+    // Add Distance constraint.
+    // [START distance_constraint]
+    routing.AddDimension(transitCostIndex, 0, 3000,
+                         true,  // start cumul to zero
+                         "Distance");
+    RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+    distanceDimension.SetGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]

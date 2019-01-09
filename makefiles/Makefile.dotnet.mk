@@ -522,7 +522,13 @@ test_dotnet_algorithms_samples: ;
 test_dotnet_constraint_solver_samples:
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/SimpleRoutingProgram.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/Tsp.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/TspDistanceMatrix.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/Vrp.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpCapacity.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpDropNodes.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpGlobalSpan.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpStartsEnds.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpTimeWindows.cs
 
 .PHONY: test_dotnet_graph_samples # Build and Run all .Net LP Samples (located in ortools/graph/samples)
 test_dotnet_graph_samples: ;

@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Vrp.cs" />
+    <Compile Include="VrpCapacity.cs" />
     <PackageReference Include="Google.OrTools" Version="7.0.6170-*" />
   </ItemGroup>
 </Project>

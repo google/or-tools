@@ -21,7 +21,7 @@ using Google.OrTools.ConstraintSolver;
 /// <summary>
 ///   Minimal TSP using distance matrix.
 /// </summary>
-public class Vrp {
+public class VrpStartsEnds {
   // [START data_model]
   class DataModel {
     // Constructor:
@@ -45,12 +45,17 @@ public class Vrp {
           {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
           {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0}
       };
+      starts_ = new int[] {1, 2, 15, 16};
+      ends_ = new int[] {0, 0, 0, 0};
     }
     public ref readonly long[,] GetDistanceMatrix() { return ref distancesMatrix_;}
     public int GetVehicleNumber() { return 4;}
-    public int GetDepot() { return 0;}
+    public ref readonly int[] GetStarts() { return ref starts_;}
+    public ref readonly int[] GetEnds() { return ref ends_;}
 
     private long[,] distancesMatrix_;
+    private int[] starts_;
+    private int[] ends_;
   };
   // [END data_model]
 
@@ -95,7 +100,9 @@ public class Vrp {
     RoutingIndexManager manager = new RoutingIndexManager(
         data.GetDistanceMatrix().GetLength(0),
         data.GetVehicleNumber(),
-        data.GetDepot());
+        data.GetStarts(),
+        data.GetEnds());
+
     // [END index_manager]
 
     // Create Routing Model.
@@ -113,6 +120,15 @@ public class Vrp {
     );
     routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
     // [END arc_cost]
+
+    // Add Distance constraint.
+    // [START distance_constraint]
+    routing.AddDimension(transitCostIndex, 0, 2000,
+                         true,  // start cumul to zero
+                         "Distance");
+    RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+    distanceDimension.SetGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]

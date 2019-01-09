@@ -21,10 +21,7 @@ using Google.OrTools.ConstraintSolver;
 ///   This is a sample using the routing library .Net wrapper.
 /// </summary>
 public class SimpleRoutingProgram {
-  /// <summary>
-  ///   Solves the current routing problem.
-  /// </summary>
-  static void Solve() {
+  public static void Main(String[] args) {
     // Instantiate the data problem.
     // [START data]
     const int num_location = 5;
@@ -81,8 +78,5 @@ public class SimpleRoutingProgram {
     Console.WriteLine("Distance of the route: {0}m", route_distance);
     // [END print_solution]
   }
-
-  public static void Main(String[] args) {
-    Solve();
-  }
 }
+// [END program]

@@ -19,9 +19,9 @@ using Google.OrTools.ConstraintSolver;
 // [END import]
 
 /// <summary>
-///   Minimal TSP using distance matrix.
+///   Minimal Vrp with drop nodes.
 /// </summary>
-public class Vrp {
+public class VrpDropNodes {
   // [START data_model]
   class DataModel {
     // Constructor:
@@ -45,12 +45,18 @@ public class Vrp {
           {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
           {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0}
       };
+      demands_ = new long[] {0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8};
+      vehicleCapacities_ = new long[] {15, 15, 15, 15};
     }
     public ref readonly long[,] GetDistanceMatrix() { return ref distancesMatrix_;}
+    public ref readonly long[] GetDemands() { return ref demands_;}
     public int GetVehicleNumber() { return 4;}
+    public ref readonly long[] GetVehicleCapacities() { return ref vehicleCapacities_;}
     public int GetDepot() { return 0;}
 
     private long[,] distancesMatrix_;
+    private long[] demands_;
+    private long[] vehicleCapacities_;
   };
   // [END data_model]
 
@@ -63,15 +69,31 @@ public class Vrp {
       in RoutingModel routing,
       in RoutingIndexManager manager,
       in Assignment solution) {
+    // Solution cost.
     Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
+    // Display dropped nodes.
+    string droppedNodes = "Dropped nodes:";
+    for (int index = 0; index < routing.Size(); ++index) {
+      if (routing.IsStart(index) || routing.IsEnd(index)) {
+        continue;
+      }
+      if (solution.Value(routing.NextVar(index)) == index) {
+        droppedNodes += " " + manager.IndexToNode(index);
+      }
+    }
+    Console.WriteLine("{0}", droppedNodes);
     // Inspect solution.
     long totalDistance = 0;
+    long totalLoad = 0;
     for (int i = 0; i < data.GetVehicleNumber(); ++i) {
       Console.WriteLine("Route for Vehicle {0}:", i);
       long routeDistance = 0;
+      long routeLoad = 0;
       var index = routing.Start(i);
       while (routing.IsEnd(index) == false) {
-        Console.Write("{0} -> ", manager.IndexToNode((int)index));
+        long nodeIndex = manager.IndexToNode(index);
+        routeLoad += data.GetDemands()[nodeIndex];
+        Console.Write("{0} Load({1}) -> ", nodeIndex, routeLoad);
         var previousIndex = index;
         index = solution.Value(routing.NextVar(index));
         routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
@@ -79,8 +101,10 @@ public class Vrp {
       Console.WriteLine("{0}", manager.IndexToNode((int)index));
       Console.WriteLine("Distance of the route: {0}m", routeDistance);
       totalDistance += routeDistance;
+      totalLoad += routeLoad;
     }
     Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
+    Console.WriteLine("Total Load of all routes: {0}m", totalLoad);
   }
   // [END solution_printer]
 
@@ -113,6 +137,26 @@ public class Vrp {
     );
     routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
     // [END arc_cost]
+
+    // Add Capacity constraint.
+    // [START capacity_constraint]
+    int demandCostIndex = routing.RegisterUnaryTransitCallback(
+      (long fromIndex) => {
+        var fromNode = manager.IndexToNode(fromIndex);
+        return data.GetDemands()[fromNode]; }
+    );
+    routing.AddDimensionWithVehicleCapacity(
+      demandCostIndex, 0,  // null capacity slack
+      data.GetVehicleCapacities(),   // vehicle maximum capacities
+      true,                      // start cumul to zero
+      "Capacity");
+    // Allow to drop nodes.
+    long penalty = 1000;
+    for (int i = 1; i < data.GetDistanceMatrix().GetLength(0); ++i) {
+      routing.AddDisjunction(
+          new long[] {manager.NodeToIndex(i)}, penalty);
+    }
+    // [END capacity_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]
