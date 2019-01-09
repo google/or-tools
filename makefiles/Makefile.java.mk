@@ -375,8 +375,13 @@ test_java_algorithms_samples: \
 test_java_constraint_solver_samples: \
  rjava_SimpleRoutingProgram \
  rjava_Tsp \
+ rjava_TspDistanceMatrix \
  rjava_Vrp \
  rjava_VrpCapacity \
+ rjava_VrpDropNodes \
+ rjava_VrpGlobalSpan \
+ rjava_VrpStartsEnds \
+ rjava_VrpTimeWindows \
 
 .PHONY: test_java_graph_samples # Build and Run all Java Graph Samples (located in ortools/graph/samples)
 test_java_graph_samples: \
@@ -477,8 +482,7 @@ test_java_java: \
  rjava_LinearProgramming \
  rjava_LsApi \
  rjava_RabbitsPheasants \
- rjava_Tsp \
- rjava_Vrp
+ rjava_RandomTsp
 
 .PHONY: test_java_pimpl
 test_java_pimpl: \

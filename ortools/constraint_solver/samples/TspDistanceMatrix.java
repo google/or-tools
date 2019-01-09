@@ -13,21 +13,21 @@
 
 // [START program]
 // [START import]
-import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
-public class Vrp {
+/** Minimal TSP using distance matrix.*/
+public class TspDistanceMatrix {
   static { System.loadLibrary("jniortools"); }
 
-  private static final Logger logger = Logger.getLogger(Vrp.class.getName());
+  private static final Logger logger = Logger.getLogger(TspDistanceMatrix.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -51,7 +51,7 @@ public class Vrp {
           {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
           {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
       };
-      vehicleNumber = 4;
+      vehicleNumber = 1;
       depot = 0;
     }
     public final long[][] distanceMatrix;
@@ -61,7 +61,7 @@ public class Vrp {
   // [END data_model]
 
   // [START manhattan_distance]
-  /// @brief Manhattan distance implemented as a transit callback.
+  /// @brief Manhattan distance implemented as a callback.
   /// @details It uses an array of positions and computes
   /// the Manhattan distance between the two positions of
   /// two different indices.
@@ -89,24 +89,19 @@ public class Vrp {
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
-    long totalDistance = 0;
-    for (int i = 0; i < data.vehicleNumber; ++i) {
-      logger.info("Route for Vehicle " + i + ":");
-      long routeDistance = 0;
-      String route = "";
-      long index = routing.start(i);
-      while (!routing.isEnd(index)) {
-        route += manager.indexToNode(index) + " -> ";
-        long previousIndex = index;
-        index = solution.value(routing.nextVar(index));
-        routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
-      }
-      route += manager.indexToNode(routing.end(i));
-      logger.info(route);
-      logger.info("Distance of the route: " + routeDistance + "m");
-      totalDistance += routeDistance;
+    logger.info("Route for Vehicle 0:");
+    long routeDistance = 0;
+    String route = "";
+    long index = routing.start(0);
+    while (!routing.isEnd(index)) {
+      route += manager.indexToNode(index) + " -> ";
+      long previousIndex = index;
+      index = solution.value(routing.nextVar(index));
+      routeDistance += routing.getArcCostForVehicle(previousIndex, index, 0);
     }
-    logger.info("Total Distance of all routes: " + totalDistance + "m");
+    route += manager.indexToNode(routing.end(0));
+    logger.info(route);
+    logger.info("Distance of the route: " + routeDistance + "m");
   }
   // [END solution_printer]
 

@@ -16,6 +16,7 @@
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.LongLongToLong;
+import com.google.ortools.constraintsolver.LongToLong;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
@@ -24,10 +25,10 @@ import java.util.logging.Logger;
 // [END import]
 
 /** Minimal VRP.*/
-public class Vrp {
+public class VrpDropNodes {
   static { System.loadLibrary("jniortools"); }
 
-  private static final Logger logger = Logger.getLogger(Vrp.class.getName());
+  private static final Logger logger = Logger.getLogger(VrpDropNodes.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -51,11 +52,15 @@ public class Vrp {
           {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
           {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
       };
+      demands = new long[] {0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8};
       vehicleNumber = 4;
+      vehicleCapacities = new long[] {15, 15, 15, 15};
       depot = 0;
     }
     public final long[][] distanceMatrix;
+    public final long[] demands;
     public final int vehicleNumber;
+    public final long[] vehicleCapacities;
     public final int depot;
   }
   // [END data_model]
@@ -82,21 +87,54 @@ public class Vrp {
   }
   // [END manhattan_distance]
 
+  // [START demands]
+  static class DemandCallback extends LongToLong {
+    public DemandCallback(DataModel data, RoutingIndexManager manager) {
+      // precompute distance between location to have distance callback in O(1)
+      demands_ = data.demands;
+      indexManager_ = manager;
+    }
+    @Override
+    public long run(long fromIndex) {
+      int fromNode = indexManager_.indexToNode(fromIndex);
+      return demands_[fromNode];
+    }
+    private long[] demands_;
+    private RoutingIndexManager indexManager_;
+  }
+  // [END demands]
+
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
     // Solution cost.
     logger.info("Objective : " + solution.objectiveValue());
+    // Display dropped nodes.
+    String droppedNodes = "Dropped nodes:";
+    for (int node = 0; node < routing.size(); ++node) {
+      if (routing.isStart(node) || routing.isEnd(node)) {
+        continue;
+      }
+      if (solution.value(routing.nextVar(node)) == node) {
+        droppedNodes += " " + manager.indexToNode(node);
+      }
+    }
+    logger.info(droppedNodes);
+    // Display routes
     // Inspect solution.
     long totalDistance = 0;
+    long totalLoad = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
+      long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
+      long routeLoad = 0;
       String route = "";
-      long index = routing.start(i);
       while (!routing.isEnd(index)) {
-        route += manager.indexToNode(index) + " -> ";
+        long nodeIndex = manager.indexToNode(index);
+        routeLoad += data.demands[(int) nodeIndex];
+        route += nodeIndex + " Load(" + routeLoad + ") -> ";
         long previousIndex = index;
         index = solution.value(routing.nextVar(index));
         routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
@@ -105,8 +143,10 @@ public class Vrp {
       logger.info(route);
       logger.info("Distance of the route: " + routeDistance + "m");
       totalDistance += routeDistance;
+      totalLoad += routeLoad;
     }
     logger.info("Total Distance of all routes: " + totalDistance + "m");
+    logger.info("Total Load of all routes: " + totalLoad);
   }
   // [END solution_printer]
 
@@ -133,6 +173,22 @@ public class Vrp {
     int transitCostIndex = routing.registerTransitCallback(distanceEvaluator);
     routing.setArcCostEvaluatorOfAllVehicles(transitCostIndex);
     // [END arc_cost]
+
+    // Add Capacity constraint.
+    // [START capacity_constraint]
+    LongToLong demandEvaluator = new DemandCallback(data, manager);
+    int demandCostIndex = routing.registerUnaryTransitCallback(demandEvaluator);
+    routing.addDimensionWithVehicleCapacity(demandCostIndex, 0, // null capacity slack
+        data.vehicleCapacities, // vehicle maximum capacities
+        true, // start cumul to zero
+        "Capacity");
+    // Allow to drop nodes.
+    long penalty = 1000;
+    for (int i = 1; i < data.distanceMatrix.length; ++i) {
+      routing.addDisjunction(
+          new long[] {manager.nodeToIndex(i)}, penalty);
+    }
+    // [END capacity_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]

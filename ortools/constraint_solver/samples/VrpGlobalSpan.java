@@ -16,6 +16,7 @@
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.LongLongToLong;
+import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
@@ -24,10 +25,10 @@ import java.util.logging.Logger;
 // [END import]
 
 /** Minimal VRP.*/
-public class Vrp {
+public class VrpGlobalSpan {
   static { System.loadLibrary("jniortools"); }
 
-  private static final Logger logger = Logger.getLogger(Vrp.class.getName());
+  private static final Logger logger = Logger.getLogger(VrpGlobalSpan.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -51,11 +52,15 @@ public class Vrp {
           {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
           {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
       };
+      demands = new long[] {0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8};
       vehicleNumber = 4;
+      vehicleCapacities = new long[] {15, 15, 15, 15};
       depot = 0;
     }
     public final long[][] distanceMatrix;
+    public final long[] demands;
     public final int vehicleNumber;
+    public final long[] vehicleCapacities;
     public final int depot;
   }
   // [END data_model]
@@ -91,18 +96,17 @@ public class Vrp {
     // Inspect solution.
     long totalDistance = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
+      long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
       long routeDistance = 0;
       String route = "";
-      long index = routing.start(i);
       while (!routing.isEnd(index)) {
         route += manager.indexToNode(index) + " -> ";
         long previousIndex = index;
         index = solution.value(routing.nextVar(index));
         routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
       }
-      route += manager.indexToNode(routing.end(i));
-      logger.info(route);
+      logger.info(route + manager.indexToNode(index));
       logger.info("Distance of the route: " + routeDistance + "m");
       totalDistance += routeDistance;
     }
@@ -133,6 +137,15 @@ public class Vrp {
     int transitCostIndex = routing.registerTransitCallback(distanceEvaluator);
     routing.setArcCostEvaluatorOfAllVehicles(transitCostIndex);
     // [END arc_cost]
+
+    // Add Distance constraint.
+    // [START distance_constraint]
+    routing.addDimension(transitCostIndex, 0, 3000,
+                         true,  // start cumul to zero
+                         "Distance");
+    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+    distanceDimension.setGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]

@@ -16,6 +16,7 @@
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.LongLongToLong;
+import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
@@ -24,10 +25,10 @@ import java.util.logging.Logger;
 // [END import]
 
 /** Minimal VRP.*/
-public class Vrp {
+public class VrpStartsEnds {
   static { System.loadLibrary("jniortools"); }
 
-  private static final Logger logger = Logger.getLogger(Vrp.class.getName());
+  private static final Logger logger = Logger.getLogger(VrpStartsEnds.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -52,11 +53,13 @@ public class Vrp {
           {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
       };
       vehicleNumber = 4;
-      depot = 0;
+      starts = new int[] {1, 2, 15, 16};
+      ends = new int[] {0, 0, 0, 0};
     }
     public final long[][] distanceMatrix;
     public final int vehicleNumber;
-    public final int depot;
+    public final int[] starts;
+    public final int[] ends;
   }
   // [END data_model]
 
@@ -119,7 +122,8 @@ public class Vrp {
     // Create Routing Index Manager
     // [START index_manager]
     RoutingIndexManager manager =
-        new RoutingIndexManager(data.distanceMatrix.length, data.vehicleNumber, data.depot);
+        new RoutingIndexManager(
+            data.distanceMatrix.length, data.vehicleNumber, data.starts, data.ends);
     // [END index_manager]
 
     // Create Routing Model.
@@ -133,6 +137,15 @@ public class Vrp {
     int transitCostIndex = routing.registerTransitCallback(distanceEvaluator);
     routing.setArcCostEvaluatorOfAllVehicles(transitCostIndex);
     // [END arc_cost]
+
+    // Add Distance constraint.
+    // [START distance_constraint]
+    routing.addDimension(transitCostIndex, 0, 2000,
+                         true,  // start cumul to zero
+                         "Distance");
+    RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+    distanceDimension.setGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]
