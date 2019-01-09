@@ -82,9 +82,21 @@ double ScalarProduct(const LinearConstraint& constraint1,
   return scalar_product;
 }
 
+LinearConstraintManager::~LinearConstraintManager() {
+  if (num_merged_constraints_ > 0) {
+    VLOG(2) << "num_merged_constraints: " << num_merged_constraints_;
+  }
+  for (const auto entry : type_to_num_cuts_) {
+    VLOG(1) << "Added " << entry.second << " cuts of type '" << entry.first
+            << "'.";
+  }
+}
+
 // Because sometimes we split a == constraint in two (>= and <=), it makes sense
 // to detect duplicate constraints and merge bounds. This is also relevant if
 // we regenerate identical cuts for some reason.
+//
+// TODO(user): Also compute GCD and divide by it.
 void LinearConstraintManager::Add(const LinearConstraint& ct) {
   LinearConstraint canonicalized = ct;
   const Terms terms = CanonicalizeConstraintAndGetTerms(&canonicalized);
@@ -114,6 +126,33 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
     equiv_constraints_[terms] = constraints_.size();
     constraint_is_in_lp_.push_back(false);
     constraints_.push_back(std::move(canonicalized));
+  }
+}
+
+// Same as Add(), but logs some information about the newly added constraint.
+// Cuts are also handled slightly differently than normal constraints.
+void LinearConstraintManager::AddCut(
+    const LinearConstraint& ct, std::string type_name,
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
+  CHECK_NE(ct.vars.size(), 0);
+  Add(ct);
+  num_cuts_++;
+  type_to_num_cuts_[type_name]++;
+
+  if (VLOG_IS_ON(1)) {
+    IntegerValue max_magnitude(0);
+    double activity = 0.0;
+    const int size = ct.vars.size();
+    for (int i = 0; i < size; ++i) {
+      max_magnitude = std::max(max_magnitude, IntTypeAbs(ct.coeffs[i]));
+      activity += ToDouble(ct.coeffs[i]) * lp_solution[ct.vars[i]];
+    }
+    double violation = 0.0;
+    violation = std::max(violation, activity - ToDouble(ct.ub));
+    violation = std::max(violation, ToDouble(ct.lb) - activity);
+    LOG(INFO) << "Cut '" << type_name << "' size: " << size
+              << " max_magnitude: " << max_magnitude
+              << " violation: " << violation;
   }
 }
 

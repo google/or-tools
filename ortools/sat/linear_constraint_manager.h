@@ -47,15 +47,16 @@ double ScalarProduct(const LinearConstraint& constraint1,
 class LinearConstraintManager {
  public:
   LinearConstraintManager() {}
-  ~LinearConstraintManager() {
-    if (num_merged_constraints_ > 0) {
-      VLOG(2) << "num_merged_constraints: " << num_merged_constraints_;
-    }
-  }
+  ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
   // and merge the bounds of constraints with the same terms.
   void Add(const LinearConstraint& ct);
+
+  // Same as Add(), but logs some information about the newly added constraint.
+  // Cuts are also handled slightly differently than normal constraints.
+  void AddCut(const LinearConstraint& ct, std::string type_name,
+              const gtl::ITIVector<IntegerVariable, double>& lp_solution);
 
   // Heuristic to decides what LP is best solved next. The given lp_solution
   // should usually be the optimal solution of the LP returned by GetLp() before
@@ -82,6 +83,8 @@ class LinearConstraintManager {
   }
 
   void SetParameters(const SatParameters& params) { sat_parameters_ = params; }
+
+  int num_cuts() const { return num_cuts_; }
 
  private:
   SatParameters sat_parameters_;
@@ -117,6 +120,9 @@ class LinearConstraintManager {
   };
   absl::flat_hash_map<Terms, int, TermsHash> equiv_constraints_;
   int64 num_merged_constraints_ = 0;
+
+  int num_cuts_ = 0;
+  std::map<std::string, int> type_to_num_cuts_;
 };
 
 }  // namespace sat
