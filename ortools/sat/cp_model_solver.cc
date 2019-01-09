@@ -1503,9 +1503,22 @@ CpSolverResponse SolveCpModelInternal(
         } else {
           return response;
         }
+      } else {
+        IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+        const IntegerValue current_internal_objective =
+            integer_trail->LowerBound(objective_var);
+        // Restrict the objective.
+        model->GetOrCreate<SatSolver>()->Backtrack(0);
+        if (!integer_trail->Enqueue(
+                IntegerLiteral::LowerOrEqual(objective_var,
+                                             current_internal_objective - 1),
+                {}, {})) {
+          response.set_best_objective_bound(response.objective_value());
+          response.set_status(CpSolverStatus::OPTIMAL);
+          fill_response_statistics();
+          return response;
+        }
       }
-      // TODO(user): Collect objective value in optimization model and
-      // constrain it in the following search.
     }
     // TODO(user): Remove conflicts used during hint search.
     model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(
