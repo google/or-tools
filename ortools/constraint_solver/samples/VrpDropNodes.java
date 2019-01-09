@@ -122,7 +122,6 @@ public class VrpDropNodes {
     }
     logger.info(droppedNodes);
     // Display routes
-    // Inspect solution.
     long totalDistance = 0;
     long totalLoad = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
