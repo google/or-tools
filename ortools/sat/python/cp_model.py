@@ -131,8 +131,8 @@ class LinearExpression(object):
             elif isinstance(expr, IntVar):
                 coeffs[expr] += coef
             elif isinstance(expr, _NotBooleanVariable):
-                raise TypeError(
-                    'Cannot interpret literals in a linear expression.')
+                constant += coef
+                coeffs[expr.Not()] -= coef
             else:
                 raise TypeError('Unrecognized linear expression: ' + str(expr))
 
@@ -1346,7 +1346,7 @@ def EvaluateLinearExpression(expression, solution):
         elif isinstance(expr, IntVar):
             value += coef * solution.solution[expr.Index()]
         elif isinstance(expr, _NotBooleanVariable):
-            raise TypeError('Cannot interpret literals in a linear expression.')
+            value += coef * (1 - solution.solution[expr.Not().Index()])
     return value
 
 
@@ -1539,8 +1539,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                raise TypeError(
-                    'Cannot interpret literals in a linear expression.')
+                value += coef * (1 - self.SolutionIntegerValue(expr.Not().Index()))
         return value
 
 
