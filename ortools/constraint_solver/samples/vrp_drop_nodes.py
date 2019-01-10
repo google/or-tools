@@ -11,12 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Simple Vehicles Routing Problem."""
+"""Capacited Vehicles Routing Problem (CVRP)."""
 
 # [START import]
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -95,7 +96,9 @@ def create_data_model():
         ],
     ]
     data['num_locations'] = len(data['distance_matrix'])
+    data['demands'] = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
     data['num_vehicles'] = 4
+    data['vehicle_capacities'] = [15, 15, 15, 15]
     data['depot'] = 0
     return data
     # [END data_model]
@@ -105,27 +108,43 @@ def create_data_model():
 def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
     print('Objective: {}'.format(assignment.ObjectiveValue()))
+    # Display dropped nodes.
+    dropped_nodes = 'Dropped nodes:'
+    for node in range(routing.Size()):
+        if routing.IsStart(node) or routing.IsEnd(node): continue
+        if assignment.Value(routing.NextVar(node)) == node:
+            dropped_nodes += ' {}'.format(manager.IndexToNode(node))
+    print(dropped_nodes)
+    # Display routes
     total_distance = 0
+    total_load = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         route_distance = 0
+        route_load = 0
         while not routing.IsEnd(index):
-            plan_output += ' {} ->'.format(manager.IndexToNode(index))
+            node_index = manager.IndexToNode(index)
+            route_load += data['demands'][node_index]
+            plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {}\n'.format(manager.IndexToNode(index))
+        plan_output += ' {0} Load({1})\n'.format(
+            manager.IndexToNode(index), route_load)
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+        plan_output += 'Load of the route: {}\n'.format(route_load)
         print(plan_output)
         total_distance += route_distance
+        total_load += route_load
     print('Total Distance of all routes: {}m'.format(total_distance))
+    print('Total Load of all routes: {}'.format(total_load))
     # [END solution_printer]
 
 
 def main():
-    """Entry point of the program."""
+    """Solve the CVRP problem."""
     # Instantiate the data problem.
     # [START data]
     data = create_data_model()
@@ -154,6 +173,22 @@ def main():
     routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
     # [END arc_cost]
 
+    # Add Capacity constraint.
+    # [START capacity_constraint]
+    demand_cost_id = routing.RegisterUnaryTransitCallback(
+        (lambda from_index: data['demands'][manager.IndexToNode(from_index)]))
+    routing.AddDimensionWithVehicleCapacity(
+        demand_cost_id,
+        0,  # null capacity slack
+        data['vehicle_capacities'],  # vehicle maximum capacities
+        True,  # start cumul to zero
+        'Capacity')
+    # Allow to drop nodes.
+    penalty = 1000
+    for node in range(1, len(data['distance_matrix'])):
+        routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
+    # [END capacity_constraint]
+
     # Setting first solution heuristic.
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
@@ -175,4 +210,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # [END program]
+# [END program]

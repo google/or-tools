@@ -11,12 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Simple Vehicles Routing Problem."""
+"""Vehicles Routing Problem (VRP)."""
 
 # [START import]
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -111,12 +112,12 @@ def print_solution(data, manager, routing, assignment):
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         route_distance = 0
         while not routing.IsEnd(index):
-            plan_output += ' {} ->'.format(manager.IndexToNode(index))
+            plan_output += ' {} -> '.format(manager.IndexToNode(index))
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {}\n'.format(manager.IndexToNode(index))
+        plan_output += '{}\n'.format(manager.IndexToNode(index))
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         print(plan_output)
         total_distance += route_distance
@@ -125,7 +126,7 @@ def print_solution(data, manager, routing, assignment):
 
 
 def main():
-    """Entry point of the program."""
+    """Solve the CVRP problem."""
     # Instantiate the data problem.
     # [START data]
     data = create_data_model()
@@ -154,6 +155,19 @@ def main():
     routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
     # [END arc_cost]
 
+    # Add Distance constraint.
+    # [START distance_constraint]
+    dimension_name = 'Distance'
+    routing.AddDimension(
+        transit_cost_id,
+        0,  # no slack
+        3000,  # vehicle maximum travel distance
+        True,  # start cumul to zero
+        dimension_name)
+    distance_dimension = routing.GetDimensionOrDie(dimension_name)
+    distance_dimension.SetGlobalSpanCostCoefficient(100)
+    # [END distance_constraint]
+
     # Setting first solution heuristic.
     # [START parameters]
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
@@ -175,4 +189,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # [END program]
+# [END program]

@@ -11,12 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Simple Vehicles Routing Problem."""
+"""Simple Travelling Salesman Problem."""
 
 # [START import]
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -95,32 +96,27 @@ def create_data_model():
         ],
     ]
     data['num_locations'] = len(data['distance_matrix'])
-    data['num_vehicles'] = 4
+    data['num_vehicles'] = 1
     data['depot'] = 0
     return data
     # [END data_model]
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing, assignment):
+def print_solution(manager, routing, assignment):
     """Prints assignment on console."""
     print('Objective: {}'.format(assignment.ObjectiveValue()))
-    total_distance = 0
-    for vehicle_id in range(data['num_vehicles']):
-        index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
-        route_distance = 0
-        while not routing.IsEnd(index):
-            plan_output += ' {} ->'.format(manager.IndexToNode(index))
-            previous_index = index
-            index = assignment.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id)
-        plan_output += ' {}\n'.format(manager.IndexToNode(index))
-        plan_output += 'Distance of the route: {}m\n'.format(route_distance)
-        print(plan_output)
-        total_distance += route_distance
-    print('Total Distance of all routes: {}m'.format(total_distance))
+    index = routing.Start(0)
+    plan_output = 'Route for vehicle 0:\n'
+    route_distance = 0
+    while not routing.IsEnd(index):
+        plan_output += ' {} ->'.format(manager.IndexToNode(index))
+        previous_index = index
+        index = assignment.Value(routing.NextVar(index))
+        route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+    plan_output += ' {}\n'.format(manager.IndexToNode(index))
+    plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+    print(plan_output)
     # [END solution_printer]
 
 
@@ -169,10 +165,10 @@ def main():
     # Print solution on console.
     # [START print_solution]
     if assignment:
-        print_solution(data, manager, routing, assignment)
+        print_solution(manager, routing, assignment)
     # [END print_solution]
 
 
 if __name__ == '__main__':
     main()
-    # [END program]
+# [END program]

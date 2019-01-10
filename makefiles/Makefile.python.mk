@@ -501,7 +501,14 @@ test_python_constraint_solver_samples: \
  rpy_simple_cp_program \
  rpy_simple_routing_program \
  rpy_tsp \
+ rpy_tsp_distance_matrix \
  rpy_vrp \
+ rpy_vrp_capacity \
+ rpy_vrp_drop_nodes \
+ rpy_vrp_global_span \
+ rpy_vrp_starts_ends \
+ rpy_vrp_time_windows \
+ \
  rpy_vrpgs \
  rpy_cvrp \
  rpy_cvrp_reload \

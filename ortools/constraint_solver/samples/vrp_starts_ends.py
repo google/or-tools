@@ -17,6 +17,7 @@
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -96,7 +97,8 @@ def create_data_model():
     ]
     data['num_locations'] = len(data['distance_matrix'])
     data['num_vehicles'] = 4
-    data['depot'] = 0
+    data['starts'] = [1, 2, 15, 16]
+    data['ends'] = [0, 0, 0, 0]
     return data
     # [END data_model]
 
@@ -134,7 +136,8 @@ def main():
     # Create the routing index manager.
     # [START index_manager]
     manager = pywrapcp.RoutingIndexManager(data['num_locations'],
-                                           data['num_vehicles'], data['depot'])
+                                           data['num_vehicles'], data['starts'],
+                                           data['ends'])
     # [END index_manager]
 
     # Create Routing Model.
@@ -153,6 +156,19 @@ def main():
     transit_cost_id = routing.RegisterTransitCallback(distance_callback)
     routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
     # [END arc_cost]
+
+    # Add Distance constraint.
+    # [START distance_constraint]
+    dimension_name = 'Distance'
+    routing.AddDimension(
+        transit_cost_id,
+        0,  # no slack
+        2000,  # vehicle maximum travel distance
+        True,  # start cumul to zero
+        dimension_name)
+    distance_dimension = routing.GetDimensionOrDie(dimension_name)
+    distance_dimension.SetGlobalSpanCostCoefficient(100)
+    # [END distance_constraint]
 
     # Setting first solution heuristic.
     # [START parameters]
