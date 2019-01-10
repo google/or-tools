@@ -54,15 +54,11 @@ public class VrpGlobalSpan {
           {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
           {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0},
       };
-      demands = new long[] {0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8};
       vehicleNumber = 4;
-      vehicleCapacities = new long[] {15, 15, 15, 15};
       depot = 0;
     }
     public final long[][] distanceMatrix;
-    public final long[] demands;
     public final int vehicleNumber;
-    public final long[] vehicleCapacities;
     public final int depot;
   }
   // [END data_model]
