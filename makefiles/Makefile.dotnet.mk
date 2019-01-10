@@ -775,6 +775,8 @@ clean_dotnet:
 	-$(DELREC) $(TEST_PATH)$Sobj
 	-$(DELREC) ortools$Salgorithms$Ssamples$Sbin
 	-$(DELREC) ortools$Salgorithms$Ssamples$Sobj
+	-$(DELREC) ortools$Sconstraint_solver$Ssamples$Sbin
+	-$(DELREC) ortools$Sconstraint_solver$Ssamples$Sobj
 	-$(DELREC) ortools$Sgraph$Ssamples$Sbin
 	-$(DELREC) ortools$Sgraph$Ssamples$Sobj
 	-$(DELREC) ortools$Slinear_solver$Ssamples$Sbin
