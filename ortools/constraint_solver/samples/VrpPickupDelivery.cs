@@ -1,0 +1,174 @@
+// Copyright 2010-2018 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// [START program]
+// [START import]
+using System;
+using System.Collections.Generic;
+using Google.OrTools.ConstraintSolver;
+// [END import]
+
+/// <summary>
+///   Minimal Pickup & Delivery Problem (PDP).
+/// </summary>
+public class VrpPickupDelivery {
+  // [START data_model]
+  class DataModel {
+    // Constructor:
+    public DataModel() {
+      distancesMatrix_ = new long[,] {
+          {0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354, 468, 776, 662},
+          {548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674, 1016, 868, 1210},
+          {776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164, 1130, 788, 1552, 754},
+          {696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628, 822, 1164, 560, 1358},
+          {582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514, 708, 1050, 674, 1244},
+          {274, 502, 502, 650, 536, 0, 228, 308, 194, 240, 582, 776, 662, 628, 514, 1050, 708},
+          {502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890, 856, 514, 1278, 480},
+          {194, 354, 810, 502, 388, 308, 536, 0, 342, 388, 730, 468, 354, 320, 662, 742, 856},
+          {308, 696, 468, 844, 730, 194, 194, 342, 0, 274, 388, 810, 696, 662, 320, 1084, 514},
+          {194, 742, 742, 890, 776, 240, 468, 388, 274, 0, 342, 536, 422, 388, 274, 810, 468},
+          {536, 1084, 400, 1232, 1118, 582, 354, 730, 388, 342, 0, 878, 764, 730, 388, 1152, 354},
+          {502, 594, 1278, 514, 400, 776, 1004, 468, 810, 536, 878, 0, 114, 308, 650, 274, 844},
+          {388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0, 194, 536, 388, 730},
+          {354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194, 0, 342, 422, 536},
+          {468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536, 342, 0, 764, 194},
+          {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
+          {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0}
+      };
+      pickupDeliveries_ = new int[,] {
+          {7, 1},
+          {3, 4},
+          {5, 8},
+          {6, 2},
+          {11, 12},
+          {13, 15},
+          {10, 9},
+          {16, 14},
+      };
+    }
+    public ref readonly long[,] GetDistanceMatrix() { return ref distancesMatrix_;}
+    public ref readonly int[,] GetPickupDeliveries() { return ref pickupDeliveries_;}
+    public int GetVehicleNumber() { return 4;}
+    public int GetDepot() { return 0;}
+
+    private long[,] distancesMatrix_;
+    private int[,] pickupDeliveries_;
+  };
+  // [END data_model]
+
+  // [START solution_printer]
+  /// <summary>
+  ///   Print the solution.
+  /// </summary>
+  static void PrintSolution(
+      in DataModel data,
+      in RoutingModel routing,
+      in RoutingIndexManager manager,
+      in Assignment solution) {
+    Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
+    // Inspect solution.
+    long totalDistance = 0;
+    for (int i = 0; i < data.GetVehicleNumber(); ++i) {
+      Console.WriteLine("Route for Vehicle {0}:", i);
+      long routeDistance = 0;
+      var index = routing.Start(i);
+      while (routing.IsEnd(index) == false) {
+        Console.Write("{0} -> ", manager.IndexToNode((int)index));
+        var previousIndex = index;
+        index = solution.Value(routing.NextVar(index));
+        routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
+      }
+      Console.WriteLine("{0}", manager.IndexToNode((int)index));
+      Console.WriteLine("Distance of the route: {0}m", routeDistance);
+      totalDistance += routeDistance;
+    }
+    Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
+  }
+  // [END solution_printer]
+
+  public static void Main(String[] args) {
+    // Instantiate the data problem.
+    // [START data]
+    DataModel data = new DataModel();
+    // [END data]
+
+    // Create Routing Index Manager
+    // [START index_manager]
+    RoutingIndexManager manager = new RoutingIndexManager(
+        data.GetDistanceMatrix().GetLength(0),
+        data.GetVehicleNumber(),
+        data.GetDepot());
+
+    // [END index_manager]
+
+    // Create Routing Model.
+    // [START routing_model]
+    RoutingModel routing = new RoutingModel(manager);
+    // [END routing_model]
+
+    // Define cost of each arc.
+    // [START arc_cost]
+    int transitCostIndex = routing.RegisterTransitCallback(
+      (long fromIndex, long toIndex) => {
+        var fromNode = manager.IndexToNode(fromIndex);
+        var toNode = manager.IndexToNode(toIndex);
+        return data.GetDistanceMatrix()[fromNode, toNode]; }
+    );
+    routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    // [END arc_cost]
+
+    // Add Distance constraint.
+    // [START distance_constraint]
+    routing.AddDimension(transitCostIndex, 0, 3000,
+                         true,  // start cumul to zero
+                         "Distance");
+    RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+    distanceDimension.SetGlobalSpanCostCoefficient(100);
+    // [END distance_constraint]
+
+    // Define Transportation Requests.
+    // [START pickup_delivery]
+    Solver solver = routing.solver();
+    for(int i=0; i < data.GetPickupDeliveries().GetLength(0); i++) {
+      long pickupIndex = manager.NodeToIndex(data.GetPickupDeliveries()[i, 0]);
+      long deliveryIndex = manager.NodeToIndex(data.GetPickupDeliveries()[i, 1]);
+      routing.AddPickupAndDelivery(pickupIndex, deliveryIndex);
+      solver.Add(solver.MakeEquality(
+          routing.VehicleVar(pickupIndex),
+          routing.VehicleVar(deliveryIndex)));
+      solver.Add(solver.MakeLessOrEqual(
+          distanceDimension.CumulVar(pickupIndex),
+          distanceDimension.CumulVar(deliveryIndex)));
+    }
+    // [END pickup_delivery]
+
+    // Setting first solution heuristic.
+    // [START parameters]
+    RoutingSearchParameters searchParameters =
+      operations_research_constraint_solver.DefaultRoutingSearchParameters();
+    searchParameters.FirstSolutionStrategy =
+      FirstSolutionStrategy.Types.Value.PathCheapestArc;
+    // [END parameters]
+
+    // Solve the problem.
+    // [START solve]
+    Assignment solution = routing.SolveWithParameters(searchParameters);
+    // [END solve]
+
+    // Print solution on console.
+    // [START print_solution]
+    PrintSolution(data, routing, manager, solution);
+    // [END print_solution]
+  }
+}
+// [END program]
