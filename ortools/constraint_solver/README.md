@@ -2,7 +2,7 @@
 
 This directory contains a Constraint Programming (CP) solver and a Vehicle Routing solver.
 
-## Constraint Programming
+## CP solver
 
 [Constraint Programming](http://en.wikipedia.org/wiki/Constraint_programming) is a technology
 issued from IA and used in Operations Research.
@@ -25,10 +25,10 @@ Holds the solution of a CP problem.
 * [demon_profiler.proto](demon_profiler.proto):
 Holds the timeline and execution profile of constraints and demons (daemons).
 
-## Vehicle Routing
+## Routing solver
 
 [Vehicle Routing](http://en.wikipedia.org/wiki/Vehicle_routing) is a useful
-extension that is implemented on top of the CP library.
+extension that is implemented on top of the CP solver library.
 
 To begin, skim
 * [routing.h](routing.h):
