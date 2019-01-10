@@ -122,7 +122,7 @@ void Solve() {
       FirstSolutionStrategy::PATH_CHEAPEST_ARC);
 
   const Assignment* solution = routing.SolveWithParameters(searchParameters);
-  PrintSolution(data, manager, routing, *solution);
+  PrintSolution(manager, routing, *solution);
 }
 }  // namespace operations_research
 
