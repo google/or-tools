@@ -380,6 +380,7 @@ test_java_constraint_solver_samples: \
  rjava_VrpCapacity \
  rjava_VrpDropNodes \
  rjava_VrpGlobalSpan \
+ rjava_VrpPickupDelivery \
  rjava_VrpStartsEnds \
  rjava_VrpTimeWindows \
 
