@@ -402,10 +402,11 @@ class SVG():
 
 class SVGPrinter():
     """Generate Problem as svg file to stdout"""
-    def __init__(self, args, data, routing=None, assignment=None):
+    def __init__(self, args, data, manager=None, routing=None, assignment=None):
         """Initializes the printer"""
         self._args = args
         self._data = data
+        self._manager = manager
         self._routing = routing
         self._assignment = assignment
         # Design variables
@@ -616,9 +617,17 @@ def main():
         action='store_true',
         help='use capacity constraints')
     parser.add_argument(
-        '-tw', '--time-window',
+        '-dn', '--drop-nodes',
+        action='store_true',
+        help='allow drop nodes (disjuntion constraints)')
+    parser.add_argument(
+        '-tw', '--time-windows',
         action='store_true',
         help='use time-window constraints')
+    parser.add_argument(
+        '-se', '--starts-ends',
+        action='store_true',
+        help='use multiple starts & ends')
     parser.add_argument(
         '-pd', '--pickup-delivery',
         action='store_true',
@@ -652,7 +661,7 @@ def main():
         if args['capacity'] is True:
             demand_evaluator = CreateDemandEvaluator(data).demand
             add_capacity_constraints(routing, data, demand_evaluator)
-        if args['time_window'] is True:
+        if args['time_windows'] is True:
             time_evaluator = CreateTimeEvaluator(data).time_evaluator
             add_time_window_constraints(routing, data, time_evaluator)
         if args['fuel'] is True:
@@ -665,7 +674,7 @@ def main():
             routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
         # Solve the problem.
         assignment = routing.SolveWithParameters(search_parameters)
-        printer = SVGPrinter(args, data, routing, assignment)
+        printer = SVGPrinter(args, data, manager, routing, assignment)
     else:
         # Print svg on cout
         printer = SVGPrinter(args, data)

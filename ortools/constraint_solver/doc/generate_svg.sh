@@ -1,26 +1,48 @@
 #!/usr/bin/env bash
 set -e
-./vrp_svg.py -h
+./routing_svg.py -h
 set -x
 
-# Simplest Problem
-./vrp_svg.py > vrp.svg
+# TSP
+./routing_svg.py > tsp.svg
+./routing_svg.py --solution > tsp_solution.svg
 
-./vrp_svg.py --solution > vrp_solution.svg
-./vrp_svg.py --global-span --solution > vrpgs_solution.svg
+# TSP Distance Matrix
+./routing_svg.py > tsp_distance_matrix.svg
+./routing_svg.py --solution > tsp_distance_matrix_solution.svg
 
-# Capacity Problem
-./vrp_svg.py --capacity > cvrp.svg
-./vrp_svg.py --capacity --solution > cvrp_solution.svg
+# VRP
+./routing_svg.py > vrp.svg
+./routing_svg.py --solution > vrp_solution.svg
 
-# Time Window Problem
-./vrp_svg.py --capacity --time-window > cvrptw.svg
-./vrp_svg.py --capacity --time-window --solution > cvrptw_solution.svg
+# VRP Global Span
+./routing_svg.py --global-span > vrp_global_span.svg
+./routing_svg.py --global-span --solution > vrp_global_span_solution.svg
+
+# VRP Capacity
+./routing_svg.py --capacity > vrp_capacity.svg
+./routing_svg.py --capacity --solution > vrp_capacity_solution.svg
+
+# VRP Drop Nodes
+./routing_svg.py --drop-nodes > vrp_drop_nodes.svg
+./routing_svg.py --drop-nodes --solution > vrp_drop_nodes_solution.svg
+
+# VRP Time Windows
+./routing_svg.py --time-windows > vrp_time_windows.svg
+./routing_svg.py --time-windows --solution > vrp_time_windows_solution.svg
+
+# VRP Starts Ends
+./routing_svg.py --starts-ends > vrp_starts_ends.svg
+./routing_svg.py --starts-ends --solution > vrp_starts_ends_solution.svg
+
+# VRP Pickup Delivery
+./routing_svg.py --pickup-delivery > vrp_pickup_delivery.svg
+./routing_svg.py --pickup-delivery --solution > vrp_pickup_delivery_solution.svg
 
 ## Fuel Problem
-#./vrp_svg.py --fuel > vrpf.svg
-#./vrp_svg.py --fuel --solution > vrpf_solution.svg
+#./routing_svg.py --fuel > vrpf.svg
+#./routing_svg.py --fuel --solution > vrpf_solution.svg
 #
 ## Ressource Problem
-#./vrp_svg.py --resource > vrpr.svg
-#./vrp_svg.py --resource --solution > vrpr_solution.svg
+#./routing_svg.py --resource > vrpr.svg
+#./routing_svg.py --resource --solution > vrpr_solution.svg
