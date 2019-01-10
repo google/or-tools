@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC
+// Copyright 2010-2018 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,10 +17,8 @@ import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.LongToLong;
-import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
@@ -28,7 +26,9 @@ import java.util.logging.Logger;
 
 /** Minimal VRP.*/
 public class VrpCapacity {
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   private static final Logger logger = Logger.getLogger(VrpCapacity.class.getName());
 
@@ -84,11 +84,10 @@ public class VrpCapacity {
       int toNode = indexManager_.indexToNode(toIndex);
       return distanceMatrix_[fromNode][toNode];
     }
-    private long[][] distanceMatrix_;
-    private RoutingIndexManager indexManager_;
+    private final long[][] distanceMatrix_;
+    private final RoutingIndexManager indexManager_;
   }
   // [END manhattan_distance]
-
 
   // [START demands]
   static class DemandCallback extends LongToLong {
@@ -102,8 +101,9 @@ public class VrpCapacity {
       int fromNode = indexManager_.indexToNode(fromIndex);
       return demands_[fromNode];
     }
-    private long[] demands_;
-    private RoutingIndexManager indexManager_;
+
+    private final long[] demands_;
+    private final RoutingIndexManager indexManager_;
   }
   // [END demands]
 
@@ -169,11 +169,10 @@ public class VrpCapacity {
     // [START capacity_constraint]
     LongToLong demandEvaluator = new DemandCallback(data, manager);
     int demandCostIndex = routing.registerUnaryTransitCallback(demandEvaluator);
-    routing.addDimensionWithVehicleCapacity(
-      demandCostIndex, 0,  // null capacity slack
-      data.vehicleCapacities,   // vehicle maximum capacities
-      true,                      // start cumul to zero
-      "Capacity");
+    routing.addDimensionWithVehicleCapacity(demandCostIndex, 0, // null capacity slack
+        data.vehicleCapacities, // vehicle maximum capacities
+        true, // start cumul to zero
+        "Capacity");
     // [END capacity_constraint]
 
     // Setting first solution heuristic.

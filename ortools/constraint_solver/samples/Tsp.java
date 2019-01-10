@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC
+// Copyright 2010-2018 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 import static java.lang.Math.abs;
+
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.LongLongToLong;
@@ -26,7 +27,9 @@ import java.util.logging.Logger;
 
 /** Minimal TSP.*/
 public class Tsp {
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   private static final Logger logger = Logger.getLogger(Tsp.class.getName());
 
@@ -53,9 +56,9 @@ public class Tsp {
           {7, 8},
       };
       // Convert locations in meters using a city block dimension of 114m x 80m.
-      for (int i = 0; i < locations.length; i++) {
-        locations[i][0] *= 114;
-        locations[i][1] *= 80;
+      for (int[] element : locations) {
+        element[0] *= 114;
+        element[1] *= 80;
       }
       vehicleNumber = 1;
       depot = 0;
@@ -95,8 +98,8 @@ public class Tsp {
       int toNode = indexManager_.indexToNode(toIndex);
       return distanceMatrix_[fromNode][toNode];
     }
-    private long[][] distanceMatrix_;
-    private RoutingIndexManager indexManager_;
+    private final long[][] distanceMatrix_;
+    private final RoutingIndexManager indexManager_;
   }
   // [END manhattan_distance]
 

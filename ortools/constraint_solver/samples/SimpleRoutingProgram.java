@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC
+// Copyright 2010-2018 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,6 +13,8 @@
 
 // [START program]
 // [START import]
+import static java.lang.Math.abs;
+
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.LongLongToLong;
@@ -23,23 +25,25 @@ import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
 // [END import]
 
-class SimpleRoutingProgram {
-  static { System.loadLibrary("jniortools");}
+/** Minimal Routing example to showcase calling the solver.*/
+public class SimpleRoutingProgram {
+  static {
+    System.loadLibrary("jniortools");
+  }
 
-  private static Logger logger =
-    Logger.getLogger(SimpleRoutingProgram.class.getName());
+  private static final Logger logger = Logger.getLogger(SimpleRoutingProgram.class.getName());
 
-  static void SimpleRoutingProgram() {
+  public static void main(String[] args) throws Exception {
     // Instantiate the data problem.
     // [START data]
-    final int num_location = 5;
-    final int num_vehicles = 1;
+    final int numLocation = 5;
+    final int numVehicles = 1;
     final int depot = 0;
     // [END data]
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager = new RoutingIndexManager(num_location, num_vehicles, depot);
+    RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
     // [END index_manager]
 
     // Create Routing Model.
@@ -49,28 +53,26 @@ class SimpleRoutingProgram {
 
     // Define cost of each arc.
     // [START arc_cost]
-    routing.setArcCostEvaluatorOfAllVehicles(
-        routing.registerTransitCallback(
-          new LongLongToLong() {
-            @Override
-            public long run(long from_node, long to_node) {
-              return 1;
-            }
-          }));
+    routing.setArcCostEvaluatorOfAllVehicles(routing.registerTransitCallback(new LongLongToLong() {
+      @Override
+      public long run(long fromIndex, long toIndex) {
+        return abs(fromIndex - toIndex);
+      }
+    }));
     // [END arc_cost]
 
     // Setting first solution heuristic.
     // [START parameters]
-    RoutingSearchParameters search_parameters =
-        RoutingSearchParameters.newBuilder()
-            .mergeFrom(main.defaultRoutingSearchParameters())
+    RoutingSearchParameters searchParameters =
+        main.defaultRoutingSearchParameters()
+            .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();
     // [END parameters]
 
     // Solve the problem.
     // [START solve]
-    Assignment solution = routing.solveWithParameters(search_parameters);
+    Assignment solution = routing.solveWithParameters(searchParameters);
     // [END solve]
 
     // Print solution on console.
@@ -79,22 +81,18 @@ class SimpleRoutingProgram {
     // Inspect solution.
     long index = routing.start(0);
     logger.info("Route for Vehicle 0:");
-    long route_distance = 0;
+    long routeDistance = 0;
     String route = "";
-    while (routing.isEnd(index) == false) {
+    while (!routing.isEnd(index)) {
       route += manager.indexToNode(index) + " -> ";
-      long previous_index = index;
+      long previousIndex = index;
       index = solution.value(routing.nextVar(index));
-      route_distance += routing.getArcCostForVehicle(previous_index, index, 0);
+      routeDistance += routing.getArcCostForVehicle(previousIndex, index, 0);
     }
     route += manager.indexToNode(index);
     logger.info(route);
-    logger.info("Distance of the route: " + route_distance + "m");
+    logger.info("Distance of the route: " + routeDistance + "m");
     // [END print_solution]
-  }
-
-  public static void main(String[] args) throws Exception {
-    SimpleRoutingProgram();
   }
 }
 // [END program]

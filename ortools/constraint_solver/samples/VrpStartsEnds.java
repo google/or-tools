@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC
+// Copyright 2010-2018 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,7 +26,9 @@ import java.util.logging.Logger;
 
 /** Minimal VRP.*/
 public class VrpStartsEnds {
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   private static final Logger logger = Logger.getLogger(VrpStartsEnds.class.getName());
 
@@ -80,8 +82,8 @@ public class VrpStartsEnds {
       int toNode = indexManager_.indexToNode(toIndex);
       return distanceMatrix_[fromNode][toNode];
     }
-    private long[][] distanceMatrix_;
-    private RoutingIndexManager indexManager_;
+    private final long[][] distanceMatrix_;
+    private final RoutingIndexManager indexManager_;
   }
   // [END manhattan_distance]
 
@@ -121,9 +123,8 @@ public class VrpStartsEnds {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager =
-        new RoutingIndexManager(
-            data.distanceMatrix.length, data.vehicleNumber, data.starts, data.ends);
+    RoutingIndexManager manager = new RoutingIndexManager(
+        data.distanceMatrix.length, data.vehicleNumber, data.starts, data.ends);
     // [END index_manager]
 
     // Create Routing Model.
@@ -141,8 +142,8 @@ public class VrpStartsEnds {
     // Add Distance constraint.
     // [START distance_constraint]
     routing.addDimension(transitCostIndex, 0, 2000,
-                         true,  // start cumul to zero
-                         "Distance");
+        true, // start cumul to zero
+        "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]

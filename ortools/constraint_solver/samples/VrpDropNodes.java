@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC
+// Copyright 2010-2018 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,7 +26,9 @@ import java.util.logging.Logger;
 
 /** Minimal VRP.*/
 public class VrpDropNodes {
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   private static final Logger logger = Logger.getLogger(VrpDropNodes.class.getName());
 
@@ -82,8 +84,8 @@ public class VrpDropNodes {
       int toNode = indexManager_.indexToNode(toIndex);
       return distanceMatrix_[fromNode][toNode];
     }
-    private long[][] distanceMatrix_;
-    private RoutingIndexManager indexManager_;
+    private final long[][] distanceMatrix_;
+    private final RoutingIndexManager indexManager_;
   }
   // [END manhattan_distance]
 
@@ -99,8 +101,8 @@ public class VrpDropNodes {
       int fromNode = indexManager_.indexToNode(fromIndex);
       return demands_[fromNode];
     }
-    private long[] demands_;
-    private RoutingIndexManager indexManager_;
+    private final long[] demands_;
+    private final RoutingIndexManager indexManager_;
   }
   // [END demands]
 
@@ -184,8 +186,7 @@ public class VrpDropNodes {
     // Allow to drop nodes.
     long penalty = 1000;
     for (int i = 1; i < data.distanceMatrix.length; ++i) {
-      routing.addDisjunction(
-          new long[] {manager.nodeToIndex(i)}, penalty);
+      routing.addDisjunction(new long[] {manager.nodeToIndex(i)}, penalty);
     }
     // [END capacity_constraint]
 

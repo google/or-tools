@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC
+// Copyright 2010-2018 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -27,7 +27,9 @@ import java.util.logging.Logger;
 
 /** Minimal VRP.*/
 public class VrpTimeWindows {
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   private static final Logger logger = Logger.getLogger(VrpTimeWindows.class.getName());
 
@@ -95,8 +97,8 @@ public class VrpTimeWindows {
       int toNode = indexManager_.indexToNode(toIndex);
       return timeMatrix_[fromNode][toNode];
     }
-    private long[][] timeMatrix_;
-    private RoutingIndexManager indexManager_;
+    private final long[][] timeMatrix_;
+    private final RoutingIndexManager indexManager_;
   }
   // [END times]
 
