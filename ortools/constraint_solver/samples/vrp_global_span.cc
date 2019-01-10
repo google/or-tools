@@ -81,18 +81,18 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     int64 index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64 distance{0};
+    int64 route_distance{0};
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
       route << manager.IndexToNode(index).value() << " -> ";
       int64 previous_index = index;
       index = solution.Value(routing.NextVar(index));
-      distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
+      route_distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
           previous_index, index, int64{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
-    LOG(INFO) << "Distance of the route: " << distance << "m";
-    total_distance += distance;
+    LOG(INFO) << "Distance of the route: " << route_distance << "m";
+    total_distance += route_distance;
   }
   LOG(INFO) << "Total distance of all routes: " << total_distance << "m";
   LOG(INFO) << "";
@@ -101,7 +101,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
 }
 // [END solution_printer]
 
-void Vrp() {
+void VrpGlobalSpan() {
   // Instantiate the data problem.
   // [START data]
   DataModel data;
@@ -128,6 +128,17 @@ void Vrp() {
   routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id);
   // [END arc_cost]
 
+  // Add Distance constraint.
+  // [START distance_constraint]
+  routing.AddDimension(transit_cost_id, 0, 3000,
+                       true,  // start cumul to zero
+                       "Distance");
+  const RoutingDimension& distance_dimension =
+      routing.GetDimensionOrDie("Distance");
+  const_cast<RoutingDimension&>(distance_dimension)
+      .SetGlobalSpanCostCoefficient(100);
+  // [END distance_constraint]
+
   // Setting first solution heuristic.
   // [START parameters]
   RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
@@ -148,7 +159,7 @@ void Vrp() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  operations_research::Vrp();
+  operations_research::VrpGlobalSpan();
   return EXIT_SUCCESS;
 }
 // [END program]

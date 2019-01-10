@@ -61,10 +61,22 @@ struct DataModel {
              536, 194, 798, 0},
         }),
         num_vehicles(4),
-        depot(0) {}
+        starts({
+            RoutingIndexManager::NodeIndex{1},
+            RoutingIndexManager::NodeIndex{2},
+            RoutingIndexManager::NodeIndex{15},
+            RoutingIndexManager::NodeIndex{16},
+        }),
+        ends({
+            RoutingIndexManager::NodeIndex{0},
+            RoutingIndexManager::NodeIndex{0},
+            RoutingIndexManager::NodeIndex{0},
+            RoutingIndexManager::NodeIndex{0},
+        }) {}
   const std::vector<std::vector<int64>> distance_matrix;
   const int num_vehicles;
-  const RoutingIndexManager::NodeIndex depot;
+  const std::vector<RoutingIndexManager::NodeIndex> starts;
+  const std::vector<RoutingIndexManager::NodeIndex> ends;
 };  // namespace operations_research
 // [END data_model]
 
@@ -101,7 +113,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
 }
 // [END solution_printer]
 
-void Vrp() {
+void VrpStartsEnds() {
   // Instantiate the data problem.
   // [START data]
   DataModel data;
@@ -110,7 +122,7 @@ void Vrp() {
   // Create Routing Index Manager
   // [START index_manager]
   RoutingIndexManager manager(data.distance_matrix.size(), data.num_vehicles,
-                              data.depot);
+                              data.starts, data.ends);
   // [END index_manager]
 
   // Create Routing Model.
@@ -127,6 +139,16 @@ void Vrp() {
       });
   routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id);
   // [END arc_cost]
+
+  // Add Distance constraint.
+  // [START distance_constraint]
+  routing.AddDimension(transit_cost_id, 0, 2000,
+                       /*fix_start_cumul_to_zero=*/true, "Distance");
+  const RoutingDimension& distance_dimension =
+      routing.GetDimensionOrDie("Distance");
+  const_cast<RoutingDimension&>(distance_dimension)
+      .SetGlobalSpanCostCoefficient(100);
+  // [END distance_constraint]
 
   // Setting first solution heuristic.
   // [START parameters]
@@ -148,7 +170,7 @@ void Vrp() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  operations_research::Vrp();
+  operations_research::VrpStartsEnds();
   return EXIT_SUCCESS;
 }
 // [END program]

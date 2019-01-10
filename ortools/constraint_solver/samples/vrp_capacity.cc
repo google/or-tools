@@ -60,10 +60,14 @@ struct DataModel {
             {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730,
              536, 194, 798, 0},
         }),
+        demands({0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8}),
         num_vehicles(4),
+        vehicle_capacities({15, 15, 15, 15}),
         depot(0) {}
   const std::vector<std::vector<int64>> distance_matrix;
+  const std::vector<int64> demands;
   const int num_vehicles;
+  const std::vector<int64> vehicle_capacities;
   const RoutingIndexManager::NodeIndex depot;
 };  // namespace operations_research
 // [END data_model]
@@ -78,30 +82,37 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
   LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   int64 total_distance{0};
+  int64 total_load{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     int64 index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
-    int64 distance{0};
+    int64 route_distance{0};
+    int64 route_load{0};
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
-      route << manager.IndexToNode(index).value() << " -> ";
+      int64 node_index = manager.IndexToNode(index).value();
+      route_load += data.demands[node_index];
+      route << node_index << " Load(" << route_load << ") -> ";
       int64 previous_index = index;
       index = solution.Value(routing.NextVar(index));
-      distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
+      route_distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
           previous_index, index, int64{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
-    LOG(INFO) << "Distance of the route: " << distance << "m";
-    total_distance += distance;
+    LOG(INFO) << "Distance of the route: " << route_distance << "m";
+    LOG(INFO) << "Load of the route: " << route_load;
+    total_distance += route_distance;
+    total_load += route_load;
   }
   LOG(INFO) << "Total distance of all routes: " << total_distance << "m";
+  LOG(INFO) << "Total load of all routes: " << total_load;
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
   LOG(INFO) << "Problem solved in " << routing.solver()->wall_time() << "ms";
 }
 // [END solution_printer]
 
-void Vrp() {
+void VrpCapacity() {
   // Instantiate the data problem.
   // [START data]
   DataModel data;
@@ -128,6 +139,19 @@ void Vrp() {
   routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id);
   // [END arc_cost]
 
+  // Add Capacity constraint.
+  // [START capacity_constraint]
+  const int demand_cost_id = routing.RegisterUnaryTransitCallback(
+      [&data, &manager](int64 from_index) -> int64 {
+        return data.demands[manager.IndexToNode(from_index).value()];
+      });
+  routing.AddDimensionWithVehicleCapacity(
+      demand_cost_id, int64{0},  // null capacity slack
+      data.vehicle_capacities,   // vehicle maximum capacities
+      true,                      // start cumul to zero
+      "Capacity");
+  // [END capacity_constraint]
+
   // Setting first solution heuristic.
   // [START parameters]
   RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
@@ -148,7 +172,7 @@ void Vrp() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  operations_research::Vrp();
+  operations_research::VrpCapacity();
   return EXIT_SUCCESS;
 }
 // [END program]

@@ -370,7 +370,13 @@ test_cc_constraint_solver_samples: \
  rcc_simple_ls_program \
  rcc_simple_routing_program \
  rcc_tsp \
- rcc_vrp
+ rcc_tsp_distance_matrix \
+ rcc_vrp \
+ rcc_vrp_capacity \
+ rcc_vrp_drop_nodes \
+ rcc_vrp_global_span \
+ rcc_vrp_starts_ends \
+ rcc_vrp_time_windows \
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \

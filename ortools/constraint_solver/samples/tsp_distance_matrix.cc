@@ -13,7 +13,6 @@
 
 // [START program]
 // [START import]
-#include <cmath>
 #include <vector>
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
@@ -25,60 +24,49 @@ namespace operations_research {
 // [START data_model]
 struct DataModel {
   DataModel()
-      : locations({
-            {4, 4},
-            {2, 0},
-            {8, 0},
-            {0, 1},
-            {1, 1},
-            {5, 2},
-            {7, 2},
-            {3, 3},
-            {6, 3},
-            {5, 5},
-            {8, 5},
-            {1, 6},
-            {2, 6},
-            {3, 7},
-            {6, 7},
-            {0, 8},
-            {7, 8},
+      : distance_matrix({
+            {0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354,
+             468, 776, 662},
+            {548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480,
+             674, 1016, 868, 1210},
+            {776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164,
+             1130, 788, 1552, 754},
+            {696, 308, 992, 0, 114, 650, 878, 502, 844, 890, 1232, 514, 628,
+             822, 1164, 560, 1358},
+            {582, 194, 878, 114, 0, 536, 764, 388, 730, 776, 1118, 400, 514,
+             708, 1050, 674, 1244},
+            {274, 502, 502, 650, 536, 0, 228, 308, 194, 240, 582, 776, 662, 628,
+             514, 1050, 708},
+            {502, 730, 274, 878, 764, 228, 0, 536, 194, 468, 354, 1004, 890,
+             856, 514, 1278, 480},
+            {194, 354, 810, 502, 388, 308, 536, 0, 342, 388, 730, 468, 354, 320,
+             662, 742, 856},
+            {308, 696, 468, 844, 730, 194, 194, 342, 0, 274, 388, 810, 696, 662,
+             320, 1084, 514},
+            {194, 742, 742, 890, 776, 240, 468, 388, 274, 0, 342, 536, 422, 388,
+             274, 810, 468},
+            {536, 1084, 400, 1232, 1118, 582, 354, 730, 388, 342, 0, 878, 764,
+             730, 388, 1152, 354},
+            {502, 594, 1278, 514, 400, 776, 1004, 468, 810, 536, 878, 0, 114,
+             308, 650, 274, 844},
+            {388, 480, 1164, 628, 514, 662, 890, 354, 696, 422, 764, 114, 0,
+             194, 536, 388, 730},
+            {354, 674, 1130, 822, 708, 628, 856, 320, 662, 388, 730, 308, 194,
+             0, 342, 422, 536},
+            {468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536,
+             342, 0, 764, 194},
+            {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274,
+             388, 422, 764, 0, 798},
+            {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730,
+             536, 194, 798, 0},
         }),
-        num_locations(locations.size()),
         num_vehicles(1),
-        depot(0) {
-    // Convert locations in meters using a city block dimension of 114m x 80m.
-    for (auto& it : locations) {
-      const_cast<std::vector<int>&>(it)[0] *= 114;
-      const_cast<std::vector<int>&>(it)[1] *= 80;
-    }
-  }
-  const std::vector<std::vector<int>> locations;
-  const int num_locations;
+        depot(0) {}
+  const std::vector<std::vector<int>> distance_matrix;
   const int num_vehicles;
   const RoutingIndexManager::NodeIndex depot;
-};
+};  // namespace operations_research
 // [END data_model]
-
-// [START manhattan_distance_matrix]
-/*! @brief Generate Manhattan distance matrix.
- * @details It uses the data.locations to computes the Manhattan distance
- * between the two positions of two different indices.*/
-std::vector<std::vector<int64>> GenerateManhattanDistanceMatrix(
-    const DataModel& data) {
-  std::vector<std::vector<int64>> distances = std::vector<std::vector<int64>>(
-      data.num_locations, std::vector<int64>(data.num_locations, 0LL));
-  for (int fromNode = 0; fromNode < data.num_locations; fromNode++) {
-    for (int toNode = 0; toNode < data.num_locations; toNode++) {
-      if (fromNode != toNode)
-        distances[fromNode][toNode] =
-            std::abs(data.locations[toNode][0] - data.locations[fromNode][0]) +
-            std::abs(data.locations[toNode][1] - data.locations[fromNode][1]);
-    }
-  }
-  return distances;
-}
-// [END manhattan_distance_matrix]
 
 // [START solution_printer]
 //! @brief Print the solution
@@ -98,7 +86,7 @@ void PrintSolution(const RoutingIndexManager& manager,
     int64 previous_index = index;
     index = solution.Value(routing.NextVar(index));
     distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-        previous_index, index, int64{0});
+        previous_index, index, 0LL);
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Distance of the route: " << distance << "m";
@@ -116,7 +104,7 @@ void Tsp() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.num_locations, data.num_vehicles,
+  RoutingIndexManager manager(data.distance_matrix.size(), data.num_vehicles,
                               data.depot);
   // [END index_manager]
 
@@ -127,11 +115,10 @@ void Tsp() {
 
   // Define cost of each arc.
   // [START arc_cost]
-  const auto distance_matrix = GenerateManhattanDistanceMatrix(data);
   const int transit_cost_id = routing.RegisterTransitCallback(
-      [&distance_matrix, &manager](int64 from_index, int64 to_index) -> int64 {
-        return distance_matrix[manager.IndexToNode(from_index).value()]
-                              [manager.IndexToNode(to_index).value()];
+      [&data, &manager](int64 from_index, int64 to_index) -> int64 {
+        return data.distance_matrix[manager.IndexToNode(from_index).value()]
+                                   [manager.IndexToNode(to_index).value()];
       });
   routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id);
   // [END arc_cost]
