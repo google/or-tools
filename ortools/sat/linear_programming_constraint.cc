@@ -246,6 +246,12 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
   if (!lp_solution_is_set_) return Propagate();
 
+  // At level zero, if there is still a chance to add cuts or lazy constraints,
+  // we re-run the LP.
+  if (trail_->CurrentDecisionLevel() == 0 && !lp_at_level_zero_is_final_) {
+    return Propagate();
+  }
+
   // Check whether the change breaks the current LP solution. If it does, call
   // Propagate() on the current LP.
   for (const int index : watch_indices) {
@@ -305,6 +311,10 @@ void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
 }
 
 bool LinearProgrammingConstraint::SolveLp() {
+  if (trail_->CurrentDecisionLevel() == 0) {
+    lp_at_level_zero_is_final_ = false;
+  }
+
   const auto status = simplex_.Solve(lp_data_, time_limit_);
   if (!status.ok()) {
     LOG(WARNING) << "The LP solver encountered an error: "
@@ -641,7 +651,8 @@ bool LinearProgrammingConstraint::Propagate() {
           std::vector<LinearConstraint> cuts =
               generator.generate_cuts(expanded_lp_solution_);
           for (const LinearConstraint& cut : cuts) {
-            constraint_manager_.AddCut(cut, "TODO", expanded_lp_solution_);
+            constraint_manager_.AddCut(cut, generator.type,
+                                       expanded_lp_solution_);
           }
         }
       }
@@ -655,6 +666,10 @@ bool LinearProgrammingConstraint::Propagate() {
           VLOG(1) << "Cuts relaxation improvement " << old_obj << " -> "
                   << simplex_.GetObjectiveValue()
                   << " diff: " << simplex_.GetObjectiveValue() - old_obj;
+        }
+      } else {
+        if (trail_->CurrentDecisionLevel() == 0) {
+          lp_at_level_zero_is_final_ = true;
         }
       }
     }
@@ -1279,6 +1294,7 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     const std::vector<IntegerVariable>& vars) {
   CutGenerator result;
   result.vars = vars;
+  result.type = "StronglyConnectedGraph";
   result.generate_cuts =
       [num_nodes, tails, heads,
        vars](const gtl::ITIVector<IntegerVariable, double>& lp_values) {
@@ -1331,6 +1347,7 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
 
   CutGenerator result;
   result.vars = vars;
+  result.type = "CVRP";
   result.generate_cuts =
       [num_nodes, tails, heads, total_demands, demands, capacity,
        vars](const gtl::ITIVector<IntegerVariable, double>& lp_values) {

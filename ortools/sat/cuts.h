@@ -35,6 +35,7 @@ namespace sat {
 //   their negation.
 // - Only return cuts in term of the same variables or their negation.
 struct CutGenerator {
+  std::string type;
   std::vector<IntegerVariable> vars;
   std::function<std::vector<LinearConstraint>(
       const gtl::ITIVector<IntegerVariable, double>& lp_values)>

@@ -33,6 +33,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_objective.h"
@@ -353,6 +354,7 @@ struct PresolveContext {
   std::vector<int> tmp_literals;
   std::vector<Domain> tmp_term_domains;
   std::vector<Domain> tmp_left_domains;
+  absl::flat_hash_set<int> tmp_literal_set;
 
   // Each time a domain is modified this is set to true.
   SparseBitset<int64> modified_domains;
@@ -418,12 +420,9 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Inspects the literals and deal with fixed ones.
-  //
-  // TODO(user): detect if one literal is the negation of another in which
-  // case the constraint is true. Remove duplicates too. Do the same for
-  // the PresolveBoolAnd() function.
   bool changed = false;
   context->tmp_literals.clear();
+  context->tmp_literal_set.clear();
   for (const int literal : ct->bool_or().literals()) {
     if (context->LiteralIsFalse(literal)) {
       changed = true;
@@ -441,8 +440,17 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
       context->SetLiteralToTrue(literal);
       return RemoveConstraint(ct, context);
     }
-    context->tmp_literals.push_back(literal);
+    if (context->tmp_literal_set.contains(NegatedRef(literal))) {
+      context->UpdateRuleStats("bool_or: always true");
+      return RemoveConstraint(ct, context);
+    }
+
+    if (!context->tmp_literal_set.contains(literal)) {
+      context->tmp_literal_set.insert(literal);
+      context->tmp_literals.push_back(literal);
+    }
   }
+  context->tmp_literal_set.clear();
 
   if (context->tmp_literals.empty()) {
     context->UpdateRuleStats("bool_or: empty");
@@ -2181,7 +2189,7 @@ void PresolvePureSatPart(PresolveContext* context) {
   for (int i = 0; i < num_passes; ++i) {
     const int old_num_clause = postsolver.NumClauses();
     if (!presolver.Presolve(can_be_removed)) {
-      LOG(INFO) << "UNSAT during SAT presolve.";
+      VLOG(1) << "UNSAT during SAT presolve.";
       context->is_unsat = true;
       return;
     }
@@ -2579,6 +2587,206 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
   }
 }
 
+// Returns the sorted list of literals for given bool_or or at_most_one
+// constraint.
+std::vector<int> GetLiteralsFromSetPPCConstraint(ConstraintProto* ct) {
+  std::vector<int> sorted_literals;
+  if (ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
+    for (const int literal : ct->at_most_one().literals()) {
+      sorted_literals.push_back(literal);
+    }
+  } else if (ct->constraint_case() ==
+             ConstraintProto::ConstraintCase::kBoolOr) {
+    for (const int literal : ct->bool_or().literals()) {
+      sorted_literals.push_back(literal);
+    }
+  }
+  std::sort(sorted_literals.begin(), sorted_literals.end());
+  return sorted_literals;
+}
+
+// Removes dominated constraints or fixes some variables for given pair of
+// setppc constraints. This assumes that literals in constraint c1 is subset of
+// literals in constraint c2.
+bool ProcessSetPPCSubset(int c1, int c2, const std::vector<int>& c2_minus_c1,
+                         const std::vector<int>& original_constraint_index,
+                         std::vector<bool>* marked_for_removal,
+                         PresolveContext* context) {
+  CHECK(!(*marked_for_removal)[c1]);
+  CHECK(!(*marked_for_removal)[c2]);
+  ConstraintProto* ct1 = context->working_model->mutable_constraints(
+      original_constraint_index[c1]);
+  ConstraintProto* ct2 = context->working_model->mutable_constraints(
+      original_constraint_index[c2]);
+  if (ct1->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr &&
+      ct2->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
+    // fix extras in c2 to 0
+    for (const int literal : c2_minus_c1) {
+      context->SetLiteralToFalse(literal);
+      context->UpdateRuleStats("setppc: fixed variables");
+    }
+    return true;
+  }
+  if (ct1->constraint_case() == ct2->constraint_case()) {
+    if (ct1->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
+      (*marked_for_removal)[c2] = true;
+      context->UpdateRuleStats("setppc: removed dominated constraints");
+      return false;
+    }
+    CHECK_EQ(ct1->constraint_case(),
+             ConstraintProto::ConstraintCase::kAtMostOne);
+    (*marked_for_removal)[c1] = true;
+    context->UpdateRuleStats("setppc: removed dominated constraints");
+    return false;
+  }
+  return false;
+}
+
+// SetPPC is short for set packing, partitioning and covering constraints. These
+// are sum of booleans <=, = and >= 1 respectively.
+// TODO(user,user): Process kBoolAnd too.
+bool ProcessSetPPC(PresolveContext* context, TimeLimit* time_limit) {
+  bool changed = false;
+  const int num_constraints = context->working_model->constraints_size();
+
+  // Signatures of all the constraints. In the signature the bit i is 1 if it
+  // contains a literal l such that l%64 = i.
+  std::vector<uint64> signatures;
+
+  // Graph of constraints to literals. constraint_literals[c] contains all the
+  // literals in constraint indexed by 'c' in sorted order.
+  std::vector<std::vector<int>> constraint_literals;
+
+  // Graph of literals to constraints. literals_to_constraints[l] contains the
+  // vector of constraint indices in which literal 'l' or 'neg(l)' appears.
+  std::vector<std::vector<int>> literals_to_constraints;
+
+  // vector of booleans indicating if the constraint is marked for removal. Note
+  // that we don't remove constraints while processing them but remove all the
+  // marked ones at the end.
+  std::vector<bool> marked_for_removal;
+
+  // The containers above use the local indices for setppc constraints. We store
+  // the original constraint indices corresponding to those local indices here.
+  std::vector<int> original_constraint_index;
+
+  // Fill the initial constraint <-> literal graph, compute signatures and
+  // initialize other containers defined above.
+  int num_setppc_constraints = 0;
+  for (int c = 0; c < num_constraints; ++c) {
+    ConstraintProto* ct = context->working_model->mutable_constraints(c);
+    if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
+        ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
+      constraint_literals.push_back(GetLiteralsFromSetPPCConstraint(ct));
+
+      uint64 signature = 0;
+      for (const int literal : constraint_literals.back()) {
+        const int positive_literal = PositiveRef(literal);
+        signature |= (1LL << (positive_literal % 64));
+        DCHECK_GE(positive_literal, 0);
+        if (positive_literal >= literals_to_constraints.size()) {
+          literals_to_constraints.resize(positive_literal + 1);
+        }
+        literals_to_constraints[positive_literal].push_back(
+            num_setppc_constraints);
+      }
+      signatures.push_back(signature);
+      marked_for_removal.push_back(false);
+      original_constraint_index.push_back(c);
+      num_setppc_constraints++;
+    }
+  }
+  VLOG(1) << "#setppc constraints: " << num_setppc_constraints;
+
+  // Set of constraint pairs which are already compared.
+  absl::flat_hash_set<std::pair<int, int>> compared_constraints;
+  for (const std::vector<int>& literal_to_constraints :
+       literals_to_constraints) {
+    for (int index1 = 0; index1 < literal_to_constraints.size(); ++index1) {
+      if (time_limit != nullptr && time_limit->LimitReached()) {
+        return changed;
+      }
+      const int c1 = literal_to_constraints[index1];
+      if (marked_for_removal[c1]) continue;
+      const std::vector<int>& c1_literals = constraint_literals[c1];
+      ConstraintProto* ct1 = context->working_model->mutable_constraints(
+          original_constraint_index[c1]);
+      for (int index2 = index1 + 1; index2 < literal_to_constraints.size();
+           ++index2) {
+        const int c2 = literal_to_constraints[index2];
+        if (marked_for_removal[c2]) continue;
+        if (marked_for_removal[c1]) break;
+        // TODO(user): This should not happen. Investigate.
+        if (c1 == c2) continue;
+
+        CHECK_LT(c1, c2);
+        if (gtl::ContainsKey(compared_constraints,
+                             std::pair<int, int>(c1, c2))) {
+          continue;
+        }
+        compared_constraints.insert({c1, c2});
+
+        // Hard limit on number of comparisions to avoid spending too much time
+        // here.
+        if (compared_constraints.size() >= 50000) return changed;
+
+        const bool smaller = (signatures[c1] & ~signatures[c2]) == 0;
+        const bool larger = (signatures[c2] & ~signatures[c1]) == 0;
+
+        if (!(smaller || larger)) {
+          continue;
+        }
+
+        // Check if literals in c1 is subset of literals in c2 or vice versa.
+        const std::vector<int>& c2_literals = constraint_literals[c2];
+        ConstraintProto* ct2 = context->working_model->mutable_constraints(
+            original_constraint_index[c2]);
+        // TODO(user): Try avoiding computation of set differences if
+        // possible.
+        std::vector<int> c1_minus_c2;
+        gtl::STLSetDifference(c1_literals, c2_literals, &c1_minus_c2);
+        std::vector<int> c2_minus_c1;
+        gtl::STLSetDifference(c2_literals, c1_literals, &c2_minus_c1);
+
+        if (c1_minus_c2.empty() && c2_minus_c1.empty()) {
+          if (ct1->constraint_case() == ct2->constraint_case()) {
+            marked_for_removal[c2] = true;
+            context->UpdateRuleStats("setppc: removed redundent constraints");
+          }
+        } else if (c1_minus_c2.empty()) {
+          if (ProcessSetPPCSubset(c1, c2, c2_minus_c1,
+                                  original_constraint_index,
+                                  &marked_for_removal, context)) {
+            context->UpdateConstraintVariableUsage(
+                original_constraint_index[c1]);
+            context->UpdateConstraintVariableUsage(
+                original_constraint_index[c2]);
+          }
+        } else if (c2_minus_c1.empty()) {
+          if (ProcessSetPPCSubset(c2, c1, c1_minus_c2,
+                                  original_constraint_index,
+                                  &marked_for_removal, context)) {
+            context->UpdateConstraintVariableUsage(
+                original_constraint_index[c1]);
+            context->UpdateConstraintVariableUsage(
+                original_constraint_index[c2]);
+          }
+        }
+      }
+    }
+  }
+  for (int c = 0; c < num_setppc_constraints; ++c) {
+    if (marked_for_removal[c]) {
+      ConstraintProto* ct = context->working_model->mutable_constraints(
+          original_constraint_index[c]);
+      changed = RemoveConstraint(ct, context);
+      context->UpdateConstraintVariableUsage(original_constraint_index[c]);
+    }
+  }
+
+  return changed;
+}
+
 void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
   if (context->is_unsat) return;
 
@@ -2835,6 +3043,11 @@ bool PresolveCpModel(const PresolveOptions& options,
   // cp_model_use_sat_presolve().
   if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
     PresolvePureSatPart(&context);
+  }
+
+  // Process set packing, partitioning and covering constraint.
+  if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
+    ProcessSetPPC(&context, options.time_limit);
   }
 
   // Extract redundant at most one constraint form the linear ones.

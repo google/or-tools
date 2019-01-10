@@ -2057,8 +2057,20 @@ CpSolverResponse SolveCpModelParallel(
   absl::Notification first_solution_found_or_search_finished;
 
   const int num_search_workers = params.num_search_workers();
+
+  // Collect per-worker parameters and names.
+  std::vector<SatParameters> worker_parameters;
+  std::vector<std::string> worker_names;
+  for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
+    std::string worker_name;
+    const SatParameters local_params =
+        DiversifySearchParameters(params, model_proto, worker_id, &worker_name);
+    worker_names.push_back(worker_name);
+    worker_parameters.push_back(local_params);
+  }
+
   VLOG(1) << "Starting parallel search with " << num_search_workers
-          << " workers.";
+          << " workers: " << absl::StrJoin(worker_names, ", ");
 
   if (!model_proto.has_objective()) {
     {
@@ -2066,9 +2078,9 @@ CpSolverResponse SolveCpModelParallel(
       pool.StartWorkers();
 
       for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
-        std::string worker_name;
-        const SatParameters local_params = DiversifySearchParameters(
-            params, model_proto, worker_id, &worker_name);
+        const std::string worker_name = worker_names[worker_id];
+        const SatParameters local_params = worker_parameters[worker_id];
+
         pool.Schedule([&model_proto, stopped, local_params, &best_response,
                        &mutex, worker_name, wall_timer]() {
           Model local_model;
@@ -2130,9 +2142,8 @@ CpSolverResponse SolveCpModelParallel(
     pool.StartWorkers();
 
     for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
-      std::string worker_name;
-      const SatParameters local_params = DiversifySearchParameters(
-          params, model_proto, worker_id, &worker_name);
+      const std::string worker_name = worker_names[worker_id];
+      const SatParameters local_params = worker_parameters[worker_id];
 
       const auto solution_observer = [maximize, worker_name, &mutex,
                                       &best_response, &observer,

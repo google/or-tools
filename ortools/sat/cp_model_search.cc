@@ -281,81 +281,96 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
   //   - Different propatation levels for scheduling constraints
   SatParameters new_params = params;
   new_params.set_random_seed(params.random_seed() + worker_id);
+  int index = worker_id;
+
   if (cp_model.has_objective()) {
-    switch (worker_id) {
-      case 0: {  // Use default parameters and automatic search.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_linearization_level(1);
-        *name = "auto";
-        break;
+    if (index == 0) {  // Use default parameters and automatic search.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      new_params.set_linearization_level(1);
+      *name = "auto";
+      return new_params;
+    }
+
+    if (cp_model.search_strategy_size() > 0) {
+      if (--index == 0) {  // Use default parameters and fixed search.
+        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        *name = "fixed";
+        return new_params;
       }
-      case 1: {  // Use default parameters and fixed search if there is one.
-        if (cp_model.search_strategy_size() > 0) {
-          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-          *name = "fixed";
-        } else {  // Use LP_SEARCH if not.
-          new_params.set_search_branching(SatParameters::LP_SEARCH);
-          *name = "lp_br";
-        }
-        break;
-      }
-      case 2: {  // Remove LP relaxation.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_linearization_level(0);
-        *name = "no_lp";
-        break;
-      }
-      case 3: {  // Reinforce LP relaxation.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_linearization_level(2);
-        *name = "max_lp";
-        break;
-      }
-      case 4: {  // Core based approach.
+    }
+
+    // TODO(user): Disable lp_br if linear part is small or empty.
+    if (--index == 0) {
+      new_params.set_search_branching(SatParameters::LP_SEARCH);
+      *name = "lp_br";
+      return new_params;
+    }
+
+    // TODO(user): Disable no_lp if linear part is small.
+    if (--index == 0) {  // Remove LP relaxation.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      new_params.set_linearization_level(0);
+      *name = "no_lp";
+      return new_params;
+    }
+
+    // TODO(user): Disable max_lp if no change in linearization against auto.
+    if (--index == 0) {  // Reinforce LP relaxation.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      new_params.set_linearization_level(2);
+      *name = "max_lp";
+      return new_params;
+    }
+
+    if (cp_model.objective().vars_size() > 1) {
+      if (--index == 0) {  // Core based approach.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_optimize_with_core(true);
         new_params.set_linearization_level(0);
         *name = "core";
-        break;
-      }
-      default: {  // LNS.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_use_lns(true);
-        new_params.set_lns_num_threads(1);
-        *name = absl::StrFormat("lns_%i", worker_id - 5);
+        return new_params;
       }
     }
+
+    // Use LNS for the remaining workers.
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_use_lns(true);
+    new_params.set_lns_num_threads(1);
+    *name = absl::StrFormat("lns_%i", index);
+    return new_params;
   } else {
     // The goal here is to try fixed and free search on the first two threads.
     // Then maximize diversity on the extra threads.
-    switch (worker_id) {
-      case 0: {
+    int index = worker_id;
+
+    if (index == 0) {  // Default automatic search.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      *name = "auto";
+      return new_params;
+    }
+
+    if (cp_model.search_strategy_size() > 0) {  // Use predefined search.
+      if (--index == 0) {
         new_params.set_search_branching(SatParameters::FIXED_SEARCH);
         *name = "fixed";
-        break;
-      }
-      case 1: {
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        *name = "auto";
-        break;
-      }
-      case 2: {
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_boolean_encoding_level(0);
-        *name = "less encoding";
-        break;
-      }
-      default: {  // Randomized fixed search.
-        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-        new_params.set_randomize_search(true);
-        new_params.set_search_randomization_tolerance(worker_id - 3);
-        *name = absl::StrFormat("rnd_%i", worker_id - 3);
-        break;
+        return new_params;
       }
     }
-  }
 
-  return new_params;
+    if (--index == 0) {  // Reduce boolean encoding.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      new_params.set_boolean_encoding_level(0);
+      *name = "less encoding";
+      return new_params;
+    }
+
+    // Randomized fixed search.
+    new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+    new_params.set_randomize_search(true);
+    new_params.set_search_randomization_tolerance(index);
+    *name = absl::StrFormat("rnd_%i", index);
+    return new_params;
+  }
 }
 
 // TODO(user): Better stats in the multi thread case.

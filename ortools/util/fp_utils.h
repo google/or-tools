@@ -204,22 +204,28 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
                                     double* scaling_factor,
                                     double* max_relative_coeff_error);
 
-// Same as the function above, but enforces that
+// Returns the scaling factor like above with the extra conditions:
 //  -  The sum over i of min(0, round(factor * x[i])) >= -max_sum.
 //  -  The sum over i of max(0, round(factor * x[i])) <= max_sum.
 // For any possible values of the x[i] such that x[i] is in [lb[i], ub[i]].
+double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
+                                      const std::vector<double>& lb,
+                                      const std::vector<double>& ub,
+                                      int64 max_absolute_sum);
+// This computes:
 //
-// This also computes the max_scaled_sum_error which is a bound on the maximum
-// difference between the exact scaled sum and the rounded one. One needs to
-// divide this by scaling_factor to have the maximum absolute error on the
-// original sum.
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
-                                    const std::vector<double>& lb,
-                                    const std::vector<double>& ub,
-                                    int64 max_absolute_sum,
-                                    double* scaling_factor,
-                                    double* max_relative_coeff_error,
-                                    double* max_scaled_sum_error);
+// The max_relative_coeff_error, which is the maximum over all coeff of
+// |round(factor * x[i]) / (factor * x[i])  - 1|.
+//
+// The max_scaled_sum_error which is a bound on the maximum difference between
+// the exact scaled sum and the rounded one. One needs to divide this by
+// scaling_factor to have the maximum absolute error on the original sum.
+void ComputeScalingErrors(const std::vector<double>& input,
+                          const std::vector<double>& lb,
+                          const std::vector<double>& ub,
+                          const double scaling_factor,
+                          double* max_relative_coeff_error,
+                          double* max_scaled_sum_error);
 
 // Returns the Greatest Common Divisor of the numbers
 // round(fabs(x[i] * scaling_factor)). The numbers 0 are ignored and if they are

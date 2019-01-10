@@ -410,6 +410,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
     const std::vector<IntegerVariable>& vars, Model* model) {
   CutGenerator result;
   result.vars = vars;
+  result.type = "Knapsack";
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   std::vector<LinearConstraint> knapsack_constraints;

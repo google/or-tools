@@ -323,6 +323,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // solution is no longer optimal though.
   std::vector<double> level_zero_lp_solution_;
 
+  // True if the last time we solved the exact same LP at level zero, no cuts
+  // and no lazy constraints where added.
+  bool lp_at_level_zero_is_final_ = false;
+
   // Same as lp_solution_ but this vector is indexed differently.
   LinearProgrammingConstraintLpSolution& expanded_lp_solution_;
 
