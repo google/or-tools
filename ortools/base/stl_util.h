@@ -34,8 +34,6 @@
 #include "absl/strings/internal/resize_uninitialized.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
-//#include "ortools/base/port.h"
-//#include "util/gtl/algorithm.h"
 
 namespace gtl {
 namespace internal {

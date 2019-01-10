@@ -1053,6 +1053,15 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   }
 
   const SatParameters& params = *(m->GetOrCreate<SatParameters>());
+  if (params.add_knapsack_cuts()) {
+    for (const auto entry : id_to_constraints) {
+      const int id = entry.first;
+      LinearProgrammingConstraint* lp =
+          gtl::FindOrDie(representative_to_lp_constraint, id);
+      lp->AddCutGenerator(CreateKnapsackCoverCutGenerator(
+          id_to_constraints[id], lp->integer_variables(), m));
+    }
+  }
 
   // Add the objective.
   std::map<int, std::vector<std::pair<IntegerVariable, int64>>>
