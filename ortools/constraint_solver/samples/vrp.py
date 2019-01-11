@@ -140,7 +140,6 @@ def main():
     # Create Routing Model.
     # [START routing_model]
     routing = pywrapcp.RoutingModel(manager)
-
     # [END routing_model]
 
     # Define cost of each arc.

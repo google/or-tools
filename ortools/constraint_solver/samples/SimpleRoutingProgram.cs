@@ -24,14 +24,17 @@ public class SimpleRoutingProgram {
   public static void Main(String[] args) {
     // Instantiate the data problem.
     // [START data]
-    const int num_location = 5;
-    const int num_vehicles = 1;
+    const int numLocation = 5;
+    const int numVehicles = 1;
     const int depot = 0;
     // [END data]
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager = new RoutingIndexManager(num_location, num_vehicles, depot);
+    RoutingIndexManager manager = new RoutingIndexManager(
+        numLocation,
+        numVehicles,
+        depot);
     // [END index_manager]
 
     // Create Routing Model.
@@ -43,8 +46,10 @@ public class SimpleRoutingProgram {
     // [START arc_cost]
     routing.SetArcCostEvaluatorOfAllVehicles(
         routing.RegisterTransitCallback(
-          (long FromIndex, long ToIndex) => {
-          return 1L; }
+          (long fromIndex, long toIndex) => {
+          var fromNode = manager.IndexToNode(fromIndex);
+          var toNode = manager.IndexToNode(toIndex);
+          return Math.Abs(toNode - fromNode); }
           ));
     // [END arc_cost]
 
