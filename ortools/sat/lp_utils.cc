@@ -201,7 +201,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     // on an int64, if the scaled bounds are too large, the constraint is either
     // always true or always false.
     Fractional lb = mp_constraint.lower_bound();
-    lb -= std::max(1.0, std::abs(lb)) * 1e-6;
+    lb -= std::max(1.0, std::abs(lb)) * 1e-8;
     const Fractional scaled_lb = std::ceil(lb * scaling_factor);
     if (lb == -kInfinity || scaled_lb <= kint64min) {
       arg->add_domain(kint64min);
@@ -211,7 +211,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
                           .value());
     }
     Fractional ub = mp_constraint.upper_bound();
-    ub += std::max(1.0, std::abs(ub)) * 1e-6;
+    ub += std::max(1.0, std::abs(ub)) * 1e-8;
     const Fractional scaled_ub = std::floor(ub * scaling_factor);
     if (ub == kInfinity || scaled_ub >= kint64max) {
       arg->add_domain(kint64max);

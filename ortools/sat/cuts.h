@@ -65,7 +65,11 @@ struct CutGenerator {
 //
 // TODO(user): Still not clear to me if this can be improved or not.
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
-    IntegerValue remainder, IntegerValue divisor, IntegerValue max_scaling);
+    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue max_scaling);
+
+// Same as GetSuperAdditiveRoundingFunction() but uses the classic MIR one.
+std::function<IntegerValue(IntegerValue)> GetMirFunction(
+    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue max_scaling);
 
 // Given an upper bounded linear constraint, this function tries to transform it
 // to a valid cut that violate the given LP solution using integer rounding.
@@ -96,7 +100,11 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 // more effort tunning them. In particular, one can try many heuristics and keep
 // the best looking cut (or more than one). This is not on the critical code
 // path, so we can spend more effort in finding good cuts.
-void IntegerRoundingCut(std::vector<double> lp_values,
+struct RoundingOptions {
+  bool use_mir = false;
+  IntegerValue max_scaling = IntegerValue(1000);
+};
+void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
                         std::vector<IntegerValue> lower_bounds,
                         std::vector<IntegerValue> upper_bounds,
                         LinearConstraint* cut);

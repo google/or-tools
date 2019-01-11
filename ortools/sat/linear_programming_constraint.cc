@@ -502,7 +502,9 @@ void LinearProgrammingConstraint::AddCGCuts() {
     }
 
     // Get the cut using some integer rounding heuristic.
-    IntegerRoundingCut(lp_values, var_lbs, var_ubs, &cut);
+    RoundingOptions options;
+    options.use_mir = sat_parameters_.use_mir_rounding();
+    IntegerRoundingCut(options, lp_values, var_lbs, var_ubs, &cut);
 
     // Compute the activity. Warning: the cut no longer have the same size so we
     // cannot use lp_values. Note that the substitution below shouldn't change

@@ -688,19 +688,31 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   if (ct->int_prod().vars_size() == 2) {
     int a = ct->int_prod().vars(0);
     int b = ct->int_prod().vars(1);
-    const int p = ct->int_prod().target();
+    const int product = ct->int_prod().target();
 
     if (context->IsFixed(b)) std::swap(a, b);
     if (context->IsFixed(a)) {
-      ConstraintProto* const lin = context->working_model->add_constraints();
-      lin->mutable_linear()->add_vars(b);
-      lin->mutable_linear()->add_coeffs(context->MinOf(a));
-      lin->mutable_linear()->add_vars(p);
-      lin->mutable_linear()->add_coeffs(-1);
-      lin->mutable_linear()->add_domain(0);
-      lin->mutable_linear()->add_domain(0);
+      if (b != product) {
+        ConstraintProto* const lin = context->working_model->add_constraints();
+        lin->mutable_linear()->add_vars(b);
+        lin->mutable_linear()->add_coeffs(context->MinOf(a));
+        lin->mutable_linear()->add_vars(product);
+        lin->mutable_linear()->add_coeffs(-1);
+        lin->mutable_linear()->add_domain(0);
+        lin->mutable_linear()->add_domain(0);
 
-      context->UpdateRuleStats("int_prod: linearize product by constant.");
+        context->UpdateRuleStats("int_prod: linearize product by constant.");
+        return RemoveConstraint(ct, context);
+      } else if (context->MinOf(a) != 1) {
+        context->IntersectDomainWith(product, Domain(0, 0));
+        context->UpdateRuleStats("int_prod: fix variable to zero.");
+      } else {
+        context->UpdateRuleStats("int_prod: remove identity.");
+        return RemoveConstraint(ct, context);
+      }
+    } else if (a == b && a == product) {  // x = x * x, only true for {0, 1}.
+      context->IntersectDomainWith(product, Domain(0, 1));
+      context->UpdateRuleStats("int_prod: fix variable to zero or one.");
       return RemoveConstraint(ct, context);
     }
   }

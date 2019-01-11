@@ -590,7 +590,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   const IntegerValue t = std::max(
       IntegerValue(1),
       remainder == 0 ? IntegerValue(1)
-                     : std::min(max_scaling, CeilRatio(target, remainder)));
+                     : std::min(max_scaling / 2, CeilRatio(target, remainder)));
   const IntegerValue threshold = std::max(target, t * remainder);
   return [t, threshold, divisor](IntegerValue coeff) {
     const IntegerValue ratio = FloorRatio(t * coeff, divisor);
@@ -599,7 +599,33 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   };
 }
 
-void IntegerRoundingCut(std::vector<double> lp_values,
+// TODO(user): if 2 * rhs_remainder < divisor, multiply by a factor t before
+// rounding.
+std::function<IntegerValue(IntegerValue)> GetMirFunction(
+    IntegerValue rhs_remainder, IntegerValue divisor,
+    IntegerValue max_scaling) {
+  CHECK_GE(max_scaling, 1);
+  if (divisor - rhs_remainder <= max_scaling) {
+    return [rhs_remainder, divisor](IntegerValue coeff) {
+      const IntegerValue ratio = FloorRatio(coeff, divisor);
+      const IntegerValue remainder = coeff - ratio * divisor;
+      return (divisor - rhs_remainder) * ratio +
+             std::max(IntegerValue(0), remainder - rhs_remainder);
+    };
+  } else {
+    // TODO(user): This function is not maximal, improve?
+    return [rhs_remainder, divisor, max_scaling](IntegerValue coeff) {
+      const IntegerValue ratio = FloorRatio(coeff, divisor);
+      const IntegerValue remainder = coeff - ratio * divisor;
+      return max_scaling * ratio +
+             std::max(FloorRatio((remainder - rhs_remainder) * max_scaling,
+                                 divisor - rhs_remainder),
+                      IntegerValue(0));
+    };
+  }
+}
+
+void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
                         std::vector<IntegerValue> lower_bounds,
                         std::vector<IntegerValue> upper_bounds,
                         LinearConstraint* cut) {
@@ -730,9 +756,11 @@ void IntegerRoundingCut(std::vector<double> lp_values,
   // Create the super-additive function f().
   const IntegerValue rhs_remainder =
       cut->ub - FloorRatio(cut->ub, divisor) * divisor;
-  const IntegerValue kMaxScaling(4);
   const auto f =
-      GetSuperAdditiveRoundingFunction(rhs_remainder, divisor, kMaxScaling);
+      options.use_mir
+          ? GetMirFunction(rhs_remainder, divisor, options.max_scaling)
+          : GetSuperAdditiveRoundingFunction(rhs_remainder, divisor,
+                                             options.max_scaling);
 
   // Apply f() to the cut.
   cut->ub = f(cut->ub);

@@ -142,17 +142,23 @@ void LinearConstraintManager::AddCut(
   if (VLOG_IS_ON(1)) {
     IntegerValue max_magnitude(0);
     double activity = 0.0;
+    double l2_norm = 0.0;
     const int size = ct.vars.size();
     for (int i = 0; i < size; ++i) {
       max_magnitude = std::max(max_magnitude, IntTypeAbs(ct.coeffs[i]));
-      activity += ToDouble(ct.coeffs[i]) * lp_solution[ct.vars[i]];
+
+      const double coeff = ToDouble(ct.coeffs[i]);
+      activity += coeff * lp_solution[ct.vars[i]];
+      l2_norm += coeff * coeff;
     }
+    l2_norm = sqrt(l2_norm);
     double violation = 0.0;
     violation = std::max(violation, activity - ToDouble(ct.ub));
     violation = std::max(violation, ToDouble(ct.lb) - activity);
-    LOG(INFO) << "Cut '" << type_name << "' size: " << size
-              << " max_magnitude: " << max_magnitude
-              << " violation: " << violation;
+    LOG(INFO) << "Cut '" << type_name << "'"
+              << " size=" << size << " max_magnitude=" << max_magnitude
+              << " norm=" << l2_norm << " violation=" << violation
+              << " eff=" << violation / l2_norm;
   }
 }
 

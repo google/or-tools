@@ -2079,7 +2079,7 @@ CpSolverResponse SolveCpModelParallel(
   }
 
   VLOG(1) << "Starting parallel search with " << num_search_workers
-          << " workers: " << absl::StrJoin(worker_names, ", ");
+          << " workers: [" << absl::StrJoin(worker_names, ", ") << "]";
 
   if (!model_proto.has_objective()) {
     {

@@ -21,7 +21,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 118
+// NEXT TAG: 119
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -506,6 +506,11 @@ message SatParameters {
   // TODO(user): When we add more cuts, better to refactorize this in a list
   // of enum that list enabled cuts, like "cuts:[KNAPSACK,GOMORY,CIRCUIT]".
   optional bool add_cg_cuts = 117 [default = false];
+
+  // Whether we use the classical MIR rounding function when computing a cut
+  // using integer rounding. If false we use our own variant based on the strong
+  // fractional rouding of Letchford and Lodi.
+  optional bool use_mir_rounding = 118 [default = true];
 
   // If true, we start by an empty LP, and only add constraints not satisfied
   // by the current LP solution batch by batch. A constraint that is only added
