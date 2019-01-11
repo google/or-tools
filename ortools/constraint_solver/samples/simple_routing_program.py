@@ -43,8 +43,15 @@ def main():
 
     # Define cost of each arc.
     # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(
-        routing.RegisterTransitCallback(lambda from_index, to_index: 1))
+    def distance_callback(from_index, to_index):
+        """Returns the absolute difference between the two nodes."""
+        # Convert from routing variable Index to user NodeIndex.
+        from_node = int(manager.IndexToNode(from_index))
+        to_node = int(manager.IndexToNode(to_index))
+        return abs(to_node - from_node)
+
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     # [END arc_cost]
 
     # Setting first solution heuristic.

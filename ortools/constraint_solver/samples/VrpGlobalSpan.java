@@ -70,18 +70,18 @@ public class VrpGlobalSpan {
   /// two different indices.
   static class ManhattanDistance extends LongLongToLong {
     public ManhattanDistance(DataModel data, RoutingIndexManager manager) {
-      // precompute distance between location to have distance callback in O(1)
-      distanceMatrix_ = data.distanceMatrix;
-      indexManager_ = manager;
+      distanceMatrix = data.distanceMatrix;
+      indexManager = manager;
     }
     @Override
     public long run(long fromIndex, long toIndex) {
-      int fromNode = indexManager_.indexToNode(fromIndex);
-      int toNode = indexManager_.indexToNode(toIndex);
-      return distanceMatrix_[fromNode][toNode];
+      // Convert from routing variable Index to distance matrix NodeIndex.
+      int fromNode = indexManager.indexToNode(fromIndex);
+      int toNode = indexManager.indexToNode(toIndex);
+      return distanceMatrix[fromNode][toNode];
     }
-    private final long[][] distanceMatrix_;
-    private final RoutingIndexManager indexManager_;
+    private final long[][] distanceMatrix;
+    private final RoutingIndexManager indexManager;
   }
   // [END manhattan_distance]
 

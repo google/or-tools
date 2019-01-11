@@ -95,7 +95,6 @@ def create_data_model():
             536, 194, 798, 0
         ],
     ]
-    data['num_locations'] = len(data['distance_matrix'])
     data['demands'] = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
     data['num_vehicles'] = 4
     data['vehicle_capacities'] = [15, 15, 15, 15]
@@ -153,8 +152,8 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(data['num_locations'],
-                                           data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(
+        len(data['distance_matrix']), data['num_vehicles'], data['depot'])
     # [END index_manager]
 
     # Create Routing Model.
@@ -167,6 +166,7 @@ def main():
     # [START arc_cost]
     def distance_callback(from_index, to_index):
         """Returns the manhattan distance between the two nodes."""
+        # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
@@ -177,8 +177,14 @@ def main():
 
     # Add Capacity constraint.
     # [START capacity_constraint]
+    def demand_callback(from_index):
+        """Returns the demand of the node."""
+        # Convert from routing variable Index to demands NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        return data['demands'][from_node]
+
     demand_callback_index = routing.RegisterUnaryTransitCallback(
-        (lambda from_index: data['demands'][manager.IndexToNode(from_index)]))
+        demand_callback)
     routing.AddDimensionWithVehicleCapacity(
         demand_callback_index,
         0,  # null capacity slack

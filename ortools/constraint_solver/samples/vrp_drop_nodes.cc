@@ -143,8 +143,10 @@ void VrpDropNodes() {
   // [START arc_cost]
   const int transit_callback_index = routing.RegisterTransitCallback(
       [&data, &manager](int64 from_index, int64 to_index) -> int64 {
-        return data.distance_matrix[manager.IndexToNode(from_index).value()]
-                                   [manager.IndexToNode(to_index).value()];
+        // Convert from routing variable Index to distance matrix NodeIndex.
+        auto from_node = manager.IndexToNode(from_index).value();
+        auto to_node = manager.IndexToNode(to_index).value();
+        return data.distance_matrix[from_node][to_node];
       });
   routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
   // [END arc_cost]
@@ -153,7 +155,9 @@ void VrpDropNodes() {
   // [START capacity_constraint]
   const int demand_callback_index = routing.RegisterUnaryTransitCallback(
       [&data, &manager](int64 from_index) -> int64 {
-        return data.demands[manager.IndexToNode(from_index).value()];
+        // Convert from routing variable Index to demand NodeIndex.
+        auto from_node = manager.IndexToNode(from_index).value();
+        return data.demands[from_node];
       });
   routing.AddDimensionWithVehicleCapacity(
       demand_callback_index,    // transit callback index

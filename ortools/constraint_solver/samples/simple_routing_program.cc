@@ -13,6 +13,7 @@
 
 // [START program]
 // [START import]
+#include <cmath>
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -41,8 +42,14 @@ void SimpleRoutingProgram() {
 
   // Define cost of each arc.
   // [START arc_cost]
-  routing.SetArcCostEvaluatorOfAllVehicles(
-      routing.RegisterTransitCallback([](int64, int64) -> int64 { return 1; }));
+  int distance_call_index = routing.RegisterTransitCallback(
+      [&manager](int64 from_index, int64 to_index) -> int64 {
+        // Convert from routing variable Index to user NodeIndex.
+        auto from_node = manager.IndexToNode(from_index).value();
+        auto to_node = manager.IndexToNode(to_index).value();
+        return std::abs(to_node - from_node);
+      });
+  routing.SetArcCostEvaluatorOfAllVehicles(distance_call_index);
   // [END arc_cost]
 
   // Setting first solution heuristic.

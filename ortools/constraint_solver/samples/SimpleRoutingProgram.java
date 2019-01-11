@@ -53,12 +53,16 @@ public class SimpleRoutingProgram {
 
     // Define cost of each arc.
     // [START arc_cost]
-    routing.setArcCostEvaluatorOfAllVehicles(routing.registerTransitCallback(new LongLongToLong() {
+    int transitCallbackIndex = routing.registerTransitCallback(new LongLongToLong() {
       @Override
       public long run(long fromIndex, long toIndex) {
-        return abs(fromIndex - toIndex);
+        // Convert from routing variable Index to user NodeIndex.
+        int fromNode = manager.indexToNode(fromIndex);
+        int toNode = manager.indexToNode(toIndex);
+        return abs(toNode - fromNode);
       }
-    }));
+    });
+    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Setting first solution heuristic.

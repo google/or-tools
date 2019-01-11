@@ -125,6 +125,7 @@ def main():
     # [START arc_cost]
     def time_callback(from_index, to_index):
         """Returns the manhattan distance travel time between the two nodes."""
+        # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['time_matrix'][from_node][to_node]

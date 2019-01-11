@@ -95,7 +95,6 @@ def create_data_model():
             536, 194, 798, 0
         ],
     ]
-    data['num_locations'] = len(data['distance_matrix'])
     data['num_vehicles'] = 4
     data['starts'] = [1, 2, 15, 16]
     data['ends'] = [0, 0, 0, 0]
@@ -135,9 +134,9 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(data['num_locations'],
-                                           data['num_vehicles'], data['starts'],
-                                           data['ends'])
+    manager = pywrapcp.RoutingIndexManager(
+        len(data['distance_matrix']), data['num_vehicles'], data['starts'],
+        data['ends'])
     # [END index_manager]
 
     # Create Routing Model.
@@ -150,6 +149,7 @@ def main():
     # [START arc_cost]
     def distance_callback(from_index, to_index):
         """Returns the manhattan distance between the two nodes."""
+        # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]

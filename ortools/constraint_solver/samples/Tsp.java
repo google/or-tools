@@ -77,14 +77,14 @@ public class Tsp {
   static class ManhattanDistance extends LongLongToLong {
     public ManhattanDistance(DataModel data, RoutingIndexManager manager) {
       // precompute distance between location to have distance callback in O(1)
-      distanceMatrix_ = new long[data.locations.length][data.locations.length];
-      indexManager_ = manager;
+      distanceMatrix = new long[data.locations.length][data.locations.length];
+      indexManager = manager;
       for (int fromNode = 0; fromNode < data.locations.length; ++fromNode) {
         for (int toNode = 0; toNode < data.locations.length; ++toNode) {
           if (fromNode == toNode) {
-            distanceMatrix_[fromNode][toNode] = 0;
+            distanceMatrix[fromNode][toNode] = 0;
           } else {
-            distanceMatrix_[fromNode][toNode] =
+            distanceMatrix[fromNode][toNode] =
                 (long) abs(data.locations[toNode][0] - data.locations[fromNode][0])
                 + (long) abs(data.locations[toNode][1] - data.locations[fromNode][1]);
           }
@@ -94,12 +94,13 @@ public class Tsp {
 
     @Override
     public long run(long fromIndex, long toIndex) {
-      int fromNode = indexManager_.indexToNode(fromIndex);
-      int toNode = indexManager_.indexToNode(toIndex);
-      return distanceMatrix_[fromNode][toNode];
+      // Convert from routing variable Index to distance matrix NodeIndex.
+      int fromNode = indexManager.indexToNode(fromIndex);
+      int toNode = indexManager.indexToNode(toIndex);
+      return distanceMatrix[fromNode][toNode];
     }
-    private final long[][] distanceMatrix_;
-    private final RoutingIndexManager indexManager_;
+    private final long[][] distanceMatrix;
+    private final RoutingIndexManager indexManager;
   }
   // [END manhattan_distance]
 

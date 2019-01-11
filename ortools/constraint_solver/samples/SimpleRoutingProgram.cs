@@ -32,9 +32,9 @@ public class SimpleRoutingProgram {
     // Create Routing Index Manager
     // [START index_manager]
     RoutingIndexManager manager = new RoutingIndexManager(
-        numLocation,
-        numVehicles,
-        depot);
+      numLocation,
+      numVehicles,
+      depot);
     // [END index_manager]
 
     // Create Routing Model.
@@ -44,13 +44,14 @@ public class SimpleRoutingProgram {
 
     // Define cost of each arc.
     // [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(
-        routing.RegisterTransitCallback(
-          (long fromIndex, long toIndex) => {
-          var fromNode = manager.IndexToNode(fromIndex);
-          var toNode = manager.IndexToNode(toIndex);
-          return Math.Abs(toNode - fromNode); }
-          ));
+    int transitCallbackIndex = routing.RegisterTransitCallback(
+      (long fromIndex, long toIndex) => {
+        // Convert from routing variable Index to distance matrix NodeIndex.
+        var fromNode = manager.IndexToNode(fromIndex);
+        var toNode = manager.IndexToNode(toIndex);
+        return Math.Abs(toNode - fromNode); }
+    );
+    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Setting first solution heuristic.

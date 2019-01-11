@@ -83,6 +83,7 @@ public class Tsp {
     ///   Returns the manhattan distance between the two nodes
     /// </summary>
     public override long Run(long FromIndex, long ToIndex) {
+      // Convert from routing variable Index to distance matrix NodeIndex.
       int FromNode = indexManager_.IndexToNode(FromIndex);
       int ToNode = indexManager_.IndexToNode(ToIndex);
       return distancesMatrix_[FromNode, ToNode];

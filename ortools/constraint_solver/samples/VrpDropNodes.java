@@ -74,35 +74,35 @@ public class VrpDropNodes {
   /// two different indices.
   static class ManhattanDistance extends LongLongToLong {
     public ManhattanDistance(DataModel data, RoutingIndexManager manager) {
-      // precompute distance between location to have distance callback in O(1)
-      distanceMatrix_ = data.distanceMatrix;
-      indexManager_ = manager;
+      distanceMatrix = data.distanceMatrix;
+      indexManager = manager;
     }
     @Override
     public long run(long fromIndex, long toIndex) {
-      int fromNode = indexManager_.indexToNode(fromIndex);
-      int toNode = indexManager_.indexToNode(toIndex);
-      return distanceMatrix_[fromNode][toNode];
+      // Convert from routing variable Index to distance matrix NodeIndex.
+      int fromNode = indexManager.indexToNode(fromIndex);
+      int toNode = indexManager.indexToNode(toIndex);
+      return distanceMatrix[fromNode][toNode];
     }
-    private final long[][] distanceMatrix_;
-    private final RoutingIndexManager indexManager_;
+    private final long[][] distanceMatrix;
+    private final RoutingIndexManager indexManager;
   }
   // [END manhattan_distance]
 
   // [START demands]
   static class DemandCallback extends LongToLong {
     public DemandCallback(DataModel data, RoutingIndexManager manager) {
-      // precompute distance between location to have distance callback in O(1)
-      demands_ = data.demands;
-      indexManager_ = manager;
+      demands = data.demands;
+      indexManager = manager;
     }
     @Override
     public long run(long fromIndex) {
-      int fromNode = indexManager_.indexToNode(fromIndex);
-      return demands_[fromNode];
+      // Convert from routing variable Index to demands NodeIndex.
+      int fromNode = indexManager.indexToNode(fromIndex);
+      return demands[fromNode];
     }
-    private final long[] demands_;
-    private final RoutingIndexManager indexManager_;
+    private final long[] demands;
+    private final RoutingIndexManager indexManager;
   }
   // [END demands]
 

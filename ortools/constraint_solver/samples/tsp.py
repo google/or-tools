@@ -39,7 +39,6 @@ def create_data_model():
              (0, 8), (7, 8),]
     # Convert locations in meters using a city block dimension of 114m x 80m.
     data['locations'] = [(l[0] * 114, l[1] * 80) for l in locations]
-    data['num_locations'] = len(data['locations'])
     data['num_vehicles'] = 1
     data['depot'] = 0
     return data
@@ -64,6 +63,7 @@ def create_distance_callback(data, manager):
 
     def distance_callback(from_index, to_index):
         """Returns the manhattan distance between the two nodes."""
+        # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = index_manager_.IndexToNode(from_index)
         to_node = index_manager_.IndexToNode(to_index)
         return distances_[from_node][to_node]
@@ -99,8 +99,8 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(data['num_locations'],
-                                           data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(
+        len(data['locations']), data['num_vehicles'], data['depot'])
     # [END index_manager]
 
     # Create Routing Model.

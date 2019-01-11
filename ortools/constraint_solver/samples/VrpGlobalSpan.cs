@@ -108,6 +108,7 @@ public class VrpGlobalSpan {
     // [START arc_cost]
     int transitCallbackIndex = routing.RegisterTransitCallback(
       (long fromIndex, long toIndex) => {
+        // Convert from routing variable Index to distance matrix NodeIndex.
         var fromNode = manager.IndexToNode(fromIndex);
         var toNode = manager.IndexToNode(toIndex);
         return data.GetDistanceMatrix()[fromNode, toNode]; }

@@ -84,23 +84,23 @@ public class VrpTimeWindows {
   }
   // [END data_model]
 
-  // [START times]
+  // [START time_callback]
   static class TimeCallback extends LongLongToLong {
     public TimeCallback(DataModel data, RoutingIndexManager manager) {
-      // precompute distance between location to have distance callback in O(1)
-      timeMatrix_ = data.timeMatrix;
-      indexManager_ = manager;
+      timeMatrix = data.timeMatrix;
+      indexManager = manager;
     }
     @Override
     public long run(long fromIndex, long toIndex) {
-      int fromNode = indexManager_.indexToNode(fromIndex);
-      int toNode = indexManager_.indexToNode(toIndex);
-      return timeMatrix_[fromNode][toNode];
+      // Convert from routing variable Index to time matrix NodeIndex.
+      int fromNode = indexManager.indexToNode(fromIndex);
+      int toNode = indexManager.indexToNode(toIndex);
+      return timeMatrix[fromNode][toNode];
     }
-    private final long[][] timeMatrix_;
-    private final RoutingIndexManager indexManager_;
+    private final long[][] timeMatrix;
+    private final RoutingIndexManager indexManager;
   }
-  // [END times]
+  // [END time_callback]
 
   // [START solution_printer]
   /// @brief Print the solution.

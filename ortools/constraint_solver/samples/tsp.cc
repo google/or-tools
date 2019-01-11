@@ -67,7 +67,7 @@ struct DataModel {
 std::vector<std::vector<int64>> GenerateManhattanDistanceMatrix(
     const DataModel& data) {
   std::vector<std::vector<int64>> distances = std::vector<std::vector<int64>>(
-      data.num_locations, std::vector<int64>(data.num_locations, 0LL));
+      data.num_locations, std::vector<int64>(data.num_locations, int64{0}));
   for (int fromNode = 0; fromNode < data.num_locations; fromNode++) {
     for (int toNode = 0; toNode < data.num_locations; toNode++) {
       if (fromNode != toNode)
@@ -130,8 +130,10 @@ void Tsp() {
   const auto distance_matrix = GenerateManhattanDistanceMatrix(data);
   const int transit_callback_index = routing.RegisterTransitCallback(
       [&distance_matrix, &manager](int64 from_index, int64 to_index) -> int64 {
-        return distance_matrix[manager.IndexToNode(from_index).value()]
-                              [manager.IndexToNode(to_index).value()];
+        // Convert from routing variable Index to distance matrix NodeIndex.
+        auto from_node = manager.IndexToNode(from_index).value();
+        auto to_node = manager.IndexToNode(to_index).value();
+        return distance_matrix[from_node][to_node];
       });
   routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
   // [END arc_cost]
