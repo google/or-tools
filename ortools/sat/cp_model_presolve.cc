@@ -706,6 +706,7 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
       } else if (context->MinOf(a) != 1) {
         context->IntersectDomainWith(product, Domain(0, 0));
         context->UpdateRuleStats("int_prod: fix variable to zero.");
+        return RemoveConstraint(ct, context);
       } else {
         context->UpdateRuleStats("int_prod: remove identity.");
         return RemoveConstraint(ct, context);
