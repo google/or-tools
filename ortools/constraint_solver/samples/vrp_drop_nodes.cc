@@ -141,24 +141,25 @@ void VrpDropNodes() {
 
   // Define cost of each arc.
   // [START arc_cost]
-  const int transit_cost_id = routing.RegisterTransitCallback(
+  const int transit_callback_index = routing.RegisterTransitCallback(
       [&data, &manager](int64 from_index, int64 to_index) -> int64 {
         return data.distance_matrix[manager.IndexToNode(from_index).value()]
                                    [manager.IndexToNode(to_index).value()];
       });
-  routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id);
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
   // [END arc_cost]
 
   // Add Capacity constraint.
   // [START capacity_constraint]
-  const int demand_cost_id = routing.RegisterUnaryTransitCallback(
+  const int demand_callback_index = routing.RegisterUnaryTransitCallback(
       [&data, &manager](int64 from_index) -> int64 {
         return data.demands[manager.IndexToNode(from_index).value()];
       });
   routing.AddDimensionWithVehicleCapacity(
-      demand_cost_id, int64{0},  // null capacity slack
-      data.vehicle_capacities,   // vehicle maximum capacities
-      true,                      // start cumul to zero
+      demand_callback_index,    // transit callback index
+      int64{0},                 // null capacity slack
+      data.vehicle_capacities,  // vehicle maximum capacities
+      true,                     // start cumul to zero
       "Capacity");
   // Allow to drop nodes.
   int64 penalty{1000};

@@ -133,21 +133,21 @@ void VrpTimeWindows() {
 
   // Define cost of each arc.
   // [START arc_cost]
-  const int transit_cost_id = routing.RegisterTransitCallback(
+  const int transit_callback_index = routing.RegisterTransitCallback(
       [&data, &manager](int64 from_index, int64 to_index) -> int64 {
         return data.time_matrix[manager.IndexToNode(from_index).value()]
                                [manager.IndexToNode(to_index).value()];
       });
-  routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id);
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
   // [END arc_cost]
 
   // Add Time constraint.
   // [START time_constraint]
   std::string time{"Time"};
-  routing.AddDimension(transit_cost_id,  // transit callback index
-                       int64{30},        // allow waiting time
-                       int64{30},        // maximum time per vehicle
-                       false,            // Don't force start cumul to zero
+  routing.AddDimension(transit_callback_index,  // transit callback index
+                       int64{30},               // allow waiting time
+                       int64{30},               // maximum time per vehicle
+                       false,  // Don't force start cumul to zero
                        time);
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(time);
   // Add time window constraints for each location except depot

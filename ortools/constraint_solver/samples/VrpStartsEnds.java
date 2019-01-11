@@ -135,13 +135,13 @@ public class VrpStartsEnds {
     // Define cost of each arc.
     // [START arc_cost]
     LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
-    int transitCostIndex = routing.registerTransitCallback(distanceEvaluator);
-    routing.setArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    int transitCallbackIndex = routing.registerTransitCallback(distanceEvaluator);
+    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(transitCostIndex, 0, 2000,
+    routing.addDimension(transitCallbackIndex, 0, 2000,
         true, // start cumul to zero
         "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");

@@ -99,13 +99,13 @@ public class TspDistanceMatrix {
 
     // Define cost of each arc.
     // [START arc_cost]
-    int transitCostIndex = routing.RegisterTransitCallback(
+    int transitCallbackIndex = routing.RegisterTransitCallback(
       (long fromIndex, long toIndex) => {
         var fromNode = manager.IndexToNode(fromIndex);
         var toNode = manager.IndexToNode(toIndex);
         return data.GetDistanceMatrix()[fromNode, toNode]; }
     );
-    routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Setting first solution heuristic.

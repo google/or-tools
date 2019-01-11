@@ -15,7 +15,6 @@
 
 # [START import]
 from __future__ import print_function
-from collections import namedtuple
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 # [END import]
@@ -158,6 +157,7 @@ def main():
     # Define cost of each arc.
     # [START arc_cost]
     def distance_callback(from_index, to_index):
+        """Returns the manhattan distance between the two nodes."""
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]

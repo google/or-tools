@@ -115,12 +115,12 @@ void Tsp() {
 
   // Define cost of each arc.
   // [START arc_cost]
-  const int transit_cost_id = routing.RegisterTransitCallback(
+  const int transit_callback_index = routing.RegisterTransitCallback(
       [&data, &manager](int64 from_index, int64 to_index) -> int64 {
         return data.distance_matrix[manager.IndexToNode(from_index).value()]
                                    [manager.IndexToNode(to_index).value()];
       });
-  routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id);
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
   // [END arc_cost]
 
   // Setting first solution heuristic.

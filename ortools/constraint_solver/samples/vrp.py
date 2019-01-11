@@ -146,12 +146,13 @@ def main():
     # Define cost of each arc.
     # [START arc_cost]
     def distance_callback(from_index, to_index):
+        """Returns the manhattan distance between the two nodes."""
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
 
-    transit_cost_id = routing.RegisterTransitCallback(distance_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     # [END arc_cost]
 
     # Setting first solution heuristic.

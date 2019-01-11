@@ -95,10 +95,10 @@ def create_data_model():
            (0, 1000),
            (75, 8500), (75, 8500), # 1, 2
            (60, 7000), (45, 5500), # 3, 4
-           (0,  8000), (50, 6000), # 5, 6
-           (0,  1000), (10, 2000), # 7, 8
-           (0,  1000), (75, 8500), # 9, 10
-           (85, 9500), (5,  1500), # 11, 12
+           (0, 8000), (50, 6000), # 5, 6
+           (0, 1000), (10, 2000), # 7, 8
+           (0, 1000), (75, 8500), # 9, 10
+           (85, 9500), (5, 1500), # 11, 12
            (15, 2500), (10, 2000), # 13, 14
            (45, 5500), (30, 4000)] # 15, 16
     data['num_vehicles'] = 3
@@ -114,8 +114,8 @@ def create_data_model():
 #######################
 def manhattan_distance(position_1, position_2):
     """Computes the Manhattan distance between two points"""
-    return (
-        abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
+    return (abs(position_1[0] - position_2[0]) +
+            abs(position_1[1] - position_2[1]))
 
 
 def create_distance_evaluator(data):
@@ -198,8 +198,8 @@ def create_time_evaluator(data):
         if from_node == to_node:
             travel_time = 0
         else:
-            travel_time = manhattan_distance(data['locations'][from_node], data[
-                'locations'][to_node]) / data['vehicle_speed']
+            travel_time = manhattan_distance(data['locations'][
+                from_node], data['locations'][to_node]) / data['vehicle_speed']
         return travel_time
 
     _total_time = {}

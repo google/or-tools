@@ -155,13 +155,13 @@ public class VrpTimeWindows {
     // Define cost of each arc.
     // [START arc_cost]
     LongLongToLong timeCallback = new TimeCallback(data, manager);
-    int transitCostIndex = routing.registerTransitCallback(timeCallback);
-    routing.setArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    int transitCallbackIndex = routing.registerTransitCallback(timeCallback);
+    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Add Time constraint.
     // [START time_constraint]
-    routing.addDimension(transitCostIndex, // transit callback
+    routing.addDimension(transitCallbackIndex, // transit callback
         30, // allow waiting time
         30, // vehicle maximum capacities
         false, // start cumul to zero

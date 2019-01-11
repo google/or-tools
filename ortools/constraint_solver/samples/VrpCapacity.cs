@@ -117,24 +117,24 @@ public class VrpCapacity {
 
     // Define cost of each arc.
     // [START arc_cost]
-    int transitCostIndex = routing.RegisterTransitCallback(
+    int transitCallbackIndex = routing.RegisterTransitCallback(
       (long fromIndex, long toIndex) => {
         var fromNode = manager.IndexToNode(fromIndex);
         var toNode = manager.IndexToNode(toIndex);
         return data.GetDistanceMatrix()[fromNode, toNode]; }
     );
-    routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Add Capacity constraint.
     // [START capacity_constraint]
-    int demandCostIndex = routing.RegisterUnaryTransitCallback(
+    int demandCallbackIndex = routing.RegisterUnaryTransitCallback(
       (long fromIndex) => {
         var fromNode = manager.IndexToNode(fromIndex);
         return data.GetDemands()[fromNode]; }
     );
     routing.AddDimensionWithVehicleCapacity(
-      demandCostIndex, 0,  // null capacity slack
+      demandCallbackIndex, 0,  // null capacity slack
       data.GetVehicleCapacities(),   // vehicle maximum capacities
       true,                      // start cumul to zero
       "Capacity");

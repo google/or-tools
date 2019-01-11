@@ -111,7 +111,8 @@ def print_solution(data, manager, routing, assignment):
     # Display dropped nodes.
     dropped_nodes = 'Dropped nodes:'
     for node in range(routing.Size()):
-        if routing.IsStart(node) or routing.IsEnd(node): continue
+        if routing.IsStart(node) or routing.IsEnd(node):
+            continue
         if assignment.Value(routing.NextVar(node)) == node:
             dropped_nodes += ' {}'.format(manager.IndexToNode(node))
     print(dropped_nodes)
@@ -165,20 +166,21 @@ def main():
     # Define cost of each arc.
     # [START arc_cost]
     def distance_callback(from_index, to_index):
+        """Returns the manhattan distance between the two nodes."""
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
 
-    transit_cost_id = routing.RegisterTransitCallback(distance_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Capacity constraint.
     # [START capacity_constraint]
-    demand_cost_id = routing.RegisterUnaryTransitCallback(
+    demand_callback_index = routing.RegisterUnaryTransitCallback(
         (lambda from_index: data['demands'][manager.IndexToNode(from_index)]))
     routing.AddDimensionWithVehicleCapacity(
-        demand_cost_id,
+        demand_callback_index,
         0,  # null capacity slack
         data['vehicle_capacities'],  # vehicle maximum capacities
         True,  # start cumul to zero

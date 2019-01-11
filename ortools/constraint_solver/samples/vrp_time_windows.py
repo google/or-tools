@@ -124,19 +124,20 @@ def main():
     # Define cost of each arc.
     # [START arc_cost]
     def time_callback(from_index, to_index):
+        """Returns the manhattan distance travel time between the two nodes."""
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['time_matrix'][from_node][to_node]
 
-    transit_cost_id = routing.RegisterTransitCallback(time_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
+    transit_callback_index = routing.RegisterTransitCallback(time_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Time Windows constraint.
     # [START time_windows_constraint]
     time = 'Time'
     routing.AddDimension(
-        transit_cost_id,
+        transit_callback_index,
         30,  # allow waiting time
         30,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.

@@ -157,24 +157,27 @@ def main():
     # Define cost of each arc.
     # [START arc_cost]
     def distance_callback(from_index, to_index):
+        """Returns the manhattan distance between the two nodes."""
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
 
-    transit_cost_id = routing.RegisterTransitCallback(distance_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
     # [END arc_cost]
 
     # Add Capacity constraint.
     # [START capacity_constraint]
     def demand_callback(from_index):
+        """Returns the demand.of the node."""
         from_node = manager.IndexToNode(from_index)
         return data['demands'][from_node]
 
-    demand_cost_id = routing.RegisterUnaryTransitCallback(demand_callback)
+    demand_callback_index = routing.RegisterUnaryTransitCallback(
+        demand_callback)
     routing.AddDimensionWithVehicleCapacity(
-        demand_cost_id,
+        demand_callback_index,
         0,  # null capacity slack
         data['vehicle_capacities'],  # vehicle maximum capacities
         True,  # start cumul to zero

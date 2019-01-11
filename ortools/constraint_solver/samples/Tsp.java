@@ -146,8 +146,8 @@ public class Tsp {
     // Define cost of each arc.
     // [START arc_cost]
     LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
-    int transitCostIndex = routing.registerTransitCallback(distanceEvaluator);
-    routing.setArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    int transitCallbackIndex = routing.registerTransitCallback(distanceEvaluator);
+    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Setting first solution heuristic.

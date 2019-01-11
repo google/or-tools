@@ -106,18 +106,18 @@ public class VrpGlobalSpan {
 
     // Define cost of each arc.
     // [START arc_cost]
-    int transitCostIndex = routing.RegisterTransitCallback(
+    int transitCallbackIndex = routing.RegisterTransitCallback(
       (long fromIndex, long toIndex) => {
         var fromNode = manager.IndexToNode(fromIndex);
         var toNode = manager.IndexToNode(toIndex);
         return data.GetDistanceMatrix()[fromNode, toNode]; }
     );
-    routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.AddDimension(transitCostIndex, 0, 3000,
+    routing.AddDimension(transitCallbackIndex, 0, 3000,
                          true,  // start cumul to zero
                          "Distance");
     RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");

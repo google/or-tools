@@ -140,8 +140,8 @@ public class Tsp {
     LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
     //protect callbacks from the GC
     GC.KeepAlive(distanceEvaluator);
-    int transitCostIndex = routing.RegisterTransitCallback(distanceEvaluator);
-    routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    int transitCallbackIndex = routing.RegisterTransitCallback(distanceEvaluator);
+    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Setting first solution heuristic.

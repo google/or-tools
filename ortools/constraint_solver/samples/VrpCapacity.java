@@ -161,15 +161,15 @@ public class VrpCapacity {
     // Define cost of each arc.
     // [START arc_cost]
     LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
-    int transitCostIndex = routing.registerTransitCallback(distanceEvaluator);
-    routing.setArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    int transitCallbackIndex = routing.registerTransitCallback(distanceEvaluator);
+    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Add Capacity constraint.
     // [START capacity_constraint]
     LongToLong demandEvaluator = new DemandCallback(data, manager);
-    int demandCostIndex = routing.registerUnaryTransitCallback(demandEvaluator);
-    routing.addDimensionWithVehicleCapacity(demandCostIndex, 0, // null capacity slack
+    int demandCallbackIndex = routing.registerUnaryTransitCallback(demandEvaluator);
+    routing.addDimensionWithVehicleCapacity(demandCallbackIndex, 0, // null capacity slack
         data.vehicleCapacities, // vehicle maximum capacities
         true, // start cumul to zero
         "Capacity");

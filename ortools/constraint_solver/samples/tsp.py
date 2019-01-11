@@ -111,8 +111,8 @@ def main():
     # Define cost of each arc.
     # [START arc_cost]
     distance_callback = create_distance_callback(data, manager)
-    transit_cost_id = routing.RegisterTransitCallback(distance_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     # [END arc_cost]
 
     # Setting first solution heuristic.
@@ -136,3 +136,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+# [END program]

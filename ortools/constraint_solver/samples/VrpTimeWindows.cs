@@ -139,19 +139,19 @@ public class VrpTimeWindows {
 
     // Define cost of each arc.
     // [START arc_cost]
-    int transitCostIndex = routing.RegisterTransitCallback(
+    int transitCallbackIndex = routing.RegisterTransitCallback(
       (long fromIndex, long toIndex) => {
         var fromNode = manager.IndexToNode(fromIndex);
         var toNode = manager.IndexToNode(toIndex);
         return data.GetTimeMatrix()[fromNode, toNode]; }
     );
-    routing.SetArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Add Distance constraint.
     // [START time_constraint]
     routing.AddDimension(
-        transitCostIndex, // transit callback
+        transitCallbackIndex, // transit callback
         30, // allow waiting time
         30, // vehicle maximum capacities
         false,  // start cumul to zero
