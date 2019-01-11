@@ -4,16 +4,16 @@ set -e
 set -x
 
 # TSP
-./routing_svg.py > tsp.svg
-./routing_svg.py --solution > tsp_solution.svg
+./routing_svg.py --tsp > tsp.svg
+./routing_svg.py --tsp --solution > tsp_solution.svg
 
 # TSP Distance Matrix
-./routing_svg.py > tsp_distance_matrix.svg
-./routing_svg.py --solution > tsp_distance_matrix_solution.svg
+./routing_svg.py --tsp > tsp_distance_matrix.svg
+./routing_svg.py --tsp --solution > tsp_distance_matrix_solution.svg
 
 # VRP
-./routing_svg.py > vrp.svg
-./routing_svg.py --solution > vrp_solution.svg
+./routing_svg.py --vrp > vrp.svg
+./routing_svg.py --vrp --solution > vrp_solution.svg
 
 # VRP Global Span
 ./routing_svg.py --global-span > vrp_global_span.svg
