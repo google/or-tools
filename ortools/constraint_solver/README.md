@@ -38,6 +38,10 @@ The point of entry for routing problems.
 * [routing_parameters.proto](routing_parameters.proto):
 The Vehicle Routing solver parameters.
 
+### Solution
+* [assignment.proto](assignment.proto):
+Holds the solution of a Routing problem.
+
 ### Recipes
 
 You can find a set of code recipes in
