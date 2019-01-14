@@ -92,7 +92,7 @@ def CPIsFunSat():
     print('  - status          : %s' % solver.StatusName(status))
     print('  - conflicts       : %i' % solver.NumConflicts())
     print('  - branches        : %i' % solver.NumBranches())
-    print('  - wall time       : %f ms' % solver.WallTime())
+    print('  - wall time       : %f s' % solver.WallTime())
     print('  - solutions found : %i' % solution_printer.solution_count())
 
 

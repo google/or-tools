@@ -417,7 +417,7 @@ def solve_shift_scheduling(params, output_proto):
     print('  - status          : %s' % solver.StatusName(status))
     print('  - conflicts       : %i' % solver.NumConflicts())
     print('  - branches        : %i' % solver.NumBranches())
-    print('  - wall time       : %f ms' % solver.WallTime())
+    print('  - wall time       : %f s' % solver.WallTime())
 
 
 def main(args):

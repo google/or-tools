@@ -203,7 +203,7 @@ def solve_with_discrete_model():
     print("Statistics")
     print("  - conflicts    : %i" % solver.NumConflicts())
     print("  - branches     : %i" % solver.NumBranches())
-    print("  - wall time    : %f ms" % solver.WallTime())
+    print("  - wall time    : %f s" % solver.WallTime())
     print("  - num solutions: %i" % solution_printer.num_solutions())
 
 

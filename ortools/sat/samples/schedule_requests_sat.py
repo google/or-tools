@@ -113,7 +113,7 @@ def main():
     print('Statistics')
     print('  - Number of shift requests met = %i' % solver.ObjectiveValue(),
           '(out of', num_nurses * min_shifts_per_nurse, ')')
-    print('  - wall time       : %f ms' % solver.WallTime())
+    print('  - wall time       : %f s' % solver.WallTime())
     # [END print_solution]
 
 

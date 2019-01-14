@@ -114,7 +114,7 @@ def solve_assignment():
     print('Statistics')
     print('  - conflicts : %i' % solver.NumConflicts())
     print('  - branches  : %i' % solver.NumBranches())
-    print('  - wall time : %f ms' % solver.WallTime())
+    print('  - wall time : %f s' % solver.WallTime())
 
 
 solve_assignment()

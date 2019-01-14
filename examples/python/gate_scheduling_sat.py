@@ -129,7 +129,7 @@ def main():
         print('Statistics')
         print('  - conflicts : %i' % solver.NumConflicts())
         print('  - branches  : %i' % solver.NumBranches())
-        print('  - wall time : %f ms' % solver.WallTime())
+        print('  - wall time : %f s' % solver.WallTime())
 
 
 if __name__ == '__main__':
