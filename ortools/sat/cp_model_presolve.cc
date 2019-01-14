@@ -626,6 +626,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
           context->DomainOf(ref).IntersectionWith({target_min, target_max}));
     }
     domain_reduced |= context->IntersectDomainWith(target_ref, infered_domain);
+    if (context->is_unsat) return true;
   }
 
   // Pass 2, update the argument domains. Filter them eventually.
