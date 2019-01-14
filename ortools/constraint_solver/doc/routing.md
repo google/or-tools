@@ -5,7 +5,6 @@
 This document presents modeling recipes for the Vehicle routing solver. These are grouped by type:
 * [Travelling Salesman Problem](tsp.md)
 * [Vehicle Routing Problem](vrp.md)
-* [Capacity Vehicle Routing Problem](cvrp.md)
 * [Pickup and Delivery Problem](pdp.md)
 
 OR-Tools comes with lots of vehicle routing samples given in C++, Python, Java

@@ -14,6 +14,8 @@ Solution:
 Samples:
 * [tsp.cc](../samples/tsp.cc)
 * [tsp.py](../samples/tsp.py)
+* [Tsp.java](../samples/Tsp.java)
+* [Tsp.cs](../samples/Tsp.cs)
 
 ## Using Distance Matrix
 Data Problem:
@@ -25,13 +27,6 @@ Solution:
 Samples:
 * [tsp_distance_matrix.cc](../samples/tsp_distance_matrix.cc)
 * [tsp_distance_matrix.py](../samples/tsp_distance_matrix.py)
+* [TspDistanceMatrix.java](../samples/TspDistanceMatrix.java)
+* [TspDistanceMatrix.cs](../samples/TspDistanceMatrix.cs)
 
-## Using Local Search
-Data Problem:
-![problem](tsp_local_search.svg)
-
-Solution:
-![solution](tsp_local_search_solution.svg)
-
-Samples:
-* [tsp_local_search.py](../samples/tsp_local_search.py)
