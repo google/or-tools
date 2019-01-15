@@ -25,16 +25,20 @@
 #include "ortools/util/tuple_set.h"
 %}
 
+%rename (arity) operations_research::IntTupleSet::Arity;
+%rename (clear) operations_research::IntTupleSet::Clear;
+%rename (contains) operations_research::IntTupleSet::Contains;
 %rename (insert) operations_research::IntTupleSet::Insert;
 %rename (insert2) operations_research::IntTupleSet::Insert2;
 %rename (insert3) operations_research::IntTupleSet::Insert3;
 %rename (insert4) operations_research::IntTupleSet::Insert4;
 %rename (insertAll) operations_research::IntTupleSet::InsertAll;
-%rename (contains) operations_research::IntTupleSet::Contains;
+%rename (numDifferentValuesInColumn) operations_research::IntTupleSet::NumDifferentValuesInColumn;
 %rename (numTuples) operations_research::IntTupleSet::NumTuples;
-%rename (value) operations_research::IntTupleSet::Value;
-%rename (arity) operations_research::IntTupleSet::Arity;
-%rename (clear) operations_research::IntTupleSet::Clear;
 %rename (rawData) operations_research::IntTupleSet::RawData;
+%rename (sortedByColumn) operations_research::IntTupleSet::SortedByColumn;
+%rename (sortedLexicographically) operations_research::IntTupleSet::SortedLexicographically;
+%rename (value) operations_research::IntTupleSet::Value;
+
 
 %include ortools/util/tuple_set.h

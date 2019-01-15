@@ -163,7 +163,7 @@ public class VrpPickupDelivery {
     for (int[] request : data.pickupDeliveries) {
       long pickupIndex = manager.nodeToIndex(request[0]);
       long deliveryIndex = manager.nodeToIndex(request[1]);
-      routing.AddPickupAndDelivery(pickupIndex, deliveryIndex);
+      routing.addPickupAndDelivery(pickupIndex, deliveryIndex);
       solver.addConstraint(
           solver.makeEquality(routing.vehicleVar(pickupIndex), routing.vehicleVar(deliveryIndex)));
       solver.addConstraint(solver.makeLessOrEqual(
