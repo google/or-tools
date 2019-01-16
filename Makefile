@@ -5,6 +5,9 @@ help: help_all
 .PHONY: all
 all: build_all
 
+.PHONY: check
+check: check_all
+
 .PHONY: test
 test: test_all
 
@@ -91,6 +94,7 @@ help_usage:
 	@echo Use one of the following targets:
 	@echo help, help_all:	Print this help.
 	@echo all:	Build OR-Tools for all available languages \(need a call to \"make third_party\" first\).
+	@echo check, check_all:	Check OR-Tools for all available languages.
 	@echo test, test_all:	Test OR-Tools for all available languages.
 	@echo clean, clean_all:	Clean output from previous build for all available languages \(won\'t clean third party\).
 	@echo detect, detect_all:	Show variables used to build OR-Tools for all available languages.
@@ -106,6 +110,10 @@ help_all: help_usage help_third_party help_cc help_python help_java help_dotnet 
 .PHONY: build_all
 build_all: cc python java dotnet
 	@echo Or-tools have been built for $(BUILT_LANGUAGES)
+
+.PHONY: check_all
+check_all: check_cc check_python check_java check_dotnet
+	@echo Or-tools have been built and checked for $(BUILT_LANGUAGES)
 
 .PHONY: test_all
 test_all: test_cc test_python test_java test_dotnet
