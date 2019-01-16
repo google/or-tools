@@ -1031,6 +1031,12 @@ class SolverToVoid {
 %ignore operations_research::PathOperator::Path;
 %ignore operations_research::PathOperator::SkipUnchanged;
 %rename (neighbor) operations_research::PathOperator::MakeNeighbor;
+// Protected methods
+%rename (getBaseNodeRestartPosition) operations_research::PathOperator::GetBaseNodeRestartPosition;
+%rename (initPosition) operations_research::PathOperator::InitPosition;
+%rename (onSamePathAsPreviousBase) operations_research::PathOperator::OnSamePathAsPreviousBase;
+%rename (restartAtPathStartOnSynchronize) operations_research::PathOperator::RestartAtPathStartOnSynchronize;
+%rename (setNextBaseToIncrement) operations_research::PathOperator::SetNextBaseToIncrement;
 
 // Rename rules on PathWithPreviousNodesOperator.
 %rename (isPathStart) operations_research::PathWithPreviousNodesOperator::IsPathStart;
