@@ -17,7 +17,6 @@
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-
 # [END import]
 
 
@@ -125,7 +124,7 @@ def print_solution(data, manager, routing, assignment):
 
 
 def main():
-    """Solve the CVRP problem."""
+    """Entry point of the program."""
     # Instantiate the data problem.
     # [START data]
     data = create_data_model()
