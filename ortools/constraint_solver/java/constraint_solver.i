@@ -1265,7 +1265,7 @@ namespace operations_research {
 %template(RevInteger) Rev<int>;
 %template(RevLong) Rev<int64>;
 %template(RevBool) Rev<bool>;
-%template(IntContainer) AssignmentContainer<IntVar, IntVarElement>;
-%template(IntervalContainer) AssignmentContainer<IntervalVar, IntervalVarElement>;
-%template(SequenceContainer) AssignmentContainer<SequenceVar,SequenceVarElement>;
+%template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
+%template(AssignmentIntervalContainer) AssignmentContainer<IntervalVar, IntervalVarElement>;
+%template(AssignmentSequenceContainer) AssignmentContainer<SequenceVar,SequenceVarElement>;
 }  // namespace operations_research
