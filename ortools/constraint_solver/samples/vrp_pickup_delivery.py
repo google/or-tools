@@ -120,12 +120,12 @@ def print_solution(data, manager, routing, assignment):
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         route_distance = 0
         while not routing.IsEnd(index):
-            plan_output += ' {} ->'.format(manager.IndexToNode(index))
+            plan_output += ' {} -> '.format(manager.IndexToNode(index))
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {}\n'.format(manager.IndexToNode(index))
+        plan_output += '{}\n'.format(manager.IndexToNode(index))
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         print(plan_output)
         total_distance += route_distance
@@ -143,9 +143,7 @@ def main():
     # Create the routing index manager.
     # [START index_manager]
     manager = pywrapcp.RoutingIndexManager(
-        len(data['distance_matrix']),
-        data['num_vehicles'],
-        data['depot'])
+        len(data['distance_matrix']), data['num_vehicles'], data['depot'])
     # [END index_manager]
 
     # Create Routing Model.
@@ -158,19 +156,20 @@ def main():
     # [START arc_cost]
     def distance_callback(from_index, to_index):
         """Returns the manhattan distance between the two nodes."""
+        # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
 
-    transit_cost_id = routing.RegisterTransitCallback(distance_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id)
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     # [END arc_cost]
 
     # Add Distance constraint.
     # [START distance_constraint]
     dimension_name = 'Distance'
     routing.AddDimension(
-        transit_cost_id,
+        transit_callback_index,
         0,  # no slack
         3000,  # vehicle maximum travel distance
         True,  # start cumul to zero
@@ -214,4 +213,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # [END program]
+# [END program]

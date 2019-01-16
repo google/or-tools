@@ -82,18 +82,18 @@ public class VrpPickupDelivery {
   /// two different indices.
   static class ManhattanDistance extends LongLongToLong {
     public ManhattanDistance(DataModel data, RoutingIndexManager manager) {
-      // precompute distance between location to have distance callback in O(1)
-      distanceMatrix_ = data.distanceMatrix;
-      indexManager_ = manager;
+      distanceMatrix = data.distanceMatrix;
+      indexManager = manager;
     }
     @Override
     public long run(long fromIndex, long toIndex) {
-      int fromNode = indexManager_.indexToNode(fromIndex);
-      int toNode = indexManager_.indexToNode(toIndex);
-      return distanceMatrix_[fromNode][toNode];
+      // Convert from routing variable Index to distance matrix NodeIndex.
+      int fromNode = indexManager.indexToNode(fromIndex);
+      int toNode = indexManager.indexToNode(toIndex);
+      return distanceMatrix[fromNode][toNode];
     }
-    private final long[][] distanceMatrix_;
-    private final RoutingIndexManager indexManager_;
+    private final long[][] distanceMatrix;
+    private final RoutingIndexManager indexManager;
   }
   // [END manhattan_distance]
 
@@ -144,13 +144,13 @@ public class VrpPickupDelivery {
     // Define cost of each arc.
     // [START arc_cost]
     LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
-    int transitCostIndex = routing.registerTransitCallback(distanceEvaluator);
-    routing.setArcCostEvaluatorOfAllVehicles(transitCostIndex);
+    int transitCallbackIndex = routing.registerTransitCallback(distanceEvaluator);
+    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(transitCostIndex, 0, 3000,
+    routing.addDimension(transitCallbackIndex, 0, 3000,
         true, // start cumul to zero
         "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");

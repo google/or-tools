@@ -140,17 +140,19 @@ void VrpGlobalSpan() {
 
   // Define cost of each arc.
   // [START arc_cost]
-  const int transit_cost_id = routing.RegisterTransitCallback(
+  const int transit_callback_index = routing.RegisterTransitCallback(
       [&data, &manager](int64 from_index, int64 to_index) -> int64 {
-        return data.distance_matrix[manager.IndexToNode(from_index).value()]
-                                   [manager.IndexToNode(to_index).value()];
+        // Convert from routing variable Index to distance matrix NodeIndex.
+        auto from_node = manager.IndexToNode(from_index).value();
+        auto to_node = manager.IndexToNode(to_index).value();
+        return data.distance_matrix[from_node][to_node];
       });
-  routing.SetArcCostEvaluatorOfAllVehicles(transit_cost_id);
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
   // [END arc_cost]
 
   // Add Distance constraint.
   // [START distance_constraint]
-  routing.AddDimension(transit_cost_id,  // transit callback
+  routing.AddDimension(transit_callback_index,  // transit callback
                        0,                // no slack
                        3000,             // vehicle maximum travel distance
                        true,             // start cumul to zero
