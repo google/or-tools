@@ -36,8 +36,6 @@ class RoutingSearchParameters;
 
 %module(directors="1") operations_research;
 
-%rename (RoutingModelStatus) operations_research::RoutingModel::Status;
-
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,
     int64 capacity,
@@ -90,6 +88,7 @@ class RoutingSearchParameters;
  }
 }
 
+%rename("GetStatus") operations_research::RoutingModel::status;
 %rename("%(camelcase)s", %$isfunction) "";
 
 // Protobuf support
