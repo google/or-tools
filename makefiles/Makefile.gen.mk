@@ -1332,16 +1332,17 @@ objs/sat/cp_model_presolve.$O: ortools/sat/cp_model_presolve.cc \
  ortools/base/commandlineflags.h ortools/base/logging.h \
  ortools/base/integral_types.h ortools/base/macros.h ortools/base/timer.h \
  ortools/base/basictypes.h ortools/util/running_stat.h \
- ortools/base/hash.h ortools/base/map_util.h ortools/base/stl_util.h \
- ortools/port/proto_utils.h ortools/sat/cp_model_checker.h \
- ortools/sat/cp_model_loader.h ortools/base/int_type.h \
- ortools/base/int_type_indexed_vector.h ortools/sat/cp_model_utils.h \
- ortools/util/sorted_interval_list.h ortools/sat/integer.h \
- ortools/graph/iterators.h ortools/sat/model.h ortools/base/typeid.h \
- ortools/sat/sat_base.h ortools/util/bitset.h ortools/sat/sat_solver.h \
- ortools/sat/clause.h ortools/sat/drat_proof_handler.h \
- ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
- ortools/base/status.h ortools/util/random_engine.h ortools/util/stats.h \
+ ortools/base/hash.h ortools/base/map_util.h ortools/base/mathutil.h \
+ ortools/base/stl_util.h ortools/port/proto_utils.h \
+ ortools/sat/cp_model_checker.h ortools/sat/cp_model_loader.h \
+ ortools/base/int_type.h ortools/base/int_type_indexed_vector.h \
+ ortools/sat/cp_model_utils.h ortools/util/sorted_interval_list.h \
+ ortools/sat/integer.h ortools/graph/iterators.h ortools/sat/model.h \
+ ortools/base/typeid.h ortools/sat/sat_base.h ortools/util/bitset.h \
+ ortools/sat/sat_solver.h ortools/sat/clause.h \
+ ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
+ ortools/sat/drat_writer.h ortools/base/file.h ortools/base/status.h \
+ ortools/util/random_engine.h ortools/util/stats.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
@@ -3256,11 +3257,11 @@ objs/constraint_solver/routing_parameters.$O: \
 objs/constraint_solver/routing_search.$O: \
  ortools/constraint_solver/routing_search.cc ortools/base/small_map.h \
  ortools/base/small_ordered_set.h ortools/base/stl_util.h \
+ ortools/base/integral_types.h ortools/base/macros.h \
  ortools/constraint_solver/routing.h \
  ortools/base/adjustable_priority_queue-inl.h \
  ortools/base/adjustable_priority_queue.h ortools/base/basictypes.h \
- ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/commandlineflags.h \
+ ortools/base/logging.h ortools/base/commandlineflags.h \
  ortools/base/hash.h ortools/base/int_type_indexed_vector.h \
  ortools/base/int_type.h ortools/constraint_solver/constraint_solver.h \
  ortools/base/map_util.h ortools/base/random.h ortools/base/sysinfo.h \

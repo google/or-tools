@@ -87,6 +87,9 @@ class Domain {
   // Returns true if this is the empty set.
   bool IsEmpty() const;
 
+  // Returns the number of elements in the domain. It is capped at kint64max.
+  int64 Size() const;
+
   // Returns the domain min/max value.
   // This Checks that the domain is not empty.
   int64 Min() const;

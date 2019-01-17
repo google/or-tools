@@ -134,32 +134,35 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
 void LinearConstraintManager::AddCut(
     const LinearConstraint& ct, std::string type_name,
     const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
-  CHECK_NE(ct.vars.size(), 0);
+  if (ct.vars.empty()) return;
+
+  IntegerValue max_magnitude(0);
+  double activity = 0.0;
+  double l2_norm = 0.0;
+  const int size = ct.vars.size();
+  for (int i = 0; i < size; ++i) {
+    max_magnitude = std::max(max_magnitude, IntTypeAbs(ct.coeffs[i]));
+
+    const double coeff = ToDouble(ct.coeffs[i]);
+    activity += coeff * lp_solution[ct.vars[i]];
+    l2_norm += coeff * coeff;
+  }
+  l2_norm = sqrt(l2_norm);
+  double violation = 0.0;
+  violation = std::max(violation, activity - ToDouble(ct.ub));
+  violation = std::max(violation, ToDouble(ct.lb) - activity);
+
+  // Only add cut with sufficient efficacity.
+  if (violation / l2_norm < 1e-5) return;
+
   Add(ct);
   num_cuts_++;
   type_to_num_cuts_[type_name]++;
 
-  if (VLOG_IS_ON(1)) {
-    IntegerValue max_magnitude(0);
-    double activity = 0.0;
-    double l2_norm = 0.0;
-    const int size = ct.vars.size();
-    for (int i = 0; i < size; ++i) {
-      max_magnitude = std::max(max_magnitude, IntTypeAbs(ct.coeffs[i]));
-
-      const double coeff = ToDouble(ct.coeffs[i]);
-      activity += coeff * lp_solution[ct.vars[i]];
-      l2_norm += coeff * coeff;
-    }
-    l2_norm = sqrt(l2_norm);
-    double violation = 0.0;
-    violation = std::max(violation, activity - ToDouble(ct.ub));
-    violation = std::max(violation, ToDouble(ct.lb) - activity);
-    LOG(INFO) << "Cut '" << type_name << "'"
-              << " size=" << size << " max_magnitude=" << max_magnitude
-              << " norm=" << l2_norm << " violation=" << violation
-              << " eff=" << violation / l2_norm;
-  }
+  VLOG(1) << "Cut '" << type_name << "'"
+          << " size=" << size << " max_magnitude=" << max_magnitude
+          << " norm=" << l2_norm << " violation=" << violation
+          << " eff=" << violation / l2_norm;
 }
 
 bool LinearConstraintManager::ChangeLp(

@@ -357,6 +357,7 @@ std::string Summarize(const std::string& input) {
 std::string CpModelStats(const CpModelProto& model_proto) {
   std::map<std::string, int> num_constraints_by_name;
   std::map<std::string, int> num_reif_constraints_by_name;
+  std::map<std::string, int> name_to_num_literals;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     std::string name = ConstraintCaseName(ct.constraint_case());
 
@@ -371,6 +372,18 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     num_constraints_by_name[name]++;
     if (!ct.enforcement_literal().empty()) {
       num_reif_constraints_by_name[name]++;
+    }
+
+    // For pure Boolean constraints, we also display the total number of literal
+    // involved as this gives a good idea of the problem size.
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
+      name_to_num_literals[name] += ct.bool_or().literals().size();
+    } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kBoolAnd) {
+      name_to_num_literals[name] += ct.bool_and().literals().size();
+    } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kAtMostOne) {
+      name_to_num_literals[name] += ct.at_most_one().literals().size();
     }
   }
 
@@ -445,10 +458,16 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   std::vector<std::string> constraints;
   constraints.reserve(num_constraints_by_name.size());
   for (const auto entry : num_constraints_by_name) {
-    constraints.push_back(
-        absl::StrCat("#", entry.first, ": ", entry.second, " (",
-                     num_reif_constraints_by_name[entry.first],
-                     " with enforcement literal)"));
+    const std::string& name = entry.first;
+    constraints.push_back(absl::StrCat("#", name, ": ", entry.second));
+    if (gtl::ContainsKey(num_reif_constraints_by_name, name)) {
+      absl::StrAppend(&constraints.back(),
+                      " (#enforced: ", num_reif_constraints_by_name[name], ")");
+    }
+    if (gtl::ContainsKey(name_to_num_literals, name)) {
+      absl::StrAppend(&constraints.back(),
+                      " (#literals: ", name_to_num_literals[name], ")");
+    }
   }
   std::sort(constraints.begin(), constraints.end());
   absl::StrAppend(&result, absl::StrJoin(constraints, "\n"));
@@ -2316,7 +2335,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   // Starts by expanding some constraints if needed.
-  CpModelProto new_model = ExpandCpModel(model_proto);
+  CpModelProto new_model = ExpandCpModel(model_proto, VLOG_IS_ON(1));
 
   // Presolve?
   std::function<void(CpSolverResponse * response)> postprocess_solution;

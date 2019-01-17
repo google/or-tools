@@ -55,16 +55,6 @@ std::vector<int64> ValuesFromProto(const Values& values) {
   return std::vector<int64>(values.begin(), values.end());
 }
 
-// Returns the size of the given domain capped to int64max.
-int64 DomainSize(const Domain& domain) {
-  int64 size = 0;
-  for (const ClosedInterval interval : domain) {
-    size += operations_research::CapAdd(
-        1, operations_research::CapSub(interval.end, interval.start));
-  }
-  return size;
-}
-
 }  // namespace
 
 void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
@@ -389,7 +379,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
     //
     // TODO(user): Also fully encode variable that are almost fully encoded?
     const Domain domain = ReadDomainFromProto(model_proto.variables(i));
-    if (DomainSize(domain) == values.size()) {
+    if (domain.Size() == values.size()) {
       ++num_fully_encoded;
       if (!encoder->VariableIsFullyEncoded(integers_[i])) {
         encoder->FullyEncodeVariable(integers_[i]);

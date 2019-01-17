@@ -136,6 +136,15 @@ Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
 
 bool Domain::IsEmpty() const { return intervals_.empty(); }
 
+int64 Domain::Size() const {
+  int64 size = 0;
+  for (const ClosedInterval interval : intervals_) {
+    size += operations_research::CapAdd(
+        1, operations_research::CapSub(interval.end, interval.start));
+  }
+  return size;
+}
+
 int64 Domain::Min() const {
   CHECK(!IsEmpty());
   return intervals_.front().start;

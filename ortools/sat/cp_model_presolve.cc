@@ -31,6 +31,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -304,6 +305,9 @@ struct PresolveContext {
     modified_domains.Resize(domains.size());
     var_to_constraints.resize(domains.size());
   }
+
+  // Returns the number of mapped domains.
+  int NumDomainsStored() const { return domains.size(); }
 
   // This regroup all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
@@ -1564,14 +1568,39 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   std::vector<std::vector<int64>> new_tuples;
   new_tuples.reserve(num_tuples);
   std::vector<absl::flat_hash_set<int64>> new_domains(num_vars);
+  std::vector<AffineRelation::Relation> affine_relations;
+
+  bool modified_variables = false;
+  for (int v = 0; v < num_vars; ++v) {
+    const int var = ct->table().vars(v);
+    if (!RefIsPositive(var)) {
+      affine_relations.push_back({var, 1, 0});  // Support opposite.
+    } else {
+      affine_relations.push_back(context->GetAffineRelation(var));
+      if (affine_relations[v].representative != var) {
+        modified_variables = true;
+      }
+    }
+  }
+
   for (int i = 0; i < num_tuples; ++i) {
     bool delete_row = false;
     std::string tmp;
     for (int j = 0; j < num_vars; ++j) {
       const int ref = ct->table().vars(j);
-      const int64 v = ct->table().values(i * num_vars + j);
+      int64 v = ct->table().values(i * num_vars + j);
+      const AffineRelation::Relation& r = affine_relations[j];
+      if (r.representative != ref) {
+        const int64 inverse_value = (v - r.offset) / r.coeff;
+        if (inverse_value * r.coeff + r.offset != v) {
+          // Bad rounding.
+          delete_row = true;
+          break;
+        }
+        v = inverse_value;
+      }
       tuple[j] = v;
-      if (!context->DomainOf(ref).Contains(v)) {
+      if (!context->DomainOf(r.representative).Contains(v)) {
         delete_row = true;
         break;
       }
@@ -1587,14 +1616,26 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   gtl::STLSortAndRemoveDuplicates(&new_tuples);
 
   // Update the list of tuples if needed.
-  if (new_tuples.size() < num_tuples) {
+  if (new_tuples.size() < num_tuples || modified_variables) {
     ct->mutable_table()->clear_values();
     for (const std::vector<int64>& t : new_tuples) {
       for (const int64 v : t) {
         ct->mutable_table()->add_values(v);
       }
     }
-    context->UpdateRuleStats("table: removed rows");
+    if (new_tuples.size() < num_tuples) {
+      context->UpdateRuleStats("table: removed rows");
+    }
+  }
+
+  if (modified_variables) {
+    for (int j = 0; j < num_vars; ++j) {
+      const AffineRelation::Relation& r = affine_relations[j];
+      if (r.representative != ct->table().vars(j)) {
+        ct->mutable_table()->set_vars(j, r.representative);
+      }
+    }
+    context->UpdateRuleStats("table: replace variable by canonical affine one");
   }
 
   // Filter the variable domains.
@@ -1655,7 +1696,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
     }
     context->UpdateRuleStats("table: negated");
   }
-  return false;
+  return modified_variables;
 }
 
 bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
@@ -2533,6 +2574,92 @@ void MergeNoOverlapConstraints(PresolveContext* context) {
   }
 }
 
+// Extracts cliques from bool_and and small at_most_one constraints and
+// transforms them into maximal cliques.
+void TransformIntoMaxCliques(PresolveContext* context) {
+  if (context->is_unsat) return;
+
+  auto convert = [](int ref) {
+    if (RefIsPositive(ref)) return Literal(BooleanVariable(ref), true);
+    return Literal(BooleanVariable(NegatedRef(ref)), false);
+  };
+  const int num_constraints = context->working_model->constraints_size();
+
+  // Extract the bool_and and at_most_one constraints.
+  std::vector<std::vector<Literal>> cliques;
+
+  for (int c = 0; c < num_constraints; ++c) {
+    ConstraintProto* ct = context->working_model->mutable_constraints(c);
+    if (ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
+      std::vector<Literal> clique;
+      // Process only small constraints.
+      for (const int ref : ct->at_most_one().literals()) {
+        clique.push_back(convert(ref));
+      }
+      cliques.push_back(clique);
+      if (RemoveConstraint(ct, context)) {
+        context->UpdateConstraintVariableUsage(c);
+      }
+    } else if (ct->constraint_case() ==
+               ConstraintProto::ConstraintCase::kBoolAnd) {
+      if (ct->enforcement_literal().size() != 1) continue;
+      const Literal enforcement = convert(ct->enforcement_literal(0));
+      for (const int ref : ct->bool_and().literals()) {
+        cliques.push_back({enforcement, convert(ref).Negated()});
+      }
+      if (RemoveConstraint(ct, context)) {
+        context->UpdateConstraintVariableUsage(c);
+      }
+    }
+  }
+
+  const int old_cliques = cliques.size();
+
+  // We reuse the max-clique code from sat.
+  Model local_model;
+  auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
+  const int num_variables = context->working_model->variables().size();
+  graph->Resize(num_variables);
+  for (const std::vector<Literal>& clique : cliques) {
+    if (clique.size() <= 100) graph->AddAtMostOne(clique);
+  }
+  if (!graph->DetectEquivalences()) {
+    context->is_unsat = true;
+    return;
+  }
+  graph->TransformIntoMaxCliques(&cliques);
+
+  // Add the Boolean variable equivalence detected by DetectEquivalences().
+  // Those are needed because TransformIntoMaxCliques() will replace all
+  // variable by its representative.
+  for (int var = 0; var < num_variables; ++var) {
+    const Literal l = Literal(BooleanVariable(var), true);
+    if (graph->RepresentativeOf(l) != l) {
+      const Literal r = graph->RepresentativeOf(l);
+      context->AddBooleanEqualityRelation(
+          var, r.IsPositive() ? r.Variable().value()
+                              : NegatedRef(r.Variable().value()));
+    }
+  }
+
+  int new_cliques = 0;
+  for (const std::vector<Literal>& clique : cliques) {
+    if (clique.empty()) continue;
+    new_cliques++;
+    ConstraintProto* ct = context->working_model->add_constraints();
+    for (const Literal literal : clique) {
+      if (literal.IsPositive()) {
+        ct->mutable_at_most_one()->add_literals(literal.Variable().value());
+      } else {
+        ct->mutable_at_most_one()->add_literals(
+            NegatedRef(literal.Variable().value()));
+      }
+    }
+  }
+  context->UpdateNewConstraintsVariableUsage();
+  VLOG(1) << "Merged " << old_cliques << " into " << new_cliques << " cliques";
+}
+
 bool PresolveOneConstraint(int c, PresolveContext* context) {
   ConstraintProto* ct = context->working_model->mutable_constraints(c);
 
@@ -2801,6 +2928,83 @@ bool ProcessSetPPC(PresolveContext* context, TimeLimit* time_limit) {
   return changed;
 }
 
+void TryToSimplifyDomains(PresolveContext* context) {
+  if (context->is_unsat) return;
+  for (int var = 0; var < context->NumDomainsStored(); ++var) {
+    if (context->IsFixed(var)) continue;
+    const AffineRelation::Relation r = context->GetAffineRelation(var);
+    if (r.representative != var) continue;
+    const Domain& domain = context->DomainOf(var);
+    if (domain.NumIntervals() == 1) continue;
+
+    if (domain.Size() == 2 && (domain.Min() != 0 || domain.Max() != 1)) {
+      const int index = context->working_model->variables_size();
+      IntegerVariableProto* const var_proto =
+          context->working_model->add_variables();
+      var_proto->add_domain(0);
+      var_proto->add_domain(1);
+      ConstraintProto* const ct = context->working_model->add_constraints();
+      LinearConstraintProto* const lin = ct->mutable_linear();
+      lin->add_vars(var);
+      lin->add_coeffs(1);
+      lin->add_vars(index);
+      lin->add_coeffs(domain.Min() - domain.Max());
+      lin->add_domain(domain.Min());
+      lin->add_domain(domain.Min());
+      context->InitializeNewDomains();
+      context->UpdateNewConstraintsVariableUsage();
+      context->AddAffineRelation(*ct, var, index, domain.Max() - domain.Min(),
+                                 domain.Min());
+      context->UpdateRuleStats("variables: canonicalize domain of size 2");
+    } else if (domain.NumIntervals() > 2 &&
+               domain.NumIntervals() == domain.Size()) {  // Discrete domain.
+      const int64 var_min = domain.Min();
+      std::vector<int64> diffs(domain.NumIntervals());
+      int64 gcd = -1;
+      bool ok = true;
+      for (int index = 0; index < domain.NumIntervals(); ++index) {
+        const ClosedInterval& i = domain[index];
+        CHECK_EQ(i.start, i.end);
+        diffs[index] = i.start - var_min;
+        CHECK_GE(diffs[index], 0);
+        if (gcd == -1) {
+          gcd = diffs[index];
+        } else {
+          gcd = MathUtil::GCD64(gcd, diffs[index]);
+        }
+        if (gcd == 1) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) {
+        continue;
+      }
+      std::vector<int64> scaled_values;
+      for (const int64 value : diffs) {
+        scaled_values.push_back(value / gcd);
+      }
+      const int index = context->working_model->variables_size();
+      IntegerVariableProto* const var_proto =
+          context->working_model->add_variables();
+      const Domain scaled_domain = Domain::FromValues(scaled_values);
+      FillDomainInProto(scaled_domain, var_proto);
+      ConstraintProto* const ct = context->working_model->add_constraints();
+      LinearConstraintProto* const lin = ct->mutable_linear();
+      lin->add_vars(var);
+      lin->add_coeffs(1);
+      lin->add_vars(index);
+      lin->add_coeffs(-gcd);
+      lin->add_domain(var_min);
+      lin->add_domain(var_min);
+      context->InitializeNewDomains();
+      context->UpdateNewConstraintsVariableUsage();
+      context->AddAffineRelation(*ct, var, index, gcd, var_min);
+      context->UpdateRuleStats("variables: canonicalize affine domain");
+    }
+  }
+}
+
 void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
   if (context->is_unsat) return;
 
@@ -2839,6 +3043,20 @@ void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
       // We loose a bit of preformance, but the code is simpler.
       if (changed) {
         context->UpdateConstraintVariableUsage(c);
+      }
+    }
+
+    // Look at variables to see if we can canonicalize the domain
+    const int num_constraints_before_simplify =
+        context->working_model->constraints_size();
+    TryToSimplifyDomains(context);
+    const int num_constraints_after_simplify =
+        context->working_model->constraints_size();
+    if (num_constraints_after_simplify > num_constraints_before_simplify) {
+      in_queue.resize(num_constraints_after_simplify, true);
+      for (int c = num_constraints_before_simplify;
+           c < num_constraints_after_simplify; ++c) {
+        queue.push_back(c);
       }
     }
 
@@ -2980,7 +3198,6 @@ void RemoveUnusedEquivalentVariables(PresolveContext* context) {
   // Update the variable usage.
   context->UpdateNewConstraintsVariableUsage();
 }
-
 }  // namespace.
 
 // =============================================================================
@@ -3058,6 +3275,8 @@ bool PresolveCpModel(const PresolveOptions& options,
   if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
     PresolvePureSatPart(&context);
   }
+
+  TransformIntoMaxCliques(&context);
 
   // Process set packing, partitioning and covering constraint.
   if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {

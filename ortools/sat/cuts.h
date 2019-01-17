@@ -45,7 +45,7 @@ struct CutGenerator {
 // Visible for testing. Returns a function f on integers such that:
 // - f is non-decreasing.
 // - f is super-additive: f(a) + f(b) <= f(a + b)
-// - 1 <= f(divisor) <= 2 * max_scaling
+// - 1 <= f(divisor) <= max_scaling
 // - For all x, f(x * divisor) = x * f(divisor)
 // - For all x, f(x * divisor + remainder) = x * f(divisor)
 //
@@ -57,19 +57,23 @@ struct CutGenerator {
 // the cut. Just taking f(x) = x / divisor result in the non-strengthened cut
 // and using any function that stricly dominate this one is better.
 //
-// Note(user): I could have used the MIR (Mixed integer rounding function), but
-// I prefered to use the function described in "Strenghtening Chvatal-Gomory
-// cuts and Gomory fractional cuts", Adam N. Letchfrod, Andrea Lodi. This is
-// because it gives better result for small value of max_scaling, and we do not
-// want to have large integer coefficient.
+// Algorithm:
+// - We first scale by a factor t so that rhs_remainder >= divisor / 2.
+// - Then, if use_letchford_lodi_version is true, we use the function described
+//   in "Strenghtening Chvatal-Gomory cuts and Gomory fractional cuts", Adam N.
+//   Letchfrod, Andrea Lodi.
+// - Otherwise, we use a generalization of this which is a discretized version
+//   of the classical MIR rounding function that only take the value of the
+//   form "an_integer / max_scaling". As max_scaling goes to infinity, this
+//   converge to the real-valued MIR function.
 //
-// TODO(user): Still not clear to me if this can be improved or not.
+// Note that for each value of max_scaling we will get a different function.
+// And that there is no dominance relation between any of these functions. So
+// it could be nice to try to generate a cut using different values of
+// max_scaling.
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
-    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue max_scaling);
-
-// Same as GetSuperAdditiveRoundingFunction() but uses the classic MIR one.
-std::function<IntegerValue(IntegerValue)> GetMirFunction(
-    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue max_scaling);
+    bool use_letchford_lodi_version, IntegerValue rhs_remainder,
+    IntegerValue divisor, IntegerValue max_scaling);
 
 // Given an upper bounded linear constraint, this function tries to transform it
 // to a valid cut that violate the given LP solution using integer rounding.
@@ -102,7 +106,7 @@ std::function<IntegerValue(IntegerValue)> GetMirFunction(
 // path, so we can spend more effort in finding good cuts.
 struct RoundingOptions {
   bool use_mir = false;
-  IntegerValue max_scaling = IntegerValue(1000);
+  IntegerValue max_scaling = IntegerValue(60);
 };
 void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
                         std::vector<IntegerValue> lower_bounds,

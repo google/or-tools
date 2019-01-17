@@ -218,6 +218,8 @@ void RegisterObjectiveBestBoundExport(
         const CpObjectiveProto& obj = model_proto.objective();
         const double new_best_bound = ScaleObjectiveValue(
             obj, integer_trail->LevelZeroLowerBound(objective_var).value());
+        const double new_objective_value = ScaleObjectiveValue(
+            obj, integer_trail->LevelZeroUpperBound(objective_var).value());
         const double current_best_bound = helper->get_external_best_bound();
         const double current_objective_value =
             helper->get_external_best_objective();
@@ -228,12 +230,16 @@ void RegisterObjectiveBestBoundExport(
             (helper->scaling_factor < 0 &&
              new_best_bound < current_best_bound)) {
           if (log_progress) {
+            const double reported_objective_value =
+                std::isfinite(current_objective_value) ? current_objective_value
+                                                       : new_objective_value;
             if (new_best_bound > current_best_bound) {  // minimization.
               LogNewSolution("ObjLb", wall_timer->Get(), new_best_bound,
-                             current_objective_value, worker_info->worker_name);
+                             reported_objective_value,
+                             worker_info->worker_name);
             } else {
               LogNewSolution("ObjUb", wall_timer->Get(),
-                             current_objective_value, new_best_bound,
+                             reported_objective_value, new_best_bound,
                              worker_info->worker_name);
             }
           }

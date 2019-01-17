@@ -155,9 +155,21 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();
 
+  // Add a "MIR" cut obtained by first taking the linear combination of the
+  // row of the matrix according to "integer_multipliers" and then trying
+  // some integer rounding heuristic.
+  void AddCutFromConstraints(
+      const std::string& name,
+      const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
+          integer_multipliers);
+
   // Computes and adds Chvatal-Gomory cuts.
   // This can currently only be called at the root node.
   void AddCGCuts();
+
+  // Computes and adds MIR cuts.
+  // This can currently only be called at the root node.
+  void AddMirCuts();
 
   // The factor to multiply a CP variable value to get the value in the LP side.
   glop::Fractional CpToLpScalingFactor(glop::ColIndex col) const;
@@ -189,17 +201,22 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // world and then make them integer (eventually multiplying them by a new
   // scaling factor returned in *scaling).
   //
-  // Then computes from this linear combination of the integer rows of the LP a
-  // new constraint of the form "sum terms <= upper_bound". Note that whatever
-  // lp_multipliers are given, the constraint will always be an exact valid
-  // constraint of the problem.
+  // Note that this will loose some precision, but our subsequent computation
+  // will still be exact as it will work for any set of multiplier.
+  std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
+      bool take_objective_into_account, bool use_constraint_status,
+      const glop::DenseColumn& dense_lp_multipliers,
+      glop::Fractional* scaling) const;
+
+  // Computes from an integer linear combination of the integer rows of the LP a
+  // new constraint of the form "sum terms <= upper_bound". All computation are
+  // exact here.
   //
   // Returns false if we encountered any integer overflow.
   bool ComputeNewLinearConstraint(
-      bool take_objective_into_account,  // For the scaling.
-      bool use_constraint_status, const glop::DenseColumn& dense_lp_multipliers,
-      glop::Fractional* scaling,
-      std::vector<std::pair<glop::RowIndex, IntegerValue>>* integer_multipliers,
+      bool use_constraint_status,
+      const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
+          integer_multipliers,
       gtl::ITIVector<glop::ColIndex, IntegerValue>* dense_terms,
       IntegerValue* upper_bound) const;
 
