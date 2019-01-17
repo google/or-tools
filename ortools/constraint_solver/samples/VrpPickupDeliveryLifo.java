@@ -26,12 +26,12 @@ import java.util.logging.Logger;
 // [END import]
 
 /** Minimal Pickup & Delivery Problem (PDP).*/
-public class VrpPickupDelivery {
+public class VrpPickupDeliveryLifo {
   static {
     System.loadLibrary("jniortools");
   }
 
-  private static final Logger logger = Logger.getLogger(VrpPickupDelivery.class.getName());
+  private static final Logger logger = Logger.getLogger(VrpPickupDeliveryLifo.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -172,6 +172,7 @@ public class VrpPickupDelivery {
       solver.addConstraint(solver.makeLessOrEqual(
           distanceDimension.cumulVar(pickupIndex), distanceDimension.cumulVar(deliveryIndex)));
     }
+    routing.setPickupAndDeliveryPolicyOfAllVehicles(RoutingModel.LIFO);
     // [END pickup_delivery]
 
     // Setting first solution heuristic.

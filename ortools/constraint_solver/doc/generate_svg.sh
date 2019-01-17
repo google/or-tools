@@ -37,7 +37,12 @@ set -x
 
 # VRP Pickup Delivery
 ./routing_svg.py --pickup-delivery > vrp_pickup_delivery.svg
+# ANY
 ./routing_svg.py --pickup-delivery --solution > vrp_pickup_delivery_solution.svg
+# FIFO
+./routing_svg.py --pickup-delivery --fifo --solution > vrp_pickup_delivery_fifo_solution.svg
+# LIFO
+./routing_svg.py --pickup-delivery --lifo --solution > vrp_pickup_delivery_lifo_solution.svg
 
 ## Fuel Problem
 #./routing_svg.py --fuel > vrpf.svg

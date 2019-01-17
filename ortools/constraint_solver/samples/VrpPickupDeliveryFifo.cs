@@ -21,7 +21,7 @@ using Google.OrTools.ConstraintSolver;
 /// <summary>
 ///   Minimal Pickup & Delivery Problem (PDP).
 /// </summary>
-public class VrpPickupDelivery {
+public class VrpPickupDeliveryFifo {
   // [START data_model]
   class DataModel {
     // Constructor:
@@ -151,6 +151,7 @@ public class VrpPickupDelivery {
           distanceDimension.CumulVar(pickupIndex),
           distanceDimension.CumulVar(deliveryIndex)));
     }
+    routing.SetPickupAndDeliveryPolicyOfAllVehicles(RoutingModel.FIFO);
     // [END pickup_delivery]
 
     // Setting first solution heuristic.

@@ -1310,6 +1310,26 @@ const std::vector<std::pair<int, int>>& RoutingModel::GetDeliveryIndexPairs(
   return index_to_delivery_index_pairs_[node_index];
 }
 
+void RoutingModel::SetPickupAndDeliveryPolicyOfVehicle(
+    PickupAndDeliveryPolicy policy,
+    int vehicle) {
+  CHECK_LT(vehicle, vehicles_);
+  vehicle_pickup_delivery_policy_[vehicle] = policy;
+}
+
+void RoutingModel::SetPickupAndDeliveryPolicyOfAllVehicles(
+    PickupAndDeliveryPolicy policy) {
+  CHECK_LT(0, vehicles_);
+  for (int i = 0; i < vehicles_; ++i) {
+    SetPickupAndDeliveryPolicyOfVehicle(policy, i);
+  }
+}
+
+RoutingModel::PickupAndDeliveryPolicy RoutingModel::GetPickupAndDeliveryPolicyOfVehicle(int vehicle) const {
+  CHECK_LT(vehicle, vehicles_);
+  return vehicle_pickup_delivery_policy_[vehicle];
+}
+
 int RoutingModel::GetNumOfSingletonNodes() const {
   int count = 0;
   for (int i = 0; i < Nexts().size(); ++i) {

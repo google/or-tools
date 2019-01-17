@@ -153,8 +153,8 @@ class DataModel:  # pylint: disable=too-many-instance-attributes
             self._demands = [0, 1, 1, 3, 6, 3, 6, 8, 8, 1, 2, 1, 2, 6, 6, 8, 8]
         else:
             self._demands = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
-        self._pickups_deliveries = [[7, 1], [3, 4], [5, 8], [6, 2], [11, 12],
-                                    [13, 15], [10, 9], [16, 14]]
+        self._pickups_deliveries = [
+            [1, 6], [2, 10], [4, 3], [5, 9], [7, 8], [15, 11], [13, 12], [16, 14],]
         if args['tsp'] is True:
             self._num_vehicles = 1
         else:
@@ -683,6 +683,16 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         action='store_true',
         help='use pickup & delivery constraints')
     parser.add_argument(
+        '-fifo',
+        '--fifo',
+        action='store_true',
+        help='use pickup & delivery FIFO Policy')
+    parser.add_argument(
+        '-lifo',
+        '--lifo',
+        action='store_true',
+        help='use pickup & delivery LIFO Policy')
+    parser.add_argument(
         '-s', '--solution', action='store_true', help='print solution')
     args = vars(parser.parse_args())
 
@@ -764,7 +774,7 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
             routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
     if args['pickup_delivery'] is True:
         dimension_name = 'Distance'
-        routing.AddDimension(distance_callback_index, 0, 2000, True,
+        routing.AddDimension(distance_callback_index, 0, 3000, True,
                              dimension_name)
         distance_dimension = routing.GetDimensionOrDie(dimension_name)
         distance_dimension.SetGlobalSpanCostCoefficient(100)
@@ -778,6 +788,12 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
             routing.solver().Add(
                 distance_dimension.CumulVar(pickup_index) <=
                 distance_dimension.CumulVar(delivery_index))
+        if args['fifo'] is True:
+            routing.SetPickupAndDeliveryPolicyOfAllVehicles(
+                pywrapcp.RoutingModel.FIFO)
+        if args['lifo'] is True:
+            routing.SetPickupAndDeliveryPolicyOfAllVehicles(
+                pywrapcp.RoutingModel.LIFO)
     if args['starts_ends'] is True:
         dimension_name = 'Distance'
         routing.AddDimension(distance_callback_index, 0, 2000, True,

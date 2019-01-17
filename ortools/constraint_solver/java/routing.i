@@ -73,6 +73,17 @@ class RoutingSearchParameters;
   }
 }
 
+// Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
+// For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
+%extend operations_research::RoutingModel {
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy ANY =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::ANY;
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy LIFO =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::LIFO;
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy FIFO =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::FIFO;
+}
+
 %ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
 %ignore operations_research::RoutingModel::StateDependentTransitCallback;
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
@@ -136,11 +147,13 @@ class RoutingSearchParameters;
 %rename (getHomogeneousCost) operations_research::RoutingModel::GetHomogeneousCost;
 %rename (getMutableDimension) operations_research::RoutingModel::GetMutableDimension;
 %rename (getNonZeroCostClassesCount) operations_research::RoutingModel::GetNonZeroCostClassesCount;
+%rename (getNumOfSingletonNodes) operations_research::RoutingModel::GetNumOfSingletonNodes;
 %rename (getNumberOfDecisionsInFirstSolution) operations_research::RoutingModel::GetNumberOfDecisionsInFirstSolution;
 %rename (getNumberOfDisjunctions) operations_research::RoutingModel::GetNumberOfDisjunctions;
 %rename (getNumberOfRejectsInFirstSolution) operations_research::RoutingModel::GetNumberOfRejectsInFirstSolution;
 %rename (getNumberOfVisitTypes) operations_research::RoutingModel::GetNumberOfVisitTypes;
 %rename (getPerfectBinaryDisjunctions) operations_research::RoutingModel::GetPerfectBinaryDisjunctions;
+%rename (getPickupAndDeliveryPolicyOfVehicle) operations_research::RoutingModel::GetPickupAndDeliveryPolicyOfVehicle;
 %rename (getPickupIndexPairs) operations_research::RoutingModel::GetPickupIndexPairs;
 %rename (getPrimaryConstrainedDimension) operations_research::RoutingModel::GetPrimaryConstrainedDimension;
 %rename (getSameVehicleIndicesOfIndex) operations_research::RoutingModel::GetSameVehicleIndicesOfIndex;
@@ -179,6 +192,8 @@ class RoutingSearchParameters;
 %rename (setFirstSolutionEvaluator) operations_research::RoutingModel::SetFirstSolutionEvaluator;
 %rename (setFixedCostOfAllVehicles) operations_research::RoutingModel::SetFixedCostOfAllVehicles;
 %rename (setFixedCostOfVehicle) operations_research::RoutingModel::SetFixedCostOfVehicle;
+%rename (setPickupAndDeliveryPolicyOfAllVehicles) operations_research::RoutingModel::SetPickupAndDeliveryPolicyOfAllVehicles;
+%rename (setPickupAndDeliveryPolicyOfVehicle) operations_research::RoutingModel::SetPickupAndDeliveryPolicyOfVehicle;
 %rename (setPrimaryConstrainedDimension) operations_research::RoutingModel::SetPrimaryConstrainedDimension;
 %rename (setVisitType) operations_research::RoutingModel::SetVisitType;
 %rename (size) operations_research::RoutingModel::Size;

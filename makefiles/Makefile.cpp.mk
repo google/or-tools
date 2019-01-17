@@ -376,6 +376,9 @@ test_cc_constraint_solver_samples: \
  rcc_vrp_drop_nodes \
  rcc_vrp_global_span \
  rcc_vrp_pickup_delivery \
+ rcc_vrp_pickup_delivery_fifo \
+ rcc_vrp_pickup_delivery_lifo \
+ rcc_vrp_pickup_delivery \
  rcc_vrp_starts_ends \
  rcc_vrp_time_windows \
 

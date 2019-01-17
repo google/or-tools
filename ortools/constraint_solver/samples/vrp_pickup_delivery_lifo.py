@@ -190,6 +190,8 @@ def main():
         routing.solver().Add(
             distance_dimension.CumulVar(pickup_index) <=
             distance_dimension.CumulVar(delivery_index))
+    routing.SetPickupAndDeliveryPolicyOfAllVehicles(
+        pywrapcp.RoutingModel.LIFO)
     # [END pickup_delivery]
 
     # Setting first solution heuristic.

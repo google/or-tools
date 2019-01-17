@@ -381,6 +381,8 @@ test_java_constraint_solver_samples: \
  rjava_VrpDropNodes \
  rjava_VrpGlobalSpan \
  rjava_VrpPickupDelivery \
+ rjava_VrpPickupDeliveryFifo \
+ rjava_VrpPickupDeliveryLifo \
  rjava_VrpStartsEnds \
  rjava_VrpTimeWindows \
 

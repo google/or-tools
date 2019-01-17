@@ -214,7 +214,6 @@ class RoutingModel {
     ROUTING_INVALID
   };
 
-#ifndef SWIG
   // Types of precedence policy applied to pickup and delivery pairs.
   enum class PickupAndDeliveryPolicy {
     // Any precedence is accepted.
@@ -224,7 +223,6 @@ class RoutingModel {
     // Deliveries must be performed in the same order as pickups.
     FIFO
   };
-#endif  // SWIG
   typedef RoutingCostClassIndex CostClassIndex;
   typedef RoutingDimensionIndex DimensionIndex;
   typedef RoutingDisjunctionIndex DisjunctionIndex;
@@ -641,6 +639,16 @@ class RoutingModel {
       GetDeliveryIndexPairs(int64 node_index) const;
   // clang-format on
 
+  void SetPickupAndDeliveryPolicyOfVehicle(PickupAndDeliveryPolicy policy,
+                                           int vehicle);
+  // Sets the Pickup and delivery policy of all vehicles. It is equivalent to calling
+  // SetPickupAndDeliveryPolicyOfVehicle on all vehicles.
+  void SetPickupAndDeliveryPolicyOfAllVehicles(PickupAndDeliveryPolicy policy);
+  PickupAndDeliveryPolicy GetPickupAndDeliveryPolicyOfVehicle(int vehicle) const;
+  // Returns the number of non-start/end nodes which do not appear in a
+  // pickup/delivery pair.
+  int GetNumOfSingletonNodes() const;
+
 #ifndef SWIG
   // Returns pickup and delivery pairs currently in the model.
   const IndexPairs& GetPickupAndDeliveryPairs() const {
@@ -649,17 +657,6 @@ class RoutingModel {
   const std::vector<std::pair<DisjunctionIndex, DisjunctionIndex>>&
   GetPickupAndDeliveryDisjunctions() const {
     return pickup_delivery_disjunctions_;
-  }
-  // Returns the number of non-start/end nodes which do not appear in a
-  // pickup/delivery pair.
-  int GetNumOfSingletonNodes() const;
-  void SetPickupAndDeliveryPolicyOfVehicle(PickupAndDeliveryPolicy policy,
-                                           int vehicle) {
-    vehicle_pickup_delivery_policy_[vehicle] = policy;
-  }
-  PickupAndDeliveryPolicy GetPickupAndDeliveryPolicyOfVehicle(
-      int vehicle) const {
-    return vehicle_pickup_delivery_policy_[vehicle];
   }
 #endif  // SWIG
   // Set the node visit types and incompatibilities between the types.
@@ -1371,9 +1368,7 @@ class RoutingModel {
   std::vector<std::vector<std::pair<int, int> > >
       index_to_delivery_index_pairs_;
   // clang-format on
-#ifndef SWIG
   std::vector<PickupAndDeliveryPolicy> vehicle_pickup_delivery_policy_;
-#endif  // SWIG
   // Same vehicle group to which a node belongs.
   std::vector<int> same_vehicle_group_;
   // Same vehicle node groups.

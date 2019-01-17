@@ -52,6 +52,17 @@ class RoutingSearchParameters;
   }
 }
 
+// Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
+// For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
+%extend operations_research::RoutingModel {
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy ANY =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::ANY;
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy LIFO =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::LIFO;
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy FIFO =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::FIFO;
+}
+
 %ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
 %ignore operations_research::RoutingModel::StateDependentTransitCallback;
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;

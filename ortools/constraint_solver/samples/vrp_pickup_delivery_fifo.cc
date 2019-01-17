@@ -176,6 +176,7 @@ void VrpGlobalSpan() {
         solver->MakeLessOrEqual(distance_dimension.CumulVar(pickup_index),
                                 distance_dimension.CumulVar(delivery_index)));
   }
+  routing.SetPickupAndDeliveryPolicyOfAllVehicles(RoutingModel::PickupAndDeliveryPolicy::FIFO);
   // [END pickup_delivery]
 
   // Setting first solution heuristic.
