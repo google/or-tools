@@ -56,7 +56,8 @@ set(BUILD_TESTING OFF)
 # the real target name of an aliased target and create a new alias
 macro(alias_target target_to_aliased alias_name)
 	get_target_property(alias_TARGET ${target_to_aliased} ALIASED_TARGET)
-	if ("${alias_TARGET}" STREQUAL "NOTFOUND")
+	if (NOT ${alias_TARGET})
+    # The target was not an alias so we can use it !
 		set(alias_TARGET ${target_to_aliased})
 	endif()
 	add_library(${alias_name} ALIAS ${alias_TARGET})
