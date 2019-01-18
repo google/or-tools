@@ -132,14 +132,14 @@ find_package(abseil REQUIRED)
 
 find_package(Cbc REQUIRED)
 
+# Reapply previous state
+set(BUILD_SHARED_LIBS ${BUILD_SHARED_BCKP})
+
 # Verify Dependencies
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 
 add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP)
-
-# Reapply previous state
-set(BUILD_SHARED_LIBS ${BUILD_SHARED_BCKP})
 
 # Main Target
 add_library(${PROJECT_NAME} "")
