@@ -76,7 +76,7 @@ endif()
 
 find_package(gflags REQUIRED)
 
-if (NOT TARGET gflags::gflags)
+if(NOT TARGET gflags::gflags)
   if(TARGET gflags)
     alias_target(gflags gflags::gflags)
   else()
@@ -104,7 +104,7 @@ endif()
 
 find_package(ZLIB REQUIRED)
 
-if (NOT TARGET ZLIB::ZLIB)
+if(NOT TARGET ZLIB::ZLIB)
   if(TARGET zlib)
     add_library(ZLIB::ZLIB ALIAS zlib)
   elseif(TARGET zlibstatic)
