@@ -52,14 +52,84 @@ set(BUILD_SHARED_LIBS OFF)
 # Disable test rules for dependencies
 set(BUILD_TESTING OFF)
 
+# Since it is not possible to ALIAS an already aliased target, this macro get
+# the real target name of an aliased target and create a new alias
+macro(alias_target target_to_aliased alias_name)
+	get_target_property(alias_TARGET ${target_to_aliased} ALIASED_TARGET)
+	if ("${alias_TARGET}" STREQUAL "NOTFOUND")
+		set(alias_TARGET ${target_to_aliased})
+	endif()
+	add_library(${alias_name} ALIAS ${alias_TARGET})
+endmacro()
+
+########
+# Swig #
+########
+
 if(WIN32 AND (BUILD_PYTHON OR BUILD_JAVA OR BUILD_CSHARP))
     find_package(Swig REQUIRED)
 endif()
+
+##########
+# gflags #
+##########
+
 find_package(gflags REQUIRED)
+
+if (NOT TARGET gflags::gflags)
+  if(TARGET gflags)
+    alias_target(gflags gflags::gflags)
+  else()
+    message(FATAL_ERROR "Cannot find target gflags::gflags")
+  endif()
+endif()
+
+########
+# glog #
+########
+
 find_package(glog REQUIRED)
+
+if(NOT TARGET glog::glog)
+  if(TARGET glog)
+    alias_target(glog glog::glog)
+  else()
+    message(FATAL_ERROR "Cannot find target glog::glog")
+  endif()
+endif()
+
+########
+# ZLIB #
+########
+
 find_package(ZLIB REQUIRED)
+
+if (NOT TARGET ZLIB::ZLIB)
+  if(TARGET zlib)
+    add_library(ZLIB::ZLIB ALIAS zlib)
+  elseif(TARGET zlibstatic)
+    add_library(ZLIB::ZLIB ALIAS zlibstatic)
+  else()
+    message(FATAL_ERROR "Cannot find target ZLIB::ZLIB")
+  endif()
+endif()
+
+############
+# Protobuf #
+############
+
 find_package(Protobuf REQUIRED)
+
+##########
+# abseil #
+##########
+
 find_package(abseil REQUIRED)
+
+#######
+# Cbc #
+#######
+
 find_package(Cbc REQUIRED)
 
 # Verify Dependencies
