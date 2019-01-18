@@ -59,7 +59,7 @@ public class Tsp {
   ///   positions and computes the Manhattan distance between the two
   ///   positions of two different indices.
   /// </summary>
-  class ManhattanDistance : LongLongToLong {
+  class ManhattanDistance {
     public ManhattanDistance(
         in DataModel data,
         in RoutingIndexManager manager) {
@@ -82,7 +82,7 @@ public class Tsp {
     /// <summary>
     ///   Returns the manhattan distance between the two nodes
     /// </summary>
-    public override long Run(long FromIndex, long ToIndex) {
+    public long call(long FromIndex, long ToIndex) {
       // Convert from routing variable Index to distance matrix NodeIndex.
       int FromNode = indexManager_.IndexToNode(FromIndex);
       int ToNode = indexManager_.IndexToNode(ToIndex);
@@ -136,12 +136,14 @@ public class Tsp {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
+    // Create a distance callback.
+    // [START distance_callback]
+    var distanceCallback = new ManhattanDistance(data, manager);
+    int transitCallbackIndex = routing.RegisterTransitCallback(distanceCallback.call);
+    // [END distance_callback]
+
     // Define cost of each arc.
     // [START arc_cost]
-    LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
-    //protect callbacks from the GC
-    GC.KeepAlive(distanceEvaluator);
-    int transitCallbackIndex = routing.RegisterTransitCallback(distanceEvaluator);
     routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 

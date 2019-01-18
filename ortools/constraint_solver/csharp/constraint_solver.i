@@ -17,16 +17,18 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Generic;
 %}
 
 %include "enumsimple.swg"
 %include "stdint.i"
 %include "exception.i"
 %include "std_vector.i"
+%include "std_common.i"
+%include "std_string.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/tuple_set.i"
-%include "ortools/util/csharp/functions.i"
 %include "ortools/util/csharp/proto.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
@@ -37,7 +39,7 @@ class ConstraintSolverParameters;
 class SearchLimitParameters;
 }  // namespace operations_research
 
-%module(directors="1", allprotected="1") operations_research;
+%module(directors="1") operations_research;
 #pragma SWIG nowarn=473
 
 %feature("director") BaseLns;
@@ -81,8 +83,8 @@ struct FailureProtect {
 };
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
+//typedef int64_t int64;
+//typedef uint64_t uint64;
 
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
@@ -161,10 +163,6 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearc
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreaker)
 
-%ignore operations_research::Solver::MakeIntVarArray;
-%ignore operations_research::Solver::MakeBoolVarArray;
-%ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
-%ignore operations_research::IntVarLocalSearchFilter::FindIndex;
 %ignore operations_research::PropagationBaseObject::set_action_on_fail;
 
 // Generic rename rule.
@@ -198,11 +196,20 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 // Rename rule on SearchLimit
 %rename (IsCrossed) operations_research::SearchLimit::crossed;
 
-// Rename rules on Solver.
-%rename (Add) operations_research::Solver::AddConstraint;
-
 // Rename rule on DisjunctiveConstraint.
 %rename (SequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
+// Keep reference to delegate to avoid GC to collect them early
+%typemap(cscode) operations_research::DisjunctiveConstraint %{
+  // Store list of delegates to avoid the GC to reclaim them.
+  private List<IndexEvaluator2> indexEvaluator2Callbacks;
+  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
+  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private IndexEvaluator2 StoreIndexEvaluator2(IndexEvaluator2 c) {
+    if (indexEvaluator2Callbacks == null) indexEvaluator2Callbacks = new List<IndexEvaluator2>();
+    indexEvaluator2Callbacks.Add(c);
+    return c;
+  }
+%}
 
 // Generic rename rules.
 %rename (ToString) *::DebugString;
@@ -282,7 +289,7 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %unignore operations_research::PathOperator::MakeNeighbor;
 
 // LocalSearchFilter
-%feature("director") operations_research::IntVarLocalSearchFilter;
+%feature("director") operations_research::LocalSearchFilter;
 %unignore operations_research::LocalSearchFilter::Accept;
 %unignore operations_research::LocalSearchFilter::Synchronize;
 %unignore operations_research::LocalSearchFilter::IsIncremental;
@@ -293,6 +300,9 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %feature("director") operations_research::IntVarLocalSearchFilter;
 %feature("nodirector") operations_research::IntVarLocalSearchFilter::Synchronize;  // Inherited.
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
+%ignore operations_research::IntVarLocalSearchFilter::IntVarLocalSearchFilter(
+    const std::vector<IntVar*>& vars,
+    Solver::ObjectiveWatcher objective_callback);
 %unignore operations_research::IntVarLocalSearchFilter::AddVars;  // Inherited.
 %unignore operations_research::IntVarLocalSearchFilter::IsIncremental;
 %unignore operations_research::IntVarLocalSearchFilter::OnSynchronize;
@@ -300,11 +310,25 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %unignore operations_research::IntVarLocalSearchFilter::Start;
 %unignore operations_research::IntVarLocalSearchFilter::Value;
 %unignore operations_research::IntVarLocalSearchFilter::Var;  // Inherited.
-
-// Rename NewSearch and EndSearch to add pinning. See the overrides of
-// NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
-%rename (NewSearchAux) operations_research::Solver::NewSearch;
-%rename (EndSearchAux) operations_research::Solver::EndSearch;
+// Extend IntVarLocalSearchFilter with an intuitive API.
+%extend operations_research::IntVarLocalSearchFilter {
+  int Index(IntVar* const var) {
+    int64 index = -1;
+    $self->FindIndex(var, &index);
+    return index;
+  }
+}
+// Keep reference to delegate to avoid GC to collect them early
+%typemap(cscode) operations_research::IntVarLocalSearchFilter %{
+  // Store list of delegates to avoid the GC to reclaim them.
+  private ObjectiveWatcher objectiveWatcherCallbacks;
+  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
+  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private ObjectiveWatcher StoreObjectiveWatcher(ObjectiveWatcher c) {
+    objectiveWatcherCallbacks = c;
+    return c;
+  }
+%}
 
 // Transform IntVar.
 %ignore operations_research::IntVar::MakeDomainIterator;
@@ -324,10 +348,14 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 
 %typemap(csinterfaces_derived) operations_research::Constraint "IConstraintWithStatus";
 
+// Solver
 namespace operations_research {
-// Take care of API with function.  SWIG doesn't wrap std::function<>
-// properly, so we write our custom wrappers for all methods involving
-// std::function<>.
+// Ignore rules on Solver.
+%ignore Solver::MakeIntVarArray;
+%ignore Solver::MakeBoolVarArray;
+%ignore Solver::MakeFixedDurationIntervalVarArray;
+// Take care of API with function. SWIG doesn't wrap std::function<> properly,
+// so we write our custom wrappers for all methods involving std::function<>.
 %ignore Solver::MakeSearchLog(
     int branch_period,
     std::function<std::string()> display_callback);
@@ -342,354 +370,167 @@ namespace operations_research {
 
 %ignore Solver::MakeActionDemon;
 %ignore Solver::MakeCustomLimit(std::function<bool()> limiter);
-%ignore Solver::MakeElement(IndexEvaluator1 values, IntVar* const index);
-%ignore Solver::MakeMonotonicElement(IndexEvaluator1 values, bool increasing,
-                                     IntVar* const index);
-%ignore Solver::MakeElement(IndexEvaluator2 values, IntVar* const index1,
-                            IntVar* const index2);
-%ignore Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
-                              const std::vector<IntVar*>& active,
-                              const std::vector<IntVar*>& cumuls,
-                              IndexEvaluator2 transit_evaluator);
-%ignore Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
-                              const std::vector<IntVar*>& active,
-                              const std::vector<IntVar*>& cumuls,
-                              const std::vector<IntVar*>& slacks,
-                              IndexEvaluator2 transit_evaluator);
-%ignore Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
-                            const std::vector<IntVar*>& active,
-                            IndexFilter1 sink_handler = nullptr);
-%ignore Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
-                            const std::vector<IntVar*>& active,
-                            IndexFilter1 sink_handler, bool assume_paths);
-%ignore Solver::MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
-                                      IndexEvaluator2 objective_function,
-                                      int64 step, const std::vector<IntVar*>& vars,
-                                      double penalty_factor);
-%ignore Solver::MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
-                                      IndexEvaluator3 objective_function,
-                                      int64 step, const std::vector<IntVar*>& vars,
-                                      const std::vector<IntVar*>& secondary_vars,
-                                      double penalty_factor);
-%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
-                          IndexEvaluator1 var_evaluator,
-                          IntValueStrategy val_str);
 
-%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
-                          IntVarStrategy var_str, IndexEvaluator2 val_eval);
-
-%ignore Solver::MakePhase(
-    const std::vector<IntVar*>& vars, IntVarStrategy var_str,
-    VariableValueComparator var_val1_val2_comparator);
-
-%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
-                          IndexEvaluator1 var_evaluator,
-                          IndexEvaluator2 val_eval);
-
-%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
-                          IntVarStrategy var_str, IndexEvaluator2 val_eval,
-                          IndexEvaluator1 tie_breaker);
-
-%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
-                          IndexEvaluator1 var_evaluator,
-                          IndexEvaluator2 val_eval,
-                          IndexEvaluator1 tie_breaker);
-%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
-                          IndexEvaluator2 evaluator, EvaluatorStrategy str);
-%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
-                          IndexEvaluator2 evaluator,
-                          IndexEvaluator1 tie_breaker,
-                          EvaluatorStrategy str);
-%ignore Solver::MakeOperator(const std::vector<IntVar*>& vars,
-                             IndexEvaluator3 evaluator,
-                             EvaluatorLocalSearchOperators op);
-%ignore Solver::MakeOperator(const std::vector<IntVar*>& vars,
-                             const std::vector<IntVar*>& secondary_vars,
-                             IndexEvaluator3 evaluator,
-                             EvaluatorLocalSearchOperators op);
-%ignore Solver::MakeSumObjectiveFilter(
-    const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
-%ignore Solver::MakeSumObjectiveFilter(
-    const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-    ObjectiveWatcher delta_objective_callback, IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum);
-%ignore Solver::MakeSumObjectiveFilter(
-    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-    Solver::IndexEvaluator3 values, IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum);
-%ignore Solver::MakeSumObjectiveFilter(
-    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-    Solver::IndexEvaluator3 values, ObjectiveWatcher delta_objective_callback,
-    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
 %ignore Solver::ConcatenateOperators(
     const std::vector<LocalSearchOperator*>& ops,
     std::function<int64(int, int)> evaluator);
 %ignore Solver::MakeClosureDemon(std::function<void()> closure);
 %ignore Solver::set_fail_intercept;
+// Rename rules on Solver.
+%rename (Add) Solver::AddConstraint;
+// Rename NewSearch and EndSearch to add pinning. See the overrides of
+// NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
+%rename (NewSearchAux) Solver::NewSearch;
+%rename (EndSearchAux) Solver::EndSearch;
+
+// Define the delegate IndexEvaluator[1-3] callback types.
+// This replace the IndexEvaluator[1-3] in the C# proxy class
+%typemap(csimports) Solver %{
+  using System.Collections.Generic; // List<>
+
+  public delegate long IndexEvaluator1(long u);
+  public delegate long IndexEvaluator2(long u, long v);
+  public delegate long IndexEvaluator3(long u, long v, long w);
+
+  public delegate bool IndexFilter1(long u);
+  public delegate void ObjectiveWatcher(long u);
+%}
+
+// Keep reference to delegate to avoid GC to collect them early
+%typemap(cscode) Solver %{
+  // Store list of delegates to avoid the GC to reclaim them.
+  private List<IndexEvaluator1> indexEvaluator1Callbacks;
+  private List<IndexEvaluator2> indexEvaluator2Callbacks;
+  private List<IndexEvaluator3> indexEvaluator3Callbacks;
+
+  private List<IndexFilter1> indexFilter1Callbacks;
+  private List<ObjectiveWatcher> objectiveWatcherCallbacks;
+
+  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
+  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private IndexEvaluator1 StoreIndexEvaluator1(IndexEvaluator1 c) {
+    if (indexEvaluator1Callbacks == null) indexEvaluator1Callbacks = new List<IndexEvaluator1>();
+    indexEvaluator1Callbacks.Add(c);
+    return c;
+  }
+  private IndexEvaluator2 StoreIndexEvaluator2(IndexEvaluator2 c) {
+    if (indexEvaluator2Callbacks == null) indexEvaluator2Callbacks = new List<IndexEvaluator2>();
+    indexEvaluator2Callbacks.Add(c);
+    return c;
+  }
+  private IndexEvaluator3 StoreIndexEvaluator3(IndexEvaluator3 c) {
+    if (indexEvaluator3Callbacks == null) indexEvaluator3Callbacks = new List<IndexEvaluator3>();
+    indexEvaluator3Callbacks.Add(c);
+    return c;
+  }
+
+  private IndexFilter1 StoreIndexFilter1(IndexFilter1 c) {
+    if (indexFilter1Callbacks == null) indexFilter1Callbacks = new List<IndexFilter1>();
+    indexFilter1Callbacks.Add(c);
+    return c;
+  }
+  private ObjectiveWatcher StoreObjectiveWatcher(ObjectiveWatcher c) {
+    if (objectiveWatcherCallbacks == null) objectiveWatcherCallbacks = new List<ObjectiveWatcher>();
+    objectiveWatcherCallbacks.Add(c);
+    return c;
+  }
+%}
+
+// Types in Foo.cs Foo::f(cstype csinput, ...) {Foo_f_SWIG(csin, ...);}
+// e.g.:
+// Foo::f(IndexEvaluator1 arg1) {
+//  ...
+//  ...PINVOKE.Foo_f_SWIG(..., StoreIndexEvaluator1(arg1), ...);
+// }
+%typemap(cstype, out="IntPtr") Solver::IndexEvaluator1 "IndexEvaluator1"
+%typemap(csin) Solver::IndexEvaluator1 "StoreIndexEvaluator1($csinput)"
+%typemap(cstype, out="IntPtr") Solver::IndexEvaluator2 "IndexEvaluator2"
+%typemap(csin) Solver::IndexEvaluator2 "StoreIndexEvaluator2($csinput)"
+%typemap(cstype, out="IntPtr") Solver::IndexEvaluator3 "IndexEvaluator3"
+%typemap(csin) Solver::IndexEvaluator3 "StoreIndexEvaluator3($csinput)"
+
+%typemap(cstype, out="IntPtr") Solver::IndexFilter1 "IndexFilter1"
+%typemap(csin) Solver::IndexFilter1 "StoreIndexFilter1($csinput)"
+%typemap(cstype, out="IntPtr") Solver::ObjectiveWatcher "ObjectiveWatcher"
+%typemap(csin) Solver::ObjectiveWatcher "StoreObjectiveWatcher($csinput)"
+// Type in the prototype of PINVOKE function.
+%typemap(imtype, out="IntPtr") Solver::IndexEvaluator1 "IndexEvaluator1"
+%typemap(imtype, out="IntPtr") Solver::IndexEvaluator2 "IndexEvaluator2"
+%typemap(imtype, out="IntPtr") Solver::IndexEvaluator3 "IndexEvaluator3"
+
+%typemap(imtype, out="IntPtr") Solver::IndexFilter1 "IndexFilter1"
+%typemap(imtype, out="IntPtr") Solver::ObjectiveWatcher "ObjectiveWatcher"
+
+// Type use in module_csharp_wrap.h function declaration.
+// since SWIG generate code as: `ctype argX` we can't use a C function pointer type.
+%typemap(ctype) Solver::IndexEvaluator1 "void*" // "int64 (*)(int64)"
+%typemap(ctype) Solver::IndexEvaluator2 "void*" // "int64 (*)(int64, int64)"
+%typemap(ctype) Solver::IndexEvaluator3 "void*" // "int64 (*)(int64, int64, int64)"
+
+%typemap(ctype) Solver::IndexFilter1 "void*" // "bool (*)(int64)"
+%typemap(ctype) Solver::ObjectiveWatcher "void*" // "void (*)(int64)"
+
+// Convert in module_csharp_wrap.cc input argument (delegate marshaled in C function pointer) to original std::function<...>
+%typemap(in) Solver::IndexEvaluator1  %{
+  $1 = [$input](int64 u) -> int64 {
+    return (*(int64 (*)(int64))$input)(u);
+    };
+%}
+%typemap(in) Solver::IndexEvaluator2  %{
+  $1 = [$input](int64 u, int64 v) -> int64 {
+    return (*(int64 (*)(int64, int64))$input)(u, v);};
+%}
+%typemap(in) Solver::IndexEvaluator3  %{
+  $1 = [$input](int64 u, int64 v, int64 w) -> int64 {
+    return (*(int64 (*)(int64, int64, int64))$input)(u, v, w);};
+%}
+
+%typemap(in) Solver::IndexFilter1  %{
+  $1 = [$input](int64 u) -> bool {
+    return (*(bool (*)(int64))$input)(u);};
+%}
+%typemap(in) Solver::ObjectiveWatcher %{
+  $1 = [$input](int64 u) -> void {
+    return (*(void (*)(int64))$input)(u);};
+%}
 
 %extend Solver {
-  IntExpr* MakeElement(swig_util::LongToLong* values, IntVar* const index) {
-    return $self->MakeElement(
-        [values](int64 i) { return values->Run(i); }, index);
-  }
-  IntExpr* MakeMonotonicElement(swig_util::LongToLong* values, bool increasing,
-                                IntVar* const index) {
-    return $self->MakeMonotonicElement(
-        [values](int64 i) { return values->Run(i); }, increasing, index);
-  }
-  IntExpr* MakeElement(swig_util::LongLongToLong* values, IntVar* const index1,
-                       IntVar* const index2) {
-    return $self->MakeElement(
-        [values](int64 i, int64 j) { return values->Run(i, j); }, index1,
-        index2);
-  }
-  Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
-                            const std::vector<IntVar*>& active,
-                            const std::vector<IntVar*>& cumuls,
-                            swig_util::LongLongToLong* transit_evaluator) {
-    return $self->MakePathCumul(
-        nexts, active, cumuls,
-        [transit_evaluator](int64 i, int64 j) {
-          return transit_evaluator->Run(i, j); });
-  }
-  Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
-                            const std::vector<IntVar*>& active,
-                            const std::vector<IntVar*>& cumuls,
-                            const std::vector<IntVar*>& slacks,
-                            swig_util::LongLongToLong* transit_evaluator) {
-    return $self->MakePathCumul(nexts, active, cumuls, slacks,
-        [transit_evaluator](int64 i, int64 j) {
-          return transit_evaluator->Run(i, j); });
-  }
-  Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
-                          const std::vector<IntVar*>& active,
-                          swig_util::LongToBoolean* sink_handler = nullptr) {
-    if (sink_handler == nullptr) {
-      return $self->MakeNoCycle(nexts, active, nullptr);
-    } else {
-      return $self->MakeNoCycle(nexts, active,
-                                [sink_handler](int64 i) {
-                                  return sink_handler->Run(i); });
-    }
-  }
-  Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
-                          const std::vector<IntVar*>& active,
-                          swig_util::LongToBoolean* sink_handler, bool assume_paths) {
-    return $self->MakeNoCycle(nexts, active,
-                              [sink_handler](int64 i) {
-                                return sink_handler->Run(i); });
-  }
-  SearchMonitor* MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
-                                       swig_util::LongLongToLong* objective_function,
-                                       int64 step, const std::vector<IntVar*>& vars,
-                                       double penalty_factor) {
-    return $self->MakeGuidedLocalSearch(
-        maximize, objective,
-        [objective_function](int64 i, int64 j) {
-            return objective_function->Run(i, j); },
-        step, vars, penalty_factor);
-  }
-  SearchMonitor* MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
-                                       swig_util::LongLongLongToLong* objective_function,
-                                       int64 step, const std::vector<IntVar*>& vars,
-                                       const std::vector<IntVar*>& secondary_vars,
-                                       double penalty_factor) {
-    return $self->MakeGuidedLocalSearch(
-        maximize, objective,
-        [objective_function](int64 i, int64 j, int64 k) {
-          return objective_function->Run(i, j, k); },
-        step, vars, secondary_vars, penalty_factor);
-  }
-  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             swig_util::LongToLong* var_evaluator,
-                             IntValueStrategy val_str) {
-    return $self->MakePhase(vars, [var_evaluator](int64 i) {
-        return var_evaluator->Run(i); }, val_str);
-  }
-  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             IntVarStrategy var_str,
-                             swig_util::LongLongToLong* val_eval) {
-    operations_research::Solver::IndexEvaluator2 func =
-         [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); };
-    return $self->MakePhase(vars, var_str, func);
-  }
-  DecisionBuilder* MakePhase(
-      const std::vector<IntVar*>& vars, IntVarStrategy var_str,
-      swig_util::LongLongLongToBoolean* var_val1_val2_comparator) {
-    operations_research::Solver::VariableValueComparator comp =
-        [var_val1_val2_comparator](int64 i, int64 j, int64 k) {
-      return var_val1_val2_comparator->Run(i, j, k); };
-    return $self->MakePhase(vars, var_str, comp);
-  }
-  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             swig_util::LongToLong* var_evaluator,
-                             swig_util::LongLongToLong* val_eval) {
-    return $self->MakePhase(vars, [var_evaluator](int64 i) { return var_evaluator->Run(i); }, [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); });
-  }
-  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             IntVarStrategy var_str,
-                             swig_util::LongLongToLong* val_eval,
-                             swig_util::LongToLong* tie_breaker) {
-    return $self->MakePhase(
-        vars, var_str,
-        [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); },
-        [tie_breaker](int64 i) { return tie_breaker->Run(i); });
-  }
-  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             swig_util::LongToLong* var_evaluator,
-                             swig_util::LongLongToLong* val_eval,
-                             swig_util::LongToLong* tie_breaker) {
-    return $self->MakePhase(
-        vars,
-        [var_evaluator](int64 i) { return var_evaluator->Run(i); },
-        [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); },
-        [tie_breaker](int64 i) { return tie_breaker->Run(i); });
-  }
-  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             swig_util::LongLongToLong* evaluator,
-                             EvaluatorStrategy str) {
-    return $self->MakePhase(
-        vars,
-        [evaluator](int64 i, int64 j) { return evaluator->Run(i, j); },
-        str);
-  }
-  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             swig_util::LongLongToLong* evaluator,
-                             swig_util::LongToLong* tie_breaker,
-                             EvaluatorStrategy str) {
-    return $self->MakePhase(
-        vars,
-        [evaluator](int64 i, int64 j) { return evaluator->Run(i, j); },
-        [tie_breaker](int64 i) { return tie_breaker->Run(i); }, str);
-  }
-  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
-                                    swig_util::LongLongLongToLong* evaluator,
-                                    EvaluatorLocalSearchOperators op) {
-    return $self->MakeOperator(
-        vars,
-        [evaluator](int64 i, int64 j, int64 k) {
-          return evaluator->Run(i, j, k); }, op);
-  }
-  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
-                                    const std::vector<IntVar*>& secondary_vars,
-                                    swig_util::LongLongLongToLong* evaluator,
-                                    EvaluatorLocalSearchOperators op) {
-    return $self->MakeOperator(
-        vars, secondary_vars,
-        [evaluator](int64 i, int64 j, int64 k) {
-          return evaluator->Run(i, j, k); }, op);
-  }
-  LocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars, swig_util::LongLongToLong* values,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum) {
-    return $self->MakeSumObjectiveFilter(
-        vars, [values](int64 i, int64 j) { return values->Run(i, j); },
-        objective, filter_enum);
-  }
-  LocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars, swig_util::LongLongToLong* values,
-      swig_util::LongToVoid* delta_objective_callback, IntVar* const objective,
-      Solver::LocalSearchFilterBound filter_enum) {
-    return $self->MakeSumObjectiveFilter(
-        vars, [values](int64 i, int64 j) { return values->Run(i, j); },
-        [delta_objective_callback](int64 i) {
-          return delta_objective_callback->Run(i); },
-        objective, filter_enum);
-  }
-  LocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-      swig_util::LongLongLongToLong* values, IntVar* const objective,
-      Solver::LocalSearchFilterBound filter_enum) {
-    return $self->MakeSumObjectiveFilter(
-        vars, secondary_vars,
-        [values](int64 i, int64 j, int64 k) { return values->Run(i, j, k); },
-        objective, filter_enum);
-  }
-  LocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars,
-      swig_util::LongLongLongToLong* values,
-      swig_util::LongToVoid* delta_objective_callback,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum) {
-    return $self->MakeSumObjectiveFilter(
-        vars, secondary_vars,
-        [values](int64 i, int64 j, int64 k) { return values->Run(i, j, k); },
-        [delta_objective_callback](int64 i) {
-          return delta_objective_callback->Run(i); },
-        objective, filter_enum);
-  }
-  LocalSearchOperator* ConcatenateOperators(
-      const std::vector<LocalSearchOperator*>& ops,
-      swig_util::IntIntToLong* evaluator) {
-    return $self->ConcatenateOperators(ops, [evaluator](int i, int64 j) {
-        return evaluator->Run(i, j); });
-  }
-  SearchMonitor* MakeSearchLog(
-      int branch_count,
-      OptimizeVar* const objective,
-      swig_util::VoidToString* display_callback) {
-    return $self->MakeSearchLog(branch_count, objective, [display_callback]() {
-        return display_callback->Run();
-      });
-  }
-  SearchMonitor* MakeSearchLog(
-      int branch_count,
-      IntVar* const obj_var,
-      swig_util::VoidToString* display_callback) {
-    return $self->MakeSearchLog(branch_count, obj_var, [display_callback]() {
-        return display_callback->Run();
-      });
-  }
-  SearchMonitor* MakeSearchLog(
-      int branch_count,
-      swig_util::VoidToString* display_callback) {
-    return $self->MakeSearchLog(branch_count, [display_callback]() {
-        return display_callback->Run();
-      });
-  }
-  SearchLimit* MakeCustomLimit(swig_util::VoidToBoolean* limiter) {
-    return $self->MakeCustomLimit([limiter]() { return limiter->Run(); });
-  }
-  Demon* MakeClosureDemon(swig_util::VoidToVoid* closure) {
-    return $self->MakeClosureDemon([closure]() { return closure->Run(); });
-  }
+  //LocalSearchOperator* ConcatenateOperators(
+  //    const std::vector<LocalSearchOperator*>& ops,
+  //    swig_util::IntIntToLong* evaluator) {
+  //  return $self->ConcatenateOperators(ops, [evaluator](int i, int64 j) {
+  //      return evaluator->Run(i, j); });
+  //}
+  //SearchMonitor* MakeSearchLog(
+  //    int branch_count,
+  //    OptimizeVar* const objective,
+  //    swig_util::VoidToString* display_callback) {
+  //  return $self->MakeSearchLog(branch_count, objective, [display_callback]() {
+  //      return display_callback->Run();
+  //    });
+  //}
+  //SearchMonitor* MakeSearchLog(
+  //    int branch_count,
+  //    IntVar* const obj_var,
+  //    swig_util::VoidToString* display_callback) {
+  //  return $self->MakeSearchLog(branch_count, obj_var, [display_callback]() {
+  //      return display_callback->Run();
+  //    });
+  //}
+  //SearchMonitor* MakeSearchLog(
+  //    int branch_count,
+  //    swig_util::VoidToString* display_callback) {
+  //  return $self->MakeSearchLog(branch_count, [display_callback]() {
+  //      return display_callback->Run();
+  //    });
+  //}
+  //SearchLimit* MakeCustomLimit(swig_util::VoidToBoolean* limiter) {
+  //  return $self->MakeCustomLimit([limiter]() { return limiter->Run(); });
+  //}
+  //Demon* MakeClosureDemon(swig_util::VoidToVoid* closure) {
+  //  return $self->MakeClosureDemon([closure]() { return closure->Run(); });
+  //}
 }  // extend Solver
-
-%ignore DisjunctiveConstraint::SetTransitionTime(Solver::IndexEvaluator2 transit_evaluator);
-%extend DisjunctiveConstraint {
-  void SetTransitionTime(swig_util::LongLongToLong* transit_evaluator) {
-    $self->SetTransitionTime([transit_evaluator](int64 i, int64 j) { return transit_evaluator->Run(i, j); });
-  }
-}  // extend DisjunctiveConstraint
-
-%ignore Pack::AddWeightedSumLessOrEqualConstantDimension(
-      Solver::IndexEvaluator1 weights, const std::vector<int64>& bounds);
-%ignore Pack::AddWeightedSumLessOrEqualConstantDimension(
-    Solver::IndexEvaluator2 weights, const std::vector<int64>& bounds);
-%ignore Pack::AddWeightedSumEqualVarDimension(Solver::IndexEvaluator2 weights,
-                                              const std::vector<IntVar*>& loads);
-%extend Pack {
-void AddWeightedSumLessOrEqualConstantDimension(
-    swig_util::LongToLong* weights, const std::vector<int64>& bounds) {
-  operations_research::Solver::IndexEvaluator1 eval = [weights](int64 i) {
-    return weights->Run(i);
-  };
-  return $self->AddWeightedSumLessOrEqualConstantDimension(eval, bounds);
-}
-
-void AddWeightedSumLessOrEqualConstantDimension(
-    swig_util::LongLongToLong* weights, const std::vector<int64>& bounds) {
-  operations_research::Solver::IndexEvaluator2 eval =
-      [weights](int64 i, int64 j) { return weights->Run(i, j); };
-  return $self->AddWeightedSumLessOrEqualConstantDimension(eval, bounds);
-}
-void AddWeightedSumEqualVarDimension(
-    swig_util::LongLongToLong* weights, const std::vector<IntVar*>& loads) {
-  return $self->AddWeightedSumEqualVarDimension([weights](int64 i, int64 j) { return weights->Run(i, j); }, loads);
-}
-
-}  // extend Pack
 
 // No custom wrapping for this method, we simply ignore it.
 %ignore SearchLog::SearchLog(
@@ -844,19 +685,32 @@ void AddWeightedSumEqualVarDimension(
   }
 }
 
-%extend IntVarLocalSearchFilter {
-  int Index(IntVar* const var) {
-    int64 index = -1;
-    $self->FindIndex(var, &index);
-    return index;
-  }
-}
-
 class LocalSearchPhaseParameters {
  public:
   LocalSearchPhaseParameters();
   ~LocalSearchPhaseParameters();
 };
+
+// Pack
+// Keep reference to delegate to avoid GC to collect them early
+%typemap(cscode) Pack %{
+  // Store list of delegates to avoid the GC to reclaim them.
+  private List<IndexEvaluator1> indexEvaluator1Callbacks;
+  private List<IndexEvaluator2> indexEvaluator2Callbacks;
+  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
+  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private IndexEvaluator1 StoreIndexEvaluator1(IndexEvaluator1 c) {
+    if (indexEvaluator1Callbacks == null) indexEvaluator1Callbacks = new List<IndexEvaluator1>();
+    indexEvaluator1Callbacks.Add(c);
+    return c;
+  }
+  private IndexEvaluator2 StoreIndexEvaluator2(IndexEvaluator2 c) {
+    if (indexEvaluator2Callbacks == null) indexEvaluator2Callbacks = new List<IndexEvaluator2>();
+    indexEvaluator2Callbacks.Add(c);
+    return c;
+  }
+%}
+
 }  // namespace operations_research
 
 // Protobuf support
