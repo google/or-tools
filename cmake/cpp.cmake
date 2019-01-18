@@ -43,10 +43,6 @@ else()
   add_definitions(-fwrapv)
 endif()
 
-# Verify Dependencies
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-find_package(Threads REQUIRED)
-
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Force dependencies to be built as static
@@ -58,10 +54,14 @@ set(BUILD_TESTING OFF)
 
 find_package(gflags REQUIRED)
 find_package(glog REQUIRED)
-find_package(Zlib REQUIRED)
+find_package(ZLIB REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(abseil REQUIRED)
 find_package(Cbc REQUIRED)
+
+# Verify Dependencies
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+find_package(Threads REQUIRED)
 
 add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP)
 
