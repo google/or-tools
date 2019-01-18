@@ -61,7 +61,7 @@ class RoutingSearchParameters;
   }
 }
 
-// RoutingModel
+// RoutingModel Callback
 namespace operations_research {
 // Define the delegate for Transit callback types.
 // This replace the RoutingTransitCallback[1-2] in the C# proxy class

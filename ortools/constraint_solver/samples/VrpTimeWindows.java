@@ -84,24 +84,6 @@ public class VrpTimeWindows {
   }
   // [END data_model]
 
-  // [START time_callback]
-  static class TimeCallback extends LongLongToLong {
-    public TimeCallback(DataModel data, RoutingIndexManager manager) {
-      timeMatrix = data.timeMatrix;
-      indexManager = manager;
-    }
-    @Override
-    public long run(long fromIndex, long toIndex) {
-      // Convert from routing variable Index to time matrix NodeIndex.
-      int fromNode = indexManager.indexToNode(fromIndex);
-      int toNode = indexManager.indexToNode(toIndex);
-      return timeMatrix[fromNode][toNode];
-    }
-    private final long[][] timeMatrix;
-    private final RoutingIndexManager indexManager;
-  }
-  // [END time_callback]
-
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
@@ -152,10 +134,19 @@ public class VrpTimeWindows {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
+    // Create and register a transit callback.
+    // [START transit_callback]
+    final int transitCallbackIndex = routing.registerTransitCallback(
+        (long fromIndex, long toIndex) -> {
+          // Convert from routing variable Index to user NodeIndex.
+          int fromNode = manager.indexToNode(fromIndex);
+          int toNode = manager.indexToNode(toIndex);
+          return data.timeMatrix[fromNode][toNode];
+        });
+    // [END transit_callback]
+
     // Define cost of each arc.
     // [START arc_cost]
-    LongLongToLong timeCallback = new TimeCallback(data, manager);
-    int transitCallbackIndex = routing.registerTransitCallback(timeCallback);
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 

@@ -17,11 +17,11 @@ import static java.lang.Math.abs;
 
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
+import java.util.function.LongBinaryOperator;
 import java.util.logging.Logger;
 // [END import]
 
@@ -74,7 +74,7 @@ public class Tsp {
   /// @details It uses an array of positions and computes
   /// the Manhattan distance between the two positions of
   /// two different indices.
-  static class ManhattanDistance extends LongLongToLong {
+  static class ManhattanDistance implements LongBinaryOperator {
     public ManhattanDistance(DataModel data, RoutingIndexManager manager) {
       // precompute distance between location to have distance callback in O(1)
       distanceMatrix = new long[data.locations.length][data.locations.length];
@@ -92,8 +92,7 @@ public class Tsp {
       }
     }
 
-    @Override
-    public long run(long fromIndex, long toIndex) {
+    public long applyAsLong(long fromIndex, long toIndex) {
       // Convert from routing variable Index to distance matrix NodeIndex.
       int fromNode = indexManager.indexToNode(fromIndex);
       int toNode = indexManager.indexToNode(toIndex);
@@ -144,10 +143,14 @@ public class Tsp {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
+    // Create and register a transit callback.
+    // [START transit_callback]
+    final int transitCallbackIndex = routing.registerTransitCallback(
+        new ManhattanDistance(data, manager));
+    // [END transit_callback]
+
     // Define cost of each arc.
     // [START arc_cost]
-    LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
-    int transitCallbackIndex = routing.registerTransitCallback(distanceEvaluator);
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 

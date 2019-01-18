@@ -65,28 +65,6 @@ public class VrpStartsEnds {
   }
   // [END data_model]
 
-  // [START manhattan_distance]
-  /// @brief Manhattan distance implemented as a transit callback.
-  /// @details It uses an array of positions and computes
-  /// the Manhattan distance between the two positions of
-  /// two different indices.
-  static class ManhattanDistance extends LongLongToLong {
-    public ManhattanDistance(DataModel data, RoutingIndexManager manager) {
-      distanceMatrix = data.distanceMatrix;
-      indexManager = manager;
-    }
-    @Override
-    public long run(long fromIndex, long toIndex) {
-      // Convert from routing variable Index to distance matrix NodeIndex.
-      int fromNode = indexManager.indexToNode(fromIndex);
-      int toNode = indexManager.indexToNode(toIndex);
-      return distanceMatrix[fromNode][toNode];
-    }
-    private final long[][] distanceMatrix;
-    private final RoutingIndexManager indexManager;
-  }
-  // [END manhattan_distance]
-
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
@@ -132,10 +110,19 @@ public class VrpStartsEnds {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
+    // Create and register a transit callback.
+    // [START transit_callback]
+    final int transitCallbackIndex = routing.registerTransitCallback(
+        (long fromIndex, long toIndex) -> {
+          // Convert from routing variable Index to user NodeIndex.
+          int fromNode = manager.indexToNode(fromIndex);
+          int toNode = manager.indexToNode(toIndex);
+          return data.distanceMatrix[fromNode][toNode];
+        });
+    // [END transit_callback]
+
     // Define cost of each arc.
     // [START arc_cost]
-    LongLongToLong distanceEvaluator = new ManhattanDistance(data, manager);
-    int transitCallbackIndex = routing.registerTransitCallback(distanceEvaluator);
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 

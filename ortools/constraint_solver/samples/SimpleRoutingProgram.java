@@ -17,7 +17,6 @@ import static java.lang.Math.abs;
 
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
@@ -51,18 +50,19 @@ public class SimpleRoutingProgram {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
+    // Create and register a transit Callback.
+    // [START transit_callback]
+    final int transitCallbackIndex = routing.registerTransitCallback(
+        (long fromIndex, long toIndex) -> {
+          // Convert from routing variable Index to user NodeIndex.
+          int fromNode = manager.indexToNode(fromIndex);
+          int toNode = manager.indexToNode(toIndex);
+          return abs(toNode - fromNode);
+        });
+    // [END transit_callback]
+
     // Define cost of each arc.
     // [START arc_cost]
-    final LongLongToLong distanceCallback = new LongLongToLong() {
-      @Override
-      public long run(long fromIndex, long toIndex) {
-        // Convert from routing variable Index to user NodeIndex.
-        int fromNode = manager.indexToNode(fromIndex);
-        int toNode = manager.indexToNode(toIndex);
-        return abs(toNode - fromNode);
-      }
-    };
-    final int transitCallbackIndex = routing.registerTransitCallback(distanceCallback);
     routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 

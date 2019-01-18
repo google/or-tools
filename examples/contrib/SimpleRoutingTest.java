@@ -1,11 +1,11 @@
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
 import java.util.ArrayList;
+import java.util.function.LongBinaryOperator;
 
 public class SimpleRoutingTest {
 
@@ -49,7 +49,7 @@ public class SimpleRoutingTest {
   }
 
   // Node Distance Evaluation
-  public static class NodeDistance extends LongLongToLong {
+  public static class NodeDistance implements LongBinaryOperator {
     private int[][] costMatrix;
     private RoutingIndexManager indexManager;
 
@@ -59,7 +59,7 @@ public class SimpleRoutingTest {
     }
 
     @Override
-    public long run(long firstIndex, long secondIndex) {
+    public long applyAsLong(long firstIndex, long secondIndex) {
       final int firstNode = indexManager.indexToNode(firstIndex);
       final int secondNode = indexManager.indexToNode(secondIndex);
       return costMatrix[firstNode][secondNode];

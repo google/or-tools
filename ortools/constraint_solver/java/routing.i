@@ -32,33 +32,27 @@ class RoutingSearchParameters;
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing.h"
+#include <memory>
 %}
 
-%typemap(in) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&
-(std::vector<std::vector<operations_research::RoutingModel::NodeIndex> > temp) {
-  if ($input) {
-    const int size = jenv->GetArrayLength($input);
-    temp.clear();
-    temp.resize(size);
-    for (int i = 0; i < size; ++i) {
-      jintArray values =
-          (jintArray)jenv->GetObjectArrayElement((jobjectArray)$input, i);
-      const int inner_size = jenv->GetArrayLength(values);
-      jint* inner_values = jenv->GetIntArrayElements(values, nullptr);
-      for (int j = 0; j < inner_size; ++j) {
-        const int value = inner_values[j];
-        temp[i].push_back(operations_research::RoutingModel::NodeIndex(value));
-      }
-      jenv->ReleaseIntArrayElements(values, inner_values, 0);
-      jenv->DeleteLocalRef(values);
-    }
-    $1 = &temp;
-  } else {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
-    return $null;
-  }
-}
+// RoutingModel methods.
+DEFINE_INDEX_TYPE_TYPEDEF(
+    operations_research::RoutingCostClassIndex,
+    operations_research::RoutingModel::CostClassIndex);
+DEFINE_INDEX_TYPE_TYPEDEF(
+    operations_research::RoutingDimensionIndex,
+    operations_research::RoutingModel::DimensionIndex);
+DEFINE_INDEX_TYPE_TYPEDEF(
+    operations_research::RoutingDisjunctionIndex,
+    operations_research::RoutingModel::DisjunctionIndex);
+DEFINE_INDEX_TYPE_TYPEDEF(
+    operations_research::RoutingVehicleClassIndex,
+    operations_research::RoutingModel::VehicleClassIndex);
 
+%ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
+%ignore operations_research::RoutingModel::StateDependentTransitCallback;
+%ignore operations_research::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 %ignore operations_research::RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
@@ -73,23 +67,102 @@ class RoutingSearchParameters;
   }
 }
 
-// Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
-// For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
-%extend operations_research::RoutingModel {
-  static const operations_research::RoutingModel::PickupAndDeliveryPolicy ANY =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::ANY;
-  static const operations_research::RoutingModel::PickupAndDeliveryPolicy LIFO =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::LIFO;
-  static const operations_research::RoutingModel::PickupAndDeliveryPolicy FIFO =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::FIFO;
-}
+// RoutingModel Callback
+namespace operations_research {
+// Map transit callback to Java @FunctionalInterface types.
+// This replace the RoutingTransitCallback[1-2] in the Java proxy class
+%typemap(javaimports) RoutingModel %{
+import java.util.List;
+import java.util.ArrayList;
 
-%ignore operations_research::RoutingModel::RegisterStateDependentTransitCallback;
-%ignore operations_research::RoutingModel::StateDependentTransitCallback;
-%ignore operations_research::RoutingModel::MakeStateDependentTransit;
-%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+// Used to wrap RoutingTransitCallback2
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
+import java.util.function.LongBinaryOperator;
+// Used to wrap RoutingTransitCallback1
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
+import java.util.function.LongUnaryOperator;
+%}
 
-// RoutingModel methods.
+// Keep reference to FunctionalInterface to avoid GC to collect them early
+%typemap(javacode) operations_research::RoutingModel %{
+  // Store list of callback to avoid the GC to reclaim them.
+  private List<LongBinaryOperator> binaryTransitCallbacks;
+  private List<LongUnaryOperator> unaryTransitCallbacks;
+
+  // Ensure that the GC does not collect any TransitCallback set from Java
+  // as the underlying C++ class only stores a shallow copy
+  private LongBinaryOperator storeBinaryTransitCallback(LongBinaryOperator c) {
+    if (binaryTransitCallbacks == null) {
+      binaryTransitCallbacks = new ArrayList<LongBinaryOperator>();
+    }
+    binaryTransitCallbacks.add(c);
+    return c;
+  }
+  private LongUnaryOperator storeUnaryTransitCallback(LongUnaryOperator c) {
+    if (unaryTransitCallbacks == null) {
+      unaryTransitCallbacks = new ArrayList<LongUnaryOperator>();
+    }
+    unaryTransitCallbacks.add(c);
+    return c;
+  }
+%}
+
+// Types in Proxy class (RoutingModel.java) e.g.:
+// Foo::f(jstype $javainput, ...) {Foo_f_SWIG(javain, ...);}
+#define %VAR_ARGS(X...) X
+%define %DEFINE_LONG_CALLBACK(
+  TYPE,
+  JAVA_TYPE, JAVA_METHOD, JAVA_SIGN,
+  LAMBDA_PARAM, LAMBDA_CALL,
+  STORE)
+  %typemap(in) TYPE %{
+    jclass object_class = jenv->GetObjectClass($input);
+    if (nullptr == object_class) return $null;
+    jmethodID method_id = jenv->GetMethodID(
+      object_class, JAVA_METHOD, JAVA_SIGN);
+    assert(method_id != nullptr);
+    // $input will be deleted once this function return.
+    jweak object_weak = jenv->NewWeakGlobalRef($input);
+
+    /* Global JNI weak reference deleter */
+    struct WeakGlobalRefGuard {
+      JNIEnv *jenv_;
+      jweak jweak_;
+      // non-copyable
+      WeakGlobalRefGuard(const WeakGlobalRefGuard &) = delete;
+      WeakGlobalRefGuard &operator=(const WeakGlobalRefGuard &) = delete;
+      public:
+      WeakGlobalRefGuard(JNIEnv *jenv, jweak jweak): jenv_(jenv), jweak_(jweak) {}
+      ~WeakGlobalRefGuard() {
+        if (jweak_) {
+          jenv_->DeleteWeakGlobalRef(jweak_);
+        }
+      }
+    };
+    auto guard = std::make_shared<WeakGlobalRefGuard>(jenv, object_weak);
+    $1 = [jenv, object_weak, method_id, guard](LAMBDA_PARAM) -> long {
+      return jenv->CallLongMethod(object_weak, method_id, LAMBDA_CALL);
+    };
+  %}
+  // These 3 typemaps tell SWIG what JNI and Java types to use.
+  %typemap(jni) TYPE "jobject" // Type use in the JNI C.
+  %typemap(jtype) TYPE "JAVA_TYPE" // Type use in the JNI.java.
+  %typemap(jstype) TYPE "JAVA_TYPE" // Type use in the Proxy class
+  // before passing the Callback to JNI java, we store a reference on it to keep it alive.
+  %typemap(javain) TYPE "STORE($javainput)"
+%enddef
+%DEFINE_LONG_CALLBACK(
+  RoutingTransitCallback2,
+  LongBinaryOperator, "applyAsLong", "(JJ)J",
+  %VAR_ARGS(long from, long to), %VAR_ARGS(from, to),
+  storeBinaryTransitCallback)
+%DEFINE_LONG_CALLBACK(
+  RoutingTransitCallback1,
+  LongUnaryOperator, "applyAsLong", "(J)J",
+  %VAR_ARGS(long from), %VAR_ARGS(from),
+  storeUnaryTransitCallback)
+}  // namespace operations_research
+
 %rename (activeVar) operations_research::RoutingModel::ActiveVar;
 %rename (addAllActive) operations_research::RoutingModel::AddAllActive;
 %rename (addAtSolutionCallback) operations_research::RoutingModel::AddAtSolutionCallback;
@@ -209,6 +282,17 @@ class RoutingSearchParameters;
 %rename (vehicleVars) operations_research::RoutingModel::VehicleVars;
 %rename (writeAssignment) operations_research::RoutingModel::WriteAssignment;
 
+// Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
+// For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
+%extend operations_research::RoutingModel {
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy ANY =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::ANY;
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy LIFO =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::LIFO;
+  static const operations_research::RoutingModel::PickupAndDeliveryPolicy FIFO =
+  operations_research::RoutingModel::PickupAndDeliveryPolicy::FIFO;
+}
+
 // RoutingDimension methods.
 %rename (cumulVar) operations_research::RoutingDimension::CumulVar;
 %rename (fixedTransitVar) operations_research::RoutingDimension::FixedTransitVar;
@@ -276,9 +360,16 @@ PROTO2_RETURN(operations_research::RoutingModelParameters,
 
 // Wrap routing_types.h, routing_parameters.h according to the SWIG styleguide.
 %ignoreall
+%unignore RoutingTransitCallback1;
 %unignore RoutingTransitCallback2;
 %unignore RoutingIndexPair;
 %unignore RoutingIndexPairs;
+
+// Add needed import to mainJNI.java
+%pragma(java) jniclassimports=%{
+import java.util.function.LongBinaryOperator;
+import java.util.function.LongUnaryOperator;
+%}
 
 // IMPORTANT(viger): These functions from routing_parameters.h are global, so in
 // java they are in the main.java (import com.[...].constraintsolver.main).
