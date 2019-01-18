@@ -42,11 +42,31 @@ if(MSVC)
 else()
   add_definitions(-fwrapv)
 endif()
-add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP)
 
 # Verify Dependencies
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Force dependencies to be built as static
+set(BUILD_SHARED_BCKP ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
+
+# Disable test rules for dependencies
+set(BUILD_TESTING OFF)
+
+find_package(gflags REQUIRED)
+find_package(glog REQUIRED)
+find_package(Zlib REQUIRED)
+find_package(Protobuf REQUIRED)
+find_package(abseil REQUIRED)
+find_package(Cbc REQUIRED)
+
+add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP)
+
+# Reapply previous state
+set(BUILD_SHARED_LIBS ${BUILD_SHARED_BCKP})
 
 # Main Target
 add_library(${PROJECT_NAME} "")
