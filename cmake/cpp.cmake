@@ -52,6 +52,9 @@ set(BUILD_SHARED_LIBS OFF)
 # Disable test rules for dependencies
 set(BUILD_TESTING OFF)
 
+if(WIN32 AND (BUILD_PYTHON OR BUILD_JAVA OR BUILD_CSHARP))
+    find_package(Swig REQUIRED)
+endif()
 find_package(gflags REQUIRED)
 find_package(glog REQUIRED)
 find_package(ZLIB REQUIRED)

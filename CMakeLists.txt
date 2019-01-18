@@ -79,6 +79,7 @@ if(BUILD_DEPS)
     endif()
   endmacro()
 
+  set(Swig_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake/external)
   set(gflags_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake/external)
   set(glog_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake/external)
   set(ZLIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake/external)
