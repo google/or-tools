@@ -15,7 +15,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
-import static org.junit.Assert.*;
+import java.util.Random;
 
 /** Tests the CP-SAT java interface. */
 public class TestSat {
@@ -24,6 +24,7 @@ public class TestSat {
   }
 
   static void testCrashInPresolve() {
+    System.out.println("testCrashInPresolve");
     CpModel model = new CpModel();
 
     // Create decision variables
@@ -50,10 +51,46 @@ public class TestSat {
     CpSolver solver = new CpSolver();
     com.google.ortools.sat.CpSolverStatus status = solver.solve(model);
 
-    assertEquals(status, CpSolverStatus.FEASIBLE);
+    if (status != CpSolverStatus.INFEASIBLE) {
+      throw new RuntimeException("Wrong status in testCrashInPresolve");
+    } else {
+      System.out.println("  ... test OK");
+    }
+  }
+
+  private static IntVar[] entitiesOne;
+  private static void testCrashInSolveWithAllowedAssignment() {
+    System.out.println("testCrashInSolveWithAllowedAssignment");
+    final CpModel model = new CpModel();
+    final int numEntityOne = 50000;
+    final int numEntityTwo = 100;
+    entitiesOne = new IntVar[numEntityOne];
+    for (int i = 0; i < entitiesOne.length; i++) {
+      entitiesOne[i] = model.newIntVar(1, numEntityTwo, "E" + i);
+    }
+    final int[][] allAllowedValues = new int[numEntityTwo][entitiesOne.length];
+    for (int i = 0; i < numEntityTwo; i++) {
+      for (int j = 0; j < entitiesOne.length; j++) {
+        allAllowedValues[i][j] = i;
+      }
+    }
+    try {
+      model.addAllowedAssignments(entitiesOne, allAllowedValues);
+    } catch (final Exception e) {
+      e.printStackTrace();
+    }
+    final Random r = new Random();
+    for (int i = 0; i < entitiesOne.length; i++) {
+      model.addEquality(entitiesOne[i], r.nextInt((numEntityTwo)));
+    }
+    final CpSolver solver = new CpSolver();
+    solver.solve(model);
+    System.out.println("  ... test OK");
   }
 
   public static void main(String[] args) throws Exception {
     testCrashInPresolve();
+    testCrashInSolveWithAllowedAssignment();
+
   }
 }
