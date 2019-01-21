@@ -287,12 +287,15 @@ struct PresolveContext {
 
   // This makes sure that the affine relation only uses one of the
   // representative from the var_equiv_relations.
-  AffineRelation::Relation GetAffineRelation(int var) {
-    CHECK(RefIsPositive(var));
-    AffineRelation::Relation r = affine_relations.Get(var);
+  AffineRelation::Relation GetAffineRelation(int ref) {
+    AffineRelation::Relation r = affine_relations.Get(PositiveRef(ref));
     AffineRelation::Relation o = var_equiv_relations.Get(r.representative);
     r.representative = o.representative;
     if (o.coeff == -1) r.coeff = -r.coeff;
+    if (!RefIsPositive(ref)) {
+      r.coeff *= -1;
+      r.offset *= -1;
+    }
     return r;
   }
 
@@ -1597,12 +1600,8 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   for (int v = 0; v < num_vars; ++v) {
     const int var = ct->table().vars(v);
     AffineRelation::Relation r = context->GetAffineRelation(PositiveRef(var));
-    if (!RefIsPositive(var)) {
-      r.coeff *= -1;
-      r.offset *= -1;
-    }
     affine_relations.push_back(r);
-    if (affine_relations[v].representative != var) {
+    if (r.representative != var) {
       modified_variables = true;
     }
   }
@@ -2974,56 +2973,50 @@ void TryToSimplifyDomains(PresolveContext* context) {
     const AffineRelation::Relation r = context->GetAffineRelation(var);
     if (r.representative != var) continue;
 
+    // Only process discrete domain.
     const Domain& domain = context->DomainOf(var);
-    if (domain.Size() > 1 &&
-        domain.NumIntervals() == domain.Size()) {  // Discrete domain.
-      const int64 var_min = domain.Min();
-      int64 gcd = -1;
-      for (int index = 0; index < domain.NumIntervals(); ++index) {
-        const ClosedInterval& i = domain[index];
-        CHECK_EQ(i.start, i.end);
-        const int64 shifted_value = i.start - var_min;
-        CHECK_GE(shifted_value, 0);
+    if (domain.NumIntervals() != domain.Size()) continue;
 
-        if (gcd == -1) {
-          gcd = shifted_value;
-        } else {
-          gcd = MathUtil::GCD64(gcd, shifted_value);
-        }
+    const int64 var_min = domain.Min();
+    int64 gcd = domain[1].start - var_min;
+    for (int index = 2; index < domain.NumIntervals(); ++index) {
+      const ClosedInterval& i = domain[index];
+      CHECK_EQ(i.start, i.end);
+      const int64 shifted_value = i.start - var_min;
+      CHECK_GE(shifted_value, 0);
 
-        if (gcd == 1) {
-          break;
-        }
-      }
-      if (gcd == 1) continue;
+      gcd = MathUtil::GCD64(gcd, shifted_value);
 
-      std::vector<int64> scaled_values;
-      for (int index = 0; index < domain.NumIntervals(); ++index) {
-        const ClosedInterval& i = domain[index];
-        CHECK_EQ(i.start, i.end);
-        const int64 shifted_value = i.start - var_min;
-        scaled_values.push_back(shifted_value / gcd);
-      }
-
-      const int index = context->working_model->variables_size();
-      IntegerVariableProto* const var_proto =
-          context->working_model->add_variables();
-      const Domain scaled_domain = Domain::FromValues(scaled_values);
-      FillDomainInProto(scaled_domain, var_proto);
-
-      ConstraintProto* const ct = context->working_model->add_constraints();
-      LinearConstraintProto* const lin = ct->mutable_linear();
-      lin->add_vars(var);
-      lin->add_coeffs(1);
-      lin->add_vars(index);
-      lin->add_coeffs(-gcd);
-      lin->add_domain(var_min);
-      lin->add_domain(var_min);
-      context->InitializeNewDomains();
-      context->UpdateNewConstraintsVariableUsage();
-      context->AddAffineRelation(*ct, var, index, gcd, var_min);
-      context->UpdateRuleStats("variables: canonicalize affine domain");
+      if (gcd == 1) break;
     }
+    if (gcd == 1) continue;
+
+    std::vector<int64> scaled_values;
+    for (int index = 0; index < domain.NumIntervals(); ++index) {
+      const ClosedInterval& i = domain[index];
+      CHECK_EQ(i.start, i.end);
+      const int64 shifted_value = i.start - var_min;
+      scaled_values.push_back(shifted_value / gcd);
+    }
+
+    const int index = context->working_model->variables_size();
+    IntegerVariableProto* const var_proto =
+        context->working_model->add_variables();
+    const Domain scaled_domain = Domain::FromValues(scaled_values);
+    FillDomainInProto(scaled_domain, var_proto);
+
+    ConstraintProto* const ct = context->working_model->add_constraints();
+    LinearConstraintProto* const lin = ct->mutable_linear();
+    lin->add_vars(var);
+    lin->add_coeffs(1);
+    lin->add_vars(index);
+    lin->add_coeffs(-gcd);
+    lin->add_domain(var_min);
+    lin->add_domain(var_min);
+    context->InitializeNewDomains();
+    context->UpdateNewConstraintsVariableUsage();
+    context->AddAffineRelation(*ct, var, index, gcd, var_min);
+    context->UpdateRuleStats("variables: canonicalize affine domain");
   }
 }
 
