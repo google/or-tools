@@ -21,6 +21,8 @@ namespace sat {
 
 namespace {
 
+const LinearConstraintManager::ConstraintIndex kInvalidConstraintIndex(-1);
+
 // TODO(user): it would be better if LinearConstraint natively supported
 // term and not two separated vectors. Fix?
 //
@@ -170,6 +172,8 @@ bool LinearConstraintManager::ChangeLp(
   const int old_num_constraints = lp_constraints_.size();
 
   std::vector<ConstraintIndex> new_constraints;
+  std::vector<double> new_constraints_efficacies;
+  std::vector<double> new_constraints_orthogonalities;
 
   // We keep any constraints that is already present, and otherwise, we add the
   // ones that are currently not satisfied by at least "tolerance".
@@ -178,37 +182,69 @@ bool LinearConstraintManager::ChangeLp(
     if (constraint_is_in_lp_[i]) continue;
 
     const double activity = ComputeActivity(constraints_[i], lp_solution);
-    if (activity > ToDouble(constraints_[i].ub) + tolerance ||
-        activity < ToDouble(constraints_[i].lb) - tolerance) {
+
+    const double lb_violation = ToDouble(constraints_[i].lb) - activity;
+    const double ub_violation = activity - ToDouble(constraints_[i].ub);
+    const double violation = std::max(lb_violation, ub_violation);
+    if (violation > tolerance) {
       new_constraints.push_back(i);
+      new_constraints_efficacies.push_back(violation / constraint_l2_norms_[i]);
+      new_constraints_orthogonalities.push_back(1.0);
     }
   }
 
-  std::vector<ConstraintIndex> selected_constraints;
-  for (ConstraintIndex new_constraint : new_constraints) {
-    double orthogonality = 1.0;
-    if (sat_parameters_.min_orthogonality_for_lp_constraints() > 0.0) {
-      for (ConstraintIndex selected_constraint : selected_constraints) {
-        double current_orthogonality =
-            1.0 - (std::abs(ScalarProduct(constraints_[selected_constraint],
+  // Note that the algo below is in O(limit * new_constraint), so this limit
+  // should stay low.
+  int constraint_limit = std::min(50, static_cast<int>(new_constraints.size()));
+  if (lp_constraints_.empty()) {
+    constraint_limit = std::min(1000, static_cast<int>(new_constraints.size()));
+  }
+  ConstraintIndex last_added_candidate = kInvalidConstraintIndex;
+  for (int i = 0; i < constraint_limit; ++i) {
+    // Iterate through all new constraints and select the one with the best
+    // score.
+    double best_score = 0.0;
+    ConstraintIndex best_candidate = kInvalidConstraintIndex;
+    for (int j = 0; j < new_constraints.size(); ++j) {
+      const ConstraintIndex new_constraint = new_constraints[j];
+      if (constraint_is_in_lp_[new_constraint]) continue;
+
+      if (last_added_candidate != kInvalidConstraintIndex) {
+        const double current_orthogonality =
+            1.0 - (std::abs(ScalarProduct(constraints_[last_added_candidate],
                                           constraints_[new_constraint])) /
-                   (constraint_l2_norms_[selected_constraint] *
+                   (constraint_l2_norms_[last_added_candidate] *
                     constraint_l2_norms_[new_constraint]));
-        orthogonality = std::min(orthogonality, current_orthogonality);
-        if (orthogonality <
-            sat_parameters_.min_orthogonality_for_lp_constraints()) {
-          break;
-        }
+        new_constraints_orthogonalities[j] =
+            std::min(new_constraints_orthogonalities[j], current_orthogonality);
+      }
+
+      // TODO(user): This constraint is discarded in this round but it might
+      // be added in the next call. Try to avoid that to maintain orthogonality
+      // of the constraints in the LP.
+      if (new_constraints_orthogonalities[j] <
+          sat_parameters_.min_orthogonality_for_lp_constraints()) {
+        continue;
+      }
+      // TODO(user): Experiment with different weights or different
+      // functions for computing score.
+      const double score =
+          new_constraints_orthogonalities[j] + new_constraints_efficacies[j];
+      CHECK_GE(score, 0.0);
+      if (score > best_score || best_candidate == kInvalidConstraintIndex) {
+        best_score = score;
+        best_candidate = new_constraint;
       }
     }
-    if (orthogonality >=
-        sat_parameters_.min_orthogonality_for_lp_constraints()) {
-      selected_constraints.push_back(new_constraint);
-      constraint_is_in_lp_[new_constraint] = true;
+
+    if (best_candidate != kInvalidConstraintIndex) {
+      // Add the best constraint in the LP.
+      constraint_is_in_lp_[best_candidate] = true;
       // Note that it is important for LP incremental solving that the old
       // constraints stays at the same position in this list (and thus in the
       // returned GetLp()).
-      lp_constraints_.push_back(new_constraint);
+      lp_constraints_.push_back(best_candidate);
+      last_added_candidate = best_candidate;
     }
   }
 

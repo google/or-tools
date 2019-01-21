@@ -306,9 +306,6 @@ struct PresolveContext {
     var_to_constraints.resize(domains.size());
   }
 
-  // Returns the number of mapped domains.
-  int NumDomainsStored() const { return domains.size(); }
-
   // This regroup all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
   // model at detection time (thus allowing proper domain propagation). However,
@@ -549,6 +546,9 @@ bool PresolveAtMostOne(ConstraintProto* ct, PresolveContext* context) {
 
   bool changed = false;
   context->tmp_literals.clear();
+  std::sort(ct->mutable_at_most_one()->mutable_literals()->begin(),
+            ct->mutable_at_most_one()->mutable_literals()->end());
+  int previous = kint32max;
   for (const int literal : ct->at_most_one().literals()) {
     if (context->LiteralIsTrue(literal)) {
       context->UpdateRuleStats("at_most_one: satisfied");
@@ -562,6 +562,12 @@ bool PresolveAtMostOne(ConstraintProto* ct, PresolveContext* context) {
       changed = true;
       continue;
     }
+    if (literal == previous) {
+      context->SetLiteralToFalse(literal);
+      context->UpdateRuleStats("at_most_one: duplicate literals");
+      continue;
+    }
+    previous = literal;
     context->tmp_literals.push_back(literal);
   }
   if (context->tmp_literals.empty()) return RemoveConstraint(ct, context);
@@ -1483,8 +1489,9 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   Domain infered_domain;
+  const Domain initial_index_domain = context->DomainOf(index_ref);
   const Domain target_domain = context->DomainOf(target_ref);
-  for (const ClosedInterval interval : context->DomainOf(index_ref)) {
+  for (const ClosedInterval interval : initial_index_domain) {
     for (int value = interval.start; value <= interval.end; ++value) {
       CHECK_GE(value, 0);
       CHECK_LT(value, ct->element().vars_size());
@@ -1535,6 +1542,22 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     return RemoveConstraint(ct, context);
   }
 
+  const AffineRelation::Relation r_index =
+      context->GetAffineRelation(index_ref);
+  const AffineRelation::Relation r_target =
+      context->GetAffineRelation(target_ref);
+  if (r_index.representative != index_ref) {
+    if (r_index.coeff == 1) {
+      context->UpdateRuleStats(
+          "TODO element: index has shifted representative");
+    } else {
+      context->UpdateRuleStats("TODO element: index has scaled representative");
+    }
+  }
+  if (r_target.representative != target_ref) {
+    context->UpdateRuleStats("TODO element: target has affine representative");
+  }
+
   if (all_constants && num_vars == constant_set.size()) {
     // TODO(user): We should be able to do something for simple mapping.
     context->UpdateRuleStats("TODO element: one to one mapping");
@@ -1573,13 +1596,14 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   bool modified_variables = false;
   for (int v = 0; v < num_vars; ++v) {
     const int var = ct->table().vars(v);
+    AffineRelation::Relation r = context->GetAffineRelation(PositiveRef(var));
     if (!RefIsPositive(var)) {
-      affine_relations.push_back({var, 1, 0});  // Support opposite.
-    } else {
-      affine_relations.push_back(context->GetAffineRelation(var));
-      if (affine_relations[v].representative != var) {
-        modified_variables = true;
-      }
+      r.coeff *= -1;
+      r.offset *= -1;
+    }
+    affine_relations.push_back(r);
+    if (affine_relations[v].representative != var) {
+      modified_variables = true;
     }
   }
 
@@ -2785,7 +2809,10 @@ bool ProcessSetPPCSubset(int c1, int c2, const std::vector<int>& c2_minus_c1,
 
 // SetPPC is short for set packing, partitioning and covering constraints. These
 // are sum of booleans <=, = and >= 1 respectively.
-// TODO(user,user): Process kBoolAnd too.
+//
+// TODO(user,user): TransformIntoMaxCliques() convert the bool_and to
+// at_most_one, but maybe also duplicating them into bool_or would allow this
+// function to do more presolving.
 bool ProcessSetPPC(PresolveContext* context, TimeLimit* time_limit) {
   bool changed = false;
   const int num_constraints = context->working_model->constraints_size();
@@ -2816,6 +2843,15 @@ bool ProcessSetPPC(PresolveContext* context, TimeLimit* time_limit) {
   int num_setppc_constraints = 0;
   for (int c = 0; c < num_constraints; ++c) {
     ConstraintProto* ct = context->working_model->mutable_constraints(c);
+    if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
+        ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
+      // Because TransformIntoMaxCliques() can detect literal equivalence
+      // relation, we make sure the constraints are presolved before beeing
+      // inspected.
+      if (PresolveOneConstraint(c, context)) {
+        context->UpdateConstraintVariableUsage(c);
+      }
+    }
     if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
         ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
       constraint_literals.push_back(GetLiteralsFromSetPPCConstraint(ct));
@@ -2892,7 +2928,7 @@ bool ProcessSetPPC(PresolveContext* context, TimeLimit* time_limit) {
         if (c1_minus_c2.empty() && c2_minus_c1.empty()) {
           if (ct1->constraint_case() == ct2->constraint_case()) {
             marked_for_removal[c2] = true;
-            context->UpdateRuleStats("setppc: removed redundent constraints");
+            context->UpdateRuleStats("setppc: removed redundant constraints");
           }
         } else if (c1_minus_c2.empty()) {
           if (ProcessSetPPCSubset(c1, c2, c2_minus_c1,
@@ -2930,65 +2966,51 @@ bool ProcessSetPPC(PresolveContext* context, TimeLimit* time_limit) {
 
 void TryToSimplifyDomains(PresolveContext* context) {
   if (context->is_unsat) return;
-  for (int var = 0; var < context->NumDomainsStored(); ++var) {
+
+  const int num_vars = context->working_model->variables_size();
+  for (int var = 0; var < num_vars; ++var) {
     if (context->IsFixed(var)) continue;
+
     const AffineRelation::Relation r = context->GetAffineRelation(var);
     if (r.representative != var) continue;
-    const Domain& domain = context->DomainOf(var);
-    if (domain.NumIntervals() == 1) continue;
 
-    if (domain.Size() == 2 && (domain.Min() != 0 || domain.Max() != 1)) {
-      const int index = context->working_model->variables_size();
-      IntegerVariableProto* const var_proto =
-          context->working_model->add_variables();
-      var_proto->add_domain(0);
-      var_proto->add_domain(1);
-      ConstraintProto* const ct = context->working_model->add_constraints();
-      LinearConstraintProto* const lin = ct->mutable_linear();
-      lin->add_vars(var);
-      lin->add_coeffs(1);
-      lin->add_vars(index);
-      lin->add_coeffs(domain.Min() - domain.Max());
-      lin->add_domain(domain.Min());
-      lin->add_domain(domain.Min());
-      context->InitializeNewDomains();
-      context->UpdateNewConstraintsVariableUsage();
-      context->AddAffineRelation(*ct, var, index, domain.Max() - domain.Min(),
-                                 domain.Min());
-      context->UpdateRuleStats("variables: canonicalize domain of size 2");
-    } else if (domain.NumIntervals() > 2 &&
-               domain.NumIntervals() == domain.Size()) {  // Discrete domain.
+    const Domain& domain = context->DomainOf(var);
+    if (domain.Size() > 1 &&
+        domain.NumIntervals() == domain.Size()) {  // Discrete domain.
       const int64 var_min = domain.Min();
-      std::vector<int64> diffs(domain.NumIntervals());
       int64 gcd = -1;
-      bool ok = true;
       for (int index = 0; index < domain.NumIntervals(); ++index) {
         const ClosedInterval& i = domain[index];
         CHECK_EQ(i.start, i.end);
-        diffs[index] = i.start - var_min;
-        CHECK_GE(diffs[index], 0);
+        const int64 shifted_value = i.start - var_min;
+        CHECK_GE(shifted_value, 0);
+
         if (gcd == -1) {
-          gcd = diffs[index];
+          gcd = shifted_value;
         } else {
-          gcd = MathUtil::GCD64(gcd, diffs[index]);
+          gcd = MathUtil::GCD64(gcd, shifted_value);
         }
+
         if (gcd == 1) {
-          ok = false;
           break;
         }
       }
-      if (!ok) {
-        continue;
-      }
+      if (gcd == 1) continue;
+
       std::vector<int64> scaled_values;
-      for (const int64 value : diffs) {
-        scaled_values.push_back(value / gcd);
+      for (int index = 0; index < domain.NumIntervals(); ++index) {
+        const ClosedInterval& i = domain[index];
+        CHECK_EQ(i.start, i.end);
+        const int64 shifted_value = i.start - var_min;
+        scaled_values.push_back(shifted_value / gcd);
       }
+
       const int index = context->working_model->variables_size();
       IntegerVariableProto* const var_proto =
           context->working_model->add_variables();
       const Domain scaled_domain = Domain::FromValues(scaled_values);
       FillDomainInProto(scaled_domain, var_proto);
+
       ConstraintProto* const ct = context->working_model->add_constraints();
       LinearConstraintProto* const lin = ct->mutable_linear();
       lin->add_vars(var);
@@ -3046,7 +3068,7 @@ void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
       }
     }
 
-    // Look at variables to see if we can canonicalize the domain
+    // Look at variables to see if we can canonicalize the domain.
     const int num_constraints_before_simplify =
         context->working_model->constraints_size();
     TryToSimplifyDomains(context);
@@ -3198,6 +3220,7 @@ void RemoveUnusedEquivalentVariables(PresolveContext* context) {
   // Update the variable usage.
   context->UpdateNewConstraintsVariableUsage();
 }
+
 }  // namespace.
 
 // =============================================================================
@@ -3264,8 +3287,6 @@ bool PresolveCpModel(const PresolveOptions& options,
     }
   }
 
-  RemoveUnusedEquivalentVariables(&context);
-
   // Run SAT specific presolve on the pure-SAT part of the problem.
   // Note that because this can only remove/fix variable not used in the other
   // part of the problem, there is no need to redo more presolve afterwards.
@@ -3274,13 +3295,6 @@ bool PresolveCpModel(const PresolveOptions& options,
   // cp_model_use_sat_presolve().
   if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
     PresolvePureSatPart(&context);
-  }
-
-  TransformIntoMaxCliques(&context);
-
-  // Process set packing, partitioning and covering constraint.
-  if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
-    ProcessSetPPC(&context, options.time_limit);
   }
 
   // Extract redundant at most one constraint form the linear ones.
@@ -3305,6 +3319,20 @@ bool PresolveCpModel(const PresolveOptions& options,
     }
     context.UpdateNewConstraintsVariableUsage();
   }
+
+  TransformIntoMaxCliques(&context);
+
+  // Process set packing, partitioning and covering constraint.
+  if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
+    ProcessSetPPC(&context, options.time_limit);
+
+    // Call the main presolve to remove the fixed variables and do more
+    // deductions.
+    PresolveToFixPoint(&context, options.time_limit);
+  }
+
+  // Note: Removing unused equivalent variables should be done at the end.
+  RemoveUnusedEquivalentVariables(&context);
 
   if (context.is_unsat) {
     // Set presolved_model to the simplest UNSAT problem (empty clause).
