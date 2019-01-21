@@ -121,6 +121,24 @@ endif()
 
 find_package(Protobuf REQUIRED)
 
+# By default, not present until CMake v3.9
+if(NOT TARGET protobuf::libprotobuf)
+  if(TARGET libprotobuf)
+    add_library(protobuf::libprotobuf ALIAS libprotobuf)
+  else()
+    message(FATAL_ERROR "Cannot find target protobuf::libprotobuf")
+  endif()
+endif()
+
+# By default, not present until CMake v3.10
+if(NOT TARGET protobuf::protoc)
+  if(TARGET protoc)
+    add_library(protobuf::protoc ALIAS protoc)
+  else()
+    message(FATAL_ERROR "Cannot find target protobuf::protoc")
+  endif()
+endif()
+
 ##########
 # abseil #
 ##########
