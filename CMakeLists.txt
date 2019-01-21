@@ -12,7 +12,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 macro(find_package)
   if(NOT TARGET ${ARGV0} AND NOT TARGET ${ARGV0}::${ARGV0})
     # Handle custom Protobuf, Zlib install path
-    if (${ARGV0}_DIR AND "${ARGV0}" STREQUAL "Protobuf" OR "${ARGV0}" STREQUAL "ZLIB")
+    if (${ARGV0}_DIR AND ("${ARGV0}" STREQUAL "Protobuf" OR "${ARGV0}" STREQUAL "ZLIB"))
         if(EXISTS ${${ARGV0}_DIR}/${ARGV0}Config.cmake)
             include(${${ARGV0}_DIR}/${ARGV0}Config.cmake)
         elseif(EXISTS ${${ARGV0}_DIR}/${ARGV0}-config.cmake)
