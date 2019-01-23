@@ -96,9 +96,8 @@ void ProcessOneColumn(
   }
 }
 
-void CompressTuples(const std::vector<int64>& domain_sizes,
-                    std::vector<std::vector<int64>>* tuples, int64* any_value) {
-  *any_value = kint64min;  // Check not conflicting.
+void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
+                    std::vector<std::vector<int64>>* tuples) {
   if (tuples->empty()) return;
   const int initial_num_tuples = tuples->size();
   const int num_vars = (*tuples)[0].size();
@@ -118,8 +117,8 @@ void CompressTuples(const std::vector<int64>& domain_sizes,
         masked_tuples_to_indices;
     for (int t = 0; t < tuples->size(); ++t) {
       std::vector<int64> masked_copy = (*tuples)[t];
-      if (masked_copy[i] == *any_value) continue;
-      masked_copy[i] = *any_value;
+      if (masked_copy[i] == any_value) continue;
+      masked_copy[i] = any_value;
       masked_tuples_to_indices[masked_copy].push_back(t);
     }
     to_remove.clear();
@@ -197,7 +196,7 @@ std::function<void(Model*)> TableConstraint(
     for (int i = 0; i < n; ++i) {
       domain_sizes.push_back(values_per_var[i].size());
     }
-    CompressTuples(domain_sizes, &new_tuples, &any_value);
+    CompressTuples(domain_sizes, any_value, &new_tuples);
 
     // Create one Boolean variable per tuple to indicate if it can still be
     // selected or not. Note that we don't enforce exactly one tuple to be
@@ -228,12 +227,12 @@ std::function<void(Model*)> TableConstraint(
     std::vector<IntegerValue> active_values;
     std::vector<Literal> any_tuple_literals;
     for (int i = 0; i < n; ++i) {
-      bool has_any = false;
-      bool all_equals = true;
       active_tuple_literals.clear();
       active_values.clear();
       any_tuple_literals.clear();
       const int64 first = new_tuples[0][i];
+      bool has_any = first == any_value;
+      bool all_equals = true;
 
       for (int j = 0; j < tuple_literals.size(); ++j) {
         const int64 v = new_tuples[j][i];
@@ -312,8 +311,8 @@ std::function<void(Model*)> NegatedTableConstraintWithoutFullEncoding(
     }
 
     std::vector<std::vector<int64>> new_tuples = tuples;
-    int64 any_value = kint64min;
-    CompressTuples(domain_sizes, &new_tuples, &any_value);
+    const int64 any_value = kint64min;
+    CompressTuples(domain_sizes, any_value, &new_tuples);
 
     for (const std::vector<int64>& tuple : new_tuples) {
       clause.clear();

@@ -9,7 +9,18 @@
       "scoped_allocator": "cpp",
       "*.inc": "cpp",
       "vector": "cpp",
-      "utility": "cpp"
+      "utility": "cpp",
+      "__config": "cpp",
+      "__nullptr": "cpp",
+      "cstddef": "cpp",
+      "exception": "cpp",
+      "initializer_list": "cpp",
+      "optional": "cpp",
+      "stdexcept": "cpp",
+      "type_traits": "cpp",
+      "typeinfo": "cpp",
+      "variant": "cpp",
+      "algorithm": "cpp"
     },
 		"C_Cpp.clang_format_fallbackStyle": "Google",
 		"C_Cpp.default.includePath": [
