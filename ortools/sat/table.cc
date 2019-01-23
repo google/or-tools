@@ -98,7 +98,7 @@ void ProcessOneColumn(
 
 void CompressTuples(const std::vector<int64>& domain_sizes,
                     std::vector<std::vector<int64>>* tuples, int64* any_value) {
-  *any_value = -kint64min;  // Check not conflicting.
+  *any_value = kint64min;  // Check not conflicting.
   if (tuples->empty()) return;
   const int initial_num_tuples = tuples->size();
   const int num_vars = (*tuples)[0].size();
