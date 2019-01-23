@@ -2047,6 +2047,65 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
   return false;
 }
 
+// Add the constraint (lhs => rhs) to the given proto. The hash map lhs ->
+// bool_and constraint index is used to merge implications with the same lhs.
+void AddImplication(int lhs, int rhs, CpModelProto* proto,
+                    absl::flat_hash_map<int, int>* ref_to_bool_and) {
+  if (ref_to_bool_and->contains(lhs)) {
+    const int ct_index = (*ref_to_bool_and)[lhs];
+    proto->mutable_constraints(ct_index)->mutable_bool_and()->add_literals(rhs);
+  } else if (ref_to_bool_and->contains(NegatedRef(rhs))) {
+    const int ct_index = (*ref_to_bool_and)[NegatedRef(rhs)];
+    proto->mutable_constraints(ct_index)->mutable_bool_and()->add_literals(
+        NegatedRef(lhs));
+  } else {
+    (*ref_to_bool_and)[lhs] = proto->constraints_size();
+    ConstraintProto* ct = proto->add_constraints();
+    ct->add_enforcement_literal(lhs);
+    ct->mutable_bool_and()->add_literals(rhs);
+  }
+}
+
+// Convert bool_or and at_most_one of size 2 to bool_and.
+//
+// TODO(user): It is probably more efficient to keep all the bool_and in a
+// global place during all the presolve, and just output them at the end rather
+// than modifying more than once the proto.
+void ExtractBoolAnd(PresolveContext* context) {
+  absl::flat_hash_map<int, int> ref_to_bool_and;
+  const int num_constraints = context->working_model->constraints_size();
+  std::vector<int> to_remove;
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = context->working_model->constraints(c);
+    if (HasEnforcementLiteral(ct)) continue;
+
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr &&
+        ct.bool_or().literals().size() == 2) {
+      AddImplication(NegatedRef(ct.bool_or().literals(0)),
+                     ct.bool_or().literals(1), context->working_model,
+                     &ref_to_bool_and);
+      to_remove.push_back(c);
+      continue;
+    }
+
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne &&
+        ct.at_most_one().literals().size() == 2) {
+      AddImplication(ct.at_most_one().literals(0),
+                     NegatedRef(ct.at_most_one().literals(1)),
+                     context->working_model, &ref_to_bool_and);
+      to_remove.push_back(c);
+      continue;
+    }
+  }
+
+  context->UpdateNewConstraintsVariableUsage();
+  for (const int c : to_remove) {
+    ConstraintProto* ct = context->working_model->mutable_constraints(c);
+    CHECK(RemoveConstraint(ct, context));
+    context->UpdateConstraintVariableUsage(c);
+  }
+}
+
 template <typename ClauseContainer>
 void ExtractClauses(const ClauseContainer& container, CpModelProto* proto) {
   // We regroup the "implication" into bool_and to have a more consise proto and
@@ -2064,20 +2123,7 @@ void ExtractClauses(const ClauseContainer& container, CpModelProto* proto) {
       const int b = clause[1].IsPositive()
                         ? clause[1].Variable().value()
                         : NegatedRef(clause[1].Variable().value());
-      if (gtl::ContainsKey(ref_to_bool_and, NegatedRef(a))) {
-        const int ct_index = ref_to_bool_and[NegatedRef(a)];
-        proto->mutable_constraints(ct_index)->mutable_bool_and()->add_literals(
-            b);
-      } else if (gtl::ContainsKey(ref_to_bool_and, NegatedRef(b))) {
-        const int ct_index = ref_to_bool_and[NegatedRef(b)];
-        proto->mutable_constraints(ct_index)->mutable_bool_and()->add_literals(
-            a);
-      } else {
-        ref_to_bool_and[NegatedRef(a)] = proto->constraints_size();
-        ConstraintProto* ct = proto->add_constraints();
-        ct->add_enforcement_literal(NegatedRef(a));
-        ct->mutable_bool_and()->add_literals(b);
-      }
+      AddImplication(NegatedRef(a), b, proto, &ref_to_bool_and);
       continue;
     }
 
@@ -3320,6 +3366,7 @@ bool PresolveCpModel(const PresolveOptions& options,
   // Process set packing, partitioning and covering constraint.
   if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
     ProcessSetPPC(&context, options.time_limit);
+    ExtractBoolAnd(&context);
 
     // Call the main presolve to remove the fixed variables and do more
     // deductions.
