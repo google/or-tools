@@ -513,7 +513,7 @@ message SatParameters {
 
   // Whether we generate MIR cuts at root node.
   // Note that for now, this is not heavily tunned.
-  optional bool add_mir_cuts = 120 [default = false];
+  optional bool add_mir_cuts = 120 [default = true];
 
   // Whether we use the classical MIR rounding function when computing a cut
   // using integer rounding. If false we use our own variant based on the strong

@@ -53,37 +53,6 @@ CanonicalizeConstraintAndGetTerms(LinearConstraint* ct) {
 
 }  // namespace
 
-double ComputeL2Norm(const LinearConstraint& constraint) {
-  double sum = 0.0;
-  for (const IntegerValue coeff : constraint.coeffs) {
-    sum += ToDouble(coeff) * ToDouble(coeff);
-  }
-  return std::sqrt(sum);
-}
-
-double ScalarProduct(const LinearConstraint& constraint1,
-                     const LinearConstraint& constraint2) {
-  DCHECK(std::is_sorted(constraint1.vars.begin(), constraint1.vars.end()));
-  DCHECK(std::is_sorted(constraint2.vars.begin(), constraint2.vars.end()));
-  double scalar_product = 0.0;
-  int index_1 = 0;
-  int index_2 = 0;
-  while (index_1 < constraint1.vars.size() &&
-         index_2 < constraint2.vars.size()) {
-    if (constraint1.vars[index_1] == constraint2.vars[index_2]) {
-      scalar_product += ToDouble(constraint1.coeffs[index_1]) *
-                        ToDouble(constraint2.coeffs[index_2]);
-      index_1++;
-      index_2++;
-    } else if (constraint1.vars[index_1] > constraint2.vars[index_2]) {
-      index_2++;
-    } else {
-      index_1++;
-    }
-  }
-  return scalar_product;
-}
-
 LinearConstraintManager::~LinearConstraintManager() {
   if (num_merged_constraints_ > 0) {
     VLOG(2) << "num_merged_constraints: " << num_merged_constraints_;
@@ -147,6 +116,7 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
     constraint_is_in_lp_.push_back(false);
     constraint_is_cut_.push_back(false);
     constraint_inactive_count_.push_back(0);
+    constraint_permanently_removed_.push_back(false);
     constraints_.push_back(std::move(canonicalized));
   }
 }
@@ -158,16 +128,10 @@ void LinearConstraintManager::AddCut(
     const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
   if (ct.vars.empty()) return;
 
-  IntegerValue max_magnitude(0);
   const double activity = ComputeActivity(ct, lp_solution);
+  const double violation =
+      std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
   const double l2_norm = ComputeL2Norm(ct);
-  const int size = ct.vars.size();
-  for (int i = 0; i < size; ++i) {
-    max_magnitude = std::max(max_magnitude, IntTypeAbs(ct.coeffs[i]));
-  }
-  double violation = 0.0;
-  violation = std::max(violation, activity - ToDouble(ct.ub));
-  violation = std::max(violation, ToDouble(ct.lb) - activity);
 
   // Only add cut with sufficient efficacy.
   if (violation / l2_norm < 1e-5) return;
@@ -178,9 +142,9 @@ void LinearConstraintManager::AddCut(
   type_to_num_cuts_[type_name]++;
 
   VLOG(2) << "Cut '" << type_name << "'"
-          << " size=" << size << " max_magnitude=" << max_magnitude
-          << " norm=" << l2_norm << " violation=" << violation
-          << " eff=" << violation / l2_norm;
+          << " size=" << ct.vars.size()
+          << " max_magnitude=" << ComputeInfinityNorm(ct) << " norm=" << l2_norm
+          << " violation=" << violation << " eff=" << violation / l2_norm;
 }
 
 bool LinearConstraintManager::ChangeLp(
@@ -195,6 +159,8 @@ bool LinearConstraintManager::ChangeLp(
   // ones that are currently not satisfied by at least "tolerance".
   const double tolerance = 1e-6;
   for (ConstraintIndex i(0); i < constraints_.size(); ++i) {
+    if (constraint_permanently_removed_[i]) continue;
+
     // TODO(user,user): Use constraint status from GLOP for constraints
     // already in LP.
     const double activity = ComputeActivity(constraints_[i], lp_solution);
@@ -236,6 +202,7 @@ bool LinearConstraintManager::ChangeLp(
     ConstraintIndex best_candidate = kInvalidConstraintIndex;
     for (int j = 0; j < new_constraints.size(); ++j) {
       const ConstraintIndex new_constraint = new_constraints[j];
+      if (constraint_permanently_removed_[new_constraint]) continue;
       if (constraint_is_in_lp_[new_constraint]) continue;
 
       if (last_added_candidate != kInvalidConstraintIndex) {
@@ -248,11 +215,15 @@ bool LinearConstraintManager::ChangeLp(
             std::min(new_constraints_orthogonalities[j], current_orthogonality);
       }
 
-      // TODO(user): This constraint is discarded in this round but it might
-      // be added in the next call. Try to avoid that to maintain orthogonality
-      // of the constraints in the LP.
+      // NOTE(user): It is safe to permanently remove this constraint as the
+      // constraint that is almost parallel to this constraint is present in the
+      // LP or is inactive for a long time and is removed from the LP. In either
+      // case, this constraint is not adding significant value and is only
+      // making the LP larger.
       if (new_constraints_orthogonalities[j] <
           sat_parameters_.min_orthogonality_for_lp_constraints()) {
+        constraint_permanently_removed_[new_constraint] = true;
+        VLOG(2) << "Constraint permanently removed: " << new_constraint;
         continue;
       }
       // TODO(user): Experiment with different weights or different

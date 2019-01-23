@@ -174,6 +174,17 @@ class LinearConstraintBuilder {
 double ComputeActivity(const LinearConstraint& constraint,
                        const gtl::ITIVector<IntegerVariable, double>& values);
 
+// Returns sqrt(sum square(coeff)).
+double ComputeL2Norm(const LinearConstraint& constraint);
+
+// Returns the maximum absolute value of the coefficients.
+IntegerValue ComputeInfinityNorm(const LinearConstraint& constraint);
+
+// Returns the scalar product of given constraint coefficients. This method
+// assumes that the constraint variables are in sorted order.
+double ScalarProduct(const LinearConstraint& constraint1,
+                     const LinearConstraint& constraint2);
+
 // Computes the GCD of the constraint coefficient, and divide them by it. This
 // also tighten the constraint bounds assumming all the variables are integer.
 void DivideByGCD(LinearConstraint* constraint);

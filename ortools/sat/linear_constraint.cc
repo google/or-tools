@@ -27,6 +27,45 @@ double ComputeActivity(const LinearConstraint& constraint,
   return activity;
 }
 
+double ComputeL2Norm(const LinearConstraint& constraint) {
+  double sum = 0.0;
+  for (const IntegerValue coeff : constraint.coeffs) {
+    sum += ToDouble(coeff) * ToDouble(coeff);
+  }
+  return std::sqrt(sum);
+}
+
+IntegerValue ComputeInfinityNorm(const LinearConstraint& constraint) {
+  IntegerValue result(0);
+  for (const IntegerValue coeff : constraint.coeffs) {
+    result = std::max(result, IntTypeAbs(coeff));
+  }
+  return result;
+}
+
+double ScalarProduct(const LinearConstraint& constraint1,
+                     const LinearConstraint& constraint2) {
+  DCHECK(std::is_sorted(constraint1.vars.begin(), constraint1.vars.end()));
+  DCHECK(std::is_sorted(constraint2.vars.begin(), constraint2.vars.end()));
+  double scalar_product = 0.0;
+  int index_1 = 0;
+  int index_2 = 0;
+  while (index_1 < constraint1.vars.size() &&
+         index_2 < constraint2.vars.size()) {
+    if (constraint1.vars[index_1] == constraint2.vars[index_2]) {
+      scalar_product += ToDouble(constraint1.coeffs[index_1]) *
+                        ToDouble(constraint2.coeffs[index_2]);
+      index_1++;
+      index_2++;
+    } else if (constraint1.vars[index_1] > constraint2.vars[index_2]) {
+      index_2++;
+    } else {
+      index_1++;
+    }
+  }
+  return scalar_product;
+}
+
 namespace {
 
 // TODO(user): Template for any integer type and expose this?

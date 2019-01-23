@@ -25,14 +25,6 @@
 namespace operations_research {
 namespace sat {
 
-// Returns sqrt(sum square(coeff)).
-double ComputeL2Norm(const LinearConstraint& constraint);
-
-// Returns the scalar product of given constraint coefficients. This method
-// assumes that the constraint variables are in sorted order.
-double ScalarProduct(const LinearConstraint& constraint1,
-                     const LinearConstraint& constraint2);
-
 // This class holds a list of globally valid linear constraints and has some
 // logic to decide which one should be part of the LP relaxation. We want more
 // for a better relaxation, but for efficiency we do not want to have too much
@@ -99,7 +91,8 @@ class LinearConstraintManager {
   // Set at true by Add() and at false by ChangeLp().
   bool some_lp_constraint_bounds_changed_ = false;
 
-  // The global list of constraint.
+  // TODO(user): Merge all the constraint related info in a struct and store
+  // a vector of struct instead. The global list of constraint.
   gtl::ITIVector<ConstraintIndex, LinearConstraint> constraints_;
   gtl::ITIVector<ConstraintIndex, double> constraint_l2_norms_;
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_cut_;
@@ -108,6 +101,11 @@ class LinearConstraintManager {
   // Temporary list of constraints marked for removal. Note that we remove
   // constraints in batch to avoid changing LP too frequently.
   absl::flat_hash_set<ConstraintIndex> constraints_removal_list_;
+
+  // List of permananently removed constraints. A constraint might be marked for
+  // permanent removal if it is almost parallel to one of the existing
+  // constraints in the LP.
+  gtl::ITIVector<ConstraintIndex, bool> constraint_permanently_removed_;
 
   // The subset of constraints currently in the lp.
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_in_lp_;
