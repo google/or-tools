@@ -21,7 +21,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 121
+// NEXT TAG: 123
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -539,6 +539,14 @@ message SatParameters {
   // cosine(vector angle between constraints). A value of zero disable this
   // feature.
   optional double min_orthogonality_for_lp_constraints = 115 [default = 0.0];
+
+  // If a constraint/cut in LP is not active for the 'max_inactive_count',
+  // remove it from the LP.
+  optional int64 max_inactive_count = 121 [default = 1000];
+
+  // Remove constraints only if at least 'constraint_removal_batch_size'
+  // constraints are marked for removal.
+  optional int64 constraint_removal_batch_size = 122 [default = 100];
 
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {

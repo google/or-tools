@@ -94,6 +94,24 @@ LinearConstraintManager::~LinearConstraintManager() {
   }
 }
 
+// TODO(user,user): Also update the revised simplex starting basis for the
+// next solve.
+void LinearConstraintManager::RemoveMarkedConstraints() {
+  int new_index = 0;
+  for (int i = 0; i < lp_constraints_.size(); ++i) {
+    const ConstraintIndex constraint = lp_constraints_[i];
+    if (constraints_removal_list_.contains(constraint)) {
+      constraint_is_in_lp_[constraint] = false;
+      continue;
+    }
+    lp_constraints_[new_index] = constraint;
+    new_index++;
+  }
+  lp_constraints_.resize(new_index);
+  VLOG(2) << "Removed " << constraints_removal_list_.size() << " constraints.";
+  constraints_removal_list_.clear();
+}
+
 // Because sometimes we split a == constraint in two (>= and <=), it makes sense
 // to detect duplicate constraints and merge bounds. This is also relevant if
 // we regenerate identical cuts for some reason.
@@ -127,6 +145,8 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
     constraint_l2_norms_.push_back(ComputeL2Norm(canonicalized));
     equiv_constraints_[terms] = constraints_.size();
     constraint_is_in_lp_.push_back(false);
+    constraint_is_cut_.push_back(false);
+    constraint_inactive_count_.push_back(0);
     constraints_.push_back(std::move(canonicalized));
   }
 }
@@ -139,29 +159,25 @@ void LinearConstraintManager::AddCut(
   if (ct.vars.empty()) return;
 
   IntegerValue max_magnitude(0);
-  double activity = 0.0;
-  double l2_norm = 0.0;
+  const double activity = ComputeActivity(ct, lp_solution);
+  const double l2_norm = ComputeL2Norm(ct);
   const int size = ct.vars.size();
   for (int i = 0; i < size; ++i) {
     max_magnitude = std::max(max_magnitude, IntTypeAbs(ct.coeffs[i]));
-
-    const double coeff = ToDouble(ct.coeffs[i]);
-    activity += coeff * lp_solution[ct.vars[i]];
-    l2_norm += coeff * coeff;
   }
-  l2_norm = sqrt(l2_norm);
   double violation = 0.0;
   violation = std::max(violation, activity - ToDouble(ct.ub));
   violation = std::max(violation, ToDouble(ct.lb) - activity);
 
-  // Only add cut with sufficient efficacity.
+  // Only add cut with sufficient efficacy.
   if (violation / l2_norm < 1e-5) return;
 
   Add(ct);
+  constraint_is_cut_.back() = true;
   num_cuts_++;
   type_to_num_cuts_[type_name]++;
 
-  VLOG(1) << "Cut '" << type_name << "'"
+  VLOG(2) << "Cut '" << type_name << "'"
           << " size=" << size << " max_magnitude=" << max_magnitude
           << " norm=" << l2_norm << " violation=" << violation
           << " eff=" << violation / l2_norm;
@@ -179,18 +195,31 @@ bool LinearConstraintManager::ChangeLp(
   // ones that are currently not satisfied by at least "tolerance".
   const double tolerance = 1e-6;
   for (ConstraintIndex i(0); i < constraints_.size(); ++i) {
-    if (constraint_is_in_lp_[i]) continue;
-
+    // TODO(user,user): Use constraint status from GLOP for constraints
+    // already in LP.
     const double activity = ComputeActivity(constraints_[i], lp_solution);
 
     const double lb_violation = ToDouble(constraints_[i].lb) - activity;
     const double ub_violation = activity - ToDouble(constraints_[i].ub);
     const double violation = std::max(lb_violation, ub_violation);
-    if (violation > tolerance) {
+    if (constraint_is_in_lp_[i] && violation < tolerance) {
+      constraint_inactive_count_[i]++;
+      if (constraint_is_cut_[i] && constraint_inactive_count_[i] >
+                                       sat_parameters_.max_inactive_count()) {
+        // Mark cut for removal.
+        constraints_removal_list_.insert(i);
+      }
+    } else if (!constraint_is_in_lp_[i] && violation >= tolerance) {
+      constraint_inactive_count_[i] = 0;
       new_constraints.push_back(i);
       new_constraints_efficacies.push_back(violation / constraint_l2_norms_[i]);
       new_constraints_orthogonalities.push_back(1.0);
     }
+  }
+  // Remove constraints in a batch to avoid changing the LP too frequently.
+  if (constraints_removal_list_.size() >=
+      sat_parameters_.constraint_removal_batch_size()) {
+    RemoveMarkedConstraints();
   }
 
   // Note that the algo below is in O(limit * new_constraint), so this limit

@@ -6,9 +6,11 @@
 	],
 	"settings": {
 		"files.associations": {
-			"scoped_allocator": "cpp",
-			"*.inc": "cpp"
-		},
+      "scoped_allocator": "cpp",
+      "*.inc": "cpp",
+      "vector": "cpp",
+      "utility": "cpp"
+    },
 		"C_Cpp.clang_format_fallbackStyle": "Google",
 		"C_Cpp.default.includePath": [
 			"${workspaceRoot}",

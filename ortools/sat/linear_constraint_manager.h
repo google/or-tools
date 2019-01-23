@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -87,6 +88,9 @@ class LinearConstraintManager {
   int num_cuts() const { return num_cuts_; }
 
  private:
+  // Removes the marked constraints from the LP.
+  void RemoveMarkedConstraints();
+
   SatParameters sat_parameters_;
 
   // The set of variables that appear in at least one constraint.
@@ -98,6 +102,12 @@ class LinearConstraintManager {
   // The global list of constraint.
   gtl::ITIVector<ConstraintIndex, LinearConstraint> constraints_;
   gtl::ITIVector<ConstraintIndex, double> constraint_l2_norms_;
+  gtl::ITIVector<ConstraintIndex, bool> constraint_is_cut_;
+  gtl::ITIVector<ConstraintIndex, int64> constraint_inactive_count_;
+
+  // Temporary list of constraints marked for removal. Note that we remove
+  // constraints in batch to avoid changing LP too frequently.
+  absl::flat_hash_set<ConstraintIndex> constraints_removal_list_;
 
   // The subset of constraints currently in the lp.
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_in_lp_;
