@@ -924,20 +924,15 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   int64 gcd = 1;
   bool first_coeff = true;
   for (const auto entry : var_to_coeff) {
-    // GCD(gcd, coeff) = GCD(coeff, gcd % coeff);
-    int64 coeff = std::abs(entry.second);
+    const int64 magnitude = std::abs(entry.second);
     if (first_coeff) {
-      if (coeff != 0) {
+      if (magnitude != 0) {
         first_coeff = false;
-        gcd = coeff;
+        gcd = magnitude;
       }
       continue;
     }
-    while (coeff != 0) {
-      const int64 r = gcd % coeff;
-      gcd = coeff;
-      coeff = r;
-    }
+    gcd = MathUtil::GCD64(gcd, magnitude);
     if (gcd == 1) break;
   }
   if (gcd > 1) {
@@ -1002,8 +997,7 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     const int var = PositiveRef(arg.vars(i));
     const int64 coeff = arg.coeffs(i);
 
-    // TODO(user): Try PreciseMultiplicationOfSortedDisjointIntervals() if
-    // the size is reasonable.
+    // TODO(user): Try MultiplicationBy() instead if the size is reasonable.
     term_domains[i] = context->DomainOf(var).ContinuousMultiplicationBy(coeff);
     left_domains[i + 1] = left_domains[i].AdditionWith(term_domains[i]);
     if (left_domains[i + 1].NumIntervals() > kDomainComplexityLimit) {
@@ -1275,6 +1269,7 @@ bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
   // TODO(user): the alternative to mark any newly created constraints might
   // be better.
   if (gtl::ContainsKey(context->affine_constraints, ct)) return false;
+
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
   int64 min_coeff = kint64max;
@@ -1303,11 +1298,23 @@ bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
   }
   CHECK_LE(min_coeff, max_coeff);
 
+  // Detect trivially false constraints. Note that this is not necessarily
+  // detected by PresolveLinear(). We do that here because we assume below
+  // that this cannot happen.
+  //
+  // TODO(user): this could be generalized to constraint not containing only
+  // Booleans.
+  const Domain domain = ReadDomainFromProto(arg);
+  if ((!domain.Contains(min_sum) && min_sum + min_coeff > domain.Max()) ||
+      (!domain.Contains(max_sum) && max_sum - min_coeff < domain.Min())) {
+    context->UpdateRuleStats("linear: all booleans and trivially false");
+    return MarkConstraintAsFalse(ct, context);
+  }
+
   // Detect clauses, reified ands, at_most_one.
   //
   // TODO(user): split a == 1 constraint or similar into a clause and an at
   // most one constraint?
-  const Domain domain = ReadDomainFromProto(arg);
   DCHECK(!domain.IsEmpty());
   if (min_sum + min_coeff > domain.Max()) {
     // All Boolean are false if the reified literal is true.
@@ -2717,6 +2724,7 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
         context->UpdateConstraintVariableUsage(c);
       }
       if (context->is_unsat) return false;
+
       if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
         const int old_num_enforcement_literals = ct->enforcement_literal_size();
         ExtractEnforcementLiteralFromLinearConstraint(ct, context);
@@ -2986,38 +2994,40 @@ void TryToSimplifyDomains(PresolveContext* context) {
       CHECK_GE(shifted_value, 0);
 
       gcd = MathUtil::GCD64(gcd, shifted_value);
-
       if (gcd == 1) break;
     }
     if (gcd == 1) continue;
 
-    std::vector<int64> scaled_values;
-    for (int index = 0; index < domain.NumIntervals(); ++index) {
-      const ClosedInterval& i = domain[index];
-      CHECK_EQ(i.start, i.end);
-      const int64 shifted_value = i.start - var_min;
-      scaled_values.push_back(shifted_value / gcd);
-    }
-
-    const int index = context->working_model->variables_size();
+    const int new_var_index = context->working_model->variables_size();
     IntegerVariableProto* const var_proto =
         context->working_model->add_variables();
-    const Domain scaled_domain = Domain::FromValues(scaled_values);
-    FillDomainInProto(scaled_domain, var_proto);
+    {
+      std::vector<int64> scaled_values;
+      for (int index = 0; index < domain.NumIntervals(); ++index) {
+        const ClosedInterval& i = domain[index];
+        CHECK_EQ(i.start, i.end);
+        const int64 shifted_value = i.start - var_min;
+        scaled_values.push_back(shifted_value / gcd);
+      }
+      const Domain scaled_domain = Domain::FromValues(scaled_values);
+      FillDomainInProto(scaled_domain, var_proto);
+    }
+    context->InitializeNewDomains();
 
     ConstraintProto* const ct = context->working_model->add_constraints();
     LinearConstraintProto* const lin = ct->mutable_linear();
     lin->add_vars(var);
     lin->add_coeffs(1);
-    lin->add_vars(index);
+    lin->add_vars(new_var_index);
     lin->add_coeffs(-gcd);
     lin->add_domain(var_min);
     lin->add_domain(var_min);
-    context->InitializeNewDomains();
-    context->UpdateNewConstraintsVariableUsage();
-    context->AddAffineRelation(*ct, var, index, gcd, var_min);
+
+    context->AddAffineRelation(*ct, var, new_var_index, gcd, var_min);
     context->UpdateRuleStats("variables: canonicalize affine domain");
   }
+
+  context->UpdateNewConstraintsVariableUsage();
 }
 
 void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
@@ -3062,18 +3072,10 @@ void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
     }
 
     // Look at variables to see if we can canonicalize the domain.
-    const int num_constraints_before_simplify =
-        context->working_model->constraints_size();
+    // Note that all the new constraint are just affine constraint and do
+    // not need to be presolved at this time.
     TryToSimplifyDomains(context);
-    const int num_constraints_after_simplify =
-        context->working_model->constraints_size();
-    if (num_constraints_after_simplify > num_constraints_before_simplify) {
-      in_queue.resize(num_constraints_after_simplify, true);
-      for (int c = num_constraints_before_simplify;
-           c < num_constraints_after_simplify; ++c) {
-        queue.push_back(c);
-      }
-    }
+    in_queue.resize(context->working_model->constraints_size(), false);
 
     // Re-add to the queue constraints that have unique variables. Note that to
     // not enter an infinite loop, we call each (var, constraint) pair at most
