@@ -1006,9 +1006,9 @@ void LoadTableConstraint(const ConstraintProto& ct, Model* m) {
     }
   }
   if (ct.table().negated()) {
-    m->Add(NegatedTableConstraintWithoutFullEncoding(vars, tuples));
+    AddNegatedTableConstraint(vars, std::move(tuples), m);
   } else {
-    m->Add(TableConstraint(vars, tuples));
+    AddTableConstraint(vars, std::move(tuples), m);
   }
 }
 

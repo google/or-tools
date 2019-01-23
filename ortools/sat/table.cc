@@ -59,7 +59,8 @@ void FilterValues(IntegerVariable var, Model* model,
 // Add the implications and clauses to link one column of a table to the Literal
 // controling if the lines are possible or not. The column has the given values,
 // and the Literal of the column variable can be retrieved using the encoding
-// map.
+// map. Thew tuples_with_any vector provides a list of line_literals that will
+// support any value.
 void ProcessOneColumn(
     const std::vector<Literal>& line_literals,
     const std::vector<IntegerValue>& values,
@@ -73,7 +74,6 @@ void ProcessOneColumn(
   // is false too (i.e not possible).
   for (int i = 0; i < values.size(); ++i) {
     const IntegerValue v = values[i];
-
     if (!gtl::ContainsKey(encoding, v)) {
       model->Add(ClauseConstraint({line_literals[i].Negated()}));
     } else {
@@ -87,27 +87,23 @@ void ProcessOneColumn(
   // false too.
   for (const auto& entry : value_to_list_of_line_literals) {
     std::vector<Literal> clause = entry.second;
-    for (const Literal any_tuple_literal : tuples_with_any) {
-      clause.push_back(any_tuple_literal);
-    }
-
+    clause.insert(clause.end(), tuples_with_any.begin(), tuples_with_any.end());
     clause.push_back(gtl::FindOrDie(encoding, entry.first).Negated());
     model->Add(ClauseConstraint(clause));
   }
 }
 
+}  // namespace
+
 void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
                     std::vector<std::vector<int64>>* tuples) {
   if (tuples->empty()) return;
+
+  // Remove duplicates if any.
+  gtl::STLSortAndRemoveDuplicates(tuples);
+
   const int initial_num_tuples = tuples->size();
   const int num_vars = (*tuples)[0].size();
-
-  const auto remove_tuple = [tuples](int pos) {
-    if (pos < tuples->size() - 1) {
-      (*tuples)[pos] = tuples->back();
-    }
-    tuples->pop_back();
-  };
 
   std::vector<int> to_remove;
   for (int i = 0; i < num_vars; ++i) {
@@ -116,23 +112,25 @@ void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
     absl::flat_hash_map<const std::vector<int64>, std::vector<int>>
         masked_tuples_to_indices;
     for (int t = 0; t < tuples->size(); ++t) {
-      std::vector<int64> masked_copy = (*tuples)[t];
-      if (masked_copy[i] == any_value) continue;
-      masked_copy[i] = any_value;
+      CHECK_NE((*tuples)[t][i], any_value);
+      std::vector<int64> masked_copy;
+      masked_copy.reserve(num_vars - 1);
+      for (int j = 0; j < num_vars; ++j) {
+        if (i == j) continue;
+        masked_copy.push_back((*tuples)[t][j]);
+      }
       masked_tuples_to_indices[masked_copy].push_back(t);
     }
     to_remove.clear();
     for (const auto& it : masked_tuples_to_indices) {
-      if (it.second.size() == domain_size) {
-        (*tuples)[it.second.front()] = it.first;
-        for (int j = 1; j < it.second.size(); j++) {
-          to_remove.push_back(it.second[j]);
-        }
-      }
+      if (it.second.size() != domain_size) continue;
+      (*tuples)[it.second.front()][i] = any_value;
+      to_remove.insert(to_remove.end(), it.second.begin() + 1, it.second.end());
     }
     std::sort(to_remove.begin(), to_remove.end(), std::greater<int>());
     for (const int t : to_remove) {
-      remove_tuple(t);
+      (*tuples)[t] = tuples->back();
+      tuples->pop_back();
     }
   }
   if (initial_num_tuples != tuples->size()) {
@@ -141,206 +139,209 @@ void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
   }
 }
 
-}  // namespace
-
 // Makes a static decomposition of a table constraint into clauses.
 // This uses an auxiliary vector of Literals tuple_literals.
 // For every column col, and every value val of that column,
 // the decomposition uses clauses corresponding to the equivalence:
 // (\/_{row | tuples[row][col] = val} tuple_literals[row]) <=> (vars[col] = val)
-std::function<void(Model*)> TableConstraint(
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64>>& tuples) {
-  return [=](Model* model) {
-    const int n = vars.size();
+void AddTableConstraint(const std::vector<IntegerVariable>& vars,
+                        std::vector<std::vector<int64>> tuples, Model* model) {
+  const int n = vars.size();
 
-    // Compute the set of possible values for each variable (from the table).
-    std::vector<absl::flat_hash_set<int64>> values_per_var(n);
-    for (const std::vector<int64>& tuple : tuples) {
-      for (int i = 0; i < n; ++i) {
-        values_per_var[i].insert(tuple[i]);
-      }
-    }
-
-    // Filter each values_per_var entries using the current variable domain.
+  // Compute the set of possible values for each variable (from the table).
+  std::vector<absl::flat_hash_set<int64>> values_per_var(n);
+  for (const std::vector<int64>& tuple : tuples) {
     for (int i = 0; i < n; ++i) {
-      FilterValues(vars[i], model, &values_per_var[i]);
+      values_per_var[i].insert(tuple[i]);
     }
+  }
 
-    // Remove the unreachable tuples.
-    std::vector<std::vector<int64>> new_tuples;
-    for (const std::vector<int64>& tuple : tuples) {
-      bool keep = true;
-      for (int i = 0; i < n; ++i) {
-        if (!gtl::ContainsKey(values_per_var[i], tuple[i])) {
-          keep = false;
-          break;
-        }
-      }
-      if (keep) {
-        new_tuples.push_back(tuple);
-      }
-    }
+  // Filter each values_per_var entries using the current variable domain.
+  for (int i = 0; i < n; ++i) {
+    FilterValues(vars[i], model, &values_per_var[i]);
+  }
 
-    if (new_tuples.empty()) {
-      model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-      return;
-    }
-
-    // Remove duplicates if any.
-    gtl::STLSortAndRemoveDuplicates(&new_tuples);
-
-    // Compress tuples.
-    int64 any_value = kint64min;
-    std::vector<int64> domain_sizes;
+  // Remove unreachable tuples.
+  int index = 0;
+  while (index < tuples.size()) {
+    bool remove = false;
     for (int i = 0; i < n; ++i) {
-      domain_sizes.push_back(values_per_var[i].size());
+      if (!gtl::ContainsKey(values_per_var[i], tuples[index][i])) {
+        remove = true;
+        break;
+      }
     }
-    CompressTuples(domain_sizes, any_value, &new_tuples);
+    if (remove) {
+      tuples[index] = tuples.back();
+      tuples.pop_back();
+    } else {
+      index++;
+    }
+  }
 
-    // Create one Boolean variable per tuple to indicate if it can still be
-    // selected or not. Note that we don't enforce exactly one tuple to be
-    // selected because these variables are just used by this constraint, so
-    // only the information "can't be selected" is important.
-    //
-    // TODO(user): If a value in one column is unique, we don't need to create a
-    // new BooleanVariable corresponding to this line since we can use the one
-    // corresponding to this value in that column.
-    //
-    // Note that if there is just one tuple, there is no need to create such
-    // variables since they are not used.
-    std::vector<Literal> tuple_literals;
-    tuple_literals.reserve(new_tuples.size());
-    if (new_tuples.size() == 2) {
+  if (tuples.empty()) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return;
+  }
+
+  // Compress tuples.
+  const int64 any_value = kint64min;
+  std::vector<int64> domain_sizes;
+  for (int i = 0; i < n; ++i) {
+    domain_sizes.push_back(values_per_var[i].size());
+  }
+  CompressTuples(domain_sizes, any_value, &tuples);
+
+  // Create one Boolean variable per tuple to indicate if it can still be
+  // selected or not. Note that we don't enforce exactly one tuple to be
+  // selected because these variables are just used by this constraint, so
+  // only the information "can't be selected" is important.
+  //
+  // TODO(user): If a value in one column is unique, we don't need to create a
+  // new BooleanVariable corresponding to this line since we can use the one
+  // corresponding to this value in that column.
+  //
+  // Note that if there is just one tuple, there is no need to create such
+  // variables since they are not used.
+  std::vector<Literal> tuple_literals;
+  tuple_literals.reserve(tuples.size());
+  if (tuples.size() == 2) {
+    tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
+    tuple_literals.emplace_back(tuple_literals[0].Negated());
+  } else if (tuples.size() > 2) {
+    for (int i = 0; i < tuples.size(); ++i) {
       tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
-      tuple_literals.emplace_back(tuple_literals[0].Negated());
-    } else if (new_tuples.size() > 2) {
-      for (int i = 0; i < new_tuples.size(); ++i) {
-        tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
+    }
+    model->Add(ClauseConstraint(tuple_literals));
+  }
+
+  // Fully encode the variables using all the values appearing in the tuples.
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  std::vector<Literal> active_tuple_literals;
+  std::vector<IntegerValue> active_values;
+  std::vector<Literal> any_tuple_literals;
+  for (int i = 0; i < n; ++i) {
+    active_tuple_literals.clear();
+    active_values.clear();
+    any_tuple_literals.clear();
+    const int64 first = tuples[0][i];
+    bool all_equals = true;
+
+    for (int j = 0; j < tuple_literals.size(); ++j) {
+      const int64 v = tuples[j][i];
+
+      if (v != first) {
+        all_equals = false;
       }
-      model->Add(ClauseConstraint(tuple_literals));
+
+      if (v == any_value) {
+        any_tuple_literals.push_back(tuple_literals[j]);
+      } else {
+        active_tuple_literals.push_back(tuple_literals[j]);
+        active_values.push_back(IntegerValue(v));
+      }
     }
 
-    // Fully encode the variables using all the values appearing in the tuples.
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    std::vector<Literal> active_tuple_literals;
-    std::vector<IntegerValue> active_values;
-    std::vector<Literal> any_tuple_literals;
-    for (int i = 0; i < n; ++i) {
-      active_tuple_literals.clear();
-      active_values.clear();
-      any_tuple_literals.clear();
-      const int64 first = new_tuples[0][i];
-      bool has_any = first == any_value;
-      bool all_equals = true;
-
-      for (int j = 0; j < tuple_literals.size(); ++j) {
-        const int64 v = new_tuples[j][i];
-
-        if (v != first) {
-          all_equals = false;
-        }
-
-        if (v == any_value) {
-          has_any = true;
-          any_tuple_literals.push_back(tuple_literals[j]);
-        } else {
-          active_tuple_literals.push_back(tuple_literals[j]);
-          active_values.push_back(IntegerValue(v));
-        }
-      }
-
-      if (all_equals && !has_any) {
-        model->Add(Equality(vars[i], first));
-      } else if (!active_tuple_literals.empty()) {
-        const std::vector<int64> reached_values(values_per_var[i].begin(),
-                                                values_per_var[i].end());
-        integer_trail->UpdateInitialDomain(vars[i],
-                                           Domain::FromValues(reached_values));
-        model->Add(FullyEncodeVariable(vars[i]));
-        ProcessOneColumn(active_tuple_literals, active_values,
-                         GetEncoding(vars[i], model), any_tuple_literals,
-                         model);
-      }
+    if (all_equals && any_tuple_literals.empty() && first != any_value) {
+      model->Add(Equality(vars[i], first));
+    } else if (!active_tuple_literals.empty()) {
+      const std::vector<int64> reached_values(values_per_var[i].begin(),
+                                              values_per_var[i].end());
+      integer_trail->UpdateInitialDomain(vars[i],
+                                         Domain::FromValues(reached_values));
+      model->Add(FullyEncodeVariable(vars[i]));
+      ProcessOneColumn(active_tuple_literals, active_values,
+                       GetEncoding(vars[i], model), any_tuple_literals, model);
     }
-  };
+  }
 }
 
-std::function<void(Model*)> NegatedTableConstraint(
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64>>& tuples) {
-  return [=](Model* model) {
-    const int n = vars.size();
-    std::vector<absl::flat_hash_map<int64, Literal>> mapping(n);
+void AddNegatedTableConstraint(const std::vector<IntegerVariable>& vars,
+                               std::vector<std::vector<int64>> tuples,
+                               Model* model) {
+  const int n = vars.size();
+  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
+
+  // Remove unreachable tuples.
+  int index = 0;
+  while (index < tuples.size()) {
+    bool remove = false;
     for (int i = 0; i < n; ++i) {
+      if (!integer_trail->InitialVariableDomain(vars[i]).Contains(
+              tuples[index][i])) {
+        remove = true;
+        break;
+      }
+    }
+    if (remove) {
+      tuples[index] = tuples.back();
+      tuples.pop_back();
+    } else {
+      index++;
+    }
+  }
+
+  if (tuples.empty()) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return;
+  }
+
+  // Compress tuples.
+  const int64 any_value = kint64min;
+  std::vector<int64> domain_sizes;
+  for (int i = 0; i < n; ++i) {
+    domain_sizes.push_back(
+        integer_trail->InitialVariableDomain(vars[i]).Size());
+  }
+  CompressTuples(domain_sizes, any_value, &tuples);
+
+  std::vector<absl::flat_hash_map<int64, Literal>> mapping(n);
+  for (int i = 0; i < n; ++i) {
+    if (integer_encoder->VariableIsFullyEncoded(vars[i])) {
       for (const auto pair : model->Add(FullyEncodeVariable(vars[i]))) {
         mapping[i][pair.value.value()] = pair.literal;
       }
     }
+  }
 
-    // For each tuple, forbid the variables values to be this tuple.
-    std::vector<Literal> clause(n);
-    for (const std::vector<int64>& tuple : tuples) {
-      bool add_tuple = true;
-      for (int i = 0; i < n; ++i) {
-        if (gtl::ContainsKey(mapping[i], tuple[i])) {
-          clause[i] = gtl::FindOrDie(mapping[i], tuple[i]).Negated();
+  // For each tuple, forbid the variables values to be this tuple.
+  std::vector<Literal> clause;
+  for (const std::vector<int64>& tuple : tuples) {
+    bool add_tuple = true;
+    clause.clear();
+    for (int i = 0; i < n; ++i) {
+      const int64 value = tuple[i];
+      if (value == any_value) continue;
+      if (!mapping[i].empty()) {  // Variable is fully encoded.
+        if (gtl::ContainsKey(mapping[i], value)) {
+          clause.push_back(gtl::FindOrDie(mapping[i], value).Negated());
         } else {
           add_tuple = false;
           break;
         }
-      }
-      if (add_tuple) model->Add(ClauseConstraint(clause));
-    }
-  };
-}
-
-std::function<void(Model*)> NegatedTableConstraintWithoutFullEncoding(
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64>>& tuples) {
-  return [=](Model* model) {
-    const int n = vars.size();
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    std::vector<Literal> clause;
-
-    std::vector<int64> domain_sizes;
-    for (int i = 0; i < n; ++i) {
-      const int64 lb = model->Get(LowerBound(vars[i]));
-      const int64 ub = model->Get(UpperBound(vars[i]));
-      domain_sizes.push_back(CapAdd(1, CapSub(ub, lb)));
-    }
-
-    std::vector<std::vector<int64>> new_tuples = tuples;
-    const int64 any_value = kint64min;
-    CompressTuples(domain_sizes, any_value, &new_tuples);
-
-    for (const std::vector<int64>& tuple : new_tuples) {
-      clause.clear();
-      bool add = true;
-      for (int i = 0; i < n; ++i) {
-        const int64 value = tuple[i];
-        if (value == any_value) continue;
+      } else {  // Mapping is empty, variable is not fully encoded.
         const int64 lb = model->Get(LowerBound(vars[i]));
         const int64 ub = model->Get(UpperBound(vars[i]));
         // TODO(user): test the full initial domain instead of just checking
         // the bounds.
         if (value < lb || value > ub) {
-          add = false;
+          add_tuple = false;
           break;
         }
         if (value > lb) {
-          clause.push_back(encoder->GetOrCreateAssociatedLiteral(
+          clause.push_back(integer_encoder->GetOrCreateAssociatedLiteral(
               IntegerLiteral::LowerOrEqual(vars[i], IntegerValue(value - 1))));
         }
         if (value < ub) {
-          clause.push_back(encoder->GetOrCreateAssociatedLiteral(
+          clause.push_back(integer_encoder->GetOrCreateAssociatedLiteral(
               IntegerLiteral::GreaterOrEqual(vars[i],
                                              IntegerValue(value + 1))));
         }
       }
-      if (add) model->Add(ClauseConstraint(clause));
     }
-  };
+    if (add_tuple) model->Add(ClauseConstraint(clause));
+  }
 }
 
 std::function<void(Model*)> LiteralTableConstraint(
