@@ -2164,12 +2164,16 @@ void Probe(TimeLimit* global_time_limit, PresolveContext* context) {
   mapping->CreateVariables(model_proto, false, &model);
   mapping->DetectOptionalVariables(model_proto, &model);
   mapping->ExtractEncoding(model_proto, &model);
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
+    if (sat_solver->IsModelUnsat()) {
+      context->is_unsat = true;
+      return;
+    }
     CHECK(LoadConstraint(ct, &model));
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();
-  auto* sat_solver = model.GetOrCreate<SatSolver>();
   if (!sat_solver->Propagate()) {
     context->is_unsat = true;
     return;
