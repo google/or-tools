@@ -283,7 +283,6 @@ void AddNegatedTableConstraint(const std::vector<IntegerVariable>& vars,
   }
 
   if (tuples.empty()) {
-    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
     return;
   }
 
