@@ -1557,6 +1557,10 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   }
   bool IsVarSynced(int index) const { return var_synced_[index]; }
 
+  void SetObjectiveWatcher(Solver::ObjectiveWatcher objective_callback) {
+    objective_callback_ = std::move(objective_callback);
+  }
+
  protected:
   virtual void OnSynchronize(const Assignment* delta) {}
   void SynchronizeOnAssignment(const Assignment* assignment);
