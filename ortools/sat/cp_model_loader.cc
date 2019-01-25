@@ -933,11 +933,49 @@ void LoadElementConstraintHalfAC(const ConstraintProto& ct, Model* m) {
   }
 }
 
+void LoadBooleanElement(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const IntegerVariable index = mapping->Integer(ct.element().index());
+  const std::vector<Literal> literals = mapping->Literals(ct.element().vars());
+  const Literal target = mapping->Literal(ct.element().target());
+
+  if (m->Get(IsFixed(index))) {
+    m->Add(Equality(target, literals[m->Get(Value(index))]));
+    return;
+  }
+
+  for (const auto value_literal : m->Add(FullyEncodeVariable(index))) {
+    const Literal a_lit = literals[value_literal.value.value()];
+    const Literal i_lit = value_literal.literal;
+    m->Add(ClauseConstraint({i_lit.Negated(), a_lit.Negated(), target}));
+    m->Add(ClauseConstraint({i_lit.Negated(), a_lit, target.Negated()}));
+  }
+}
+
 }  // namespace
 
 void LoadElementConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable index = mapping->Integer(ct.element().index());
+
+  bool boolean_array = true;
+  for (const int ref : ct.element().vars()) {
+    if (!mapping->IsBoolean(ref)) {
+      boolean_array = false;
+      break;
+    }
+  }
+  if (!mapping->IsBoolean(ct.element().target())) {
+    // Should have been reduced but presolve.
+    VLOG(1) << "Fix boolean_element not propagated on target";
+    boolean_array = false;
+  }
+
+  if (boolean_array) {
+    LoadBooleanElement(ct, m);
+    return;
+  }
+
   const IntegerVariable target = mapping->Integer(ct.element().target());
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.element().vars());

@@ -412,6 +412,52 @@ bool PresolveEnforcementLiteral(ConstraintProto* ct, PresolveContext* context) {
   return new_size != old_size;
 }
 
+bool PresolveBoolXor(ConstraintProto* ct, PresolveContext* context) {
+  if (HasEnforcementLiteral(*ct)) return false;
+  int new_size = 0;
+  bool changed = false;
+  int num_true_literals = 0;
+  int true_literal = kint32min;
+  for (const int literal : ct->bool_xor().literals()) {
+    // TODO(user): More generally, if a variable appear in only bool xor
+    // constraints, we can simply eliminate it using linear algebra on Z/2Z.
+    // This should solve in polynomial time the parity-learning*.fzn problems
+    // for instance. This seems low priority, but it is also easy to do. Even
+    // better would be to have a dedicated propagator with all bool_xor
+    // constraints that do the necessary linear algebra.
+    if (context->VariableIsUniqueAndRemovable(literal)) {
+      context->UpdateRuleStats("TODO bool_xor: remove constraint");
+    }
+
+    if (context->LiteralIsFalse(literal)) {
+      context->UpdateRuleStats("bool_xor: remove false literal");
+      changed = true;
+      continue;
+    } else if (context->LiteralIsTrue(literal)) {
+      true_literal = literal;  // Keep if we need to put one back.
+      num_true_literals++;
+      continue;
+    }
+
+    ct->mutable_bool_xor()->set_literals(new_size++, literal);
+  }
+  if (new_size == 1) {
+    context->UpdateRuleStats("TODO bool_xor: one active literal");
+  } else if (new_size == 2) {
+    context->UpdateRuleStats("TODO bool_xor: two active literals");
+  }
+  if (num_true_literals % 2 == 1) {
+    CHECK_NE(true_literal, kint32min);
+    ct->mutable_bool_xor()->set_literals(new_size++, true_literal);
+  }
+  if (num_true_literals > 1) {
+    context->UpdateRuleStats("bool_xor: remove even number of true literals");
+    changed = true;
+  }
+  ct->mutable_bool_xor()->mutable_literals()->Truncate(new_size);
+  return changed;
+}
+
 bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
   // Move the enforcement literal inside the clause if any. Note that we do not
   // mark this as a change since the literal in the constraint are the same.
@@ -2167,11 +2213,11 @@ void Probe(TimeLimit* global_time_limit, PresolveContext* context) {
   auto* sat_solver = model.GetOrCreate<SatSolver>();
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
+    CHECK(LoadConstraint(ct, &model));
     if (sat_solver->IsModelUnsat()) {
       context->is_unsat = true;
       return;
     }
-    CHECK(LoadConstraint(ct, &model));
   }
   encoder->AddAllImplicationsBetweenAssociatedLiterals();
   if (!sat_solver->Propagate()) {
@@ -2761,6 +2807,8 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
       return PresolveBoolAnd(ct, context);
     case ConstraintProto::ConstraintCase::kAtMostOne:
       return PresolveAtMostOne(ct, context);
+    case ConstraintProto::ConstraintCase::kBoolXor:
+      return PresolveBoolXor(ct, context);
     case ConstraintProto::ConstraintCase::kIntMax:
       return PresolveIntMax(ct, context);
     case ConstraintProto::ConstraintCase::kIntMin:
