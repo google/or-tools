@@ -944,12 +944,21 @@ void LoadBooleanElement(const ConstraintProto& ct, Model* m) {
     return;
   }
 
+  std::vector<Literal> all_true;
+  std::vector<Literal> all_false;
   for (const auto value_literal : m->Add(FullyEncodeVariable(index))) {
     const Literal a_lit = literals[value_literal.value.value()];
     const Literal i_lit = value_literal.literal;
     m->Add(ClauseConstraint({i_lit.Negated(), a_lit.Negated(), target}));
     m->Add(ClauseConstraint({i_lit.Negated(), a_lit, target.Negated()}));
+    all_true.push_back(a_lit.Negated());
+    all_false.push_back(a_lit);
   }
+  all_true.push_back(target);
+  all_false.push_back(target.Negated());
+  m->Add(ClauseConstraint(all_true));
+  m->Add(ClauseConstraint(all_false));
+  // TODO(user): Investigate filtering this with active literals.
 }
 
 }  // namespace
@@ -965,12 +974,14 @@ void LoadElementConstraint(const ConstraintProto& ct, Model* m) {
       break;
     }
   }
-  if (!mapping->IsBoolean(ct.element().target())) {
+  if (boolean_array && !mapping->IsBoolean(ct.element().target())) {
     // Should have been reduced but presolve.
     VLOG(1) << "Fix boolean_element not propagated on target";
     boolean_array = false;
   }
 
+  // TODO(user): Move this to presolve. Leads to a larger discussion on
+  // adding full encoding to model during presolve.
   if (boolean_array) {
     LoadBooleanElement(ct, m);
     return;

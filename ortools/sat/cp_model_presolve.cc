@@ -1603,11 +1603,31 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   const AffineRelation::Relation r_target =
       context->GetAffineRelation(target_ref);
   if (r_index.representative != index_ref) {
-    if (r_index.coeff == 1) {
-      context->UpdateRuleStats(
-          "TODO element: index has shifted representative");
+    const int r_ref = r_index.representative;
+    const int r_min = context->MinOf(r_ref);
+    const int r_max = context->MaxOf(r_ref);
+    const int num_vars = ct->element().vars_size();
+    if (r_min != 0 || r_index.offset >= num_vars || r_index.offset < 0) {
+      context->UpdateRuleStats("TODO element: representative has bad domain");
     } else {
-      context->UpdateRuleStats("TODO element: index has scaled representative");
+      std::vector<int> new_vars;
+      for (int v = 0; v <= r_max; ++v) {
+        const int scaled_index = v * r_index.coeff + r_index.offset;
+        if (scaled_index >= num_vars || scaled_index < 0) break;
+        new_vars.push_back(ct->element().vars(scaled_index));
+      }
+      ct->mutable_element()->set_index(r_ref);
+      ct->mutable_element()->clear_vars();
+      for (const int var : new_vars) {
+        ct->mutable_element()->add_vars(var);
+      }
+
+      if (r_index.coeff == 1) {
+        context->UpdateRuleStats("element: shifed index ");
+      } else {
+        context->UpdateRuleStats("element: scaled index");
+      }
+      return true;
     }
   }
   if (r_target.representative != target_ref) {
@@ -2330,10 +2350,14 @@ void PresolvePureSatPart(PresolveContext* context) {
 
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolAnd) {
       ++num_removed_constraints;
-      const Literal l = convert(ct.enforcement_literal(0)).Negated();
-      CHECK(!ct.bool_and().literals().empty());
+      std::vector<Literal> clause;
+      for (const int ref : ct.enforcement_literal()) {
+        clause.push_back(convert(ref).Negated());
+      }
+      clause.push_back(Literal(kNoLiteralIndex));  // will be replaced below.
       for (const int ref : ct.bool_and().literals()) {
-        presolver.AddClause({l, convert(ref)});
+        clause.back() = convert(ref);
+        presolver.AddClause(clause);
       }
 
       context->working_model->mutable_constraints(i)->Clear();
