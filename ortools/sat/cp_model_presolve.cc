@@ -181,6 +181,16 @@ struct PresolveContext {
     return true;
   }
 
+  int NewConstant(int64 cst) {
+    if (!gtl::ContainsKey(constant_to_ref, cst)) {
+      constant_to_ref[cst] = working_model->variables_size();
+      IntegerVariableProto* const var_proto = working_model->add_variables();
+      var_proto->add_domain(cst);
+      var_proto->add_domain(cst);
+    }
+    return constant_to_ref[cst];
+  }
+
   // Regroups fixed variables with the same value.
   // TODO(user): Also regroup cte and -cte?
   void ExploitFixedDomain(int var) {
@@ -1631,7 +1641,48 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     }
   }
   if (r_target.representative != target_ref) {
-    context->UpdateRuleStats("TODO element: target has affine representative");
+    if (all_constants) {
+      // LOG(INFO) << "ct = " << ct->DebugString();
+      // LOG(INFO) << "coeff = " << r_target.coeff
+      //           << ", offset = " << r_target.offset;
+      bool changed_values = false;
+      std::vector<int64> valid_index_values;
+      const Domain index_domain = context->DomainOf(index_ref);
+      for (const ClosedInterval interval : index_domain) {
+        for (int i = interval.start; i <= interval.end; ++i) {
+          const int64 value = context->MinOf(ct->element().vars(i));
+          const int64 inverse = (value - r_target.offset) / r_target.coeff;
+          // LOG(INFO) << "i: " << i << " -> " << value << " -> " << inverse;
+          // Check rounding.
+          if (inverse * r_target.coeff + r_target.offset == value) {
+            valid_index_values.push_back(i);
+            if (inverse != value) {
+              const int cst_ref = context->NewConstant(inverse);
+              ct->mutable_element()->set_vars(i, cst_ref);
+              changed_values = true;
+            }
+          }
+        }
+      }
+      ct->mutable_element()->set_target(r_target.representative);
+      // LOG(INFO) << "  out " << ct->DebugString();
+      if (changed_values) {
+        context->InitializeNewDomains();
+        context->UpdateRuleStats("element: unscaled values from affine target");
+      }
+      if (index_domain.Size() > valid_index_values.size()) {
+        const Domain new_domain = Domain::FromValues(valid_index_values);
+        LOG(INFO) << "before " << index_domain << " to " << new_domain;
+        context->IntersectDomainWith(index_ref, new_domain);
+        context->UpdateRuleStats(
+            "CHECK element: reduce index domain from affine target");
+        changed_values = true;
+      }
+      return changed_values;
+    } else {
+      context->UpdateRuleStats(
+          "TODO element: target has affine representative");
+    }
   }
 
   if (all_constants && num_vars == constant_set.size()) {
@@ -1642,7 +1693,17 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("TODO element: target not used elsewhere");
   }
   if (context->IsFixed(index_ref)) {
-    context->UpdateRuleStats("TODO element: fixed index.");
+    const int var = ct->element().vars(context->MinOf(index_ref));
+    LinearConstraintProto* const lin =
+        context->working_model->add_constraints()->mutable_linear();
+    lin->add_vars(var);
+    lin->add_coeffs(-1);
+    lin->add_vars(target_ref);
+    lin->add_coeffs(1);
+    lin->add_domain(0);
+    lin->add_domain(0);
+    context->UpdateRuleStats("element: fixed index");
+    return RemoveConstraint(ct, context);
   } else if (unique_index) {
     context->UpdateRuleStats("TODO element: index not used elsewhere");
   }
