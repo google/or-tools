@@ -1770,7 +1770,7 @@ class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
             double scaling_factor,
-            std::function<std::string()> display_callback, int period);
+            Solver::DisplayCallback display_callback, int period);
   ~SearchLog() override;
   void EnterSearch() override;
   void ExitSearch() override;

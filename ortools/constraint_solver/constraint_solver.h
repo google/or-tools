@@ -713,6 +713,8 @@ class Solver {
   };
 
   // Callback typedefs
+  typedef std::function<std::string()> DisplayCallback;
+
   typedef std::function<int64(int64)> IndexEvaluator1;
   typedef std::function<int64(int64, int64)> IndexEvaluator2;
   typedef std::function<int64(int64, int64, int64)> IndexEvaluator3;
@@ -2245,12 +2247,12 @@ class Solver {
   // At each solution, this monitor will also display result of @p
   // display_callback.
   SearchMonitor* MakeSearchLog(int branch_period,
-                               std::function<std::string()> display_callback);
+                               DisplayCallback display_callback);
 
   // At each solution, this monitor will display the 'var' value and the
   // result of @p display_callback.
   SearchMonitor* MakeSearchLog(int branch_period, IntVar* var,
-                               std::function<std::string()> display_callback);
+                               DisplayCallback display_callback);
 
   // OptimizeVar Search Logs
   // At each solution, this monitor will also display the 'opt_var' value.
@@ -2259,7 +2261,7 @@ class Solver {
   // Creates a search monitor that will also print the result of the
   // display callback.
   SearchMonitor* MakeSearchLog(int branch_period, OptimizeVar* const opt_var,
-                               std::function<std::string()> display_callback);
+                               DisplayCallback display_callback);
 
   // Creates a search monitor from logging parameters.
   struct SearchLogParameters {
@@ -2274,7 +2276,7 @@ class Solver {
     double scaling_factor = 1.0;
     // SearchMonitors will display the result of display_callback at each new
     // solution found.
-    std::function<std::string()> display_callback;
+    DisplayCallback display_callback;
   };
   SearchMonitor* MakeSearchLog(SearchLogParameters parameters);
 

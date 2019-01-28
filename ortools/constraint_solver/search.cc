@@ -54,7 +54,7 @@ namespace operations_research {
 
 SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
                      double scaling_factor,
-                     std::function<std::string()> display_callback, int period)
+                     Solver::DisplayCallback display_callback, int period)
     : SearchMonitor(s),
       period_(period),
       timer_(new WallTimer),
@@ -277,14 +277,14 @@ SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var) {
 }
 
 SearchMonitor* Solver::MakeSearchLog(
-    int branch_period, std::function<std::string()> display_callback) {
+    int branch_period, Solver::DisplayCallback display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, nullptr, 1.0,
                                 std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, IntVar* const var,
-    std::function<std::string()> display_callback) {
+    Solver::DisplayCallback display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, var, 1.0,
                                 std::move(display_callback), branch_period));
 }
@@ -297,7 +297,7 @@ SearchMonitor* Solver::MakeSearchLog(int branch_period,
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, OptimizeVar* const opt_var,
-    std::function<std::string()> display_callback) {
+    Solver::DisplayCallback display_callback) {
   return RevAlloc(new SearchLog(this, opt_var, nullptr, 1.0,
                                 std::move(display_callback), branch_period));
 }
