@@ -356,18 +356,6 @@ namespace operations_research {
 %ignore Solver::MakeFixedDurationIntervalVarArray;
 // Take care of API with function. SWIG doesn't wrap std::function<> properly,
 // so we write our custom wrappers for all methods involving std::function<>.
-%ignore Solver::MakeSearchLog(
-    int branch_period,
-    std::function<std::string()> display_callback);
-%ignore Solver::MakeSearchLog(
-    int branch_period,
-    IntVar* var,
-    std::function<std::string()> display_callback);
-%ignore Solver::MakeSearchLog(
-    int branch_period,
-    OptimizeVar* const opt_var,
-    std::function<std::string()> display_callback);
-
 %ignore Solver::MakeActionDemon;
 %ignore Solver::MakeCustomLimit(std::function<bool()> limiter);
 
@@ -387,6 +375,8 @@ namespace operations_research {
 // This replace the IndexEvaluator[1-3] in the C# proxy class
 %typemap(csimports) Solver %{
   using System.Collections.Generic; // List<>
+
+  public delegate string DisplayCallback();
 
   public delegate long IndexEvaluator1(long u);
   public delegate long IndexEvaluator2(long u, long v);
@@ -442,6 +432,9 @@ namespace operations_research {
 //  ...
 //  ...PINVOKE.Foo_f_SWIG(..., StoreIndexEvaluator1(arg1), ...);
 // }
+%typemap(cstype, out="IntPtr") Solver::DisplayCallback "DisplayCallback"
+%typemap(csin) Solver::DisplayCallback "$csinput"
+
 %typemap(cstype, out="IntPtr") Solver::IndexEvaluator1 "IndexEvaluator1"
 %typemap(csin) Solver::IndexEvaluator1 "StoreIndexEvaluator1($csinput)"
 %typemap(cstype, out="IntPtr") Solver::IndexEvaluator2 "IndexEvaluator2"
@@ -454,6 +447,8 @@ namespace operations_research {
 %typemap(cstype, out="IntPtr") Solver::ObjectiveWatcher "ObjectiveWatcher"
 %typemap(csin) Solver::ObjectiveWatcher "StoreObjectiveWatcher($csinput)"
 // Type in the prototype of PINVOKE function.
+%typemap(imtype, out="IntPtr") Solver::DisplayCallback "DisplayCallback"
+
 %typemap(imtype, out="IntPtr") Solver::IndexEvaluator1 "IndexEvaluator1"
 %typemap(imtype, out="IntPtr") Solver::IndexEvaluator2 "IndexEvaluator2"
 %typemap(imtype, out="IntPtr") Solver::IndexEvaluator3 "IndexEvaluator3"
@@ -463,6 +458,8 @@ namespace operations_research {
 
 // Type use in module_csharp_wrap.h function declaration.
 // since SWIG generate code as: `ctype argX` we can't use a C function pointer type.
+%typemap(ctype) Solver::DisplayCallback "void*" // "char * (*)()"
+
 %typemap(ctype) Solver::IndexEvaluator1 "void*" // "int64 (*)(int64)"
 %typemap(ctype) Solver::IndexEvaluator2 "void*" // "int64 (*)(int64, int64)"
 %typemap(ctype) Solver::IndexEvaluator3 "void*" // "int64 (*)(int64, int64, int64)"
@@ -471,6 +468,13 @@ namespace operations_research {
 %typemap(ctype) Solver::ObjectiveWatcher "void*" // "void (*)(int64)"
 
 // Convert in module_csharp_wrap.cc input argument (delegate marshaled in C function pointer) to original std::function<...>
+%typemap(in) Solver::DisplayCallback  %{
+  $1 = [$input]() -> std::string {
+    std::string result;
+    return result.assign((*(char* (*)())$input)());
+    };
+%}
+
 %typemap(in) Solver::IndexEvaluator1  %{
   $1 = [$input](int64 u) -> int64 {
     return (*(int64 (*)(int64))$input)(u);
@@ -500,29 +504,6 @@ namespace operations_research {
   //    swig_util::IntIntToLong* evaluator) {
   //  return $self->ConcatenateOperators(ops, [evaluator](int i, int64 j) {
   //      return evaluator->Run(i, j); });
-  //}
-  //SearchMonitor* MakeSearchLog(
-  //    int branch_count,
-  //    OptimizeVar* const objective,
-  //    swig_util::VoidToString* display_callback) {
-  //  return $self->MakeSearchLog(branch_count, objective, [display_callback]() {
-  //      return display_callback->Run();
-  //    });
-  //}
-  //SearchMonitor* MakeSearchLog(
-  //    int branch_count,
-  //    IntVar* const obj_var,
-  //    swig_util::VoidToString* display_callback) {
-  //  return $self->MakeSearchLog(branch_count, obj_var, [display_callback]() {
-  //      return display_callback->Run();
-  //    });
-  //}
-  //SearchMonitor* MakeSearchLog(
-  //    int branch_count,
-  //    swig_util::VoidToString* display_callback) {
-  //  return $self->MakeSearchLog(branch_count, [display_callback]() {
-  //      return display_callback->Run();
-  //    });
   //}
   //SearchLimit* MakeCustomLimit(swig_util::VoidToBoolean* limiter) {
   //  return $self->MakeCustomLimit([limiter]() { return limiter->Run(); });

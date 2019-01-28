@@ -424,6 +424,10 @@ build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_NUPKG)
 .PHONY: run # Run a .Net C# program.
 run: build
 	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
+
+.PHONY: run_test # Run a .Net C# program.
+run_test: build
+	"$(DOTNET_BIN)" test --no-build $(SOURCE_PATH)proj -- $(ARGS)
 endif
 
 # .Net F#
@@ -573,6 +577,7 @@ check_dotnet_pimpl: \
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
 test_dotnet_tests:
+	$(MAKE) run_test SOURCE=examples/tests/ConstraintSolverTests.cs
 	$(MAKE) run SOURCE=examples/tests/issue18.cs
 	$(MAKE) run SOURCE=examples/tests/issue22.cs
 	$(MAKE) run SOURCE=examples/tests/issue33.cs
