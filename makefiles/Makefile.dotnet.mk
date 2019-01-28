@@ -578,6 +578,7 @@ check_dotnet_pimpl: \
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
 test_dotnet_tests:
 	$(MAKE) run_test SOURCE=examples/tests/ConstraintSolverTests.cs
+	$(MAKE) run_test SOURCE=examples/tests/RoutingSolverTests.cs
 	$(MAKE) run SOURCE=examples/tests/issue18.cs
 	$(MAKE) run SOURCE=examples/tests/issue22.cs
 	$(MAKE) run SOURCE=examples/tests/issue33.cs
