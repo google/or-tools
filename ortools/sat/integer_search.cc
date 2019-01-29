@@ -15,7 +15,10 @@
 
 #include <cmath>
 
+#include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/pseudo_costs.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/util.h"
 
@@ -89,6 +92,48 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
     const bool all_assigned = trail->Index() == sat_solver->NumVariables();
     return all_assigned ? kNoLiteralIndex
                         : decision_policy->NextBranch().Index();
+  };
+}
+
+std::function<LiteralIndex()> PseudoCost(Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* trail = model->GetOrCreate<Trail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  const ObjectiveSynchronizationHelper* helper =
+      model->Get<ObjectiveSynchronizationHelper>();
+  const bool has_objective =
+      helper != nullptr && helper->objective_var != kNoIntegerVariable;
+
+  if (!has_objective) {
+    return []() { return kNoLiteralIndex; };
+  }
+
+  PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
+
+  // NOTE: The algorithm to choose the value for a variable is kept outside of
+  // PseudoCosts class since this is an independent heuristic. For now this is
+  // only used for pseudo costs however this can be refactored a bit for other
+  // branching strategies to use.
+  return [=]() {
+    const IntegerVariable chosen_var = pseudo_costs->GetBestDecisionVar();
+
+    if (chosen_var == kNoIntegerVariable) return kNoLiteralIndex;
+    const IntegerValue chosen_var_lb = integer_trail->LowerBound(chosen_var);
+    const IntegerValue chosen_var_ub = integer_trail->UpperBound(chosen_var);
+    CHECK_LT(chosen_var_lb, chosen_var_ub);
+
+    // TODO(user): Experiment with different heuristics for choosing
+    // value.
+    const IntegerValue chosen_value =
+        chosen_var_lb +
+        std::max(IntegerValue(1),
+                 (chosen_var_ub - chosen_var_lb) / IntegerValue(2));
+    const Literal ge = encoder->GetOrCreateAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(chosen_var, chosen_value));
+    CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
+    VLOG(2) << "Chosen " << chosen_var << " >= " << chosen_value;
+    return ge.Index();
   };
 }
 
@@ -360,6 +405,17 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
       return SolveProblemWithPortfolioSearch(portfolio, restart_policies,
                                              model);
     }
+    case SatParameters::PSEUDO_COST_SEARCH: {
+      std::function<LiteralIndex()> search;
+      search = SequentialSearch(
+          {PseudoCost(model), SatSolverHeuristic(model), next_decision});
+      if (parameters.exploit_integer_lp_solution() ||
+          parameters.exploit_all_lp_solution()) {
+        search = ExploitLpSolution(search, model);
+      }
+      return SolveProblemWithPortfolioSearch(
+          {search}, {SatSolverRestartPolicy(model)}, model);
+    }
   }
   return SatSolver::LIMIT_REACHED;
 }
@@ -407,6 +463,13 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
   // the solver is in a "propagated" state.
   if (!solver->FinishPropagation()) return solver->UnsatStatus();
 
+  // Create and initialize pseudo costs.
+  // TODO(user): If this ever shows up in a cpu profile, find a way to not
+  // execute the code when pseudo costs are not needed.
+  PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
+
+  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+
   // Main search loop.
   int policy_index = 0;
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
@@ -432,7 +495,6 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
       const double external_bound = helper->get_external_best_objective();
       CHECK(helper->get_external_best_bound != nullptr);
       const double external_best_bound = helper->get_external_best_bound();
-      IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
       IntegerValue current_objective_upper_bound(
           integer_trail->UpperBound(helper->objective_var));
       IntegerValue current_objective_lower_bound(
@@ -465,11 +527,36 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
 
     // Get next decision, try to enqueue.
     const LiteralIndex decision = decision_policies[policy_index]();
+
+    // Record the changelist and objective bounds for updating pseudo costs.
+    const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
+        GetBoundChanges(decision, model);
+    IntegerValue current_obj_lb = kMinIntegerValue;
+    IntegerValue current_obj_ub = kMaxIntegerValue;
+    if (helper != nullptr && helper->objective_var != kNoIntegerVariable) {
+      current_obj_lb = integer_trail->LowerBound(helper->objective_var);
+      current_obj_ub = integer_trail->UpperBound(helper->objective_var);
+    }
+    const int old_level = solver->CurrentDecisionLevel();
+
     if (decision == kNoLiteralIndex) return SatSolver::FEASIBLE;
 
     // TODO(user): on some problems, this function can be quite long. Expand
     // so that we can check the time limit at each step?
     solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
+
+    // Update the pseudo costs.
+    if (solver->CurrentDecisionLevel() > old_level && helper != nullptr &&
+        helper->objective_var != kNoIntegerVariable) {
+      const IntegerValue new_obj_lb =
+          integer_trail->LowerBound(helper->objective_var);
+      const IntegerValue new_obj_ub =
+          integer_trail->UpperBound(helper->objective_var);
+      const IntegerValue objective_bound_change =
+          (new_obj_lb - current_obj_lb) + (current_obj_ub - new_obj_ub);
+      pseudo_costs->UpdateCost(bound_changes, objective_bound_change);
+    }
+
     solver->AdvanceDeterministicTime(time_limit);
     if (!solver->ReapplyAssumptionsIfNeeded()) return solver->UnsatStatus();
   }

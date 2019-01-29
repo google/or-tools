@@ -301,7 +301,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 
     // TODO(user): Disable lp_br if linear part is small or empty.
     if (--index == 0) {
-      new_params.set_search_branching(SatParameters::LP_SEARCH);
+      new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
       *name = "lp_br";
       return new_params;
     }

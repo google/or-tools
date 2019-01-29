@@ -60,6 +60,10 @@ std::function<LiteralIndex()> SequentialSearch(
 // Returns the LiteralIndex advised by the underliying SAT solver.
 std::function<LiteralIndex()> SatSolverHeuristic(Model* model);
 
+// Gets the branching variable using pseudo costs and combines it with a value
+// for branching.
+std::function<LiteralIndex()> PseudoCost(Model* model);
+
 // Uses the given heuristics, but when the LP relaxation has a solution, use it
 // to change the polarity of the next decision. This is only done for integer
 // solutions unless 'exploit_all_lp_solution' parameter is set to true. For

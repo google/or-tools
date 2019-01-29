@@ -1554,6 +1554,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     reduced_index_domain = true;
   }
 
+  // Filter possible index values. Accumulate variable domains to build
+  // a possible target domain.
   Domain infered_domain;
   const Domain initial_index_domain = context->DomainOf(index_ref);
   const Domain target_domain = context->DomainOf(target_ref);
@@ -1588,6 +1590,91 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("element: reduced target domain");
   }
 
+  // If the index is fixed, this is a equality constraint.
+  if (context->IsFixed(index_ref)) {
+    const int var = ct->element().vars(context->MinOf(index_ref));
+    if (var != target_ref) {
+      LinearConstraintProto* const lin =
+          context->working_model->add_constraints()->mutable_linear();
+      lin->add_vars(var);
+      lin->add_coeffs(-1);
+      lin->add_vars(target_ref);
+      lin->add_coeffs(1);
+      lin->add_domain(0);
+      lin->add_domain(0);
+    }
+    context->UpdateRuleStats("element: fixed index");
+    return RemoveConstraint(ct, context);
+  }
+
+  // If the accessible part of the array is made of a single constant value,
+  // then we do not care about the index. And, because of the previous target
+  // domain reduction, the target is also fixed.
+  if (all_constants && constant_set.size() == 1) {
+    CHECK(context->IsFixed(target_ref));
+    context->UpdateRuleStats("element: one value array");
+    return RemoveConstraint(ct, context);
+  }
+
+  // Special case when the index is boolean, and the array does not contain
+  // variables.
+  if (context->MinOf(index_ref) == 0 && context->MaxOf(index_ref) == 1 &&
+      all_constants) {
+    const int64 v0 = context->MinOf(ct->element().vars(0));
+    const int64 v1 = context->MinOf(ct->element().vars(1));
+
+    LinearConstraintProto* const lin =
+        context->working_model->add_constraints()->mutable_linear();
+    lin->add_vars(target_ref);
+    lin->add_coeffs(1);
+    lin->add_vars(index_ref);
+    lin->add_coeffs(v0 - v1);
+    lin->add_domain(v0);
+    lin->add_domain(v0);
+    context->UpdateRuleStats("element: linearize constant element of size 2");
+    return RemoveConstraint(ct, context);
+  }
+
+  // If the index has a canonical affine representative, rewrite the element.
+  const AffineRelation::Relation r_index =
+      context->GetAffineRelation(index_ref);
+  if (r_index.representative != index_ref) {
+    // Checks the domains are synchronized.
+    if (context->DomainOf(r_index.representative).Size() >
+        context->DomainOf(index_ref).Size()) {
+      // Postpone, we will come back later when domains are synchronized.
+      return true;
+    }
+    const int r_ref = r_index.representative;
+    const int64 r_min = context->MinOf(r_ref);
+    const int64 r_max = context->MaxOf(r_ref);
+    const int array_size = ct->element().vars_size();
+    if (r_min != 0) {
+      context->UpdateRuleStats("TODO element: representative has bad domain");
+    } else if (r_index.offset >= 0 && r_index.offset < array_size &&
+               r_index.offset + r_max * r_index.coeff >= 0 &&
+               r_index.offset + r_max * r_index.coeff < array_size) {
+      // This will happen eventually when domains are synchronized.
+      ElementConstraintProto* const element =
+          context->working_model->add_constraints()->mutable_element();
+      for (int64 v = 0; v <= r_max; ++v) {
+        const int64 scaled_index = v * r_index.coeff + r_index.offset;
+        CHECK_GE(scaled_index, 0);
+        CHECK_LT(scaled_index, array_size);
+        element->add_vars(ct->element().vars(scaled_index));
+      }
+      element->set_index(r_ref);
+      element->set_target(target_ref);
+
+      if (r_index.coeff == 1) {
+        context->UpdateRuleStats("element: shifed index ");
+      } else {
+        context->UpdateRuleStats("element: scaled index");
+      }
+      return RemoveConstraint(ct, context);
+    }
+  }
+
   const bool unique_index = context->VariableIsUniqueAndRemovable(index_ref) ||
                             context->IsFixed(index_ref);
   if (all_constants && unique_index) {
@@ -1608,43 +1695,13 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     return RemoveConstraint(ct, context);
   }
 
-  const AffineRelation::Relation r_index =
-      context->GetAffineRelation(index_ref);
   const AffineRelation::Relation r_target =
       context->GetAffineRelation(target_ref);
-  if (r_index.representative != index_ref) {
-    const int r_ref = r_index.representative;
-    const int r_min = context->MinOf(r_ref);
-    const int r_max = context->MaxOf(r_ref);
-    const int num_vars = ct->element().vars_size();
-    if (r_min != 0 || r_index.offset >= num_vars || r_index.offset < 0) {
-      context->UpdateRuleStats("TODO element: representative has bad domain");
-    } else {
-      std::vector<int> new_vars;
-      for (int v = 0; v <= r_max; ++v) {
-        const int scaled_index = v * r_index.coeff + r_index.offset;
-        if (scaled_index >= num_vars || scaled_index < 0) break;
-        new_vars.push_back(ct->element().vars(scaled_index));
-      }
-      ct->mutable_element()->set_index(r_ref);
-      ct->mutable_element()->clear_vars();
-      for (const int var : new_vars) {
-        ct->mutable_element()->add_vars(var);
-      }
-
-      if (r_index.coeff == 1) {
-        context->UpdateRuleStats("element: shifed index ");
-      } else {
-        context->UpdateRuleStats("element: scaled index");
-      }
-      return true;
-    }
-  }
   if (r_target.representative != target_ref) {
-    if (all_constants) {
-      // LOG(INFO) << "ct = " << ct->DebugString();
-      // LOG(INFO) << "coeff = " << r_target.coeff
-      //           << ", offset = " << r_target.offset;
+    if (all_constants &&
+        context->DomainOf(target_ref).Size() ==
+            context->DomainOf(r_target.representative).Size()) {
+      // Eventually, domain sizes will be synchronized.
       bool changed_values = false;
       std::vector<int64> valid_index_values;
       const Domain index_domain = context->DomainOf(index_ref);
@@ -1652,8 +1709,6 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
         for (int i = interval.start; i <= interval.end; ++i) {
           const int64 value = context->MinOf(ct->element().vars(i));
           const int64 inverse = (value - r_target.offset) / r_target.coeff;
-          // LOG(INFO) << "i: " << i << " -> " << value << " -> " << inverse;
-          // Check rounding.
           if (inverse * r_target.coeff + r_target.offset == value) {
             valid_index_values.push_back(i);
             if (inverse != value) {
@@ -1665,20 +1720,17 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
         }
       }
       ct->mutable_element()->set_target(r_target.representative);
-      // LOG(INFO) << "  out " << ct->DebugString();
       if (changed_values) {
         context->InitializeNewDomains();
         context->UpdateRuleStats("element: unscaled values from affine target");
       }
       if (index_domain.Size() > valid_index_values.size()) {
         const Domain new_domain = Domain::FromValues(valid_index_values);
-        LOG(INFO) << "before " << index_domain << " to " << new_domain;
         context->IntersectDomainWith(index_ref, new_domain);
         context->UpdateRuleStats(
             "CHECK element: reduce index domain from affine target");
-        changed_values = true;
       }
-      return changed_values;
+      return true;
     } else {
       context->UpdateRuleStats(
           "TODO element: target has affine representative");
@@ -1692,19 +1744,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   if (unique_target) {
     context->UpdateRuleStats("TODO element: target not used elsewhere");
   }
-  if (context->IsFixed(index_ref)) {
-    const int var = ct->element().vars(context->MinOf(index_ref));
-    LinearConstraintProto* const lin =
-        context->working_model->add_constraints()->mutable_linear();
-    lin->add_vars(var);
-    lin->add_coeffs(-1);
-    lin->add_vars(target_ref);
-    lin->add_coeffs(1);
-    lin->add_domain(0);
-    lin->add_domain(0);
-    context->UpdateRuleStats("element: fixed index");
-    return RemoveConstraint(ct, context);
-  } else if (unique_index) {
+  if (unique_index) {
     context->UpdateRuleStats("TODO element: index not used elsewhere");
   }
 
