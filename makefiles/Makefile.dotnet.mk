@@ -582,7 +582,6 @@ test_dotnet_tests:
 	$(MAKE) run SOURCE=examples/tests/issue18.cs
 	$(MAKE) run SOURCE=examples/tests/issue22.cs
 	$(MAKE) run SOURCE=examples/tests/issue33.cs
-	$(MAKE) run SOURCE=examples/tests/testcp.cs
 	$(MAKE) run SOURCE=examples/tests/testlp.cs
 	$(MAKE) run SOURCE=examples/tests/testsat.cs
 	$(MAKE) run SOURCE=examples/tests/test_sat_model.cs
