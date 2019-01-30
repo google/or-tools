@@ -1,46 +1,61 @@
-﻿using System;
+using System;
 using Xunit;
-
 using Google.OrTools.LinearSolver;
 
 namespace Google.OrTools.Tests {
-  public class LinearProgramming {
+  public class LinearSolverTest {
     [Fact]
-      public void TestVarOperator() {
-        Solver solver = new Solver("TestVarOperator", Solver.CLP_LINEAR_PROGRAMMING);
+      public void VarOperator() {
+        Solver solver = new Solver(
+            "Solver",
+            Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
-        Constraint ct1 = solver.Add(x >= 1);
-        Constraint ct2 = solver.Add(x <= 1);
-        Constraint ct3 = solver.Add(x == 1);
-        Constraint ct4 = solver.Add(1 >= x);
-        Constraint ct5 = solver.Add(1 <= x);
-        Constraint ct6 = solver.Add(1 == x);
+        Assert.Equal(0.0, x.Lb());
+        Assert.Equal(100.0, x.Ub());
 
+        Constraint ct1 = solver.Add(x >= 1);
         Assert.Equal(1.0, ct1.GetCoefficient(x));
-        Assert.Equal(1.0, ct2.GetCoefficient(x));
-        Assert.Equal(1.0, ct3.GetCoefficient(x));
-        Assert.Equal(1.0, ct4.GetCoefficient(x));
-        Assert.Equal(1.0, ct5.GetCoefficient(x));
-        Assert.Equal(1.0, ct6.GetCoefficient(x));
         Assert.Equal(1.0, ct1.Lb());
-        Assert.Equal(ct1.Ub(), double.PositiveInfinity);
-        Assert.Equal(ct2.Lb(), double.NegativeInfinity);
+        Assert.Equal(double.PositiveInfinity, ct1.Ub());
+
+        Constraint ct2 = solver.Add(x <= 1);
+        Assert.Equal(1.0, ct2.GetCoefficient(x));
+        Assert.Equal(double.NegativeInfinity, ct2.Lb());
         Assert.Equal(1.0, ct2.Ub());
+
+        Constraint ct3 = solver.Add(x == 1);
+        Assert.Equal(1.0, ct3.GetCoefficient(x));
         Assert.Equal(1.0, ct3.Lb());
         Assert.Equal(1.0, ct3.Ub());
-        Assert.Equal(ct4.Lb(), double.NegativeInfinity);
+
+        Constraint ct4 = solver.Add(1 >= x);
+        Assert.Equal(1.0, ct4.GetCoefficient(x));
+        Assert.Equal(double.NegativeInfinity, ct4.Lb());
         Assert.Equal(1.0, ct4.Ub());
+
+        Constraint ct5 = solver.Add(1 <= x);
+        Assert.Equal(1.0, ct5.GetCoefficient(x));
         Assert.Equal(1.0, ct5.Lb());
-        Assert.Equal(ct5.Ub(), double.PositiveInfinity);
+        Assert.Equal(double.PositiveInfinity, ct5.Ub());
+
+        Constraint ct6 = solver.Add(1 == x);
+        Assert.Equal(1.0, ct6.GetCoefficient(x));
         Assert.Equal(1.0, ct6.Lb());
         Assert.Equal(1.0, ct6.Ub());
       }
 
     [Fact]
-      public void TestVarAddition() {
-        Solver solver = new Solver("TestVarAddition", Solver.CLP_LINEAR_PROGRAMMING);
+      public void VarAddition() {
+        Solver solver = new Solver(
+            "Solver",
+            Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
+        Assert.Equal(0.0, x.Lb());
+        Assert.Equal(100.0, x.Ub());
+
         Variable y = solver.MakeNumVar(0.0, 100.0, "y");
+        Assert.Equal(0.0, y.Lb());
+        Assert.Equal(100.0, y.Ub());
 
         Constraint ct1 = solver.Add(x + y == 1);
         Assert.Equal(1.0, ct1.GetCoefficient(x));
@@ -61,10 +76,17 @@ namespace Google.OrTools.Tests {
       }
 
     [Fact]
-      public void TestVarMultiplication() {
-        Solver solver = new Solver("TestVarMultiplication", Solver.CLP_LINEAR_PROGRAMMING);
+      public void VarMultiplication() {
+        Solver solver = new Solver(
+            "Solver",
+            Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
+        Assert.Equal(0.0, x.Lb());
+        Assert.Equal(100.0, x.Ub());
+
         Variable y = solver.MakeNumVar(0.0, 100.0, "y");
+        Assert.Equal(0.0, y.Lb());
+        Assert.Equal(100.0, y.Ub());
 
         Constraint ct1 = solver.Add(3 * x == 1);
         Assert.Equal(3.0, ct1.GetCoefficient(x));
@@ -90,10 +112,17 @@ namespace Google.OrTools.Tests {
       }
 
     [Fact]
-      public void TestBinaryOperations() {
-        Solver solver = new Solver("TestBinaryOperations", Solver.CLP_LINEAR_PROGRAMMING);
+      public void BinaryOperator() {
+        Solver solver = new Solver(
+            "Solver",
+            Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
+        Assert.Equal(0.0, x.Lb());
+        Assert.Equal(100.0, x.Ub());
+
         Variable y = solver.MakeNumVar(0.0, 100.0, "y");
+        Assert.Equal(0.0, y.Lb());
+        Assert.Equal(100.0, y.Ub());
 
         Constraint ct1 = solver.Add(x == y);
         Assert.Equal(1.0, ct1.GetCoefficient(x));
@@ -111,37 +140,44 @@ namespace Google.OrTools.Tests {
         Assert.Equal(9.0, ct3.Lb());
         Assert.Equal(9.0, ct3.Ub());
 
-        Assert.True(x == x, "test11");
-        Assert.True(!(x == y), "test12");
-        Assert.True(!(x != x), "test13");
-        Assert.True((x != y), "test14");
+        Assert.True(x == x);
+        Assert.True(!(x != x));
+        Assert.True((x != y));
+        Assert.True(!(x == y));
       }
 
     [Fact]
-      public void TestInequalities() {
-        Solver solver = new Solver("TestInequalities", Solver.CLP_LINEAR_PROGRAMMING);
+      public void Inequalities() {
+        Solver solver = new Solver(
+            "Solver",
+            Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
-        Variable y = solver.MakeNumVar(0.0, 100.0, "y");
+        Assert.Equal(0.0, x.Lb());
+        Assert.Equal(100.0, x.Ub());
 
-        Constraint ct1 = solver.Add(2 * (x + 3) + 5 * (y + x - 1) >= 3);
+        Variable y = solver.MakeNumVar(0.0, 100.0, "y");
+        Assert.Equal(0.0, y.Lb());
+        Assert.Equal(100.0, y.Ub());
+
+        Constraint ct1 = solver.Add(2 * (x + 3) + 5 * (y + x -1) >= 3);
         Assert.Equal(7.0, ct1.GetCoefficient(x));
         Assert.Equal(5.0, ct1.GetCoefficient(y));
         Assert.Equal(2.0, ct1.Lb());
         Assert.Equal(double.PositiveInfinity, ct1.Ub());
 
-        Constraint ct2 = solver.Add(2 * (x + 3) + 5 * (y + x - 1) <= 3);
+        Constraint ct2 = solver.Add(2 * (x + 3) + 5 * (y + x -1) <= 3);
         Assert.Equal(7.0, ct2.GetCoefficient(x));
         Assert.Equal(5.0, ct2.GetCoefficient(y));
         Assert.Equal(double.NegativeInfinity, ct2.Lb());
         Assert.Equal(2.0, ct2.Ub());
 
-        Constraint ct3 = solver.Add(2 * (x + 3) + 5 * (y + x - 1) >= 3 - x - y);
+        Constraint ct3 = solver.Add(2 * (x + 3) + 5 * (y + x -1) >= 3 - x - y);
         Assert.Equal(8.0, ct3.GetCoefficient(x));
         Assert.Equal(6.0, ct3.GetCoefficient(y));
         Assert.Equal(2.0, ct3.Lb());
         Assert.Equal(double.PositiveInfinity, ct3.Ub());
 
-        Constraint ct4 = solver.Add(2 * (x + 3) + 5 * (y + x - 1) <= -x - y + 3);
+        Constraint ct4 = solver.Add(2 * (x + 3) + 5 * (y + x -1) <= -x - y + 3);
         Assert.Equal(8.0, ct4.GetCoefficient(x));
         Assert.Equal(6.0, ct4.GetCoefficient(y));
         Assert.Equal(double.NegativeInfinity, ct4.Lb());
@@ -149,8 +185,10 @@ namespace Google.OrTools.Tests {
       }
 
     [Fact]
-      public void TestSumArray() {
-        Solver solver = new Solver("TestSumArray", Solver.CLP_LINEAR_PROGRAMMING);
+      public void SumArray() {
+        Solver solver = new Solver(
+            "Solver",
+            Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
 
         Variable[] x = solver.MakeBoolVarArray(10, "x");
         Constraint ct1 = solver.Add(x.Sum() == 3);
@@ -159,7 +197,7 @@ namespace Google.OrTools.Tests {
         Constraint ct2 = solver.Add(-2 * x.Sum() == 3);
         Assert.Equal(-2.0, ct2.GetCoefficient(x[0]));
 
-        LinearExpr[] array = new LinearExpr[] { x[0] + 2.0, x[0] + 3, x[0] + 4 };
+        LinearExpr[] array = new LinearExpr[] { x[0]+ 2.0, x[0] + 3, x[0] + 4 };
         Constraint ct3 = solver.Add(array.Sum() == 1);
         Assert.Equal(3.0, ct3.GetCoefficient(x[0]));
         Assert.Equal(-8.0, ct3.Lb());
@@ -167,12 +205,17 @@ namespace Google.OrTools.Tests {
       }
 
     [Fact]
-      public void TestObjective() {
-
-        Solver solver = new Solver("TestObjective", Solver.CLP_LINEAR_PROGRAMMING);
-
+      public void Objective() {
+        Solver solver = new Solver(
+            "Solver",
+            Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
         Variable x = solver.MakeNumVar(0.0, 100.0, "x");
+        Assert.Equal(0.0, x.Lb());
+        Assert.Equal(100.0, x.Ub());
+
         Variable y = solver.MakeNumVar(0.0, 100.0, "y");
+        Assert.Equal(0.0, y.Lb());
+        Assert.Equal(100.0, y.Ub());
 
         solver.Maximize(x);
         Assert.Equal(0.0, solver.Objective().Offset());
@@ -186,4 +229,5 @@ namespace Google.OrTools.Tests {
         Assert.True(solver.Objective().Minimization());
       }
   }
-}
+} // namespace Google.OrTools.Tests
+

@@ -68,7 +68,6 @@ endif
 DOTNET_ORTOOLS_SNK := $(BIN_DIR)/or-tools.snk
 DOTNET_ORTOOLS_SNK_PATH := $(subst /,$S,$(DOTNET_ORTOOLS_SNK))
 OR_TOOLS_ASSEMBLY_NAME := Google.OrTools
-OR_TOOLS_TESTS_ASSEMBLY_NAME := Google.OrTools.Tests
 OR_TOOLS_NATIVE_ASSEMBLY_NAME := $(OR_TOOLS_ASSEMBLY_NAME).runtime.$(RUNTIME_IDENTIFIER)
 OR_TOOLS_FSHARP_ASSEMBLY_NAME := $(OR_TOOLS_ASSEMBLY_NAME).FSharp
 OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME := $(OR_TOOLS_ASSEMBLY_NAME).FSharp.Tests
@@ -167,7 +166,6 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/constraint_solver/csharp/constraint_solver.i \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/util/csharp/proto.i \
- $(SRC_DIR)/ortools/util/csharp/functions.i \
  $(CP_DEPS) \
  | $(GEN_DIR)/ortools/constraint_solver
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
@@ -366,18 +364,6 @@ $(DOTNET_ORTOOLS_NUPKG): \
 	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)
 	"$(DOTNET_BIN)" pack ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)
 
-ortools/dotnet/$(OR_TOOLS_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj: \
- $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj.in
-	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
- ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj.in \
- > ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj
-
-.PHONY: test_dotnet_csharp # Run C# OrTools Tests
-test_dotnet_csharp: $(DOTNET_ORTOOLS_NUPKG) \
- ortools/dotnet/$(OR_TOOLS_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj
-	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)
-	"$(DOTNET_BIN)" test ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)
-
 ##############
 ##  FSHARP  ##
 ##############
@@ -425,6 +411,10 @@ build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_NUPKG)
 .PHONY: run # Run a .Net C# program.
 run: build
 	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
+
+.PHONY: run_test # Run a .Net C# program.
+run_test: build
+	"$(DOTNET_BIN)" test --no-build $(SOURCE_PATH)proj -- $(ARGS)
 endif
 
 # .Net F#
@@ -445,76 +435,6 @@ endif
 #############################
 ##  .NET Examples/Samples  ##
 #############################
-rdotnet_%: \
- $(TEST_DIR)/% \
- $(TEST_DIR)/%proj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(TEST_PATH)$S$*proj
-	"$(DOTNET_BIN)" run --no-build --project $(TEST_PATH)$S$*proj -- $(ARGS)
-
-rdotnet_%.cs: \
- $(DOTNET_EX_DIR)/%.cs \
- $(DOTNET_EX_DIR)/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- $(CONTRIB_EX_DIR)/%.cs \
- $(CONTRIB_EX_DIR)/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(CONTRIB_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project $(CONTRIB_EX_PATH)$S$*.csproj -- $(ARGS)
-
-rdotnet_%.fs: \
- $(DOTNET_EX_DIR)/%.fs \
- $(DOTNET_EX_DIR)/%.fsproj \
- $(DOTNET_ORTOOLS_FSHARP_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
-
-rdotnet_%.fs: \
- $(CONTRIB_EX_DIR)/%.fs \
- $(CONTRIB_EX_DIR)/%.fsproj \
- $(DOTNET_ORTOOLS_FSHARP_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(CONTRIB_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --no-build --project $(CONTRIB_EX_PATH)$S$*.fsproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/algorithms/samples/%.cs \
- ortools/algorithms/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Salgorithms$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Salgorithms$Ssamples$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/constraint_solver/samples/%.cs \
- ortools/constraint_solver/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Sconstraint_solver$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Sconstraint_solver$Ssamples$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/graph/samples/%.cs \
- ortools/graph/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Sgraph$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Sgraph$Ssamples$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/linear_solver/samples/%.cs \
- ortools/linear_solver/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Slinear_solver$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Slinear_solver$Ssamples$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/sat/samples/%.cs \
- ortools/sat/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
-
 .PHONY: test_dotnet_algorithms_samples # Build and Run all .Net LP Samples (located in ortools/algorithms/samples)
 test_dotnet_algorithms_samples: ;
 
@@ -569,16 +489,15 @@ check_dotnet_pimpl: \
  test_dotnet_graph_samples \
  test_dotnet_linear_solver_samples \
  test_dotnet_sat_samples \
- \
- rdotnet_SimpleProgramFSharp.fs
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
 test_dotnet_tests:
+	$(MAKE) run_test SOURCE=examples/tests/LinearSolverTests.cs
+	$(MAKE) run_test SOURCE=examples/tests/ConstraintSolverTests.cs
+	$(MAKE) run_test SOURCE=examples/tests/RoutingSolverTests.cs
 	$(MAKE) run SOURCE=examples/tests/issue18.cs
 	$(MAKE) run SOURCE=examples/tests/issue22.cs
 	$(MAKE) run SOURCE=examples/tests/issue33.cs
-	$(MAKE) run SOURCE=examples/tests/testcp.cs
-	$(MAKE) run SOURCE=examples/tests/testlp.cs
 	$(MAKE) run SOURCE=examples/tests/testsat.cs
 	$(MAKE) run SOURCE=examples/tests/test_sat_model.cs
 
@@ -739,20 +658,17 @@ clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sbin
 	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sobj
 	-$(DEL) $(DOTNET_ORTOOLS_SNK_PATH)
-	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj
+	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)*.csproj
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$Sobj
-	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME).csproj
-	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sruntime.json
+	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME)*.csproj
+	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sruntime.json
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sobj
-	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME).csproj
-	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)$Sbin
-	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_TESTS_ASSEMBLY_NAME)$Sobj
-	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj
+	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)*.fsproj
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$Sobj
-	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj
+	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)*.fsproj
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$Sobj
 	-$(DELREC) $(PACKAGE_DIR)
@@ -825,7 +741,6 @@ detect_dotnet:
 	@echo DOTNET_ORTOOLS_NATIVE_NUPKG = $(DOTNET_ORTOOLS_NATIVE_NUPKG)
 	@echo OR_TOOLS_ASSEMBLY_NAME = $(OR_TOOLS_ASSEMBLY_NAME)
 	@echo DOTNET_ORTOOLS_NUPKG = $(DOTNET_ORTOOLS_NUPKG)
-	@echo OR_TOOLS_TESTS_ASSEMBLY_NAME = $(OR_TOOLS_TESTS_ASSEMBLY_NAME)
 	@echo OR_TOOLS_FSHARP_ASSEMBLY_NAME = $(OR_TOOLS_FSHARP_ASSEMBLY_NAME)
 	@echo DOTNET_ORTOOLS_FSHARP_NUPKG = $(DOTNET_ORTOOLS_FSHARP_NUPKG)
 	@echo OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME = $(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)

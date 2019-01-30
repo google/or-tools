@@ -1557,6 +1557,10 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   }
   bool IsVarSynced(int index) const { return var_synced_[index]; }
 
+  void SetObjectiveWatcher(Solver::ObjectiveWatcher objective_callback) {
+    objective_callback_ = std::move(objective_callback);
+  }
+
  protected:
   virtual void OnSynchronize(const Assignment* delta) {}
   void SynchronizeOnAssignment(const Assignment* assignment);
@@ -1766,7 +1770,7 @@ class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
             double scaling_factor,
-            std::function<std::string()> display_callback, int period);
+            Solver::DisplayCallback display_callback, int period);
   ~SearchLog() override;
   void EnterSearch() override;
   void ExitSearch() override;

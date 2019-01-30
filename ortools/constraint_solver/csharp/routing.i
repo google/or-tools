@@ -15,7 +15,6 @@
 %include "ortools/constraint_solver/csharp/constraint_solver.i"
 %include "ortools/constraint_solver/csharp/routing_types.i"
 %include "ortools/constraint_solver/csharp/routing_index_manager.i"
-%include "ortools/util/csharp/functions.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -51,22 +50,7 @@ class RoutingSearchParameters;
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
 %ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 
-%ignore operations_research::RoutingModel::RegisterTransitCallback(
-    operations_research::TransitCallback2);
-%ignore operations_research::RoutingModel::RegisterUnaryTransitCallback(
-    operations_research::TransitCallback1);
-
 %extend operations_research::RoutingModel {
-  int RegisterTransitCallback(swig_util::LongLongToLong* callback) {
-    return $self->RegisterTransitCallback([callback](int64 i, int64 j) {
-        return callback->Run(i, j);
-      });
-  }
-  int RegisterUnaryTransitCallback(swig_util::LongToLong* callback) {
-    return $self->RegisterUnaryTransitCallback([callback](int64 i) {
-        return callback->Run(i);
-      });
-  }
   void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,
                           bool fix_start_cumul_to_zero,
@@ -75,18 +59,71 @@ class RoutingSearchParameters;
     self->AddVectorDimension(values.data(), capacity,
                              fix_start_cumul_to_zero, name);
   }
-
- int RegisterTransitCallback(operations_research::TransitCallback c) {
-   return $self->RegisterTransitCallback([c](int64 i, int64 j) {
-       return (*c)(i, j);
-       });
- }
- int RegisterUnaryTransitCallback(operations_research::UnaryTransitCallback c) {
-   return $self->RegisterUnaryTransitCallback([c](int64 i) {
-       return (*c)(i);
-       });
- }
 }
+
+// RoutingModel
+namespace operations_research {
+// Define the delegate for Transit callback types.
+// This replace the RoutingTransitCallback[1-2] in the C# proxy class
+%typemap(csimports) RoutingModel %{
+  using System.Collections.Generic; // List<>
+
+  public delegate long UnaryTransitCallback(long fromIndex);
+  public delegate long TransitCallback(long fromIndex, long toIndex);
+%}
+
+// Keep reference to delegate to avoid GC to collect them early
+%typemap(cscode) RoutingModel %{
+  // Store list of delegate to avoid the GC to reclaim them.
+  private List<UnaryTransitCallback> unaryTransitCallbacks;
+  private List<TransitCallback> transitCallbacks;
+  private IndexEvaluator2 indexEvaluator2Callback;
+
+  // Ensure that the GC does not collect any TransitCallback set from C#
+  // as the underlying C++ class stores a shallow copy
+  private UnaryTransitCallback StoreUnaryTransitCallback(UnaryTransitCallback c) {
+    if (unaryTransitCallbacks == null) unaryTransitCallbacks = new List<UnaryTransitCallback>();
+    unaryTransitCallbacks.Add(c);
+    return c;
+  }
+  private TransitCallback StoreTransitCallback(TransitCallback c) {
+    if (transitCallbacks == null) transitCallbacks = new List<TransitCallback>();
+    transitCallbacks.Add(c);
+    return c;
+  }
+  // only use in RoutingModel::SetFirstSolutionEvaluator()
+  private IndexEvaluator2 StoreIndexEvaluator2(IndexEvaluator2 c) {
+    indexEvaluator2Callback = c;
+    return c;
+  }
+%}
+
+// Types in Proxy class (foo.cs) e.g.:
+// Foo::f(cstype $csinput, ...) {Foo_f_SWIG(csin, ...);}
+%typemap(cstype, out="IntPtr") RoutingTransitCallback1 "UnaryTransitCallback"
+%typemap(csin) RoutingTransitCallback1 "StoreUnaryTransitCallback($csinput)"
+%typemap(cstype, out="IntPtr") RoutingTransitCallback2 "TransitCallback"
+%typemap(csin) RoutingTransitCallback2 "StoreTransitCallback($csinput)"
+// Type in the prototype of PINVOKE function.
+%typemap(imtype, out="IntPtr") RoutingTransitCallback1 "UnaryTransitCallback"
+%typemap(imtype, out="IntPtr") RoutingTransitCallback2 "TransitCallback"
+
+// Type use in module_csharp_wrap.h function declaration.
+// since SWIG generate code as: `ctype argX` we can't use a C function pointer type.
+%typemap(ctype) RoutingTransitCallback1 "void*" // "int64 (*)(int64)"
+%typemap(ctype) RoutingTransitCallback2 "void*" // "int64 (*)(int64, int64)"
+
+// Convert in module_csharp_wrap.cc input argument (delegate marshaled in C function pointer) to original std::function<...>
+%typemap(in) RoutingTransitCallback1  %{
+  $1 = [$input](int64 fromIndex) -> int64 {
+    return (*(int64 (*)(int64))$input)(fromIndex);
+    };
+%}
+%typemap(in) RoutingTransitCallback2  %{
+  $1 = [$input](int64 fromIndex, int64 toIndex) -> int64 {
+    return (*(int64 (*)(int64, int64))$input)(fromIndex, toIndex);};
+%}
+}  // namespace operations_research
 
 // Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
 // For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
