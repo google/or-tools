@@ -448,76 +448,6 @@ endif
 #############################
 ##  .NET Examples/Samples  ##
 #############################
-rdotnet_%: \
- $(TEST_DIR)/% \
- $(TEST_DIR)/%proj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(TEST_PATH)$S$*proj
-	"$(DOTNET_BIN)" run --no-build --project $(TEST_PATH)$S$*proj -- $(ARGS)
-
-rdotnet_%.cs: \
- $(DOTNET_EX_DIR)/%.cs \
- $(DOTNET_EX_DIR)/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- $(CONTRIB_EX_DIR)/%.cs \
- $(CONTRIB_EX_DIR)/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(CONTRIB_EX_PATH)$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project $(CONTRIB_EX_PATH)$S$*.csproj -- $(ARGS)
-
-rdotnet_%.fs: \
- $(DOTNET_EX_DIR)/%.fs \
- $(DOTNET_EX_DIR)/%.fsproj \
- $(DOTNET_ORTOOLS_FSHARP_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(DOTNET_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --no-build --project $(DOTNET_EX_PATH)$S$*.fsproj -- $(ARGS)
-
-rdotnet_%.fs: \
- $(CONTRIB_EX_DIR)/%.fs \
- $(CONTRIB_EX_DIR)/%.fsproj \
- $(DOTNET_ORTOOLS_FSHARP_NUPKG) FORCE
-	"$(DOTNET_BIN)" build $(CONTRIB_EX_PATH)$S$*.fsproj
-	"$(DOTNET_BIN)" run --no-build --project $(CONTRIB_EX_PATH)$S$*.fsproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/algorithms/samples/%.cs \
- ortools/algorithms/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Salgorithms$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Salgorithms$Ssamples$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/constraint_solver/samples/%.cs \
- ortools/constraint_solver/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Sconstraint_solver$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Sconstraint_solver$Ssamples$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/graph/samples/%.cs \
- ortools/graph/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Sgraph$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Sgraph$Ssamples$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/linear_solver/samples/%.cs \
- ortools/linear_solver/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Slinear_solver$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Slinear_solver$Ssamples$S$*.csproj -- $(ARGS)
-
-rdotnet_%.cs: \
- ortools/sat/samples/%.cs \
- ortools/sat/samples/%.csproj \
- $(DOTNET_ORTOOLS_NUPKG) FORCE
-	"$(DOTNET_BIN)" build ortools$Ssat$Ssamples$S$*.csproj
-	"$(DOTNET_BIN)" run --no-build --project ortools$Ssat$Ssamples$S$*.csproj -- $(ARGS)
-
 .PHONY: test_dotnet_algorithms_samples # Build and Run all .Net LP Samples (located in ortools/algorithms/samples)
 test_dotnet_algorithms_samples: ;
 
@@ -572,8 +502,6 @@ check_dotnet_pimpl: \
  test_dotnet_graph_samples \
  test_dotnet_linear_solver_samples \
  test_dotnet_sat_samples \
- \
- rdotnet_SimpleProgramFSharp.fs
 
 .PHONY: test_dotnet_tests # Build and Run all .Net Tests (located in examples/test)
 test_dotnet_tests:
