@@ -1741,7 +1741,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     // TODO(user): We should be able to do something for simple mapping.
     context->UpdateRuleStats("TODO element: one to one mapping");
   }
-  if (unique_target) {
+  if (unique_target && !context->IsFixed(target_ref)) {
     context->UpdateRuleStats("TODO element: target not used elsewhere");
   }
   if (unique_index) {

@@ -28,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
@@ -76,6 +77,17 @@ inline double ToDouble(IntegerValue value) {
 template <class IntType>
 inline IntType IntTypeAbs(IntType t) {
   return IntType(std::abs(t.value()));
+}
+
+inline IntegerValue Subtract(IntegerValue a, IntegerValue b) {
+  const int64 result = CapSub(a.value(), b.value());
+  if (result == kint64min || IntegerValue(result) <= kMinIntegerValue) {
+    return kMinIntegerValue;
+  }
+  if (result == kint64max || IntegerValue(result) >= kMaxIntegerValue) {
+    return kMaxIntegerValue;
+  }
+  return IntegerValue(result);
 }
 
 inline IntegerValue CeilRatio(IntegerValue dividend,

@@ -134,7 +134,7 @@ std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
     PseudoCosts::VariableBoundChange var_bound_change;
     var_bound_change.var = l.var;
     const IntegerValue current_lb = integer_trail->LowerBound(l.var);
-    var_bound_change.lower_bound_change = l.bound - current_lb;
+    var_bound_change.lower_bound_change = Subtract(l.bound, current_lb);    
     bound_changes.push_back(var_bound_change);
   }
 
