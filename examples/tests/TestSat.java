@@ -88,9 +88,107 @@ public class TestSat {
     System.out.println("  ... test OK");
   }
 
+  private static void testCrashEquality() {
+    System.out.println("testCrashInSolveWithAllowedAssignment");
+    final CpModel model = new CpModel();
+
+    final IntVar[] entities = new IntVar[20];
+    for (int i = 0; i < entities.length; i++) {
+      entities[i] = model.newIntVar(1, 5, "E" + i);
+    }
+
+    final Integer[] equalities = new Integer[] { 18, 4, 19, 3, 12 };
+    addEqualities(model, entities, equalities);
+
+    final Integer[] allowedAssignments = new Integer[] { 12, 8, 15 };
+    final Integer[] allowedAssignmentValues = new Integer[] { 1, 3 };
+    addAllowedAssignMents(model, entities, allowedAssignments, allowedAssignmentValues);
+
+    final Integer[] forbiddenAssignments1 = new Integer[] { 6, 15, 19 };
+    final Integer[] forbiddenAssignments1Values = new Integer[] { 3 };
+    final Integer[] forbiddenAssignments2 = new Integer[] { 10, 19 };
+    final Integer[] forbiddenAssignments2Values = new Integer[] { 4 };
+    final Integer[] forbiddenAssignments3 = new Integer[] { 18, 0, 9, 7 };
+    final Integer[] forbiddenAssignments3Values = new Integer[] { 4 };
+    final Integer[] forbiddenAssignments4 = new Integer[] { 14, 11 };
+    final Integer[] forbiddenAssignments4Values = new Integer[] { 1, 2, 3, 4, 5 };
+    final Integer[] forbiddenAssignments5 = new Integer[] { 5, 16, 1, 3 };
+    final Integer[] forbiddenAssignments5Values = new Integer[] { 1, 2, 3, 4, 5 };
+    final Integer[] forbiddenAssignments6 = new Integer[] { 2, 6, 11, 4 };
+    final Integer[] forbiddenAssignments6Values = new Integer[] { 1, 2, 3, 4, 5 };
+    final Integer[] forbiddenAssignments7 = new Integer[] { 6, 18, 12, 2, 9, 14 };
+    final Integer[] forbiddenAssignments7Values = new Integer[] { 1, 2, 3, 4, 5 };
+
+    addForbiddenAssignments(forbiddenAssignments1Values, forbiddenAssignments1, entities, model);
+    addForbiddenAssignments(forbiddenAssignments2Values, forbiddenAssignments2, entities, model);
+    addForbiddenAssignments(forbiddenAssignments3Values, forbiddenAssignments3, entities, model);
+    addForbiddenAssignments(forbiddenAssignments4Values, forbiddenAssignments4, entities, model);
+    addForbiddenAssignments(forbiddenAssignments5Values, forbiddenAssignments5, entities, model);
+    addForbiddenAssignments(forbiddenAssignments6Values, forbiddenAssignments6, entities, model);
+    addForbiddenAssignments(forbiddenAssignments7Values, forbiddenAssignments7, entities, model);
+
+    final Integer[] configuration = new Integer[] { 5, 4, 2, 3, 3, 3, 4, 3, 3, 1, 4, 4, 3, 1, 4, 1, 4, 4, 3, 3 };
+    for (int i = 0; i < configuration.length; i++) {
+      model.addEquality(entities[i], configuration[i]);
+    }
+
+    final CpSolver solver = new CpSolver();
+    solver.solve(model);
+
+    System.out.println("  ... test OK");
+  }
+
+  private static void addEqualities(final CpModel model, final IntVar[] entities, final Integer[] equalities) {
+    for (int i = 0; i < (equalities.length - 1); i++) {
+      model.addEquality(entities[equalities[i]], entities[equalities[i + 1]]);
+    }
+  }
+
+  private static void addAllowedAssignMents(final CpModel model, final IntVar[] entities, final Integer[] allowedAssignments,
+      final Integer[] allowedAssignmentValues) {
+    final int[][] allAllowedValues = new int[allowedAssignmentValues.length][allowedAssignments.length];
+    for (int i = 0; i < allowedAssignmentValues.length; i++) {
+      final Integer value = allowedAssignmentValues[i];
+      for (int j = 0; j < allowedAssignments.length; j++) {
+        allAllowedValues[i][j] = value;
+      }
+    }
+    final IntVar[] specificEntities = new IntVar[allowedAssignments.length];
+    for (int i = 0; i < allowedAssignments.length; i++) {
+      specificEntities[i] = entities[allowedAssignments[i]];
+    }
+    try {
+      model.addAllowedAssignments(specificEntities, allAllowedValues);
+    } catch (final Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static void addForbiddenAssignments(final Integer[] forbiddenAssignmentsValues, final Integer[] forbiddenAssignments,
+      final IntVar[] entities, final CpModel model) {
+    final IntVar[] specificEntities = new IntVar[forbiddenAssignments.length];
+    for (int i = 0; i < forbiddenAssignments.length; i++) {
+      specificEntities[i] = entities[forbiddenAssignments[i]];
+    }
+
+    final int[][] notAllowedValues = new int[forbiddenAssignmentsValues.length][forbiddenAssignments.length];
+    for (int i = 0; i < forbiddenAssignmentsValues.length; i++) {
+      final Integer value = forbiddenAssignmentsValues[i];
+      for (int j = 0; j < forbiddenAssignments.length; j++) {
+        notAllowedValues[i][j] = value;
+      }
+    }
+    try {
+      model.addForbiddenAssignments(specificEntities, notAllowedValues);
+    } catch (final Exception e) {
+      e.printStackTrace();
+    }
+
+  }
+
   public static void main(String[] args) throws Exception {
     testCrashInPresolve();
     testCrashInSolveWithAllowedAssignment();
-
+    testCrashEquality();
   }
 }

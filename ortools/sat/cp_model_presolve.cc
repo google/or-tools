@@ -1842,6 +1842,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
     changed |= context->IntersectDomainWith(
         PositiveRef(ref), Domain::FromValues(std::vector<int64>(
                               new_domains[j].begin(), new_domains[j].end())));
+    if (context->is_unsat) return true;
   }
   if (changed) {
     context->UpdateRuleStats("table: reduced variable domains");
