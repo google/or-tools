@@ -48,7 +48,7 @@
     $1 = i == size;
   }
 }
-%typemap(in) std::vector<type>(std::vector<type> temp) {
+%typemap(in) std::vector<type> (std::vector<type> temp) {
   if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
     if (!PyErr_Occurred())
       SWIG_Error(SWIG_TypeError, "sequence(type) expected");
@@ -157,4 +157,6 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 
 %enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
+PY_LIST_LIST_INPUT_TYPEMAP(int, PyInt_Check);
 PY_LIST_LIST_INPUT_TYPEMAP(int64, SwigPyIntOrLong_Check);
+PY_LIST_LIST_INPUT_TYPEMAP(double, PyFloat_Check);

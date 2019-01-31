@@ -22,6 +22,11 @@
 
 %{
 #include "ortools/constraint_solver/routing_types.h"
+
+template<typename IndexT>
+inline PyObject* PyInt_FromIndexT(const IndexT i) {
+  return PyInt_FromLong(i.value());
+}
 %}
 
 // This macro defines typemaps for IndexT, std::vector<IndexT> and
@@ -47,7 +52,7 @@ bool PyObjAs(PyObject *py, IndexT* i) {
   return true;
 }
 %}
-PY_LIST_OUTPUT_TYPEMAP(IndexT, PyInt_Check, PyInt_FromLong);
+PY_LIST_OUTPUT_TYPEMAP(IndexT, PyInt_Check, PyInt_FromIndexT<IndexT>);
 PY_LIST_LIST_INPUT_TYPEMAP(IndexT, PyInt_Check);
 
 %enddef  // DEFINE_INDEX_TYPE
