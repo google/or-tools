@@ -393,7 +393,7 @@ std::function<void(Model*)> LiteralTableConstraint(
 
 std::function<void(Model*)> TransitionConstraint(
     const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64>>& automata, int64 initial_state,
+    const std::vector<std::vector<int64>>& automaton, int64 initial_state,
     const std::vector<int64>& final_states) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
@@ -403,7 +403,7 @@ std::function<void(Model*)> TransitionConstraint(
     // Test precondition.
     {
       std::set<std::pair<int64, int64>> unique_transition_checker;
-      for (const std::vector<int64>& transition : automata) {
+      for (const std::vector<int64>& transition : automaton) {
         CHECK_EQ(transition.size(), 3);
         const std::pair<int64, int64> p{transition[0], transition[1]};
         CHECK(!gtl::ContainsKey(unique_transition_checker, p))
@@ -417,7 +417,7 @@ std::function<void(Model*)> TransitionConstraint(
     std::vector<absl::flat_hash_set<int64>> possible_values(n);
     for (int time = 0; time < n; ++time) {
       const auto domain = integer_trail->InitialVariableDomain(vars[time]);
-      for (const std::vector<int64>& transition : automata) {
+      for (const std::vector<int64>& transition : automaton) {
         // TODO(user): quadratic algo, improve!
         if (domain.Contains(transition[1])) {
           possible_values[time].insert(transition[1]);
@@ -435,7 +435,7 @@ std::function<void(Model*)> TransitionConstraint(
     // TODO(user): filter using the domain of vars[time] that may not contain
     // all the possible transitions.
     for (int time = 0; time + 1 < n; ++time) {
-      for (const std::vector<int64>& transition : automata) {
+      for (const std::vector<int64>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         reachable_states[time + 1].insert(transition[2]);
@@ -445,7 +445,7 @@ std::function<void(Model*)> TransitionConstraint(
     // Backward.
     for (int time = n - 1; time > 0; --time) {
       std::set<int64> new_set;
-      for (const std::vector<int64>& transition : automata) {
+      for (const std::vector<int64>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))
@@ -455,7 +455,7 @@ std::function<void(Model*)> TransitionConstraint(
       reachable_states[time].swap(new_set);
     }
 
-    // We will model at each time step the current automata state using Boolean
+    // We will model at each time step the current automaton state using Boolean
     // variables. We will have n+1 time step. At time zero, we start in the
     // initial state, and at time n we should be in one of the final states. We
     // don't need to create Booleans at at time when there is just one possible
@@ -465,13 +465,13 @@ std::function<void(Model*)> TransitionConstraint(
     absl::flat_hash_map<IntegerValue, Literal> out_encoding;
     for (int time = 0; time < n; ++time) {
       // All these vector have the same size. We will use them to enforce a
-      // local table constraint representing one step of the automata at the
+      // local table constraint representing one step of the automaton at the
       // given time.
       std::vector<Literal> tuple_literals;
       std::vector<IntegerValue> in_states;
       std::vector<IntegerValue> transition_values;
       std::vector<IntegerValue> out_states;
-      for (const std::vector<int64>& transition : automata) {
+      for (const std::vector<int64>& transition : automaton) {
         if (!gtl::ContainsKey(reachable_states[time], transition[0])) continue;
         if (!gtl::ContainsKey(possible_values[time], transition[1])) continue;
         if (!gtl::ContainsKey(reachable_states[time + 1], transition[2]))

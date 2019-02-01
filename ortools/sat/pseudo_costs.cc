@@ -126,7 +126,7 @@ std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
   if (decision == kNoLiteralIndex) return bound_changes;
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  // TODO(user): Support equality decisions.
+  // NOTE: We ignore negation of equality decisions.
   for (const IntegerLiteral l :
        encoder->GetIntegerLiterals(Literal(decision))) {
     if (l.var == kNoIntegerVariable) continue;
@@ -134,7 +134,7 @@ std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
     PseudoCosts::VariableBoundChange var_bound_change;
     var_bound_change.var = l.var;
     const IntegerValue current_lb = integer_trail->LowerBound(l.var);
-    var_bound_change.lower_bound_change = Subtract(l.bound, current_lb);    
+    var_bound_change.lower_bound_change = Subtract(l.bound, current_lb);
     bound_changes.push_back(var_bound_change);
   }
 

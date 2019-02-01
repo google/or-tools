@@ -402,12 +402,12 @@ public class CpModel
     return ct;
   }
 
-  public Constraint AddAutomata(IEnumerable<IntVar> vars,
+  public Constraint AddAutomaton(IEnumerable<IntVar> vars,
                                 long starting_state,
                                 long[,] transitions,
                                 IEnumerable<long> final_states) {
     Constraint ct = new Constraint(model_);
-    AutomataConstraintProto aut = new AutomataConstraintProto();
+    AutomatonConstraintProto aut = new AutomatonConstraintProto();
     foreach (IntVar var in vars)
     {
       aut.Vars.Add(var.Index);
@@ -424,17 +424,17 @@ public class CpModel
       aut.TransitionHead.Add(transitions[i, 2]);
     }
 
-    ct.Proto.Automata = aut;
+    ct.Proto.Automaton = aut;
     return ct;
   }
 
-  public Constraint AddAutomata(
+  public Constraint AddAutomaton(
       IEnumerable<IntVar> vars,
       long starting_state,
       IEnumerable<Tuple<long, long, long>> transitions,
       IEnumerable<long> final_states) {
     Constraint ct = new Constraint(model_);
-    AutomataConstraintProto aut = new AutomataConstraintProto();
+    AutomatonConstraintProto aut = new AutomatonConstraintProto();
     foreach (IntVar var in vars)
     {
       aut.Vars.Add(var.Index);
@@ -452,7 +452,7 @@ public class CpModel
       aut.TransitionTail.Add(transition.Item3);
     }
 
-    ct.Proto.Automata = aut;
+    ct.Proto.Automaton = aut;
     return ct;
   }
 

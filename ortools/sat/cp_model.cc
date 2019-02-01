@@ -233,9 +233,9 @@ void ReservoirConstraint::AddOptionalEvent(IntVar time, int64 demand,
 
 void AutomatonConstraint::AddTransition(int tail, int head,
                                         int64 transition_label) {
-  proto_->mutable_automata()->add_transition_tail(tail);
-  proto_->mutable_automata()->add_transition_head(head);
-  proto_->mutable_automata()->add_transition_label(transition_label);
+  proto_->mutable_automaton()->add_transition_tail(tail);
+  proto_->mutable_automaton()->add_transition_head(head);
+  proto_->mutable_automaton()->add_transition_label(transition_label);
 }
 
 void NoOverlap2DConstraint::AddRectangle(IntervalVar x_coordinate,
@@ -584,11 +584,11 @@ AutomatonConstraint CpModelBuilder::AddAutomaton(
     absl::Span<const int> final_states) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   for (const IntVar& var : transition_variables) {
-    proto->mutable_automata()->add_vars(GetOrCreateIntegerIndex(var.index_));
+    proto->mutable_automaton()->add_vars(GetOrCreateIntegerIndex(var.index_));
   }
-  proto->mutable_automata()->set_starting_state(starting_state);
+  proto->mutable_automaton()->set_starting_state(starting_state);
   for (const int final_state : final_states) {
-    proto->mutable_automata()->add_final_states(final_state);
+    proto->mutable_automaton()->add_final_states(final_state);
   }
   return AutomatonConstraint(proto);
 }

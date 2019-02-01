@@ -497,22 +497,22 @@ class ConstraintChecker {
     return ct.table().negated();
   }
 
-  bool AutomataConstraintIsFeasible(const ConstraintProto& ct) {
+  bool AutomatonConstraintIsFeasible(const ConstraintProto& ct) {
     // Build the transition table {tail, label} -> head.
     absl::flat_hash_map<std::pair<int64, int64>, int64> transition_map;
-    const int num_transitions = ct.automata().transition_tail().size();
+    const int num_transitions = ct.automaton().transition_tail().size();
     for (int i = 0; i < num_transitions; ++i) {
-      transition_map[{ct.automata().transition_tail(i),
-                      ct.automata().transition_label(i)}] =
-          ct.automata().transition_head(i);
+      transition_map[{ct.automaton().transition_tail(i),
+                      ct.automaton().transition_label(i)}] =
+          ct.automaton().transition_head(i);
     }
 
-    // Walk the automata.
-    int64 current_state = ct.automata().starting_state();
-    const int num_steps = ct.automata().vars_size();
+    // Walk the automaton.
+    int64 current_state = ct.automaton().starting_state();
+    const int num_steps = ct.automaton().vars_size();
     for (int i = 0; i < num_steps; ++i) {
       const std::pair<int64, int64> key = {current_state,
-                                           Value(ct.automata().vars(i))};
+                                           Value(ct.automaton().vars(i))};
       if (!gtl::ContainsKey(transition_map, key)) {
         return false;
       }
@@ -520,7 +520,7 @@ class ConstraintChecker {
     }
 
     // Check we are now in a final state.
-    for (const int64 final : ct.automata().final_states()) {
+    for (const int64 final : ct.automaton().final_states()) {
       if (current_state == final) return true;
     }
     return false;
@@ -782,8 +782,8 @@ bool SolutionIsFeasible(const CpModelProto& model,
       case ConstraintProto::ConstraintCase::kTable:
         is_feasible = checker.TableConstraintIsFeasible(ct);
         break;
-      case ConstraintProto::ConstraintCase::kAutomata:
-        is_feasible = checker.AutomataConstraintIsFeasible(ct);
+      case ConstraintProto::ConstraintCase::kAutomaton:
+        is_feasible = checker.AutomatonConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         is_feasible = checker.CircuitConstraintIsFeasible(ct);

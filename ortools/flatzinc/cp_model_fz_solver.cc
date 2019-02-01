@@ -403,7 +403,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
     for (const int64 value : fz_ct.arguments[1].values) arg->add_values(value);
   } else if (fz_ct.type == "regular") {
-    auto* arg = ct->mutable_automata();
+    auto* arg = ct->mutable_automaton();
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
 
     int count = 0;

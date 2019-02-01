@@ -1061,23 +1061,23 @@ void LoadTableConstraint(const ConstraintProto& ct, Model* m) {
   }
 }
 
-void LoadAutomataConstraint(const ConstraintProto& ct, Model* m) {
+void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> vars =
-      mapping->Integers(ct.automata().vars());
+      mapping->Integers(ct.automaton().vars());
 
-  const int num_transitions = ct.automata().transition_tail_size();
+  const int num_transitions = ct.automaton().transition_tail_size();
   std::vector<std::vector<int64>> transitions;
   transitions.reserve(num_transitions);
   for (int i = 0; i < num_transitions; ++i) {
-    transitions.push_back({ct.automata().transition_tail(i),
-                           ct.automata().transition_label(i),
-                           ct.automata().transition_head(i)});
+    transitions.push_back({ct.automaton().transition_tail(i),
+                           ct.automaton().transition_label(i),
+                           ct.automaton().transition_head(i)});
   }
 
-  const int64 starting_state = ct.automata().starting_state();
+  const int64 starting_state = ct.automaton().starting_state();
   const std::vector<int64> final_states =
-      ValuesFromProto(ct.automata().final_states());
+      ValuesFromProto(ct.automaton().final_states());
   m->Add(TransitionConstraint(vars, transitions, starting_state, final_states));
 }
 
@@ -1269,8 +1269,8 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
     case ConstraintProto::ConstraintProto::kTable:
       LoadTableConstraint(ct, m);
       return true;
-    case ConstraintProto::ConstraintProto::kAutomata:
-      LoadAutomataConstraint(ct, m);
+    case ConstraintProto::ConstraintProto::kAutomaton:
+      LoadAutomatonConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kCircuit:
       LoadCircuitConstraint(ct, m);

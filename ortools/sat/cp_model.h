@@ -576,7 +576,7 @@ class CpModelBuilder {
   // and 'label' is the label of an arc from 'head' to 'tail',
   // corresponding to the value of one variable in the list of variables.
   //
-  // This automata will be unrolled into a flow with n + 1 phases. Each phase
+  // This automaton will be unrolled into a flow with n + 1 phases. Each phase
   // contains the possible states of the automaton. The first state contains the
   // initial state. The last phase contains the final states.
   //

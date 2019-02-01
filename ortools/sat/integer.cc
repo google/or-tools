@@ -353,6 +353,9 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     return;
   }
 
+  const IntegerLiteral ge = IntegerLiteral::GreaterOrEqual(var, value);
+  const IntegerLiteral le = IntegerLiteral::LowerOrEqual(var, value);
+
   // Special case for the first and last value.
   if (value == domain.Min()) {
     // Note that this will recursively call AssociateToIntegerEqualValue() but
@@ -360,24 +363,26 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     // stop there. When a domain has just 2 values, this allows to call just
     // once AssociateToIntegerEqualValue() and also associate the other value to
     // the negation of the given literal.
-    AssociateToIntegerLiteral(literal,
-                              IntegerLiteral::LowerOrEqual(var, value));
+    AssociateToIntegerLiteral(literal, le);
     return;
   }
   if (value == domain.Max()) {
-    AssociateToIntegerLiteral(literal,
-                              IntegerLiteral::GreaterOrEqual(var, value));
+    AssociateToIntegerLiteral(literal, ge);
     return;
   }
 
   // (var == value)  <=>  (var >= value) and (var <= value).
-  const Literal a(
-      GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(var, value)));
-  const Literal b(
-      GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(var, value)));
+  const Literal a(GetOrCreateAssociatedLiteral(ge));
+  const Literal b(GetOrCreateAssociatedLiteral(le));
   sat_solver_->AddBinaryClause(a, literal.Negated());
   sat_solver_->AddBinaryClause(b, literal.Negated());
   sat_solver_->AddProblemClause({a.Negated(), b.Negated(), literal});
+
+  // Update reverse encoding.
+  const int new_size = 1 + literal.Index().value();
+  if (new_size > reverse_encoding_.size()) reverse_encoding_.resize(new_size);
+  reverse_encoding_[literal.Index()].push_back(le);
+  reverse_encoding_[literal.Index()].push_back(ge);
 }
 
 // TODO(user): The hard constraints we add between associated literals seems to

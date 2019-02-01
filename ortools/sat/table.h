@@ -57,10 +57,10 @@ std::function<void(Model*)> LiteralTableConstraint(
 void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
                     std::vector<std::vector<int64>>* tuples);
 
-// Given an automata defined by a set of 3-tuples:
+// Given an automaton defined by a set of 3-tuples:
 //     (state, transition_with_value_as_label, next_state)
 // this accepts the sequences of vars.size() variables that are recognized by
-// this automata. That is:
+// this automaton. That is:
 //   - We start from the initial state.
 //   - For each variable, we move along the transition labeled by this variable
 //     value. Moreover, the variable must take a value that correspond to a
@@ -71,7 +71,7 @@ void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
 // See the test for some examples.
 std::function<void(Model*)> TransitionConstraint(
     const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64>>& automata, int64 initial_state,
+    const std::vector<std::vector<int64>>& automaton, int64 initial_state,
     const std::vector<int64>& final_states);
 
 }  // namespace sat

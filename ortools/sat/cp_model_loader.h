@@ -190,7 +190,7 @@ void LoadElementConstraintBounds(const ConstraintProto& ct, Model* m);
 void LoadElementConstraintAC(const ConstraintProto& ct, Model* m);
 void LoadElementConstraint(const ConstraintProto& ct, Model* m);
 void LoadTableConstraint(const ConstraintProto& ct, Model* m);
-void LoadAutomataConstraint(const ConstraintProto& ct, Model* m);
+void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m);
 void LoadCircuitConstraint(const ConstraintProto& ct, Model* m);
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m);
 void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m);

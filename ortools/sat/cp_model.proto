@@ -222,10 +222,11 @@ message InverseConstraintProto {
   repeated int32 f_inverse = 2;
 }
 
-// This constraint forces a sequence of variables to be accepted by an automata.
-message AutomataConstraintProto {
+// This constraint forces a sequence of variables to be accepted by an
+// automaton.
+message AutomatonConstraintProto {
   // A state is identified by a non-negative number. It is preferable to keep
-  // all the states dense in says [0, num_states). The automata starts at
+  // all the states dense in says [0, num_states). The automaton starts at
   // starting_state and must finish in any of the final states.
   int64 starting_state = 2;
   repeated int64 final_states = 3;
@@ -237,7 +238,7 @@ message AutomataConstraintProto {
   repeated int64 transition_head = 5;
   repeated int64 transition_label = 6;
 
-  // The sequence of variables. The automata is ran for vars_size() "steps" and
+  // The sequence of variables. The automaton is ran for vars_size() "steps" and
   // the value of vars[i] corresponds to the transition label at step i.
   repeated int32 vars = 7;
 }
@@ -330,9 +331,9 @@ message ConstraintProto {
     // take.
     TableConstraintProto table = 16;
 
-    // The automata constraint forces a sequence of variables to be accepted
+    // The automaton constraint forces a sequence of variables to be accepted
     // by an automaton.
-    AutomataConstraintProto automata = 17;
+    AutomatonConstraintProto automaton = 17;
 
     // The inverse constraint forces two arrays to be inverses of each other:
     // the values of one are the indices of the other, and vice versa.

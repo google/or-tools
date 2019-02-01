@@ -154,8 +154,8 @@ class FullEncodingFixedPointComputer {
         return PropagateElement(ct);
       case ConstraintProto::ConstraintProto::kTable:
         return PropagateTable(ct);
-      case ConstraintProto::ConstraintProto::kAutomata:
-        return PropagateAutomata(ct);
+      case ConstraintProto::ConstraintProto::kAutomaton:
+        return PropagateAutomaton(ct);
       case ConstraintProto::ConstraintProto::kInverse:
         return PropagateInverse(ct);
       case ConstraintProto::ConstraintProto::kLinear:
@@ -209,7 +209,7 @@ class FullEncodingFixedPointComputer {
 
   bool PropagateElement(const ConstraintProto* ct);
   bool PropagateTable(const ConstraintProto* ct);
-  bool PropagateAutomata(const ConstraintProto* ct);
+  bool PropagateAutomaton(const ConstraintProto* ct);
   bool PropagateInverse(const ConstraintProto* ct);
   bool PropagateLinear(const ConstraintProto* ct);
 
@@ -268,9 +268,9 @@ bool FullEncodingFixedPointComputer::PropagateTable(const ConstraintProto* ct) {
   return true;
 }
 
-bool FullEncodingFixedPointComputer::PropagateAutomata(
+bool FullEncodingFixedPointComputer::PropagateAutomaton(
     const ConstraintProto* ct) {
-  for (const int variable : ct->automata().vars()) {
+  for (const int variable : ct->automaton().vars()) {
     FullyEncode(variable);
   }
   return true;

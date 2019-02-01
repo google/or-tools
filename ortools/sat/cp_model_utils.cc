@@ -93,8 +93,8 @@ void AddReferencesUsedByConstraint(const ConstraintProto& ct,
     case ConstraintProto::ConstraintCase::kTable:
       AddIndices(ct.table().vars(), &output->variables);
       break;
-    case ConstraintProto::ConstraintCase::kAutomata:
-      AddIndices(ct.automata().vars(), &output->variables);
+    case ConstraintProto::ConstraintCase::kAutomaton:
+      AddIndices(ct.automaton().vars(), &output->variables);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
       output->variables.insert(ct.interval().start());
@@ -177,7 +177,7 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kTable:
       break;
-    case ConstraintProto::ConstraintCase::kAutomata:
+    case ConstraintProto::ConstraintCase::kAutomaton:
       break;
     case ConstraintProto::ConstraintCase::kInterval:
       break;
@@ -251,8 +251,8 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kTable:
       APPLY_TO_REPEATED_FIELD(table, vars);
       break;
-    case ConstraintProto::ConstraintCase::kAutomata:
-      APPLY_TO_REPEATED_FIELD(automata, vars);
+    case ConstraintProto::ConstraintCase::kAutomaton:
+      APPLY_TO_REPEATED_FIELD(automaton, vars);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
       APPLY_TO_SINGULAR_FIELD(interval, start);
@@ -311,7 +311,7 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kTable:
       break;
-    case ConstraintProto::ConstraintCase::kAutomata:
+    case ConstraintProto::ConstraintCase::kAutomaton:
       break;
     case ConstraintProto::ConstraintCase::kInterval:
       break;
@@ -372,8 +372,8 @@ std::string ConstraintCaseName(
       return "kReservoir";
     case ConstraintProto::ConstraintCase::kTable:
       return "kTable";
-    case ConstraintProto::ConstraintCase::kAutomata:
-      return "kAutomata";
+    case ConstraintProto::ConstraintCase::kAutomaton:
+      return "kAutomaton";
     case ConstraintProto::ConstraintCase::kInterval:
       return "kInterval";
     case ConstraintProto::ConstraintCase::kNoOverlap:

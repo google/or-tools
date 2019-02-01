@@ -764,7 +764,7 @@ class CpModel(object):
     and 'transition' is the label of an arc from 'head' to 'tail',
     corresponding to the value of one variable in the list of variables.
 
-    This automata will be unrolled into a flow with n + 1 phases. Each phase
+    This automaton will be unrolled into a flow with n + 1 phases. Each phase
     contains the possible states of the automaton. The first state contains the
     initial state. The last phase contains the final states.
 
@@ -782,10 +782,10 @@ class CpModel(object):
 
     Args:
       transition_variables: A non empty list of variables whose values
-        correspond to the labels of the arcs traversed by the automata.
-      starting_state: The initial state of the automata.
+        correspond to the labels of the arcs traversed by the automaton.
+      starting_state: The initial state of the automaton.
       final_states: A non empty list of admissible final states.
-      transition_triples: A list of transition for the automata, in the
+      transition_triples: A list of transition for the automaton, in the
         following format (current_state, variable_value, next_state).
 
     Returns:
@@ -798,23 +798,23 @@ class CpModel(object):
 
         if not transition_variables:
             raise ValueError(
-                'AddAutomata expects a non empty transition_variables '
+                'AddAutomaton expects a non empty transition_variables '
                 'array')
         if not final_states:
-            raise ValueError('AddAutomata expects some final states')
+            raise ValueError('AddAutomaton expects some final states')
 
         if not transition_triples:
-            raise ValueError('AddAutomata expects some transtion triples')
+            raise ValueError('AddAutomaton expects some transtion triples')
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.automata.vars.extend(
+        model_ct.automaton.vars.extend(
             [self.GetOrMakeIndex(x) for x in transition_variables])
         cp_model_helper.AssertIsInt64(starting_state)
-        model_ct.automata.starting_state = starting_state
+        model_ct.automaton.starting_state = starting_state
         for v in final_states:
             cp_model_helper.AssertIsInt64(v)
-            model_ct.automata.final_states.append(v)
+            model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
                 raise TypeError('Tuple ' + str(t) +
@@ -822,9 +822,9 @@ class CpModel(object):
             cp_model_helper.AssertIsInt64(t[0])
             cp_model_helper.AssertIsInt64(t[1])
             cp_model_helper.AssertIsInt64(t[2])
-            model_ct.automata.transition_tail.append(t[0])
-            model_ct.automata.transition_label.append(t[1])
-            model_ct.automata.transition_head.append(t[2])
+            model_ct.automaton.transition_tail.append(t[0])
+            model_ct.automaton.transition_label.append(t[1])
+            model_ct.automaton.transition_head.append(t[2])
         return ct
 
     def AddInverse(self, variables, inverse_variables):
@@ -1558,7 +1558,7 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
         best_bound = self.BestObjectiveBound()
         obj_lb = min(objective, best_bound)
         obj_ub = max(objective, best_bound)
-        print('Solution %i, time = %.2f s, objective = [%i, %i]' %
-              (self.__solution_count, current_time - self.__start_time,
-               obj_lb, obj_ub))
+        print('Solution %i, time = %f s, objective = [%i, %i]' %
+              (self.__solution_count, current_time - self.__start_time, obj_lb,
+               obj_ub))
         self.__solution_count += 1
