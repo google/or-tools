@@ -14,7 +14,7 @@
 package com.google.ortools.sat;
 
 import com.google.ortools.sat.AllDifferentConstraintProto;
-import com.google.ortools.sat.AutomataConstraintProto;
+import com.google.ortools.sat.AutomatonConstraintProto;
 import com.google.ortools.sat.BoolArgumentProto;
 import com.google.ortools.sat.CircuitConstraintProto;
 import com.google.ortools.sat.CpModelProto;
@@ -569,7 +569,7 @@ public class CpModel {
    * 'head'), where 'tail' and 'head' are states, and 'transition' is the label of an arc from
    * 'head' to 'tail', corresponding to the value of one variable in the list of variables.
    *
-   * <p>This automata will be unrolled into a flow with n + 1 phases. Each phase contains the
+   * <p>This automaton will be unrolled into a flow with n + 1 phases. Each phase contains the
    * possible states of the automaton. The first state contains the initial state. The last phase
    * contains the final states.
    *
@@ -584,10 +584,10 @@ public class CpModel {
    * ends in one of the final states in the final phase.
    *
    * @param transitionVariables a non empty list of variables whose values correspond to the labels
-   *     of the arcs traversed by the automata
-   * @param startingState the initial state of the automata
+   *     of the arcs traversed by the automaton
+   * @param startingState the initial state of the automaton
    * @param finalStates a non empty list of admissible final states
-   * @param transitions a list of transition for the automata, in the following format
+   * @param transitions a list of transition for the automaton, in the following format
    *     (currentState, variableValue, nextState)
    * @return an instance of the Constraint class
    * @throws WrongLength if one transition does not have a length of 3
@@ -595,7 +595,7 @@ public class CpModel {
   public Constraint addAutomaton(IntVar[] transitionVariables, long startingState,
       long[] finalStates, long[][] transitions) throws WrongLength {
     Constraint ct = new Constraint(modelBuilder);
-    AutomataConstraintProto.Builder automaton = ct.builder().getAutomataBuilder();
+    AutomatonConstraintProto.Builder automaton = ct.builder().getAutomatonBuilder();
     for (IntVar var : transitionVariables) {
       automaton.addVars(var.getIndex());
     }
