@@ -412,9 +412,11 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     for (int i = 1; i <= num_states; ++i) {
       for (int j = 1; j <= num_values; ++j) {
         CHECK_LT(count, fz_ct.arguments[3].values.size());
+        const int next = fz_ct.arguments[3].values[count++];
+        if (next == 0) continue;  // 0 is a failing state.
         arg->add_transition_tail(i);
         arg->add_transition_label(j);
-        arg->add_transition_head(fz_ct.arguments[3].values[count++]);
+        arg->add_transition_head(next);
       }
     }
 
