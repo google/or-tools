@@ -79,6 +79,7 @@ find_package(gflags REQUIRED)
 
 if(NOT TARGET gflags::gflags)
   if(TARGET gflags)
+    set_target_properties(gflags PROPERTIES IMPORTED_GLOBAL TRUE)
     alias_target(gflags gflags::gflags)
   else()
     message(FATAL_ERROR "Cannot find target gflags::gflags")
@@ -93,6 +94,7 @@ find_package(glog REQUIRED)
 
 if(NOT TARGET glog::glog)
   if(TARGET glog)
+    set_target_properties(glog PROPERTIES IMPORTED_GLOBAL TRUE)
     alias_target(glog glog::glog)
   else()
     message(FATAL_ERROR "Cannot find target glog::glog")
@@ -106,10 +108,12 @@ endif()
 find_package(ZLIB REQUIRED)
 
 if(NOT TARGET ZLIB::ZLIB)
-  if(TARGET zlib)
-    add_library(ZLIB::ZLIB ALIAS zlib)
-  elseif(TARGET zlibstatic)
-    add_library(ZLIB::ZLIB ALIAS zlibstatic)
+  if(BUILD_SHARED_LIBS AND TARGET ZLIB::zlib)
+    set_target_properties(ZLIB::zlib PROPERTIES IMPORTED_GLOBAL TRUE)
+    alias_target(ZLIB::zlib ZLIB::ZLIB)
+  elseif(NOT BUILD_SHARED_LIBS AND TARGET ZLIB::zlibstatic)
+    set_target_properties(ZLIB::zlibstatic PROPERTIES IMPORTED_GLOBAL TRUE)
+    alias_target(ZLIB::zlibstatic ZLIB::ZLIB)
   else()
     message(FATAL_ERROR "Cannot find target ZLIB::ZLIB")
   endif()
@@ -124,6 +128,7 @@ find_package(Protobuf REQUIRED)
 # By default, not present until CMake v3.9
 if(NOT TARGET protobuf::libprotobuf)
   if(TARGET libprotobuf)
+    set_target_properties(libprotobuf PROPERTIES IMPORTED_GLOBAL TRUE)
     add_library(protobuf::libprotobuf ALIAS libprotobuf)
   else()
     message(FATAL_ERROR "Cannot find target protobuf::libprotobuf")
@@ -133,6 +138,7 @@ endif()
 # By default, not present until CMake v3.10
 if(NOT TARGET protobuf::protoc)
   if(TARGET protoc)
+    set_target_properties(libprotoc PROPERTIES IMPORTED_GLOBAL TRUE)
     add_library(protobuf::protoc ALIAS protoc)
   else()
     message(FATAL_ERROR "Cannot find target protobuf::protoc")
@@ -143,7 +149,7 @@ endif()
 # abseil #
 ##########
 
-find_package(abseil REQUIRED)
+find_package(abseil-cpp REQUIRED)
 
 #######
 # Cbc #
@@ -189,15 +195,15 @@ target_include_directories(${PROJECT_NAME} INTERFACE
   )
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
-  absl::base
-  absl::container
-  absl::hash
-  absl::memory
-  absl::meta
-  absl::str_format
-  absl::strings
-  absl::synchronization
-  absl::types
+  absl::absl_base
+  absl::absl_container
+  absl::absl_hash
+  absl::absl_memory
+  absl::absl_meta
+  absl::absl_str_format
+  absl::absl_strings
+  absl::absl_synchronization
+  absl::absl_types
   gflags::gflags glog::glog
   protobuf::libprotobuf
   Cbc::CbcSolver Cbc::OsiCbc Cbc::ClpSolver Cbc::OsiClp
@@ -236,7 +242,7 @@ foreach (PROTO_FILE ${proto_files})
     OUTPUT ${PROTO_SRC} ${PROTO_HDR}
     COMMAND protobuf::protoc
     "--proto_path=${PROJECT_SOURCE_DIR}"
-    "${PROTO_DIRS}"
+    ${PROTO_DIRS}
     "--cpp_out=${PROJECT_BINARY_DIR}"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc

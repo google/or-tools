@@ -1,0 +1,4 @@
+if(NOT TARGET absl::base)
+  include(${PKG_CONFIG_FILE})
+  message(STATUS "Abseil found")
+endif()

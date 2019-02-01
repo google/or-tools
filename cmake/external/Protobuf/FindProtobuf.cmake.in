@@ -1,0 +1,4 @@
+if(NOT TARGET protobuf::libprotobuf OR NOT TARGET protobuf::protoc)
+  include(${PKG_CONFIG_FILE})
+  message(STATUS "Protobuf Found")
+endif()

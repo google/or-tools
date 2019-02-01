@@ -12,7 +12,7 @@ set_target_properties(${NAME} PROPERTIES
 )
 # CMake < 3.12: CMakeError: Object library may not link to anything.
 #target_link_libraries(${NAME} PRIVATE
-#  absl::strings
+#  absl::absl_strings
 #  gflags::gflags glog::glog
 #  protobuf::libprotobuf
 #  Cbc::Cbc
@@ -20,14 +20,14 @@ set_target_properties(${NAME} PROPERTIES
 target_include_directories(${NAME} PRIVATE
 	${PROJECT_SOURCE_DIR}
 	${PROJECT_BINARY_DIR}
-	$<TARGET_PROPERTY:absl::strings,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:absl::absl_strings,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_options(${NAME} PRIVATE
-	$<TARGET_PROPERTY:absl::strings,INTERFACE_COMPILE_OPTIONS>
+	$<TARGET_PROPERTY:absl::absl_strings,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_OPTIONS>
@@ -35,7 +35,7 @@ target_compile_options(${NAME} PRIVATE
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_OPTIONS>
 	)
 target_compile_definitions(${NAME} PRIVATE
-	$<TARGET_PROPERTY:absl::strings,INTERFACE_COMPILE_DEFINITIONS>
+	$<TARGET_PROPERTY:absl::absl_strings,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_DEFINITIONS>
@@ -43,7 +43,7 @@ target_compile_definitions(${NAME} PRIVATE
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_DEFINITIONS>
 	)
 add_dependencies(${NAME}
-  absl::strings
+  absl::absl_strings
   gflags::gflags glog::glog
 	protobuf::libprotobuf
   Cbc::Cbc

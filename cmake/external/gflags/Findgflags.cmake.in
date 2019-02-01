@@ -1,0 +1,4 @@
+if(NOT TARGET gflags::gflags)
+  include(${PKG_CONFIG_FILE})
+  message(STATUS "Found Gflag")
+endif()

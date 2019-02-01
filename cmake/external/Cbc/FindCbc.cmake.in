@@ -1,0 +1,4 @@
+if(NOT TARGET Cbc::CbcSolver OR NOT TARGET Cbc::ClpSolver)
+  include(${PKG_CONFIG_FILE})
+  message(STATUS "Adding CMake project: Cbc...DONE")
+endif()

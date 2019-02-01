@@ -1,0 +1,4 @@
+if(NOT TARGET glog::glog)
+  include(${PKG_CONFIG_FILE})
+  message(STATUS "Found Glog")
+endif()

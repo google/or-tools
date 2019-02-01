@@ -1,0 +1,6 @@
+if(NOT TARGET ZLIB::ZLIB)
+
+  include(${PKG_CONFIG_FILE})
+
+  message(STATUS "Adding ZLIB...DONE")
+endif()

@@ -10,13 +10,9 @@ include(ExternalProject)
 ExternalProject_Add(cbc_project
   GIT_REPOSITORY https://github.com/Mizux/Cbc
   GIT_TAG "master"
-  SOURCE_DIR "${CMAKE_BINARY_DIR}/cbc-src"
-  BINARY_DIR "${CMAKE_BINARY_DIR}/cbc-build"
   UPDATE_COMMAND ""
-  #PATCH_COMMAND git apply "${PROJECT_SOURCE_DIR}/patches/cbc.patch"
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND ""
-  INSTALL_COMMAND ""
+  CMAKE_ARGS ${CMAKE_ARGS}
   TEST_COMMAND ""
   LOG_DOWNLOAD ON
 )
+#PATCH_COMMAND git apply "${PROJECT_SOURCE_DIR}/patches/cbc.patch"

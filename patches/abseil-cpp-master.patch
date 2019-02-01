@@ -205,7 +205,7 @@ index 9a7e103..353dbb3 100644
  
  
  # config options
-@@ -96,3 +103,12 @@ if(BUILD_TESTING)
+@@ -96,3 +103,9 @@ if(BUILD_TESTING)
  endif()
  
  add_subdirectory(absl)
@@ -213,9 +213,6 @@ index 9a7e103..353dbb3 100644
 +set(CMAKE_INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 +install(EXPORT ${PROJECT_NAME}-targets
 +  NAMESPACE absl::
-+  DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
-+  )
-+install(FILES CMake/${PROJECT_NAME}-config.cmake
 +  DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
 +  )
 diff --git a/absl/algorithm/CMakeLists.txt b/absl/algorithm/CMakeLists.txt
