@@ -30,7 +30,7 @@ public class LinearProgrammingExample {
     // [END solver]
 
     // [START variables]
-    double infinity = MPSolver.infinity();
+    double infinity = java.lang.Double.POSITIVE_INFINITY;
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeNumVar(0.0, infinity, "x");
     MPVariable y = solver.makeNumVar(0.0, infinity, "y");

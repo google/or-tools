@@ -32,7 +32,7 @@ public class SimpleMipProgram {
     // [END solver]
 
     // [START variables]
-    double infinity = MPSolver.infinity();
+    double infinity = java.lang.Double.POSITIVE_INFINITY;
     // x and y are integer non-negative variables.
     MPVariable x = solver.makeIntVar(0.0, infinity, "x");
     MPVariable y = solver.makeIntVar(0.0, infinity, "y");

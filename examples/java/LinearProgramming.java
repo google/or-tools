@@ -37,7 +37,7 @@ public class LinearProgramming {
       System.out.println("Could not create solver " + solverType);
       return;
     }
-    double infinity = MPSolver.infinity();
+    double infinity = java.lang.Double.POSITIVE_INFINITY;
     // x1, x2 and x3 are continuous non-negative variables.
     MPVariable x1 = solver.makeNumVar(0.0, infinity, "x1");
     MPVariable x2 = solver.makeNumVar(0.0, infinity, "x2");
