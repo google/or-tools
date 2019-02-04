@@ -428,6 +428,8 @@ check_java_pimpl: \
 
 .PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
 test_java_tests: \
+ rjava_TestConstraintSolver \
+ rjava_TestRouting \
  rjava_TestSat \
  rjava_TestLp
 
