@@ -17,7 +17,7 @@ boolean variable *b* and two half-reified constraints, shown below:
 <div class="ds-selector-tabs">
     <section>
     <h3>Python</h3>
-<pre class="prettyprint">
+```python
 """Link integer constraints together."""
 
 from __future__ import absolute_import
@@ -82,11 +82,11 @@ def ChannelingSampleSat():
 
 
 ChannelingSampleSat()
-</pre>
+```
     </section>
     <section>
     <h3>C++</h3>
-<pre class="prettyprint">
+    ```[cpp]
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -137,7 +137,7 @@ int main() {
 
   return EXIT_SUCCESS;
 }
-</pre>
+```
     </section>
 
 This displays the following:
