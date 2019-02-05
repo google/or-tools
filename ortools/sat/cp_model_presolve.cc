@@ -38,345 +38,298 @@
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_objective.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/simplification.h"
-#include "ortools/util/affine_relation.h"
-#include "ortools/util/bitset.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
-namespace {
 
-// Wrap the CpModelProto we are presolving with extra data structure like the
-// in-memory domain of each variables and the constraint variable graph.
-struct PresolveContext {
-  bool DomainIsEmpty(int ref) const {
-    return domains[PositiveRef(ref)].IsEmpty();
+int PresolveContext::NewIntVar(const Domain& domain) {
+  IntegerVariableProto* const var = working_model->add_variables();
+  FillDomainInProto(domain, var);
+  return working_model->variables_size() - 1;
+}
+
+int PresolveContext::NewBoolVar() { return NewIntVar(Domain(0, 1)); }
+
+int PresolveContext::GetOrCreateConstantVar(int64 cst) {
+  if (!gtl::ContainsKey(constant_to_ref, cst)) {
+    constant_to_ref[cst] = working_model->variables_size();
+    IntegerVariableProto* const var_proto = working_model->add_variables();
+    var_proto->add_domain(cst);
+    var_proto->add_domain(cst);
+  }
+  return constant_to_ref[cst];
+}
+
+// a => b.
+void PresolveContext::AddImplication(int a, int b) {
+  ConstraintProto* const ct = working_model->add_constraints();
+  ct->add_enforcement_literal(a);
+  ct->mutable_bool_and()->add_literals(b);
+}
+
+// b => x in [lb, ub].
+void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
+  ConstraintProto* const imply = working_model->add_constraints();
+  imply->add_enforcement_literal(b);
+  imply->mutable_linear()->add_vars(x);
+  imply->mutable_linear()->add_coeffs(1);
+  FillDomainInProto(domain, imply->mutable_linear());
+}
+
+bool PresolveContext::DomainIsEmpty(int ref) const {
+  return domains[PositiveRef(ref)].IsEmpty();
+}
+
+bool PresolveContext::IsFixed(int ref) const {
+  CHECK(!DomainIsEmpty(ref));
+  return domains[PositiveRef(ref)].Min() == domains[PositiveRef(ref)].Max();
+}
+
+bool PresolveContext::LiteralIsTrue(int lit) const {
+  if (!IsFixed(lit)) return false;
+  if (RefIsPositive(lit)) {
+    return domains[lit].Min() == 1ll;
+  } else {
+    return domains[PositiveRef(lit)].Max() == 0ll;
+  }
+}
+
+bool PresolveContext::LiteralIsFalse(int lit) const {
+  if (!IsFixed(lit)) return false;
+  if (RefIsPositive(lit)) {
+    return domains[lit].Max() == 0ll;
+  } else {
+    return domains[PositiveRef(lit)].Min() == 1ll;
+  }
+}
+
+int64 PresolveContext::MinOf(int ref) const {
+  CHECK(!DomainIsEmpty(ref));
+  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
+                            : -domains[PositiveRef(ref)].Max();
+}
+
+int64 PresolveContext::MaxOf(int ref) const {
+  CHECK(!DomainIsEmpty(ref));
+  return RefIsPositive(ref) ? domains[PositiveRef(ref)].Max()
+                            : -domains[PositiveRef(ref)].Min();
+}
+
+bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
+  return var_to_constraints[PositiveRef(ref)].size() == 1 &&
+         !enumerate_all_solutions;
+}
+
+Domain PresolveContext::DomainOf(int ref) const {
+  if (RefIsPositive(ref)) return domains[ref];
+  return domains[PositiveRef(ref)].Negation();
+}
+
+bool PresolveContext::IntersectDomainWith(int ref, const Domain& domain) {
+  CHECK(!DomainIsEmpty(ref));
+  const int var = PositiveRef(ref);
+
+  if (RefIsPositive(ref)) {
+    if (domains[var].IsIncludedIn(domain)) return false;
+    domains[var] = domains[var].IntersectionWith(domain);
+  } else {
+    const Domain temp = domain.Negation();
+    if (domains[var].IsIncludedIn(temp)) return false;
+    domains[var] = domains[var].IntersectionWith(temp);
   }
 
-  bool IsFixed(int ref) const {
-    CHECK(!DomainIsEmpty(ref));
-    return domains[PositiveRef(ref)].Min() == domains[PositiveRef(ref)].Max();
-  }
+  modified_domains.Set(var);
+  if (domains[var].IsEmpty()) is_unsat = true;
+  return true;
+}
 
-  bool LiteralIsTrue(int lit) const {
-    if (!IsFixed(lit)) return false;
-    if (RefIsPositive(lit)) {
-      return domains[lit].Min() == 1ll;
-    } else {
-      return domains[PositiveRef(lit)].Max() == 0ll;
+void PresolveContext::SetLiteralToFalse(int lit) {
+  const int var = PositiveRef(lit);
+  const int64 value = RefIsPositive(lit) ? 0ll : 1ll;
+  if (IsFixed(var)) {
+    const int64 fixed_value = MinOf(var);
+    if (value != fixed_value) {
+      is_unsat = true;
     }
+  } else {
+    IntersectDomainWith(var, Domain(value));
   }
+}
 
-  bool LiteralIsFalse(int lit) const {
-    if (!IsFixed(lit)) return false;
-    if (RefIsPositive(lit)) {
-      return domains[lit].Max() == 0ll;
-    } else {
-      return domains[PositiveRef(lit)].Min() == 1ll;
-    }
-  }
+void PresolveContext::SetLiteralToTrue(int lit) {
+  return SetLiteralToFalse(NegatedRef(lit));
+}
 
-  int64 MinOf(int ref) const {
-    CHECK(!DomainIsEmpty(ref));
-    return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
-                              : -domains[PositiveRef(ref)].Max();
-  }
+void PresolveContext::UpdateRuleStats(const std::string& name) {
+  stats_by_rule_name[name]++;
+}
 
-  int64 MaxOf(int ref) const {
-    CHECK(!DomainIsEmpty(ref));
-    return RefIsPositive(ref) ? domains[PositiveRef(ref)].Max()
-                              : -domains[PositiveRef(ref)].Min();
-  }
+void PresolveContext::UpdateConstraintVariableUsage(int c) {
+  CHECK_EQ(constraint_to_vars.size(), working_model->constraints_size());
+  const ConstraintProto& ct = working_model->constraints(c);
+  for (const int v : constraint_to_vars[c]) var_to_constraints[v].erase(c);
+  constraint_to_vars[c] = UsedVariables(ct);
+  for (const int v : constraint_to_vars[c]) var_to_constraints[v].insert(c);
+}
 
-  // Returns true if this ref only appear in one constraint.
-  bool VariableIsUniqueAndRemovable(int ref) const {
-    return var_to_constraints[PositiveRef(ref)].size() == 1 &&
-           !enumerate_all_solutions;
-  }
-
-  Domain DomainOf(int ref) const {
-    if (RefIsPositive(ref)) return domains[ref];
-    return domains[PositiveRef(ref)].Negation();
-  }
-
-  // Returns true iff the domain changed.
-  bool IntersectDomainWith(int ref, const Domain& domain) {
-    CHECK(!DomainIsEmpty(ref));
-    const int var = PositiveRef(ref);
-
-    if (RefIsPositive(ref)) {
-      if (domains[var].IsIncludedIn(domain)) return false;
-      domains[var] = domains[var].IntersectionWith(domain);
-    } else {
-      const Domain temp = domain.Negation();
-      if (domains[var].IsIncludedIn(temp)) return false;
-      domains[var] = domains[var].IntersectionWith(temp);
-    }
-
-    modified_domains.Set(var);
-    if (domains[var].IsEmpty()) is_unsat = true;
-    return true;
-  }
-
-  void SetLiteralToFalse(int lit) {
-    const int var = PositiveRef(lit);
-    const int64 value = RefIsPositive(lit) ? 0ll : 1ll;
-    if (IsFixed(var)) {
-      const int64 fixed_value = MinOf(var);
-      if (value != fixed_value) {
-        is_unsat = true;
-      }
-    } else {
-      IntersectDomainWith(var, Domain(value));
-    }
-  }
-
-  void SetLiteralToTrue(int lit) { return SetLiteralToFalse(NegatedRef(lit)); }
-
-  void UpdateRuleStats(const std::string& name) { stats_by_rule_name[name]++; }
-
-  // Update the constraints <-> variables graph. This needs to be called each
-  // time a constraint is modified.
-  void UpdateConstraintVariableUsage(int c) {
-    CHECK_EQ(constraint_to_vars.size(), working_model->constraints_size());
-    const ConstraintProto& ct = working_model->constraints(c);
-    for (const int v : constraint_to_vars[c]) var_to_constraints[v].erase(c);
-    constraint_to_vars[c] = UsedVariables(ct);
+void PresolveContext::UpdateNewConstraintsVariableUsage() {
+  const int old_size = constraint_to_vars.size();
+  const int new_size = working_model->constraints_size();
+  CHECK_LE(old_size, new_size);
+  constraint_to_vars.resize(new_size);
+  for (int c = old_size; c < new_size; ++c) {
+    constraint_to_vars[c] = UsedVariables(working_model->constraints(c));
     for (const int v : constraint_to_vars[c]) var_to_constraints[v].insert(c);
   }
+}
 
-  // Calls UpdateConstraintVariableUsage() on all newly created constraints.
-  void UpdateNewConstraintsVariableUsage() {
-    const int old_size = constraint_to_vars.size();
-    const int new_size = working_model->constraints_size();
-    CHECK_LE(old_size, new_size);
-    constraint_to_vars.resize(new_size);
-    for (int c = old_size; c < new_size; ++c) {
-      constraint_to_vars[c] = UsedVariables(working_model->constraints(c));
-      for (const int v : constraint_to_vars[c]) var_to_constraints[v].insert(c);
-    }
+bool PresolveContext::ConstraintVariableUsageIsConsistent() {
+  if (is_unsat) return true;
+  if (constraint_to_vars.size() != working_model->constraints_size()) {
+    LOG(INFO) << "Wrong constraint_to_vars size!";
+    return false;
   }
-
-  // Returns true if our current constraints <-> variables graph is ok.
-  // This is meant to be used in DEBUG mode only.
-  bool ConstraintVariableUsageIsConsistent() {
-    if (is_unsat) return true;
-    if (constraint_to_vars.size() != working_model->constraints_size()) {
-      LOG(INFO) << "Wrong constraint_to_vars size!";
+  for (int c = 0; c < constraint_to_vars.size(); ++c) {
+    if (constraint_to_vars[c] != UsedVariables(working_model->constraints(c))) {
+      LOG(INFO) << "Wrong variables usage for constraint: \n"
+                << ProtobufDebugString(working_model->constraints(c));
       return false;
     }
-    for (int c = 0; c < constraint_to_vars.size(); ++c) {
-      if (constraint_to_vars[c] !=
-          UsedVariables(working_model->constraints(c))) {
-        LOG(INFO) << "Wrong variables usage for constraint: \n"
-                  << ProtobufDebugString(working_model->constraints(c));
-        return false;
-      }
+  }
+  return true;
+}
+
+void PresolveContext::ExploitFixedDomain(int var) {
+  CHECK(IsFixed(var));
+  const int min = MinOf(var);
+  if (gtl::ContainsKey(constant_to_ref, min)) {
+    const int representative = constant_to_ref[min];
+    if (representative != var) {
+      affine_relations.TryAdd(var, representative, 1, 0);
+      var_equiv_relations.TryAdd(var, representative, 1, 0);
     }
-    return true;
+  } else {
+    constant_to_ref[min] = var;
+  }
+}
+
+void PresolveContext::StoreAffineRelation(const ConstraintProto& ct, int ref_x,
+                                          int ref_y, int64 coeff,
+                                          int64 offset) {
+  int x = PositiveRef(ref_x);
+  int y = PositiveRef(ref_y);
+  if (IsFixed(x) || IsFixed(y)) return;
+
+  int64 c = RefIsPositive(ref_x) == RefIsPositive(ref_y) ? coeff : -coeff;
+  int64 o = RefIsPositive(ref_x) ? offset : -offset;
+  const int rep_x = affine_relations.Get(x).representative;
+  const int rep_y = affine_relations.Get(y).representative;
+
+  // If a Boolean variable (one with domain [0, 1]) appear in this affine
+  // equivalence class, then we want its representative to be Boolean. Note
+  // that this is always possible because a Boolean variable can never be
+  // equal to a multiple of another if std::abs(coeff) is greater than 1 and
+  // if it is not fixed to zero. This is important because it allows to simply
+  // use the same representative for any referenced literals.
+  bool allow_rep_x = MinOf(rep_x) == 0 && MaxOf(rep_x) == 1;
+  bool allow_rep_y = MinOf(rep_y) == 0 && MaxOf(rep_y) == 1;
+  if (!allow_rep_x && !allow_rep_y) {
+    // If none are Boolean, we can use any representative.
+    allow_rep_x = true;
+    allow_rep_y = true;
   }
 
-  int NewConstant(int64 cst) {
-    if (!gtl::ContainsKey(constant_to_ref, cst)) {
-      constant_to_ref[cst] = working_model->variables_size();
-      IntegerVariableProto* const var_proto = working_model->add_variables();
-      var_proto->add_domain(cst);
-      var_proto->add_domain(cst);
-    }
-    return constant_to_ref[cst];
+  // TODO(user): can we force the rep and remove GetAffineRelation()?
+  bool added = affine_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
+  if ((c == 1 || c == -1) && o == 0) {
+    added |= var_equiv_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
   }
-
-  // Regroups fixed variables with the same value.
-  // TODO(user): Also regroup cte and -cte?
-  void ExploitFixedDomain(int var) {
-    CHECK(IsFixed(var));
-    const int min = MinOf(var);
-    if (gtl::ContainsKey(constant_to_ref, min)) {
-      const int representative = constant_to_ref[min];
-      if (representative != var) {
-        affine_relations.TryAdd(var, representative, 1, 0);
-        var_equiv_relations.TryAdd(var, representative, 1, 0);
-      }
-    } else {
-      constant_to_ref[min] = var;
-    }
+  if (added) {
+    // The domain didn't change, but this notification allows to re-process
+    // any constraint containing these variables.
+    modified_domains.Set(x);
+    modified_domains.Set(y);
+    affine_constraints.insert(&ct);
   }
+}
 
-  // Adds the relation (ref_x = coeff * ref_y + offset) to the repository.
-  void AddAffineRelation(const ConstraintProto& ct, int ref_x, int ref_y,
-                         int64 coeff, int64 offset) {
-    int x = PositiveRef(ref_x);
-    int y = PositiveRef(ref_y);
-    if (IsFixed(x) || IsFixed(y)) return;
-
-    int64 c = RefIsPositive(ref_x) == RefIsPositive(ref_y) ? coeff : -coeff;
-    int64 o = RefIsPositive(ref_x) ? offset : -offset;
-    const int rep_x = affine_relations.Get(x).representative;
-    const int rep_y = affine_relations.Get(y).representative;
-
-    // If a Boolean variable (one with domain [0, 1]) appear in this affine
-    // equivalence class, then we want its representative to be Boolean. Note
-    // that this is always possible because a Boolean variable can never be
-    // equal to a multiple of another if std::abs(coeff) is greater than 1 and
-    // if it is not fixed to zero. This is important because it allows to simply
-    // use the same representative for any referenced literals.
-    bool allow_rep_x = MinOf(rep_x) == 0 && MaxOf(rep_x) == 1;
-    bool allow_rep_y = MinOf(rep_y) == 0 && MaxOf(rep_y) == 1;
-    if (!allow_rep_x && !allow_rep_y) {
-      // If none are Boolean, we can use any representative.
-      allow_rep_x = true;
-      allow_rep_y = true;
-    }
-
-    // TODO(user): can we force the rep and remove GetAffineRelation()?
-    bool added = affine_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
-    if ((c == 1 || c == -1) && o == 0) {
-      added |= var_equiv_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
-    }
-    if (added) {
-      // The domain didn't change, but this notification allows to re-process
-      // any constraint containing these variables.
-      modified_domains.Set(x);
-      modified_domains.Set(y);
-      affine_constraints.insert(&ct);
-    }
+void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
+  if (ref_a == ref_b) return;
+  if (ref_a == NegatedRef(ref_b)) {
+    is_unsat = true;
+    return;
   }
-
-  void AddBooleanEqualityRelation(int ref_a, int ref_b) {
-    if (ref_a == ref_b) return;
-    if (ref_a == NegatedRef(ref_b)) {
-      is_unsat = true;
-      return;
-    }
-    bool added = false;
-    if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
-      added |=
-          affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), 1, 0);
-      added |= var_equiv_relations.TryAdd(PositiveRef(ref_a),
-                                          PositiveRef(ref_b), 1, 0);
-    } else {
-      added |= affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b),
-                                       -1, 1);
-    }
-    if (!added) return;
-
-    modified_domains.Set(PositiveRef(ref_a));
-    modified_domains.Set(PositiveRef(ref_b));
-
-    // For now, we do need to add the relation ref_a == ref_b so we have a
-    // proper variable usage count and propagation between ref_a and ref_b.
-    //
-    // TODO(user): This looks unclean. We should probably handle the affine
-    // relation together without the need of keep all the constraints that
-    // define them around.
-    ConstraintProto* ct = working_model->add_constraints();
-    auto* arg = ct->mutable_linear();
-    arg->add_vars(PositiveRef(ref_a));
-    arg->add_vars(PositiveRef(ref_b));
-    if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
-      // a = b
-      arg->add_coeffs(1);
-      arg->add_coeffs(-1);
-      arg->add_domain(0);
-      arg->add_domain(0);
-    } else {
-      // a = 1 - b
-      arg->add_coeffs(1);
-      arg->add_coeffs(1);
-      arg->add_domain(1);
-      arg->add_domain(1);
-    }
-    affine_constraints.insert(ct);
-    UpdateNewConstraintsVariableUsage();
+  bool added = false;
+  if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
+    added |=
+        affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), 1, 0);
+    added |= var_equiv_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b),
+                                        1, 0);
+  } else {
+    added |=
+        affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), -1, 1);
   }
+  if (!added) return;
 
-  // This makes sure that the affine relation only uses one of the
-  // representative from the var_equiv_relations.
-  AffineRelation::Relation GetAffineRelation(int ref) {
-    AffineRelation::Relation r = affine_relations.Get(PositiveRef(ref));
-    AffineRelation::Relation o = var_equiv_relations.Get(r.representative);
-    r.representative = o.representative;
-    if (o.coeff == -1) r.coeff = -r.coeff;
-    if (!RefIsPositive(ref)) {
-      r.coeff *= -1;
-      r.offset *= -1;
-    }
-    return r;
-  }
+  modified_domains.Set(PositiveRef(ref_a));
+  modified_domains.Set(PositiveRef(ref_b));
 
-  // Create the internal structure for any new variables in working_model.
-  void InitializeNewDomains() {
-    for (int i = domains.size(); i < working_model->variables_size(); ++i) {
-      domains.push_back(ReadDomainFromProto(working_model->variables(i)));
-      if (IsFixed(i)) ExploitFixedDomain(i);
-    }
-    modified_domains.Resize(domains.size());
-    var_to_constraints.resize(domains.size());
-  }
-
-  // This regroup all the affine relations between variables. Note that the
-  // constraints used to detect such relations will not be removed from the
-  // model at detection time (thus allowing proper domain propagation). However,
-  // if the arity of a variable becomes one, then such constraint will be
-  // removed.
-  AffineRelation affine_relations;
-  AffineRelation var_equiv_relations;
-
-  // Set of constraint that implies an "affine relation". We need to mark them,
-  // because we can't simplify them using the relation they added.
+  // For now, we do need to add the relation ref_a == ref_b so we have a
+  // proper variable usage count and propagation between ref_a and ref_b.
   //
-  // WARNING: This assumes the ConstraintProto* to stay valid during the full
-  // presolve even if we add new constraint to the CpModelProto.
-  absl::flat_hash_set<ConstraintProto const*> affine_constraints;
+  // TODO(user): This looks unclean. We should probably handle the affine
+  // relation together without the need of keep all the constraints that
+  // define them around.
+  ConstraintProto* ct = working_model->add_constraints();
+  auto* arg = ct->mutable_linear();
+  arg->add_vars(PositiveRef(ref_a));
+  arg->add_vars(PositiveRef(ref_b));
+  if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
+    // a = b
+    arg->add_coeffs(1);
+    arg->add_coeffs(-1);
+    arg->add_domain(0);
+    arg->add_domain(0);
+  } else {
+    // a = 1 - b
+    arg->add_coeffs(1);
+    arg->add_coeffs(1);
+    arg->add_domain(1);
+    arg->add_domain(1);
+  }
+  affine_constraints.insert(ct);
+  UpdateNewConstraintsVariableUsage();
+}
 
-  // For each constant variable appearing in the model, we maintain a reference
-  // variable with the same constant value. If two variables end up having the
-  // same fixed value, then we can detect it using this and add a new
-  // equivalence relation. See ExploitFixedDomain().
-  absl::flat_hash_map<int64, int> constant_to_ref;
+// This makes sure that the affine relation only uses one of the
+// representative from the var_equiv_relations.
+AffineRelation::Relation PresolveContext::GetAffineRelation(int ref) {
+  AffineRelation::Relation r = affine_relations.Get(PositiveRef(ref));
+  AffineRelation::Relation o = var_equiv_relations.Get(r.representative);
+  r.representative = o.representative;
+  if (o.coeff == -1) r.coeff = -r.coeff;
+  if (!RefIsPositive(ref)) {
+    r.coeff *= -1;
+    r.offset *= -1;
+  }
+  return r;
+}
 
-  // Variable <-> constraint graph.
-  // The vector list is sorted and contains unique elements.
-  //
-  // Important: To properly handle the objective, var_to_constraints[objective]
-  // contains -1 so that if the objective appear in only one constraint, the
-  // constraint cannot be simplified.
-  //
-  // TODO(user): Make this private?
-  std::vector<std::vector<int>> constraint_to_vars;
-  std::vector<absl::flat_hash_set<int>> var_to_constraints;
+// Create the internal structure for any new variables in working_model.
+void PresolveContext::InitializeNewDomains() {
+  for (int i = domains.size(); i < working_model->variables_size(); ++i) {
+    domains.push_back(ReadDomainFromProto(working_model->variables(i)));
+    if (IsFixed(i)) ExploitFixedDomain(i);
+  }
+  modified_domains.Resize(domains.size());
+  var_to_constraints.resize(domains.size());
+}
 
-  CpModelProto* working_model;
-  CpModelProto* mapping_model;
-
-  // Initially false, and set to true on the first inconsistency.
-  bool is_unsat = false;
-
-  // Indicate if we are enumerating all solutions. This disable some presolve
-  // rules.
-  bool enumerate_all_solutions = false;
-
-  // Just used to display statistics on the presolve rules that were used.
-  absl::flat_hash_map<std::string, int> stats_by_rule_name;
-
-  // Temporary storage.
-  std::vector<int> tmp_literals;
-  std::vector<Domain> tmp_term_domains;
-  std::vector<Domain> tmp_left_domains;
-  absl::flat_hash_set<int> tmp_literal_set;
-
-  // Each time a domain is modified this is set to true.
-  SparseBitset<int64> modified_domains;
-
- private:
-  // The current domain of each variables.
-  std::vector<Domain> domains;
-};
+namespace {
 
 // =============================================================================
 // Presolve functions.
@@ -1133,13 +1086,13 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
       const int64 coeff1 = arg.coeffs(0);
       const int64 coeff2 = arg.coeffs(1);
       if (coeff1 == 1) {
-        context->AddAffineRelation(*ct, v1, v2, -coeff2, rhs_max);
+        context->StoreAffineRelation(*ct, v1, v2, -coeff2, rhs_max);
       } else if (coeff2 == 1) {
-        context->AddAffineRelation(*ct, v2, v1, -coeff1, rhs_max);
+        context->StoreAffineRelation(*ct, v2, v1, -coeff1, rhs_max);
       } else if (coeff1 == -1) {
-        context->AddAffineRelation(*ct, v1, v2, coeff2, -rhs_max);
+        context->StoreAffineRelation(*ct, v1, v2, coeff2, -rhs_max);
       } else if (coeff2 == -1) {
-        context->AddAffineRelation(*ct, v2, v1, coeff1, -rhs_max);
+        context->StoreAffineRelation(*ct, v2, v1, coeff1, -rhs_max);
       }
     }
   }
@@ -1528,8 +1481,9 @@ bool PresolveInterval(ConstraintProto* ct, PresolveContext* context) {
     // We add it even if the interval is optional.
     // TODO(user): we must verify that all the variable of an optional interval
     // do not appear in a constraint which is not reified by the same literal.
-    context->AddAffineRelation(*ct, ct->interval().end(),
-                               ct->interval().start(), 1, context->MinOf(size));
+    context->StoreAffineRelation(*ct, ct->interval().end(),
+                                 ct->interval().start(), 1,
+                                 context->MinOf(size));
   }
 
   // This never change the constraint-variable graph.
@@ -1712,7 +1666,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
           if (inverse * r_target.coeff + r_target.offset == value) {
             valid_index_values.push_back(i);
             if (inverse != value) {
-              const int cst_ref = context->NewConstant(inverse);
+              const int cst_ref = context->GetOrCreateConstantVar(inverse);
               ct->mutable_element()->set_vars(i, cst_ref);
               changed_values = true;
             }
@@ -2198,8 +2152,8 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
       }
       if (literals.size() == 2 && literals[0] != NegatedRef(literals[1])) {
         context->UpdateRuleStats("circuit: degree 2");
-        context->AddBooleanEqualityRelation(literals[0],
-                                            NegatedRef(literals[1]));
+        context->StoreBooleanEqualityRelation(literals[0],
+                                              NegatedRef(literals[1]));
       }
     }
   }
@@ -2387,14 +2341,14 @@ void Probe(TimeLimit* global_time_limit, PresolveContext* context) {
       const int r_var =
           mapping->GetProtoVariableFromBooleanVariable(r.Variable());
       CHECK_GE(r_var, 0);
-      context->AddBooleanEqualityRelation(
+      context->StoreBooleanEqualityRelation(
           var, r.IsPositive() ? r_var : NegatedRef(r_var));
     }
   }
 }
 
 void PresolvePureSatPart(PresolveContext* context) {
-  // TODO(user, lperron): Reenable some SAT presolve with
+  // TODO(user,user): Reenable some SAT presolve with
   // enumerate_all_solutions set to true.
   if (context->is_unsat || context->enumerate_all_solutions) return;
 
@@ -2888,7 +2842,7 @@ void TransformIntoMaxCliques(PresolveContext* context) {
     const Literal l = Literal(BooleanVariable(var), true);
     if (graph->RepresentativeOf(l) != l) {
       const Literal r = graph->RepresentativeOf(l);
-      context->AddBooleanEqualityRelation(
+      context->StoreBooleanEqualityRelation(
           var, r.IsPositive() ? r.Variable().value()
                               : NegatedRef(r.Variable().value()));
     }
@@ -3247,7 +3201,7 @@ void TryToSimplifyDomains(PresolveContext* context) {
     lin->add_domain(var_min);
     lin->add_domain(var_min);
 
-    context->AddAffineRelation(*ct, var, new_var_index, gcd, var_min);
+    context->StoreAffineRelation(*ct, var, new_var_index, gcd, var_min);
     context->UpdateRuleStats("variables: canonicalize affine domain");
   }
 

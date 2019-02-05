@@ -29,7 +29,8 @@ bool ReadFileToProto(absl::string_view filename,
   std::string data;
   CHECK_OK(file::GetContents(filename, &data, file::Defaults()));
   // Note that gzipped files are currently not supported.
-  // Try binary format first, then text format, then JSON, then give up.
+  // Try binary format first, then text format, then JSON, then proto3 JSON,
+  // then give up.
   if (proto->ParseFromString(data)) return true;
   if (google::protobuf::TextFormat::ParseFromString(data, proto)) return true;
   LOG(WARNING) << "Could not parse protocol buffer";

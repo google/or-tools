@@ -23,7 +23,7 @@ namespace sat {
 // simpler constraints.
 // This is different from PresolveCpModel() as there are no reduction or
 // simplification of the model. Furthermore, this expansion is mandatory.
-CpModelProto ExpandCpModel(const CpModelProto& initial_model, bool log);
+void ExpandCpModel(CpModelProto* working_model, bool log);
 
 }  // namespace sat
 }  // namespace operations_research

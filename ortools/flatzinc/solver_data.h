@@ -68,7 +68,7 @@ class SolverData {
   absl::flat_hash_map<IntegerVariable*, IntExpr*> extracted_map_;
 
   // Stores a set of sorted std::vector<IntegerVariables*>.
-  // TODO(user, fdid): If it become too slow, switch to an unordered_set, it
+  // TODO(user,user): If it become too slow, switch to an unordered_set, it
   // isn't too hard to define the hash of a vector.
   std::set<std::vector<IntegerVariable*>> alldiffs_;
 };

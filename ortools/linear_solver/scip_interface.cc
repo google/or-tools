@@ -714,6 +714,18 @@ void SCIPInterface::SetRelativeMipGap(double value) {
 }
 
 void SCIPInterface::SetPrimalTolerance(double value) {
+  // SCIP automatically updates numerics/lpfeastol if the primal tolerance is
+  // tighter. Doing that it unconditionally logs this modification to stderr. By
+  // setting numerics/lpfeastol first we avoid this unwanted log.
+  double current_lpfeastol = 0.0;
+  CHECK_EQ(SCIP_OKAY,
+           SCIPgetRealParam(scip_, "numerics/lpfeastol", &current_lpfeastol));
+  if (value < current_lpfeastol) {
+    // See the NOTE on SetRelativeMipGap().
+    const auto status =
+        TO_STATUS(SCIPsetRealParam(scip_, "numerics/lpfeastol", value));
+    if (status_.ok()) status_ = status;
+  }
   // See the NOTE on SetRelativeMipGap().
   const auto status =
       TO_STATUS(SCIPsetRealParam(scip_, "numerics/feastol", value));

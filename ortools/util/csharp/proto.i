@@ -12,7 +12,7 @@
 // limitations under the License.
 
 // TODO(user): make this SWIG file comply with the SWIG style guide.
-%include ortools/base/base.i
+%include "ortools/base/base.i"
 
 %{
 #include <vector>

@@ -48,7 +48,7 @@
     $1 = i == size;
   }
 }
-%typemap(in) std::vector<type> (std::vector<type> temp) {
+%typemap(in) std::vector<type>(std::vector<type> temp) {
   if (!vector_input_helper($input, &temp, PyObjAs<type>)) {
     if (!PyErr_Occurred())
       SWIG_Error(SWIG_TypeError, "sequence(type) expected");

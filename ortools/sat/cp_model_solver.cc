@@ -2228,7 +2228,7 @@ CpSolverResponse SolveCpModelParallel(
         CpSolverResponse thread_response;
         if (local_params.use_lns()) {
           first_solution_found_or_search_finished.WaitForNotification();
-          // TODO(user, lperron): Provide a better diversification for different
+          // TODO(user,user): Provide a better diversification for different
           // seeds.
           thread_response = SolveCpModelWithLNS(
               model_proto, solution_observer, num_search_workers,
@@ -2335,7 +2335,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   // Starts by expanding some constraints if needed.
-  CpModelProto new_model = ExpandCpModel(model_proto, VLOG_IS_ON(1));
+  CpModelProto new_model = model_proto;  // Copy.
+  ExpandCpModel(&new_model, VLOG_IS_ON(1));
 
   // Presolve?
   std::function<void(CpSolverResponse * response)> postprocess_solution;
@@ -2430,7 +2431,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #endif  // __PORTABLE_PLATFORM__
   } else if (params.use_lns() && new_model.has_objective() &&
              !params.enumerate_all_solutions()) {
-    // TODO(user, lperron): Provide a better diversification for different
+    // TODO(user,user): Provide a better diversification for different
     // seeds.
     const int random_seed = model->GetOrCreate<SatParameters>()->random_seed();
     response = SolveCpModelWithLNS(new_model, observer_function, 1, random_seed,

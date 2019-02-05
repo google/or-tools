@@ -1285,8 +1285,13 @@ objs/sat/cp_model_expand.$O: ortools/sat/cp_model_expand.cc \
  ortools/base/hash.h ortools/base/basictypes.h \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/macros.h ortools/base/map_util.h \
- ortools/sat/cp_model_utils.h ortools/util/sorted_interval_list.h \
- ortools/util/saturated_arithmetic.h ortools/util/bitset.h | $(OBJ_DIR)/sat
+ ortools/sat/cp_model_presolve.h ortools/sat/cp_model_utils.h \
+ ortools/util/sorted_interval_list.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h \
+ ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
+ ortools/util/bitset.h ortools/util/time_limit.h \
+ ortools/base/commandlineflags.h ortools/base/timer.h \
+ ortools/util/running_stat.h ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_expand.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_expand.$O
 
 objs/sat/cp_model_lns.$O: ortools/sat/cp_model_lns.cc \
@@ -1330,18 +1335,20 @@ objs/sat/cp_model_objective.$O: ortools/sat/cp_model_objective.cc \
 
 objs/sat/cp_model_presolve.$O: ortools/sat/cp_model_presolve.cc \
  ortools/sat/cp_model_presolve.h ortools/gen/ortools/sat/cp_model.pb.h \
- ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/time_limit.h \
- ortools/base/commandlineflags.h ortools/base/logging.h \
- ortools/base/integral_types.h ortools/base/macros.h ortools/base/timer.h \
- ortools/base/basictypes.h ortools/util/running_stat.h \
- ortools/base/hash.h ortools/base/map_util.h ortools/base/mathutil.h \
- ortools/base/stl_util.h ortools/port/proto_utils.h \
- ortools/sat/cp_model_checker.h ortools/sat/cp_model_loader.h \
- ortools/base/int_type.h ortools/base/int_type_indexed_vector.h \
- ortools/sat/cp_model_utils.h ortools/util/sorted_interval_list.h \
- ortools/sat/integer.h ortools/graph/iterators.h ortools/sat/model.h \
- ortools/base/typeid.h ortools/sat/sat_base.h ortools/util/bitset.h \
- ortools/sat/sat_solver.h ortools/sat/clause.h \
+ ortools/sat/cp_model_utils.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/macros.h \
+ ortools/util/sorted_interval_list.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h \
+ ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
+ ortools/util/bitset.h ortools/base/basictypes.h \
+ ortools/util/time_limit.h ortools/base/commandlineflags.h \
+ ortools/base/timer.h ortools/util/running_stat.h ortools/base/hash.h \
+ ortools/base/map_util.h ortools/base/mathutil.h ortools/base/stl_util.h \
+ ortools/port/proto_utils.h ortools/sat/cp_model_checker.h \
+ ortools/sat/cp_model_loader.h ortools/base/int_type.h \
+ ortools/base/int_type_indexed_vector.h ortools/sat/integer.h \
+ ortools/graph/iterators.h ortools/sat/model.h ortools/base/typeid.h \
+ ortools/sat/sat_base.h ortools/sat/sat_solver.h ortools/sat/clause.h \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h ortools/base/status.h \
  ortools/util/random_engine.h ortools/util/stats.h \
@@ -1351,8 +1358,7 @@ objs/sat/cp_model_presolve.$O: ortools/sat/cp_model_presolve.cc \
  ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
  ortools/sat/precedences.h ortools/sat/cp_model_objective.h \
  ortools/sat/probing.h ortools/sat/simplification.h \
- ortools/base/adjustable_priority_queue.h ortools/util/affine_relation.h \
- ortools/base/iterator_adaptors.h | $(OBJ_DIR)/sat
+ ortools/base/adjustable_priority_queue.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_presolve.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_presolve.$O
 
 objs/sat/cp_model_search.$O: ortools/sat/cp_model_search.cc \
@@ -1400,6 +1406,7 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/sat/cp_model_utils.h ortools/sat/intervals.h \
  ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
  ortools/sat/precedences.h ortools/sat/cp_model_presolve.h \
+ ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
  ortools/sat/cp_model_search.h ortools/sat/integer_search.h \
  ortools/sat/linear_programming_constraint.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \

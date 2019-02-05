@@ -301,7 +301,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
       const int current_event = task_to_event_[current_task];
       const IntegerValue energy_min = helper_->DurationMin(current_task);
       if (helper_->IsPresent(current_task)) {
-        // TODO(user, stevengay): Add max energy deduction for variable
+        // TODO(user,user): Add max energy deduction for variable
         // durations by putting the energy_max here and modifying the code
         // dealing with the optional envelope greater than current_end below.
         theta_tree_.AddOrUpdateEvent(current_event, event_time_[current_event],

@@ -145,6 +145,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   // analyzes the current solver state.
   const double start_time = time_limit->GetElapsedTime();
   GLOP_RETURN_IF_ERROR(Initialize(lp));
+
   dual_infeasibility_improvement_direction_.clear();
   update_row_.Invalidate();
   test_lu_.Clear();
@@ -156,6 +157,12 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   feasibility_time_ = 0.0;
   optimization_time_ = 0.0;
   total_time_ = 0.0;
+
+  // In case we abort because of an error, we cannot assume that the current
+  // solution state will be in sync with all our internal data structure. In
+  // case we abort without resetting it, setting this allow us to still use the
+  // previous state info, but we will double-check everything.
+  solution_state_has_been_set_externally_ = true;
 
   if (VLOG_IS_ON(1)) {
     ComputeNumberOfEmptyRows();

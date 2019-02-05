@@ -17,7 +17,7 @@
 #include <string>
 
 #ifndef __PORTABLE_PLATFORM__
-#include "google/protobuf/generated_enum_reflection.h"
+#include "google/protobuf/descriptor.h"
 #include "google/protobuf/text_format.h"
 #endif
 

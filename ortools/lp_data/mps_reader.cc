@@ -235,7 +235,7 @@ void MPSReader::ProcessLine(const std::string& line) {
       // fixed form, the name has at most 8 characters, and starts at a specific
       // position in the NAME line. For MIPLIB2010 problems (eg, air04, glass4),
       // the name in fixed form ends up being preceded with a whitespace.
-      // TODO(user, bdb): Return an error for fixed form if the problem name
+      // TODO(user,user): Return an error for fixed form if the problem name
       // does not fit.
       data_->SetName(problem_name_);
     }

@@ -24,4 +24,6 @@
 #include "ortools/util/tuple_set.h"
 %}
 
-%include ortools/util/tuple_set.h
+// TODO(user): Replace with %ignoreall/%unignoreall
+//swiglint: disable include-h-allglobals
+%include "ortools/util/tuple_set.h"
