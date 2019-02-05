@@ -44,13 +44,13 @@ public class CpModel {
     }
   }
 
-  static class MismatchedArrayLengths extends CpModelException {
+  static public class MismatchedArrayLengths extends CpModelException {
     public MismatchedArrayLengths(String methodName, String array1Name, String array2Name) {
       super(methodName, array1Name + " and " + array2Name + " have mismatched lengths");
     }
   }
 
-  static class WrongLength extends CpModelException {
+  static public class WrongLength extends CpModelException {
     public WrongLength(String methodName, String msg) {
       super(methodName, msg);
     }
