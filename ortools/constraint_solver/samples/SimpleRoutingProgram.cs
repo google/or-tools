@@ -42,16 +42,16 @@ public class SimpleRoutingProgram {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
-    // Create a distance callback.
-    // [START distance_callback]
-    int transitCallbackIndex = routing.RegisterTransitCallback(
+    // Create and register a transit callback.
+    // [START transit_callback]
+    const int transitCallbackIndex = routing.RegisterTransitCallback(
       (long fromIndex, long toIndex) => {
       // Convert from routing variable Index to distance matrix NodeIndex.
       var fromNode = manager.IndexToNode(fromIndex);
       var toNode = manager.IndexToNode(toIndex);
       return Math.Abs(toNode - fromNode);
     });
-    // [END distance_callback]
+    // [END transit_callback]
 
     // Define cost of each arc.
     // [START arc_cost]

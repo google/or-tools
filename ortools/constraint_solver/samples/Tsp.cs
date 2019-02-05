@@ -136,11 +136,11 @@ public class Tsp {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
-    // Create a distance callback.
-    // [START distance_callback]
+    // Create and register a transit callback.
+    // [START transit_callback]
     var distanceCallback = new ManhattanDistance(data, manager);
-    int transitCallbackIndex = routing.RegisterTransitCallback(distanceCallback.Call);
-    // [END distance_callback]
+    const int transitCallbackIndex = routing.RegisterTransitCallback(distanceCallback.Call);
+    // [END transit_callback]
 
     // Define cost of each arc.
     // [START arc_cost]

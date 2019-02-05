@@ -108,7 +108,6 @@ public class VrpPickupDeliveryLifo {
         data.GetDistanceMatrix().GetLength(0),
         data.GetVehicleNumber(),
         data.GetDepot());
-
     // [END index_manager]
 
     // Create Routing Model.
@@ -116,15 +115,19 @@ public class VrpPickupDeliveryLifo {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
-    // Define cost of each arc.
-    // [START arc_cost]
-    int transitCallbackIndex = routing.RegisterTransitCallback(
+    // Create and register a transit callback.
+    // [START transit_callback]
+    const int transitCallbackIndex = routing.RegisterTransitCallback(
       (long fromIndex, long toIndex) => {
         // Convert from routing variable Index to distance matrix NodeIndex.
         var fromNode = manager.IndexToNode(fromIndex);
         var toNode = manager.IndexToNode(toIndex);
         return data.GetDistanceMatrix()[fromNode, toNode]; }
     );
+    // [END transit_callback]
+
+    // Define cost of each arc.
+    // [START arc_cost]
     routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
