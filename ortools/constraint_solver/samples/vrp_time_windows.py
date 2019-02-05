@@ -17,7 +17,6 @@
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-
 # [END import]
 
 
@@ -121,8 +120,8 @@ def main():
 
     # [END routing_model]
 
-    # Define cost of each arc.
-    # [START arc_cost]
+    # Create and register a transit callback.
+    # [START transit_callback]
     def time_callback(from_index, to_index):
         """Returns the manhattan distance travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
@@ -131,6 +130,10 @@ def main():
         return data['time_matrix'][from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(time_callback)
+    # [END transit_callback]
+
+    # Define cost of each arc.
+    # [START arc_cost]
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     # [END arc_cost]
 

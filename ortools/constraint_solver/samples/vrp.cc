@@ -118,8 +118,8 @@ void Vrp() {
   RoutingModel routing(manager);
   // [END routing_model]
 
-  // Define cost of each arc.
-  // [START arc_cost]
+  // Create and register a transit callback.
+  // [START transit_callback]
   const int transit_callback_index = routing.RegisterTransitCallback(
       [&data, &manager](int64 from_index, int64 to_index) -> int64 {
         // Convert from routing variable Index to distance matrix NodeIndex.
@@ -127,6 +127,10 @@ void Vrp() {
         auto to_node = manager.IndexToNode(to_index).value();
         return data.distance_matrix[from_node][to_node];
       });
+  // [END transit_callback]
+
+  // Define cost of each arc.
+  // [START arc_cost]
   routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index);
   // [END arc_cost]
 

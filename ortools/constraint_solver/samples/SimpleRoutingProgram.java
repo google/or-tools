@@ -50,7 +50,7 @@ public class SimpleRoutingProgram {
     RoutingModel routing = new RoutingModel(manager);
     // [END routing_model]
 
-    // Create and register a transit Callback.
+    // Create and register a transit callback.
     // [START transit_callback]
     final int transitCallbackIndex = routing.registerTransitCallback(
         (long fromIndex, long toIndex) -> {

@@ -41,8 +41,8 @@ def main():
     routing = pywrapcp.RoutingModel(manager)
     # [END routing_model]
 
-    # Define cost of each arc.
-    # [START arc_cost]
+    # Create and register a transit callback.
+    # [START transit_callback]
     def distance_callback(from_index, to_index):
         """Returns the absolute difference between the two nodes."""
         # Convert from routing variable Index to user NodeIndex.
@@ -51,6 +51,10 @@ def main():
         return abs(to_node - from_node)
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    # [END transit_callback]
+
+    # Define cost of each arc.
+    # [START arc_cost]
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
     # [END arc_cost]
 
