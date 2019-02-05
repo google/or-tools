@@ -44,13 +44,15 @@ public class CpModel {
     }
   }
 
-  static public class MismatchedArrayLengths extends CpModelException {
+  /** Exception thrown when parallel arrays have mismatched lengths. */
+  public static  class MismatchedArrayLengths extends CpModelException {
     public MismatchedArrayLengths(String methodName, String array1Name, String array2Name) {
       super(methodName, array1Name + " and " + array2Name + " have mismatched lengths");
     }
   }
 
-  static public class WrongLength extends CpModelException {
+  /** Exception thrown when an array has a wrong length. */
+  public static class WrongLength extends CpModelException {
     public WrongLength(String methodName, String msg) {
       super(methodName, msg);
     }
