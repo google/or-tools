@@ -107,7 +107,6 @@ public class TspDistanceMatrix {
         return data.GetDistanceMatrix()[fromNode, toNode]; }
     );
     routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
-    GC.Collect();
     // [END arc_cost]
 
     // Setting first solution heuristic.

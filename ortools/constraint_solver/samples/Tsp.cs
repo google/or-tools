@@ -82,11 +82,11 @@ public class Tsp {
     /// <summary>
     ///   Returns the manhattan distance between the two nodes
     /// </summary>
-    public long call(long FromIndex, long ToIndex) {
+    public long Call(long fromIndex, long toIndex) {
       // Convert from routing variable Index to distance matrix NodeIndex.
-      int FromNode = indexManager_.IndexToNode(FromIndex);
-      int ToNode = indexManager_.IndexToNode(ToIndex);
-      return distancesMatrix_[FromNode, ToNode];
+      int fromNode = indexManager_.IndexToNode(fromIndex);
+      int toNode = indexManager_.IndexToNode(toIndex);
+      return distancesMatrix_[fromNode, toNode];
     }
     private long[,] distancesMatrix_;
     private RoutingIndexManager indexManager_;
@@ -139,7 +139,7 @@ public class Tsp {
     // Create a distance callback.
     // [START distance_callback]
     var distanceCallback = new ManhattanDistance(data, manager);
-    int transitCallbackIndex = routing.RegisterTransitCallback(distanceCallback.call);
+    int transitCallbackIndex = routing.RegisterTransitCallback(distanceCallback.Call);
     // [END distance_callback]
 
     // Define cost of each arc.
