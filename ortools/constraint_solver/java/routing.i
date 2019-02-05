@@ -331,20 +331,8 @@ import java.util.function.LongUnaryOperator;
 %rename (makeDisjunctionNodesUnperformed) operations_research::RoutingFilteredDecisionBuilder::MakeDisjunctionNodesUnperformed;
 %rename (makeUnassignedNodesUnperformed) operations_research::RoutingFilteredDecisionBuilder::MakeUnassignedNodesUnperformed;
 
-// IntVarFilteredDecisionBuilder.
-%rename (buildSolution) operations_research::IntVarFilteredDecisionBuilder::BuildSolution;
-
-// GlobalCheapestInsertionFilteredDecisionBuilder.
-%rename (buildSolution) operations_research::GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution;
-
-// LocalCheapestInsertionFilteredDecisionBuilder.
-%rename (buildSolution) operations_research::LocalCheapestInsertionFilteredDecisionBuilder::BuildSolution;
-
-// CheapestAdditionFilteredDecisionBuilder.
-%rename (buildSolution) operations_research::CheapestAdditionFilteredDecisionBuilder::BuildSolution;
-
-// ChristofidesFilteredDecisionBuilder.
-%rename (buildSolution) operations_research::ChristofidesFilteredDecisionBuilder::BuildSolution;
+// Generic rename rules.
+%rename (buildSolution) *::BuildSolution;
 
 // Protobuf support
 PROTO_INPUT(operations_research::RoutingSearchParameters,
