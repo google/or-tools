@@ -39,7 +39,7 @@ public class TestRouting {
     int transitCallbackIndex;
     if (true) {
       transitCallbackIndex = routing.registerTransitCallback(
-          (long fromIndex, long toIndex) -> long {
+          (long fromIndex, long toIndex) -> {
             // Convert from routing variable Index to user NodeIndex.
             int fromNode = manager.indexToNode(fromIndex);
             int toNode = manager.indexToNode(toIndex);
