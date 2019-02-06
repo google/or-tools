@@ -12,18 +12,6 @@ function installswig() {
     make install >/dev/null
 }
 
-function installmono() {
-  # Need mono >= 4.2 cf. makefiles/Makefile.port.mk:87
-  # http://www.mono-project.com/download/stable/
-  sudo apt-key adv \
-    --keyserver hkp://keyserver.ubuntu.com:80 \
-    --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF &&
-    echo "deb http://download.mono-project.com/repo/ubuntu stable-trusty main" | \
-    sudo tee /etc/apt/sources.list.d/mono-official-stable.list &&
-    sudo apt-get update -qq &&
-    sudo apt-get install -yqq mono-complete
-}
-
 function installdotnetsdk(){
   # Installs for Ubuntu Trusty distro
   sudo apt-get update -qq
