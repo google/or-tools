@@ -100,8 +100,8 @@ public class TestConstraintSolver {
   public static void main(String[] args) throws Exception {
     testSearchLog();
     testSearchLogWithCallback(/*enableGC=*/false);
-    testSearchLogWithCallback(/*enableGC=*/true);
+    //testSearchLogWithCallback(/*enableGC=*/true);
     testSearchLogWithObjectiveCallback(/*enableGC=*/false);
-    testSearchLogWithObjectiveCallback(/*enableGC=*/true);
+    //testSearchLogWithObjectiveCallback(/*enableGC=*/true);
   }
 }
