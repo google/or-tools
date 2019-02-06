@@ -22,12 +22,34 @@ from ortools.sat.python import cp_model
 def main():
 
     # Data
-    pr = [
+    data_0 = [
         [107, 107, 107, 0, 0],  # pr1
         [0, 47, 47, 47, 0],  # pr2
         [10, 10, 10, 0, 0],  # pr3
         [0, 55, 55, 55, 55],  # pr4
     ]
+
+    data_1 = [
+        [119444030, 0, 0, 0],
+        [34585586, 38358559, 31860661, 0],
+        [19654655, 21798799, 18106106, 0],
+        [298836792, 0, 0, 0],
+        [3713428, 4118530, 4107277, 3072018],
+        [6477273, 7183884, 5358471, 0],
+        [1485371, 1647412, 1642911, 1228807]
+    ]
+
+    data_2 = [
+        [1194440, 0, 0, 0],
+        [345855, 383585, 318606, 0],
+        [196546, 217987, 181061, 0],
+        [2988367, 0, 0, 0],
+        [37134, 41185, 41072, 30720],
+        [64772, 71838, 53584, 0],
+        [14853, 16474, 16429, 12288]
+    ]
+
+    pr = data_0
 
     num_pr = len(pr)
     num_years = len(pr[1])
@@ -94,7 +116,7 @@ def main():
                 if pr[p][y] == 0:
                     print('        ', end='')
                 else:
-                    print('%8i' % pr[p][y], end='')
+                    print('%10i' % pr[p][y], end='')
             print()
 
         print('Solution')
@@ -103,11 +125,11 @@ def main():
                 if pr[p][y] == 0:
                     print('        ', end='')
                 else:
-                    print('%8i' % solver.Value(all_contribs[p, y]), end='')
+                    print('%10i' % solver.Value(all_contribs[p, y]), end='')
             print()
 
         for y in range(num_years):
-            print('%8i' % solver.Value(year_var[y]), end='')
+            print('%10i' % solver.Value(year_var[y]), end='')
         print()
 
 
