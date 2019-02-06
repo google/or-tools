@@ -58,7 +58,7 @@ if [ "${BUILDER}" == make ]; then
     brew update
     # see https://github.com/travis-ci/travis-ci/issues/10275
     brew install gcc || brew link --overwrite gcc
-    brew install make --with-default-names
+    brew install make
     if [ "${LANGUAGE}" != cc ]; then
       brew install swig
     fi
