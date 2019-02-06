@@ -123,9 +123,9 @@ class Domain {
   //
   // Note that because the resulting domain will only contains multiple of
   // coeff, the size of intervals.size() can become really large. If it is
-  // larger than a fixed constant, success will be set to false and an empty
-  // Domain will be returned.
-  Domain MultiplicationBy(int64 coeff, bool* success) const;
+  // larger than a fixed constant, exact will be set to false and the result
+  // will be set to ContinuousMultiplicationBy(coeff).
+  Domain MultiplicationBy(int64 coeff, bool* exact) const;
 
   // Returns a super-set of MultiplicationBy() to avoid the explosion in the
   // representation size. This behaves as if we replace the set D of

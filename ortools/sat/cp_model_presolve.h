@@ -45,6 +45,12 @@ struct PresolveContext {
   // a => b.
   void AddImplication(int a, int b);
 
+  // a => b1 && ... && bn.
+  void AddImplication(int a, const std::vector<int>& b);
+
+  // a1 && .. && an => b
+  void AddImplication(const std::vector<int>& a, int b);
+
   // b => x in [lb, ub].
   void AddImplyInDomain(int b, int x, const Domain& domain);
 
@@ -60,10 +66,12 @@ struct PresolveContext {
 
   int64 MaxOf(int ref) const;
 
-  // Returns true if this ref only appear in one constraint.
-  bool VariableIsUniqueAndRemovable(int ref) const;
+  bool DomainContains(int ref, int64 value) const;
 
   Domain DomainOf(int ref) const;
+
+  // Returns true if this ref only appear in one constraint.
+  bool VariableIsUniqueAndRemovable(int ref) const;
 
   // Returns true iff the domain changed.
   bool IntersectDomainWith(int ref, const Domain& domain);
@@ -102,6 +110,9 @@ struct PresolveContext {
   // Create the internal structure for any new variables in working_model.
   void InitializeNewDomains();
 
+  // Fully encode a variable.
+  void FullyEncodeVariable(int var);
+
   // This regroup all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
   // model at detection time (thus allowing proper domain propagation). However,
@@ -122,6 +133,11 @@ struct PresolveContext {
   // same fixed value, then we can detect it using this and add a new
   // equivalence relation. See ExploitFixedDomain().
   absl::flat_hash_map<int64, int> constant_to_ref;
+
+  // Contains fully expanded variables.
+  // expanded_variables[i][v] point to the literal attached to the value v of
+  // the variable i.
+  absl::flat_hash_map<int, absl::flat_hash_map<int64, int>> expanded_variables;
 
   // Variable <-> constraint graph.
   // The vector list is sorted and contains unique elements.

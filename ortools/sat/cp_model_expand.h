@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_CP_MODEL_EXPAND_H_
 
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_presolve.h"
 
 namespace operations_research {
 namespace sat {
@@ -23,7 +24,7 @@ namespace sat {
 // simpler constraints.
 // This is different from PresolveCpModel() as there are no reduction or
 // simplification of the model. Furthermore, this expansion is mandatory.
-void ExpandCpModel(CpModelProto* working_model, bool log);
+void ExpandCpModel(CpModelProto* working_model, PresolveOptions options);
 
 }  // namespace sat
 }  // namespace operations_research

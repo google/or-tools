@@ -123,6 +123,7 @@ class FullEncodingFixedPointComputer {
  public:
   explicit FullEncodingFixedPointComputer(Model* model)
       : model_(model),
+        parameters_(*(model->GetOrCreate<SatParameters>())),
         mapping_(model->GetOrCreate<CpModelMapping>()),
         integer_encoder_(model->GetOrCreate<IntegerEncoder>()) {}
 
@@ -214,6 +215,7 @@ class FullEncodingFixedPointComputer {
   bool PropagateLinear(const ConstraintProto* ct);
 
   Model* model_;
+  const SatParameters& parameters_;
   CpModelMapping* mapping_;
   IntegerEncoder* integer_encoder_;
 
@@ -289,6 +291,8 @@ bool FullEncodingFixedPointComputer::PropagateInverse(
 
 bool FullEncodingFixedPointComputer::PropagateLinear(
     const ConstraintProto* ct) {
+  if (parameters_.boolean_encoding_level() == 0) return true;
+
   // Only act when the constraint is an equality.
   if (ct->linear().domain(0) != ct->linear().domain(1)) return true;
 
@@ -2336,7 +2340,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   // Starts by expanding some constraints if needed.
   CpModelProto new_model = model_proto;  // Copy.
-  ExpandCpModel(&new_model, VLOG_IS_ON(1));
+  PresolveOptions options;
+  options.log_info = VLOG_IS_ON(1);
+  ExpandCpModel(&new_model, options);
 
   // Presolve?
   std::function<void(CpSolverResponse * response)> postprocess_solution;

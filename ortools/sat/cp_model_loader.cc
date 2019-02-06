@@ -567,9 +567,23 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     }
   }
 
+  // Compute the min/max to relax the bounds if needed.
+  IntegerValue min_sum(0);
+  IntegerValue max_sum(0);
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  for (int i = 0; i < vars.size(); ++i) {
+    const IntegerValue term_a = coeffs[i] * integer_trail->LowerBound(vars[i]);
+    const IntegerValue term_b = coeffs[i] * integer_trail->UpperBound(vars[i]);
+    min_sum += std::min(term_a, term_b);
+    max_sum += std::max(term_a, term_b);
+  }
+
   if (ct.linear().domain_size() == 2) {
-    const int64 lb = ct.linear().domain(0);
-    const int64 ub = ct.linear().domain(1);
+    int64 lb = ct.linear().domain(0);
+    int64 ub = ct.linear().domain(1);
+    if (min_sum >= lb) lb = kint64min;
+    if (max_sum <= ub) ub = kint64max;
+
     if (!HasEnforcementLiteral(ct)) {
       // Detect if there is only Booleans in order to use a more efficient
       // propagator. TODO(user): we should probably also implement an
@@ -609,8 +623,11 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   } else {
     std::vector<Literal> clause;
     for (int i = 0; i < ct.linear().domain_size(); i += 2) {
-      const int64 lb = ct.linear().domain(i);
-      const int64 ub = ct.linear().domain(i + 1);
+      int64 lb = ct.linear().domain(i);
+      int64 ub = ct.linear().domain(i + 1);
+      if (min_sum >= lb) lb = kint64min;
+      if (max_sum <= ub) ub = kint64max;
+
       const Literal subdomain_literal(m->Add(NewBooleanVariable()), true);
       clause.push_back(subdomain_literal);
       if (lb != kint64min) {

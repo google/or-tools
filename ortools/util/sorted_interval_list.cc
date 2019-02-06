@@ -264,25 +264,25 @@ Domain Domain::AdditionWith(const Domain& domain) const {
   return result;
 }
 
-Domain Domain::MultiplicationBy(int64 coeff, bool* success) const {
-  *success = true;
+Domain Domain::MultiplicationBy(int64 coeff, bool* exact) const {
+  *exact = true;
   if (intervals_.empty() || coeff == 0) return {};
 
-  Domain result;
   const int64 abs_coeff = std::abs(coeff);
+  if (abs_coeff > 1 && Size() > 100) {
+    *exact = false;
+    return ContinuousMultiplicationBy(coeff);
+  }
+
+  Domain result;
   if (abs_coeff != 1) {
-    if (CapSub(Max(), Min()) <= 1000) {
-      std::vector<int64> individual_values;
-      for (const ClosedInterval& i : intervals_) {
-        for (int v = i.start; v <= i.end; ++v) {
-          individual_values.push_back(CapProd(v, abs_coeff));
-        }
+    std::vector<int64> individual_values;
+    for (const ClosedInterval& i : intervals_) {
+      for (int v = i.start; v <= i.end; ++v) {
+        individual_values.push_back(CapProd(v, abs_coeff));
       }
-      result = Domain::FromValues(individual_values);
-    } else {
-      *success = false;
-      return {};
     }
+    result = Domain::FromValues(individual_values);
   } else {
     result = *this;
   }

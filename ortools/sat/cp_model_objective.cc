@@ -20,6 +20,7 @@ namespace sat {
 
 void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model) {
   if (!cp_model->has_objective()) return;
+
   if (cp_model->objective().vars_size() == 1) {
     // Canonicalize the objective to make it easier on us by always making the
     // coefficient equal to 1.0.
@@ -30,6 +31,9 @@ void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model) {
       cp_model->mutable_objective()->set_vars(0, NegatedRef(old_ref));
     }
     if (muliplier != 1.0) {
+      // TODO(user): deal with this case.
+      CHECK(cp_model->objective().domain().empty());
+
       double old_factor = cp_model->objective().scaling_factor();
       if (old_factor == 0.0) old_factor = 1.0;
       const double old_offset = cp_model->objective().offset();
@@ -63,13 +67,12 @@ void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model) {
   const int obj_ref = cp_model->variables_size();
   {
     IntegerVariableProto* obj = cp_model->add_variables();
-    if (cp_model->objective().domain().empty()) {
-      obj->add_domain(min_obj);
-      obj->add_domain(max_obj);
-    } else {
-      *(obj->mutable_domain()) = cp_model->objective().domain();
-      cp_model->mutable_objective()->clear_domain();
+    Domain obj_domain(min_obj, max_obj);
+    if (!cp_model->objective().domain().empty()) {
+      obj_domain = obj_domain.IntersectionWith(
+          ReadDomainFromProto(cp_model->objective()));
     }
+    FillDomainInProto(obj_domain, obj);
   }
 
   // Add the linear constraint.
@@ -86,6 +89,7 @@ void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model) {
   cp_model->mutable_objective()->clear_coeffs();
   cp_model->mutable_objective()->add_vars(obj_ref);
   cp_model->mutable_objective()->add_coeffs(1);
+  cp_model->mutable_objective()->clear_domain();
 }
 
 }  // namespace sat

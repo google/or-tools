@@ -84,10 +84,10 @@ class AffineRelation {
              offset == other.offset;
     }
   };
-  Relation Get(int x);
+  Relation Get(int x) const;
 
   // Returns the size of the class of x.
-  int ClassSize(int x) {
+  int ClassSize(int x) const {
     if (x >= representative_.size()) return 1;
     return size_[Get(x).representative];
   }
@@ -103,7 +103,7 @@ class AffineRelation {
     size_.resize(new_size, 1);
   }
 
-  void CompressPath(int x) {
+  void CompressPath(int x) const {
     DCHECK_GE(x, 0);
     DCHECK_LT(x, representative_.size());
     tmp_path_.clear();
@@ -123,12 +123,12 @@ class AffineRelation {
   int num_relations_;
 
   // The equivalence class representative for each variable index.
-  std::vector<int> representative_;
+  mutable std::vector<int> representative_;
 
   // The offset and coefficient such that
   // variable[index] = coeff * variable[representative_[index]] + offset;
-  std::vector<int64> coeff_;
-  std::vector<int64> offset_;
+  mutable std::vector<int64> coeff_;
+  mutable std::vector<int64> offset_;
 
   // The size of each representative "tree", used to get a good complexity when
   // we have the choice of which tree to merge into the other.
@@ -139,7 +139,7 @@ class AffineRelation {
   std::vector<int> size_;
 
   // Used by CompressPath() to maintain the coeff/offset during compression.
-  std::vector<int> tmp_path_;
+  mutable std::vector<int> tmp_path_;
 };
 
 inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset) {
@@ -186,7 +186,7 @@ inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset,
   return true;
 }
 
-inline AffineRelation::Relation AffineRelation::Get(int x) {
+inline AffineRelation::Relation AffineRelation::Get(int x) const {
   if (x >= representative_.size() || representative_[x] == x) return {x, 1, 0};
   CompressPath(x);
   return {representative_[x], coeff_[x], offset_[x]};

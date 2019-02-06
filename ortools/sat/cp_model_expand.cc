@@ -356,7 +356,7 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
 
 }  // namespace
 
-void ExpandCpModel(CpModelProto* working_model, bool log) {
+void ExpandCpModel(CpModelProto* working_model, PresolveOptions options) {
   PresolveContext context;
   context.working_model = working_model;
   const int num_constraints = context.working_model->constraints_size();
@@ -377,7 +377,7 @@ void ExpandCpModel(CpModelProto* working_model, bool log) {
     }
   }
 
-  if (log) {
+  if (options.log_info) {
     std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
                                             context.stats_by_rule_name.end());
     for (const auto& entry : sorted_rules) {
