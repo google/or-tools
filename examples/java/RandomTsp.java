@@ -14,22 +14,28 @@
 // limitations under the License.
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.LongLongToLong;
 import com.google.ortools.constraintsolver.LongToLong;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
-import java.io.*;
-import java.text.*;
-import java.util.*;
+//import java.io.*;
+//import java.text.*;
+//import java.util.*;
+import java.util.Random;
+import java.util.function.LongBinaryOperator;
+import java.util.function.LongUnaryOperator;
+import java.util.logging.Logger;
 
 class RandomTsp {
   static {
     System.loadLibrary("jniortools");
   }
 
-  static class RandomManhattan extends LongLongToLong {
+  private static Logger logger =
+      Logger.getLogger(RandomTsp.class.getName());
+
+  static class RandomManhattan implements LongBinaryOperator {
     public RandomManhattan(RoutingIndexManager manager, int size, int seed) {
       this.xs = new int[size];
       this.ys = new int[size];
@@ -41,8 +47,7 @@ class RandomTsp {
       }
     }
 
-    @Override
-    public long run(long firstIndex, long secondIndex) {
+    public long applyAsLong(long firstIndex, long secondIndex) {
       int firstNode = indexManager.indexToNode(firstIndex);
       int secondNode = indexManager.indexToNode(secondIndex);
       return Math.abs(xs[firstNode] - xs[secondNode]) + Math.abs(ys[firstNode] - ys[secondNode]);
@@ -53,9 +58,8 @@ class RandomTsp {
     private RoutingIndexManager indexManager;
   }
 
-  static class ConstantCallback extends LongToLong {
-    @Override
-    public long run(long index) {
+  static class ConstantCallback implements LongUnaryOperator {
+    public long applyAsLong(long index) {
       return 1;
     }
   }
@@ -68,7 +72,7 @@ class RandomTsp {
     // Put a permanent callback to the distance accessor here. The callback
     // has the following signature: ResultCallback2<int64, int64, int64>.
     // The two arguments are the from and to node inidices.
-    LongLongToLong distances = new RandomManhattan(manager, size, seed);
+    LongBinaryOperator distances = new RandomManhattan(manager, size, seed);
     routing.setArcCostEvaluatorOfAllVehicles(routing.registerTransitCallback(distances));
 
     // Forbid node connections (randomly).
@@ -78,7 +82,7 @@ class RandomTsp {
       long from = randomizer.nextInt(size - 1);
       long to = randomizer.nextInt(size - 1) + 1;
       if (routing.nextVar(from).contains(to)) {
-        System.out.println("Forbidding connection " + from + " -> " + to);
+        logger.info("Forbidding connection " + from + " -> " + to);
         routing.nextVar(from).removeValue(to);
         ++forbidden_connections;
       }
@@ -102,16 +106,17 @@ class RandomTsp {
     Assignment solution = routing.solveWithParameters(search_parameters);
     if (solution != null) {
       // Solution cost.
-      System.out.println("Cost = " + solution.objectiveValue());
+      logger.info("Objective : " + solution.objectiveValue());
       // Inspect solution.
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       int route_number = 0;
+      String route = "";
       for (long node = routing.start(route_number);
           !routing.isEnd(node);
           node = solution.value(routing.nextVar(node))) {
-        System.out.print("" + node + " -> ");
+          route += "" + node + " -> ";
       }
-      System.out.println("0");
+      logger.info(route + "0");
     }
   }
 
