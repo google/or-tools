@@ -70,7 +70,7 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 // RoutingModel Callback
 namespace operations_research {
 // Map transit callback to Java @FunctionalInterface types.
-// This replace the RoutingTransitCallback[1-2] in the Java proxy class
+// This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingModel %{
 import java.util.List;
 import java.util.ArrayList;
@@ -109,8 +109,8 @@ import java.util.function.LongUnaryOperator;
 
 // Types in Proxy class (RoutingModel.java) e.g.:
 // Foo::f(jstype $javainput, ...) {Foo_f_SWIG(javain, ...);}
-#define %VAR_ARGS(X...) X
-%define %DEFINE_LONG_CALLBACK(
+#define VAR_ARGS(X...) X
+%define DEFINE_LONG_CALLBACK(
   TYPE,
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN,
   LAMBDA_PARAM, LAMBDA_CALL,
@@ -125,7 +125,7 @@ import java.util.function.LongUnaryOperator;
     jweak object_weak = jenv->NewWeakGlobalRef($input);
 
     /* Global JNI weak reference deleter */
-    struct WeakGlobalRefGuard {
+    class WeakGlobalRefGuard {
       JNIEnv *jenv_;
       jweak jweak_;
       // non-copyable
@@ -145,21 +145,21 @@ import java.util.function.LongUnaryOperator;
     };
   %}
   // These 3 typemaps tell SWIG what JNI and Java types to use.
-  %typemap(jni) TYPE "jobject" // Type use in the JNI C.
-  %typemap(jtype) TYPE "JAVA_TYPE" // Type use in the JNI.java.
-  %typemap(jstype) TYPE "JAVA_TYPE" // Type use in the Proxy class
-  // before passing the Callback to JNI java, we store a reference on it to keep it alive.
+  %typemap(jni) TYPE "jobject" // Type used in the JNI C.
+  %typemap(jtype) TYPE "JAVA_TYPE" // Type used in the JNI.java.
+  %typemap(jstype) TYPE "JAVA_TYPE" // Type used in the Proxy class
+  // Before passing the Callback to JNI java, we store a reference to it to keep it alive.
   %typemap(javain) TYPE "STORE($javainput)"
 %enddef
-%DEFINE_LONG_CALLBACK(
+DEFINE_LONG_CALLBACK(
   RoutingTransitCallback2,
   LongBinaryOperator, "applyAsLong", "(JJ)J",
-  %VAR_ARGS(long from, long to), %VAR_ARGS(from, to),
+  VAR_ARGS(long from, long to), VAR_ARGS(from, to),
   storeBinaryTransitCallback)
-%DEFINE_LONG_CALLBACK(
+DEFINE_LONG_CALLBACK(
   RoutingTransitCallback1,
   LongUnaryOperator, "applyAsLong", "(J)J",
-  %VAR_ARGS(long from), %VAR_ARGS(from),
+  VAR_ARGS(long from), VAR_ARGS(from),
   storeUnaryTransitCallback)
 }  // namespace operations_research
 
