@@ -20,7 +20,7 @@ function installdotnetsdk(){
   sudo dpkg -i packages-microsoft-prod.deb
   # Install dotnet sdk 2.1
   sudo apt-get update -qq
-  sudo apt-get install -yqq dotnet-sdk-2.1
+  sudo apt-get install -yqq dotnet-sdk-2.2
 }
 
 ################
