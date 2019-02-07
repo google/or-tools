@@ -36,6 +36,10 @@ const bool DEBUG_MODE = true;
   TypeName(const TypeName&);               \
   void operator=(const TypeName&)
 
+#define DISALLOW_NO_ARGS_CTOR(TypeName) \
+  private: \
+    TypeName();
+
 // The FALLTHROUGH_INTENDED macro can be used to annotate implicit fall-through
 // between switch labels.
 #ifndef FALLTHROUGH_INTENDED

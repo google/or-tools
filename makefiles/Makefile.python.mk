@@ -34,6 +34,7 @@ PYTHON3 := true
 SWIG_PYTHON3_FLAG := -py3 -DPY3
 PYTHON3_CFLAGS := -DPY3
 endif
+PYTHON_DEBUG := -DNDEBUG
 endif
 
 # All libraries and dependecies
@@ -314,10 +315,7 @@ $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
  $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/linear_solver
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) \
- -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc \
- -module pywraplp \
- $(SRC_DIR)/ortools/linear_solver$Spython$Slinear_solver.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) $(PYTHON_DEBUG) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc -module pywraplp $(SRC_DIR)/ortools/linear_solver$Spython$Slinear_solver.i
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_python_wrap.cc: \
  $(GEN_DIR)/ortools/linear_solver/pywraplp.py

@@ -53,7 +53,7 @@ endif()
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
 #get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
-set(FLAGS -DUSE_BOP -DUSE_GLOP -DUSE_CBC -DUSE_CLP -DMUST_USE_RESULT)
+set(FLAGS -DUSE_BOP -DUSE_GLOP -DUSE_CBC -DUSE_CLP -DUSE_GUROBI -DMUST_USE_RESULT)
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
 foreach(SUBPROJECT constraint_solver linear_solver sat graph algorithms data)

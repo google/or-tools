@@ -93,12 +93,12 @@ ifndef UNIX_GUROBI_DIR
 endif
 ifndef UNIX_SCIP_DIR
 	$(info SCIP: not found)
-else
-  ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
-	$(error Third party SCIP files was not found! please check the path given to UNIX_SCIP_DIR)
-  else
-	$(info SCIP: found)
-  endif
+#else
+  # ifeq ($(wildcard $(UNIX_SCIP_DIR)/src/scip/scip.h),)
+  #	$(error Third party SCIP files was not found! please check the path given to UNIX_SCIP_DIR)
+  #else
+#	$(info SCIP: found)
+  #endif
 endif
 	$(TOUCH) $@
 
@@ -401,7 +401,7 @@ $(CBC_SRCDIR): | dependencies/sources
 # This is needed to find CBC include files.
 CBC_COIN_DIR = $(firstword $(wildcard $(UNIX_CBC_DIR)/include/cbc/coin \
                                       $(UNIX_CBC_DIR)/include/coin))
-CBC_INC = -I$(UNIX_CBC_DIR)/include -I$(CBC_COIN_DIR) -DUSE_CBC
+CBC_INC = -I$(UNIX_CBC_DIR)/include -I$(CBC_COIN_DIR) -DUSE_CBC -DUSE_GUROBI
 CBC_SWIG = $(CBC_INC)
 ifneq ($(wildcard $(UNIX_CBC_DIR)/lib/coin),)
  UNIX_CBC_COIN = /coin

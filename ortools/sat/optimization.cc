@@ -1918,6 +1918,10 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     }
   }
 
+  // TO DO (dimitarpg13): add the corresponding SOS constraint to hs_model here.
+  //
+  //
+
   // Returns FEASIBLE if we found the optimal.
   return num_solutions > 0 && result == SatSolver::INFEASIBLE
              ? SatSolver::FEASIBLE

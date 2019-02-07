@@ -41,6 +41,7 @@
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/util/fp_utils.h"
+#include "gurobi_c.h"
 
 DEFINE_bool(verify_solution, false,
             "Systematically verify the solution when calling Solve()"
@@ -138,6 +139,67 @@ bool MPConstraint::ContainsNewVariables() {
   }
   return false;
 }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+// ----- SOSConstraint ----
+
+void SOSConstraint::Clear() {
+  // TO DO (dimitarpg13): implement it
+  interface_->ClearSOSConstraint(this);
+  coefficients_.clear();
+}
+
+void SOSConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
+  // TO DO (dimitarpg13): implement it
+  DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
+  if (var == nullptr) return;
+  if (coeff == 0.0) {
+    auto it = coefficients_.find(var);
+    // If setting a coefficient to 0 when this coefficient did not
+    // exist or was already 0, do nothing: skip
+    // interface_->SetCoefficient() and do not store a coefficient in
+    // the map.  Note that if the coefficient being set to 0 did exist
+    // and was not 0, we do have to keep a 0 in the coefficients_ map,
+    // because the extraction of the constraint might rely on it,
+    // depending on the underlying solver.
+    if (it != coefficients_.end() && it->second != 0.0) {
+      const double old_value = it->second;
+      it->second = 0.0;
+      interface_->SetCoefficient(this, var, 0.0, old_value);
+    }
+    return;
+  }
+  auto insertion_result = coefficients_.insert(std::make_pair(var, coeff));
+  if (insertion_result.second) {
+     ind_.push_back(var->index()); 
+     weight_.push_back(coeff);
+  }
+  else {
+     auto it = std::find(std::begin(ind_), std::end(ind_), var->index());
+     if (it != ind_.end()) {
+        auto idx = std::distance(std::begin(ind_), it);
+        weight_[idx] = coeff;
+     } else {
+        std::string err_msg = "SOS constraint internal inconsistency";
+        LOG(DFATAL) << "Error: could not create environment: " << err_msg;
+        throw std::runtime_error(err_msg);        
+     }
+  }
+  const double old_value =
+      insertion_result.second ? 0.0 : insertion_result.first->second;
+  insertion_result.first->second = coeff;
+  interface_->SetCoefficient(this, var, coeff, old_value);
+}
+
+double SOSConstraint::GetCoefficient(const MPVariable* const var) const {
+  // TO DO (dimitarpg13): implement it
+  DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
+  if (var == nullptr) return 0.0;
+  return gtl::FindWithDefault(coefficients_, var, 0.0);
+}
+
+#endif // MIP_SOLVER_WITH_SOS_CONSTRAINTS
+
 
 // ----- MPObjective -----
 
@@ -506,6 +568,18 @@ MPConstraint* MPSolver::LookupConstraintOrNull(
   return constraints_[it->second];
 }
 
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+
+SOSConstraint* MPSolver::LookupSOSConstraintOrNull(
+    const std::string& sos_constraint_name) const {
+  if (!sos_constraint_name_to_index_) GenerateSOSConstraintNameIndex();
+
+  const auto it = sos_constraint_name_to_index_->find(sos_constraint_name);
+  if (it == sos_constraint_name_to_index_->end()) return nullptr;
+  return sos_constraints_[it->second];
+}
+
+#endif
 // ----- Methods using protocol buffers -----
 
 MPSolverResponseStatus MPSolver::LoadModelFromProto(
@@ -523,7 +597,9 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
   // Force variable and constraint name indexing (which CHECKs name uniqueness).
   GenerateVariableNameIndex();
   GenerateConstraintNameIndex();
-
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  GenerateSOSConstraintNameIndex();
+#endif
   return LoadModelFromProtoInternal(input_model, /*clear_names=*/false,
                                     error_message);
 }
@@ -576,6 +652,11 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
                          ct_proto.coefficient(j));
     }
   }
+  
+  //TO DO (dimitarpg13): load sos constraints from model here
+  //
+  //
+
   objective->SetOptimizationDirection(input_model.maximize());
   if (input_model.has_objective_offset()) {
     objective->SetOffset(input_model.objective_offset());
@@ -736,6 +817,10 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     }
   }
 
+  //TO DO (dimitarpg13): handle SOS constraints here
+  //
+  //
+
   output_model->set_maximize(Objective().maximization());
   output_model->set_objective_offset(Objective().offset());
 
@@ -826,6 +911,13 @@ void MPSolver::Clear() {
     constraint_name_to_index_->clear();
   }
   constraint_is_extracted_.clear();
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  sos_constraints_.clear();
+  if (sos_constraint_name_to_index_) {
+    sos_constraint_name_to_index_->clear();
+  }
+  sos_constraint_is_extracted_.clear();
+#endif
   interface_->Reset();
   solution_hint_.clear();
 }
@@ -943,6 +1035,30 @@ MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range,
   }
   return constraint;
 }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+SOSConstraint* MPSolver::MakeSOSConstraint(const std::string& name, 
+                                           const SOSType sos_type) {
+   //TO DO (dimitarpg13): finish this method after an appropriate method
+   //is added to the MPSolverInterface
+   const int sos_constraint_index = NumSOSConstraints();
+   SOSConstraint* const sos_constraint =
+      new SOSConstraint(sos_constraint_index, sos_type, name, interface_.get());
+   if (constraint_name_to_index_) {
+       gtl::InsertOrDie(&*sos_constraint_name_to_index_, sos_constraint->name(),
+                     sos_constraint_index);
+   }
+   sos_constraints_.push_back(sos_constraint);
+   sos_constraint_is_extracted_.push_back(false);
+   interface_->AddSOSConstraint(sos_constraint);
+   return sos_constraint;   
+}
+
+SOSConstraint* MPSolver::MakeSOSConstraint(const SOSType sos_type) {
+   return MakeSOSConstraint("", sos_type);
+}
+ 
+#endif
 
 int MPSolver::ComputeMaxConstraintSize(int min_constraint_index,
                                        int max_constraint_index) const {
@@ -1310,7 +1426,15 @@ void MPSolver::GenerateConstraintNameIndex() const {
     gtl::InsertOrDie(&*constraint_name_to_index_, cst->name(), cst->index());
   }
 }
-
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+void MPSolver::GenerateSOSConstraintNameIndex() const {
+  if (sos_constraint_name_to_index_) return;
+  sos_constraint_name_to_index_ = std::unordered_map<std::string, int>();
+  for (const SOSConstraint* const cst : sos_constraints_) {
+    gtl::InsertOrDie(&*sos_constraint_name_to_index_, cst->name(), cst->index());
+  }
+}
+#endif
 bool MPSolver::NextSolution() { return interface_->NextSolution(); }
 
 // ---------- MPSolverInterface ----------
@@ -1324,6 +1448,7 @@ MPSolverInterface::MPSolverInterface(MPSolver* const solver)
       maximize_(false),
       last_constraint_index_(0),
       last_variable_index_(0),
+      last_sos_constraint_index_(0),
       objective_value_(0.0),
       quiet_(true) {}
 
@@ -1333,15 +1458,28 @@ void MPSolverInterface::Write(const std::string& filename) {
   LOG(WARNING) << "Writing model not implemented in this solver interface.";
 }
 
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+void MPSolverInterface::ExtractNewSOSConstraints() {
+   // do nothing since if this method execute the SOS constraints are not applicable 
+   // to this solver instance
+}
+#endif
+
 void MPSolverInterface::ExtractModel() {
   switch (sync_status_) {
     case MUST_RELOAD: {
       ExtractNewVariables();
       ExtractNewConstraints();
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+      ExtractNewSOSConstraints();
+#endif
       ExtractObjective();
 
       last_constraint_index_ = solver_->constraints_.size();
       last_variable_index_ = solver_->variables_.size();
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+      last_sos_constraint_index_ = solver_->sos_constraints_.size();
+#endif
       sync_status_ = MODEL_SYNCHRONIZED;
       break;
     }
@@ -1349,12 +1487,18 @@ void MPSolverInterface::ExtractModel() {
       // Everything has already been extracted.
       DCHECK_EQ(last_constraint_index_, solver_->constraints_.size());
       DCHECK_EQ(last_variable_index_, solver_->variables_.size());
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+      DCHECK_EQ(last_sos_constraint_index_, solver_->sos_constraints_.size());
+#endif
       break;
     }
     case SOLUTION_SYNCHRONIZED: {
       // Nothing has changed since last solve.
       DCHECK_EQ(last_constraint_index_, solver_->constraints_.size());
       DCHECK_EQ(last_variable_index_, solver_->variables_.size());
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+      DCHECK_EQ(last_sos_constraint_index_, solver_->sos_constraints_.size());
+#endif
       break;
     }
   }
@@ -1364,9 +1508,11 @@ void MPSolverInterface::ExtractModel() {
 void MPSolverInterface::ResetExtractionInformation() {
   sync_status_ = MUST_RELOAD;
   last_constraint_index_ = 0;
+  last_sos_constraint_index_ = 0;
   last_variable_index_ = 0;
   solver_->variable_is_extracted_.assign(solver_->variables_.size(), false);
   solver_->constraint_is_extracted_.assign(solver_->constraints_.size(), false);
+  solver_->sos_constraint_is_extracted_.assign(solver_->sos_constraints_.size(), false);
 }
 
 bool MPSolverInterface::CheckSolutionIsSynchronized() const {
@@ -1541,6 +1687,34 @@ bool MPSolverInterface::ReadParameterFile(const std::string& filename) {
 std::string MPSolverInterface::ValidFileExtensionForParameterFile() const {
   return ".tmp";
 }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+void MPSolverInterface::AddSOSConstraint(SOSConstraint* const ct) {
+   // this base method should never get called
+   std::string err_msg = "SOS constraintis are not implemented yet for this solver!";
+   LOG(DFATAL) << "Error: could not create environment: " << err_msg;
+   throw std::runtime_error(err_msg);
+}
+
+// Changes a coefficient in a SOS constraint.
+void MPSolverInterface::SetCoefficient(SOSConstraint* const sos_constraint,
+                              const MPVariable* const variable,
+                              double new_value, double old_value) {
+   // this base method should never get called
+   std::string err_msg = "SOS constraints are not implemented yet for this solver!";
+   LOG(DFATAL) << "Error: could not create environment: " << err_msg;
+   throw std::runtime_error(err_msg);
+}
+
+// Clears a constraint from all its terms.
+void MPSolverInterface::ClearSOSConstraint(SOSConstraint* const sos_constraint)
+{
+   // this base method should never get called
+   std::string err_msg = "SOS constraints are not implemented yet for this solver!";
+   LOG(DFATAL) << "Error: could not create environment: " << err_msg;
+   throw std::runtime_error(err_msg);
+}
+#endif
 
 // ---------- MPSolverParameters ----------
 
@@ -1731,5 +1905,721 @@ int MPSolverParameters::GetIntegerParam(
     }
   }
 }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+PWLSolver::PWLSolver(const std::string& name, enum OptimizationSuite opt_suite) : 
+	name_(name), opt_suite_(opt_suite), 
+    sos_constraint_(nullptr), objective_(nullptr),
+    xvalues_inited_(false), yvalues_inited_(false), Avalues_inited_(false),
+    Bvalues_inited_(false), bvalues_inited_(false), cvalues_inited_(false), 
+    dvalues_inited_(false), validated_(false), valid_state_(false)
+{
+    timer_.Restart();
+    MPSolver::OptimizationProblemType prob_type;
+    bool res = GetProblemType(opt_suite, &prob_type);
+    if (res) {
+       mp_solver_ = std::unique_ptr<MPSolver>(new MPSolver(name_, prob_type));
+    }
+    // TO DO (dimitarpg13): initialize data members
+    //
+}
+
+void PWLSolver::Clear() {
+    //TO DO (dimitarpg13): clear initialized data members
+    //
+    variables_.clear();
+    constraints_.clear();
+    sos_constraint_ = nullptr;
+
+    x_.clear();
+    y_.clear();
+    A_.clear();
+    B_.clear();
+    b_.clear();
+    c_.clear();
+    d_.clear();
+    C_.clear();
+
+    xvalues_inited_ = false;
+    yvalues_inited_ = false;
+    Avalues_inited_ = false;
+    Bvalues_inited_ = false;
+    bvalues_inited_ = false;
+    cvalues_inited_ = false;
+    dvalues_inited_ = false;
+
+    validated_ = false;
+    valid_state_ = false;
+
+    mp_solver_->Clear();
+}
+
+PWLSolver::~PWLSolver() {
+    //TO DO (dimitarpg13): destroy any additional objects here
+    //
+    
+}
+
+MPVariable* PWLSolver::GetVariableOrNull(const int var_idx) const {
+   if (variables_.size() > var_idx)
+       return variables_[var_idx];
+   else
+       return nullptr;
+}
+
+// Solves the problem using default parameter values.
+MPSolver::ResultStatus PWLSolver::Solve() {
+    //TO DO (dimitarpg13): do any extra preparation for PWL solving here
+    //
+    if (!ExtractState()) {
+        LOG(ERROR) << "Invalid parameter(s) data. Check x_i, y_i, A, B, b, c, and d!"; 
+#ifndef NDEBUG
+        LOG(INFO) << "x coordinates:";
+        PrintXValues();
+        LOG(INFO) << "y coordinates:";
+        PrintYValues();
+        LOG(INFO) << "matrix A:";
+        PrintAValues();
+        LOG(INFO) << "matrix B:";
+        PrintBValues();
+        LOG(INFO) << "vector b:";
+        PrintbValues();
+        LOG(INFO) << "vector c:";
+        PrintcValues();
+        LOG(INFO) << "vector d:";
+        PrintdValues();
+#endif
+        return MPSolver::ABNORMAL;
+    }
+
+    return mp_solver_->Solve();
+}
+
+// Solves the problem using the specified parameter values.
+MPSolver::ResultStatus PWLSolver::Solve(const MPSolverParameters& param) {
+    //TO DO (dimitarpg13): do any additional preparation for PWL solving here
+    //
+    if (!ExtractState()) {
+        LOG(ERROR) << "Invalid parameter(s) data. Check x_i, y_i, A, B, b, c, and d!"; 
+#ifndef NDEBUG
+        LOG(INFO) << "x coordinates:";
+        PrintXValues();
+        LOG(INFO) << "y coordinates:";
+        PrintYValues();
+        LOG(INFO) << "matrix A:";
+        PrintAValues();
+        LOG(INFO) << "matrix B:";
+        PrintBValues();
+        LOG(INFO) << "vector b:";
+        PrintbValues();
+        LOG(INFO) << "vector c:";
+        PrintcValues();
+        LOG(INFO) << "vector d:";
+        PrintdValues();
+#endif
+        return MPSolver::ABNORMAL;
+    }
+
+    return mp_solver_->Solve(param);
+}
+
+bool PWLSolver::VerifySolution(double tolerance, bool log_errors) const {
+
+    return mp_solver_->VerifySolution(tolerance, log_errors);
+}
+
+bool PWLSolver::NextSolution() {
+    //TO DO (dimitarpg13): do any additional state cleanup before invoking the next PWL soltuion
+    //
+    return mp_solver_->NextSolution();
+}
+
+int64 PWLSolver::nodes() const {
+    if (mp_solver_) {
+       return mp_solver_->nodes();
+    }
+    else
+       return 0;
+}
+
+void PWLSolver::SetXValues(MatrixOfDoubles const & x) {
+  if (xvalues_inited_)
+      x_.clear();
+  x_.assign(x.begin(),x.end());
+  xvalues_inited_ = true;
+  validated_ = false;
+}
+
+
+void PWLSolver::SetYValues(VectorOfDoubles const & y) {
+  if (yvalues_inited_)
+      y_.clear();
+  y_.assign(y.begin(),y.end());
+  yvalues_inited_ = true;
+  validated_ = false;
+}
+
+void PWLSolver::SetParameter(VectorOfDoubles const & v, VectorParameterType type) {
+  if (type == VectorParameterType::bVector) {
+    if (bvalues_inited_)
+        b_.clear();
+    b_.assign(v.begin(),v.end()); 
+    bvalues_inited_ = true;
+    validated_ = false;
+  }
+  else if (type == VectorParameterType::cVector) {
+    if (cvalues_inited_)
+        c_.clear();
+    c_.assign(v.begin(),v.end());
+    cvalues_inited_ = true;
+    validated_ = false;
+  }
+  else if (type == VectorParameterType::dVector) {
+    if (dvalues_inited_)
+        d_.clear();
+    d_.assign(v.begin(),v.end());
+    dvalues_inited_ = true;
+    validated_ = false;
+  }
+  else {
+     LOG(ERROR) << "Trying to set an unknown vector parameter type: " << type << ".";
+  }
+}
+
+void PWLSolver::SetParameter(MatrixOfDoubles const & m, MatrixParameterType type) {
+ //TO DO (dimitarpg13): finish this method
+  if (type == MatrixParameterType::AMatrix) {
+     if (Avalues_inited_)
+        A_.clear();
+     A_.assign(m.begin(), m.end());
+     Avalues_inited_ = true;
+     validated_ = false;
+  } else if (type == MatrixParameterType::BMatrix) {
+     if (Bvalues_inited_)
+        B_.clear();
+     B_.assign(m.begin(), m.end());
+     Bvalues_inited_ = true;
+     validated_ = false;
+  } else {
+     LOG(ERROR) << "Trying to set an unknown vector parameter type: " << type << ".";
+  }
+
+}
+
+int PWLSolver::dim_of_x_point() { // denoted by m
+   if (inited())
+      return x_.size();
+   else 
+      return 0;
+}
+
+int PWLSolver::numb_of_x_points() { // denoted by k
+    if (inited() && dim_of_x_point() > 0)
+        return x_[0].size();
+    else
+        return 0;
+}
+
+int PWLSolver::numb_of_constr() { // denoted by p
+    if (inited())
+        return A_.size();
+    else
+        return 0;
+}
+
+int PWLSolver::numb_of_real_vars() { // denoted by l
+    if (inited())
+        return b_.size();
+    else
+        return 0;
+}
+
+int PWLSolver::numb_of_vars() { //denoted by l + k
+   return numb_of_x_points() + numb_of_real_vars();
+}
+
+// public methods useful for debugging and troubleshooting
+//
+
+#ifndef NDEBUG
+void PWLSolver::PrintXValues() {
+  print_matrix(x_);
+}
+
+void PWLSolver::PrintYValues() {
+  print_vector(y_);
+}
+
+void PWLSolver::PrintAValues() {
+  print_matrix(A_);
+}
+
+void PWLSolver::PrintBValues() {
+  print_matrix(B_);
+}
+
+void PWLSolver::PrintbValues() {
+  print_vector(b_);
+}
+
+void PWLSolver::PrintcValues() {
+  print_vector(c_);
+}
+
+void PWLSolver::PrintdValues() {
+  print_vector(d_);
+}
+
+void PWLSolver::print_matrix(MatrixOfDoubles const & m) {
+  printf("[");
+  int i=1;
+  for (auto & row : m ) {
+    int j=1;
+    if (i>1)
+      printf(" ");
+    printf("[");
+    for (auto & val : row) {
+      printf("%3.3f", val);
+      if (j < row.size())
+          printf(",");
+      ++j;
+    }
+    printf("]");
+    if (i < m.size())
+       printf(",\n");
+    ++i;
+  }
+  printf("]\n");
+
+}
+
+
+void PWLSolver::print_vector(VectorOfDoubles const & v) {
+    int j=1;
+    printf("[");
+    for (auto & val : v) {
+      printf("%3.3f", val);
+      if (j < v.size())
+          printf(",");
+      ++j;
+    }
+    printf("]\n");
+}
+
+#endif //ifndef NDEBUG
+
+// protected PWLSolver methods for handling state
+//
+//
+
+bool PWLSolver::inited() {
+
+   return xvalues_inited_ &&
+          yvalues_inited_ &&
+          Avalues_inited_ &&
+          Bvalues_inited_ &&
+          bvalues_inited_ &&
+          cvalues_inited_ &&
+          dvalues_inited_;
+
+}
+
+bool PWLSolver::ExtractState() {
+   if (!inited()               ||
+       !ValidateState()        ||
+       !ExtractVariables()     ||
+       !ExtractObjective()     ||
+       !ExtractConstraints()  /* || 
+       !ExtractSOSConstraint()*/)         
+   {
+       Clear();
+       return false;
+   }
+
+   return true;
+}
+
+bool PWLSolver::ExtractVariables() {
+
+   int k = numb_of_x_points();
+   int m = dim_of_x_point();
+   int p = numb_of_constr();
+   int l = numb_of_real_vars();
+
+   // there are k integer variables lambda_i, i=1..k
+   // and l continuous variables (a.k.a free variables) 
+   // z_j, j=1..l
+   //
+   MPVariable * curVar = nullptr;
+   char buffer[32];
+   for (int i = 0; i < k; ++i) {
+     snprintf( buffer, 31, "lambda_%d", i+1 );
+     curVar = mp_solver_->MakeIntVar(0.0, infinity(), std::string(buffer)); 
+     variables_.push_back(curVar);
+   }
+   for (int j = 0; j < l; ++j) {
+     snprintf( buffer, 31, "z_%d", j+1 );
+     curVar = mp_solver_->MakeNumVar(0.0, infinity(), std::string(buffer));
+     variables_.push_back(curVar);
+   }
+   return true;
+}
+
+bool PWLSolver::ExtractObjective() {
+   int k = numb_of_x_points();
+   int m = dim_of_x_point();
+   int l = numb_of_real_vars();
+
+   //
+   // The objective function is given by
+   //
+   // f = y * lambda + ( c * x ) * lambda + b * z  
+   //
+   // lambda -> integer variables
+   // z -> continuous variables
+   // f -> objective function
+   //
+   // c -> double[1,m]
+   // x -> double[m,k]
+   // lambda -> double[1,k] 
+   // y -> double[1,k]
+   // b -> double[1,l]
+   // z -> double[l,1]
+   //
+   // let us use the helper vector a given by :
+   // a = y + c * x
+   // a -> double[1,k]
+   //
+   // then the objective function can be rewritten as:
+   // f = a * lambda + b * z
+   //
+   MultiplyAndSum(c_, x_, y_, k, m, a_);
+
+   objective_ = mp_solver_->MutableObjective();
+   
+   for (int i = 0; i < k; ++i) {
+     objective_->SetCoefficient(variables_[i], a_[i]); 
+   }
+
+   for (int i = 0; i < l; ++i) {
+     objective_->SetCoefficient(variables_[i+k], b_[i]);
+   }
+   objective_->SetMaximization();
+
+   return  true;
+}
+
+bool PWLSolver::ExtractConstraints() {
+   int k = numb_of_x_points();
+   int m = dim_of_x_point();
+   int p = numb_of_constr();
+   int l = numb_of_real_vars();
+
+   // calculate the helper matrix C_ used for extracting the constraints
+   //
+   // A -> double[p,m]
+   // x -> double[m,k]
+   // C -> double[p,k]
+   //
+   // C = A * x
+   //
+   Multiply(A_, x_, p, m, k, C_);
+
+   // create the constraints of the model using the notation:
+   //
+   // lambda -> integer variables
+   // z -> continuous variables
+   //
+   // C -> double[p,k]
+   // B -> double[p,l]
+   // lambda -> double[k,1]
+   // z -> double[l,1]
+   // d -> double[p,1]
+   //
+   // C * lambda + B * z <= d
+   //
+   MPConstraint* curConstr = nullptr;
+   MPVariable* curVar = nullptr;
+   for (int i=0; i < p; ++i) {
+      // we are at the i-th inequality
+      //
+      curConstr = mp_solver_->MakeRowConstraint(-infinity(),d_[i]); 
+      for (int j=0; j < k; ++j) {
+          // we are setting the coefficient for lambda_j for the i-th inequality
+          //
+          curVar = variables_[j];
+          curConstr->SetCoefficient(curVar, C_[i][j]);
+      }
+
+      for (int j=0; j < l; ++j) {
+          // we are setting the coefficient for z_j for the i-th inequality
+          //
+          curVar = variables_[k+j];
+          curConstr->SetCoefficient(curVar, B_[i][j]);
+      }
+   }
+
+
+   // add one last constraint to make sure that at least one of the integer 
+   // (in fact boolean) variables lambda_i is turned on.
+   curConstr = mp_solver_->MakeRowConstraint(1, 1);
+   for (int j=0; j < k; ++j) {
+       curVar = variables_[j];
+       curConstr->SetCoefficient(curVar, 1.0);
+   }
+
+   return true;
+}
+
+bool PWLSolver::ExtractSOSConstraint() {
+    sos_constraint_ = mp_solver_->MakeSOSConstraint("lambda", MPSolver::SOS1);
+    int k = numb_of_x_points();
+    for (int i = 0; i < k; ++i) {
+      sos_constraint_->SetCoefficient(variables_[i], 1.0);  
+    }
+    return true;
+}
+
+bool PWLSolver::ValidateState() {
+   if (validated_)
+       return valid_state_;
+
+   validated_ = true;
+   int m = x_.size();
+   int k = 0;
+   if (m > 0) {
+       k = x_[0].size();
+       if (k == 0) {
+         valid_state_ = false;
+         return valid_state_;
+       }
+   }
+   else {
+     valid_state_ = false;
+     return valid_state_;
+   }
+   for (int i = 1; i < m; ++i) {
+     if (x_[i].size() < k) {
+         valid_state_ = false;
+         return valid_state_;
+     }
+   }      
+   if (y_.size() < k)
+   {
+     valid_state_ = false;
+     return valid_state_;
+   }
+   int p = A_.size();
+   if (p > 0)
+   {
+      for (int j = 0; j < p; ++j) {
+        if (A_[j].size() < m) {
+           valid_state_ = false;
+           return valid_state_;
+        }
+      }
+   }
+   else
+   {
+     valid_state_ = false;
+     return valid_state_;
+   }
+
+   int l = b_.size();
+   if (l > 0) { 
+      if (B_.size() < p) {
+        valid_state_ = false;
+        return valid_state_;
+      }
+      else {
+        for (int j = 0; j < p; ++j) {
+          if (B_[j].size() < l) {
+            valid_state_ = false;
+            return valid_state_;
+          }
+        }
+      }
+   }
+   else
+   {
+      if (B_.size() < p) {
+        valid_state_ = false;
+        return valid_state_;
+      }
+   }
+
+   if (c_.size() < m) {
+     valid_state_ = false;
+     return valid_state_;
+   }
+
+   if (d_.size() < p) {
+     valid_state_ = false;
+     return valid_state_;
+   }
+
+   valid_state_ = true;
+   return valid_state_;
+}
+
+void PWLSolver::Multiply(MatrixOfDoubles const & A, VectorOfDoubles const & v, 
+        const int n, const int m, VectorOfDoubles& r) {
+   // r[n] = A[n][m] * v[m]
+   //
+   r.resize(m,0.0);
+   for (int i = 0; i < n; ++i) {
+      r[i] = 0.0;
+      for (int j = 0; j < m; ++j) {
+          r[i] += A[i][j]*v[j];
+      }
+   }
+}
+
+void PWLSolver::Multiply(MatrixOfDoubles const & A, MatrixOfDoubles const & B,
+           const int n, const int m, const int p, MatrixOfDoubles& C) {
+   // C[n][p] = sum_{m} A[n][m] * B[m][p]
+   //
+   C.resize(n);
+   for (int i = 0; i < n; ++i) {
+      C[i].resize(p,0.0);
+      for (int k = 0; k < p; ++k) {
+          for (int j = 0; j < m; ++j) {
+              C[i][k] += A[i][j] * B[j][k];
+          }
+      }
+   }
+}
+
+// helper method for multiplying a vector with matrix and summing the result with another vector
+// a[k] = y[k] + sum_{m} c[m]*x[m][k]
+//
+void PWLSolver::MultiplyAndSum(VectorOfDoubles const & c, MatrixOfDoubles const & x, 
+           VectorOfDoubles const & y, const int k, const int m, VectorOfDoubles& a) {
+   a.resize(k);
+   for (int i = 0; i < k; ++i) {
+      a[i] = y[i];
+      for (int j = 0; j < m; ++j) {
+         a[i] += c[j] * x[j][i];
+      }
+   }
+}
+
+
+// static PWLSolver methods
+//
+
+bool PWLSolver::GetProblemType(PWLSolver::OptimizationSuite opt_suite, MPSolver::OptimizationProblemType* pType) {
+#ifdef USE_GUROBI
+    if (opt_suite == PWLSolver::GUROBI) { 
+        *pType = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+        return true;
+    }
+#endif
+#ifdef USE_SCIP
+    else if (opt_suite == PWLSolver::SCIP) {
+        *pType =  MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
+        return true;
+    }
+#endif
+#ifdef USE_CBC
+    else if (opt_suite == PWLSolver::CBC) {
+        *pType = MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
+        return true;
+    }
+#endif
+#ifdef USE_GLPK
+    else if (opt_suite == PWLSolver::GLPK) { 
+        *pType = MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+        return true;
+    }
+#endif
+    else return false;
+}
+
+
+
+bool PWLSolver::SupportsOptimizationSuite(PWLSolver::OptimizationSuite opt_suite) {
+#ifdef USE_GUROBI
+    if (opt_suite == GUROBI) return true;
+#endif
+#ifdef USE_SCIP
+    if (opt_suite == SCIP) return true;
+#endif
+#ifdef USE_CBC
+    if (opt_suite == CBC) return true;
+#endif
+#ifdef USE_GLPK
+    if (opt_suite == GLPK) return true;
+#endif
+    return false;
+}
+
+
+bool PWLSolver::ParseOptimizationSuite(absl::string_view suite,
+                                       PWLSolver::OptimizationSuite* pSuite) {
+#if defined(USE_GUROBI)
+   if (suite == "gurobi") {
+     *pSuite = PWLSolver::GUROBI;
+#endif
+#if defined(USE_SCIP)
+   } else if (suite == "scip") {
+    *pSuite = PWLSolver::SCIP;
+#endif
+#if defined(USE_CBC)
+  } else if (suite == "cbc") {
+    *pSuite = PWLSolver::CBC;
+#endif
+#if defined(USE_GLPK)
+  } else if (suite == "glpk") {
+    *type = PWLSolver::GLPK;
+#endif
+  } else {
+    return false;
+  }
+  return true;
+}
+
+bool PWLSolver::OptSuiteToString(const OptimizationSuite optimization_suite, std::string & sOptSuite) {
+  bool res;
+  switch (optimization_suite) {
+#ifdef USE_GUROBI
+    case GUROBI:
+      sOptSuite = "GUROBI";
+      res = true;
+      break;
+#endif
+#ifdef USE_SCIP
+    case SCIP:
+      sOptSuite = "SCIP";
+      res = true;
+      break;
+#endif
+#ifdef USE_GLPK
+    case GLPK:
+      sOptSuite = "GLPK";
+      res = true;
+      break;
+#endif
+#ifdef USE_CBC
+    case CBC:
+      sOptSuite = "CBC";
+      res = true;
+      break;
+#endif
+#ifdef USE_CPLEX
+    case CPLEX:
+      sOptSuite = "CPLEX";
+      res = true;
+      break;
+#endif
+    default:
+      sOptSuite = "Unknown";
+      res = false;
+      break;
+  }
+  return res;
+}
+
+#endif // MIP_SOLVER_WITH_SOS_CONSTRAINTS
 
 }  // namespace operations_research

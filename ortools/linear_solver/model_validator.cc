@@ -108,6 +108,10 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
   return std::string();
 }
 
+//TO DO (dimitarpg13): create 
+//std::string FindErrorInSOSConstraint(const SOSConstraintProto& constraint,
+//                                    std::vector<bool>* var_mask)
+
 std::string FindErrorInSolutionHint(
     const PartialVariableAssignment& solution_hint, int num_vars) {
   if (solution_hint.var_index_size() != solution_hint.var_value_size()) {
@@ -190,6 +194,10 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
     }
   }
 
+  //TO DO (dimitarpg13): validate SOS constraints here
+  //
+  //
+
   // Validate the solution hint.
   error = FindErrorInSolutionHint(model.solution_hint(), num_vars);
   if (!error.empty()) {
@@ -260,6 +268,10 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
           absl::LegacyPrecision(tolerance), ".");
     }
   }
+
+  // TO DO (dimitarpg13): write a code which checks if all SOS constraints are satisfiable
+  //
+  //
 
   return "";
 }

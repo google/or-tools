@@ -17,10 +17,12 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
+
 namespace operations_research {
 void RunLinearProgrammingExample() {
+  putenv("GRB_LICENSE_FILE=/Users/dimitargueorguiev/git/gurobi.lic");
   MPSolver solver("LinearProgrammingExample",
-                  MPSolver::GLOP_LINEAR_PROGRAMMING);
+                  MPSolver::GUROBI_LINEAR_PROGRAMMING);
   const double infinity = solver.infinity();
   // x and y are continuous non-negative variables.
   MPVariable* const x = solver.MakeNumVar(0.0, infinity, "x");

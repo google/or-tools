@@ -117,6 +117,10 @@ class GLPKInterface : public MPSolverInterface {
 
   // Add Constraint incrementally.
   void AddRowConstraint(MPConstraint* const ct) override;
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // Add SOS Constraint incrementally
+  void AddSOSConstraint(SOSConstraint* const ct) override;
+#endif
   // Add variable incrementally.
   void AddVariable(MPVariable* const var) override;
   // Change a coefficient in a constraint.
@@ -374,6 +378,13 @@ void GLPKInterface::ClearObjective() {
 void GLPKInterface::AddRowConstraint(MPConstraint* const ct) {
   sync_status_ = MUST_RELOAD;
 }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+//TO DO (dimitarpg13): implement SOS constraint here
+void GLPKInterface::AddSOSConstraint(SOSConstraint* const ct) {
+  sync_status_ = MUST_RELOAD;
+}
+#endif
 
 void GLPKInterface::AddVariable(MPVariable* const var) {
   sync_status_ = MUST_RELOAD;

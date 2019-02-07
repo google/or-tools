@@ -95,7 +95,7 @@ ifdef UNIX_GLPK_DIR
 endif
 # This is needed to find scip include files.
 ifdef UNIX_SCIP_DIR
-  SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP
+  SCIP_INC = -I$(UNIX_SCIP_DIR)/src -DUSE_SCIP
   SCIP_SWIG = $(SCIP_INC)
 endif
 ifdef UNIX_GUROBI_DIR
@@ -113,7 +113,7 @@ SWIG_INC = \
  $(GLPK_SWIG) $(SCIP_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG)
 
 # Compilation flags
-DEBUG = -O4 -DNDEBUG
+DEBUG = -O0 -g
 JNIDEBUG = -O1 -DNDEBUG
 
 ifeq ($(PLATFORM),LINUX)
@@ -129,7 +129,7 @@ ifeq ($(PLATFORM),LINUX)
   ifdef UNIX_SCIP_DIR
     SCIP_ARCH = linux.x86_64.gnu.opt
     SCIP_LNK = \
- $(UNIX_SCIP_DIR)/lib/libscip.a \
+ $(UNIX_SCIP_DIR)/lib/static/libscip.a \
  $(UNIX_SCIP_DIR)/lib/libscipopt.a \
  $(UNIX_SCIP_DIR)/lib/libsoplex.a \
  $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
@@ -198,12 +198,14 @@ ifeq ($(PLATFORM),MACOSX)
     GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_SCIP_DIR
+#    SCIP_ARCH = darwin.x86_64.gnu.opt
+#    SCIP_LNK = \
+# -force_load $(UNIX_SCIP_DIR)/lib/libscip.a \
+# $(UNIX_SCIP_DIR)/lib/libscipopt.a \
+# $(UNIX_SCIP_DIR)/lib/libsoplex.a \
+# $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     SCIP_ARCH = darwin.x86_64.gnu.opt
-    SCIP_LNK = \
- -force_load $(UNIX_SCIP_DIR)/lib/libscip.a \
- $(UNIX_SCIP_DIR)/lib/libscipopt.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/libtpitny.$(SCIP_ARCH).a
   endif
   ifdef UNIX_GUROBI_DIR
     GUROBI_LNK = \
@@ -251,10 +253,17 @@ DEPENDENCIES_INC = -I$(INC_DIR) -I$(GEN_DIR) \
  -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
  $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC)
 
+@echo GUROBI_INC = $(GUROBI_INC)
+@echo DEPENDENCIES_INC = $(DEPENDENCIES_INC)
+
+
 CFLAGS = $(DEBUG) $(DEPENDENCIES_INC)
 JNIFLAGS = $(JNIDEBUG) $(DEPENDENCIES_INC)
 LDFLAGS += $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
 DEPENDENCIES_LNK = $(GLPK_LNK) $(SCIP_LNK) $(GUROBI_LNK) $(CPLEX_LNK)
+
+@echo CFLAGS = $(CFLAGS)
+@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
 
 OR_TOOLS_LNK =
 OR_TOOLS_LDFLAGS = $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)

@@ -17,9 +17,9 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
-void RunIntegerProgrammingExample(
+void RunMixedIntegerProgrammingExample(
     MPSolver::OptimizationProblemType optimization_problem_type) {
-  MPSolver solver("IntegerProgrammingExample", optimization_problem_type);
+  MPSolver solver("MixedIntegerProgrammingExample", optimization_problem_type);
   const double infinity = solver.infinity();
   // x and y are integer non-negative variables.
   MPVariable* const x = solver.MakeIntVar(0.0, infinity, "x");
@@ -68,24 +68,24 @@ void RunIntegerProgrammingExample(
 
 void RunAllExamples() {
 #if defined(USE_CBC)
-  LOG(INFO) << "---- Integer programming example with CBC ----";
-  RunIntegerProgrammingExample(MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  LOG(INFO) << "---- Mixed integer programming example with CBC ----";
+  RunMixedIntegerProgrammingExample(MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
 #endif
 #if defined(USE_GLPK)
-  LOG(INFO) << "---- Integer programming example with GLPK ----";
-  RunIntegerProgrammingExample(MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
+  LOG(INFO) << "---- Mixed integer programming example with GLPK ----";
+  RunMixedIntegerProgrammingExample(MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
 #endif
 #if defined(USE_SCIP)
-  LOG(INFO) << "---- Integer programming example with SCIP ----";
-  RunIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  LOG(INFO) << "---- Mixed integer programming example with SCIP ----";
+  RunMixedIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
 #endif
 #if defined(USE_GUROBI)
-  LOG(INFO) << "---- Integer programming example with Gurobi ----";
-  RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
+  LOG(INFO) << "---- Mixed integer programming example with Gurobi ----";
+  RunMixedIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
 #endif  // USE_GUROBI
 #if defined(USE_CPLEX)
-  LOG(INFO) << "---- Integer programming example with CPLEX ----";
-  RunIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
+  LOG(INFO) << "---- Mixed integer programming example with CPLEX ----";
+  RunMixedIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
 #endif  // USE_CPLEX
 }
 }  // namespace operations_research
@@ -94,6 +94,6 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
   //operations_research::RunAllExamples();
-  RunIntegerProgrammingExample(operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
+  RunMixedIntegerProgrammingExample(operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
   return EXIT_SUCCESS;
 }

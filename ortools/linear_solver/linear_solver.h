@@ -147,6 +147,7 @@
 #include "ortools/base/commandlineflags.h"
 
 #include <unordered_map>
+#include "ortools/base/optimization_suites.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -170,6 +171,8 @@ class MPObjective;
 class MPSolverInterface;
 class MPSolverParameters;
 class MPVariable;
+class SOSConstraint;
+
 
 // This mathematical programming (MP) solver class is the main class
 // though which users build and solve problems.
@@ -322,7 +325,29 @@ class MPSolver {
   // As above, but also names the constraint.
   MPConstraint* MakeRowConstraint(const LinearRange& range,
                                   const std::string& name);
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // ----- SOS Constraints -----
+  // Returns the number of SOS constraints (both types SOS1 and SOS2).
+  int NumSOSConstraints() const { return sos_constraints_.size(); }
+  // Returns the array of constraints handled by the MPSolver.
+  // (They are listed in the order in which they were created.)
+  const std::vector<SOSConstraint*>& sos_constraints() const { return sos_constraints_; }
 
+  // Looks up a SOS constraint by name, and returns nullptr if it does not exist.
+  // The first call has a O(n) complexity, as the constraint name index is
+  // lazily created upon first use. Will crash if constraint names are not
+  // unique.
+  SOSConstraint* LookupSOSConstraintOrNull(
+      const std::string& sos_constraint_name) const;
+
+  enum SOSType {
+    SOS1 = 1,
+    SOS2 = 2
+  };
+
+  SOSConstraint* MakeSOSConstraint(const std::string& name, const SOSType sos_type);
+  SOSConstraint* MakeSOSConstraint(const SOSType sos_type);
+#endif
   // ----- Objective -----
   // Note that the objective is owned by the solver, and is initialized to
   // its default value (see the MPObjective class below) at construction.
@@ -624,7 +649,9 @@ class MPSolver {
   friend class BopInterface;
   friend class SatInterface;
   friend class KnapsackInterface;
-
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  friend class SOSConstraintAggregator;
+#endif
   // Debugging: verify that the given MPVariable* belongs to this solver.
   bool OwnsVariable(const MPVariable* var) const;
 
@@ -647,6 +674,11 @@ class MPSolver {
   // Generates the map from constraint names to their indices.
   void GenerateConstraintNameIndex() const;
 
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // Generates the map from SOS constraint names to their indices.
+  void GenerateSOSConstraintNameIndex() const;
+#endif
+
   // The name of the linear programming problem.
   const std::string name_;
 
@@ -666,11 +698,23 @@ class MPSolver {
 
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
+
   // A map from a constraint's name to its index in constraints_.
   mutable absl::optional<std::unordered_map<std::string, int> >
       constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // the vector of SOS contraints in the problem in case it is MIP
+  std::vector<SOSConstraint*> sos_constraints_;
+  
+  // A map from a SOS constraint's name to its index in constraints_.
+  mutable absl::optional<std::unordered_map<std::string, int> >
+      sos_constraint_name_to_index_;
+  // Whether constraints have been extracted to the underlying interface.
+  std::vector<bool> sos_constraint_is_extracted_;
+#endif
 
   // The linear objective function.
   std::unique_ptr<MPObjective> objective_;
@@ -802,6 +846,365 @@ class MPObjective {
 
   DISALLOW_COPY_AND_ASSIGN(MPObjective);
 };
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+// this class provides a solver optimizing an objective function containing 
+// a piecewise linear function as well as continuous variables.
+//
+// Problem definition:
+// We have a piecewise linear (discrete) function given in tabular form with the relation
+//
+// (1)     y_i = f(x_i), i = 1..k
+//
+// Here x_i are m-dimensional real vectors i.e. x_i b.t. R(m), y_i are real scalar values i.e. y_i b.t. R
+//
+// We would like to find the maximum of the following expression
+//
+// (2)     f(x) + c^{T} * x + b^{T} * z
+//
+// Here the subscript T denotes a matrix transpose operation. All quantities with small letters 
+// denote column vectors and all quantities with capital letters will denote matrices 
+// unless explicitly stated otherwise. The operator '*' denotes matrix multiplication.
+// 
+// The objective function (2) is subject to the following constraints:
+//
+// (3)     A * x + B * z <= d
+// (4)     z >= 0
+//
+// Here z b.t. R(l) is a l-dimensional vector of continuous variables while x_i is a vector of given values.
+// The number of individual constraints in (3) is p so the matrix A b.t. R(p,k), the matrix B b.t. R(p,l), 
+// and the vector d b.t. R(p).
+// 
+// After change of variables the problem given with (2)-(4) is transformed into
+//
+// (5)    sum_{i=1}^{k} lambda_i * y_i + c^{T}*( sum_{i=1}^k lambda_i * x_i ) + b^{T} * z
+//
+// subject to the system of constraints:
+//
+// (6)    A * (sum_{i=1}^k lambda_i * x_i) + B * z <= d
+// (7)    sum_{i=1}^{k} lambda_i = 1
+// (8)    z >= 0
+//
+// Here lambda_i, i = 1..k are the new set of binary variables where at most one of them can be 1. The goal is
+// to find such set of binary variables given with the vector lambda b.t. R(k) and continuous variables 
+// z b.t. R(l) such that the maximum of (5) is attained subject to constraints (6)-(8).
+//
+// The dimensionality of the various parameters and variables in the PWL Solver is summarized below:
+//
+// x b.t. R(m), y b.t. R, c b.t. R(l), z b.t. R(l)
+// A b.t. R(p,m), B b.t. R(p,l), d b.t. R(p)
+//
+// It is useful to rewrite (5)-(8) in a more concise form where (5) becomes
+//
+// (9)    maximize a * lambda + b * z
+//
+// Here we have made the substiution 
+//
+// (10)   a = y + c * x, a b.t. R
+//
+// In (6) we make the substitution 
+//
+// (11)   C = A * X, C b.t. R(p,k)
+//
+// where X is a matrix with m rows and k columns composed of all x_i, i=1..k each represented as a column in X.
+//
+// Then (6) becomes
+//
+// (12)   C * lambda + B * z <= d
+//
+// (13)   sum_{i=1}^{k} = 1
+//
+// (14)   z >= 0
+//
+class PWLSolver {
+ public:
+  // TO DO (dimitarpg13):  if we are going to support invocation through protobuf (PWLSolver::SolveWithProto)
+  // we need to create PWLModelRequest template for this class 
+  enum OptimizationSuite {
+#ifdef USE_GUROBI
+    GUROBI = 1, // Recommended default value
+#endif
+#ifdef USE_SCIP
+    SCIP = 2,  
+#endif
+#ifdef USE_GLPK
+    GLPK = 4,
+#endif
+#ifdef USE_CBC
+    CBC = 8,
+#endif
+#ifdef USE_CPLEX
+    CPLEX = 16,
+#endif
+  };
+
+  enum CoordType {
+    XCoord = 1,
+    YCoord = 2
+  };
+
+  enum VectorParameterType {
+    bVector = 1,
+    cVector = 2,
+    dVector = 4
+  };
+
+  enum MatrixParameterType {
+    AMatrix = 1,
+    BMatrix = 2
+  };
+
+  typedef std::vector<std::vector<double>> MatrixOfDoubles;
+  typedef std::vector<double> VectorOfDoubles;
+
+  PWLSolver(const std::string& name, OptimizationSuite opt_suite);
+  ~PWLSolver();
+
+  static double infinity() { return std::numeric_limits<double>::infinity(); }
+  // Whether the given problem type is supported (this will depend on the
+  // targets that you linked).
+  static bool SupportsOptimizationSuite(PWLSolver::OptimizationSuite opt_suite);
+
+  // Parses the name of the solver. Returns true if the solver type is
+  // successfully parsed as one of the OptimizationProblemType.
+  static bool ParseOptimizationSuite(absl::string_view suite,
+                                     PWLSolver::OptimizationSuite* pSuite);
+
+  static bool GetProblemType(OptimizationSuite opt_suite, MPSolver::OptimizationProblemType* pType);
+
+  static bool OptSuiteToString(const OptimizationSuite optimization_suite, std::string & sOptSuite); 
+
+  const std::string& Name() const {
+      return name_;  // Set at construction.
+  }
+
+  const OptimizationSuite OptSuite() const {
+      return opt_suite_;
+  }
+
+  // Clears the objective (including the optimization direction), all
+  // variables and constraints. All the other properties of the MPSolver
+  // (like the time limit) are kept untouched.
+  void Clear();
+
+
+  // ----- Variables ------
+  // Returns the number of variables.
+  // int NumVariables() const { return variables_.size(); }
+  // Returns the array of variables handled by the MPSolver.
+  // (They are listed in the order in which they were created.)
+  const std::vector<MPVariable*>& variables() const { return variables_; }
+  // Looks up a variable by index, and returns nullptr if it does not exist.
+  MPVariable* GetVariableOrNull(const int var_idx) const;
+
+  // ----- Constraints -----
+  // Returns the number of constraints.
+  // int NumConstraints() const { return constraints_.size(); }
+  // Returns the array of constraints handled by the MPSolver.
+  // (They are listed in the order in which they were created.)
+  const std::vector<MPConstraint*>& constraints() const { return constraints_; }
+
+  const SOSConstraint* sos_constraint() const { return sos_constraint_; }
+
+  const MPObjective* objective() const { return objective_; }
+
+  void SetXValues(MatrixOfDoubles const & );
+
+  void SetYValues(VectorOfDoubles const & );
+  
+  void SetParameter(VectorOfDoubles const &, VectorParameterType );
+
+  void SetParameter(MatrixOfDoubles const &, MatrixParameterType );
+
+#ifndef NDEBUG
+  void PrintXValues();
+  void PrintYValues();
+  void PrintAValues();
+  void PrintBValues();
+  void PrintbValues();
+  void PrintcValues();
+  void PrintdValues();
+#endif
+
+  // Solves the problem using default parameter values.
+  MPSolver::ResultStatus Solve();
+  // Solves the problem using the specified parameter values.
+  MPSolver::ResultStatus Solve(const MPSolverParameters& param);
+
+  // Advanced usage:
+  // Verifies the *correctness* of the solution: all variables must be within
+  // their domains, all constraints must be satisfied, and the reported
+  // objective value must be accurate.
+  // Usage:
+  // - This can only be called after Solve() was called.
+  // - "tolerance" is interpreted as an absolute error threshold.
+  // - For the objective value only, if the absolute error is too large,
+  //   the tolerance is interpreted as a relative error threshold instead.
+  // - If "log_errors" is true, every single violation will be logged.
+  // - If "tolerance" is negative, it will be set to infinity().
+  //
+  // Most users should just set the --verify_solution flag and not bother
+  // using this method directly.
+  bool VerifySolution(double tolerance, bool log_errors) const;
+
+  // Some MIP solvers can produce multiple solutions to the
+  // problem. Returns true when another solution is available, and updates the
+  // MPVariable* objects to make the new solution queryable. Call only after
+  // calling solve.
+  //
+  // The optimality properties of the additional solutions found, and whether
+  // or not the solver computes them ahead of time or when NextSolution() is
+  // called is solver specific.
+  //
+  // As of 2018-08-09, only Gurobi supports NextSolution(), see
+  // linear_solver_underlying_gurobi_test for an example of how to configure
+  // Gurobi for this purpose. The other solvers return false unconditionally.
+  bool NextSolution() MUST_USE_RESULT;
+
+  // Controls (or queries) the amount of output produced by the underlying
+  // solver. The output can surface to LOGs, or to stdout or stderr, depending
+  // on the implementation. The amount of output will greatly vary with each
+  // implementation and each problem.
+  //
+  // Output is suppressed by default.
+  bool OutputIsEnabled() const;
+  void EnableOutput();
+  void SuppressOutput();
+
+  void set_time_limit(int64 time_limit_milliseconds) {
+    DCHECK_GE(time_limit_milliseconds, 0);
+    time_limit_ = time_limit_milliseconds;
+  }
+
+  // In milliseconds.
+  int64 time_limit() const { return time_limit_; }
+
+  // In seconds. Note that this returns a double.
+  double time_limit_in_secs() const {
+    // static_cast<double> avoids a warning with -Wreal-conversion. This
+    // helps catching bugs with unwanted conversions from double to ints.
+    return static_cast<double>(time_limit_) / 1000.0;
+  }
+
+  // Returns wall_time() in milliseconds since the creation of the solver.
+  int64 wall_time() const { return timer_.GetInMs(); }
+
+  // Returns the number of branch-and-bound nodes. 
+  int64 nodes() const;
+
+  int numb_of_x_points(); // denoted by k
+  int dim_of_x_point(); // denoted by m
+  int numb_of_constr(); // denoted by p
+  int numb_of_real_vars(); // denoted by l
+  int numb_of_vars(); // denoted by l+k
+
+ protected:
+
+   // protected fields
+   //
+   //
+   // the name of the problem
+   std::string name_;
+
+   // the chosen optimization suite to be used to solve this problem
+   enum OptimizationSuite opt_suite_;
+
+   // The vector of variables in the problem.
+   std::vector<MPVariable*> variables_;
+   // The vector of constraints in the problem.
+   std::vector<MPConstraint*> constraints_;
+
+   SOSConstraint * sos_constraint_;
+   
+   MPObjective * objective_;
+   // a row vector of all column vectors composed by the x_i values
+   // where i = 1..numb_of_x_points(). each x_i is a column vector of size dim_of_x_point() in x_.
+   // Hence x_ is matrix of size numb_of_x_points() times dim_of_x_point().
+   MatrixOfDoubles x_;
+
+   // column vector of the y-coordinate values y_i = y(x_i)
+   // the vector y_ is of size numb_of_x_points(). 
+   VectorOfDoubles y_;
+
+   // column vector containing numb_of_constr() row vectors each with size dim_of_x_point(). 
+   MatrixOfDoubles A_;
+
+   // column vector containing numb_of_constr() row vectors each with size dim_of_x_point()
+   MatrixOfDoubles B_;
+
+   // column vector containing dim_of_x_point() parameters for the continuous variables z
+   VectorOfDoubles b_;
+
+   // column vector containing dim_of_x_point() parameters for the x coordinates x_i, i=1..numb_of_x_points(). 
+   VectorOfDoubles c_;
+
+   // column vector containing dim_of_x_point() values which are the rhs of the system of constraint inequalities
+   VectorOfDoubles d_;
+
+   // C_ -> helper matrix given by:
+   // C_ = A_ * x_
+   // each row is the set of coefficients corresponding to lambda_i, i=1..numb_of_x_points() where the current row
+   // corresponds to the current constraint
+   MatrixOfDoubles C_;
+
+   // a_ -> helper vector of size numb_of_x_points() given by:
+   // a_ = y_ + c_ * x_
+   //
+   VectorOfDoubles a_;
+
+   std::unique_ptr<MPSolver> mp_solver_; 
+
+   // Time limit in milliseconds (0 = no limit).
+   int64 time_limit_;
+
+   WallTimer timer_;
+
+   // protected methods and fields for handling state
+   //
+   //
+   bool valid_state_;
+   bool validated_;
+   bool ValidateState();
+
+   bool ExtractState();
+   bool ExtractVariables();
+   bool ExtractObjective();
+   bool ExtractConstraints();
+   bool ExtractSOSConstraint();
+
+   // helper method for multiplying a matrix with a vector
+   // r[n] = sum_{m} A[n][m] * v[m]
+   //
+   void Multiply(MatrixOfDoubles const & A, VectorOfDoubles const & v,
+           const int n, const int m, VectorOfDoubles& r);
+
+   // helper method for multiplying two matrices
+   // C[n][p] = sum_{m} A[n][m] * B[m][p]
+   //
+   void Multiply(MatrixOfDoubles const & A, MatrixOfDoubles const & B,
+           const int n, const int m, const int p, MatrixOfDoubles& C);
+
+   // helper method for multiplying a vector with matrix and summing the result with another vector
+   // a[k] = y[k] + sum_{m} c[m]*x[m][k]
+   //
+   void MultiplyAndSum(VectorOfDoubles const & c, MatrixOfDoubles const & x, 
+           VectorOfDoubles const & y, const int k, const int m, VectorOfDoubles& a);  
+
+   bool inited();
+   bool xvalues_inited_;
+   bool yvalues_inited_;
+   bool Avalues_inited_;
+   bool Bvalues_inited_;
+   bool bvalues_inited_;
+   bool cvalues_inited_;
+   bool dvalues_inited_;
+
+#ifndef NDEBUG
+   void print_matrix(MatrixOfDoubles const &);
+   void print_vector(VectorOfDoubles const &);
+#endif
+};
+#endif // MIP_SOLVER_WITH_SOS_CONSTRAINTS
 
 // The class for variables of a Mathematical Programming (MP) model.
 class MPVariable {
@@ -1011,6 +1414,100 @@ class MPConstraint {
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };
+
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+
+class SOSConstraintAggregator;
+// The class for constraints of a Mathematical Programming (MP) model.
+// A constraint is represented as a linear equation or inequality.
+class SOSConstraint {
+ public:
+  // Returns the name of the constraint.
+  const std::string& name() const { return name_; }
+
+  // Clears all variables and coefficients. Does not clear the bounds.
+  void Clear();
+
+  // Sets the coefficient of the variable on the constraint. If the variable
+  // does not belong to the solver, the function just returns, or crashes in
+  // non-opt mode.
+  void SetCoefficient(const MPVariable* const var, double coeff);
+  // Gets the coefficient of a given variable on the constraint (which
+  // is 0 if the variable does not appear in the constraint).
+  double GetCoefficient(const MPVariable* const var) const;
+
+  MPSolver::SOSType GetSOSType() const { return sos_type_; }
+  // Returns a map from variables to their coefficients in the constraint. If a
+  // variable is not present in the map, then its coefficient is zero.
+  const std::unordered_map<const MPVariable*, double>& terms() const {
+    return coefficients_;
+  }
+
+
+  // Returns the index of the constraint in the MPSolver::sos_constraints_.
+  int index() const { return index_; }
+
+
+ protected:
+  friend class MPSolver;
+  friend class MPSolverInterface;
+  friend class CBCInterface;
+  friend class GLPKInterface;
+  friend class SCIPInterface;
+  friend class GurobiInterface;
+  friend class CplexInterface;
+  friend class SOSConstraintAggregator;
+
+  // Constructor. A constraint points to a single MPSolverInterface
+  // that is specified in the constructor. A constraint cannot belong
+  // to several models.
+  SOSConstraint(int index, MPSolver::SOSType sos_type,  const std::string& name,
+               MPSolverInterface* const interface)
+      : coefficients_(1),
+        sos_type_(sos_type),
+        index_(index),
+        name_(name.empty() ? absl::StrFormat("auto_sc_%09d", index) : name),
+        interface_(interface) {}
+
+  // Advanced use only. Order index of the first variable in the constraint 
+  int begin_index() { return beg_; }
+
+  // Advanced use only. Order indices of the variables associated with this constraint
+  std::vector<int>& variable_indices() { return ind_; }
+
+  // Advanced use only. weights of the variables indexed by their order indices
+  std::vector<double>& weights() { return weight_; }
+
+ private:
+  // Returns true if the constraint contains variables that have not
+  // been extracted yet.
+  bool ContainsNewVariables();
+
+  // Mapping var -> coefficient.
+  std::unordered_map<const MPVariable*, double> coefficients_;
+
+  const MPSolver::SOSType sos_type_;
+  const int index_;  // See index().
+
+
+  // Name.
+  const std::string name_;
+
+  // Order index of the first variable in the constraint  
+  int beg_; 
+
+  // Order indices of the variables associated with this constraint
+  std::vector<int> ind_;
+
+  // Weights associated with variables indexed by their order indices
+  std::vector<double> weight_;
+
+  MPSolverInterface* const interface_;
+  DISALLOW_COPY_AND_ASSIGN(SOSConstraint);
+};
+
+#endif // MIP_SOLVER_WITH_SOS_CONSTRAINTS
 
 // This class stores parameter settings for LP and MIP solvers.
 // Some parameters are marked as advanced: do not change their values
@@ -1225,6 +1722,10 @@ class MPSolverInterface {
   // Adds a linear constraint.
   virtual void AddRowConstraint(MPConstraint* const ct) = 0;
 
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // Adds a SOS constraint.
+  virtual void AddSOSConstraint(SOSConstraint* const ct);
+#endif
   // Add a variable.
   virtual void AddVariable(MPVariable* const var) = 0;
 
@@ -1235,6 +1736,18 @@ class MPSolverInterface {
 
   // Clears a constraint from all its terms.
   virtual void ClearConstraint(MPConstraint* const constraint) = 0;
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+
+  // Changes a coefficient in a SOS constraint.
+  virtual void SetCoefficient(SOSConstraint* const sos_constraint,
+                              const MPVariable* const variable,
+                              double new_value, double old_value);
+
+  // Clears a constraint from all its terms.
+  virtual void ClearSOSConstraint(SOSConstraint* const sos_constraint);
+
+#endif
 
   // Changes a coefficient in the linear objective.
   virtual void SetObjectiveCoefficient(const MPVariable* const variable,
@@ -1310,7 +1823,14 @@ class MPSolverInterface {
   void set_constraint_as_extracted(int ct_index, bool extracted) {
     solver_->constraint_is_extracted_[ct_index] = extracted;
   }
-
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  bool sos_constraint_is_extracted(int ct_index) const {
+    return solver_->sos_constraint_is_extracted_[ct_index];
+  }
+  void set_sos_constraint_as_extracted(int ct_index, bool extracted) {
+    solver_->sos_constraint_is_extracted_[ct_index] = extracted;
+  }
+#endif
   // Returns the boolean indicating the verbosity of the solver output.
   bool quiet() const { return quiet_; }
   // Sets the boolean indicating the verbosity of the solver output.
@@ -1348,6 +1868,10 @@ class MPSolverInterface {
 
   // To access the maximize_ bool and the MPSolver.
   friend class MPConstraint;
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  friend class SOSConstraint;
+  friend class SOSConstraintAggregator;
+#endif
   friend class MPObjective;
 
  protected:
@@ -1360,9 +1884,15 @@ class MPSolverInterface {
   // Optimization direction.
   bool maximize_;
 
-  // Index in MPSolver::variables_ of last constraint extracted.
+  // Index in MPSolver::constraints_ of last constraint extracted.
   int last_constraint_index_;
-  // Index in MPSolver::constraints_ of last variable extracted.
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // Index in MPSolver::sos_constraints_
+  int last_sos_constraint_index_;
+#endif
+
+  // Index in MPSolver::variables_ of last variable extracted.
   int last_variable_index_;
 
   // The value of the objective function.
@@ -1381,6 +1911,10 @@ class MPSolverInterface {
   virtual void ExtractNewVariables() = 0;
   // Extracts the constraints that have not been extracted yet.
   virtual void ExtractNewConstraints() = 0;
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // Extracts the SOS constraints that have not been extracted yet.
+  virtual void ExtractNewSOSConstraints();
+#endif
   // Extracts the objective.
   virtual void ExtractObjective() = 0;
   // Resets the extraction information.

@@ -42,7 +42,7 @@ if(MSVC)
 else()
   add_definitions(-fwrapv)
 endif()
-add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP)
+add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP -DUSE_GUROBI)
 
 # Verify Dependencies
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -85,7 +85,7 @@ if(WIN32)
   target_compile_definitions(${PROJECT_NAME} PUBLIC __WIN32__)
 endif()
 target_compile_definitions(${PROJECT_NAME}
-  PUBLIC USE_BOP USE_GLOP USE_CBC USE_CLP)
+	PUBLIC USE_BOP USE_GLOP USE_CBC USE_CLP USE_GUROBI)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 

@@ -29,7 +29,8 @@
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
 %include "ortools/base/base.i"
-
+%include "ortools/base/optimization_suites.h"
+%include "std_vector.i"
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -39,6 +40,11 @@ class MPModelProto;
 class MPModelRequest;
 class MPSolutionResponse;
 }  // namespace operations_research
+
+namespace std {
+%template(Vector) vector < double >;
+%template(Matrix)  vector < vector < double > >;
+}
 
 %{
 #include "ortools/linear_solver/linear_solver.h"
@@ -206,7 +212,6 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 
-
 // Expose the MPSolver::ResultStatus enum.
 %unignore operations_research::MPSolver::ResultStatus;
 %unignore operations_research::MPSolver::OPTIMAL;
@@ -229,6 +234,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint();
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint(double, double, const std::string&);
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint(const std::string&);
+
 %unignore operations_research::MPSolver::~MPSolver;
 %unignore operations_research::MPSolver::Solve;
 %unignore operations_research::MPSolver::VerifySolution;
@@ -262,6 +268,152 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::AT_UPPER_BOUND;
 %unignore operations_research::MPSolver::FIXED_VALUE;  // No unit test
 %unignore operations_research::MPSolver::BASIC;
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS 
+%define DOCSTRING
+ " 
+this class provides a solver optimizing an objective function containing 
+a piecewise linear function as well as continuous variables.
+
+Problem definition:
+We have a piecewise linear (discrete) function given in tabular form with the relation
+
+(1)     y_i = f(x_i), i = 1..k
+
+Here x_i are m-dimensional real vectors i.e. x_i b.t. R(m), y_i are real scalar values i.e. y_i b.t. R
+
+We would like to find the maximum of the following expression
+
+(2)     f(x) + c^{T} * x + b^{T} * z
+
+Here the subscript T denotes a matrix transpose operation. All quantities with small letters 
+denote column vectors and all quantities with capital letters will denote matrices 
+unless explicitly stated otherwise. The operator '*' denotes matrix multiplication.
+
+The objective function (2) is subject to the following constraints:
+
+(3)     A * x + B * z <= d
+(4)     z >= 0
+
+Here z b.t. R(l) is a l-dimensional vector of continuous variables while x_i is a vector of given values.
+The number of individual constraints in (3) is p so the matrix A b.t. R(p,k), the matrix B b.t. R(p,l), 
+and the vector d b.t. R(p).
+
+After change of variables the problem given with (2)-(4) is transformed into
+
+(5)    sum_{i=1}^{k} lambda_i * y_i + c^{T}*( sum_{i=1}^k lambda_i * x_i ) + b^{T} * z
+
+subject to the system of constraints:
+
+(6)    A * (sum_{i=1}^k lambda_i * x_i) + B * z <= d
+(7)    sum_{i=1}^{k} lambda_i = 1
+(8)    z >= 0
+
+Here lambda_i, i = 1..k are the new set of binary variables where at most one of them can be 1. The goal is
+to find such set of binary variables given with the vector lambda b.t. R(k) and continuous variables 
+z b.t. R(l) such that the maximum of (5) is attained subject to constraints (6)-(8).
+
+The dimensionality of the various parameters and variables in the PWL Solver is summarized below:
+
+x b.t. R(m), y b.t. R, c b.t. R(l), z b.t. R(l)
+A b.t. R(p,m), B b.t. R(p,l), d b.t. R(p)
+
+It is useful to rewrite (5)-(8) in a more concise form where (5) becomes
+
+(9)    maximize a * lambda + b * z
+
+Here we have made the substiution 
+
+(10)   a = y + c * x, a b.t. R
+
+In (6) we make the substitution 
+
+(11)   C = A * X, C b.t. R(p,k)
+
+where X is a matrix with m rows and k columns composed of all x_i, i=1..k each represented as a column in X.
+
+Then (6) becomes
+
+(12)   C * lambda + B * z <= d
+
+(13)   sum_{i=1}^{k} = 1
+
+(14)   z >= 0
+ "
+%enddef
+
+%feature("docstring", DOCSTRING) operations_research::PWLSolver;
+%rename (PwlSolver) operations_research::PWLSolver;
+%rename (PwlSolver) operations_research::PWLSolver::PWLSolver;
+%rename (SosConstraint) operations_research::SOSConstraint;
+%rename (NumSosConstraints) operations_research::MPSolver::NumSOSConstraints; 
+%rename (SosConstraint) operations_research::MPSolver::MakeSOSConstraint(const SOSType);
+%rename (SosConstraint) operations_research::MPSolver::MakeSOSConstraint(const std::string&,
+                                                                         const SOSType);
+%rename (NumOfXPoints) operations_research::PWLSolver::numb_of_x_points();
+%rename (DimOfXPoint) operations_research::PWLSolver::dim_of_x_point();
+%rename (NumConstraints) operations_research::PWLSolver::numb_of_constr();
+%rename (NumRealVariables) operations_research::PWLSolver::numb_of_real_vars();
+%rename (NumVariables) operations_research::PWLSolver::numb_of_vars();
+%rename (Objective) operations_research::PWLSolver::objective;
+%rename (GetVariable) operations_research::PWLSolver::GetVariableOrNull;
+%rename (LookupSosConstraint)
+         operations_research::MPSolver::LookupSOSConstraintOrNull;
+
+%unignore operations_research::PWLSolver::OptimizationSuite;
+%unignore operations_research::PWLSolver::SCIP;
+%unignore operations_research::PWLSolver::CBC;
+%unignore operations_research::PWLSolver::GLPK;
+%unignore operations_research::PWLSolver::GUROBI;
+%unignore operations_research::PWLSolver::CPLEX;
+
+%unignore operations_research::PWLSolver::VectorParameterType;
+%unignore operations_research::PWLSolver::bVector;
+%unignore operations_research::PWLSolver::cVector;
+%unignore operations_research::PWLSolver::dVector;
+
+%unignore operations_research::PWLSolver::MatrixParameterType;
+%unignore operations_research::PWLSolver::AMatrix;
+%unignore operations_research::PWLSolver::BMatrix;
+
+// Expose the PWLSolver's basic API.
+%unignore operations_research::PWLSolver::~PWLSolver;
+%unignore operations_research::PWLSolver::Solve;
+%unignore operations_research::PWLSolver::VerifySolution;
+%unignore operations_research::PWLSolver::infinity;
+%unignore operations_research::PWLSolver::set_time_limit;  // No unit test
+%unignore operations_research::PWLSolver::wall_time;
+%unignore operations_research::PWLSolver::nodes;
+%unignore operations_research::PWLSolver::SetXValues;
+%unignore operations_research::PWLSolver::SetYValues;
+%unignore operations_research::PWLSolver::SetParameter;
+#ifndef NDEBUG
+%unignore operations_research::PWLSolver::PrintXValues;
+%unignore operations_research::PWLSolver::PrintYValues;
+%unignore operations_research::PWLSolver::PrintAValues;
+%unignore operations_research::PWLSolver::PrintBValues;
+%unignore operations_research::PWLSolver::PrintbValues;
+%unignore operations_research::PWLSolver::PrintcValues;
+%unignore operations_research::PWLSolver::PrintdValues;
+#endif
+
+// Expose some of the more advanced PWLSolver API.
+%unignore operations_research::PWLSolver::Clear;  // No unit test
+%unignore operations_research::PWLSolver::NextSolution;
+
+%unignore operations_research::MPSolver::SOSType;
+%unignore operations_research::MPSolver::SOS1;
+%unignore operations_research::MPSolver::SOS2;
+
+// SOSConstraint: writer API.
+%unignore operations_research::SOSConstraint::SetCoefficient;
+
+// SOSConstraint: reader API.
+%unignore operations_research::SOSConstraint::GetCoefficient;
+%unignore operations_research::SOSConstraint::GetSOSType;
+%unignore operations_research::SOSConstraint::name;
+%unignore operations_research::SOSConstraint::index;
+#endif
 
 // MPVariable: reader API.
 %unignore operations_research::MPVariable::solution_value;

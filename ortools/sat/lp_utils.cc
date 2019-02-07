@@ -40,6 +40,7 @@ using glop::kInfinity;
 using glop::RowIndex;
 
 using operations_research::MPConstraintProto;
+//TO DO (dimitarpg13): add ref to SOSConstraintProto here
 using operations_research::MPModelProto;
 using operations_research::MPVariableProto;
 
@@ -185,6 +186,10 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     // solver!
     if (arg->vars_size() == 0) constraint->Clear();
   }
+
+  //TO DO (dimitarpg13): add the SOS constraints here
+  //
+  //
 
   // Display the error/scaling without taking into account the objective first.
   VLOG(1) << "Maximum constraint coefficient relative error: "
@@ -374,6 +379,10 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
       }
     }
   }
+
+  //TO DO (dimitarpg13): add all SOS constraints here
+  //
+  //
 
   // Display the error/scaling without taking into account the objective first.
   LOG(INFO) << "Maximum constraint relative error: " << max_relative_error;

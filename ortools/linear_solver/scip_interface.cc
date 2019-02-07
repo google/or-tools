@@ -60,6 +60,9 @@ class SCIPInterface : public MPSolverInterface {
   void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   void AddRowConstraint(MPConstraint* ct) override;
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  void AddSOSConstraint(SOSConstraint* const ct) override;
+#endif
   void AddVariable(MPVariable* var) override;
   void SetCoefficient(MPConstraint* constraint, const MPVariable* variable,
                       double new_value, double old_value) override;
@@ -308,6 +311,13 @@ void SCIPInterface::ClearObjective() {
 void SCIPInterface::AddRowConstraint(MPConstraint* ct) {
   sync_status_ = MUST_RELOAD;
 }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+//TO DO (dimitarpg13): SOS constraints need to be implemented
+void SCIPInterface::AddSOSConstraint(SOSConstraint* ct) {
+  sync_status_ = MUST_RELOAD;
+}
+#endif
 
 void SCIPInterface::AddVariable(MPVariable* var) { sync_status_ = MUST_RELOAD; }
 
