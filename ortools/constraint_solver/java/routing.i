@@ -72,9 +72,6 @@ namespace operations_research {
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingModel %{
-import java.util.List;
-import java.util.ArrayList;
-
 // Used to wrap RoutingTransitCallback2
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
@@ -82,85 +79,56 @@ import java.util.function.LongBinaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
 %}
-
-// Keep reference to FunctionalInterface to avoid GC to collect them early
-%typemap(javacode) operations_research::RoutingModel %{
-  // Store list of callback to avoid the GC to reclaim them.
-  private List<LongBinaryOperator> binaryTransitCallbacks;
-  private List<LongUnaryOperator> unaryTransitCallbacks;
-
-  // Ensure that the GC does not collect any TransitCallback set from Java
-  // as the underlying C++ class only stores a shallow copy
-  private LongBinaryOperator storeBinaryTransitCallback(LongBinaryOperator c) {
-    if (binaryTransitCallbacks == null) {
-      binaryTransitCallbacks = new ArrayList<LongBinaryOperator>();
-    }
-    binaryTransitCallbacks.add(c);
-    return c;
-  }
-  private LongUnaryOperator storeUnaryTransitCallback(LongUnaryOperator c) {
-    if (unaryTransitCallbacks == null) {
-      unaryTransitCallbacks = new ArrayList<LongUnaryOperator>();
-    }
-    unaryTransitCallbacks.add(c);
-    return c;
-  }
-%}
-
 // Types in Proxy class (RoutingModel.java) e.g.:
 // Foo::f(jstype $javainput, ...) {Foo_f_SWIG(javain, ...);}
 #define VAR_ARGS(X...) X
 %define DEFINE_LONG_CALLBACK(
   TYPE,
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN,
-  LAMBDA_PARAM, LAMBDA_CALL,
-  STORE)
+  LAMBDA_PARAM, LAMBDA_CALL)
   %typemap(in) TYPE %{
     jclass object_class = jenv->GetObjectClass($input);
     if (nullptr == object_class) return $null;
     jmethodID method_id = jenv->GetMethodID(
       object_class, JAVA_METHOD, JAVA_SIGN);
     assert(method_id != nullptr);
-    // $input will be deleted once this function return.
-    jweak object_weak = jenv->NewWeakGlobalRef($input);
+    // $input is a local pointer which will be deleted once this function return.
+    // we need to create a global ref to keep the java object alive
+    jobject object_ref = jenv->NewGlobalRef($input);
 
-    /* Global JNI weak reference deleter */
-    class WeakGlobalRefGuard {
+    /* Global JNI reference deleter */
+    class GlobalRefGuard {
       JNIEnv *jenv_;
-      jweak jweak_;
+      jobject jref_;
       // non-copyable
-      WeakGlobalRefGuard(const WeakGlobalRefGuard &) = delete;
-      WeakGlobalRefGuard &operator=(const WeakGlobalRefGuard &) = delete;
+      GlobalRefGuard(const GlobalRefGuard &) = delete;
+      GlobalRefGuard &operator=(const GlobalRefGuard &) = delete;
       public:
-      WeakGlobalRefGuard(JNIEnv *jenv, jweak jweak): jenv_(jenv), jweak_(jweak) {}
-      ~WeakGlobalRefGuard() {
-        if (jweak_) {
-          jenv_->DeleteWeakGlobalRef(jweak_);
-        }
-      }
+      GlobalRefGuard(JNIEnv *jenv, jobject jref): jenv_(jenv), jref_(jref) {}
+      ~GlobalRefGuard() {jenv_->DeleteGlobalRef(jref_);}
     };
-    auto guard = std::make_shared<WeakGlobalRefGuard>(jenv, object_weak);
-    $1 = [jenv, object_weak, method_id, guard](LAMBDA_PARAM) -> long {
-      return jenv->CallLongMethod(object_weak, method_id, LAMBDA_CALL);
+    // instantiate an object responsible of deleting the global ref when no one
+    // own it (thus allowing the GC to collect the Java object).
+    auto guard = std::make_shared<GlobalRefGuard>(jenv, object_ref);
+    // lambda capture the guard thus capturing the Java object ownership.
+    $1 = [jenv, object_ref, method_id, guard](LAMBDA_PARAM) -> long {
+      return jenv->CallLongMethod(object_ref, method_id, LAMBDA_CALL);
     };
   %}
-  // These 3 typemaps tell SWIG what JNI and Java types to use.
+  // These 3 typemaps tell SWIG which JNI and Java types to use.
   %typemap(jni) TYPE "jobject" // Type used in the JNI C.
   %typemap(jtype) TYPE "JAVA_TYPE" // Type used in the JNI.java.
   %typemap(jstype) TYPE "JAVA_TYPE" // Type used in the Proxy class
-  // Before passing the Callback to JNI java, we store a reference to it to keep it alive.
-  %typemap(javain) TYPE "STORE($javainput)"
+  %typemap(javain) TYPE "$javainput" // argument passed to JNI java class
 %enddef
 DEFINE_LONG_CALLBACK(
   RoutingTransitCallback2,
   LongBinaryOperator, "applyAsLong", "(JJ)J",
-  VAR_ARGS(long from, long to), VAR_ARGS(from, to),
-  storeBinaryTransitCallback)
+  VAR_ARGS(long from, long to), VAR_ARGS(from, to))
 DEFINE_LONG_CALLBACK(
   RoutingTransitCallback1,
   LongUnaryOperator, "applyAsLong", "(J)J",
-  VAR_ARGS(long from), VAR_ARGS(from),
-  storeUnaryTransitCallback)
+  VAR_ARGS(long from), VAR_ARGS(from))
 }  // namespace operations_research
 
 %rename (activeVar) operations_research::RoutingModel::ActiveVar;
