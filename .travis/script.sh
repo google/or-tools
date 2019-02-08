@@ -53,6 +53,9 @@ if [ "${BUILDER}" == make ];then
     if [ "${LANGUAGE}" == python2 ] || [ "${LANGUAGE}"  == python3 ]; then
       make python --jobs=4
       make test_python --jobs=4
+    elif [ "${LANGUAGE}" == java ]; then
+      make java --jobs=4
+      make test_java --jobs=1
     else
       make "${LANGUAGE}" --jobs=4
       make test_"${LANGUAGE}" --jobs=4
