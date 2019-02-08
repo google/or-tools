@@ -28,8 +28,8 @@ public class TestRouting {
 
   private static final Logger logger = Logger.getLogger(TestRouting.class.getName());
 
-  static void testSimpleRouting(boolean enableGC) {
-    logger.info("testSimpleRouting (enable gc:" + enableGC + ")...");
+  static void testRoutingTransitCallback(boolean enableGC) {
+    logger.info("testRoutingTransitCallback (enable gc:" + enableGC + ")...");
     // Create Routing Index Manager
     RoutingIndexManager manager =
       new RoutingIndexManager(5/*location*/, 1/*vehicle*/, 0/*depot*/);
@@ -58,13 +58,49 @@ public class TestRouting {
             .build();
     // Solve the problem.
     Assignment solution = routing.solveWithParameters(searchParameters);
-    assert null != solution;
-    assert 5 == solution.objectiveValue();
-    logger.info("testSimpleRouting (enable gc:" + enableGC + ")...DONE");
+    if (null == solution) throw new AssertionError("null == solution");
+    if (8 != solution.objectiveValue()) throw new AssertionError("5 != objective");
+    logger.info("testRoutingTransitCallback (enable gc:" + enableGC + ")...DONE");
+  }
+
+  static void testRoutingUnaryTransitCallback(boolean enableGC) {
+    logger.info("testRoutingUnaryTransitCallback (enable gc:" + enableGC + ")...");
+    // Create Routing Index Manager
+    RoutingIndexManager manager =
+      new RoutingIndexManager(5/*location*/, 1/*vehicle*/, 0/*depot*/);
+    // Create Routing Model.
+    RoutingModel routing = new RoutingModel(manager);
+    // Define cost of each arc.
+    int transitCallbackIndex;
+    if (true) {
+      transitCallbackIndex = routing.registerUnaryTransitCallback(
+          (long fromIndex) -> {
+            // Convert from routing variable Index to user NodeIndex.
+            int fromNode = manager.indexToNode(fromIndex);
+            return abs(fromNode);
+          });
+    }
+    if (enableGC) {
+      System.gc();
+    }
+    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+    // Setting first solution heuristic.
+    RoutingSearchParameters searchParameters =
+        main.defaultRoutingSearchParameters()
+            .toBuilder()
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .build();
+    // Solve the problem.
+    Assignment solution = routing.solveWithParameters(searchParameters);
+    if (null == solution) throw new AssertionError("null == solution");
+    if (10 != solution.objectiveValue()) throw new AssertionError("5 != objective");
+    logger.info("testRoutingUnaryTransitCallback (enable gc:" + enableGC + ")...DONE");
   }
 
   public static void main(String[] args) throws Exception {
-    testSimpleRouting(/*enable_gc=*/false);
-    testSimpleRouting(/*enable_gc=*/true);
+    testRoutingTransitCallback(/*enable_gc=*/false);
+    testRoutingTransitCallback(/*enable_gc=*/true);
+    testRoutingUnaryTransitCallback(/*enable_gc=*/false);
+    testRoutingUnaryTransitCallback(/*enable_gc=*/true);
   }
 }
