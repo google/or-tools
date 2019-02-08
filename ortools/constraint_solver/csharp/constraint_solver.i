@@ -196,8 +196,7 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 // Rename rule on SearchLimit
 %rename (IsCrossed) operations_research::SearchLimit::crossed;
 
-// Rename rule on DisjunctiveConstraint.
-%rename (SequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
+// DisjunctiveConstraint.
 // Keep reference to delegate to avoid GC to collect them early
 %typemap(cscode) operations_research::DisjunctiveConstraint %{
   // Store list of delegates to avoid the GC to reclaim them.
@@ -210,6 +209,8 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
     return c;
   }
 %}
+// Rename rule on DisjunctiveConstraint.
+%rename (SequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
 
 // Generic rename rules.
 %rename (ToString) *::DebugString;

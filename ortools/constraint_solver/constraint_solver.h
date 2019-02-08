@@ -721,6 +721,7 @@ class Solver {
 
   typedef std::function<bool(int64)> IndexFilter1;
 
+#if !defined(SWIG)
   typedef std::function<IntVar*(int64)> Int64ToIntVar;
 
   typedef std::function<int64(Solver* solver, const std::vector<IntVar*>& vars,
@@ -728,6 +729,8 @@ class Solver {
       VariableIndexSelector;
 
   typedef std::function<int64(const IntVar* v, int64 id)> VariableValueSelector;
+#endif  // SWIG
+
   typedef std::function<bool(int64, int64, int64)> VariableValueComparator;
   typedef std::function<void(int64)> ObjectiveWatcher;
   typedef std::function<DecisionModification()> BranchSelector;
