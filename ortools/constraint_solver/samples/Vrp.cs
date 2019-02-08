@@ -105,7 +105,7 @@ public class Vrp {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    const int transitCallbackIndex = routing.RegisterTransitCallback(
+    int transitCallbackIndex = routing.RegisterTransitCallback(
       (long fromIndex, long toIndex) => {
         // Convert from routing variable Index to distance matrix NodeIndex.
         var fromNode = manager.IndexToNode(fromIndex);
