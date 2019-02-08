@@ -15,7 +15,9 @@ function installswig() {
 function installdotnetsdk(){
   # Installs for Ubuntu Trusty distro
   sudo apt-get update -qq
-  sudo apt-get install -yq apt-transport-https
+  # Need to upgrade to dpkg >= 1.17.5ubuntu5.8,
+  # which fixes https://bugs.launchpad.net/ubuntu/+source/dpkg/+bug/1730627
+  sudo apt-get install -yq apt-transport-https dpkg
   wget -q https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
   # Install dotnet sdk 2.1
