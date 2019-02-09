@@ -1,3 +1,23 @@
+cc_binary(
+    name = "constraint_programming_cp",
+    srcs = ["constraint_programming_cp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+    ],
+)
+
+cc_binary(
+    name = "costas_array_sat",
+    srcs = ["costas_array_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:random",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+    ],
+)
+
 cc_library(
     name = "cvrptw_lib",
     hdrs = ["cvrptw_lib.h"],
@@ -236,9 +256,27 @@ cc_binary(
 )
 
 cc_binary(
+    name = "knapsack",
+    srcs = ["knapsack.cc"],
+    deps = [
+        "//ortools/algorithms:knapsack_solver_lib",
+        "//ortools/base",
+    ],
+)
+
+cc_binary(
+    name = "linear_assignment_api",
+    srcs = ["linear_assignment_api.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:ebert_graph",
+        "//ortools/graph:linear_assignment",
+    ],
+)
+
+cc_binary(
     name = "linear_programming",
     srcs = ["linear_programming.cc"],
-    copts = ["-DUSE_GLOP"],
     deps = [
         "//ortools/base",
         "//ortools/linear_solver",
@@ -264,6 +302,39 @@ cc_binary(
         "//ortools/base:strings",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
+    ],
+)
+
+cc_binary(
+    name = "max_flow",
+    srcs = ["max_flow.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:max_flow",
+    ],
+)
+
+cc_binary(
+    name = "min_cost_flow",
+    srcs = ["min_cost_flow.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:min_cost_flow",
+    ],
+)
+
+cc_binary(
+    name = "mps_driver",
+    srcs = ["mps_driver.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:strings",
+        "//ortools/base:timer",
+        "//ortools/glop",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/lp_data:mps_reader",
+        "//ortools/util:proto_tools",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -307,6 +378,19 @@ cc_binary(
 )
 
 cc_binary(
+    name = "random_tsp",
+    srcs = ["random_tsp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:random",
+        "//ortools/base:strings",
+        "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:routing_flags",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_binary(
     name = "sat_runner",
     srcs = [
         "opb_reader.h",
@@ -340,34 +424,34 @@ cc_binary(
     ],
 )
 
-#cc_binary(
-#    name = "shift_minimization_sat",
-#    srcs = [
-#        "shift_minimization_sat.cc",
-#    ],
-#    deps = [
-#        "//ortools/base",
-#        "//ortools/base:file",
-#        "//ortools/base:strings",
-#        "//ortools/sat:cp_constraints",
-#        "//ortools/sat:integer",
-#        "//ortools/sat:integer_expr",
-#        "//ortools/sat:model",
-#        "//ortools/sat:optimization",
-#        "//ortools/sat:precedences",
-#        "//ortools/sat:sat_solver",
-#        "//ortools/util:bp_parser",
-#        "//ortools/base:filelineiter",
-#    ],
-#)
+cc_binary(
+    name = "shift_minimization_sat",
+    srcs = [
+        "shift_minimization_sat.cc",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:filelineiter",
+        "//ortools/base:strings",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+    ],
+)
+
+cc_binary(
+    name = "slitherlink_sat",
+    srcs = ["slitherlink_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+    ],
+)
 
 cc_binary(
     name = "solve",
     srcs = ["solve.cc"],
-    copts = [
-        "-DUSE_GLOP",
-        "-DUSE_BOP",
-    ],
     deps = [
         "//ortools/base",
         "//ortools/linear_solver",
@@ -388,9 +472,17 @@ cc_binary(
 )
 
 cc_binary(
+    name = "stigler_diet",
+    srcs = ["stigler_diet.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+    ],
+)
+
+cc_binary(
     name = "strawberry_fields_with_column_generation",
     srcs = ["strawberry_fields_with_column_generation.cc"],
-    copts = ["-DUSE_GLOP"],
     deps = [
         "//ortools/base",
         "//ortools/linear_solver",
@@ -406,6 +498,24 @@ cc_binary(
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
         "@com_google_protobuf_cc//:protobuf",
+    ],
+)
+
+cc_binary(
+    name = "variable_intervals_sat",
+    srcs = ["variable_intervals_sat.cc"],
+    deps = [
+        "//ortools/sat:cp_model",
+        "//ortools/util:time_limit",
+    ],
+)
+
+cc_binary(
+    name = "vrp",
+    srcs = ["vrp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:routing",
     ],
 )
 
