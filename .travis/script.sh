@@ -115,3 +115,8 @@ if [ "${BUILDER}" == cmake ];then
     cmake --build build --target test -- CTEST_OUTPUT_ON_FAILURE=1
   fi
 fi
+
+if [ "${BUILDER}" == bazel ]; then
+  bazel build --curses=no //...:all
+  bazel test -c opt --curses=no //...:all
+fi

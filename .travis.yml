@@ -3,7 +3,7 @@ language: cpp
 
 matrix:
   include:
-# Makefile builder
+    # Makefile builder
     - os: linux
       dist: trusty
       compiler: gcc
@@ -45,7 +45,7 @@ matrix:
       osx_image: xcode9.4
       compiler: clang
       env: BUILDER=make LANGUAGE=dotnet
-# CMake Build Generator
+    # CMake Build Generator
     - os: linux
       dist: trusty
       compiler: gcc
@@ -63,7 +63,18 @@ matrix:
       osx_image: xcode9.4
       compiler: clang
       env: BUILDER=cmake
-# Jobs too long
+    # Bazel builds and tests
+    - os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - sourceline: "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8"
+              key_url: "https://bazel.build/bazel-release.pub.gpg"
+          packages:
+            - bazel
+      env: BUILDER=bazel
+  # Jobs too long
   allow_failures:
     - os: osx
       osx_image: xcode9.4
