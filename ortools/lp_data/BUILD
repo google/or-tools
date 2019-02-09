@@ -42,7 +42,7 @@ cc_library(
         ":permutation",
         "//ortools/base",
         "//ortools/base:strings",
-        "//ortools/util:iterators",
+        "//ortools/graph:iterators",
         "//ortools/util:return_macros",
     ],
 )
@@ -56,6 +56,7 @@ cc_library(
         ":base",
         ":sparse_vector",
         "//ortools/base",
+        "//ortools/base:random",
     ],
 )
 
@@ -86,6 +87,7 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:random",
         "//ortools/base:strings",
         "//ortools/util:fp_utils",
         "//ortools/util:return_macros",
@@ -104,6 +106,9 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type_indexed_vector",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/glop:revised_simplex",
+        "//ortools/glop:status",
         "//ortools/util:fp_utils",
     ],
 )
@@ -127,7 +132,6 @@ cc_library(
         ":base",
         ":lp_print_utils",
         ":lp_utils",
-        ":matrix_scaler",
         ":matrix_utils",
         ":permutation",
         ":sparse",
@@ -136,7 +140,20 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:strings",
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/util:fp_utils",
+    ],
+)
+
+cc_library(
+    name = "lp_data_utils",
+    srcs = ["lp_data_utils.cc"],
+    hdrs = ["lp_data_utils.h"],
+    deps = [
+        ":base",
+        ":lp_data",
+        ":matrix_scaler",
+        "//ortools/glop:parameters_cc_proto",
     ],
 )
 
@@ -228,9 +245,10 @@ cc_library(
         ":lp_data",
         ":lp_print_utils",
         "//ortools/base",
+        "//ortools/base:callback",
         "//ortools/base:file",
         #        "//ortools/base:file:path",
-        "//ortools/base:filelinereader",
+        "//ortools/base:filelineiter",
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
@@ -272,5 +290,6 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:mutex",
+        "//ortools/glop:parameters_cc_proto",
     ],
 )

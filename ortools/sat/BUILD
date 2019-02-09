@@ -59,8 +59,38 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:map_util",
         "//ortools/base:strings",
+        "//ortools/port:proto_utils",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+    ],
+)
+
+cc_library(
+    name = "cp_model_expand",
+    srcs = ["cp_model_expand.cc"],
+    hdrs = ["cp_model_expand.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/util:saturated_arithmetic",
+    ],
+)
+
+cc_library(
+    name = "cp_model_lns",
+    srcs = ["cp_model_lns.cc"],
+    hdrs = [
+        "cp_model_lns.h",
+        "lns.h",
+    ],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base",
+        "//ortools/base:threadpool",
+        "//ortools/util:random_engine",
     ],
 )
 
@@ -71,24 +101,66 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":all_different",
+        ":circuit",
         ":cp_model_cc_proto",
         ":cp_model_checker",
+        ":cp_model_expand",
+        ":cp_model_lns",
         ":cp_model_presolve",
+        ":cp_model_search",
         ":cp_model_utils",
         ":cumulative",
         ":disjunctive",
         ":integer",
         ":intervals",
         ":linear_programming_constraint",
+        ":linear_relaxation",
         ":model",
         ":optimization",
         ":sat_solver",
         ":table",
         "//ortools/base",
         "//ortools/base:hash",
+        "//ortools/base:notification",
         "//ortools/base:stl_util",
         "//ortools/base:strings",
         "//ortools/graph:connectivity",
+    ],
+)
+
+cc_library(
+    name = "cp_model_loader",
+    srcs = ["cp_model_loader.cc"],
+    hdrs = ["cp_model_loader.h"],
+    deps = [
+        ":all_different",
+        ":circuit",
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":cumulative",
+        ":integer",
+        ":intervals",
+        ":model",
+        ":sat_base",
+        ":table",
+        "//ortools/base",
+        "//ortools/base:map_util",
+    ],
+)
+
+cc_library(
+    name = "cp_model_search",
+    srcs = ["cp_model_search.cc"],
+    hdrs = ["cp_model_search.h"],
+    deps = [
+        ":cp_model_utils",
+        ":integer",
+        ":integer_search",
+        ":model",
+        ":util",
+        "//ortools/base",
+        "//ortools/base:cleanup",
+        "//ortools/base:strings",
     ],
 )
 
@@ -100,7 +172,10 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
+        ":cp_model_loader",
+        ":cp_model_objective",
         ":cp_model_utils",
+        ":probing",
         ":simplification",
         "//ortools/base",
         "//ortools/base:hash",
@@ -114,12 +189,35 @@ cc_library(
 )
 
 cc_library(
+    name = "cp_model_objective",
+    srcs = ["cp_model_objective.cc"],
+    hdrs = ["cp_model_objective.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+    ],
+)
+
+cc_library(
     name = "model",
     hdrs = ["model.h"],
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:typeid",
+    ],
+)
+
+cc_library(
+    name = "restart",
+    srcs = ["restart.cc"],
+    hdrs = ["restart.h"],
+    deps = [
+        ":model",
+        ":sat_parameters_cc_proto",
+        "//ortools/base:strings",
+        "//ortools/util:bitset",
+        "//ortools/util:running_stat",
     ],
 )
 
@@ -152,7 +250,10 @@ cc_library(
         ":drat",
         ":model",
         ":pb_constraint",
+        ":restart",
+        ":util",
         ":sat_base",
+        ":sat_decision",
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
@@ -162,6 +263,7 @@ cc_library(
         "//ortools/base:random",
         "//ortools/base:stl_util",
         "//ortools/base:strings",
+        "//ortools/port:proto_utils",
         "//ortools/util:bitset",
         "//ortools/util:running_stat",
         "//ortools/util:saturated_arithmetic",
@@ -173,11 +275,29 @@ cc_library(
 )
 
 cc_library(
+    name = "sat_decision",
+    srcs = ["sat_decision.cc"],
+    hdrs = ["sat_decision.h"],
+    deps = [
+        ":model",
+        ":pb_constraint",
+        ":sat_base",
+        ":sat_parameters_cc_proto",
+        ":util",
+        "//ortools/base",
+        "//ortools/util:bitset",
+        "//ortools/util:integer_pq",
+        "//ortools/util:random_engine",
+    ],
+)
+
+cc_library(
     name = "clause",
     srcs = ["clause.cc"],
     hdrs = ["clause.h"],
     copts = [W_FLOAT_CONVERSION],
     deps = [
+        ":drat",
         ":sat_base",
         ":sat_parameters_cc_proto",
         "//ortools/base",
@@ -189,6 +309,7 @@ cc_library(
         "//ortools/base:span",
         "//ortools/base:stl_util",
         "//ortools/base:strings",
+        "//ortools/graph:strongly_connected_components",
         "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
@@ -212,7 +333,22 @@ cc_library(
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:random",
         "//ortools/base:stl_util",
-        "//ortools/base:strongly_connected_components",
+        "//ortools/graph:strongly_connected_components",
+    ],
+)
+
+cc_library(
+    name = "circuit",
+    srcs = ["circuit.cc"],
+    hdrs = ["circuit.h"],
+    deps = [
+        ":integer",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/util:rev",
     ],
 )
 
@@ -244,19 +380,6 @@ cc_library(
 )
 
 cc_library(
-    name = "no_cycle",
-    srcs = ["no_cycle.cc"],
-    hdrs = ["no_cycle.h"],
-    copts = [W_FLOAT_CONVERSION],
-    deps = [
-        ":model",
-        ":sat_base",
-        ":sat_solver",
-        "//ortools/base:stl_util",
-    ],
-)
-
-cc_library(
     name = "integer",
     srcs = ["integer.cc"],
     hdrs = ["integer.h"],
@@ -273,11 +396,24 @@ cc_library(
         "//ortools/base:span",
         "//ortools/base:stl_util",
         "//ortools/base:strings",
+        "//ortools/graph:iterators",
         "//ortools/util:bitset",
-        "//ortools/util:iterators",
         "//ortools/util:rev",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
+    ],
+)
+
+cc_library(
+    name = "integer_search",
+    srcs = ["integer_search.cc"],
+    hdrs = ["integer_search.h"],
+    deps = [
+        ":integer",
+        ":linear_programming_constraint",
+        ":sat_decision",
+        ":sat_solver",
+        ":util",
     ],
 )
 
@@ -304,6 +440,7 @@ cc_library(
     hdrs = ["precedences.h"],
     copts = [W_FLOAT_CONVERSION],
     deps = [
+        ":cp_constraints",
         ":integer",
         ":model",
         ":sat_base",
@@ -336,7 +473,7 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_solver",
-        "//ortools/base:strongly_connected_components",
+        "//ortools/graph:strongly_connected_components",
         "//ortools/util:sort",
     ],
 )
@@ -458,6 +595,19 @@ cc_library(
         "//ortools/graph",
         "//ortools/graph:io",
         "//ortools/graph:util",
+        "//ortools/port:proto_utils",
+    ],
+)
+
+cc_library(
+    name = "linear_relaxation",
+    srcs = ["linear_relaxation.cc"],
+    hdrs = ["linear_relaxation.h"],
+    deps = [
+        ":integer",
+        ":linear_programming_constraint",
+        ":model",
+        "//ortools/base:iterator_adaptors",
     ],
 )
 
@@ -505,11 +655,13 @@ cc_library(
         ":encoding",
         ":integer",
         ":integer_expr",
+        ":integer_search",
         ":model",
         ":sat_solver",
         ":util",
         "//ortools/base",
         "//ortools/base:strings",
+        "//ortools/linear_solver",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )
@@ -520,10 +672,13 @@ cc_library(
     hdrs = ["util.h"],
     copts = [W_FLOAT_CONVERSION],
     deps = [
+        ":model",
+        ":sat_base",
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:random",
         "//ortools/base:strings",
+        "//ortools/util:random_engine",
     ],
 )
 
@@ -558,19 +713,6 @@ cc_library(
 )
 
 cc_library(
-    name = "flow_costs",
-    srcs = ["flow_costs.cc"],
-    hdrs = ["flow_costs.h"],
-    copts = ["-DUSE_GLOP"],
-    deps = [
-        ":integer",
-        ":model",
-        ":sat_base",
-        "//ortools/linear_solver",
-    ],
-)
-
-cc_library(
     name = "encoding",
     srcs = ["encoding.cc"],
     hdrs = ["encoding.h"],
@@ -584,9 +726,30 @@ cc_library(
 )
 
 cc_library(
+    name = "probing",
+    srcs = ["probing.cc"],
+    hdrs = ["probing.h"],
+    deps = [
+        ":clause",
+        ":integer",
+        ":model",
+        ":sat_solver",
+        "//ortools/base:timer",
+    ],
+)
+
+cc_library(
     name = "drat",
-    srcs = ["drat.cc"],
-    hdrs = ["drat.h"],
+    srcs = [
+        "drat_checker.cc",
+        "drat_proof_handler.cc",
+        "drat_writer.cc",
+    ],
+    hdrs = [
+        "drat_checker.h",
+        "drat_proof_handler.h",
+        "drat_writer.h",
+    ],
     copts = [W_FLOAT_CONVERSION],
     deps = [
         ":model",
@@ -594,6 +757,10 @@ cc_library(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:hash",
+        "//ortools/base:memory",
+        "//ortools/base:stl_util",
         "//ortools/base:strings",
+        "//ortools/base:timer",
+        "//ortools/util:time_limit",
     ],
 )

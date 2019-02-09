@@ -10,17 +10,6 @@ cc_library(
 )
 
 cc_library(
-    name = "filelineiter",
-    hdrs = ["filelineiter.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:status",
-        "//ortools/base:strings",
-    ],
-)
-
-cc_library(
     name = "vector_map",
     hdrs = ["vector_map.h"],
     deps = ["//ortools/base:map_util"],
@@ -37,6 +26,16 @@ cc_library(
     srcs = ["bitset.cc"],
     hdrs = ["bitset.h"],
     deps = ["//ortools/base"],
+)
+
+cc_library(
+    name = "integer_pq",
+    hdrs = [
+        "integer_pq.h",
+    ],
+    deps = [
+        "//ortools/base",
+    ],
 )
 
 cc_library(
@@ -57,11 +56,6 @@ cc_library(
         "//ortools/base:file",
         "//ortools/base:status",
     ],
-)
-
-cc_library(
-    name = "iterators",
-    hdrs = ["iterators.h"],
 )
 
 cc_library(
@@ -177,6 +171,7 @@ cc_library(
     deps = [
         ":running_stat",
         "//ortools/base",
+        "//ortools/base:memory",
         "//ortools/base:strings",
         "//ortools/base:sysinfo",
         "//ortools/base:timer",
@@ -251,6 +246,16 @@ cc_library(
     ],
 )
 
+proto_library(
+    name = "optional_boolean_proto",
+    srcs = ["optional_boolean.proto"],
+)
+
+cc_proto_library(
+    name = "optional_boolean_cc_proto",
+    deps = [":optional_boolean_proto"],
+)
+
 cc_library(
     name = "functions_swig_helpers",
     hdrs = [
@@ -291,6 +296,15 @@ cc_library(
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:strings",
+    ],
+)
+
+cc_library(
+    name = "sigint",
+    srcs = ["sigint.cc"],
+    hdrs = ["sigint.h"],
+    deps = [
+        "//ortools/base",
     ],
 )
 
@@ -349,19 +363,6 @@ cc_library(
 #        "//ortools/base:file",
 #    ],
 #)
-
-cc_library(
-    name = "rcpsp_parser",
-    srcs = ["rcpsp_parser.cc"],
-    hdrs = ["rcpsp_parser.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":filelineiter",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:strings",
-    ],
-)
 
 cc_library(
     name = "sort",

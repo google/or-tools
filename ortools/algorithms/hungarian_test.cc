@@ -21,13 +21,13 @@ void GenericCheck(const int expected_assignment_size,
   EXPECT_EQ(expected_assignment_size, direct_assignment.size());
   EXPECT_EQ(expected_assignment_size, reverse_assignment.size());
   for (int i = 0; i < expected_assignment_size; ++i) {
-    EXPECT_EQ(FindOrDie(direct_assignment, expected_agents[i]),
+    EXPECT_EQ(gtl::FindOrDie(direct_assignment, expected_agents[i]),
               expected_tasks[i]);
-    EXPECT_EQ(FindOrDie(reverse_assignment, expected_tasks[i]),
+    EXPECT_EQ(gtl::FindOrDie(reverse_assignment, expected_tasks[i]),
               expected_agents[i]);
   }
   for (const auto& direct_iter : direct_assignment) {
-    EXPECT_EQ(FindOrDie(reverse_assignment, direct_iter.second),
+    EXPECT_EQ(gtl::FindOrDie(reverse_assignment, direct_iter.second),
               direct_iter.first)
         << direct_iter.first << " -> " << direct_iter.second;
   }

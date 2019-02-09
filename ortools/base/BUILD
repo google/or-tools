@@ -28,7 +28,6 @@ cc_library(
     ],
 )
 
-
 cc_library(
     name = "status",
     hdrs = [
@@ -61,6 +60,20 @@ cc_library(
 )
 
 cc_library(
+    name = "memory",
+    hdrs = [
+        "memory.h",
+    ],
+)
+
+cc_library(
+    name = "ptr_util",
+    hdrs = [
+        "ptr_util.h",
+    ],
+)
+
+cc_library(
     name = "strings",
     srcs = [
         "join.cc",
@@ -71,6 +84,7 @@ cc_library(
     ],
     hdrs = [
         "join.h",
+        "match.h",
         "numbers.h",
         "split.h",
         "string_view.h",
@@ -114,6 +128,17 @@ cc_library(
 )
 
 cc_library(
+    name = "filelineiter",
+    hdrs = ["filelineiter.h"],
+    deps = [
+        ":base",
+        ":file",
+        ":status",
+        ":strings",
+    ],
+)
+
+cc_library(
     name = "recordio",
     srcs = [
         "recordio.cc",
@@ -132,6 +157,19 @@ cc_library(
 )
 
 cc_library(
+    name = "protoutil",
+    hdrs = [
+        "protoutil.h",
+    ],
+    deps = [
+        ":status",
+        ":statusor",
+        ":timer",
+        "@com_google_protobuf_cc//:protobuf",
+    ],
+)
+
+cc_library(
     name = "callback",
     hdrs = [
         "callback.h",
@@ -142,20 +180,9 @@ cc_library(
 )
 
 cc_library(
-    name = "filelinereader",
-    srcs = [
-        "filelinereader.cc",
-    ],
+    name = "optional",
     hdrs = [
-        "filelinereader.h",
-    ],
-    deps = [
-        ":base",
-        ":callback",
-        ":file",
-        ":status",
-        ":strings",
-        "@com_google_protobuf_cc//:protobuf",
+        "optional.h",
     ],
 )
 
@@ -246,6 +273,13 @@ cc_library(
 )
 
 cc_library(
+    name = "canonical_errors",
+    hdrs = [
+        "canonical_errors.h",
+    ],
+)
+
+cc_library(
     name = "stl_util",
     hdrs = [
         "stl_util.h",
@@ -286,13 +320,9 @@ cc_library(
 )
 
 cc_library(
-    name = "strongly_connected_components",
-    hdrs = [
-        "strongly_connected_components.h",
-    ],
-    deps = [
-        ":base",
-    ],
+    name = "notification",
+    srcs = ["notification.cc"],
+    hdrs = ["notification.h"],
 )
 
 cc_library(

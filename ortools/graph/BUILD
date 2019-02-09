@@ -4,8 +4,8 @@ cc_library(
     name = "graph",
     hdrs = ["graph.h"],
     deps = [
+        ":iterators",
         "//ortools/base",
-        "//ortools/util:iterators",
     ],
 )
 
@@ -23,6 +23,7 @@ cc_library(
     srcs = ["util.cc"],
     hdrs = ["util.h"],
     deps = [
+        ":connected_components",
         ":graph",
         "//ortools/base:hash",
         "//ortools/base:map_util",
@@ -30,14 +31,19 @@ cc_library(
 )
 
 cc_library(
+    name = "iterators",
+    hdrs = ["iterators.h"],
+)
+
+cc_library(
     name = "io",
     hdrs = ["io.h"],
     deps = [
         ":graph",
+        "//ortools/base:filelineiter",
         "//ortools/base:status",
         "//ortools/base:statusor",
         "//ortools/base:strings",
-        "//ortools/util:filelineiter",
     ],
 )
 
@@ -197,7 +203,6 @@ cc_library(
     ],
 )
 
-
 #cc_library(
 #    name = "shortest_paths",
 #    srcs = ["shortest_paths.cc"],
@@ -243,6 +248,8 @@ cc_library(
         ":graph",
         ":graphs",
         "//ortools/base",
+        "//ortools/base:callback",
+        "//ortools/base:memory",
         "//ortools/util:stats",
         "//ortools/util:zvector",
     ],
@@ -287,6 +294,31 @@ cc_library(
         #        "//ortools/testing/production_stub/public:gunit_prod",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
+    ],
+)
+
+cc_library(
+    name = "connected_components",
+    srcs = [
+        "connected_components.cc",
+    ],
+    hdrs = [
+        "connected_components.h",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:ptr_util",
+    ],
+)
+
+cc_library(
+    name = "strongly_connected_components",
+    hdrs = [
+        "strongly_connected_components.h",
+    ],
+    deps = [
+        "//ortools/base",
     ],
 )
 

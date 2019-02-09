@@ -31,6 +31,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:mutex",
         #        "//ortools/glop:lp_solver",
         "//ortools/glop",
         "//ortools/lp_data:base",

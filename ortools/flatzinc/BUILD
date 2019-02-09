@@ -20,7 +20,7 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:strings",
-        "//ortools/util:iterators",
+        "//ortools/graph:iterators",
         "//ortools/util:string_array",
     ],
 )
@@ -51,6 +51,7 @@ cc_library(
         ":model",
         "//ortools/base",
         "//ortools/base:map_util",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/base:strings",
         "//ortools/util:string_array",
@@ -269,8 +270,9 @@ cc_library(
         ":model",
         ":solver",
         "//ortools/base",
-        "//ortools/base:strings",
         "//ortools/base:map_util",
+        "//ortools/base:strings",
+        "//ortools/base:threadpool",
         "//ortools/sat:cp_constraints",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
@@ -284,8 +286,10 @@ cc_library(
         "//ortools/sat:optimization",
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
+        "//ortools/util:sigint",
     ],
 )
+
 cc_binary(
     name = "fz",
     srcs = ["fz.cc"],

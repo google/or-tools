@@ -18,3 +18,26 @@ cc_library(
         "//ortools/base:sysinfo",
     ],
 )
+
+cc_library(
+    name = "file",
+    hdrs = [
+        "file.h",
+    ],
+    deps = [
+        "//ortools/base:status",
+        "//ortools/base:strings",
+    ],
+)
+
+cc_library(
+    name = "proto_utils",
+    hdrs = [
+        "proto_utils.h",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:strings",
+        "@com_google_protobuf_cc//:protobuf",
+    ],
+)

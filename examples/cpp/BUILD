@@ -370,6 +370,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:strings",
+        "//ortools/data:rcpsp_parser",
         "//ortools/sat:cp_constraints",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:cumulative",
@@ -382,7 +383,6 @@ cc_binary(
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
         "//ortools/util:filelineiter",
-        "//ortools/util:rcpsp_parser",
     ],
 )
 
