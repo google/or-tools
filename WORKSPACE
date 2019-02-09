@@ -9,7 +9,6 @@ http_archive(
     urls = ["https://github.com/gflags/gflags/archive/v2.2.2.zip"],
 )
 
-
 #Import the glog files.
 git_repository(
     name = "com_github_glog_glog",
