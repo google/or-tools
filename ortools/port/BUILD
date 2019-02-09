@@ -21,10 +21,14 @@ cc_library(
 
 cc_library(
     name = "file",
+    srcs = [
+        "file_nonport.cc",
+    ],
     hdrs = [
         "file.h",
     ],
     deps = [
+        "//ortools/base:file",
         "//ortools/base:status",
         "//ortools/base:strings",
     ],

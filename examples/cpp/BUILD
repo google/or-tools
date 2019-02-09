@@ -1,26 +1,5 @@
-cc_binary(
-    name = "costas_array",
-    srcs = ["costas_array.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:random",
-        "//ortools/constraint_solver:cp",
-    ],
-)
-
-cc_binary(
-    name = "cryptarithm",
-    srcs = ["cryptarithm.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/constraint_solver:cp",
-        "@com_google_protobuf_cc//:protobuf",
-    ],
-)
-
 cc_library(
     name = "cvrptw_lib",
-    srcs = ["cvrptw_lib.cc"],
     hdrs = ["cvrptw_lib.h"],
     deps = [
         "//ortools/base",
@@ -118,14 +97,13 @@ cc_library(
 
 cc_library(
     name = "parse_dimacs_assignment",
-    srcs = ["parse_dimacs_assignment.cc"],
     hdrs = ["parse_dimacs_assignment.h"],
     deps = [
         "//ortools/base",
         "//ortools/base:callback",
+        "//ortools/base:filelineiter",
         "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
-        "//ortools/util:filelineiter",
     ],
 )
 
@@ -168,7 +146,6 @@ cc_binary(
 
 cc_library(
     name = "fap_parser",
-    srcs = ["fap_parser.cc"],
     hdrs = ["fap_parser.h"],
     deps = [
         "//ortools/base",
@@ -181,7 +158,6 @@ cc_library(
 
 cc_library(
     name = "fap_model_printer",
-    srcs = ["fap_model_printer.cc"],
     hdrs = ["fap_model_printer.h"],
     deps = [
         ":fap_parser",
@@ -193,7 +169,6 @@ cc_library(
 
 cc_library(
     name = "fap_utilities",
-    srcs = ["fap_utilities.cc"],
     hdrs = ["fap_utilities.h"],
     deps = [
         ":fap_parser",
@@ -217,11 +192,13 @@ cc_binary(
 )
 
 cc_binary(
-    name = "golomb",
-    srcs = ["golomb.cc"],
+    name = "golomb_sat",
+    srcs = ["golomb_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:cp",
+        "//ortools/base:strings",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
     ],
 )
 
@@ -234,65 +211,19 @@ cc_binary(
     ],
 )
 
-cc_library(
-    name = "jobshop_reader",
-    hdrs = ["jobshop.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:strings",
-        "//ortools/util:filelineiter",
-    ],
-)
-
-cc_library(
-    name = "flexible_jobshop_reader",
-    hdrs = ["flexible_jobshop.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:strings",
-        "//ortools/util:filelineiter",
-        "//ortools/util:string_array",
-    ],
-)
-
-cc_binary(
-    name = "flexible_jobshop",
-    srcs = [
-        "flexible_jobshop.cc",
-    ],
-    deps = [
-        ":flexible_jobshop_reader",
-        "//ortools/base",
-        "//ortools/base:strings",
-        "//ortools/constraint_solver:cp",
-    ],
-)
-
-cc_binary(
-    name = "jobshop",
-    srcs = [
-        "jobshop.cc",
-    ],
-    deps = [
-        ":jobshop_reader",
-        "//ortools/base",
-        "//ortools/base:strings",
-        "//ortools/constraint_solver:cp",
-    ],
-)
-
 cc_binary(
     name = "jobshop_sat",
     srcs = [
         "jobshop_sat.cc",
     ],
     deps = [
-        ":flexible_jobshop_reader",
-        ":jobshop_reader",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:strings",
         "//ortools/base:timer",
+        "//ortools/data:jobshop_scheduling_cc_proto",
+        "//ortools/data:jobshop_scheduling_parser",
+        "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:disjunctive",
         "//ortools/sat:integer",
@@ -326,63 +257,29 @@ cc_binary(
 )
 
 cc_binary(
-    name = "ls_api",
-    srcs = ["ls_api.cc"],
+    name = "magic_square_sat",
+    srcs = ["magic_square_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
-        "//ortools/base:random",
-        "//ortools/base:stl_util",
-        "//ortools/constraint_solver:cp",
-    ],
-)
-
-cc_binary(
-    name = "magic_square",
-    srcs = ["magic_square.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/constraint_solver:cp",
-    ],
-)
-
-cc_binary(
-    name = "network_routing",
-    srcs = ["network_routing.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
-        "//ortools/base:random",
-        "//ortools/constraint_solver:cp",
-        "//ortools/graph:shortestpaths",
-        "//ortools/util:tuple_set",
-    ],
-)
-
-cc_binary(
-    name = "rcpsp_sat",
-    srcs = [
-        "rcpsp_sat.cc",
-    ],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
         "//ortools/base:strings",
-        "//ortools/data:rcpsp_parser",
-        "//ortools/sat:cp_constraints",
-        "//ortools/sat:cp_model_solver",
-        "//ortools/sat:cumulative",
-        "//ortools/sat:disjunctive",
-        "//ortools/sat:integer",
-        "//ortools/sat:integer_expr",
-        "//ortools/sat:intervals",
+        "//ortools/sat:cp_model",
         "//ortools/sat:model",
-        "//ortools/sat:optimization",
-        "//ortools/sat:precedences",
-        "//ortools/sat:sat_solver",
-        "//ortools/util:filelineiter",
+    ],
+)
+
+cc_binary(
+    name = "network_routing_sat",
+    srcs = ["network_routing_sat.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/base:random",
+        "//ortools/base:strings",
+        "//ortools/graph:shortestpaths",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "//ortools/util:tuple_set",
     ],
 )
 
@@ -420,6 +317,7 @@ cc_binary(
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:filelineiter",
         "//ortools/base:random",
         "//ortools/base:status",
         "//ortools/base:strings",
@@ -436,7 +334,7 @@ cc_binary(
         "//ortools/sat:sat_solver",
         "//ortools/sat:simplification",
         "//ortools/sat:symmetry",
-        "//ortools/util:filelineiter",
+        "//ortools/util:sigint",
         "//ortools/util:time_limit",
         "@com_google_protobuf_cc//:protobuf",
     ],
@@ -459,7 +357,7 @@ cc_binary(
 #        "//ortools/sat:precedences",
 #        "//ortools/sat:sat_solver",
 #        "//ortools/util:bp_parser",
-#        "//ortools/util:filelineiter",
+#        "//ortools/base:filelineiter",
 #    ],
 #)
 
@@ -479,11 +377,13 @@ cc_binary(
 )
 
 cc_binary(
-    name = "sports_scheduling",
-    srcs = ["sports_scheduling.cc"],
+    name = "sports_scheduling_sat",
+    srcs = ["sports_scheduling_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:cp",
+        "//ortools/base:strings",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
     ],
 )
 
@@ -517,7 +417,9 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:filelineiter",
         "//ortools/base:strings",
+        "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:disjunctive",
         "//ortools/sat:integer",
@@ -527,7 +429,6 @@ cc_binary(
         "//ortools/sat:optimization",
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
-        "//ortools/util:filelineiter",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )

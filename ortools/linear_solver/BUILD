@@ -25,16 +25,23 @@ cc_library(
         "linear_solver.cc",
         "model_exporter.cc",
         "model_validator.cc",
+
+        # By default include GLOP interface.
+        "glop_interface.cc",
+        "glop_utils.cc",
     ],
     hdrs = [
         "linear_expr.h",
         "linear_solver.h",
         "model_exporter.h",
         "model_validator.h",
+
+        # By default include GLOP interface.
+        "glop_interface.cc",
+        "glop_utils.h",
     ],
     copts = [
         "-DUSE_GLOP",
-        "-DUSE_BOP",
     ],
     deps = [
         ":linear_solver_cc_proto",
@@ -49,6 +56,7 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/base:strings",
         "//ortools/base:timer",
+        "//ortools/glop",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/port:file",
         "//ortools/port:proto_utils",

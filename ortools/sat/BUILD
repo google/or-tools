@@ -48,6 +48,19 @@ cc_library(
 )
 
 cc_library(
+    name = "cp_model",
+    srcs = ["cp_model.cc"],
+    hdrs = ["cp_model.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_solver",
+        ":model",
+        "//ortools/base:span",
+        "//ortools/util:sorted_interval_list",
+    ],
+)
+
+cc_library(
     name = "cp_model_checker",
     srcs = ["cp_model_checker.cc"],
     hdrs = ["cp_model_checker.h"],
