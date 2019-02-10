@@ -2,7 +2,7 @@
 
 #include "ortools/algorithms/hungarian.h"
 
-#include <unordered_map>
+#include "absl/container/flat_hash_map.h"
 #include "gtest/gtest.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
@@ -15,19 +15,19 @@ namespace operations_research {
 // result as well as whether the result is the expected one.
 
 void GenericCheck(const int expected_assignment_size,
-                  const std::unordered_map<int, int>& direct_assignment,
-                  const std::unordered_map<int, int>& reverse_assignment,
+                  const absl::flat_hash_map<int, int>& direct_assignment,
+                  const absl::flat_hash_map<int, int>& reverse_assignment,
                   const int expected_agents[], const int expected_tasks[]) {
   EXPECT_EQ(expected_assignment_size, direct_assignment.size());
   EXPECT_EQ(expected_assignment_size, reverse_assignment.size());
   for (int i = 0; i < expected_assignment_size; ++i) {
-    EXPECT_EQ(FindOrDie(direct_assignment, expected_agents[i]),
+    EXPECT_EQ(gtl::FindOrDie(direct_assignment, expected_agents[i]),
               expected_tasks[i]);
-    EXPECT_EQ(FindOrDie(reverse_assignment, expected_tasks[i]),
+    EXPECT_EQ(gtl::FindOrDie(reverse_assignment, expected_tasks[i]),
               expected_agents[i]);
   }
   for (const auto& direct_iter : direct_assignment) {
-    EXPECT_EQ(FindOrDie(reverse_assignment, direct_iter.second),
+    EXPECT_EQ(gtl::FindOrDie(reverse_assignment, direct_iter.second),
               direct_iter.first)
         << direct_iter.first << " -> " << direct_iter.second;
   }
@@ -36,8 +36,8 @@ void GenericCheck(const int expected_assignment_size,
 void TestMinimization(const std::vector<std::vector<double> >& cost,
                       const int expected_assignment_size,
                       const int expected_agents[], const int expected_tasks[]) {
-  std::unordered_map<int, int> direct_assignment;
-  std::unordered_map<int, int> reverse_assignment;
+  absl::flat_hash_map<int, int> direct_assignment;
+  absl::flat_hash_map<int, int> reverse_assignment;
   MinimizeLinearAssignment(cost, &direct_assignment, &reverse_assignment);
   SCOPED_TRACE("Minimization");
   GenericCheck(expected_assignment_size, direct_assignment, reverse_assignment,
@@ -47,8 +47,8 @@ void TestMinimization(const std::vector<std::vector<double> >& cost,
 void TestMaximization(const std::vector<std::vector<double> >& cost,
                       const int expected_assignment_size,
                       const int expected_agents[], const int expected_tasks[]) {
-  std::unordered_map<int, int> direct_assignment;
-  std::unordered_map<int, int> reverse_assignment;
+  absl::flat_hash_map<int, int> direct_assignment;
+  absl::flat_hash_map<int, int> reverse_assignment;
   MaximizeLinearAssignment(cost, &direct_assignment, &reverse_assignment);
   SCOPED_TRACE("Maximization");
   GenericCheck(expected_assignment_size, direct_assignment, reverse_assignment,

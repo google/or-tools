@@ -387,7 +387,7 @@ void PresolveContext::FullyEncodeVariable(int var) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
         const int lit = NewBoolVar();
         AddImplyInDomain(lit, var, Domain(v));
-        AddImplyInDomain(NegatedRef(lit), var, Domain(v).Complement());
+        // AddImplyInDomain(NegatedRef(lit), var, Domain(v).Complement());
         expanded_variables[var][v] = lit;
       }
     }
@@ -2326,12 +2326,14 @@ bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("automaton: reduce variable domains");
   }
 
+  const int true_literal = context->GetOrCreateConstantVar(1);
+
   // Encode reachable states for each time point.
   std::vector<absl::flat_hash_map<int64, int>> state_literals(n + 1);
   for (int time = 0; time < n; ++time) {
     if (reachable_states[time].size() == 1) {
       const int64 state = *reachable_states[time].begin();
-      state_literals[time][state] = context->GetOrCreateConstantVar(1);
+      state_literals[time][state] = true_literal;
     } else if (reachable_states[time].size() == 2) {
       const int lit = context->NewBoolVar();
       auto it = reachable_states[time].begin();
@@ -2345,6 +2347,7 @@ bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
           context->working_model->add_constraints()->mutable_bool_or();
       BoolArgumentProto* const at_most_one =
           context->working_model->add_constraints()->mutable_at_most_one();
+      
       for (const int64 state : reachable_states[time]) {
         const int lit = context->NewBoolVar();
         state_literals[time][state] = lit;
@@ -2360,8 +2363,12 @@ bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Encode each transition.
-  for (int time = 0; time + 1 < n; ++time) {
-    absl::flat_hash_map<int, int> num_incident_arcs;
+  for (int time = 0; time < n; ++time) {
+    BoolArgumentProto* const bool_or =
+        context->working_model->add_constraints()->mutable_bool_or();
+    BoolArgumentProto* const at_most_one =
+        context->working_model->add_constraints()->mutable_at_most_one();
+    
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
       const int64 tail = proto.transition_tail(t);
       const int64 label = proto.transition_label(t);
@@ -2370,65 +2377,22 @@ bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
       if (!gtl::ContainsKey(reachable_states[time], tail)) continue;
       if (!context->DomainContains(vars[time], label)) continue;
       if (!gtl::ContainsKey(reachable_states[time + 1], head)) continue;
-      num_incident_arcs[head]++;
-    }
 
-    absl::flat_hash_map<int, std::vector<int>> heads_per_state_lit;
-    for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64 tail = proto.transition_tail(t);
-      const int64 label = proto.transition_label(t);
-      const int64 head = proto.transition_head(t);
-
-      if (!gtl::ContainsKey(reachable_states[time], tail)) continue;
-      if (!context->DomainContains(vars[time], label)) continue;
-      if (!gtl::ContainsKey(reachable_states[time + 1], head)) continue;
-
-      const int next_lit = state_literals[time + 1][head];
+      CHECK(gtl::ContainsKey(state_literals[time], tail));
+      if (time != n - 1) {
+        CHECK(gtl::ContainsKey(state_literals[time + 1], head));
+      }
       const int tail_lit = state_literals[time][tail];
       const int label_lit = context->expanded_variables[vars[time]][label];
-      const bool unique = num_incident_arcs[head] == 1;
-      const int head_lit = unique ? next_lit : context->NewBoolVar();
-      if (!unique) {
-        heads_per_state_lit[next_lit].push_back(head_lit);
-      }
+      const int head_lit =
+          time == n - 1 ? true_literal : state_literals[time + 1][head];
+      const int transition_lit = context->NewBoolVar();
 
-      context->AddImplication({tail_lit, label_lit}, head_lit);
-      context->AddImplication(head_lit, {tail_lit, label_lit});
-    }
+      context->AddImplication(transition_lit, {tail_lit, label_lit, head_lit});
+      context->AddImplication({tail_lit, label_lit, head_lit}, transition_lit);
 
-    for (const auto& it : heads_per_state_lit) {
-      BoolArgumentProto* const bool_or =
-          context->working_model->add_constraints()->mutable_bool_or();
-      bool_or->add_literals(NegatedRef(it.first));
-      for (const int lit : it.second) {
-        bool_or->add_literals(lit);
-        context->AddImplication(lit, it.first);
-      }
-    }
-  }
-
-  {  // Last transition to a final state.
-    const int last = n - 1;
-    BoolArgumentProto* const reach_final_state =
-        context->working_model->add_constraints()->mutable_bool_or();
-
-    for (int t = 0; t < proto.transition_tail_size(); ++t) {
-      const int64 tail = proto.transition_tail(t);
-      const int64 label = proto.transition_label(t);
-      const int64 head = proto.transition_head(t);
-
-      if (!gtl::ContainsKey(reachable_states[last], tail)) continue;
-      if (!context->DomainContains(vars[last], label)) continue;
-      if (!gtl::ContainsKey(reachable_states[last + 1], head)) continue;
-
-      const int tail_lit = state_literals[last][tail];
-      const int head_lit = context->NewBoolVar();
-      const int label_lit = context->expanded_variables[vars[last]][label];
-
-      context->AddImplication({tail_lit, label_lit}, head_lit);
-      context->AddImplication(head_lit, {tail_lit, label_lit});
-
-      reach_final_state->add_literals(head_lit);
+      bool_or->add_literals(transition_lit);
+      at_most_one->add_literals(transition_lit);
     }
   }
 
@@ -3208,8 +3172,8 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
       return PresolveCumulative(ct, context);
     case ConstraintProto::ConstraintCase::kCircuit:
       return PresolveCircuit(ct, context);
-//    case ConstraintProto::ConstraintCase::kAutomaton:
-//      return PresolveAutomaton(ct, context);
+   case ConstraintProto::ConstraintCase::kAutomaton:
+     return PresolveAutomaton(ct, context);
     default:
       return false;
   }

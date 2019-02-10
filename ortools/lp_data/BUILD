@@ -41,8 +41,9 @@ cc_library(
         ":base",
         ":permutation",
         "//ortools/base",
-        "//ortools/base:strings",
-        "//ortools/util:iterators",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "//ortools/graph:iterators",
         "//ortools/util:return_macros",
     ],
 )
@@ -56,6 +57,7 @@ cc_library(
         ":base",
         ":sparse_vector",
         "//ortools/base",
+        "//ortools/base:random",
     ],
 )
 
@@ -86,7 +88,8 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
-        "//ortools/base:strings",
+        "//ortools/base:random",
+        "@com_google_absl//absl/strings",
         "//ortools/util:fp_utils",
         "//ortools/util:return_macros",
     ],
@@ -104,6 +107,9 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type_indexed_vector",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/glop:revised_simplex",
+        "//ortools/glop:status",
         "//ortools/util:fp_utils",
     ],
 )
@@ -127,7 +133,6 @@ cc_library(
         ":base",
         ":lp_print_utils",
         ":lp_utils",
-        ":matrix_scaler",
         ":matrix_utils",
         ":permutation",
         ":sparse",
@@ -135,8 +140,23 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/strings",
+        "//ortools/glop:parameters_cc_proto",
         "//ortools/util:fp_utils",
+    ],
+)
+
+cc_library(
+    name = "lp_data_utils",
+    srcs = ["lp_data_utils.cc"],
+    hdrs = ["lp_data_utils.h"],
+    deps = [
+        ":base",
+        ":lp_data",
+        ":matrix_scaler",
+        "//ortools/glop:parameters_cc_proto",
     ],
 )
 
@@ -176,7 +196,7 @@ cc_library(
 #        ":base",
 #        ":lp_data",
 #        "//ortools/base",
-#        "//ortools/base:strings",
+#        "@com_google_absl//absl/strings",
 #        "//ortools/util/regexp/re2",
 #    ],
 #)
@@ -200,7 +220,8 @@ cc_library(
     deps = [
         ":base",
         "//ortools/base",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "//ortools/util:rational_approximation",
     ],
 )
@@ -229,17 +250,13 @@ cc_library(
         ":lp_print_utils",
         "//ortools/base",
         "//ortools/base:file",
-        #        "//ortools/base:file:path",
-        "//ortools/base:filelinereader",
+        "//ortools/base:filelineiter",
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
         "//ortools/base:status",
-        "//ortools/base:strings",
-        #        "//ortools/file/localfile",
-        #        "//ortools/file/memfile",
-        #        "//ortools/file/zipfile",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -271,6 +288,7 @@ cc_library(
         "//ortools/algorithms:dynamic_partition",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:mutex",
+        "@com_google_absl//absl/synchronization",
+        "//ortools/glop:parameters_cc_proto",
     ],
 )

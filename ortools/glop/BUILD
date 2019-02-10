@@ -1,4 +1,176 @@
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Floating-point code in this directory must not be compiled with
+# dangerous optimizations. For example do not assume that FP expressions
+# are associative. This is what -fno-fast-math is for.
+SAFE_FP_CODE = ["-fno-fast-math"]
+
+# Revised Simplex LP solver.
+
+cc_library(
+    name = "revised_simplex",
+    srcs = ["revised_simplex.cc"],
+    hdrs = ["revised_simplex.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":dual_edge_norms",
+        ":entering_variable",
+        ":initial_basis",
+        ":parameters_cc_proto",
+        ":primal_edge_norms",
+        ":reduced_costs",
+        ":status",
+        ":update_row",
+        ":variable_values",
+        ":variables_info",
+        "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_print_utils",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:matrix_utils",
+        "//ortools/lp_data:sparse_row",
+        "//ortools/util:fp_utils",
+        "//ortools/util:random_engine",
+        "//ortools/util:time_limit",
+    ],
+)
+
+# Update row.
+
+cc_library(
+    name = "update_row",
+    srcs = ["update_row.cc"],
+    hdrs = ["update_row.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":parameters_cc_proto",
+        ":variables_info",
+        "//ortools/base",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/util:stats",
+    ],
+)
+
+# Variables info.
+
+cc_library(
+    name = "variables_info",
+    srcs = ["variables_info.cc"],
+    hdrs = ["variables_info.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        "//ortools/base",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:sparse",
+    ],
+)
+
+# LU factorization of sparse matrices.
+
+cc_library(
+    name = "lu_factorization",
+    srcs = ["lu_factorization.cc"],
+    hdrs = ["lu_factorization.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":markowitz",
+        ":parameters_cc_proto",
+        ":status",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:stats",
+    ],
+)
+
+cc_library(
+    name = "markowitz",
+    srcs = ["markowitz.cc"],
+    hdrs = ["markowitz.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":parameters_cc_proto",
+        ":status",
+        "//ortools/base",
+        "@com_google_absl//absl/container:inlined_vector",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:stats",
+    ],
+)
+
+# Basis representations (Eta and LU).
+
+cc_library(
+    name = "basis_representation",
+    srcs = ["basis_representation.cc"],
+    hdrs = ["basis_representation.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":lu_factorization",
+        ":parameters_cc_proto",
+        ":rank_one_update",
+        ":status",
+        "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:sparse",
+        "//ortools/util:stats",
+    ],
+)
+
+cc_library(
+    name = "rank_one_update",
+    hdrs = ["rank_one_update.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":status",
+        "//ortools/base",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:sparse",
+    ],
+)
+
+# Initial basis.
+
+cc_library(
+    name = "initial_basis",
+    srcs = ["initial_basis.cc"],
+    hdrs = ["initial_basis.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":markowitz",
+        "//ortools/base",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:sparse",
+    ],
+)
+
+# Function status.
+
+cc_library(
+    name = "status",
+    srcs = ["status.cc"],
+    hdrs = ["status.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        "//ortools/base",
+    ],
+)
+
+# Glop parameters.
 
 cc_proto_library(
     name = "parameters_cc_proto",
@@ -10,75 +182,152 @@ proto_library(
     srcs = ["parameters.proto"],
 )
 
-SAFE_FP_CODE = ["-fno-fast-math"]
+# Dual edge norms.
 
-# GLOP library with minimal external dependencies for easier use on
-# portable targets (e.g., Android, iOS).
-# We define a separate target to:
-#  * Avoid select(), which doesn't work with blaze query
-#  * Define ANDROID_JNI, which is necessary for portable build
 cc_library(
-    name = "glop",
-    srcs = [
-        "basis_representation.cc",
-        "dual_edge_norms.cc",
-        "entering_variable.cc",
-        "initial_basis.cc",
-        "lp_solver.cc",
-        "lu_factorization.cc",
-        "markowitz.cc",
-        "preprocessor.cc",
-        "primal_edge_norms.cc",
-        "reduced_costs.cc",
-        "revised_simplex.cc",
-        "status.cc",
-        "update_row.cc",
-        "variable_values.cc",
-        "variables_info.cc",
-    ],
-    hdrs = [
-        "basis_representation.h",
-        "dual_edge_norms.h",
-        "entering_variable.h",
-        "initial_basis.h",
-        "lp_solver.h",
-        "lu_factorization.h",
-        "markowitz.h",
-        "preprocessor.h",
-        "primal_edge_norms.h",
-        "rank_one_update.h",
-        "reduced_costs.h",
-        "revised_simplex.h",
-        "status.h",
-        "update_row.h",
-        "variable_values.h",
-        "variables_info.h",
-    ],
+    name = "dual_edge_norms",
+    srcs = ["dual_edge_norms.cc"],
+    hdrs = ["dual_edge_norms.h"],
     copts = SAFE_FP_CODE,
-    visibility = ["//visibility:public"],
     deps = [
+        ":basis_representation",
         ":parameters_cc_proto",
         "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/base:random",
-        "//ortools/base:stl_util",
-        "//ortools/base:strings",
-        "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
-        "//ortools/lp_data:lp_print_utils",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/util:stats",
+    ],
+)
+
+# Primal edge norms.
+
+cc_library(
+    name = "primal_edge_norms",
+    srcs = ["primal_edge_norms.cc"],
+    hdrs = ["primal_edge_norms.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":parameters_cc_proto",
+        ":update_row",
+        ":variables_info",
+        "//ortools/base",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/util:stats",
+    ],
+)
+
+cc_library(
+    name = "reduced_costs",
+    srcs = ["reduced_costs.cc"],
+    hdrs = ["reduced_costs.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":parameters_cc_proto",
+        ":primal_edge_norms",
+        ":status",
+        ":update_row",
+        ":variables_info",
+        "//ortools/base",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/util:random_engine",
+        "//ortools/util:stats",
+        "//ortools/base:random",
+    ],
+)
+
+cc_library(
+    name = "variable_values",
+    srcs = ["variable_values.cc"],
+    hdrs = ["variable_values.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":variables_info",
+        "//ortools/base",
+        "//ortools/graph:iterators",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/util:stats",
+    ],
+)
+
+# Primal pricing rules.
+
+cc_library(
+    name = "entering_variable",
+    srcs = ["entering_variable.cc"],
+    hdrs = ["entering_variable.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":basis_representation",
+        ":parameters_cc_proto",
+        ":primal_edge_norms",
+        ":reduced_costs",
+        ":status",
+        ":update_row",
+        ":variables_info",
+        "//ortools/base",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/port:proto_utils",
+        "//ortools/util:bitset",
+        "//ortools/base:random",
+        "//ortools/util:random_engine",
+        "//ortools/util:stats",
+    ],
+)
+
+# Preprocessor.
+
+cc_library(
+    name = "preprocessor",
+    srcs = ["preprocessor.cc"],
+    hdrs = ["preprocessor.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":parameters_cc_proto",
+        ":revised_simplex",
+        ":status",
+        "//ortools/base",
+        "@com_google_absl//absl/strings:str_format",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_data_utils",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:matrix_scaler",
         "//ortools/lp_data:matrix_utils",
+    ],
+)
+
+# LP Solver.
+
+cc_library(
+    name = "lp_solver",
+    srcs = ["lp_solver.cc"],
+    hdrs = ["lp_solver.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":parameters_cc_proto",
+        ":preprocessor",
+        ":status",
+        "//ortools/base",
+        "@com_google_absl//absl/strings:strings",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings:str_format",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:proto_utils",
-        "//ortools/lp_data:sparse",
-        "//ortools/lp_data:sparse_row",
-        "//ortools/util:bitset",
-        "//ortools/util:file_util",
         "//ortools/util:fp_utils",
-        "//ortools/util:iterators",
-        "//ortools/util:random_engine",
-        "//ortools/util:stats",
         "//ortools/util:time_limit",
+        "//ortools/util:file_util",
     ],
 )

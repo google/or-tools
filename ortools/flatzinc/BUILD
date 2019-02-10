@@ -19,21 +19,14 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
-        "//ortools/base:strings",
-        "//ortools/util:iterators",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "//ortools/graph:iterators",
         "//ortools/util:string_array",
     ],
 )
-
-#cc_test(
-#    name = "model_test",
-#    size = "small",
-#    srcs = ["model_test.cc"],
-#    deps = [
-#        ":model",
-#        "//@gtest//:main",
-#    ],
-#)
 
 cc_library(
     name = "parser_yacc_lib",
@@ -44,15 +37,15 @@ cc_library(
         "parser_util.h",
     ],
     copts = [
-        #        "-Xclang-only=-Wno-implicit-fallthrough",
         "$(STACK_FRAME_UNLIMITED)",  # parser.tab.cc
     ],
     deps = [
         ":model",
         "//ortools/base",
         "//ortools/base:map_util",
+        "//ortools/base:mathutil",
         "//ortools/base:stl_util",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
         "//ortools/util:string_array",
     ],
 )
@@ -61,12 +54,13 @@ cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
     copts = [
-        #        "-Xclang-only=-Wno-implicit-fallthrough",
         "-Wno-unused-function",  # parser.yy.cc
     ],
     deps = [
         ":parser_yacc_lib",
         "//ortools/base",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -81,24 +75,6 @@ cc_library(
     ],
 )
 
-#cc_test(
-#    name = "parser_test",
-#    size = "small",
-#    srcs = ["parser_test.cc"],
-#    data = [
-#        "testdata/M12.fzn",
-#        "testdata/alpha.fzn",
-#        "testdata/golomb.fzn",
-#    ],
-#    deps = [
-#        ":model",
-#        ":parser_lib",
-#        "//@gtest//:main",
-#        "//ortools/base:file",
-#        "//ortools/base:file:path",
-#    ],
-#)
-
 cc_library(
     name = "presolve",
     srcs = ["presolve.cc"],
@@ -109,25 +85,12 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
         "//ortools/graph:cliques",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_map",
     ],
 )
-
-#cc_test(
-#    name = "presolve_test",
-#    size = "small",
-#    srcs = ["presolve_test.cc"],
-#    deps = [
-#        ":model",
-#        ":presolve",
-#        "//@gtest//:main",
-#        "//ortools/base:file",
-#        "//ortools/base:file:path",
-#    ],
-#)
 
 cc_library(
     name = "checker",
@@ -139,7 +102,8 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -182,7 +146,7 @@ cc_library(
     deps = [
         ":logging",
         "//ortools/base",
-        "//ortools/base:mutex",
+        "@com_google_absl//absl/synchronization",
         "//ortools/constraint_solver:cp",
     ],
 )
@@ -269,8 +233,9 @@ cc_library(
         ":model",
         ":solver",
         "//ortools/base",
-        "//ortools/base:strings",
         "//ortools/base:map_util",
+        "@com_google_absl//absl/strings",
+        "//ortools/base:threadpool",
         "//ortools/sat:cp_constraints",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
@@ -284,8 +249,10 @@ cc_library(
         "//ortools/sat:optimization",
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
+        "//ortools/util:sigint",
     ],
 )
+
 cc_binary(
     name = "fz",
     srcs = ["fz.cc"],

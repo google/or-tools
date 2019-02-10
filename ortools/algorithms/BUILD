@@ -7,6 +7,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:hash",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 
@@ -20,7 +21,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:random",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
         "@gtest//:main",
     ],
 )
@@ -60,6 +61,20 @@ cc_library(
 )
 
 cc_library(
+    name = "knapsack_solver_for_cuts",
+    srcs = ["knapsack_solver_for_cuts.cc"],
+    hdrs = ["knapsack_solver_for_cuts.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:ptr_util",
+        "//ortools/util:time_limit",
+    ],
+)
+
+cc_library(
     name = "dense_doubly_linked_list",
     hdrs = ["dense_doubly_linked_list.h"],
     deps = [
@@ -74,7 +89,8 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:murmur",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -84,7 +100,7 @@ cc_library(
     hdrs = ["sparse_permutation.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -95,7 +111,7 @@ cc_library(
     deps = [
         ":sparse_permutation",
         "//ortools/base",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -109,11 +125,12 @@ cc_library(
         ":dynamic_permutation",
         ":sparse_permutation",
         "//ortools/base",
+        "//ortools/base:canonical_errors",
         "//ortools/base:status",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
         "//ortools/graph",
+        "//ortools/graph:iterators",
         "//ortools/graph:util",
-        "//ortools/util:iterators",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
     ],

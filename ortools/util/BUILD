@@ -10,17 +10,6 @@ cc_library(
 )
 
 cc_library(
-    name = "filelineiter",
-    hdrs = ["filelineiter.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:status",
-        "//ortools/base:strings",
-    ],
-)
-
-cc_library(
     name = "vector_map",
     hdrs = ["vector_map.h"],
     deps = ["//ortools/base:map_util"],
@@ -40,6 +29,16 @@ cc_library(
 )
 
 cc_library(
+    name = "integer_pq",
+    hdrs = [
+        "integer_pq.h",
+    ],
+    deps = [
+        "//ortools/base",
+    ],
+)
+
+cc_library(
     name = "cached_log",
     srcs = ["cached_log.cc"],
     hdrs = ["cached_log.h"],
@@ -53,15 +52,11 @@ cc_library(
     srcs = ["graph_export.cc"],
     hdrs = ["graph_export.h"],
     deps = [
+        "@com_google_absl//absl/strings:str_format",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:status",
     ],
-)
-
-cc_library(
-    name = "iterators",
-    hdrs = ["iterators.h"],
 )
 
 cc_library(
@@ -76,22 +71,12 @@ cc_library(
     deps = ["//ortools/base"],
 )
 
-cc_library(
-    name = "xml_helper",
-    srcs = ["xml_helper.cc"],
-    hdrs = ["xml_helper.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:strings",
-    ],
-)
-
 #cc_library(
 #    name = "step_function",
 #    srcs = ["step_function.cc"],
 #    hdrs = ["step_function.h"],
 #    deps = [
-#        "//ortools/base:strings",
+#        "@com_google_absl//absl/strings",
 #        ":iterators",
 #        "//ortools/base",
 #    ],
@@ -103,7 +88,7 @@ cc_library(
     deps = [
         ":bitset",
         "//ortools/base",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -114,7 +99,8 @@ cc_library(
     deps = [
         ":saturated_arithmetic",
         "//ortools/base",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -124,7 +110,7 @@ cc_library(
     hdrs = ["rational_approximation.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -135,8 +121,10 @@ cc_library(
     deps = [
         ":saturated_arithmetic",
         "//ortools/base",
-        "//ortools/base:span",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/container:inlined_vector",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -162,8 +150,9 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:stl_util",
-        "//ortools/base:strings",
-        #        "//ortools/base:strings:human_readable",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        #        "@com_google_absl//absl/strings:human_readable",
         "//ortools/port:sysinfo",
         "//ortools/base:timer",
         "//ortools/port:utf8",
@@ -177,7 +166,9 @@ cc_library(
     deps = [
         ":running_stat",
         "//ortools/base",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
         "//ortools/base:sysinfo",
         "//ortools/base:timer",
     ],
@@ -221,7 +212,7 @@ cc_library(
     srcs = ["file_util.cc"],
     hdrs = ["file_util.h"],
     deps = [
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:hash",
@@ -239,7 +230,7 @@ cc_library(
     srcs = ["proto_tools.cc"],
     hdrs = ["proto_tools.h"],
     deps = [
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:hash",
@@ -249,6 +240,16 @@ cc_library(
         #        "//net/proto2/util/public:json",
         "@com_google_protobuf_cc//:protobuf",
     ],
+)
+
+proto_library(
+    name = "optional_boolean_proto",
+    srcs = ["optional_boolean.proto"],
+)
+
+cc_proto_library(
+    name = "optional_boolean_cc_proto",
+    deps = [":optional_boolean_proto"],
 )
 
 cc_library(
@@ -290,7 +291,16 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "sigint",
+    srcs = ["sigint.cc"],
+    hdrs = ["sigint.h"],
+    deps = [
+        "//ortools/base",
     ],
 )
 
@@ -309,14 +319,14 @@ cc_library(
 #    hdrs = ["tsplib_parser.h"],
 #    visibility = ["//visibility:public"],
 #    deps = [
-#        "//ortools/base:strings",
+#        "@com_google_absl//absl/strings",
 #        ":filelineiter",
 #        "//ortools/base",
 #        "//ortools/base:file",
 #        "//ortools/base:file:path",
 #        "//ortools/base:map_util",
 #        "//ortools/base:mathutil",
-#        "///ortools/base:strings",
+#        "/@com_google_absl//absl/strings",
 #        "//file/zipfile",
 #        "//util/regexp/re2",
 #    ],
@@ -328,7 +338,7 @@ cc_library(
 #    hdrs = ["pdtsp_parser.h"],
 #    visibility = ["//visibility:public"],
 #    deps = [
-#        "//ortools/base:strings",
+#        "@com_google_absl//absl/strings",
 #        ":filelineiter",
 #        "//ortools/base",
 #        "//ortools/base:file",
@@ -343,25 +353,12 @@ cc_library(
 #    hdrs = ["bp_parser.h"],
 #    visibility = ["//visibility:public"],
 #    deps = [
-#        "//ortools/base:strings",
+#        "@com_google_absl//absl/strings",
 #        ":filelineiter",
 #        "//ortools/base",
 #        "//ortools/base:file",
 #    ],
 #)
-
-cc_library(
-    name = "rcpsp_parser",
-    srcs = ["rcpsp_parser.cc"],
-    hdrs = ["rcpsp_parser.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":filelineiter",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:strings",
-    ],
-)
 
 cc_library(
     name = "sort",

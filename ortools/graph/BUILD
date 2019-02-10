@@ -4,8 +4,8 @@ cc_library(
     name = "graph",
     hdrs = ["graph.h"],
     deps = [
+        ":iterators",
         "//ortools/base",
-        "//ortools/util:iterators",
     ],
 )
 
@@ -23,6 +23,7 @@ cc_library(
     srcs = ["util.cc"],
     hdrs = ["util.h"],
     deps = [
+        ":connected_components",
         ":graph",
         "//ortools/base:hash",
         "//ortools/base:map_util",
@@ -30,14 +31,19 @@ cc_library(
 )
 
 cc_library(
+    name = "iterators",
+    hdrs = ["iterators.h"],
+)
+
+cc_library(
     name = "io",
     hdrs = ["io.h"],
     deps = [
         ":graph",
+        "//ortools/base:filelineiter",
         "//ortools/base:status",
         "//ortools/base:statusor",
-        "//ortools/base:strings",
-        "//ortools/util:filelineiter",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -81,7 +87,9 @@ cc_library(
         #        "//ortools/base:int_type_indexed_bitmap",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:recordio",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/strings",
         #        "//ortools/thread",
         #        "//ortools/util/coding:prefixvarint",
     ],
@@ -112,7 +120,7 @@ cc_library(
 #    deps = [
 #        "//ortools/base",
 #        "//ortools/base:iterator_adaptors",
-#        "//ortools/base:strings",
+#        "@com_google_absl//absl/strings",
 #        "//ortools/thread",
 #    ],
 #)
@@ -126,7 +134,8 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/strings",
         "//ortools/util:time_limit",
     ],
 )
@@ -181,7 +190,7 @@ cc_library(
         ":christofides",
         ":minimum_spanning_tree",
         "//ortools/base",
-        "//ortools/base:strings",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -195,7 +204,6 @@ cc_library(
         "//ortools/util:zvector",
     ],
 )
-
 
 #cc_library(
 #    name = "shortest_paths",
@@ -242,6 +250,7 @@ cc_library(
         ":graph",
         ":graphs",
         "//ortools/base",
+        "@com_google_absl//absl/memory",
         "//ortools/util:stats",
         "//ortools/util:zvector",
     ],
@@ -282,10 +291,37 @@ cc_library(
     deps = [
         ":ebert_graph",
         "//ortools/base",
-        "//ortools/base:strings",
-        #        "//ortools/testing/production_stub/public:gunit_prod",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
+    ],
+)
+
+cc_library(
+    name = "connected_components",
+    srcs = [
+        "connected_components.cc",
+    ],
+    hdrs = [
+        "connected_components.h",
+    ],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:ptr_util",
+    ],
+)
+
+cc_library(
+    name = "strongly_connected_components",
+    hdrs = [
+        "strongly_connected_components.h",
+    ],
+    deps = [
+        "//ortools/base",
     ],
 )
 

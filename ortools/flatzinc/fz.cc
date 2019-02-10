@@ -33,7 +33,7 @@
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
 #include "ortools/flatzinc/presolve.h"
-#include "ortools/flatzinc/reporting.h"
+//#include "ortools/flatzinc/reporting.h"
 
 DEFINE_int32(time_limit, 0, "time limit in ms.");
 DEFINE_bool(all_solutions, false, "Search for all solutions.");

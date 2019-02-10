@@ -18,6 +18,7 @@
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/wrappers.pb.h"
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
