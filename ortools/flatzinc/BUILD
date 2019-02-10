@@ -263,8 +263,6 @@ cc_binary(
         ":parser_lib",
         ":presolve",
         ":reporting",
-        ":solver",
-        ":solver_util",
         "//ortools/base",
         "//ortools/base:threadpool",
     ],
