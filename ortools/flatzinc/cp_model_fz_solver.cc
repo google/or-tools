@@ -28,7 +28,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/logging.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_search.h"
@@ -846,7 +845,7 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
 }  // namespace
 
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
-                             const fz::FlatzincParameters& p,
+                             const fz::FlatzincSatParameters& p,
                              const std::string& sat_params) {
   WallTimer timer;
   timer.Start();
@@ -930,8 +929,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   } else {
     m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
   }
-  if (p.time_limit_in_ms > 0) {
-    m.parameters.set_max_time_in_seconds(p.time_limit_in_ms * 1e-3);
+  if (p.time_limit_in_seconds > 0) {
+    m.parameters.set_max_time_in_seconds(p.time_limit_in_seconds);
   }
 
   // We don't support enumerating all solution in parallel for a SAT problem.

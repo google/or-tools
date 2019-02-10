@@ -70,9 +70,6 @@ void SortVariableByDegree(const std::vector<int>& occurrences, bool use_size,
 // Report memory usage in a nice way.
 std::string MemoryUsage();
 
-// Helper method to flatten Search annotations.
-void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out);
-
 // This method tries to reduce the list of active variables when defining a
 // search procedure with search annotations. In order to do so, it looks at
 // constraints which semantics clearly defines output variables (x = sum(yi)

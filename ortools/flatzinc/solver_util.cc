@@ -199,18 +199,6 @@ std::string MemoryUsage() {
   }
 }
 
-// Flatten Search annotations.
-void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out) {
-  if (ann.type == Annotation::ANNOTATION_LIST ||
-      ann.IsFunctionCallWithIdentifier("seq_search")) {
-    for (const Annotation& inner : ann.annotations) {
-      FlattenAnnotations(inner, out);
-    }
-  } else {
-    out->push_back(ann);
-  }
-}
-
 void Interrupt::ControlCHandler(int s) {
   FZLOG << "Ctrl-C caught" << FZENDL;
   operations_research::fz::Interrupt::control_c_ = true;

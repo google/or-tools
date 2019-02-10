@@ -990,5 +990,18 @@ void ModelStatistics::BuildStatistics() {
     }
   }
 }
+
+// Flatten Search annotations.
+void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out) {
+  if (ann.type == Annotation::ANNOTATION_LIST ||
+      ann.IsFunctionCallWithIdentifier("seq_search")) {
+    for (const Annotation& inner : ann.annotations) {
+      FlattenAnnotations(inner, out);
+    }
+  } else {
+    out->push_back(ann);
+  }
+}
+
 }  // namespace fz
 }  // namespace operations_research

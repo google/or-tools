@@ -14,17 +14,17 @@ cc_library(
     srcs = ["model.cc"],
     hdrs = ["model.h"],
     deps = [
-        ":logging",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
         "//ortools/graph:iterators",
         "//ortools/util:string_array",
+        ":logging",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -40,13 +40,13 @@ cc_library(
         "$(STACK_FRAME_UNLIMITED)",  # parser.tab.cc
     ],
     deps = [
-        ":model",
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/strings",
         "//ortools/util:string_array",
+        ":model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -57,8 +57,8 @@ cc_library(
         "-Wno-unused-function",  # parser.yy.cc
     ],
     deps = [
-        ":parser_yacc_lib",
         "//ortools/base",
+        ":parser_yacc_lib",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
     ],
@@ -80,15 +80,15 @@ cc_library(
     srcs = ["presolve.cc"],
     hdrs = ["presolve.h"],
     deps = [
-        ":logging",
-        ":model",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
-        "@com_google_absl//absl/strings",
         "//ortools/graph:cliques",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_map",
+        ":logging",
+        ":model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -97,45 +97,13 @@ cc_library(
     srcs = ["checker.cc"],
     hdrs = ["checker.h"],
     deps = [
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
         ":logging",
         ":model",
-        "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "sat_constraint",
-    srcs = ["sat_constraint.cc"],
-    hdrs = ["sat_constraint.h"],
-    deps = [
-        ":logging",
-        "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
-        "//ortools/base:map_util",
-        "//ortools/constraint_solver:cp",
-        "//ortools/sat:pb_constraint",
-        "//ortools/sat:sat_base",
-        "//ortools/sat:sat_solver",
-        "//ortools/util:string_array",
-    ],
-)
-
-cc_library(
-    name = "flatzinc_constraints",
-    srcs = ["flatzinc_constraints.cc"],
-    hdrs = ["flatzinc_constraints.h"],
-    deps = [
-        ":logging",
-        "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/constraint_solver:cp",
-        "//ortools/util:string_array",
     ],
 )
 
@@ -144,82 +112,10 @@ cc_library(
     srcs = ["reporting.cc"],
     hdrs = ["reporting.h"],
     deps = [
-        ":logging",
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        ":logging",
         "@com_google_absl//absl/synchronization",
-        "//ortools/constraint_solver:cp",
-    ],
-)
-
-cc_library(
-    name = "solver_util",
-    srcs = ["solver_util.cc"],
-    hdrs = ["solver_util.h"],
-    deps = [
-        ":logging",
-        ":model",
-        "//ortools/base",
-        "//ortools/constraint_solver:cp",
-    ],
-)
-
-cc_library(
-    name = "solver_data",
-    srcs = ["solver_data.cc"],
-    hdrs = ["solver_data.h"],
-    deps = [
-        ":logging",
-        ":model",
-        ":sat_constraint",
-        "//ortools/base",
-        "//ortools/constraint_solver:cp",
-    ],
-)
-
-cc_library(
-    name = "constraints",
-    srcs = ["constraints.cc"],
-    hdrs = ["constraints.h"],
-    deps = [
-        ":flatzinc_constraints",
-        ":logging",
-        ":model",
-        ":sat_constraint",
-        ":solver_data",
-        "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/constraint_solver:cp",
-        "//ortools/util:string_array",
-    ],
-)
-
-cc_library(
-    name = "solver",
-    srcs = [
-        "solver.cc",
-    ],
-    hdrs = [
-        "solver.h",
-    ],
-    deps = [
-        ":checker",
-        ":constraints",
-        ":logging",
-        ":model",
-        ":reporting",
-        ":sat_constraint",
-        ":solver_data",
-        ":solver_util",
-        "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/base:int_type",
-        "//ortools/base:int_type_indexed_vector",
-        "//ortools/base:map_util",
-        "//ortools/constraint_solver:cp",
-        "//ortools/sat:pb_constraint",
-        "//ortools/sat:sat_base",
-        "//ortools/sat:sat_solver",
-        "//ortools/util:string_array",
     ],
 )
 
@@ -228,13 +124,8 @@ cc_library(
     srcs = ["cp_model_fz_solver.cc"],
     hdrs = ["cp_model_fz_solver.h"],
     deps = [
-        ":checker",
-        ":logging",
-        ":model",
-        ":solver",
         "//ortools/base",
         "//ortools/base:map_util",
-        "@com_google_absl//absl/strings",
         "//ortools/base:threadpool",
         "//ortools/sat:cp_constraints",
         "//ortools/sat:cp_model_cc_proto",
@@ -250,6 +141,10 @@ cc_library(
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
         "//ortools/util:sigint",
+        ":checker",
+        ":logging",
+        ":model",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -257,13 +152,13 @@ cc_binary(
     name = "fz",
     srcs = ["fz.cc"],
     deps = [
+        "//ortools/base",
+        "//ortools/base:threadpool",
         ":cp_model_fz_solver",
         ":logging",
         ":model",
         ":parser_lib",
         ":presolve",
         ":reporting",
-        "//ortools/base",
-        "//ortools/base:threadpool",
     ],
 )

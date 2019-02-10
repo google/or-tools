@@ -416,6 +416,10 @@ class ModelStatistics {
   absl::flat_hash_map<const IntegerVariable*, std::vector<Constraint*>>
       constraints_per_variables_;
 };
+
+// Helper method to flatten Search annotations.
+void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out);
+
 }  // namespace fz
 }  // namespace operations_research
 
