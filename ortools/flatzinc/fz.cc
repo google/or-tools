@@ -174,18 +174,17 @@ int main(int argc, char** argv) {
       operations_research::fz::ParseFlatzincModel(input,
                                                   !FLAGS_read_from_stdin);
   operations_research::fz::FlatzincSatParameters parameters;
-  parameters.all_solutions = FLAGS_all_solutions;
-  parameters.free_search = FLAGS_free_search;
-  parameters.logging = FLAGS_fz_logging;
-  parameters.num_solutions =
+  parameters.display_all_solutions = FLAGS_all_solutions;
+  parameters.use_free_search = FLAGS_free_search;
+  parameters.verbose_logging = FLAGS_fz_logging;
+  parameters.max_number_of_solutions =
       FLAGS_num_solutions == 0 ?  // Not fixed.
           (FLAGS_num_solutions = FLAGS_all_solutions ? kint32max : 1)
                                : FLAGS_num_solutions;
   parameters.random_seed = FLAGS_fz_seed;
-  parameters.statistics = FLAGS_statistics;
-  parameters.threads = FLAGS_threads;
-  parameters.thread_id = -1;
-  parameters.time_limit_in_seconds = FLAGS_time_limit;
+  parameters.display_statistics = FLAGS_statistics;
+  parameters.number_of_threads = FLAGS_threads;
+  parameters.max_time_in_seconds = FLAGS_time_limit;
 
   operations_research::sat::SolveFzWithCpModelProto(model, parameters,
                                                     FLAGS_params);

@@ -18,19 +18,20 @@
 
 namespace operations_research {
 namespace fz {
+
 struct FlatzincSatParameters {
-  bool all_solutions = false;
-  bool free_search = false;
-  bool logging = false;
-  bool statistics = false;
-  int num_solutions = 1;
+  bool display_all_solutions = false;
+  bool use_free_search = false;
+  bool verbose_logging = false;
+  bool display_statistics = false;
+  int max_number_of_solutions = 1;
   int random_seed = 0;
-  int threads = 0;
-  int thread_id = -1;
-  double time_limit_in_seconds = 0.0;
+  int number_of_threads = 0;
+  double max_time_in_seconds = 0.0;
 };
 
-  }  // namespace fz
+}  // namespace fz
+
 namespace sat {
 
 void SolveFzWithCpModelProto(const fz::Model& model,
