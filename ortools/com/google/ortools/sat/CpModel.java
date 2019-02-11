@@ -45,7 +45,7 @@ public class CpModel {
   }
 
   /** Exception thrown when parallel arrays have mismatched lengths. */
-  public static  class MismatchedArrayLengths extends CpModelException {
+  public static class MismatchedArrayLengths extends CpModelException {
     public MismatchedArrayLengths(String methodName, String array1Name, String array2Name) {
       super(methodName, array1Name + " and " + array2Name + " have mismatched lengths");
     }

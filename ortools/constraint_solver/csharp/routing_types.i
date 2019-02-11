@@ -76,4 +76,6 @@ DEFINE_INDEX_TYPE(operations_research::RoutingDimensionIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingDisjunctionIndex);
 DEFINE_INDEX_TYPE(operations_research::RoutingVehicleClassIndex);
 
+// TODO(user): Replace with %ignoreall/%unignoreall
+//swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/routing_types.h"

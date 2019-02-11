@@ -498,6 +498,7 @@ namespace operations_research {
     return (*(void (*)(int64))$input)(u);};
 %}
 
+// TODO(user): Add new delegate to wrap the following API.
 %extend Solver {
   //LocalSearchOperator* ConcatenateOperators(
   //    const std::vector<LocalSearchOperator*>& ops,
@@ -714,6 +715,8 @@ PROTO2_RETURN(operations_research::CpModel,
               Google.OrTools.ConstraintSolver.CpModel)
 
 // Wrap cp includes
+// TODO(user): Replace with %ignoreall/%unignoreall
+//swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/constraint_solveri.h"
 

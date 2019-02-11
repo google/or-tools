@@ -55,13 +55,13 @@ class RoutingSearchParameters;
                           int64 capacity,
                           bool fix_start_cumul_to_zero,
                           const std::string& name) {
-    DCHECK_EQ(values.size(), self->nodes());
-    self->AddVectorDimension(values.data(), capacity,
+    DCHECK_EQ(values.size(), $self->nodes());
+    $self->AddVectorDimension(values.data(), capacity,
                              fix_start_cumul_to_zero, name);
   }
 }
 
-// RoutingModel Callback
+// RoutingModel
 namespace operations_research {
 // Define the delegate for Transit callback types.
 // This replace the RoutingTransitCallback[1-2] in the C# proxy class
