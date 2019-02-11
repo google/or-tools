@@ -387,11 +387,20 @@ void PresolveContext::FullyEncodeVariable(int var) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
         const int lit = NewBoolVar();
         AddImplyInDomain(lit, var, Domain(v));
-        // AddImplyInDomain(NegatedRef(lit), var, Domain(v).Complement());
+        AddImplyInDomain(NegatedRef(lit), var, Domain(v).Complement());
         expanded_variables[var][v] = lit;
       }
     }
   }
+}
+
+int PresolveContext::GetLiteralAssociatedToEquality(int var, int64 value) {
+  if (!RefIsPositive(var)) {
+    return GetLiteralAssociatedToEquality(NegatedRef(var), -value);
+  }
+  CHECK(gtl::ContainsKey(expanded_variables, var));
+  CHECK(gtl::ContainsKey(expanded_variables[var], value));
+  return expanded_variables[var][value];
 }
 
 namespace {
@@ -1011,12 +1020,16 @@ bool RemoveSingletonInLinear(ConstraintProto* ct, PresolveContext* context) {
       const auto term_domain =
           context->DomainOf(var).MultiplicationBy(-coeff, &exact);
       if (exact) {
+        // We do not do that if the domain of rhs becomes too complex.
+        const Domain new_rhs = rhs.AdditionWith(term_domain);
+        if (new_rhs.NumIntervals() > 100) continue;
+
         // Note that we can't do that if we loose information in the
         // multiplication above because the new domain might not be as strict
         // as the initial constraint otherwise. TODO(user): because of the
         // addition, it might be possible to cover more cases though.
         index_to_erase.insert(i);
-        rhs = rhs.AdditionWith(term_domain);
+        rhs = new_rhs;
         continue;
       }
     }
@@ -1075,7 +1088,6 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Compute the implied rhs bounds from the variable ones.
-  const int kDomainComplexityLimit = 100;
   auto& term_domains = context->tmp_term_domains;
   auto& left_domains = context->tmp_left_domains;
   const int num_vars = ct->linear().vars_size();
@@ -1085,18 +1097,9 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   for (int i = 0; i < num_vars; ++i) {
     const int var = PositiveRef(ct->linear().vars(i));
     const int64 coeff = ct->linear().coeffs(i);
-
-    bool unused;
-    term_domains[i] = context->DomainOf(var).MultiplicationBy(coeff, &unused);
-    left_domains[i + 1] = left_domains[i].AdditionWith(term_domains[i]);
-    if (left_domains[i + 1].NumIntervals() > kDomainComplexityLimit) {
-      // We take a super-set, otherwise it will be too slow.
-      //
-      // TODO(user): We could be smarter in how we compute this if we allow for
-      // more than one intervals.
-      left_domains[i + 1] =
-          Domain(left_domains[i + 1].Min(), left_domains[i + 1].Max());
-    }
+    term_domains[i] = context->DomainOf(var).MultiplicationBy(coeff);
+    left_domains[i + 1] =
+        left_domains[i].AdditionWith(term_domains[i]).RelaxIfTooComplex();
   }
   const Domain& implied_rhs = left_domains[num_vars];
 
@@ -1150,11 +1153,8 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     Domain right_domain(0, 0);
     term_domains[num_vars] = rhs.Negation();
     for (int i = num_vars - 1; i >= 0; --i) {
-      right_domain = right_domain.AdditionWith(term_domains[i + 1]);
-      if (right_domain.NumIntervals() > kDomainComplexityLimit) {
-        // We take a super-set, otherwise it will be too slow.
-        right_domain = Domain(right_domain.Min(), right_domain.Max());
-      }
+      right_domain =
+          right_domain.AdditionWith(term_domains[i + 1]).RelaxIfTooComplex();
       new_domain = left_domains[i]
                        .AdditionWith(right_domain)
                        .InverseMultiplicationBy(-ct->linear().coeffs(i));
@@ -1792,6 +1792,42 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     }
   }
 
+  if (context->IsFixed(target_ref)) {
+    context->FullyEncodeVariable(index_ref);
+
+    bool all_vars_encoded = true;
+    const Domain index_domain = context->DomainOf(index_ref);
+    for (const ClosedInterval& interval : index_domain) {
+      for (int64 v = interval.start; v <= interval.end; ++v) {
+        const int var = ct->element().vars(v);
+        if (!gtl::ContainsKey(context->expanded_variables, var)) {
+          all_vars_encoded = false;
+          break;
+        }
+      }
+    }
+
+    if (all_vars_encoded) {
+      const int64 target_value = context->MinOf(target_ref);
+      for (const ClosedInterval& interval : index_domain) {
+        for (int64 v = interval.start; v <= interval.end; ++v) {
+          const int var = ct->element().vars(v);
+          const int index_lit =
+              context->GetLiteralAssociatedToEquality(index_ref, v);
+          const int var_lit =
+              context->GetLiteralAssociatedToEquality(var, target_value);
+          context->AddImplication(index_lit, var_lit);
+          // context->AddImplication(var_lit, index_lit);
+        }
+      }
+      context->UpdateRuleStats("element: expand fixed target element");
+      context->InitializeNewDomains();
+      return RemoveConstraint(ct, context);
+    } else {
+      context->InitializeNewDomains();
+    }
+  }
+
   if (all_constants && num_vars == constant_set.size()) {
     // TODO(user): We should be able to do something for simple mapping.
     context->UpdateRuleStats("TODO element: one to one mapping");
@@ -2325,7 +2361,6 @@ bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
   if (removed_values) {
     context->UpdateRuleStats("automaton: reduce variable domains");
   }
-
   return false;
 }
 
@@ -2837,10 +2872,11 @@ void ExpandObjective(PresolveContext* context) {
         for (int i = 0; i < num_terms; ++i) {
           const int ref = ct.linear().vars(i);
           if (PositiveRef(ref) == objective_var) continue;
-          bool unused;
-          implied_domain = implied_domain.AdditionWith(
-              context->DomainOf(ref).MultiplicationBy(-ct.linear().coeffs(i),
-                                                      &unused));
+          implied_domain =
+              implied_domain
+                  .AdditionWith(context->DomainOf(ref).MultiplicationBy(
+                      -ct.linear().coeffs(i)))
+                  .RelaxIfTooComplex();
         }
         implied_domain = implied_domain.InverseMultiplicationBy(
             objective_coeff_in_expanded_constraint);
@@ -3100,8 +3136,8 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
       return PresolveCumulative(ct, context);
     case ConstraintProto::ConstraintCase::kCircuit:
       return PresolveCircuit(ct, context);
-   case ConstraintProto::ConstraintCase::kAutomaton:
-     return PresolveAutomaton(ct, context);
+    case ConstraintProto::ConstraintCase::kAutomaton:
+      return PresolveAutomaton(ct, context);
     default:
       return false;
   }

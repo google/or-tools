@@ -113,6 +113,9 @@ struct PresolveContext {
   // Fully encode a variable.
   void FullyEncodeVariable(int var);
 
+  // Get associated literal for a fully encoded variable.
+  int GetLiteralAssociatedToEquality(int var, int64 value);
+
   // This regroup all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
   // model at detection time (thus allowing proper domain propagation). However,

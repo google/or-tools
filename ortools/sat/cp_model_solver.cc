@@ -1212,6 +1212,13 @@ CpSolverResponse SolveCpModelInternal(
         external_solution_observer,
     SharedBoundsManager* shared_bounds_manager, WallTimer* wall_timer,
     Model* model) {
+  const bool worker_is_in_parallel_search = model->Get<WorkerInfo>() != nullptr;
+  const bool is_lns = model->GetOrCreate<SatParameters>()->use_lns();
+
+  if (!worker_is_in_parallel_search && is_real_solve && !is_lns) {
+    VLOG(1) << absl::StrFormat("*** starting to load the model at %.2fs",
+                               wall_timer->Get());
+  }
   // Initialize a default invalid response.
   CpSolverResponse response;
   response.set_status(CpSolverStatus::MODEL_INVALID);
@@ -1429,10 +1436,8 @@ CpSolverResponse SolveCpModelInternal(
   // Objective bounds reporting and sharing.
   ObjectiveSynchronizationHelper* helper =
       model->GetOrCreate<ObjectiveSynchronizationHelper>();
-  const bool worker_is_in_parallel_search = model->Get<WorkerInfo>() != nullptr;
 
-  if (!model->GetOrCreate<SatParameters>()->use_lns() &&
-      model_proto.has_objective()) {
+  if (!is_lns && model_proto.has_objective()) {
     // Detect sequential mode, register callbacks in that case.
     if (!worker_is_in_parallel_search) {
       model->GetOrCreate<WorkerInfo>()->worker_id = 0;
@@ -1478,7 +1483,7 @@ CpSolverResponse SolveCpModelInternal(
   // Import objective bounds.
   // TODO(user): Support bounds import in LNS and Core based search.
   if (model->GetOrCreate<SatParameters>()->share_objective_bounds() &&
-      worker_is_in_parallel_search) {
+      worker_is_in_parallel_search && model_proto.has_objective()) {
     RegisterObjectiveBoundsImport(model);
   }
 
@@ -1489,6 +1494,11 @@ CpSolverResponse SolveCpModelInternal(
 
     RegisterVariableBoundsLevelZeroImport(model_proto, shared_bounds_manager,
                                           model);
+  }
+
+  if (!worker_is_in_parallel_search && is_real_solve && !is_lns) {
+    VLOG(1) << absl::StrFormat("*** starting sequential search at %.2fs",
+                               wall_timer->Get());
   }
 
   // Load solution hint.
@@ -2101,8 +2111,9 @@ CpSolverResponse SolveCpModelParallel(
     worker_parameters.push_back(local_params);
   }
 
-  VLOG(1) << "Starting parallel search with " << num_search_workers
-          << " workers: [" << absl::StrJoin(worker_names, ", ") << "]";
+  VLOG(1) << absl::StrFormat(
+      "*** starting parallel search at %.2fs with %i workers: [ %s ]",
+      wall_timer->Get(), num_search_workers, absl::StrJoin(worker_names, ", "));
 
   if (!model_proto.has_objective()) {
     {
@@ -2114,11 +2125,17 @@ CpSolverResponse SolveCpModelParallel(
         const SatParameters local_params = worker_parameters[worker_id];
 
         pool.Schedule([&model_proto, stopped, local_params, &best_response,
-                       &mutex, worker_name, wall_timer]() {
+                       &mutex, worker_name, worker_id, wall_timer]() {
           Model local_model;
           local_model.Add(NewSatParameters(local_params));
           local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
               stopped);
+
+          // Stores info that will be used for logs in the local model.
+          WorkerInfo* worker_info = local_model.GetOrCreate<WorkerInfo>();
+          worker_info->worker_name = worker_name;
+          worker_info->worker_id = worker_id;
+
           const CpSolverResponse local_response = SolveCpModelInternal(
               model_proto, true, [](const CpSolverResponse& response) {},
               /*shared_bounds_manager=*/nullptr, wall_timer, &local_model);
@@ -2129,7 +2146,8 @@ CpSolverResponse SolveCpModelParallel(
           }
           if (local_response.status() != CpSolverStatus::UNKNOWN) {
             CHECK_EQ(local_response.status(), best_response.status());
-            VLOG(1) << "Solution found by worker '" << worker_name << "'.";
+            VLOG(1) << absl::StrFormat("#1      %6.2fs  %s", wall_timer->Get(),
+                                       worker_name);
             *stopped = true;
           }
         });
@@ -2248,7 +2266,8 @@ CpSolverResponse SolveCpModelParallel(
         // called.
         {
           absl::MutexLock lock(&mutex);
-          VLOG(1) << "Worker '" << worker_name << "' terminates with status "
+          VLOG(1) << "*** worker '" << worker_name
+                  << "' terminates with status "
                   << ProtoEnumToString<CpSolverStatus>(thread_response.status())
                   << " and an objective value of "
                   << thread_response.objective_value();
@@ -2339,6 +2358,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   // Starts by expanding some constraints if needed.
+  VLOG(1) << absl::StrFormat("*** starting model expansion at %.2fs",
+                             wall_timer.Get());
   CpModelProto new_model = model_proto;  // Copy.
   PresolveOptions options;
   options.log_info = VLOG_IS_ON(1);
@@ -2347,6 +2368,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Presolve?
   std::function<void(CpSolverResponse * response)> postprocess_solution;
   if (params.cp_model_presolve()) {
+    VLOG(1) << absl::StrFormat("*** starting model presolve at %.2fs",
+                               wall_timer.Get());
     // Do the actual presolve.
     CpModelProto mapping_proto;
     std::vector<int> postsolve_mapping;
