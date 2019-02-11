@@ -264,13 +264,21 @@ Domain Domain::AdditionWith(const Domain& domain) const {
   return result;
 }
 
+Domain Domain::RelaxIfTooComplex() const {
+  if (NumIntervals() > kDomainComplexityLimit) {
+    return Domain(Min(), Max());
+  } else {
+    return *this;
+  }
+}
+
 Domain Domain::MultiplicationBy(int64 coeff, bool* exact) const {
-  *exact = true;
+  if (exact != nullptr) *exact = true;
   if (intervals_.empty() || coeff == 0) return {};
 
   const int64 abs_coeff = std::abs(coeff);
-  if (abs_coeff > 1 && Size() > 100) {
-    *exact = false;
+  if (abs_coeff > 1 && Size() > kDomainComplexityLimit) {
+    if (exact != nullptr) *exact = false;
     return ContinuousMultiplicationBy(coeff);
   }
 

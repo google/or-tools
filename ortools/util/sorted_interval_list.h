@@ -125,7 +125,10 @@ class Domain {
   // coeff, the size of intervals.size() can become really large. If it is
   // larger than a fixed constant, exact will be set to false and the result
   // will be set to ContinuousMultiplicationBy(coeff).
-  Domain MultiplicationBy(int64 coeff, bool* exact) const;
+  Domain MultiplicationBy(int64 coeff, bool* exact = nullptr) const;
+
+  // If NumIntervals() is too large, this return a superset of the domain.
+  Domain RelaxIfTooComplex() const;
 
   // Returns a super-set of MultiplicationBy() to avoid the explosion in the
   // representation size. This behaves as if we replace the set D of
@@ -188,6 +191,10 @@ class Domain {
   }
 
  private:
+  // Some functions relax the domain when its "complexity" (i.e NumIntervals())
+  // become too large.
+  static const int kDomainComplexityLimit = 100;
+
   // Invariant: will always satisfy IntervalsAreSortedAndNonAdjacent().
   //
   // Note that we use InlinedVector for the common case of single interal
