@@ -63,7 +63,6 @@ class SearchLimitParameters;
 #include "ortools/base/integral_types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/util/functions_swig_helpers.h"
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 

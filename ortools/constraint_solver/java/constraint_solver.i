@@ -20,7 +20,6 @@
 %include "ortools/base/base.i"
 %include "ortools/util/java/tuple_set.i"
 %include "ortools/util/java/vector.i"
-//%include "ortools/util/java/functions.i"
 %include "ortools/util/java/proto.i"
 
 // Remove swig warnings
@@ -127,16 +126,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 #include "ortools/base/integral_types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-
-namespace operations_research {
-namespace swig_util {
-class SolverToVoid {
- public:
-  virtual ~SolverToVoid() {}
-  virtual void Run(Solver*) = 0;
-};
-}  // namespace swig_util
-}  // namespace operations_research
 %}
 
 // Types in Proxy class (e.g. Solver.java) e.g.:
@@ -1164,19 +1153,6 @@ import java.util.function.LongBinaryOperator;
 %rename (setUnassigned) Pack::SetUnassigned;
 %rename (unassignAllRemainingItems) Pack::UnassignAllRemainingItems;
 
-// Generic rename rules.
-%rename (bound) *::Bound;
-%rename (max) *::Max;
-%rename (min) *::Min;
-%rename (setMax) *::SetMax;
-%rename (setMin) *::SetMin;
-%rename (setRange) *::SetRange;
-%rename (setValue) *::SetValue;
-%rename (setValue) *::SetValues;
-%rename (value) *::Value;
-%rename (accept) *::Accept;
-%rename (toString) *::DebugString;
-
 // Rename rules on PropagationBaseObject.
 %ignore PropagationBaseObject::set_action_on_fail;
 %rename (baseName) PropagationBaseObject::BaseName;
@@ -1399,15 +1375,13 @@ import java.util.function.Supplier;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
 import java.util.function.LongConsumer;
 %}
-%ignore IntVarLocalSearchFilter::IntVarLocalSearchFilter(
-    const std::vector<IntVar*>& vars,
-    Solver::ObjectiveWatcher objective_callback); // Can't call StoreObjectiveWatcher() from the Ctor
 %ignore IntVarLocalSearchFilter::FindIndex;
 %ignore IntVarLocalSearchFilter::IsVarSynced;
 %rename (addVars) IntVarLocalSearchFilter::AddVars;  // Inherited.
 %rename (injectObjectiveValue) IntVarLocalSearchFilter::InjectObjectiveValue;
 %rename (isIncremental) IntVarLocalSearchFilter::IsIncremental;
 %rename (onSynchronize) IntVarLocalSearchFilter::OnSynchronize;
+%rename (setObjectiveWatcher) IntVarLocalSearchFilter::SetObjectiveWatcher;
 %rename (size) IntVarLocalSearchFilter::Size;
 %rename (start) IntVarLocalSearchFilter::Start;
 %rename (value) IntVarLocalSearchFilter::Value;
@@ -1440,44 +1414,18 @@ CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker);
 
 }  // namespace operations_research
 
-//// Create std::function wrappers.
-//WRAP_STD_FUNCTION_JAVA(
-//    LongToLong,
-//    "com/google/ortools/constraintsolver/",
-//    int64, Long, int64)
-//WRAP_STD_FUNCTION_JAVA(
-//    LongLongToLong,
-//    "com/google/ortools/constraintsolver/",
-//    int64, Long, int64, int64)
-//WRAP_STD_FUNCTION_JAVA(
-//    IntToLong,
-//    "com/google/ortools/constraintsolver/",
-//    int64, Long, int)
-//WRAP_STD_FUNCTION_JAVA(
-//    IntIntToLong,
-//    "com/google/ortools/constraintsolver/",
-//    int64, Long, int, int)
-//WRAP_STD_FUNCTION_JAVA(
-//    LongLongLongToLong,
-//    "com/google/ortools/constraintsolver/",
-//    int64, Long, int64, int64, int64)
-//WRAP_STD_FUNCTION_JAVA(
-//    LongToBoolean,
-//    "com/google/ortools/constraintsolver/",
-//    bool, Boolean, int64)
-//WRAP_STD_FUNCTION_JAVA(
-//    VoidToBoolean,
-//    "com/google/ortools/constraintsolver/",
-//    bool, Boolean)
-//WRAP_STD_FUNCTION_JAVA(
-//    LongLongLongToBoolean,
-//    "com/google/ortools/constraintsolver/",
-//    bool, Boolean, int64, int64, int64)
-//WRAP_STD_FUNCTIONS_WITH_VOID_JAVA("com/google/ortools/constraintsolver/")
-//WRAP_STD_FUNCTION_JAVA_CLASS_TO_VOID(
-//    SolverToVoid,
-//    "com/google/ortools/constraintsolver/",
-//    Solver)
+// Generic rename rules.
+%rename (bound) *::Bound;
+%rename (max) *::Max;
+%rename (min) *::Min;
+%rename (setMax) *::SetMax;
+%rename (setMin) *::SetMin;
+%rename (setRange) *::SetRange;
+%rename (setValue) *::SetValue;
+%rename (setValue) *::SetValues;
+%rename (value) *::Value;
+%rename (accept) *::Accept;
+%rename (toString) *::DebugString;
 
 // Add needed import to mainJNI.java
 %pragma(java) jniclassimports=%{
@@ -1558,17 +1506,6 @@ namespace operations_research {
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/constraint_solveri.h"
 %include "ortools/constraint_solver/java/javawrapcp_util.h"
-
-namespace operations_research {
-namespace swig_util {
-class SolverToVoid {
- public:
-  virtual ~SolverToVoid() {}
-  virtual void Run(Solver*) = 0;
-};
-}  // namespace swig_util
-}  // namespace operations_research
-
 
 // Define templates instantiation after wrapping.
 namespace operations_research {
