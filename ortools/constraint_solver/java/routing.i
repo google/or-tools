@@ -16,7 +16,6 @@
 %include "ortools/constraint_solver/java/constraint_solver.i"
 %include "ortools/constraint_solver/java/routing_types.i"
 %include "ortools/constraint_solver/java/routing_index_manager.i"
-%include "ortools/util/java/functions.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -254,10 +253,10 @@ import java.util.function.LongBinaryOperator;
 %rename (makeDisjunctionNodesUnperformed) RoutingFilteredDecisionBuilder::MakeDisjunctionNodesUnperformed;
 %rename (makeUnassignedNodesUnperformed) RoutingFilteredDecisionBuilder::MakeUnassignedNodesUnperformed;
 
+}  // namespace operations_research
+
 // Generic rename rules.
 %rename (buildSolution) *::BuildSolution;
-
-}  // namespace operations_research
 
 // Protobuf support
 PROTO_INPUT(operations_research::RoutingSearchParameters,
