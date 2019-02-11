@@ -52,6 +52,9 @@ class VariableValues {
   // function and it is up to the client to call RecomputeBasicVariableValues().
   void SetNonBasicVariableValueFromStatus(ColIndex col);
 
+  // Calls SetNonBasicVariableValueFromStatus() on all non-basic variables.
+  void ResetAllNonBasicVariableValues();
+
   // Recomputes the value of the basic variables from the non-basic ones knowing
   // that the linear program matrix A times the variable values vector must be
   // zero. It is better to call this when the basis is refactorized. This

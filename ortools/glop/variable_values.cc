@@ -62,6 +62,31 @@ void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
   // get a compile-time error if a value is missing.
 }
 
+void VariableValues::ResetAllNonBasicVariableValues() {
+  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+  const VariableStatusRow& statuses = variables_info_.GetStatusRow();
+  const ColIndex num_cols = matrix_.num_cols();
+  variable_values_.resize(num_cols, 0.0);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    switch (statuses[col]) {
+      case VariableStatus::FIXED_VALUE:
+        ABSL_FALLTHROUGH_INTENDED;
+      case VariableStatus::AT_LOWER_BOUND:
+        variable_values_[col] = lower_bounds[col];
+        break;
+      case VariableStatus::AT_UPPER_BOUND:
+        variable_values_[col] = upper_bounds[col];
+        break;
+      case VariableStatus::FREE:
+        variable_values_[col] = 0.0;
+        break;
+      case VariableStatus::BASIC:
+        break;
+    }
+  }
+}
+
 void VariableValues::RecomputeBasicVariableValues() {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(basis_factorization_.IsRefactorized());

@@ -269,12 +269,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     //
     // Note(user): Currently, we never do both at the same time, so we could
     // be a bit faster here, but then this is quick anyway.
-    const VariableStatusRow& statuses = variables_info_.GetStatusRow();
-    for (ColIndex col(0); col < num_cols_; ++col) {
-      if (statuses[col] != VariableStatus::BASIC) {
-        SetNonBasicVariableStatusAndDeriveValue(col, statuses[col]);
-      }
-    }
+    variable_values_.ResetAllNonBasicVariableValues();
     GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
     PermuteBasis();
     variable_values_.RecomputeBasicVariableValues();
@@ -895,7 +890,7 @@ void RevisedSimplex::InitializeVariableStatusesForWarmStart(
       if (num_basic_variables == num_rows_) {
         VLOG(1) << "Too many basic variables in the warm-start basis."
                 << "Only keeping the first ones as VariableStatus::BASIC.";
-        SetNonBasicVariableStatusAndDeriveValue(col, default_status);
+        variables_info_.UpdateToNonBasicStatus(col, default_status);
       } else {
         ++num_basic_variables;
         variables_info_.UpdateToBasicStatus(col);
@@ -914,9 +909,12 @@ void RevisedSimplex::InitializeVariableStatusesForWarmStart(
             upper_bound_[col] == kInfinity))) {
         status = default_status;
       }
-      SetNonBasicVariableStatusAndDeriveValue(col, status);
+      variables_info_.UpdateToNonBasicStatus(col, status);
     }
   }
+
+  // Initialize the values.
+  variable_values_.ResetAllNonBasicVariableValues();
 }
 
 // This implementation starts with an initial matrix B equal to the identity
