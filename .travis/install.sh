@@ -58,9 +58,6 @@ if [ "${BUILDER}" == make ]; then
     elif [ "${LANGUAGE}" == python3 ]; then
       brew upgrade python
       python3 -m pip install -q virtualenv wheel six
-    elif [ "${LANGUAGE}" == java ]; then
-      brew tap caskroom/versions
-      brew cask install java8
     elif [ "${LANGUAGE}" == dotnet ]; then
       brew tap caskroom/cask
       brew cask install dotnet-sdk
