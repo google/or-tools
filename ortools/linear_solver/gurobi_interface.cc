@@ -67,12 +67,24 @@ class GurobiInterface : public MPSolverInterface {
 
   // Adds Constraint incrementally.
   void AddRowConstraint(MPConstraint* const ct) override;
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  void AddSOSConstraint(SOSConstraint* const ct) override;
+  void ClearSOSConstraint(SOSConstraint* const ct) override;
+#endif
+
   // Adds variable incrementally.
   void AddVariable(MPVariable* const var) override;
   // Changes a coefficient in a constraint.
   void SetCoefficient(MPConstraint* const constraint,
                       const MPVariable* const variable, double new_value,
                       double old_value) override;
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // Changes a coefficient in a SOS constraint.
+  void SetCoefficient(SOSConstraint* const sos_constraint,
+                              const MPVariable* const variable,
+                              double new_value, double old_value) override;
+#endif
   // Clears a constraint from all its terms.
   void ClearConstraint(MPConstraint* const constraint) override;
   // Changes a coefficient in the linear objective
@@ -104,6 +116,9 @@ class GurobiInterface : public MPSolverInterface {
 
   void ExtractNewVariables() override;
   void ExtractNewConstraints() override;
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  void ExtractNewSOSConstraints() override;
+#endif
   void ExtractObjective() override;
 
   std::string SolverVersion() const override {
@@ -172,6 +187,38 @@ class GurobiInterface : public MPSolverInterface {
   GRBenv* env_;
   bool mip_;
 };
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+//Gurobi-specific helper class used in order to prepare the input for GRBaddsos
+class SOSConstraintAggregator {
+ public:
+  enum AggregationError {
+   INFEASIBLE_CONSTRAINTS=1,
+   UNSPECIFIED=2
+  };
+
+  SOSConstraintAggregator(MPSolver* const solver, MPSolverInterface* const iface);
+  int num_sos_constr() { return num_sos_; }
+  int num_members() { return num_members_; }
+  int *types() { return types_.data(); }
+  int *beg_indices() { return beg_indices_.data(); }
+  int *indices() { return indices_.data(); };
+  double *weights() { return weights_.data(); };
+  AggregationError error() { return error_; }
+ private:
+  bool memb_init();
+  int num_sos_;
+  int num_members_;
+  std::vector<int> types_;
+  std::vector<int> beg_indices_; 
+  std::vector<int> indices_;
+  std::vector<double> weights_;
+  AggregationError error_;
+  MPSolver* const solver_;
+  MPSolverInterface* const iface_;
+  DISALLOW_NO_ARGS_CTOR(SOSConstraintAggregator);
+};  
+#endif // MIP_SOLVER_WITH_SOS_CONSTRAINTS
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
@@ -262,6 +309,16 @@ void GurobiInterface::AddRowConstraint(MPConstraint* const ct) {
   sync_status_ = MUST_RELOAD;
 }
 
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+//TO DO (dimitarpg13): implement the SOS constraint
+void GurobiInterface::AddSOSConstraint(SOSConstraint* const ct) {
+  sync_status_ = MUST_RELOAD;
+}
+void GurobiInterface::ClearSOSConstraint(SOSConstraint* const sos_constraint) {
+  sync_status_ = MUST_RELOAD;
+}
+#endif
+
 void GurobiInterface::AddVariable(MPVariable* const ct) {
   sync_status_ = MUST_RELOAD;
 }
@@ -271,6 +328,13 @@ void GurobiInterface::SetCoefficient(MPConstraint* const constraint,
                                      double new_value, double old_value) {
   sync_status_ = MUST_RELOAD;
 }
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+void GurobiInterface::SetCoefficient(SOSConstraint* const sos_constraint,
+                              const MPVariable* const variable,
+                              double new_value, double old_value) {
+  sync_status_ = MUST_RELOAD;
+}
+#endif
 
 void GurobiInterface::ClearConstraint(MPConstraint* const constraint) {
   sync_status_ = MUST_RELOAD;
@@ -511,6 +575,21 @@ void GurobiInterface::ExtractNewConstraints() {
   }
   CheckedGurobiCall(GRBupdatemodel(model_));
 }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+void GurobiInterface::ExtractNewSOSConstraints() {
+ 
+  SOSConstraintAggregator sos(solver_, this);
+
+  CheckedGurobiCall(GRBaddsos(model_, sos.num_sos_constr(), sos.num_members(),
+                                      sos.types(), sos.beg_indices(), sos.indices(),
+                                      sos.weights()));
+
+  CheckedGurobiCall(GRBupdatemodel(model_));
+ 
+}
+
+#endif // MIP_SOLVER_WITH_SOS_CONSTRAINTS
 
 void GurobiInterface::ExtractObjective() {
   CheckedGurobiCall(
@@ -783,6 +862,66 @@ MPSolverInterface* BuildGurobiInterface(bool mip, MPSolver* const solver) {
   return new GurobiInterface(solver, mip);
 }
 
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+bool SOSConstraintAggregator::memb_init() {
+  typedef std::pair<int,double> var_pair;
+  typedef std::vector<var_pair> var_arr;
+
+  CHECK(iface_->last_variable_index_ == 0 ||
+        iface_->last_variable_index_ == solver_->variables().size());
+  CHECK(iface_->last_sos_constraint_index_ == 0 ||
+        iface_->last_sos_constraint_index_ == solver_->constraints_.size());
+  int total_num_sos_rows = solver_->sos_constraints_.size();
+  
+  bool res = true;
+  if (iface_->last_sos_constraint_index_ < total_num_sos_rows) {
+      int i=0, v_size = 0;
+      std::set<int> vars;
+      for (i = iface_->last_sos_constraint_index_; i < total_num_sos_rows; ++i) {
+         auto ct = solver_->sos_constraints_[i];
+         CHECK(!iface_->sos_constraint_is_extracted(i));
+         iface_->set_sos_constraint_as_extracted(i, true);
+  
+         v_size = ct->variable_indices().size();
+         var_arr v(v_size);
+         for (int j = 0; j < v_size; j++) {
+            const auto var_index = ct->variable_indices()[j]; 
+            CHECK(iface_->variable_is_extracted(var_index));
+            v[j].first = var_index;
+            v[j].second = ct->weights()[j];
+            vars.insert(ct->variable_indices()[j]);
+         }
+         // dimitarpg13: not sure if I need to sort the variable indices in increasing order so
+         // I am assuming that GRBaddsos requires that for its ind[] and weight[] arguments.
+         std::sort(v.begin(), v.end(), [] (const var_pair& a , const var_pair& b) -> bool 
+              {
+                return a.first < b.first;
+              });
+         beg_indices_.push_back(v.front().first);
+         if (ct->GetSOSType() == MPSolver::SOSType::SOS1) 
+            types_.push_back(GRB_SOS_TYPE1);
+         else
+            types_.push_back(GRB_SOS_TYPE2);
+
+         for (auto& p : v) {
+           indices_.push_back(p.first);
+           weights_.push_back(p.second);           
+         }    
+      }
+      num_members_ = vars.size();
+      num_sos_ = total_num_sos_rows - iface_->last_sos_constraint_index_;
+  }
+  return res;
+}
+
+SOSConstraintAggregator::SOSConstraintAggregator(MPSolver* const solver,
+                                                 MPSolverInterface* const iface) :
+  num_sos_(0), num_members_(0), solver_(solver), iface_(iface) 
+{
+   if (!memb_init())
+       error_=UNSPECIFIED;
+}
+#endif // MIP_SOLVER_WITH_SOS_CONSTRAINTS
 
 }  // namespace operations_research
 #endif  //  #if defined(USE_GUROBI)

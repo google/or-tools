@@ -99,6 +99,11 @@ message MPConstraintProto {
   optional bool is_lazy = 5 [default = false];
 }
 
+// TO DO (dimitarpg13): implement SOSConstraintProto here
+// 
+//
+//
+
 // This message encodes a partial (or full) assignment of the variables of a
 // MPModelProto problem. The indices in var_index should be unique and valid
 // variable indices of the associated problem.
@@ -120,6 +125,9 @@ message MPModelProto {
 
   // All the constraints appearing in the model.
   repeated MPConstraintProto constraint = 4;
+
+
+  // TO DO (dimitarpg13): add sos_constraint member here
 
   // Name of the model.
   optional string name = 5 [default = ""];

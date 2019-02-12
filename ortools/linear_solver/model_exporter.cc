@@ -336,6 +336,13 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
     }
   }
 
+
+  // SOS Constraints 
+  // TO DO (dimitarpg13): handle SOS constraints here
+  //
+  //
+
+
   // Bounds
   absl::StrAppend(output, "Bounds\n");
   if (proto_.objective_offset() != 0.0) {
@@ -522,6 +529,11 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     absl::StrAppend(output, "ROWS\n", rows_section);
   }
 
+  // SOS Constraints 
+  // TO DO (dimitarpg13): handle SOS constraints here
+  //
+  //
+
   // As the information regarding a column needs to be contiguous, we create
   // a vector associating a variable index to a vector containing the indices
   // of the constraints where this variable appears.
@@ -543,6 +555,11 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
       }
     }
   }
+
+  // SOS Constraints 
+  // TO DO (dimitarpg13): handle SOS constraints here
+  //
+  //
 
   // COLUMNS section.
   std::string columns_section;
@@ -593,6 +610,11 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   if (!ranges_section.empty()) {
     absl::StrAppend(output, "RANGES\n", ranges_section);
   }
+
+  // SOS Constraints 
+  // TO DO (dimitarpg13): handle SOS constraints here
+  //
+  //
 
   // BOUNDS section.
   current_mps_column_ = 0;

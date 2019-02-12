@@ -29,7 +29,8 @@
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
 %include "ortools/base/base.i"
-
+%include "ortools/base/optimization_suites.h"
+%include "std_vector.i"
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -39,6 +40,11 @@ class MPModelProto;
 class MPModelRequest;
 class MPSolutionResponse;
 }  // namespace operations_research
+
+namespace std {
+%template(Vector) vector < double >;
+%template(Matrix)  vector < vector < double > >;
+}
 
 %{
 #include "ortools/linear_solver/linear_solver.h"
@@ -196,7 +202,6 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 
-
 // Expose the MPSolver::ResultStatus enum.
 %unignore operations_research::MPSolver::ResultStatus;
 %unignore operations_research::MPSolver::OPTIMAL;
@@ -218,6 +223,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint();
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint(double, double, const std::string&);
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint(const std::string&);
+
 %unignore operations_research::MPSolver::~MPSolver;
 %unignore operations_research::MPSolver::Solve;
 %unignore operations_research::MPSolver::VerifySolution;
@@ -250,6 +256,78 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::AT_UPPER_BOUND;
 %unignore operations_research::MPSolver::FIXED_VALUE;  // No unit test
 %unignore operations_research::MPSolver::BASIC;
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS 
+%rename (PwlSolver) operations_research::PWLSolver;
+%rename (PwlSolver) operations_research::PWLSolver::PWLSolver;
+%rename (SosConstraint) operations_research::SOSConstraint;
+%rename (NumSosConstraints) operations_research::MPSolver::NumSOSConstraints; 
+%rename (SosConstraint) operations_research::MPSolver::MakeSOSConstraint(const SOSType);
+%rename (SosConstraint) operations_research::MPSolver::MakeSOSConstraint(const std::string&,
+                                                                         const SOSType);
+%rename (NumOfXPoints) operations_research::PWLSolver::numb_of_x_points();
+%rename (DimOfXPoint) operations_research::PWLSolver::dim_of_x_point();
+%rename (NumConstraints) operations_research::PWLSolver::numb_of_constr();
+%rename (NumRealVariables) operations_research::PWLSolver::numb_of_real_vars();
+%rename (NumVariables) operations_research::PWLSolver::numb_of_vars();
+%rename (Objective) operations_research::PWLSolver::objective;
+%rename (GetVariable) operations_research::PWLSolver::GetVariableOrNull;
+%rename (LookupSosConstraint)
+         operations_research::MPSolver::LookupSOSConstraintOrNull;
+
+%unignore operations_research::PWLSolver::OptimizationSuite;
+%unignore operations_research::PWLSolver::SCIP;
+%unignore operations_research::PWLSolver::CBC;
+%unignore operations_research::PWLSolver::GLPK;
+%unignore operations_research::PWLSolver::GUROBI;
+%unignore operations_research::PWLSolver::CPLEX;
+
+%unignore operations_research::PWLSolver::VectorParameterType;
+%unignore operations_research::PWLSolver::bVector;
+%unignore operations_research::PWLSolver::cVector;
+%unignore operations_research::PWLSolver::dVector;
+
+%unignore operations_research::PWLSolver::MatrixParameterType;
+%unignore operations_research::PWLSolver::AMatrix;
+%unignore operations_research::PWLSolver::BMatrix;
+
+// Expose the PWLSolver's basic API.
+%unignore operations_research::PWLSolver::~PWLSolver;
+%unignore operations_research::PWLSolver::Solve;
+%unignore operations_research::PWLSolver::VerifySolution;
+%unignore operations_research::PWLSolver::infinity;
+%unignore operations_research::PWLSolver::set_time_limit;  // No unit test
+%unignore operations_research::PWLSolver::SetXValues;
+%unignore operations_research::PWLSolver::SetYValues;
+%unignore operations_research::PWLSolver::SetParameter;
+
+#ifndef NDEBUG
+%unignore operations_research::PWLSolver::PrintXValues;
+%unignore operations_research::PWLSolver::PrintYValues;
+%unignore operations_research::PWLSolver::PrintAValues;
+%unignore operations_research::PWLSolver::PrintBValues;
+%unignore operations_research::PWLSolver::PrintbValues;
+%unignore operations_research::PWLSolver::PrintcValues;
+%unignore operations_research::PWLSolver::PrintdValues;
+#endif
+
+// Expose some of the more advanced PWLSolver API.
+%unignore operations_research::PWLSolver::Clear;  // No unit test
+%unignore operations_research::PWLSolver::NextSolution;
+
+%unignore operations_research::MPSolver::SOSType;
+%unignore operations_research::MPSolver::SOS1;
+%unignore operations_research::MPSolver::SOS2;
+
+// SOSConstraint: writer API.
+%unignore operations_research::SOSConstraint::SetCoefficient;
+
+// SOSConstraint: reader API.
+%unignore operations_research::SOSConstraint::GetCoefficient;
+%unignore operations_research::SOSConstraint::GetSOSType;
+%unignore operations_research::SOSConstraint::name;
+%unignore operations_research::SOSConstraint::index;
+#endif
 
 // MPVariable: reader API.
 %unignore operations_research::MPVariable::solution_value;

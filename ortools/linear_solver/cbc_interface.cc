@@ -74,6 +74,10 @@ class CBCInterface : public MPSolverInterface {
 
   // Add constraint incrementally.
   void AddRowConstraint(MPConstraint* const ct) override;
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  // Add SOS Constraint incrementally
+  void AddSOSConstraint(SOSConstraint* const ct) override;
+#endif
   // Add variable incrementally.
   void AddVariable(MPVariable* const var) override;
   // Change a coefficient in a constraint.
@@ -230,6 +234,13 @@ void CBCInterface::SetConstraintBounds(int index, double lb, double ub) {
 void CBCInterface::AddRowConstraint(MPConstraint* const ct) {
   sync_status_ = MUST_RELOAD;
 }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+//TO DO (dimitarpg13): SOS constraints need to be implemented
+void CBCInterface::AddSOSConstraint(SOSConstraint* const ct) {
+   sync_status_ = MUST_RELOAD;
+}
+#endif
 
 void CBCInterface::AddVariable(MPVariable* const var) {
   sync_status_ = MUST_RELOAD;

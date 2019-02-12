@@ -45,6 +45,8 @@ void LinearProgramToMPModelProto(const LinearProgram& input,
       constraint->add_coefficient(e.coefficient());
     }
   }
+  //TO DO (dimitarpg13): handle SOSConstraintProto here
+  //
 }
 
 // Converts a MPModelProto to a LinearProgram.
@@ -78,6 +80,9 @@ void MPModelProtoToLinearProgram(const MPModelProto& input,
                              cst.coefficient(k));
     }
   }
+  //TO DO (dimitarpg13): read the SOS constraints from the input and save their
+  //coefficients to the output
+  //
 }
 
 }  // namespace glop

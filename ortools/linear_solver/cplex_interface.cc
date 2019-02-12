@@ -79,6 +79,9 @@ namespace operations_research {
       virtual void SetConstraintBounds(int row_index, double lb, double ub);
 
       virtual void AddRowConstraint(MPConstraint* const ct);
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+  virtual void AddSOSConstraint(SOSConstraint* const ct);
+#endif
       virtual void AddVariable(MPVariable* const var);
       virtual void SetCoefficient(MPConstraint* const constraint,
                                   MPVariable const* const variable,
@@ -477,6 +480,13 @@ namespace operations_research {
       // ExtractNewConstraints() right before the solve.
       InvalidateModelSynchronization();
    }
+
+#ifdef MIP_SOLVER_WITH_SOS_CONSTRAINTS
+   // TO DO (dimitarpg13): SOS constraints need to be implemented
+   void CplexInterface::AddSOSConstraint(SOSConstraint* ct) {
+       InvalidateModelSynchronization();
+   }
+#endif
 
    void CplexInterface::AddVariable(MPVariable* const ct)
    {
