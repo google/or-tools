@@ -123,6 +123,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %{
 #include <setjmp.h>
 #include <vector>
+
 #include "ortools/base/integral_types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -656,8 +657,7 @@ import java.util.function.LongConsumer;
 // see https://docs.oracle.com/javase/8/docs/api/java/lang/Runnable.html
 import java.lang.Runnable;
 %}
-// Keep reference to FunctionalInterface to avoid GC to collect them early
-// note: SWUG does not support multiple %typemap(javacode) Type, so we have to
+// note: SWIG does not support multiple %typemap(javacode) Type, so we have to
 // define all Solver tweak here (ed and not in the macro DEFINE_CALLBACK_*)
 %typemap(javacode) Solver %{
   /** This exceptions signal that a failure has been raised in the C++ world. */
@@ -1377,6 +1377,7 @@ import java.util.function.LongConsumer;
 %}
 %ignore IntVarLocalSearchFilter::FindIndex;
 %ignore IntVarLocalSearchFilter::IsVarSynced;
+
 %rename (addVars) IntVarLocalSearchFilter::AddVars;  // Inherited.
 %rename (injectObjectiveValue) IntVarLocalSearchFilter::InjectObjectiveValue;
 %rename (isIncremental) IntVarLocalSearchFilter::IsIncremental;
@@ -1503,6 +1504,8 @@ namespace operations_research {
 }  // namespace operations_research
 
 // Wrap cp includes
+// TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
+//swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/constraint_solver.h"
 %include "ortools/constraint_solver/constraint_solveri.h"
 %include "ortools/constraint_solver/java/javawrapcp_util.h"

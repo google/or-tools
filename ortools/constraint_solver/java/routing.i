@@ -48,7 +48,6 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingVehicleClassIndex,
     operations_research::RoutingModel::VehicleClassIndex);
 
-
 namespace operations_research {
 // RoutingModel
 // Map transit callback to Java @FunctionalInterface types.
@@ -78,6 +77,7 @@ import java.util.function.LongUnaryOperator;
     $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 }
+
 %rename (activeVar) RoutingModel::ActiveVar;
 %rename (addAllActive) RoutingModel::AddAllActive;
 %rename (addAtSolutionCallback) RoutingModel::AddAtSolutionCallback;
@@ -216,6 +216,7 @@ import java.util.function.LongUnaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
+
 %rename (cumulVar) RoutingDimension::CumulVar;
 %rename (fixedTransitVar) RoutingDimension::FixedTransitVar;
 %rename (getBreakIntervalsOfVehicle) RoutingDimension::GetBreakIntervalsOfVehicle;
