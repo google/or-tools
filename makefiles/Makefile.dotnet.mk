@@ -408,11 +408,11 @@ endif
 build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_NUPKG)
 	"$(DOTNET_BIN)" build $(SOURCE_PATH)proj
 
-.PHONY: run # Run a .Net C# program.
+.PHONY: run # Run a .Net C# program (using 'dotnet run').
 run: build
 	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
 
-.PHONY: run_test # Run a .Net C# program.
+.PHONY: run_test # Run a .Net C# program (using 'dotnet test').
 run_test: build
 	"$(DOTNET_BIN)" test --no-build $(SOURCE_PATH)proj -- $(ARGS)
 endif
