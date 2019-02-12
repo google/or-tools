@@ -28,28 +28,25 @@ public class Tsp {
   class DataModel {
     // Constructor:
     public DataModel() {
-      locations_ = new int[,] {
-        {4, 4},
-          {2, 0}, {8, 0},
-          {0, 1}, {1, 1},
-          {5, 2}, {7, 2},
-          {3, 3}, {6, 3},
-          {5, 5}, {8, 5},
-          {1, 6}, {2, 6},
-          {3, 7}, {6, 7},
-          {0, 8}, {7, 8}
-      };
       // Convert locations in meters using a city block dimension of 114m x 80m.
-      for (int i=0; i < locations_.GetLength(0); i++) {
-        locations_[i, 0] *= 114;
-        locations_[i, 1] *= 80;
+      for (int i=0; i < Locations.GetLength(0); i++) {
+        Locations[i, 0] *= 114;
+        Locations[i, 1] *= 80;
       }
     }
-    public ref readonly int[,] GetLocations() { return ref locations_;}
-    public int GetVehicleNumber() { return 1;}
-    public int GetDepot() { return 0;}
-
-    private int[,] locations_;
+    public int[,] Locations = {
+      {4, 4},
+      {2, 0}, {8, 0},
+      {0, 1}, {1, 1},
+      {5, 2}, {7, 2},
+      {3, 3}, {6, 3},
+      {5, 5}, {8, 5},
+      {1, 6}, {2, 6},
+      {3, 7}, {6, 7},
+      {0, 8}, {7, 8}
+    };
+    public int VehicleNumber = 1;
+    public int Depot = 0;
   };
   // [END data_model]
 
@@ -64,7 +61,7 @@ public class Tsp {
         in DataModel data,
         in RoutingIndexManager manager) {
       // precompute distance between location to have distance callback in O(1)
-      int locationNumber = data.GetLocations().GetLength(0);
+      int locationNumber = data.Locations.GetLength(0);
       distancesMatrix_ = new long[locationNumber, locationNumber];
       indexManager_ = manager;
       for (int fromNode = 0; fromNode < locationNumber; fromNode++) {
@@ -73,8 +70,8 @@ public class Tsp {
             distancesMatrix_[fromNode, toNode] = 0;
           else
             distancesMatrix_[fromNode, toNode] =
-              Math.Abs(data.GetLocations()[toNode, 0] - data.GetLocations()[fromNode, 0]) +
-              Math.Abs(data.GetLocations()[toNode, 1] - data.GetLocations()[fromNode, 1]);
+              Math.Abs(data.Locations[toNode, 0] - data.Locations[fromNode, 0]) +
+              Math.Abs(data.Locations[toNode, 1] - data.Locations[fromNode, 1]);
         }
       }
     }
@@ -126,9 +123,9 @@ public class Tsp {
     // Create Routing Index Manager
     // [START index_manager]
     RoutingIndexManager manager = new RoutingIndexManager(
-        data.GetLocations().GetLength(0),
-        data.GetVehicleNumber(),
-        data.GetDepot());
+        data.Locations.GetLength(0),
+        data.VehicleNumber,
+        data.Depot);
     // [END index_manager]
 
     // Create Routing Model.
