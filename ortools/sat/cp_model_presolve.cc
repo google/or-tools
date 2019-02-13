@@ -72,24 +72,6 @@ void PresolveContext::AddImplication(int a, int b) {
   ct->mutable_bool_and()->add_literals(b);
 }
 
-// a => b1 && ... && bn.
-void PresolveContext::AddImplication(int a, const std::vector<int>& b) {
-  ConstraintProto* const ct = working_model->add_constraints();
-  ct->add_enforcement_literal(a);
-  for (const int lit : b) {
-    ct->mutable_bool_and()->add_literals(lit);
-  }
-}
-
-void PresolveContext::AddImplication(const std::vector<int>& a, int b) {
-  BoolArgumentProto* const bool_or =
-      working_model->add_constraints()->mutable_bool_or();
-  for (const int lit : a) {
-    bool_or->add_literals(NegatedRef(lit));
-  }
-  bool_or->add_literals(b);
-}
-
 // b => x in [lb, ub].
 void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
   ConstraintProto* const imply = working_model->add_constraints();
@@ -356,51 +338,51 @@ void PresolveContext::InitializeNewDomains() {
   var_to_constraints.resize(domains.size());
 }
 
-void PresolveContext::FullyEncodeVariable(int var) {
-  CHECK(RefIsPositive(var));
-  if (gtl::ContainsKey(expanded_variables, var)) return;
+int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
+  const int var = PositiveRef(ref);
+  const int64 s_value = RefIsPositive(ref) ? value : -value;
+  std::pair<int, int64> key{var, s_value};
+
+  if (encoding.contains(key)) return encoding[key];
 
   if (domains[var].Size() == 1) {
-    expanded_variables[var][MinOf(var)] = GetOrCreateConstantVar(1);
-  } else if (domains[var].Size() == 2) {
+    const int true_literal = GetOrCreateConstantVar(1);
+    encoding[key] = true_literal;
+    return true_literal;
+  }
+
+  if (domains[var].Size() == 2) {
     const int64 var_min = MinOf(var);
     const int64 var_max = MaxOf(var);
     if (var_min == 0 && var_max == 1) {
-      expanded_variables[var][var_min] = NegatedRef(var);
-      expanded_variables[var][var_max] = var;
+      encoding[std::make_pair(var, 0)] = NegatedRef(var);
+      encoding[std::make_pair(var, 1)] = var;
     } else {
-      const int lit = NewBoolVar();
-      expanded_variables[var][var_min] = NegatedRef(lit);
-      expanded_variables[var][var_max] = lit;
+      const int literal = NewBoolVar();
+      encoding[std::make_pair(var, var_min)] = NegatedRef(literal);
+      encoding[std::make_pair(var, var_max)] = literal;
+      InitializeNewDomains();
 
-      LinearConstraintProto* const lin =
-          working_model->add_constraints()->mutable_linear();
+      ConstraintProto* const ct = working_model->add_constraints();
+      LinearConstraintProto* const lin = ct->mutable_linear();
       lin->add_vars(var);
       lin->add_coeffs(1);
-      lin->add_vars(lit);
+      lin->add_vars(literal);
       lin->add_coeffs(var_min - var_max);
       lin->add_domain(var_min);
       lin->add_domain(var_min);
+      StoreAffineRelation(*ct, var, literal, var_max - var_min, var_min);
     }
-  } else {
-    for (const ClosedInterval& interval : domains[var]) {
-      for (int64 v = interval.start; v <= interval.end; ++v) {
-        const int lit = NewBoolVar();
-        AddImplyInDomain(lit, var, Domain(v));
-        AddImplyInDomain(NegatedRef(lit), var, Domain(v).Complement());
-        expanded_variables[var][v] = lit;
-      }
-    }
+    return encoding[key];
   }
-}
 
-int PresolveContext::GetLiteralAssociatedToEquality(int var, int64 value) {
-  if (!RefIsPositive(var)) {
-    return GetLiteralAssociatedToEquality(NegatedRef(var), -value);
-  }
-  CHECK(gtl::ContainsKey(expanded_variables, var));
-  CHECK(gtl::ContainsKey(expanded_variables[var], value));
-  return expanded_variables[var][value];
+  const int literal = NewBoolVar();
+  AddImplyInDomain(literal, var, Domain(s_value));
+  AddImplyInDomain(NegatedRef(literal), var, Domain(s_value).Complement());
+  encoding[key] = literal;
+
+  InitializeNewDomains();
+  return literal;
 }
 
 namespace {
@@ -1793,45 +1775,78 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   if (context->IsFixed(target_ref)) {
-    context->FullyEncodeVariable(index_ref);
-
-    bool all_vars_encoded = true;
     const Domain index_domain = context->DomainOf(index_ref);
+    const int64 target_value = context->MinOf(target_ref);
+
     for (const ClosedInterval& interval : index_domain) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
         const int var = ct->element().vars(v);
-        if (!gtl::ContainsKey(context->expanded_variables, var)) {
-          all_vars_encoded = false;
-          break;
+        const int index_lit =
+            context->GetOrCreateVarValueEncoding(index_ref, v);
+        const int var_lit =
+            context->GetOrCreateVarValueEncoding(var, target_value);
+        context->AddImplication(index_lit, var_lit);
+      }
+    }
+    context->UpdateRuleStats("element: expand fixed target element");
+    context->InitializeNewDomains();
+    return RemoveConstraint(ct, context);
+  }
+
+  if (all_constants) {
+    const Domain index_domain = context->DomainOf(index_ref);
+    absl::flat_hash_map<int, std::vector<int>> supports;
+
+    // Help linearization.
+    LinearConstraintProto* const lin =
+        context->working_model->add_constraints()->mutable_linear();
+    lin->add_vars(target_ref);
+    lin->add_coeffs(-1);
+    int64 rhs = 0;
+
+    for (const ClosedInterval& interval : index_domain) {
+      for (int64 v = interval.start; v <= interval.end; ++v) {
+        const int64 value = context->MinOf(ct->element().vars(v));
+        const int index_lit =
+            context->GetOrCreateVarValueEncoding(index_ref, v);
+        CHECK(context->DomainContains(target_ref, value))
+            << "target " << context->DomainOf(target_ref)
+            << ", value = " << value;
+
+        const int target_lit =
+            context->GetOrCreateVarValueEncoding(target_ref, value);
+        context->AddImplication(index_lit, target_lit);
+        supports[target_lit].push_back(index_lit);
+        if (value != 0) {
+          if (!RefIsPositive(index_lit)) {
+            lin->add_vars(PositiveRef(index_lit));
+            lin->add_coeffs(-value);
+            rhs -= value;
+          } else {
+            lin->add_vars(index_lit);
+            lin->add_coeffs(value);
+          }
         }
       }
     }
 
-    if (all_vars_encoded) {
-      const int64 target_value = context->MinOf(target_ref);
-      for (const ClosedInterval& interval : index_domain) {
-        for (int64 v = interval.start; v <= interval.end; ++v) {
-          const int var = ct->element().vars(v);
-          const int index_lit =
-              context->GetLiteralAssociatedToEquality(index_ref, v);
-          const int var_lit =
-              context->GetLiteralAssociatedToEquality(var, target_value);
-          context->AddImplication(index_lit, var_lit);
-          // context->AddImplication(var_lit, index_lit);
-        }
+    lin->add_domain(rhs);
+    lin->add_domain(rhs);
+
+    for (const auto& it : supports) {
+      BoolArgumentProto* const bool_or =
+          context->working_model->add_constraints()->mutable_bool_or();
+      bool_or->add_literals(NegatedRef(it.first));
+      for (const int lit : it.second) {
+        bool_or->add_literals(lit);
       }
-      context->UpdateRuleStats("element: expand fixed target element");
-      context->InitializeNewDomains();
-      return RemoveConstraint(ct, context);
-    } else {
-      context->InitializeNewDomains();
     }
+
+    context->UpdateRuleStats("element: expand fixed array element");
+    context->InitializeNewDomains();
+    return RemoveConstraint(ct, context);
   }
 
-  if (all_constants && num_vars == constant_set.size()) {
-    // TODO(user): We should be able to do something for simple mapping.
-    context->UpdateRuleStats("TODO element: one to one mapping");
-  }
   if (unique_target && !context->IsFixed(target_ref)) {
     context->UpdateRuleStats("TODO element: target not used elsewhere");
   }
@@ -2309,6 +2324,41 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
 bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
   AutomatonConstraintProto& proto = *ct->mutable_automaton();
+
+  bool all_affine = true;
+  std::vector<AffineRelation::Relation> affine_relations;
+  for (int v = 0; v < proto.vars_size(); ++v) {
+    const int var = ct->automaton().vars(v);
+    AffineRelation::Relation r = context->GetAffineRelation(PositiveRef(var));
+    affine_relations.push_back(r);
+    if (r.representative == var) {
+      all_affine = false;
+      break;
+    }
+    if (v > 0 && (r.coeff != affine_relations[v - 1].coeff ||
+                  r.offset != affine_relations[v - 1].offset)) {
+      all_affine = false;
+      break;
+    }
+  }
+
+  if (all_affine) {
+    for (int v = 0; v < proto.vars_size(); ++v) {
+      proto.set_vars(v, affine_relations[v].representative);
+    }
+    const AffineRelation::Relation rep = affine_relations.front();
+    for (int t = 0; t < proto.transition_tail_size(); ++t) {
+      const int64 label = proto.transition_label(t);
+      int64 inverse_label = (label - rep.offset) / rep.coeff;
+      if (inverse_label * rep.coeff + rep.offset != label) {
+        inverse_label = kint64min;
+      }
+      proto.set_transition_label(t, inverse_label);
+    }
+    context->UpdateRuleStats("automaton: unscale all affine labels");
+    return true;
+  }
+
   const int n = proto.vars_size();
   const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
 
@@ -3386,7 +3436,6 @@ void TryToSimplifyDomains(PresolveContext* context) {
       lin->add_coeffs(-1);
       lin->add_domain(offset);
       lin->add_domain(offset);
-
       context->StoreAffineRelation(*ct, var, new_var_index, 1, offset);
       context->UpdateRuleStats("variables: canonicalize size two domain");
       continue;

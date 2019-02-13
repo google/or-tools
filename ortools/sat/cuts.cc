@@ -632,23 +632,6 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
   CHECK_EQ(cut->coeffs.size(), size);
   CHECK_EQ(cut->lb, kMinIntegerValue);
 
-  // Test the tighteness precondition. Note that we use a big tolerance.
-  // This is not really needed, but if the constraint is not tight, there is
-  // little chance to generate a cut that violate the LP. And given how this
-  // is currently used, it should always be tight.
-  {
-    double activity = 0.0;
-    for (int i = 0; i < size; ++i) {
-      activity += lp_values[i] * ToDouble(cut->coeffs[i]);
-    }
-    if (std::abs(activity - ToDouble(cut->ub)) > 1.0) {
-      VLOG(1) << "Issue, base constraint not tight " << activity
-              << " <= " << ToDouble(cut->ub);
-      *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
-      return;
-    }
-  }
-
   // Shift each variable using its lower/upper bound so that no variable can
   // change sign. We eventually do a change of variable to its negation so
   // that all variable are non-negative.

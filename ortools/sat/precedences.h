@@ -186,7 +186,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   bool DisassembleSubtree(int source, int target,
                           std::vector<bool>* can_be_skipped);
   void AnalyzePositiveCycle(ArcIndex first_arc, Trail* trail,
-                            std::vector<Literal>* literal_to_push,
+                            std::vector<Literal>* must_be_all_true,
                             std::vector<Literal>* literal_reason,
                             std::vector<IntegerLiteral>* integer_reason);
   void CleanUpMarkedArcsAndParents();

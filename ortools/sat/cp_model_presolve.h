@@ -45,12 +45,6 @@ struct PresolveContext {
   // a => b.
   void AddImplication(int a, int b);
 
-  // a => b1 && ... && bn.
-  void AddImplication(int a, const std::vector<int>& b);
-
-  // a1 && .. && an => b
-  void AddImplication(const std::vector<int>& a, int b);
-
   // b => x in [lb, ub].
   void AddImplyInDomain(int b, int x, const Domain& domain);
 
@@ -110,11 +104,8 @@ struct PresolveContext {
   // Create the internal structure for any new variables in working_model.
   void InitializeNewDomains();
 
-  // Fully encode a variable.
-  void FullyEncodeVariable(int var);
-
   // Get associated literal for a fully encoded variable.
-  int GetLiteralAssociatedToEquality(int var, int64 value);
+  int GetOrCreateVarValueEncoding(int ref, int64 value);
 
   // This regroup all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
@@ -138,9 +129,9 @@ struct PresolveContext {
   absl::flat_hash_map<int64, int> constant_to_ref;
 
   // Contains fully expanded variables.
-  // expanded_variables[i][v] point to the literal attached to the value v of
-  // the variable i.
-  absl::flat_hash_map<int, absl::flat_hash_map<int64, int>> expanded_variables;
+  // expanded_variables[std::pair(i, v)] point to the literal attached to the
+  // value v of the variable i.
+  absl::flat_hash_map<std::pair<int, int64>, int> encoding;
 
   // Variable <-> constraint graph.
   // The vector list is sorted and contains unique elements.

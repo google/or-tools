@@ -240,7 +240,68 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
         coefficients[1] == 1 ? vars[1] : NegationOf(vars[1]),
         coefficients[2] == 1 ? vars[2] : NegationOf(vars[2]), upper_bound);
   }
+
   return [=](Model* model) {
+    // We split large constraints into a square root number of parts.
+    // This is to avoid a bad complexity while propagating them since our
+    // algorithm is not in O(num_changes).
+    //
+    // TODO(user): Alternatively, we could use a O(num_changes) propagation (a
+    // bit tricky to implement), or a decomposition into a tree with more than
+    // one level. Both requires experimentations.
+    //
+    // TODO(user): If the initial constraint was an equalilty we will create
+    // the "intermediate" variable twice where we could have use the same for
+    // both direction. Improve?
+    const int num_vars = vars.size();
+    if (num_vars > 100) {
+      std::vector<IntegerVariable> bucket_sum_vars;
+
+      std::vector<IntegerVariable> local_vars;
+      std::vector<IntegerValue> local_coeffs;
+
+      int i = 0;
+      const int num_buckets = static_cast<int>(std::round(std::sqrt(num_vars)));
+      for (int b = 0; b < num_buckets; ++b) {
+        local_vars.clear();
+        local_coeffs.clear();
+        int64 bucket_lb = 0;
+        int64 bucket_ub = 0;
+        const int limit = num_vars * (b + 1);
+        for (; i * num_buckets < limit; ++i) {
+          local_vars.push_back(vars[i]);
+          local_coeffs.push_back(IntegerValue(coefficients[i]));
+          const int64 term1 = model->Get(LowerBound(vars[i])) * coefficients[i];
+          const int64 term2 = model->Get(UpperBound(vars[i])) * coefficients[i];
+          bucket_lb += std::min(term1, term2);
+          bucket_ub += std::max(term1, term2);
+        }
+
+        const IntegerVariable bucket_sum =
+            model->Add(NewIntegerVariable(bucket_lb, bucket_ub));
+        bucket_sum_vars.push_back(bucket_sum);
+        local_vars.push_back(bucket_sum);
+        local_coeffs.push_back(IntegerValue(-1));
+        IntegerSumLE* constraint = new IntegerSumLE(
+            {}, local_vars, local_coeffs, IntegerValue(0), model);
+        constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+        model->TakeOwnership(constraint);
+      }
+
+      // Create the root-level sum.
+      local_vars.clear();
+      local_coeffs.clear();
+      for (const IntegerVariable var : bucket_sum_vars) {
+        local_vars.push_back(var);
+        local_coeffs.push_back(IntegerValue(1));
+      }
+      IntegerSumLE* constraint = new IntegerSumLE(
+          {}, local_vars, local_coeffs, IntegerValue(upper_bound), model);
+      constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+      model->TakeOwnership(constraint);
+      return;
+    }
+
     IntegerSumLE* constraint = new IntegerSumLE(
         {}, vars,
         std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),

@@ -26,11 +26,6 @@ namespace sat {
 
 namespace {
 
-bool IsInvalidOrTrue(LiteralIndex index, const Trail& trail) {
-  return index == kNoLiteralIndex ||
-         trail.Assignment().LiteralIsTrue(Literal(index));
-}
-
 void AppendLowerBoundReasonIfValid(IntegerVariable var,
                                    const IntegerTrail& i_trail,
                                    std::vector<IntegerLiteral>* reason) {
@@ -561,10 +556,10 @@ bool PrecedencesPropagator::DisassembleSubtree(
 }
 
 void PrecedencesPropagator::AnalyzePositiveCycle(
-    ArcIndex first_arc, Trail* trail, std::vector<Literal>* literal_to_push,
+    ArcIndex first_arc, Trail* trail, std::vector<Literal>* must_be_all_true,
     std::vector<Literal>* literal_reason,
     std::vector<IntegerLiteral>* integer_reason) {
-  literal_to_push->clear();
+  must_be_all_true->clear();
   literal_reason->clear();
   integer_reason->clear();
 
@@ -600,12 +595,12 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
 
     // If the cycle happens to contain optional variable not yet ignored, then
     // it is not a conflict anymore, but we can infer that these variable must
-    // all be ignored.
+    // all be ignored. This is because since we propagated them even if they
+    // where not present for sure, their presence literal must form a cycle
+    // together (i.e. they are all absent or present at the same time).
     if (integer_trail_->IsOptional(arc.head_var)) {
-      const Literal l = integer_trail_->IsIgnoredLiteral(arc.head_var);
-      if (!trail->Assignment().LiteralIsFalse(l)) {
-        literal_to_push->push_back(l);
-      }
+      must_be_all_true->push_back(
+          integer_trail_->IsIgnoredLiteral(arc.head_var));
     }
   }
 
@@ -666,22 +661,23 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
         // need to be propagated again later).
         if (DisassembleSubtree(arc.head_var.value(), arc.tail_var.value(),
                                &bf_can_be_skipped_)) {
-          std::vector<Literal> literal_to_push;
-          AnalyzePositiveCycle(arc_index, trail, &literal_to_push,
+          std::vector<Literal> must_be_all_true;
+          AnalyzePositiveCycle(arc_index, trail, &must_be_all_true,
                                &literal_reason_, &integer_reason_);
-          if (literal_to_push.empty()) {
-            std::vector<Literal>* conflict = trail->MutableConflict();
-            *conflict = literal_reason_;
-            integer_trail_->MergeReasonInto(integer_reason_, conflict);
-
-            // We don't want any duplicates.
-            // TODO(user): I think we could handle them, so maybe this is not
-            // needed.
-            gtl::STLSortAndRemoveDuplicates(conflict);
-            return false;
+          if (must_be_all_true.empty()) {
+            return integer_trail_->ReportConflict(literal_reason_,
+                                                  integer_reason_);
           } else {
-            gtl::STLSortAndRemoveDuplicates(&literal_to_push);
-            for (const Literal l : literal_to_push) {
+            gtl::STLSortAndRemoveDuplicates(&must_be_all_true);
+            for (const Literal l : must_be_all_true) {
+              if (trail_->Assignment().LiteralIsFalse(l)) {
+                literal_reason_.push_back(l);
+                return integer_trail_->ReportConflict(literal_reason_,
+                                                      integer_reason_);
+              }
+            }
+            for (const Literal l : must_be_all_true) {
+              if (trail_->Assignment().LiteralIsTrue(l)) continue;
               integer_trail_->EnqueueLiteral(l, literal_reason_,
                                              integer_reason_);
             }
