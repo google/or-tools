@@ -104,7 +104,8 @@ struct PresolveContext {
   // Create the internal structure for any new variables in working_model.
   void InitializeNewDomains();
 
-  // Get associated literal for a fully encoded variable.
+  // Gets the associated literal if it is already created. Otherwise
+  // create it, add the corresponding constraints and returns it.
   int GetOrCreateVarValueEncoding(int ref, int64 value);
 
   // This regroup all the affine relations between variables. Note that the

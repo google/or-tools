@@ -339,6 +339,7 @@ void PresolveContext::InitializeNewDomains() {
 }
 
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
+  // TODO(user,user): use affine relation here.
   const int var = PositiveRef(ref);
   const int64 s_value = RefIsPositive(ref) ? value : -value;
   std::pair<int, int64> key{var, s_value};
@@ -359,9 +360,9 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
       encoding[std::make_pair(var, 1)] = var;
     } else {
       const int literal = NewBoolVar();
+      InitializeNewDomains();
       encoding[std::make_pair(var, var_min)] = NegatedRef(literal);
       encoding[std::make_pair(var, var_max)] = literal;
-      InitializeNewDomains();
 
       ConstraintProto* const ct = working_model->add_constraints();
       LinearConstraintProto* const lin = ct->mutable_linear();
@@ -373,7 +374,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
       lin->add_domain(var_min);
       StoreAffineRelation(*ct, var, literal, var_max - var_min, var_min);
     }
-    return encoding[key];
+    return gtl::FindOrDieNoPrint(encoding, key);
   }
 
   const int literal = NewBoolVar();
@@ -2324,6 +2325,8 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
 bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
   AutomatonConstraintProto& proto = *ct->mutable_automaton();
+  if (proto.vars_size() == 0 || proto.transition_label_size() == 0)
+    return false;
 
   bool all_affine = true;
   std::vector<AffineRelation::Relation> affine_relations;
@@ -2342,21 +2345,57 @@ bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
     }
   }
 
-  if (all_affine) {
+  if (all_affine) {  // Unscale labels.
     for (int v = 0; v < proto.vars_size(); ++v) {
       proto.set_vars(v, affine_relations[v].representative);
     }
     const AffineRelation::Relation rep = affine_relations.front();
+    int new_size = 0;
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
       const int64 label = proto.transition_label(t);
       int64 inverse_label = (label - rep.offset) / rep.coeff;
-      if (inverse_label * rep.coeff + rep.offset != label) {
-        inverse_label = kint64min;
+      if (inverse_label * rep.coeff + rep.offset == label) {
+        if (new_size != t) {
+          proto.set_transition_tail(new_size, proto.transition_tail(t));
+          proto.set_transition_head(new_size, proto.transition_head(t));
+        }
+        proto.set_transition_label(new_size, inverse_label);
+        new_size++;
       }
-      proto.set_transition_label(t, inverse_label);
+    }
+    if (new_size < proto.transition_tail_size()) {
+      proto.mutable_transition_tail()->Truncate(new_size);
+      proto.mutable_transition_label()->Truncate(new_size);
+      proto.mutable_transition_head()->Truncate(new_size);
+      context->UpdateRuleStats("automaton: remove invalid transitions");
     }
     context->UpdateRuleStats("automaton: unscale all affine labels");
     return true;
+  }
+
+  Domain hull = context->DomainOf(proto.vars(0));
+  for (int v = 1; v < proto.vars_size(); ++v) {
+    hull = hull.UnionWith(context->DomainOf(proto.vars(v)));
+  }
+
+  int new_size = 0;
+  for (int t = 0; t < proto.transition_tail_size(); ++t) {
+    const int64 label = proto.transition_label(t);
+    if (hull.Contains(label)) {
+      if (new_size != t) {
+        proto.set_transition_tail(new_size, proto.transition_tail(t));
+        proto.set_transition_label(new_size, label);
+        proto.set_transition_head(new_size, proto.transition_head(t));
+      }
+      new_size++;
+    }
+  }
+  if (new_size < proto.transition_tail_size()) {
+    proto.mutable_transition_tail()->Truncate(new_size);
+    proto.mutable_transition_label()->Truncate(new_size);
+    proto.mutable_transition_head()->Truncate(new_size);
+    context->UpdateRuleStats("automaton: remove invalid transitions");
+    return false;
   }
 
   const int n = proto.vars_size();
@@ -2409,7 +2448,7 @@ bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
                                         reached_values[time].end()}));
   }
   if (removed_values) {
-    context->UpdateRuleStats("automaton: reduce variable domains");
+    context->UpdateRuleStats("automaton: reduced variable domains");
   }
   return false;
 }
