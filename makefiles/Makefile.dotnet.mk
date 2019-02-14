@@ -626,6 +626,7 @@ test_dotnet_contrib:
 
 .PHONY: test_dotnet_dotnet # Build and Run all .Net Examples (located in examples/dotnet)
 test_dotnet_dotnet:
+        $(MAKE) run SOURCE=examples/dotnet/BalanceGroupSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/cscvrptw.cs
 	$(MAKE) run SOURCE=examples/dotnet/csflow.cs
 	$(MAKE) run SOURCE=examples/dotnet/csintegerprogramming.cs
