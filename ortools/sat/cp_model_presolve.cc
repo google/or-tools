@@ -50,6 +50,7 @@ namespace sat {
 int PresolveContext::NewIntVar(const Domain& domain) {
   IntegerVariableProto* const var = working_model->add_variables();
   FillDomainInProto(domain, var);
+  InitializeNewDomains();
   return working_model->variables_size() - 1;
 }
 
@@ -61,6 +62,7 @@ int PresolveContext::GetOrCreateConstantVar(int64 cst) {
     IntegerVariableProto* const var_proto = working_model->add_variables();
     var_proto->add_domain(cst);
     var_proto->add_domain(cst);
+    InitializeNewDomains();
   }
   return constant_to_ref[cst];
 }
@@ -342,6 +344,9 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   // TODO(user,user): use affine relation here.
   const int var = PositiveRef(ref);
   const int64 s_value = RefIsPositive(ref) ? value : -value;
+  if (!domains[var].Contains(s_value)) {
+    return GetOrCreateConstantVar(0);
+  }
   std::pair<int, int64> key{var, s_value};
 
   if (encoding.contains(key)) return encoding[key];
@@ -355,12 +360,12 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   if (domains[var].Size() == 2) {
     const int64 var_min = MinOf(var);
     const int64 var_max = MaxOf(var);
+
     if (var_min == 0 && var_max == 1) {
       encoding[std::make_pair(var, 0)] = NegatedRef(var);
       encoding[std::make_pair(var, 1)] = var;
     } else {
       const int literal = NewBoolVar();
-      InitializeNewDomains();
       encoding[std::make_pair(var, var_min)] = NegatedRef(literal);
       encoding[std::make_pair(var, var_max)] = literal;
 
@@ -374,6 +379,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
       lin->add_domain(var_min);
       StoreAffineRelation(*ct, var, literal, var_max - var_min, var_min);
     }
+
     return gtl::FindOrDieNoPrint(encoding, key);
   }
 
@@ -382,7 +388,6 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   AddImplyInDomain(NegatedRef(literal), var, Domain(s_value).Complement());
   encoding[key] = literal;
 
-  InitializeNewDomains();
   return literal;
 }
 
@@ -1584,48 +1589,50 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   int num_vars = 0;
   bool all_constants = true;
   absl::flat_hash_set<int64> constant_set;
-
   bool all_included_in_target_domain = true;
-  bool reduced_index_domain = false;
-  if (context->IntersectDomainWith(index_ref,
-                                   Domain(0, ct->element().vars_size() - 1))) {
-    reduced_index_domain = true;
-  }
 
-  // Filter possible index values. Accumulate variable domains to build
-  // a possible target domain.
-  Domain infered_domain;
-  const Domain initial_index_domain = context->DomainOf(index_ref);
-  const Domain target_domain = context->DomainOf(target_ref);
-  for (const ClosedInterval interval : initial_index_domain) {
-    for (int value = interval.start; value <= interval.end; ++value) {
-      CHECK_GE(value, 0);
-      CHECK_LT(value, ct->element().vars_size());
-      const int ref = ct->element().vars(value);
-      const Domain domain = context->DomainOf(ref);
-      if (domain.IntersectionWith(target_domain).IsEmpty()) {
-        context->IntersectDomainWith(index_ref, Domain(value).Complement());
-        reduced_index_domain = true;
-      } else {
-        ++num_vars;
-        if (domain.Min() == domain.Max()) {
-          constant_set.insert(domain.Min());
+  {
+    bool reduced_index_domain = false;
+    if (context->IntersectDomainWith(
+            index_ref, Domain(0, ct->element().vars_size() - 1))) {
+      reduced_index_domain = true;
+    }
+
+    // Filter possible index values. Accumulate variable domains to build
+    // a possible target domain.
+    Domain infered_domain;
+    const Domain initial_index_domain = context->DomainOf(index_ref);
+    Domain target_domain = context->DomainOf(target_ref);
+    for (const ClosedInterval interval : initial_index_domain) {
+      for (int value = interval.start; value <= interval.end; ++value) {
+        CHECK_GE(value, 0);
+        CHECK_LT(value, ct->element().vars_size());
+        const int ref = ct->element().vars(value);
+        const Domain domain = context->DomainOf(ref);
+        if (domain.IntersectionWith(target_domain).IsEmpty()) {
+          context->IntersectDomainWith(index_ref, Domain(value).Complement());
+          reduced_index_domain = true;
         } else {
-          all_constants = false;
+          ++num_vars;
+          if (domain.Min() == domain.Max()) {
+            constant_set.insert(domain.Min());
+          } else {
+            all_constants = false;
+          }
+          if (!domain.IsIncludedIn(target_domain)) {
+            all_included_in_target_domain = false;
+          }
+          infered_domain = infered_domain.UnionWith(domain);
         }
-        if (!domain.IsIncludedIn(target_domain)) {
-          all_included_in_target_domain = false;
-        }
-        infered_domain = infered_domain.UnionWith(domain);
       }
     }
-  }
-  if (reduced_index_domain) {
-    context->UpdateRuleStats("element: reduced index domain");
-  }
-  if (context->IntersectDomainWith(target_ref, infered_domain)) {
-    if (context->DomainOf(target_ref).IsEmpty()) return true;
-    context->UpdateRuleStats("element: reduced target domain");
+    if (reduced_index_domain) {
+      context->UpdateRuleStats("element: reduced index domain");
+    }
+    if (context->IntersectDomainWith(target_ref, infered_domain)) {
+      if (context->DomainOf(target_ref).IsEmpty()) return true;
+      context->UpdateRuleStats("element: reduced target domain");
+    }
   }
 
   // If the index is fixed, this is a equality constraint.
@@ -1759,7 +1766,6 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
       }
       ct->mutable_element()->set_target(r_target.representative);
       if (changed_values) {
-        context->InitializeNewDomains();
         context->UpdateRuleStats("element: unscaled values from affine target");
       }
       if (index_domain.Size() > valid_index_values.size()) {
@@ -1790,8 +1796,29 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
       }
     }
     context->UpdateRuleStats("element: expand fixed target element");
-    context->InitializeNewDomains();
     return RemoveConstraint(ct, context);
+  }
+
+  if (target_ref == index_ref) {
+    // Filter impossible index values.
+    Domain index_domain = context->DomainOf(index_ref);
+    std::vector<int64> possible_indices;
+    for (const ClosedInterval& interval : index_domain) {
+      for (int64 value = interval.start; value <= interval.end; ++value) {
+        const int ref = ct->element().vars(value);
+        if (context->DomainContains(ref, value)) {
+          possible_indices.push_back(value);
+        }
+      }
+    }
+    if (possible_indices.size() < index_domain.Size()) {
+      context->IntersectDomainWith(index_ref,
+                                   Domain::FromValues(possible_indices));
+    }
+    context->UpdateRuleStats(
+        "element: reduce index domain when target equals index");
+
+    return true;
   }
 
   if (all_constants) {
@@ -1810,10 +1837,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
         const int64 value = context->MinOf(ct->element().vars(v));
         const int index_lit =
             context->GetOrCreateVarValueEncoding(index_ref, v);
-        CHECK(context->DomainContains(target_ref, value))
-            << "target " << context->DomainOf(target_ref)
-            << ", value = " << value;
 
+        CHECK(context->DomainContains(target_ref, value));
         const int target_lit =
             context->GetOrCreateVarValueEncoding(target_ref, value);
         context->AddImplication(index_lit, target_lit);
@@ -1844,7 +1869,6 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     }
 
     context->UpdateRuleStats("element: expand fixed array element");
-    context->InitializeNewDomains();
     return RemoveConstraint(ct, context);
   }
 
@@ -2006,7 +2030,9 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
 
 bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
-  const int size = ct->all_diff().vars_size();
+  AllDifferentConstraintProto& all_diff = *ct->mutable_all_diff();
+
+  const int size = all_diff.vars_size();
   if (size == 0) {
     context->UpdateRuleStats("all_diff: empty constraint");
     return RemoveConstraint(ct, context);
@@ -2016,16 +2042,46 @@ bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
     return RemoveConstraint(ct, context);
   }
 
-  bool contains_fixed_variable = false;
+  absl::flat_hash_set<int> fixed_variables;
   for (int i = 0; i < size; ++i) {
-    if (context->IsFixed(ct->all_diff().vars(i))) {
-      contains_fixed_variable = true;
-      break;
+    if (!context->IsFixed(all_diff.vars(i))) continue;
+    fixed_variables.insert(i);
+    const int64 value = context->MinOf(all_diff.vars(i));
+    bool propagated = false;
+    for (int j = 0; j < size; ++j) {
+      if (i == j) continue;
+      if (context->DomainContains(all_diff.vars(j), value)) {
+        context->IntersectDomainWith(all_diff.vars(j),
+                                     Domain(value).Complement());
+        if (context->is_unsat) return true;
+        propagated = true;
+      }
+    }
+    if (propagated) {
+      context->UpdateRuleStats("all_diff: propagated fixed variables");
     }
   }
-  if (contains_fixed_variable) {
-    context->UpdateRuleStats("TODO all_diff: fixed variables");
+
+  if (!fixed_variables.empty()) {
+    std::vector<int> new_variables;
+    for (int i = 0; i < all_diff.vars_size(); ++i) {
+      // We cannot check the domain here, as it may have been fixed by the
+      // propagation loop above. In that case, it will be picked up by this
+      // presolve rule in the next iteration.
+      if (!gtl::ContainsKey(fixed_variables, i)) {
+        new_variables.push_back(all_diff.vars(i));
+      }
+    }
+    CHECK_EQ(all_diff.vars_size(),
+             new_variables.size() + fixed_variables.size());
+    all_diff.mutable_vars()->Clear();
+    for (const int var : new_variables) {
+      all_diff.add_vars(var);
+    }
+    context->UpdateRuleStats("all_diff: removed fixed variables");
+    return true;
   }
+
   return false;
 }
 
@@ -2325,8 +2381,9 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
 bool PresolveAutomaton(ConstraintProto* ct, PresolveContext* context) {
   if (HasEnforcementLiteral(*ct)) return false;
   AutomatonConstraintProto& proto = *ct->mutable_automaton();
-  if (proto.vars_size() == 0 || proto.transition_label_size() == 0)
+  if (proto.vars_size() == 0 || proto.transition_label_size() == 0) {
     return false;
+  }
 
   bool all_affine = true;
   std::vector<AffineRelation::Relation> affine_relations;
@@ -3459,13 +3516,8 @@ void TryToSimplifyDomains(PresolveContext* context) {
 
     if (domain.Size() == 2 && domain.NumIntervals() == 1 && domain.Min() != 0) {
       // Shifted Boolean variable.
-      const int new_var_index = context->working_model->variables_size();
-      IntegerVariableProto* const var_proto =
-          context->working_model->add_variables();
-      var_proto->add_domain(0);
-      var_proto->add_domain(1);
+      const int new_var_index = context->NewBoolVar();
       const int64 offset = domain.Min();
-      context->InitializeNewDomains();
 
       ConstraintProto* const ct = context->working_model->add_constraints();
       LinearConstraintProto* const lin = ct->mutable_linear();

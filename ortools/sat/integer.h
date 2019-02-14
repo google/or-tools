@@ -336,6 +336,10 @@ class IntegerEncoder {
   void AddAllImplicationsBetweenAssociatedLiterals();
 
   // Returns the IntegerLiterals that were associated with the given Literal.
+  //
+  // Note that more than one IntegerLiterals (possibly on different variables)
+  // may have been associated to the same literal. We also returns ">= value"
+  // and "<= value" if lit was associated to "== value".
   const InlinedIntegerLiteralVector& GetIntegerLiterals(Literal lit) const {
     if (lit.Index() >= reverse_encoding_.size()) {
       return empty_integer_literal_vector_;

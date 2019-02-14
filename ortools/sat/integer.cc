@@ -37,72 +37,23 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   CHECK(!VariableIsFullyEncoded(var));
   CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
   CHECK(!(*domains_)[var].IsEmpty());  // UNSAT. We don't deal with that here.
+  CHECK_LT((*domains_)[var].Size(), 100000)
+      << "Domain too large for full encoding.";
 
-  std::vector<IntegerValue> values;
+  // TODO(user): Maybe we can optimize the literal creation order and their
+  // polarity as our default SAT heuristics initially depends on this.
   for (const ClosedInterval interval : (*domains_)[var]) {
     for (IntegerValue v(interval.start); v <= interval.end; ++v) {
-      values.push_back(v);
-      CHECK_LT(values.size(), 100000) << "Domain too large for full encoding.";
+      GetOrCreateLiteralAssociatedToEquality(var, v);
     }
-  }
-
-  std::vector<Literal> literals;
-  if (values.size() == 1) {
-    literals.push_back(GetTrueLiteral());
-  } else if (values.size() == 2) {
-    literals.push_back(GetOrCreateAssociatedLiteral(
-        IntegerLiteral::LowerOrEqual(var, values[0])));
-    literals.push_back(literals.back().Negated());
-  } else {
-    for (int i = 0; i < values.size(); ++i) {
-      const std::pair<IntegerVariable, IntegerValue> key{var, values[i]};
-      if (gtl::ContainsKey(equality_to_associated_literal_, key)) {
-        literals.push_back(equality_to_associated_literal_[key]);
-      } else {
-        literals.push_back(Literal(sat_solver_->NewBooleanVariable(), true));
-      }
-    }
-  }
-
-  // Create the associated literal (<= and >=) in order (best for the
-  // implications between them). Note that we only create literals like this for
-  // value inside the domain. This is nice since these will be the only kind of
-  // literal pushed by Enqueue() (we look at the domain there).
-  for (int i = 0; i + 1 < literals.size(); ++i) {
-    const IntegerLiteral i_lit = IntegerLiteral::LowerOrEqual(var, values[i]);
-    const IntegerLiteral i_lit_negated =
-        IntegerLiteral::GreaterOrEqual(var, values[i + 1]);
-    if (i == 0) {
-      // Special case for the start.
-      HalfAssociateGivenLiteral(i_lit, literals[0]);
-      HalfAssociateGivenLiteral(i_lit_negated, literals[0].Negated());
-    } else if (i + 2 == literals.size()) {
-      // Special case for the end.
-      HalfAssociateGivenLiteral(i_lit, literals.back().Negated());
-      HalfAssociateGivenLiteral(i_lit_negated, literals.back());
-    } else {
-      // Normal case.
-      if (!LiteralIsAssociated(i_lit) || !LiteralIsAssociated(i_lit_negated)) {
-        const BooleanVariable b = sat_solver_->NewBooleanVariable();
-        HalfAssociateGivenLiteral(i_lit, Literal(b, true));
-        HalfAssociateGivenLiteral(i_lit_negated, Literal(b, false));
-      }
-    }
-  }
-
-  // Now that all literals are created, wire them together using
-  //    (X == v)  <=>  (X >= v) and (X <= v).
-  //
-  // TODO(user): this is currently in O(n^2) which is potentially bad even if
-  // we do it only once per variable.
-  for (int i = 0; i < literals.size(); ++i) {
-    AssociateToIntegerEqualValue(literals[i], var, values[i]);
   }
 
   // Mark var and Negation(var) as fully encoded.
-  const int required_size = std::max(var, NegationOf(var)).value() + 1;
-  if (required_size > is_fully_encoded_.size()) {
-    is_fully_encoded_.resize(required_size, false);
+  {
+    const int required_size = std::max(var, NegationOf(var)).value() + 1;
+    if (required_size > is_fully_encoded_.size()) {
+      is_fully_encoded_.resize(required_size, false);
+    }
   }
   is_fully_encoded_[var] = true;
   is_fully_encoded_[NegationOf(var)] = true;

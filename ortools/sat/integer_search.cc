@@ -137,21 +137,33 @@ std::function<LiteralIndex()> PseudoCost(Model* model) {
   };
 }
 
-std::function<LiteralIndex()> RandomizeOnRestartSatSolverHeuristic(
-    Model* model) {
+std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-  Trail* trail = model->GetOrCreate<Trail>();
   SatDecisionPolicy* decision_policy = model->GetOrCreate<SatDecisionPolicy>();
-  return [sat_solver, trail, decision_policy, model] {
-    if (sat_solver->CurrentDecisionLevel() == 0) {
-      RandomizeDecisionHeuristic(model->GetOrCreate<ModelRandomGenerator>(),
-                                 model->GetOrCreate<SatParameters>());
-      decision_policy->ResetDecisionHeuristic();
-    }
-    const bool all_assigned = trail->Index() == sat_solver->NumVariables();
-    return all_assigned ? kNoLiteralIndex
-                        : decision_policy->NextBranch().Index();
-  };
+
+  // The duplication increase the probability of the first heuristics. This is
+  // wanted because when we randomize the sat parameters, we have more than one
+  // heuristic for choosing the phase of the decision.
+  //
+  // TODO(user): Add other policy and perform more experiments.
+  std::function<LiteralIndex()> sat_policy = SatSolverHeuristic(model);
+  std::vector<std::function<LiteralIndex()>> policies{
+      sat_policy, sat_policy, ExploitLpSolution(sat_policy, model),
+      ExploitLpSolution(SequentialSearch({PseudoCost(model), sat_policy}),
+                        model)};
+
+  int policy_index = 0;
+  return
+      [sat_solver, decision_policy, policies, policy_index, model]() mutable {
+        if (sat_solver->CurrentDecisionLevel() == 0) {
+          RandomizeDecisionHeuristic(model->GetOrCreate<ModelRandomGenerator>(),
+                                     model->GetOrCreate<SatParameters>());
+          decision_policy->ResetDecisionHeuristic();
+          std::uniform_int_distribution<int> dist(0, policies.size() - 1);
+          policy_index = dist(*(model->GetOrCreate<ModelRandomGenerator>()));
+        }
+        return policies[policy_index]();
+      };
 }
 
 std::function<LiteralIndex()> FollowHint(
@@ -343,7 +355,7 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
       std::function<LiteralIndex()> search;
       if (parameters.randomize_search()) {
         search = SequentialSearch(
-            {RandomizeOnRestartSatSolverHeuristic(model), next_decision});
+            {RandomizeOnRestartHeuristic(model), next_decision});
       } else {
         search = SequentialSearch({SatSolverHeuristic(model), next_decision});
       }
@@ -406,8 +418,7 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
                                              model);
     }
     case SatParameters::PSEUDO_COST_SEARCH: {
-      std::function<LiteralIndex()> search;
-      search = SequentialSearch(
+      std::function<LiteralIndex()> search = SequentialSearch(
           {PseudoCost(model), SatSolverHeuristic(model), next_decision});
       if (parameters.exploit_integer_lp_solution() ||
           parameters.exploit_all_lp_solution()) {
@@ -415,6 +426,13 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
       }
       return SolveProblemWithPortfolioSearch(
           {search}, {SatSolverRestartPolicy(model)}, model);
+    }
+    case SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH: {
+      std::function<LiteralIndex()> search =
+          SequentialSearch({RandomizeOnRestartHeuristic(model), next_decision});
+      return SolveProblemWithPortfolioSearch(
+          {search},
+          {RestartEveryKFailures(10, model->GetOrCreate<SatSolver>())}, model);
     }
   }
   return SatSolver::LIMIT_REACHED;
