@@ -109,17 +109,19 @@ class CpPropagator : public PropagatorInterface {
 };
 
 // Non overlapping rectangles.
-template <class S>
 class NonOverlappingRectanglesPropagator : public CpPropagator {
  public:
   // The strict parameters indicates how to place zero width or zero height
   // boxes. If strict is true, these boxes must not 'cross' another box, and are
   // pushed by the other boxes.
-  NonOverlappingRectanglesPropagator(const std::vector<IntegerVariable>& x,
-                                     const std::vector<IntegerVariable>& y,
-                                     const std::vector<S>& dx,
-                                     const std::vector<S>& dy, bool strict,
-                                     IntegerTrail* integer_trail);
+  NonOverlappingRectanglesPropagator(
+      const std::vector<IntegerVariable>& start_x,
+      const std::vector<IntegerVariable>& size_x,
+      const std::vector<IntegerVariable>& end_x,
+      const std::vector<IntegerVariable>& start_y,
+      const std::vector<IntegerVariable>& size_y,
+      const std::vector<IntegerVariable>& end_y, bool strict,
+      IntegerTrail* integer_trail);
   ~NonOverlappingRectanglesPropagator() override;
 
   // TODO(user): Look at intervals to to store x and dx, y and dy.
@@ -129,22 +131,36 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
  private:
   void UpdateNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);
+  bool CheckEnergyOnProjections();
+  bool CheckEnergyOnOneDimension(
+      const std::vector<IntegerVariable>& starts,
+      const std::vector<IntegerVariable>& sizes,
+      const std::vector<IntegerVariable>& ends,
+      const std::vector<IntegerVariable>& other_starts,
+      const std::vector<IntegerVariable>& other_sizes,
+      const std::vector<IntegerVariable>& other_ends);
   bool PushOneBox(int box, int other);
   void AddBoxReason(int box);
-  void AddBoxReason(int box, IntegerValue xmin, IntegerValue xmax,
-                    IntegerValue ymin, IntegerValue ymax);
+  void AddBoxInRectangleReason(int box, IntegerValue xmin, IntegerValue xmax,
+                               IntegerValue ymin, IntegerValue ymax);
 
   // Updates the boxes positions and size when the given box is before other in
   // the passed direction. This will fill integer_reason_ if it is empty,
   // otherwise, it will reuse its current value.
-  bool FirstBoxIsBeforeSecondBox(const std::vector<IntegerVariable>& pos,
-                                 const std::vector<S>& size, int box, int other,
-                                 std::vector<IntegerValue>* min_end);
+  bool FirstBoxIsBeforeSecondBox(const std::vector<IntegerVariable>& starts,
+                                 const std::vector<IntegerVariable>& sizes,
+                                 const std::vector<IntegerVariable>& ends,
+                                 const std::vector<bool>& fixed, int box,
+                                 int other);
 
-  const std::vector<IntegerVariable> x_;
-  const std::vector<IntegerVariable> y_;
-  const std::vector<S> dx_;
-  const std::vector<S> dy_;
+  const std::vector<IntegerVariable> start_x_;
+  const std::vector<IntegerVariable> size_x_;
+  const std::vector<IntegerVariable> end_x_;
+  const std::vector<IntegerVariable> start_y_;
+  const std::vector<IntegerVariable> size_y_;
+  const std::vector<IntegerVariable> end_y_;
+  std::vector<bool> fixed_x_;
+  std::vector<bool> fixed_y_;
   const bool strict_;
 
   // The neighbors_ of a box will be in
@@ -155,8 +171,6 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   std::vector<int> tmp_removed_;
 
   std::vector<IntegerValue> cached_areas_;
-  std::vector<IntegerValue> cached_min_end_x_;
-  std::vector<IntegerValue> cached_min_end_y_;
   std::vector<IntegerValue> cached_distance_to_bounding_box_;
   std::vector<IntegerLiteral> integer_reason_;
 
@@ -227,30 +241,16 @@ inline std::function<void(Model*)> LiteralXorIs(
 // and (x + dx, y + dy) do not overlap.
 // If one box has a zero dimension, then it can be placed anywhere.
 inline std::function<void(Model*)> NonOverlappingRectangles(
-    const std::vector<IntegerVariable>& x,
-    const std::vector<IntegerVariable>& y,
-    const std::vector<IntegerVariable>& dx,
-    const std::vector<IntegerVariable>& dy) {
+    const std::vector<IntegerVariable>& start_x,
+    const std::vector<IntegerVariable>& size_x,
+    const std::vector<IntegerVariable>& end_x,
+    const std::vector<IntegerVariable>& start_y,
+    const std::vector<IntegerVariable>& size_y,
+    const std::vector<IntegerVariable>& end_y) {
   return [=](Model* model) {
-    NonOverlappingRectanglesPropagator<IntegerVariable>* constraint =
-        new NonOverlappingRectanglesPropagator<IntegerVariable>(
-            x, y, dx, dy, false, model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
-}
-
-// Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
-// and (x + dx, y + dy) do not overlap.
-// If one box has a zero dimension, then it can be placed anywhere.
-inline std::function<void(Model*)> NonOverlappingFixedSizeRectangles(
-    const std::vector<IntegerVariable>& x,
-    const std::vector<IntegerVariable>& y, const std::vector<int64>& dx,
-    const std::vector<int64>& dy) {
-  return [=](Model* model) {
-    NonOverlappingRectanglesPropagator<IntegerValue>* constraint =
-        new NonOverlappingRectanglesPropagator<IntegerValue>(
-            x, y, ToIntegerValueVector(dx), ToIntegerValueVector(dy), false,
+    NonOverlappingRectanglesPropagator* constraint =
+        new NonOverlappingRectanglesPropagator(
+            start_x, size_x, end_x, start_y, size_y, end_y, false,
             model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
@@ -261,30 +261,16 @@ inline std::function<void(Model*)> NonOverlappingFixedSizeRectangles(
 // and (x + dx, y + dy) do not overlap.
 // If one box has a zero dimension, it still cannot intersect another box.
 inline std::function<void(Model*)> StrictNonOverlappingRectangles(
-    const std::vector<IntegerVariable>& x,
-    const std::vector<IntegerVariable>& y,
-    const std::vector<IntegerVariable>& dx,
-    const std::vector<IntegerVariable>& dy) {
+    const std::vector<IntegerVariable>& start_x,
+    const std::vector<IntegerVariable>& size_x,
+    const std::vector<IntegerVariable>& end_x,
+    const std::vector<IntegerVariable>& start_y,
+    const std::vector<IntegerVariable>& size_y,
+    const std::vector<IntegerVariable>& end_y) {
   return [=](Model* model) {
-    NonOverlappingRectanglesPropagator<IntegerVariable>* constraint =
-        new NonOverlappingRectanglesPropagator<IntegerVariable>(
-            x, y, dx, dy, true, model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
-}
-
-// Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
-// and (x + dx, y + dy) do not overlap.
-// If one box has a zero dimension, it still cannot intersect another box.
-inline std::function<void(Model*)> StrictNonOverlappingFixedSizeRectangles(
-    const std::vector<IntegerVariable>& x,
-    const std::vector<IntegerVariable>& y, const std::vector<int64>& dx,
-    const std::vector<int64>& dy) {
-  return [=](Model* model) {
-    NonOverlappingRectanglesPropagator<IntegerValue>* constraint =
-        new NonOverlappingRectanglesPropagator<IntegerValue>(
-            x, y, ToIntegerValueVector(dx), ToIntegerValueVector(dy), true,
+    NonOverlappingRectanglesPropagator* constraint =
+        new NonOverlappingRectanglesPropagator(
+            start_x, size_x, end_x, start_y, size_y, end_y, true,
             model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);

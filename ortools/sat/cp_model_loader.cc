@@ -722,17 +722,21 @@ void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
 
   const IntervalsRepository& repository = *(m->Get<IntervalsRepository>());
-  std::vector<IntegerVariable> x;
-  std::vector<IntegerVariable> y;
+  std::vector<IntegerVariable> sx;
   std::vector<IntegerVariable> dx;
+  std::vector<IntegerVariable> ex;
+  std::vector<IntegerVariable> sy;
   std::vector<IntegerVariable> dy;
+  std::vector<IntegerVariable> ey;
   for (int i = 0; i < x_intervals.size(); ++i) {
-    x.push_back(repository.StartVar(x_intervals[i]));
-    y.push_back(repository.StartVar(y_intervals[i]));
+    sx.push_back(repository.StartVar(x_intervals[i]));
+    sy.push_back(repository.StartVar(y_intervals[i]));
     dx.push_back(repository.SizeVar(x_intervals[i]));
     dy.push_back(repository.SizeVar(y_intervals[i]));
+    ex.push_back(repository.EndVar(x_intervals[i]));
+    ey.push_back(repository.EndVar(y_intervals[i]));
   }
-  m->Add(StrictNonOverlappingRectangles(x, y, dx, dy));
+  m->Add(StrictNonOverlappingRectangles(sx, dx, ex, sy, dy, ey));
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {

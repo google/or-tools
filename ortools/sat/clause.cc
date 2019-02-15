@@ -889,7 +889,9 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
 
     // Special case for clique of size 2, we don't expand them if they
     // are included in an already added clique.
-    if (old_size == 2) {
+    //
+    // TODO(user): the second condition means the literal must be false!
+    if (old_size == 2 && clique[0] != clique[1]) {
       if (!IntersectionIsEmpty(max_cliques_containing[clique[0].Index()],
                                max_cliques_containing[clique[1].Index()])) {
         ++num_removed;

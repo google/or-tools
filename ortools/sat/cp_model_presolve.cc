@@ -2042,10 +2042,13 @@ bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
     return RemoveConstraint(ct, context);
   }
 
-  absl::flat_hash_set<int> fixed_variables;
+  std::vector<int> new_variables;
   for (int i = 0; i < size; ++i) {
-    if (!context->IsFixed(all_diff.vars(i))) continue;
-    fixed_variables.insert(i);
+    if (!context->IsFixed(all_diff.vars(i))) {
+      new_variables.push_back(all_diff.vars(i));
+      continue;
+    }
+
     const int64 value = context->MinOf(all_diff.vars(i));
     bool propagated = false;
     for (int j = 0; j < size; ++j) {
@@ -2062,18 +2065,7 @@ bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
     }
   }
 
-  if (!fixed_variables.empty()) {
-    std::vector<int> new_variables;
-    for (int i = 0; i < all_diff.vars_size(); ++i) {
-      // We cannot check the domain here, as it may have been fixed by the
-      // propagation loop above. In that case, it will be picked up by this
-      // presolve rule in the next iteration.
-      if (!gtl::ContainsKey(fixed_variables, i)) {
-        new_variables.push_back(all_diff.vars(i));
-      }
-    }
-    CHECK_EQ(all_diff.vars_size(),
-             new_variables.size() + fixed_variables.size());
+  if (new_variables.size() < all_diff.vars_size()) {
     all_diff.mutable_vars()->Clear();
     for (const int var : new_variables) {
       all_diff.add_vars(var);
