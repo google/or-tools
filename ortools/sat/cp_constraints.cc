@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "ortools/base/map_util.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
@@ -236,15 +237,20 @@ bool NonOverlappingRectanglesPropagator::CheckEnergyOnOneDimension(
         mandatory_boxes[t].push_back(box);
       }
       events.insert(start_max);
-      events.insert(end_min - 1);
+      events.insert(end_min);
     }
   }
 
   const auto box_min = [&](int b) { return Min(other_starts[b]).value(); };
   const auto box_max = [&](int b) { return Max(other_ends[b]).value(); };
 
+  absl::flat_hash_set<std::vector<int>> visited_combinations;
+
   for (const int64 e : events) {
-    if (mandatory_boxes[e].size() <= 2) continue;
+    std::vector<int> boxes = mandatory_boxes[e];
+    if (boxes.size() <= 2) continue;
+    if (gtl::ContainsKey(visited_combinations, boxes)) continue;
+    visited_combinations.insert(boxes);
 
     for (int direction = 0; direction <= 1; ++direction) {
       int64 min_hull = kint64max;
@@ -252,15 +258,13 @@ bool NonOverlappingRectanglesPropagator::CheckEnergyOnOneDimension(
       int64 min_energy = 0;
       if (direction) {
         std::sort(
-            mandatory_boxes[e].begin(), mandatory_boxes[e].end(),
-            [this, &box_min, &box_max](int b1, int b2) {
+            boxes.begin(), boxes.end(), [&box_min, &box_max](int b1, int b2) {
               return box_min(b1) < box_min(b2) ||
                      (box_min(b1) == box_min(b2) && box_max(b1) < box_max(b2));
             });
       } else {
         std::sort(
-            mandatory_boxes[e].begin(), mandatory_boxes[e].end(),
-            [this, &box_min, &box_max](int b1, int b2) {
+            boxes.begin(), boxes.end(), [&box_min, &box_max](int b1, int b2) {
               return box_max(b1) > box_max(b2) ||
                      (box_max(b1) == box_max(b2) && box_min(b1) > box_min(b2));
             });
@@ -269,8 +273,8 @@ bool NonOverlappingRectanglesPropagator::CheckEnergyOnOneDimension(
       bool restart = true;
       while (restart) {
         restart = false;
-        for (int b1 = last_restart; b1 < mandatory_boxes[e].size(); ++b1) {
-          const int box = mandatory_boxes[e][b1];
+        for (int b1 = last_restart; b1 < boxes.size(); ++b1) {
+          const int box = boxes[b1];
           const int64 new_min = box_min(box);
           const int64 new_max = box_max(box);
           const int64 min_size = Min(other_sizes[box]).value();
@@ -290,7 +294,7 @@ bool NonOverlappingRectanglesPropagator::CheckEnergyOnOneDimension(
           if (min_energy > max_hull - min_hull) {
             integer_reason_.clear();
             for (int b2 = 0; b2 <= b1; ++b2) {
-              AddBoxReason(mandatory_boxes[e][b2]);
+              AddBoxReason(boxes[b2]);
             }
             return integer_trail_->ReportConflict(integer_reason_);
           }
