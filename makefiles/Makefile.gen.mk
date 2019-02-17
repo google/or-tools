@@ -1075,6 +1075,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/cumulative.h \
  $(SRC_DIR)/ortools/sat/cuts.h \
  $(SRC_DIR)/ortools/sat/disjunctive.h \
+ $(SRC_DIR)/ortools/sat/diffn.h \
  $(SRC_DIR)/ortools/sat/drat_checker.h \
  $(SRC_DIR)/ortools/sat/drat_proof_handler.h \
  $(SRC_DIR)/ortools/sat/drat_writer.h \
@@ -1132,6 +1133,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/cp_model_utils.$O \
  $(OBJ_DIR)/sat/cumulative.$O \
  $(OBJ_DIR)/sat/cuts.$O \
+ $(OBJ_DIR)/sat/diffn.$O \
  $(OBJ_DIR)/sat/disjunctive.$O \
  $(OBJ_DIR)/sat/drat_checker.$O \
  $(OBJ_DIR)/sat/drat_proof_handler.$O \
@@ -1495,6 +1497,25 @@ objs/sat/cuts.$O: ortools/sat/cuts.cc ortools/sat/cuts.h \
  ortools/sat/linear_constraint.h \
  ortools/algorithms/knapsack_solver_for_cuts.h ortools/base/ptr_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scuts.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scuts.$O
+
+objs/sat/diffn.$O: ortools/sat/diffn.cc \
+ ortools/sat/cp_constraints.h ortools/sat/diffn.h ortools/base/int_type.h \
+ ortools/base/macros.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/sat/integer.h ortools/base/hash.h \
+ ortools/base/basictypes.h ortools/base/int_type_indexed_vector.h \
+ ortools/base/map_util.h ortools/graph/iterators.h ortools/sat/model.h \
+ ortools/base/typeid.h ortools/sat/sat_base.h ortools/util/bitset.h \
+ ortools/sat/sat_solver.h ortools/base/timer.h ortools/sat/clause.h \
+ ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
+ ortools/sat/drat_writer.h ortools/base/file.h ortools/base/status.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
+ ortools/util/stats.h ortools/sat/pb_constraint.h ortools/sat/restart.h \
+ ortools/util/running_stat.h ortools/sat/sat_decision.h \
+ ortools/util/integer_pq.h ortools/util/time_limit.h \
+ ortools/base/commandlineflags.h ortools/util/rev.h \
+ ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
+ ortools/util/sort.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdiffn.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdiffn.$O
 
 objs/sat/disjunctive.$O: ortools/sat/disjunctive.cc \
  ortools/sat/disjunctive.h ortools/base/int_type.h ortools/base/macros.h \
@@ -3553,4 +3574,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

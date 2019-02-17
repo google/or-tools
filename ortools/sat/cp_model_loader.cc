@@ -32,6 +32,7 @@
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cumulative.h"
+#include "ortools/sat/diffn.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"

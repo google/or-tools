@@ -213,6 +213,7 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_utils",
         ":cumulative",
+        ":diffn",
         ":disjunctive",
         ":integer",
         ":integer_expr",
@@ -924,6 +925,25 @@ cc_library(
     srcs = ["cp_constraints.cc"],
     hdrs = ["cp_constraints.h"],
     deps = [
+        ":integer",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:map_util",
+        "//ortools/util:rev",
+        "//ortools/util:sort",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
+    name = "diffn",
+    srcs = ["diffn.cc"],
+    hdrs = ["diffn.h"],
+    deps = [
+        ":cp_constraints",
         ":integer",
         ":model",
         ":sat_base",
