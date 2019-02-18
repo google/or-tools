@@ -501,6 +501,8 @@ test_python_constraint_solver_samples: \
  rpy_simple_cp_program \
  rpy_simple_routing_program \
  rpy_tsp \
+ rpy_tsp_cities \
+ rpy_tsp_circuit_board \
  rpy_tsp_distance_matrix \
  rpy_vrp \
  rpy_vrp_capacity \

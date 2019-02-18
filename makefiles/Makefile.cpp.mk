@@ -370,6 +370,8 @@ test_cc_constraint_solver_samples: \
  rcc_simple_ls_program \
  rcc_simple_routing_program \
  rcc_tsp \
+ rcc_tsp_cities \
+ rcc_tsp_circuit_board \
  rcc_tsp_distance_matrix \
  rcc_vrp \
  rcc_vrp_capacity \

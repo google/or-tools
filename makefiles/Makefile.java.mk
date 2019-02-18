@@ -375,6 +375,8 @@ test_java_algorithms_samples: \
 test_java_constraint_solver_samples: \
  rjava_SimpleRoutingProgram \
  rjava_Tsp \
+ rjava_TspCities \
+ rjava_TspCircuitBoard \
  rjava_TspDistanceMatrix \
  rjava_Vrp \
  rjava_VrpCapacity \

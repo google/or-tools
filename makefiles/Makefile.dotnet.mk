@@ -442,6 +442,8 @@ test_dotnet_algorithms_samples: ;
 test_dotnet_constraint_solver_samples:
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/SimpleRoutingProgram.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/Tsp.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/TspCities.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/TspCircuitBoard.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/TspDistanceMatrix.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/Vrp.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpCapacity.cs
