@@ -292,4 +292,5 @@ namespace operations_research {
 %unignoreall
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
+//swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/routing.h"

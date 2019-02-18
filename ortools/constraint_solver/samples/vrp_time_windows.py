@@ -82,22 +82,21 @@ def print_solution(data, manager, routing, assignment):
             time_var = time_dimension.CumulVar(index)
             slack_var = time_dimension.SlackVar(index)
             plan_output += ' {0} Time({1},{2}) Slack({3},{4})-> '.format(
-                manager.IndexToNode(index),
-                assignment.Min(time_var),
-                assignment.Max(time_var),
-                assignment.Min(slack_var), assignment.Max(slack_var))
+                manager.IndexToNode(index), assignment.Min(time_var),
+                assignment.Max(time_var), assignment.Min(slack_var),
+                assignment.Max(slack_var))
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_time += routing.GetArcCostForVehicle(previous_index, index,
                                                        vehicle_id)
         time_var = time_dimension.CumulVar(index)
         plan_output += ' {0} Time({1},{2})\n'.format(
-            manager.IndexToNode(index),
-            assignment.Min(time_var), assignment.Max(time_var))
+            manager.IndexToNode(index), assignment.Min(time_var),
+            assignment.Max(time_var))
         plan_output += 'Time of the route: {}min\n'.format(route_time)
         print(plan_output)
         total_time += route_time
-    print('Total Time of all routes: {}min'.format(total_time))
+    print('Total time of all routes: {}min'.format(total_time))
     # [END solution_printer]
 
 
@@ -123,7 +122,7 @@ def main():
     # Create and register a transit callback.
     # [START transit_callback]
     def time_callback(from_index, to_index):
-        """Returns the manhattan distance travel time between the two nodes."""
+        """Returns the travel time between the two nodes."""
         # Convert from routing variable Index to time matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)

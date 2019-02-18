@@ -43,9 +43,11 @@ public class VrpStartsEnds {
       {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
       {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0}
     };
+    public int VehicleNumber = 4;
+    // [START starts_ends]
     public int[] Starts = {1, 2, 15, 16};
     public int[] Ends = {0, 0, 0, 0};
-    public int VehicleNumber = 4;
+    // [END starts_ends]
   };
   // [END data_model]
 

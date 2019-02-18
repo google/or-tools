@@ -16,11 +16,11 @@
 import static java.lang.Math.abs;
 
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import java.util.logging.Logger;
 // [END import]
 
@@ -52,8 +52,8 @@ public class SimpleRoutingProgram {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    final int transitCallbackIndex = routing.registerTransitCallback(
-        (long fromIndex, long toIndex) -> {
+    final int transitCallbackIndex =
+        routing.registerTransitCallback((long fromIndex, long toIndex) -> {
           // Convert from routing variable Index to user NodeIndex.
           int fromNode = manager.indexToNode(fromIndex);
           int toNode = manager.indexToNode(toIndex);

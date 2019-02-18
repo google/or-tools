@@ -186,7 +186,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   %typemap(javain) TYPE "$javainput" // passing the Callback to JNI java class.
 %enddef
 
-// Method taking no parameters and returning a string
+// Method taking no parameters and returning a std::string
 %define DEFINE_VOID_TO_STRING_CALLBACK(
   TYPE,
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN)
@@ -236,7 +236,8 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
     auto $input_guard = std::make_shared<GlobalRefGuard>(jenv, $input_object);
     $1 = [jenv, $input_object, $input_method_id,
     $input_guard](operations_research::Solver* solver) -> void {
-      jclass solver_class = jenv->FindClass("com/google/ortools/constraintsolver/Solver");
+      jclass solver_class = jenv->FindClass(
+          "com/google/ortools/constraintsolver/Solver");
       assert(nullptr != solver_class);
       jmethodID solver_constructor = jenv->GetMethodID(solver_class, "<init>", "(JZ)V");
       assert(nullptr != solver_constructor);
@@ -266,7 +267,7 @@ DEFINE_SOLVER_TO_VOID_CALLBACK(
 
 DEFINE_VOID_TO_STRING_CALLBACK(
   std::function<std::string()>,
-  Supplier<String>, "get", "()Ljava/lang/String;")
+  Supplier<String>, "get", "()Ljava/lang/Object;")
 
 DEFINE_VOID_TO_R_CALLBACK(
   std::function<bool()>,
@@ -312,6 +313,8 @@ DEFINE_ARGS_TO_R_CALLBACK(
   std::function<void(int64)>,
   LongConsumer, "accept", "(J)V",
   void, CallVoidMethod, VAR_ARGS(long t), VAR_ARGS(t))
+
+#undef VAR_ARGS
 
 // Renaming
 namespace operations_research {
@@ -660,7 +663,9 @@ import java.lang.Runnable;
 // note: SWIG does not support multiple %typemap(javacode) Type, so we have to
 // define all Solver tweak here (ed and not in the macro DEFINE_CALLBACK_*)
 %typemap(javacode) Solver %{
-  /** This exceptions signal that a failure has been raised in the C++ world. */
+  /**
+   * This exceptions signal that a failure has been raised in the C++ world.
+   */
   public static class FailException extends Exception {
     public FailException() {
       super();

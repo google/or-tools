@@ -144,7 +144,7 @@ def main():
     # Create and register a transit callback.
     # [START transit_callback]
     def distance_callback(from_index, to_index):
-        """Returns the manhattan distance between the two nodes."""
+        """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)

@@ -108,12 +108,13 @@ namespace operations_research {
 %typemap(imtype, out="IntPtr") RoutingTransitCallback1 "UnaryTransitCallback"
 %typemap(imtype, out="IntPtr") RoutingTransitCallback2 "TransitCallback"
 
-// Type use in module_csharp_wrap.h function declaration.
-// since SWIG generate code as: `ctype argX` we can't use a C function pointer type.
-%typemap(ctype) RoutingTransitCallback1 "void*" // "int64 (*)(int64)"
-%typemap(ctype) RoutingTransitCallback2 "void*" // "int64 (*)(int64, int64)"
+// Type use in module_csharp_wrap.h function declaration, since SWIG generate
+// code as: `ctype argX`, we can't use the real C function pointer type.
+%typemap(ctype) RoutingTransitCallback1 "void*" // "int64 (*argX)(int64)"
+%typemap(ctype) RoutingTransitCallback2 "void*" // "int64 (*argX)(int64, int64)"
 
-// Convert in module_csharp_wrap.cc input argument (delegate marshaled in C function pointer) to original std::function<...>
+// Convert in module_csharp_wrap.cc input argument
+// (delegate marshaled in C function pointer) to original std::function<...>
 %typemap(in) RoutingTransitCallback1  %{
   $1 = [$input](int64 fromIndex) -> int64 {
     return (*(int64 (*)(int64))$input)(fromIndex);
@@ -125,8 +126,10 @@ namespace operations_research {
 %}
 }  // namespace operations_research
 
-// Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
-// For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
+// Add PickupAndDeliveryPolicy enum value to RoutingModel
+// (like RoutingModel::Status)
+// For C++11 strongly typed enum SWIG support
+// see https://github.com/swig/swig/issues/316
 %extend operations_research::RoutingModel {
   static const operations_research::RoutingModel::PickupAndDeliveryPolicy ANY =
   operations_research::RoutingModel::PickupAndDeliveryPolicy::ANY;
@@ -151,6 +154,7 @@ PROTO2_RETURN(operations_research::RoutingSearchParameters,
 PROTO2_RETURN(operations_research::RoutingModelParameters,
               Google.OrTools.ConstraintSolver.RoutingModelParameters)
 
-
+// TODO(user): Replace with %ignoreall/%unignoreall
+//swiglint: disable include-h-allglobals
 %include "ortools/constraint_solver/routing_parameters.h"
 %include "ortools/constraint_solver/routing.h"

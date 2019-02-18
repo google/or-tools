@@ -16,11 +16,11 @@
 import static java.lang.Math.abs;
 
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import java.util.function.LongBinaryOperator;
 import java.util.logging.Logger;
 // [END import]
@@ -35,37 +35,34 @@ public class Tsp {
 
   // [START data_model]
   static class DataModel {
+    public final int[][] locations = {
+        {4, 4},
+        {2, 0},
+        {8, 0},
+        {0, 1},
+        {1, 1},
+        {5, 2},
+        {7, 2},
+        {3, 3},
+        {6, 3},
+        {5, 5},
+        {8, 5},
+        {1, 6},
+        {2, 6},
+        {3, 7},
+        {6, 7},
+        {0, 8},
+        {7, 8},
+    };
+    public final int vehicleNumber = 1;
+    public final int depot = 0;
     public DataModel() {
-      locations = new int[][] {
-          {4, 4},
-          {2, 0},
-          {8, 0},
-          {0, 1},
-          {1, 1},
-          {5, 2},
-          {7, 2},
-          {3, 3},
-          {6, 3},
-          {5, 5},
-          {8, 5},
-          {1, 6},
-          {2, 6},
-          {3, 7},
-          {6, 7},
-          {0, 8},
-          {7, 8},
-      };
       // Convert locations in meters using a city block dimension of 114m x 80m.
       for (int[] element : locations) {
         element[0] *= 114;
         element[1] *= 80;
       }
-      vehicleNumber = 1;
-      depot = 0;
     }
-    public final int[][] locations;
-    public final int vehicleNumber;
-    public final int depot;
   }
   // [END data_model]
 
@@ -91,7 +88,7 @@ public class Tsp {
         }
       }
     }
-
+    @Override
     public long applyAsLong(long fromIndex, long toIndex) {
       // Convert from routing variable Index to distance matrix NodeIndex.
       int fromNode = indexManager.indexToNode(fromIndex);
@@ -145,8 +142,8 @@ public class Tsp {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    final int transitCallbackIndex = routing.registerTransitCallback(
-        new ManhattanDistance(data, manager));
+    final int transitCallbackIndex =
+        routing.registerTransitCallback(new ManhattanDistance(data, manager));
     // [END transit_callback]
 
     // Define cost of each arc.

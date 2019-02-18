@@ -94,9 +94,11 @@ def create_data_model():
             536, 194, 798, 0
         ],
     ]
+    # [START demands_capacities]
     data['demands'] = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
-    data['num_vehicles'] = 4
     data['vehicle_capacities'] = [15, 15, 15, 15]
+    # [END demands_capacities]
+    data['num_vehicles'] = 4
     data['depot'] = 0
     return data
     # [END data_model]
@@ -128,8 +130,8 @@ def print_solution(data, manager, routing, assignment):
         print(plan_output)
         total_distance += route_distance
         total_load += route_load
-    print('Total Distance of all routes: {}m'.format(total_distance))
-    print('Total Load of all routes: {}'.format(total_load))
+    print('Total distance of all routes: {}m'.format(total_distance))
+    print('Total load of all routes: {}'.format(total_load))
     # [END solution_printer]
 
 
@@ -155,7 +157,7 @@ def main():
     # Create and register a transit callback.
     # [START transit_callback]
     def distance_callback(from_index, to_index):
-        """Returns the manhattan distance between the two nodes."""
+        """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)

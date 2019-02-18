@@ -105,7 +105,7 @@ public class VrpTimeWindows {
       Console.WriteLine("Time of the route: {0}m", routeTime);
       totalTime += routeTime;
     }
-    Console.WriteLine("Total Distance of all routes: {0}m", totalTime);
+    Console.WriteLine("Total distance of all routes: {0}m", totalTime);
   }
   // [END solution_printer]
 

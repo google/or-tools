@@ -43,8 +43,10 @@ public class VrpCapacity {
       {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
       {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0}
     };
+    // [START demands_capacities]
     public long[] Demands = {0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8};
     public long[] VehicleCapacities = {15, 15, 15, 15};
+    // [END demands_capacities]
     public int VehicleNumber = 4;
     public int Depot = 0;
   };
@@ -81,8 +83,8 @@ public class VrpCapacity {
       totalDistance += routeDistance;
       totalLoad += routeLoad;
     }
-    Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
-    Console.WriteLine("Total Load of all routes: {0}m", totalLoad);
+    Console.WriteLine("Total distance of all routes: {0}m", totalDistance);
+    Console.WriteLine("Total load of all routes: {0}m", totalLoad);
   }
   // [END solution_printer]
 

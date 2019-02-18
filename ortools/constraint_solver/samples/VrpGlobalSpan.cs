@@ -74,7 +74,7 @@ public class VrpGlobalSpan {
       Console.WriteLine("Distance of the route: {0}m", routeDistance);
       totalDistance += routeDistance;
     }
-    Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
+    Console.WriteLine("Total distance of all routes: {0}m", totalDistance);
   }
   // [END solution_printer]
 

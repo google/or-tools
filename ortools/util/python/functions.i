@@ -109,7 +109,7 @@ static ReturnT InvokePythonCallableReturning(PyObject* pyfunc) {
 %typemap(in) std::function<int64(int64)> {
   SharedPyPtr input($input);
   $1 = [input](int64 index) {
-    return InvokePythonCallableReturning<int64>(input.get(), "(l)", index);
+    return InvokePythonCallableReturning<int64>(input.get(), "(L)", index);
   };
 }
 
@@ -122,7 +122,7 @@ static ReturnT InvokePythonCallableReturning(PyObject* pyfunc) {
 %typemap(in) std::function<int64(int64, int64)> {
   SharedPyPtr input($input);
   $1 = [input](int64 i, int64 j) {
-    return InvokePythonCallableReturning<int64>(input.get(), "ll", i, j);
+    return InvokePythonCallableReturning<int64>(input.get(), "LL", i, j);
   };
 }
 
@@ -135,7 +135,7 @@ static ReturnT InvokePythonCallableReturning(PyObject* pyfunc) {
 %typemap(in) std::function<int64(int64, int64, int64)> {
   SharedPyPtr input($input);
   $1 = [input](int64 i, int64 j, int64 k) {
-    return InvokePythonCallableReturning<int64>(input.get(), "lll", i, j, k);
+    return InvokePythonCallableReturning<int64>(input.get(), "LLL", i, j, k);
   };
 }
 
@@ -174,7 +174,7 @@ static ReturnT InvokePythonCallableReturning(PyObject* pyfunc) {
 %typemap(in) std::function<bool(int64)> {
   SharedPyPtr input($input);
   $1 = [input](int64 index) {
-    return InvokePythonCallableReturning<bool>(input.get(), "(l)", index);
+    return InvokePythonCallableReturning<bool>(input.get(), "(L)", index);
   };
 }
 

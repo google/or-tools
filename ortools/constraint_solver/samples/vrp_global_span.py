@@ -119,7 +119,7 @@ def print_solution(data, manager, routing, assignment):
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         print(plan_output)
         total_distance += route_distance
-    print('Total Distance of all routes: {}m'.format(total_distance))
+    print('Total distance of all routes: {}m'.format(total_distance))
     # [END solution_printer]
 
 
@@ -145,7 +145,7 @@ def main():
     # Create and register a transit callback.
     # [START transit_callback]
     def distance_callback(from_index, to_index):
-        """Returns the manhattan distance between the two nodes."""
+        """Returns the distance between the two nodes."""
         # Convert from routing variable Index to distance matrix NodeIndex.
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)

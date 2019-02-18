@@ -24,39 +24,19 @@
 namespace operations_research {
 // [START data_model]
 struct DataModel {
-  DataModel()
-      : locations({
-            {4, 4},
-            {2, 0},
-            {8, 0},
-            {0, 1},
-            {1, 1},
-            {5, 2},
-            {7, 2},
-            {3, 3},
-            {6, 3},
-            {5, 5},
-            {8, 5},
-            {1, 6},
-            {2, 6},
-            {3, 7},
-            {6, 7},
-            {0, 8},
-            {7, 8},
-        }),
-        num_locations(locations.size()),
-        num_vehicles(1),
-        depot(0) {
+  const std::vector<std::vector<int>> locations{
+      {4, 4}, {2, 0}, {8, 0}, {0, 1}, {1, 1}, {5, 2}, {7, 2}, {3, 3}, {6, 3},
+      {5, 5}, {8, 5}, {1, 6}, {2, 6}, {3, 7}, {6, 7}, {0, 8}, {7, 8},
+  };
+  const int num_vehicles = 1;
+  const RoutingIndexManager::NodeIndex depot{0};
+  DataModel() {
     // Convert locations in meters using a city block dimension of 114m x 80m.
     for (auto& it : locations) {
       const_cast<std::vector<int>&>(it)[0] *= 114;
       const_cast<std::vector<int>&>(it)[1] *= 80;
     }
   }
-  const std::vector<std::vector<int>> locations;
-  const int num_locations;
-  const int num_vehicles;
-  const RoutingIndexManager::NodeIndex depot;
 };
 // [END data_model]
 
@@ -65,15 +45,15 @@ struct DataModel {
  * @details It uses the data.locations to computes the Manhattan distance
  * between the two positions of two different indices.*/
 std::vector<std::vector<int64>> GenerateManhattanDistanceMatrix(
-    const DataModel& data) {
+    const std::vector<std::vector<int>>& locations) {
   std::vector<std::vector<int64>> distances = std::vector<std::vector<int64>>(
-      data.num_locations, std::vector<int64>(data.num_locations, int64{0}));
-  for (int fromNode = 0; fromNode < data.num_locations; fromNode++) {
-    for (int toNode = 0; toNode < data.num_locations; toNode++) {
+      locations.size(), std::vector<int64>(locations.size(), int64{0}));
+  for (int fromNode = 0; fromNode < locations.size(); fromNode++) {
+    for (int toNode = 0; toNode < locations.size(); toNode++) {
       if (fromNode != toNode)
         distances[fromNode][toNode] =
-            std::abs(data.locations[toNode][0] - data.locations[fromNode][0]) +
-            std::abs(data.locations[toNode][1] - data.locations[fromNode][1]);
+            int64{std::abs(locations[toNode][0] - locations[fromNode][0]) +
+                  std::abs(locations[toNode][1] - locations[fromNode][1])};
     }
   }
   return distances;
@@ -116,7 +96,7 @@ void Tsp() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(data.num_locations, data.num_vehicles,
+  RoutingIndexManager manager(data.locations.size(), data.num_vehicles,
                               data.depot);
   // [END index_manager]
 
@@ -127,7 +107,7 @@ void Tsp() {
 
   // Create and register a transit callback.
   // [START transit_callback]
-  const auto distance_matrix = GenerateManhattanDistanceMatrix(data);
+  const auto distance_matrix = GenerateManhattanDistanceMatrix(data.locations);
   const int transit_callback_index = routing.RegisterTransitCallback(
       [&distance_matrix, &manager](int64 from_index, int64 to_index) -> int64 {
         // Convert from routing variable Index to distance matrix NodeIndex.
