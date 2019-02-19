@@ -80,15 +80,13 @@ void RegisterVariableBoundsLevelZeroExport(
 void RegisterObjectiveBoundsImport(Model* model);
 
 // Registers a callback that will report improving objective best bound.
-// If synchronization_helper->broadcast_lower_bound is true, it will create a
-// fake CpSolverResponse (status UNKNOWN, new best bound, best know objective
-// value) and call the external_solution_observer with that response.
-void RegisterObjectiveBestBoundExport(
-    const CpModelProto& model_proto,
-    const std::function<void(const CpSolverResponse&)>&
-        external_solution_observer,
-    bool log_progress, IntegerVariable objective_var, WallTimer* wall_timer,
-    Model* model);
+//
+// TODO(user): A solver can also improve the objective upper bound without
+// finding a solution and we should maybe share this as well.
+void RegisterObjectiveBestBoundExport(const CpModelProto& model_proto,
+                                      bool log_progress,
+                                      IntegerVariable objective_var,
+                                      WallTimer* wall_timer, Model* model);
 
 // Stores information on the worker in the parallel context.
 struct WorkerInfo {

@@ -24,7 +24,6 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/util/rev.h"
 
 namespace operations_research {
 namespace sat {
@@ -56,9 +55,6 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
   void UpdateNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);
   bool PushOneBox(int box, int other);
-  void AddBoxReason(int box);
-  void AddBoxInRectangleReason(int box, IntegerValue xmin, IntegerValue xmax,
-                               IntegerValue ymin, IntegerValue ymax);
 
   // Updates the boxes positions and size when the given box is before other in
   // the passed direction. This will fill integer_reason_ if it is empty,
@@ -66,7 +62,7 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
   bool FirstBoxIsBeforeSecondBox(const std::vector<IntegerVariable>& starts,
                                  const std::vector<IntegerVariable>& sizes,
                                  const std::vector<IntegerVariable>& ends,
-                                 const std::vector<IntegerValue>& fixed,
+                                 const std::vector<IntegerValue>& fixed_sizes,
                                  int box, int other);
 
   const int num_boxes_;

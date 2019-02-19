@@ -202,24 +202,22 @@ void RegisterVariableBoundsLevelZeroImport(
       import_lower_bounds);
 }
 
-void RegisterObjectiveBestBoundExport(
-    const CpModelProto& model_proto,
-    const std::function<void(const CpSolverResponse&)>&
-        external_solution_observer,
-    bool log_progress, IntegerVariable objective_var, WallTimer* wall_timer,
-    Model* model) {
+void RegisterObjectiveBestBoundExport(const CpModelProto& model_proto,
+                                      bool log_progress,
+                                      IntegerVariable objective_var,
+                                      WallTimer* wall_timer, Model* model) {
   const auto broadcast_objective_lower_bound =
-      [&model_proto, external_solution_observer, objective_var, wall_timer,
-       model, log_progress](const std::vector<IntegerVariable>& modified_vars) {
+      [&model_proto, objective_var, wall_timer, model,
+       log_progress](const std::vector<IntegerVariable>& unused) {
         auto* integer_trail = model->Get<IntegerTrail>();
-        const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
-        const ObjectiveSynchronizationHelper* const helper =
-            model->GetOrCreate<ObjectiveSynchronizationHelper>();
         const CpObjectiveProto& obj = model_proto.objective();
         const double new_best_bound = ScaleObjectiveValue(
             obj, integer_trail->LevelZeroLowerBound(objective_var).value());
         const double new_objective_value = ScaleObjectiveValue(
             obj, integer_trail->LevelZeroUpperBound(objective_var).value());
+
+        const ObjectiveSynchronizationHelper* const helper =
+            model->GetOrCreate<ObjectiveSynchronizationHelper>();
         const double current_best_bound = helper->get_external_best_bound();
         const double current_objective_value =
             helper->get_external_best_objective();
@@ -230,6 +228,8 @@ void RegisterObjectiveBestBoundExport(
             (helper->scaling_factor < 0 &&
              new_best_bound < current_best_bound)) {
           if (log_progress) {
+            const WorkerInfo* const worker_info =
+                model->GetOrCreate<WorkerInfo>();
             const double reported_objective_value =
                 std::isfinite(current_objective_value) ? current_objective_value
                                                        : new_objective_value;

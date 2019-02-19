@@ -1223,7 +1223,7 @@ CpSolverResponse SolveCpModelInternal(
   CpSolverResponse response;
   response.set_status(CpSolverStatus::MODEL_INVALID);
 
-  auto fill_response_statistics = [&]() {
+  auto fill_response_statistics = [&response, model, wall_timer]() {
     auto* sat_solver = model->Get<SatSolver>();
     response.set_num_booleans(sat_solver->NumVariables());
     response.set_num_branches(sat_solver->num_branches());
@@ -1444,8 +1444,8 @@ CpSolverResponse SolveCpModelInternal(
       auto* integer_trail = model->Get<IntegerTrail>();
       const CpObjectiveProto& obj = model_proto.objective();
 
-      const auto get_objective_value = [&response, integer_trail, &obj,
-                                        objective_var]() {
+      helper->get_external_best_objective = [&response, integer_trail, &obj,
+                                             objective_var]() {
         return response.status() != CpSolverStatus::MODEL_INVALID
                    ? response.objective_value()
                    : ScaleObjectiveValue(
@@ -1454,8 +1454,8 @@ CpSolverResponse SolveCpModelInternal(
                                   1);
       };
 
-      const auto get_objective_best_bound = [&response, integer_trail, &obj,
-                                             &objective_var]() {
+      helper->get_external_best_bound = [&response, integer_trail, &obj,
+                                         objective_var]() {
         return response.status() != CpSolverStatus::MODEL_INVALID
                    ? response.best_objective_bound()
                    : ScaleObjectiveValue(
@@ -1463,21 +1463,16 @@ CpSolverResponse SolveCpModelInternal(
                                   .value());
       };
 
-      const auto set_objective_best_bound =
+      helper->set_external_best_bound =
           [&response](double objective_value, double objective_best_bound) {
             response.set_best_objective_bound(objective_best_bound);
           };
-
-      helper->get_external_best_objective = std::move(get_objective_value);
-      helper->get_external_best_bound = std::move(get_objective_best_bound);
-      helper->set_external_best_bound = std::move(set_objective_best_bound);
     }
 
     // Watch improved objective best bounds in regular search, or core based
     // search. It should be disabled for LNS.
-    RegisterObjectiveBestBoundExport(model_proto, external_solution_observer,
-                                     VLOG_IS_ON(1), objective_var, wall_timer,
-                                     model);
+    RegisterObjectiveBestBoundExport(model_proto, VLOG_IS_ON(1), objective_var,
+                                     wall_timer, model);
   }
 
   // Import objective bounds.

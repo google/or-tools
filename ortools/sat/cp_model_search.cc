@@ -379,11 +379,18 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       return new_params;
     }
 
+    if (--index == 0) {
+      new_params.set_search_branching(
+          SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+      *name = "random";
+      return new_params;
+    }
+
     // Randomized fixed search.
     new_params.set_search_branching(SatParameters::FIXED_SEARCH);
     new_params.set_randomize_search(true);
     new_params.set_search_randomization_tolerance(index);
-    *name = absl::StrFormat("rnd_%i", index);
+    *name = absl::StrFormat("random_%i", index);
     return new_params;
   }
 }

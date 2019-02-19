@@ -65,23 +65,37 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
 
   // All [0, 1] variables always have a corresponding Boolean, even if it is
   // fixed to 0 (domain == [0,0]) or fixed to 1 (domain == [1,1]).
-  booleans_.resize(num_proto_variables, kNoBooleanVariable);
-  for (int i = 0; i < num_proto_variables; ++i) {
-    const auto domain = ReadDomainFromProto(model_proto.variables(i));
-    if (domain.Min() >= 0 && domain.Max() <= 1) {
-      booleans_[i] = m->Add(NewBooleanVariable());
-      if (booleans_[i] >= reverse_boolean_map_.size()) {
-        reverse_boolean_map_.resize(booleans_[i].value() + 1, -1);
-      }
-      reverse_boolean_map_[booleans_[i]] = i;
+  {
+    auto* sat_solver = m->GetOrCreate<SatSolver>();
+    CHECK_EQ(sat_solver->NumVariables(), 0);
 
-      if (domain.Max() == 0) {
-        // Fix to false.
-        m->Add(ClauseConstraint({sat::Literal(booleans_[i], false)}));
-      } else if (domain.Min() == 1) {
-        // Fix to true.
-        m->Add(ClauseConstraint({sat::Literal(booleans_[i], true)}));
+    BooleanVariable new_var(0);
+    std::vector<BooleanVariable> false_variables;
+    std::vector<BooleanVariable> true_variables;
+
+    booleans_.resize(num_proto_variables, kNoBooleanVariable);
+    reverse_boolean_map_.resize(num_proto_variables, -1);
+    for (int i = 0; i < num_proto_variables; ++i) {
+      const auto& domain = model_proto.variables(i).domain();
+      if (domain.size() != 2) continue;
+      if (domain[0] >= 0 && domain[1] <= 1) {
+        booleans_[i] = new_var;
+        reverse_boolean_map_[new_var] = i;
+        if (domain[1] == 0) {
+          false_variables.push_back(new_var);
+        } else if (domain[0] == 1) {
+          true_variables.push_back(new_var);
+        }
+        ++new_var;
       }
+    }
+
+    sat_solver->SetNumVariables(new_var.value());
+    for (const BooleanVariable var : true_variables) {
+      m->Add(ClauseConstraint({sat::Literal(var, true)}));
+    }
+    for (const BooleanVariable var : false_variables) {
+      m->Add(ClauseConstraint({sat::Literal(var, false)}));
     }
   }
 
@@ -133,9 +147,12 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     gtl::STLSortAndRemoveDuplicates(&var_to_instantiate_as_integer);
   }
   integers_.resize(num_proto_variables, kNoIntegerVariable);
+
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (const int i : var_to_instantiate_as_integer) {
     const auto& var_proto = model_proto.variables(i);
-    integers_[i] = m->Add(NewIntegerVariable(ReadDomainFromProto(var_proto)));
+    integers_[i] =
+        integer_trail->AddIntegerVariable(ReadDomainFromProto(var_proto));
     if (integers_[i] >= reverse_integer_map_.size()) {
       reverse_integer_map_.resize(integers_[i].value() + 1, -1);
     }
@@ -481,9 +498,10 @@ void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
   for (const Literal literal : mapping->Literals(ct.bool_and().literals())) {
     literals.push_back(literal);
-    m->Add(ClauseConstraint(literals));
+    sat_solver->AddProblemClause(literals);
     literals.pop_back();
   }
 }

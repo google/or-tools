@@ -16,7 +16,6 @@
 #include <algorithm>
 
 #include "absl/container/flat_hash_map.h"
-#include "ortools/base/map_util.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
 
@@ -166,64 +165,6 @@ void NonOverlappingRectanglesPropagator::RegisterWith(
   }
 }
 
-void NonOverlappingRectanglesPropagator::AddBoxReason(int box) {
-  integer_reason_.push_back(
-      integer_trail_->LowerBoundAsLiteral(start_x_vars_[box]));
-  integer_reason_.push_back(
-      integer_trail_->UpperBoundAsLiteral(start_x_vars_[box]));
-  if (duration_x_vars_[box] != kNoIntegerVariable) {
-    integer_reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(duration_x_vars_[box]));
-    integer_reason_.push_back(
-        integer_trail_->UpperBoundAsLiteral(end_x_vars_[box]));
-  } else {
-    integer_reason_.push_back(
-        integer_trail_->UpperBoundAsLiteral(start_x_vars_[box]));
-  }
-
-  integer_reason_.push_back(
-      integer_trail_->LowerBoundAsLiteral(start_y_vars_[box]));
-  integer_reason_.push_back(
-      integer_trail_->UpperBoundAsLiteral(start_y_vars_[box]));
-  if (duration_y_vars_[box] != kNoIntegerVariable) {
-    integer_reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(duration_y_vars_[box]));
-    integer_reason_.push_back(
-        integer_trail_->UpperBoundAsLiteral(end_y_vars_[box]));
-  } else {
-    integer_reason_.push_back(
-        integer_trail_->UpperBoundAsLiteral(start_y_vars_[box]));
-  }
-}
-
-void NonOverlappingRectanglesPropagator::AddBoxInRectangleReason(
-    int box, IntegerValue xmin, IntegerValue xmax, IntegerValue ymin,
-    IntegerValue ymax) {
-  integer_reason_.push_back(
-      IntegerLiteral::GreaterOrEqual(start_x_vars_[box], xmin));
-  if (duration_x_vars_[box] == kNoIntegerVariable) {
-    integer_reason_.push_back(IntegerLiteral::LowerOrEqual(
-        start_x_vars_[box], xmax - fixed_duration_x_[box]));
-  } else {
-    integer_reason_.push_back(
-        IntegerLiteral::LowerOrEqual(end_x_vars_[box], xmax));
-    integer_reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(duration_y_vars_[box]));
-  }
-
-  integer_reason_.push_back(
-      IntegerLiteral::GreaterOrEqual(start_y_vars_[box], ymin));
-  if (duration_y_vars_[box] == kNoIntegerVariable) {
-    integer_reason_.push_back(IntegerLiteral::LowerOrEqual(
-        start_y_vars_[box], ymax - fixed_duration_y_[box]));
-  } else {
-    integer_reason_.push_back(
-        IntegerLiteral::LowerOrEqual(end_y_vars_[box], ymax));
-    integer_reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(duration_y_vars_[box]));
-  }
-}
-
 namespace {
 
 // Returns true iff the 2 given intervals are disjoint. If their union is one
@@ -304,6 +245,31 @@ bool NonOverlappingRectanglesPropagator::FailWhenEnergyIsTooLarge(int box) {
     total_sum_of_areas += cached_areas_[other];
   }
 
+  const auto add_box_energy_in_rectangle_reason = [&](int box) {
+    integer_reason_.push_back(
+        IntegerLiteral::GreaterOrEqual(start_x_vars_[box], area_min_x));
+    if (duration_x_vars_[box] == kNoIntegerVariable) {
+      integer_reason_.push_back(IntegerLiteral::LowerOrEqual(
+          start_x_vars_[box], area_max_x - fixed_duration_x_[box]));
+    } else {
+      integer_reason_.push_back(
+          IntegerLiteral::LowerOrEqual(end_x_vars_[box], area_max_x));
+      integer_reason_.push_back(
+          integer_trail_->LowerBoundAsLiteral(duration_y_vars_[box]));
+    }
+    integer_reason_.push_back(
+        IntegerLiteral::GreaterOrEqual(start_y_vars_[box], area_min_y));
+    if (duration_y_vars_[box] == kNoIntegerVariable) {
+      integer_reason_.push_back(IntegerLiteral::LowerOrEqual(
+          start_y_vars_[box], area_max_y - fixed_duration_y_[box]));
+    } else {
+      integer_reason_.push_back(
+          IntegerLiteral::LowerOrEqual(end_y_vars_[box], area_max_y));
+      integer_reason_.push_back(
+          integer_trail_->LowerBoundAsLiteral(duration_y_vars_[box]));
+    }
+  };
+
   // TODO(user): Is there a better order, maybe sort by distance
   // with the current box.
   for (int i = neighbors_begins_[box]; i < end; ++i) {
@@ -327,13 +293,11 @@ bool NonOverlappingRectanglesPropagator::FailWhenEnergyIsTooLarge(int box) {
 
     if (sum_of_areas > bounding_area) {
       integer_reason_.clear();
-      AddBoxInRectangleReason(box, area_min_x, area_max_x, area_min_y,
-                              area_max_y);
+      add_box_energy_in_rectangle_reason(box);
       for (int j = neighbors_begins_[box]; j <= i; ++j) {
         const int other = neighbors_[j];
         if (cached_areas_[other] == 0) continue;
-        AddBoxInRectangleReason(other, area_min_x, area_max_x, area_min_y,
-                                area_max_y);
+        add_box_energy_in_rectangle_reason(other);
       }
       return integer_trail_->ReportConflict(integer_reason_);
     }
@@ -346,19 +310,34 @@ bool NonOverlappingRectanglesPropagator::FirstBoxIsBeforeSecondBox(
     const std::vector<IntegerVariable>& sizes,
     const std::vector<IntegerVariable>& ends,
     const std::vector<IntegerValue>& fixed_sizes, int box, int other) {
-  const IntegerValue min_end = Min(ends[box]);
-  if (min_end > Min(starts[other])) {
-    integer_reason_.clear();
-    AddBoxReason(box);
-    AddBoxReason(other);
-    if (!SetMin(starts[other], min_end, integer_reason_)) return false;
+  // Box cannot be after other. This is because:
+  //   min(end(other)) > max(start(box))
+  integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(starts[box]));
+  if (sizes[other] == kNoIntegerVariable) {
+    integer_reason_.push_back(
+        integer_trail_->LowerBoundAsLiteral(starts[other]));
+  } else {
+    integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(ends[other]));
   }
 
+  // Box pushes other towards the right.
+  const IntegerValue min_end = Min(ends[box]);
+  if (sizes[box] == kNoIntegerVariable) {
+    integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(starts[box]));
+  } else {
+    integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(ends[box]));
+  }
+
+  if (!SetMin(starts[other], min_end, integer_reason_)) return false;
+
+  // Remove previous integer literal from the reason.
+  integer_reason_.pop_back();
+
+  // Other pushes box towards the left.
   const IntegerValue other_max_start = Max(starts[other]);
+  integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(starts[other]));
+
   if (other_max_start < Max(ends[box])) {
-    integer_reason_.clear();
-    AddBoxReason(box);
-    AddBoxReason(other);
     if (sizes[box] == kNoIntegerVariable) {
       if (!SetMax(starts[box], other_max_start - fixed_sizes[box],
                   integer_reason_)) {
@@ -380,28 +359,68 @@ bool NonOverlappingRectanglesPropagator::PushOneBox(int box, int other) {
                     4 * (Min(end_y_vars_[box]) <= Max(start_y_vars_[other])) +
                     8 * (Min(end_y_vars_[other]) <= Max(start_y_vars_[box]));
 
+  if (state != 0 && state != 1 && state != 2 && state != 4 && state != 8) {
+    return true;
+  }
+
+  const auto add_mandatory_x_bounds_as_reason = [&](int b) {
+    integer_reason_.push_back(
+        integer_trail_->UpperBoundAsLiteral(start_x_vars_[b]));
+    if (duration_x_vars_[b] == kNoIntegerVariable) {
+      integer_reason_.push_back(
+          integer_trail_->LowerBoundAsLiteral(start_x_vars_[b]));
+    } else {
+      integer_reason_.push_back(
+          integer_trail_->LowerBoundAsLiteral(end_x_vars_[b]));
+    }
+  };
+
+  const auto add_mandatory_y_bounds_as_reason = [&](int b) {
+    integer_reason_.push_back(
+        integer_trail_->UpperBoundAsLiteral(start_y_vars_[b]));
+    if (duration_y_vars_[b] == kNoIntegerVariable) {
+      integer_reason_.push_back(
+          integer_trail_->LowerBoundAsLiteral(start_y_vars_[b]));
+    } else {
+      integer_reason_.push_back(
+          integer_trail_->LowerBoundAsLiteral(end_y_vars_[b]));
+    }
+  };
+
+  // Pre-fill integer reasons for actually propagating.
+  integer_reason_.clear();
+
   // This is an "hack" to be able to easily test for none or for one
   // and only one of the conditions below.
-  integer_reason_.clear();
   switch (state) {
     case 0: {
-      AddBoxReason(box);
-      AddBoxReason(other);
+      add_mandatory_x_bounds_as_reason(box);
+      add_mandatory_y_bounds_as_reason(box);
+      add_mandatory_x_bounds_as_reason(other);
+      add_mandatory_y_bounds_as_reason(other);
       return integer_trail_->ReportConflict(integer_reason_);
     }
     case 1:
+      add_mandatory_y_bounds_as_reason(box);
+      add_mandatory_y_bounds_as_reason(other);
       return FirstBoxIsBeforeSecondBox(start_x_vars_, duration_x_vars_,
                                        end_x_vars_, fixed_duration_x_, box,
                                        other);
     case 2:
+      add_mandatory_y_bounds_as_reason(box);
+      add_mandatory_y_bounds_as_reason(other);
       return FirstBoxIsBeforeSecondBox(start_x_vars_, duration_x_vars_,
                                        end_x_vars_, fixed_duration_x_, other,
                                        box);
     case 4:
+      add_mandatory_x_bounds_as_reason(box);
+      add_mandatory_x_bounds_as_reason(other);
       return FirstBoxIsBeforeSecondBox(start_y_vars_, duration_y_vars_,
                                        end_y_vars_, fixed_duration_y_, box,
                                        other);
     case 8:
+      add_mandatory_x_bounds_as_reason(box);
+      add_mandatory_x_bounds_as_reason(other);
       return FirstBoxIsBeforeSecondBox(start_y_vars_, duration_y_vars_,
                                        end_y_vars_, fixed_duration_y_, other,
                                        box);
