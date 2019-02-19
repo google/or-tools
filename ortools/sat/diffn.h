@@ -14,16 +14,14 @@
 #ifndef OR_TOOLS_SAT_DIFFN_H_
 #define OR_TOOLS_SAT_DIFFN_H_
 
-#include <functional>
-#include <memory>
 #include <vector>
 
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/rev.h"
@@ -32,19 +30,15 @@ namespace operations_research {
 namespace sat {
 
 // Non overlapping rectangles.
-class NonOverlappingRectanglesPropagator : public CpPropagator {
+class NonOverlappingRectanglesPropagator : public PropagatorInterface {
  public:
   // The strict parameters indicates how to place zero width or zero height
   // boxes. If strict is true, these boxes must not 'cross' another box, and are
   // pushed by the other boxes.
-  NonOverlappingRectanglesPropagator(
-      const std::vector<IntegerVariable>& start_x,
-      const std::vector<IntegerVariable>& size_x,
-      const std::vector<IntegerVariable>& end_x,
-      const std::vector<IntegerVariable>& start_y,
-      const std::vector<IntegerVariable>& size_y,
-      const std::vector<IntegerVariable>& end_y, bool strict,
-      IntegerTrail* integer_trail);
+  NonOverlappingRectanglesPropagator(const std::vector<IntervalVariable>& x,
+                                     const std::vector<IntervalVariable>& y,
+                                     bool strict, Model* model,
+                                     IntegerTrail* integer_trail);
   ~NonOverlappingRectanglesPropagator() override;
 
   // TODO(user): Look at intervals to to store x and dx, y and dy.
@@ -52,16 +46,15 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  IntegerValue Min(IntegerVariable v) const;
+  IntegerValue Max(IntegerVariable v) const;
+  bool SetMin(IntegerVariable v, IntegerValue value,
+              const std::vector<IntegerLiteral>& reason);
+  bool SetMax(IntegerVariable v, IntegerValue value,
+              const std::vector<IntegerLiteral>& reason);
+
   void UpdateNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);
-  bool CheckEnergyOnProjections();
-  bool CheckEnergyOnOneDimension(
-      const std::vector<IntegerVariable>& starts,
-      const std::vector<IntegerVariable>& sizes,
-      const std::vector<IntegerVariable>& ends,
-      const std::vector<IntegerVariable>& other_starts,
-      const std::vector<IntegerVariable>& other_sizes,
-      const std::vector<IntegerVariable>& other_ends);
   bool PushOneBox(int box, int other);
   void AddBoxReason(int box);
   void AddBoxInRectangleReason(int box, IntegerValue xmin, IntegerValue xmax,
@@ -73,18 +66,14 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   bool FirstBoxIsBeforeSecondBox(const std::vector<IntegerVariable>& starts,
                                  const std::vector<IntegerVariable>& sizes,
                                  const std::vector<IntegerVariable>& ends,
-                                 const std::vector<bool>& fixed, int box,
-                                 int other);
+                                 const std::vector<IntegerValue>& fixed,
+                                 int box, int other);
 
-  const std::vector<IntegerVariable> start_x_;
-  const std::vector<IntegerVariable> size_x_;
-  const std::vector<IntegerVariable> end_x_;
-  const std::vector<IntegerVariable> start_y_;
-  const std::vector<IntegerVariable> size_y_;
-  const std::vector<IntegerVariable> end_y_;
-  std::vector<bool> fixed_x_;
-  std::vector<bool> fixed_y_;
+  const int num_boxes_;
+  const std::vector<IntervalVariable> x_;
+  const std::vector<IntervalVariable> y_;
   const bool strict_;
+  IntegerTrail* integer_trail_;
 
   // The neighbors_ of a box will be in
   // [neighbors_[begin[box]], neighbors_[end[box]])
@@ -96,87 +85,29 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   std::vector<IntegerValue> cached_areas_;
   std::vector<IntegerValue> cached_distance_to_bounding_box_;
   std::vector<IntegerLiteral> integer_reason_;
+
+  std::vector<IntegerVariable> start_x_vars_;
+  std::vector<IntegerVariable> end_x_vars_;
+  std::vector<IntegerVariable> duration_x_vars_;
+  std::vector<IntegerValue> fixed_duration_x_;
+  std::vector<IntegerVariable> start_y_vars_;
+  std::vector<IntegerVariable> end_y_vars_;
+  std::vector<IntegerVariable> duration_y_vars_;
+  std::vector<IntegerValue> fixed_duration_y_;
 
   DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesPropagator);
 };
-
-
-// Non overlapping rectangles.
-class FixedDiff2 : public CpPropagator {
- public:
-  // The strict parameters indicates how to place zero width or zero height
-  // boxes. If strict is true, these boxes must not 'cross' another box, and are
-  // pushed by the other boxes.
-  FixedDiff2(
-      const std::vector<IntegerVariable>& start_x,
-      const std::vector<IntegerValue>& size_x,
-      const std::vector<IntegerVariable>& start_y,
-      const std::vector<IntegerValue>& size_y,
-      IntegerTrail* integer_trail);
-  ~FixedDiff2() override;
-
-  // TODO(user): Look at intervals to to store x and dx, y and dy.
-  bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
-
- private:
-  IntegerValue MinEndX(int box);
-  IntegerValue MaxEndX(int box);
-  void UpdateNeighbors(int box);
-  bool FailWhenEnergyIsTooLarge(int box);
-  bool CheckEnergyOnProjections();
-  bool CheckEnergyOnOneDimension(
-      const std::vector<IntegerVariable>& starts,
-      const std::vector<IntegerValue>& sizes,
-      const std::vector<IntegerVariable>& other_starts,
-      const std::vector<IntegerValue>& other_sizes);
-  bool PushOneBox(int box, int other);
-  void AddBoxReason(int box);
-  void AddBoxInRectangleReason(int box, IntegerValue xmin, IntegerValue xmax,
-                               IntegerValue ymin, IntegerValue ymax);
-
-  // Updates the boxes positions and size when the given box is before other in
-  // the passed direction. This will fill integer_reason_ if it is empty,
-  // otherwise, it will reuse its current value.
-  bool FirstBoxIsBeforeSecondBox(const std::vector<IntegerVariable>& starts,
-                                 const std::vector<IntegerValue>& sizes,
-                                 int box, int other);
-
-  const std::vector<IntegerVariable> start_x_;
-  const std::vector<IntegerValue> size_x_;
-  const std::vector<IntegerVariable> start_y_;
-  const std::vector<IntegerValue> size_y_;
-
-  // The neighbors_ of a box will be in
-  // [neighbors_[begin[box]], neighbors_[end[box]])
-  std::vector<int> neighbors_;
-  std::vector<int> neighbors_begins_;
-  std::vector<int> neighbors_ends_;
-  std::vector<int> tmp_removed_;
-
-  std::vector<IntegerValue> cached_areas_;
-  std::vector<IntegerValue> cached_distance_to_bounding_box_;
-  std::vector<IntegerLiteral> integer_reason_;
-
-  DISALLOW_COPY_AND_ASSIGN(FixedDiff2);
-};
-
 
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
 // and (x + dx, y + dy) do not overlap.
 // If one box has a zero dimension, then it can be placed anywhere.
 inline std::function<void(Model*)> NonOverlappingRectangles(
-    const std::vector<IntegerVariable>& start_x,
-    const std::vector<IntegerVariable>& size_x,
-    const std::vector<IntegerVariable>& end_x,
-    const std::vector<IntegerVariable>& start_y,
-    const std::vector<IntegerVariable>& size_y,
-    const std::vector<IntegerVariable>& end_y) {
+    const std::vector<IntervalVariable>& x,
+    const std::vector<IntervalVariable>& y) {
   return [=](Model* model) {
     NonOverlappingRectanglesPropagator* constraint =
         new NonOverlappingRectanglesPropagator(
-            start_x, size_x, end_x, start_y, size_y, end_y, false,
-            model->GetOrCreate<IntegerTrail>());
+            x, y, false, model, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -186,33 +117,12 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
 // and (x + dx, y + dy) do not overlap.
 // If one box has a zero dimension, it still cannot intersect another box.
 inline std::function<void(Model*)> StrictNonOverlappingRectangles(
-    const std::vector<IntegerVariable>& start_x,
-    const std::vector<IntegerVariable>& size_x,
-    const std::vector<IntegerVariable>& end_x,
-    const std::vector<IntegerVariable>& start_y,
-    const std::vector<IntegerVariable>& size_y,
-    const std::vector<IntegerVariable>& end_y) {
+    const std::vector<IntervalVariable>& x,
+    const std::vector<IntervalVariable>& y) {
   return [=](Model* model) {
     NonOverlappingRectanglesPropagator* constraint =
         new NonOverlappingRectanglesPropagator(
-            start_x, size_x, end_x, start_y, size_y, end_y, true,
-            model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
-}
-
-// Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
-// and (x + dx, y + dy) do not overlap.
-// If one box has a zero dimension, then it can be placed anywhere.
-inline std::function<void(Model*)> FixedNonOverlappingRectangles(
-    const std::vector<IntegerVariable>& start_x,
-    const std::vector<IntegerValue>& size_x,
-    const std::vector<IntegerVariable>& start_y,
-    const std::vector<IntegerValue>& size_y) {
-  return [=](Model* model) {
-    FixedDiff2* constraint = new FixedDiff2(start_x, size_x, start_y, size_y,
-                                            model->GetOrCreate<IntegerTrail>());
+            x, y, true, model, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

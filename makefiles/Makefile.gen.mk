@@ -265,8 +265,9 @@ objs/data/jobshop_scheduling_parser.$O: \
  ortools/data/jobshop_scheduling_parser.cc \
  ortools/data/jobshop_scheduling_parser.h ortools/base/integral_types.h \
  ortools/gen/ortools/data/jobshop_scheduling.pb.h \
- ortools/base/filelineiter.h ortools/base/file.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/status.h | $(OBJ_DIR)/data
+ ortools/base/commandlineflags.h ortools/base/filelineiter.h \
+ ortools/base/file.h ortools/base/logging.h ortools/base/macros.h \
+ ortools/base/status.h | $(OBJ_DIR)/data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Sjobshop_scheduling_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Sjobshop_scheduling_parser.$O
 
 objs/data/rcpsp_parser.$O: ortools/data/rcpsp_parser.cc \
@@ -1074,8 +1075,8 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/cp_model_utils.h \
  $(SRC_DIR)/ortools/sat/cumulative.h \
  $(SRC_DIR)/ortools/sat/cuts.h \
- $(SRC_DIR)/ortools/sat/disjunctive.h \
  $(SRC_DIR)/ortools/sat/diffn.h \
+ $(SRC_DIR)/ortools/sat/disjunctive.h \
  $(SRC_DIR)/ortools/sat/drat_checker.h \
  $(SRC_DIR)/ortools/sat/drat_proof_handler.h \
  $(SRC_DIR)/ortools/sat/drat_writer.h \
@@ -1284,16 +1285,15 @@ objs/sat/cp_model_checker.$O: ortools/sat/cp_model_checker.cc \
 
 objs/sat/cp_model_expand.$O: ortools/sat/cp_model_expand.cc \
  ortools/sat/cp_model_expand.h ortools/gen/ortools/sat/cp_model.pb.h \
- ortools/base/hash.h ortools/base/basictypes.h \
- ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/map_util.h \
  ortools/sat/cp_model_presolve.h ortools/sat/cp_model_utils.h \
- ortools/util/sorted_interval_list.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/base/macros.h ortools/util/sorted_interval_list.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h \
  ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
- ortools/util/bitset.h ortools/util/time_limit.h \
- ortools/base/commandlineflags.h ortools/base/timer.h \
- ortools/util/running_stat.h ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
+ ortools/util/bitset.h ortools/base/basictypes.h \
+ ortools/util/time_limit.h ortools/base/commandlineflags.h \
+ ortools/base/timer.h ortools/util/running_stat.h ortools/base/hash.h \
+ ortools/base/map_util.h ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_expand.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_expand.$O
 
 objs/sat/cp_model_lns.$O: ortools/sat/cp_model_lns.cc \
@@ -1324,7 +1324,7 @@ objs/sat/cp_model_loader.$O: ortools/sat/cp_model_loader.cc \
  ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
  ortools/sat/precedences.h ortools/base/stl_util.h \
  ortools/sat/all_different.h ortools/sat/circuit.h \
- ortools/sat/cumulative.h ortools/sat/disjunctive.h \
+ ortools/sat/cumulative.h ortools/sat/diffn.h ortools/sat/disjunctive.h \
  ortools/sat/theta_tree.h ortools/sat/table.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_loader.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_loader.$O
 
@@ -1404,11 +1404,11 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/util/integer_pq.h ortools/util/time_limit.h ortools/util/rev.h \
  ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
  ortools/sat/cp_model_checker.h ortools/sat/cp_model_expand.h \
- ortools/sat/cp_model_lns.h ortools/sat/cp_model_loader.h \
- ortools/sat/cp_model_utils.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/sat/precedences.h ortools/sat/cp_model_presolve.h \
+ ortools/sat/cp_model_presolve.h ortools/sat/cp_model_utils.h \
  ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
+ ortools/sat/cp_model_lns.h ortools/sat/cp_model_loader.h \
+ ortools/sat/intervals.h ortools/sat/cp_constraints.h \
+ ortools/sat/integer_expr.h ortools/sat/precedences.h \
  ortools/sat/cp_model_search.h ortools/sat/integer_search.h \
  ortools/sat/linear_programming_constraint.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
@@ -1498,14 +1498,14 @@ objs/sat/cuts.$O: ortools/sat/cuts.cc ortools/sat/cuts.h \
  ortools/algorithms/knapsack_solver_for_cuts.h ortools/base/ptr_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scuts.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scuts.$O
 
-objs/sat/diffn.$O: ortools/sat/diffn.cc \
- ortools/sat/cp_constraints.h ortools/sat/diffn.h ortools/base/int_type.h \
- ortools/base/macros.h ortools/base/integral_types.h \
- ortools/base/logging.h ortools/sat/integer.h ortools/base/hash.h \
- ortools/base/basictypes.h ortools/base/int_type_indexed_vector.h \
- ortools/base/map_util.h ortools/graph/iterators.h ortools/sat/model.h \
- ortools/base/typeid.h ortools/sat/sat_base.h ortools/util/bitset.h \
- ortools/sat/sat_solver.h ortools/base/timer.h ortools/sat/clause.h \
+objs/sat/diffn.$O: ortools/sat/diffn.cc ortools/sat/diffn.h \
+ ortools/base/int_type.h ortools/base/macros.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/sat/integer.h ortools/base/hash.h ortools/base/basictypes.h \
+ ortools/base/int_type_indexed_vector.h ortools/base/map_util.h \
+ ortools/graph/iterators.h ortools/sat/model.h ortools/base/typeid.h \
+ ortools/sat/sat_base.h ortools/util/bitset.h ortools/sat/sat_solver.h \
+ ortools/base/timer.h ortools/sat/clause.h \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h ortools/base/status.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
@@ -1514,7 +1514,8 @@ objs/sat/diffn.$O: ortools/sat/diffn.cc \
  ortools/util/integer_pq.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/rev.h \
  ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/intervals.h ortools/sat/cp_constraints.h \
+ ortools/sat/integer_expr.h ortools/sat/precedences.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdiffn.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdiffn.$O
 
 objs/sat/disjunctive.$O: ortools/sat/disjunctive.cc \
@@ -3574,3 +3575,4 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+

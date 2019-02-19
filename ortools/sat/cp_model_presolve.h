@@ -36,10 +36,9 @@ struct PresolveOptions {
 // Wrap the CpModelProto we are presolving with extra data structure like the
 // in-memory domain of each variables and the constraint variable graph.
 struct PresolveContext {
+  // Helpers to adds new variables to the presolved model.
   int NewIntVar(const Domain& domain);
-
   int NewBoolVar();
-
   int GetOrCreateConstantVar(int64 cst);
 
   // a => b.
@@ -48,20 +47,14 @@ struct PresolveContext {
   // b => x in [lb, ub].
   void AddImplyInDomain(int b, int x, const Domain& domain);
 
+  // Helpers to query the current domain of a variable.
   bool DomainIsEmpty(int ref) const;
-
   bool IsFixed(int ref) const;
-
   bool LiteralIsTrue(int lit) const;
-
   bool LiteralIsFalse(int lit) const;
-
   int64 MinOf(int ref) const;
-
   int64 MaxOf(int ref) const;
-
   bool DomainContains(int ref, int64 value) const;
-
   Domain DomainOf(int ref) const;
 
   // Returns true if this ref only appear in one constraint.
@@ -70,10 +63,16 @@ struct PresolveContext {
   // Returns true iff the domain changed.
   bool IntersectDomainWith(int ref, const Domain& domain);
 
+  // TODO(user): These function and IntersectDomainWith() can make the model
+  // UNSAT and leave the PresolveContext() in an unusable state. Either make
+  // sure that is not a problem until the client check for is_unsat, or use
+  // a construct like MUST_USE_RESULT to ensure that the client do not forget to
+  // test for empty domains.
   void SetLiteralToFalse(int lit);
-
   void SetLiteralToTrue(int lit);
 
+  // Stores a description of a rule that was just applied to have a summary of
+  // what the presolve did at the end.
   void UpdateRuleStats(const std::string& name);
 
   // Update the constraints <-> variables graph. This needs to be called each

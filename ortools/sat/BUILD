@@ -943,8 +943,8 @@ cc_library(
     srcs = ["diffn.cc"],
     hdrs = ["diffn.h"],
     deps = [
-        ":cp_constraints",
         ":integer",
+        ":intervals",
         ":model",
         ":sat_base",
         ":sat_solver",

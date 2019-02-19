@@ -16,7 +16,6 @@
 #include <algorithm>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "ortools/base/map_util.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
@@ -75,75 +74,6 @@ void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchLiteral(l, id);
     watcher->WatchLiteral(l.Negated(), id);
   }
-}
-
-// ----- CpPropagator -----
-
-CpPropagator::CpPropagator(IntegerTrail* integer_trail)
-    : integer_trail_(integer_trail) {}
-
-CpPropagator::~CpPropagator() {}
-
-IntegerValue CpPropagator::Min(IntegerVariable v) const {
-  return integer_trail_->LowerBound(v);
-}
-
-IntegerValue CpPropagator::Max(IntegerVariable v) const {
-  return integer_trail_->UpperBound(v);
-}
-
-bool CpPropagator::SetMin(IntegerVariable v, IntegerValue val,
-                          const std::vector<IntegerLiteral>& reason) {
-  IntegerValue current_min = Min(v);
-  if (val > current_min &&
-      !integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(v, val),
-                               /*literal_reason=*/{}, reason)) {
-    return false;
-  }
-  return true;
-}
-
-bool CpPropagator::SetMax(IntegerVariable v, IntegerValue val,
-                          const std::vector<IntegerLiteral>& reason) {
-  const IntegerValue current_max = Max(v);
-  if (val < current_max &&
-      !integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(v, val),
-                               /*literal_reason=*/{}, reason)) {
-    return false;
-  }
-  return true;
-}
-
-bool CpPropagator::SetMin(IntegerValue v, IntegerValue val,
-                          const std::vector<IntegerLiteral>& reason) {
-  if (val > v) {
-    return integer_trail_->ReportConflict(reason);
-  }
-  return true;
-}
-
-bool CpPropagator::SetMax(IntegerValue v, IntegerValue val,
-                          const std::vector<IntegerLiteral>& reason) {
-  if (val < v) {
-    return integer_trail_->ReportConflict(reason);
-  }
-  return true;
-}
-
-void CpPropagator::AddLowerBoundReason(
-    IntegerVariable v, std::vector<IntegerLiteral>* reason) const {
-  reason->push_back(integer_trail_->LowerBoundAsLiteral(v));
-}
-
-void CpPropagator::AddUpperBoundReason(
-    IntegerVariable v, std::vector<IntegerLiteral>* reason) const {
-  reason->push_back(integer_trail_->UpperBoundAsLiteral(v));
-}
-
-void CpPropagator::AddBoundsReason(IntegerVariable v,
-                                   std::vector<IntegerLiteral>* reason) const {
-  reason->push_back(integer_trail_->LowerBoundAsLiteral(v));
-  reason->push_back(integer_trail_->UpperBoundAsLiteral(v));
 }
 
 GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(

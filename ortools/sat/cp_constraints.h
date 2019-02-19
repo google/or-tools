@@ -57,57 +57,6 @@ class BooleanXorPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(BooleanXorPropagator);
 };
 
-// Base class to help writing CP inspired constraints.
-class CpPropagator : public PropagatorInterface {
- public:
-  explicit CpPropagator(IntegerTrail* integer_trail);
-  ~CpPropagator() override;
-
-  // ----- Shortcuts to integer variables -----
-
-  // Bound getters.
-  IntegerValue Min(IntegerVariable v) const;
-  IntegerValue Max(IntegerVariable v) const;
-  IntegerValue Min(IntegerValue v) const { return v; }
-  IntegerValue Max(IntegerValue v) const { return v; }
-
-  // Bound setters. They expects integer_reason to be filled and it will be
-  // used to create the conflicts. These setters are monotonic, i.e. setting a
-  // min value lower or equal to the current min of the variable will result
-  // in a no-op.
-  bool SetMin(IntegerVariable v, IntegerValue value,
-              const std::vector<IntegerLiteral>& reason);
-  bool SetMax(IntegerVariable v, IntegerValue value,
-              const std::vector<IntegerLiteral>& reason);
-  bool SetMin(IntegerValue v, IntegerValue value,
-              const std::vector<IntegerLiteral>& reason);
-  bool SetMax(IntegerValue v, IntegerValue value,
-              const std::vector<IntegerLiteral>& reason);
-
-  // ----- Conflict management -----
-
-  // Manage the list of integer bounds used to build the reason of propagation.
-  void AddLowerBoundReason(IntegerVariable v,
-                           std::vector<IntegerLiteral>* reason) const;
-  void AddUpperBoundReason(IntegerVariable v,
-                           std::vector<IntegerLiteral>* reason) const;
-  void AddBoundsReason(IntegerVariable v,
-                       std::vector<IntegerLiteral>* reason) const;
-
-  void AddLowerBoundReason(IntegerValue v,
-                           std::vector<IntegerLiteral>* reason) const {}
-  void AddUpperBoundReason(IntegerValue v,
-                           std::vector<IntegerLiteral>* reason) const {}
-  void AddBoundsReason(IntegerValue v,
-                       std::vector<IntegerLiteral>* reason) const {}
-
- protected:
-  IntegerTrail* integer_trail_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(CpPropagator);
-};
-
 // If we have:
 //  - selectors[i] =>  (target_var >= vars[i] + offset[i])
 //  - and we known that at least one selectors[i] must be true

@@ -161,14 +161,7 @@ bool PresolveContext::IntersectDomainWith(int ref, const Domain& domain) {
 void PresolveContext::SetLiteralToFalse(int lit) {
   const int var = PositiveRef(lit);
   const int64 value = RefIsPositive(lit) ? 0ll : 1ll;
-  if (IsFixed(var)) {
-    const int64 fixed_value = MinOf(var);
-    if (value != fixed_value) {
-      is_unsat = true;
-    }
-  } else {
-    IntersectDomainWith(var, Domain(value));
-  }
+  IntersectDomainWith(var, Domain(value));
 }
 
 void PresolveContext::SetLiteralToTrue(int lit) {
@@ -619,33 +612,40 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
 bool PresolveAtMostOne(ConstraintProto* ct, PresolveContext* context) {
   CHECK(!HasEnforcementLiteral(*ct));
 
-  bool changed = false;
-  context->tmp_literals.clear();
+  // Fix to false any duplicate literals.
   std::sort(ct->mutable_at_most_one()->mutable_literals()->begin(),
             ct->mutable_at_most_one()->mutable_literals()->end());
   int previous = kint32max;
   for (const int literal : ct->at_most_one().literals()) {
+    if (literal == previous) {
+      context->SetLiteralToFalse(literal);
+      context->UpdateRuleStats("at_most_one: duplicate literals");
+    }
+    previous = literal;
+  }
+
+  bool changed = false;
+  context->tmp_literals.clear();
+  for (const int literal : ct->at_most_one().literals()) {
     if (context->LiteralIsTrue(literal)) {
       context->UpdateRuleStats("at_most_one: satisfied");
       for (const int other : ct->at_most_one().literals()) {
-        if (other == literal) continue;
-        context->SetLiteralToFalse(other);
+        if (other != literal) context->SetLiteralToFalse(other);
       }
       return RemoveConstraint(ct, context);
     }
+
     if (context->LiteralIsFalse(literal)) {
       changed = true;
       continue;
     }
-    if (literal == previous) {
-      context->SetLiteralToFalse(literal);
-      context->UpdateRuleStats("at_most_one: duplicate literals");
-      continue;
-    }
-    previous = literal;
+
     context->tmp_literals.push_back(literal);
   }
-  if (context->tmp_literals.empty()) return RemoveConstraint(ct, context);
+  if (context->tmp_literals.empty()) {
+    context->UpdateRuleStats("at_most_one: all false");
+    return RemoveConstraint(ct, context);
+  }
 
   if (changed) {
     ct->mutable_at_most_one()->mutable_literals()->Clear();
@@ -2235,6 +2235,7 @@ bool PresolveCircuit(ConstraintProto* ct, PresolveContext* context) {
         if (!context->LiteralIsTrue(refs.front())) {
           ++num_fixed_at_true;
           context->SetLiteralToTrue(refs.front());
+          if (context->is_unsat) return false;
         }
         continue;
       }
@@ -2813,6 +2814,20 @@ void PresolvePureSatPart(PresolveContext* context) {
   ExtractClauses(postsolver, context->mapping_model);
 }
 
+void MaybeDivideByGcd(std::map<int, int64>* objective_map, int64* divisor) {
+  if (objective_map->empty()) return;
+  int64 gcd = 0;
+  for (const auto entry : *objective_map) {
+    gcd = MathUtil::GCD64(gcd, std::abs(entry.second));
+    if (gcd == 1) break;
+  }
+  if (gcd == 1) return;
+  for (auto& entry : *objective_map) {
+    entry.second /= gcd;
+  }
+  *divisor *= gcd;
+}
+
 // TODO(user): The idea behind this was that it is better to have an objective
 // as spreaded as possible. However on some problems this have the opposite
 // effect. Like on a triangular matrix where each expansion reduced the size
@@ -2820,36 +2835,36 @@ void PresolvePureSatPart(PresolveContext* context) {
 void ExpandObjective(PresolveContext* context) {
   if (context->is_unsat) return;
 
-  // This is because we called EncodeObjectiveAsSingleVariable(). Note that
-  // it allows us to update the proto objective domain too.
-  CHECK_EQ(context->working_model->objective().vars_size(), 1);
-  CHECK_EQ(context->working_model->objective().coeffs(0), 1);
-
-  // This is also because of EncodeObjectiveAsSingleVariable(). Note that
-  // we DO NOT count the offset in the domain, which make the code below quite
-  // tricky. TODO(user): maybe we should change that.
+  // Convert the objective linear expression to a map for ease of use below.
+  // We also only use affine representative.
+  std::map<int, int64> objective_map;
   int64 objective_offset_change = 0;
-  const auto initial_objective_domain =
-      context->DomainOf(context->working_model->objective().vars(0));
+  int64 objective_divisor = 1;
+  for (int i = 0; i < context->working_model->objective().vars_size(); ++i) {
+    const int ref = context->working_model->objective().vars(i);
+    int64 coeff = context->working_model->objective().coeffs(i);
+    if (!RefIsPositive(ref)) coeff = -coeff;
+    int var = PositiveRef(ref);
 
-  // Replace the objective by its representative.
-  {
-    const int ref = context->working_model->objective().vars(0);
-    const int var = PositiveRef(ref);
+    // Will be added back at the end.
+    context->var_to_constraints[var].erase(-1);
+
+    if (context->IsFixed(var)) {
+      objective_offset_change += coeff * context->MinOf(var);
+      continue;
+    }
+
     const AffineRelation::Relation r = context->GetAffineRelation(var);
     if (r.representative != var) {
-      auto* mutable_objective = context->working_model->mutable_objective();
-      const int coeff = RefIsPositive(ref) ? r.coeff : -r.coeff;
-      const int offset = RefIsPositive(ref) ? r.offset : -r.offset;
-
-      objective_offset_change += offset;
-      mutable_objective->set_coeffs(0, coeff);
-      mutable_objective->set_vars(0, r.representative);
-
-      context->var_to_constraints[var].erase(-1);
-      context->var_to_constraints[r.representative].insert(-1);
+      var = r.representative;
+      objective_offset_change += r.offset * coeff;
+      coeff *= r.coeff;
     }
+
+    objective_map[var] += coeff;
+    if (objective_map[var] == 0) objective_map.erase(var);
   }
+  MaybeDivideByGcd(&objective_map, &objective_divisor);
 
   // To avoid a bad complexity, we need to compute the number of relevant
   // constraints for each variables.
@@ -2861,6 +2876,7 @@ void ExpandObjective(PresolveContext* context) {
     const ConstraintProto& ct = context->working_model->constraints(ct_index);
     // Skip everything that is not a linear equality constraint.
     if (!ct.enforcement_literal().empty() ||
+        context->affine_constraints.contains(&ct) ||
         ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
         ct.linear().domain().size() != 2 ||
         ct.linear().domain(0) != ct.linear().domain(1)) {
@@ -2874,15 +2890,12 @@ void ExpandObjective(PresolveContext* context) {
     }
   }
 
-  // Convert the objective linear expression to a map for ease of use below.
-  std::map<int, int64> objective_map;
   std::set<int> var_to_process;
-  for (int i = 0; i < context->working_model->objective().vars_size(); ++i) {
-    const int ref = context->working_model->objective().vars(i);
-    const int64 coeff = context->working_model->objective().coeffs(i);
-    objective_map[PositiveRef(ref)] = RefIsPositive(ref) ? coeff : -coeff;
-    if (var_to_num_relevant_constraints[PositiveRef(ref)] != 0) {
-      var_to_process.insert(PositiveRef(ref));
+  for (const auto entry : objective_map) {
+    const int var = entry.first;
+    CHECK(RefIsPositive(var));
+    if (var_to_num_relevant_constraints[var] != 0) {
+      var_to_process.insert(var);
     }
   }
 
@@ -2903,6 +2916,7 @@ void ExpandObjective(PresolveContext* context) {
       objective_var = var;
       break;
     }
+
     if (objective_var == -1) break;
     CHECK(RefIsPositive(objective_var));
     processed_vars.insert(objective_var);
@@ -2918,7 +2932,6 @@ void ExpandObjective(PresolveContext* context) {
     std::sort(constraints_with_objective.begin(),
               constraints_with_objective.end());
     for (const int ct_index : constraints_with_objective) {
-      if (ct_index == -1) continue;
       if (relevant_constraints.count(ct_index) == 0) continue;
       const ConstraintProto& ct = context->working_model->constraints(ct_index);
 
@@ -2971,7 +2984,6 @@ void ExpandObjective(PresolveContext* context) {
           objective_map[objective_var] / objective_coeff_in_expanded_constraint;
 
       objective_map.erase(objective_var);
-      context->var_to_constraints[objective_var].erase(-1);
 
       const ConstraintProto& ct =
           context->working_model->constraints(expanded_linear_index);
@@ -2984,7 +2996,6 @@ void ExpandObjective(PresolveContext* context) {
         int64 coeff = -ct.linear().coeffs(i) * factor;
         if (!RefIsPositive(ref)) coeff = -coeff;
         if (!gtl::ContainsKey(objective_map, var)) {
-          context->var_to_constraints[var].insert(-1);
           if (!gtl::ContainsKey(processed_vars, var)) {
             var_to_process.insert(var);
           }
@@ -2993,10 +3004,12 @@ void ExpandObjective(PresolveContext* context) {
         if (objective_map[var] == 0.0) {
           objective_map.erase(var);
           var_to_process.erase(var);
-          context->var_to_constraints[var].erase(-1);
         }
       }
-      objective_offset_change += ct.linear().domain(0) * factor;
+
+      objective_offset_change +=
+          ct.linear().domain(0) * factor * objective_divisor;
+      MaybeDivideByGcd(&objective_map, &objective_divisor);
 
       // If the objective variable wasn't used in other constraints and it can
       // be reconstructed whatever the value of the other variables, we can
@@ -3004,7 +3017,7 @@ void ExpandObjective(PresolveContext* context) {
       //
       // TODO(user): It should be possible to refactor the code so this is
       // automatically done by the linear constraint singleton presolve rule.
-      if (context->var_to_constraints[objective_var].size() == 1) {
+      if (context->var_to_constraints[objective_var].empty()) {
         // Compute implied domain on objective_var.
         Domain implied_domain = ReadDomainFromProto(ct.linear());
         for (int i = 0; i < num_terms; ++i) {
@@ -3021,12 +3034,7 @@ void ExpandObjective(PresolveContext* context) {
 
         // Remove the constraint if the implied domain is included in the
         // domain of the objective_var term.
-        //
-        // Note the special case for the first expansion where any domain
-        // restriction will be handled by the objective domain because we
-        // called EncodeObjectiveAsSingleVariable() above.
-        if (num_expansions == 0 ||
-            implied_domain.IsIncludedIn(context->DomainOf(objective_var))) {
+        if (implied_domain.IsIncludedIn(context->DomainOf(objective_var))) {
           context->UpdateRuleStats("objective: removed objective constraint.");
           *(context->mapping_model->add_constraints()) = ct;
           context->working_model->mutable_constraints(expanded_linear_index)
@@ -3043,15 +3051,39 @@ void ExpandObjective(PresolveContext* context) {
       context->working_model->mutable_objective();
   mutable_objective->clear_coeffs();
   mutable_objective->clear_vars();
+  Domain objective_domain(0);
   for (const auto& entry : objective_map) {
+    context->var_to_constraints[PositiveRef(entry.first)].insert(-1);
     mutable_objective->add_vars(entry.first);
     mutable_objective->add_coeffs(entry.second);
+    objective_domain =
+        objective_domain
+            .AdditionWith(
+                context->DomainOf(entry.first).MultiplicationBy(entry.second))
+            .RelaxIfTooComplex();
   }
+
+  // Tricky, the domain in the proto do not include the offset.
+  const Domain old_domain =
+      ReadDomainFromProto(context->working_model->objective());
+  if (!old_domain.IsEmpty()) {
+    objective_domain = objective_domain.IntersectionWith(
+        old_domain.AdditionWith(Domain(-objective_offset_change))
+            .InverseMultiplicationBy(objective_divisor));
+  }
+  FillDomainInProto(objective_domain, mutable_objective);
   mutable_objective->set_offset(mutable_objective->offset() +
                                 objective_offset_change);
-  FillDomainInProto(
-      initial_objective_domain.AdditionWith(Domain(-objective_offset_change)),
-      mutable_objective);
+  if (objective_divisor > 1) {
+    const double divisor = static_cast<double>(objective_divisor);
+    mutable_objective->set_offset(mutable_objective->offset() / divisor);
+    if (mutable_objective->scaling_factor() == 0) {
+      mutable_objective->set_scaling_factor(divisor);
+    } else {
+      mutable_objective->set_scaling_factor(
+          mutable_objective->scaling_factor() * divisor);
+    }
+  }
 }
 
 void MergeNoOverlapConstraints(PresolveContext* context) {
@@ -3133,7 +3165,6 @@ void TransformIntoMaxCliques(PresolveContext* context) {
     ConstraintProto* ct = context->working_model->mutable_constraints(c);
     if (ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
       std::vector<Literal> clique;
-      // Process only small constraints.
       for (const int ref : ct->at_most_one().literals()) {
         clique.push_back(convert(ref));
       }
@@ -3380,6 +3411,7 @@ bool ProcessSetPPC(PresolveContext* context, TimeLimit* time_limit) {
       if (PresolveOneConstraint(c, context)) {
         context->UpdateConstraintVariableUsage(c);
       }
+      if (context->is_unsat) return false;
     }
     if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
         ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
@@ -3792,10 +3824,6 @@ bool PresolveCpModel(const PresolveOptions& options,
     *mapping_model->add_search_strategy() = decision_strategy;
   }
 
-  // Encode linear objective, so that it can be presolved like a normal
-  // constraint.
-  EncodeObjectiveAsSingleVariable(context.working_model);
-
   // Initialize the initial context.working_model domains.
   context.InitializeNewDomains();
 
@@ -3803,8 +3831,8 @@ bool PresolveCpModel(const PresolveOptions& options,
   context.var_to_constraints.resize(context.working_model->variables_size());
   context.UpdateNewConstraintsVariableUsage();
 
-  // Hack for the objective so that it is never considered to appear in only one
-  // constraint.
+  // Hack for the objective variable(s) so that they are never considered to
+  // appear in only one constraint.
   if (context.working_model->has_objective()) {
     for (const int obj_var : context.working_model->objective().vars()) {
       context.var_to_constraints[PositiveRef(obj_var)].insert(-1);
@@ -3868,9 +3896,6 @@ bool PresolveCpModel(const PresolveOptions& options,
     PresolveToFixPoint(&context, options.time_limit);
   }
 
-  // Note: Removing unused equivalent variables should be done at the end.
-  RemoveUnusedEquivalentVariables(&context);
-
   if (context.is_unsat) {
     // Set presolved_model to the simplest UNSAT problem (empty clause).
     presolved_model->Clear();
@@ -3884,6 +3909,9 @@ bool PresolveCpModel(const PresolveOptions& options,
   if (context.working_model->has_objective()) {
     ExpandObjective(&context);
   }
+
+  // Note: Removing unused equivalent variables should be done at the end.
+  RemoveUnusedEquivalentVariables(&context);
 
   // TODO(user): Past this point the context.constraint_to_vars[] graph is not
   // consistent and shouldn't be used. We do use var_to_constraints.size()
