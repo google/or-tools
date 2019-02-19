@@ -118,9 +118,9 @@ class Customers():
         stops = np.array(range(0, num_stops))
         # normaly distributed random distribution of stops within the box
         stdv = 6  # the number of standard deviations 99.9% will be within +-3
-        lats = (self.extents['llcrnrlat'] + np.random.randn(num_stops) *
+        lats = (self.extents['llcrnrlat'] + np.random.randint(num_stops) *
                 (self.extents['urcrnrlat'] - self.extents['llcrnrlat']) / stdv)
-        lons = (self.extents['llcrnrlon'] + np.random.randn(num_stops) *
+        lons = (self.extents['llcrnrlon'] + np.random.randint(num_stops) *
                 (self.extents['urcrnrlon'] - self.extents['llcrnrlon']) / stdv)
         # uniformly distributed integer demands.
         demmands = np.random.randint(min_demand, max_demand, num_stops)
