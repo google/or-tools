@@ -1,11 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-	<LangVersion>7.2</LangVersion>
+    <LangVersion>7.2</LangVersion>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-	<EnableDefaultItems>false</EnableDefaultItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
     <RestoreSources>../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
+    <AssemblyName>Google.OrTools.ShiftSchedulingSat</AssemblyName>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -16,10 +17,6 @@
 
   <ItemGroup>
     <Compile Include="ShiftSchedulingSat.cs" />
+    <PackageReference Include="Google.OrTools" Version="7.0*" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Google.OrTools" Version="7.0.6170-*" />
-  </ItemGroup>
-
 </Project>

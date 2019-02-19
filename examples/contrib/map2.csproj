@@ -5,6 +5,8 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <EnableDefaultItems>false</EnableDefaultItems>
     <RestoreSources>../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
+    <AssemblyName>Google.OrTools.map2</AssemblyName>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -15,6 +17,6 @@
 
   <ItemGroup>
     <Compile Include="map2.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.0-*" />
+    <PackageReference Include="Google.OrTools" Version="7.0*" />
   </ItemGroup>
 </Project>
