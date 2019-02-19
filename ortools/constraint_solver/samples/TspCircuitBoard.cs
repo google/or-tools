@@ -93,13 +93,10 @@ public class TspCircuitBoard {
         if (fromNode == toNode)
           distanceMatrix[fromNode, toNode] = 0;
         else
-          distanceMatrix[fromNode, toNode] =
-            (long)Math.Sqrt(
-                Math.Pow(locations[toNode, 0] -
-                  locations[fromNode, 0], 2) +
-                Math.Pow(locations[toNode, 1] -
-                  locations[fromNode, 1], 2)
-                );
+          distanceMatrix[fromNode, toNode] = (long)
+            Math.Sqrt(
+              Math.Pow(locations[toNode, 0] - locations[fromNode, 0], 2) +
+              Math.Pow(locations[toNode, 1] - locations[fromNode, 1], 2));
       }
     }
     return distanceMatrix;
