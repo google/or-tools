@@ -34,14 +34,13 @@ before_build:
   - git config --global user.email "ci@appveyor.com"
   - git config --global user.name "CI"
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
-  - tools\win\which.exe csc.exe
-  - tools\win\which.exe fsc.exe
-  - tools\win\which.exe dotnet.exe
   - cmake --version
   - set PATH=C:\Python36-x64;%PATH%
   - tools\win\which.exe python.exe
   - python -V
   - python -m pip install virtualenv wheel six
+  - tools\win\which.exe dotnet.exe
+  - dotnet --info
 #  - set PATH="C:\Program Files\Java\jdk1.8.0\bin";%PATH%
   - if "%BUILDER%"=="cmake" cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release -G "%CMAKE_GENERATOR%" || VER>NUL
   - if "%BUILDER%"=="make" del "C:\Program Files\Git\usr\bin\sh.exe"
