@@ -410,11 +410,11 @@ build: $(SOURCE) $(SOURCE)proj $(DOTNET_ORTOOLS_NUPKG)
 
 .PHONY: run # Run a .Net C# program (using 'dotnet run').
 run: build
-	"$(DOTNET_BIN)" run --no-build --project $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build $(ARGS) --project $(SOURCE_PATH)proj
 
 .PHONY: run_test # Run a .Net C# program (using 'dotnet test').
 run_test: build
-	"$(DOTNET_BIN)" test --no-build $(SOURCE_PATH)proj -- $(ARGS)
+	"$(DOTNET_BIN)" test --no-build $(ARGS) $(SOURCE_PATH)proj
 endif
 
 # .Net F#
