@@ -197,6 +197,9 @@ class SchedulingConstraintHelper {
   void AddEndMaxReason(int t, IntegerValue upper_bound);
   void AddEnergyAfterReason(int t, IntegerValue energy_min, IntegerValue time);
 
+  // Used in the NoOverlap2D propagation.
+  void ImportOtherReasons(const SchedulingConstraintHelper& other_helper);
+
   // Adds the reason why task "before" must be before task "after".
   // That is StartMax(before) < EndMin(after).
   void AddReasonForBeingBefore(int before, int after);
@@ -331,6 +334,16 @@ inline bool SchedulingConstraintHelper::IsAbsent(int t) const {
 inline void SchedulingConstraintHelper::ClearReason() {
   integer_reason_.clear();
   literal_reason_.clear();
+}
+
+inline void SchedulingConstraintHelper::ImportOtherReasons(
+    const SchedulingConstraintHelper& other_helper) {
+  literal_reason_.insert(literal_reason_.end(),
+                         other_helper.literal_reason_.begin(),
+                         other_helper.literal_reason_.end());
+  integer_reason_.insert(integer_reason_.end(),
+                         other_helper.integer_reason_.begin(),
+                         other_helper.integer_reason_.end());
 }
 
 inline void SchedulingConstraintHelper::AddPresenceReason(int t) {

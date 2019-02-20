@@ -45,29 +45,13 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  IntegerValue Min(IntegerVariable v) const;
-  IntegerValue Max(IntegerVariable v) const;
-  bool SetMin(IntegerVariable v, IntegerValue value,
-              const std::vector<IntegerLiteral>& reason);
-  bool SetMax(IntegerVariable v, IntegerValue value,
-              const std::vector<IntegerLiteral>& reason);
-
   void UpdateNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);
   bool PushOneBox(int box, int other);
 
-  // Updates the boxes positions and size when the given box is before other in
-  // the passed direction. This will fill integer_reason_ if it is empty,
-  // otherwise, it will reuse its current value.
-  bool FirstBoxIsBeforeSecondBox(const std::vector<IntegerVariable>& starts,
-                                 const std::vector<IntegerVariable>& sizes,
-                                 const std::vector<IntegerVariable>& ends,
-                                 const std::vector<IntegerValue>& fixed_sizes,
-                                 int box, int other);
-
   const int num_boxes_;
-  const std::vector<IntervalVariable> x_;
-  const std::vector<IntervalVariable> y_;
+  SchedulingConstraintHelper x_;
+  SchedulingConstraintHelper y_;
   const bool strict_;
   IntegerTrail* integer_trail_;
 
@@ -80,16 +64,6 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
 
   std::vector<IntegerValue> cached_areas_;
   std::vector<IntegerValue> cached_distance_to_bounding_box_;
-  std::vector<IntegerLiteral> integer_reason_;
-
-  std::vector<IntegerVariable> start_x_vars_;
-  std::vector<IntegerVariable> end_x_vars_;
-  std::vector<IntegerVariable> duration_x_vars_;
-  std::vector<IntegerValue> fixed_duration_x_;
-  std::vector<IntegerVariable> start_y_vars_;
-  std::vector<IntegerVariable> end_y_vars_;
-  std::vector<IntegerVariable> duration_y_vars_;
-  std::vector<IntegerValue> fixed_duration_y_;
 
   DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesPropagator);
 };
