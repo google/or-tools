@@ -158,7 +158,7 @@ public class TspCircuitBoard {
     );
     // [END transit_callback]
 
-    // [START arc_cost
+    // [START arc_cost]
     routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
     // [END arc_cost]
 
