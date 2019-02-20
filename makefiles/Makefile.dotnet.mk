@@ -498,9 +498,9 @@ test_dotnet_tests:
 	$(MAKE) run_test SOURCE=examples/tests/ConstraintSolverTests.cs
 	$(MAKE) run_test SOURCE=examples/tests/RoutingSolverTests.cs
 	$(MAKE) run_test SOURCE=examples/tests/SatSolverTests.cs
-	$(MAKE) run SOURCE=examples/tests/issue18.cs
-	$(MAKE) run SOURCE=examples/tests/issue22.cs
-	$(MAKE) run SOURCE=examples/tests/issue33.cs
+	$(MAKE) run_test SOURCE=examples/tests/issue18.cs
+	$(MAKE) run_test SOURCE=examples/tests/issue22.cs
+	$(MAKE) run_test SOURCE=examples/tests/issue33.cs
 
 .PHONY: test_dotnet_contrib # Build and Run all .Net Examples (located in examples/contrib)
 test_dotnet_contrib:
