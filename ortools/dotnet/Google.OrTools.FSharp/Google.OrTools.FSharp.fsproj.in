@@ -3,18 +3,27 @@
     <OutputType>Library</OutputType>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Google.OrTools.FSharp</AssemblyName>
-
-    <!-- Nuget Properties-->
-    <PackageId>Google.OrTools.FSharp</PackageId>
     <Version>@PROJECT_VERSION@</Version>
-    <Authors>Google LLC</Authors>
+
+    <!-- Nuget Properties -->
+    <MinClientVersion>4.1.0</MinClientVersion>
     <Description>.NET F# wrapper for the Operations Research Tools project</Description>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <Authors>Laurent Perron</Authors>
+    <Company>Google LLC</Company>
     <Copyright>Copyright 2018 Google LLC</Copyright>
-    <PackageLicenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</PackageLicenseUrl>
+    <!-- Pack Option -->
+    <Title>Google.OrTools.FSharp v@PROJECT_VERSION@</Title>
+    <PackageId>Google.OrTools.FSharp</PackageId>
+    <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
+    <PackageIconUrl>https://developers.google.com/optimization/images/orLogo.png</PackageIconUrl>
     <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
-    <PackageTags>math;LinearSolver;ConstraintSolver;ConstraintProgramming</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageOutputPath>../../../packages</PackageOutputPath>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/google/or-tools</RepositoryUrl>
 
     <AssemblyKeyFileAttribute>../../../bin/or-tools.snk</AssemblyKeyFileAttribute>
     <SignAssembly>true</SignAssembly>

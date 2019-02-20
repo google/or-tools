@@ -4,18 +4,27 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     <AssemblyName>Google.OrTools</AssemblyName>
-
-    <!-- Nuget Properties-->
-    <PackageId>Google.OrTools.runtime.linux-x64</PackageId>
     <Version>@PROJECT_VERSION@</Version>
-    <Authors>Google LLC</Authors>
+
+    <!-- Nuget Properties -->
+    <MinClientVersion>4.1.0</MinClientVersion>
     <Description>.NET native wrapper for the Operations Research Tools project</Description>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <Authors>Laurent Perron</Authors>
+    <Company>Google LLC</Company>
     <Copyright>Copyright 2018 Google LLC</Copyright>
-    <PackageLicenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</PackageLicenseUrl>
+    <!-- Pack Option -->
+    <Title>Google.OrTools linux-x64 v@PROJECT_VERSION@</Title>
+    <PackageId>Google.OrTools.runtime.linux-x64</PackageId>
+    <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
+    <PackageIconUrl>https://developers.google.com/optimization/images/orLogo.png</PackageIconUrl>
     <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
-    <PackageTags>native;math;LinearSolver;ConstraintSolver;ConstraintProgramming</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageOutputPath>../../../packages</PackageOutputPath>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/google/or-tools</RepositoryUrl>
 
     <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
