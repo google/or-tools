@@ -243,7 +243,8 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
     if (decision == kNoLiteralIndex) return decision;
 
     for (const IntegerLiteral i_lit :
-         model->Get<IntegerEncoder>()->GetIntegerLiterals(Literal(decision))) {
+         model->Get<IntegerEncoder>()->GetAllIntegerLiterals(
+             Literal(decision))) {
       LOG(INFO) << "decision " << i_lit;
     }
     const int level = model->Get<Trail>()->CurrentDecisionLevel();

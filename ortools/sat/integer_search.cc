@@ -272,7 +272,7 @@ std::function<LiteralIndex()> ExploitLpSolution(
                 << " obj:" << old_obj;
       }
       for (const IntegerLiteral l :
-           encoder->GetIntegerLiterals(Literal(decision))) {
+           encoder->GetAllIntegerLiterals(Literal(decision))) {
         const IntegerVariable positive_var =
             VariableIsPositive(l.var) ? l.var : NegationOf(l.var);
         if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;

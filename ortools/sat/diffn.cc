@@ -51,7 +51,7 @@ NonOverlappingRectanglesPropagator::~NonOverlappingRectanglesPropagator() {}
 bool NonOverlappingRectanglesPropagator::Propagate() {
   cached_areas_.resize(num_boxes_);
   for (int box = 0; box < num_boxes_; ++box) {
-    // We never change the min-size of a box, so this stays valid.
+    // We assume that the min-size of a box never changes.
     cached_areas_[box] = x_.DurationMin(box) * y_.DurationMin(box);
   }
 
@@ -165,11 +165,13 @@ bool NonOverlappingRectanglesPropagator::FailWhenEnergyIsTooLarge(int box) {
     total_sum_of_areas += cached_areas_[other];
   }
 
-  const auto add_box_energy_in_rectangle_reason = [&](int box) {
-    x_.AddStartMinReason(box, area_min_x);
-    x_.AddEndMaxReason(box, area_max_x);
-    y_.AddStartMinReason(box, area_min_y);
-    y_.AddEndMaxReason(box, area_max_y);
+  const auto add_box_energy_in_rectangle_reason = [&](int b) {
+    x_.AddStartMinReason(b, area_min_x);
+    x_.AddDurationMinReason(b, x_.DurationMin(b));
+    x_.AddEndMaxReason(b, area_max_x);
+    y_.AddStartMinReason(b, area_min_y);
+    y_.AddDurationMinReason(b, y_.DurationMin(b));
+    y_.AddEndMaxReason(b, area_max_y);
   };
 
   // TODO(user): Is there a better order, maybe sort by distance
@@ -223,7 +225,7 @@ bool NonOverlappingRectanglesPropagator::PushOneBox(int box, int other) {
   }
 
   const auto left_box_before_right_box =
-      [this](int left, int right, SchedulingConstraintHelper* helper) {
+      [](int left, int right, SchedulingConstraintHelper* helper) {
         // left box pushes right box.
         const IntegerValue left_end_min = helper->EndMin(left);
         if (left_end_min > helper->StartMin(right)) {

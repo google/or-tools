@@ -336,15 +336,21 @@ class IntegerEncoder {
   void AddAllImplicationsBetweenAssociatedLiterals();
 
   // Returns the IntegerLiterals that were associated with the given Literal.
-  //
-  // Note that more than one IntegerLiterals (possibly on different variables)
-  // may have been associated to the same literal. We also returns ">= value"
-  // and "<= value" if lit was associated to "== value".
   const InlinedIntegerLiteralVector& GetIntegerLiterals(Literal lit) const {
     if (lit.Index() >= reverse_encoding_.size()) {
       return empty_integer_literal_vector_;
     }
     return reverse_encoding_[lit.Index()];
+  }
+
+  // Same as GetIntegerLiterals(), but in addition, if the literal was
+  // associated to an integer == value, then the returned list will contain both
+  // (integer >= value) and (integer <= value).
+  const InlinedIntegerLiteralVector& GetAllIntegerLiterals(Literal lit) const {
+    if (lit.Index() >= full_reverse_encoding_.size()) {
+      return empty_integer_literal_vector_;
+    }
+    return full_reverse_encoding_[lit.Index()];
   }
 
   // This is part of a "hack" to deal with new association involving a fixed
@@ -373,7 +379,8 @@ class IntegerEncoder {
   // Ex: if 'i' is (x >= 4) and we already created a literal associated to
   // (x >= 2) but not to (x >= 3), we will return the literal associated with
   // (x >= 2).
-  LiteralIndex SearchForLiteralAtOrBefore(IntegerLiteral i) const;
+  LiteralIndex SearchForLiteralAtOrBefore(IntegerLiteral i,
+                                          IntegerValue* bound) const;
 
   // Gets the literal always set to true, make it if it does not exist.
   Literal GetTrueLiteral() {
@@ -427,6 +434,8 @@ class IntegerEncoder {
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
   gtl::ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
+  gtl::ITIVector<LiteralIndex, InlinedIntegerLiteralVector>
+      full_reverse_encoding_;
   std::vector<IntegerLiteral> newly_fixed_integer_literals_;
 
   // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
@@ -612,8 +621,6 @@ class IntegerTrail : public SatPropagator {
   // STLSortAndRemoveDuplicates() in MergeReasonInto(), but maybe they shouldn't
   // for efficiency reason.
   //
-  // TODO(user): provide an API to give the reason lazily.
-  //
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
@@ -625,6 +632,9 @@ class IntegerTrail : public SatPropagator {
   // integer_trail_.size() is interpreted as the trail index of an old Enqueue()
   // that had the same reason as this one. Note that the given Span must still
   // be valid as they are used in case of conflict.
+  //
+  // TODO(user): This currently cannot refer to a trail_index with a lazy
+  // reason. Fix or at least check that this is the case.
   ABSL_MUST_USE_RESULT bool Enqueue(
       IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason,
@@ -742,6 +752,17 @@ class IntegerTrail : public SatPropagator {
       absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason,
       int trail_index_with_same_reason);
+
+  // Internal implementation of the EnqueueLiteral() functions.
+  void EnqueueLiteralInternal(Literal literal, LazyReasonFunction lazy_reason,
+                              absl::Span<const Literal> literal_reason,
+                              absl::Span<const IntegerLiteral> integer_reason);
+
+  // Same as EnqueueInternal() but for the case where we push an IntegerLiteral
+  // because an associated Literal is true (and we know it). In this case, we
+  // have less work to do, so this has the same effect but is faster.
+  ABSL_MUST_USE_RESULT bool EnqueueAssociatedIntegerLiteral(
+      IntegerLiteral i_lit, Literal literal_reason);
 
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;

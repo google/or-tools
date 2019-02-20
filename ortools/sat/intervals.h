@@ -197,7 +197,7 @@ class SchedulingConstraintHelper {
   void AddEndMaxReason(int t, IntegerValue upper_bound);
   void AddEnergyAfterReason(int t, IntegerValue energy_min, IntegerValue time);
 
-  // Used in the NoOverlap2D propagation.
+  // Adds to this helper reason all the explanation of the other helper.
   void ImportOtherReasons(const SchedulingConstraintHelper& other_helper);
 
   // Adds the reason why task "before" must be before task "after".
