@@ -776,6 +776,9 @@ namespace Google.OrTools.Tests {
             GC.Collect();
           }
           RunSearchLog(in searchlog);
+          GC.KeepAlive(var);
+          GC.KeepAlive(objective);
+          GC.KeepAlive(solver);
           Assert.Equal(1, count);
         }
 
@@ -796,6 +799,9 @@ namespace Google.OrTools.Tests {
             GC.Collect();
           }
           RunSearchLog(in searchlog);
+          GC.KeepAlive(var);
+          GC.KeepAlive(objective);
+          GC.KeepAlive(solver);
           Assert.Equal(1, count);
         }
 
@@ -807,7 +813,7 @@ namespace Google.OrTools.Tests {
           int count = 0;
           SearchMonitor searchlog = solver.MakeSearchLog(
               0,    // branch period
-              var,  // objective var to monitor
+              var,  // int var to monitor
               () => {
               count++;
               return "IntVar display callback";
@@ -816,6 +822,9 @@ namespace Google.OrTools.Tests {
             GC.Collect();
           }
           RunSearchLog(in searchlog);
+          GC.KeepAlive(var);
+          GC.KeepAlive(objective);
+          GC.KeepAlive(solver);
           Assert.Equal(1, count);
         }
     }

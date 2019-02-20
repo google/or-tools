@@ -414,7 +414,7 @@ run: build
 
 .PHONY: run_test # Run a .Net C# program (using 'dotnet test').
 run_test: build
-	"$(DOTNET_BIN)" test --no-build $(ARGS) $(SOURCE_PATH)proj
+	"$(DOTNET_BIN)" test --blame --no-build $(ARGS) $(SOURCE_PATH)proj
 endif
 
 # .Net F#

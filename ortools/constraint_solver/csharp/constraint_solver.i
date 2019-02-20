@@ -59,6 +59,7 @@ class SearchLimitParameters;
 
 #include <string>
 #include <vector>
+#include <functional>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -389,6 +390,8 @@ namespace operations_research {
 // Keep reference to delegate to avoid GC to collect them early
 %typemap(cscode) Solver %{
   // Store list of delegates to avoid the GC to reclaim them.
+  private List<DisplayCallback> displayCallbacks;
+
   private List<IndexEvaluator1> indexEvaluator1Callbacks;
   private List<IndexEvaluator2> indexEvaluator2Callbacks;
   private List<IndexEvaluator3> indexEvaluator3Callbacks;
@@ -396,8 +399,13 @@ namespace operations_research {
   private List<IndexFilter1> indexFilter1Callbacks;
   private List<ObjectiveWatcher> objectiveWatcherCallbacks;
 
-  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
+  // Ensure that the GC does not collect any callback set from C#
   // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private DisplayCallback StoreDisplayCallback(DisplayCallback c) {
+    if (displayCallbacks == null) displayCallbacks = new List<DisplayCallback>();
+    displayCallbacks.Add(c);
+    return c;
+  }
   private IndexEvaluator1 StoreIndexEvaluator1(IndexEvaluator1 c) {
     if (indexEvaluator1Callbacks == null) indexEvaluator1Callbacks = new List<IndexEvaluator1>();
     indexEvaluator1Callbacks.Add(c);
@@ -433,7 +441,7 @@ namespace operations_research {
 //  ...PINVOKE.Foo_f_SWIG(..., StoreIndexEvaluator1(arg1), ...);
 // }
 %typemap(cstype, out="IntPtr") Solver::DisplayCallback "DisplayCallback"
-%typemap(csin) Solver::DisplayCallback "$csinput"
+%typemap(csin) Solver::DisplayCallback "StoreDisplayCallback($csinput)"
 
 %typemap(cstype, out="IntPtr") Solver::IndexEvaluator1 "IndexEvaluator1"
 %typemap(csin) Solver::IndexEvaluator1 "StoreIndexEvaluator1($csinput)"
@@ -514,10 +522,12 @@ namespace operations_research {
   //}
 }  // extend Solver
 
+// Searchlog
 // No custom wrapping for this method, we simply ignore it.
 %ignore SearchLog::SearchLog(
     Solver* const s, OptimizeVar* const obj, IntVar* const var,
-    std::function<std::string()> display_callback, int period);
+    double scaling_factor,
+    Solver::DisplayCallback display_callback, int period);
 
 // Extend IntervalVar with an intuitive API to create precedence constraints.
 %extend IntervalVar {
