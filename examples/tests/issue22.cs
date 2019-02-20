@@ -16,10 +16,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using Xunit;
 using Google.OrTools.ConstraintSolver;
 
-public class OrTools {
-  private static long Solve(long num_buses_check = 0) {
+namespace Google.OrTools.Tests {
+public class Issue22Test {
+  private long Solve(long num_buses_check = 0) {
     ConstraintSolverParameters sPrm = Solver.DefaultSolverParameters();
     sPrm.CompressTrail = 0;
     Solver solver = new Solver("OrTools",sPrm);
@@ -65,10 +67,12 @@ public class OrTools {
     return 1;
   }
 
-  public static void Main(String[] args) {
+  [Fact]
+  public void InitialPropagateTest() {
     Console.WriteLine("Check for minimum number of buses: ");
     long num_buses = Solve();
     Console.WriteLine("\n... got {0} as minimal value.", num_buses);
     Console.WriteLine("\nAll solutions: ", num_buses);
   }
 }
+}  // namespace Google.OrTools.Tests
