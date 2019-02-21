@@ -63,15 +63,17 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   ///   positions and computes the Manhattan distance between the two
   ///   positions of two different indices.
   /// </summary>
-  class Manhattan : LongLongToLong {
-    public Manhattan(RoutingIndexManager manager,
-                     Position[] locations, int coefficient) {
+  class Manhattan {
+    public Manhattan(
+        RoutingIndexManager manager,
+        Position[] locations,
+        int coefficient) {
+      this.manager_ = manager;
       this.locations_ = locations;
       this.coefficient_ = coefficient;
-      this.manager_ = manager;
     }
 
-    public override long Run(long first_index, long second_index) {
+    public long Call(long first_index, long second_index) {
       if (first_index >= locations_.Length ||
           second_index >= locations_.Length) {
         return 0;
@@ -84,28 +86,33 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
                        locations_[second_node].y_)) * coefficient_;
     }
 
-    private Position[] locations_;
-    private int coefficient_;
-    private RoutingIndexManager manager_;
+    private readonly RoutingIndexManager manager_;
+    private readonly Position[] locations_;
+    private readonly int coefficient_;
   };
 
   /// <summary>
   ///   A callback that computes the volume of a demand stored in an
   ///   integer array.
   /// </summary>
-  class Demand : LongToLong {
-    public Demand(int[] order_demands) {
+  class Demand {
+    public Demand(
+        RoutingIndexManager manager,
+        int[] order_demands) {
+      this.manager_ = manager;
       this.order_demands_ = order_demands;
     }
 
-    public override long Run(long index) {
+    public long Call(long index) {
       if (index < order_demands_.Length) {
-        return order_demands_[index];
+        int node = manager_.IndexToNode(index);
+        return order_demands_[node];
       }
       return 0;
     }
 
-    private int[] order_demands_;
+    private readonly RoutingIndexManager manager_;
+    private readonly int[] order_demands_;
   };
 
   /// Locations representing either an order location or a vehicle route
@@ -240,26 +247,26 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
     // Setting up dimensions
     const int big_number = 100000;
-    LongLongToLong manhattan_callback = new Manhattan(manager, locations_, 1);
+    Manhattan manhattan_callback = new Manhattan(manager, locations_, 1);
     model.AddDimension(
-        model.RegisterTransitCallback(manhattan_callback),
+        model.RegisterTransitCallback(manhattan_callback.Call),
         big_number, big_number, false, "time");
     RoutingDimension time_dimension = model.GetDimensionOrDie("time");
 
-    LongToLong demand_callback = new Demand(order_demands_);
-    model.AddDimension(model.RegisterUnaryTransitCallback(demand_callback),
+    Demand demand_callback = new Demand(manager, order_demands_);
+    model.AddDimension(model.RegisterUnaryTransitCallback(demand_callback.Call),
                        0, vehicle_capacity_, true, "capacity");
     RoutingDimension capacity_dimension = model.GetDimensionOrDie("capacity");
 
     // Setting up vehicles
-    LongLongToLong[] cost_callbacks = new LongLongToLong[number_of_vehicles];
+    Manhattan[] cost_callbacks = new Manhattan[number_of_vehicles];
     for (int vehicle = 0; vehicle < number_of_vehicles; ++vehicle) {
       int cost_coefficient = vehicle_cost_coefficients_[vehicle];
-      LongLongToLong manhattan_cost_callback =
+      Manhattan manhattan_cost_callback =
           new Manhattan(manager, locations_, cost_coefficient);
       cost_callbacks[vehicle] = manhattan_cost_callback;
       int manhattan_cost_index =
-          model.RegisterTransitCallback(manhattan_cost_callback);
+          model.RegisterTransitCallback(manhattan_cost_callback.Call);
       model.SetArcCostEvaluatorOfVehicle(manhattan_cost_index, vehicle);
       time_dimension.CumulVar(model.End(vehicle)).SetMax(
           vehicle_end_time_[vehicle]);
@@ -279,15 +286,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     search_parameters.FirstSolutionStrategy =
         FirstSolutionStrategy.Types.Value.AllUnperformed;
 
-    Console.WriteLine("Search");
+    Console.WriteLine("Search...");
     Assignment solution = model.SolveWithParameters(search_parameters);
-
-    //protect callbacks from the GC
-    GC.KeepAlive(manhattan_callback);
-    GC.KeepAlive(demand_callback);
-    for (int cost_callback_index = 0; cost_callback_index < cost_callbacks.Length; cost_callback_index++) {
-        GC.KeepAlive(cost_callbacks[cost_callback_index]);
-    }
 
     if (solution != null) {
       String output = "Total cost: " + solution.ObjectiveValue() + "\n";
