@@ -90,7 +90,7 @@ public class SumFilter : IntVarLocalSearchFilter {
   }
 
   public override bool Accept(Assignment delta, Assignment unused_deltadelta) {
-    IntContainer solution_delta = delta.IntVarContainer();
+    AssignmentIntContainer solution_delta = delta.IntVarContainer();
     int solution_delta_size = solution_delta.Size();
 
     for (int i = 0; i < solution_delta_size; ++i)
