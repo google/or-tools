@@ -17,7 +17,7 @@ using Google.OrTools.ConstraintSolver;
 
 class Tsp
 {
-  class RandomManhattan : LongLongToLong {
+  class RandomManhattan {
     public RandomManhattan(RoutingIndexManager manager, int size, int seed)
     {
       this.xs_ = new int[size];
@@ -31,22 +31,16 @@ class Tsp
       }
     }
 
-    public override long Run(long first_index, long second_index) {
+    public long Call(long first_index, long second_index) {
       int first_node = manager_.IndexToNode(first_index);
       int second_node = manager_.IndexToNode(second_index);
       return Math.Abs(xs_[first_node] - xs_[second_node]) +
           Math.Abs(ys_[first_node] - ys_[second_node]);
     }
 
-    private int[] xs_;
-    private int[] ys_;
-    private RoutingIndexManager manager_;
-  };
-
-  class ConstantCallback : LongToLong {
-    public override long Run(long index) {
-      return 1;
-    }
+    private readonly int[] xs_;
+    private readonly int[] ys_;
+    private readonly RoutingIndexManager manager_;
   };
 
   static void Solve(int size, int forbidden, int seed)
@@ -60,7 +54,7 @@ class Tsp
     // The two arguments are the from and to node inidices.
     RandomManhattan distances = new RandomManhattan(manager, size, seed);
     routing.SetArcCostEvaluatorOfAllVehicles(
-        routing.RegisterTransitCallback(distances));
+        routing.RegisterTransitCallback(distances.Call));
 
     // Forbid node connections (randomly).
     Random randomizer = new Random();
@@ -77,7 +71,7 @@ class Tsp
 
     // Add dummy dimension to test API.
     routing.AddDimension(
-        routing.RegisterUnaryTransitCallback(new ConstantCallback()),
+        routing.RegisterUnaryTransitCallback((long index) => {return 1;}),
         size + 1,
         size + 1,
         true,
@@ -91,7 +85,7 @@ class Tsp
         FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
     Assignment solution = routing.SolveWithParameters(search_parameters);
-    Console.WriteLine("Status = {0}", routing.Status());
+    Console.WriteLine("Status = {0}", routing.GetStatus());
     if (solution != null) {
       // Solution cost.
       Console.WriteLine("Cost = {0}", solution.ObjectiveValue());
