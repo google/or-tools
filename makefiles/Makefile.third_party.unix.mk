@@ -22,7 +22,7 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.3.5
 PROTOBUF_TAG = 3.6.1
-ABSL_TAG = master
+ABSL_TAG = 93d155b
 CBC_TAG = 2.9.9
 CGL_TAG = 0.59.10
 CLP_TAG = 1.16.11
@@ -355,25 +355,63 @@ dependencies/install/lib/libabsl.$L: dependencies/sources/abseil-cpp-$(ABSL_TAG)
 
 dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)
-	git clone --quiet -b $(ABSL_TAG) https://github.com/abseil/abseil-cpp.git dependencies/sources/abseil-cpp-$(ABSL_TAG)
-	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
- git reset --hard 45221cc
-	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
- git apply "$(OR_TOOLS_TOP)/patches/abseil-cpp-$(ABSL_TAG).patch"
-	$(COPY) patches/absl-config.cmake	dependencies/sources/abseil-cpp-$(ABSL_TAG)/CMake
+	git clone --quiet https://github.com/abseil/abseil-cpp.git dependencies/sources/abseil-cpp-$(ABSL_TAG)
+	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && git reset --hard $(ABSL_TAG)
+	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)/patches/abseil-cpp-$(ABSL_TAG).patch"
+#	$(COPY) patches/abslConfig.cmake.in	dependencies/sources/abseil-cpp-$(ABSL_TAG)/CMake
 
 ABSL_INC = -I$(UNIX_ABSL_DIR)/include
 ABSL_SWIG = $(ABSL_INC)
-STATIC_ABSL_LNK = $(UNIX_ABSL_DIR)/lib/libabsl.a
+_ABSL_STATIC_LIB_DIR = $(dir $(wildcard \
+ $(UNIX_ABSL_DIR)/lib*/libabsl_base.a \
+ $(UNIX_ABSL_DIR)/lib/*/libabsl_base.a))
+STATIC_ABSL_LNK = \
+$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_bad_any_cast_impl.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_bad_optional_access.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_bad_variant_access.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_civil_time.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_hash.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_sampler.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_force_sampling.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_leak_check.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_malloc_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_optional.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_raw_hash_set.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_strings.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_strings_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_symbolize.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_throw_delegate.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_time.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_time_zone.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a \
+
 _ABSL_LIB_DIR = $(dir $(wildcard \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L@ \
  $(UNIX_ABSL_DIR)/lib/*/libabsl_base.$L))
 DYNAMIC_ABSL_LNK = -L$(_ABSL_LIB_DIR) \
--labsl_bad_any_cast \
+-labsl_bad_any_cast_impl \
 -labsl_bad_optional_access \
+-labsl_bad_variant_access \
 -labsl_base \
--labsl_container \
+-labsl_city \
+-labsl_civil_time \
 -labsl_dynamic_annotations \
 -labsl_examine_stack \
 -labsl_failure_signal_handler \
@@ -382,19 +420,19 @@ DYNAMIC_ABSL_LNK = -L$(_ABSL_LIB_DIR) \
 -labsl_leak_check \
 -labsl_malloc_internal \
 -labsl_optional \
+-labsl_raw_hash_set \
 -labsl_spinlock_wait \
--labsl_stack_consumption \
 -labsl_stacktrace \
--labsl_strings \
--labsl_str_format_extension_internal \
 -labsl_str_format_internal \
+-labsl_strings \
+-labsl_strings_internal \
 -labsl_symbolize \
 -labsl_synchronization \
 -labsl_throw_delegate \
 -labsl_time \
--labsl_variant
+-labsl_time_zone
 
-ABSL_LNK = $(DYNAMIC_ABSL_LNK)
+ABSL_LNK = $(STATIC_ABSL_LNK)
 DEPENDENCIES_LNK += $(ABSL_LNK)
 OR_TOOLS_LNK += $(ABSL_LNK)
 

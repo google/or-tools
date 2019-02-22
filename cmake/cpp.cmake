@@ -78,14 +78,14 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
   absl::base
-  absl::container
+  absl::raw_hash_set
   absl::hash
   absl::memory
   absl::meta
   absl::str_format
   absl::strings
   absl::synchronization
-  absl::types
+  absl::any
   gflags::gflags glog::glog
   protobuf::libprotobuf
   Cbc::CbcSolver Cbc::OsiCbc Cbc::ClpSolver Cbc::OsiClp

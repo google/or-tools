@@ -1,0 +1,248 @@
+diff --git a/CMake/AbseilHelpers.cmake b/CMake/AbseilHelpers.cmake
+index 350282f..65e6c7a 100644
+--- a/CMake/AbseilHelpers.cmake
++++ b/CMake/AbseilHelpers.cmake
+@@ -17,6 +17,10 @@
+ include(CMakeParseArguments)
+ include(AbseilConfigureCopts)
+ 
++if(ABSL_ENABLE_INSTALL)
++  include(GNUInstallDirs)
++endif()
++
+ # The IDE folder for Abseil that will be used if Abseil is included in a CMake
+ # project that sets
+ #    set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+@@ -40,9 +44,12 @@ set(ABSL_IDE_FOLDER Abseil)
+ # TESTONLY: When added, this target will only be built if user passes -DABSL_RUN_TESTS=ON to CMake.
+ #
+ # Note:
+-# By default, absl_cc_library will always create a library named absl_internal_${NAME},
+-# and alias target absl::${NAME}.
++# By default, absl_cc_library will always create an alias target absl::${NAME}.
++# When ABSL_ENABLE_INSTALL is OFF, target name is absl_${NAME} for PUBLIC libraries
++# and absl_internal_${NAME} for private ones.
++# When ABSL_ENABLE_INSTALL is ON, target name is ${NAME}.
+ # This is to reduce namespace pollution.
++# Alias target name must be always used instead of target name.
+ #
+ # absl_cc_library(
+ #   NAME
+@@ -58,11 +65,11 @@ set(ABSL_IDE_FOLDER Abseil)
+ #   SRCS
+ #     "b.cc"
+ #   DEPS
+-#     absl_internal_awesome # not "awesome"!
++#     absl::awesome
+ # )
+ #
+-# If PUBLIC is set, absl_cc_library will instead create a target named
+-# absl_${NAME} and still an alias absl::${NAME}.
++# Warning: Only libraries with the PUBLIC flag set can be used by user.
++# Otherwise they are internal absl targets that shouldn't be used externally.
+ #
+ # absl_cc_library(
+ #   NAME
+@@ -71,22 +78,26 @@ set(ABSL_IDE_FOLDER Abseil)
+ #   PUBLIC
+ # )
+ #
+-# User can then use the library as absl::main_lib (although absl_main_lib is defined too).
++# User can then use the library as absl::main_lib.
+ #
+ # TODO: Implement "ALWAYSLINK"
+ function(absl_cc_library)
+   cmake_parse_arguments(ABSL_CC_LIB
+-    "DISABLE_INSTALL;PUBLIC;TESTONLY"
++    "PUBLIC;TESTONLY"
+     "NAME"
+     "HDRS;SRCS;COPTS;DEFINES;LINKOPTS;DEPS"
+     ${ARGN}
+   )
+ 
+   if (NOT ABSL_CC_LIB_TESTONLY OR ABSL_RUN_TESTS)
+-    if (ABSL_CC_LIB_PUBLIC)
+-      set(_NAME "absl_${ABSL_CC_LIB_NAME}")
++    if(NOT ABSL_ENABLE_INSTALL)
++      if (ABSL_CC_LIB_PUBLIC)
++        set(_NAME "absl_${ABSL_CC_LIB_NAME}")
++      else()
++        set(_NAME "absl_internal_${ABSL_CC_LIB_NAME}")
++      endif()
+     else()
+-      set(_NAME "absl_internal_${ABSL_CC_LIB_NAME}")
++      set(_NAME "${ABSL_CC_LIB_NAME}")
+     endif()
+ 
+     # Check if this is a header-only library
+@@ -100,9 +111,14 @@ function(absl_cc_library)
+ 
+     if(NOT ABSL_CC_LIB_IS_INTERFACE)
+       add_library(${_NAME} STATIC "")
++      set_target_properties(${_NAME} PROPERTIES
++        OUTPUT_NAME "absl_${_NAME}"
++      )
+       target_sources(${_NAME} PRIVATE ${ABSL_CC_LIB_SRCS} ${ABSL_CC_LIB_HDRS})
+-      target_include_directories(${_NAME}
+-        PUBLIC ${ABSL_COMMON_INCLUDE_DIRS})
++      target_include_directories(${_NAME} PUBLIC
++        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  # <prefix>/include
++      )
+       target_compile_options(${_NAME}
+         PRIVATE ${ABSL_CC_LIB_COPTS})
+       target_link_libraries(${_NAME}
+@@ -126,8 +142,10 @@ function(absl_cc_library)
+     else()
+       # Generating header-only library
+       add_library(${_NAME} INTERFACE)
+-      target_include_directories(${_NAME}
+-        INTERFACE ${ABSL_COMMON_INCLUDE_DIRS})
++      target_include_directories(${_NAME} INTERFACE
++        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  # <prefix>/include
++      )
+       target_link_libraries(${_NAME}
+         INTERFACE ${ABSL_CC_LIB_DEPS} ${ABSL_CC_LIB_LINKOPTS}
+       )
+@@ -135,6 +153,16 @@ function(absl_cc_library)
+     endif()
+ 
+     add_library(absl::${ABSL_CC_LIB_NAME} ALIAS ${_NAME})
++
++    # install rules
++    if(ABSL_ENABLE_INSTALL)
++      install(TARGETS ${_NAME}
++        EXPORT ${PROJECT_NAME}Targets
++        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
++        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
++      )
++    endif()
+   endif()
+ endfunction()
+ 
+@@ -191,7 +219,7 @@ function(absl_cc_test)
+   add_executable(${_NAME} "")
+   target_sources(${_NAME} PRIVATE ${ABSL_CC_TEST_SRCS})
+   target_include_directories(${_NAME}
+-    PUBLIC ${ABSL_COMMON_INCLUDE_DIRS}
++    PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+     PRIVATE ${GMOCK_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS}
+   )
+   target_compile_definitions(${_NAME}
+diff --git a/CMake/abslConfig.cmake.in b/CMake/abslConfig.cmake.in
+new file mode 100644
+index 0000000..9b83fda
+--- /dev/null
++++ b/CMake/abslConfig.cmake.in
+@@ -0,0 +1,7 @@
++## absl CMake configuration file
++
++set(ABSL_VERSION @PROJECT_VERSION@)
++
++@PACKAGE_INIT@
++
++include ("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+\ No newline at end of file
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 380ed74..4977086 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -19,21 +19,31 @@
+ cmake_minimum_required(VERSION 3.1)
+ 
+ # Compiler id for Apple Clang is now AppleClang.
+-if (POLICY CMP0025)
++if(POLICY CMP0025)
+   cmake_policy(SET CMP0025 NEW)
+ endif()
+ 
+-project(absl)
++# Enable MACOSX_RPATH by default.
++if(POLICY CMP0042)
++  cmake_policy (SET CMP0042 NEW)
++endif()
++
++project(absl VERSION 1.0.0 LANGUAGES CXX)
++
++option(ABSL_ENABLE_INSTALL "If ON, Abseil enable install rules." ON)
++# when absl is included as subproject (i.e. using add_subdirectory(abseil-cpp))
++# in the source tree of a project that uses it, install rules are disabled.
++if(NOT "^${CMAKE_SOURCE_DIR}$" STREQUAL "^${PROJECT_SOURCE_DIR}$")
++  set(ABSL_ENABLE_INSTALL OFF)
++endif()
+ 
+ list(APPEND CMAKE_MODULE_PATH
+   ${CMAKE_CURRENT_LIST_DIR}/CMake
+   ${CMAKE_CURRENT_LIST_DIR}/absl/copts
+ )
+ 
+-include(GNUInstallDirs)
+ include(AbseilHelpers)
+ 
+-
+ ##
+ ## Using absl targets
+ ##
+@@ -44,7 +54,6 @@ include(AbseilHelpers)
+ ##
+ ## DO NOT rely on the internal targets outside of the prefix
+ 
+-
+ # include current path
+ list(APPEND ABSL_COMMON_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+@@ -72,7 +81,6 @@ endif()
+ 
+ ## check targets
+ if(BUILD_TESTING)
+-
+   if(${ABSL_USE_GOOGLETEST_HEAD})
+     include(CMake/DownloadGTest.cmake)
+   endif()
+@@ -90,3 +98,44 @@ if(BUILD_TESTING)
+ endif()
+ 
+ add_subdirectory(absl)
++
++# install rules
++if(ABSL_ENABLE_INSTALL)
++  # See https://cmake.org/cmake/help/latest/module/GNUInstallDirs.html
++  include(GNUInstallDirs)
++  # See https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure
++  set(CMAKE_INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
++  install(
++    EXPORT ${PROJECT_NAME}Targets
++    NAMESPACE absl::
++    DESTINATION ${CMAKE_INSTALL_CONFIGDIR}
++  )
++  install(
++    DIRECTORY absl
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++    COMPONENT Devel
++    FILES_MATCHING
++    PATTERN "*.inc"
++    PATTERN "*.h"
++  )
++
++  # See https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html
++  include(CMakePackageConfigHelpers)
++  configure_package_config_file(
++    CMake/abslConfig.cmake.in
++    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
++    INSTALL_DESTINATION "${CMAKE_INSTALL_CONFIGDIR}"
++    NO_CHECK_REQUIRED_COMPONENTS_MACRO
++  )
++  write_basic_package_version_file(
++    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
++    COMPATIBILITY ExactVersion
++  )
++  install(
++    FILES
++    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
++    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
++    DESTINATION "${CMAKE_INSTALL_CONFIGDIR}"
++    COMPONENT Devel
++  )
++endif()

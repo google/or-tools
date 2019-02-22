@@ -12,7 +12,7 @@ set_target_properties(${NAME} PROPERTIES
 )
 # CMake < 3.12: CMakeError: Object library may not link to anything.
 #target_link_libraries(${NAME} PRIVATE
-#  absl::types absl::memory absl::synchronization absl::container absl::strings absl::str_format
+#  absl::any absl::memory absl::synchronization absl::container absl::strings absl::str_format
 #  gflags::gflags glog::glog
 #  protobuf::libprotobuf
 #  Cbc::Cbc
@@ -20,7 +20,7 @@ set_target_properties(${NAME} PROPERTIES
 target_include_directories(${NAME} PRIVATE
 	${PROJECT_SOURCE_DIR}
 	${PROJECT_BINARY_DIR}
-	$<TARGET_PROPERTY:absl::types,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:absl::any,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:absl::memory,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:absl::synchronization,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:absl::container,INTERFACE_INCLUDE_DIRECTORIES>
@@ -32,7 +32,7 @@ target_include_directories(${NAME} PRIVATE
 	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_options(${NAME} PRIVATE
-	$<TARGET_PROPERTY:absl::types,INTERFACE_COMPILE_OPTIONS>
+	$<TARGET_PROPERTY:absl::any,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:absl::memory,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:absl::synchronization,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:absl::container,INTERFACE_COMPILE_OPTIONS>
@@ -45,7 +45,7 @@ target_compile_options(${NAME} PRIVATE
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_OPTIONS>
 	)
 target_compile_definitions(${NAME} PRIVATE
-	$<TARGET_PROPERTY:absl::types,INTERFACE_COMPILE_DEFINITIONS>
+	$<TARGET_PROPERTY:absl::any,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:absl::memory,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:absl::synchronization,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:absl::container,INTERFACE_COMPILE_DEFINITIONS>
@@ -58,7 +58,7 @@ target_compile_definitions(${NAME} PRIVATE
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_DEFINITIONS>
 	)
 add_dependencies(${NAME}
-  absl::types absl::memory absl::synchronization absl::container absl::strings absl::str_format
+  absl::any absl::memory absl::synchronization absl::container absl::strings absl::str_format
   gflags::gflags glog::glog
 	protobuf::libprotobuf
   Cbc::Cbc

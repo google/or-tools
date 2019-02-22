@@ -38,7 +38,7 @@ ZLIB_ARCHIVE_TAG = 1211
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.3.5
 PROTOBUF_TAG = 3.6.1
-ABSL_TAG = master
+ABSL_TAG = 93d155b
 CBC_TAG = 2.9.9
 CGL_TAG = 0.59.10
 CLP_TAG = 1.16.11
@@ -368,39 +368,44 @@ dependencies/install/lib/absl.lib: dependencies/sources/abseil-cpp-$(ABSL_TAG) |
 
 dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)
-	git clone --quiet -b $(ABSL_TAG) https://github.com/abseil/abseil-cpp.git dependencies\sources\abseil-cpp-$(ABSL_TAG)
-	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) \
- && git reset --hard 45221cc
-	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) \
- && git apply "$(OR_TOOLS_TOP)\patches\abseil-cpp-$(ABSL_TAG).patch"
-	$(COPY) patches\absl-config.cmake dependencies\sources\abseil-cpp-$(ABSL_TAG)\CMake
+	git clone --quiet https://github.com/abseil/abseil-cpp.git dependencies\sources\abseil-cpp-$(ABSL_TAG)
+	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && git reset --hard $(ABSL_TAG)
+	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)\patches\abseil-cpp-$(ABSL_TAG).patch"
+#	$(COPY) patches\abslConfig.cmake dependencies\sources\abseil-cpp-$(ABSL_TAG)\CMake
 
 ABSL_INC = /I"$(WINDOWS_ABSL_PATH)\\include"
 ABSL_SWIG = -I"$(WINDOWS_ABSL_PATH)/include"
 STATIC_ABSL_LNK = \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_bad_any_cast.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_bad_any_cast_impl.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_bad_optional_access.lib"\
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_bad_variant_access.lib"\
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_base.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_container.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_city.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_civil_time.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_debugging_internal.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_demangle_internal.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_dynamic_annotations.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_examine_stack.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_failure_signal_handler.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_graphcycles_internal.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_hash.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_hashtablez_sampler.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_hashtablez_force_sampling.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_int128.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_leak_check.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_malloc_internal.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_optional.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_raw_hash_set.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_spinlock_wait.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_stack_consumption.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_stacktrace.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_strings.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_str_format_extension_internal.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_str_format_internal.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_strings.lib" \
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_strings_internal.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_symbolize.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_synchronization.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_throw_delegate.lib" \
  "$(WINDOWS_ABSL_PATH)\\lib\\absl_time.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_variant.lib"
+ "$(WINDOWS_ABSL_PATH)\\lib\\absl_time_zone.lib"
 DYNAMIC_ABSL_LNK = $(STATIC_ABSL_LNK)
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
