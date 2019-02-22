@@ -131,20 +131,6 @@ index 350282f..65e6c7a 100644
      PRIVATE ${GMOCK_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS}
    )
    target_compile_definitions(${_NAME}
-diff --git a/CMake/abslConfig.cmake.in b/CMake/abslConfig.cmake.in
-new file mode 100644
-index 0000000..9b83fda
---- /dev/null
-+++ b/CMake/abslConfig.cmake.in
-@@ -0,0 +1,7 @@
-+## absl CMake configuration file
-+
-+set(ABSL_VERSION @PROJECT_VERSION@)
-+
-+@PACKAGE_INIT@
-+
-+include ("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
-\ No newline at end of file
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 380ed74..4977086 100644
 --- a/CMakeLists.txt

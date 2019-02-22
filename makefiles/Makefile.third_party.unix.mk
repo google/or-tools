@@ -358,7 +358,7 @@ dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	git clone --quiet https://github.com/abseil/abseil-cpp.git dependencies/sources/abseil-cpp-$(ABSL_TAG)
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && git reset --hard $(ABSL_TAG)
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)/patches/abseil-cpp-$(ABSL_TAG).patch"
-#	$(COPY) patches/abslConfig.cmake.in	dependencies/sources/abseil-cpp-$(ABSL_TAG)/CMake
+	$(COPY) patches/abslConfig.cmake.in	dependencies/sources/abseil-cpp-$(ABSL_TAG)/CMake
 
 ABSL_INC = -I$(UNIX_ABSL_DIR)/include
 ABSL_SWIG = $(ABSL_INC)
