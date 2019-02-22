@@ -175,15 +175,24 @@ SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
 // Produces a relaxed reason for StartMax(before) < EndMin(after).
 void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
                                                          int after) {
+  const IntegerLiteral end_min_lit =
+      integer_trail_->LowerBoundAsLiteral(end_vars_[after]);
+  const IntegerLiteral start_max_lit =
+      integer_trail_->UpperBoundAsLiteral(start_vars_[before]);
+
   DCHECK_LT(StartMax(before), EndMin(after));
-  const IntegerValue slack = EndMin(after) - StartMax(before) - 1;
-  std::vector<IntegerLiteral> temp;
-  temp.push_back(integer_trail_->LowerBoundAsLiteral(end_vars_[after]));
-  temp.push_back(
-      integer_trail_->LowerBoundAsLiteral(NegationOf(start_vars_[before])));
-  integer_trail_->RelaxLinearReason(slack, {IntegerValue(1), IntegerValue(1)},
-                                    &temp);
-  integer_reason_.insert(integer_reason_.end(), temp.begin(), temp.end());
+  DCHECK_EQ(EndMin(after), end_min_lit.bound);
+  DCHECK_EQ(StartMax(before), -start_max_lit.bound);
+
+  const IntegerValue slack = end_min_lit.bound + start_max_lit.bound - 1;
+  if (slack == 0) {
+    integer_reason_.push_back(end_min_lit);
+    integer_reason_.push_back(start_max_lit);
+    return;
+  }
+  integer_trail_->AppendRelaxedLinearReason(
+      slack, {IntegerValue(1), IntegerValue(1)},
+      {end_min_lit.var, start_max_lit.var}, &integer_reason_);
 }
 
 bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral bound) {

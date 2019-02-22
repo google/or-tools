@@ -128,7 +128,7 @@ std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   // NOTE: We ignore negation of equality decisions.
   for (const IntegerLiteral l :
-       encoder->GetIntegerLiterals(Literal(decision))) {
+       encoder->GetAllIntegerLiterals(Literal(decision))) {
     if (l.var == kNoIntegerVariable) continue;
     if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
     PseudoCosts::VariableBoundChange var_bound_change;

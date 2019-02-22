@@ -45,9 +45,19 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  bool PropagateOnProjections();
+  bool FindMandatoryBoxesOnOneDimension(SchedulingConstraintHelper* active,
+                                        SchedulingConstraintHelper* other);
+  bool PropagateMandatoryBoxesOnOneDimension(IntegerValue event,
+                                             const std::vector<int>& boxes,
+                                             SchedulingConstraintHelper* active,
+                                             SchedulingConstraintHelper* other);
+  bool NaivePush(bool time_direction, IntegerValue other_time,
+                 const absl::flat_hash_set<int>& boxes,
+                 SchedulingConstraintHelper* helper,
+                 SchedulingConstraintHelper* other_helper);
   void UpdateNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);
-  bool PushOneBox(int box, int other);
 
   const int num_boxes_;
   SchedulingConstraintHelper x_;

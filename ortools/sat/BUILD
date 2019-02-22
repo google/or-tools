@@ -943,6 +943,7 @@ cc_library(
     srcs = ["diffn.cc"],
     hdrs = ["diffn.h"],
     deps = [
+        ":disjunctive",
         ":integer",
         ":intervals",
         ":model",

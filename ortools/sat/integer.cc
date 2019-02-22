@@ -685,17 +685,32 @@ void IntegerTrail::RelaxLinearReason(
   CHECK_GE(slack, 0);
   if (slack == 0) return;
   const int size = reason->size();
-  std::vector<int> indices(size);
+  tmp_indices_.resize(size);
   for (int i = 0; i < size; ++i) {
     CHECK_EQ((*reason)[i].bound, LowerBound((*reason)[i].var));
     CHECK_GE(coeffs[i], 0);
-    indices[i] = vars_[(*reason)[i].var].current_trail_index;
+    tmp_indices_[i] = vars_[(*reason)[i].var].current_trail_index;
   }
 
-  RelaxLinearReason(slack, coeffs, &indices);
+  RelaxLinearReason(slack, coeffs, &tmp_indices_);
 
   reason->clear();
-  for (const int i : indices) {
+  for (const int i : tmp_indices_) {
+    reason->push_back(IntegerLiteral::GreaterOrEqual(integer_trail_[i].var,
+                                                     integer_trail_[i].bound));
+  }
+}
+
+void IntegerTrail::AppendRelaxedLinearReason(
+    IntegerValue slack, absl::Span<const IntegerValue> coeffs,
+    absl::Span<const IntegerVariable> vars,
+    std::vector<IntegerLiteral>* reason) const {
+  tmp_indices_.clear();
+  for (const IntegerVariable var : vars) {
+    tmp_indices_.push_back(vars_[var].current_trail_index);
+  }
+  RelaxLinearReason(slack, coeffs, &tmp_indices_);
+  for (const int i : tmp_indices_) {
     reason->push_back(IntegerLiteral::GreaterOrEqual(integer_trail_[i].var,
                                                      integer_trail_[i].bound));
   }

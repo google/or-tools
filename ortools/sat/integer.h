@@ -598,6 +598,12 @@ class IntegerTrail : public SatPropagator {
                          absl::Span<const IntegerValue> coeffs,
                          std::vector<IntegerLiteral>* reason) const;
 
+  // Same as above but take in IntegerVariables instead of IntegerLiterals.
+  void AppendRelaxedLinearReason(IntegerValue slack,
+                                 absl::Span<const IntegerValue> coeffs,
+                                 absl::Span<const IntegerVariable> vars,
+                                 std::vector<IntegerLiteral>* reason) const;
+
   // Same as above but relax the given trail indices.
   void RelaxLinearReason(IntegerValue slack,
                          absl::Span<const IntegerValue> coeffs,
@@ -883,6 +889,7 @@ class IntegerTrail : public SatPropagator {
     bool operator<(const RelaxHeapEntry& o) const { return index < o.index; }
   };
   mutable std::vector<RelaxHeapEntry> relax_heap_;
+  mutable std::vector<int> tmp_indices_;
 
   // Temporary data used by AppendNewBounds().
   mutable SparseBitset<IntegerVariable> tmp_marked_;

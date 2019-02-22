@@ -420,6 +420,10 @@ class ConstraintChecker {
            Value(interval2.end()) <= Value(interval1.start());
   }
 
+  bool IntervalIsEmpty(const IntervalConstraintProto& interval) {
+    return Value(interval.start()) == Value(interval.end());
+  }
+
   bool NoOverlap2DConstraintIsFeasible(const CpModelProto& model,
                                        const ConstraintProto& ct) {
     const auto& arg = ct.no_overlap_2d();
@@ -446,7 +450,15 @@ class ConstraintChecker {
         const auto& yi = *enforced_intervals_xy[i].second;
         const auto& xj = *enforced_intervals_xy[j].first;
         const auto& yj = *enforced_intervals_xy[j].second;
-        if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj)) {
+        if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj) &&
+            !IntervalIsEmpty(xi) && !IntervalIsEmpty(xj) &&
+            !IntervalIsEmpty(yi) && !IntervalIsEmpty(yj)) {
+          VLOG(1) << "Interval " << i << "(x=[" << Value(xi.start()) << ", "
+                  << Value(xi.end()) << "], y=[" << Value(yi.start()) << ", "
+                  << Value(yi.end()) << "]) and " << j << "("
+                  << "(x=[" << Value(xj.start()) << ", " << Value(xj.end())
+                  << "], y=[" << Value(yj.start()) << ", " << Value(yj.end())
+                  << "]) are not disjoint.";
           return false;
         }
       }
