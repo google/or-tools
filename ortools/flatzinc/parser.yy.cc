@@ -846,7 +846,7 @@ YY_DECL {
           YY_RULE_SETUP
 #line 28 "./ortools/flatzinc/parser.lex"
           {
-            return BOOL;
+            return TOKEN_BOOL;
           }
           YY_BREAK
         case 3:
@@ -860,14 +860,14 @@ YY_DECL {
           YY_RULE_SETUP
 #line 30 "./ortools/flatzinc/parser.lex"
           {
-            return FLOAT;
+            return TOKEN_FLOAT;
           }
           YY_BREAK
         case 5:
           YY_RULE_SETUP
 #line 31 "./ortools/flatzinc/parser.lex"
           {
-            return INT;
+            return TOKEN_INT;
           }
           YY_BREAK
         case 6:

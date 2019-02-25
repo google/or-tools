@@ -63,10 +63,10 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 #define YYTOKENTYPE
 enum yytokentype {
   ARRAY = 258,
-  BOOL = 259,
+  TOKEN_BOOL = 259,
   CONSTRAINT = 260,
-  FLOAT = 261,
-  INT = 262,
+  TOKEN_FLOAT = 261,
+  TOKEN_INT = 262,
   MAXIMIZE = 263,
   MINIMIZE = 264,
   OF = 265,

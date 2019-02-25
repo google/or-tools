@@ -25,10 +25,10 @@
 
 %%
 "array"         { return ARRAY;     }
-"bool"          { return BOOL;      }
+"bool"          { return TOKEN_BOOL;}
 "constraint"    { return CONSTRAINT;}
-"float"         { return FLOAT;     }
-"int"           { return INT;       }
+"float"         { return TOKEN_FLOAT;}
+"int"           { return TOKEN_INT;  }
 "maximize"      { return MAXIMIZE;  }
 "minimize"      { return MINIMIZE;  }
 "of"            { return OF;        }
