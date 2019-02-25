@@ -222,7 +222,7 @@ dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip:
 ZLIB_INC = /I"$(WINDOWS_ZLIB_PATH)\\include"
 ZLIB_SWIG = -I"$(WINDOWS_ZLIB_DIR)/include"
 
-ZLIB_LNK = "$(WINDOWS_ZLIB_PATH)\\lib\\$(WINDOWS_ZLIB_NAME)"
+ZLIB_LNK = "$(WINDOWS_ZLIB_PATH)\lib\$(WINDOWS_ZLIB_NAME)"
 DEPENDENCIES_LNK += $(ZLIB_LNK)
 
 ##############
@@ -252,8 +252,8 @@ dependencies/archives/gflags-$(GFLAGS_TAG).zip:
 
 GFLAGS_INC = /I"$(WINDOWS_GFLAGS_PATH)\\include" /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG=
 GFLAGS_SWIG = -I"$(WINDOWS_GFLAGS_DIR)/include" -DGFLAGS_DLL_DECL= -DGFLAGS_DLL_DECLARE_FLAG= -DGFLAGS_DLL_DEFINE_FLAG=
-DYNAMIC_GFLAGS_LNK = "$(WINDOWS_GFLAGS_PATH)\\lib\\gflags_static.lib"
-STATIC_GFLAGS_LNK = "$(WINDOWS_GFLAGS_PATH)\\lib\\gflags_static.lib"
+DYNAMIC_GFLAGS_LNK = "$(WINDOWS_GFLAGS_PATH)\lib\gflags_static.lib"
+STATIC_GFLAGS_LNK = "$(WINDOWS_GFLAGS_PATH)\lib\gflags_static.lib"
 
 GFLAGS_LNK = $(STATIC_GFLAGS_LNK)
 DEPENDENCIES_LNK += $(GFLAGS_LNK)
@@ -286,8 +286,8 @@ dependencies/archives/glog-$(GLOG_TAG).zip:
 
 GLOG_INC = /I"$(WINDOWS_GLOG_PATH)\\include" /DGOOGLE_GLOG_DLL_DECL=
 GLOG_SWIG = -I"$(WINDOWS_GLOG_DIR)/include" -DGOOGLE_GLOG_DLL_DECL=
-DYNAMIC_GLOG_LNK = "$(WINDOWS_GLOG_PATH)\\lib\\glog.lib"
-STATIC_GLOG_LNK = "$(WINDOWS_GLOG_PATH)\\lib\\glog.lib"
+DYNAMIC_GLOG_LNK = "$(WINDOWS_GLOG_PATH)\lib\glog.lib"
+STATIC_GLOG_LNK = "$(WINDOWS_GLOG_PATH)\lib\glog.lib"
 
 GLOG_LNK = $(STATIC_GLOG_LNK)
 DEPENDENCIES_LNK += $(GLOG_LNK)
@@ -327,8 +327,8 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 PROTOBUF_INC = /I"$(WINDOWS_PROTOBUF_PATH)\\include"
 PROTOBUF_SWIG = -I"$(WINDOWS_PROTOBUF_DIR)/include"
 PROTOBUF_PROTOC_INC = -I"$(WINDOWS_PROTOBUF_DIR)/include"
-DYNAMIC_PROTOBUF_LNK = "$(WINDOWS_PROTOBUF_PATH)\\lib\\libprotobuf.lib"
-STATIC_PROTOBUF_LNK = "$(WINDOWS_PROTOBUF_PATH)\\lib\\libprotobuf.lib"
+DYNAMIC_PROTOBUF_LNK = "$(WINDOWS_PROTOBUF_PATH)\lib\libprotobuf.lib"
+STATIC_PROTOBUF_LNK = "$(WINDOWS_PROTOBUF_PATH)\lib\libprotobuf.lib"
 
 PROTOBUF_LNK = $(STATIC_PROTOBUF_LNK)
 DEPENDENCIES_LNK += $(PROTOBUF_LNK)
@@ -375,37 +375,10 @@ dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 
 ABSL_INC = /I"$(WINDOWS_ABSL_PATH)\\include"
 ABSL_SWIG = -I"$(WINDOWS_ABSL_PATH)/include"
+# Can't explicitly list all abseil-cpp libraries
+# otherwise windows prompt seems to overflow...
 STATIC_ABSL_LNK = \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_bad_any_cast_impl.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_bad_optional_access.lib"\
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_bad_variant_access.lib"\
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_base.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_city.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_civil_time.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_debugging_internal.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_demangle_internal.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_dynamic_annotations.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_examine_stack.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_failure_signal_handler.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_graphcycles_internal.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_hash.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_hashtablez_sampler.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_hashtablez_force_sampling.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_int128.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_leak_check.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_malloc_internal.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_optional.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_raw_hash_set.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_spinlock_wait.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_stacktrace.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_str_format_internal.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_strings.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_strings_internal.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_symbolize.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_synchronization.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_throw_delegate.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_time.lib" \
- "$(WINDOWS_ABSL_PATH)\\lib\\absl_time_zone.lib"
+ "$(WINDOWS_ABSL_PATH)\lib\absl_*.lib"
 DYNAMIC_ABSL_LNK = $(STATIC_ABSL_LNK)
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
@@ -454,40 +427,40 @@ dependencies\sources\Cbc-$(CBC_TAG)\configure:
 # This is needed to find Coin include files and libraries.
 COINUTILS_INC = /I"$(WINDOWS_COINUTILS_PATH)\\include" /I"$(WINDOWS_COINUTILS_PATH)\\include\\coin"
 COINUTILS_SWIG = -I"$(WINDOWS_COINUTILS_DIR)/include" -I"$(WINDOWS_COINUTILS_DIR)/include/coin"
-DYNAMIC_COINUTILS_LNK = "$(WINDOWS_COINUTILS_PATH)\\lib\\coin\\libCoinUtils.lib"
-STATIC_COINUTILS_LNK = "$(WINDOWS_COINUTILS_PATH)\\lib\\coin\\libCoinUtils.lib"
+DYNAMIC_COINUTILS_LNK = "$(WINDOWS_COINUTILS_PATH)\lib\coin\libCoinUtils.lib"
+STATIC_COINUTILS_LNK = "$(WINDOWS_COINUTILS_PATH)\lib\coin\libCoinUtils.lib"
 COINUTILS_LNK = $(STATIC_COINUTILS_LNK)
 
 OSI_INC = /I"$(WINDOWS_OSI_PATH)\\include" /I"$(WINDOWS_OSI_PATH)\\include\\coin"
 OSI_SWIG = -I"$(WINDOWS_OSI_DIR)/include" -I"$(WINDOWS_OSI_DIR)/include/coin"
-DYNAMIC_OSI_LNK = "$(WINDOWS_OSI_PATH)\\lib\\coin\\libOsi.lib"
-STATIC_OSI_LNK = "$(WINDOWS_OSI_PATH)\\lib\\coin\\libOsi.lib"
+DYNAMIC_OSI_LNK = "$(WINDOWS_OSI_PATH)\lib\coin\libOsi.lib"
+STATIC_OSI_LNK = "$(WINDOWS_OSI_PATH)\lib\coin\libOsi.lib"
 OSI_LNK = $(STATIC_OSI_LNK)
 
 CLP_INC = /I"$(WINDOWS_CLP_PATH)\\include" /I"$(WINDOWS_CLP_PATH)\\include\\coin" /DUSE_CLP
 CLP_SWIG = -I"$(WINDOWS_CLP_DIR)/include" -I"$(WINDOWS_CLP_DIR)/include/coin" -DUSE_CLP
 DYNAMIC_CLP_LNK = \
- "$(WINDOWS_CLP_PATH)\\lib\\coin\\libClp.lib" \
- "$(WINDOWS_CLP_PATH)\\lib\\coin\\libOsiClp.lib"
+ "$(WINDOWS_CLP_PATH)\lib\coin\libClp.lib" \
+ "$(WINDOWS_CLP_PATH)\lib\coin\libOsiClp.lib"
 STATIC_CLP_LNK = \
- "$(WINDOWS_CLP_PATH)\\lib\\coin\\libClp.lib" \
- "$(WINDOWS_CLP_PATH)\\lib\\coin\\libOsiClp.lib"
+ "$(WINDOWS_CLP_PATH)\lib\coin\libClp.lib" \
+ "$(WINDOWS_CLP_PATH)\lib\coin\libOsiClp.lib"
 CLP_LNK = $(STATIC_CLP_LNK)
 
 CGL_INC = /I"$(WINDOWS_CGL_PATH)\\include" /I"$(WINDOWS_CGL_PATH)\\include\\coin"
 CGL_SWIG = -I"$(WINDOWS_CGL_DIR)/include" -I"$(WINDOWS_CGL_DIR)/include/coin"
-DYNAMIC_CGL_LNK = "$(WINDOWS_CGL_PATH)\\lib\\coin\\libCgl.lib"
-STATIC_CGL_LNK = "$(WINDOWS_CGL_PATH)\\lib\\coin\\libCgl.lib"
+DYNAMIC_CGL_LNK = "$(WINDOWS_CGL_PATH)\lib\coin\libCgl.lib"
+STATIC_CGL_LNK = "$(WINDOWS_CGL_PATH)\lib\coin\libCgl.lib"
 CGL_LNK = $(STATIC_CGL_LNK)
 
 CBC_INC = /I"$(WINDOWS_CBC_PATH)\\include" /I"$(WINDOWS_CBC_PATH)\\include\\coin" /DUSE_CBC
 CBC_SWIG = -I"$(WINDOWS_CBC_DIR)/include" -I"$(WINDOWS_CBC_DIR)/include/coin" -DUSE_CBC
 DYNAMIC_CBC_LNK = \
- "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbcSolver.lib" \
- "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbc.lib"
+ "$(WINDOWS_CBC_PATH)\lib\coin\libCbcSolver.lib" \
+ "$(WINDOWS_CBC_PATH)\lib\coin\libCbc.lib"
 STATIC_CBC_LNK = \
- "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbcSolver.lib" \
- "$(WINDOWS_CBC_PATH)\\lib\\coin\\libCbc.lib"
+ "$(WINDOWS_CBC_PATH)\lib\coin\libCbcSolver.lib" \
+ "$(WINDOWS_CBC_PATH)\lib\coin\libCbc.lib"
 CBC_LNK = $(STATIC_CBC_LNK)
 
 # Agregate all previous coin packages
@@ -573,6 +546,8 @@ detect_third_party:
 	@echo WINDOWS_PROTOBUF_DIR = $(WINDOWS_PROTOBUF_DIR)
 	@echo PROTOBUF_INC = $(PROTOBUF_INC)
 	@echo PROTOBUF_LNK = $(PROTOBUF_LNK)
+	@echo ABSL_INC = $(ABSL_INC)
+	@echo ABSL_LNK = $(ABSL_LNK)
 	@echo WINDOWS_CBC_DIR = $(WINDOWS_CBC_DIR)
 	@echo CBC_INC = $(CBC_INC)
 	@echo CBC_LNK = $(CBC_LNK)
