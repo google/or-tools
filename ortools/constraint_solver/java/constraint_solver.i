@@ -282,37 +282,49 @@ DEFINE_VOID_TO_R_CALLBACK(
 DEFINE_ARGS_TO_R_CALLBACK(
   std::function<int64(int64)>,
   LongUnaryOperator, "applyAsLong", "(J)J",
-  long, CallLongMethod, VAR_ARGS(long t), VAR_ARGS(t))
+  long, CallLongMethod, VAR_ARGS(long t), VAR_ARGS((jlong)t))
 
 DEFINE_ARGS_TO_R_CALLBACK(
   std::function<int64(int64, int64)>,
   LongBinaryOperator, "applyAsLong", "(JJ)J",
-  long, CallLongMethod, VAR_ARGS(long t, long u), VAR_ARGS(t, u))
+  long, CallLongMethod,
+  VAR_ARGS(long t, long u),
+  VAR_ARGS((jlong)t, (jlong)u))
 
 DEFINE_ARGS_TO_R_CALLBACK(
   std::function<int64(int64, int64, int64)>,
   LongTernaryOperator, "applyAsLong", "(JJJ)J",
-  long, CallLongMethod, VAR_ARGS(long t, long u, long v), VAR_ARGS(t, u, v))
+  long, CallLongMethod,
+  VAR_ARGS(long t, long u, long v),
+  VAR_ARGS((jlong)t, (jlong)u, (jlong)v))
 
 DEFINE_ARGS_TO_R_CALLBACK(
   std::function<int64(int, int)>,
   IntIntToLongFunction, "applyAsLong", "(II)J",
-  long, CallLongMethod, VAR_ARGS(int t, int u), VAR_ARGS(t, u))
+  long, CallLongMethod,
+  VAR_ARGS(int t, int u),
+  VAR_ARGS((jlong)t, (jlong)u))
 
 DEFINE_ARGS_TO_R_CALLBACK(
   std::function<bool(int64)>,
   LongPredicate, "test", "(J)Z",
-  bool, CallBooleanMethod, VAR_ARGS(long t), VAR_ARGS(t))
+  bool, CallBooleanMethod,
+  VAR_ARGS(long t),
+  VAR_ARGS((jlong)t))
 
 DEFINE_ARGS_TO_R_CALLBACK(
   std::function<bool(int64, int64, int64)>,
   LongTernaryPredicate, "test", "(JJJ)Z",
-  bool, CallBooleanMethod, VAR_ARGS(long t, long u, long v), VAR_ARGS(t, u, v))
+  bool, CallBooleanMethod,
+  VAR_ARGS(long t, long u, long v),
+  VAR_ARGS((jlong)t, (jlong)u, (jlong)v))
 
 DEFINE_ARGS_TO_R_CALLBACK(
   std::function<void(int64)>,
   LongConsumer, "accept", "(J)V",
-  void, CallVoidMethod, VAR_ARGS(long t), VAR_ARGS(t))
+  void, CallVoidMethod,
+  VAR_ARGS(long t),
+  VAR_ARGS((jlong)t))
 
 #undef VAR_ARGS
 
