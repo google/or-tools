@@ -104,6 +104,40 @@ VECTOR_AS_JAVA_ARRAY(int, int, Int);
 VECTOR_AS_JAVA_ARRAY(int64, long, Long);
 VECTOR_AS_JAVA_ARRAY(double, double, Double);
 
+// Typemaps to represent const std::vector<std::vector<CType> >& arguments as
+// an ObjectArray of JavaTypeArrays.
+%define MATRIX_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)
+%typemap(jni) const std::vector<std::vector<CType> >& "jobjectArray"
+%typemap(jtype) const std::vector<std::vector<CType> >& #JavaType "[][]"
+%typemap(jstype) const std::vector<std::vector<CType> >& #JavaType "[][]"
+%typemap(javain) const std::vector<std::vector<CType> >& "$javainput"
+%typemap(in) const std::vector<std::vector<CType> >& (std::vector<std::vector<CType> > result) %{
+  const int size = jenv->GetArrayLength($input);
+  result.clear();
+  result.resize(size);
+  for (int index1 = 0; index1 < size; ++index1) {
+    j ## JavaType ## Array inner_array =
+        (j ## JavaType ## Array)jenv->GetObjectArrayElement($input, index1);
+    const int inner_size = jenv->GetArrayLength(inner_array);
+    result[index1].reserve(inner_size);
+    j ## JavaType * const values =
+        jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, NULL);
+    for (int index2 = 0; index2 < inner_size; ++index2) {
+      const CType value = values[index2];
+      result[index1].emplace_back(value);
+    }
+    jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, values, JNI_ABORT);
+    jenv->DeleteLocalRef(inner_array);
+  }
+  $1 = &result;
+%}
+
+%enddef  // MATRIX_AS_JAVA_ARRAY
+
+MATRIX_AS_JAVA_ARRAY(int, int, Int);
+MATRIX_AS_JAVA_ARRAY(int64, long, Long);
+MATRIX_AS_JAVA_ARRAY(double, double, Double);
+
 // Same, for std::vector<CType*>, where CType is not a primitive type.
 // CastOp defines how to cast the output of CallStaticLongMethod to CType*;
 // its first argument is CType, its second is the output of
@@ -151,33 +185,4 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 %define REINTERPRET_CAST(CType, ptr)
 reinterpret_cast<CType*>(ptr)
 %enddef
-
-// Convert long[][] to std::vector<std::vector<int64>>
-//
-// TODO(user): move this code to a generic macro to convert
-// std::vector<std::vector<T>> to T[][].
-%typemap(jni) const std::vector<std::vector<int64> >& "jobjectArray"
-%typemap(jtype) const std::vector<std::vector<int64> >& "long[][]"
-%typemap(jstype) const std::vector<std::vector<int64> >& "long[][]"
-%typemap(javain) const std::vector<std::vector<int64> >& "$javainput"
-%typemap(in) const std::vector<std::vector<int64> >& (std::vector<std::vector<int64> > result) {
-  const int size = jenv->GetArrayLength($input);
-  result.clear();
-  result.resize(size);
-  for (int index1 = 0; index1 < size; ++index1) {
-    jlongArray inner_array =
-        (jlongArray)jenv->GetObjectArrayElement($input, index1);
-    const int tuple_size = jenv->GetArrayLength(inner_array);
-    result[index1].reserve(tuple_size);
-    jlong* const values =
-        jenv->GetLongArrayElements((jlongArray)inner_array, NULL);
-    for (int index2 = 0; index2 < tuple_size; ++index2) {
-      const int64 value = values[index2];
-      result[index1].emplace_back(value);
-    }
-    jenv->ReleaseLongArrayElements((jlongArray)inner_array, values, JNI_ABORT);
-    jenv->DeleteLocalRef(inner_array);
-  }
-  $1 = &result;
-}
 
