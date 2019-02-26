@@ -334,6 +334,10 @@ DEFINE_ARGS_TO_R_CALLBACK(
   VAR_ARGS((jlong)t))
 
 #undef VAR_ARGS
+#undef DEFINE_SOLVER_TO_VOID_CALLBACK
+#undef DEFINE_ARGS_TO_R_CALLBACK
+#undef DEFINE_VOID_TO_R_CALLBACK
+#undef DEFINE_VOID_TO_STRING_CALLBACK
 
 // Renaming
 namespace operations_research {
@@ -342,17 +346,23 @@ namespace operations_research {
 // part of the public API anyway.
 %ignore ToInt64Vector;
 
-// Rename rules on Decision.
+// Decision
 %feature("director") Decision;
+%unignore Decision;
+// Methods:
 %rename (apply) Decision::Apply;
 %rename (refute) Decision::Refute;
 
-// Rename rules on DecisionBuilder.
+// DecisionBuilder
 %feature("director") DecisionBuilder;
+%unignore DecisionBuilder;
+// Methods:
 %rename (nextWrap) DecisionBuilder::Next;
 
-// Rename rules on DecisionVisitor.
+// DecisionVisitor
 %feature("director") DecisionVisitor;
+%unignore DecisionVisitor;
+// Methods:
 %rename (visitRankFirstInterval) DecisionVisitor::VisitRankFirstInterval;
 %rename (visitRankLastInterval) DecisionVisitor::VisitRankLastInterval;
 %rename (visitScheduleOrExpedite) DecisionVisitor::VisitScheduleOrExpedite;
@@ -361,7 +371,9 @@ namespace operations_research {
 %rename (visitSplitVariableDomain) DecisionVisitor::VisitSplitVariableDomain;
 %rename (visitUnknownDecision) DecisionVisitor::VisitUnknownDecision;
 
-// Rename rules on ModelVisitor.
+// ModelVisitor
+%unignore ModelVisitor;
+// Methods:
 %rename (beginVisitConstraint) ModelVisitor::BeginVisitConstraint;
 %rename (beginVisitExtension) ModelVisitor::BeginVisitExtension;
 %rename (beginVisitIntegerExpression) ModelVisitor::BeginVisitIntegerExpression;
@@ -383,13 +395,17 @@ namespace operations_research {
 %rename (visitSequenceArrayArgument) ModelVisitor::VisitSequenceArrayArgument;
 %rename (visitSequenceVariable) ModelVisitor::VisitSequenceVariable;
 
-// Rename rules on SymmetryBreaker.
+// SymmetryBreaker
 %feature("director") SymmetryBreaker;
+%unignore SymmetryBreaker;
+// Methods:
 %rename (addIntegerVariableEqualValueClause) SymmetryBreaker::AddIntegerVariableEqualValueClause;
 %rename (addIntegerVariableGreaterOrEqualValueClause) SymmetryBreaker::AddIntegerVariableGreaterOrEqualValueClause;
 %rename (addIntegerVariableLessOrEqualValueClause) SymmetryBreaker::AddIntegerVariableLessOrEqualValueClause;
 
-// Rename rules on ModelCache.
+// ModelCache
+%unignore ModelCache;
+// Methods:
 %rename (clear) ModelCache::Clear;
 %rename (findExprConstantExpression) ModelCache::FindExprConstantExpression;
 %rename (findExprExprConstantExpression) ModelCache::FindExprExprConstantExpression;
@@ -418,7 +434,9 @@ namespace operations_research {
 %rename (insertVarConstantConstraint) ModelCache::InsertVarConstantConstraint;
 %rename (insertVoidConstraint) ModelCache::InsertVoidConstraint;
 
-// Rename rules on RevPartialSequence.
+// RevPartialSequence
+%unignore RevPartialSequence;
+// Methods:
 %rename (isRanked) RevPartialSequence::IsRanked;
 %rename (numFirstRanked) RevPartialSequence::NumFirstRanked;
 %rename (numLastRanked) RevPartialSequence::NumLastRanked;
@@ -426,15 +444,16 @@ namespace operations_research {
 %rename (rankLast) RevPartialSequence::RankLast;
 %rename (size) RevPartialSequence::Size;
 
-// Rename rules on UnsortedNullableRevBitset.
-%rename (activeWordSize) UnsortedNullableRevBitset::ActiveWordSize;
-%rename (empty) UnsortedNullableRevBitset::Empty;
-%rename (init) UnsortedNullableRevBitset::Init;
-%rename (intersects) UnsortedNullableRevBitset::Intersects;
-%rename (revAnd) UnsortedNullableRevBitset::RevAnd;
-%rename (revSubtract) UnsortedNullableRevBitset::RevSubtract;
+// UnsortedNullableRevBitset
+// TODO(corentinl) To removed from constraint_solveri.h (only use by table.cc)
+%ignore UnsortedNullableRevBitset;
 
-// Rename rules on Assignment.
+// Assignment
+%unignore Assignment;
+// Ignored:
+%ignore Assignment::Load;
+%ignore Assignment::Save;
+// Methods:
 %rename (activate) Assignment::Activate;
 %rename (activateObjective) Assignment::ActivateObjective;
 %rename (activated) Assignment::Activated;
@@ -460,7 +479,6 @@ namespace operations_research {
 %rename (hasObjective) Assignment::HasObjective;
 %rename (intVarContainer) Assignment::IntVarContainer;
 %rename (intervalVarContainer) Assignment::IntervalVarContainer;
-%rename (load) Assignment::Load;
 %rename (mutableIntVarContainer) Assignment::MutableIntVarContainer;
 %rename (mutableIntervalVarContainer) Assignment::MutableIntervalVarContainer;
 %rename (mutableSequenceVarContainer) Assignment::MutableSequenceVarContainer;
@@ -476,7 +494,6 @@ namespace operations_research {
 %rename (performedMin) Assignment::PerformedMin;
 %rename (performedValue) Assignment::PerformedValue;
 %rename (restore) Assignment::Restore;
-%rename (save) Assignment::Save;
 %rename (size) Assignment::Size;
 %rename (sequenceVarContainer) Assignment::SequenceVarContainer;
 %rename (setBackwardSequence) Assignment::SetBackwardSequence;
@@ -510,42 +527,45 @@ namespace operations_research {
 %rename (store) Assignment::Store;
 %rename (unperformed) Assignment::Unperformed;
 
-// Rename rules on AssignmentContainer;
+// template AssignmentContainer<>
+// Ignored:
+%ignore AssignmentContainer::MutableElement;
+%ignore AssignmentContainer::MutableElementOrNull;
+%ignore AssignmentContainer::ElementPtrOrNull;
+%ignore AssignmentContainer::elements;
+// Methods:
 %rename (add) AssignmentContainer::Add;
 %rename (addAtPosition) AssignmentContainer::AddAtPosition;
 %rename (clear) AssignmentContainer::Clear;
+%rename (element) AssignmentContainer::Element;
 %rename (fastAdd) AssignmentContainer::FastAdd;
 %rename (resize) AssignmentContainer::Resize;
 %rename (empty) AssignmentContainer::Empty;
 %rename (copy) AssignmentContainer::Copy;
 %rename (copyIntersection) AssignmentContainer::CopyIntersection;
 %rename (contains) AssignmentContainer::Contains;
-%rename (mutableElement) AssignmentContainer::MutableElement;
-// No MutableElementOrNull
-%ignore AssignmentContainer::MutableElementOrNull;
-%rename (element) AssignmentContainer::Element;
-// No ElementPtrOrNull
-%ignore AssignmentContainer::ElementPtrOrNull;
-// %unignore AssignmentContainer::elements;
 %rename (size) AssignmentContainer::Size;
 %rename (store) AssignmentContainer::Store;
 %rename (restore) AssignmentContainer::Restore;
 
-// Rename rules on AssignmentElement;
+// AssignmentElement
+%unignore AssignmentElement;
+// Methods:
 %rename (activate) AssignmentElement::Activate;
 %rename (deactivate) AssignmentElement::Deactivate;
 %rename (activated) AssignmentElement::Activated;
 
-// Rename rules on IntVarElement
+// IntVarElement
+%unignore IntVarElement;
+// Ignored:
+%ignore IntVarElement::LoadFromProto;
+%ignore IntVarElement::WriteToProto;
+// Methods:
 %rename (reset) IntVarElement::Reset;
 %rename (clone) IntVarElement::Clone;
 %rename (copy) IntVarElement::Copy;
 %rename (store) IntVarElement::Store;
 %rename (restore) IntVarElement::Restore;
-// No LoadFromProto
-%ignore IntVarElement::LoadFromProto;
-// No WriteToProto
-%ignore IntVarElement::WriteToProto;
 %rename (min) IntVarElement::Min;
 %rename (setMin) IntVarElement::SetMin;
 %rename (max) IntVarElement::Max;
@@ -555,7 +575,12 @@ namespace operations_research {
 %rename (setRange) IntVarElement::SetRange;
 %rename (var) IntVarElement::Var;
 
-// Rename rules on IntervalVarElement
+// IntervalVarElement
+%unignore IntervalVarElement;
+// Ignored:
+%ignore IntervalVarElement::LoadFromProto;
+%ignore IntervalVarElement::WriteToProto;
+// Methods:
 %rename (clone) IntervalVarElement::Clone;
 %rename (copy) IntervalVarElement::Copy;
 %rename (durationMax) IntervalVarElement::DurationMax;
@@ -564,8 +589,6 @@ namespace operations_research {
 %rename (endMax) IntervalVarElement::EndMax;
 %rename (endMin) IntervalVarElement::EndMin;
 %rename (endValue) IntervalVarElement::EndValue;
-// No LoadFromProto
-%ignore IntervalVarElement::LoadFromProto;
 %rename (performedMax) IntervalVarElement::PerformedMax;
 %rename (performedMin) IntervalVarElement::PerformedMin;
 %rename (performedValue) IntervalVarElement::PerformedValue;
@@ -592,16 +615,17 @@ namespace operations_research {
 %rename (startValue) IntervalVarElement::StartValue;
 %rename (store) IntervalVarElement::Store;
 %rename (var) IntervalVarElement::Var;
-// No WriteToProto
-%ignore IntervalVarElement::WriteToProto;
 
-// Rename rules on SequenceVarElement.
+// SequenceVarElement
+%unignore SequenceVarElement;
+// Ignored:
+%ignore SequenceVarElement::LoadFromProto;
+%ignore SequenceVarElement::WriteToProto;
+// Methods:
 %rename (backwardSequence) SequenceVarElement::BackwardSequence;
 %rename (clone) SequenceVarElement::Clone;
 %rename (copy) SequenceVarElement::Copy;
 %rename (forwardSequence) SequenceVarElement::ForwardSequence;
-// No LoadFromProto
-%ignore SequenceVarElement::LoadFromProto;
 %rename (reset) SequenceVarElement::Reset;
 %rename (restore) SequenceVarElement::Restore;
 %rename (setBackwardSequence) SequenceVarElement::SetBackwardSequence;
@@ -611,10 +635,10 @@ namespace operations_research {
 %rename (store) SequenceVarElement::Store;
 %rename (unperformed) SequenceVarElement::Unperformed;
 %rename (var) SequenceVarElement::Var;
-// No WriteToProto
-%ignore SequenceVarElement::WriteToProto;
 
-// Rename rules on SolutionCollector.
+// SolutionCollector
+%unignore SolutionCollector;
+// Methods:
 %rename (add) SolutionCollector::Add;
 %rename (addObjective) SolutionCollector::AddObjective;
 %rename (backwardSequence) SolutionCollector::BackwardSequence;
@@ -628,13 +652,16 @@ namespace operations_research {
 %rename (unperformed) SolutionCollector::Unperformed;
 %rename (wallTime) SolutionCollector::wall_time;
 
-// Rename rules on SolutionPool.
+// SolutionPool
+%unignore SolutionPool;
+// Methods:
 %rename (getNextSolution) SolutionPool::GetNextSolution;
 %rename (initialize) SolutionPool::Initialize;
 %rename (registerNewSolution) SolutionPool::RegisterNewSolution;
 %rename (syncNeeded) SolutionPool::SyncNeeded;
 
 // Solver
+%unignore Solver;
 %typemap(javaimports) Solver %{
 import com.google.ortools.constraintsolver.ConstraintSolverParameters;
 import com.google.ortools.constraintsolver.SearchLimitParameters;
@@ -680,7 +707,7 @@ import java.util.function.LongConsumer;
 import java.lang.Runnable;
 %}
 // note: SWIG does not support multiple %typemap(javacode) Type, so we have to
-// define all Solver tweak here (ed and not in the macro DEFINE_CALLBACK_*)
+// define all Solver tweak here.
 %typemap(javacode) Solver %{
   /**
    * This exceptions signal that a failure has been raised in the C++ world.
@@ -762,15 +789,24 @@ import java.lang.Runnable;
     return array;
   }
 %}
-
-// Ignore rules on Solver.
+// Ignored:
+%ignore Solver::SearchLogParameters;
+%ignore Solver::ActiveSearch;
+%ignore Solver::SetSearchContext;
+%ignore Solver::SearchContext;
+%ignore Solver::MakeSearchLog(SearchLogParameters parameters);
 %ignore Solver::MakeIntVarArray;
+%ignore Solver::MakeIntervalVarArray;
 %ignore Solver::MakeBoolVarArray;
 %ignore Solver::MakeFixedDurationIntervalVarArray;
+%ignore Solver::SetBranchSelector;
+%ignore Solver::MakeApplyBranchSelector;
+%ignore Solver::MakeAtMost;
+%ignore Solver::demon_profiler;
 %ignore Solver::set_fail_intercept;
-// Rename rules on Solver.
+// Methods:
+%unignore Solver::Solver;
 %rename (acceptedNeighbors) Solver::accepted_neighbors;
-%rename (activeSearch) Solver::ActiveSearch;
 %rename (addBacktrackAction) Solver::AddBacktrackAction;
 %rename (addCastConstraint) Solver::AddCastConstraint;
 %rename (addConstraint) Solver::AddConstraint;
@@ -805,12 +841,10 @@ import java.lang.Runnable;
 %rename (makeAllDifferentExcept) Solver::MakeAllDifferentExcept;
 %rename (makeAllSolutionCollector) Solver::MakeAllSolutionCollector;
 %rename (makeAllowedAssignment) Solver::MakeAllowedAssignments;
-%rename (makeApplyBranchSelector) Solver::MakeApplyBranchSelector;
 %rename (makeAssignVariableValue) Solver::MakeAssignVariableValue;
 %rename (makeAssignVariableValueOrFail) Solver::MakeAssignVariableValueOrFail;
 %rename (makeAssignVariablesValues) Solver::MakeAssignVariablesValues;
 %rename (makeAssignment) Solver::MakeAssignment;
-%rename (makeAtMost) Solver::MakeAtMost;
 %rename (makeAtSolutionCallback) Solver::MakeAtSolutionCallback;
 %rename (makeBestValueSolutionCollector) Solver::MakeBestValueSolutionCollector;
 %rename (makeBetweenCt) Solver::MakeBetweenCt;
@@ -868,7 +902,6 @@ import java.lang.Runnable;
 %rename (makeIntervalRelaxedMax) Solver::MakeIntervalRelaxedMax;
 %rename (makeIntervalRelaxedMin) Solver::MakeIntervalRelaxedMin;
 %rename (makeIntervalVar) Solver::MakeIntervalVar;
-%rename (makeIntervalVarArray) Solver::MakeIntervalVarArray;
 %rename (makeIntervalVarRelation) Solver::MakeIntervalVarRelation;
 %rename (makeIntervalVarRelationWithDelay) Solver::MakeIntervalVarRelationWithDelay;
 %rename (makeInversePermutationConstraint) Solver::MakeInversePermutationConstraint;
@@ -993,11 +1026,6 @@ import java.lang.Runnable;
 %rename (rand32) Solver::Rand32;
 %rename (rand64) Solver::Rand64;
 %rename (randomConcatenateOperators) Solver::RandomConcatenateOperators;
-%rename (rankFirst) SequenceVar::RankFirst;
-%rename (rankLast) SequenceVar::RankLast;
-%rename (rankNotFirst) SequenceVar::RankNotFirst;
-%rename (rankNotLast) SequenceVar::RankNotLast;
-%rename (rankSequence) SequenceVar::RankSequence;
 %rename (reSeed) Solver::ReSeed;
 %rename (registerDemon) Solver::RegisterDemon;
 %rename (registerIntExpr) Solver::RegisterIntExpr;
@@ -1005,11 +1033,8 @@ import java.lang.Runnable;
 %rename (registerIntervalVar) Solver::RegisterIntervalVar;
 %rename (restartCurrentSearch) Solver::RestartCurrentSearch;
 %rename (restartSearch) Solver::RestartSearch;
-%rename (searchContext) Solver::SearchContext;
 %rename (searchDepth) Solver::SearchDepth;
 %rename (searchLeftDepth) Solver::SearchLeftDepth;
-%rename (setBranchSelector) Solver::SetBranchSelector;
-%rename (setSearchContext) Solver::SetSearchContext;
 %rename (shouldFail) Solver::ShouldFail;
 %rename (solve) Solver::Solve;
 %rename (solveAndCommit) Solver::SolveAndCommit;
@@ -1020,15 +1045,24 @@ import java.lang.Runnable;
 %rename (updateLimits) Solver::UpdateLimits;
 %rename (wallTime) Solver::wall_time;
 
-// Rename rules on IntExpr.
+
+// BaseIntExpr
+%unignore BaseIntExpr;
+// Methods:
 %rename (castToVar) BaseIntExpr::CastToVar;
+
+// IntExpr
+%unignore IntExpr;
+// Methods:
 %rename (isVar) IntExpr::IsVar;
 %rename (range) IntExpr::Range;
 %rename (var) IntExpr::Var;
 %rename (varWithName) IntExpr::VarWithName;
 %rename (whenRange) IntExpr::WhenRange;
 
-// Rename rules on IntVar.
+// IntVar
+%unignore IntVar;
+// Methods:
 %rename (addName) IntVar::AddName;
 %rename (contains) IntVar::Contains;
 %rename (isDifferent) IntVar::IsDifferent;
@@ -1047,12 +1081,16 @@ import java.lang.Runnable;
 %rename (whenBound) IntVar::WhenBound;
 %rename (whenDomain) IntVar::WhenDomain;
 
-// Rename rules on IntVarIterator.
+// IntVarIterator
+%unignore IntVarIterator;
+// Methods:
 %rename (init) IntVarIterator::Init;
 %rename (next) IntVarIterator::Next;
 %rename (ok) IntVarIterator::Ok;
 
-// Rename rules on BooleanVar.
+// BooleanVar
+%unignore BooleanVar;
+// Methods:
 %rename (baseName) BooleanVar::BaseName;
 %rename (isDifferent) BooleanVar::IsDifferent;
 %rename (isEqual) BooleanVar::IsEqual;
@@ -1068,7 +1106,9 @@ import java.lang.Runnable;
 %rename (whenDomain) BooleanVar::WhenDomain;
 %rename (whenRange) BooleanVar::WhenRange;
 
-// Rename rules on IntervalVar.
+// IntervalVar
+%unignore IntervalVar;
+// Methods:
 %rename (cannotBePerformed) IntervalVar::CannotBePerformed;
 %rename (durationExpr) IntervalVar::DurationExpr;
 %rename (durationMax) IntervalVar::DurationMax;
@@ -1112,18 +1152,30 @@ import java.lang.Runnable;
 %rename (whenStartBound) IntervalVar::WhenStartBound;
 %rename (whenStartRange) IntervalVar::WhenStartRange;
 
-// Rename rules on OptimizeVar.
+// OptimizeVar
+%unignore OptimizeVar;
+// Methods:
 %rename (applyBound) OptimizeVar::ApplyBound;
 %rename (print) OptimizeVar::Print;
 %rename (var) OptimizeVar::Var;
 
-// Rename rules on SequenceVar.
-%rename (computePossibleFirstsAndLasts) SequenceVar::ComputePossibleFirstsAndLasts;
-%rename (fillSequence) SequenceVar::FillSequence;
+// SequenceVar
+%unignore SequenceVar;
+// Ignored:
+%ignore SequenceVar::ComputePossibleFirstsAndLasts;
+%ignore SequenceVar::FillSequence;
+// Methods:
+%rename (rankFirst) SequenceVar::RankFirst;
+%rename (rankLast) SequenceVar::RankLast;
+%rename (rankNotFirst) SequenceVar::RankNotFirst;
+%rename (rankNotLast) SequenceVar::RankNotLast;
+%rename (rankSequence) SequenceVar::RankSequence;
 %rename (interval) SequenceVar::Interval;
 %rename (next) SequenceVar::Next;
 
-// Rename rules on Constraint.
+// Constraint
+%unignore Constraint;
+// Methods:
 %rename (initialPropagate) Constraint::InitialPropagate;
 %rename (isCastConstraint) Constraint::IsCastConstraint;
 %rename (postAndPropagate) Constraint::PostAndPropagate;
@@ -1131,19 +1183,18 @@ import java.lang.Runnable;
 %rename (var) Constraint::Var;
 
 // DisjunctiveConstraint
-// Keep reference to FunctionalInterface to avoid GC to collect them early
 %typemap(javaimports) DisjunctiveConstraint %{
 // Used to wrap IndexEvaluator2
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
-// Rename rule on Disjunctive Constraint.
+// Methods:
 %rename (makeSequenceVar) DisjunctiveConstraint::MakeSequenceVar;
 %rename (setTransitionTime) DisjunctiveConstraint::SetTransitionTime;
 %rename (transitionTime) DisjunctiveConstraint::TransitionTime;
 
 // Pack
-// Keep reference to FunctionalInterface to avoid GC to collect them early
+%unignore Pack;
 %typemap(javaimports) Pack %{
 // Used to wrap IndexEvaluator1
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
@@ -1152,7 +1203,7 @@ import java.util.function.LongUnaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
-// Rename rule on Pack.
+// Methods:
 %rename (addCountAssignedItemsDimension) Pack::AddCountAssignedItemsDimension;
 %rename (addCountUsedBinDimension) Pack::AddCountUsedBinDimension;
 %rename (addSumVariableWeightsLessOrEqualConstantDimension) Pack::AddSumVariableWeightsLessOrEqualConstantDimension;
@@ -1177,20 +1228,25 @@ import java.util.function.LongBinaryOperator;
 %rename (setUnassigned) Pack::SetUnassigned;
 %rename (unassignAllRemainingItems) Pack::UnassignAllRemainingItems;
 
-// Rename rules on PropagationBaseObject.
+// PropagationBaseObject
+%unignore PropagationBaseObject;
+// Ignored:
 %ignore PropagationBaseObject::set_action_on_fail;
+%ignore PropagationBaseObject::ExecuteAll;
+%ignore PropagationBaseObject::EnqueueAll;
+// Methods:
 %rename (baseName) PropagationBaseObject::BaseName;
-%rename (enqueueAll) PropagationBaseObject::EnqueueAll;
 %rename (enqueueDelayedDemon) PropagationBaseObject::EnqueueDelayedDemon;
 %rename (enqueueVar) PropagationBaseObject::EnqueueVar;
-%rename (executeAll) PropagationBaseObject::ExecuteAll;
 %rename (freezeQueue) PropagationBaseObject::FreezeQueue;
 %rename (hasName) PropagationBaseObject::HasName;
 %rename (setName) PropagationBaseObject::set_name;
 %rename (unfreezeQueue) PropagationBaseObject::UnfreezeQueue;
 
-// Rename rules on Search Monitor
+// SearchMonitor
 %feature("director") SearchMonitor;
+%unignore SearchMonitor;
+// Methods:
 %rename (acceptDelta) SearchMonitor::AcceptDelta;
 %rename (acceptNeighbor) SearchMonitor::AcceptNeighbor;
 %rename (acceptSolution) SearchMonitor::AcceptSolution;
@@ -1215,23 +1271,28 @@ import java.util.function.LongBinaryOperator;
 %rename (restartCurrentSearch) SearchMonitor::RestartCurrentSearch;
 %rename (restartSearch) SearchMonitor::RestartSearch;
 
-// Rename rules on SearchLimit.
+// SearchLimit
+%unignore SearchLimit;
+// Ignored:
 %rename (check) SearchLimit::Check;
 %rename (copy) SearchLimit::Copy;
 %rename (init) SearchLimit::Init;
 %rename (makeClone) SearchLimit::MakeClone;
 
 // SearchLog
+%unignore SearchLog;
 %typemap(javaimports) SearchLog %{
 // Used to wrap DisplayCallback (std::function<std::string()>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/Supplier.html
 import java.util.function.Supplier;
 %}
-// Rename rules on SearchLog.
+// Methods:
 %rename (maintain) SearchLog::Maintain;
 %rename (outputDecision) SearchLog::OutputDecision;
 
-// Rename rules on LocalSearchMonitor.
+// LocalSearchMonitor
+%unignore LocalSearchMonitor;
+// Methods:
 %rename (beginAcceptNeighbor) LocalSearchMonitor::BeginAcceptNeighbor;
 %rename (beginFiltering) LocalSearchMonitor::BeginFiltering;
 %rename (beginFilterNeighbor) LocalSearchMonitor::BeginFilterNeighbor;
@@ -1243,7 +1304,9 @@ import java.util.function.Supplier;
 %rename (endMakeNextNeighbor) LocalSearchMonitor::EndMakeNextNeighbor;
 %rename (endOperatorStart) LocalSearchMonitor::EndOperatorStart;
 
-// Rename rules on PropagationMonitor.
+// PropagationMonitor
+%unignore PropagationMonitor;
+// Methods:
 %rename (beginConstraintInitialPropagation) PropagationMonitor::BeginConstraintInitialPropagation;
 %rename (beginDemonRun) PropagationMonitor::BeginDemonRun;
 %rename (beginNestedConstraintInitialPropagation) PropagationMonitor::BeginNestedConstraintInitialPropagation;
@@ -1275,27 +1338,38 @@ import java.util.function.Supplier;
 %rename (setStartRange) PropagationMonitor::SetStartRange;
 %rename (startProcessingIntegerVariable) PropagationMonitor::StartProcessingIntegerVariable;
 
-// Rename rules on IntVarLocalSearchHandler.
-%rename (addToAssignment) IntVarLocalSearchHandler::AddToAssignment;
-%rename (onAddVars) IntVarLocalSearchHandler::OnAddVars;
-%rename (onRevertChanges) IntVarLocalSearchHandler::OnRevertChanges;
-%rename (valueFromAssignent) IntVarLocalSearchHandler::ValueFromAssignent;
+// IntVarLocalSearchHandler
+%ignore IntVarLocalSearchHandler;
+// Methods:
+//%rename (addToAssignment) IntVarLocalSearchHandler::AddToAssignment;
+//%rename (onAddVars) IntVarLocalSearchHandler::OnAddVars;
+//%rename (onRevertChanges) IntVarLocalSearchHandler::OnRevertChanges;
+//%rename (valueFromAssignent) IntVarLocalSearchHandler::ValueFromAssignent;
+
+// SequenceVarLocalSearchHandler
+%ignore SequenceVarLocalSearchHandler;
+// Methods:
+//%rename (addToAssignment) SequenceVarLocalSearchHandler::AddToAssignment;
+//%rename (onAddVars) SequenceVarLocalSearchHandler::OnAddVars;
+//%rename (onRevertChanges) SequenceVarLocalSearchHandler::OnRevertChanges;
+//%rename (valueFromAssignent) SequenceVarLocalSearchHandler::ValueFromAssignent;
 
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;
+%unignore LocalSearchOperator;
+// Methods:
 %rename (nextNeighbor) LocalSearchOperator::MakeNextNeighbor;
 %rename (reset) LocalSearchOperator::Reset;
 %rename (start) LocalSearchOperator::Start;
 
 // VarLocalSearchOperator<>
+%unignore VarLocalSearchOperator;
 // Ignored:
-// - Start()
-// - SkipUnchanged()
-// - ApplyChanges()
-// - RevertChanges()
+%ignore VarLocalSearchOperator::Start;
 %ignore VarLocalSearchOperator::ApplyChanges;
 %ignore VarLocalSearchOperator::RevertChanges;
 %ignore VarLocalSearchOperator::SkipUnchanged;
+// Methods:
 %rename (size) VarLocalSearchOperator::Size;
 %rename (value) VarLocalSearchOperator::Value;
 %rename (isIncremental) VarLocalSearchOperator::IsIncremental;
@@ -1310,6 +1384,10 @@ import java.util.function.Supplier;
 
 // IntVarLocalSearchOperator
 %feature("director") IntVarLocalSearchOperator;
+%unignore IntVarLocalSearchOperator;
+// Ignored:
+%ignore IntVarLocalSearchOperator::MakeNextNeighbor;
+// Methods:
 %rename (size) IntVarLocalSearchOperator::Size;
 %rename (oneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
 %rename (value) IntVarLocalSearchOperator::Value;
@@ -1322,9 +1400,11 @@ import java.util.function.Supplier;
 %rename (activate) IntVarLocalSearchOperator::Activate;
 %rename (deactivate) IntVarLocalSearchOperator::Deactivate;
 %rename (addVars) IntVarLocalSearchOperator::AddVars;
-%ignore IntVarLocalSearchOperator::MakeNextNeighbor;
 
+// BaseLns
 %feature("director") BaseLns;
+%unignore BaseLns;
+// Methods:
 %rename (initFragments) BaseLns::InitFragments;
 %rename (nextFragment) BaseLns::NextFragment;
 %feature ("nodirector") BaseLns::OnStart;
@@ -1336,58 +1416,53 @@ import java.util.function.Supplier;
 
 // ChangeValue
 %feature("director") ChangeValue;
+%unignore ChangeValue;
+// Methods:
 %rename (modifyValue) ChangeValue::ModifyValue;
 
 // SequenceVarLocalSearchOperator
-// Ignored:
-// - Sequence()
-// - OldSequence()
-// - SetForwardSequence()
-// - SetBackwardSequence()
 %feature("director") SequenceVarLocalSearchOperator;
+%unignore SequenceVarLocalSearchOperator;
+// Ignored:
 %ignore SequenceVarLocalSearchOperator::OldSequence;
 %ignore SequenceVarLocalSearchOperator::Sequence;
 %ignore SequenceVarLocalSearchOperator::SetBackwardSequence;
 %ignore SequenceVarLocalSearchOperator::SetForwardSequence;
+// Methods:
 %rename (start) SequenceVarLocalSearchOperator::Start;
 
-// Rename rules on SequenceVarLocalSearchHandler.
-%rename (addToAssignment) SequenceVarLocalSearchHandler::AddToAssignment;
-%rename (onAddVars) SequenceVarLocalSearchHandler::OnAddVars;
-%rename (onRevertChanges) SequenceVarLocalSearchHandler::OnRevertChanges;
-%rename (valueFromAssignent) SequenceVarLocalSearchHandler::ValueFromAssignent;
-
-
 // PathOperator
-// Ignored:
-// - SkipUnchanged()
-// - Next()
-// - Path()
-// - number_of_nexts()
 %feature("director") PathOperator;
+%unignore PathOperator;
 %typemap(javaimports) PathOperator %{
 // Used to wrap start_empty_path_class
 // see
 // https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
 import java.util.function.LongToIntFunction;
 %}
+// Ignored:
 %ignore PathOperator::Next;
 %ignore PathOperator::Path;
 %ignore PathOperator::SkipUnchanged;
+%ignore PathOperator::number_of_nexts;
 %rename (neighbor) PathOperator::MakeNeighbor;
-// Protected methods
+// Methods:
 %rename (getBaseNodeRestartPosition) PathOperator::GetBaseNodeRestartPosition;
 %rename (initPosition) PathOperator::InitPosition;
 %rename (onSamePathAsPreviousBase) PathOperator::OnSamePathAsPreviousBase;
 %rename (restartAtPathStartOnSynchronize) PathOperator::RestartAtPathStartOnSynchronize;
 %rename (setNextBaseToIncrement) PathOperator::SetNextBaseToIncrement;
 
-// Rename rules on PathWithPreviousNodesOperator.
+// PathWithPreviousNodesOperator
+%unignore PathWithPreviousNodesOperator;
+// Methods:
 %rename (isPathStart) PathWithPreviousNodesOperator::IsPathStart;
 %rename (prev) PathWithPreviousNodesOperator::Prev;
 
 // LocalSearchFilter
 %feature("director") LocalSearchFilter;
+%unignore LocalSearchFilter;
+// Methods:
 %rename (accept) LocalSearchFilter::Accept;
 %rename (getAcceptedObjectiveValue) LocalSearchFilter::GetAcceptedObjectiveValue;
 %rename (getSynchronizedObjectiveValue) LocalSearchFilter::GetSynchronizedObjectiveValue;
@@ -1395,19 +1470,18 @@ import java.util.function.LongToIntFunction;
 %rename (synchronize) LocalSearchFilter::Synchronize;
 
 // IntVarLocalSearchFilter
-// Ignored:
-// - IsVarSynced()
 %feature("director") IntVarLocalSearchFilter;
-%feature("nodirector") IntVarLocalSearchFilter::Synchronize;  // Inherited.
-// Keep reference to FunctionalInterface to avoid GC to collect them early
+%unignore IntVarLocalSearchFilter;
 %typemap(javaimports) IntVarLocalSearchFilter %{
 // Used to wrap ObjectiveWatcher
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
 import java.util.function.LongConsumer;
 %}
+// Ignored:
 %ignore IntVarLocalSearchFilter::FindIndex;
 %ignore IntVarLocalSearchFilter::IsVarSynced;
-
+// Methods:
+%feature("nodirector") IntVarLocalSearchFilter::Synchronize;  // Inherited.
 %rename (addVars) IntVarLocalSearchFilter::AddVars;  // Inherited.
 %rename (injectObjectiveValue) IntVarLocalSearchFilter::InjectObjectiveValue;
 %rename (isIncremental) IntVarLocalSearchFilter::IsIncremental;
@@ -1417,8 +1491,17 @@ import java.util.function.LongConsumer;
 %rename (start) IntVarLocalSearchFilter::Start;
 %rename (value) IntVarLocalSearchFilter::Value;
 %rename (var) IntVarLocalSearchFilter::Var;  // Inherited.
+%extend IntVarLocalSearchFilter {
+  int index(IntVar* const var) {
+    int64 index = -1;
+    $self->FindIndex(var, &index);
+    return index;
+  }
+}
 
-// Demon.
+// Demon
+%unignore Demon;
+// Methods:
 %rename (run) Demon::Run;
 
 %define CONVERT_VECTOR(CType, JavaType)
@@ -1435,13 +1518,7 @@ CONVERT_VECTOR(operations_research::LocalSearchOperator, LocalSearchOperator);
 CONVERT_VECTOR(operations_research::LocalSearchFilter, LocalSearchFilter);
 CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker);
 
-%extend IntVarLocalSearchFilter {
-  int index(IntVar* const var) {
-    int64 index = -1;
-    $self->FindIndex(var, &index);
-    return index;
-  }
-}
+#undef CONVERT_VECTOR
 
 }  // namespace operations_research
 
@@ -1523,12 +1600,16 @@ PROTO2_RETURN(operations_research::SearchLimitParameters,
               com.google.ortools.constraintsolver.SearchLimitParameters)
 
 namespace operations_research {
-// IMPORTANT(corentinl): These functions from constraint_solveri.h are global, so in
-// java they are in the main.java (import com.[...].constraintsolver.main).
+
+// Globals
+// IMPORTANT(corentinl): Global will be placed in main.java
+// i.e. use `import com.[...].constraintsolver.main`
+// Ignored:
+%ignore FillValues;
+// Functions:
 %rename (areAllBooleans) AreAllBooleans;
 %rename (areAllBound) AreAllBound;
 %rename (areAllBoundTo) AreAllBoundTo;
-%rename (fillValues) FillValues;
 %rename (maxVarArray) MaxVarArray;
 %rename (minVarArray) MinVarArray;
 %rename (posIntDivDown) PosIntDivDown;
@@ -1551,5 +1632,5 @@ namespace operations_research {
 %template(RevBool) Rev<bool>;
 %template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
 %template(AssignmentIntervalContainer) AssignmentContainer<IntervalVar, IntervalVarElement>;
-%template(AssignmentSequenceContainer) AssignmentContainer<SequenceVar,SequenceVarElement>;
+%template(AssignmentSequenceContainer) AssignmentContainer<SequenceVar, SequenceVarElement>;
 }  // namespace operations_research
