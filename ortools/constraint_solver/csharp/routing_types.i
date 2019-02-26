@@ -54,8 +54,9 @@
 %}
 
 // Convert std::vector<IndexT> to/from int arrays.
-VECTOR_AS_CSHARP_ARRAY(IndexT, int, int);
-MATRIX_AS_CSHARP_ARRAY(IndexT, int, int);
+VECTOR_AS_CSHARP_ARRAY(IndexT, int, int, CpIntVector);
+// Convert std::vector<std::vector<IndexT>> to/from two-dimensional int arrays.
+MATRIX_AS_CSHARP_ARRAY(IndexT, int, int, CpIntVectorVector);
 
 %enddef  // DEFINE_INDEX_TYPE
 
