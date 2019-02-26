@@ -40,7 +40,7 @@
   $1 = IndexT($input);
 }
 %typemap(out) IndexT {
-  $result = (jlong)$1.value();
+  $result = (jint)$1.value();
 }
 
 // Convert std::vector<IndexT> to/from int arrays.
