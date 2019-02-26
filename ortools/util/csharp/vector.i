@@ -27,9 +27,6 @@
 #include "ortools/base/integral_types.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 // Typemaps to represent const std::vector<TYPE>& arguments as arrays of
 // CSHARPTYPE.
 %define VECTOR_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE)
