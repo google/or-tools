@@ -88,7 +88,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
     int64 route_load{0};
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
-      int64 node_index = manager.IndexToNode(index).value();
+      int node_index = manager.IndexToNode(index).value();
       route_load += data.demands[node_index];
       route << node_index << " Load(" << route_load << ") -> ";
       int64 previous_index = index;
@@ -132,8 +132,8 @@ void VrpCapacity() {
   const int transit_callback_index = routing.RegisterTransitCallback(
       [&data, &manager](int64 from_index, int64 to_index) -> int64 {
         // Convert from routing variable Index to distance matrix NodeIndex.
-        auto from_node = manager.IndexToNode(from_index).value();
-        auto to_node = manager.IndexToNode(to_index).value();
+        int from_node = manager.IndexToNode(from_index).value();
+        int to_node = manager.IndexToNode(to_index).value();
         return data.distance_matrix[from_node][to_node];
       });
   // [END transit_callback]
@@ -148,7 +148,7 @@ void VrpCapacity() {
   const int demand_callback_index = routing.RegisterUnaryTransitCallback(
       [&data, &manager](int64 from_index) -> int64 {
         // Convert from routing variable Index to demand NodeIndex.
-        auto from_node = manager.IndexToNode(from_index).value();
+        int from_node = manager.IndexToNode(from_index).value();
         return data.demands[from_node];
       });
   routing.AddDimensionWithVehicleCapacity(
