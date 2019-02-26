@@ -21,23 +21,32 @@ MPSolver::ResultStatus GlopToMPSolverResultStatus(glop::ProblemStatus s) {
       return MPSolver::OPTIMAL;
     case glop::ProblemStatus::PRIMAL_FEASIBLE:
       return MPSolver::FEASIBLE;
-    case glop::ProblemStatus::PRIMAL_INFEASIBLE:  // PASS_THROUGH_INTENDED
+
+    // Note(user): MPSolver does not have the equivalent of
+    // INFEASIBLE_OR_UNBOUNDED however UNBOUNDED is almost never relevant in
+    // applications, so we decided to report this status as INFEASIBLE since
+    // it should almost always be the case. Historically, we where reporting
+    // ABNORMAL, but that was more confusing than helpful.
+    //
+    // TODO(user): We could argue that it is infeasible to find the optimal of
+    // an unbounded problem. So it might just be simpler to completely get rid
+    // of the MpSolver::UNBOUNDED status that seems to never be used
+    // programmatically.
+    case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:  // PASS_THROUGH_INTENDED
+    case glop::ProblemStatus::PRIMAL_INFEASIBLE:        // PASS_THROUGH_INTENDED
     case glop::ProblemStatus::DUAL_UNBOUNDED:
       return MPSolver::INFEASIBLE;
+
+    case glop::ProblemStatus::DUAL_INFEASIBLE:  // PASS_THROUGH_INTENDED
     case glop::ProblemStatus::PRIMAL_UNBOUNDED:
       return MPSolver::UNBOUNDED;
+
     case glop::ProblemStatus::DUAL_FEASIBLE:  // PASS_THROUGH_INTENDED
     case glop::ProblemStatus::INIT:
       return MPSolver::NOT_SOLVED;
-    // TODO(user): Glop may return ProblemStatus::DUAL_INFEASIBLE or
-    // ProblemStatus::INFEASIBLE_OR_UNBOUNDED.
-    // Unfortunatley, the wrapper does not support this return status at this
-    // point (even though Cplex and Gurobi have the equivalent). So we convert
-    // it to MPSolver::ABNORMAL instead.
-    case glop::ProblemStatus::DUAL_INFEASIBLE:          // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::ABNORMAL:                 // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::IMPRECISE:                // PASS_THROUGH_INTENDED
+
+    case glop::ProblemStatus::ABNORMAL:   // PASS_THROUGH_INTENDED
+    case glop::ProblemStatus::IMPRECISE:  // PASS_THROUGH_INTENDED
     case glop::ProblemStatus::INVALID_PROBLEM:
       return MPSolver::ABNORMAL;
   }
