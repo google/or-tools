@@ -139,9 +139,12 @@ bool Domain::IsEmpty() const { return intervals_.empty(); }
 int64 Domain::Size() const {
   int64 size = 0;
   for (const ClosedInterval interval : intervals_) {
-    size += operations_research::CapAdd(
-        1, operations_research::CapSub(interval.end, interval.start));
+    size = operations_research::CapAdd(
+        size, operations_research::CapSub(interval.end, interval.start));
   }
+  // Because the intervals are closed on both side above, with miss 1 per
+  // interval.
+  size = operations_research::CapAdd(size, intervals_.size());
   return size;
 }
 

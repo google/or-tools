@@ -61,6 +61,18 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
       }
     }
   }
+
+  type_to_constraints_.clear();
+  const int num_constraints = model_proto_.constraints_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const int type = model_proto_.constraints(c).constraint_case();
+    CHECK_GE(type, 0) << "Negative constraint case ??";
+    CHECK_LT(type, 10000) << "Large constraint case ??";
+    if (type >= type_to_constraints_.size()) {
+      type_to_constraints_.resize(type + 1);
+    }
+    type_to_constraints_[type].push_back(c);
+  }
 }
 
 bool NeighborhoodGeneratorHelper::IsActive(int var) const {
@@ -111,20 +123,26 @@ CpModelProto NeighborhoodGeneratorHelper::RelaxGivenVariables(
   return FixGivenVariables(initial_solution, fixed_variables);
 }
 
-CpModelProto SimpleNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, int64 seed,
-    double difficulty) const {
+namespace {
+
+void GetRandomSubset(int seed, double relative_size, std::vector<int>* base) {
   random_engine_t random;
   random.seed(seed);
 
   // TODO(user): we could generate this more efficiently than using random
   // shuffle.
-  std::vector<int> fixed_variables = helper_.ActiveVariables();
+  std::shuffle(base->begin(), base->end(), random);
+  const int target_size = std::ceil(relative_size * base->size());
+  base->resize(target_size);
+}
 
-  std::shuffle(fixed_variables.begin(), fixed_variables.end(), random);
-  const int target_size =
-      std::ceil((1.0 - difficulty) * fixed_variables.size());
-  fixed_variables.resize(target_size);
+}  // namespace
+
+CpModelProto SimpleNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, int64 seed,
+    double difficulty) const {
+  std::vector<int> fixed_variables = helper_.ActiveVariables();
+  GetRandomSubset(seed, 1.0 - difficulty, &fixed_variables);
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
 }
 
@@ -240,6 +258,92 @@ CpModelProto ConstraintGraphNeighborhoodGenerator::Generate(
     }
   }
   return helper_.RelaxGivenVariables(initial_solution, relaxed_variables);
+}
+
+CpModelProto SchedulingNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, int64 seed,
+    double difficulty) const {
+  std::set<int> intervals_to_relax;
+  {
+    const auto span = helper_.TypeToConstraints(ConstraintProto::kInterval);
+    std::vector<int> v(span.begin(), span.end());
+    GetRandomSubset(seed, difficulty, &v);
+    intervals_to_relax.insert(v.begin(), v.end());
+  }
+
+  CpModelProto copy = helper_.ModelProto();
+
+  // Fix the presence/absence of non-relaxed intervals.
+  for (const int i : helper_.TypeToConstraints(ConstraintProto::kInterval)) {
+    if (intervals_to_relax.count(i)) continue;
+
+    const ConstraintProto& interval_ct = copy.constraints(i);
+    if (interval_ct.enforcement_literal().empty()) continue;
+
+    CHECK_EQ(interval_ct.enforcement_literal().size(), 1);
+    const int enforcement_ref = interval_ct.enforcement_literal(0);
+    const int enforcement_var = PositiveRef(enforcement_ref);
+    const int value = initial_solution.solution(enforcement_var);
+
+    // Fix the value.
+    copy.mutable_variables(enforcement_var)->clear_domain();
+    copy.mutable_variables(enforcement_var)->add_domain(value);
+    copy.mutable_variables(enforcement_var)->add_domain(value);
+
+    // If the interval is ignored, skip for the loop below as there is no
+    // point adding precedence on it.
+    if (RefIsPositive(enforcement_ref) == (value == 0)) {
+      intervals_to_relax.insert(i);
+    }
+  }
+
+  for (const int c : helper_.TypeToConstraints(ConstraintProto::kNoOverlap)) {
+    // Sort all non-relaxed intervals of this constraint by current start time.
+    std::vector<std::pair<int64, int>> start_interval_pairs;
+    for (const int i : copy.constraints(c).no_overlap().intervals()) {
+      if (intervals_to_relax.count(i)) continue;
+      const ConstraintProto& interval_ct = copy.constraints(i);
+
+      // TODO(user): we ignore size zero for now.
+      const int size_var = interval_ct.interval().size();
+      if (initial_solution.solution(size_var) == 0) continue;
+
+      const int start_var = interval_ct.interval().start();
+      const int64 start_value = initial_solution.solution(start_var);
+      start_interval_pairs.push_back({start_value, i});
+    }
+    std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
+
+    // Add precedence between the remaining intervals, forcing their order.
+    for (int i = 0; i + 1 < start_interval_pairs.size(); ++i) {
+      const int before_var =
+          copy.constraints(start_interval_pairs[i].second).interval().end();
+      const int after_var = copy.constraints(start_interval_pairs[i + 1].second)
+                                .interval()
+                                .start();
+      CHECK_LE(initial_solution.solution(before_var),
+               initial_solution.solution(after_var));
+
+      LinearConstraintProto* linear = copy.add_constraints()->mutable_linear();
+      linear->add_domain(kint64min);
+      linear->add_domain(0);
+      linear->add_vars(before_var);
+      linear->add_coeffs(1);
+      linear->add_vars(after_var);
+      linear->add_coeffs(-1);
+    }
+  }
+
+  // Set the current solution as a hint.
+  //
+  // TODO(user): Move to common function?
+  copy.clear_solution_hint();
+  for (int var = 0; var < copy.variables_size(); ++var) {
+    copy.mutable_solution_hint()->add_vars(var);
+    copy.mutable_solution_hint()->add_values(initial_solution.solution(var));
+  }
+
+  return copy;
 }
 
 }  // namespace sat

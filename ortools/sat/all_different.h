@@ -24,7 +24,6 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -140,14 +139,11 @@ class AllDifferentConstraint : PropagatorInterface {
 // deduce that the domain of the other variables cannot contains such Hall
 // interval.
 //
-// We use a "simple" O(n log n) algorithm.
+// We use a "fast" O(n log n) algorithm.
 //
-// TODO(user): implement the faster algorithm described in:
+// TODO(user): It might be difficult to find something faster than what is
+// implemented here. Some related reference:
 // https://cs.uwaterloo.ca/~vanbeek/Publications/ijcai03_TR.pdf
-// Note that the algorithms are similar, the gain comes by replacing our
-// SortedDisjointIntervalList with a more customized class for our operations.
-// It is even possible to get an O(n) complexity if the values of the bounds are
-// in a range of size O(n).
 class AllDifferentBoundsPropagator : public PropagatorInterface {
  public:
   AllDifferentBoundsPropagator(const std::vector<IntegerVariable>& vars,
@@ -157,36 +153,71 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  // We locally cache the lb/ub for faster sorting and to guarantee some
+  // invariant when we push bounds.
+  struct VarValue {
+    IntegerVariable var;
+    IntegerValue lb;
+    IntegerValue ub;
+  };
+
   // Fills integer_reason_ with the reason why we have the given hall interval.
   void FillHallReason(IntegerValue hall_lb, IntegerValue hall_ub);
 
-  // Do half the job of Propagate().
+  // Do half the job of Propagate(). This will split the variable into
+  // independent subset, and call PropagateLowerBoundsInternal() on each of
+  // them.
   bool PropagateLowerBounds();
+  bool PropagateLowerBoundsInternal(IntegerValue min_lb,
+                                    absl::Span<VarValue> vars);
 
-  std::vector<IntegerVariable> vars_;
-  std::vector<IntegerVariable> negated_vars_;
+  // Internally, we will maintain a set of non-consecutive integer intervals of
+  // the form [start, end]. Each point (i.e. IntegerValue) of such interval will
+  // be associated to an unique variable and via an union-find algorithm point
+  // to its start. The end only make sense for representative.
+  //
+  // TODO(user): Because we don't use rank, we have a worst case complexity of
+  // O(n log n). We could try a normal Union-find data structure, but then we
+  // also have to maintain a start vector.
+  //
+  // Note that during the execution of the algorithm we start from empty
+  // intervals and finish with a set of points of size num_vars.
+  //
+  // The list of all points are maintained in the dense vectors index_to_*_
+  // where we have remapped values to indices (with GetIndex()) to make sure it
+  // always fall into the correct range.
+  int FindStartIndexAndCompressPath(int index);
+
+  int GetIndex(IntegerValue value) const {
+    DCHECK_GE(value, base_);
+    DCHECK_LT(value - base_, index_to_start_index_.size());
+    return (value - base_).value();
+  }
+
+  IntegerValue GetValue(int index) const { return base_ + IntegerValue(index); }
+
+  bool PointIsPresent(int index) const {
+    return index_to_var_[index] != kNoIntegerVariable;
+  }
+
   IntegerTrail* integer_trail_;
 
-  // The sets of "critical" intervals. This has the same meaning as in the
-  // disjunctive constraint.
-  SortedDisjointIntervalList critical_intervals_;
+  // These vector will be either sorted by lb or by ub.
+  std::vector<VarValue> vars_;
+  std::vector<VarValue> negated_vars_;
 
   // The list of Hall intervalls detected so far, sorted.
   std::vector<IntegerValue> hall_starts_;
   std::vector<IntegerValue> hall_ends_;
 
-  // Members needed for explaining the propagation.
-  //
-  // The IntegerVariable in an hall interval [lb, ub] are the variables with key
-  // in [lb, ub] in this map. Note(user): if the set of bounds is small, we
-  // could use a std::vector here. The O(ub - lb) to create the reason is fine
-  // since this is the size of the reason.
-  //
-  // Optimization: we only insert the entry in the map lazily when the reason
-  // is needed.
-  int64 num_calls_;
-  std::vector<std::pair<int64, IntegerVariable>> to_insert_;
-  absl::flat_hash_map<int64, IntegerVariable> value_to_variable_;
+  // Non-consecutive intervals related data-structures.
+  IntegerValue base_;
+  std::vector<int> indices_to_clear_;
+  std::vector<int> index_to_start_index_;
+  std::vector<int> index_to_end_index_;
+  std::vector<IntegerVariable> index_to_var_;
+
+  // Temporary integer reason.
   std::vector<IntegerLiteral> integer_reason_;
 
   DISALLOW_COPY_AND_ASSIGN(AllDifferentBoundsPropagator);

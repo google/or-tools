@@ -497,9 +497,9 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
     absl::StrAppend(&result, "\nobjective: NA");
     absl::StrAppend(&result, "\nbest_bound: NA");
   } else {
-    absl::StrAppendFormat(&result, "\nobjective: %g",
+    absl::StrAppendFormat(&result, "\nobjective: %.9g",
                           response.objective_value());
-    absl::StrAppendFormat(&result, "\nbest_bound: %g",
+    absl::StrAppendFormat(&result, "\nbest_bound: %.9g",
                           response.best_objective_bound());
   }
 
@@ -513,10 +513,10 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
                   "\npropagations: ", response.num_binary_propagations());
   absl::StrAppend(
       &result, "\ninteger_propagations: ", response.num_integer_propagations());
-  absl::StrAppendFormat(&result, "\nwalltime: %g", response.wall_time());
-  absl::StrAppendFormat(&result, "\nusertime: %g", response.user_time());
-  absl::StrAppendFormat(&result, "\ndeterministic_time: %g",
-                        response.deterministic_time());
+  absl::StrAppend(&result, "\nwalltime: ", response.wall_time());
+  absl::StrAppend(&result, "\nusertime: ", response.user_time());
+  absl::StrAppend(&result,
+                  "\ndeterministic_time: ", response.deterministic_time());
   absl::StrAppend(&result, "\n");
   return result;
 }
@@ -1900,8 +1900,16 @@ CpSolverResponse SolveCpModelWithLNS(
   const bool focus_on_decision_variables =
       parameters->lns_focus_on_decision_variables();
 
+  // TODO(user): Find a way to propagate the level zero bounds from the other
+  // worker inside this base LNS problem.
+  const NeighborhoodGeneratorHelper helper(&model_proto,
+                                           focus_on_decision_variables);
+
   // For now we will just alternate between our possible neighborhoods.
-  NeighborhoodGeneratorHelper helper(&model_proto, focus_on_decision_variables);
+  //
+  // TODO(user): select with higher probability the one that seems to work best?
+  // We can evaluate this compared to the best solution at the time of the
+  // neighborhood creation.
   std::vector<std::unique_ptr<NeighborhoodGenerator>> generators;
   generators.push_back(
       absl::make_unique<SimpleNeighborhoodGenerator>(&helper, "rnd_lns"));
@@ -1909,9 +1917,17 @@ CpSolverResponse SolveCpModelWithLNS(
       &helper, "var_lns"));
   generators.push_back(absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
       &helper, "cst_lns"));
+  if (!helper.TypeToConstraints(ConstraintProto::kNoOverlap).empty()) {
+    generators.push_back(absl::make_unique<SchedulingNeighborhoodGenerator>(
+        &helper, "scheduling_lns"));
+  }
 
   // The "optimal" difficulties do not have to be the same for different
-  // generators. TODO(user): move this inside the generator API?
+  // generators.
+  //
+  // TODO(user): This should be shared across LNS threads! create a thread
+  // safe class that accept signals of the form (difficulty and result) and
+  // properly update the difficulties.
   std::vector<AdaptiveParameterValue> difficulties(generators.size(),
                                                    AdaptiveParameterValue(0.5));
 

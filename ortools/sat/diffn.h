@@ -52,11 +52,7 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
                                              const std::vector<int>& boxes,
                                              SchedulingConstraintHelper* active,
                                              SchedulingConstraintHelper* other);
-  bool NaivePush(bool time_direction, IntegerValue other_time,
-                 const absl::flat_hash_set<int>& boxes,
-                 SchedulingConstraintHelper* helper,
-                 SchedulingConstraintHelper* other_helper);
-  void UpdateNeighbors(int box);
+  void SortNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);
 
   const int num_boxes_;
@@ -65,13 +61,7 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
   const bool strict_;
   IntegerTrail* integer_trail_;
 
-  // The neighbors_ of a box will be in
-  // [neighbors_[begin[box]], neighbors_[end[box]])
   std::vector<int> neighbors_;
-  std::vector<int> neighbors_begins_;
-  std::vector<int> neighbors_ends_;
-  std::vector<int> tmp_removed_;
-
   std::vector<IntegerValue> cached_areas_;
   std::vector<IntegerValue> cached_distance_to_bounding_box_;
 

@@ -503,8 +503,8 @@ SparseVector<IndexType, IteratorType>::SparseVector(const SparseVector& other) {
 }
 
 template <typename IndexType, typename IteratorType>
-SparseVector<IndexType, IteratorType>& SparseVector<IndexType, IteratorType>::
-operator=(const SparseVector& other) {
+SparseVector<IndexType, IteratorType>&
+SparseVector<IndexType, IteratorType>::operator=(const SparseVector& other) {
   PopulateFromSparseVector(other);
   return *this;
 }

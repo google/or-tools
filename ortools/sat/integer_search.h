@@ -17,10 +17,23 @@
 #include <vector>
 
 #include "ortools/sat/integer.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {
 namespace sat {
+
+// Returns decision corresponding to var at its lower bound. Returns
+// kNoLiteralIndex if the variable is fixed.
+LiteralIndex AtMinValue(IntegerVariable var, Model* model);
+
+// Returns decision corresponding to var <= round(lp_value). If the variable
+// does not appear in the LP, this method returns kNoLiteralIndex.
+LiteralIndex SplitDomainUsingLpValue(IntegerVariable var, Model* model);
+
+// Returns decision corresponding to var >= lb + max(1, (ub - lb) / 2). It also
+// CHECKs that the variable is not fixed.
+LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model);
 
 // Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Returns a
 // function that will return the literal corresponding to the fact that the
@@ -74,6 +87,11 @@ std::function<LiteralIndex()> PseudoCost(Model* model);
 // appear in the LP relaxation.
 std::function<LiteralIndex()> ExploitLpSolution(
     std::function<LiteralIndex()> heuristic, Model* model);
+
+// Similar to ExploitLpSolution(). Takes LiteralIndex as base decision and
+// changes change the returned decision to AtLpValue() of the underlying integer
+// variable if LP solution is exploitable.
+LiteralIndex ExploitLpSolution(const LiteralIndex decision, Model* model);
 
 // A restart policy that restarts every k failures.
 std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver);

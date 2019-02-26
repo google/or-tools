@@ -16,6 +16,7 @@
 
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
 
@@ -60,6 +61,13 @@ class NeighborhoodGeneratorHelper {
     return var_to_constraint_;
   }
 
+  // Returns all the constraints indices of a given type.
+  const absl::Span<const int> TypeToConstraints(
+      ConstraintProto::ConstraintCase type) const {
+    if (type >= type_to_constraints_.size()) return {};
+    return absl::MakeSpan(type_to_constraints_[type]);
+  }
+
   // The initial problem.
   const CpModelProto& ModelProto() const { return model_proto_; }
 
@@ -68,6 +76,9 @@ class NeighborhoodGeneratorHelper {
   bool IsConstant(int var) const;
 
   const CpModelProto& model_proto_;
+
+  // Constraints by types.
+  std::vector<std::vector<int>> type_to_constraints_;
 
   // Variable-Constraint graph.
   std::vector<std::vector<int>> constraint_to_var_;
@@ -146,6 +157,21 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit ConstraintGraphNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
+  CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
+                        double difficulty) const final;
+};
+
+// Only make sense for scheduling problem. This select a random set of interval
+// of the problem according to the difficulty. Then, for each no_overlap
+// constraints, it adds strict relation order between the non-relaxed intervals.
+//
+// TODO(user): Also deal with cumulative constraint.
+class SchedulingNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit SchedulingNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
   CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 };

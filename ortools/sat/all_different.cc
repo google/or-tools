@@ -56,7 +56,8 @@ std::function<void(Model*)> AllDifferentBinary(
 std::function<void(Model*)> AllDifferentOnBounds(
     const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
-    AllDifferentBoundsPropagator* constraint = new AllDifferentBoundsPropagator(
+    if (vars.empty()) return;
+    auto* constraint = new AllDifferentBoundsPropagator(
         vars, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
@@ -407,14 +408,22 @@ bool AllDifferentConstraint::Propagate() {
 
 AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
     const std::vector<IntegerVariable>& vars, IntegerTrail* integer_trail)
-    : vars_(vars), integer_trail_(integer_trail), num_calls_(0) {
+    : integer_trail_(integer_trail) {
+  CHECK(!vars.empty());
+
+  // We need +2 for sentinels.
+  const int capacity = vars.size() + 2;
+  index_to_start_index_.resize(capacity);
+  index_to_end_index_.resize(capacity);
+  index_to_var_.resize(capacity, kNoIntegerVariable);
+
   for (int i = 0; i < vars.size(); ++i) {
-    negated_vars_.push_back(NegationOf(vars_[i]));
+    vars_.push_back({vars[i]});
+    negated_vars_.push_back({NegationOf(vars[i])});
   }
 }
 
 bool AllDifferentBoundsPropagator::Propagate() {
-  if (vars_.empty()) return true;
   if (!PropagateLowerBounds()) return false;
 
   // Note that it is not required to swap back vars_ and negated_vars_.
@@ -425,77 +434,183 @@ bool AllDifferentBoundsPropagator::Propagate() {
   return result;
 }
 
-// TODO(user): we could gain by pushing all the new bound at the end, so that
-// we just have to sort to_insert_ once.
 void AllDifferentBoundsPropagator::FillHallReason(IntegerValue hall_lb,
                                                   IntegerValue hall_ub) {
-  for (auto entry : to_insert_) {
-    value_to_variable_[entry.first] = entry.second;
-  }
-  to_insert_.clear();
   integer_reason_.clear();
-  for (int64 v = hall_lb.value(); v <= hall_ub; ++v) {
-    const IntegerVariable var = gtl::FindOrDie(value_to_variable_, v);
+  const int limit = GetIndex(hall_ub);
+  for (int i = GetIndex(hall_lb); i <= limit; ++i) {
+    const IntegerVariable var = index_to_var_[i];
     integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, hall_lb));
     integer_reason_.push_back(IntegerLiteral::LowerOrEqual(var, hall_ub));
   }
 }
 
-bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
-  ++num_calls_;
-  critical_intervals_.clear();
-  hall_starts_.clear();
-  hall_ends_.clear();
-
-  to_insert_.clear();
-  if (num_calls_ % 20 == 0) {
-    // We don't really need to clear this, but we do from time to time to
-    // save memory (in case the variable domains are huge). This optimization
-    // helps a bit.
-    value_to_variable_.clear();
+int AllDifferentBoundsPropagator::FindStartIndexAndCompressPath(int index) {
+  // First, walk the pointer until we find one pointing to itself.
+  int start_index = index;
+  while (true) {
+    const int next = index_to_start_index_[start_index];
+    if (start_index == next) break;
+    start_index = next;
   }
 
-  // Loop over the variables by increasing ub.
-  IncrementalSort(
-      vars_.begin(), vars_.end(), [this](IntegerVariable a, IntegerVariable b) {
-        return integer_trail_->UpperBound(a) < integer_trail_->UpperBound(b);
-      });
-  for (const IntegerVariable var : vars_) {
-    const IntegerValue lb = integer_trail_->LowerBound(var);
+  // Second, redo the same thing and make everyone point to the representative.
+  while (true) {
+    const int next = index_to_start_index_[index];
+    if (start_index == next) break;
+    index_to_start_index_[index] = start_index;
+    index = next;
+  }
+  return start_index;
+}
 
-    // Check if lb is in an Hall interval, and push it if this is the case.
-    const int hall_index =
-        std::lower_bound(hall_ends_.begin(), hall_ends_.end(), lb) -
-        hall_ends_.begin();
-    if (hall_index < hall_ends_.size() && hall_starts_[hall_index] <= lb) {
-      const IntegerValue hs = hall_starts_[hall_index];
-      const IntegerValue he = hall_ends_[hall_index];
-      FillHallReason(hs, he);
-      integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, hs));
-      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(var, he + 1),
-                                   /*literal_reason=*/{}, integer_reason_)) {
+bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
+  // Start by filling the cached bounds and sorting by increasing lb.
+  for (VarValue& entry : vars_) {
+    entry.lb = integer_trail_->LowerBound(entry.var);
+    entry.ub = integer_trail_->UpperBound(entry.var);
+  }
+  IncrementalSort(vars_.begin(), vars_.end(),
+                  [](VarValue a, VarValue b) { return a.lb < b.lb; });
+
+  // We will split the variable in vars sorted by lb in contiguous subset with
+  // index of the form [start, start + num_in_window).
+  int start = 0;
+  int num_in_window = 1;
+
+  // Minimum lower bound in the current window.
+  IntegerValue min_lb = vars_.front().lb;
+
+  const int size = vars_.size();
+  for (int i = 1; i < size; ++i) {
+    const IntegerValue lb = vars_[i].lb;
+
+    // If the lower bounds of all the other variables is greater, then it can
+    // never fall into a potential hall interval formed by the variable in the
+    // current window, so we can split the problem into independent parts.
+    if (lb <= min_lb + IntegerValue(num_in_window - 1)) {
+      ++num_in_window;
+      continue;
+    }
+
+    // Process the current window.
+    if (num_in_window > 1) {
+      absl::Span<VarValue> window(&vars_[start], num_in_window);
+      if (!PropagateLowerBoundsInternal(min_lb, window)) {
         return false;
       }
     }
 
-    // Updates critical_intervals_. Note that we use the old lb, but that
-    // doesn't change the value of newly_covered. This block is what takes the
-    // most time.
-    int64 newly_covered;
-    const auto it =
-        critical_intervals_.GrowRightByOne(lb.value(), &newly_covered);
-    to_insert_.push_back({newly_covered, var});
-    const IntegerValue end(it->end);
+    // Start of the next window.
+    start = i;
+    num_in_window = 1;
+    min_lb = lb;
+  }
+
+  // Take care of the last window.
+  if (num_in_window > 1) {
+    absl::Span<VarValue> window(&vars_[start], num_in_window);
+    return PropagateLowerBoundsInternal(min_lb, window);
+  }
+
+  return true;
+}
+
+bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
+    IntegerValue min_lb, absl::Span<VarValue> vars) {
+  hall_starts_.clear();
+  hall_ends_.clear();
+
+  // All cached lb in vars will be in [min_lb, min_lb + vars_.size()).
+  // Make sure we change our base_ so that GetIndex() fit in our buffers.
+  base_ = min_lb - IntegerValue(1);
+
+  // Sparse cleaning of value_to_nodes_.
+  for (const int i : indices_to_clear_) {
+    index_to_var_[i] = kNoIntegerVariable;
+  }
+  indices_to_clear_.clear();
+
+  // Sort vars by increasing ub.
+  std::sort(vars.begin(), vars.end(),
+            [](VarValue a, VarValue b) { return a.ub < b.ub; });
+  for (const VarValue entry : vars) {
+    const IntegerVariable var = entry.var;
+
+    // Note that it is important to use the cache to make sure GetIndex() is
+    // not out of bound in case integer_trail_->LowerBound() changed when we
+    // pushed something.
+    const IntegerValue lb = entry.lb;
+    const int lb_index = GetIndex(lb);
+    const bool value_is_covered = PointIsPresent(lb_index);
+
+    // Check if lb is in an Hall interval, and push it if this is the case.
+    if (value_is_covered) {
+      const int hall_index =
+          std::lower_bound(hall_ends_.begin(), hall_ends_.end(), lb) -
+          hall_ends_.begin();
+      if (hall_index < hall_ends_.size() && hall_starts_[hall_index] <= lb) {
+        const IntegerValue hs = hall_starts_[hall_index];
+        const IntegerValue he = hall_ends_[hall_index];
+        FillHallReason(hs, he);
+        integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, hs));
+        if (!integer_trail_->Enqueue(
+                IntegerLiteral::GreaterOrEqual(var, he + 1),
+                /*literal_reason=*/{}, integer_reason_)) {
+          return false;
+        }
+      }
+    }
+
+    // Update our internal representation of the non-consecutive intervals.
+    //
+    // If lb is not used, we add a node there, otherwise we add it to the
+    // right of the interval that contains lb. In both cases, if there is an
+    // interval to the left (resp. right) we merge them.
+    int new_index = lb_index;
+    int start_index = lb_index;
+    int end_index = lb_index;
+    if (value_is_covered) {
+      start_index = FindStartIndexAndCompressPath(new_index);
+      new_index = index_to_end_index_[start_index] + 1;
+      end_index = new_index;
+    } else {
+      if (PointIsPresent(new_index - 1)) {
+        start_index = FindStartIndexAndCompressPath(new_index - 1);
+      }
+    }
+    if (PointIsPresent(new_index + 1)) {
+      end_index = index_to_end_index_[new_index + 1];
+      index_to_start_index_[new_index + 1] = start_index;
+    }
+
+    // Update the end of the representative.
+    index_to_end_index_[start_index] = end_index;
+
+    // This is the only place where we "add" a new node.
+    {
+      index_to_start_index_[new_index] = start_index;
+      index_to_var_[new_index] = var;
+      indices_to_clear_.push_back(new_index);
+    }
 
     // We cannot have a conflict, because it should have beend detected before
     // by pushing an interval lower bound past its upper bound.
+    //
+    // TODO(user): Not 100% clear since pushing can have side-effect, maybe we
+    // should just report the conflict if it happens!
+    const IntegerValue end = GetValue(end_index);
     DCHECK_LE(end, integer_trail_->UpperBound(var));
 
     // If we have a new Hall interval, add it to the set. Note that it will
     // always be last, and if it overlaps some previous Hall intervals, it
     // always overlaps them fully.
-    if (end == integer_trail_->UpperBound(var)) {
-      const IntegerValue start(it->start);
+    //
+    // Note: It is okay to not use entry.ub here if we want to fetch the last
+    // value, but in practice it shouldn't really change when we push a
+    // lower_bound and it is faster to use the cached entry.
+    if (end == entry.ub) {
+      const IntegerValue start = GetValue(start_index);
       while (!hall_starts_.empty() && start <= hall_starts_.back()) {
         hall_starts_.pop_back();
         hall_ends_.pop_back();
@@ -511,8 +626,8 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
 void AllDifferentBoundsPropagator::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  for (const IntegerVariable& var : vars_) {
-    watcher->WatchIntegerVariable(var, id);
+  for (const VarValue entry : vars_) {
+    watcher->WatchIntegerVariable(entry.var, id);
   }
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }

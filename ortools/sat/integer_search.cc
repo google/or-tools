@@ -25,25 +25,94 @@
 namespace operations_research {
 namespace sat {
 
+LiteralIndex AtMinValue(IntegerVariable var, Model* model) {
+  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  DCHECK(!integer_trail->IsCurrentlyIgnored(var));
+  const IntegerValue lb = integer_trail->LowerBound(var);
+  DCHECK_LE(lb, integer_trail->UpperBound(var));
+  if (lb == integer_trail->UpperBound(var)) return kNoLiteralIndex;
+  return integer_encoder
+      ->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(var, lb))
+      .Index();
+}
+
+LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* trail = model->GetOrCreate<Trail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const IntegerValue var_lb = integer_trail->LowerBound(var);
+  const IntegerValue var_ub = integer_trail->UpperBound(var);
+  CHECK_LT(var_lb, var_ub);
+
+  const IntegerValue chosen_value =
+      var_lb + std::max(IntegerValue(1), (var_ub - var_lb) / IntegerValue(2));
+  const Literal ge = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, chosen_value));
+  CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
+  VLOG(2) << "Chosen " << var << " >= " << chosen_value;
+  return ge.Index();
+}
+
+LiteralIndex SplitDomainUsingLpValue(IntegerVariable var, Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* trail = model->GetOrCreate<Trail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
+
+  const IntegerVariable positive_var =
+      VariableIsPositive(var) ? var : NegationOf(var);
+  DCHECK(!integer_trail->IsCurrentlyIgnored(positive_var));
+  LinearProgrammingConstraint* lp =
+      gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+  if (lp == nullptr) return kNoLiteralIndex;
+  const IntegerValue value = IntegerValue(
+      static_cast<int64>(std::round(lp->GetSolutionValue(positive_var))));
+
+  // Because our lp solution might be from higher up in the tree, it
+  // is possible that value is now outside the domain of positive_var.
+  // In this case, we just revert to the current literal.
+  const IntegerValue lb = integer_trail->LowerBound(positive_var);
+  const IntegerValue ub = integer_trail->UpperBound(positive_var);
+
+  // We try first (<= value), but if this do not reduce the domain we
+  // try to enqueue (>= value). Note that even for domain with hole,
+  // since we know that this variable is not fixed, one of the two
+  // alternative must reduce the domain.
+  //
+  // TODO(user): use GetOrCreateLiteralAssociatedToEquality() instead?
+  // It may replace two decision by only one. However this function
+  // cannot currently be called during search, but that should be easy
+  // enough to fix.
+  if (value >= lb && value < ub) {
+    const Literal le = encoder->GetOrCreateAssociatedLiteral(
+        IntegerLiteral::LowerOrEqual(positive_var, value));
+    CHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
+    return le.Index();
+  }
+  if (value > lb && value <= ub) {
+    const Literal ge = encoder->GetOrCreateAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(positive_var, value));
+    CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
+    return ge.Index();
+  }
+  return kNoLiteralIndex;
+}
+
 // TODO(user): the complexity caused by the linear scan in this heuristic and
 // the one below is ok when search_branching is set to SAT_SEARCH because it is
 // not executed often, but otherwise it is done for each search decision,
 // which seems expensive. Improve.
 std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
-  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [integer_encoder, integer_trail, /*copy*/ vars]() {
+  return [/*copy*/ vars, model]() {
+    IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
     for (const IntegerVariable var : vars) {
       // Note that there is no point trying to fix a currently ignored variable.
       if (integer_trail->IsCurrentlyIgnored(var)) continue;
-      const IntegerValue lb = integer_trail->LowerBound(var);
-      if (lb < integer_trail->UpperBound(var)) {
-        return integer_encoder
-            ->GetOrCreateAssociatedLiteral(
-                IntegerLiteral::LowerOrEqual(var, lb))
-            .Index();
-      }
+      const LiteralIndex decision = AtMinValue(var, model);
+      if (decision != kNoLiteralIndex) return decision;
     }
     return kNoLiteralIndex;
   };
@@ -51,9 +120,8 @@ std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
 
 std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
-  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-  return [integer_encoder, integer_trail, /*copy */ vars]() {
+  return [/*copy */ vars, model]() {
+    IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
     IntegerVariable candidate = kNoIntegerVariable;
     IntegerValue candidate_lb;
     for (const IntegerVariable var : vars) {
@@ -66,10 +134,7 @@ std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
       }
     }
     if (candidate == kNoIntegerVariable) return kNoLiteralIndex;
-    return integer_encoder
-        ->GetOrCreateAssociatedLiteral(
-            IntegerLiteral::LowerOrEqual(candidate, candidate_lb))
-        .Index();
+    return AtMinValue(candidate, model);
   };
 }
 
@@ -96,10 +161,6 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
 }
 
 std::function<LiteralIndex()> PseudoCost(Model* model) {
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* trail = model->GetOrCreate<Trail>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-
   const ObjectiveSynchronizationHelper* helper =
       model->Get<ObjectiveSynchronizationHelper>();
   const bool has_objective =
@@ -111,29 +172,14 @@ std::function<LiteralIndex()> PseudoCost(Model* model) {
 
   PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
 
-  // NOTE: The algorithm to choose the value for a variable is kept outside of
-  // PseudoCosts class since this is an independent heuristic. For now this is
-  // only used for pseudo costs however this can be refactored a bit for other
-  // branching strategies to use.
   return [=]() {
     const IntegerVariable chosen_var = pseudo_costs->GetBestDecisionVar();
 
     if (chosen_var == kNoIntegerVariable) return kNoLiteralIndex;
-    const IntegerValue chosen_var_lb = integer_trail->LowerBound(chosen_var);
-    const IntegerValue chosen_var_ub = integer_trail->UpperBound(chosen_var);
-    CHECK_LT(chosen_var_lb, chosen_var_ub);
 
     // TODO(user): Experiment with different heuristics for choosing
     // value.
-    const IntegerValue chosen_value =
-        chosen_var_lb +
-        std::max(IntegerValue(1),
-                 (chosen_var_ub - chosen_var_lb) / IntegerValue(2));
-    const Literal ge = encoder->GetOrCreateAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(chosen_var, chosen_value));
-    CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
-    VLOG(2) << "Chosen " << chosen_var << " >= " << chosen_value;
-    return ge.Index();
+    return GreaterOrEqualToMiddleValue(chosen_var, model);
   };
 }
 
@@ -214,15 +260,49 @@ std::function<LiteralIndex()> FollowHint(
   };
 }
 
-std::function<LiteralIndex()> ExploitLpSolution(
-    std::function<LiteralIndex()> heuristic, Model* model) {
+LiteralIndex ExploitLpSolution(const LiteralIndex decision, Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
+
   auto* lp_constraints =
       model->GetOrCreate<LinearProgrammingConstraintCollection>();
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
+
+  if (decision == kNoLiteralIndex) {
+    return decision;
+  }
+
+  bool lp_solution_is_exploitable = true;
+  // TODO(user,user): When we have more than one LP, their set of variable
+  // is always disjoint. So we could still change the polarity if the next
+  // variable we branch on is part of a LP that has a solution.
+  for (LinearProgrammingConstraint* lp : *lp_constraints) {
+    if (!lp->HasSolution() ||
+        !(parameters.exploit_all_lp_solution() || lp->SolutionIsInteger())) {
+      lp_solution_is_exploitable = false;
+      break;
+    }
+  }
+  if (lp_solution_is_exploitable) {
+    for (const IntegerLiteral l :
+         encoder->GetAllIntegerLiterals(Literal(decision))) {
+      const IntegerVariable positive_var =
+          VariableIsPositive(l.var) ? l.var : NegationOf(l.var);
+      if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
+      const LiteralIndex lp_decision =
+          SplitDomainUsingLpValue(positive_var, model);
+      if (lp_decision != kNoLiteralIndex) {
+        return lp_decision;
+      }
+    }
+  }
+  return decision;
+}
+
+std::function<LiteralIndex()> ExploitLpSolution(
+    std::function<LiteralIndex()> heuristic, Model* model) {
+  auto* lp_constraints =
+      model->GetOrCreate<LinearProgrammingConstraintCollection>();
 
   // Use the normal heuristic if the LP(s) do not seem to cover enough variables
   // to be relevant.
@@ -237,86 +317,9 @@ std::function<LiteralIndex()> ExploitLpSolution(
     if (num_integer_variables > 2 * num_lp_variables) return heuristic;
   }
 
-  bool last_decision_followed_lp = false;
-  int old_level = 0;
-  double old_obj = 0.0;
   return [=]() mutable {
     const LiteralIndex decision = heuristic();
-    if (decision == kNoLiteralIndex) {
-      if (last_decision_followed_lp) {
-        VLOG(1) << "Integer LP solution is feasible, level:" << old_level
-                << "->" << trail->CurrentDecisionLevel() << " obj:" << old_obj;
-      }
-      last_decision_followed_lp = false;
-      return kNoLiteralIndex;
-    }
-
-    bool lp_solution_is_exploitable = true;
-    double obj = 0.0;
-    // TODO(user,user): When we have more than one LP, their set of variable
-    // is always disjoint. So we could still change the polarity if the next
-    // variable we branch on is part of a LP that has a solution.
-    for (LinearProgrammingConstraint* lp : *lp_constraints) {
-      if (!lp->HasSolution() ||
-          !(parameters.exploit_all_lp_solution() || lp->SolutionIsInteger())) {
-        lp_solution_is_exploitable = false;
-        break;
-      }
-      obj += lp->SolutionObjectiveValue();
-    }
-    if (lp_solution_is_exploitable) {
-      if (!last_decision_followed_lp || obj != old_obj) {
-        old_level = trail->CurrentDecisionLevel();
-        old_obj = obj;
-        VLOG(2) << "Integer LP solution at level:" << old_level
-                << " obj:" << old_obj;
-      }
-      for (const IntegerLiteral l :
-           encoder->GetAllIntegerLiterals(Literal(decision))) {
-        const IntegerVariable positive_var =
-            VariableIsPositive(l.var) ? l.var : NegationOf(l.var);
-        if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
-        LinearProgrammingConstraint* lp =
-            gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
-        if (lp != nullptr) {
-          const IntegerValue value = IntegerValue(static_cast<int64>(
-              std::round(lp->GetSolutionValue(positive_var))));
-
-          // Because our lp solution might be from higher up in the tree, it
-          // is possible that value is now outside the domain of positive_var.
-          // In this case, we just revert to the current literal.
-          const IntegerValue lb = integer_trail->LowerBound(positive_var);
-          const IntegerValue ub = integer_trail->UpperBound(positive_var);
-
-          // We try first (<= value), but if this do not reduce the domain we
-          // try to enqueue (>= value). Note that even for domain with hole,
-          // since we know that this variable is not fixed, one of the two
-          // alternative must reduce the domain.
-          //
-          // TODO(user): use GetOrCreateLiteralAssociatedToEquality() instead?
-          // It may replace two decision by only one. However this function
-          // cannot currently be called during search, but that should be easy
-          // enough to fix.
-          if (value >= lb && value < ub) {
-            const Literal le = encoder->GetOrCreateAssociatedLiteral(
-                IntegerLiteral::LowerOrEqual(positive_var, value));
-            CHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
-            last_decision_followed_lp = true;
-            return le.Index();
-          }
-          if (value > lb && value <= ub) {
-            const Literal ge = encoder->GetOrCreateAssociatedLiteral(
-                IntegerLiteral::GreaterOrEqual(positive_var, value));
-            CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
-            last_decision_followed_lp = true;
-            return ge.Index();
-          }
-        }
-      }
-    }
-
-    last_decision_followed_lp = false;
-    return decision;
+    return ExploitLpSolution(decision, model);
   };
 }
 
@@ -598,7 +601,7 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
 void LogNewSolution(const std::string& event_or_solution_count,
                     double time_in_seconds, double obj_lb, double obj_ub,
                     const std::string& solution_info) {
-  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  obj:[%g,%g]  %s",
+  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  obj:[%.9g,%.9g]  %s",
                                event_or_solution_count, time_in_seconds, obj_lb,
                                obj_ub, solution_info);
 }
