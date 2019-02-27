@@ -39,22 +39,24 @@ public class ChannelingSampleSat
 {
   static void Main()
   {
-    // Model.
+    // Create the CP-SAT model.
     CpModel model = new CpModel();
 
-    // Variables.
+    // Declare our two primary variables.
     IntVar x = model.NewIntVar(0, 10, "x");
     IntVar y = model.NewIntVar(0, 10, "y");
 
+    // Declare our intermediate boolean variable.
     IntVar b = model.NewBoolVar("b");
 
     // Implement b == (x >= 5).
     model.Add(x >= 5).OnlyEnforceIf(b);
     model.Add(x < 5).OnlyEnforceIf(b.Not());
 
-    // b implies (y == 10 - x).
+    // Create our two half-reified constraints.
+    // First, b implies (y == 10 - x).
     model.Add(y == 10 - x).OnlyEnforceIf(b);
-    // not(b) implies y == 0.
+    // Second, not(b) implies y == 0.
     model.Add(y == 0).OnlyEnforceIf(b.Not());
 
     // Search for x values in increasing order.
@@ -63,7 +65,7 @@ public class ChannelingSampleSat
         DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
         DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
-    // Create a solver and solve with a fixed search.
+    // Create the solver.
     CpSolver solver = new CpSolver();
 
     // Force solver to follow the decision strategy exactly.

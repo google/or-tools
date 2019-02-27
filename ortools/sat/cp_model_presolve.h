@@ -144,6 +144,10 @@ struct PresolveContext {
   std::vector<std::vector<int>> constraint_to_vars;
   std::vector<absl::flat_hash_set<int>> var_to_constraints;
 
+  // We maintain how many time each interval is used.
+  std::vector<std::vector<int>> constraint_to_intervals;
+  std::vector<int> interval_usage;
+
   CpModelProto* working_model;
   CpModelProto* mapping_model;
 
@@ -167,6 +171,8 @@ struct PresolveContext {
   SparseBitset<int64> modified_domains;
 
  private:
+  void AddVariableUsage(int c);
+
   // The current domain of each variables.
   std::vector<Domain> domains;
 };

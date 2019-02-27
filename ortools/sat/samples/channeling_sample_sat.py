@@ -40,22 +40,24 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 def ChannelingSampleSat():
     """Demonstrates how to link integer constraints together."""
 
-    # Model.
+    # Create the CP-SAT model.
     model = cp_model.CpModel()
 
-    # Variables.
+    # Declare our two primary variables.
     x = model.NewIntVar(0, 10, 'x')
     y = model.NewIntVar(0, 10, 'y')
 
+    # Declare our intermediate boolean variable.
     b = model.NewBoolVar('b')
 
     # Implement b == (x >= 5).
     model.Add(x >= 5).OnlyEnforceIf(b)
     model.Add(x < 5).OnlyEnforceIf(b.Not())
 
-    # b implies (y == 10 - x).
+    # Create our two half-reified constraints.
+    # First, b implies (y == 10 - x).
     model.Add(y == 10 - x).OnlyEnforceIf(b)
-    # not(b) implies y == 0.
+    # Second, not(b) implies y == 0.
     model.Add(y == 0).OnlyEnforceIf(b.Not())
 
     # Search for x values in increasing order.
@@ -65,10 +67,10 @@ def ChannelingSampleSat():
     # Create a solver and solve with a fixed search.
     solver = cp_model.CpSolver()
 
-    # Force solver to follow the decision strategy exactly.
+    # Force the solver to follow the decision strategy exactly.
     solver.parameters.search_branching = cp_model.FIXED_SEARCH
 
-    # Searches and prints out all solutions.
+    # Search and print out all solutions.
     solution_printer = VarArraySolutionPrinter([x, y, b])
     solver.SearchForAllSolutions(model, solution_printer)
 

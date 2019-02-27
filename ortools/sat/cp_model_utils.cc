@@ -26,6 +26,11 @@ void AddIndices(const IntList& indices, absl::flat_hash_set<int>* output) {
   output->insert(indices.begin(), indices.end());
 }
 
+template <typename IntList>
+void AddIndices(const IntList& indices, std::vector<int>* output) {
+  output->insert(output->end(), indices.begin(), indices.end());
+}
+
 }  // namespace
 
 void AddReferencesUsedByConstraint(const ConstraintProto& ct,
@@ -102,19 +107,14 @@ void AddReferencesUsedByConstraint(const ConstraintProto& ct,
       output->variables.insert(ct.interval().size());
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap:
-      AddIndices(ct.no_overlap().intervals(), &output->intervals);
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
-      AddIndices(ct.no_overlap_2d().x_intervals(), &output->intervals);
-      AddIndices(ct.no_overlap_2d().y_intervals(), &output->intervals);
       break;
     case ConstraintProto::ConstraintCase::kCumulative:
       output->variables.insert(ct.cumulative().capacity());
-      AddIndices(ct.cumulative().intervals(), &output->intervals);
       AddIndices(ct.cumulative().demands(), &output->variables);
       break;
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
-      // Empty constraint.
       break;
   }
 }
@@ -387,10 +387,11 @@ std::string ConstraintCaseName(
   }
 }
 
+// TODO(user): Optimize this function, it appear in the presolve profile.
+// We could get rid of AddReferencesUsedByConstraint().
 std::vector<int> UsedVariables(const ConstraintProto& ct) {
   IndexReferences references;
   AddReferencesUsedByConstraint(ct, &references);
-
   std::vector<int> used_variables;
   for (const int var : references.variables) {
     used_variables.push_back(PositiveRef(var));
@@ -403,6 +404,66 @@ std::vector<int> UsedVariables(const ConstraintProto& ct) {
   }
   gtl::STLSortAndRemoveDuplicates(&used_variables);
   return used_variables;
+}
+
+std::vector<int> UsedIntervals(const ConstraintProto& ct) {
+  std::vector<int> used_intervals;
+  switch (ct.constraint_case()) {
+    case ConstraintProto::ConstraintCase::kBoolOr:
+      break;
+    case ConstraintProto::ConstraintCase::kBoolAnd:
+      break;
+    case ConstraintProto::ConstraintCase::kAtMostOne:
+      break;
+    case ConstraintProto::ConstraintCase::kBoolXor:
+      break;
+    case ConstraintProto::ConstraintCase::kIntDiv:
+      break;
+    case ConstraintProto::ConstraintCase::kIntMod:
+      break;
+    case ConstraintProto::ConstraintCase::kIntMax:
+      break;
+    case ConstraintProto::ConstraintCase::kIntMin:
+      break;
+    case ConstraintProto::ConstraintCase::kIntProd:
+      break;
+    case ConstraintProto::ConstraintCase::kLinear:
+      break;
+    case ConstraintProto::ConstraintCase::kAllDiff:
+      break;
+    case ConstraintProto::ConstraintCase::kElement:
+      break;
+    case ConstraintProto::ConstraintCase::kCircuit:
+      break;
+    case ConstraintProto::ConstraintCase::kRoutes:
+      break;
+    case ConstraintProto::ConstraintCase::kCircuitCovering:
+      break;
+    case ConstraintProto::ConstraintCase::kInverse:
+      break;
+    case ConstraintProto::ConstraintCase::kReservoir:
+      break;
+    case ConstraintProto::ConstraintCase::kTable:
+      break;
+    case ConstraintProto::ConstraintCase::kAutomaton:
+      break;
+    case ConstraintProto::ConstraintCase::kInterval:
+      break;
+    case ConstraintProto::ConstraintCase::kNoOverlap:
+      AddIndices(ct.no_overlap().intervals(), &used_intervals);
+      break;
+    case ConstraintProto::ConstraintCase::kNoOverlap2D:
+      AddIndices(ct.no_overlap_2d().x_intervals(), &used_intervals);
+      AddIndices(ct.no_overlap_2d().y_intervals(), &used_intervals);
+      break;
+    case ConstraintProto::ConstraintCase::kCumulative:
+      AddIndices(ct.cumulative().intervals(), &used_intervals);
+      break;
+    case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
+      break;
+  }
+  gtl::STLSortAndRemoveDuplicates(&used_intervals);
+  return used_intervals;
 }
 
 }  // namespace sat

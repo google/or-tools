@@ -75,18 +75,9 @@ void NonOverlappingRectanglesPropagator::RegisterWith(
 
 namespace {
 
-// Returns true iff the 2 given intervals are disjoint. If their union is one
-// point, this also returns true.
-bool IntervalAreDisjointForSure(IntegerValue min_a, IntegerValue max_a,
-                                IntegerValue min_b, IntegerValue max_b) {
-  return min_a >= max_b || min_b >= max_a;
-}
-
-// Returns the distance from interval a to the "bounding interval" of a and b.
-IntegerValue DistanceToBoundingInterval(IntegerValue min_a, IntegerValue max_a,
-                                        IntegerValue min_b,
-                                        IntegerValue max_b) {
-  return std::max(min_a - min_b, max_b - max_a);
+IntegerValue MaxSpan(IntegerValue min_a, IntegerValue max_a, IntegerValue min_b,
+                     IntegerValue max_b) {
+  return std::max(max_a, max_b) - std::min(min_a, min_b) + 1;
 }
 
 }  // namespace
@@ -110,10 +101,8 @@ void NonOverlappingRectanglesPropagator::SortNeighbors(int box) {
 
     neighbors_.push_back(other);
     cached_distance_to_bounding_box_[other] =
-        std::max(DistanceToBoundingInterval(box_x_min, box_x_max, other_x_min,
-                                            other_x_max),
-                 DistanceToBoundingInterval(box_y_min, box_y_max, other_y_min,
-                                            other_y_max));
+        MaxSpan(box_x_min, box_x_max, other_x_min, other_x_max) *
+        MaxSpan(box_y_min, box_y_max, other_y_min, other_y_max);
   }
   IncrementalSort(neighbors_.begin(), neighbors_.begin(), [this](int i, int j) {
     return cached_distance_to_bounding_box_[i] <
@@ -261,23 +250,6 @@ bool CheckOverload(bool time_direction, IntegerValue other_time,
   return true;
 }
 
-void AddOtherReasons(const std::vector<int>& tasks, IntegerValue other_time,
-                     int main_task, SchedulingConstraintHelper* other) {
-  other->ClearReason();
-  bool main_task_seen = false;
-  for (const int task : tasks) {
-    other->AddStartMaxReason(task, other_time);
-    other->AddEndMinReason(task, other_time + 1);
-    if (task == main_task) {
-      main_task_seen = true;
-    }
-  }
-  if (!main_task_seen) {
-    other->AddStartMaxReason(main_task, other_time);
-    other->AddEndMinReason(main_task, other_time + 1);
-  }
-}
-
 bool DetectPrecedences(bool time_direction, IntegerValue other_time,
                        const absl::flat_hash_set<int>& active_boxes,
                        SchedulingConstraintHelper* helper,
@@ -324,6 +296,7 @@ bool DetectPrecedences(bool time_direction, IntegerValue other_time,
     if (end_min_of_critical_tasks > helper->StartMin(t)) {
       const std::vector<TaskSet::Entry>& sorted_tasks = task_set.SortedTasks();
       helper->ClearReason();
+      other->ClearReason();
 
       // We need:
       // - StartMax(ct) < EndMin(t) for the detectable precedence.
@@ -334,8 +307,6 @@ bool DetectPrecedences(bool time_direction, IntegerValue other_time,
         tasks[i - critical_index] = sorted_tasks[i].task;
       }
 
-      AddOtherReasons(tasks, other_time, t, other);
-
       for (int i = critical_index; i < sorted_tasks.size(); ++i) {
         const int ct = sorted_tasks[i].task;
         if (ct == t) continue;
@@ -344,10 +315,14 @@ bool DetectPrecedences(bool time_direction, IntegerValue other_time,
         helper->AddEnergyAfterReason(ct, sorted_tasks[i].duration_min,
                                      window_start);
         helper->AddStartMaxReason(ct, end_min - 1);
+        other->AddStartMaxReason(ct, other_time);
+        other->AddEndMinReason(ct, other_time + 1);
       }
 
       // Add the reason for t (we only need the end-min).
       helper->AddEndMinReason(t, end_min);
+      other->AddStartMaxReason(t, other_time);
+      other->AddEndMinReason(t, other_time + 1);
 
       // Import reasons from the 'other' dimension.
       helper->ImportOtherReasons(*other);
@@ -368,6 +343,101 @@ bool DetectPrecedences(bool time_direction, IntegerValue other_time,
   }
   return true;
 }
+
+// Specialized propagation on only two boxes are mandatory on a single line
+// (parallel to x or parallel to y). In that case, we can improve the reason
+// why these two boxes overlap on one dimension, forcing them to be disjoint
+// in the other dimension.
+bool PropagateTwoBoxes(int b1, int b2, SchedulingConstraintHelper* helper,
+                       SchedulingConstraintHelper* other) {
+  // For each direction and each order, we test if the boxes can be disjoint.
+  const int state = (helper->EndMin(b1) <= helper->StartMax(b2)) +
+                    2 * (helper->EndMin(b2) <= helper->StartMax(b1));
+
+  const auto left_box_before_right_box =
+      [](int left, int right, SchedulingConstraintHelper* helper) {
+        // left box pushes right box.
+        const IntegerValue left_end_min = helper->EndMin(left);
+        if (left_end_min > helper->StartMin(right)) {
+          // Store reasons state.
+          const int literal_size = helper->MutableLiteralReason()->size();
+          const int integer_size = helper->MutableIntegerReason()->size();
+
+          helper->AddEndMinReason(left, left_end_min);
+          if (!helper->IncreaseStartMin(right, left_end_min)) {
+            return false;
+          }
+
+          // Restore the reasons to the state before the increase of the start.
+          helper->MutableLiteralReason()->resize(literal_size);
+          helper->MutableIntegerReason()->resize(integer_size);
+        }
+
+        // right box pushes left box.
+        const IntegerValue right_start_max = helper->StartMax(right);
+        if (right_start_max < helper->EndMax(left)) {
+          helper->AddStartMaxReason(right, right_start_max);
+          return helper->DecreaseEndMax(left, right_start_max);
+        }
+
+        return true;
+      };
+
+  // Clean up reasons.
+  helper->ClearReason();
+  other->ClearReason();
+
+  // This is an "hack" to be able to easily test for none or for one
+  // and only one of the conditions below.
+  switch (state) {
+    case 0: {
+      helper->AddReasonForBeingBefore(b1, b2);
+      helper->AddReasonForBeingBefore(b2, b1);
+      other->AddReasonForBeingBefore(b1, b2);
+      other->AddReasonForBeingBefore(b2, b1);
+      helper->ImportOtherReasons(*other);
+      return helper->ReportConflict();
+    }
+    case 1: {
+      other->AddReasonForBeingBefore(b1, b2);
+      other->AddReasonForBeingBefore(b2, b1);
+      helper->AddReasonForBeingBefore(b1, b2);
+      helper->ImportOtherReasons(*other);
+      return left_box_before_right_box(b1, b2, helper);
+    }
+    case 2: {
+      other->AddReasonForBeingBefore(b1, b2);
+      other->AddReasonForBeingBefore(b2, b1);
+      helper->AddReasonForBeingBefore(b2, b1);
+      helper->ImportOtherReasons(*other);
+      return left_box_before_right_box(b2, b1, helper);
+    }
+    default: {
+      return true;
+    }
+  }
+}
+
+IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub) {
+  if (lb == ub) return lb;
+  if (lb < 0 && ub > 0) return IntegerValue(0);
+  if (lb < 0 && ub <= 0) {
+    return -FindCanonicalValue(-ub, -lb);
+  }
+  int64 mask = 0;
+  IntegerValue candidate = ub;
+  for (int o = 0; o < 62; ++o) {
+    mask = 2 * mask + 1;
+    const IntegerValue masked_ub(ub.value() & ~mask);
+    if (masked_ub >= lb) {
+      candidate = masked_ub;
+    } else {
+      break;
+    }
+  }
+  return candidate;
+}
+
 }  // namespace
 
 bool NonOverlappingRectanglesPropagator::PropagateOnProjections() {
@@ -430,38 +500,39 @@ bool NonOverlappingRectanglesPropagator::FindMandatoryBoxesOnOneDimension(
   }
 
   for (const auto& it : mandatory_boxes) {
-    // Compute the 'canonical' line to use when explaining that boxes overlap
-    // on the 'other' dimension.
+    // Collect the common mandatory coordinates of all boxes.
     IntegerValue lb(kint64min);
     IntegerValue ub(kint64max);
     for (const int task : it.second) {
       lb = std::max(lb, other->StartMax(task));
-      ub = std::min(ub, other->EndMin(task));
+      ub = std::min(ub, other->EndMin(task) - 1);
     }
 
-    const IntegerValue span = ub - lb + 1;
-    IntegerValue selected = lb;
-    for (int shift = 30; shift >= 0; --shift) {
-      const IntegerValue mask(static_cast<int64>(1) >> shift);
-      if (mask <= span) {
-        selected = (ub / mask) * mask;
-        break;
-      }
-    }
+    // Compute the 'canonical' line to use when explaining that boxes overlap
+    // on the 'other' dimension. We compute the multiple of the biggest power of
+    // two that is common to all boxes.
+    const IntegerValue candidate = FindCanonicalValue(lb, ub);
+
     // And propagate.
-    RETURN_IF_FALSE(PropagateMandatoryBoxesOnOneDimension(selected, it.second,
+    RETURN_IF_FALSE(PropagateMandatoryBoxesOnOneDimension(candidate, it.second,
                                                           helper, other));
   }
   return true;
 }
 
 bool NonOverlappingRectanglesPropagator::PropagateMandatoryBoxesOnOneDimension(
-    IntegerValue event, const std::vector<int>& boxes,
+    IntegerValue other_time, const std::vector<int>& boxes,
     SchedulingConstraintHelper* helper, SchedulingConstraintHelper* other) {
+  if (boxes.size() == 2) {
+    return PropagateTwoBoxes(boxes[0], boxes[1], helper, other);
+  }
+
   const absl::flat_hash_set<int> active_boxes(boxes.begin(), boxes.end());
-  RETURN_IF_FALSE(CheckOverload(true, event, active_boxes, helper, other));
-  RETURN_IF_FALSE(DetectPrecedences(true, event, active_boxes, helper, other));
-  RETURN_IF_FALSE(DetectPrecedences(false, event, active_boxes, helper, other));
+  RETURN_IF_FALSE(CheckOverload(true, other_time, active_boxes, helper, other));
+  RETURN_IF_FALSE(
+      DetectPrecedences(true, other_time, active_boxes, helper, other));
+  RETURN_IF_FALSE(
+      DetectPrecedences(false, other_time, active_boxes, helper, other));
   return true;
 }
 

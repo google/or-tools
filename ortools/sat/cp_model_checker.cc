@@ -108,7 +108,7 @@ std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
                           ProtobufShortDebugString(ct));
     }
   }
-  for (const int i : references.intervals) {
+  for (const int i : UsedIntervals(ct)) {
     if (i < 0 || i >= model.constraints_size()) {
       return absl::StrCat("Out of bound interval ", i, " in constraint #", c,
                           " : ", ProtobufShortDebugString(ct));

@@ -13,6 +13,8 @@
 
 #include "ortools/sat/linear_constraint.h"
 
+#include "ortools/base/mathutil.h"
+
 namespace operations_research {
 namespace sat {
 
@@ -71,19 +73,12 @@ namespace {
 // TODO(user): Template for any integer type and expose this?
 IntegerValue ComputeGcd(const std::vector<IntegerValue>& values) {
   if (values.empty()) return IntegerValue(1);
-  IntegerValue gcd = IntTypeAbs(values.front());
-  const int size = values.size();
-  for (int i = 1; i < size; ++i) {
-    // GCD(gcd, value) = GCD(value, gcd % value);
-    IntegerValue value = IntTypeAbs(values[i]);
-    while (value != 0) {
-      const IntegerValue r = gcd % value;
-      gcd = value;
-      value = r;
-    }
+  int64 gcd = 0;
+  for (const IntegerValue value : values) {
+    gcd = MathUtil::GCD64(gcd, std::abs(value.value()));
     if (gcd == 1) break;
   }
-  return gcd;
+  return IntegerValue(gcd);
 }
 
 }  // namespace

@@ -902,7 +902,6 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     // TODO(user): It should be possible to speed this up if needed.
     refs.variables.clear();
     refs.literals.clear();
-    refs.intervals.clear();
     AddReferencesUsedByConstraint(ct, &refs);
     bool ok = true;
     for (const int literal_ref : refs.literals) {

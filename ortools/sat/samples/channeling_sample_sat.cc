@@ -19,27 +19,31 @@ namespace operations_research {
 namespace sat {
 
 void ChannelingSampleSat() {
-  // Model.
+  // Create the CP-SAT model.
   CpModelBuilder cp_model;
 
-  // Main variables.
+  // Declare our two primary variables.
   const IntVar x = cp_model.NewIntVar({0, 10});
   const IntVar y = cp_model.NewIntVar({0, 10});
+
+  // Declare our intermediate boolean variable.
   const BoolVar b = cp_model.NewBoolVar();
 
-  // b == (x >= 5).
+  // Implement b == (x >= 5).
   cp_model.AddGreaterOrEqual(x, 5).OnlyEnforceIf(b);
   cp_model.AddLessThan(x, 5).OnlyEnforceIf(Not(b));
 
-  // b implies (y == 10 - x).
+  // Create our two half-reified constraints.
+  // First, b implies (y == 10 - x).
   cp_model.AddEquality(LinearExpr::Sum({x, y}), 10).OnlyEnforceIf(b);
-  // not(b) implies y == 0.
+  // Second, not(b) implies y == 0.
   cp_model.AddEquality(y, 0).OnlyEnforceIf(Not(b));
 
   // Search for x values in increasing order.
   cp_model.AddDecisionStrategy({x}, DecisionStrategyProto::CHOOSE_FIRST,
                                DecisionStrategyProto::SELECT_MIN_VALUE);
 
+  // Create a solver and solve with a fixed search.
   Model model;
   SatParameters parameters;
   parameters.set_search_branching(SatParameters::FIXED_SEARCH);

@@ -172,12 +172,23 @@ void PresolveContext::UpdateRuleStats(const std::string& name) {
   stats_by_rule_name[name]++;
 }
 
+void PresolveContext::AddVariableUsage(int c) {
+  const ConstraintProto& ct = working_model->constraints(c);
+
+  constraint_to_vars[c] = UsedVariables(working_model->constraints(c));
+  constraint_to_intervals[c] = UsedIntervals(ct);
+  for (const int v : constraint_to_vars[c]) var_to_constraints[v].insert(c);
+  for (const int i : constraint_to_intervals[c]) interval_usage[i]++;
+}
+
 void PresolveContext::UpdateConstraintVariableUsage(int c) {
   CHECK_EQ(constraint_to_vars.size(), working_model->constraints_size());
-  const ConstraintProto& ct = working_model->constraints(c);
+
+  // Remove old usage.
   for (const int v : constraint_to_vars[c]) var_to_constraints[v].erase(c);
-  constraint_to_vars[c] = UsedVariables(ct);
-  for (const int v : constraint_to_vars[c]) var_to_constraints[v].insert(c);
+  for (const int i : constraint_to_intervals[c]) interval_usage[i]--;
+
+  AddVariableUsage(c);
 }
 
 void PresolveContext::UpdateNewConstraintsVariableUsage() {
@@ -185,9 +196,10 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
   const int new_size = working_model->constraints_size();
   CHECK_LE(old_size, new_size);
   constraint_to_vars.resize(new_size);
+  constraint_to_intervals.resize(new_size);
+  interval_usage.resize(new_size);
   for (int c = old_size; c < new_size; ++c) {
-    constraint_to_vars[c] = UsedVariables(working_model->constraints(c));
-    for (const int v : constraint_to_vars[c]) var_to_constraints[v].insert(c);
+    AddVariableUsage(c);
   }
 }
 
@@ -1546,11 +1558,28 @@ bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
   return RemoveConstraint(ct, context);
 }
 
-bool PresolveInterval(ConstraintProto* ct, PresolveContext* context) {
-  if (!ct->enforcement_literal().empty()) return false;
+bool PresolveInterval(int c, ConstraintProto* ct, PresolveContext* context) {
   const int start = ct->interval().start();
   const int end = ct->interval().end();
   const int size = ct->interval().size();
+  if (context->interval_usage[c] == 0) {
+    // Convert to linear.
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    *(new_ct->mutable_enforcement_literal()) = ct->enforcement_literal();
+    new_ct->mutable_linear()->add_domain(0);
+    new_ct->mutable_linear()->add_domain(0);
+    new_ct->mutable_linear()->add_vars(start);
+    new_ct->mutable_linear()->add_coeffs(1);
+    new_ct->mutable_linear()->add_vars(size);
+    new_ct->mutable_linear()->add_coeffs(1);
+    new_ct->mutable_linear()->add_vars(end);
+    new_ct->mutable_linear()->add_coeffs(-1);
+    context->UpdateRuleStats("interval: unused, converted to linear");
+
+    return RemoveConstraint(ct, context);
+  }
+
+  if (!ct->enforcement_literal().empty()) return false;
   bool changed = false;
   changed |= context->IntersectDomainWith(
       end, context->DomainOf(start).AdditionWith(context->DomainOf(size)));
@@ -3292,7 +3321,7 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
       return false;
     }
     case ConstraintProto::ConstraintCase::kInterval:
-      return PresolveInterval(ct, context);
+      return PresolveInterval(c, ct, context);
     case ConstraintProto::ConstraintCase::kElement:
       return PresolveElement(ct, context);
     case ConstraintProto::ConstraintCase::kTable:

@@ -25,36 +25,38 @@ public class ChannelingSampleSat {
   }
 
   public static void main(String[] args) throws Exception {
-    // Model.
+    // Create the CP-SAT model.
     CpModel model = new CpModel();
 
-    // Variables.
+    // Declare our two primary variables.
     IntVar x = model.newIntVar(0, 10, "x");
     IntVar y = model.newIntVar(0, 10, "y");
 
+    // Declare our intermediate boolean variable.
     IntVar b = model.newBoolVar("b");
 
-    // Implements b == (x >= 5).
+    // Implement b == (x >= 5).
     model.addGreaterOrEqual(x, 5).onlyEnforceIf(b);
     model.addLessOrEqual(x, 4).onlyEnforceIf(b.not());
 
-    // b implies (y == 10 - x).
+    // Create our two half-reified constraints.
+    // First, b implies (y == 10 - x).
     model.addLinearSumEqual(new IntVar[] {x, y}, 10).onlyEnforceIf(b);
-    // not(b) implies y == 0.
+    // Second, not(b) implies y == 0.
     model.addEquality(y, 0).onlyEnforceIf(b.not());
 
-    // Searches for x values in increasing order.
+    // Search for x values in increasing order.
     model.addDecisionStrategy(new IntVar[] {x},
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
-    // Creates the solver.
+    // Create the solver.
     CpSolver solver = new CpSolver();
 
-    // Forces the solver to follow the decision strategy exactly.
+    // Force the solver to follow the decision strategy exactly.
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
 
-    // Solves the problem with the printer callback.
+    // Solve the problem with the printer callback.
     solver.searchAllSolutions(model, new CpSolverSolutionCallback() {
       public CpSolverSolutionCallback init(IntVar[] variables) {
         variableArray = variables;
