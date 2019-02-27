@@ -307,7 +307,7 @@ DEFINE_ARGS_TO_R_CALLBACK(
   IntIntToLongFunction, "applyAsLong", "(II)J",
   long, CallLongMethod,
   VAR_ARGS(int t, int u),
-  VAR_ARGS((jlong)t, (jlong)u))
+  VAR_ARGS((jint)t, (jint)u))
 
 DEFINE_ARGS_TO_R_CALLBACK(
   std::function<bool(int64)>,
