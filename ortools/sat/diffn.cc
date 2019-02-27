@@ -228,6 +228,7 @@ bool CheckOverload(bool time_direction, IntegerValue other_time,
     if (theta_tree.GetEnvelope() > current_end) {
       // Explain failure with tasks in critical interval.
       helper->ClearReason();
+      other->ClearReason();
       const int critical_event =
           theta_tree.GetMaxEventWithEnvelopeGreaterThan(current_end);
       const IntegerValue window_start = event_time[critical_event];
@@ -344,7 +345,7 @@ bool DetectPrecedences(bool time_direction, IntegerValue other_time,
   return true;
 }
 
-// Specialized propagation on only two boxes are mandatory on a single line
+// Specialized propagation when only two boxes are mandatory on a single line
 // (parallel to x or parallel to y). In that case, we can improve the reason
 // why these two boxes overlap on one dimension, forcing them to be disjoint
 // in the other dimension.
@@ -418,12 +419,14 @@ bool PropagateTwoBoxes(int b1, int b2, SchedulingConstraintHelper* helper,
   }
 }
 
+// We maximize the number of trailing bits set to 0 within a range.
 IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub) {
   if (lb == ub) return lb;
-  if (lb < 0 && ub > 0) return IntegerValue(0);
+  if (lb <= 0 && ub > 0) return IntegerValue(0);
   if (lb < 0 && ub <= 0) {
     return -FindCanonicalValue(-ub, -lb);
   }
+  
   int64 mask = 0;
   IntegerValue candidate = ub;
   for (int o = 0; o < 62; ++o) {
@@ -524,6 +527,9 @@ bool NonOverlappingRectanglesPropagator::PropagateMandatoryBoxesOnOneDimension(
     IntegerValue other_time, const std::vector<int>& boxes,
     SchedulingConstraintHelper* helper, SchedulingConstraintHelper* other) {
   if (boxes.size() == 2) {
+    // In that case, we can use simpler algorithms, and stronger explanations.
+    // Note that this case happens frequently (~30% of all calls to this method
+    // according to our tests).
     return PropagateTwoBoxes(boxes[0], boxes[1], helper, other);
   }
 
