@@ -50,6 +50,8 @@ typedef uint64_t uint64;
 %ignoreall
 
 %unignore operations_research;
+
+// MaxFlow
 %rename (MaxFlow) operations_research::SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::~SimpleMaxFlow;
@@ -63,8 +65,9 @@ typedef uint64_t uint64;
 %rename (solve) operations_research::SimpleMaxFlow::Solve;
 %rename (getOptimalFlow) operations_research::SimpleMaxFlow::OptimalFlow;
 %rename (getFlow) operations_research::SimpleMaxFlow::Flow;
-%rename (getSourceSideMinCut) operations_research::SimpleMaxFlow::GetSourceSideMinCut;  // untested
-%rename (getSinkSideMinCut) operations_research::SimpleMaxFlow::GetSinkSideMinCut;  // untested
+// Ignored:
+%ignore operations_research::SimpleMaxFlow::GetSourceSideMinCut;  // missing typemap for argument
+%ignore operations_research::SimpleMaxFlow::GetSinkSideMinCut;  // missing typemap for argument
 
 // To expose the Status enum's values (as constant integers), we must expose the enum
 // type itself.
