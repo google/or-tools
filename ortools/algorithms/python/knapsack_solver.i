@@ -38,6 +38,7 @@ typedef uint64_t uint64;
 %unignore operations_research::KnapsackSolver::Solve;
 // TODO(user): unit test BestSolutionContains.
 %unignore operations_research::KnapsackSolver::BestSolutionContains;
+%unignore operations_research::KnapsackSolver::set_time_limit;
 %unignore operations_research::KnapsackSolver::set_use_reduction;
 
 %unignore operations_research::KnapsackSolver::SolverType;
