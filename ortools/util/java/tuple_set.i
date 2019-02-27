@@ -35,9 +35,10 @@
 %rename (insertAll) operations_research::IntTupleSet::InsertAll;
 %rename (numDifferentValuesInColumn) operations_research::IntTupleSet::NumDifferentValuesInColumn;
 %rename (numTuples) operations_research::IntTupleSet::NumTuples;
-%rename (rawData) operations_research::IntTupleSet::RawData;
 %rename (sortedByColumn) operations_research::IntTupleSet::SortedByColumn;
 %rename (sortedLexicographically) operations_research::IntTupleSet::SortedLexicographically;
 %rename (value) operations_research::IntTupleSet::Value;
+// Ignored:
+%ignore operations_research::IntTupleSet::RawData;  // no typemap
 
 %include ortools/util/tuple_set.h
