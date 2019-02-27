@@ -277,6 +277,13 @@ DEFINE_VOID_TO_R_CALLBACK(
   void, CallVoidMethod)
 
 DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<int(int64)>,
+  LongToIntFunction, "applyAsInt", "(J)I",
+  int, CallIntMethod,
+  VAR_ARGS(long t),
+  VAR_ARGS((jlong)t))
+
+DEFINE_ARGS_TO_R_CALLBACK(
   std::function<int64(int64)>,
   LongUnaryOperator, "applyAsLong", "(J)J",
   long, CallLongMethod, VAR_ARGS(long t), VAR_ARGS((jlong)t))
@@ -1355,6 +1362,12 @@ import java.util.function.Supplier;
 // - Path()
 // - number_of_nexts()
 %feature("director") PathOperator;
+%typemap(javaimports) PathOperator %{
+// Used to wrap start_empty_path_class
+// see
+// https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
+import java.util.function.LongToIntFunction;
+%}
 %ignore PathOperator::Next;
 %ignore PathOperator::Path;
 %ignore PathOperator::SkipUnchanged;
@@ -1451,6 +1464,10 @@ import java.util.function.Supplier;
 // Used to wrap std::function<bool()>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/BooleanSupplier.html
 import java.util.function.BooleanSupplier;
+
+// Used to wrap std::function<int(int64)>
+// see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
+import java.util.function.LongToIntFunction;
 
 // Used to wrap std::function<int64(int64)>
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
