@@ -109,24 +109,30 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 %typemap(jstype) const std::vector<std::vector<CType> >& #JavaType "[][]"
 %typemap(javain) const std::vector<std::vector<CType> >& "$javainput"
 %typemap(in) const std::vector<std::vector<CType> >& (std::vector<std::vector<CType> > result) %{
-  const int size = jenv->GetArrayLength($input);
-  result.clear();
-  result.resize(size);
-  for (int index1 = 0; index1 < size; ++index1) {
-    j ## JavaType ## Array inner_array =
+  if($input) {
+    const int size = jenv->GetArrayLength($input);
+    result.clear();
+    result.resize(size);
+    for (int index1 = 0; index1 < size; ++index1) {
+      j ## JavaType ## Array inner_array =
         (j ## JavaType ## Array)jenv->GetObjectArrayElement($input, index1);
-    const int inner_size = jenv->GetArrayLength(inner_array);
-    result[index1].reserve(inner_size);
-    j ## JavaType * const values =
+      const int inner_size = jenv->GetArrayLength(inner_array);
+      result[index1].reserve(inner_size);
+      j ## JavaType * const values =
         jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, NULL);
-    for (int index2 = 0; index2 < inner_size; ++index2) {
-      const CType value = values[index2];
-      result[index1].emplace_back(value);
+      for (int index2 = 0; index2 < inner_size; ++index2) {
+        const CType value = values[index2];
+        result[index1].emplace_back(value);
+      }
+      jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, values, JNI_ABORT);
+      jenv->DeleteLocalRef(inner_array);
     }
-    jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, values, JNI_ABORT);
-    jenv->DeleteLocalRef(inner_array);
+    $1 = &result;
   }
-  $1 = &result;
+  else {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
+    return $null;
+  }
 %}
 
 // Same, for std::vector<std::vector<CType>>*
