@@ -126,6 +126,9 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 #include "ortools/constraint_solver/constraint_solveri.h"
 %}
 
+%apply int64 * INOUT { int64 *const marker };
+%apply int64 * OUTPUT { int64 *l, int64 *u, int64 *value };
+
 // Types in Proxy class (e.g. Solver.java) e.g.:
 // Solver::f(jstype $javainput, ...) {Solver_f_SWIG(javain, ...);}
 #define VAR_ARGS(X...) X
