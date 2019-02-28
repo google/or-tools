@@ -188,10 +188,7 @@ class DivisionPropagator : public PropagatorInterface {
 };
 
 // Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
-// cases, and we only propagates the bounds.
-//
-// TODO(user): Deal with overflow.
-// TODO(user): Unit-test this like the ProductPropagator.
+// cases, and we only propagates the bounds. cst_b must be > 0.
 class FixedDivisionPropagator : public PropagatorInterface {
  public:
   FixedDivisionPropagator(IntegerVariable a, IntegerValue b, IntegerVariable c,

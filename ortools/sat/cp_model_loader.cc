@@ -711,7 +711,11 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
       mapping->Integers(ct.int_div().vars());
   if (m->Get(IsFixed(vars[1]))) {
     const IntegerValue denom(m->Get(Value(vars[1])));
-    m->Add(FixedDivisionConstraint(vars[0], denom, div));
+    if (denom == 1) {
+      m->Add(Equality(vars[0], div));
+    } else {
+      m->Add(FixedDivisionConstraint(vars[0], denom, div));
+    }
   } else {
     m->Add(DivisionConstraint(vars[0], vars[1], div));
   }

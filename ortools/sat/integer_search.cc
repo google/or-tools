@@ -173,6 +173,71 @@ std::function<LiteralIndex()> SequentialSearch(
   };
 }
 
+std::function<LiteralIndex()> SequentialValueSelection(
+    std::vector<std::function<LiteralIndex(IntegerVariable)>>
+        value_selection_heuristics,
+    std::function<LiteralIndex()> var_selection_heuristic, Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  return [=]() {
+    // Get the current decision.
+    const LiteralIndex current_decision = var_selection_heuristic();
+    if (current_decision == kNoLiteralIndex) return kNoLiteralIndex;
+
+    // Decode the decision and get the variable.
+    for (const IntegerLiteral l :
+         encoder->GetAllIntegerLiterals(Literal(current_decision))) {
+      if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
+
+      // Sequentially try the value selection heuristics.
+      for (const auto& value_heuristic : value_selection_heuristics) {
+        const LiteralIndex decision = value_heuristic(l.var);
+        if (decision != kNoLiteralIndex) {
+          return decision;
+        }
+      }
+    }
+
+    VLOG(2) << "Value selection: using default decision.";
+    return current_decision;
+  };
+}
+
+std::function<LiteralIndex()> IntegerValueSelectionHeuristic(
+    std::function<LiteralIndex()> var_selection_heuristic, Model* model) {
+  std::vector<std::function<LiteralIndex(IntegerVariable)>>
+      value_selection_heuristics;
+
+  // TODO(user): Experiment with value selection heuristics.
+
+  // LP based value.
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
+  if (LinearizedPartIsLarge(model) &&
+      (parameters.exploit_integer_lp_solution() ||
+       parameters.exploit_all_lp_solution())) {
+    std::function<LiteralIndex(IntegerVariable)> lp_value =
+        [model](IntegerVariable var) {
+          if (LpSolutionIsExploitable(model)) {
+            return SplitAroundLpValue(PositiveVariable(var), model);
+          }
+          return kNoLiteralIndex;
+        };
+    value_selection_heuristics.push_back(lp_value);
+    VLOG(1) << "Using LP value selection heuristic";
+  }
+
+  // Solution based value.
+  std::function<LiteralIndex(IntegerVariable)> solution_value =
+      [model](IntegerVariable var) {
+        return SplitDomainUsingBestSolutionValue(var, model);
+      };
+  value_selection_heuristics.push_back(solution_value);
+  VLOG(1) << "Using best solution value selection heuristic";
+
+  return SequentialValueSelection(value_selection_heuristics,
+                                  var_selection_heuristic, model);
+}
+
 std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   Trail* trail = model->GetOrCreate<Trail>();
@@ -200,13 +265,6 @@ std::function<LiteralIndex()> PseudoCost(Model* model) {
     const IntegerVariable chosen_var = pseudo_costs->GetBestDecisionVar();
 
     if (chosen_var == kNoIntegerVariable) return kNoLiteralIndex;
-
-    // TODO(user): Experiment with value selection heuristics.
-    const LiteralIndex best_solution_decision =
-        SplitDomainUsingBestSolutionValue(chosen_var, model);
-    if (best_solution_decision != kNoLiteralIndex) {
-      return best_solution_decision;
-    }
 
     return GreaterOrEqualToMiddleValue(chosen_var, model);
   };
@@ -274,30 +332,45 @@ std::function<LiteralIndex()> FollowHint(
   };
 }
 
-LiteralIndex ExploitLpSolution(const LiteralIndex decision, Model* model) {
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-
+bool LpSolutionIsExploitable(Model* model) {
   auto* lp_constraints =
       model->GetOrCreate<LinearProgrammingConstraintCollection>();
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
 
-  if (decision == kNoLiteralIndex) {
-    return decision;
-  }
-
-  bool lp_solution_is_exploitable = true;
   // TODO(user,user): When we have more than one LP, their set of variable
   // is always disjoint. So we could still change the polarity if the next
   // variable we branch on is part of a LP that has a solution.
   for (LinearProgrammingConstraint* lp : *lp_constraints) {
     if (!lp->HasSolution() ||
         !(parameters.exploit_all_lp_solution() || lp->SolutionIsInteger())) {
-      lp_solution_is_exploitable = false;
-      break;
+      return false;
     }
   }
-  if (lp_solution_is_exploitable) {
+  return true;
+}
+
+bool LinearizedPartIsLarge(Model* model) {
+  auto* lp_constraints =
+      model->GetOrCreate<LinearProgrammingConstraintCollection>();
+
+  int num_lp_variables = 0;
+  for (LinearProgrammingConstraint* lp : *lp_constraints) {
+    num_lp_variables += lp->NumVariables();
+  }
+  const int num_integer_variables =
+      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value() / 2;
+  return (num_integer_variables <= 2 * num_lp_variables);
+}
+
+LiteralIndex ExploitLpSolution(const LiteralIndex decision, Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+  if (decision == kNoLiteralIndex) {
+    return decision;
+  }
+
+  if (LpSolutionIsExploitable(model)) {
     for (const IntegerLiteral l :
          encoder->GetAllIntegerLiterals(Literal(decision))) {
       const IntegerVariable positive_var = PositiveVariable(l.var);
@@ -313,21 +386,10 @@ LiteralIndex ExploitLpSolution(const LiteralIndex decision, Model* model) {
 
 std::function<LiteralIndex()> ExploitLpSolution(
     std::function<LiteralIndex()> heuristic, Model* model) {
-  auto* lp_constraints =
-      model->GetOrCreate<LinearProgrammingConstraintCollection>();
-
   // Use the normal heuristic if the LP(s) do not seem to cover enough variables
   // to be relevant.
   // TODO(user): Instead, try and depending on the result call it again or not?
-  {
-    int num_lp_variables = 0;
-    for (LinearProgrammingConstraint* lp : *lp_constraints) {
-      num_lp_variables += lp->NumVariables();
-    }
-    const int num_integer_variables =
-        model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value() / 2;
-    if (num_integer_variables > 2 * num_lp_variables) return heuristic;
-  }
+  if (!LinearizedPartIsLarge(model)) return heuristic;
 
   return [=]() mutable {
     const LiteralIndex decision = heuristic();
@@ -435,10 +497,7 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     case SatParameters::PSEUDO_COST_SEARCH: {
       std::function<LiteralIndex()> search = SequentialSearch(
           {PseudoCost(model), SatSolverHeuristic(model), next_decision});
-      if (parameters.exploit_integer_lp_solution() ||
-          parameters.exploit_all_lp_solution()) {
-        search = ExploitLpSolution(search, model);
-      }
+      search = IntegerValueSelectionHeuristic(search, model);
       return SolveProblemWithPortfolioSearch(
           {search}, {SatSolverRestartPolicy(model)}, model);
     }

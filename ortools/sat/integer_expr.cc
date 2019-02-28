@@ -538,7 +538,8 @@ bool FixedDivisionPropagator::Propagate() {
     }
   } else if (max_a / b_ > max_c) {
     const IntegerValue new_max_a =
-        max_c >= 0 ? max_c * b_ + b_ - 1 : max_c * b_;
+        max_c >= 0 ? max_c * b_ + b_ - 1
+                   : IntegerValue(CapProd(max_c.value(), b_.value()));
     CHECK_LT(new_max_a, max_a);
     if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(a_, new_max_a),
                                  {},
@@ -554,7 +555,9 @@ bool FixedDivisionPropagator::Propagate() {
       return false;
     }
   } else if (min_a / b_ < min_c) {
-    const IntegerValue new_min_a = min_c > 0 ? min_c * b_ : min_c * b_ - b_ + 1;
+    const IntegerValue new_min_a =
+        min_c > 0 ? IntegerValue(CapProd(min_c.value(), b_.value()))
+                  : min_c * b_ - b_ + 1;
     CHECK_GT(new_min_a, min_a);
     if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(a_, new_min_a),
                                  {},
