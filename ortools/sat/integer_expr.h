@@ -187,6 +187,28 @@ class DivisionPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(DivisionPropagator);
 };
 
+// Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
+// cases, and we only propagates the bounds.
+//
+// TODO(user): Deal with overflow.
+// TODO(user): Unit-test this like the ProductPropagator.
+class FixedDivisionPropagator : public PropagatorInterface {
+ public:
+  FixedDivisionPropagator(IntegerVariable a, IntegerValue b, IntegerVariable c,
+                          IntegerTrail* integer_trail);
+
+  bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  const IntegerVariable a_;
+  const IntegerValue b_;
+  const IntegerVariable c_;
+  IntegerTrail* integer_trail_;
+
+  DISALLOW_COPY_AND_ASSIGN(FixedDivisionPropagator);
+};
+
 // Propagates x * x = s.
 // TODO(user): Only works for x nonnegative.
 class SquarePropagator : public PropagatorInterface {
@@ -611,6 +633,21 @@ inline std::function<void(Model*)> DivisionConstraint(IntegerVariable a,
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     DivisionPropagator* constraint =
         new DivisionPropagator(a, b, c, integer_trail);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+// Adds the constraint: a / b = d where b is a constant.
+inline std::function<void(Model*)> FixedDivisionConstraint(IntegerVariable a,
+                                                           IntegerValue b,
+                                                           IntegerVariable c) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    FixedDivisionPropagator* constraint =
+        b > 0
+            ? new FixedDivisionPropagator(a, b, c, integer_trail)
+            : new FixedDivisionPropagator(NegationOf(a), -b, c, integer_trail);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

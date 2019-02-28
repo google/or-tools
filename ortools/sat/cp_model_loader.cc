@@ -709,7 +709,12 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
   const IntegerVariable div = mapping->Integer(ct.int_div().target());
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.int_div().vars());
-  m->Add(DivisionConstraint(vars[0], vars[1], div));
+  if (m->Get(IsFixed(vars[1]))) {
+    const IntegerValue denom(m->Get(Value(vars[1])));
+    m->Add(FixedDivisionConstraint(vars[0], denom, div));
+  } else {
+    m->Add(DivisionConstraint(vars[0], vars[1], div));
+  }
 }
 
 void LoadIntMinConstraint(const ConstraintProto& ct, Model* m) {

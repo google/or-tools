@@ -516,6 +516,61 @@ void DivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchIntegerVariable(c_, id);
 }
 
+FixedDivisionPropagator::FixedDivisionPropagator(IntegerVariable a,
+                                                 IntegerValue b,
+                                                 IntegerVariable c,
+                                                 IntegerTrail* integer_trail)
+    : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {}
+
+bool FixedDivisionPropagator::Propagate() {
+  const IntegerValue min_a = integer_trail_->LowerBound(a_);
+  const IntegerValue max_a = integer_trail_->UpperBound(a_);
+  IntegerValue min_c = integer_trail_->LowerBound(c_);
+  IntegerValue max_c = integer_trail_->UpperBound(c_);
+
+  CHECK_GT(b_, 0);  // b can never be zero. Must be > 0.
+
+  if (max_a / b_ < max_c) {
+    max_c = max_a / b_;
+    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(c_, max_c), {},
+                                 {integer_trail_->UpperBoundAsLiteral(a_)})) {
+      return false;
+    }
+  }
+  if (min_a / b_ > min_c) {
+    min_c = min_a / b_;
+    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(c_, min_c), {},
+                                 {integer_trail_->LowerBoundAsLiteral(a_)})) {
+      return false;
+    }
+  }
+
+  const IntegerValue new_min_a = min_c > 0 ? min_c * b_ : min_c * b_ - b_ + 1;
+  if (new_min_a > min_a) {
+    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(a_, new_min_a),
+                                 {},
+                                 {integer_trail_->LowerBoundAsLiteral(c_)})) {
+      return false;
+    }
+  }
+
+  const IntegerValue new_max_a = max_c >= 0 ? max_c * b_ + b_ - 1 : max_c * b_;
+  if (new_max_a < max_a) {
+    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(a_, new_max_a),
+                                 {},
+                                 {integer_trail_->UpperBoundAsLiteral(c_)})) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void FixedDivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  watcher->WatchIntegerVariable(a_, id);
+  watcher->WatchIntegerVariable(c_, id);
+}
+
 std::function<void(Model*)> IsOneOf(IntegerVariable var,
                                     const std::vector<Literal>& selectors,
                                     const std::vector<IntegerValue>& values) {
