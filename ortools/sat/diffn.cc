@@ -345,11 +345,12 @@ bool DetectPrecedences(bool time_direction, IntegerValue other_time,
   return true;
 }
 
-// Specialized propagation when only two boxes are mandatory on a single line
+// Specialized propagation on only two boxes are mandatory on a single line
 // (parallel to x or parallel to y). In that case, we can improve the reason
 // why these two boxes overlap on one dimension, forcing them to be disjoint
 // in the other dimension.
-bool PropagateTwoBoxes(int b1, int b2, SchedulingConstraintHelper* helper,
+bool PropagateTwoBoxes(IntegerValue other_time, int b1, int b2,
+                       SchedulingConstraintHelper* helper,
                        SchedulingConstraintHelper* other) {
   // For each direction and each order, we test if the boxes can be disjoint.
   const int state = (helper->EndMin(b1) <= helper->StartMax(b2)) +
@@ -391,29 +392,35 @@ bool PropagateTwoBoxes(int b1, int b2, SchedulingConstraintHelper* helper,
   // This is an "hack" to be able to easily test for none or for one
   // and only one of the conditions below.
   switch (state) {
-    case 0: {
+    case 0: {  // Conflict.
       helper->AddReasonForBeingBefore(b1, b2);
       helper->AddReasonForBeingBefore(b2, b1);
-      other->AddReasonForBeingBefore(b1, b2);
-      other->AddReasonForBeingBefore(b2, b1);
+      other->AddStartMaxReason(b1, other_time);
+      other->AddEndMinReason(b1, other_time + 1);
+      other->AddStartMaxReason(b2, other_time);
+      other->AddEndMinReason(b2, other_time + 1);
       helper->ImportOtherReasons(*other);
       return helper->ReportConflict();
     }
-    case 1: {
-      other->AddReasonForBeingBefore(b1, b2);
-      other->AddReasonForBeingBefore(b2, b1);
+    case 1: {  // b1 is left of b2.
+      other->AddStartMaxReason(b1, other_time);
+      other->AddEndMinReason(b1, other_time + 1);
+      other->AddStartMaxReason(b2, other_time);
+      other->AddEndMinReason(b2, other_time + 1);
       helper->AddReasonForBeingBefore(b1, b2);
       helper->ImportOtherReasons(*other);
       return left_box_before_right_box(b1, b2, helper);
     }
-    case 2: {
-      other->AddReasonForBeingBefore(b1, b2);
-      other->AddReasonForBeingBefore(b2, b1);
+    case 2: {  // b2 is left of b1.
+      other->AddStartMaxReason(b1, other_time);
+      other->AddEndMinReason(b1, other_time + 1);
+      other->AddStartMaxReason(b2, other_time);
+      other->AddEndMinReason(b2, other_time + 1);
       helper->AddReasonForBeingBefore(b2, b1);
       helper->ImportOtherReasons(*other);
       return left_box_before_right_box(b2, b1, helper);
     }
-    default: {
+    default: {  // Nothing to deduce.
       return true;
     }
   }
@@ -426,7 +433,7 @@ IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub) {
   if (lb < 0 && ub <= 0) {
     return -FindCanonicalValue(-ub, -lb);
   }
-  
+
   int64 mask = 0;
   IntegerValue candidate = ub;
   for (int o = 0; o < 62; ++o) {
@@ -511,6 +518,10 @@ bool NonOverlappingRectanglesPropagator::FindMandatoryBoxesOnOneDimension(
       ub = std::min(ub, other->EndMin(task) - 1);
     }
 
+    // TODO(user): We should scan to integer trail to find the oldest
+    // non-empty common interval. Then we can pick the canonical value within
+    // it.
+
     // Compute the 'canonical' line to use when explaining that boxes overlap
     // on the 'other' dimension. We compute the multiple of the biggest power of
     // two that is common to all boxes.
@@ -527,10 +538,10 @@ bool NonOverlappingRectanglesPropagator::PropagateMandatoryBoxesOnOneDimension(
     IntegerValue other_time, const std::vector<int>& boxes,
     SchedulingConstraintHelper* helper, SchedulingConstraintHelper* other) {
   if (boxes.size() == 2) {
-    // In that case, we can use simpler algorithms, and stronger explanations.
+    // In that case, we can use simpler algorithms.
     // Note that this case happens frequently (~30% of all calls to this method
     // according to our tests).
-    return PropagateTwoBoxes(boxes[0], boxes[1], helper, other);
+    return PropagateTwoBoxes(other_time, boxes[0], boxes[1], helper, other);
   }
 
   const absl::flat_hash_set<int> active_boxes(boxes.begin(), boxes.end());

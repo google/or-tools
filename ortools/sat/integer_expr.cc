@@ -528,7 +528,7 @@ bool FixedDivisionPropagator::Propagate() {
   IntegerValue min_c = integer_trail_->LowerBound(c_);
   IntegerValue max_c = integer_trail_->UpperBound(c_);
 
-  CHECK_GT(b_, 0);  // b can never be zero. Must be > 0.
+  CHECK_GT(b_, 0);
 
   if (max_a / b_ < max_c) {
     max_c = max_a / b_;
@@ -536,17 +536,26 @@ bool FixedDivisionPropagator::Propagate() {
                                  {integer_trail_->UpperBoundAsLiteral(a_)})) {
       return false;
     }
+  } else if (max_a / b_ > max_c) {
+    const IntegerValue new_max_a =
+        max_c >= 0 ? max_c * b_ + b_ - 1 : max_c * b_;
+    CHECK_LT(new_max_a, max_a);
+    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(a_, new_max_a),
+                                 {},
+                                 {integer_trail_->UpperBoundAsLiteral(c_)})) {
+      return false;
+    }
   }
+
   if (min_a / b_ > min_c) {
     min_c = min_a / b_;
     if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(c_, min_c), {},
                                  {integer_trail_->LowerBoundAsLiteral(a_)})) {
       return false;
     }
-  }
-
-  const IntegerValue new_min_a = min_c > 0 ? min_c * b_ : min_c * b_ - b_ + 1;
-  if (new_min_a > min_a) {
+  } else if (min_a / b_ < min_c) {
+    const IntegerValue new_min_a = min_c > 0 ? min_c * b_ : min_c * b_ - b_ + 1;
+    CHECK_GT(new_min_a, min_a);
     if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(a_, new_min_a),
                                  {},
                                  {integer_trail_->LowerBoundAsLiteral(c_)})) {
@@ -554,14 +563,6 @@ bool FixedDivisionPropagator::Propagate() {
     }
   }
 
-  const IntegerValue new_max_a = max_c >= 0 ? max_c * b_ + b_ - 1 : max_c * b_;
-  if (new_max_a < max_a) {
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(a_, new_max_a),
-                                 {},
-                                 {integer_trail_->UpperBoundAsLiteral(c_)})) {
-      return false;
-    }
-  }
   return true;
 }
 

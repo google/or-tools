@@ -55,24 +55,14 @@ LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model) {
   return ge.Index();
 }
 
-LiteralIndex SplitDomainUsingLpValue(IntegerVariable var, Model* model) {
+LiteralIndex SplitAroundGivenValue(IntegerVariable positive_var,
+                                   IntegerValue value, Model* model) {
+  DCHECK(VariableIsPositive(positive_var));
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
 
-  const IntegerVariable positive_var =
-      VariableIsPositive(var) ? var : NegationOf(var);
-  DCHECK(!integer_trail->IsCurrentlyIgnored(positive_var));
-  LinearProgrammingConstraint* lp =
-      gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
-  if (lp == nullptr) return kNoLiteralIndex;
-  const IntegerValue value = IntegerValue(
-      static_cast<int64>(std::round(lp->GetSolutionValue(positive_var))));
-
-  // Because our lp solution might be from higher up in the tree, it
-  // is possible that value is now outside the domain of positive_var.
-  // In this case, we just revert to the current literal.
+  // The value might be out of bounds. In that case we return kNoLiteralIndex.
   const IntegerValue lb = integer_trail->LowerBound(positive_var);
   const IntegerValue ub = integer_trail->UpperBound(positive_var);
 
@@ -98,6 +88,40 @@ LiteralIndex SplitDomainUsingLpValue(IntegerVariable var, Model* model) {
     return ge.Index();
   }
   return kNoLiteralIndex;
+}
+
+LiteralIndex SplitAroundLpValue(IntegerVariable var, Model* model) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
+
+  const IntegerVariable positive_var = PositiveVariable(var);
+  DCHECK(!integer_trail->IsCurrentlyIgnored(positive_var));
+  LinearProgrammingConstraint* lp =
+      gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+  if (lp == nullptr) return kNoLiteralIndex;
+  const IntegerValue value = IntegerValue(
+      static_cast<int64>(std::round(lp->GetSolutionValue(positive_var))));
+
+  // Because our lp solution might be from higher up in the tree, it
+  // is possible that value is now outside the domain of positive_var.
+  // In this case, we just revert to the current literal.
+  return SplitAroundGivenValue(positive_var, value, model);
+}
+
+LiteralIndex SplitDomainUsingBestSolutionValue(IntegerVariable var,
+                                               Model* model) {
+  SolutionDetails* solution_details = model->GetOrCreate<SolutionDetails>();
+  if (solution_details->solution_count == 0) return kNoLiteralIndex;
+
+  const IntegerVariable positive_var = PositiveVariable(var);
+
+  if (var >= solution_details->best_solution.size()) {
+    return kNoLiteralIndex;
+  }
+
+  VLOG(2) << "Using last solution value for branching";
+  const IntegerValue value = solution_details->best_solution[var];
+  return SplitAroundGivenValue(positive_var, value, model);
 }
 
 // TODO(user): the complexity caused by the linear scan in this heuristic and
@@ -177,8 +201,13 @@ std::function<LiteralIndex()> PseudoCost(Model* model) {
 
     if (chosen_var == kNoIntegerVariable) return kNoLiteralIndex;
 
-    // TODO(user): Experiment with different heuristics for choosing
-    // value.
+    // TODO(user): Experiment with value selection heuristics.
+    const LiteralIndex best_solution_decision =
+        SplitDomainUsingBestSolutionValue(chosen_var, model);
+    if (best_solution_decision != kNoLiteralIndex) {
+      return best_solution_decision;
+    }
+
     return GreaterOrEqualToMiddleValue(chosen_var, model);
   };
 }
@@ -217,7 +246,6 @@ std::function<LiteralIndex()> FollowHint(
     const std::vector<IntegerValue>& values, Model* model) {
   const Trail* trail = model->GetOrCreate<Trail>();
   const IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   return [=] {  // copy
     for (int i = 0; i < vars.size(); ++i) {
       const IntegerValue value = values[i];
@@ -233,24 +261,10 @@ std::function<LiteralIndex()> FollowHint(
         const IntegerValue ub = integer_trail->UpperBound(integer_var);
         if (lb == ub) continue;
 
-        // We try first (<= value), but if this do not reduce the domain we
-        // try to enqueue (>= value). Note that even for domain with hole,
-        // since we know that this variable is not fixed, one of the two
-        // alternative must reduce the domain.
-        //
-        // TODO(user): De-dup with logic in ExploitLpSolution.
-        if (value >= lb && value < ub) {
-          const Literal le = encoder->GetOrCreateAssociatedLiteral(
-              IntegerLiteral::LowerOrEqual(integer_var, value));
-          CHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
-          return le.Index();
-        }
-        if (value > lb && value <= ub) {
-          const Literal ge = encoder->GetOrCreateAssociatedLiteral(
-              IntegerLiteral::GreaterOrEqual(integer_var, value));
-          CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
-          return ge.Index();
-        }
+        const IntegerVariable positive_var = PositiveVariable(integer_var);
+        const LiteralIndex decision =
+            SplitAroundGivenValue(positive_var, value, model);
+        if (decision != kNoLiteralIndex) return decision;
 
         // If the value is outside the current possible domain, we skip it.
         continue;
@@ -286,11 +300,9 @@ LiteralIndex ExploitLpSolution(const LiteralIndex decision, Model* model) {
   if (lp_solution_is_exploitable) {
     for (const IntegerLiteral l :
          encoder->GetAllIntegerLiterals(Literal(decision))) {
-      const IntegerVariable positive_var =
-          VariableIsPositive(l.var) ? l.var : NegationOf(l.var);
+      const IntegerVariable positive_var = PositiveVariable(l.var);
       if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
-      const LiteralIndex lp_decision =
-          SplitDomainUsingLpValue(positive_var, model);
+      const LiteralIndex lp_decision = SplitAroundLpValue(positive_var, model);
       if (lp_decision != kNoLiteralIndex) {
         return lp_decision;
       }
@@ -463,6 +475,16 @@ std::vector<std::function<LiteralIndex()>> CompleteHeuristics(
   return complete_heuristics;
 }
 
+void SolutionDetails::LoadFromTrail(const IntegerTrail& integer_trail) {
+  const IntegerVariable num_vars = integer_trail.NumIntegerVariables();
+  best_solution.resize(num_vars.value());
+  // NOTE: There might be some variables which are not fixed.
+  for (IntegerVariable var(0); var < num_vars; ++var) {
+    best_solution[var] = integer_trail.LowerBound(var);
+  }
+  solution_count++;
+}
+
 SatSolver::Status SolveProblemWithPortfolioSearch(
     std::vector<std::function<LiteralIndex()>> decision_policies,
     std::vector<std::function<bool()>> restart_policies, Model* model) {
@@ -560,7 +582,13 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     }
     const int old_level = solver->CurrentDecisionLevel();
 
-    if (decision == kNoLiteralIndex) return SatSolver::FEASIBLE;
+    if (decision == kNoLiteralIndex) {
+      SolutionDetails* solution_details = model->Mutable<SolutionDetails>();
+      if (solution_details != nullptr) {
+        solution_details->LoadFromTrail(*integer_trail);
+      }
+      return SatSolver::FEASIBLE;
+    }
 
     // TODO(user): on some problems, this function can be quite long. Expand
     // so that we can check the time limit at each step?

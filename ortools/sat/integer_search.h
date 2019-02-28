@@ -27,13 +27,34 @@ namespace sat {
 // kNoLiteralIndex if the variable is fixed.
 LiteralIndex AtMinValue(IntegerVariable var, Model* model);
 
-// Returns decision corresponding to var <= round(lp_value). If the variable
-// does not appear in the LP, this method returns kNoLiteralIndex.
-LiteralIndex SplitDomainUsingLpValue(IntegerVariable var, Model* model);
-
 // Returns decision corresponding to var >= lb + max(1, (ub - lb) / 2). It also
 // CHECKs that the variable is not fixed.
 LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model);
+
+// This method first tries var <= value. If this does not reduce the domain it
+// tries var >= value. If that also does not reduce the domain then returns
+// kNoLiteralIndex.
+LiteralIndex SplitAroundGivenValue(IntegerVariable positive_var,
+                                   IntegerValue value, Model* model);
+
+// Returns decision corresponding to var <= round(lp_value). If the variable
+// does not appear in the LP, this method returns kNoLiteralIndex.
+LiteralIndex SplitAroundLpValue(IntegerVariable var, Model* model);
+
+struct SolutionDetails {
+  int64 solution_count = 0;
+  gtl::ITIVector<IntegerVariable, IntegerValue> best_solution;
+
+  // Loads the solution in best_solution using lower bounds from integer trail.
+  void LoadFromTrail(const IntegerTrail& integer_trail);
+};
+
+// Returns decision corresponding to var <= best_solution[var]. If no solution
+// has been found, this method returns kNoLiteralIndex. This was suggested in
+// paper: "Solution-Based Phase Saving for CP" (2018) by Emir Demirovic,
+// Geoffrey Chu, and Peter J. Stuckey
+LiteralIndex SplitDomainUsingBestSolutionValue(IntegerVariable var,
+                                               Model* model);
 
 // Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Returns a
 // function that will return the literal corresponding to the fact that the
