@@ -177,6 +177,25 @@ MATRIX_AS_JAVA_ARRAY(double, double, Double);
 %typemap(javaout) const std::vector<CType*> & {
   return $jnicall;
 }
+
+// Same, for std::vector<CType*>
+%typemap(jstype) std::vector<CType*> "JavaType[]"
+%typemap(javain) std::vector<CType*> "$javainput"
+%typemap(jtype) std::vector<CType*> "JavaType[]"
+%typemap(jni) std::vector<CType*> "jobjectArray"
+%typemap(in) std::vector<CType*> (std::vector<CType*> result) {
+  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
+  if (nullptr == object_class)
+    return $null;
+  jmethodID method_id = jenv->GetStaticMethodID(
+    object_class, "getCPtr", "(LJavaPackage/JavaType;)J");
+  assert(method_id != nullptr);
+  for (int i = 0; i < jenv->GetArrayLength($input); i++) {
+    jobject elem = jenv->GetObjectArrayElement($input, i);
+    jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
+    $1.push_back(CastOp(CType, ptr_value));
+  }
+}
 %enddef
 
 %define REINTERPRET_CAST(CType, ptr)
