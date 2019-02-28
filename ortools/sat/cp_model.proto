@@ -15,12 +15,12 @@
 
 syntax = "proto3";
 
+package operations_research.sat;
+
 option csharp_namespace = "Google.OrTools.Sat";
 option java_package = "com.google.ortools.sat";
 option java_multiple_files = true;
 option java_outer_classname = "CpModelProtobuf";
-
-package operations_research.sat;
 
 // An integer variable.
 //
@@ -115,8 +115,9 @@ message NoOverlapConstraintProto {
 
 // The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.
 //
-// TODO(user): If one of the box dimension is zero, it is not clear what
-// happens. For now, only use with non-zero box dimensions.
+// TODO(user): Currently, this constraint will ignore a box if one of its
+// dimension is zero. Add parameter to specify the behavior with boxes with
+// zero area.
 message NoOverlap2DConstraintProto {
   repeated int32 x_intervals = 1;
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
@@ -266,7 +267,6 @@ message ConstraintProto {
 
   // The actual constraint with its arguments.
   oneof constraint {
-
     // The bool_or constraint forces at least one literal to be true.
     BoolArgumentProto bool_or = 3;
 
