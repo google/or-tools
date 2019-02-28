@@ -191,6 +191,44 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
 	@echo "# i.e. you define all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
+	@echo " UNIX_GUROBI_DIR=/opt/gurobi800" >> Makefile.local
+	@echo "GUROBI_LIB_VERSION=80" >> Makefile.local
+	@echo "UNIX_CPLEX_DIR=/opt/CPLEX_Studio_Community128" >> Makefile.local
+	@echo "UNIX_SCIP_DIR=/opt/scipoptsuite-5.0.1/scip" >> Makefile.local
+	@echo "# i.e. you define all UNIX_GTEST_DIR, UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
+
+##############
+##  GTEST  ##
+##############
+# This uses gflags cmake-based build.
+.PHONY: build_gtest
+build_gtest: dependencies/install/lib/libgtest.$L
+
+dependencies/install/lib/libgtest.$L: dependencies/sources/gtest-$(GTEST_TAG) | dependencies/install
+	cd dependencies/sources/gtest-$(GTEST_TAG) && \
+  $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_STATIC_LIBS=OFF \
+    -DBUILD_TESTING=OFF \
+    -DGTEST_NAMESPACE=gtest \
+    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_INSTALL_PREFIX=../../install && \
+  $(CMAKE) --build build_cmake -- -j 4 && \
+  $(CMAKE) --build build_cmake --target install
+
+dependencies/sources/gtest-$(GTEST_TAG): | dependencies/sources
+	-$(DELREC) dependencies/sources/gtest-$(GTEST_TAG)
+	git clone --quiet -b release-$(GTEST_TAG) https://github.com/google/googletest.git dependencies/sources/gtest-$(GTEST_TAG)
+
+GTEST_INC = -I$(UNIX_GTEST_DIR)/include
+GTEST_SWIG = $(GTEST_INC)
+STATIC_GTEST_LNK = $(UNIX_GTEST_DIR)/lib/libgtest.a
+DYNAMIC_GTEST_LNK = -L$(UNIX_GTEST_DIR)/lib -lgtest
+
+GTEST_LNK = $(DYNAMIC_GTEST_LNK)
+DEPENDENCIES_LNK += $(GTEST_LNK)
+OR_TOOLS_LNK += $(GTEST_LNK)
+>>>>>>> ee46ebf00... add third party dependencies to Makefile.local
 
 ##############
 ##  GFLAGS  ##
