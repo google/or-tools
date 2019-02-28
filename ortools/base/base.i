@@ -10,32 +10,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-#ifdef SWIGPYTHON
-
-#pragma SWIG nowarn=312,451,454,503,362
-
-// 312 suppresses warnings about nested classes that SWIG doesn't currently
-// support.
-// 451 suppresses warnings about setting const char * variable may leak memory.
-// 454 suppresses setting global ptr/ref variables may leak memory warning
-// 503 suppresses warnings about identifiers that SWIG can't wrap without a
-// rename.  For example, an operator< in a class without a rename.
-// 362 is similar to 503 but for operator=.
-
-%include "typemaps.i"
-%include "exception.i"
-%include "stdint.i"
-%include "std_string.i"
-
 %{
 #include <cstdint>
 #include <string>
 #include <vector>
 
 #include "ortools/base/basictypes.h"
-#include "ortools/base/python-swig.h"
 %}
+
+%include "typemaps.i"
+%include "stdint.i"
+%include "std_string.i"
+
+// Google typedef
+typedef int32_t int32;
+typedef uint32_t uint32;
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 // Typedefs and typemaps do not interact the way one would expect.
 // E.g., "typedef int int32;" alone does *not* mean that typemap
@@ -56,30 +47,31 @@ typedef oldtype newtype;
 %apply std::vector<oldtype> * OUTPUT { std::vector<newtype> * OUTPUT };
 %enddef
 
-COPY_TYPEMAPS(int, int32);
-COPY_TYPEMAPS(unsigned int, uint32);
+COPY_TYPEMAPS(int32_t, int32);
+COPY_TYPEMAPS(uint32_t, uint32);
 COPY_TYPEMAPS(int64_t, int64);
 COPY_TYPEMAPS(uint64_t, uint64);
 #undef COPY_TYPEMAPS
 
+#ifdef SWIGPYTHON
+
+#pragma SWIG nowarn=312,451,454,503,362
+// 312 suppresses warnings about nested classes that SWIG doesn't currently
+// support.
+// 451 suppresses warnings about setting const char * variable may leak memory.
+// 454 suppresses setting global ptr/ref variables may leak memory warning
+// 503 suppresses warnings about identifiers that SWIG can't wrap without a
+// rename.  For example, an operator< in a class without a rename.
+// 362 is similar to 503 but for operator=.
+%{
+#include "ortools/base/python-swig.h"
+%}
+
+%include "exception.i"
+
 #endif  // SWIGPYTHON
 
 #if defined(SWIGJAVA) || defined(SWIGCSHARP)
-%{
-#include <cstdint>
-#include <string>
-#include <vector>
-
-#include "ortools/base/basictypes.h"
-%}
-
-%include "stdint.i"
-%include "std_string.i"
-
-typedef int int32;
-typedef unsigned int uint32;
-typedef int64_t int64;
-typedef uint64_t uint64;
 
 #endif  // defined(SWIGJAVA) || defined(SWIGCSHARP)
 
