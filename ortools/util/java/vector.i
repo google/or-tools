@@ -129,6 +129,45 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
   $1 = &result;
 %}
 
+// Same, for std::vector<std::vector<CType>>*
+%typemap(jstype) std::vector<std::vector<CType> >* #JavaType "[][]"
+%typemap(javain) std::vector<std::vector<CType> >* "$javainput"
+%typemap(jtype) std::vector<std::vector<CType> >* #JavaType "[][]"
+%typemap(jni) std::vector<std::vector<CType> >* "jobjectArray"
+%typemap(in) std::vector<std::vector<CType> >* (std::vector<std::vector<CType> > temp) %{
+  if (!$input) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "array null");
+    return $null;
+  }
+  $1 = &temp;
+%}
+%typemap(argout) std::vector<std::vector<CType> >* %{
+  // Verify arg has enough inner array element(s) since we can't resize it.
+  const int outer_size = $1->size();
+  if (JCALL1(GetArrayLength, jenv, $input) < outer_size) {
+    std::string message("Array must contain at least ");
+    message += std::to_string(outer_size);
+    message += " inner array element(s), only contains ";
+    message += std::to_string(outer_size);
+    message += " element(s).";
+    SWIG_JavaThrowException(jenv, SWIG_JavaIndexOutOfBoundsException, message.c_str());
+    return $null;
+  }
+
+  for (int index1 = 0; index1 < outer_size; ++index1) {
+    // Create inner array
+    const int inner_size = (*$1)[index1].size();
+    j##JavaType##Array inner_array = JCALL1(New##JavaTypeName##Array, jenv, inner_size);
+    // Copy data in it
+    JCALL4(Set##JavaTypeName##ArrayRegion, jenv,
+      inner_array,
+      0,
+      inner_size,
+      reinterpret_cast<const j##JavaType*>((*$1)[index1].data()));
+    // Add innner_array to $input
+    JCALL3(SetObjectArrayElement, jenv, $input, index1, inner_array);
+  }
+%}
 %enddef  // MATRIX_AS_JAVA_ARRAY
 
 MATRIX_AS_JAVA_ARRAY(int, int, Int);
