@@ -49,6 +49,7 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::RoutingModel::VehicleClassIndex);
 
 namespace operations_research {
+
 // RoutingModel
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
@@ -60,24 +61,35 @@ import java.util.function.LongBinaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
 %}
-%ignore RoutingModel::RegisterStateDependentTransitCallback;
-%ignore RoutingModel::StateDependentTransitCallback;
-%ignore RoutingModel::MakeStateDependentTransit;
+// Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name);
-
-%extend RoutingModel {
-  void addMatrixDimension(const std::vector<std::vector<int64> >& values,
-                          int64 capacity, bool fix_start_cumul_to_zero,
-                          const std::string& name) {
-    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
-  }
-}
-
+%ignore RoutingModel::GetAllDimensionNames;
+%ignore RoutingModel::GetDeliveryIndexPairs;
+%ignore RoutingModel::GetDimensions;
+%ignore RoutingModel::GetDimensionsWithSoftAndSpanCosts;
+%ignore RoutingModel::GetDimensionsWithSoftOrSpanCosts;
+%ignore RoutingModel::GetPerfectBinaryDisjunctions;
+%ignore RoutingModel::GetPickupIndexPairs;
+%ignore RoutingModel::GetTypeIncompatibilities;
+%ignore RoutingModel::MakeStateDependentTransit;
+%ignore RoutingModel::RegisterStateDependentTransitCallback;
+%ignore RoutingModel::SolveWithParameters(
+    const RoutingSearchParameters& search_parameters,
+    std::vector<const Assignment*>* solutions);
+%ignore RoutingModel::SolveFromAssignmentWithParameters(
+      const Assignment* assignment,
+      const RoutingSearchParameters& search_parameters,
+      std::vector<const Assignment*>* solutions);
+%ignore RoutingModel::TransitCallback;
+%ignore RoutingModel::StateDependentTransitCallback;
+%ignore RoutingModel::UnaryTransitCallbackOrNull;
+// Methods:
+%unignore RoutingModel;
 %rename (activeVar) RoutingModel::ActiveVar;
 %rename (addAllActive) RoutingModel::AddAllActive;
 %rename (addAtSolutionCallback) RoutingModel::AddAtSolutionCallback;
@@ -114,7 +126,6 @@ import java.util.function.LongUnaryOperator;
 %rename (costsAreHomogeneousAcrossVehicles) RoutingModel::CostsAreHomogeneousAcrossVehicles;
 %rename (debugOutputAssignment) RoutingModel::DebugOutputAssignment;
 %rename (end) RoutingModel::End;
-%rename (getAllDimensionNames) RoutingModel::GetAllDimensionNames;
 %rename (getAmortizedLinearCostFactorOfVehicles) RoutingModel::GetAmortizedLinearCostFactorOfVehicles;
 %rename (getAmortizedQuadraticCostFactorOfVehicles) RoutingModel::GetAmortizedQuadraticCostFactorOfVehicles;
 %rename (getArcCostForClass) RoutingModel::GetArcCostForClass;
@@ -122,12 +133,8 @@ import java.util.function.LongUnaryOperator;
 %rename (getArcCostForVehicle) RoutingModel::GetArcCostForVehicle;
 %rename (getCostClassIndexOfVehicle) RoutingModel::GetCostClassIndexOfVehicle;
 %rename (getCostClassesCount) RoutingModel::GetCostClassesCount;
-%rename (getDeliveryIndexPairs) RoutingModel::GetDeliveryIndexPairs;
 %rename (getDepot) RoutingModel::GetDepot;
 %rename (getDimensionOrDie) RoutingModel::GetDimensionOrDie;
-%rename (getDimensions) RoutingModel::GetDimensions;
-%rename (getDimensionsWithSoftAndSpanCosts) RoutingModel::GetDimensionsWithSoftAndSpanCosts;
-%rename (getDimensionsWithSoftOrSpanCosts) RoutingModel::GetDimensionsWithSoftOrSpanCosts;
 %rename (getDisjunctionIndices) RoutingModel::GetDisjunctionIndices;
 %rename (getDisjunctionMaxCardinality) RoutingModel::GetDisjunctionMaxCardinality;
 %rename (getDisjunctionPenalty) RoutingModel::GetDisjunctionPenalty;
@@ -140,12 +147,9 @@ import java.util.function.LongUnaryOperator;
 %rename (getNumberOfDisjunctions) RoutingModel::GetNumberOfDisjunctions;
 %rename (getNumberOfRejectsInFirstSolution) RoutingModel::GetNumberOfRejectsInFirstSolution;
 %rename (getNumberOfVisitTypes) RoutingModel::GetNumberOfVisitTypes;
-%rename (getPerfectBinaryDisjunctions) RoutingModel::GetPerfectBinaryDisjunctions;
 %rename (getPickupAndDeliveryPolicyOfVehicle) RoutingModel::GetPickupAndDeliveryPolicyOfVehicle;
-%rename (getPickupIndexPairs) RoutingModel::GetPickupIndexPairs;
 %rename (getPrimaryConstrainedDimension) RoutingModel::GetPrimaryConstrainedDimension;
 %rename (getSameVehicleIndicesOfIndex) RoutingModel::GetSameVehicleIndicesOfIndex;
-%rename (getTypeIncompatibilities) RoutingModel::GetTypeIncompatibilities;
 %rename (getVehicleClassIndexOfVehicle) RoutingModel::GetVehicleClassIndexOfVehicle;
 %rename (getVehicleClassesCount) RoutingModel::GetVehicleClassesCount;
 %rename (getVisitType) RoutingModel::GetVisitType;
@@ -189,17 +193,21 @@ import java.util.function.LongUnaryOperator;
 %rename (solveFromAssignmentWithParameters) RoutingModel::SolveFromAssignmentWithParameters;
 %rename (solveWithParameters) RoutingModel::SolveWithParameters;
 %rename (start) RoutingModel::Start;
-%rename (transitCallback) RoutingModel::TransitCallback;
-%rename (unaryTransitCallbackOrNull) RoutingModel::UnaryTransitCallbackOrNull;
 %rename (unperformedPenalty) RoutingModel::UnperformedPenalty;
 %rename (unperformedPenaltyOrValue) RoutingModel::UnperformedPenaltyOrValue;
 %rename (vehicleVar) RoutingModel::VehicleVar;
 %rename (vehicleVars) RoutingModel::VehicleVars;
 %rename (writeAssignment) RoutingModel::WriteAssignment;
-
-// Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
-// For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
+// Extend:
 %extend RoutingModel {
+  void addMatrixDimension(const std::vector<std::vector<int64> >& values,
+                          int64 capacity, bool fix_start_cumul_to_zero,
+                          const std::string& name) {
+    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
+  }
+
+  // Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
+  // For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
   static const RoutingModel::PickupAndDeliveryPolicy ANY =
   operations_research::RoutingModel::PickupAndDeliveryPolicy::ANY;
   static const RoutingModel::PickupAndDeliveryPolicy LIFO =
