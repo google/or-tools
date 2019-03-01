@@ -350,9 +350,120 @@ bool DetectPrecedences(bool time_direction, IntegerValue y_line_for_reason,
   return true;
 }
 
+bool NotLast(bool time_direction, IntegerValue y_line_for_reason,
+             const absl::flat_hash_set<int>& boxes,
+             SchedulingConstraintHelper* x_dim,
+             SchedulingConstraintHelper* y_dim) {
+  x_dim->SetTimeDirection(time_direction);
+  y_dim->SetTimeDirection(true);
+  const auto& task_by_decreasing_start_max =
+      x_dim->TaskByDecreasingStartMax();
+
+  const int num_tasks = x_dim->NumTasks();
+  int queue_index = num_tasks - 1;
+
+  TaskSet task_set(num_tasks);
+  const auto& task_by_increasing_end_max =
+      ::gtl::reversed_view(x_dim->TaskByDecreasingEndMax());
+  for (const auto task_time : task_by_increasing_end_max) {
+    const int t = task_time.task_index;
+    const IntegerValue end_max = task_time.time;
+
+    if (x_dim->IsAbsent(t) || !boxes.contains(t)) continue;
+
+    // task_set contains all the tasks that must start before the end-max of t.
+    // These are the only candidates that have a chance to decrease the end-max
+    // of t.
+    while (queue_index >= 0) {
+      const auto to_insert = task_by_decreasing_start_max[queue_index];
+      const int task_index = to_insert.task_index;
+      const IntegerValue start_max = to_insert.time;
+      if (end_max <= start_max) break;
+      if (boxes.contains(task_index)) {
+        CHECK(x_dim->IsPresent(task_index));
+        task_set.AddEntry({task_index, x_dim->ShiftedStartMin(task_index),
+                           x_dim->DurationMin(task_index)});
+      }
+      --queue_index;
+    }
+
+    // In the following case, task t cannot be after all the critical tasks
+    // (i.e. it cannot be last):
+    //
+    // [(critical tasks)
+    //              | <- t start-max
+    //
+    // So we can deduce that the end-max of t is smaller than or equal to the
+    // largest start-max of the critical tasks.
+    //
+    // Note that this works as well when task_is_currently_present_[t] is false.
+    int critical_index = 0;
+    const IntegerValue end_min_of_critical_tasks =
+        task_set.ComputeEndMin(/*task_to_ignore=*/t, &critical_index);
+    if (end_min_of_critical_tasks <= x_dim->StartMax(t)) continue;
+
+    // Find the largest start-max of the critical tasks (excluding t). The
+    // end-max for t need to be smaller than or equal to this.
+    IntegerValue largest_ct_start_max = kMinIntegerValue;
+    const std::vector<TaskSet::Entry>& sorted_tasks = task_set.SortedTasks();
+    const int sorted_tasks_size = sorted_tasks.size();
+    for (int i = critical_index; i < sorted_tasks_size; ++i) {
+      const int ct = sorted_tasks[i].task;
+      if (t == ct) continue;
+      const IntegerValue start_max = x_dim->StartMax(ct);
+      if (start_max > largest_ct_start_max) {
+        largest_ct_start_max = start_max;
+      }
+    }
+
+    // If we have any critical task, the test will always be true because
+    // of the tasks we put in task_set.
+    DCHECK(largest_ct_start_max == kMinIntegerValue ||
+           end_max > largest_ct_start_max);
+    if (end_max > largest_ct_start_max) {
+      x_dim->ClearReason();
+      y_dim->ClearReason();
+
+      const IntegerValue window_start = sorted_tasks[critical_index].start_min;
+
+      std::vector<int> tasks(sorted_tasks.size() - critical_index);
+      for (int i = critical_index; i < sorted_tasks.size(); ++i) {
+        tasks[i - critical_index] = sorted_tasks[i].task;
+      }
+
+      for (int i = critical_index; i < sorted_tasks_size; ++i) {
+        const int ct = sorted_tasks[i].task;
+
+        CHECK(gtl::ContainsKey(boxes, ct));
+        CHECK(x_dim->IsPresent(ct));
+        if (ct == t) continue;
+
+        x_dim->AddEnergyAfterReason(ct, sorted_tasks[i].duration_min,
+                                      window_start);
+        x_dim->AddStartMaxReason(ct, largest_ct_start_max);
+        y_dim->AddStartMaxReason(ct, y_line_for_reason);
+        y_dim->AddEndMinReason(ct, y_line_for_reason + 1);
+      }
+
+      // Add the reason for t, we only need the start-max.
+      x_dim->AddStartMaxReason(t, end_min_of_critical_tasks - 1);
+      y_dim->AddStartMaxReason(t, y_line_for_reason);
+      y_dim->AddEndMinReason(t, y_line_for_reason + 1);
+
+      // Import reasons from the 'y_dim' dimension.
+      x_dim->ImportOtherReasons(*y_dim);
+
+      // Enqueue the new end-max for t.
+      // Note that changing it will not influence the rest of the loop.
+      if (!x_dim->DecreaseEndMax(t, largest_ct_start_max)) return false;
+    }
+  }
+  return true;
+}
+
 // Specialized propagation on only two boxes that must intersect with the given
 // y_line_for_reason.
-bool PropagateTwoBoxes(IntegerValue other_time, int b1, int b2,
+bool PropagateTwoBoxes(IntegerValue y_line_for_reason, int b1, int b2,
                        SchedulingConstraintHelper* x_dim,
                        SchedulingConstraintHelper* y_dim) {
   // For each direction and each order, we test if the boxes can be disjoint.
@@ -396,27 +507,27 @@ bool PropagateTwoBoxes(IntegerValue other_time, int b1, int b2,
     case 0: {  // Conflict.
       x_dim->AddReasonForBeingBefore(b1, b2);
       x_dim->AddReasonForBeingBefore(b2, b1);
-      y_dim->AddStartMaxReason(b1, other_time);
-      y_dim->AddEndMinReason(b1, other_time + 1);
-      y_dim->AddStartMaxReason(b2, other_time);
-      y_dim->AddEndMinReason(b2, other_time + 1);
+      y_dim->AddStartMaxReason(b1, y_line_for_reason);
+      y_dim->AddEndMinReason(b1, y_line_for_reason + 1);
+      y_dim->AddStartMaxReason(b2, y_line_for_reason);
+      y_dim->AddEndMinReason(b2, y_line_for_reason + 1);
       x_dim->ImportOtherReasons(*y_dim);
       return x_dim->ReportConflict();
     }
     case 1: {  // b1 is left of b2.
-      y_dim->AddStartMaxReason(b1, other_time);
-      y_dim->AddEndMinReason(b1, other_time + 1);
-      y_dim->AddStartMaxReason(b2, other_time);
-      y_dim->AddEndMinReason(b2, other_time + 1);
+      y_dim->AddStartMaxReason(b1, y_line_for_reason);
+      y_dim->AddEndMinReason(b1, y_line_for_reason + 1);
+      y_dim->AddStartMaxReason(b2, y_line_for_reason);
+      y_dim->AddEndMinReason(b2, y_line_for_reason + 1);
       x_dim->AddReasonForBeingBefore(b1, b2);
       x_dim->ImportOtherReasons(*y_dim);
       return left_box_before_right_box(b1, b2, x_dim);
     }
     case 2: {  // b2 is left of b1.
-      y_dim->AddStartMaxReason(b1, other_time);
-      y_dim->AddEndMinReason(b1, other_time + 1);
-      y_dim->AddStartMaxReason(b2, other_time);
-      y_dim->AddEndMinReason(b2, other_time + 1);
+      y_dim->AddStartMaxReason(b1, y_line_for_reason);
+      y_dim->AddEndMinReason(b1, y_line_for_reason + 1);
+      y_dim->AddStartMaxReason(b2, y_line_for_reason);
+      y_dim->AddEndMinReason(b2, y_line_for_reason + 1);
       x_dim->AddReasonForBeingBefore(b2, b1);
       x_dim->ImportOtherReasons(*y_dim);
       return left_box_before_right_box(b2, b1, x_dim);
@@ -535,7 +646,7 @@ bool NonOverlappingRectanglesPropagator::
 }
 
 bool NonOverlappingRectanglesPropagator::
-    PropagateBoxesOvelappingAHorizontalLine(IntegerValue other_time,
+    PropagateBoxesOvelappingAHorizontalLine(IntegerValue y_line_for_reason,
                                             const std::vector<int>& boxes,
                                             SchedulingConstraintHelper* x_dim,
                                             SchedulingConstraintHelper* y_dim) {
@@ -543,15 +654,19 @@ bool NonOverlappingRectanglesPropagator::
     // In that case, we can use simpler algorithms.
     // Note that this case happens frequently (~30% of all calls to this method
     // according to our tests).
-    return PropagateTwoBoxes(other_time, boxes[0], boxes[1], x_dim, y_dim);
+    return PropagateTwoBoxes(y_line_for_reason, boxes[0], boxes[1], x_dim, y_dim);
   }
 
   const absl::flat_hash_set<int> active_boxes(boxes.begin(), boxes.end());
-  RETURN_IF_FALSE(CheckOverload(other_time, active_boxes, x_dim, y_dim));
+  RETURN_IF_FALSE(CheckOverload(y_line_for_reason, active_boxes, x_dim, y_dim));
   RETURN_IF_FALSE(
-      DetectPrecedences(true, other_time, active_boxes, x_dim, y_dim));
+      DetectPrecedences(true, y_line_for_reason, active_boxes, x_dim, y_dim));
   RETURN_IF_FALSE(
-      DetectPrecedences(false, other_time, active_boxes, x_dim, y_dim));
+      DetectPrecedences(false, y_line_for_reason, active_boxes, x_dim, y_dim));
+  RETURN_IF_FALSE(
+      NotLast(false, y_line_for_reason, active_boxes, x_dim, y_dim));
+  RETURN_IF_FALSE(
+      NotLast(true, y_line_for_reason, active_boxes, x_dim, y_dim));
   return true;
 }
 
