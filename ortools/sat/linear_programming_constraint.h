@@ -205,8 +205,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // will still be exact as it will work for any set of multiplier.
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
       bool take_objective_into_account, bool use_constraint_status,
-      const glop::DenseColumn& dense_lp_multipliers,
-      glop::Fractional* scaling) const;
+      const glop::DenseColumn& dense_lp_multipliers, glop::Fractional* scaling,
+      int max_pow = 62) const;
 
   // Computes from an integer linear combination of the integer rows of the LP a
   // new constraint of the form "sum terms <= upper_bound". All computation are
@@ -217,6 +217,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       bool use_constraint_status,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers,
+      gtl::ITIVector<glop::ColIndex, IntegerValue>* dense_terms,
+      IntegerValue* upper_bound) const;
+
+  // Simple heuristic to try to minimize |upper_bound - ImpliedLB(terms)|. This
+  // should make the new constraint tighter and correct a bit the imprecision
+  // introduced by rounding the floating points values.
+  void AdjustNewLinearConstraint(
+      std::vector<std::pair<glop::RowIndex, IntegerValue>>* integer_multipliers,
       gtl::ITIVector<glop::ColIndex, IntegerValue>* dense_terms,
       IntegerValue* upper_bound) const;
 
@@ -278,7 +286,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
     LinearExpression terms;
   };
   LinearExpression integer_objective_;
+  IntegerValue objective_infinity_norm_ = IntegerValue(0);
   std::vector<LinearConstraintInternal> integer_lp_;
+  gtl::ITIVector<glop::RowIndex, IntegerValue> infinity_norms_;
 
   // Underlying LP solver API.
   glop::LinearProgram lp_data_;

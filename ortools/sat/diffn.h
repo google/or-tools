@@ -40,7 +40,6 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
                                      IntegerTrail* integer_trail);
   ~NonOverlappingRectanglesPropagator() override;
 
-  // TODO(user): Look at intervals to to store x and dx, y and dy.
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -48,7 +47,7 @@ class NonOverlappingRectanglesPropagator : public PropagatorInterface {
   bool FindBoxesThatMustOverlapAHorizontalLine(
       SchedulingConstraintHelper* x_dim, SchedulingConstraintHelper* y_dim);
   bool PropagateBoxesOvelappingAHorizontalLine(
-      IntegerValue other_time, const std::vector<int>& boxes,
+      IntegerValue y_line_for_reason, const std::vector<int>& boxes,
       SchedulingConstraintHelper* x_dim, SchedulingConstraintHelper* y_dim);
   void SortNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);

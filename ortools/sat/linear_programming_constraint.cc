@@ -103,6 +103,8 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
 
   const glop::ColIndex col = GetOrCreateMirrorVariable(pos_var);
   integer_objective_.push_back({col, coeff});
+  objective_infinity_norm_ =
+      std::max(objective_infinity_norm_, IntTypeAbs(coeff));
 }
 
 // TODO(user): As the search progress, some variables might get fixed. Exploit
@@ -112,6 +114,7 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
 void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Fill integer_lp_.
   integer_lp_.clear();
+  infinity_norms_.clear();
   constraint_manager_.SetParameters(sat_parameters_);
   const auto& all_constraints = constraint_manager_.AllConstraints();
   for (const auto index : constraint_manager_.LpConstraints()) {
@@ -121,6 +124,13 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     new_ct.lb = ct.lb;
     new_ct.ub = ct.ub;
     const int size = ct.vars.size();
+    IntegerValue infinity_norm(0);
+    if (ct.lb > kMinIntegerValue) {
+      infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.lb));
+    }
+    if (ct.ub < kMaxIntegerValue) {
+      infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.ub));
+    }
     for (int i = 0; i < size; ++i) {
       // We only use positive variable inside this class.
       IntegerVariable var = ct.vars[i];
@@ -129,8 +139,10 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
         var = NegationOf(var);
         coeff = -coeff;
       }
+      infinity_norm = std::max(infinity_norm, IntTypeAbs(coeff));
       new_ct.terms.push_back({GetOrCreateMirrorVariable(var), coeff});
     }
+    infinity_norms_.push_back(infinity_norm);
 
     // Important to keep lp_data_ "clean".
     std::sort(new_ct.terms.begin(), new_ct.terms.end());
@@ -397,12 +409,16 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
       VLOG(1) << "Issue, overflow!";
       return;
     }
+
+    // Important: because we use integer_multipliers below, we cannot just
+    // divide by GCD or call PreventOverflow() here.
     cut = ConvertToLinearConstraint(dense_cut, cut_ub);
   }
 
   // This should be tight!
-  if (std::abs(ComputeActivity(cut, expanded_lp_solution_) - ToDouble(cut.ub)) >
-      0.1) {
+  if (std::abs(ComputeActivity(cut, expanded_lp_solution_) - ToDouble(cut.ub)) /
+          std::max(1.0, std::abs(ToDouble(cut.ub))) >
+      1e-2) {
     VLOG(1) << "Not tight " << ComputeActivity(cut, expanded_lp_solution_)
             << " " << ToDouble(cut.ub);
     return;
@@ -580,10 +596,13 @@ void LinearProgrammingConstraint::AddCGCuts() {
     if (num_non_zeros == 0) continue;
 
     Fractional scaling;
+
+    // TODO(user): We use a lower value here otherwise we might run into
+    // overflow while computing the cut. This should be fixable.
     const std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers =
         ScaleLpMultiplier(/*take_objective_into_account=*/false,
                           /*use_constraint_status=*/true, lp_multipliers,
-                          &scaling);
+                          &scaling, /*max_pow=*/52);
     AddCutFromConstraints("CG", integer_multipliers);
   }
 }
@@ -723,13 +742,14 @@ bool LinearProgrammingConstraint::Propagate() {
     if (sat_parameters_.use_exact_lp_reason()) {
       if (!ExactLpReasonning()) return false;
 
-      // A difference of 1 happens relatively often, so we just display when
-      // there is more.
+      // Display when the inexact bound would have propagated more.
       const IntegerValue propagated_lb =
           integer_trail_->LowerBound(objective_cp_);
-      if (std::abs((approximate_new_lb - propagated_lb).value()) > 1) {
-        VLOG(2) << "LP objective lower bound approx = " << approximate_new_lb;
-        VLOG(2) << "                         exact  = " << propagated_lb;
+      if (approximate_new_lb > propagated_lb) {
+        VLOG(1) << "LP objective [ " << ToDouble(propagated_lb) << ", "
+                << ToDouble(integer_trail_->UpperBound(objective_cp_))
+                << " ] approx_lb += "
+                << ToDouble(approximate_new_lb - propagated_lb);
       }
     } else {
       FillReducedCostsReason();
@@ -826,9 +846,7 @@ bool LinearProgrammingConstraint::Propagate() {
 
 // Returns kMinIntegerValue in case of overflow.
 //
-// TODO(user): To avoid overflow, we could relax the constraint Sum term <= ub
-// with Sum floor(term/divisor) <= floor(ub/divisor). It will be less precise,
-// but we should be able to avoid overlow.
+// TODO(user): Because of PreventOverflow(), this should actually never happen.
 IntegerValue LinearProgrammingConstraint::GetImpliedLowerBound(
     const LinearConstraint& terms) const {
   IntegerValue lower_bound(0);
@@ -854,10 +872,14 @@ bool LinearProgrammingConstraint::PossibleOverflow(
     CHECK_NE(coeff, 0);
     const IntegerValue bound = coeff > 0 ? integer_trail_->LowerBound(var)
                                          : integer_trail_->UpperBound(var);
-    if (!AddProductTo(bound, coeff, &lower_bound)) return true;
+    if (!AddProductTo(bound, coeff, &lower_bound)) {
+      return true;
+    }
   }
   const int64 slack = CapAdd(lower_bound.value(), -constraint.ub.value());
-  if (slack == kint64min || slack == kint64max) return true;
+  if (slack == kint64min || slack == kint64max) {
+    return true;
+  }
   return false;
 }
 
@@ -891,10 +913,13 @@ void LinearProgrammingConstraint::SetImpliedLowerBoundReason(
 std::vector<std::pair<RowIndex, IntegerValue>>
 LinearProgrammingConstraint::ScaleLpMultiplier(
     bool take_objective_into_account, bool use_constraint_status,
-    const glop::DenseColumn& dense_lp_multipliers, Fractional* scaling) const {
-  // Process the dense_lp_multipliers and compute their infinity norm.
-  std::vector<std::pair<RowIndex, Fractional>> lp_multipliers;
-  Fractional lp_multipliers_norm = take_objective_into_account ? 1.0 : 0.0;
+    const glop::DenseColumn& dense_lp_multipliers, Fractional* scaling,
+    int max_pow) const {
+  const Fractional global_scaling =
+      bound_scaling_factor_ / lp_data_.objective_scaling_factor();
+
+  double max_sum = 0.0;
+  std::vector<std::pair<RowIndex, Fractional>> cp_multipliers;
   for (RowIndex row(0); row < dense_lp_multipliers.size(); ++row) {
     const Fractional lp_multi = dense_lp_multipliers[row];
     if (lp_multi == 0.0) continue;
@@ -908,63 +933,25 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
         continue;
       }
     }
-    lp_multipliers_norm = std::max(lp_multipliers_norm, std::abs(lp_multi));
-    lp_multipliers.push_back({row, lp_multi});
-  }
 
-  // This scaling will be responsible to keep the wanted number of precision
-  // digit when we round a floating point value to integer. We will want
-  // around 6 digits for the larger lp_multi and less for the smaller ones.
-  *scaling = 1.0;
-
-  // Scale the lp_multipliers to the CP world (still Fractional though).
-  std::vector<std::pair<RowIndex, Fractional>> cp_multipliers;
-  Fractional max_cp_multi = 0.0;
-  Fractional min_cp_multi = glop::kInfinity;
-  const Fractional global_scaling =
-      bound_scaling_factor_ / lp_data_.objective_scaling_factor();
-  for (const auto entry : lp_multipliers) {
-    const RowIndex row = entry.first;
-    const Fractional lp_multi = entry.second;
-
-    // The LP guarantee about 6 digits of precision, so we ignore anything
-    // smaller that lp_multipliers_norm * 1e-6.
-    const Fractional magnitude_diff = lp_multipliers_norm / std::abs(lp_multi);
-    if (magnitude_diff > 1e6) continue;
-
-    // Scale back in the cp world.
     const Fractional cp_multi =
         lp_multi / scaler_.row_scale(row) / global_scaling;
-
-    // We want std::round(cp_multi * scaling) to have the same number of
-    // digits of relative precision as lp_multi.
-    const Fractional wanted_scaling =
-        (1e6 / magnitude_diff) / std::abs(cp_multi);
-    *scaling = std::max(*scaling, wanted_scaling);
-
-    max_cp_multi = std::max(std::abs(cp_multi), max_cp_multi);
-    min_cp_multi = std::min(std::abs(cp_multi), min_cp_multi);
     cp_multipliers.push_back({row, cp_multi});
+    max_sum += ToDouble(infinity_norms_[row]) * std::abs(cp_multi);
   }
 
   // This behave exactly like if we had another "objective" constraint with
   // an lp_multi of 1.0 and a cp_multi of 1.0.
   if (take_objective_into_account) {
-    *scaling = std::max(*scaling, 1e6 / lp_multipliers_norm);
+    max_sum += ToDouble(objective_infinity_norm_);
   }
 
-  // Make sure the scaled coeff are not too big so that they can fit on
-  // an IntegerValue. Since 1<<63 is around 9.2e18, we use 1e18 here.
-  if (max_cp_multi > 0.0) {
-    *scaling = std::min(*scaling, 1e18 / max_cp_multi);
-  }
+  // We want max_sum * scaling to be <= 2 ^ max_pow and fit on an int64.
+  *scaling = std::ldexp(1, max_pow) / max_sum;
 
   // Scale the multipliers by *scaling.
   //
   // TODO(user): Maybe use int128 to avoid overflow?
-  // TODO(user): Divide dual by gcd to limit overflow?
-  // TODO(user): To avoid overflow, we could lower scaling at the cost of
-  // loosing precision.
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   for (const auto entry : cp_multipliers) {
     const IntegerValue coeff(std::round(entry.second * (*scaling)));
@@ -1017,6 +1004,138 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
   return true;
 }
 
+// TODO(user): no need to update the multipliers.
+void LinearProgrammingConstraint::AdjustNewLinearConstraint(
+    std::vector<std::pair<glop::RowIndex, IntegerValue>>* integer_multipliers,
+    gtl::ITIVector<ColIndex, IntegerValue>* dense_terms,
+    IntegerValue* upper_bound) const {
+  const IntegerValue kMaxWantedCoeff(1e18);
+  for (std::pair<RowIndex, IntegerValue>& term : *integer_multipliers) {
+    const RowIndex row = term.first;
+    const IntegerValue multiplier = term.second;
+    if (multiplier == 0) continue;
+
+    // We will only allow change of the form "multiplier += to_add" with to_add
+    // in [-negative_limit, positive_limit].
+    IntegerValue negative_limit = kMaxWantedCoeff;
+    IntegerValue positive_limit = kMaxWantedCoeff;
+
+    // Make sure we never change the sign of the multiplier, except if the
+    // row is an equality in which case we don't care.
+    if (integer_lp_[row.value()].ub != integer_lp_[row.value()].lb) {
+      if (multiplier > 0) {
+        negative_limit = std::min(negative_limit, multiplier);
+      } else {
+        positive_limit = std::min(positive_limit, -multiplier);
+      }
+    }
+
+    // Make sure upper_bound + to_add * row_bound never overflow.
+    const IntegerValue row_bound = multiplier > 0 ? integer_lp_[row.value()].ub
+                                                  : integer_lp_[row.value()].lb;
+    if (row_bound != 0) {
+      const IntegerValue limit1 = FloorRatio(
+          std::max(IntegerValue(0), kMaxWantedCoeff - IntTypeAbs(*upper_bound)),
+          IntTypeAbs(row_bound));
+      const IntegerValue limit2 =
+          FloorRatio(kMaxWantedCoeff, IntTypeAbs(row_bound));
+      if (*upper_bound > 0 == row_bound > 0) {  // Same sign.
+        positive_limit = std::min(positive_limit, limit1);
+        negative_limit = std::min(negative_limit, limit2);
+      } else {
+        negative_limit = std::min(negative_limit, limit1);
+        positive_limit = std::min(positive_limit, limit2);
+      }
+    }
+
+    // If we add the row to the dense_terms, diff will indicate by how much
+    // |upper_bound - ImpliedLB(dense_terms)| will change. That correspond to
+    // increasing the multiplier by 1.
+    IntegerValue positive_diff = row_bound;
+    IntegerValue negative_diff = row_bound;
+
+    // TODO(user): we could relax a bit some of the condition and allow a sign
+    // change. It is just trickier to compute the diff when we allow such
+    // changes.
+    for (const auto entry : integer_lp_[row.value()].terms) {
+      const ColIndex col = entry.first;
+      const IntegerValue coeff = entry.second;
+      CHECK_NE(coeff, 0);
+
+      // Moving a variable away from zero seems to improve the bound even
+      // if it reduces the number of non-zero. Note that this is because of
+      // this that positive_diff and negative_diff are not the same.
+      const IntegerValue current = (*dense_terms)[col];
+      if (current == 0) {
+        const IntegerValue overflow_limit(
+            FloorRatio(kMaxWantedCoeff, IntTypeAbs(coeff)));
+        positive_limit = std::min(positive_limit, overflow_limit);
+        negative_limit = std::min(negative_limit, overflow_limit);
+        const IntegerVariable var = integer_variables_[col.value()];
+        if (coeff > 0) {
+          positive_diff -= coeff * integer_trail_->LowerBound(var);
+          negative_diff -= coeff * integer_trail_->UpperBound(var);
+        } else {
+          positive_diff -= coeff * integer_trail_->UpperBound(var);
+          negative_diff -= coeff * integer_trail_->LowerBound(var);
+        }
+        continue;
+      }
+
+      // We don't want to change the sign of current or to have an overflow.
+      IntegerValue before_sign_change(
+          FloorRatio(IntTypeAbs(current), IntTypeAbs(coeff)));
+
+      // If the variable is fixed, we don't actually care about changing the
+      // sign.
+      const IntegerVariable var = integer_variables_[col.value()];
+      if (integer_trail_->LowerBound(var) == integer_trail_->UpperBound(var)) {
+        before_sign_change = kMaxWantedCoeff;
+      }
+
+      const IntegerValue overflow_limit(
+          FloorRatio(kMaxWantedCoeff - IntTypeAbs(current), IntTypeAbs(coeff)));
+      if (current > 0 == coeff > 0) {  // Same sign.
+        negative_limit = std::min(negative_limit, before_sign_change);
+        positive_limit = std::min(positive_limit, overflow_limit);
+      } else {
+        negative_limit = std::min(negative_limit, overflow_limit);
+        positive_limit = std::min(positive_limit, before_sign_change);
+      }
+
+      // This is how diff change.
+      const IntegerValue implied = current > 0
+                                       ? integer_trail_->LowerBound(var)
+                                       : integer_trail_->UpperBound(var);
+
+      positive_diff -= coeff * implied;
+      negative_diff -= coeff * implied;
+    }
+
+    // Only add a multiple of this row if it tighten the final constraint.
+    IntegerValue to_add(0);
+    if (positive_diff < 0 && positive_limit > 0) {
+      to_add = positive_limit;
+    }
+    if (negative_diff > 0 && negative_limit > 0) {
+      // Pick this if it is better than the positive sign.
+      if (to_add == 0 || IntTypeAbs(negative_limit * negative_diff) >
+                             IntTypeAbs(positive_limit * positive_diff)) {
+        to_add = -negative_limit;
+      }
+    }
+    if (to_add != 0) {
+      term.second += to_add;
+      *upper_bound += to_add * row_bound;
+      for (const auto entry : integer_lp_[row.value()].terms) {
+        const ColIndex col = entry.first;
+        const IntegerValue coeff = entry.second;
+        (*dense_terms)[col] += to_add * coeff;
+      }
+    }
+  }
+}
+
 // The "exact" computation go as follow:
 //
 // Given any INTEGER linear combination of the LP constraints, we can create a
@@ -1047,43 +1166,31 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   }
 
   Fractional scaling;
-  const std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers =
+  std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers =
       ScaleLpMultiplier(/*take_objective_into_account=*/true,
                         /*use_constraint_status=*/false, lp_multipliers,
                         &scaling);
 
   gtl::ITIVector<ColIndex, IntegerValue> reduced_costs;
   IntegerValue rc_ub;
-  if (!ComputeNewLinearConstraint(
-          /*use_constraint_status=*/false, integer_multipliers, &reduced_costs,
-          &rc_ub)) {
-    VLOG(2) << "Overflow during exact LP reasoning.";
-    return true;
-  }
+  CHECK(ComputeNewLinearConstraint(
+      /*use_constraint_status=*/false, integer_multipliers, &reduced_costs,
+      &rc_ub));
 
   // The "objective constraint" behave like if the unscaled cp multiplier was
   // 1.0, so we will multiply it by this number and add it to reduced_costs.
   const IntegerValue obj_scale(std::round(scaling));
   if (obj_scale == 0) {
-    VLOG(2) << "Overflow during exact LP reasoning.";
+    VLOG(1) << "Overflow during exact LP reasoning. scaling=" << scaling;
     return true;
   }
-  if (!AddLinearExpressionMultiple(obj_scale, integer_objective_,
-                                   &reduced_costs)) {
-    VLOG(2) << "Overflow during exact LP reasoning.";
-    return true;
-  }
+  CHECK(AddLinearExpressionMultiple(obj_scale, integer_objective_,
+                                    &reduced_costs));
 
-  // TODO(user): We could correct little imprecision by heuristically computing
-  // for each row the best multiple to improve the scaled_objective_lb below
-  // while keeping the coefficient of the same sign. This should improve the
-  // objective lower bound.
+  AdjustNewLinearConstraint(&integer_multipliers, &reduced_costs, &rc_ub);
 
   // Create the IntegerSumLE that will allow to propagate the objective and more
   // generally do the reduced cost fixing.
-  //
-  // TODO(user): Make sure there cannot be any overflow if we want to reuse the
-  // constraint for different lower-bounds of the variables later.
   LinearConstraint new_constraint =
       ConvertToLinearConstraint(reduced_costs, rc_ub);
   new_constraint.vars.push_back(objective_cp_);
@@ -1106,20 +1213,27 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
 
 bool LinearProgrammingConstraint::FillExactDualRayReason() {
   Fractional scaling;
-  const std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers =
+  std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers =
       ScaleLpMultiplier(/*take_objective_into_account=*/false,
                         /*use_constraint_status=*/false, simplex_.GetDualRay(),
                         &scaling);
 
   gtl::ITIVector<ColIndex, IntegerValue> dense_new_constraint;
   IntegerValue new_constraint_ub;
-  if (!ComputeNewLinearConstraint(
-          /*use_constraint_status=*/false, integer_multipliers,
-          &dense_new_constraint, &new_constraint_ub)) {
-    return false;
-  }
-  const LinearConstraint new_constraint =
+  CHECK(ComputeNewLinearConstraint(
+      /*use_constraint_status=*/false, integer_multipliers,
+      &dense_new_constraint, &new_constraint_ub));
+
+  AdjustNewLinearConstraint(&integer_multipliers, &dense_new_constraint,
+                            &new_constraint_ub);
+
+  LinearConstraint new_constraint =
       ConvertToLinearConstraint(dense_new_constraint, new_constraint_ub);
+  DivideByGCD(&new_constraint);
+  if (PossibleOverflow(new_constraint)) {
+    VLOG(2) << "Overflow during exact LP reasoning.";
+    return true;
+  }
   const IntegerValue implied_lb = GetImpliedLowerBound(new_constraint);
   if (implied_lb <= new_constraint.ub) {
     VLOG(1) << "LP exact dual ray not infeasible,"

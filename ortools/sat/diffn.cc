@@ -61,6 +61,7 @@ bool NonOverlappingRectanglesPropagator::Propagate() {
   }
 
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLine(&x_, &y_));
+
   // We can actually swap dimensions to propagate vertically.
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLine(&y_, &x_));
 
@@ -654,7 +655,8 @@ bool NonOverlappingRectanglesPropagator::
     // In that case, we can use simpler algorithms.
     // Note that this case happens frequently (~30% of all calls to this method
     // according to our tests).
-    return PropagateTwoBoxes(y_line_for_reason, boxes[0], boxes[1], x_dim, y_dim);
+    return PropagateTwoBoxes(y_line_for_reason, boxes[0], boxes[1], x_dim,
+                             y_dim);
   }
 
   const absl::flat_hash_set<int> active_boxes(boxes.begin(), boxes.end());
