@@ -63,9 +63,6 @@ class GlobalRefGuard {
 };
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .i
 // files in ../python and ../csharp.
