@@ -289,6 +289,35 @@ run: build
 	$(BIN_DIR)$S$(SOURCE_NAME)$E $(ARGS)
 endif
 
+##################
+##  GTest tests ##
+##################
+
+#GTEST_TESTS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)gtest$A
+GTEST_TESTS_DEPS = \
+	$(SRC_DIR)/ortools/linear_solver/simplemath.h
+GTEST_TESTS_LNK = $(PRE_LIB)gtest$(POST_LIB) $(OR_TOOLS_LNK)
+ifeq ($(PLATFORM),MACOSX)
+GTEST_TESTS_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)gtest.$L #
+endif
+
+LINEAR_SOLVER_CC_TESTS = \
+my_first_test
+
+$(OBJ_DIR)/my_first_test.$O: $(GTEST_TESTS_PATH)$Smy_first_test.cc $(GTEST_TESTS_DEP) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -I$(GTEST_PATH) -c $(GTEST_TESTS_PATH)$Smy_first_test.cc $(OBJ_OUT)$(OBJ_DIR)$Smy_first_test.$O
+
+$(BIN_DIR)/my_first_test$E: $(OBJ_DIR)/my_first_test.$O | $(BIN_DIR)
+	$(CCC) $(CLFAGS) $(OBJ_DIR)$Smy_first_test.$O $(GTEST_LNK) $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Smy_first_test$E
+
+.PHONY: build_test # Builds C++ gtests
+build_test: \
+$(addsuffix $E, $(addprefix $(BIN_DIR)/, $(LINEAR_SOLVER_CC_TESTS)))
+
+.PHONY: run_test # Runs C++ gtests
+run_test: 
+	DYLD_LIBRARY_PATH=$(UNIX_GTEST_DIR)/lib bin/my_first_test
+
 ##################################
 ##  CPP Tests/Examples/Samples  ##
 ##################################

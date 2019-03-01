@@ -5,6 +5,7 @@ help_third_party:
 	@echo
 
 # Checks if the user has overwritten default libraries and binaries.
+UNIX_GTEST_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_GFLAGS_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
@@ -18,6 +19,7 @@ UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
+GTEST_TAG = 1.8.1
 GFLAGS_TAG = 2.2.1
 GLOG_TAG = 0.3.5
 PROTOBUF_TAG = 3.6.1
@@ -36,6 +38,11 @@ third_party: build_third_party
 third_party_check: dependencies/check.log
 
 dependencies/check.log: Makefile.local
+ifeq ($(wildcard $(UNIX_GTEST_DIR)/include/gtest/gtest.h),)
+	$(error Third party GTest files were not found! did you run 'make third_party' or set UNIX_GTEST_DIR ?)
+else
+	$(info GTEST: found)
+endif
 ifeq ($(wildcard $(UNIX_GFLAGS_DIR)/include/gflags/gflags.h),)
 	$(error Third party GFlags files was not found! did you run 'make third_party' or set UNIX_GFLAGS_DIR ?)
 else
@@ -107,6 +114,7 @@ build_third_party: \
  Makefile.local \
  archives_directory \
  install_deps_directories \
+ build_gtest \
  build_gflags \
  build_glog \
  build_protobuf \
@@ -191,11 +199,43 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
 	@echo "# i.e. you define all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
-	@echo " UNIX_GUROBI_DIR=/opt/gurobi800" >> Makefile.local
+	@echo "UNIX_GUROBI_DIR=/opt/gurobi800" >> Makefile.local
 	@echo "GUROBI_LIB_VERSION=80" >> Makefile.local
 	@echo "UNIX_CPLEX_DIR=/opt/CPLEX_Studio_Community128" >> Makefile.local
 	@echo "UNIX_SCIP_DIR=/opt/scipoptsuite-5.0.1/scip" >> Makefile.local
 	@echo "# i.e. you define all UNIX_GTEST_DIR, UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
+
+##############
+##  GTEST  ##
+##############
+# This uses gflags cmake-based build.
+.PHONY: build_gtest
+build_gtest: dependencies/install/lib/libgtest.$L
+
+dependencies/install/lib/libgtest.$L: dependencies/sources/gtest-$(GTEST_TAG) | dependencies/install
+	cd dependencies/sources/gtest-$(GTEST_TAG) && \
+  $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_STATIC_LIBS=OFF \
+    -DBUILD_TESTING=OFF \
+    -DGTEST_NAMESPACE=gtest \
+    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_INSTALL_PREFIX=../../install && \
+  $(CMAKE) --build build_cmake -- -j 4 && \
+  $(CMAKE) --build build_cmake --target install
+
+dependencies/sources/gtest-$(GTEST_TAG): | dependencies/sources
+	-$(DELREC) dependencies/sources/gtest-$(GTEST_TAG)
+	git clone --quiet -b release-$(GTEST_TAG) https://github.com/google/googletest.git dependencies/sources/gtest-$(GTEST_TAG)
+
+GTEST_INC = -I$(UNIX_GTEST_DIR)/include
+GTEST_SWIG = $(GTEST_INC)
+STATIC_GTEST_LNK = $(UNIX_GTEST_DIR)/lib/libgtest.a
+DYNAMIC_GTEST_LNK = -L$(UNIX_GTEST_DIR)/lib -lgtest
+
+GTEST_LNK = $(DYNAMIC_GTEST_LNK)
+#DEPENDENCIES_LNK += $(GTEST_LNK)
+#OR_TOOLS_LNK += $(GTEST_LNK)
 
 ##############
 ##  GFLAGS  ##
