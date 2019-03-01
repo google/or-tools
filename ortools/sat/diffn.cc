@@ -609,9 +609,9 @@ bool NonOverlappingRectanglesPropagator::
                         current_overlapping_boxes.end())) {
         events_to_remove.insert(current_event);
       }
-      previous_event = current_event;
-      previous_overlapping_boxes = current_overlapping_boxes;
     }
+    previous_event = current_event;
+    previous_overlapping_boxes = current_overlapping_boxes;
   }
 
   for (const IntegerValue event : events_to_remove) {
