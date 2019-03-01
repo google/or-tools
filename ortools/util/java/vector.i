@@ -29,9 +29,6 @@
 #include "ortools/base/integral_types.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 // Typemaps to represent const std::vector<CType>& arguments as arrays of
 // JavaType.
 %define VECTOR_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)
