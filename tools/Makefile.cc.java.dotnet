@@ -378,7 +378,6 @@ $(LIB_DIR)/Issue173$J \
 $(LIB_DIR)/KnapsackMIP$J \
 $(LIB_DIR)/LeastDiff$J \
 $(LIB_DIR)/LinearAssignmentAPI$J \
-$(LIB_DIR)/LsApi$J \
 $(LIB_DIR)/MagicSquare$J \
 $(LIB_DIR)/Map2$J \
 $(LIB_DIR)/Map$J \
