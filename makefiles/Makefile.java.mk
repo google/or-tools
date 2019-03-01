@@ -488,7 +488,6 @@ test_java_java: \
  rjava_Knapsack \
  rjava_LinearAssignmentAPI \
  rjava_LinearProgramming \
- rjava_LsApi \
  rjava_RabbitsPheasants \
  rjava_RandomTsp
 
