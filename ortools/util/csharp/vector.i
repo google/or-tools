@@ -42,6 +42,19 @@
   }
 %}
 %typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
+
+%typemap(out) const std::vector<TYPE>& %{
+  $result = new std::vector< CTYPE >((const std::vector< CTYPE> &)*$1);
+%}
+%typemap(csout, excode=SWIGEXCODE) const std::vector<TYPE>& {
+  global::System.IntPtr cPtr = $imcall;$excode
+  ARRAYTYPE ret = null;
+  if (cPtr != global::System.IntPtr.Zero) {
+    ret = new ARRAYTYPE(cPtr, $owner);
+  }
+  return ret;
+}
+
 // Same, for std::vector<TYPE>
 %typemap(cstype) std::vector<TYPE> %{ CSHARPTYPE[] %}
 %typemap(csin)   std::vector<TYPE> %{ $csinput.Length, $csinput %}
@@ -54,6 +67,18 @@
     $1.emplace_back($input[i]);
   }
 %}
+
+%typemap(out) std::vector<TYPE> %{
+  $result = new std::vector< CTYPE >((const std::vector< CTYPE> &)$1);
+%}
+%typemap(csout, excode=SWIGEXCODE) std::vector<TYPE> {
+  global::System.IntPtr cPtr = $imcall;$excode
+  ARRAYTYPE ret = null;
+  if (cPtr != global::System.IntPtr.Zero) {
+    ret = new ARRAYTYPE(cPtr, $owner);
+  }
+  return ret;
+}
 %enddef // VECTOR_AS_CSHARP_ARRAY
 
 //VECTOR_AS_CSHARP_ARRAY(int, int, int);
