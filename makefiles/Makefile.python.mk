@@ -508,6 +508,7 @@ test_python_constraint_solver_samples: \
  rpy_vrp_capacity \
  rpy_vrp_drop_nodes \
  rpy_vrp_global_span \
+ rpy_vrp_initial_routes \
  rpy_vrp_pickup_delivery \
  rpy_vrp_pickup_delivery_fifo \
  rpy_vrp_pickup_delivery_lifo \

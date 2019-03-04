@@ -382,6 +382,7 @@ test_java_constraint_solver_samples: \
  rjava_VrpCapacity \
  rjava_VrpDropNodes \
  rjava_VrpGlobalSpan \
+ rjava_VrpInitialRoutes \
  rjava_VrpPickupDelivery \
  rjava_VrpPickupDeliveryFifo \
  rjava_VrpPickupDeliveryLifo \

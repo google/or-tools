@@ -449,6 +449,7 @@ test_dotnet_constraint_solver_samples:
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpCapacity.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpDropNodes.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpGlobalSpan.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpInitialRoutes.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpPickupDelivery.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpPickupDeliveryFifo.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpPickupDeliveryLifo.cs
