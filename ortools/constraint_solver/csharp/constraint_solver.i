@@ -29,6 +29,7 @@ using System.Collections.Generic;
 
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/tuple_set.i"
+%include "ortools/util/csharp/vector.i"
 %include "ortools/util/csharp/proto.i"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
@@ -42,18 +43,6 @@ class SearchLimitParameters;
 %module(directors="1") operations_research;
 #pragma SWIG nowarn=473
 
-%feature("director") BaseLns;
-%feature("director") Decision;
-%feature("director") DecisionBuilder;
-%feature("director") IntVarLocalSearchFilter;
-%feature("director") IntVarLocalSearchOperator;
-%feature("director") LocalSearchOperator;
-%feature("director") OptimizeVar;
-%feature("director") SearchLimit;
-%feature("director") SearchMonitor;
-%feature("director") SequenceVarLocalSearchOperator;
-%feature("director") SolutionCollector;
-%feature("director") SymmetryBreaker;
 %{
 #include <setjmp.h>
 
@@ -82,9 +71,6 @@ struct FailureProtect {
   }
 };
 %}
-
-//typedef int64_t int64;
-//typedef uint64_t uint64;
 
 /* allow partial c# classes */
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
@@ -140,395 +126,451 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // ############ END DUPLICATED CODE BLOCK ############
 
+%apply int64 * INOUT { int64 *const marker };
+%apply int64 * OUTPUT { int64 *l, int64 *u, int64 *value };
+
 // Since knapsack_solver.i and constraint_solver.i both need to
 // instantiate the vector template, but their csharp_wrap.cc
 // files end up being compiled into the same .dll, we must name the
 // vector template differently.
+
 %template(CpIntVector) std::vector<int>;
-%template(CpInt64Vector) std::vector<int64>;
+// IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
+// we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
 %template(CpIntVectorVector) std::vector<std::vector<int> >;
+VECTOR_AS_CSHARP_ARRAY(int, int, int, CpIntVector);
+MATRIX_AS_CSHARP_ARRAY(int, int, int, CpIntVectorVector);
+
+%template(CpInt64Vector) std::vector<int64>;
+// IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
+// we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
 %template(CpInt64VectorVector) std::vector<std::vector<int64> >;
+VECTOR_AS_CSHARP_ARRAY(int64, int64, long, CpInt64Vector);
+MATRIX_AS_CSHARP_ARRAY(int64, int64, long, CpInt64VectorVector);
 
-%define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
-SWIG_STD_VECTOR_ENHANCED(operations_research::CTYPE*);
-%template(TYPE ## Vector) std::vector<CTYPE*>;
-%enddef  // CS_TYPEMAP_STDVECTOR_OBJECT
-
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntVar, IntVar)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SearchMonitor, SearchMonitor)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::DecisionBuilder, DecisionBuilder)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::IntervalVar, IntervalVar)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SequenceVar, SequenceVar)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreaker)
-
-%ignore operations_research::PropagationBaseObject::set_action_on_fail;
-
-// Generic rename rule.
-%rename("%(camelcase)s", %$isfunction) "";
-
-// Rename rules on Demon.
-%feature("director") operations_research::Demon;
-%feature("nodirector") operations_research::Demon::inhibit;
-%feature("nodirector") operations_research::Demon::desinhibit;
-%rename (RunWrapper) operations_research::Demon::Run;
-%rename (Inhibit) operations_research::Demon::inhibit;
-%rename (Desinhibit) operations_research::Demon::desinhibit;
-
-// Rename rules on Constraint.
-%feature("director") operations_research::Constraint;
-%rename (InitialPropagateWrapper) operations_research::Constraint::InitialPropagate;
-%ignore operations_research::Constraint::PostAndPropagate;
-%feature ("nodirector") operations_research::Constraint::Accept;
-%ignore operations_research::Constraint::Accept;
-%feature ("nodirector") operations_research::Constraint::Var;
-%feature ("nodirector") operations_research::Constraint::IsCastConstraint;
-%ignore operations_research::Constraint::IsCastConstraint;
-
-// Rename rule on DecisionBuilder;
-%rename (NextWrapper) operations_research::DecisionBuilder::Next;
-
-// Rename rule on DecisionBuilder;
-%rename (ApplyWrapper) operations_research::Decision::Apply;
-%rename (RefuteWrapper) operations_research::Decision::Refute;
-
-// Rename rule on SearchLimit
-%rename (IsCrossed) operations_research::SearchLimit::crossed;
-
-// DisjunctiveConstraint.
-// Keep reference to delegate to avoid GC to collect them early
-%typemap(cscode) operations_research::DisjunctiveConstraint %{
-  // Store list of delegates to avoid the GC to reclaim them.
-  private List<IndexEvaluator2> indexEvaluator2Callbacks;
-  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
-  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
-  private IndexEvaluator2 StoreIndexEvaluator2(IndexEvaluator2 c) {
-    if (indexEvaluator2Callbacks == null) indexEvaluator2Callbacks = new List<IndexEvaluator2>();
-    indexEvaluator2Callbacks.Add(c);
-    return c;
-  }
+// Types in Proxy class:
+// Solver.cs:
+// Solver::Foo($cstype $csinput, ...) {Solver_Foo_SWIG($csin, ...);}
+// constraint_solverPINVOKE.cs:
+// $csout Solver_Foo_SWIG($imtype $input, ...) {...}
+// constraint_solver_csharp_wrap.cc:
+// $out CSharp_Solver_Foo__($ctype $input, ...) {...; $in; PInvoke($1...); return $out;}
+%define DEFINE_ARGS_TO_R_CALLBACK(
+  TYPE, DELEGATE,
+  LAMBDA_RETURN, CAST_DELEGATE, LAMBDA_PARAM, LAMBDA_CALL)
+%typemap(cstype, out="IntPtr") TYPE %{ DELEGATE %}
+%typemap(csin) TYPE %{ Store ## DELEGATE ## ($csinput) %}
+%typemap(imtype, out="IntPtr") TYPE %{ DELEGATE  %}
+// Type use in module_csharp_wrap.h function declaration.
+// since SWIG generate code as: `$ctype argX` we can't use a C function pointer type.
+%typemap(ctype) TYPE %{ void * %}
+// Convert in module_csharp_wrap.cc input argument
+// (delegate marshaled in C function pointer) to original std::function<...>
+%typemap(in) TYPE  %{
+  $1 = [$input]LAMBDA_PARAM -> LAMBDA_RETURN {
+    return (CAST_DELEGATE$input)LAMBDA_CALL;
+    };
 %}
-// Rename rule on DisjunctiveConstraint.
-%rename (SequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
+%enddef
 
-// Generic rename rules.
-%rename (ToString) *::DebugString;
-
-// Keep the .solver() API.
-%rename (solver) *::solver;
-
-// LocalSearchOperator
-%feature("director") operations_research::LocalSearchOperator;
-%unignore operations_research::LocalSearchOperator::MakeNextNeighbor;
-%unignore operations_research::LocalSearchOperator::Start;
-
-// VarLocalSearchOperator<>
-// Ignored:
-// - Start()
-// - SkipUnchanged()
-// - ApplyChanges()
-// - RevertChanges()
-%unignore operations_research::VarLocalSearchOperator::Size;
-%unignore operations_research::VarLocalSearchOperator::Value;
-%unignore operations_research::VarLocalSearchOperator::IsIncremental;
-%unignore operations_research::VarLocalSearchOperator::OnStart;
-%unignore operations_research::VarLocalSearchOperator::OldValue;
-%unignore operations_research::VarLocalSearchOperator::SetValue;
-%unignore operations_research::VarLocalSearchOperator::Var;
-%unignore operations_research::VarLocalSearchOperator::Activated;
-%unignore operations_research::VarLocalSearchOperator::Activate;
-%unignore operations_research::VarLocalSearchOperator::Deactivate;
-%unignore operations_research::VarLocalSearchOperator::AddVars;
-
-// IntVarLocalSearchOperator
-%feature("director") operations_research::IntVarLocalSearchOperator;
-%unignore operations_research::IntVarLocalSearchOperator::Size;
-%unignore operations_research::IntVarLocalSearchOperator::MakeOneNeighbor;
-%unignore operations_research::IntVarLocalSearchOperator::Value;
-%unignore operations_research::IntVarLocalSearchOperator::IsIncremental;
-%unignore operations_research::IntVarLocalSearchOperator::OnStart;
-%unignore operations_research::IntVarLocalSearchOperator::OldValue;
-%unignore operations_research::IntVarLocalSearchOperator::SetValue;
-%unignore operations_research::IntVarLocalSearchOperator::Var;
-%unignore operations_research::IntVarLocalSearchOperator::Activated;
-%unignore operations_research::IntVarLocalSearchOperator::Activate;
-%unignore operations_research::IntVarLocalSearchOperator::Deactivate;
-%unignore operations_research::IntVarLocalSearchOperator::AddVars;
-%ignore operations_research::IntVarLocalSearchOperator::MakeNextNeighbor;
-
-%feature("director") operations_research::BaseLns;
-%unignore operations_research::BaseLns::InitFragments;
-%unignore operations_research::BaseLns::NextFragment;
-%feature ("nodirector") operations_research::BaseLns::OnStart;
-%feature ("nodirector") operations_research::BaseLns::SkipUnchanged;
-%feature ("nodirector") operations_research::BaseLns::MakeOneNeighbor;
-%unignore operations_research::BaseLns::IsIncremental;
-%unignore operations_research::BaseLns::AppendToFragment;
-%unignore operations_research::BaseLns::FragmentSize;
-
-// ChangeValue
-%feature("director") operations_research::ChangeValue;
-%unignore operations_research::ChangeValue::ModifyValue;
-
-// SequenceVarLocalSearchOperator
-// Ignored:
-// - Sequence()
-// - OldSequence()
-// - SetForwardSequence()
-// - SetBackwardSequence()
-%feature("director") operations_research::SequenceVarLocalSearchOperator;
-%unignore operations_research::SequenceVarLocalSearchOperator::Start;
-
-// PathOperator
-// Ignored:
-// - SkipUnchanged()
-// - Next()
-// - Path()
-// - number_of_nexts()
-%feature("director") operations_research::PathOperator;
-%unignore operations_research::PathOperator::MakeNeighbor;
-
-// LocalSearchFilter
-%feature("director") operations_research::LocalSearchFilter;
-%unignore operations_research::LocalSearchFilter::Accept;
-%unignore operations_research::LocalSearchFilter::Synchronize;
-%unignore operations_research::LocalSearchFilter::IsIncremental;
-
-// IntVarLocalSearchFilter
-// Ignored:
-// - IsVarSynced()
-%feature("director") operations_research::IntVarLocalSearchFilter;
-%feature("nodirector") operations_research::IntVarLocalSearchFilter::Synchronize;  // Inherited.
-%ignore operations_research::IntVarLocalSearchFilter::FindIndex;
-%ignore operations_research::IntVarLocalSearchFilter::IntVarLocalSearchFilter(
-    const std::vector<IntVar*>& vars,
-    Solver::ObjectiveWatcher objective_callback);
-%unignore operations_research::IntVarLocalSearchFilter::AddVars;  // Inherited.
-%unignore operations_research::IntVarLocalSearchFilter::IsIncremental;
-%unignore operations_research::IntVarLocalSearchFilter::OnSynchronize;
-%unignore operations_research::IntVarLocalSearchFilter::Size;
-%unignore operations_research::IntVarLocalSearchFilter::Start;
-%unignore operations_research::IntVarLocalSearchFilter::Value;
-%unignore operations_research::IntVarLocalSearchFilter::Var;  // Inherited.
-// Extend IntVarLocalSearchFilter with an intuitive API.
-%extend operations_research::IntVarLocalSearchFilter {
-  int Index(IntVar* const var) {
-    int64 index = -1;
-    $self->FindIndex(var, &index);
-    return index;
-  }
-}
-// Keep reference to delegate to avoid GC to collect them early
-%typemap(cscode) operations_research::IntVarLocalSearchFilter %{
-  // Store list of delegates to avoid the GC to reclaim them.
-  private ObjectiveWatcher objectiveWatcherCallbacks;
-  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
-  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
-  private ObjectiveWatcher StoreObjectiveWatcher(ObjectiveWatcher c) {
-    objectiveWatcherCallbacks = c;
-    return c;
-  }
+%define DEFINE_VOID_TO_STRING_CALLBACK(TYPE, DELEGATE)
+%typemap(cstype, out="IntPtr") TYPE %{ DELEGATE %}
+%typemap(csin) TYPE %{ Store ## DELEGATE ## ($csinput) %}
+%typemap(imtype, out="IntPtr") TYPE %{ DELEGATE  %}
+// Type use in module_csharp_wrap.h function declaration.
+// since SWIG generate code as: `$ctype argX` we can't use a C function pointer type.
+%typemap(ctype) TYPE %{ void * %}
+// Convert in module_csharp_wrap.cc input argument
+// (delegate marshaled in C function pointer) to original std::function<...>
+%typemap(in) TYPE  %{
+  $1 = [$input]() -> std::string {
+    std::string result;
+    return result.assign((*(char* (*)()) $input)());
+  };
 %}
+%enddef
 
-// Transform IntVar.
-%ignore operations_research::IntVar::MakeDomainIterator;
-%ignore operations_research::IntVar::MakeHoleIterator;
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<void(operations_research::Solver*)>, SolverToVoid,
+  void, *(void(*)(operations_research::Solver*)), (operations_research::Solver* s), (s))
 
-%extend operations_research::IntVar {
-  operations_research::IntVarIterator* GetDomain() {
-    return $self->MakeDomainIterator(false);
-  }
+DEFINE_VOID_TO_STRING_CALLBACK(
+  std::function<std::string()>, VoidToString)
 
-  operations_research::IntVarIterator* GetHoles() {
-    return $self->MakeHoleIterator(false);
-  }
-}
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<bool()>, VoidToBoolean,
+  bool, *(bool(*)()), (), ())
 
-%typemap(csinterfaces_derived) operations_research::IntVarIterator "IEnumerable";
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<void()>, VoidToVoid,
+  void, *(void(*)()), (), ())
 
-%typemap(csinterfaces_derived) operations_research::Constraint "IConstraintWithStatus";
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<int(int64)>, LongToInt,
+  int, *(int(*)(int64)), (int64 t), (t))
+
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<int64(int64)>, LongToLong,
+  int64, *(int64(*)(int64)), (int64 t), (t))
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<int64(int64, int64)>, LongLongToLong,
+  int64, *(int64(*)(int64, int64)), (int64 t, int64 u), (t, u))
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<int64(int64, int64, int64)>, LongLongLongToLong,
+  int64, *(int64(*)(int64, int64, int64)), (int64 t, int64 u, int64 v), (t, u, v))
+
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<int64(int, int)>, IntIntToLong,
+  int64, *(int64(*)(int, int)), (int t, int u), (t, u))
+
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<bool(int64)>, LongToBoolean,
+  bool, *(bool(*)(int64)), (int64 t), (t))
+
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<bool(int64, int64, int64)>, LongLongLongToBoolean,
+  bool, *(bool(*)(int64, int64, int64)), (int64 t, int64 u, int64 v), (t, u, v))
+
+DEFINE_ARGS_TO_R_CALLBACK(
+  std::function<void(int64)>, LongToVoid,
+  void, *(void(*)(int64)), (int64 t), (t))
+
+#undef DEFINE_ARGS_TO_R_CALLBACK
+#undef DEFINE_VOID_TO_STRING_CALLBACK
+
+// Convert in module_csharp_wrap.cc input argument (delegate marshaled in C function pointer) to original std::function<...>
+//%typemap(in) Solver::DisplayCallback  %{
+//  $1 = [$input]() -> std::string {
+//    std::string result;
+//    return result.assign((*(char* (*)())$input)());
+//    };
+//%}
+//
+//%typemap(in) Solver::IndexEvaluator1  %{
+//  $1 = [$input](int64 u) -> int64 {
+//    return (*(int64 (*)(int64))$input)(u);
+//    };
+//%}
+//%typemap(in) Solver::IndexEvaluator2  %{
+//  $1 = [$input](int64 u, int64 v) -> int64 {
+//    return (*(int64 (*)(int64, int64))$input)(u, v);};
+//%}
+//%typemap(in) Solver::IndexEvaluator3  %{
+//  $1 = [$input](int64 u, int64 v, int64 w) -> int64 {
+//    return (*(int64 (*)(int64, int64, int64))$input)(u, v, w);};
+//%}
+//
+//%typemap(in) Solver::IndexFilter1  %{
+//  $1 = [$input](int64 u) -> bool {
+//    return (*(bool (*)(int64))$input)(u);};
+//%}
+//%typemap(in) Solver::ObjectiveWatcher %{
+//  $1 = [$input](int64 u) -> void {
+//    return (*(void (*)(int64))$input)(u);};
+//%}
+
+
+
+// Renaming
+namespace operations_research {
+
+// Decision
+%feature("director") Decision;
+%unignore Decision;
+// Methods:
+%rename (ApplyWrapper) Decision::Apply;
+%rename (RefuteWrapper) Decision::Refute;
+
+// DecisionBuilder
+%feature("director") DecisionBuilder;
+%unignore DecisionBuilder;
+// Methods:
+%rename (NextWrapper) DecisionBuilder::Next;
+
+// SymmetryBreaker
+%feature("director") SymmetryBreaker;
+%unignore SymmetryBreaker;
+
+// UnsortedNullableRevBitset
+// TODO(corentinl) To removed from constraint_solveri.h (only use by table.cc)
+%ignore UnsortedNullableRevBitset;
+
+// Assignment
+%unignore Assignment;
+// Ignored:
+%ignore Assignment::Load;
+%ignore Assignment::Save;
+
+// template AssignmentContainer<>
+// Ignored:
+%ignore AssignmentContainer::MutableElement;
+%ignore AssignmentContainer::MutableElementOrNull;
+%ignore AssignmentContainer::ElementPtrOrNull;
+%ignore AssignmentContainer::elements;
+
+// AssignmentElement
+%unignore AssignmentElement;
+// Methods:
+%unignore AssignmentElement::Activate;
+%unignore AssignmentElement::Deactivate;
+%unignore AssignmentElement::Activated;
+
+// IntVarElement
+%unignore IntVarElement;
+// Ignored:
+%ignore IntVarElement::LoadFromProto;
+%ignore IntVarElement::WriteToProto;
+
+// IntervalVarElement
+%unignore IntervalVarElement;
+// Ignored:
+%ignore IntervalVarElement::LoadFromProto;
+%ignore IntervalVarElement::WriteToProto;
+
+// SequenceVarElement
+%unignore SequenceVarElement;
+// Ignored:
+%ignore SequenceVarElement::LoadFromProto;
+%ignore SequenceVarElement::WriteToProto;
+
+// SolutionCollector
+%feature("director") SolutionCollector;
+%unignore SolutionCollector;
 
 // Solver
-namespace operations_research {
-// Ignore rules on Solver.
+%unignore Solver;
+%typemap(cscode) Solver %{
+  // Store list of delegates to avoid the GC to reclaim them.
+  // This avoid the GC to collect any callback (i.e. delegate) set from C#.
+  // The underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private List<VoidToString> displayCallbacks;
+  private VoidToString StoreVoidToString(VoidToString c) {
+    if (displayCallbacks == null)
+      displayCallbacks = new List<VoidToString>();
+    displayCallbacks.Add(c);
+    return c;
+  }
+
+  private List<LongToLong> LongToLongCallbacks;
+  private LongToLong StoreLongToLong(LongToLong c) {
+    if (LongToLongCallbacks == null)
+      LongToLongCallbacks = new List<LongToLong>();
+    LongToLongCallbacks.Add(c);
+    return c;
+  }
+  private List<LongLongToLong> LongLongToLongCallbacks;
+  private LongLongToLong StoreLongLongToLong(LongLongToLong c) {
+    if (LongLongToLongCallbacks == null)
+      LongLongToLongCallbacks = new List<LongLongToLong>();
+    LongLongToLongCallbacks.Add(c);
+    return c;
+  }
+  private List<LongLongLongToLong> LongLongLongToLongCallbacks;
+  private LongLongLongToLong StoreLongLongLongToLong(LongLongLongToLong c) {
+    if (LongLongLongToLongCallbacks == null)
+      LongLongLongToLongCallbacks = new List<LongLongLongToLong>();
+    LongLongLongToLongCallbacks.Add(c);
+    return c;
+  }
+
+  private List<VoidToBoolean> limiterCallbacks;
+  private VoidToBoolean StoreVoidToBoolean(VoidToBoolean limiter) {
+    if (limiterCallbacks == null)
+      limiterCallbacks = new List<VoidToBoolean>();
+    limiterCallbacks.Add(limiter);
+    return limiter;
+  }
+
+  private List<LongLongLongToBoolean> variableValueComparatorCallbacks;
+  private LongLongLongToBoolean StoreLongLongLongToBoolean(
+    LongLongLongToBoolean c) {
+    if (variableValueComparatorCallbacks == null)
+      variableValueComparatorCallbacks = new List<LongLongLongToBoolean>();
+    variableValueComparatorCallbacks.Add(c);
+    return c;
+  }
+
+  private List<LongToBoolean> indexFilter1Callbacks;
+  private LongToBoolean StoreLongToBoolean(LongToBoolean c) {
+    if (indexFilter1Callbacks == null)
+      indexFilter1Callbacks = new List<LongToBoolean>();
+    indexFilter1Callbacks.Add(c);
+    return c;
+  }
+
+  private List<LongToVoid> objectiveWatcherCallbacks;
+  private LongToVoid StoreLongToVoid(LongToVoid c) {
+    if (objectiveWatcherCallbacks == null)
+      objectiveWatcherCallbacks = new List<LongToVoid>();
+    objectiveWatcherCallbacks.Add(c);
+    return c;
+  }
+
+  private List<SolverToVoid> actionCallbacks;
+  private SolverToVoid StoreSolverToVoid(SolverToVoid action) {
+    if (actionCallbacks == null)
+      actionCallbacks = new List<SolverToVoid>();
+    actionCallbacks.Add(action);
+    return action;
+  }
+
+  private List<VoidToVoid> closureCallbacks;
+  private VoidToVoid StoreVoidToVoid(VoidToVoid closure) {
+    if (closureCallbacks == null)
+      closureCallbacks = new List<VoidToVoid>();
+    closureCallbacks.Add(closure);
+    return closure;
+  }
+
+  // note: Should be store in LocalSearchOperator
+  private List<IntIntToLong> evaluatorCallbacks;
+  private IntIntToLong StoreIntIntToLong(IntIntToLong evaluator) {
+    if (evaluatorCallbacks == null)
+      evaluatorCallbacks = new List<IntIntToLong>();
+    evaluatorCallbacks.Add(evaluator);
+    return evaluator;
+  }
+%}
+// Ignored:
+%ignore Solver::SearchLogParameters;
+%ignore Solver::ActiveSearch;
+%ignore Solver::SetSearchContext;
+%ignore Solver::SearchContext;
+%ignore Solver::MakeSearchLog(SearchLogParameters parameters);
 %ignore Solver::MakeIntVarArray;
 %ignore Solver::MakeBoolVarArray;
 %ignore Solver::MakeFixedDurationIntervalVarArray;
-// Take care of API with function. SWIG doesn't wrap std::function<> properly,
-// so we write our custom wrappers for all methods involving std::function<>.
-%ignore Solver::MakeActionDemon;
-%ignore Solver::MakeCustomLimit(std::function<bool()> limiter);
-
-%ignore Solver::ConcatenateOperators(
-    const std::vector<LocalSearchOperator*>& ops,
-    std::function<int64(int, int)> evaluator);
-%ignore Solver::MakeClosureDemon(std::function<void()> closure);
+%ignore Solver::SetBranchSelector;
+%ignore Solver::MakeApplyBranchSelector;
+%ignore Solver::MakeAtMost;
+%ignore Solver::demon_profiler;
 %ignore Solver::set_fail_intercept;
-// Rename rules on Solver.
+%ignore Solver::tmp_vector_;
+// Methods:
 %rename (Add) Solver::AddConstraint;
 // Rename NewSearch and EndSearch to add pinning. See the overrides of
 // NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
 %rename (NewSearchAux) Solver::NewSearch;
 %rename (EndSearchAux) Solver::EndSearch;
 
-// Define the delegate IndexEvaluator[1-3] callback types.
-// This replace the IndexEvaluator[1-3] in the C# proxy class
-%typemap(csimports) Solver %{
-  using System.Collections.Generic; // List<>
-
-  public delegate string DisplayCallback();
-
-  public delegate long IndexEvaluator1(long u);
-  public delegate long IndexEvaluator2(long u, long v);
-  public delegate long IndexEvaluator3(long u, long v, long w);
-
-  public delegate bool IndexFilter1(long u);
-  public delegate void ObjectiveWatcher(long u);
-%}
-
-// Keep reference to delegate to avoid GC to collect them early
-%typemap(cscode) Solver %{
-  // Store list of delegates to avoid the GC to reclaim them.
-  private List<DisplayCallback> displayCallbacks;
-
-  private List<IndexEvaluator1> indexEvaluator1Callbacks;
-  private List<IndexEvaluator2> indexEvaluator2Callbacks;
-  private List<IndexEvaluator3> indexEvaluator3Callbacks;
-
-  private List<IndexFilter1> indexFilter1Callbacks;
-  private List<ObjectiveWatcher> objectiveWatcherCallbacks;
-
-  // Ensure that the GC does not collect any callback set from C#
-  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
-  private DisplayCallback StoreDisplayCallback(DisplayCallback c) {
-    if (displayCallbacks == null) displayCallbacks = new List<DisplayCallback>();
-    displayCallbacks.Add(c);
-    return c;
-  }
-  private IndexEvaluator1 StoreIndexEvaluator1(IndexEvaluator1 c) {
-    if (indexEvaluator1Callbacks == null) indexEvaluator1Callbacks = new List<IndexEvaluator1>();
-    indexEvaluator1Callbacks.Add(c);
-    return c;
-  }
-  private IndexEvaluator2 StoreIndexEvaluator2(IndexEvaluator2 c) {
-    if (indexEvaluator2Callbacks == null) indexEvaluator2Callbacks = new List<IndexEvaluator2>();
-    indexEvaluator2Callbacks.Add(c);
-    return c;
-  }
-  private IndexEvaluator3 StoreIndexEvaluator3(IndexEvaluator3 c) {
-    if (indexEvaluator3Callbacks == null) indexEvaluator3Callbacks = new List<IndexEvaluator3>();
-    indexEvaluator3Callbacks.Add(c);
-    return c;
-  }
-
-  private IndexFilter1 StoreIndexFilter1(IndexFilter1 c) {
-    if (indexFilter1Callbacks == null) indexFilter1Callbacks = new List<IndexFilter1>();
-    indexFilter1Callbacks.Add(c);
-    return c;
-  }
-  private ObjectiveWatcher StoreObjectiveWatcher(ObjectiveWatcher c) {
-    if (objectiveWatcherCallbacks == null) objectiveWatcherCallbacks = new List<ObjectiveWatcher>();
-    objectiveWatcherCallbacks.Add(c);
-    return c;
+// IntExpr
+%unignore IntExpr;
+%typemap(cscode) IntExpr %{
+  // Keep reference to delegate to avoid GC to collect them early
+  private List<VoidToVoid> closureCallbacks;
+  private VoidToVoid StoreVoidToVoid(VoidToVoid closure) {
+    if (closureCallbacks == null)
+      closureCallbacks = new List<VoidToVoid>();
+    closureCallbacks.Add(closure);
+    return closure;
   }
 %}
+// Methods:
+%extend IntExpr {
+  Constraint* MapTo(const std::vector<IntVar*>& vars) {
+    return $self->solver()->MakeMapDomain($self->Var(), vars);
+  }
+  IntExpr* IndexOf(const std::vector<int64>& vars) {
+    return $self->solver()->MakeElement(vars, $self->Var());
+  }
+  IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
+    return $self->solver()->MakeElement(vars, $self->Var());
+  }
+  IntVar* IsEqual(int64 value) {
+    return $self->solver()->MakeIsEqualCstVar($self->Var(), value);
+  }
+  IntVar* IsDifferent(int64 value) {
+    return $self->solver()->MakeIsDifferentCstVar($self->Var(), value);
+  }
+  IntVar* IsGreater(int64 value) {
+    return $self->solver()->MakeIsGreaterCstVar($self->Var(), value);
+  }
+  IntVar* IsGreaterOrEqual(int64 value) {
+    return $self->solver()->MakeIsGreaterOrEqualCstVar($self->Var(), value);
+  }
+  IntVar* IsLess(int64 value) {
+    return $self->solver()->MakeIsLessCstVar($self->Var(), value);
+  }
+  IntVar* IsLessOrEqual(int64 value) {
+    return $self->solver()->MakeIsLessOrEqualCstVar($self->Var(), value);
+  }
+  IntVar* IsMember(const std::vector<int64>& values) {
+    return $self->solver()->MakeIsMemberVar($self->Var(), values);
+  }
+  IntVar* IsMember(const std::vector<int>& values) {
+    return $self->solver()->MakeIsMemberVar($self->Var(), values);
+  }
+  Constraint* Member(const std::vector<int64>& values) {
+    return $self->solver()->MakeMemberCt($self->Var(), values);
+  }
+  Constraint* Member(const std::vector<int>& values) {
+    return $self->solver()->MakeMemberCt($self->Var(), values);
+  }
+  IntVar* IsEqual(IntExpr* const other) {
+    return $self->solver()->MakeIsEqualVar($self->Var(), other->Var());
+  }
+  IntVar* IsDifferent(IntExpr* const other) {
+    return $self->solver()->MakeIsDifferentVar($self->Var(), other->Var());
+  }
+  IntVar* IsGreater(IntExpr* const other) {
+    return $self->solver()->MakeIsGreaterVar($self->Var(), other->Var());
+  }
+  IntVar* IsGreaterOrEqual(IntExpr* const other) {
+    return $self->solver()->MakeIsGreaterOrEqualVar($self->Var(), other->Var());
+  }
+  IntVar* IsLess(IntExpr* const other) {
+    return $self->solver()->MakeIsLessVar($self->Var(), other->Var());
+  }
+  IntVar* IsLessOrEqual(IntExpr* const other) {
+    return $self->solver()->MakeIsLessOrEqualVar($self->Var(), other->Var());
+  }
+  OptimizeVar* Minimize(long step) {
+    return $self->solver()->MakeMinimize($self->Var(), step);
+  }
+  OptimizeVar* Maximize(long step) {
+    return $self->solver()->MakeMaximize($self->Var(), step);
+  }
+}
 
-// Types in Foo.cs Foo::f(cstype csinput, ...) {Foo_f_SWIG(csin, ...);}
-// e.g.:
-// Foo::f(IndexEvaluator1 arg1) {
-//  ...
-//  ...PINVOKE.Foo_f_SWIG(..., StoreIndexEvaluator1(arg1), ...);
-// }
-%typemap(cstype, out="IntPtr") Solver::DisplayCallback "DisplayCallback"
-%typemap(csin) Solver::DisplayCallback "StoreDisplayCallback($csinput)"
-
-%typemap(cstype, out="IntPtr") Solver::IndexEvaluator1 "IndexEvaluator1"
-%typemap(csin) Solver::IndexEvaluator1 "StoreIndexEvaluator1($csinput)"
-%typemap(cstype, out="IntPtr") Solver::IndexEvaluator2 "IndexEvaluator2"
-%typemap(csin) Solver::IndexEvaluator2 "StoreIndexEvaluator2($csinput)"
-%typemap(cstype, out="IntPtr") Solver::IndexEvaluator3 "IndexEvaluator3"
-%typemap(csin) Solver::IndexEvaluator3 "StoreIndexEvaluator3($csinput)"
-
-%typemap(cstype, out="IntPtr") Solver::IndexFilter1 "IndexFilter1"
-%typemap(csin) Solver::IndexFilter1 "StoreIndexFilter1($csinput)"
-%typemap(cstype, out="IntPtr") Solver::ObjectiveWatcher "ObjectiveWatcher"
-%typemap(csin) Solver::ObjectiveWatcher "StoreObjectiveWatcher($csinput)"
-// Type in the prototype of PINVOKE function.
-%typemap(imtype, out="IntPtr") Solver::DisplayCallback "DisplayCallback"
-
-%typemap(imtype, out="IntPtr") Solver::IndexEvaluator1 "IndexEvaluator1"
-%typemap(imtype, out="IntPtr") Solver::IndexEvaluator2 "IndexEvaluator2"
-%typemap(imtype, out="IntPtr") Solver::IndexEvaluator3 "IndexEvaluator3"
-
-%typemap(imtype, out="IntPtr") Solver::IndexFilter1 "IndexFilter1"
-%typemap(imtype, out="IntPtr") Solver::ObjectiveWatcher "ObjectiveWatcher"
-
-// Type use in module_csharp_wrap.h function declaration.
-// since SWIG generate code as: `ctype argX` we can't use a C function pointer type.
-%typemap(ctype) Solver::DisplayCallback "void*" // "char * (*)()"
-
-%typemap(ctype) Solver::IndexEvaluator1 "void*" // "int64 (*)(int64)"
-%typemap(ctype) Solver::IndexEvaluator2 "void*" // "int64 (*)(int64, int64)"
-%typemap(ctype) Solver::IndexEvaluator3 "void*" // "int64 (*)(int64, int64, int64)"
-
-%typemap(ctype) Solver::IndexFilter1 "void*" // "bool (*)(int64)"
-%typemap(ctype) Solver::ObjectiveWatcher "void*" // "void (*)(int64)"
-
-// Convert in module_csharp_wrap.cc input argument (delegate marshaled in C function pointer) to original std::function<...>
-%typemap(in) Solver::DisplayCallback  %{
-  $1 = [$input]() -> std::string {
-    std::string result;
-    return result.assign((*(char* (*)())$input)());
-    };
+// IntVar
+%unignore IntVar;
+%typemap(cscode) IntVar %{
+  // Keep reference to delegate to avoid GC to collect them early
+  private List<VoidToVoid> closureCallbacks;
+  private VoidToVoid StoreVoidToVoid(VoidToVoid closure) {
+    if (closureCallbacks == null)
+      closureCallbacks = new List<VoidToVoid>();
+    closureCallbacks.Add(closure);
+    return closure;
+  }
 %}
+// Ignored:
+%ignore IntVar::MakeDomainIterator;
+%ignore IntVar::MakeHoleIterator;
+// Methods:
+%extend IntVar {
+  IntVarIterator* GetDomain() {
+    return $self->MakeDomainIterator(false);
+  }
+  IntVarIterator* GetHoles() {
+    return $self->MakeHoleIterator(false);
+  }
+}
 
-%typemap(in) Solver::IndexEvaluator1  %{
-  $1 = [$input](int64 u) -> int64 {
-    return (*(int64 (*)(int64))$input)(u);
-    };
-%}
-%typemap(in) Solver::IndexEvaluator2  %{
-  $1 = [$input](int64 u, int64 v) -> int64 {
-    return (*(int64 (*)(int64, int64))$input)(u, v);};
-%}
-%typemap(in) Solver::IndexEvaluator3  %{
-  $1 = [$input](int64 u, int64 v, int64 w) -> int64 {
-    return (*(int64 (*)(int64, int64, int64))$input)(u, v, w);};
-%}
+%typemap(csinterfaces_derived) IntVarIterator "IEnumerable";
 
-%typemap(in) Solver::IndexFilter1  %{
-  $1 = [$input](int64 u) -> bool {
-    return (*(bool (*)(int64))$input)(u);};
+// IntervalVar
+%unignore IntervalVar;
+%typemap(cscode) IntervalVar %{
+  // Keep reference to delegate to avoid GC to collect them early
+  private List<VoidToVoid> closureCallbacks;
+  private VoidToVoid StoreVoidToVoid(VoidToVoid closure) {
+    if (closureCallbacks == null)
+      closureCallbacks = new List<VoidToVoid>();
+    closureCallbacks.Add(closure);
+    return closure;
+  }
 %}
-%typemap(in) Solver::ObjectiveWatcher %{
-  $1 = [$input](int64 u) -> void {
-    return (*(void (*)(int64))$input)(u);};
-%}
-
-// TODO(user): Add new delegate to wrap the following API.
-%extend Solver {
-  //LocalSearchOperator* ConcatenateOperators(
-  //    const std::vector<LocalSearchOperator*>& ops,
-  //    swig_util::IntIntToLong* evaluator) {
-  //  return $self->ConcatenateOperators(ops, [evaluator](int i, int64 j) {
-  //      return evaluator->Run(i, j); });
-  //}
-  //SearchLimit* MakeCustomLimit(swig_util::VoidToBoolean* limiter) {
-  //  return $self->MakeCustomLimit([limiter]() { return limiter->Run(); });
-  //}
-  //Demon* MakeClosureDemon(swig_util::VoidToVoid* closure) {
-  //  return $self->MakeClosureDemon([closure]() { return closure->Run(); });
-  //}
-}  // extend Solver
-
-// Searchlog
-// No custom wrapping for this method, we simply ignore it.
-%ignore SearchLog::SearchLog(
-    Solver* const s, OptimizeVar* const obj, IntVar* const var,
-    double scaling_factor,
-    Solver::DisplayCallback display_callback, int period);
-
 // Extend IntervalVar with an intuitive API to create precedence constraints.
 %extend IntervalVar {
   Constraint* EndsAfterEnd(IntervalVar* other) {
@@ -611,71 +653,259 @@ namespace operations_research {
   }
 }
 
-%extend IntExpr {
-  Constraint* MapTo(const std::vector<IntVar*>& vars) {
-    return $self->solver()->MakeMapDomain($self->Var(), vars);
+// OptimizeVar
+%feature("director") OptimizeVar;
+%unignore OptimizeVar;
+// Methods:
+%unignore OptimizeVar::ApplyBound;
+%unignore OptimizeVar::Print;
+%unignore OptimizeVar::Var;
+
+// SequenceVar
+%unignore SequenceVar;
+// Ignored:
+%ignore SequenceVar::ComputePossibleFirstsAndLasts;
+%ignore SequenceVar::FillSequence;
+
+// Constraint
+%feature("director") Constraint;
+%unignore Constraint;
+%typemap(csinterfaces_derived) Constraint "IConstraintWithStatus";
+// Ignored:
+%ignore Constraint::PostAndPropagate;
+// Methods:
+%rename (InitialPropagateWrapper) Constraint::InitialPropagate;
+%feature ("nodirector") Constraint::Accept;
+%feature ("nodirector") Constraint::Var;
+%feature ("nodirector") Constraint::IsCastConstraint;
+
+// DisjunctiveConstraint
+%unignore DisjunctiveConstraint;
+%typemap(cscode) DisjunctiveConstraint %{
+  // Store list of delegates to avoid the GC to reclaim them.
+  private List<LongLongToLong> LongLongToLongCallbacks;
+  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
+  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private LongLongToLong StoreLongLongToLong(LongLongToLong c) {
+    if (LongLongToLongCallbacks == null)
+      LongLongToLongCallbacks = new List<LongLongToLong>();
+    LongLongToLongCallbacks.Add(c);
+    return c;
   }
-  IntExpr* IndexOf(const std::vector<int64>& vars) {
-    return $self->solver()->MakeElement(vars, $self->Var());
+%}
+// Methods:
+%rename (SequenceVar) DisjunctiveConstraint::MakeSequenceVar;
+
+// Pack
+%unignore Pack;
+%typemap(cscode) Pack %{
+  // Store list of delegates to avoid the GC to reclaim them.
+  private List<LongToLong> LongToLongCallbacks;
+  private List<LongLongToLong> LongLongToLongCallbacks;
+  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
+  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private LongToLong StoreLongToLong(LongToLong c) {
+    if (LongToLongCallbacks == null)
+      LongToLongCallbacks = new List<LongToLong>();
+    LongToLongCallbacks.Add(c);
+    return c;
   }
-  IntExpr* IndexOf(const std::vector<IntVar*>& vars) {
-    return $self->solver()->MakeElement(vars, $self->Var());
+  private LongLongToLong StoreLongLongToLong(LongLongToLong c) {
+    if (LongLongToLongCallbacks == null)
+      LongLongToLongCallbacks = new List<LongLongToLong>();
+    LongLongToLongCallbacks.Add(c);
+    return c;
   }
-  IntVar* IsEqual(int64 value) {
-    return $self->solver()->MakeIsEqualCstVar($self->Var(), value);
+%}
+
+// PropagationBaseObject
+%unignore PropagationBaseObject;
+// Ignored:
+%ignore PropagationBaseObject::ExecuteAll;
+%ignore PropagationBaseObject::EnqueueAll;
+%ignore PropagationBaseObject::set_action_on_fail;
+
+// SearchMonitor
+%feature("director") SearchMonitor;
+%unignore SearchMonitor;
+
+// SearchLimit
+%feature("director") SearchLimit;
+%unignore SearchLimit;
+// Methods:
+%rename (IsCrossed) SearchLimit::crossed;
+
+// Searchlog
+%unignore SearchLog;
+// Ignored:
+// No custom wrapping for this method, we simply ignore it.
+%ignore SearchLog::SearchLog(
+    Solver* const s, OptimizeVar* const obj, IntVar* const var,
+    double scaling_factor,
+    Solver::DisplayCallback display_callback, int period);
+// Methods:
+%unignore SearchLog::Maintain;
+%unignore SearchLog::OutputDecision;
+
+// IntVarLocalSearchHandler
+%ignore IntVarLocalSearchHandler;
+
+// SequenceVarLocalSearchHandler
+%ignore SequenceVarLocalSearchHandler;
+
+// LocalSearchOperator
+%feature("director") LocalSearchOperator;
+%unignore LocalSearchOperator;
+// Methods:
+%unignore LocalSearchOperator::MakeNextNeighbor;
+%unignore LocalSearchOperator::Reset;
+%unignore LocalSearchOperator::Start;
+
+// VarLocalSearchOperator<>
+%unignore VarLocalSearchOperator;
+// Ignored:
+%ignore VarLocalSearchOperator::Start;
+%ignore VarLocalSearchOperator::ApplyChanges;
+%ignore VarLocalSearchOperator::RevertChanges;
+%ignore VarLocalSearchOperator::SkipUnchanged;
+// Methods:
+%unignore VarLocalSearchOperator::Size;
+%unignore VarLocalSearchOperator::Value;
+%unignore VarLocalSearchOperator::IsIncremental;
+%unignore VarLocalSearchOperator::OnStart;
+%unignore VarLocalSearchOperator::OldValue;
+%unignore VarLocalSearchOperator::SetValue;
+%unignore VarLocalSearchOperator::Var;
+%unignore VarLocalSearchOperator::Activated;
+%unignore VarLocalSearchOperator::Activate;
+%unignore VarLocalSearchOperator::Deactivate;
+%unignore VarLocalSearchOperator::AddVars;
+
+// IntVarLocalSearchOperator
+%feature("director") IntVarLocalSearchOperator;
+%unignore IntVarLocalSearchOperator;
+// Ignored:
+%ignore IntVarLocalSearchOperator::MakeNextNeighbor;
+// Methods:
+%unignore IntVarLocalSearchOperator::Size;
+%unignore IntVarLocalSearchOperator::MakeOneNeighbor;
+%unignore IntVarLocalSearchOperator::Value;
+%unignore IntVarLocalSearchOperator::IsIncremental;
+%unignore IntVarLocalSearchOperator::OnStart;
+%unignore IntVarLocalSearchOperator::OldValue;
+%unignore IntVarLocalSearchOperator::SetValue;
+%unignore IntVarLocalSearchOperator::Var;
+%unignore IntVarLocalSearchOperator::Activated;
+%unignore IntVarLocalSearchOperator::Activate;
+%unignore IntVarLocalSearchOperator::Deactivate;
+%unignore IntVarLocalSearchOperator::AddVars;
+
+// BaseLns
+%feature("director") BaseLns;
+%unignore BaseLns;
+// Methods:
+%unignore BaseLns::InitFragments;
+%unignore BaseLns::NextFragment;
+%feature ("nodirector") BaseLns::OnStart;
+%feature ("nodirector") BaseLns::SkipUnchanged;
+%feature ("nodirector") BaseLns::MakeOneNeighbor;
+%unignore BaseLns::IsIncremental;
+%unignore BaseLns::AppendToFragment;
+%unignore BaseLns::FragmentSize;
+
+// ChangeValue
+%feature("director") ChangeValue;
+%unignore ChangeValue;
+// Methods:
+%unignore ChangeValue::ModifyValue;
+
+// SequenceVarLocalSearchOperator
+%feature("director") SequenceVarLocalSearchOperator;
+%unignore SequenceVarLocalSearchOperator;
+// Ignored:
+%ignore SequenceVarLocalSearchOperator::SetBackwardSequence;
+%ignore SequenceVarLocalSearchOperator::SetForwardSequence;
+// Methods:
+%unignore SequenceVarLocalSearchOperator::OldSequence;
+%unignore SequenceVarLocalSearchOperator::Sequence;
+%unignore SequenceVarLocalSearchOperator::Start;
+
+// PathOperator
+%feature("director") PathOperator;
+%unignore PathOperator;
+%typemap(cscode) PathOperator %{
+  // Keep reference to delegate to avoid GC to collect them early
+  private List<LongToInt> startEmptyPathCallbacks;
+  private LongToInt StoreLongToInt(LongToInt path) {
+    if (startEmptyPathCallbacks == null)
+      startEmptyPathCallbacks = new List<LongToInt>();
+    startEmptyPathCallbacks.Add(path);
+    return path;
   }
-  IntVar* IsDifferent(int64 value) {
-    return $self->solver()->MakeIsDifferentCstVar($self->Var(), value);
+%}
+// Ignored:
+%ignore PathOperator::PathOperator;
+%ignore PathOperator::Next;
+%ignore PathOperator::Path;
+%ignore PathOperator::SkipUnchanged;
+%ignore PathOperator::number_of_nexts;
+// Methods:
+%unignore PathOperator::MakeNeighbor;
+
+// LocalSearchFilter
+%feature("director") LocalSearchFilter;
+%unignore LocalSearchFilter;
+// Methods:
+%unignore LocalSearchFilter::Accept;
+%unignore LocalSearchFilter::Synchronize;
+%unignore LocalSearchFilter::IsIncremental;
+
+// IntVarLocalSearchFilter
+%feature("director") IntVarLocalSearchFilter;
+%unignore IntVarLocalSearchFilter;
+%typemap(cscode) IntVarLocalSearchFilter %{
+  // Store list of delegates to avoid the GC to reclaim them.
+  private LongToVoid objectiveWatcherCallbacks;
+  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
+  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
+  private LongToVoid StoreLongToVoid(LongToVoid c) {
+    objectiveWatcherCallbacks = c;
+    return c;
   }
-  IntVar* IsGreater(int64 value) {
-    return $self->solver()->MakeIsGreaterCstVar($self->Var(), value);
-  }
-  IntVar* IsGreaterOrEqual(int64 value) {
-    return $self->solver()->MakeIsGreaterOrEqualCstVar($self->Var(), value);
-  }
-  IntVar* IsLess(int64 value) {
-    return $self->solver()->MakeIsLessCstVar($self->Var(), value);
-  }
-  IntVar* IsLessOrEqual(int64 value) {
-    return $self->solver()->MakeIsLessOrEqualCstVar($self->Var(), value);
-  }
-  IntVar* IsMember(const std::vector<int64>& values) {
-    return $self->solver()->MakeIsMemberVar($self->Var(), values);
-  }
-  IntVar* IsMember(const std::vector<int>& values) {
-    return $self->solver()->MakeIsMemberVar($self->Var(), values);
-  }
-  Constraint* Member(const std::vector<int64>& values) {
-    return $self->solver()->MakeMemberCt($self->Var(), values);
-  }
-  Constraint* Member(const std::vector<int>& values) {
-    return $self->solver()->MakeMemberCt($self->Var(), values);
-  }
-  IntVar* IsEqual(IntExpr* const other) {
-    return $self->solver()->MakeIsEqualVar($self->Var(), other->Var());
-  }
-  IntVar* IsDifferent(IntExpr* const other) {
-    return $self->solver()->MakeIsDifferentVar($self->Var(), other->Var());
-  }
-  IntVar* IsGreater(IntExpr* const other) {
-    return $self->solver()->MakeIsGreaterVar($self->Var(), other->Var());
-  }
-  IntVar* IsGreaterOrEqual(IntExpr* const other) {
-    return $self->solver()->MakeIsGreaterOrEqualVar($self->Var(), other->Var());
-  }
-  IntVar* IsLess(IntExpr* const other) {
-    return $self->solver()->MakeIsLessVar($self->Var(), other->Var());
-  }
-  IntVar* IsLessOrEqual(IntExpr* const other) {
-    return $self->solver()->MakeIsLessOrEqualVar($self->Var(), other->Var());
-  }
-  OptimizeVar* Minimize(long step) {
-    return $self->solver()->MakeMinimize($self->Var(), step);
-  }
-  OptimizeVar* Maximize(long step) {
-    return $self->solver()->MakeMaximize($self->Var(), step);
+%}
+// Ignored:
+%ignore IntVarLocalSearchFilter::FindIndex;
+%ignore IntVarLocalSearchFilter::IntVarLocalSearchFilter(
+    const std::vector<IntVar*>& vars,
+    Solver::ObjectiveWatcher objective_callback);
+%ignore IntVarLocalSearchFilter::IsVarSynced;
+// Methods:
+%feature("nodirector") IntVarLocalSearchFilter::Synchronize;  // Inherited.
+%unignore IntVarLocalSearchFilter::AddVars;  // Inherited.
+%unignore IntVarLocalSearchFilter::IsIncremental;
+%unignore IntVarLocalSearchFilter::OnSynchronize;
+%unignore IntVarLocalSearchFilter::Size;
+%unignore IntVarLocalSearchFilter::Start;
+%unignore IntVarLocalSearchFilter::Value;
+%unignore IntVarLocalSearchFilter::Var;  // Inherited.
+// Extend IntVarLocalSearchFilter with an intuitive API.
+%extend IntVarLocalSearchFilter {
+  int Index(IntVar* const var) {
+    int64 index = -1;
+    $self->FindIndex(var, &index);
+    return index;
   }
 }
+
+// Demon
+%feature("director") Demon;
+%unignore Demon;
+// Methods:
+%feature("nodirector") Demon::inhibit;
+%feature("nodirector") Demon::desinhibit;
+%rename (RunWrapper) Demon::Run;
+%rename (Inhibit) Demon::inhibit;
+%rename (Desinhibit) Demon::desinhibit;
 
 class LocalSearchPhaseParameters {
  public:
@@ -683,27 +913,64 @@ class LocalSearchPhaseParameters {
   ~LocalSearchPhaseParameters();
 };
 
-// Pack
-// Keep reference to delegate to avoid GC to collect them early
-%typemap(cscode) Pack %{
-  // Store list of delegates to avoid the GC to reclaim them.
-  private List<IndexEvaluator1> indexEvaluator1Callbacks;
-  private List<IndexEvaluator2> indexEvaluator2Callbacks;
-  // Ensure that the GC does not collect any IndexEvaluator1Callback set from C#
-  // as the underlying C++ class will only store a pointer to it (i.e. no ownership).
-  private IndexEvaluator1 StoreIndexEvaluator1(IndexEvaluator1 c) {
-    if (indexEvaluator1Callbacks == null) indexEvaluator1Callbacks = new List<IndexEvaluator1>();
-    indexEvaluator1Callbacks.Add(c);
-    return c;
-  }
-  private IndexEvaluator2 StoreIndexEvaluator2(IndexEvaluator2 c) {
-    if (indexEvaluator2Callbacks == null) indexEvaluator2Callbacks = new List<IndexEvaluator2>();
-    indexEvaluator2Callbacks.Add(c);
-    return c;
-  }
-%}
-
 }  // namespace operations_research
+
+%define CONVERT_VECTOR(CTYPE, TYPE)
+SWIG_STD_VECTOR_ENHANCED(CTYPE*);
+%template(TYPE ## Vector) std::vector<CTYPE*>;
+%enddef  // CONVERT_VECTOR
+
+CONVERT_VECTOR(operations_research::IntVar, IntVar)
+CONVERT_VECTOR(operations_research::SearchMonitor, SearchMonitor)
+CONVERT_VECTOR(operations_research::DecisionBuilder, DecisionBuilder)
+CONVERT_VECTOR(operations_research::IntervalVar, IntervalVar)
+CONVERT_VECTOR(operations_research::SequenceVar, SequenceVar)
+CONVERT_VECTOR(operations_research::LocalSearchOperator, LocalSearchOperator)
+CONVERT_VECTOR(operations_research::LocalSearchFilter, LocalSearchFilter)
+CONVERT_VECTOR(operations_research::SymmetryBreaker, SymmetryBreaker)
+
+#undef CONVERT_VECTOR
+
+// Generic rename rule
+%rename("%(camelcase)s", %$isfunction) "";
+%rename (ToString) *::DebugString;
+%rename (solver) *::solver;
+
+%pragma(csharp) imclassimports=%{
+// Used to wrap DisplayCallback (std::function<std::string()>)
+public delegate string VoidToString();
+
+// Used to wrap std::function<bool()>
+public delegate bool VoidToBoolean();
+
+// Used to wrap std::function<int(int64)>
+public delegate int LongToInt(long t);
+
+// Used to wrap IndexEvaluator1 (std::function<int64(int64)>)
+public delegate long LongToLong(long t);
+// Used to wrap IndexEvaluator2 (std::function<int64(int64, int64)>)
+public delegate long LongLongToLong(long t, long u);
+// Used to wrap IndexEvaluator3 (std::function<int64(int64, int64, int64)>)
+public delegate long LongLongLongToLong(long t, long u, long v);
+
+// Used to wrap std::function<int64(int, int)>
+public delegate long IntIntToLong(int t, int u);
+
+// Used to wrap IndexFilter1 (std::function<bool(int64)>)
+public delegate bool LongToBoolean(long t);
+
+// Used to wrap std::function<bool(int64, int64, int64)>
+public delegate bool LongLongLongToBoolean(long t, long u, long v);
+
+// Used to wrap std::function<void(Solver*)>
+public delegate void SolverToVoid(Solver s);
+
+// Used to wrap ObjectiveWatcher (std::function<void(int64)>)
+public delegate void LongToVoid(long t);
+
+// Used to wrap Closure (std::function<void()>)
+public delegate void VoidToVoid();
+%}
 
 // Protobuf support
 PROTO_INPUT(operations_research::ConstraintSolverParameters,
@@ -723,6 +990,13 @@ PROTO_INPUT(operations_research::CpModel,
             proto)
 PROTO2_RETURN(operations_research::CpModel,
               Google.OrTools.ConstraintSolver.CpModel)
+
+namespace operations_research {
+// Globals
+// IMPORTANT(corentinl): Global will be placed in operations_research_constraint_solver.cs
+// Ignored:
+%ignore FillValues;
+}  // namespace operations_research
 
 // Wrap cp includes
 // TODO(user): Replace with %ignoreall/%unignoreall

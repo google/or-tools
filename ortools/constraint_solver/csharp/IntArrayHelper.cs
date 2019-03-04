@@ -25,28 +25,6 @@ public static class IntArrayHelper  {
   }
 }
 
-public partial class CpInt64Vector: IDisposable, System.Collections.IEnumerable
-#if !SWIG_DOTNET_1
-    , System.Collections.Generic.IList<long>
-#endif
-{
-  // cast from C# long array
-  public static implicit operator CpInt64Vector(long[] inVal) {
-    var outVal= new CpInt64Vector();
-    foreach (long element in inVal) {
-      outVal.Add(element);
-    }
-    return outVal;
-  }
-
-  // cast to C# long array
-  public static implicit operator long[](CpInt64Vector inVal) {
-    var outVal= new long[inVal.Count];
-    inVal.CopyTo(outVal);
-    return outVal;
-  }
-}
-
 public partial class CpIntVector: IDisposable, System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
     , System.Collections.Generic.IList<int>
@@ -69,12 +47,34 @@ public partial class CpIntVector: IDisposable, System.Collections.IEnumerable
   }
 }
 
+public partial class CpInt64Vector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<long>
+#endif
+{
+  // cast from C# long array
+  public static implicit operator CpInt64Vector(long[] inVal) {
+    var outVal= new CpInt64Vector();
+    foreach (long element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# long array
+  public static implicit operator long[](CpInt64Vector inVal) {
+    var outVal= new long[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
 public partial class CpIntVectorVector : IDisposable, System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
     , System.Collections.Generic.IEnumerable<CpIntVector>
 #endif
  {
-  // cast from C# int matrix
+  // cast from C# int[,] matrix
   public static implicit operator CpIntVectorVector(int[,] inVal) {
     int x_size = inVal.GetLength(0);
     int y_size = inVal.GetLength(1);
@@ -90,7 +90,7 @@ public partial class CpIntVectorVector : IDisposable, System.Collections.IEnumer
     return outVal;
   }
 
-  // cast to C# int matrix
+  // cast to C# int[,] matrix
   public static implicit operator int[,](CpIntVectorVector inVal) {
     int x_size = inVal.Count;
     int y_size = inVal.Count == 0  ? 0 : inVal[0].Count;
@@ -100,6 +100,38 @@ public partial class CpIntVectorVector : IDisposable, System.Collections.IEnumer
       for (int j = 0; j < y_size; ++j)
       {
         outVal[i, j] = inVal[i][j];
+      }
+    }
+    return outVal;
+  }
+
+  // cast from C# int[][] two-dimensional rray
+  public static implicit operator CpIntVectorVector(int[][] inVal) {
+    int x_size = inVal.GetLength(0);
+    CpIntVectorVector outVal = new CpIntVectorVector();
+    for (int i = 0; i < x_size; ++i)
+    {
+      int y_size = inVal[i].GetLength(0);
+      outVal.Add(new CpIntVector());
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i].Add(inVal[i][j]);
+      }
+    }
+    return outVal;
+  }
+
+  // cast to C# int[][] two-dimensional array
+  public static implicit operator int[][](CpIntVectorVector inVal) {
+    int x_size = inVal.Count;
+    var outVal= new int[x_size][];
+    for (int i = 0; i < x_size; ++i)
+    {
+      int y_size = inVal[i].Count;
+      outVal[i] = new int[y_size];
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i][j] = inVal[i][j];
       }
     }
     return outVal;
@@ -126,8 +158,22 @@ public partial class CpInt64VectorVector : IDisposable, System.Collections.IEnum
     }
     return outVal;
   }
+  // cast to C# long[,] matrix
+  public static implicit operator long[,](CpInt64VectorVector inVal) {
+    int x_size = inVal.Count;
+    int y_size = inVal.Count == 0  ? 0 : inVal[0].Count;
+    var outVal= new long[x_size, y_size];
+    for (int i = 0; i < x_size; ++i)
+    {
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i, j] = inVal[i][j];
+      }
+    }
+    return outVal;
+  }
 
-  // cast from C# long[][]
+  // cast from C# long[][] two-dimensional rray
   public static implicit operator CpInt64VectorVector(long[][] inVal) {
     int x_size = inVal.GetLength(0);
     CpInt64VectorVector outVal = new CpInt64VectorVector();
@@ -143,16 +189,17 @@ public partial class CpInt64VectorVector : IDisposable, System.Collections.IEnum
     return outVal;
   }
 
-  // cast to C# long matrix
-  public static implicit operator long[,](CpInt64VectorVector inVal) {
+  // cast to C# long[][] two-dimensional array
+  public static implicit operator long[][](CpInt64VectorVector inVal) {
     int x_size = inVal.Count;
-    int y_size = inVal.Count == 0  ? 0 : inVal[0].Count;
-    var outVal= new long[x_size, y_size];
+    var outVal= new long[x_size][];
     for (int i = 0; i < x_size; ++i)
     {
+      int y_size = inVal[i].Count;
+      outVal[i] = new long[y_size];
       for (int j = 0; j < y_size; ++j)
       {
-        outVal[i, j] = inVal[i][j];
+        outVal[i][j] = inVal[i][j];
       }
     }
     return outVal;
