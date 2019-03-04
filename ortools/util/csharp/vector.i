@@ -29,25 +29,24 @@
 
 // Typemaps to represent const std::vector<TYPE>& arguments as arrays of
 // CSHARPTYPE.
-%define VECTOR_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE)
-%typemap(ctype)    const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
-%typemap(imtype)   const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
-%typemap(cstype)   const std::vector<TYPE>&  %{ CSHARPTYPE[] %}
-%typemap(csin)     const std::vector<TYPE>&  "$csinput.Length, $csinput"
-%typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
-%typemap(in)       const std::vector<TYPE>&  %{
+%define VECTOR_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE, ARRAYTYPE)
+%typemap(cstype) const std::vector<TYPE>& %{ CSHARPTYPE[] %}
+%typemap(csin)   const std::vector<TYPE>& %{ $csinput.Length, $csinput %}
+%typemap(imtype, out="global::System.IntPtr") const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
+%typemap(ctype, out="void*") const std::vector<TYPE>&  %{ int length$argnum, CTYPE* %}
+%typemap(in)     const std::vector<TYPE>&  %{
   $1 = new std::vector<TYPE>;
   $1->reserve(length$argnum);
   for(int i = 0; i < length$argnum; ++i) {
     $1->emplace_back($input[i]);
   }
 %}
+%typemap(freearg)  const std::vector<TYPE>&  { delete $1; }
 // Same, for std::vector<TYPE>
-%typemap(ctype)   std::vector<TYPE>  %{ int length$argnum, CTYPE* %}
-%typemap(imtype)  std::vector<TYPE>  %{ int length$argnum, CSHARPTYPE[] %}
-%typemap(cstype)  std::vector<TYPE>  %{ CSHARPTYPE[] %}
-%typemap(csin)    std::vector<TYPE>  "$csinput.Length, $csinput"
-%typemap(freearg) std::vector<TYPE>  { delete $1; }
+%typemap(cstype) std::vector<TYPE> %{ CSHARPTYPE[] %}
+%typemap(csin)   std::vector<TYPE> %{ $csinput.Length, $csinput %}
+%typemap(imtype, out="global::System.IntPtr") std::vector<TYPE>  %{ int length$argnum, CSHARPTYPE[] %}
+%typemap(ctype, out="void*")   std::vector<TYPE>  %{ int length$argnum, CTYPE* %}
 %typemap(in)      std::vector<TYPE>  %{
   $1.clear();
   $1.reserve(length$argnum);
@@ -56,6 +55,10 @@
   }
 %}
 %enddef // VECTOR_AS_CSHARP_ARRAY
+
+//VECTOR_AS_CSHARP_ARRAY(int, int, int);
+//VECTOR_AS_CSHARP_ARRAY(int64, int64, long);
+//VECTOR_AS_CSHARP_ARRAY(double, double, double);
 
 %define MATRIX_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE)
 %typemap(ctype)  const std::vector<std::vector<TYPE> >&  %{
