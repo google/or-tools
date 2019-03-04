@@ -127,6 +127,22 @@ public partial class CpInt64VectorVector : IDisposable, System.Collections.IEnum
     return outVal;
   }
 
+  // cast from C# long[][]
+  public static implicit operator CpInt64VectorVector(long[][] inVal) {
+    int x_size = inVal.GetLength(0);
+    CpInt64VectorVector outVal = new CpInt64VectorVector();
+    for (int i = 0; i < x_size; ++i)
+    {
+      int y_size = inVal[i].GetLength(0);
+      outVal.Add(new CpInt64Vector());
+      for (int j = 0; j < y_size; ++j)
+      {
+        outVal[i].Add(inVal[i][j]);
+      }
+    }
+    return outVal;
+  }
+
   // cast to C# long matrix
   public static implicit operator long[,](CpInt64VectorVector inVal) {
     int x_size = inVal.Count;
