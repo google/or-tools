@@ -32,10 +32,10 @@
 // Typemaps to represent const std::vector<CType>& arguments as arrays of
 // JavaType.
 %define VECTOR_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)
-%typemap(jni) const std::vector<CType>& "j" #JavaType "Array"
-%typemap(jtype) const std::vector<CType>& #JavaType "[]"
 %typemap(jstype) const std::vector<CType>& #JavaType "[]"
 %typemap(javain) const std::vector<CType>& "$javainput"
+%typemap(jtype) const std::vector<CType>& #JavaType "[]"
+%typemap(jni) const std::vector<CType>& "j" #JavaType "Array"
 %typemap(in) const std::vector<CType>& %{
   if($input) {
     $1 = new std::vector<CType>;
@@ -66,10 +66,10 @@
 }
 
 // Same, for std::vector<CType>
-%typemap(jni) std::vector<CType> "j" #JavaType "Array"
-%typemap(jtype) std::vector<CType> #JavaType "[]"
 %typemap(jstype) std::vector<CType> #JavaType "[]"
 %typemap(javain) std::vector<CType> "$javainput"
+%typemap(jtype) std::vector<CType> #JavaType "[]"
+%typemap(jni) std::vector<CType> "j" #JavaType "Array"
 %typemap(in) std::vector<CType> %{
   if($input) {
     const int size = jenv->GetArrayLength($input);
@@ -104,10 +104,10 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 // Typemaps to represent const std::vector<std::vector<CType> >& arguments as
 // an ObjectArray of JavaTypeArrays.
 %define MATRIX_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)
-%typemap(jni) const std::vector<std::vector<CType> >& "jobjectArray"
-%typemap(jtype) const std::vector<std::vector<CType> >& #JavaType "[][]"
 %typemap(jstype) const std::vector<std::vector<CType> >& #JavaType "[][]"
 %typemap(javain) const std::vector<std::vector<CType> >& "$javainput"
+%typemap(jtype) const std::vector<std::vector<CType> >& #JavaType "[][]"
+%typemap(jni) const std::vector<std::vector<CType> >& "jobjectArray"
 %typemap(in) const std::vector<std::vector<CType> >& (std::vector<std::vector<CType> > result) %{
   if($input) {
     const int size = jenv->GetArrayLength($input);
@@ -185,10 +185,10 @@ MATRIX_AS_JAVA_ARRAY(double, double, Double);
 // its first argument is CType, its second is the output of
 // CallStaticLongMethod.
 %define CONVERT_VECTOR_WITH_CAST(CType, JavaType, CastOp, JavaPackage)
-%typemap(jni) const std::vector<CType*>& "jobjectArray"
-%typemap(jtype) const std::vector<CType*>& "JavaType[]"
 %typemap(jstype) const std::vector<CType*>& "JavaType[]"
 %typemap(javain) const std::vector<CType*>& "$javainput"
+%typemap(jtype) const std::vector<CType*>& "JavaType[]"
+%typemap(jni) const std::vector<CType*>& "jobjectArray"
 %typemap(in) const std::vector<CType*>& (std::vector<CType*> result) {
   std::string java_class_path = #JavaPackage "/" #JavaType;
   jclass object_class = jenv->FindClass(java_class_path.c_str());
