@@ -85,26 +85,30 @@
 //VECTOR_AS_CSHARP_ARRAY(int64, int64, long);
 //VECTOR_AS_CSHARP_ARRAY(double, double, double);
 
-%define MATRIX_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE)
-%typemap(ctype)  const std::vector<std::vector<TYPE> >&  %{
-  int len$argnum_1, int len$argnum_2[], CTYPE*
-%}
-%typemap(imtype) const std::vector<std::vector<TYPE> >&  %{
-  int len$argnum_1, int[] len$argnum_2, CSHARPTYPE[]
-%}
+// Typemaps to represent const std::vector<std::vector<CType> >& arguments as
+// a CSharpType[][].
+%define MATRIX_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE, ARRAYTYPE)
 %typemap(cstype) const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[][] %}
-%typemap(csin)   const std::vector<std::vector<TYPE> >&  "$csinput.GetLength(0), NestedArrayHelper.GetArraySecondSize($csinput), NestedArrayHelper.GetFlatArray($csinput)"
-%typemap(in)     const std::vector<std::vector<TYPE> >&  (std::vector<std::vector<TYPE> > result) %{
-
+%typemap(csin)   const std::vector<std::vector<TYPE> >&  %{
+  $csinput.GetLength(0),
+  NestedArrayHelper.GetArraySecondSize($csinput),
+  NestedArrayHelper.GetFlatArray($csinput)
+%}
+%typemap(imtype, out="global::System.IntPtr") const std::vector<std::vector<TYPE> >&  %{
+  int len$argnum##_1, int[] len$argnum##_2, CSHARPTYPE[]
+%}
+%typemap(ctype, out="void*")  const std::vector<std::vector<TYPE> >&  %{
+  int len$argnum##_1, int len$argnum##_2[], CTYPE*
+%}
+%typemap(in) const std::vector<std::vector<TYPE> >&  (std::vector<std::vector<TYPE> > result) %{
   result.clear();
-  result.resize(len$argnum_1);
+  result.resize(len$argnum##_1);
 
   TYPE* inner_array = reinterpret_cast<TYPE*>($input);
-
   int actualIndex = 0;
-  for (int index1 = 0; index1 < len$argnum_1; ++index1) {
-    result[index1].reserve(len$argnum_2[index1]);
-    for (int index2 = 0; index2 < len$argnum_2[index1]; ++index2) {
+  for (int index1 = 0; index1 < len$argnum##_1; ++index1) {
+    result[index1].reserve(len$argnum##_2[index1]);
+    for (int index2 = 0; index2 < len$argnum##_2[index1]; ++index2) {
       const TYPE value = inner_array[actualIndex];
       result[index1].emplace_back(value);
       actualIndex++;
@@ -113,4 +117,38 @@
 
   $1 = &result;
 %}
+
+// Same, for std::vector<std::vector<CType>>*
+%typemap(cstype) std::vector<std::vector<TYPE> >*  %{ CSHARPTYPE[][] %}
+%typemap(csin)   std::vector<std::vector<TYPE> >*  %{
+  $csinput.GetLength(0),
+  NestedArrayHelper.GetArraySecondSize($csinput),
+  NestedArrayHelper.GetFlatArray($csinput)
+%}
+%typemap(imtype, out="global::System.IntPtr") std::vector<std::vector<TYPE> >*  %{
+  int len$argnum##_1, int[] len$argnum##_2, CSHARPTYPE[]
+%}
+%typemap(ctype, out="void*")  std::vector<std::vector<TYPE> >*  %{
+  int len$argnum##_1, int len$argnum##_2[], CTYPE*
+%}
+%typemap(in) std::vector<std::vector<TYPE> >*  (std::vector<std::vector<TYPE> > result) %{
+  result.clear();
+  result.resize(len$argnum##_1);
+
+  TYPE* flat_array = reinterpret_cast<TYPE*>($input);
+  int actualIndex = 0;
+  for (int index1 = 0; index1 < len$argnum##_1; ++index1) {
+    result[index1].reserve(len$argnum##_2[index1]);
+    for (int index2 = 0; index2 < len$argnum##_2[index1]; ++index2) {
+      const TYPE value = flat_array[actualIndex];
+      result[index1].emplace_back(value);
+      actualIndex++;
+    }
+  }
+  $1 = &result;
+%}
 %enddef // MATRIX_AS_CSHARP_ARRAY
+
+//MATRIX_AS_CSHARP_ARRAY(int, int, int);
+//MATRIX_AS_CSHARP_ARRAY(int64, int64, long);
+//MATRIX_AS_CSHARP_ARRAY(double, double, double);
