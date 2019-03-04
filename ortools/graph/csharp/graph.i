@@ -55,8 +55,9 @@ typedef uint64_t uint64;
 %unignore operations_research::SimpleMaxFlow::Capacity;
 %unignore operations_research::SimpleMaxFlow::OptimalFlow;
 %unignore operations_research::SimpleMaxFlow::Flow;
-%unignore operations_research::SimpleMaxFlow::GetSourceSideMinCut;
-%unignore operations_research::SimpleMaxFlow::GetSinkSideMinCut;
+// Ignored:
+%ignore operations_research::SimpleMaxFlow::GetSourceSideMinCut;  // missing typemap for argument
+%ignore operations_research::SimpleMaxFlow::GetSinkSideMinCut;  // missing typemap for argument
 
 // Expose the "operations_research::SimpleMaxFlow::Status" enum.
 %unignore operations_research::SimpleMaxFlow::Status;
