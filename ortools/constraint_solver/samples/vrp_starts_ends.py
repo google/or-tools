@@ -104,25 +104,24 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing, assignment):
-    """Prints assignment on console."""
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
-    total_distance = 0
+def print_solution(data, manager, routing, solution):
+    """Prints solution on console."""
+    max_route_distance = 0
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         route_distance = 0
         while not routing.IsEnd(index):
-            plan_output += ' {} ->'.format(manager.IndexToNode(index))
+            plan_output += ' {} -> '.format(manager.IndexToNode(index))
             previous_index = index
-            index = assignment.Value(routing.NextVar(index))
+            index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {}\n'.format(manager.IndexToNode(index))
+        plan_output += '{}\n'.format(manager.IndexToNode(index))
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         print(plan_output)
-        total_distance += route_distance
-    print('Total distance of all routes: {}m'.format(total_distance))
+        max_route_distance = max(route_distance, max_route_distance)
+    print('Maximum of the route distances: {}m'.format(max_route_distance))
     # [END solution_printer]
 
 
@@ -185,13 +184,13 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    assignment = routing.SolveWithParameters(search_parameters)
+    solution = routing.SolveWithParameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
-    if assignment:
-        print_solution(data, manager, routing, assignment)
+    if solution:
+        print_solution(data, manager, routing, solution)
     # [END print_solution]
 
 

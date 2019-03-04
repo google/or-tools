@@ -88,7 +88,7 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
     int64 route_load{0};
     std::stringstream route;
     while (routing.IsEnd(index) == false) {
-      int node_index = manager.IndexToNode(index).value();
+      int64 node_index = manager.IndexToNode(index).value();
       route_load += data.demands[node_index];
       route << node_index << " Load(" << route_load << ") -> ";
       int64 previous_index = index;

@@ -12,8 +12,10 @@
 # limitations under the License.
 # [START program]
 """Simple Travelling Salesman Problem.
-   A description of the problem can be found here:
-   http://en.wikipedia.org/wiki/Travelling_salesman_problem."""
+
+A description of the problem can be found here:
+http://en.wikipedia.org/wiki/Travelling_salesman_problem.
+"""
 
 # [START import]
 from __future__ import print_function

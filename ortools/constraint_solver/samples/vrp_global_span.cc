@@ -64,16 +64,15 @@ struct DataModel {
 };
 // [END data_model]
 
-// [START solution_printer]
 //! @brief Print the solution.
 //! @param[in] data Data of the problem.
 //! @param[in] manager Index manager used.
 //! @param[in] routing Routing solver used.
 //! @param[in] solution Solution found by the solver.
+// [START solution_printer]
 void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  LOG(INFO) << "Objective: " << solution.ObjectiveValue();
-  int64 total_distance{0};
+  int64 max_route_distance{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     int64 index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for Vehicle " << vehicle_id << ":";
@@ -88,11 +87,10 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";
-    total_distance += route_distance;
+    max_route_distance = std::max(route_distance, max_route_distance);
   }
-  LOG(INFO) << "Total distance of all routes: " << total_distance << "m";
+  LOG(INFO) << "Maximum of the route distances: " << max_route_distance << "m";
   LOG(INFO) << "";
-  LOG(INFO) << "Advanced usage:";
   LOG(INFO) << "Problem solved in " << routing.solver()->wall_time() << "ms";
 }
 // [END solution_printer]

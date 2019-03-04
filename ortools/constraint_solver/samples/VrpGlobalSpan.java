@@ -14,12 +14,12 @@
 // [START program]
 // [START import]
 import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.main;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
 // [END import]
 
@@ -61,10 +61,8 @@ public class VrpGlobalSpan {
   /// @brief Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
-    // Solution cost.
-    logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
-    long totalDistance = 0;
+    long maxRouteDistance = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
@@ -78,9 +76,9 @@ public class VrpGlobalSpan {
       }
       logger.info(route + manager.indexToNode(index));
       logger.info("Distance of the route: " + routeDistance + "m");
-      totalDistance += routeDistance;
+      maxRouteDistance = Math.max(routeDistance, maxRouteDistance);
     }
-    logger.info("Total distance of all routes: " + totalDistance + "m");
+    logger.info("Maximum of the route distances: " + maxRouteDistance + "m");
   }
   // [END solution_printer]
 

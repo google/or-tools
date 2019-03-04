@@ -22,56 +22,9 @@
 // [END import]
 
 namespace operations_research {
-// [START distance_matrix]
-// @brief Generate distance matrix.
-std::vector<std::vector<int64>> GenerateDistanceMatrix(
-    const std::vector<std::vector<int>>& locations) {
-  std::vector<std::vector<int64>> distances = std::vector<std::vector<int64>>(
-      locations.size(), std::vector<int64>(locations.size(), int64{0}));
-  for (int fromNode = 0; fromNode < locations.size(); fromNode++) {
-    for (int toNode = 0; toNode < locations.size(); toNode++) {
-      if (fromNode != toNode)
-        distances[fromNode][toNode] = static_cast<int64>(
-            std::hypot((locations[toNode][0] - locations[fromNode][0]),
-                       (locations[toNode][1] - locations[fromNode][1])));
-    }
-  }
-  return distances;
-}
-// [END distance_matrix]
-
-// [START solution_printer]
-//! @brief Print the solution
-//! @param[in] manager Index manager used.
-//! @param[in] routing Routing solver used.
-//! @param[in] solution Solution found by the solver.
-void PrintSolution(const RoutingIndexManager& manager,
-                   const RoutingModel& routing, const Assignment& solution) {
-  LOG(INFO) << "Objective: " << solution.ObjectiveValue();
-  // Inspect solution.
-  int64 index = routing.Start(0);
-  LOG(INFO) << "Route:";
-  int64 distance{0};
-  std::stringstream route;
-  while (routing.IsEnd(index) == false) {
-    route << manager.IndexToNode(index).value() << " -> ";
-    int64 previous_index = index;
-    index = solution.Value(routing.NextVar(index));
-    distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-        previous_index, index, int64{0});
-  }
-  LOG(INFO) << route.str() << manager.IndexToNode(index).value();
-  LOG(INFO) << "Route distance: " << distance << "miles";
-  LOG(INFO) << "";
-  LOG(INFO) << "Advanced usage:";
-  LOG(INFO) << "Problem solved in " << routing.solver()->wall_time() << "ms";
-}
-// [END solution_printer]
-
-void Tsp() {
-  // Instantiate the data problem.
-  // [START data]
-  const std::vector<std::vector<int>> locations = {
+// [START data_model]
+struct DataModel {
+  const std::vector<std::vector<int>> locations{
       {288, 149}, {288, 129}, {270, 133}, {256, 141}, {256, 157}, {246, 157},
       {236, 169}, {228, 169}, {228, 161}, {220, 169}, {212, 169}, {204, 169},
       {196, 169}, {188, 169}, {196, 161}, {188, 145}, {172, 145}, {164, 145},
@@ -120,12 +73,67 @@ void Tsp() {
       {196, 145}, {204, 145}, {212, 145}, {220, 145}, {228, 145}, {236, 145},
       {246, 141}, {252, 125}, {260, 129}, {280, 133},
   };
-  const int num_vehicles(1);
-  const RoutingIndexManager::NodeIndex depot(0);
+  const int num_vehicles = 1;
+  const RoutingIndexManager::NodeIndex depot{0};
+};
+// [END data_model]
+
+// [START distance_matrix]
+// @brief Generate distance matrix.
+std::vector<std::vector<int64>> ComputeEuclideanDistanceMatrix(
+    const std::vector<std::vector<int>>& locations) {
+  std::vector<std::vector<int64>> distances = std::vector<std::vector<int64>>(
+      locations.size(), std::vector<int64>(locations.size(), int64{0}));
+  for (int fromNode = 0; fromNode < locations.size(); fromNode++) {
+    for (int toNode = 0; toNode < locations.size(); toNode++) {
+      if (fromNode != toNode)
+        distances[fromNode][toNode] = static_cast<int64>(
+            std::hypot((locations[toNode][0] - locations[fromNode][0]),
+                       (locations[toNode][1] - locations[fromNode][1])));
+    }
+  }
+  return distances;
+}
+// [END distance_matrix]
+
+// [START solution_printer]
+//! @brief Print the solution
+//! @param[in] manager Index manager used.
+//! @param[in] routing Routing solver used.
+//! @param[in] solution Solution found by the solver.
+void PrintSolution(const RoutingIndexManager& manager,
+                   const RoutingModel& routing, const Assignment& solution) {
+  LOG(INFO) << "Objective: " << solution.ObjectiveValue();
+  // Inspect solution.
+  int64 index = routing.Start(0);
+  LOG(INFO) << "Route:";
+  int64 distance{0};
+  std::stringstream route;
+  while (routing.IsEnd(index) == false) {
+    route << manager.IndexToNode(index).value() << " -> ";
+    int64 previous_index = index;
+    index = solution.Value(routing.NextVar(index));
+    distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
+        previous_index, index, int64{0});
+  }
+  LOG(INFO) << route.str() << manager.IndexToNode(index).value();
+  LOG(INFO) << "Route distance: " << distance << "miles";
+  LOG(INFO) << "";
+  LOG(INFO) << "Advanced usage:";
+  LOG(INFO) << "Problem solved in " << routing.solver()->wall_time() << "ms";
+}
+// [END solution_printer]
+
+void Tsp() {
+  // Instantiate the data problem.
+  // [START data]
+  DataModel data;
   // [END data]
+
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(locations.size(), num_vehicles, depot);
+  RoutingIndexManager manager(data.locations.size(), data.num_vehicles,
+                              data.depot);
   // [END index_manager]
 
   // Create Routing Model.
@@ -134,7 +142,7 @@ void Tsp() {
   // [END routing_model]
 
   // [START transit_callback]
-  const auto distance_matrix = GenerateDistanceMatrix(locations);
+  const auto distance_matrix = ComputeEuclideanDistanceMatrix(data.locations);
   const int transit_callback_index = routing.RegisterTransitCallback(
       [&distance_matrix, &manager](int64 from_index, int64 to_index) -> int64 {
         // Convert from routing variable Index to distance matrix NodeIndex.
@@ -142,7 +150,7 @@ void Tsp() {
         auto to_node = manager.IndexToNode(to_index).value();
         return distance_matrix[from_node][to_node];
       });
-  // [End transit_callback]
+  // [END transit_callback]
 
   // Define cost of each arc.
   // [START arc_cost]

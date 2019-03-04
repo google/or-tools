@@ -60,9 +60,8 @@ public class VrpStartsEnds {
       in RoutingModel routing,
       in RoutingIndexManager manager,
       in Assignment solution) {
-    Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
     // Inspect solution.
-    long totalDistance = 0;
+    long maxRouteDistance = 0;
     for (int i = 0; i < data.VehicleNumber; ++i) {
       Console.WriteLine("Route for Vehicle {0}:", i);
       long routeDistance = 0;
@@ -75,9 +74,9 @@ public class VrpStartsEnds {
       }
       Console.WriteLine("{0}", manager.IndexToNode((int)index));
       Console.WriteLine("Distance of the route: {0}m", routeDistance);
-      totalDistance += routeDistance;
+      maxRouteDistance = Math.Max(routeDistance, maxRouteDistance);
     }
-    Console.WriteLine("Total Distance of all routes: {0}m", totalDistance);
+    Console.WriteLine("Maximum distance of the routes: {0}m", maxRouteDistance);
   }
   // [END solution_printer]
 

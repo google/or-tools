@@ -56,7 +56,7 @@ public class TspCities {
   // [START solution_printer]
   /// @brief Print the solution.
   static void printSolution(
-      DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
+      RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
     // Solution cost.
     logger.info("Objective: " + solution.objectiveValue() + "miles");
     // Inspect solution.
@@ -125,7 +125,7 @@ public class TspCities {
 
     // Print solution on console.
     // [START print_solution]
-    printSolution(data, routing, manager, solution);
+    printSolution(routing, manager, solution);
     // [END print_solution]
   }
 }
