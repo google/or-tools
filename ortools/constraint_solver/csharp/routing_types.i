@@ -29,22 +29,22 @@
 %define DEFINE_INDEX_TYPE(IndexT)
 
 // Convert IndexT to (32-bit signed) integers.
-%typemap(ctype) IndexT "int"
-%typemap(imtype) IndexT "int"
 %typemap(cstype) IndexT "int"
 %typemap(csin) IndexT "$csinput"
-%typemap(csout) IndexT {
-  return $imcall;
-}
+%typemap(imtype) IndexT "int"
+%typemap(ctype) IndexT "int"
 %typemap(in) IndexT {
   $1 = IndexT($input);
 }
 %typemap(out) IndexT {
   $result = $1.value();
 }
+%typemap(csout) IndexT {
+  return $imcall;
+}
 %typemap(csvarin) IndexT
 %{
-        set { $imcall; }
+   set { $imcall; }
 %}
 %typemap(csvarout, excode=SWIGEXCODE)  IndexT
 %{
