@@ -29,18 +29,18 @@
 %define DEFINE_INDEX_TYPE(IndexT)
 
 // Convert IndexT to (32-bit signed) integers.
-%typemap(jni) IndexT "jint"
-%typemap(jtype) IndexT "int"
 %typemap(jstype) IndexT "int"
 %typemap(javain) IndexT "$javainput"
-%typemap(javaout) IndexT {
-  return $jnicall;
-}
+%typemap(jtype) IndexT "int"
+%typemap(jni) IndexT "jint"
 %typemap(in) IndexT {
   $1 = IndexT($input);
 }
 %typemap(out) IndexT {
   $result = (jint)$1.value();
+}
+%typemap(javaout) IndexT {
+  return $jnicall;
 }
 
 // Convert std::vector<IndexT> to/from int arrays.
