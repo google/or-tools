@@ -16,6 +16,7 @@
 
 %include "ortools/base/base.i"
 
+%include "ortools/util/csharp/vector.i"
 
 %{
 // TODO(user): See if we really need <vector>.
@@ -23,6 +24,9 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/util/tuple_set.h"
 %}
+
+// Ignored:
+%ignore operations_research::IntTupleSet::RawData;  // no typemap
 
 // TODO(user): Replace with %ignoreall/%unignoreall
 //swiglint: disable include-h-allglobals
