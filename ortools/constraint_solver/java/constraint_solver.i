@@ -1183,6 +1183,7 @@ import java.lang.Runnable;
 %rename (var) Constraint::Var;
 
 // DisjunctiveConstraint
+%unignore DisjunctiveConstraint;
 %typemap(javaimports) DisjunctiveConstraint %{
 // Used to wrap IndexEvaluator2
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
@@ -1231,9 +1232,9 @@ import java.util.function.LongBinaryOperator;
 // PropagationBaseObject
 %unignore PropagationBaseObject;
 // Ignored:
-%ignore PropagationBaseObject::set_action_on_fail;
 %ignore PropagationBaseObject::ExecuteAll;
 %ignore PropagationBaseObject::EnqueueAll;
+%ignore PropagationBaseObject::set_action_on_fail;
 // Methods:
 %rename (baseName) PropagationBaseObject::BaseName;
 %rename (enqueueDelayedDemon) PropagationBaseObject::EnqueueDelayedDemon;
@@ -1445,10 +1446,10 @@ import java.util.function.LongToIntFunction;
 %ignore PathOperator::Path;
 %ignore PathOperator::SkipUnchanged;
 %ignore PathOperator::number_of_nexts;
-%rename (neighbor) PathOperator::MakeNeighbor;
 // Methods:
 %rename (getBaseNodeRestartPosition) PathOperator::GetBaseNodeRestartPosition;
 %rename (initPosition) PathOperator::InitPosition;
+%rename (neighbor) PathOperator::MakeNeighbor;
 %rename (onSamePathAsPreviousBase) PathOperator::OnSamePathAsPreviousBase;
 %rename (restartAtPathStartOnSynchronize) PathOperator::RestartAtPathStartOnSynchronize;
 %rename (setNextBaseToIncrement) PathOperator::SetNextBaseToIncrement;
