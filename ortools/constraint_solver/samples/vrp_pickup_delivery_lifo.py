@@ -94,6 +94,7 @@ def create_data_model():
             536, 194, 798, 0
         ],
     ]
+    # [START pickups_deliveries]
     data['pickups_deliveries'] = [
         [1, 6],
         [2, 10],
@@ -104,6 +105,7 @@ def create_data_model():
         [13, 12],
         [16, 14],
     ]
+    # [END pickups_deliveries]
     data['num_vehicles'] = 4
     data['depot'] = 0
     return data
@@ -179,7 +181,7 @@ def main():
     # [END distance_constraint]
 
     # Define Transportation Requests.
-    # [START pickup_delivery]
+    # [START pickup_delivery_constraint]
     for request in data['pickups_deliveries']:
         pickup_index = manager.NodeToIndex(request[0])
         delivery_index = manager.NodeToIndex(request[1])
@@ -192,7 +194,7 @@ def main():
             distance_dimension.CumulVar(delivery_index))
     routing.SetPickupAndDeliveryPolicyOfAllVehicles(
         pywrapcp.RoutingModel.LIFO)
-    # [END pickup_delivery]
+    # [END pickup_delivery_constraint]
 
     # Setting first solution heuristic.
     # [START parameters]
