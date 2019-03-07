@@ -43,16 +43,18 @@ public class VrpPickupDelivery {
       {776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798},
       {662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0}
     };
-    public int[,] PickupDeliveries = {
-      {1, 6},
-      {2, 10},
-      {4, 3},
-      {5, 9},
-      {7, 8},
-      {15, 11},
-      {13, 12},
-      {16, 14},
+    // [START pickups_deliveries]
+    public int[][] PickupsDeliveries = {
+      new int[] {1, 6},
+      new int[] {2, 10},
+      new int[] {4, 3},
+      new int[] {5, 9},
+      new int[] {7, 8},
+      new int[] {15, 11},
+      new int[] {13, 12},
+      new int[] {16, 14},
     };
+    // [END pickups_deliveries]
     public int VehicleNumber = 4;
     public int Depot = 0;
   };
@@ -134,11 +136,11 @@ public class VrpPickupDelivery {
     // [END distance_constraint]
 
     // Define Transportation Requests.
-    // [START pickup_delivery]
+    // [START pickup_delivery_constraint]
     Solver solver = routing.solver();
-    for(int i=0; i < data.PickupDeliveries.GetLength(0); i++) {
-      long pickupIndex = manager.NodeToIndex(data.PickupDeliveries[i, 0]);
-      long deliveryIndex = manager.NodeToIndex(data.PickupDeliveries[i, 1]);
+    for(int i=0; i < data.PickupsDeliveries.GetLength(0); i++) {
+      long pickupIndex = manager.NodeToIndex(data.PickupsDeliveries[i][0]);
+      long deliveryIndex = manager.NodeToIndex(data.PickupsDeliveries[i][1]);
       routing.AddPickupAndDelivery(pickupIndex, deliveryIndex);
       solver.Add(solver.MakeEquality(
             routing.VehicleVar(pickupIndex),
@@ -147,7 +149,7 @@ public class VrpPickupDelivery {
             distanceDimension.CumulVar(pickupIndex),
             distanceDimension.CumulVar(deliveryIndex)));
     }
-    // [END pickup_delivery]
+    // [END pickup_delivery_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]
