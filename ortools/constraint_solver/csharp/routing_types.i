@@ -29,22 +29,22 @@
 %define DEFINE_INDEX_TYPE(IndexT)
 
 // Convert IndexT to (32-bit signed) integers.
-%typemap(ctype) IndexT "int"
-%typemap(imtype) IndexT "int"
 %typemap(cstype) IndexT "int"
 %typemap(csin) IndexT "$csinput"
-%typemap(csout) IndexT {
-  return $imcall;
-}
+%typemap(imtype) IndexT "int"
+%typemap(ctype) IndexT "int"
 %typemap(in) IndexT {
   $1 = IndexT($input);
 }
 %typemap(out) IndexT {
   $result = $1.value();
 }
+%typemap(csout) IndexT {
+  return $imcall;
+}
 %typemap(csvarin) IndexT
 %{
-        set { $imcall; }
+   set { $imcall; }
 %}
 %typemap(csvarout, excode=SWIGEXCODE)  IndexT
 %{
@@ -54,8 +54,9 @@
 %}
 
 // Convert std::vector<IndexT> to/from int arrays.
-VECTOR_AS_CSHARP_ARRAY(IndexT, int, int);
-MATRIX_AS_CSHARP_ARRAY(IndexT, int, int);
+VECTOR_AS_CSHARP_ARRAY(IndexT, int, int, CpIntVector);
+// Convert std::vector<std::vector<IndexT>> to/from two-dimensional int arrays.
+MATRIX_AS_CSHARP_ARRAY(IndexT, int, int, CpIntVectorVector);
 
 %enddef  // DEFINE_INDEX_TYPE
 

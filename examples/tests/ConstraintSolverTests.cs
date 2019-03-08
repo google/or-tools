@@ -1,9 +1,20 @@
 using System;
 using Xunit;
 using Google.OrTools.ConstraintSolver;
+using static Google.OrTools.ConstraintSolver.operations_research_constraint_solver;
 
 namespace Google.OrTools.Tests {
   public class ConstraintSolverTest {
+    [Fact]
+      public void IntVectorToInt64Vector() {
+        int[] input = { 5, 11, 17 };
+        long[] output = ToInt64Vector(input);
+        Assert.Equal(3, output.Length);
+        Assert.Equal(5, output[0]);
+        Assert.Equal(11, output[1]);
+        Assert.Equal(17, output[2]);
+      }
+
     [Fact]
       public void IntVarConstructor() {
         Solver solver = new Solver("Solver");
@@ -598,6 +609,9 @@ namespace Google.OrTools.Tests {
         ass.SetForwardSequence(var, new int[] { 1, 3, 5 });
         int[] seq = ass.ForwardSequence(var);
         Assert.Equal(3, seq.Length);
+        Assert.Equal(1, seq[0]);
+        Assert.Equal(3, seq[1]);
+        Assert.Equal(5, seq[2]);
       }
 
     // A simple demon that simply sets the maximum of a fixed IntVar to 10 when

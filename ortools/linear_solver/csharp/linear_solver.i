@@ -33,14 +33,13 @@
 %include "std_vector.i"
 
 %include "ortools/base/base.i"
+%include "ortools/util/csharp/vector.i"
 
 %{
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -60,6 +59,7 @@ class MPSolutionResponse;
 %typemap(csclassmodifiers) operations_research::MPSolver "public partial class"
 
 %template(MpDoubleVector) std::vector<double>;
+VECTOR_AS_CSHARP_ARRAY(double, double, double, MpDoubleVector);
 
 %ignoreall
 
