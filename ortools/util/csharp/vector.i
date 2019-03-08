@@ -50,7 +50,7 @@
   global::System.IntPtr cPtr = $imcall;$excode
   ARRAYTYPE ret = null;
   if (cPtr != global::System.IntPtr.Zero) {
-    ret = new ARRAYTYPE(cPtr, $owner);
+    ret = new ARRAYTYPE(cPtr, true);
   }
   return ret;
 }
@@ -75,7 +75,7 @@
   global::System.IntPtr cPtr = $imcall;$excode
   ARRAYTYPE ret = null;
   if (cPtr != global::System.IntPtr.Zero) {
-    ret = new ARRAYTYPE(cPtr, $owner);
+    ret = new ARRAYTYPE(cPtr, true);
   }
   return ret;
 }
