@@ -31,6 +31,10 @@ set -x
 ./routing_svg.py --time-windows > vrp_time_windows.svg
 ./routing_svg.py --time-windows --solution > vrp_time_windows_solution.svg
 
+# Ressource Problem
+./routing_svg.py --resources > vrp_resources.svg
+./routing_svg.py --resources --solution > vrp_resources_solution.svg
+
 # VRP Starts Ends
 ./routing_svg.py --starts-ends > vrp_starts_ends.svg
 ./routing_svg.py --starts-ends --solution > vrp_starts_ends_solution.svg
@@ -47,7 +51,3 @@ set -x
 ## Fuel Problem
 #./routing_svg.py --fuel > vrpf.svg
 #./routing_svg.py --fuel --solution > vrpf_solution.svg
-#
-## Ressource Problem
-#./routing_svg.py --resource > vrpr.svg
-#./routing_svg.py --resource --solution > vrpr_solution.svg

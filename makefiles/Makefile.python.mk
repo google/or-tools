@@ -512,6 +512,7 @@ test_python_constraint_solver_samples: \
  rpy_vrp_pickup_delivery \
  rpy_vrp_pickup_delivery_fifo \
  rpy_vrp_pickup_delivery_lifo \
+ rpy_vrp_resources \
  rpy_vrp_starts_ends \
  rpy_vrp_time_windows \
  \
