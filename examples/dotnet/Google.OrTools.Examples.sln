@@ -37,10 +37,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeakerSchedulingSat", "Spe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskSchedulingSat", "TaskSchedulingSat.csproj", "{768FEDB1-45A7-4051-847F-2D9B4C0E2FA3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tsp", "tsp.csproj", "{4BBD7983-D698-4638-B690-9D27BC44CD64}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vrp", "vrp.csproj", "{DA83621B-14F2-4D26-8DD2-4E79D684DFA7}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
