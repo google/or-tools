@@ -402,6 +402,8 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a \
 
 _ABSL_LIB_DIR = $(dir $(wildcard \
+ $(UNIX_ABSL_DIR)/lib*/libabsl_base.a \
+ $(UNIX_ABSL_DIR)/lib/*/libabsl_base.a \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L@ \
  $(UNIX_ABSL_DIR)/lib/*/libabsl_base.$L))
