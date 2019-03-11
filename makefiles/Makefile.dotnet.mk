@@ -641,6 +641,7 @@ test_dotnet_dotnet:
 	$(MAKE) run SOURCE=examples/dotnet/GateSchedulingSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopFt06Sat.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
+	$(MAKE) run SOURCE=examples/dotnet/NetworkRoutingSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/ShiftSchedulingSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/SpeakerSchedulingSat.cs
