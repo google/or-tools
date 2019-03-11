@@ -44,23 +44,23 @@ def create_data_model():
         [7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0],
     ]
     data['time_windows'] = [
-        (0, 0),  # depot
-        (10, 15),  # 1
+        (0, 5),  # depot
+        (7, 12),  # 1
         (10, 15),  # 2
-        (5, 10),  # 3
-        (5, 10),  # 4
+        (5, 14),  # 3
+        (5, 13),  # 4
         (0, 5),  # 5
         (5, 10),  # 6
-        (0, 5),  # 7
+        (0, 10),  # 7
         (5, 10),  # 8
         (0, 5),  # 9
-        (10, 15),  # 10
+        (10, 16),  # 10
         (10, 15),  # 11
         (0, 5),  # 12
         (5, 10),  # 13
-        (5, 10),  # 14
+        (7, 12),  # 14
         (10, 15),  # 15
-        (5, 10),  # 16
+        (5, 15),  # 16
     ]
     data['num_vehicles'] = 4
     data['depot'] = 0
@@ -77,7 +77,6 @@ def print_solution(data, manager, routing, assignment):
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
-        route_time = 0
         while not routing.IsEnd(index):
             time_var = time_dimension.CumulVar(index)
             slack_var = time_dimension.SlackVar(index)
@@ -87,15 +86,13 @@ def print_solution(data, manager, routing, assignment):
                 assignment.Max(slack_var))
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
-            route_time += routing.GetArcCostForVehicle(previous_index, index,
-                                                       vehicle_id)
         time_var = time_dimension.CumulVar(index)
         plan_output += ' {0} Time({1},{2})\n'.format(
             manager.IndexToNode(index), assignment.Min(time_var),
             assignment.Max(time_var))
-        plan_output += 'Time of the route: {}min\n'.format(route_time)
+        plan_output += 'Time of the route: {}min\n'.format(assignment.Min(time_var))
         print(plan_output)
-        total_time += route_time
+        total_time += assignment.Min(time_var)
     print('Total time of all routes: {}min'.format(total_time))
     # [END solution_printer]
 
@@ -164,6 +161,15 @@ def main():
                                                 data['time_windows'][0][1])
         routing.AddToAssignment(time_dimension.SlackVar(index))
     # [END time_windows_constraint]
+
+    # Instantiate route start and end times to produce feasible times.
+    # [START depot_start_end_times]
+    for i in range(data['num_vehicles']):
+        routing.AddVariableMinimizedByFinalizer(
+            time_dimension.CumulVar(routing.Start(i)))
+        routing.AddVariableMinimizedByFinalizer(
+            time_dimension.CumulVar(routing.End(i)))
+    # [END depot_start_end_times]
 
     # Setting first solution heuristic.
     # [START parameters]

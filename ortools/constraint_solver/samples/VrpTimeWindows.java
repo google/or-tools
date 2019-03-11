@@ -54,23 +54,23 @@ public class VrpTimeWindows {
         {7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0},
     };
     public final long[][] timeWindows = {
-        {0, 0},
-        {10, 15},
-        {10, 15},
-        {5, 10},
-        {5, 10},
-        {0, 5},
-        {5, 10},
-        {0, 5},
-        {5, 10},
-        {0, 5},
-        {10, 15},
-        {10, 15},
-        {0, 5},
-        {5, 10},
-        {5, 10},
-        {10, 15},
-        {5, 10},
+        {0, 5},  // depot
+        {7, 12}, // 1
+        {10, 15}, // 2
+        {5, 14}, // 3
+        {5, 13}, // 4
+        {0, 5}, // 5
+        {5, 10}, // 6
+        {0, 10}, // 7
+        {5, 10}, // 8
+        {0, 5}, // 9
+        {10, 16}, // 10
+        {10, 15}, // 11
+        {0, 5}, // 12
+        {5, 10}, // 13
+        {7, 12}, // 14
+        {10, 15}, // 15
+        {5, 15}, // 16
     };
     public final int vehicleNumber = 4;
     public final int depot = 0;
@@ -87,7 +87,6 @@ public class VrpTimeWindows {
     for (int i = 0; i < data.vehicleNumber; ++i) {
       long index = routing.start(i);
       logger.info("Route for Vehicle " + i + ":");
-      long routeTime = 0;
       String route = "";
       while (!routing.isEnd(index)) {
         IntVar timeVar = timeDimension.cumulVar(index);
@@ -97,16 +96,15 @@ public class VrpTimeWindows {
             + solution.max(slackVar) + ") -> ";
         long previousIndex = index;
         index = solution.value(routing.nextVar(index));
-        routeTime += routing.getArcCostForVehicle(previousIndex, index, i);
       }
       IntVar timeVar = timeDimension.cumulVar(index);
       route += manager.indexToNode(index) + " Time(" + solution.min(timeVar) + ","
           + solution.max(timeVar) + ")";
       logger.info(route);
-      logger.info("Time of the route: " + routeTime + "m");
-      totalTime += routeTime;
+      logger.info("Time of the route: " + solution.min(timeVar) + "min");
+      totalTime += solution.min(timeVar);
     }
-    logger.info("Total time of all routes: " + totalTime + "m");
+    logger.info("Total time of all routes: " + totalTime + "min");
   }
   // [END solution_printer]
 
@@ -167,6 +165,16 @@ public class VrpTimeWindows {
       routing.addToAssignment(timeDimension.slackVar(index));
     }
     // [END time_constraint]
+
+    // Instantiate route start and end times to produce feasible times.
+    // [START depot_start_end_times]
+    for (int i = 0; i < data.vehicleNumber; ++i) {
+      routing.addVariableMinimizedByFinalizer(
+          timeDimension.cumulVar(routing.start(i)));
+      routing.addVariableMinimizedByFinalizer(
+          timeDimension.cumulVar(routing.end(i)));
+    }
+    // [END depot_start_end_times]
 
     // Setting first solution heuristic.
     // [START parameters]

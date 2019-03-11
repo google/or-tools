@@ -44,9 +44,23 @@ struct DataModel {
       {7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0},
   };
   const std::vector<std::pair<int64, int64>> time_windows{
-      {0, 0},  {10, 15}, {10, 15}, {5, 10},  {5, 10},  {0, 5},
-      {5, 10}, {0, 5},   {5, 10},  {0, 5},   {10, 15}, {10, 15},
-      {0, 5},  {5, 10},  {5, 10},  {10, 15}, {5, 10},
+      {0, 5},    // depot
+      {7, 12},   // 1
+      {10, 15},  // 2
+      {5, 14},   // 3
+      {5, 13},   // 4
+      {0, 5},    // 5
+      {5, 10},   // 6
+      {0, 10},   // 7
+      {5, 10},   // 8
+      {0, 5},    // 9
+      {10, 16},  // 10
+      {10, 15},  // 11
+      {0, 5},    // 12
+      {5, 10},   // 13
+      {7, 12},   // 14
+      {10, 15},  // 15
+      {5, 15},   // 16
   };
   const int num_vehicles = 4;
   const RoutingIndexManager::NodeIndex depot{0};
@@ -67,7 +81,6 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     int64 index = routing.Start(vehicle_id);
     LOG(INFO) << "Route for vehicle " << vehicle_id << ":";
-    int64 route_time{0};
     std::ostringstream route;
     while (routing.IsEnd(index) == false) {
       auto time_var = time_dimension.CumulVar(index);
@@ -78,15 +91,13 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
             << solution.Max(slack_var) << ") -> ";
       int64 previous_index = index;
       index = solution.Value(routing.NextVar(index));
-      route_time += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-          previous_index, index, int64{vehicle_id});
     }
     auto time_var = time_dimension.CumulVar(index);
     LOG(INFO) << route.str() << manager.IndexToNode(index).value() << " Time("
               << solution.Min(time_var) << ", " << solution.Max(time_var)
               << ")";
-    LOG(INFO) << "Time of the route: " << route_time << "min";
-    total_time += route_time;
+    LOG(INFO) << "Time of the route: " << solution.Min(time_var) << "min";
+    total_time += solution.Min(time_var);
   }
   LOG(INFO) << "Total time of all routes: " << total_time << "min";
   LOG(INFO) << "";
@@ -156,6 +167,16 @@ void VrpTimeWindows() {
     routing.AddToAssignment(time_dimension.SlackVar(index));
   }
   // [END time_constraint]
+
+  // Instantiate route start and end times to produce feasible times.
+  // [START depot_start_end_times]
+  for (int i = 0; i < data.num_vehicles; ++i) {
+    routing.AddVariableMinimizedByFinalizer(
+        time_dimension.CumulVar(routing.Start(i)));
+    routing.AddVariableMinimizedByFinalizer(
+        time_dimension.CumulVar(routing.End(i)));
+  }
+  // [END depot_start_end_times]
 
   // Setting first solution heuristic.
   // [START parameters]

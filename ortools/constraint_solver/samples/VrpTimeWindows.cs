@@ -19,7 +19,7 @@ using Google.OrTools.ConstraintSolver;
 // [END import]
 
 /// <summary>
-///   Minimal TSP using distance matrix.
+///   Vehicles Routing Problem (VRP) with Time Windows.
 /// </summary>
 public class VrpTimeWindows {
   // [START data_model]
@@ -44,23 +44,23 @@ public class VrpTimeWindows {
       {7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0},
     };
     public long[,] TimeWindows = {
-      {0, 0},
-      {10, 15},
-      {10, 15},
-      {5, 10},
-      {5, 10},
-      {0, 5},
-      {5, 10},
-      {0, 5},
-      {5, 10},
-      {0, 5},
-      {10, 15},
-      {10, 15},
-      {0, 5},
-      {5, 10},
-      {5, 10},
-      {10, 15},
-      {5, 10},
+      {0, 5},    // depot
+      {7, 12},   // 1
+      {10, 15},  // 2
+      {5, 14},   // 3
+      {5, 13},   // 4
+      {0, 5},    // 5
+      {5, 10},   // 6
+      {0, 10},   // 7
+      {5, 10},   // 8
+      {0, 5},    // 9
+      {10, 16},  // 10
+      {10, 15},  // 11
+      {0, 5},    // 12
+      {5, 10},   // 13
+      {7, 12},   // 14
+      {10, 15},  // 15
+      {5, 15},   // 16
     };
     public int VehicleNumber = 4;
     public int Depot = 0;
@@ -82,7 +82,6 @@ public class VrpTimeWindows {
     long totalTime = 0;
     for (int i = 0; i < data.VehicleNumber; ++i) {
       Console.WriteLine("Route for Vehicle {0}:", i);
-      long routeTime = 0;
       var index = routing.Start(i);
       while (routing.IsEnd(index) == false) {
         var timeVar = timeDimension.CumulVar(index);
@@ -95,17 +94,16 @@ public class VrpTimeWindows {
             solution.Max(slackVar));
         var previousIndex = index;
         index = solution.Value(routing.NextVar(index));
-        routeTime += routing.GetArcCostForVehicle(previousIndex, index, 0);
       }
       var endTimeVar = timeDimension.CumulVar(index);
       Console.WriteLine("{0} Time({1},{2})",
           manager.IndexToNode(index),
           solution.Min(endTimeVar),
           solution.Max(endTimeVar));
-      Console.WriteLine("Time of the route: {0}m", routeTime);
-      totalTime += routeTime;
+      Console.WriteLine("Time of the route: {0}min", solution.Min(endTimeVar));
+      totalTime += solution.Min(endTimeVar);
     }
-    Console.WriteLine("Total distance of all routes: {0}m", totalTime);
+    Console.WriteLine("Total time of all routes: {0}min", totalTime);
   }
   // [END solution_printer]
 
@@ -173,6 +171,16 @@ public class VrpTimeWindows {
       routing.AddToAssignment(timeDimension.SlackVar(index));
     }
     // [END time_constraint]
+
+    // Instantiate route start and end times to produce feasible times.
+    // [START depot_start_end_times]
+    for (int i = 0; i < data.VehicleNumber; ++i) {
+      routing.AddVariableMinimizedByFinalizer(
+          timeDimension.CumulVar(routing.Start(i)));
+      routing.AddVariableMinimizedByFinalizer(
+          timeDimension.CumulVar(routing.End(i)));
+    }
+    // [END depot_start_end_times]
 
     // Setting first solution heuristic.
     // [START parameters]
