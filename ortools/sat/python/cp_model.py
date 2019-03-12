@@ -141,6 +141,10 @@ class LinearExpression(object):
     def __hash__(self):
         return object.__hash__(self)
 
+    def __abs__(self):
+        raise NotImplementedError(
+            'LinearExpression.__abs__, please use cp_model.AddAbsEquality')
+
     def __add__(self, expr):
         return _SumArray([self, expr])
 
