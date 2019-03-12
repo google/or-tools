@@ -82,3 +82,16 @@ Samples:
 * [VrpTimeWindows.java](../samples/VrpTimeWindows.java)
 * [VrpTimeWindows.cs](../samples/VrpTimeWindows.cs)
 
+## Resource Constraints
+Data Problem:
+![problem](vrp_resources.svg)
+
+Solution:
+![solution](vrp_resources_solution.svg)
+
+Samples:
+* [vrp_resources.cc](../samples/vrp_resources.cc)
+* [vrp_resources.py](../samples/vrp_resources.py)
+* [VrpResources.java](../samples/VrpResources.java)
+* [VrpResources.cs](../samples/VrpResources.cs)
+

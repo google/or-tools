@@ -16,21 +16,24 @@
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.IntVar;
+import com.google.ortools.constraintsolver.IntervalVar;
 import com.google.ortools.constraintsolver.RoutingDimension;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.constraintsolver.main;
+import java.util.Arrays;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
-public class VrpTimeWindows {
+/** Minimal VRP with Resource Constraints.*/
+public class VrpResources {
   static {
     System.loadLibrary("jniortools");
   }
 
-  private static final Logger logger = Logger.getLogger(VrpTimeWindows.class.getName());
+  private static final Logger logger = Logger.getLogger(VrpResources.class.getName());
 
   // [START data_model]
   static class DataModel {
@@ -73,6 +76,11 @@ public class VrpTimeWindows {
         {5, 15}, // 16
     };
     public final int vehicleNumber = 4;
+    // [START resources_data]
+    public final int vehicleLoadTime = 5;
+    public final int vehicleUnloadTime = 5;
+    public final int depotCapacity = 2;
+    // [END resources_data]
     public final int depot = 0;
   }
   // [END data_model]
@@ -165,6 +173,29 @@ public class VrpTimeWindows {
       routing.addToAssignment(timeDimension.slackVar(index));
     }
     // [END time_constraint]
+
+    // Add resource constraints at the depot.
+    // [START depot_load_time]
+    Solver solver = routing.solver();
+    IntervalVar[] intervals = new IntervalVar[ data.vehicleNumber * 2 ];
+    for (int i = 0; i < data.vehicleNumber; ++i) {
+      // Add load duration at start of routes
+      intervals[2*i] = solver.makeFixedDurationIntervalVar(
+            timeDimension.cumulVar(routing.start(i)), data.vehicleLoadTime,
+            "depot_interval");
+      // Add unload duration at end of routes.
+      intervals[2*i+1] = solver.makeFixedDurationIntervalVar(
+            timeDimension.cumulVar(routing.end(i)), data.vehicleUnloadTime,
+            "depot_interval");
+    }
+    // [END depot_load_time]
+
+    // [START depot_capacity]
+    long[] depot_usage = new long[ intervals.length ];
+    Arrays.fill(depot_usage, 1);
+    solver.addConstraint(solver.makeCumulative(intervals, depot_usage,
+          data.depotCapacity, "depot"));
+    // [END depot_capacity]
 
     // Instantiate route start and end times to produce feasible times.
     // [START depot_start_end_times]

@@ -63,6 +63,11 @@ struct DataModel {
       {5, 15},   // 16
   };
   const int num_vehicles = 4;
+  // [START resources_data]
+  const int vehicle_load_time = 5;
+  const int vehicle_unload_time = 5;
+  const int depot_capacity = 2;
+  // [END resources_data]
   const RoutingIndexManager::NodeIndex depot{0};
 };
 // [END data_model]
@@ -168,13 +173,35 @@ void VrpTimeWindows() {
   }
   // [END time_constraint]
 
+  // Add resource constraints at the depot.
+  // [START depot_load_time]
+  Solver* solver = routing.solver();
+  std::vector<IntervalVar*> intervals;
+  for (int i = 0; i < data.num_vehicles; ++i) {
+    // Add load duration at start of routes
+    intervals.push_back(solver->MakeFixedDurationIntervalVar(
+        time_dimension.CumulVar(routing.Start(i)), data.vehicle_load_time,
+        "depot_interval"));
+    // Add unload duration at end of routes.
+    intervals.push_back(solver->MakeFixedDurationIntervalVar(
+        time_dimension.CumulVar(routing.End(i)), data.vehicle_unload_time,
+        "depot_interval"));
+  }
+  // [END depot_load_time]
+
+  // [START depot_capacity]
+  std::vector<int64> depot_usage(intervals.size(), 1);
+  solver->AddConstraint(solver->MakeCumulative(intervals, depot_usage,
+                                               data.depot_capacity, "depot"));
+  // [END depot_capacity]
+
   // Instantiate route start and end times to produce feasible times.
   // [START depot_start_end_times]
   for (int i = 0; i < data.num_vehicles; ++i) {
     routing.AddVariableMinimizedByFinalizer(
-        time_dimension.CumulVar(routing.Start(i)));
-    routing.AddVariableMinimizedByFinalizer(
         time_dimension.CumulVar(routing.End(i)));
+    routing.AddVariableMinimizedByFinalizer(
+        time_dimension.CumulVar(routing.Start(i)));
   }
   // [END depot_start_end_times]
 

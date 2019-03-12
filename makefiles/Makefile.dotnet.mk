@@ -453,6 +453,7 @@ test_dotnet_constraint_solver_samples:
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpPickupDelivery.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpPickupDeliveryFifo.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpPickupDeliveryLifo.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpResources.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpStartsEnds.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpTimeWindows.cs
 

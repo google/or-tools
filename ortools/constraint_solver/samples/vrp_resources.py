@@ -11,12 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START program]
-"""Vehicles Routing Problem (VRP) with Time Windows."""
+"""Vehicles Routing Problem (VRP) with Resource Constraints."""
 
 # [START import]
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
@@ -63,6 +64,11 @@ def create_data_model():
         (5, 15),  # 16
     ]
     data['num_vehicles'] = 4
+    # [START resources_data]
+    data['vehicle_load_time'] = 5
+    data['vehicle_unload_time'] = 5
+    data['depot_capacity'] = 2
+    # [END resources_data]
     data['depot'] = 0
     return data
     # [END data_model]
@@ -138,11 +144,9 @@ def main():
     time = 'Time'
     routing.AddDimension(
         transit_callback_index,
-        30,  # allow waiting time
-        30,  # maximum time per vehicle
+        60,  # allow waiting time
+        60,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
-        # This doesn't have any effect in this example,
-        # since the depot has a start window of (0, 0).
         time)
     time_dimension = routing.GetDimensionOrDie(time)
     # Add time window constraints for each location except depot
@@ -161,6 +165,33 @@ def main():
                                                 data['time_windows'][0][1])
         routing.AddToAssignment(time_dimension.SlackVar(index))
     # [END time_windows_constraint]
+
+    # Add resource constraints at the depot.
+    # [START depot_load_time]
+    solver = routing.solver()
+    intervals = []
+    for i in range(data['num_vehicles']):
+        # Add time windows at start of routes
+        intervals.append(
+            solver.FixedDurationIntervalVar(
+                time_dimension.CumulVar(routing.Start(i)),
+                data['vehicle_load_time'], 'depot_interval'))
+        # Add time windows at end of routes.
+        intervals.append(
+            solver.FixedDurationIntervalVar(
+                time_dimension.CumulVar(routing.End(i)),
+                data['vehicle_unload_time'], 'depot_interval'))
+    # [END depot_load_time]
+
+    # [START depot_capacity]
+    depot_usage = [1 for i in range(len(intervals))]
+    solver.AddConstraint(
+        solver.Cumulative(
+            intervals,
+            depot_usage,
+            data['depot_capacity'],
+            'depot'))
+    # [END depot_capacity]
 
     # Instantiate route start and end times to produce feasible times.
     # [START depot_start_end_times]
@@ -188,7 +219,8 @@ def main():
     if assignment:
         print_solution(data, manager, routing, assignment)
     # [END print_solution]
-
+    else:
+        print('No solution found !')
 
 if __name__ == '__main__':
     main()

@@ -14,14 +14,15 @@
 // [START program]
 // [START import]
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 // [END import]
 
 /// <summary>
-///   Vehicles Routing Problem (VRP) with Time Windows.
+///   Vehicles Routing Problem (VRP) with Resource Constraints.
 /// </summary>
-public class VrpTimeWindows {
+public class VrpResources {
   // [START data_model]
   class DataModel {
     public long[,] TimeMatrix = {
@@ -63,6 +64,11 @@ public class VrpTimeWindows {
       {5, 15},   // 16
     };
     public int VehicleNumber = 4;
+    // [START resources_data]
+    public int VehicleLoadTime = 5;
+    public int VehicleUnloadTime = 5;
+    public int DepotCapacity = 2;
+    // [END resources_data]
     public int Depot = 0;
   };
   // [END data_model]
@@ -171,6 +177,28 @@ public class VrpTimeWindows {
       routing.AddToAssignment(timeDimension.SlackVar(index));
     }
     // [END time_constraint]
+
+    // Add resource constraints at the depot.
+    // [START depot_load_time]
+    Solver solver = routing.solver();
+    IntervalVar[] intervals = new IntervalVar[ data.VehicleNumber * 2 ];
+    for (int i = 0; i < data.VehicleNumber; ++i) {
+      // Add load duration at start of routes
+      intervals[2*i] = solver.MakeFixedDurationIntervalVar(
+            timeDimension.CumulVar(routing.Start(i)), data.VehicleLoadTime,
+            "depot_interval");
+      // Add unload duration at end of routes.
+      intervals[2*i+1] = solver.MakeFixedDurationIntervalVar(
+            timeDimension.CumulVar(routing.End(i)), data.VehicleUnloadTime,
+            "depot_interval");
+    }
+    // [END depot_load_time]
+
+    // [START depot_capacity]
+    long[] depot_usage = Enumerable.Repeat<long>(1, intervals.Length).ToArray();
+    solver.Add(solver.MakeCumulative(intervals, depot_usage,
+          data.DepotCapacity, "depot"));
+    // [END depot_capacity]
 
     // Instantiate route start and end times to produce feasible times.
     // [START depot_start_end_times]
