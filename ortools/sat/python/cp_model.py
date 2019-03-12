@@ -143,7 +143,8 @@ class LinearExpression(object):
 
     def __abs__(self):
         raise NotImplementedError(
-            'LinearExpression.__abs__, please use cp_model.AddAbsEquality')
+            'calling abs() on a LinearExpression is not supported, '
+            'please use cp_model.AddAbsEquality')
 
     def __add__(self, expr):
         return _SumArray([self, expr])
@@ -173,13 +174,19 @@ class LinearExpression(object):
         return _ProductCst(self, arg)
 
     def __div__(self, _):
-        raise NotImplementedError('LinearExpression.__div__')
+        raise NotImplementedError(
+              'calling / on a LinearExpression is not supported, '
+              'please use cp_model.AddDivisionEquality')
 
     def __truediv__(self, _):
-        raise NotImplementedError('LinearExpression.__truediv__')
+        raise NotImplementedError(
+              'calling // on a LinearExpression is not supported, '
+              'please use cp_model.AddDivisionEquality')
 
     def __mod__(self, _):
-        raise NotImplementedError('LinearExpression.__mod__')
+        raise NotImplementedError(
+              'calling %% on a LinearExpression is not supported, '
+              'please use cp_model.AddModuloEquality')
 
     def __neg__(self):
         return _ProductCst(self, -1)
