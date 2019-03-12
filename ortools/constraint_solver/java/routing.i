@@ -51,6 +51,7 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 namespace operations_research {
 
 // RoutingModel
+%unignore RoutingModel;
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingModel %{
@@ -89,7 +90,6 @@ import java.util.function.LongUnaryOperator;
 %ignore RoutingModel::StateDependentTransitCallback;
 %ignore RoutingModel::UnaryTransitCallbackOrNull;
 // Methods:
-%unignore RoutingModel;
 %rename (activeVar) RoutingModel::ActiveVar;
 %rename (addAllActive) RoutingModel::AddAllActive;
 %rename (addAtSolutionCallback) RoutingModel::AddAtSolutionCallback;
@@ -216,7 +216,8 @@ import java.util.function.LongUnaryOperator;
   operations_research::RoutingModel::PickupAndDeliveryPolicy::FIFO;
 }
 
-// RoutingDimension methods.
+// RoutingDimension
+%unignore RoutingDimension;
 // Map transit callback to Java @FunctionalInterface types.
 // This replaces the RoutingTransitCallback[1-2] in the Java proxy class
 %typemap(javaimports) RoutingDimension %{
@@ -224,7 +225,7 @@ import java.util.function.LongUnaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
-
+// Methods:
 %rename (cumulVar) RoutingDimension::CumulVar;
 %rename (fixedTransitVar) RoutingDimension::FixedTransitVar;
 %rename (getBreakIntervalsOfVehicle) RoutingDimension::GetBreakIntervalsOfVehicle;
@@ -255,7 +256,9 @@ import java.util.function.LongBinaryOperator;
 %rename (transitVar) RoutingDimension::TransitVar;
 %rename (vehicleHasBreakIntervals) RoutingDimension::VehicleHasBreakIntervals;
 
-// RoutingFilteredDecisionBuilder methods.
+// RoutingFilteredDecisionBuilder
+%unignore RoutingFilteredDecisionBuilder;
+// Methods:
 %rename (getEndChainStart) RoutingFilteredDecisionBuilder::GetEndChainStart;
 %rename (getStartChainEnd) RoutingFilteredDecisionBuilder::GetStartChainEnd;
 %rename (initializeRoutes) RoutingFilteredDecisionBuilder::InitializeRoutes;

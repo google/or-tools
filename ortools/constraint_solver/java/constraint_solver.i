@@ -707,7 +707,7 @@ import java.util.function.LongConsumer;
 import java.lang.Runnable;
 %}
 // note: SWIG does not support multiple %typemap(javacode) Type, so we have to
-// define all Solver tweak here.
+// define all Solver tweak here (ed and not in the macro DEFINE_CALLBACK_*)
 %typemap(javacode) Solver %{
   /**
    * This exceptions signal that a failure has been raised in the C++ world.
