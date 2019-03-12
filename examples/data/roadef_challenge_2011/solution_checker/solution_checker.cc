@@ -1,4 +1,16 @@
-// Copyright 2011 Google Inc. All Rights Reserved.
+// Copyright 2010-2018 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 
 #include "solution_checker.h"
 
@@ -78,7 +90,7 @@ int64 RemainingCapacities::GetLoadCost(
     const int load_cost_weight = resources_.at(resource_id).load_cost_weight;
     const int64 delta = safety_remaining_capacities.at(resource_id) -
                         remaining_capacities_.at(resource_id);
-    load_cost += load_cost_weight * std::max(delta, 0LL);
+    load_cost += load_cost_weight * std::max(delta, int64{0});
   }
   return load_cost;
 }
@@ -90,7 +102,8 @@ int64 RemainingCapacities::GetBalanceCost(const BalanceCost& balance_cost)
       remaining_capacities_.at(balance_cost.first_resource_id);
   const int64 remaining =
       remaining_capacities_.at(balance_cost.second_resource_id);
-  return balance_cost.weight * std::max(0LL, remaining_on_target - remaining);
+  return balance_cost.weight *
+         std::max(int64{0}, remaining_on_target - remaining);
 }
 
 // --------------------------------------------------------
@@ -115,7 +128,7 @@ Service::Service(ServiceIndex id, NumberOfLocations spread_min,
       dependencies_(dependencies),
       processes_() {}
 
-Service::~Service() { STLDeleteElements(&processes_); }
+Service::~Service() { gtl::STLDeleteElements(&processes_); }
 
 // --------------------------------------------------------
 // Machine
@@ -176,7 +189,7 @@ int64 Machine::GetBalanceCost(const BalanceCost& balance_cost) const {
 
 namespace {
 template<class T>
-void CheckNotNullInVector(const vector<T*>& v) {
+void CheckNotNullInVector(const std::vector<T*>& v) {
   for (int i = 0; i < v.size(); ++i) {
     CHECK_NOTNULL(v.at(i));
   }
@@ -302,7 +315,7 @@ bool SolutionChecker::CheckConflictConstraints() const {
   const ServiceIndex num_services = GetNumberOfServices();
   for (ServiceIndex service_id(0); service_id < num_services; ++service_id) {
     const Service& service = services(service_id);
-    vector<bool> is_machine_used(machines_.size(), false);
+    std::vector<bool> is_machine_used(machines_.size(), false);
     LocalProcessIndex num_local_processes = service.GetNumberOfProcesses();
     for (LocalProcessIndex local_process_id(0);
          local_process_id < num_local_processes; ++local_process_id) {
@@ -325,7 +338,7 @@ bool SolutionChecker::CheckSpreadConstraints() const {
   const ServiceIndex num_services = GetNumberOfServices();
   for (ServiceIndex service_id(0); service_id < num_services; ++service_id) {
     const Service& service = services(service_id);
-    vector<bool> is_location_used(machines_.size(), false);
+    std::vector<bool> is_location_used(machines_.size(), false);
     NumberOfLocations spread(0);
     LocalProcessIndex num_local_processes = service.GetNumberOfProcesses();
     for (LocalProcessIndex local_process_id(0);
@@ -355,7 +368,7 @@ bool SolutionChecker::CheckSpreadConstraints() const {
 bool SolutionChecker::CheckDependencyConstraint(
     const Service& dependent_service, const Service& service) const {
   // Mark all neighborhood where a process of service runs.
-  vector<bool> used_neighborhoods(machines_.size(),
+  std::vector<bool> used_neighborhoods(machines_.size(),
                                     false);
   LocalProcessIndex num_local_processes = service.GetNumberOfProcesses();
   for (LocalProcessIndex local_process_id(0);
@@ -479,9 +492,9 @@ int64 SolutionChecker::GetMachineMoveCost() const {
 // --------------------------------------------------------
 // DataParser
 // --------------------------------------------------------
-DataParser::DataParser(const vector<int>& raw_model_data,
-                       const vector<int>& raw_initial_assignments_data,
-                       const vector<int>& raw_new_assignments_data)
+DataParser::DataParser(const std::vector<int>& raw_model_data,
+                       const std::vector<int>& raw_initial_assignments_data,
+                       const std::vector<int>& raw_new_assignments_data)
     : raw_model_data_(raw_model_data),
       raw_initial_assignments_data_(raw_initial_assignments_data),
       raw_new_assignments_data_(raw_new_assignments_data),
@@ -500,8 +513,8 @@ DataParser::DataParser(const vector<int>& raw_model_data,
 }
 
 DataParser::~DataParser() {
-  STLDeleteElements(&machines_);
-  STLDeleteElements(&services_);
+  gtl::STLDeleteElements(&machines_);
+  gtl::STLDeleteElements(&services_);
 }
 
 int DataParser::GetNextModelValue(int max_value) {
@@ -526,8 +539,8 @@ int DataParser::GetNextModelValue(int max_value) {
 template<class T>
   void DataParser::GetModelVector(size_t size,
                                   int max_value,
-                                  vector<T>* model_vector) {
-  CHECK_NOTNULL(model_vector);
+                                  std::vector<T>* model_vector) {
+  CHECK(model_vector != nullptr);
   model_vector->clear();
   for (int i = 0; i < size; ++i) {
     const T new_element(GetNextModelValue(max_value));
@@ -612,7 +625,7 @@ void DataParser::ParseProcesses() {
   for (int process_id = 0; process_id < num_processes; ++process_id) {
     const ServiceIndex service_id(GetNextModelValue(num_services - 1));
     Service* const service = services_.at(service_id);
-    CHECK_NOTNULL(service);
+    CHECK(service != nullptr);
 
     Requirements requirements;
     GetModelVector(num_resources, kMaxIntValue, &requirements);
@@ -646,9 +659,9 @@ void DataParser::ParseWeights() {
   machine_move_cost_weight_ = GetNextModelValue(kMaxIntValue);
 }
 
-void DataParser::ParseAssignments(const vector<int>& assignments,
+void DataParser::ParseAssignments(const std::vector<int>& assignments,
                                   ProcessAssignments* process_assignments) {
-  CHECK_NOTNULL(process_assignments);
+  CHECK(process_assignments != nullptr);
   process_assignments->clear();
   const size_t num_machines = machines_.size();
   const size_t num_assignments = assignments.size();

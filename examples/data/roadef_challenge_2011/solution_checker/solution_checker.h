@@ -1,11 +1,23 @@
-// Copyright 2011 Google Inc. All Rights Reserved.
+// Copyright 2010-2018 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 
 #ifndef SOLUTION_CHECKER_H_
 #define SOLUTION_CHECKER_H_
 
-#include "assert.h"
 #include <iostream>
 #include <vector>
+#include "assert.h"
 
 using namespace std;
 typedef long long int int64;
@@ -23,11 +35,11 @@ typedef int NumberOfLocations;
 typedef int BalanceCostIndex;
 typedef int DependencyIndex;
 
-typedef vector<int64> Capacities;
-typedef vector<int> Requirements;
-typedef vector<int> ProcessAssignments;
-typedef vector<int> MoveToMachineCosts;
-typedef vector<int> Dependencies;
+typedef std::vector<int64> Capacities;
+typedef std::vector<int> Requirements;
+typedef std::vector<int> ProcessAssignments;
+typedef std::vector<int> MoveToMachineCosts;
+typedef std::vector<int> Dependencies;
 
 #define CHECK(x) assert(x)
 #define CHECK_EQ(x, y) CHECK((x) == (y))
@@ -38,7 +50,7 @@ typedef vector<int> Dependencies;
 #define kint32max 0x7fffffff
 
 template <class T>
-void STLDeleteElements(vector<T*>* elements) {
+void STLDeleteElements(std::vector<T*>* elements) {
   CHECK_NOTNULL(elements);
   for (int i = 0; i < elements->size(); ++i) {
     delete elements->at(i);
@@ -47,7 +59,7 @@ void STLDeleteElements(vector<T*>* elements) {
 }
 
 template<class T>
-size_t VectorSize(const vector<T>& v) {
+size_t VectorSize(const std::vector<T>& v) {
   return v.size();
 }
 
@@ -58,7 +70,7 @@ struct Resource {
   bool is_transient;
   int load_cost_weight;
 };
-typedef vector<Resource> Resources;
+typedef std::vector<Resource> Resources;
 
 struct BalanceCost {
   BalanceCost(ResourceIndex _first_resource_id,
@@ -73,7 +85,7 @@ struct BalanceCost {
   int target;
   int weight;
 };
-typedef vector<BalanceCost> BalanceCosts;
+typedef std::vector<BalanceCost> BalanceCosts;
 
 // This class is a collection of remaining capacities per resource.
 // It deals with both remaining capacities (used for load and balance costs)
@@ -140,8 +152,8 @@ class Process {
   const Service& service_;
 
 };
-typedef vector<const Process*> Processes;
-typedef vector<const Process*> LocalProcesses;
+typedef std::vector<const Process*> Processes;
+typedef std::vector<const Process*> LocalProcesses;
 
 // This class contains all needed information about services to check hard
 // constraints and compute objective costs.
@@ -152,7 +164,7 @@ class Service {
   virtual ~Service();
 
   void AddProcess(const Process* const process) {
-    CHECK_NOTNULL(process);
+    CHECK(process != nullptr);
     processes_.push_back(process);
   }
 
@@ -182,7 +194,7 @@ class Service {
   LocalProcesses processes_;
 
 };
-typedef vector<Service*> Services;
+typedef std::vector<Service*> Services;
 
 // This class contains all needed information about machines to check hard
 // constraints and compute objective costs.
@@ -239,7 +251,7 @@ class Machine {
   RemainingCapacities remaining_capacities_;
 
 };
-typedef vector<Machine*> Machines;
+typedef std::vector<Machine*> Machines;
 
 // This class checks all hard constraints and compute the total objective cost.
 class SolutionChecker {
@@ -344,9 +356,9 @@ class SolutionChecker {
 // description document, and creates needed objects for the solution checker.
 class DataParser {
  public:
-  DataParser(const vector<int>& raw_model_data,
-             const vector<int>& raw_initial_assignments_data,
-             const vector<int>& raw_new_assignments_data);
+  DataParser(const std::vector<int>& raw_model_data,
+             const std::vector<int>& raw_initial_assignments_data,
+             const std::vector<int>& raw_new_assignments_data);
   virtual ~DataParser();
 
   const Machines& machines() const { return machines_; }
@@ -368,7 +380,7 @@ class DataParser {
   template<class T>
     void GetModelVector(size_t size,
                         int max_value,
-                        vector<T>* model_vector);
+                        std::vector<T>* model_vector);
 
   void Parse();
   void ParseModel();
@@ -378,12 +390,12 @@ class DataParser {
   void ParseProcesses();
   void ParseBalanceCosts();
   void ParseWeights();
-  void ParseAssignments(const vector<int>& assignment,
+  void ParseAssignments(const std::vector<int>& assignment,
                         ProcessAssignments* process_assignment);
 
-  const vector<int>& raw_model_data_;
-  const vector<int>& raw_initial_assignments_data_;
-  const vector<int>& raw_new_assignments_data_;
+  const std::vector<int>& raw_model_data_;
+  const std::vector<int>& raw_initial_assignments_data_;
+  const std::vector<int>& raw_new_assignments_data_;
   int raw_data_iterator_;
 
   ProcessAssignments initial_assignments_;
