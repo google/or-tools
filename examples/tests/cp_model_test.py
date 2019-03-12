@@ -6,17 +6,22 @@ from __future__ import print_function
 
 from ortools.sat import cp_model_pb2
 from ortools.sat.python import cp_model
+from ortools.sat.python import cp_model_helper
 
 
 class CpModelTest(object):
 
   def assertEqual(self, a, b):
-    if isinstance(a, cp_model.CpIntegerVariable) or isinstance(a, cp_model.NotBooleanVariable):
+    if isinstance(a, cp_model.LinearExpression) and hasattr(a.__class__, 'Index'):
       if a.Index() != b.Index():
         print('Error: ' + repr(a) + ' != ' + repr(b) + '|' + str(a.Index()) +
               " <-> " + str(b.Index()))
     elif a != b:
       print('Error: ' + str(a) + ' != ' + str(b))
+
+  def assertTrue(self, a, msg):
+    if not a:
+      print('Error:', msg)
 
   def testCreateIntegerVariable(self):
     print('testCreateIntegerVariable')
@@ -30,13 +35,9 @@ class CpModelTest(object):
     model = cp_model.CpModel()
     x = model.NewIntVar(-10, 10, 'x')
     b = model.NewBoolVar('b')
-    nx = x.Not()
     nb = b.Not()
-    self.assertEqual(x.Not(), nx)
-    self.assertEqual(x.Not().Not(), x)
     self.assertEqual(b.Not(), nb)
     self.assertEqual(b.Not().Not(), b)
-    self.assertEqual(nx.Index(), -x.Index() - 1)
     self.assertEqual(nb.Index(), -b.Index() - 1)
 
   def testLinear(self):
@@ -342,6 +343,14 @@ class CpModelTest(object):
     self.assertEqual(2, len(model.ModelProto().constraints[0].int_max.vars))
     self.assertEqual(-2, model.ModelProto().constraints[0].int_max.vars[0])
     self.assertEqual(1, model.ModelProto().constraints[0].int_max.vars[1])
+    passed = False
+    try:
+      z = abs(x)
+    except NotImplementedError as e:
+      self.assertEqual(
+        'LinearExpression.__abs__, please use cp_model.AddAbsEquality', str(e))
+      passed = True
+    self.assertTrue(passed, 'abs() did not raise an error')
 
   def testDivision(self):
     print('testDivision')
@@ -415,27 +424,27 @@ class CpModelTest(object):
 
   def testAssertIsInt64(self):
     print('testAssertIsInt64')
-    cp_model.AssertIsInt64(123)
-    cp_model.AssertIsInt64(2**63 - 1)
-    cp_model.AssertIsInt64(-2**63)
+    cp_model_helper.AssertIsInt64(123)
+    cp_model_helper.AssertIsInt64(2**63 - 1)
+    cp_model_helper.AssertIsInt64(-2**63)
 
   def testCapInt64(self):
     print('testCapInt64')
-    self.assertEqual(cp_model.CapInt64(cp_model.INT_MAX), cp_model.INT_MAX)
-    self.assertEqual(cp_model.CapInt64(cp_model.INT_MAX + 1), cp_model.INT_MAX)
-    self.assertEqual(cp_model.CapInt64(cp_model.INT_MIN), cp_model.INT_MIN)
-    self.assertEqual(cp_model.CapInt64(cp_model.INT_MIN - 1), cp_model.INT_MIN)
-    self.assertEqual(cp_model.CapInt64(15), 15)
+    self.assertEqual(cp_model_helper.CapInt64(cp_model.INT_MAX), cp_model.INT_MAX)
+    self.assertEqual(cp_model_helper.CapInt64(cp_model.INT_MAX + 1), cp_model.INT_MAX)
+    self.assertEqual(cp_model_helper.CapInt64(cp_model.INT_MIN), cp_model.INT_MIN)
+    self.assertEqual(cp_model_helper.CapInt64(cp_model.INT_MIN - 1), cp_model.INT_MIN)
+    self.assertEqual(cp_model_helper.CapInt64(15), 15)
 
   def testCapSub(self):
     print('testCapSub')
-    self.assertEqual(cp_model.CapSub(10, 5), 5)
-    self.assertEqual(cp_model.CapSub(cp_model.INT_MIN, 5), cp_model.INT_MIN)
-    self.assertEqual(cp_model.CapSub(cp_model.INT_MIN, -5), cp_model.INT_MIN)
-    self.assertEqual(cp_model.CapSub(cp_model.INT_MAX, 5), cp_model.INT_MAX)
-    self.assertEqual(cp_model.CapSub(cp_model.INT_MAX, -5), cp_model.INT_MAX)
-    self.assertEqual(cp_model.CapSub(2, cp_model.INT_MIN), cp_model.INT_MAX)
-    self.assertEqual(cp_model.CapSub(2, cp_model.INT_MAX), cp_model.INT_MIN)
+    self.assertEqual(cp_model_helper.CapSub(10, 5), 5)
+    self.assertEqual(cp_model_helper.CapSub(cp_model.INT_MIN, 5), cp_model.INT_MIN)
+    self.assertEqual(cp_model_helper.CapSub(cp_model.INT_MIN, -5), cp_model.INT_MIN)
+    self.assertEqual(cp_model_helper.CapSub(cp_model.INT_MAX, 5), cp_model.INT_MAX)
+    self.assertEqual(cp_model_helper.CapSub(cp_model.INT_MAX, -5), cp_model.INT_MAX)
+    self.assertEqual(cp_model_helper.CapSub(2, cp_model.INT_MIN), cp_model.INT_MAX)
+    self.assertEqual(cp_model_helper.CapSub(2, cp_model.INT_MAX), cp_model.INT_MIN)
 
   def testGetOrMakeIndexFromConstant(self):
     print('testGetOrMakeIndexFromConstant')
@@ -469,17 +478,9 @@ class CpModelTest(object):
     self.assertEqual(
         str(x != y),
         '(x + -y) in [-9223372036854775808..-1, 1..9223372036854775807]')
-    self.assertEqual('(x * y)', str(x * y))
     self.assertEqual('0 <= x <= 10',
-                     str(cp_model.BoundIntegerExpression(x, [0, 10])))
+                     str(cp_model.LinearInequality(x, [0, 10])))
     print(str(model))
-
-  def testProduct(self):
-    model = cp_model.CpModel()
-    x = model.NewIntVar(0, 4, 'x')
-    y = model.NewIntVar(0, 3, 'y')
-    self.assertEqual(x, (x * y).Left())
-    self.assertEqual(y, (x * y).Right())
 
   def testRepr(self):
     model = cp_model.CpModel()
@@ -489,7 +490,6 @@ class CpModelTest(object):
     self.assertEqual(repr(x * 2), 'ProductCst(x(0..4), 2)')
     self.assertEqual(repr(x + y), 'SumArray(x(0..4), y(0..3), 0)')
     self.assertEqual(repr(x + 5), 'SumArray(x(0..4), 5)')
-    self.assertEqual('Product(x(0..4), y(0..3))', repr(x * y))
 
   def testDisplayBounds(self):
     print('testDisplayBounds')
@@ -502,8 +502,17 @@ class CpModelTest(object):
     model = cp_model.CpModel()
     x = model.NewIntVar(0, 4, 'x')
     y = model.NewIntVar(0, 3, 'y')
-    not_x = x.Not()
-    prod = x * y
+    errors = 0
+    try:
+      not_x = x.Not()
+    except:
+      errors += 1
+    
+    try:
+      prod = x * y
+    except:
+      errors += 1
+    self.assertEqual(errors, 2)
 
 
 
@@ -548,7 +557,6 @@ if __name__ == '__main__':
   cp_model_test.testCapSub()
   cp_model_test.testGetOrMakeIndexFromConstant()
   cp_model_test.testStr()
-  cp_model_test.testProduct()
   cp_model_test.testRepr()
   cp_model_test.testDisplayBounds()
   cp_model_test.testIntegerExpressionErrors()
