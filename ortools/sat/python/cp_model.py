@@ -175,18 +175,18 @@ class LinearExpression(object):
 
     def __div__(self, _):
         raise NotImplementedError(
-              'calling / on a LinearExpression is not supported, '
-              'please use cp_model.AddDivisionEquality')
+            'calling / on a LinearExpression is not supported, '
+            'please use cp_model.AddDivisionEquality')
 
     def __truediv__(self, _):
         raise NotImplementedError(
-              'calling // on a LinearExpression is not supported, '
-              'please use cp_model.AddDivisionEquality')
+            'calling // on a LinearExpression is not supported, '
+            'please use cp_model.AddDivisionEquality')
 
     def __mod__(self, _):
         raise NotImplementedError(
-              'calling %% on a LinearExpression is not supported, '
-              'please use cp_model.AddModuloEquality')
+            'calling %% on a LinearExpression is not supported, '
+            'please use cp_model.AddModuloEquality')
 
     def __neg__(self):
         return _ProductCst(self, -1)
@@ -828,8 +828,8 @@ class CpModel(object):
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
-                raise TypeError('Tuple ' + str(t) +
-                                ' has the wrong arity (!= 3)')
+                raise TypeError(
+                    'Tuple ' + str(t) + ' has the wrong arity (!= 3)')
             cp_model_helper.AssertIsInt64(t[0])
             cp_model_helper.AssertIsInt64(t[1])
             cp_model_helper.AssertIsInt64(t[2])
