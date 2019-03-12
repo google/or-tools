@@ -413,7 +413,7 @@ class NetworkRoutingSolver {
            max_length <= min_path_length + extra_hops + 1; ++max_length) {
         ComputeAllPathsForOneDemandAndOnePathLength(demand_index, max_length,
                                                     max_paths);
-        if (all_paths_[demand_index].size() > max_paths) {
+        if (all_paths_[demand_index].size() >= max_paths) {
           break;
         }
       }
