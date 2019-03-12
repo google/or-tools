@@ -642,7 +642,8 @@ test_dotnet_dotnet:
 	$(MAKE) run SOURCE=examples/dotnet/GateSchedulingSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopFt06Sat.cs
 	$(MAKE) run SOURCE=examples/dotnet/JobshopSat.cs
-	$(MAKE) run SOURCE=examples/dotnet/NetworkRoutingSat.cs ARGS="--clients=10 --backbones=5 --demands=10 --trafficMin=5 --trafficMax=10 --minClientDegree=2 --maxClientDegree=5 --minBackboneDegree=3 --maxBackboneDegree=5 --maxCapacity=20 --fixedChargeCost=10"
+	$(MAKE) run SOURCE=examples/dotnet/NetworkRoutingSat.cs \
+ ARGS="--clients=10 --backbones=5 --demands=10 --trafficMin=5 --trafficMax=10 --minClientDegree=2 --maxClientDegree=5 --minBackboneDegree=3 --maxBackboneDegree=5 --maxCapacity=20 --fixedChargeCost=10"
 	$(MAKE) run SOURCE=examples/dotnet/NursesSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/ShiftSchedulingSat.cs
 	$(MAKE) run SOURCE=examples/dotnet/SpeakerSchedulingSat.cs
