@@ -209,6 +209,10 @@ class ThetaLambdaTree {
   std::vector<IntegerType> tree_max_of_energy_delta_;
 };
 
+// Explicit instantiations in theta_Tree.cc.
+extern template class ThetaLambdaTree<IntegerValue>;
+extern template class ThetaLambdaTree<int64>;
+
 }  // namespace sat
 }  // namespace operations_research
 

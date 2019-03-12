@@ -134,8 +134,7 @@ class SatPostsolver {
 // appearing in pseudo-Boolean constraints.
 class SatPresolver {
  public:
-  // TODO(user): use IntType? not sure because that complexify the code, and
-  // it is not really needed here.
+  // TODO(user): use IntType!
   typedef int32 ClauseIndex;
 
   explicit SatPresolver(SatPostsolver* postsolver)
@@ -214,6 +213,10 @@ class SatPresolver {
   }
 
  private:
+  // Internal function used by ProcessClauseToSimplifyOthers().
+  bool ProcessClauseToSimplifyOthersUsingLiteral(ClauseIndex clause_index,
+                                                 Literal lit);
+
   // Internal function to add clauses generated during the presolve. The clause
   // must already be sorted with the default Literal order and will be cleared
   // after this call.
@@ -251,6 +254,11 @@ class SatPresolver {
 
   // Display some statistics on the current clause database.
   void DisplayStats(double elapsed_seconds);
+
+  // Returns a hash of the given clause variables (not literal) in such a way
+  // that hash1 & not(hash2) == 0 iff the set of variable of clause 1 is a
+  // subset of the one of clause2.
+  uint64 ComputeSignatureOfClauseVariables(ClauseIndex ci);
 
   // The "active" variables on which we want to call CrossProduct() are kept
   // in a priority queue so that we process first the ones that occur the least
@@ -317,6 +325,9 @@ class SatPresolver {
   // The set of all clauses.
   // An empty clause means that it has been removed.
   std::vector<std::vector<Literal>> clauses_;  // Indexed by ClauseIndex
+
+  // The cached value of ComputeSignatureOfClauseVariables() for each clause.
+  std::vector<uint64> signatures_;  // Indexed by ClauseIndex
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).

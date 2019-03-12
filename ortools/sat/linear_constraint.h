@@ -77,9 +77,6 @@ struct LinearConstraint {
 
 // Allow to build a LinearConstraint while making sure there is no duplicate
 // variables.
-//
-// TODO(user): Storing all coeff in the vector then sorting and merging
-// duplicates might be more efficient. Change if required.
 class LinearConstraintBuilder {
  public:
   // We support "sticky" kMinIntegerValue for lb and kMaxIntegerValue for ub
@@ -90,75 +87,21 @@ class LinearConstraintBuilder {
         lb_(lb),
         ub_(ub) {}
 
-  int size() const { return terms_.size(); }
-  bool IsEmpty() const { return terms_.empty(); }
-
   // Adds var * coeff to the constraint.
-  void AddTerm(IntegerVariable var, IntegerValue coeff) {
-    // We can either add var or NegationOf(var), and we always choose the
-    // positive one.
-    if (VariableIsPositive(var)) {
-      terms_[var] += coeff;
-      if (terms_[var] == 0) terms_.erase(var);
-    } else {
-      const IntegerVariable minus_var = NegationOf(var);
-      terms_[minus_var] -= coeff;
-      if (terms_[minus_var] == 0) terms_.erase(minus_var);
-    }
-  }
+  void AddTerm(IntegerVariable var, IntegerValue coeff);
 
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
-  ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff) {
-    if (assignment_.LiteralIsTrue(lit)) {
-      if (lb_ > kMinIntegerValue) lb_ -= coeff;
-      if (ub_ < kMaxIntegerValue) ub_ -= coeff;
-      return true;
-    }
-    if (assignment_.LiteralIsFalse(lit)) {
-      return true;
-    }
+  ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff);
 
-    bool has_direct_view = encoder_.GetLiteralView(lit) != kNoIntegerVariable;
-    bool has_opposite_view =
-        encoder_.GetLiteralView(lit.Negated()) != kNoIntegerVariable;
-
-    // If a literal has both views, we want to always keep the same
-    // representative: the smallest IntegerVariable. Note that AddTerm() will
-    // also make sure to use the associated positive variable.
-    if (has_direct_view && has_opposite_view) {
-      if (encoder_.GetLiteralView(lit) <=
-          encoder_.GetLiteralView(lit.Negated())) {
-        has_direct_view = true;
-        has_opposite_view = false;
-      } else {
-        has_direct_view = false;
-        has_opposite_view = true;
-      }
-    }
-    if (has_direct_view) {
-      AddTerm(encoder_.GetLiteralView(lit), coeff);
-      return true;
-    }
-    if (has_opposite_view) {
-      AddTerm(encoder_.GetLiteralView(lit.Negated()), -coeff);
-      if (lb_ > kMinIntegerValue) lb_ -= coeff;
-      if (ub_ < kMaxIntegerValue) ub_ -= coeff;
-      return true;
-    }
-    return false;
-  }
-
-  LinearConstraint Build() {
-    LinearConstraint result;
-    result.lb = lb_;
-    result.ub = ub_;
-    for (const auto entry : terms_) {
-      result.vars.push_back(entry.first);
-      result.coeffs.push_back(entry.second);
-    }
-    return result;
-  }
+  // Builds and return the corresponding constraint in a canonical form.
+  // All the IntegerVariable will be positive and appear in increasing index
+  // order.
+  //
+  // TODO(user): this doesn't invalidate the builder object, but if one wants
+  // to do a lot of dynamic editing to the constraint, then then underlying
+  // algorithm needs to be optimized of that.
+  LinearConstraint Build();
 
  private:
   const VariablesAssignment& assignment_;
@@ -166,7 +109,10 @@ class LinearConstraintBuilder {
   IntegerValue lb_;
   IntegerValue ub_;
   IntegerValue offset_;
-  std::map<IntegerVariable, IntegerValue> terms_;
+
+  // Initially we push all AddTerm() here, and during Build() we merge terms
+  // on the same variable.
+  std::vector<std::pair<IntegerVariable, IntegerValue>> terms_;
 };
 
 // Returns the activity of the given constraint. That is the current value of

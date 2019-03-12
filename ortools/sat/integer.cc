@@ -119,42 +119,36 @@ IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
 // Note that by not inserting the literal in "order" we can in the worst case
 // use twice as much implication (2 by literals) instead of only one between
 // consecutive literals.
-void IntegerEncoder::AddImplications(IntegerLiteral i_lit,
-                                     Literal associated_lit) {
-  if (i_lit.var >= encoding_by_var_.size()) {
-    encoding_by_var_.resize(i_lit.var.value() + 1);
-  }
+void IntegerEncoder::AddImplications(
+    const std::map<IntegerValue, Literal>& map,
+    std::map<IntegerValue, Literal>::const_iterator it,
+    Literal associated_lit) {
+  if (!add_implications_) return;
+  DCHECK_EQ(it->second, associated_lit);
 
-  std::map<IntegerValue, Literal>& map_ref =
-      encoding_by_var_[IntegerVariable(i_lit.var)];
-  CHECK(!gtl::ContainsKey(map_ref, i_lit.bound));
-
-  if (add_implications_) {
-    auto after_it = map_ref.lower_bound(i_lit.bound);
-    if (after_it != map_ref.end()) {
-      // Literal(after) => associated_lit
-      if (sat_solver_->CurrentDecisionLevel() == 0) {
-        sat_solver_->AddBinaryClause(after_it->second.Negated(),
-                                     associated_lit);
-      } else {
-        sat_solver_->AddBinaryClauseDuringSearch(after_it->second.Negated(),
-                                                 associated_lit);
-      }
-    }
-    if (after_it != map_ref.begin()) {
-      // associated_lit => Literal(before)
-      if (sat_solver_->CurrentDecisionLevel() == 0) {
-        sat_solver_->AddBinaryClause(associated_lit.Negated(),
-                                     (--after_it)->second);
-      } else {
-        sat_solver_->AddBinaryClauseDuringSearch(associated_lit.Negated(),
-                                                 (--after_it)->second);
-      }
+  // Literal(after) => associated_lit
+  auto after_it = it;
+  ++after_it;
+  if (after_it != map.end()) {
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      sat_solver_->AddBinaryClause(after_it->second.Negated(), associated_lit);
+    } else {
+      sat_solver_->AddBinaryClauseDuringSearch(after_it->second.Negated(),
+                                               associated_lit);
     }
   }
 
-  // Add the new entry.
-  map_ref[i_lit.bound] = associated_lit;
+  // associated_lit => Literal(before)
+  if (it != map.begin()) {
+    auto before_it = it;
+    --before_it;
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      sat_solver_->AddBinaryClause(associated_lit.Negated(), before_it->second);
+    } else {
+      sat_solver_->AddBinaryClauseDuringSearch(associated_lit.Negated(),
+                                               before_it->second);
+    }
+  }
 }
 
 void IntegerEncoder::AddAllImplicationsBetweenAssociatedLiterals() {
@@ -280,10 +274,13 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     }
   }
 
-  const std::pair<IntegerVariable, IntegerValue> key{var, value};
-  if (gtl::ContainsKey(equality_to_associated_literal_, key)) {
+  // We use the "do not insert if present" behavior of .insert() to do just one
+  // lookup.
+  const auto insert_result =
+      equality_to_associated_literal_.insert({{var, value}, literal});
+  if (!insert_result.second) {
     // If this key is already associated, make the two literals equal.
-    const Literal representative = equality_to_associated_literal_[key];
+    const Literal representative = insert_result.first->second;
     if (representative != literal) {
       DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
       sat_solver_->AddBinaryClause(literal, representative.Negated());
@@ -291,8 +288,8 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     }
     return;
   }
-  equality_to_associated_literal_[key] = literal;
-  equality_to_associated_literal_[{NegationOf(var), -value}] = literal;
+  gtl::InsertOrDieNoPrint(&equality_to_associated_literal_,
+                          {{NegationOf(var), -value}, literal});
 
   // Fix literal for value outside the domain or for singleton domain.
   if (!domain.Contains(value.value())) {
@@ -354,8 +351,13 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
   }
 
   // Associate the new literal to i_lit.
-  if (!LiteralIsAssociated(i_lit)) {
-    AddImplications(i_lit, literal);
+  if (i_lit.var >= encoding_by_var_.size()) {
+    encoding_by_var_.resize(i_lit.var.value() + 1);
+  }
+  auto& var_encoding = encoding_by_var_[i_lit.var];
+  auto insert_result = var_encoding.insert({i_lit.bound, literal});
+  if (insert_result.second) {  // New item.
+    AddImplications(var_encoding, insert_result.first, literal);
     if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
       CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
       newly_fixed_integer_literals_.push_back(i_lit);
@@ -365,7 +367,7 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
     reverse_encoding_[literal.Index()].push_back(i_lit);
     full_reverse_encoding_[literal.Index()].push_back(i_lit);
   } else {
-    const Literal associated(GetAssociatedLiteral(i_lit));
+    const Literal associated(insert_result.first->second);
     if (associated != literal) {
       DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
       sat_solver_->AddBinaryClause(literal, associated.Negated());

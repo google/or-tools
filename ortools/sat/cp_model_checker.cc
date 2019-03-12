@@ -86,8 +86,7 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
 std::string ValidateArgumentReferencesInConstraint(const CpModelProto& model,
                                                    int c) {
   const ConstraintProto& ct = model.constraints(c);
-  IndexReferences references;
-  AddReferencesUsedByConstraint(ct, &references);
+  IndexReferences references = GetReferencesUsedByConstraint(ct);
   for (const int v : references.variables) {
     if (!VariableReferenceIsValid(model, v)) {
       return absl::StrCat("Out of bound integer variable ", v,

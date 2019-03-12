@@ -141,7 +141,7 @@ bool PresolveContext::DomainContains(int ref, int64 value) const {
 }
 
 bool PresolveContext::IntersectDomainWith(int ref, const Domain& domain) {
-  CHECK(!DomainIsEmpty(ref));
+  DCHECK(!DomainIsEmpty(ref));
   const int var = PositiveRef(ref);
 
   if (RefIsPositive(ref)) {
@@ -939,18 +939,17 @@ void DivideLinearByGcd(ConstraintProto* ct, PresolveContext* context) {
 
 bool CanonicalizeLinear(ConstraintProto* ct, PresolveContext* context) {
   // First regroup the terms on the same variables and sum the fixed ones.
-  // Note that we use a map to sort the variables and because we expect most
-  // constraints to be small.
   //
-  // TODO(user): move the map in context to reuse its memory. Add a quick pass
+  // TODO(user): move terms in context to reuse its memory? Add a quick pass
   // to skip most of the work below if the constraint is already in canonical
   // form (strictly increasing var, no-fixed var, gcd = 1).
-  std::map<int, int64> var_to_coeff;
+  std::vector<std::pair<int, int64>> terms;
   const bool was_affine = gtl::ContainsKey(context->affine_constraints, ct);
 
   int64 sum_of_fixed_terms = 0;
   bool remapped = false;
   const int num_vars = ct->linear().vars().size();
+  DCHECK_EQ(num_vars, ct->linear().coeffs().size());
   for (int i = 0; i < num_vars; ++i) {
     const int ref = ct->linear().vars(i);
     const int var = PositiveRef(ref);
@@ -968,13 +967,9 @@ bool CanonicalizeLinear(ConstraintProto* ct, PresolveContext* context) {
         remapped = true;
         sum_of_fixed_terms += coeff * r.offset;
       }
-      var_to_coeff[r.representative] += coeff * r.coeff;
-      if (var_to_coeff[r.representative] == 0) {
-        var_to_coeff.erase(r.representative);
-      }
+      terms.push_back({r.representative, coeff * r.coeff});
     } else {
-      var_to_coeff[var] += coeff;
-      if (var_to_coeff[var] == 0) var_to_coeff.erase(var);
+      terms.push_back({var, coeff});
     }
   }
 
@@ -986,10 +981,25 @@ bool CanonicalizeLinear(ConstraintProto* ct, PresolveContext* context) {
 
   ct->mutable_linear()->clear_vars();
   ct->mutable_linear()->clear_coeffs();
-  for (const auto entry : var_to_coeff) {
+  std::sort(terms.begin(), terms.end());
+  int current_var = 0;
+  int64 current_coeff = 0;
+  for (const auto entry : terms) {
     CHECK(RefIsPositive(entry.first));
-    ct->mutable_linear()->add_vars(entry.first);
-    ct->mutable_linear()->add_coeffs(entry.second);
+    if (entry.first == current_var) {
+      current_coeff += entry.second;
+    } else {
+      if (current_coeff != 0) {
+        ct->mutable_linear()->add_vars(current_var);
+        ct->mutable_linear()->add_coeffs(current_coeff);
+      }
+      current_var = entry.first;
+      current_coeff = entry.second;
+    }
+  }
+  if (current_coeff != 0) {
+    ct->mutable_linear()->add_vars(current_var);
+    ct->mutable_linear()->add_coeffs(current_coeff);
   }
   DivideLinearByGcd(ct, context);
 
@@ -998,7 +1008,7 @@ bool CanonicalizeLinear(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("linear: remapped using affine relations");
     var_constraint_graph_changed = true;
   }
-  if (var_to_coeff.size() < num_vars) {
+  if (ct->linear().vars().size() < num_vars) {
     context->UpdateRuleStats("linear: fixed or dup variables");
     var_constraint_graph_changed = true;
   }
@@ -1196,36 +1206,6 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
   return false;
 }
 
-// Fixes the variable at 'var_index' to 'fixed_value' in the constraint and
-// returns the modified RHS Domain.
-Domain FixVariableInLinearConstraint(const int var_index,
-                                     const int64 fixed_value,
-                                     ConstraintProto* ct,
-                                     PresolveContext* context) {
-  auto* arg = ct->mutable_linear();
-  const int num_vars = arg->vars_size();
-  CHECK_LT(var_index, num_vars);
-  const int ref = arg->vars(var_index);
-  CHECK(context->DomainOf(ref).Contains(fixed_value));
-  const int64 coeff = arg->coeffs(var_index);
-  // Subtract the fixed term from the domain.
-  const Domain term_domain(coeff * fixed_value);
-  const Domain rhs_domain = ReadDomainFromProto(ct->linear());
-  const Domain new_rhs_domain = rhs_domain.AdditionWith(term_domain.Negation());
-  // Copy coefficients of all variables except the fixed one.
-  int new_size = 0;
-  for (int i = 0; i < num_vars; ++i) {
-    if (i == var_index) continue;
-    arg->set_vars(new_size, arg->vars(i));
-    arg->set_coeffs(new_size, arg->coeffs(i));
-    ++new_size;
-  }
-  arg->mutable_vars()->Truncate(new_size);
-  arg->mutable_coeffs()->Truncate(new_size);
-  FillDomainInProto(new_rhs_domain, arg);
-  return new_rhs_domain;
-}
-
 // Identify Boolean variable that makes the constraint always true when set to
 // true or false. Moves such literal to the constraint enforcement literals
 // list.
@@ -1254,6 +1234,10 @@ void ExtractEnforcementLiteralFromLinearConstraint(ConstraintProto* ct,
   const bool not_upper_bounded = max_sum <= rhs_domain.Max();
   if (not_lower_bounded == not_upper_bounded) return;
 
+  // To avoid a quadratic loop, we will rewrite the linear expression at the
+  // same time as we extract enforcement literals.
+  int new_size = 0;
+  LinearConstraintProto* mutable_arg = ct->mutable_linear();
   for (int i = 0; i < arg.vars_size(); ++i) {
     // Only work with binary variables.
     //
@@ -1262,56 +1246,61 @@ void ExtractEnforcementLiteralFromLinearConstraint(ConstraintProto* ct,
     // variable at is min/max" and using this literal in the enforcement list.
     // It is thus a bit more involved, and might not be as useful.
     const int ref = arg.vars(i);
-    if (context->MinOf(ref) != 0) continue;
-    if (context->MaxOf(ref) != 1) continue;
-    const int64 coeff = arg.coeffs(i);
-    if (not_lower_bounded) {
-      if (max_sum - std::abs(coeff) <= rhs_domain.front().end) {
-        if (coeff > 0) {
-          // Fix the variable to 1 in the constraint and add it as enforcement
-          // literal.
-          rhs_domain = FixVariableInLinearConstraint(i, 1, ct, context);
-          ct->add_enforcement_literal(ref);
-          // 'min_sum' remains unaffected.
-          max_sum -= coeff;
-        } else {
-          // Fix the variable to 0 in the constraint and add its negation as
-          // enforcement literal.
-          rhs_domain = FixVariableInLinearConstraint(i, 0, ct, context);
-          ct->add_enforcement_literal(NegatedRef(ref));
-          // 'max_sum' remains unaffected.
-          min_sum -= coeff;
+    if (context->MinOf(ref) == 0 && context->MaxOf(ref) == 1) {
+      const int64 coeff = arg.coeffs(i);
+      if (not_lower_bounded) {
+        if (max_sum - std::abs(coeff) <= rhs_domain.front().end) {
+          if (coeff > 0) {
+            // Fix the variable to 1 in the constraint and add it as enforcement
+            // literal.
+            rhs_domain = rhs_domain.AdditionWith(Domain(-coeff));
+            ct->add_enforcement_literal(ref);
+            // 'min_sum' remains unaffected.
+            max_sum -= coeff;
+          } else {
+            // Fix the variable to 0 in the constraint and add its negation as
+            // enforcement literal.
+            ct->add_enforcement_literal(NegatedRef(ref));
+            // 'max_sum' remains unaffected.
+            min_sum -= coeff;
+          }
+          context->UpdateRuleStats(
+              "linear: extracted enforcement literal from constraint");
+          continue;
         }
-        context->UpdateRuleStats(
-            "linear: extracted enforcement literal from constraint");
-        --i;
-        continue;
-      }
-    } else {
-      DCHECK(not_upper_bounded);
-      if (min_sum + std::abs(coeff) >= rhs_domain.back().start) {
-        if (coeff > 0) {
-          // Fix the variable to 0 in the constraint and add its negation as
-          // enforcement literal.
-          rhs_domain = FixVariableInLinearConstraint(i, 0, ct, context);
-          ct->add_enforcement_literal(NegatedRef(ref));
-          // 'min_sum' remains unaffected.
-          max_sum -= coeff;
-        } else {
-          // Fix the variable to 1 in the constraint and add it as enforcement
-          // literal.
-          rhs_domain = FixVariableInLinearConstraint(i, 1, ct, context);
-          ct->add_enforcement_literal(ref);
-          // 'max_sum' remains unaffected.
-          min_sum -= coeff;
+      } else {
+        DCHECK(not_upper_bounded);
+        if (min_sum + std::abs(coeff) >= rhs_domain.back().start) {
+          if (coeff > 0) {
+            // Fix the variable to 0 in the constraint and add its negation as
+            // enforcement literal.
+            ct->add_enforcement_literal(NegatedRef(ref));
+            // 'min_sum' remains unaffected.
+            max_sum -= coeff;
+          } else {
+            // Fix the variable to 1 in the constraint and add it as enforcement
+            // literal.
+            rhs_domain = rhs_domain.AdditionWith(Domain(-coeff));
+            ct->add_enforcement_literal(ref);
+            // 'max_sum' remains unaffected.
+            min_sum -= coeff;
+          }
+          context->UpdateRuleStats(
+              "linear: extracted enforcement literal from constraint");
+          continue;
         }
-        context->UpdateRuleStats(
-            "linear: extracted enforcement literal from constraint");
-        --i;
-        continue;
       }
     }
+
+    // We keep this term.
+    mutable_arg->set_vars(new_size, mutable_arg->vars(i));
+    mutable_arg->set_coeffs(new_size, mutable_arg->coeffs(i));
+    ++new_size;
   }
+
+  mutable_arg->mutable_vars()->Truncate(new_size);
+  mutable_arg->mutable_coeffs()->Truncate(new_size);
+  FillDomainInProto(rhs_domain, mutable_arg);
 }
 
 void ExtractAtMostOneFromLinear(ConstraintProto* ct, PresolveContext* context) {
@@ -1659,7 +1648,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
       context->UpdateRuleStats("element: reduced index domain");
     }
     if (context->IntersectDomainWith(target_ref, infered_domain)) {
-      if (context->DomainOf(target_ref).IsEmpty()) return true;
+      if (context->DomainIsEmpty(target_ref)) return true;
       context->UpdateRuleStats("element: reduced target domain");
     }
   }

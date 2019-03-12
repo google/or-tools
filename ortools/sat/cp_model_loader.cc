@@ -109,23 +109,28 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     }
   } else {
     // Compute the integer variable references used by the model.
-    IndexReferences references;
+    absl::flat_hash_set<int> used_variables;
+
+    IndexReferences refs;
     for (int c = 0; c < model_proto.constraints_size(); ++c) {
       const ConstraintProto& ct = model_proto.constraints(c);
-      AddReferencesUsedByConstraint(ct, &references);
+      refs = GetReferencesUsedByConstraint(ct);
+      for (const int ref : refs.variables) {
+        used_variables.insert(PositiveRef(ref));
+      }
     }
 
     // Add the objectives and search heuristics variables that needs to be
     // referenceable as integer even if they are only used as Booleans.
     if (model_proto.has_objective()) {
       for (const int obj_var : model_proto.objective().vars()) {
-        references.variables.insert(obj_var);
+        used_variables.insert(PositiveRef(obj_var));
       }
     }
     for (const DecisionStrategyProto& strategy :
          model_proto.search_strategy()) {
       for (const int var : strategy.variables()) {
-        references.variables.insert(var);
+        used_variables.insert(PositiveRef(var));
       }
     }
 
@@ -133,17 +138,13 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     // considered "used".
     for (int i = 0; i < num_proto_variables; ++i) {
       if (booleans_[i] == kNoBooleanVariable) {
-        references.variables.insert(i);
+        used_variables.insert(i);
       }
     }
 
     // We want the variable in the problem order.
-    // Warning: references.variables also contains negative reference.
-    var_to_instantiate_as_integer.assign(references.variables.begin(),
-                                         references.variables.end());
-    for (int& ref : var_to_instantiate_as_integer) {
-      if (!RefIsPositive(ref)) ref = PositiveRef(ref);
-    }
+    var_to_instantiate_as_integer.assign(used_variables.begin(),
+                                         used_variables.end());
     gtl::STLSortAndRemoveDuplicates(&var_to_instantiate_as_integer);
   }
   integers_.resize(num_proto_variables, kNoIntegerVariable);
@@ -435,7 +436,8 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   // properly exploit that afterwards though. Do some research!
   const int num_proto_variables = model_proto.variables_size();
   std::vector<bool> already_seen(num_proto_variables, false);
-  std::vector<std::set<int>> enforcement_intersection(num_proto_variables);
+  std::vector<std::vector<int>> enforcement_intersection(num_proto_variables);
+  std::set<int> literals_set;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
     if (ct.enforcement_literal().empty()) {
@@ -444,21 +446,23 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
         enforcement_intersection[var].clear();
       }
     } else {
-      const std::set<int> literals{ct.enforcement_literal().begin(),
-                                   ct.enforcement_literal().end()};
+      literals_set.clear();
+      literals_set.insert(ct.enforcement_literal().begin(),
+                          ct.enforcement_literal().end());
       for (const int var : UsedVariables(ct)) {
         if (!already_seen[var]) {
-          enforcement_intersection[var] = literals;
+          enforcement_intersection[var].assign(ct.enforcement_literal().begin(),
+                                               ct.enforcement_literal().end());
         } else {
           // Take the intersection.
-          for (auto it = enforcement_intersection[var].begin();
-               it != enforcement_intersection[var].end();) {
-            if (!gtl::ContainsKey(literals, *it)) {
-              it = enforcement_intersection[var].erase(it);
-            } else {
-              ++it;
+          std::vector<int>& vector_ref = enforcement_intersection[var];
+          int new_size = 0;
+          for (const int literal : vector_ref) {
+            if (gtl::ContainsKey(literals_set, literal)) {
+              vector_ref[new_size++] = literal;
             }
           }
+          vector_ref.resize(new_size);
         }
         already_seen[var] = true;
       }
@@ -478,7 +482,7 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
 
     ++num_optionals;
     integer_trail->MarkIntegerVariableAsOptional(
-        Integer(var), Literal(*enforcement_intersection[var].begin()));
+        Integer(var), Literal(enforcement_intersection[var].front()));
   }
   VLOG(2) << "Auto-detected " << num_optionals << " optional variables.";
 }
@@ -590,7 +594,11 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   IntegerValue min_sum(0);
   IntegerValue max_sum(0);
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  bool all_booleans = true;
   for (int i = 0; i < vars.size(); ++i) {
+    if (all_booleans && !mapping->IsBoolean(ct.linear().vars(i))) {
+      all_booleans = false;
+    }
     const IntegerValue term_a = coeffs[i] * integer_trail->LowerBound(vars[i]);
     const IntegerValue term_b = coeffs[i] * integer_trail->UpperBound(vars[i]);
     min_sum += std::min(term_a, term_b);
@@ -604,20 +612,14 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     if (max_sum <= ub) ub = kint64max;
 
     if (!HasEnforcementLiteral(ct)) {
-      // Detect if there is only Booleans in order to use a more efficient
-      // propagator. TODO(user): we should probably also implement an
-      // half-reified version of this constraint.
-      bool all_booleans = true;
-      std::vector<LiteralWithCoeff> cst;
-      for (int i = 0; i < vars.size(); ++i) {
-        const int ref = ct.linear().vars(i);
-        if (!mapping->IsBoolean(ref)) {
-          all_booleans = false;
-          continue;
-        }
-        cst.push_back({mapping->Literal(ref), coeffs[i]});
-      }
       if (all_booleans) {
+        // TODO(user): we should probably also implement an
+        // half-reified version of this constraint.
+        std::vector<LiteralWithCoeff> cst;
+        for (int i = 0; i < vars.size(); ++i) {
+          const int ref = ct.linear().vars(i);
+          cst.push_back({mapping->Literal(ref), coeffs[i]});
+        }
         m->Add(BooleanLinearConstraint(lb, ub, &cst));
       } else {
         if (lb != kint64min) {

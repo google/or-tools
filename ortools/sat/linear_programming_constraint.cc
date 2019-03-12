@@ -76,7 +76,8 @@ void LinearProgrammingConstraint::AddLinearConstraint(
 glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
     IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
-  if (!gtl::ContainsKey(mirror_lp_variable_, positive_variable)) {
+  const auto it = mirror_lp_variable_.find(positive_variable);
+  if (it == mirror_lp_variable_.end()) {
     const glop::ColIndex col(integer_variables_.size());
     mirror_lp_variable_[positive_variable] = col;
     integer_variables_.push_back(positive_variable);
@@ -91,7 +92,7 @@ glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
     }
     return col;
   }
-  return mirror_lp_variable_[positive_variable];
+  return it->second;
 }
 
 void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,

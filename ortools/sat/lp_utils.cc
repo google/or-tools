@@ -44,7 +44,36 @@ using operations_research::MPConstraintProto;
 using operations_research::MPModelProto;
 using operations_research::MPVariableProto;
 
-bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
+std::vector<double> ScaleContinuousVariables(double scaling,
+                                             MPModelProto* mp_model) {
+  const int num_variables = mp_model->variable_size();
+  std::vector<double> var_scaling(num_variables, 1.0);
+  for (int i = 0; i < num_variables; ++i) {
+    const MPVariableProto& mp_var = mp_model->variable(i);
+    if (mp_var.is_integer()) continue;
+
+    const double old_lb = mp_var.lower_bound();
+    const double old_ub = mp_var.upper_bound();
+    const double old_obj = mp_var.objective_coefficient();
+
+    var_scaling[i] = scaling;
+    mp_model->mutable_variable(i)->set_lower_bound(old_lb * scaling);
+    mp_model->mutable_variable(i)->set_upper_bound(old_ub * scaling);
+    mp_model->mutable_variable(i)->set_objective_coefficient(old_obj / scaling);
+  }
+  for (MPConstraintProto& mp_constraint : *mp_model->mutable_constraint()) {
+    const int num_terms = mp_constraint.coefficient_size();
+    for (int i = 0; i < num_terms; ++i) {
+      const int var_index = mp_constraint.var_index(i);
+      mp_constraint.set_coefficient(
+          i, mp_constraint.coefficient(i) / var_scaling[var_index]);
+    }
+  }
+  return var_scaling;
+}
+
+bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
+                                       const MPModelProto& mp_model,
                                        CpModelProto* cp_model) {
   const double kInfinity = std::numeric_limits<double>::infinity();
   CHECK(cp_model != nullptr);
@@ -63,12 +92,12 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   // similar condition in disguise because problem with a difference of more
   // than 6 magnitudes between the variable values will likely run into numeric
   // trouble.
-  const int64 kMaxVariableBound = static_cast<int64>(1e7);
+  const int64 kMaxVariableBound = static_cast<int64>(params.mip_max_bound());
 
   int num_truncated_bounds = 0;
   int num_small_domains = 0;
   const int64 kSmallDomainSize = 1000;
-  const double kWantedCoefficientPrecision = 1e-6;
+  const double kWantedPrecision = params.mip_wanted_precision();
 
   // Add the variables.
   const int num_variables = mp_model.variable_size();
@@ -109,12 +138,13 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
 
       // Note that the cast is "perfect" because we forbid large values.
       cp_var->add_domain(
-          static_cast<int64>(lower ? std::ceil(bound) : std::floor(bound)));
+          static_cast<int64>(lower ? std::ceil(bound - kWantedPrecision)
+                                   : std::floor(bound + kWantedPrecision)));
     }
 
     // Notify if a continuous variable has a small domain as this is likely to
     // make an all integer solution far from a continuous one.
-    if (!mp_var.is_integer() &&
+    if (!mp_var.is_integer() && cp_var->domain(0) != cp_var->domain(1) &&
         cp_var->domain(1) - cp_var->domain(0) < kSmallDomainSize) {
       ++num_small_domains;
     }
@@ -129,7 +159,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
 
   // Variables needed to scale the double coefficients into int64.
   double max_relative_coeff_error = 0.0;
-  double max_scaled_sum_error = 0.0;
+  double max_sum_error = 0.0;
   double max_scaling_factor = 0.0;
   double relative_coeff_error = 0.0;
   double scaled_sum_error = 0.0;
@@ -138,10 +168,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
 
-  // TODO(user): we could use up to kint64max here, but our code is not as
-  // defensive as it should be regarding integer overflow. So we use the
-  // precision of a double.
-  const int64 kScalingTarget = 1LL << 53;
+  const int64 kScalingTarget = 1LL << params.mip_max_activity_exponent();
 
   // Add the constraints. We scale each of them individually.
   for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {
@@ -168,16 +195,25 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     scaling_factor = GetBestScalingOfDoublesToInt64(
         coefficients, lower_bounds, upper_bounds, kScalingTarget);
 
-    // Returns the smallest factor of the form 2^i that gives us a relative
-    // coefficient precision of kWantedCoefficientPrecision and still make sure
-    // we will have no integer overflow.
+    // We use an absolute precision if the constraint domain contains a point in
+    // [-1, 1], otherwise we use a relative error to the minimum absolute value
+    // in the domain.
+    Fractional lb = mp_constraint.lower_bound();
+    Fractional ub = mp_constraint.upper_bound();
+    double relative_ref = 1.0;
+    if (lb > 1.0) relative_ref = lb;
+    if (ub < -1.0) relative_ref = -ub;
+
+    // Returns the smallest factor of the form 2^i that gives us a relative sum
+    // error of kWantedPrecision and still make sure we will have no integer
+    // overflow.
     //
     // TODO(user): Make this faster.
     double x = std::min(scaling_factor, 1.0);
     for (; x <= scaling_factor; x *= 2) {
       ComputeScalingErrors(coefficients, lower_bounds, upper_bounds, x,
                            &relative_coeff_error, &scaled_sum_error);
-      if (relative_coeff_error < kWantedCoefficientPrecision) break;
+      if (scaled_sum_error < kWantedPrecision * x * relative_ref) break;
     }
     scaling_factor = x;
 
@@ -186,22 +222,30 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
         std::max(relative_coeff_error, max_relative_coeff_error);
     max_scaling_factor = std::max(scaling_factor / gcd, max_scaling_factor);
 
+    // We do not relax the constraint bound if all variables are integer and
+    // we made no error at all during our scaling.
+    bool relax_bound = scaled_sum_error > 0;
+
     for (int i = 0; i < num_coeffs; ++i) {
       const double scaled_value = mp_constraint.coefficient(i) * scaling_factor;
       const int64 value = static_cast<int64>(std::round(scaled_value)) / gcd;
       if (value != 0) {
+        if (!mp_model.variable(mp_constraint.var_index(i)).is_integer()) {
+          relax_bound = true;
+        }
         arg->add_vars(mp_constraint.var_index(i));
         arg->add_coeffs(value);
       }
     }
-    max_scaled_sum_error =
-        std::max(max_scaled_sum_error, scaled_sum_error / scaling_factor);
+    max_sum_error = std::max(
+        max_sum_error, scaled_sum_error / (scaling_factor * relative_ref));
 
     // Add the constraint bounds. Because we are sure the scaled constraint fit
     // on an int64, if the scaled bounds are too large, the constraint is either
     // always true or always false.
-    Fractional lb = mp_constraint.lower_bound();
-    lb -= std::max(1.0, std::abs(lb)) * 1e-8;
+    if (relax_bound) {
+      lb -= std::max(1.0, std::abs(lb)) * kWantedPrecision;
+    }
     const Fractional scaled_lb = std::ceil(lb * scaling_factor);
     if (lb == -kInfinity || scaled_lb <= kint64min) {
       arg->add_domain(kint64min);
@@ -210,8 +254,10 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
                                 IntegerValue(gcd))
                           .value());
     }
-    Fractional ub = mp_constraint.upper_bound();
-    ub += std::max(1.0, std::abs(ub)) * 1e-8;
+
+    if (relax_bound) {
+      ub += std::max(1.0, std::abs(ub)) * kWantedPrecision;
+    }
     const Fractional scaled_ub = std::floor(ub * scaling_factor);
     if (ub == kInfinity || scaled_ub >= kint64max) {
       arg->add_domain(kint64max);
@@ -221,8 +267,8 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
                           .value());
     }
 
-    // TODO(user): checks feasibility (contains zero) or support that in the
-    // solver!
+    // TODO(user): check feasibility (contains zero) or support that in the
+    // solver.
     if (arg->vars_size() == 0) constraint->Clear();
   }
 
@@ -230,7 +276,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   VLOG(1) << "Maximum constraint coefficient relative error: "
           << max_relative_coeff_error;
   VLOG(1) << "Maximum constraint worst-case sum absolute error: "
-          << max_scaled_sum_error;
+          << max_sum_error;
   VLOG(1) << "Maximum constraint scaling factor: " << max_scaling_factor;
 
   // Add the objective.
@@ -249,16 +295,16 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     scaling_factor = GetBestScalingOfDoublesToInt64(
         coefficients, lower_bounds, upper_bounds, kScalingTarget);
 
-    // Returns the smallest factor of the form 2^i that gives us a relative
-    // coefficient precision of kWantedCoefficientPrecision and still make sure
-    // we will have no integer overflow.
+    // Returns the smallest factor of the form 2^i that gives us an absolute
+    // error of kWantedPrecision and still make sure we will have no integer
+    // overflow.
     //
     // TODO(user): Make this faster.
     double x = std::min(scaling_factor, 1.0);
     for (; x <= scaling_factor; x *= 2) {
       ComputeScalingErrors(coefficients, lower_bounds, upper_bounds, x,
                            &relative_coeff_error, &scaled_sum_error);
-      if (relative_coeff_error < kWantedCoefficientPrecision) break;
+      if (scaled_sum_error < kWantedPrecision * x) break;
     }
     scaling_factor = x;
 
@@ -294,10 +340,12 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   }
 
   // Test the precision of the conversion.
-  const double kRelativeTolerance = 1e-4;
-  if (max_relative_coeff_error > kRelativeTolerance) {
+  const double allowed_error =
+      std::max(params.mip_check_precision(), params.mip_wanted_precision());
+  if (max_sum_error > allowed_error) {
     LOG(WARNING) << "The relative error during double -> int64 conversion "
-                 << "is too high! error:" << max_relative_coeff_error;
+                 << "is too high! error:" << max_sum_error
+                 << " check_tolerance:" << allowed_error;
     return false;
   }
   return true;

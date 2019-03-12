@@ -14,6 +14,7 @@
 #include "ortools/sat/integer_search.h"
 
 #include <cmath>
+#include <functional>
 
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -274,29 +275,96 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   SatDecisionPolicy* decision_policy = model->GetOrCreate<SatDecisionPolicy>();
 
-  // The duplication increase the probability of the first heuristics. This is
-  // wanted because when we randomize the sat parameters, we have more than one
-  // heuristic for choosing the phase of the decision.
-  //
   // TODO(user): Add other policy and perform more experiments.
   std::function<LiteralIndex()> sat_policy = SatSolverHeuristic(model);
   std::vector<std::function<LiteralIndex()>> policies{
-      sat_policy, sat_policy, ExploitLpSolution(sat_policy, model),
-      ExploitLpSolution(SequentialSearch({PseudoCost(model), sat_policy}),
-                        model)};
+      sat_policy, SequentialSearch({PseudoCost(model), sat_policy})};
+  // The higher weight for the sat policy is because this policy actually
+  // contains a lot of variation as we randomize the sat parameters.
+  // TODO(user,user): Do more experiments to find better distribution.
+  std::discrete_distribution<int> var_dist{3 /*sat_policy*/, 1 /*Pseudo cost*/};
+
+  // Value selection.
+  std::vector<std::function<LiteralIndex(IntegerVariable)>>
+      value_selection_heuristics;
+  std::vector<int> value_selection_weight;
+
+  // LP Based value.
+  value_selection_heuristics.push_back([model](IntegerVariable var) {
+    if (LpSolutionIsExploitable(model)) {
+      return SplitAroundLpValue(PositiveVariable(var), model);
+    }
+    return kNoLiteralIndex;
+  });
+  value_selection_weight.push_back(8);
+
+  // Solution based value.
+  value_selection_heuristics.push_back([model](IntegerVariable var) {
+    return SplitDomainUsingBestSolutionValue(var, model);
+  });
+  value_selection_weight.push_back(5);
+
+  // Middle value.
+  value_selection_heuristics.push_back([model](IntegerVariable var) {
+    return GreaterOrEqualToMiddleValue(var, model);
+  });
+  value_selection_weight.push_back(1);
+
+  // Min value.
+  value_selection_heuristics.push_back(
+      [model](IntegerVariable var) { return AtMinValue(var, model); });
+  value_selection_weight.push_back(1);
+
+  // Special case: Don't change the decision value.
+  value_selection_weight.push_back(10);
+
+  // TODO(user): These distribution values are just guessed values. They need
+  // to be tuned.
+  std::discrete_distribution<int> val_dist(value_selection_weight.begin(),
+                                           value_selection_weight.end());
 
   int policy_index = 0;
-  return
-      [sat_solver, decision_policy, policies, policy_index, model]() mutable {
-        if (sat_solver->CurrentDecisionLevel() == 0) {
-          RandomizeDecisionHeuristic(model->GetOrCreate<ModelRandomGenerator>(),
-                                     model->GetOrCreate<SatParameters>());
-          decision_policy->ResetDecisionHeuristic();
-          std::uniform_int_distribution<int> dist(0, policies.size() - 1);
-          policy_index = dist(*(model->GetOrCreate<ModelRandomGenerator>()));
-        }
-        return policies[policy_index]();
-      };
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  int val_policy_index = 0;
+  return [=]() mutable {
+    if (sat_solver->CurrentDecisionLevel() == 0) {
+      auto* random = model->GetOrCreate<ModelRandomGenerator>();
+      RandomizeDecisionHeuristic(random, model->GetOrCreate<SatParameters>());
+      decision_policy->ResetDecisionHeuristic();
+
+      // Select the variable selection heuristic.
+      policy_index = var_dist(*(random));
+
+      // Select the value selection heuristic.
+      val_policy_index = val_dist(*(random));
+    }
+
+    // Get the current decision.
+    const LiteralIndex current_decision = policies[policy_index]();
+    if (current_decision == kNoLiteralIndex) return kNoLiteralIndex;
+
+    // Special case: Don't override the decision value.
+    if (val_policy_index >= value_selection_heuristics.size()) {
+      return current_decision;
+    }
+
+    // Decode the decision and get the variable.
+    for (const IntegerLiteral l :
+         encoder->GetAllIntegerLiterals(Literal(current_decision))) {
+      if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
+
+      // Try the selected policy.
+      const LiteralIndex new_decision =
+          value_selection_heuristics[val_policy_index](l.var);
+      if (new_decision != kNoLiteralIndex) {
+        return new_decision;
+      }
+    }
+
+    // Selected policy failed. Revert back to original decision.
+    return current_decision;
+  };
 }
 
 std::function<LiteralIndex()> FollowHint(

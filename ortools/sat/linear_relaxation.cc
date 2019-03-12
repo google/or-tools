@@ -42,15 +42,8 @@ bool AppendFullEncodingRelaxation(IntegerVariable var, const Model& model,
     if (!encoding_ct.AddLiteralTerm(lit, -value_literal.value)) return false;
   }
 
-  // TODO(user): also skip if var is fixed and there is just one term. Or more
-  // generally, always add all constraints, but do not add the trivial ones to
-  // the LP.
-  if (!at_least_one.IsEmpty()) {
-    relaxation->linear_constraints.push_back(at_least_one.Build());
-  }
-  if (!encoding_ct.IsEmpty()) {
-    relaxation->linear_constraints.push_back(encoding_ct.Build());
-  }
+  relaxation->linear_constraints.push_back(at_least_one.Build());
+  relaxation->linear_constraints.push_back(encoding_ct.Build());
   relaxation->at_most_ones.push_back(at_most_one);
   return true;
 }
@@ -144,12 +137,8 @@ void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
       CHECK(
           encoding_ct.AddLiteralTerm(lit, IntegerValue(-value_literal.value)));
     }
-    if (exactly_one_ct.size() > 1) {
-      relaxation->linear_constraints.push_back(exactly_one_ct.Build());
-    }
-    if (encoding_ct.size() > 1) {
-      relaxation->linear_constraints.push_back(encoding_ct.Build());
-    }
+    relaxation->linear_constraints.push_back(exactly_one_ct.Build());
+    relaxation->linear_constraints.push_back(encoding_ct.Build());
     return;
   }
 
@@ -171,15 +160,10 @@ void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
                                         d_max - value_literal.value));
   }
 
-  if (at_most_one_ct.size() > 1 && encoded_values.size() > 1) {
-    relaxation->at_most_ones.push_back(at_most_one_ct);
-  }
-  if (lower_bound_ct.size() > 1) {
-    relaxation->linear_constraints.push_back(lower_bound_ct.Build());
-  }
-  if (upper_bound_ct.size() > 1) {
-    relaxation->linear_constraints.push_back(upper_bound_ct.Build());
-  }
+  // Note that empty/trivial constraints will be filtered later.
+  relaxation->at_most_ones.push_back(at_most_one_ct);
+  relaxation->linear_constraints.push_back(lower_bound_ct.Build());
+  relaxation->linear_constraints.push_back(upper_bound_ct.Build());
 }
 
 void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
@@ -217,9 +201,7 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
       prev_used_bound = entry.first;
       prev_literal_index = literal_index;
     }
-    if (!lb_constraint.IsEmpty()) {
-      relaxation->linear_constraints.push_back(lb_constraint.Build());
-    }
+    relaxation->linear_constraints.push_back(lb_constraint.Build());
   }
 
   // Do the same for the var <= side by using NegationOfVar().
@@ -238,9 +220,7 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
       if (!lb_constraint.AddLiteralTerm(entry.second, diff)) continue;
       prev_used_bound = entry.first;
     }
-    if (!lb_constraint.IsEmpty()) {
-      relaxation->linear_constraints.push_back(lb_constraint.Build());
-    }
+    relaxation->linear_constraints.push_back(lb_constraint.Build());
   }
 }
 

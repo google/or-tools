@@ -95,6 +95,18 @@ bool InsertOrUpdate(Collection* const collection, const Key& key,
   return true;
 }
 
+// Insert a new key into a set.
+// If the key is not present in the set the key is
+// inserted, otherwise nothing happens. True indicates that an insert
+// took place, false indicates the key was already present.
+template <class Collection>
+bool InsertIfNotPresent(Collection* const collection, 
+                        const typename Collection::value_type& value) {
+  std::pair<typename Collection::iterator, bool> ret =
+      collection->insert(value);
+  return ret.second;
+}
+
 // Insert a new key and value into a map or std::unordered_map.
 // If the key is not present in the map the key and value are
 // inserted, otherwise nothing happens. True indicates that an insert
@@ -105,6 +117,15 @@ bool InsertIfNotPresent(Collection* const collection, const Key& key,
   std::pair<typename Collection::iterator, bool> ret =
       collection->insert(typename Collection::value_type(key, value));
   return ret.second;
+}
+
+// Inserts a new std::pair<key,value> into a map or std::unordered_map.
+// Insert a new key into a set or std::unordered_set.
+// Dies if the key is already present.
+template <class Collection>
+void InsertOrDieNoPrint(Collection* const collection,
+                        const typename Collection::value_type& value) {
+  CHECK(collection->insert(value).second);
 }
 
 // Inserts a new std::pair<key,value> into a map or std::unordered_map.

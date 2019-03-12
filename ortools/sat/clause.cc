@@ -905,14 +905,13 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
       clique = ExpandAtMostOne(clique);
     }
     std::sort(clique.begin(), clique.end());
-    if (max_cliques.count(clique)) {
+    if (!gtl::InsertIfNotPresent(&max_cliques, clique)) {
       ++num_removed;
       clique.clear();
       continue;
     }
 
     const int clique_index = max_cliques.size();
-    max_cliques.insert(clique);
     for (const Literal l : clique) {
       max_cliques_containing[l.Index()].push_back(clique_index);
     }

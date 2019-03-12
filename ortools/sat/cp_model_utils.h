@@ -43,15 +43,13 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
 
 // Collects all the references used by a constraint. This function is used in a
 // few places to have a "generic" code dealing with constraints. Note that the
-// enforcement_literal is NOT counted here.
-//
-// TODO(user): replace this by constant version of the Apply...() functions?
+// enforcement_literal is NOT counted here and that the vectors can have
+// duplicates.
 struct IndexReferences {
-  absl::flat_hash_set<int> variables;
-  absl::flat_hash_set<int> literals;
+  std::vector<int> variables;
+  std::vector<int> literals;
 };
-void AddReferencesUsedByConstraint(const ConstraintProto& ct,
-                                   IndexReferences* output);
+IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct);
 
 // Applies the given function to all variables/literals/intervals indices of the
 // constraint. This function is used in a few places to have a "generic" code

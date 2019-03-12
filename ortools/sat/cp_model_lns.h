@@ -23,6 +23,18 @@
 namespace operations_research {
 namespace sat {
 
+// Neighborhood returned by Neighborhood generators.
+struct Neighborhood {
+  // True if the CpModelProto below is not the same as the base model.
+  // This is not expected to happen often but allows to handle this case
+  // properly.
+  bool is_reduced;
+
+  // Relaxed model. Any feasible solution to this "local" model should be a
+  // feasible solution to the base model too.
+  CpModelProto cp_model;
+};
+
 // Contains pre-computed information about a given CpModelProto that is meant
 // to be used to generate LNS neighborhood. This class can be shared between
 // more than one generator in order to reduce memory usage.
@@ -35,13 +47,13 @@ class NeighborhoodGeneratorHelper {
 
   // Returns the LNS fragment where the given variables are fixed to the value
   // they take in the given solution.
-  CpModelProto FixGivenVariables(
+  Neighborhood FixGivenVariables(
       const CpSolverResponse& initial_solution,
       const std::vector<int>& variables_to_fix) const;
 
   // Returns the LNS fragment which will relax all inactive variables and all
   // variables in relaxed_variables.
-  CpModelProto RelaxGivenVariables(
+  Neighborhood RelaxGivenVariables(
       const CpSolverResponse& initial_solution,
       const std::vector<int>& relaxed_variables) const;
 
@@ -114,7 +126,7 @@ class NeighborhoodGenerator {
   // CPModelProto should also be valid solution to the same initial model.
   //
   // This function should be thread-safe.
-  virtual CpModelProto Generate(const CpSolverResponse& initial_solution,
+  virtual Neighborhood Generate(const CpSolverResponse& initial_solution,
                                 int64 seed, double difficulty) const = 0;
 
   // Returns a short description of the generator.
@@ -131,7 +143,7 @@ class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit SimpleNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
-  CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
+  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 };
 
@@ -144,7 +156,7 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit VariableGraphNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
-  CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
+  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 };
 
@@ -157,9 +169,17 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit ConstraintGraphNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
-  CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
+  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 };
+
+// Helper method for the scheduling neighborhood generators. Returns the model
+// as neighborhood for the given set of intervals to relax. For each no_overlap
+// constraints, it adds strict relation order between the non-relaxed intervals.
+Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
+    const absl::Span<const int> intervals_to_relax,
+    const CpSolverResponse& initial_solution,
+    const NeighborhoodGeneratorHelper& helper);
 
 // Only make sense for scheduling problem. This select a random set of interval
 // of the problem according to the difficulty. Then, for each no_overlap
@@ -172,7 +192,19 @@ class SchedulingNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
 
-  CpModelProto Generate(const CpSolverResponse& initial_solution, int64 seed,
+  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
+                        double difficulty) const final;
+};
+
+// Similar to SchedulingNeighborhoodGenerator except the set of intervals that
+// are relaxed are from a specific random time interval.
+class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit SchedulingTimeWindowNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 };
 

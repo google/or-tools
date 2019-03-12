@@ -18,6 +18,84 @@
 namespace operations_research {
 namespace sat {
 
+void LinearConstraintBuilder::AddTerm(IntegerVariable var, IntegerValue coeff) {
+  // We can either add var or NegationOf(var), and we always choose the
+  // positive one.
+  if (VariableIsPositive(var)) {
+    terms_.push_back({var, coeff});
+  } else {
+    const IntegerVariable negated_var = NegationOf(var);
+    terms_.push_back({negated_var, -coeff});
+  }
+}
+
+ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
+    Literal lit, IntegerValue coeff) {
+  if (assignment_.LiteralIsTrue(lit)) {
+    if (lb_ > kMinIntegerValue) lb_ -= coeff;
+    if (ub_ < kMaxIntegerValue) ub_ -= coeff;
+    return true;
+  }
+  if (assignment_.LiteralIsFalse(lit)) {
+    return true;
+  }
+
+  bool has_direct_view = encoder_.GetLiteralView(lit) != kNoIntegerVariable;
+  bool has_opposite_view =
+      encoder_.GetLiteralView(lit.Negated()) != kNoIntegerVariable;
+
+  // If a literal has both views, we want to always keep the same
+  // representative: the smallest IntegerVariable. Note that AddTerm() will
+  // also make sure to use the associated positive variable.
+  if (has_direct_view && has_opposite_view) {
+    if (encoder_.GetLiteralView(lit) <=
+        encoder_.GetLiteralView(lit.Negated())) {
+      has_opposite_view = false;
+    } else {
+      has_direct_view = false;
+    }
+  }
+  if (has_direct_view) {
+    AddTerm(encoder_.GetLiteralView(lit), coeff);
+    return true;
+  }
+  if (has_opposite_view) {
+    AddTerm(encoder_.GetLiteralView(lit.Negated()), -coeff);
+    if (lb_ > kMinIntegerValue) lb_ -= coeff;
+    if (ub_ < kMaxIntegerValue) ub_ -= coeff;
+    return true;
+  }
+  return false;
+}
+
+LinearConstraint LinearConstraintBuilder::Build() {
+  LinearConstraint result;
+  result.lb = lb_;
+  result.ub = ub_;
+
+  // Sort and add coeff of duplicate variables.
+  std::sort(terms_.begin(), terms_.end());
+  IntegerVariable previous_var = kNoIntegerVariable;
+  IntegerValue current_coeff(0);
+  for (const auto entry : terms_) {
+    if (previous_var == entry.first) {
+      current_coeff += entry.second;
+    } else {
+      if (current_coeff != 0) {
+        result.vars.push_back(previous_var);
+        result.coeffs.push_back(current_coeff);
+      }
+      previous_var = entry.first;
+      current_coeff = entry.second;
+    }
+  }
+  if (current_coeff != 0) {
+    result.vars.push_back(previous_var);
+    result.coeffs.push_back(current_coeff);
+  }
+  return result;
+}
+
 double ComputeActivity(const LinearConstraint& constraint,
                        const gtl::ITIVector<IntegerVariable, double>& values) {
   double activity = 0;

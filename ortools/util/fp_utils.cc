@@ -33,31 +33,29 @@ void ComputeScalingErrors(const std::vector<double>& input,
                           const std::vector<double>& ub, double scaling_factor,
                           double* max_relative_coeff_error,
                           double* max_scaled_sum_error) {
-  const double kInfinity = std::numeric_limits<double>::infinity();
-
-  double max_positive_error = 0.0;
-  double max_negative_error = 0.0;
+  double max_error = 0.0;
+  double min_error = 0.0;
   *max_relative_coeff_error = 0.0;
   const int size = input.size();
   for (int i = 0; i < size; ++i) {
     const double x = input[i];
     if (x == 0.0) continue;
-    if (use_bounds && lb[i] == 0 && ub[i] == 0) continue;
-    const double scaled = std::abs(x * scaling_factor);
+    const double scaled = x * scaling_factor;
+
     if (scaled == 0.0) {
-      *max_relative_coeff_error = kInfinity;
-      *max_scaled_sum_error = kInfinity;
-      return;
+      *max_relative_coeff_error = std::numeric_limits<double>::infinity();
+    } else {
+      *max_relative_coeff_error = std::max(
+          *max_relative_coeff_error, std::abs(std::round(scaled) / scaled - 1));
     }
-    *max_relative_coeff_error = std::max(
-        *max_relative_coeff_error, std::abs(std::round(scaled) / scaled - 1));
+
     const double error = std::round(scaled) - scaled;
-    const double error_a = error * (use_bounds ? x * lb[i] : -x);
-    const double error_b = error * (use_bounds ? x * ub[i] : x);
-    max_positive_error += std::max(0.0, std::max(error_a, error_b));
-    max_negative_error += std::max(0.0, std::max(-error_a, -error_b));
+    const double error_lb = (use_bounds ? error * lb[i] : -error);
+    const double error_ub = (use_bounds ? error * ub[i] : error);
+    max_error += std::max(error_lb, error_ub);
+    min_error += std::min(error_lb, error_ub);
   }
-  *max_scaled_sum_error = std::max(max_positive_error, max_negative_error);
+  *max_scaled_sum_error = std::max(std::abs(max_error), std::abs(min_error));
 }
 
 template <bool use_bounds>
@@ -192,7 +190,7 @@ int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
                                  double scaling_factor) {
   int64 gcd = 0;
   for (int i = 0; i < x.size() && gcd != 1; ++i) {
-    int64 value = round(fabs(x[i] * scaling_factor));
+    int64 value = std::abs(std::round(x[i] * scaling_factor));
     DCHECK_GE(value, 0);
     if (value == 0) continue;
     if (gcd == 0) {

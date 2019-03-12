@@ -33,90 +33,91 @@ void AddIndices(const IntList& indices, std::vector<int>* output) {
 
 }  // namespace
 
-void AddReferencesUsedByConstraint(const ConstraintProto& ct,
-                                   IndexReferences* output) {
+IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
+  IndexReferences output;
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr:
-      AddIndices(ct.bool_or().literals(), &output->literals);
+      AddIndices(ct.bool_or().literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kBoolAnd:
-      AddIndices(ct.bool_and().literals(), &output->literals);
+      AddIndices(ct.bool_and().literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kAtMostOne:
-      AddIndices(ct.at_most_one().literals(), &output->literals);
+      AddIndices(ct.at_most_one().literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kBoolXor:
-      AddIndices(ct.bool_xor().literals(), &output->literals);
+      AddIndices(ct.bool_xor().literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kIntDiv:
-      output->variables.insert(ct.int_div().target());
-      AddIndices(ct.int_div().vars(), &output->variables);
+      output.variables.push_back(ct.int_div().target());
+      AddIndices(ct.int_div().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kIntMod:
-      output->variables.insert(ct.int_mod().target());
-      AddIndices(ct.int_mod().vars(), &output->variables);
+      output.variables.push_back(ct.int_mod().target());
+      AddIndices(ct.int_mod().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kIntMax:
-      output->variables.insert(ct.int_max().target());
-      AddIndices(ct.int_max().vars(), &output->variables);
+      output.variables.push_back(ct.int_max().target());
+      AddIndices(ct.int_max().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kIntMin:
-      output->variables.insert(ct.int_min().target());
-      AddIndices(ct.int_min().vars(), &output->variables);
+      output.variables.push_back(ct.int_min().target());
+      AddIndices(ct.int_min().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kIntProd:
-      output->variables.insert(ct.int_prod().target());
-      AddIndices(ct.int_prod().vars(), &output->variables);
+      output.variables.push_back(ct.int_prod().target());
+      AddIndices(ct.int_prod().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kLinear:
-      AddIndices(ct.linear().vars(), &output->variables);
+      AddIndices(ct.linear().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kAllDiff:
-      AddIndices(ct.all_diff().vars(), &output->variables);
+      AddIndices(ct.all_diff().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kElement:
-      output->variables.insert(ct.element().index());
-      output->variables.insert(ct.element().target());
-      AddIndices(ct.element().vars(), &output->variables);
+      output.variables.push_back(ct.element().index());
+      output.variables.push_back(ct.element().target());
+      AddIndices(ct.element().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
-      AddIndices(ct.circuit().literals(), &output->literals);
+      AddIndices(ct.circuit().literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
-      AddIndices(ct.routes().literals(), &output->literals);
+      AddIndices(ct.routes().literals(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kCircuitCovering:
-      AddIndices(ct.circuit_covering().nexts(), &output->variables);
+      AddIndices(ct.circuit_covering().nexts(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kInverse:
-      AddIndices(ct.inverse().f_direct(), &output->variables);
-      AddIndices(ct.inverse().f_inverse(), &output->variables);
+      AddIndices(ct.inverse().f_direct(), &output.variables);
+      AddIndices(ct.inverse().f_inverse(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
-      AddIndices(ct.reservoir().times(), &output->variables);
+      AddIndices(ct.reservoir().times(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kTable:
-      AddIndices(ct.table().vars(), &output->variables);
+      AddIndices(ct.table().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kAutomaton:
-      AddIndices(ct.automaton().vars(), &output->variables);
+      AddIndices(ct.automaton().vars(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::kInterval:
-      output->variables.insert(ct.interval().start());
-      output->variables.insert(ct.interval().end());
-      output->variables.insert(ct.interval().size());
+      output.variables.push_back(ct.interval().start());
+      output.variables.push_back(ct.interval().end());
+      output.variables.push_back(ct.interval().size());
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap:
       break;
     case ConstraintProto::ConstraintCase::kNoOverlap2D:
       break;
     case ConstraintProto::ConstraintCase::kCumulative:
-      output->variables.insert(ct.cumulative().capacity());
-      AddIndices(ct.cumulative().demands(), &output->variables);
+      output.variables.push_back(ct.cumulative().capacity());
+      AddIndices(ct.cumulative().demands(), &output.variables);
       break;
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
       break;
   }
+  return output;
 }
 
 #define APPLY_TO_SINGULAR_FIELD(ct_name, field_name)  \
@@ -387,23 +388,19 @@ std::string ConstraintCaseName(
   }
 }
 
-// TODO(user): Optimize this function, it appear in the presolve profile.
-// We could get rid of AddReferencesUsedByConstraint().
 std::vector<int> UsedVariables(const ConstraintProto& ct) {
-  IndexReferences references;
-  AddReferencesUsedByConstraint(ct, &references);
-  std::vector<int> used_variables;
-  for (const int var : references.variables) {
-    used_variables.push_back(PositiveRef(var));
+  IndexReferences references = GetReferencesUsedByConstraint(ct);
+  for (int& ref : references.variables) {
+    ref = PositiveRef(ref);
   }
   for (const int lit : references.literals) {
-    used_variables.push_back(PositiveRef(lit));
+    references.variables.push_back(PositiveRef(lit));
   }
   for (const int lit : ct.enforcement_literal()) {
-    used_variables.push_back(PositiveRef(lit));
+    references.variables.push_back(PositiveRef(lit));
   }
-  gtl::STLSortAndRemoveDuplicates(&used_variables);
-  return used_variables;
+  gtl::STLSortAndRemoveDuplicates(&references.variables);
+  return references.variables;
 }
 
 std::vector<int> UsedIntervals(const ConstraintProto& ct) {

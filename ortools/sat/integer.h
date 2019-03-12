@@ -412,9 +412,16 @@ class IntegerEncoder {
   // literal equivalent.
   void HalfAssociateGivenLiteral(IntegerLiteral i_lit, Literal literal);
 
-  // Adds the new associated_lit to encoding_by_var_.
-  // Adds the implications: Literal(before) <= associated_lit <= Literal(after).
-  void AddImplications(IntegerLiteral i, Literal associated_lit);
+  // Adds the implications:
+  //    Literal(before) <= associated_lit <= Literal(after).
+  // Arguments:
+  //  - map is just encoding_by_var_[associated_lit.var] and is passed as a
+  //    slight optimization.
+  //  - 'it' is the current position of associated_lit in map, i.e we must have
+  //    it->second == associated_lit.
+  void AddImplications(const std::map<IntegerValue, Literal>& map,
+                       std::map<IntegerValue, Literal>::const_iterator it,
+                       Literal associated_lit);
 
   SatSolver* sat_solver_;
   IntegerDomains* domains_;

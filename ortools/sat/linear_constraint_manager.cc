@@ -108,9 +108,6 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
     }
     ++num_merged_constraints_;
   } else {
-    for (const IntegerVariable var : canonicalized.vars) {
-      used_variables_.insert(var);
-    }
     constraint_l2_norms_.push_back(ComputeL2Norm(canonicalized));
     equiv_constraints_[terms] = constraints_.size();
     constraint_is_in_lp_.push_back(false);

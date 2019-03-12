@@ -85,9 +85,6 @@ class LinearConstraintManager {
 
   SatParameters sat_parameters_;
 
-  // The set of variables that appear in at least one constraint.
-  std::set<IntegerVariable> used_variables_;
-
   // Set at true by Add() and at false by ChangeLp().
   bool some_lp_constraint_bounds_changed_ = false;
 
