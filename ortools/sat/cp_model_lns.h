@@ -19,6 +19,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/model.h"
 
 namespace operations_research {
 namespace sat {
@@ -206,6 +207,24 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 
   Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
+};
+
+// Generates a neighborhood by fixing the variables who have same solution value
+// as their linear relaxation. This was published in "Exploring relaxation
+// induced neighborhoods to improve MIP solutions" 2004 by E. Danna et.
+// TODO(user): This simulates RINS only at root node. Try to exploit it on
+// other nodes as well.
+class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit RelaxationInducedNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const Model& model,
+      const std::string& name)
+      : NeighborhoodGenerator(name, helper), model_(model) {}
+
+  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
+                        double difficulty) const final;
+
+  const Model& model_;
 };
 
 }  // namespace sat

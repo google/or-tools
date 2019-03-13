@@ -52,7 +52,6 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/ptr_util.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

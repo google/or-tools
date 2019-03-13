@@ -16,7 +16,9 @@
 #include <numeric>
 
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/util/random_engine.h"
 
 namespace operations_research {
@@ -407,6 +409,51 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
   }
   return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
                                                      initial_solution, helper_);
+}
+
+Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, int64 seed,
+    double difficulty) const {
+  Neighborhood neighborhood;
+  neighborhood.cp_model = helper_.ModelProto();
+
+  const int num_active_vars = helper_.ActiveVariables().size();
+  const int num_model_vars = helper_.ModelProto().variables_size();
+  const int target_size =
+      num_model_vars - std::ceil(difficulty * num_active_vars);
+  if (target_size == num_active_vars) {
+    neighborhood.is_reduced = false;
+    return neighborhood;
+  }
+
+  auto* mapping = model_.Get<CpModelMapping>();
+  auto* lp_dispatcher = model_.Get<LinearProgrammingDispatcher>();
+
+  if (lp_dispatcher == nullptr) {
+    neighborhood.is_reduced = false;
+    return neighborhood;
+  }
+
+  std::vector<int> fixed_variables;
+  for (int i = 0; i < num_model_vars; ++i) {
+    if (!helper_.IsActive(i)) continue;
+    if (mapping->IsInteger(i)) {
+      const IntegerVariable var = mapping->Integer(i);
+      const IntegerVariable positive_var = PositiveVariable(var);
+      LinearProgrammingConstraint* lp =
+          gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+      if (lp == nullptr) continue;
+      const double lp_value = (lp->GetSolutionValue(positive_var));
+
+      if (std::abs(lp_value - initial_solution.solution(i)) < 1e-4) {
+        // Fix this var.
+        fixed_variables.push_back(i);
+        if (fixed_variables.size() >= target_size) break;
+      }
+    }
+  }
+
+  return helper_.FixGivenVariables(initial_solution, fixed_variables);
 }
 
 }  // namespace sat

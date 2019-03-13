@@ -326,7 +326,8 @@ double KnapsackSolverForCuts::Solve(TimeLimit* time_limit,
 
   SearchQueue search_queue;
   const KnapsackAssignmentForCuts assignment(kNoSelection, true);
-  auto root_node = absl::make_unique<KnapsackSearchNodeForCuts>(nullptr, assignment);
+  auto root_node =
+      absl::make_unique<KnapsackSearchNodeForCuts>(nullptr, assignment);
   root_node->set_current_profit(GetCurrentProfit());
   root_node->set_profit_upper_bound(GetAggregatedProfitUpperBound());
   root_node->set_next_item_id(GetNextItemId());
@@ -436,7 +437,8 @@ bool KnapsackSolverForCuts::MakeNewNode(const KnapsackSearchNodeForCuts& node,
   }
 
   // The node is relevant.
-  auto relevant_node = absl::make_unique<KnapsackSearchNodeForCuts>(&node, assignment);
+  auto relevant_node =
+      absl::make_unique<KnapsackSearchNodeForCuts>(&node, assignment);
   relevant_node->set_current_profit(new_node.current_profit());
   relevant_node->set_profit_upper_bound(new_node.profit_upper_bound());
   relevant_node->set_next_item_id(new_node.next_item_id());

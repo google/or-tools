@@ -1922,6 +1922,12 @@ CpSolverResponse SolveCpModelWithLNS(
     generators.push_back(absl::make_unique<SchedulingNeighborhoodGenerator>(
         &helper, "scheduling_random_lns"));
   }
+  if (parameters->use_rins_lns()) {
+    // TODO(user): Only do it if we have a linear relaxation.
+    generators.push_back(
+        absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
+            &helper, *model, "rins"));
+  }
 
   // The "optimal" difficulties do not have to be the same for different
   // generators.

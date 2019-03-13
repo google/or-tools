@@ -959,7 +959,8 @@ class CpModel(object):
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
         model_ct.reservoir.demands.extend(demands)
-        model_ct.reservoir.actives.extend([self.GetOrMakeIndex(x) for x in actives])
+        model_ct.reservoir.actives.extend(
+            [self.GetOrMakeIndex(x) for x in actives])
         model_ct.reservoir.min_level = min_level
         model_ct.reservoir.max_level = max_level
         return ct
@@ -1220,8 +1221,8 @@ class CpModel(object):
             cp_model_helper.AssertIsInt64(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) +
-                            ')')
+            raise TypeError(
+                'NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
 
     def GetOrMakeBooleanIndex(self, arg):
         """Returns an index from a boolean expression."""
@@ -1235,8 +1236,8 @@ class CpModel(object):
             cp_model_helper.AssertIsBoolean(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError('NotSupported: model.GetOrMakeBooleanIndex(' +
-                            str(arg) + ')')
+            raise TypeError(
+                'NotSupported: model.GetOrMakeBooleanIndex(' + str(arg) + ')')
 
     def GetIntervalIndex(self, arg):
         if not isinstance(arg, IntervalVar):
@@ -1289,8 +1290,8 @@ class CpModel(object):
             self.__model.objective.offset = obj
             self.__model.objective.scaling_factor = 1
         else:
-            raise TypeError('TypeError: ' + str(obj) +
-                            ' is not a valid objective')
+            raise TypeError(
+                'TypeError: ' + str(obj) + ' is not a valid objective')
 
     def Minimize(self, obj):
         """Sets the objective of the model to minimize(obj)."""
@@ -1333,11 +1334,11 @@ class CpModel(object):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
             if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
-                raise TypeError('TypeError: ' + str(x) +
-                                ' is not a boolean variable')
+                raise TypeError(
+                    'TypeError: ' + str(x) + ' is not a boolean variable')
         elif not isinstance(x, _NotBooleanVariable):
-            raise TypeError('TypeError: ' + str(x) +
-                            ' is not a boolean variable')
+            raise TypeError(
+                'TypeError: ' + str(x) + ' is not a boolean variable')
 
 
 def EvaluateLinearExpression(expression, solution):
@@ -1550,7 +1551,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (
+                    1 - self.SolutionIntegerValue(expr.Not().Index()))
         return value
 
 
