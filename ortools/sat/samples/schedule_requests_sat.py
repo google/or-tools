@@ -88,8 +88,8 @@ def main():
 
     # [START objective]
     model.Maximize(
-        sum(shift_requests[n][d][s] * shifts[(n, d, s)]
-            for n in all_nurses for d in all_days for s in all_shifts))
+        sum(shift_requests[n][d][s] * shifts[(n, d, s)] for n in all_nurses
+            for d in all_days for s in all_shifts))
     # [END objective]
     # Creates the solver and solve.
     # [START solve]
