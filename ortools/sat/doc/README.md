@@ -4,15 +4,7 @@
 
 ## Documentation structure
 
-This document presents modeling recipes for the CP-SAT solver. These are grouped
-by type:
-
--   [boolean logic](boolean_logic.md)
--   [integer arithmetic](integer_arithmetic.md)
--   [channeling constraints](channeling.md)
--   [scheduling](scheduling.md)
--   [Using the CP-SAT solver](solver.md)
--   [Reference manual for the CpModel and CpSolver classes](reference.md)
+This document presents modeling recipes for the CP-SAT solver.
 
 Code samples are given in C++ and python. Each language have different
 requirements for the code samples.
