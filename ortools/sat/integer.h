@@ -28,7 +28,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/integral_types.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"

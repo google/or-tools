@@ -933,10 +933,10 @@ bool IntegerTrail::ReasonIsValid(
       }
     }
     DLOG_IF(WARNING, num_literal_assigned_after_root_node == 0)
-         << "Propagating a literal with no reason at a positive level!\n"
-         << "level:" << integer_search_levels_.size() << " "
-         << ReasonDebugString(literal_reason, integer_reason) << "\n"
-         << DebugString();
+        << "Propagating a literal with no reason at a positive level!\n"
+        << "level:" << integer_search_levels_.size() << " "
+        << ReasonDebugString(literal_reason, integer_reason) << "\n"
+        << DebugString();
   }
 
   return true;

@@ -997,7 +997,10 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
+        ":cp_model_loader",
         ":cp_model_utils",
+        ":linear_programming_constraint",
+        ":model",
         "//ortools/base",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
@@ -1027,6 +1030,7 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:status",
+        "@com_google_absl//absl/hash",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:span",
     ],
