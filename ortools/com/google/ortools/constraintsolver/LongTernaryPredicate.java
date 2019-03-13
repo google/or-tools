@@ -24,25 +24,25 @@ package com.google.ortools.constraintsolver;
  */
 @FunctionalInterface
 public interface LongTernaryPredicate {
-    /**
-     * Evaluates this predicate on the given arguments.
-     *
-     * @param left the first operand
-     * @param center the second operand
-     * @param right the third operand
-     * @return {@code true} if the input argument matches the predicate,
-     * otherwise {@code false}
-     */
-    boolean test(long left, long center, long right);
+  /**
+   * Evaluates this predicate on the given arguments.
+   *
+   * @param left the first operand
+   * @param center the second operand
+   * @param right the third operand
+   * @return {@code true} if the input argument matches the predicate,
+   * otherwise {@code false}
+   */
+  boolean test(long left, long center, long right);
 
-    /**
-     * Returns a predicate that represents the logical negation of this
-     * predicate.
-     *
-     * @return a predicate that represents the logical negation of this
-     * predicate
-     */
-    default LongTernaryPredicate negate() {
-        return (left, center, right) -> !test(left, center, right);
-    }
+  /**
+   * Returns a predicate that represents the logical negation of this
+   * predicate.
+   *
+   * @return a predicate that represents the logical negation of this
+   * predicate
+   */
+  default LongTernaryPredicate negate() {
+    return (left, center, right) -> !test(left, center, right);
+  }
 }

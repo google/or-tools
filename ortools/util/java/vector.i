@@ -29,9 +29,12 @@
 #include "ortools/base/integral_types.h"
 %}
 
-// Typemaps to represent const std::vector<CType>& arguments as arrays of
-// JavaType.
+// Typemaps to represents arguments of types "const std::vector<CType>&" or
+// "std::vector<CType>" as JavaType[] (<PrimitiveType>Array).
+// note: CType must be a primitive data type (PDT).
+// ref: https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/functions.html#Get_PrimitiveType_ArrayElements_routines
 %define VECTOR_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)
+// This part is for const std::vector<>&.
 %typemap(jstype) const std::vector<CType>& #JavaType "[]"
 %typemap(javain) const std::vector<CType>& "$javainput"
 %typemap(jtype) const std::vector<CType>& #JavaType "[]"
@@ -64,8 +67,7 @@
 %typemap(javaout) const std::vector<CType>& {
   return $jnicall;
 }
-
-// Same, for std::vector<CType>
+// Now, we do it for std::vector<>.
 %typemap(jstype) std::vector<CType> #JavaType "[]"
 %typemap(javain) std::vector<CType> "$javainput"
 %typemap(jtype) std::vector<CType> #JavaType "[]"
@@ -101,9 +103,80 @@ VECTOR_AS_JAVA_ARRAY(int, int, Int);
 VECTOR_AS_JAVA_ARRAY(int64, long, Long);
 VECTOR_AS_JAVA_ARRAY(double, double, Double);
 
-// Typemaps to represent const std::vector<std::vector<CType> >& arguments as
-// an ObjectArray of JavaTypeArrays.
+
+// Typemaps to represents arguments of types "const std::vector<CType*>&" or
+// "std::vector<CType*>" as JavaType[] (ObjectArray).
+// note: CType is NOT a primitive type.
+// note: CastOp defines how to cast the output of CallStaticLongMethod to CType*;
+// its first argument is CType, its second is the output of CallStaticLongMethod.
+// ref: https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/functions.html#GetObjectArrayElement
+%define CONVERT_VECTOR_WITH_CAST(CType, JavaType, CastOp, JavaPackage)
+// This part is for const std::vector<CType*>&.
+%typemap(jstype) const std::vector<CType*>& "JavaType[]"
+%typemap(javain) const std::vector<CType*>& "$javainput"
+%typemap(jtype) const std::vector<CType*>& "JavaType[]"
+%typemap(jni) const std::vector<CType*>& "jobjectArray"
+%typemap(in) const std::vector<CType*>& (std::vector<CType*> result) {
+  std::string java_class_path = #JavaPackage "/" #JavaType;
+  jclass object_class = jenv->FindClass(java_class_path.c_str());
+  if (nullptr == object_class)
+    return $null;
+  jmethodID method_id =
+      jenv->GetStaticMethodID(object_class,
+                              "getCPtr",
+                              std::string("(L" + java_class_path + ";)J").c_str());
+  assert(method_id != nullptr);
+  for (int i = 0; i < jenv->GetArrayLength($input); i++) {
+    jobject elem = jenv->GetObjectArrayElement($input, i);
+    jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
+    result.push_back(CastOp(CType, ptr_value));
+  }
+  $1 = &result;
+}
+%typemap(out) const std::vector<CType*>& {
+  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
+  $result = jenv->NewObjectArray($1->size(), object_class, 0);
+  if (nullptr != object_class) {
+    jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
+    for (int i = 0; i < $1->size(); ++i) {
+      jlong obj_ptr = 0;
+      *((CType **)&obj_ptr) = (*$1)[i];
+      jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
+      jenv->SetObjectArrayElement($result, i, elem);
+    }
+  }
+}
+%typemap(javaout) const std::vector<CType*> & {
+  return $jnicall;
+}
+// Now, we do it for std::vector<CType*>.
+%typemap(jstype) std::vector<CType*> "JavaType[]"
+%typemap(javain) std::vector<CType*> "$javainput"
+%typemap(jtype) std::vector<CType*> "JavaType[]"
+%typemap(jni) std::vector<CType*> "jobjectArray"
+%typemap(in) std::vector<CType*> (std::vector<CType*> result) {
+  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
+  if (nullptr == object_class)
+    return $null;
+  jmethodID method_id = jenv->GetStaticMethodID(
+    object_class, "getCPtr", "(LJavaPackage/JavaType;)J");
+  assert(method_id != nullptr);
+  for (int i = 0; i < jenv->GetArrayLength($input); i++) {
+    jobject elem = jenv->GetObjectArrayElement($input, i);
+    jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
+    $1.push_back(CastOp(CType, ptr_value));
+  }
+}
+%enddef  // CONVERT_VECTOR_WITH_CAST
+
+
+// Typemaps to represents arguments of types "const std::vector<std::vector<CType>>&" or
+// "std::vector<std::vector<CType>>*" as JavaType[][] (ObjectArray of JavaTypeArrays).
+// note: CType must be a primitive data type (PDT).
+// ref: https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/functions.html#GetObjectArrayElement
+// ref: https://docs.oracle.com/javase/8/docs/technotes/guides/jni/spec/functions.html#Get_PrimitiveType_ArrayElements_routines
 %define MATRIX_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)
+// This part is for const std::vector<std::vector<>>&.
 %typemap(jstype) const std::vector<std::vector<CType> >& #JavaType "[][]"
 %typemap(javain) const std::vector<std::vector<CType> >& "$javainput"
 %typemap(jtype) const std::vector<std::vector<CType> >& #JavaType "[][]"
@@ -134,8 +207,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
     return $null;
   }
 %}
-
-// Same, for std::vector<std::vector<CType>>*
+// Now, we do it for std::vector<std::vector<>>*
 %typemap(jstype) std::vector<std::vector<CType> >* #JavaType "[][]"
 %typemap(javain) std::vector<std::vector<CType> >* "$javainput"
 %typemap(jtype) std::vector<std::vector<CType> >* #JavaType "[][]"
@@ -179,69 +251,6 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 MATRIX_AS_JAVA_ARRAY(int, int, Int);
 MATRIX_AS_JAVA_ARRAY(int64, long, Long);
 MATRIX_AS_JAVA_ARRAY(double, double, Double);
-
-// Same, for std::vector<CType*>, where CType is not a primitive type.
-// CastOp defines how to cast the output of CallStaticLongMethod to CType*;
-// its first argument is CType, its second is the output of
-// CallStaticLongMethod.
-%define CONVERT_VECTOR_WITH_CAST(CType, JavaType, CastOp, JavaPackage)
-%typemap(jstype) const std::vector<CType*>& "JavaType[]"
-%typemap(javain) const std::vector<CType*>& "$javainput"
-%typemap(jtype) const std::vector<CType*>& "JavaType[]"
-%typemap(jni) const std::vector<CType*>& "jobjectArray"
-%typemap(in) const std::vector<CType*>& (std::vector<CType*> result) {
-  std::string java_class_path = #JavaPackage "/" #JavaType;
-  jclass object_class = jenv->FindClass(java_class_path.c_str());
-  if (nullptr == object_class)
-    return $null;
-  jmethodID method_id =
-      jenv->GetStaticMethodID(object_class,
-                              "getCPtr",
-                              std::string("(L" + java_class_path + ";)J").c_str());
-  assert(method_id != nullptr);
-  for (int i = 0; i < jenv->GetArrayLength($input); i++) {
-    jobject elem = jenv->GetObjectArrayElement($input, i);
-    jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
-    result.push_back(CastOp(CType, ptr_value));
-  }
-  $1 = &result;
-}
-%typemap(out) const std::vector<CType*>& {
-  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
-  $result = jenv->NewObjectArray($1->size(), object_class, 0);
-  if (nullptr != object_class) {
-    jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
-    for (int i = 0; i < $1->size(); ++i) {
-      jlong obj_ptr = 0;
-      *((CType **)&obj_ptr) = (*$1)[i];
-      jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
-      jenv->SetObjectArrayElement($result, i, elem);
-    }
-  }
-}
-%typemap(javaout) const std::vector<CType*> & {
-  return $jnicall;
-}
-
-// Same, for std::vector<CType*>
-%typemap(jstype) std::vector<CType*> "JavaType[]"
-%typemap(javain) std::vector<CType*> "$javainput"
-%typemap(jtype) std::vector<CType*> "JavaType[]"
-%typemap(jni) std::vector<CType*> "jobjectArray"
-%typemap(in) std::vector<CType*> (std::vector<CType*> result) {
-  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
-  if (nullptr == object_class)
-    return $null;
-  jmethodID method_id = jenv->GetStaticMethodID(
-    object_class, "getCPtr", "(LJavaPackage/JavaType;)J");
-  assert(method_id != nullptr);
-  for (int i = 0; i < jenv->GetArrayLength($input); i++) {
-    jobject elem = jenv->GetObjectArrayElement($input, i);
-    jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
-    $1.push_back(CastOp(CType, ptr_value));
-  }
-}
-%enddef
 
 %define REINTERPRET_CAST(CType, ptr)
 reinterpret_cast<CType*>(ptr)

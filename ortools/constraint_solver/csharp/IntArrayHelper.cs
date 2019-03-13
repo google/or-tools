@@ -105,7 +105,7 @@ public partial class CpIntVectorVector : IDisposable, System.Collections.IEnumer
     return outVal;
   }
 
-  // cast from C# int[][] two-dimensional rray
+  // cast from C# int[][] two-dimensional array
   public static implicit operator CpIntVectorVector(int[][] inVal) {
     int x_size = inVal.GetLength(0);
     CpIntVectorVector outVal = new CpIntVectorVector();
@@ -173,7 +173,7 @@ public partial class CpInt64VectorVector : IDisposable, System.Collections.IEnum
     return outVal;
   }
 
-  // cast from C# long[][] two-dimensional rray
+  // cast from C# long[][] two-dimensional array
   public static implicit operator CpInt64VectorVector(long[][] inVal) {
     int x_size = inVal.GetLength(0);
     CpInt64VectorVector outVal = new CpInt64VectorVector();

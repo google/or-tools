@@ -15,7 +15,7 @@ using System;
 using System.Collections.Generic;
 
 namespace Google.OrTools.Sat
-{ 
+{
   public class CpSolver
   {
 

@@ -25,13 +25,13 @@ package com.google.ortools.constraintsolver;
  */
 @FunctionalInterface
 public interface LongTernaryOperator {
-    /**
-     * Applies this operator to the given operands.
-     *
-     * @param left the first operand
-     * @param center the second operand
-     * @param right the third operand
-     * @return the operator result
-     */
-    long applyAsLong(long left, long center, long right);
+  /**
+   * Applies this operator to the given operands.
+   *
+   * @param left the first operand
+   * @param center the second operand
+   * @param right the third operand
+   * @return the operator result
+   */
+  long applyAsLong(long left, long center, long right);
 }

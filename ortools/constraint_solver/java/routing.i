@@ -62,7 +62,6 @@ import java.util.function.LongBinaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongUnaryOperator.html
 import java.util.function.LongUnaryOperator;
 %}
-// Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
@@ -89,7 +88,6 @@ import java.util.function.LongUnaryOperator;
 %ignore RoutingModel::TransitCallback;
 %ignore RoutingModel::StateDependentTransitCallback;
 %ignore RoutingModel::UnaryTransitCallbackOrNull;
-// Methods:
 %rename (activeVar) RoutingModel::ActiveVar;
 %rename (addAllActive) RoutingModel::AddAllActive;
 %rename (addAtSolutionCallback) RoutingModel::AddAtSolutionCallback;
@@ -225,7 +223,6 @@ import java.util.function.LongUnaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
-// Methods:
 %rename (cumulVar) RoutingDimension::CumulVar;
 %rename (fixedTransitVar) RoutingDimension::FixedTransitVar;
 %rename (getBreakIntervalsOfVehicle) RoutingDimension::GetBreakIntervalsOfVehicle;
@@ -258,7 +255,6 @@ import java.util.function.LongBinaryOperator;
 
 // RoutingFilteredDecisionBuilder
 %unignore RoutingFilteredDecisionBuilder;
-// Methods:
 %rename (getEndChainStart) RoutingFilteredDecisionBuilder::GetEndChainStart;
 %rename (getStartChainEnd) RoutingFilteredDecisionBuilder::GetStartChainEnd;
 %rename (initializeRoutes) RoutingFilteredDecisionBuilder::InitializeRoutes;

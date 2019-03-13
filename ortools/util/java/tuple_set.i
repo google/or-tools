@@ -25,6 +25,7 @@
 #include "ortools/util/tuple_set.h"
 %}
 
+%ignore operations_research::IntTupleSet::RawData;  // no typemap
 %rename (arity) operations_research::IntTupleSet::Arity;
 %rename (clear) operations_research::IntTupleSet::Clear;
 %rename (contains) operations_research::IntTupleSet::Contains;
@@ -38,7 +39,5 @@
 %rename (sortedByColumn) operations_research::IntTupleSet::SortedByColumn;
 %rename (sortedLexicographically) operations_research::IntTupleSet::SortedLexicographically;
 %rename (value) operations_research::IntTupleSet::Value;
-// Ignored:
-%ignore operations_research::IntTupleSet::RawData;  // no typemap
 
 %include ortools/util/tuple_set.h

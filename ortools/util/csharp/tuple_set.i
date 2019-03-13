@@ -15,7 +15,6 @@
 // TODO(user): Refactor this file to comply with the SWIG style guide.
 
 %include "ortools/base/base.i"
-
 %include "ortools/util/csharp/vector.i"
 
 %{

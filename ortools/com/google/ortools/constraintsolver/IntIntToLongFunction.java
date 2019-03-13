@@ -25,12 +25,12 @@ package com.google.ortools.constraintsolver;
  */
 @FunctionalInterface
 public interface IntIntToLongFunction {
-    /**
-     * Applies this function to the given arguments.
-     *
-     * @param left the first argument
-     * @param right the second argument
-     * @return the function result
-     */
-    long applyAsLong(int left, int right);
+  /**
+   * Applies this function to the given arguments.
+   *
+   * @param left the first argument
+   * @param right the second argument
+   * @return the function result
+   */
+  long applyAsLong(int left, int right);
 }

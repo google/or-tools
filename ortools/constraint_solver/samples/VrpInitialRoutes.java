@@ -20,7 +20,6 @@ import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
-
 // [END import]
 
 /** Minimal VRP. */

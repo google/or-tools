@@ -27,9 +27,11 @@
 #include "ortools/base/integral_types.h"
 %}
 
-// Typemaps to represent const std::vector<TYPE>& arguments as arrays of
-// CSHARPTYPE.
+// Typemaps to represent arguments of types "const std::vector<TYPE>&" or
+// "std::vector<TYPE>" as CSHARPTYPE[].
+// note: TYPE must be a primitive data type (PDT).
 %define VECTOR_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE, ARRAYTYPE)
+// This part is for const std::vector<>&.
 %typemap(cstype) const std::vector<TYPE>& %{ CSHARPTYPE[] %}
 %typemap(csin)   const std::vector<TYPE>& %{ $csinput.Length, $csinput %}
 %typemap(imtype, out="global::System.IntPtr") const std::vector<TYPE>&  %{ int length$argnum, CSHARPTYPE[] %}
@@ -54,8 +56,7 @@
   }
   return ret;
 }
-
-// Same, for std::vector<TYPE>
+// Now, we do it for std::vector<>.
 %typemap(cstype) std::vector<TYPE> %{ CSHARPTYPE[] %}
 %typemap(csin)   std::vector<TYPE> %{ $csinput.Length, $csinput %}
 %typemap(imtype, out="global::System.IntPtr") std::vector<TYPE>  %{ int length$argnum, CSHARPTYPE[] %}
@@ -81,13 +82,11 @@
 }
 %enddef // VECTOR_AS_CSHARP_ARRAY
 
-//VECTOR_AS_CSHARP_ARRAY(int, int, int);
-//VECTOR_AS_CSHARP_ARRAY(int64, int64, long);
-//VECTOR_AS_CSHARP_ARRAY(double, double, double);
-
-// Typemaps to represent const std::vector<std::vector<CType> >& arguments as
-// a CSharpType[][].
+// Typemaps to represent arguments of types "const std::vector<std::vector<TYPE>>&" or
+// "std::vector<std::vector<TYPE>>*" as CSHARPTYPE[][].
+// note: TYPE must be a primitive data type (PDT).
 %define MATRIX_AS_CSHARP_ARRAY(TYPE, CTYPE, CSHARPTYPE, ARRAYTYPE)
+// This part is for const std::vector<std::vector<>>&.
 %typemap(cstype) const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[][] %}
 %typemap(csin)   const std::vector<std::vector<TYPE> >&  %{
   $csinput.GetLength(0),
@@ -117,8 +116,7 @@
 
   $1 = &result;
 %}
-
-// Same, for std::vector<std::vector<CType>>*
+// Now, we do it for std::vector<std::vector<>>*.
 %typemap(cstype) std::vector<std::vector<TYPE> >*  %{ CSHARPTYPE[][] %}
 %typemap(csin)   std::vector<std::vector<TYPE> >*  %{
   $csinput.GetLength(0),
@@ -149,6 +147,3 @@
 %}
 %enddef // MATRIX_AS_CSHARP_ARRAY
 
-//MATRIX_AS_CSHARP_ARRAY(int, int, int);
-//MATRIX_AS_CSHARP_ARRAY(int64, int64, long);
-//MATRIX_AS_CSHARP_ARRAY(double, double, double);

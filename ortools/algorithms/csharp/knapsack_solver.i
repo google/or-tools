@@ -39,4 +39,6 @@ typedef uint64_t uint64;
 %rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
 %rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;
 
+// TODO(user): Replace with %ignoreall/%unignoreall
+//swiglint: disable include-h-allglobals
 %include "ortools/algorithms/knapsack_solver.h"

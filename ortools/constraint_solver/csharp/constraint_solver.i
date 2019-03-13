@@ -238,39 +238,6 @@ DEFINE_ARGS_TO_R_CALLBACK(
 #undef DEFINE_ARGS_TO_R_CALLBACK
 #undef DEFINE_VOID_TO_STRING_CALLBACK
 
-// Convert in module_csharp_wrap.cc input argument (delegate marshaled in C function pointer) to original std::function<...>
-//%typemap(in) Solver::DisplayCallback  %{
-//  $1 = [$input]() -> std::string {
-//    std::string result;
-//    return result.assign((*(char* (*)())$input)());
-//    };
-//%}
-//
-//%typemap(in) Solver::IndexEvaluator1  %{
-//  $1 = [$input](int64 u) -> int64 {
-//    return (*(int64 (*)(int64))$input)(u);
-//    };
-//%}
-//%typemap(in) Solver::IndexEvaluator2  %{
-//  $1 = [$input](int64 u, int64 v) -> int64 {
-//    return (*(int64 (*)(int64, int64))$input)(u, v);};
-//%}
-//%typemap(in) Solver::IndexEvaluator3  %{
-//  $1 = [$input](int64 u, int64 v, int64 w) -> int64 {
-//    return (*(int64 (*)(int64, int64, int64))$input)(u, v, w);};
-//%}
-//
-//%typemap(in) Solver::IndexFilter1  %{
-//  $1 = [$input](int64 u) -> bool {
-//    return (*(bool (*)(int64))$input)(u);};
-//%}
-//%typemap(in) Solver::ObjectiveWatcher %{
-//  $1 = [$input](int64 u) -> void {
-//    return (*(void (*)(int64))$input)(u);};
-//%}
-
-
-
 // Renaming
 namespace operations_research {
 

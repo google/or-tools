@@ -1922,6 +1922,8 @@ CONTAINERHELPER(IntVar, IntVarElement, IntContainer)
 CONTAINERHELPER(IntervalVar, IntervalVarElement, IntervalContainer)
 CONTAINERHELPER(SequenceVar, SequenceVarElement, SequenceContainer)
 
+#undef CONTAINERHELPER
+
 }  // namespace operations_research
 
 // ================= constraint_solver.i API =====================

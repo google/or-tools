@@ -126,7 +126,10 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 #include "ortools/constraint_solver/constraint_solveri.h"
 %}
 
+// Use to correctly wrap Solver::MakeScheduleOrPostpone.
 %apply int64 * INOUT { int64 *const marker };
+// Use to correctly wrap arguments otherwise SWIG will wrap them as
+// SWIGTYPE_p_long_long opaque pointer.
 %apply int64 * OUTPUT { int64 *l, int64 *u, int64 *value };
 
 // Types in Proxy class (e.g. Solver.java) e.g.:
@@ -349,20 +352,17 @@ namespace operations_research {
 // Decision
 %feature("director") Decision;
 %unignore Decision;
-// Methods:
 %rename (apply) Decision::Apply;
 %rename (refute) Decision::Refute;
 
 // DecisionBuilder
 %feature("director") DecisionBuilder;
 %unignore DecisionBuilder;
-// Methods:
 %rename (nextWrap) DecisionBuilder::Next;
 
 // DecisionVisitor
 %feature("director") DecisionVisitor;
 %unignore DecisionVisitor;
-// Methods:
 %rename (visitRankFirstInterval) DecisionVisitor::VisitRankFirstInterval;
 %rename (visitRankLastInterval) DecisionVisitor::VisitRankLastInterval;
 %rename (visitScheduleOrExpedite) DecisionVisitor::VisitScheduleOrExpedite;
@@ -373,7 +373,6 @@ namespace operations_research {
 
 // ModelVisitor
 %unignore ModelVisitor;
-// Methods:
 %rename (beginVisitConstraint) ModelVisitor::BeginVisitConstraint;
 %rename (beginVisitExtension) ModelVisitor::BeginVisitExtension;
 %rename (beginVisitIntegerExpression) ModelVisitor::BeginVisitIntegerExpression;
@@ -398,14 +397,12 @@ namespace operations_research {
 // SymmetryBreaker
 %feature("director") SymmetryBreaker;
 %unignore SymmetryBreaker;
-// Methods:
 %rename (addIntegerVariableEqualValueClause) SymmetryBreaker::AddIntegerVariableEqualValueClause;
 %rename (addIntegerVariableGreaterOrEqualValueClause) SymmetryBreaker::AddIntegerVariableGreaterOrEqualValueClause;
 %rename (addIntegerVariableLessOrEqualValueClause) SymmetryBreaker::AddIntegerVariableLessOrEqualValueClause;
 
 // ModelCache
 %unignore ModelCache;
-// Methods:
 %rename (clear) ModelCache::Clear;
 %rename (findExprConstantExpression) ModelCache::FindExprConstantExpression;
 %rename (findExprExprConstantExpression) ModelCache::FindExprExprConstantExpression;
@@ -436,7 +433,6 @@ namespace operations_research {
 
 // RevPartialSequence
 %unignore RevPartialSequence;
-// Methods:
 %rename (isRanked) RevPartialSequence::IsRanked;
 %rename (numFirstRanked) RevPartialSequence::NumFirstRanked;
 %rename (numLastRanked) RevPartialSequence::NumLastRanked;
@@ -445,7 +441,7 @@ namespace operations_research {
 %rename (size) RevPartialSequence::Size;
 
 // UnsortedNullableRevBitset
-// TODO(corentinl) To removed from constraint_solveri.h (only use by table.cc)
+// TODO(user): Remove from constraint_solveri.h (only use by table.cc)
 %ignore UnsortedNullableRevBitset;
 
 // Assignment
@@ -528,12 +524,10 @@ namespace operations_research {
 %rename (unperformed) Assignment::Unperformed;
 
 // template AssignmentContainer<>
-// Ignored:
 %ignore AssignmentContainer::MutableElement;
 %ignore AssignmentContainer::MutableElementOrNull;
 %ignore AssignmentContainer::ElementPtrOrNull;
 %ignore AssignmentContainer::elements;
-// Methods:
 %rename (add) AssignmentContainer::Add;
 %rename (addAtPosition) AssignmentContainer::AddAtPosition;
 %rename (clear) AssignmentContainer::Clear;
@@ -550,17 +544,14 @@ namespace operations_research {
 
 // AssignmentElement
 %unignore AssignmentElement;
-// Methods:
 %rename (activate) AssignmentElement::Activate;
 %rename (deactivate) AssignmentElement::Deactivate;
 %rename (activated) AssignmentElement::Activated;
 
 // IntVarElement
 %unignore IntVarElement;
-// Ignored:
 %ignore IntVarElement::LoadFromProto;
 %ignore IntVarElement::WriteToProto;
-// Methods:
 %rename (reset) IntVarElement::Reset;
 %rename (clone) IntVarElement::Clone;
 %rename (copy) IntVarElement::Copy;
@@ -577,10 +568,8 @@ namespace operations_research {
 
 // IntervalVarElement
 %unignore IntervalVarElement;
-// Ignored:
 %ignore IntervalVarElement::LoadFromProto;
 %ignore IntervalVarElement::WriteToProto;
-// Methods:
 %rename (clone) IntervalVarElement::Clone;
 %rename (copy) IntervalVarElement::Copy;
 %rename (durationMax) IntervalVarElement::DurationMax;
@@ -618,10 +607,8 @@ namespace operations_research {
 
 // SequenceVarElement
 %unignore SequenceVarElement;
-// Ignored:
 %ignore SequenceVarElement::LoadFromProto;
 %ignore SequenceVarElement::WriteToProto;
-// Methods:
 %rename (backwardSequence) SequenceVarElement::BackwardSequence;
 %rename (clone) SequenceVarElement::Clone;
 %rename (copy) SequenceVarElement::Copy;
@@ -638,7 +625,6 @@ namespace operations_research {
 
 // SolutionCollector
 %unignore SolutionCollector;
-// Methods:
 %rename (add) SolutionCollector::Add;
 %rename (addObjective) SolutionCollector::AddObjective;
 %rename (backwardSequence) SolutionCollector::BackwardSequence;
@@ -654,7 +640,6 @@ namespace operations_research {
 
 // SolutionPool
 %unignore SolutionPool;
-// Methods:
 %rename (getNextSolution) SolutionPool::GetNextSolution;
 %rename (initialize) SolutionPool::Initialize;
 %rename (registerNewSolution) SolutionPool::RegisterNewSolution;
@@ -789,7 +774,6 @@ import java.lang.Runnable;
     return array;
   }
 %}
-// Ignored:
 %ignore Solver::SearchLogParameters;
 %ignore Solver::ActiveSearch;
 %ignore Solver::SetSearchContext;
@@ -804,7 +788,6 @@ import java.lang.Runnable;
 %ignore Solver::MakeAtMost;
 %ignore Solver::demon_profiler;
 %ignore Solver::set_fail_intercept;
-// Methods:
 %unignore Solver::Solver;
 %rename (acceptedNeighbors) Solver::accepted_neighbors;
 %rename (addBacktrackAction) Solver::AddBacktrackAction;
@@ -1048,12 +1031,10 @@ import java.lang.Runnable;
 
 // BaseIntExpr
 %unignore BaseIntExpr;
-// Methods:
 %rename (castToVar) BaseIntExpr::CastToVar;
 
 // IntExpr
 %unignore IntExpr;
-// Methods:
 %rename (isVar) IntExpr::IsVar;
 %rename (range) IntExpr::Range;
 %rename (var) IntExpr::Var;
@@ -1062,7 +1043,6 @@ import java.lang.Runnable;
 
 // IntVar
 %unignore IntVar;
-// Methods:
 %rename (addName) IntVar::AddName;
 %rename (contains) IntVar::Contains;
 %rename (isDifferent) IntVar::IsDifferent;
@@ -1083,14 +1063,12 @@ import java.lang.Runnable;
 
 // IntVarIterator
 %unignore IntVarIterator;
-// Methods:
 %rename (init) IntVarIterator::Init;
 %rename (next) IntVarIterator::Next;
 %rename (ok) IntVarIterator::Ok;
 
 // BooleanVar
 %unignore BooleanVar;
-// Methods:
 %rename (baseName) BooleanVar::BaseName;
 %rename (isDifferent) BooleanVar::IsDifferent;
 %rename (isEqual) BooleanVar::IsEqual;
@@ -1108,7 +1086,6 @@ import java.lang.Runnable;
 
 // IntervalVar
 %unignore IntervalVar;
-// Methods:
 %rename (cannotBePerformed) IntervalVar::CannotBePerformed;
 %rename (durationExpr) IntervalVar::DurationExpr;
 %rename (durationMax) IntervalVar::DurationMax;
@@ -1154,17 +1131,14 @@ import java.lang.Runnable;
 
 // OptimizeVar
 %unignore OptimizeVar;
-// Methods:
 %rename (applyBound) OptimizeVar::ApplyBound;
 %rename (print) OptimizeVar::Print;
 %rename (var) OptimizeVar::Var;
 
 // SequenceVar
 %unignore SequenceVar;
-// Ignored:
 %ignore SequenceVar::ComputePossibleFirstsAndLasts;
 %ignore SequenceVar::FillSequence;
-// Methods:
 %rename (rankFirst) SequenceVar::RankFirst;
 %rename (rankLast) SequenceVar::RankLast;
 %rename (rankNotFirst) SequenceVar::RankNotFirst;
@@ -1175,7 +1149,6 @@ import java.lang.Runnable;
 
 // Constraint
 %unignore Constraint;
-// Methods:
 %rename (initialPropagate) Constraint::InitialPropagate;
 %rename (isCastConstraint) Constraint::IsCastConstraint;
 %rename (postAndPropagate) Constraint::PostAndPropagate;
@@ -1189,7 +1162,6 @@ import java.lang.Runnable;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
-// Methods:
 %rename (makeSequenceVar) DisjunctiveConstraint::MakeSequenceVar;
 %rename (setTransitionTime) DisjunctiveConstraint::SetTransitionTime;
 %rename (transitionTime) DisjunctiveConstraint::TransitionTime;
@@ -1204,7 +1176,6 @@ import java.util.function.LongUnaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
-// Methods:
 %rename (addCountAssignedItemsDimension) Pack::AddCountAssignedItemsDimension;
 %rename (addCountUsedBinDimension) Pack::AddCountUsedBinDimension;
 %rename (addSumVariableWeightsLessOrEqualConstantDimension) Pack::AddSumVariableWeightsLessOrEqualConstantDimension;
@@ -1231,11 +1202,9 @@ import java.util.function.LongBinaryOperator;
 
 // PropagationBaseObject
 %unignore PropagationBaseObject;
-// Ignored:
 %ignore PropagationBaseObject::ExecuteAll;
 %ignore PropagationBaseObject::EnqueueAll;
 %ignore PropagationBaseObject::set_action_on_fail;
-// Methods:
 %rename (baseName) PropagationBaseObject::BaseName;
 %rename (enqueueDelayedDemon) PropagationBaseObject::EnqueueDelayedDemon;
 %rename (enqueueVar) PropagationBaseObject::EnqueueVar;
@@ -1247,7 +1216,6 @@ import java.util.function.LongBinaryOperator;
 // SearchMonitor
 %feature("director") SearchMonitor;
 %unignore SearchMonitor;
-// Methods:
 %rename (acceptDelta) SearchMonitor::AcceptDelta;
 %rename (acceptNeighbor) SearchMonitor::AcceptNeighbor;
 %rename (acceptSolution) SearchMonitor::AcceptSolution;
@@ -1274,7 +1242,6 @@ import java.util.function.LongBinaryOperator;
 
 // SearchLimit
 %unignore SearchLimit;
-// Ignored:
 %rename (check) SearchLimit::Check;
 %rename (copy) SearchLimit::Copy;
 %rename (init) SearchLimit::Init;
@@ -1287,13 +1254,11 @@ import java.util.function.LongBinaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/Supplier.html
 import java.util.function.Supplier;
 %}
-// Methods:
 %rename (maintain) SearchLog::Maintain;
 %rename (outputDecision) SearchLog::OutputDecision;
 
 // LocalSearchMonitor
 %unignore LocalSearchMonitor;
-// Methods:
 %rename (beginAcceptNeighbor) LocalSearchMonitor::BeginAcceptNeighbor;
 %rename (beginFiltering) LocalSearchMonitor::BeginFiltering;
 %rename (beginFilterNeighbor) LocalSearchMonitor::BeginFilterNeighbor;
@@ -1307,7 +1272,6 @@ import java.util.function.Supplier;
 
 // PropagationMonitor
 %unignore PropagationMonitor;
-// Methods:
 %rename (beginConstraintInitialPropagation) PropagationMonitor::BeginConstraintInitialPropagation;
 %rename (beginDemonRun) PropagationMonitor::BeginDemonRun;
 %rename (beginNestedConstraintInitialPropagation) PropagationMonitor::BeginNestedConstraintInitialPropagation;
@@ -1358,19 +1322,16 @@ import java.util.function.Supplier;
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;
 %unignore LocalSearchOperator;
-// Methods:
 %rename (nextNeighbor) LocalSearchOperator::MakeNextNeighbor;
 %rename (reset) LocalSearchOperator::Reset;
 %rename (start) LocalSearchOperator::Start;
 
 // VarLocalSearchOperator<>
 %unignore VarLocalSearchOperator;
-// Ignored:
 %ignore VarLocalSearchOperator::Start;
 %ignore VarLocalSearchOperator::ApplyChanges;
 %ignore VarLocalSearchOperator::RevertChanges;
 %ignore VarLocalSearchOperator::SkipUnchanged;
-// Methods:
 %rename (size) VarLocalSearchOperator::Size;
 %rename (value) VarLocalSearchOperator::Value;
 %rename (isIncremental) VarLocalSearchOperator::IsIncremental;
@@ -1386,9 +1347,7 @@ import java.util.function.Supplier;
 // IntVarLocalSearchOperator
 %feature("director") IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator;
-// Ignored:
 %ignore IntVarLocalSearchOperator::MakeNextNeighbor;
-// Methods:
 %rename (size) IntVarLocalSearchOperator::Size;
 %rename (oneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
 %rename (value) IntVarLocalSearchOperator::Value;
@@ -1405,7 +1364,6 @@ import java.util.function.Supplier;
 // BaseLns
 %feature("director") BaseLns;
 %unignore BaseLns;
-// Methods:
 %rename (initFragments) BaseLns::InitFragments;
 %rename (nextFragment) BaseLns::NextFragment;
 %feature ("nodirector") BaseLns::OnStart;
@@ -1418,35 +1376,29 @@ import java.util.function.Supplier;
 // ChangeValue
 %feature("director") ChangeValue;
 %unignore ChangeValue;
-// Methods:
 %rename (modifyValue) ChangeValue::ModifyValue;
 
 // SequenceVarLocalSearchOperator
 %feature("director") SequenceVarLocalSearchOperator;
 %unignore SequenceVarLocalSearchOperator;
-// Ignored:
 %ignore SequenceVarLocalSearchOperator::OldSequence;
 %ignore SequenceVarLocalSearchOperator::Sequence;
 %ignore SequenceVarLocalSearchOperator::SetBackwardSequence;
 %ignore SequenceVarLocalSearchOperator::SetForwardSequence;
-// Methods:
 %rename (start) SequenceVarLocalSearchOperator::Start;
 
 // PathOperator
 %feature("director") PathOperator;
 %unignore PathOperator;
 %typemap(javaimports) PathOperator %{
-// Used to wrap start_empty_path_class
-// see
+// Used to wrap start_empty_path_class see:
 // https://docs.oracle.com/javase/8/docs/api/java/util/function/LongToIntFunction.html
 import java.util.function.LongToIntFunction;
 %}
-// Ignored:
 %ignore PathOperator::Next;
 %ignore PathOperator::Path;
 %ignore PathOperator::SkipUnchanged;
 %ignore PathOperator::number_of_nexts;
-// Methods:
 %rename (getBaseNodeRestartPosition) PathOperator::GetBaseNodeRestartPosition;
 %rename (initPosition) PathOperator::InitPosition;
 %rename (neighbor) PathOperator::MakeNeighbor;
@@ -1456,14 +1408,12 @@ import java.util.function.LongToIntFunction;
 
 // PathWithPreviousNodesOperator
 %unignore PathWithPreviousNodesOperator;
-// Methods:
 %rename (isPathStart) PathWithPreviousNodesOperator::IsPathStart;
 %rename (prev) PathWithPreviousNodesOperator::Prev;
 
 // LocalSearchFilter
 %feature("director") LocalSearchFilter;
 %unignore LocalSearchFilter;
-// Methods:
 %rename (accept) LocalSearchFilter::Accept;
 %rename (getAcceptedObjectiveValue) LocalSearchFilter::GetAcceptedObjectiveValue;
 %rename (getSynchronizedObjectiveValue) LocalSearchFilter::GetSynchronizedObjectiveValue;
@@ -1478,10 +1428,8 @@ import java.util.function.LongToIntFunction;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongConsumer.html
 import java.util.function.LongConsumer;
 %}
-// Ignored:
 %ignore IntVarLocalSearchFilter::FindIndex;
 %ignore IntVarLocalSearchFilter::IsVarSynced;
-// Methods:
 %feature("nodirector") IntVarLocalSearchFilter::Synchronize;  // Inherited.
 %rename (addVars) IntVarLocalSearchFilter::AddVars;  // Inherited.
 %rename (injectObjectiveValue) IntVarLocalSearchFilter::InjectObjectiveValue;
@@ -1502,7 +1450,6 @@ import java.util.function.LongConsumer;
 
 // Demon
 %unignore Demon;
-// Methods:
 %rename (run) Demon::Run;
 
 %define CONVERT_VECTOR(CType, JavaType)
@@ -1603,11 +1550,9 @@ PROTO2_RETURN(operations_research::SearchLimitParameters,
 namespace operations_research {
 
 // Globals
-// IMPORTANT(corentinl): Global will be placed in main.java
+// IMPORTANT(corentinl): Globals will be placed in main.java
 // i.e. use `import com.[...].constraintsolver.main`
-// Ignored:
 %ignore FillValues;
-// Functions:
 %rename (areAllBooleans) AreAllBooleans;
 %rename (areAllBound) AreAllBound;
 %rename (areAllBoundTo) AreAllBoundTo;

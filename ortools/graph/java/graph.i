@@ -42,9 +42,6 @@
 #include "ortools/graph/min_cost_flow.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 // ############ max_flow.h ############
 
 %ignoreall
@@ -53,6 +50,8 @@ typedef uint64_t uint64;
 
 // MaxFlow
 %rename (MaxFlow) operations_research::SimpleMaxFlow;
+%ignore operations_research::SimpleMaxFlow::GetSourceSideMinCut;  // missing typemap for argument
+%ignore operations_research::SimpleMaxFlow::GetSinkSideMinCut;  // missing typemap for argument
 %unignore operations_research::SimpleMaxFlow::SimpleMaxFlow;
 %unignore operations_research::SimpleMaxFlow::~SimpleMaxFlow;
 %rename (addArcWithCapacity) operations_research::SimpleMaxFlow::AddArcWithCapacity;
@@ -65,9 +64,6 @@ typedef uint64_t uint64;
 %rename (solve) operations_research::SimpleMaxFlow::Solve;
 %rename (getOptimalFlow) operations_research::SimpleMaxFlow::OptimalFlow;
 %rename (getFlow) operations_research::SimpleMaxFlow::Flow;
-// Ignored:
-%ignore operations_research::SimpleMaxFlow::GetSourceSideMinCut;  // missing typemap for argument
-%ignore operations_research::SimpleMaxFlow::GetSinkSideMinCut;  // missing typemap for argument
 
 // To expose the Status enum's values (as constant integers), we must expose the enum
 // type itself.

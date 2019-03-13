@@ -16,9 +16,9 @@ namespace Google.OrTools.Sat
 using System;
 using System.Collections.Generic;
 
-/// <summary>  
+/// <summary>
 ///  Wrapper class around the cp_model proto.
-/// </summary> 
+/// </summary>
 public class CpModel
 {
   public CpModel()
