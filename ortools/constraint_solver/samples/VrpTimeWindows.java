@@ -127,8 +127,8 @@ public class VrpTimeWindows {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    final int transitCallbackIndex =
-        routing.registerTransitCallback((long fromIndex, long toIndex) -> {
+    final int transitCallbackIndex = routing.registerTransitCallback(
+        (long fromIndex, long toIndex) -> {
           // Convert from routing variable Index to user NodeIndex.
           int fromNode = manager.indexToNode(fromIndex);
           int toNode = manager.indexToNode(toIndex);
