@@ -119,8 +119,8 @@ TESTS=(
     "${SRC_ROOT}/ortools/linear_solver/samples/simple_lp_program.py"
     "${SRC_ROOT}/ortools/linear_solver/samples/simple_mip_program.py"
     "${SRC_ROOT}/ortools/sat/samples/simple_sat_program.py"
-    "${SRC_ROOT}/examples/python/tsp.py"
-    "${SRC_ROOT}/examples/python/vrp.py"
+    "${SRC_ROOT}/ortools/constraint_solver/samples/tsp.py"
+    "${SRC_ROOT}/ortools/constraint_solver/samples/vrp.py"
 )
 
 (
