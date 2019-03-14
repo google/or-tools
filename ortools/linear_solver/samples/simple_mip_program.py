@@ -33,8 +33,6 @@ def main():
     # [END variables]
 
     # [START constraints]
-
-    # [END constraints]
     # x + 7 * y <= 17.5.
     solver.Add(x + 7 * y <= 17.5)
 

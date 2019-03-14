@@ -94,7 +94,6 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
             << solution.Min(time_var) << ", " << solution.Max(time_var)
             << ") Slack(" << solution.Min(slack_var) << ", "
             << solution.Max(slack_var) << ") -> ";
-      int64 previous_index = index;
       index = solution.Value(routing.NextVar(index));
     }
     auto time_var = time_dimension.CumulVar(index);
@@ -199,9 +198,9 @@ void VrpTimeWindows() {
   // [START depot_start_end_times]
   for (int i = 0; i < data.num_vehicles; ++i) {
     routing.AddVariableMinimizedByFinalizer(
-        time_dimension.CumulVar(routing.End(i)));
-    routing.AddVariableMinimizedByFinalizer(
         time_dimension.CumulVar(routing.Start(i)));
+    routing.AddVariableMinimizedByFinalizer(
+        time_dimension.CumulVar(routing.End(i)));
   }
   // [END depot_start_end_times]
 

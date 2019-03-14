@@ -90,7 +90,6 @@ def print_solution(data, manager, routing, assignment):
                 manager.IndexToNode(index), assignment.Min(time_var),
                 assignment.Max(time_var), assignment.Min(slack_var),
                 assignment.Max(slack_var))
-            previous_index = index
             index = assignment.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
         plan_output += ' {0} Time({1},{2})\n'.format(

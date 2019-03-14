@@ -102,7 +102,6 @@ public class VrpResources {
         route += manager.indexToNode(index) + " Time(" + solution.min(timeVar) + ","
             + solution.max(timeVar) + ") Slack(" + solution.min(slackVar) + ","
             + solution.max(slackVar) + ") -> ";
-        long previousIndex = index;
         index = solution.value(routing.nextVar(index));
       }
       IntVar timeVar = timeDimension.cumulVar(index);
@@ -135,8 +134,8 @@ public class VrpResources {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    final int transitCallbackIndex =
-        routing.registerTransitCallback((long fromIndex, long toIndex) -> {
+    final int transitCallbackIndex = routing.registerTransitCallback(
+        (long fromIndex, long toIndex) -> {
           // Convert from routing variable Index to user NodeIndex.
           int fromNode = manager.indexToNode(fromIndex);
           int toNode = manager.indexToNode(toIndex);

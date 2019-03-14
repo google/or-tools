@@ -98,7 +98,6 @@ public class VrpResources {
             solution.Max(timeVar),
             solution.Min(slackVar),
             solution.Max(slackVar));
-        var previousIndex = index;
         index = solution.Value(routing.NextVar(index));
       }
       var endTimeVar = timeDimension.CumulVar(index);
