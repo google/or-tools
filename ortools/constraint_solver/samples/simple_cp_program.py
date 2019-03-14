@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-# This Python file uses the following encoding: utf-8
-# Copyright 2018 Google LLC
+# Copyright 2010-2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,13 +16,15 @@
 # [START import]
 from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
+
 # [END import]
 
 
 def main():
-    """Entry point of the program"""
+    """Entry point of the program."""
+    # Instantiate the solver.
     # [START solver]
-    solver = pywrapcp.Solver('ConstraintExample')
+    solver = pywrapcp.Solver('CPSimple')
     # [END solver]
 
     # Create the variables.
@@ -38,34 +38,36 @@ def main():
     # Constraint 0: x != y.
     # [START constraints]
     solver.Add(x != y)
-
-    print('Number of constraints =', solver.Constraints())
+    print('Number of constraints: ', solver.Constraints())
     # [END constraints]
 
-    # Call the solver.
+    # Solve the problem.
     # [START solve]
     decision_builder = solver.Phase([x, y, z], solver.CHOOSE_FIRST_UNBOUND,
                                     solver.ASSIGN_MIN_VALUE)
     # [END solve]
 
+    # Print solution on console.
     # [START print_solution]
+    count = 0
     solver.NewSearch(decision_builder)
     while solver.NextSolution():
-        solution = 'Solution:'
+        count += 1
+        solution = 'Solution {}:\n'.format(count)
         for var in [x, y, z]:
-            solution += ' {} = {};'.format(var.Name(), var.Value())
+            solution += ' {} = {}'.format(var.Name(), var.Value())
         print(solution)
     solver.EndSearch()
-    print("Number of solutions found:", solver.Solutions())
+    print('Number of solutions found: ', count)
     # [END print_solution]
 
     # [START advanced]
-    print('\nAdvanced usage:')
-    print('Problem solved in ', solver.WallTime(), ' milliseconds')
-    print('Memory usage: ', pywrapcp.Solver.MemoryUsage(), ' bytes')
+    print('Advanced usage:')
+    print('Problem solved in ', solver.WallTime(), 'ms')
+    print('Memory usage: ', pywrapcp.Solver.MemoryUsage(), 'bytes')
     # [END advanced]
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 # [END program]

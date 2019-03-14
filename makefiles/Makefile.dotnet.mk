@@ -440,6 +440,7 @@ test_dotnet_algorithms_samples: ;
 
 .PHONY: test_dotnet_constraint_solver_samples # Build and Run all .Net CP Samples (located in ortools/constraint_solver/samples)
 test_dotnet_constraint_solver_samples:
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/SimpleCpProgram.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/SimpleRoutingProgram.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/Tsp.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/TspCities.cs
