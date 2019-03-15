@@ -2096,7 +2096,8 @@ CpSolverResponse SolveCpModelParallel(
     WallTimer* wall_timer, Model* model) {
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   const int random_seed = params.random_seed();
-  CHECK(!params.enumerate_all_solutions());
+  CHECK(!params.enumerate_all_solutions())
+      << "Enumerating all solutions in parallel is not supported.";
 
   // This is a bit hacky. If the provided TimeLimit as a "stop" Boolean, we
   // use this one instead.
