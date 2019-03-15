@@ -429,6 +429,9 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
 In an non-optimization model, you can search for all solutions. You need to
 register a callback on the solver that will be called at each solution.
 
+Please note that it does not work in parallel
+(i. e. parameter `num_search_workers` > 1).
+
 The exact implementation depends on the target language.
 
 ### Python code
