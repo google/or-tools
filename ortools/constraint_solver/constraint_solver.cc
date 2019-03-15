@@ -82,6 +82,9 @@ DEFINE_bool(cp_diffn_use_cumulative, true,
             "Diffn constraint adds redundant cumulative constraint");
 DEFINE_bool(cp_use_element_rmq, true,
             "If true, rmq's will be used in element expressions.");
+DEFINE_int32(cp_check_solution_period, 1,
+             "Number of solutions explored between two solution checks during "
+             "local search.");
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
@@ -136,6 +139,7 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_max_edge_finder_size(FLAGS_cp_max_edge_finder_size);
   params.set_diffn_use_cumulative(FLAGS_cp_diffn_use_cumulative);
   params.set_use_element_rmq(FLAGS_cp_use_element_rmq);
+  params.set_check_solution_period(FLAGS_cp_check_solution_period);
   return params;
 }
 
@@ -989,6 +993,7 @@ class Search {
   bool LocalOptimum();
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
   void AcceptNeighbor();
+  void AcceptUncheckedNeighbor();
   void PeriodicCheck();
   int ProgressPercent();
   void Accept(ModelVisitor* const visitor) const;
@@ -1283,6 +1288,10 @@ void Search::AcceptNeighbor() {
   ForAll(monitors_, &SearchMonitor::AcceptNeighbor);
 }
 
+void Search::AcceptUncheckedNeighbor() {
+  ForAll(monitors_, &SearchMonitor::AcceptUncheckedNeighbor);
+}
+
 void Search::PeriodicCheck() {
   ForAll(monitors_, &SearchMonitor::PeriodicCheck);
 }
@@ -1312,6 +1321,10 @@ bool AcceptDelta(Search* const search, Assignment* delta,
 }
 
 void AcceptNeighbor(Search* const search) { search->AcceptNeighbor(); }
+
+void AcceptUncheckedNeighbor(Search* const search) {
+  search->AcceptUncheckedNeighbor();
+}
 
 namespace {
 
@@ -1366,6 +1379,7 @@ Solver::Solver(const std::string& name,
       parameters_(parameters),
       random_(ACMRandom::DeterministicSeed()),
       demon_profiler_(BuildDemonProfiler(this)),
+      use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
 }
@@ -1375,6 +1389,7 @@ Solver::Solver(const std::string& name)
       parameters_(DefaultSolverParameters()),
       random_(ACMRandom::DeterministicSeed()),
       demon_profiler_(BuildDemonProfiler(this)),
+      use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
 }
@@ -1391,6 +1406,7 @@ void Solver::Init() {
   neighbors_ = 0;
   filtered_neighbors_ = 0;
   accepted_neighbors_ = 0;
+  optimization_direction_ = NOT_SET;
   timer_ = absl::make_unique<ClockTimer>();
   searches_.assign(1, new Search(this, 0));
   fail_stamp_ = GG_ULONGLONG(1);
@@ -2812,6 +2828,7 @@ bool SearchMonitor::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   return true;
 }
 void SearchMonitor::AcceptNeighbor() {}
+void SearchMonitor::AcceptUncheckedNeighbor() {}
 void SearchMonitor::PeriodicCheck() {}
 void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
 // A search monitors adds itself on the active search.
@@ -3149,6 +3166,13 @@ std::string Solver::SearchContext() const {
 
 std::string Solver::SearchContext(const Search* search) const {
   return search->search_context();
+}
+
+Assignment* Solver::GetOrCreateLocalSearchState() {
+  if (local_search_state_ == nullptr) {
+    local_search_state_ = absl::make_unique<Assignment>(this);
+  }
+  return local_search_state_.get();
 }
 
 // ----------------- Constraint class -------------------

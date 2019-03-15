@@ -146,7 +146,8 @@ public class VrpPickupDeliveryLifo {
           distanceDimension.CumulVar(pickupIndex),
           distanceDimension.CumulVar(deliveryIndex)));
     }
-    routing.SetPickupAndDeliveryPolicyOfAllVehicles(RoutingModel.LIFO);
+    routing.SetPickupAndDeliveryPolicyOfAllVehicles(
+      RoutingModel.PICKUP_AND_DELIVERY_LIFO);
     // [END pickup_delivery_constraint]
 
     // Setting first solution heuristic.

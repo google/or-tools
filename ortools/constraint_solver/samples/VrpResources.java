@@ -57,7 +57,7 @@ public class VrpResources {
         {7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0},
     };
     public final long[][] timeWindows = {
-        {0, 5},  // depot
+        {0, 5}, // depot
         {7, 12}, // 1
         {10, 15}, // 2
         {5, 14}, // 3
@@ -89,7 +89,6 @@ public class VrpResources {
   /// @brief Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
-    logger.info("Objective : " + solution.objectiveValue());
     RoutingDimension timeDimension = routing.getMutableDimension("Time");
     long totalTime = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
@@ -134,8 +133,8 @@ public class VrpResources {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    final int transitCallbackIndex = routing.registerTransitCallback(
-        (long fromIndex, long toIndex) -> {
+    final int transitCallbackIndex =
+        routing.registerTransitCallback((long fromIndex, long toIndex) -> {
           // Convert from routing variable Index to user NodeIndex.
           int fromNode = manager.indexToNode(fromIndex);
           int toNode = manager.indexToNode(toIndex);
@@ -176,33 +175,28 @@ public class VrpResources {
     // Add resource constraints at the depot.
     // [START depot_load_time]
     Solver solver = routing.solver();
-    IntervalVar[] intervals = new IntervalVar[ data.vehicleNumber * 2 ];
+    IntervalVar[] intervals = new IntervalVar[data.vehicleNumber * 2];
     for (int i = 0; i < data.vehicleNumber; ++i) {
       // Add load duration at start of routes
-      intervals[2*i] = solver.makeFixedDurationIntervalVar(
-            timeDimension.cumulVar(routing.start(i)), data.vehicleLoadTime,
-            "depot_interval");
+      intervals[2 * i] = solver.makeFixedDurationIntervalVar(
+          timeDimension.cumulVar(routing.start(i)), data.vehicleLoadTime, "depot_interval");
       // Add unload duration at end of routes.
-      intervals[2*i+1] = solver.makeFixedDurationIntervalVar(
-            timeDimension.cumulVar(routing.end(i)), data.vehicleUnloadTime,
-            "depot_interval");
+      intervals[2 * i + 1] = solver.makeFixedDurationIntervalVar(
+          timeDimension.cumulVar(routing.end(i)), data.vehicleUnloadTime, "depot_interval");
     }
     // [END depot_load_time]
 
     // [START depot_capacity]
-    long[] depot_usage = new long[ intervals.length ];
-    Arrays.fill(depot_usage, 1);
-    solver.addConstraint(solver.makeCumulative(intervals, depot_usage,
-          data.depotCapacity, "depot"));
+    long[] depotUsage = new long[intervals.length];
+    Arrays.fill(depotUsage, 1);
+    solver.addConstraint(solver.makeCumulative(intervals, depotUsage, data.depotCapacity, "depot"));
     // [END depot_capacity]
 
     // Instantiate route start and end times to produce feasible times.
     // [START depot_start_end_times]
     for (int i = 0; i < data.vehicleNumber; ++i) {
-      routing.addVariableMinimizedByFinalizer(
-          timeDimension.cumulVar(routing.start(i)));
-      routing.addVariableMinimizedByFinalizer(
-          timeDimension.cumulVar(routing.end(i)));
+      routing.addVariableMinimizedByFinalizer(timeDimension.cumulVar(routing.start(i)));
+      routing.addVariableMinimizedByFinalizer(timeDimension.cumulVar(routing.end(i)));
     }
     // [END depot_start_end_times]
 

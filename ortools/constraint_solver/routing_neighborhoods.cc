@@ -872,4 +872,67 @@ bool RelocateExpensiveChain::FindMostExpensiveChainsOnCurrentPath() {
   return true;
 }
 
+RelocateSubtrip::RelocateSubtrip(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64)> start_empty_path_class,
+    const RoutingIndexPairs& pairs)
+    : PathOperator(vars, secondary_vars, 2, false,
+                   std::move(start_empty_path_class)) {
+  is_first_node_.resize(number_of_nexts_, false);
+  is_second_node_.resize(number_of_nexts_, false);
+  pair_of_node_.resize(number_of_nexts_, -1);
+  for (int pair_index = 0; pair_index < pairs.size(); ++pair_index) {
+    for (const int node : pairs[pair_index].first) {
+      is_first_node_[node] = true;
+      pair_of_node_[node] = pair_index;
+    }
+    for (const int node : pairs[pair_index].second) {
+      is_second_node_[node] = true;
+      pair_of_node_[node] = pair_index;
+    }
+  }
+  opened_pairs_set_.resize(pairs.size(), false);
+}
+
+bool RelocateSubtrip::MakeNeighbor() {
+  // We iterate on two nodes, one is the beginning of the subtrip,
+  // the other is the position after which to insert.
+  // If the first node cannot be the beginning of a subtrip, do not move.
+  const int prev_chain = BaseNode(0);
+  if (IsPathEnd(prev_chain)) return false;
+  const int insertion_node = BaseNode(1);
+  if (IsPathEnd(insertion_node)) return false;
+  if (prev_chain == insertion_node) return false;
+
+  // We are looking for the shortest chain such that all pickup/delivery pairs
+  // appearing in the chain have both pickup and delivery inside the chain.
+  // If there is none (other that the empty chain), do not move.
+  // Obviously, the chain should not contain the insertion node.
+  int current = Next(prev_chain);
+  if (IsPathEnd(current)) return false;
+  if (!is_first_node_[current]) return false;
+  int chain_end = current;
+  opened_pairs_set_.assign(opened_pairs_set_.size(), false);
+  int num_opened_pairs = 0;
+  do {
+    if (current == insertion_node) return false;
+    if (is_first_node_[current] || is_second_node_[current]) {
+      const int pair = pair_of_node_[current];
+      if (opened_pairs_set_[pair]) {
+        --num_opened_pairs;
+        opened_pairs_set_[pair] = false;
+      } else {
+        ++num_opened_pairs;
+        opened_pairs_set_[pair] = true;
+      }
+    }
+    chain_end = current;
+    current = Next(current);
+  } while (num_opened_pairs != 0 && !IsPathEnd(current));
+  if (num_opened_pairs != 0) return false;
+
+  return MoveChain(prev_chain, chain_end, insertion_node);
+}
+
 }  // namespace operations_research

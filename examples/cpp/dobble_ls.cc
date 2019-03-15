@@ -465,8 +465,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   // The LocalSearchFilter::Accept() API also takes a deltadelta,
   // which is the difference between the current delta and the last
   // delta that was given to Accept() -- but we don't use it here.
-  bool Accept(const Assignment* delta,
-              const Assignment* unused_deltadelta) override {
+  bool Accept(Assignment* delta, Assignment* unused_deltadelta) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 

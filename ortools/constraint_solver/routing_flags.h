@@ -26,6 +26,7 @@ DECLARE_bool(routing_no_lns);
 DECLARE_bool(routing_no_fullpathlns);
 DECLARE_bool(routing_no_relocate);
 DECLARE_bool(routing_no_relocate_neighbors);
+DECLARE_bool(routing_no_relocate_subtrip);
 DECLARE_bool(routing_no_exchange);
 DECLARE_bool(routing_no_cross);
 DECLARE_bool(routing_no_2opt);
@@ -59,7 +60,7 @@ DECLARE_double(savings_arc_coefficient);
 DECLARE_double(cheapest_insertion_farthest_seeds_ratio);
 DECLARE_double(cheapest_insertion_neighbors_ratio);
 DECLARE_bool(routing_dfs);
-DECLARE_int64(routing_optimization_step);
+DECLARE_double(routing_optimization_step);
 DECLARE_int32(routing_number_of_solutions_to_collect);
 DECLARE_int32(routing_relocate_expensive_chain_num_arcs_to_consider);
 

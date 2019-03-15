@@ -75,7 +75,6 @@ struct DataModel {
 //! @param[in] solution Solution found by the solver.
 void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("Time");
   int64 total_time{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
@@ -89,7 +88,6 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
             << solution.Min(time_var) << ", " << solution.Max(time_var)
             << ") Slack(" << solution.Min(slack_var) << ", "
             << solution.Max(slack_var) << ") -> ";
-      int64 previous_index = index;
       index = solution.Value(routing.NextVar(index));
     }
     auto time_var = time_dimension.CumulVar(index);

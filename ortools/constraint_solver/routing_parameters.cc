@@ -57,6 +57,7 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "  use_relocate: BOOL_TRUE"
       "  use_relocate_pair: BOOL_TRUE"
       "  use_light_relocate_pair: BOOL_TRUE"
+      "  use_relocate_subtrip: BOOL_TRUE"
       "  use_relocate_neighbors: BOOL_FALSE"
       "  use_exchange: BOOL_TRUE"
       "  use_exchange_pair: BOOL_TRUE"
@@ -83,7 +84,7 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "local_search_metaheuristic: AUTOMATIC "
       "guided_local_search_lambda_coefficient: 0.1 "
       "use_depth_first_search: false "
-      "optimization_step: 1 "
+      "optimization_step: 0.0 "
       "number_of_solutions_to_collect: 1 "
       // No "time_limit" by default.
       "solution_limit: 0x7fffffffffffffff "             // kint64max
@@ -194,8 +195,10 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
-    const int64 step = search_parameters.optimization_step();
-    if (step < 1) return StrCat("Invalid optimization_step:", step);
+    const double step = search_parameters.optimization_step();
+    if (std::isnan(step) || step < 0.0) {
+      return StrCat("Invalid optimization_step: ", step);
+    }
   }
   {
     const int32 num = search_parameters.number_of_solutions_to_collect();

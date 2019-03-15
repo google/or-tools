@@ -1,3 +1,5 @@
+# CP-SAT navbar
+
 -   [home](README.md)
 -   [boolean logic](boolean_logic.md)
 -   [integer arithmetic](integer_arithmetic.md)

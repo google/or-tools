@@ -149,9 +149,9 @@ void VrpGlobalSpan() {
   // Add Distance constraint.
   // [START distance_constraint]
   routing.AddDimension(transit_callback_index,  // transit callback
-                       0,                // no slack
-                       3000,             // vehicle maximum travel distance
-                       true,             // start cumul to zero
+                       0,                       // no slack
+                       3000,  // vehicle maximum travel distance
+                       true,  // start cumul to zero
                        "Distance");
   const RoutingDimension& distance_dimension =
       routing.GetDimensionOrDie("Distance");
@@ -172,7 +172,8 @@ void VrpGlobalSpan() {
         solver->MakeLessOrEqual(distance_dimension.CumulVar(pickup_index),
                                 distance_dimension.CumulVar(delivery_index)));
   }
-  routing.SetPickupAndDeliveryPolicyOfAllVehicles(RoutingModel::PickupAndDeliveryPolicy::LIFO);
+  routing.SetPickupAndDeliveryPolicyOfAllVehicles(
+      RoutingModel::PICKUP_AND_DELIVERY_LIFO);
   // [END pickup_delivery_constraint]
 
   // Setting first solution heuristic.

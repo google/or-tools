@@ -502,6 +502,27 @@ bool PairNodeSwapActiveOperator<swap_first>::MakeNeighbor() {
   }
 }
 
+// Tries to move subtrips to other parts of paths.
+// A subtrip is a minimal subpath that splits no pickup and delivery pair.
+class RelocateSubtrip : public PathOperator {
+ public:
+  RelocateSubtrip(const std::vector<IntVar*>& vars,
+                  const std::vector<IntVar*>& secondary_vars,
+                  std::function<int(int64)> start_empty_path_class,
+                  const RoutingIndexPairs& pairs);
+
+  std::string DebugString() const override { return "RelocateSubtrip"; }
+  bool MakeNeighbor() override;
+
+ private:
+  std::vector<bool> is_first_node_;
+  std::vector<bool> is_second_node_;
+  std::vector<int> pair_of_node_;
+  std::vector<bool> opened_pairs_set_;
+  static const int kSubtripStart = 0;
+  static const int kNodeToInsertAfter = 1;
+};
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_NEIGHBORHOODS_H_

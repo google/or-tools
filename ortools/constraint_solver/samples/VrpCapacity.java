@@ -64,8 +64,6 @@ public class VrpCapacity {
   /// @brief Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
-    // Solution cost.
-    logger.info("Objective : " + solution.objectiveValue());
     // Inspect solution.
     long totalDistance = 0;
     long totalLoad = 0;

@@ -54,7 +54,7 @@ public class VrpTimeWindows {
         {7, 14, 9, 16, 14, 8, 5, 10, 6, 5, 4, 10, 8, 6, 2, 9, 0},
     };
     public final long[][] timeWindows = {
-        {0, 5},  // depot
+        {0, 5}, // depot
         {7, 12}, // 1
         {10, 15}, // 2
         {5, 14}, // 3
@@ -81,7 +81,6 @@ public class VrpTimeWindows {
   /// @brief Print the solution.
   static void printSolution(
       DataModel data, RoutingModel routing, RoutingIndexManager manager, Assignment solution) {
-    logger.info("Objective : " + solution.objectiveValue());
     RoutingDimension timeDimension = routing.getMutableDimension("Time");
     long totalTime = 0;
     for (int i = 0; i < data.vehicleNumber; ++i) {
@@ -94,7 +93,6 @@ public class VrpTimeWindows {
         route += manager.indexToNode(index) + " Time(" + solution.min(timeVar) + ","
             + solution.max(timeVar) + ") Slack(" + solution.min(slackVar) + ","
             + solution.max(slackVar) + ") -> ";
-        long previousIndex = index;
         index = solution.value(routing.nextVar(index));
       }
       IntVar timeVar = timeDimension.cumulVar(index);
@@ -127,8 +125,8 @@ public class VrpTimeWindows {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    final int transitCallbackIndex = routing.registerTransitCallback(
-        (long fromIndex, long toIndex) -> {
+    final int transitCallbackIndex =
+        routing.registerTransitCallback((long fromIndex, long toIndex) -> {
           // Convert from routing variable Index to user NodeIndex.
           int fromNode = manager.indexToNode(fromIndex);
           int toNode = manager.indexToNode(toIndex);
@@ -169,10 +167,8 @@ public class VrpTimeWindows {
     // Instantiate route start and end times to produce feasible times.
     // [START depot_start_end_times]
     for (int i = 0; i < data.vehicleNumber; ++i) {
-      routing.addVariableMinimizedByFinalizer(
-          timeDimension.cumulVar(routing.start(i)));
-      routing.addVariableMinimizedByFinalizer(
-          timeDimension.cumulVar(routing.end(i)));
+      routing.addVariableMinimizedByFinalizer(timeDimension.cumulVar(routing.start(i)));
+      routing.addVariableMinimizedByFinalizer(timeDimension.cumulVar(routing.end(i)));
     }
     // [END depot_start_end_times]
 

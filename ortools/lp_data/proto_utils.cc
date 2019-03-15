@@ -78,6 +78,7 @@ void MPModelProtoToLinearProgram(const MPModelProto& input,
                              cst.coefficient(k));
     }
   }
+  output->CleanUp();
 }
 
 }  // namespace glop

@@ -61,8 +61,6 @@ public class VrpDropNodes {
       in RoutingModel routing,
       in RoutingIndexManager manager,
       in Assignment solution) {
-    // Solution cost.
-    Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
     // Display dropped nodes.
     string droppedNodes = "Dropped nodes:";
     for (int index = 0; index < routing.Size(); ++index) {

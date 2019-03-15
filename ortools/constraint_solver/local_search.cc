@@ -65,6 +65,7 @@ bool AcceptDelta(Search* const search, Assignment* delta,
 
 // Notifies the search that a neighbor has been accepted by local search.
 void AcceptNeighbor(Search* const search);
+void AcceptUncheckedNeighbor(Search* const search);
 
 // ----- Base operator class for operators manipulating IntVars -----
 
@@ -1781,6 +1782,7 @@ class PathLns : public PathOperator {
   bool MakeNeighbor() override;
 
   std::string DebugString() const override { return "PathLns"; }
+  bool HasFragments() const override { return true; }
 
  private:
   inline bool ChainsAreFullPaths() const { return chunk_size_ == 0; }
@@ -1879,9 +1881,13 @@ class CompoundOperator : public LocalSearchOperator {
   void Reset() override;
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
+  bool HasFragments() const override { return has_fragments_; }
 
   std::string DebugString() const override {
     return operators_[operator_indices_[index_]]->DebugString();
+  }
+  const LocalSearchOperator* Self() const override {
+    return operators_[operator_indices_[index_]]->Self();
   }
 
  private:
@@ -1911,6 +1917,7 @@ class CompoundOperator : public LocalSearchOperator {
   std::function<int64(int, int)> evaluator_;
   Bitset64<> started_;
   const Assignment* start_assignment_;
+  bool has_fragments_;
 };
 
 CompoundOperator::CompoundOperator(std::vector<LocalSearchOperator*> operators,
@@ -1919,11 +1926,18 @@ CompoundOperator::CompoundOperator(std::vector<LocalSearchOperator*> operators,
       operators_(std::move(operators)),
       evaluator_(std::move(evaluator)),
       started_(operators_.size()),
-      start_assignment_(nullptr) {
+      start_assignment_(nullptr),
+      has_fragments_(false) {
   operators_.erase(std::remove(operators_.begin(), operators_.end(), nullptr),
                    operators_.end());
   operator_indices_.resize(operators_.size());
   std::iota(operator_indices_.begin(), operator_indices_.end(), 0);
+  for (LocalSearchOperator* const op : operators_) {
+    if (op->HasFragments()) {
+      has_fragments_ = true;
+      break;
+    }
+  }
 }
 
 void CompoundOperator::Reset() {
@@ -2015,10 +2029,12 @@ class RandomCompoundOperator : public LocalSearchOperator {
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
 
   std::string DebugString() const override { return "RandomCompoundOperator"; }
+  // TODO(user): define Self method.
 
  private:
   ACMRandom rand_;
   const std::vector<LocalSearchOperator*> operators_;
+  bool has_fragments_;
 };
 
 void RandomCompoundOperator::Start(const Assignment* assignment) {
@@ -2034,7 +2050,14 @@ RandomCompoundOperator::RandomCompoundOperator(
 
 RandomCompoundOperator::RandomCompoundOperator(
     std::vector<LocalSearchOperator*> operators, int32 seed)
-    : rand_(seed), operators_(std::move(operators)) {}
+    : rand_(seed), operators_(std::move(operators)), has_fragments_(false) {
+  for (LocalSearchOperator* const op : operators_) {
+    if (op->HasFragments()) {
+      has_fragments_ = true;
+      break;
+    }
+  }
+}
 
 void RandomCompoundOperator::Reset() {
   for (LocalSearchOperator* const op : operators_) {
@@ -2321,15 +2344,14 @@ class VariableDomainFilter : public LocalSearchFilter {
  public:
   VariableDomainFilter() {}
   ~VariableDomainFilter() override {}
-  bool Accept(const Assignment* delta, const Assignment* deltadelta) override;
+  bool Accept(Assignment* delta, Assignment* deltadelta) override;
   void Synchronize(const Assignment* assignment,
                    const Assignment* delta) override {}
 
   std::string DebugString() const override { return "VariableDomainFilter"; }
 };
 
-bool VariableDomainFilter::Accept(const Assignment* delta,
-                                  const Assignment* deltadelta) {
+bool VariableDomainFilter::Accept(Assignment* delta, Assignment* deltadelta) {
   const Assignment::IntContainer& container = delta->IntVarContainer();
   const int size = container.Size();
   for (int i = 0; i < size; ++i) {
@@ -2427,7 +2449,7 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
  public:
   SumObjectiveFilter(const std::vector<IntVar*>& vars,
                      Solver::ObjectiveWatcher delta_objective_callback,
-                     const IntVar* const objective,
+                     IntVar* const objective,
                      Solver::LocalSearchFilterBound filter_enum)
       : IntVarLocalSearchFilter(vars, std::move(delta_objective_callback)),
         primary_vars_size_(vars.size()),
@@ -2449,7 +2471,7 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
   }
   // If delta->Objective() is not objective, then we take kint64max for
   // delta->ObjectiveMax() and kint64min for delta->ObjectiveMin().
-  bool Accept(const Assignment* delta, const Assignment* deltadelta) override {
+  bool Accept(Assignment* delta, Assignment* deltadelta) override {
     if (delta == nullptr) {
       return false;
     }
@@ -2483,14 +2505,20 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
     }
     const int64 value = CapAdd(delta_sum_, injected_objective_value_);
     PropagateObjectiveValue(value);
+    if (!delta->HasObjective()) {
+      delta->AddObjective(objective_);
+    }
     switch (filter_enum_) {
       case Solver::LE: {
+        delta->SetObjectiveMin(value);
         return value <= var_max;
       }
       case Solver::GE: {
+        delta->SetObjectiveMax(value);
         return value >= var_min;
       }
       case Solver::EQ: {
+        delta->SetObjectiveValue(value);
         return value <= var_max && value >= var_min;
       }
       default: {
@@ -2521,7 +2549,7 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
   const int primary_vars_size_;
   int64* const synchronized_costs_;
   int64* const delta_costs_;
-  const IntVar* const objective_;
+  IntVar* const objective_;
   Solver::LocalSearchFilterBound filter_enum_;
   int64 synchronized_sum_;
   int64 delta_sum_;
@@ -2570,7 +2598,7 @@ class BinaryObjectiveFilter : public SumObjectiveFilter {
   BinaryObjectiveFilter(const std::vector<IntVar*>& vars,
                         Solver::IndexEvaluator2 value_evaluator,
                         Solver::ObjectiveWatcher delta_objective_callback,
-                        const IntVar* const objective,
+                        IntVar* const objective,
                         Solver::LocalSearchFilterBound filter_enum)
       : SumObjectiveFilter(vars, std::move(delta_objective_callback), objective,
                            filter_enum),
@@ -2609,7 +2637,7 @@ class TernaryObjectiveFilter : public SumObjectiveFilter {
                          const std::vector<IntVar*>& secondary_vars,
                          Solver::IndexEvaluator3 value_evaluator,
                          Solver::ObjectiveWatcher delta_objective_callback,
-                         const IntVar* const objective,
+                         IntVar* const objective,
                          Solver::LocalSearchFilterBound filter_enum)
       : SumObjectiveFilter(vars, std::move(delta_objective_callback), objective,
                            filter_enum),
@@ -2717,50 +2745,71 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
   }
   std::string PrintOverview() const {
-    size_t op_name_size = 0;
+    size_t max_name_size = 0;
+    std::vector<const LocalSearchOperator*> operators;
     for (const auto& stat : operator_stats_) {
-      op_name_size = std::max(op_name_size, stat.first.length());
+      operators.push_back(stat.first);
+      max_name_size =
+          std::max(max_name_size, stat.first->DebugString().length());
     }
+    std::sort(
+        operators.begin(), operators.end(),
+        [this](const LocalSearchOperator* op1, const LocalSearchOperator* op2) {
+          return gtl::FindOrDie(operator_stats_, op1).neighbors >
+                 gtl::FindOrDie(operator_stats_, op2).neighbors;
+        });
     std::string overview = "Local search operator statistics:\n";
     absl::StrAppendFormat(&overview,
                           "%*s | Neighbors | Filtered | Accepted | Time (s)\n",
-                          op_name_size, "");
+                          max_name_size, "");
     OperatorStats total_stats;
-    for (const auto& stat : operator_stats_) {
-      absl::StrAppendFormat(
-          &overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n", op_name_size,
-          stat.first, stat.second.neighbors, stat.second.filtered_neighbors,
-          stat.second.accepted_neighbors, stat.second.seconds);
-      total_stats.neighbors += stat.second.neighbors;
-      total_stats.filtered_neighbors += stat.second.filtered_neighbors;
-      total_stats.accepted_neighbors += stat.second.accepted_neighbors;
-      total_stats.seconds += stat.second.seconds;
+    for (const LocalSearchOperator* const op : operators) {
+      const OperatorStats& stats = gtl::FindOrDie(operator_stats_, op);
+      const std::string& name = op->DebugString();
+      absl::StrAppendFormat(&overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n",
+                            max_name_size, name, stats.neighbors,
+                            stats.filtered_neighbors, stats.accepted_neighbors,
+                            stats.seconds);
+      total_stats.neighbors += stats.neighbors;
+      total_stats.filtered_neighbors += stats.filtered_neighbors;
+      total_stats.accepted_neighbors += stats.accepted_neighbors;
+      total_stats.seconds += stats.seconds;
     }
     absl::StrAppendFormat(&overview, "%*s | %9ld | %8ld | %8ld | %7.2g\n",
-                          op_name_size, "Total", total_stats.neighbors,
+                          max_name_size, "Total", total_stats.neighbors,
                           total_stats.filtered_neighbors,
                           total_stats.accepted_neighbors, total_stats.seconds);
-    op_name_size = 0;
+    max_name_size = 0;
+    std::vector<const LocalSearchFilter*> filters;
     for (const auto& stat : filter_stats_) {
-      op_name_size = std::max(op_name_size, stat.first.length());
+      filters.push_back(stat.first);
+      max_name_size =
+          std::max(max_name_size, stat.first->DebugString().length());
     }
+    std::sort(filters.begin(), filters.end(),
+              [this](const LocalSearchFilter* filter1,
+                     const LocalSearchFilter* filter2) {
+                return gtl::FindOrDie(filter_stats_, filter1).calls >
+                       gtl::FindOrDie(filter_stats_, filter2).calls;
+              });
     absl::StrAppendFormat(&overview,
                           "Local search filter statistics:\n%*s |     Calls |  "
                           " Rejects | Time (s) "
                           "| Rejects/s\n",
-                          op_name_size, "");
+                          max_name_size, "");
     FilterStats total_filter_stats;
-    for (const auto& stat : filter_stats_) {
+    for (const LocalSearchFilter* const filter : filters) {
+      const FilterStats& stats = gtl::FindOrDie(filter_stats_, filter);
+      const std::string& name = filter->DebugString();
       absl::StrAppendFormat(&overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n",
-                            op_name_size, stat.first, stat.second.calls,
-                            stat.second.rejects, stat.second.seconds,
-                            stat.second.rejects / stat.second.seconds);
-      total_filter_stats.calls += stat.second.calls;
-      total_filter_stats.rejects += stat.second.rejects;
-      total_filter_stats.seconds += stat.second.seconds;
+                            max_name_size, name, stats.calls, stats.rejects,
+                            stats.seconds, stats.rejects / stats.seconds);
+      total_filter_stats.calls += stats.calls;
+      total_filter_stats.rejects += stats.rejects;
+      total_filter_stats.seconds += stats.seconds;
     }
     absl::StrAppendFormat(
-        &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n", op_name_size,
+        &overview, "%*s | %9ld | %9ld | %7.2g  | %7.2g\n", max_name_size,
         "Total", total_filter_stats.calls, total_filter_stats.rejects,
         total_filter_stats.seconds,
         total_filter_stats.rejects / total_filter_stats.seconds);
@@ -2769,39 +2818,39 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   void BeginOperatorStart() override {}
   void EndOperatorStart() override {}
   void BeginMakeNextNeighbor(const LocalSearchOperator* op) override {
-    if (last_operator_ != op->DebugString()) {
+    if (last_operator_ != op->Self()) {
       UpdateTime();
-      last_operator_ = op->DebugString();
+      last_operator_ = op->Self();
     }
   }
   void EndMakeNextNeighbor(const LocalSearchOperator* op, bool neighbor_found,
                            const Assignment* delta,
                            const Assignment* deltadelta) override {
     if (neighbor_found) {
-      operator_stats_[op->DebugString()].neighbors++;
+      operator_stats_[op->Self()].neighbors++;
     }
   }
   void BeginFilterNeighbor(const LocalSearchOperator* op) override {}
   void EndFilterNeighbor(const LocalSearchOperator* op,
                          bool neighbor_found) override {
     if (neighbor_found) {
-      operator_stats_[op->DebugString()].filtered_neighbors++;
+      operator_stats_[op->Self()].filtered_neighbors++;
     }
   }
   void BeginAcceptNeighbor(const LocalSearchOperator* op) override {}
   void EndAcceptNeighbor(const LocalSearchOperator* op,
                          bool neighbor_found) override {
     if (neighbor_found) {
-      operator_stats_[op->DebugString()].accepted_neighbors++;
+      operator_stats_[op->Self()].accepted_neighbors++;
     }
   }
   void BeginFiltering(const LocalSearchFilter* filter) override {
-    filter_stats_[filter->DebugString()].calls++;
+    filter_stats_[filter].calls++;
     filter_timer_.Start();
   }
   void EndFiltering(const LocalSearchFilter* filter, bool reject) override {
     filter_timer_.Stop();
-    auto& stats = filter_stats_[filter->DebugString()];
+    auto& stats = filter_stats_[filter];
     stats.seconds += filter_timer_.Get();
     if (reject) {
       stats.rejects++;
@@ -2811,7 +2860,7 @@ class LocalSearchProfiler : public LocalSearchMonitor {
 
  private:
   void UpdateTime() {
-    if (!last_operator_.empty()) {
+    if (last_operator_ != nullptr) {
       timer_.Stop();
       operator_stats_[last_operator_].seconds += timer_.Get();
     }
@@ -2832,9 +2881,10 @@ class LocalSearchProfiler : public LocalSearchMonitor {
   };
   WallTimer timer_;
   WallTimer filter_timer_;
-  std::string last_operator_;
-  std::map<std::string, OperatorStats> operator_stats_;
-  std::map<std::string, FilterStats> filter_stats_;
+  const LocalSearchOperator* last_operator_ = nullptr;
+  absl::flat_hash_map<const LocalSearchOperator*, OperatorStats>
+      operator_stats_;
+  absl::flat_hash_map<const LocalSearchFilter*, FilterStats> filter_stats_;
 };
 
 void InstallLocalSearchProfiler(LocalSearchProfiler* monitor) {
@@ -2872,9 +2922,8 @@ class FindOneNeighbor : public DecisionBuilder {
   std::string DebugString() const override { return "FindOneNeighbor"; }
 
  private:
-  bool FilterAccept(Solver* solver, const Assignment* delta,
-                    const Assignment* deltadelta);
-  void SynchronizeAll(Solver* solver);
+  bool FilterAccept(Solver* solver, Assignment* delta, Assignment* deltadelta);
+  void SynchronizeAll(Solver* solver, bool synchronize_filters = true);
   void SynchronizeFilters(const Assignment* assignment);
 
   Assignment* const assignment_;
@@ -2886,6 +2935,10 @@ class FindOneNeighbor : public DecisionBuilder {
   const SearchLimit* const original_limit_;
   bool neighbor_found_;
   std::vector<LocalSearchFilter*> filters_;
+  int solution_count_;
+  int check_period_;
+  Assignment last_checked_assignment_;
+  bool has_checked_assignment_ = false;
 };
 
 // reference_assignment_ is used to keep track of the last assignment on which
@@ -2905,16 +2958,33 @@ FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
       limit_(nullptr),
       original_limit_(limit),
       neighbor_found_(false),
-      filters_(filters) {
+      filters_(filters),
+      solution_count_(0),
+      check_period_(
+          assignment_->solver()->parameters().check_solution_period()),
+      last_checked_assignment_(assignment) {
   CHECK(nullptr != assignment);
   CHECK(nullptr != ls_operator);
 
+  Solver* const solver = assignment_->solver();
   // If limit is nullptr, default limit is 1 solution
   if (nullptr == limit) {
-    Solver* const solver = assignment_->solver();
     limit_ = solver->MakeLimit(kint64max, kint64max, kint64max, 1);
   } else {
     limit_ = limit->MakeClone();
+    // TODO(user): Support skipping neighborhood checks for limits accepting
+    // more than one solution (e.g. best accept). For now re-enabling systematic
+    // checks.
+    if (Solver::GetSolutionLimit(limit_) != 1) {
+      VLOG(1) << "Disabling neighbor-check skipping outside of first accept.";
+      check_period_ = 1;
+    }
+  }
+  // TODO(user): Support skipping neighborhood checks with LNS (at least on
+  // the non-LNS operators).
+  if (ls_operator->HasFragments()) {
+    VLOG(1) << "Disabling neighbor-check skipping for LNS.";
+    check_period_ = 1;
   }
 }
 
@@ -2925,6 +2995,10 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
     limit_->Copy(original_limit_);
   }
 
+  if (!last_checked_assignment_.HasObjective()) {
+    last_checked_assignment_.AddObjective(assignment_->Objective());
+  }
+
   if (!neighbor_found_) {
     // Only called on the first call to Next(), reference_assignment_ has not
     // been synced with assignment_ yet
@@ -2933,7 +3007,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
     // use the old code with a zero test on pool_.
     // reference_assignment_->CopyIntersection(assignment_);
     pool_->Initialize(assignment_);
-    SynchronizeAll(solver);
+    SynchronizeAll(solver, /*synchronize_filters*/ false);
   }
 
   {
@@ -2966,6 +3040,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
         solver->GetLocalSearchMonitor()->EndMakeNextNeighbor(
             ls_operator_, has_neighbor, delta, deltadelta);
       }
+
       if (has_neighbor) {
         solver->neighbors_ += 1;
         // All filters must be called for incrementality reasons.
@@ -2981,23 +3056,99 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
             ls_operator_, mh_filter && move_filter);
         if (mh_filter && move_filter) {
           solver->filtered_neighbors_ += 1;
+          if (delta->HasObjective()) {
+            if (!assignment_copy->HasObjective()) {
+              assignment_copy->AddObjective(delta->Objective());
+            }
+            if (!assignment_->HasObjective()) {
+              assignment_->AddObjective(delta->Objective());
+              last_checked_assignment_.AddObjective(delta->Objective());
+            }
+          }
           assignment_copy->CopyIntersection(reference_assignment_.get());
           assignment_copy->CopyIntersection(delta);
           solver->GetLocalSearchMonitor()->BeginAcceptNeighbor(ls_operator_);
-          const bool accept = solver->SolveAndCommit(restore);
+          const bool check_solution = (solution_count_ == 0) ||
+                                      !solver->UseFastLocalSearch() ||
+                                      // LNS deltas need to be restored
+                                      !delta->AreAllElementsBound();
+          if (has_checked_assignment_) solution_count_++;
+          if (solution_count_ >= check_period_) solution_count_ = 0;
+          const bool accept =
+              !check_solution || solver->SolveAndCommit(restore);
           solver->GetLocalSearchMonitor()->EndAcceptNeighbor(ls_operator_,
                                                              accept);
           if (accept) {
-            solver->SetSearchContext(solver->ParentSearch(),
-                                     ls_operator_->DebugString());
             solver->accepted_neighbors_ += 1;
-            assignment_->Store();
-            neighbor_found_ = true;
-            return nullptr;
+            if (check_solution) {
+              solver->SetSearchContext(solver->ParentSearch(),
+                                       ls_operator_->DebugString());
+              assignment_->Store();
+              last_checked_assignment_.CopyIntersection(assignment_);
+              neighbor_found_ = true;
+              has_checked_assignment_ = true;
+              return nullptr;
+            } else {
+              solver->SetSearchContext(solver->ActiveSearch(),
+                                       ls_operator_->DebugString());
+              assignment_->CopyIntersection(assignment_copy);
+              switch (solver->optimization_direction()) {
+                case Solver::MINIMIZATION:
+                  assignment_->SetObjectiveValue(delta->ObjectiveMin());
+                  break;
+                case Solver::MAXIMIZATION:
+                  assignment_->SetObjectiveValue(delta->ObjectiveMax());
+                  break;
+                case Solver::NOT_SET:
+                  // No optimization direction, defaulting to minimization.
+                  assignment_->SetObjectiveValue(delta->ObjectiveMin());
+                  break;
+                default:
+                  LOG(FATAL) << "Direction not supported: "
+                             << solver->optimization_direction();
+              }
+              // Advancing local search to the current solution without
+              // checking.
+              // TODO(user): support the case were limit_ accepts more than
+              // one solution (e.g. best accept).
+              AcceptUncheckedNeighbor(solver->ParentSearch());
+              pool_->RegisterNewSolution(assignment_);
+              SynchronizeAll(solver);
+              // NOTE: SynchronizeAll() sets neighbor_found_ to false, force it
+              // back to true when skipping checks.
+              neighbor_found_ = true;
+            }
+          } else if (check_period_ > 1 && has_checked_assignment_) {
+            // Filtering is not perfect, disabling fast local search and
+            // resynchronizing with the last checked solution.
+            // TODO(user): Restore state of local search operators to
+            // make sure we are exploring neighbors in the same order. This can
+            // affect the local optimum found.
+            VLOG(1) << "Imperfect filtering detected, backtracking to last "
+                       "checked solution and checking all solutions.";
+            check_period_ = 1;
+            solution_count_ = 0;
+            pool_->RegisterNewSolution(&last_checked_assignment_);
+            SynchronizeAll(solver);
+            assignment_->CopyIntersection(&last_checked_assignment_);
           }
         }
       } else {
         if (neighbor_found_) {
+          // In case the last checked assignment isn't the current one, restore
+          // it to make sure the solver knows about it, especially if this is
+          // the end of the search.
+          // TODO(user): Compare assignments in addition to their cost.
+          if (last_checked_assignment_.ObjectiveValue() !=
+              assignment_->ObjectiveValue()) {
+            // If restoring fails this means filtering is not perfect and the
+            // solver will consider the last checked assignment.
+            assignment_copy->CopyIntersection(assignment_);
+            if (!solver->SolveAndCommit(restore)) solver->Fail();
+            last_checked_assignment_.CopyIntersection(assignment_);
+            has_checked_assignment_ = true;
+            return nullptr;
+          }
           AcceptNeighbor(solver->ParentSearch());
           // Keeping the code in case a performance problem forces us to
           // use the old code with a zero test on pool_.
@@ -3014,8 +3165,8 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
   return nullptr;
 }
 
-bool FindOneNeighbor::FilterAccept(Solver* solver, const Assignment* delta,
-                                   const Assignment* deltadelta) {
+bool FindOneNeighbor::FilterAccept(Solver* solver, Assignment* delta,
+                                   Assignment* deltadelta) {
   bool ok = true;
   LocalSearchMonitor* const monitor = solver->GetLocalSearchMonitor();
   for (LocalSearchFilter* filter : filters_) {
@@ -3029,13 +3180,15 @@ bool FindOneNeighbor::FilterAccept(Solver* solver, const Assignment* delta,
   return ok;
 }
 
-void FindOneNeighbor::SynchronizeAll(Solver* solver) {
+void FindOneNeighbor::SynchronizeAll(Solver* solver, bool synchronize_filters) {
   pool_->GetNextSolution(reference_assignment_.get());
   neighbor_found_ = false;
   limit_->Init();
   solver->GetLocalSearchMonitor()->BeginOperatorStart();
   ls_operator_->Start(reference_assignment_.get());
-  SynchronizeFilters(reference_assignment_.get());
+  if (synchronize_filters) {
+    SynchronizeFilters(reference_assignment_.get());
+  }
   solver->GetLocalSearchMonitor()->EndOperatorStart();
 }
 
@@ -3218,6 +3371,13 @@ class LocalSearch : public DecisionBuilder {
               DecisionBuilder* const sub_decision_builder,
               SearchLimit* const limit,
               const std::vector<LocalSearchFilter*>& filters);
+  LocalSearch(const std::vector<IntVar*>& vars, SolutionPool* const pool,
+              DecisionBuilder* const first_solution,
+              DecisionBuilder* const first_solution_sub_decision_builder,
+              LocalSearchOperator* const ls_operator,
+              DecisionBuilder* const sub_decision_builder,
+              SearchLimit* const limit,
+              const std::vector<LocalSearchFilter*>& filters);
   LocalSearch(const std::vector<SequenceVar*>& vars, SolutionPool* const pool,
               DecisionBuilder* const first_solution,
               LocalSearchOperator* const ls_operator,
@@ -3237,6 +3397,7 @@ class LocalSearch : public DecisionBuilder {
   Assignment* assignment_;
   SolutionPool* const pool_;
   LocalSearchOperator* const ls_operator_;
+  DecisionBuilder* const first_solution_sub_decision_builder_;
   DecisionBuilder* const sub_decision_builder_;
   std::vector<NestedSolveDecision*> nested_decisions_;
   int nested_decision_index_;
@@ -3250,9 +3411,10 @@ LocalSearch::LocalSearch(Assignment* const assignment, SolutionPool* const pool,
                          DecisionBuilder* const sub_decision_builder,
                          SearchLimit* const limit,
                          const std::vector<LocalSearchFilter*>& filters)
-    : assignment_(assignment),
+    : assignment_(nullptr),
       pool_(pool),
       ls_operator_(ls_operator),
+      first_solution_sub_decision_builder_(sub_decision_builder),
       sub_decision_builder_(sub_decision_builder),
       nested_decision_index_(0),
       limit_(limit),
@@ -3260,8 +3422,10 @@ LocalSearch::LocalSearch(Assignment* const assignment, SolutionPool* const pool,
       has_started_(false) {
   CHECK(nullptr != assignment);
   CHECK(nullptr != ls_operator);
-  Solver* const solver = assignment_->solver();
-  DecisionBuilder* restore = solver->MakeRestoreAssignment(assignment_);
+  Solver* const solver = assignment->solver();
+  assignment_ = solver->GetOrCreateLocalSearchState();
+  assignment_->Copy(assignment);
+  DecisionBuilder* restore = solver->MakeRestoreAssignment(assignment);
   PushFirstSolutionDecision(restore);
   PushLocalSearchDecision();
 }
@@ -3276,6 +3440,7 @@ LocalSearch::LocalSearch(const std::vector<IntVar*>& vars,
     : assignment_(nullptr),
       pool_(pool),
       ls_operator_(ls_operator),
+      first_solution_sub_decision_builder_(sub_decision_builder),
       sub_decision_builder_(sub_decision_builder),
       nested_decision_index_(0),
       limit_(limit),
@@ -3285,7 +3450,33 @@ LocalSearch::LocalSearch(const std::vector<IntVar*>& vars,
   CHECK(nullptr != ls_operator);
   CHECK(!vars.empty());
   Solver* const solver = vars[0]->solver();
-  assignment_ = solver->MakeAssignment();
+  assignment_ = solver->GetOrCreateLocalSearchState();
+  assignment_->Add(vars);
+  PushFirstSolutionDecision(first_solution);
+  PushLocalSearchDecision();
+}
+
+LocalSearch::LocalSearch(
+    const std::vector<IntVar*>& vars, SolutionPool* const pool,
+    DecisionBuilder* const first_solution,
+    DecisionBuilder* const first_solution_sub_decision_builder,
+    LocalSearchOperator* const ls_operator,
+    DecisionBuilder* const sub_decision_builder, SearchLimit* const limit,
+    const std::vector<LocalSearchFilter*>& filters)
+    : assignment_(nullptr),
+      pool_(pool),
+      ls_operator_(ls_operator),
+      first_solution_sub_decision_builder_(first_solution_sub_decision_builder),
+      sub_decision_builder_(sub_decision_builder),
+      nested_decision_index_(0),
+      limit_(limit),
+      filters_(filters),
+      has_started_(false) {
+  CHECK(nullptr != first_solution);
+  CHECK(nullptr != ls_operator);
+  CHECK(!vars.empty());
+  Solver* const solver = vars[0]->solver();
+  assignment_ = solver->GetOrCreateLocalSearchState();
   assignment_->Add(vars);
   PushFirstSolutionDecision(first_solution);
   PushLocalSearchDecision();
@@ -3301,6 +3492,7 @@ LocalSearch::LocalSearch(const std::vector<SequenceVar*>& vars,
     : assignment_(nullptr),
       pool_(pool),
       ls_operator_(ls_operator),
+      first_solution_sub_decision_builder_(sub_decision_builder),
       sub_decision_builder_(sub_decision_builder),
       nested_decision_index_(0),
       limit_(limit),
@@ -3310,7 +3502,7 @@ LocalSearch::LocalSearch(const std::vector<SequenceVar*>& vars,
   CHECK(nullptr != ls_operator);
   CHECK(!vars.empty());
   Solver* const solver = vars[0]->solver();
-  assignment_ = solver->MakeAssignment();
+  assignment_ = solver->GetOrCreateLocalSearchState();
   assignment_->Add(vars);
   PushFirstSolutionDecision(first_solution);
   PushLocalSearchDecision();
@@ -3401,12 +3593,34 @@ Decision* LocalSearch::Next(Solver* const solver) {
   return nullptr;
 }
 
+namespace {
+class SynchronizeFiltersDecisionBuilder : public DecisionBuilder {
+ public:
+  SynchronizeFiltersDecisionBuilder(
+      Assignment* assignment, const std::vector<LocalSearchFilter*>& filters)
+      : assignment_(assignment), filters_(filters) {}
+
+  Decision* Next(Solver* const solver) override {
+    for (LocalSearchFilter* filter : filters_) {
+      filter->Synchronize(assignment_, nullptr);
+    }
+    return nullptr;
+  }
+
+ private:
+  Assignment* const assignment_;
+  const std::vector<LocalSearchFilter*> filters_;
+};
+}  // namespace
+
 void LocalSearch::PushFirstSolutionDecision(DecisionBuilder* first_solution) {
   CHECK(first_solution);
   Solver* const solver = assignment_->solver();
   DecisionBuilder* store = solver->MakeStoreAssignment(assignment_);
-  DecisionBuilder* first_solution_and_store =
-      solver->Compose(first_solution, sub_decision_builder_, store);
+  DecisionBuilder* synchronize = solver->RevAlloc(
+      new SynchronizeFiltersDecisionBuilder(assignment_, filters_));
+  DecisionBuilder* first_solution_and_store = solver->Compose(
+      first_solution, first_solution_sub_decision_builder_, store, synchronize);
   std::vector<SearchMonitor*> monitor;
   monitor.push_back(limit_);
   nested_decisions_.push_back(solver->RevAlloc(
@@ -3468,6 +3682,17 @@ DecisionBuilder* Solver::MakeLocalSearchPhase(
                                   first_solution, parameters->ls_operator(),
                                   parameters->sub_decision_builder(),
                                   parameters->limit(), parameters->filters()));
+}
+
+DecisionBuilder* Solver::MakeLocalSearchPhase(
+    const std::vector<IntVar*>& vars, DecisionBuilder* first_solution,
+    DecisionBuilder* first_solution_sub_decision_builder,
+    LocalSearchPhaseParameters* parameters) {
+  return RevAlloc(new LocalSearch(
+      vars, parameters->solution_pool(), first_solution,
+      first_solution_sub_decision_builder, parameters->ls_operator(),
+      parameters->sub_decision_builder(), parameters->limit(),
+      parameters->filters()));
 }
 
 DecisionBuilder* Solver::MakeLocalSearchPhase(

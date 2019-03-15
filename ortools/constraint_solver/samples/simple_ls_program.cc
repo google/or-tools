@@ -98,8 +98,7 @@ class SumFilter : public IntVarLocalSearchFilter {
     }
   }
 
-  bool Accept(const Assignment* delta,
-              const Assignment* unused_deltadelta) override {
+  bool Accept(Assignment* delta, Assignment* unused_deltadelta) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 

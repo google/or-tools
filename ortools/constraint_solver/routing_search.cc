@@ -27,6 +27,7 @@
 #include "ortools/base/small_map.h"
 #include "ortools/base/small_ordered_set.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/graph/christofides.h"
@@ -57,7 +58,7 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
         synchronized_objective_value_(kint64min),
         accepted_objective_value_(kint64min) {}
 
-  bool Accept(const Assignment* delta, const Assignment* deltadelta) override {
+  bool Accept(Assignment* delta, Assignment* deltadelta) override {
     const int64 kUnassigned = -1;
     const Assignment::IntContainer& container = delta->IntVarContainer();
     const int delta_size = container.Size();
@@ -154,8 +155,9 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
       }
     }
     if (lns_detected) accepted_objective_value_ = 0;
-    PropagateObjectiveValue(
-        CapAdd(accepted_objective_value_, injected_objective_value_));
+    const int64 new_objective_value =
+        CapAdd(accepted_objective_value_, injected_objective_value_);
+    PropagateObjectiveValue(new_objective_value);
     if (lns_detected) {
       return true;
     } else {
@@ -166,7 +168,11 @@ class NodeDisjunctionFilter : public IntVarLocalSearchFilter {
       if (delta->Objective() == cost_var) {
         cost_max = std::min(cost_max, delta->ObjectiveMax());
       }
-      return accepted_objective_value_ <= cost_max;
+      if (!delta->HasObjective()) {
+        delta->AddObjective(cost_var);
+      }
+      delta->SetObjectiveMin(new_objective_value);
+      return new_objective_value <= cost_max;
     }
   }
   std::string DebugString() const override { return "NodeDisjunctionFilter"; }
@@ -244,8 +250,8 @@ LocalSearchFilterManager::LocalSearchFilterManager(
 // TODO(user): the behaviour of Accept relies on the initial order of
 // filters having at most one filter with negative objective values,
 // this could be fixed by having filters return their general bounds.
-bool LocalSearchFilterManager::Accept(const Assignment* delta,
-                                      const Assignment* deltadelta) {
+bool LocalSearchFilterManager::Accept(Assignment* delta,
+                                      Assignment* deltadelta) {
   int64 objective_max = kint64max;
   if (objective_ != nullptr) {
     objective_max = objective_->Max();
@@ -296,8 +302,7 @@ BasePathFilter::BasePathFilter(const std::vector<IntVar*>& nexts,
       ranks_(next_domain_size, -1),
       status_(BasePathFilter::UNKNOWN) {}
 
-bool BasePathFilter::Accept(const Assignment* delta,
-                            const Assignment* deltadelta) {
+bool BasePathFilter::Accept(Assignment* delta, Assignment* deltadelta) {
   if (IsDisabled()) return true;
   PropagateObjectiveValue(injected_objective_value_);
   for (const int touched : delta_touched_) {
@@ -527,9 +532,9 @@ class VehicleAmortizedCostFilter : public BasePathFilter {
   void InitializeAcceptPath() override;
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
-  bool FinalizeAcceptPath(const Assignment* delta) override;
+  bool FinalizeAcceptPath(Assignment* delta) override;
 
-  const IntVar* const objective_;
+  IntVar* const objective_;
   int64 current_vehicle_cost_;
   int64 delta_vehicle_cost_;
   std::vector<int> current_route_lengths_;
@@ -651,15 +656,18 @@ bool VehicleAmortizedCostFilter::AcceptPath(int64 path_start, int64 chain_start,
   return true;
 }
 
-bool VehicleAmortizedCostFilter::FinalizeAcceptPath(const Assignment* delta) {
+bool VehicleAmortizedCostFilter::FinalizeAcceptPath(Assignment* delta) {
   int64 objective_max = objective_->Max();
   if (delta->Objective() == objective_) {
     objective_max = std::min(objective_max, delta->ObjectiveMax());
   }
   const int64 new_objective_value =
       CapAdd(injected_objective_value_, delta_vehicle_cost_);
+  if (!delta->HasObjective()) {
+    delta->AddObjective(objective_);
+  }
+  delta->SetObjectiveMin(new_objective_value);
   PropagateObjectiveValue(new_objective_value);
-
   return new_objective_value <= objective_max;
 }
 
@@ -687,29 +695,47 @@ class TypeIncompatibilityFilter : public BasePathFilter {
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
 
+  bool HardIncompatibilitiesRespected(int vehicle, int64 chain_start,
+                                      int64 chain_end);
+
   const RoutingModel& routing_model_;
-  std::vector<int> start_to_route_;
-  std::vector<std::vector<int>> type_counts_per_route_;
+  std::vector<int> start_to_vehicle_;
+  // The following vector is used to keep track of the type counts for hard
+  // incompatibilities.
+  std::vector<std::vector<int>> hard_incompatibility_type_counts_per_vehicle_;
+  // Used to verify the temporal incompatibilities.
+  const TypeIncompatibilityChecker temporal_incompatibility_checker_;
 };
 
 TypeIncompatibilityFilter::TypeIncompatibilityFilter(const RoutingModel& model)
     : BasePathFilter(model.Nexts(), model.Size() + model.vehicles(), nullptr),
-      routing_model_(model) {
+      routing_model_(model),
+      start_to_vehicle_(model.Size(), -1),
+      temporal_incompatibility_checker_(model) {
   const int num_vehicles = model.vehicles();
-  type_counts_per_route_.resize(num_vehicles);
+  const bool has_hard_type_incompatibilities =
+      model.HasHardTypeIncompatibilities();
+  if (has_hard_type_incompatibilities) {
+    hard_incompatibility_type_counts_per_vehicle_.resize(num_vehicles);
+  }
   const int num_visit_types = model.GetNumberOfVisitTypes();
-  start_to_route_.resize(Size(), -1);
-  for (int route = 0; route < num_vehicles; route++) {
-    type_counts_per_route_[route].resize(num_visit_types, 0);
-    const int64 start = model.Start(route);
-    start_to_route_[start] = route;
+  for (int vehicle = 0; vehicle < num_vehicles; vehicle++) {
+    const int64 start = model.Start(vehicle);
+    start_to_vehicle_[start] = vehicle;
+    if (has_hard_type_incompatibilities) {
+      hard_incompatibility_type_counts_per_vehicle_[vehicle].resize(
+          num_visit_types, 0);
+    }
   }
 }
 
 void TypeIncompatibilityFilter::OnSynchronizePathFromStart(int64 start) {
-  const int route = start_to_route_[start];
-  CHECK_GE(route, 0);
-  std::vector<int>& type_counts = type_counts_per_route_[route];
+  if (!routing_model_.HasHardTypeIncompatibilities()) return;
+
+  const int vehicle = start_to_vehicle_[start];
+  CHECK_GE(vehicle, 0);
+  std::vector<int>& type_counts =
+      hard_incompatibility_type_counts_per_vehicle_[vehicle];
   std::fill(type_counts.begin(), type_counts.end(), 0);
   const int num_types = type_counts.size();
 
@@ -725,11 +751,12 @@ void TypeIncompatibilityFilter::OnSynchronizePathFromStart(int64 start) {
   }
 }
 
-bool TypeIncompatibilityFilter::AcceptPath(int64 path_start, int64 chain_start,
-                                           int64 chain_end) {
-  const int route = start_to_route_[path_start];
-  CHECK_GE(route, 0);
-  std::vector<int> new_type_counts = type_counts_per_route_[route];
+bool TypeIncompatibilityFilter::HardIncompatibilitiesRespected(
+    int vehicle, int64 chain_start, int64 chain_end) {
+  if (!routing_model_.HasHardTypeIncompatibilities()) return true;
+
+  std::vector<int> new_type_counts =
+      hard_incompatibility_type_counts_per_vehicle_[vehicle];
   const int num_types = new_type_counts.size();
   std::vector<int> types_to_check;
 
@@ -765,13 +792,26 @@ bool TypeIncompatibilityFilter::AcceptPath(int64 path_start, int64 chain_start,
   // Check the incompatibilities for types in types_to_check.
   for (int type : types_to_check) {
     for (int incompatible_type :
-         routing_model_.GetTypeIncompatibilities(type)) {
+         routing_model_.GetHardTypeIncompatibilitiesOfType(type)) {
       if (new_type_counts[incompatible_type] > 0) {
         return false;
       }
     }
   }
   return true;
+}
+
+bool TypeIncompatibilityFilter::AcceptPath(int64 path_start, int64 chain_start,
+                                           int64 chain_end) {
+  const int vehicle = start_to_vehicle_[path_start];
+  CHECK_GE(vehicle, 0);
+  return HardIncompatibilitiesRespected(vehicle, chain_start, chain_end) &&
+         temporal_incompatibility_checker_
+             .TemporalIncompatibilitiesRespectedOnVehicle(
+                 vehicle,
+                 /*next_accessor*/ [this](int64 node) {
+                   return GetNext(node);
+                 });
 }
 
 }  // namespace
@@ -918,16 +958,17 @@ class PathCumulFilter : public BasePathFilter {
  public:
   PathCumulFilter(const RoutingModel& routing_model,
                   const RoutingDimension& dimension,
-                  Solver::ObjectiveWatcher objective_callback);
+                  Solver::ObjectiveWatcher objective_callback,
+                  bool propagate_own_objective_value);
   ~PathCumulFilter() override {}
   std::string DebugString() const override {
     return "PathCumulFilter(" + name_ + ")";
   }
   int64 GetSynchronizedObjectiveValue() const override {
-    return synchronized_objective_value_;
+    return propagate_own_objective_value_ ? synchronized_objective_value_ : 0;
   }
   int64 GetAcceptedObjectiveValue() const override {
-    return accepted_objective_value_;
+    return propagate_own_objective_value_ ? accepted_objective_value_ : 0;
   }
 
  private:
@@ -995,7 +1036,7 @@ class PathCumulFilter : public BasePathFilter {
   }
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
-  bool FinalizeAcceptPath(const Assignment* delta) override;
+  bool FinalizeAcceptPath(Assignment* delta) override;
   void OnBeforeSynchronizePaths() override;
 
   bool FilterSpanCost() const { return global_span_cost_coefficient_ != 0; }
@@ -1052,6 +1093,8 @@ class PathCumulFilter : public BasePathFilter {
   // Returns true if for every pickup/delivery nodes visited on this path,
   // min_cumul_value(delivery) - max_cumul_value(pickup) is less than the limit
   // set for this pickup to delivery.
+  // TODO(user): Verify if we should filter the pickup/delivery limits using
+  // the LP, for a perfect filtering.
   bool PickupToDeliveryLimitsRespected(
       const PathTransits& path_transits, int path,
       const std::vector<int64>& min_path_cumuls) const;
@@ -1098,14 +1141,16 @@ class PathCumulFilter : public BasePathFilter {
   gtl::small_ordered_set<std::set<int>> delta_paths_;
   const std::string name_;
 
-  RouteDimensionCumulOptimizer optimizer_;
+  LocalDimensionCumulOptimizer optimizer_;
+  const bool propagate_own_objective_value_;
 
   bool lns_detected_;
 };
 
 PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
                                  const RoutingDimension& dimension,
-                                 Solver::ObjectiveWatcher objective_callback)
+                                 Solver::ObjectiveWatcher objective_callback,
+                                 bool propagate_own_objective_value)
     : BasePathFilter(routing_model.Nexts(), dimension.cumuls().size(),
                      std::move(objective_callback)),
       routing_model_(routing_model),
@@ -1130,6 +1175,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       delta_max_end_cumul_(kint64min),
       name_(dimension.name()),
       optimizer_(&dimension),
+      propagate_own_objective_value_(propagate_own_objective_value),
       lns_detected_(false) {
   for (const int64 upper_bound : vehicle_span_upper_bounds_) {
     if (upper_bound != kint64max) {
@@ -1356,9 +1402,12 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
                      CapSub(current_max_end_.cumul_value,
                             current_min_start_.cumul_value)));
   if (CanPropagateObjectiveValue()) {
-    const int64 new_objective_value =
-        CapAdd(injected_objective_value_, synchronized_objective_value_);
-    PropagateObjectiveValue(new_objective_value);
+    if (propagate_own_objective_value_) {
+      PropagateObjectiveValue(
+          CapAdd(injected_objective_value_, synchronized_objective_value_));
+    } else {
+      PropagateObjectiveValue(injected_objective_value_);
+    }
   }
 }
 
@@ -1481,7 +1530,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   return true;
 }
 
-bool PathCumulFilter::FinalizeAcceptPath(const Assignment* delta) {
+bool PathCumulFilter::FinalizeAcceptPath(Assignment* delta) {
   if ((!FilterSpanCost() && !FilterCumulSoftBounds() && !FilterSlackCost() &&
        !FilterCumulSoftLowerBounds() && !FilterCumulPiecewiseLinearCosts()) ||
       lns_detected_) {
@@ -1557,9 +1606,21 @@ bool PathCumulFilter::FinalizeAcceptPath(const Assignment* delta) {
                                         CapSub(new_max_end, new_min_start)));
   const int64 new_objective_value =
       CapAdd(injected_objective_value_, accepted_objective_value_);
-  PropagateObjectiveValue(new_objective_value);
+  int64 cost_max = cost_var_->Max();
+  if (delta->Objective() == cost_var_) {
+    cost_max = std::min(cost_max, delta->ObjectiveMax());
+  }
+  if (!delta->HasObjective()) {
+    delta->AddObjective(cost_var_);
+  }
+  delta->SetObjectiveMin(new_objective_value);
+  if (propagate_own_objective_value_) {
+    PropagateObjectiveValue(new_objective_value);
+  } else {
+    PropagateObjectiveValue(injected_objective_value_);
+  }
   // Only compare to max as a cost lower bound is computed.
-  return new_objective_value <= cost_var_->Max();
+  return new_objective_value <= cost_max;
 }
 
 void PathCumulFilter::InitializeSupportedPathCumul(
@@ -1644,58 +1705,102 @@ int64 PathCumulFilter::ComputePathMaxStartFromEndCumul(
 }  // namespace
 
 IntVarLocalSearchFilter* MakePathCumulFilter(
-    const RoutingModel& routing_model, const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback) {
+    const RoutingDimension& dimension,
+    Solver::ObjectiveWatcher objective_callback,
+    bool propagate_own_objective_value) {
+  RoutingModel& model = *dimension.model();
+  return model.solver()->RevAlloc(new PathCumulFilter(
+      model, dimension, objective_callback, propagate_own_objective_value));
+}
+
+std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
+    const RoutingDimension& dimension,
+    Solver::ObjectiveWatcher objective_callback, bool filter_objective) {
+  std::vector<IntVarLocalSearchFilter*> filters;
+  if (!dimension.GetNodePrecedences().empty() ||
+      (filter_objective && dimension.global_span_cost_coefficient() > 0)) {
+    IntVarLocalSearchFilter* lp_cumul_filter =
+        MakeGlobalLPCumulFilter(dimension, objective_callback);
+    filters.push_back(lp_cumul_filter);
+    if (objective_callback != nullptr) {
+      objective_callback = [lp_cumul_filter](int64 value) {
+        return lp_cumul_filter->InjectObjectiveValue(value);
+      };
+    }
+  }
+  // NOTE: We always add the PathCumulFilter to filter each route's feasibility
+  // separately to try and cut bad decisions earlier in the search, but we don't
+  // propagate the computed cost if the LPCumulFilter is already doing it.
+  const bool propagate_path_cumul_filter_objective_value = filters.empty();
+
   for (const int64 upper_bound : dimension.vehicle_span_upper_bounds()) {
     if (upper_bound != kint64max) {
-      return routing_model.solver()->RevAlloc(
-          new PathCumulFilter(routing_model, dimension, objective_callback));
+      filters.push_back(
+          MakePathCumulFilter(dimension, objective_callback,
+                              propagate_path_cumul_filter_objective_value));
+      return filters;
     }
   }
   for (const int64 coefficient : dimension.vehicle_span_cost_coefficients()) {
     if (coefficient != 0) {
-      return routing_model.solver()->RevAlloc(
-          new PathCumulFilter(routing_model, dimension, objective_callback));
+      filters.push_back(
+          MakePathCumulFilter(dimension, objective_callback,
+                              propagate_path_cumul_filter_objective_value));
+      return filters;
     }
   }
   for (const IntVar* const slack : dimension.slacks()) {
     if (slack->Min() > 0) {
-      return routing_model.solver()->RevAlloc(
-          new PathCumulFilter(routing_model, dimension, objective_callback));
+      filters.push_back(
+          MakePathCumulFilter(dimension, objective_callback,
+                              propagate_path_cumul_filter_objective_value));
+      return filters;
     }
   }
   const std::vector<IntVar*>& cumuls = dimension.cumuls();
   for (int i = 0; i < cumuls.size(); ++i) {
     if (dimension.HasCumulVarSoftUpperBound(i)) {
-      return routing_model.solver()->RevAlloc(
-          new PathCumulFilter(routing_model, dimension, objective_callback));
+      filters.push_back(
+          MakePathCumulFilter(dimension, objective_callback,
+                              propagate_path_cumul_filter_objective_value));
+      return filters;
     }
     if (dimension.HasCumulVarSoftLowerBound(i)) {
-      return routing_model.solver()->RevAlloc(
-          new PathCumulFilter(routing_model, dimension, objective_callback));
+      filters.push_back(
+          MakePathCumulFilter(dimension, objective_callback,
+                              propagate_path_cumul_filter_objective_value));
+      return filters;
     }
     if (dimension.HasCumulVarPiecewiseLinearCost(i)) {
-      return routing_model.solver()->RevAlloc(
-          new PathCumulFilter(routing_model, dimension, objective_callback));
+      filters.push_back(
+          MakePathCumulFilter(dimension, objective_callback,
+                              propagate_path_cumul_filter_objective_value));
+      return filters;
     }
     IntVar* const cumul_var = cumuls[i];
     if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max) {
-      if (!routing_model.IsEnd(i)) {
-        return routing_model.solver()->RevAlloc(
-            new PathCumulFilter(routing_model, dimension, objective_callback));
+      if (!dimension.model()->IsEnd(i)) {
+        filters.push_back(
+            MakePathCumulFilter(dimension, objective_callback,
+                                propagate_path_cumul_filter_objective_value));
+        return filters;
       }
     }
     if (dimension.forbidden_intervals()[i].NumIntervals() > 0) {
-      return routing_model.solver()->RevAlloc(
-          new PathCumulFilter(routing_model, dimension, objective_callback));
+      filters.push_back(
+          MakePathCumulFilter(dimension, objective_callback,
+                              propagate_path_cumul_filter_objective_value));
+      return filters;
     }
   }
   if (dimension.global_span_cost_coefficient() == 0) {
-    return routing_model.solver()->RevAlloc(
-        new ChainCumulFilter(routing_model, dimension, objective_callback));
+    return {dimension.model()->solver()->RevAlloc(new ChainCumulFilter(
+        *dimension.model(), dimension, objective_callback))};
   } else {
-    return routing_model.solver()->RevAlloc(
-        new PathCumulFilter(routing_model, dimension, objective_callback));
+    filters.push_back(
+        MakePathCumulFilter(dimension, objective_callback,
+                            propagate_path_cumul_filter_objective_value));
+    return filters;
   }
 }
 
@@ -1750,11 +1855,11 @@ PickupDeliveryFilter::PickupDeliveryFilter(
 bool PickupDeliveryFilter::AcceptPath(int64 path_start, int64 chain_start,
                                       int64 chain_end) {
   switch (vehicle_policies_[GetPath(path_start)]) {
-    case RoutingModel::PickupAndDeliveryPolicy::ANY:
+    case RoutingModel::PICKUP_AND_DELIVERY_NO_ORDER:
       return AcceptPathDefault(path_start);
-    case RoutingModel::PickupAndDeliveryPolicy::LIFO:
+    case RoutingModel::PICKUP_AND_DELIVERY_LIFO:
       return AcceptPathOrdered<true>(path_start);
-    case RoutingModel::PickupAndDeliveryPolicy::FIFO:
+    case RoutingModel::PICKUP_AND_DELIVERY_FIFO:
       return AcceptPathOrdered<false>(path_start);
     default:
       return true;
@@ -1898,7 +2003,7 @@ class VehicleVarFilter : public BasePathFilter {
  public:
   explicit VehicleVarFilter(const RoutingModel& routing_model);
   ~VehicleVarFilter() override {}
-  bool Accept(const Assignment* delta, const Assignment* deltadelta) override;
+  bool Accept(Assignment* delta, Assignment* deltadelta) override;
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
   std::string DebugString() const override { return "VehicleVariableFilter"; }
@@ -1924,8 +2029,7 @@ VehicleVarFilter::VehicleVarFilter(const RoutingModel& routing_model)
 }
 
 // Avoid filtering if variable domains are unconstrained.
-bool VehicleVarFilter::Accept(const Assignment* delta,
-                              const Assignment* deltadelta) {
+bool VehicleVarFilter::Accept(Assignment* delta, Assignment* deltadelta) {
   if (IsDisabled()) return true;
   const Assignment::IntContainer& container = delta->IntVarContainer();
   const int size = container.Size();
@@ -2097,6 +2201,116 @@ IntVarLocalSearchFilter* MakeVehicleBreaksFilter(
       new VehicleBreaksFilter(routing_model, dimension));
 }
 
+namespace {
+
+class LPCumulFilter : public IntVarLocalSearchFilter {
+ public:
+  LPCumulFilter(const RoutingModel& routing_model,
+                const RoutingDimension& dimension,
+                Solver::ObjectiveWatcher objective_callback);
+  bool Accept(Assignment* delta, Assignment* deltadelta) override;
+  int64 GetAcceptedObjectiveValue() const override;
+  void OnSynchronize(const Assignment* delta) override;
+  int64 GetSynchronizedObjectiveValue() const override;
+  std::string DebugString() const override {
+    return "LPCumulFilter(" + optimizer_.dimension()->name() + ")";
+  }
+
+ private:
+  GlobalDimensionCumulOptimizer optimizer_;
+  const IntVar* const objective_;
+  int64 synchronized_cost_without_transit_;
+  int64 delta_cost_without_transit_;
+  SparseBitset<int64> delta_touched_;
+  std::vector<int64> delta_nexts_;
+};
+
+LPCumulFilter::LPCumulFilter(const RoutingModel& routing_model,
+                             const RoutingDimension& dimension,
+                             Solver::ObjectiveWatcher objective_callback)
+    : IntVarLocalSearchFilter(routing_model.Nexts(),
+                              std::move(objective_callback)),
+      optimizer_(&dimension),
+      objective_(routing_model.CostVar()),
+      synchronized_cost_without_transit_(-1),
+      delta_cost_without_transit_(-1),
+      delta_touched_(Size()),
+      delta_nexts_(Size()) {}
+
+bool LPCumulFilter::Accept(Assignment* delta, Assignment* deltadelta) {
+  delta_touched_.ClearAll();
+  for (const IntVarElement& delta_element :
+       delta->IntVarContainer().elements()) {
+    int64 index = -1;
+    if (FindIndex(delta_element.Var(), &index)) {
+      if (!delta_element.Bound()) {
+        // LNS detected
+        return true;
+      }
+      delta_touched_.Set(index);
+      delta_nexts_[index] = delta_element.Value();
+    }
+  }
+  const auto& next_accessor = [this](int64 index) {
+    return delta_touched_[index] ? delta_nexts_[index] : Value(index);
+  };
+
+  int64 objective_max = objective_->Max();
+  if (delta->Objective() == objective_) {
+    objective_max = std::min(objective_max, delta->ObjectiveMax());
+  }
+
+  if (!CanPropagateObjectiveValue() && objective_max == kint64max) {
+    // No need to compute the cost of the LP, only verify its feasibility.
+    delta_cost_without_transit_ = -1;
+    return optimizer_.IsFeasible(next_accessor);
+  }
+
+  if (!optimizer_.ComputeCumulCostWithoutFixedTransits(
+          next_accessor, &delta_cost_without_transit_)) {
+    // Infeasible.
+    delta_cost_without_transit_ = -1;
+    return false;
+  }
+  const int64 new_objective_value =
+      CapAdd(injected_objective_value_, delta_cost_without_transit_);
+  PropagateObjectiveValue(new_objective_value);
+
+  return new_objective_value <= objective_max;
+}
+
+int64 LPCumulFilter::GetAcceptedObjectiveValue() const {
+  return delta_cost_without_transit_;
+}
+
+void LPCumulFilter::OnSynchronize(const Assignment* delta) {
+  // TODO(user): Try to optimize this so the LP is not called when the last
+  // computed delta cost corresponds to the solution being synchronized.
+  if (!optimizer_.ComputeCumulCostWithoutFixedTransits(
+          [this](int64 index) { return Value(index); },
+          &synchronized_cost_without_transit_)) {
+    LOG(DFATAL)
+        << "Infeasible LP problem when calling LPCumulFilter::OnSynchronize().";
+    synchronized_cost_without_transit_ = 0;
+  }
+  PropagateObjectiveValue(
+      CapAdd(injected_objective_value_, synchronized_cost_without_transit_));
+}
+
+int64 LPCumulFilter::GetSynchronizedObjectiveValue() const {
+  return synchronized_cost_without_transit_;
+}
+
+}  // namespace
+
+IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
+    const RoutingDimension& dimension,
+    Solver::ObjectiveWatcher objective_callback) {
+  const RoutingModel* model = dimension.model();
+  return model->solver()->RevAlloc(
+      new LPCumulFilter(*model, dimension, std::move(objective_callback)));
+}
+
 const int64 CPFeasibilityFilter::kUnassigned = -1;
 
 CPFeasibilityFilter::CPFeasibilityFilter(const RoutingModel* routing_model)
@@ -2109,8 +2323,7 @@ CPFeasibilityFilter::CPFeasibilityFilter(const RoutingModel* routing_model)
   assignment_->Add(routing_model->Nexts());
 }
 
-bool CPFeasibilityFilter::Accept(const Assignment* delta,
-                                 const Assignment* deltadelta) {
+bool CPFeasibilityFilter::Accept(Assignment* delta, Assignment* deltadelta) {
   temp_assignment_->Copy(assignment_);
   AddDeltaToAssignment(delta, temp_assignment_);
   return solver_->Solve(restore_);
@@ -2186,6 +2399,9 @@ Decision* IntVarFilteredDecisionBuilder::Next(Solver* solver) {
   assignment_->MutableIntVarContainer()->Clear();
   assignment_->MutableIntVarContainer()->Resize(vars_.size());
   delta_->MutableIntVarContainer()->Clear();
+  if (!InitializeSolution()) {
+    solver->Fail();
+  }
   SynchronizeFilters();
   if (BuildSolution()) {
     VLOG(2) << "Number of decisions: " << number_of_decisions_;
@@ -2240,7 +2456,7 @@ RoutingFilteredDecisionBuilder::RoutingFilteredDecisionBuilder(
     : IntVarFilteredDecisionBuilder(model->solver(), model->Nexts(), filters),
       model_(model) {}
 
-bool RoutingFilteredDecisionBuilder::InitializeRoutes() {
+bool RoutingFilteredDecisionBuilder::InitializeSolution() {
   // Find the chains of nodes (when nodes have their "Next" value bound in the
   // current solution, it forms a link in a chain). Eventually, starts[end]
   // will contain the index of the first node of the chain ending at node 'end'
@@ -2663,9 +2879,6 @@ bool GlobalCheapestInsertionFilteredDecisionBuilder::IsNeighborForCostClass(
 }
 
 bool GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
-  if (!InitializeRoutes()) {
-    return false;
-  }
   // Insert partially inserted pairs.
   std::vector<int> pair_nodes;
   for (const RoutingModel::IndexPair& index_pair :
@@ -3424,9 +3637,6 @@ LocalCheapestInsertionFilteredDecisionBuilder::
                                                nullptr, filters) {}
 
 bool LocalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
-  if (!InitializeRoutes()) {
-    return false;
-  }
   // Marking if we've tried inserting a node.
   std::vector<bool> visited(model()->Size(), false);
   // Possible positions where the current node can inserted.
@@ -3547,9 +3757,6 @@ CheapestAdditionFilteredDecisionBuilder::
     : RoutingFilteredDecisionBuilder(model, filters) {}
 
 bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
-  if (!InitializeRoutes()) {
-    return false;
-  }
   const int kUnassigned = -1;
   const RoutingModel::IndexPairs& pairs = model()->GetPickupAndDeliveryPairs();
   std::vector<std::vector<int64>> deliveries(Size());
@@ -4207,9 +4414,6 @@ SavingsFilteredDecisionBuilder::SavingsFilteredDecisionBuilder(
 SavingsFilteredDecisionBuilder::~SavingsFilteredDecisionBuilder() {}
 
 bool SavingsFilteredDecisionBuilder::BuildSolution() {
-  if (!InitializeRoutes()) {
-    return false;
-  }
   const int size = model()->Size();
   size_squared_ = size * size;
   ComputeSavings();
@@ -4841,9 +5045,6 @@ ChristofidesFilteredDecisionBuilder::ChristofidesFilteredDecisionBuilder(
 
 // TODO(user): Support pickup & delivery.
 bool ChristofidesFilteredDecisionBuilder::BuildSolution() {
-  if (!InitializeRoutes()) {
-    return false;
-  }
   const int size = model()->Size() - model()->vehicles() + 1;
   // Node indices for Christofides solver.
   // 0: start/end node

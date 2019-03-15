@@ -148,6 +148,7 @@ import java.util.function.LongUnaryOperator;
 %rename (getPickupAndDeliveryPolicyOfVehicle) RoutingModel::GetPickupAndDeliveryPolicyOfVehicle;
 %rename (getPrimaryConstrainedDimension) RoutingModel::GetPrimaryConstrainedDimension;
 %rename (getSameVehicleIndicesOfIndex) RoutingModel::GetSameVehicleIndicesOfIndex;
+%rename (getTypeIncompatibilities) RoutingModel::GetTypeIncompatibilities;
 %rename (getVehicleClassIndexOfVehicle) RoutingModel::GetVehicleClassIndexOfVehicle;
 %rename (getVehicleClassesCount) RoutingModel::GetVehicleClassesCount;
 %rename (getVisitType) RoutingModel::GetVisitType;
@@ -203,15 +204,6 @@ import java.util.function.LongUnaryOperator;
                           const std::string& name) {
     $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
-
-  // Add PickupAndDeliveryPolicy enum value to RoutingModel (like RoutingModel::Status)
-  // For C++11 strongly typed enum SWIG support see https://github.com/swig/swig/issues/316
-  static const RoutingModel::PickupAndDeliveryPolicy ANY =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::ANY;
-  static const RoutingModel::PickupAndDeliveryPolicy LIFO =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::LIFO;
-  static const RoutingModel::PickupAndDeliveryPolicy FIFO =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::FIFO;
 }
 
 // RoutingDimension
@@ -223,6 +215,7 @@ import java.util.function.LongUnaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
+%rename (addNodePrecedence) RoutingDimension::AddNodePrecedence;
 %rename (cumulVar) RoutingDimension::CumulVar;
 %rename (fixedTransitVar) RoutingDimension::FixedTransitVar;
 %rename (getBreakIntervalsOfVehicle) RoutingDimension::GetBreakIntervalsOfVehicle;

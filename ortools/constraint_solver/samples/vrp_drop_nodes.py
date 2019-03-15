@@ -107,7 +107,6 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
     # Display dropped nodes.
     dropped_nodes = 'Dropped nodes:'
     for node in range(routing.Size()):
@@ -178,6 +177,7 @@ def main():
     # Define cost of each arc.
     # [START arc_cost]
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+
     # [END arc_cost]
 
     # Add Capacity constraint.

@@ -140,7 +140,7 @@ bool RoutingModel::SolveMatchingModel(Assignment* assignment) {
   // do not use the LP model.
   const std::vector<RoutingDimension*> dimensions =
       GetDimensionsWithSoftOrSpanCosts();
-  std::vector<RouteDimensionCumulOptimizer> optimizers;
+  std::vector<LocalDimensionCumulOptimizer> optimizers;
   optimizers.reserve(dimensions.size());
   for (RoutingDimension* dimension : dimensions) {
     optimizers.emplace_back(dimension);
@@ -257,7 +257,7 @@ bool RoutingModel::SolveMatchingModel(Assignment* assignment) {
                               GetArcCostForVehicle(delivery, end, vehicle)));
             const std::unordered_map<int64, int64> nexts = {
                 {start, pickup}, {pickup, delivery}, {delivery, end}};
-            for (RouteDimensionCumulOptimizer& optimizer : optimizers) {
+            for (LocalDimensionCumulOptimizer& optimizer : optimizers) {
               int64 cumul_cost_value = 0;
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
                       vehicle,
@@ -277,7 +277,7 @@ bool RoutingModel::SolveMatchingModel(Assignment* assignment) {
                           GetArcCostForVehicle(node, end, vehicle));
             const std::unordered_map<int64, int64> nexts = {{start, node},
                                                             {node, end}};
-            for (RouteDimensionCumulOptimizer& optimizer : optimizers) {
+            for (LocalDimensionCumulOptimizer& optimizer : optimizers) {
               int64 cumul_cost_value = 0;
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
                       vehicle,

@@ -118,6 +118,25 @@ class MathUtil {
   static T IPow(T base, int exp) {
     return pow(base, exp);
   }
+
+  template <class IntOut, class FloatIn>
+  static IntOut Round(FloatIn x) {
+    // We don't use sgn(x) below because there is no need to distinguish the
+    // (x == 0) case.  Also note that there are specialized faster versions
+    // of this function for Intel, ARM and PPC processors at the bottom
+    // of this file.
+    if (x > -0.5 && x < 0.5) {
+      // This case is special, because for largest floating point number
+      // below 0.5, the addition of 0.5 yields 1 and this would lead
+      // to incorrect result.
+      return static_cast<IntOut>(0);
+    }
+    return static_cast<IntOut>(x < 0 ? (x - 0.5) : (x + 0.5));
+  }  
+
+  static int64 FastInt64Round(double x) {
+    return Round<int64>(x);
+  }
 };
 }  // namespace operations_research
 

@@ -16,6 +16,7 @@
 // neighborhoods.
 
 syntax = "proto3";
+
 option java_package = "com.google.ortools.constraintsolver";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
@@ -77,6 +78,7 @@ message RoutingSearchParameters {
   double cheapest_insertion_neighbors_ratio = 21;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
+  // Next ID: 26
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -129,6 +131,21 @@ message RoutingSearchParameters {
     // This operator is extremelly useful to move chains of nodes which are
     // located at the same place (for instance nodes part of a same stop).
     OptionalBoolean use_relocate_neighbors = 3;
+    // Relocate neighborhood that moves subpaths all pickup and delivery
+    // pairs have both pickup and delivery inside the subpath or both outside
+    // the subpath. For instance, for given paths:
+    // 0 -> A -> B -> A' -> B' -> 5 -> 6 -> 8
+    // 7 -> 9
+    // Pairs (A,A') and (B,B') are interleaved, so the expected neighbors are:
+    // 0 -> 5 -> A -> B -> A' -> B' -> 6 -> 8
+    // 7 -> 9
+    //
+    // 0 -> 5 -> 6 -> A -> B -> A' -> B' -> 8
+    // 7 -> 9
+    //
+    // 0 -> 5 -> 6 -> 8
+    // 7 -> A -> B -> A' -> B' -> 9
+    OptionalBoolean use_relocate_subtrip = 25;
     // Operator which exchanges the positions of two nodes.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
     // (where (1, 5) are first and last nodes of the path and can therefore not
@@ -312,8 +329,9 @@ message RoutingSearchParameters {
   // to solve the problem.
   bool use_depth_first_search = 6;
   // Minimum step by which the solution must be improved in local search. 0
-  // means "unspecified".
-  int64 optimization_step = 7;
+  // means "unspecified". If this value is fractional, it will get rounded to
+  // the nearest integer.
+  double optimization_step = 7;
   // Number of solutions to collect during the search. Corresponds to the best
   // solutions found during the search. 0 means "unspecified".
   int32 number_of_solutions_to_collect = 17;

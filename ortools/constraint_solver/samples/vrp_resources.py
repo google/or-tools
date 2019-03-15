@@ -77,7 +77,6 @@ def create_data_model():
 # [START solution_printer]
 def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
-    print('Objective: {}'.format(assignment.ObjectiveValue()))
     time_dimension = routing.GetDimensionOrDie('Time')
     total_time = 0
     for vehicle_id in range(data['num_vehicles']):
@@ -95,7 +94,8 @@ def print_solution(data, manager, routing, assignment):
         plan_output += ' {0} Time({1},{2})\n'.format(
             manager.IndexToNode(index), assignment.Min(time_var),
             assignment.Max(time_var))
-        plan_output += 'Time of the route: {}min\n'.format(assignment.Min(time_var))
+        plan_output += 'Time of the route: {}min\n'.format(
+            assignment.Min(time_var))
         print(plan_output)
         total_time += assignment.Min(time_var)
     print('Total time of all routes: {}min'.format(total_time))
@@ -184,12 +184,9 @@ def main():
 
     # [START depot_capacity]
     depot_usage = [1 for i in range(len(intervals))]
-    solver.AddConstraint(
-        solver.Cumulative(
-            intervals,
-            depot_usage,
-            data['depot_capacity'],
-            'depot'))
+    solver.Add(
+        solver.Cumulative(intervals, depot_usage, data['depot_capacity'],
+                          'depot'))
     # [END depot_capacity]
 
     # Instantiate route start and end times to produce feasible times.
@@ -220,6 +217,7 @@ def main():
     # [END print_solution]
     else:
         print('No solution found !')
+
 
 if __name__ == '__main__':
     main()

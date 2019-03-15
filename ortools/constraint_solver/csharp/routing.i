@@ -130,19 +130,6 @@ namespace operations_research {
 
 }  // namespace operations_research
 
-// Add PickupAndDeliveryPolicy enum value to RoutingModel
-// (like RoutingModel::Status)
-// For C++11 strongly typed enum SWIG support
-// see https://github.com/swig/swig/issues/316
-%extend operations_research::RoutingModel {
-  static const operations_research::RoutingModel::PickupAndDeliveryPolicy ANY =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::ANY;
-  static const operations_research::RoutingModel::PickupAndDeliveryPolicy LIFO =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::LIFO;
-  static const operations_research::RoutingModel::PickupAndDeliveryPolicy FIFO =
-  operations_research::RoutingModel::PickupAndDeliveryPolicy::FIFO;
-}
-
 %rename("GetStatus") operations_research::RoutingModel::status;
 %rename("%(camelcase)s", %$isfunction) "";
 

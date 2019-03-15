@@ -78,7 +78,6 @@ struct DataModel {
 //! @param[in] solution Solution found by the solver.
 void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   // Display dropped nodes.
   std::ostringstream dropped_nodes;
   for (int64 node = 0; node < routing.Size(); ++node) {

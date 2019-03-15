@@ -76,7 +76,6 @@ public class VrpTimeWindows {
       in RoutingModel routing,
       in RoutingIndexManager manager,
       in Assignment solution) {
-    Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
     RoutingDimension timeDimension = routing.GetMutableDimension("Time");
     // Inspect solution.
     long totalTime = 0;
@@ -92,7 +91,6 @@ public class VrpTimeWindows {
             solution.Max(timeVar),
             solution.Min(slackVar),
             solution.Max(slackVar));
-        var previousIndex = index;
         index = solution.Value(routing.NextVar(index));
       }
       var endTimeVar = timeDimension.CumulVar(index);

@@ -3165,8 +3165,8 @@ objs/constraint_solver/routing.$O: ortools/constraint_solver/routing.cc \
  ortools/base/status.h ortools/gen/ortools/sat/sat_parameters.pb.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/range_query_function.h ortools/base/protoutil.h \
- ortools/base/statusor.h ortools/base/stl_util.h \
+ ortools/util/range_query_function.h ortools/base/mathutil.h \
+ ortools/base/protoutil.h ortools/base/statusor.h ortools/base/stl_util.h \
  ortools/base/thorough_hash.h \
  ortools/constraint_solver/routing_lp_scheduling.h \
  ortools/constraint_solver/routing_neighborhoods.h \
@@ -3340,21 +3340,21 @@ objs/constraint_solver/routing_parameters.$O: \
 
 objs/constraint_solver/routing_search.$O: \
  ortools/constraint_solver/routing_search.cc ortools/base/small_map.h \
- ortools/base/small_ordered_set.h ortools/base/stl_util.h \
- ortools/base/integral_types.h ortools/base/macros.h \
- ortools/constraint_solver/routing.h \
- ortools/base/adjustable_priority_queue-inl.h \
- ortools/base/adjustable_priority_queue.h ortools/base/basictypes.h \
- ortools/base/logging.h ortools/base/commandlineflags.h \
- ortools/base/hash.h ortools/base/int_type_indexed_vector.h \
- ortools/base/int_type.h ortools/constraint_solver/constraint_solver.h \
- ortools/base/map_util.h ortools/base/random.h ortools/base/sysinfo.h \
- ortools/base/timer.h \
+ ortools/base/small_ordered_set.h \
+ ortools/constraint_solver/constraint_solveri.h \
+ ortools/base/commandlineflags.h ortools/base/hash.h \
+ ortools/base/basictypes.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
+ ortools/base/sysinfo.h ortools/base/timer.h \
+ ortools/constraint_solver/constraint_solver.h ortools/base/random.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
- ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
+ ortools/util/vector_map.h ortools/constraint_solver/routing.h \
+ ortools/base/adjustable_priority_queue-inl.h \
+ ortools/base/adjustable_priority_queue.h \
+ ortools/base/int_type_indexed_vector.h ortools/base/int_type.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/constraint_solver/routing_types.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \

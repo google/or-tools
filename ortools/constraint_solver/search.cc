@@ -54,7 +54,7 @@ namespace operations_research {
 
 SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
                      double scaling_factor,
-                     Solver::DisplayCallback display_callback, int period)
+                     std::function<std::string()> display_callback, int period)
     : SearchMonitor(s),
       period_(period),
       timer_(new WallTimer),
@@ -112,23 +112,27 @@ bool SearchLog::AtSolution() {
       return absl::StrCat(value);
     }
   };
-  if (obj_ != nullptr) {
+  if (obj_ != nullptr && obj_->Var()->Bound()) {
     current = obj_->Var()->Value();
     obj_str = obj_->Print();
     objective_updated = true;
-  } else if (var_ != nullptr) {
+  } else if (var_ != nullptr && var_->Bound()) {
     current = var_->Value();
+    absl::StrAppend(&obj_str, scaled_str(current), ", ");
+    objective_updated = true;
+  } else {
+    current = solver()->GetOrCreateLocalSearchState()->ObjectiveMin();
     absl::StrAppend(&obj_str, scaled_str(current), ", ");
     objective_updated = true;
   }
   if (objective_updated) {
-    if (current >= objective_min_) {
+    if (current > objective_min_) {
       absl::StrAppend(&obj_str,
                       "objective minimum = ", scaled_str(objective_min_), ", ");
     } else {
       objective_min_ = current;
     }
-    if (current <= objective_max_) {
+    if (current < objective_max_) {
       absl::StrAppend(&obj_str,
                       "objective maximum = ", scaled_str(objective_max_), ", ");
     } else {
@@ -163,6 +167,8 @@ bool SearchLog::AtSolution() {
   }
   return false;
 }
+
+void SearchLog::AcceptUncheckedNeighbor() { AtSolution(); }
 
 void SearchLog::BeginFail() { Maintain(); }
 
@@ -277,14 +283,14 @@ SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var) {
 }
 
 SearchMonitor* Solver::MakeSearchLog(
-    int branch_period, Solver::DisplayCallback display_callback) {
+    int branch_period, std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, nullptr, 1.0,
                                 std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, IntVar* const var,
-    Solver::DisplayCallback display_callback) {
+    std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, var, 1.0,
                                 std::move(display_callback), branch_period));
 }
@@ -297,7 +303,7 @@ SearchMonitor* Solver::MakeSearchLog(int branch_period,
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, OptimizeVar* const opt_var,
-    Solver::DisplayCallback display_callback) {
+    std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, opt_var, nullptr, 1.0,
                                 std::move(display_callback), branch_period));
 }
@@ -2548,6 +2554,11 @@ NBestValueSolutionCollector::NBestValueSolutionCollector(Solver* const solver,
 
 void NBestValueSolutionCollector::EnterSearch() {
   SolutionCollector::EnterSearch();
+  // TODO(user): Remove this when fast local search works with
+  // multiple solutions collected.
+  if (solution_count_ > 1) {
+    solver()->SetUseFastLocalSearch(false);
+  }
   Clear();
 }
 
@@ -2671,7 +2682,15 @@ OptimizeVar::OptimizeVar(Solver* const s, bool maximize, IntVar* const a,
       best_(kint64max),
       maximize_(maximize),
       found_initial_solution_(false) {
-  CHECK_GT(step, 0);
+  CHECK_GT(step_, 0);
+  // TODO(user): Store optimization direction in Solver. Besides making the
+  // code simpler it would also having two monitors optimizing in opposite
+  // directions.
+  if (maximize) {
+    s->set_optimization_direction(Solver::MAXIMIZATION);
+  } else {
+    s->set_optimization_direction(Solver::MINIMIZATION);
+  }
 }
 
 OptimizeVar::~OptimizeVar() {}
@@ -2725,6 +2744,40 @@ bool OptimizeVar::AtSolution() {
     best_ = val;
   }
   found_initial_solution_ = true;
+  return true;
+}
+
+bool OptimizeVar::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
+  if (delta != nullptr) {
+    const bool delta_has_objective = delta->HasObjective();
+    if (!delta_has_objective) {
+      delta->AddObjective(var_);
+    }
+    if (delta->Objective() == var_) {
+      const Assignment* const local_search_state =
+          solver()->GetOrCreateLocalSearchState();
+      if (maximize_) {
+        const int64 delta_min_objective =
+            delta_has_objective ? delta->ObjectiveMin() : kint64min;
+        const int64 min_objective =
+            local_search_state->HasObjective()
+                ? CapAdd(local_search_state->ObjectiveMin(), step_)
+                : kint64min;
+        delta->SetObjectiveMin(
+            std::max({var_->Min(), min_objective, delta_min_objective}));
+
+      } else {
+        const int64 delta_max_objective =
+            delta_has_objective ? delta->ObjectiveMax() : kint64max;
+        const int64 max_objective =
+            local_search_state->HasObjective()
+                ? CapSub(local_search_state->ObjectiveMax(), step_)
+                : kint64max;
+        delta->SetObjectiveMax(
+            std::min({var_->Max(), max_objective, delta_max_objective}));
+      }
+    }
+  }
   return true;
 }
 
@@ -2852,6 +2905,7 @@ class Metaheuristic : public SearchMonitor {
   bool AtSolution() override;
   void EnterSearch() override;
   void RefuteDecision(Decision* const d) override;
+  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
 
  protected:
   IntVar* const objective_;
@@ -2881,6 +2935,9 @@ bool Metaheuristic::AtSolution() {
 }
 
 void Metaheuristic::EnterSearch() {
+  // TODO(user): Remove this when fast local search works with
+  // metaheuristics.
+  solver()->SetUseFastLocalSearch(false);
   if (maximize_) {
     best_ = objective_->Min();
     current_ = kint64min;
@@ -2898,6 +2955,24 @@ void Metaheuristic::RefuteDecision(Decision* d) {
   } else if (objective_->Min() > best_ - step_) {
     solver()->Fail();
   }
+}
+
+bool Metaheuristic::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
+  if (delta != nullptr) {
+    if (!delta->HasObjective()) {
+      delta->AddObjective(objective_);
+    }
+    if (delta->Objective() == objective_) {
+      if (maximize_) {
+        delta->SetObjectiveMin(
+            std::max(objective_->Min(), delta->ObjectiveMin()));
+      } else {
+        delta->SetObjectiveMax(
+            std::min(objective_->Max(), delta->ObjectiveMax()));
+      }
+    }
+  }
+  return true;
 }
 
 // ---------- Tabu Search ----------
@@ -3491,7 +3566,10 @@ void GuidedLocalSearch::EnterSearch() {
 // GLS filtering; compute the penalized value corresponding to the delta and
 // modify objective bound accordingly.
 bool GuidedLocalSearch::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
-  if ((delta != nullptr || deltadelta != nullptr) && penalties_->HasValues()) {
+  if (delta != nullptr || deltadelta != nullptr) {
+    if (!penalties_->HasValues()) {
+      return Metaheuristic::AcceptDelta(delta, deltadelta);
+    }
     int64 penalty = 0;
     if (!deltadelta->Empty()) {
       if (!incremental_) {
@@ -3520,11 +3598,13 @@ bool GuidedLocalSearch::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
     if (delta->Objective() == objective_) {
       if (maximize_) {
         delta->SetObjectiveMin(
-            std::max(std::min(current_ + step_ - penalty, best_ + step_),
+            std::max(std::min(CapSub(CapAdd(current_, step_), penalty),
+                              CapAdd(best_, step_)),
                      delta->ObjectiveMin()));
       } else {
         delta->SetObjectiveMax(
-            std::min(std::max(current_ - step_ - penalty, best_ - step_),
+            std::min(std::max(CapSub(CapSub(current_, step_), penalty),
+                              CapSub(best_, step_)),
                      delta->ObjectiveMax()));
       }
     }
@@ -3544,10 +3624,10 @@ int64 GuidedLocalSearch::Evaluate(const Assignment* delta,
     IntVar* var = new_element.Var();
     int64 index = -1;
     if (gtl::FindCopy(indices_, var, &index)) {
-      penalty -= out_values[index];
+      penalty = CapSub(penalty, out_values[index]);
       int64 new_penalty = 0;
       if (EvaluateElementValue(container, index, &i, &new_penalty)) {
-        penalty += new_penalty;
+        penalty = CapAdd(penalty, new_penalty);
         if (cache_delta_values) {
           delta_cache_[index] = new_penalty;
         }
@@ -3842,7 +3922,10 @@ class RegularLimit : public SearchLimit {
   void ExitSearch() override;
   void UpdateLimits(int64 time, int64 branches, int64 failures,
                     int64 solutions);
-  int64 wall_time() { return wall_time_; }
+  int64 wall_time() const { return wall_time_; }
+  int64 branches() const { return branches_; }
+  int64 failures() const { return failures_; }
+  int64 solutions() const { return solutions_; }
   int ProgressPercent() override;
   std::string DebugString() const override;
 
@@ -4134,8 +4217,20 @@ void Solver::UpdateLimits(int64 time, int64 branches, int64 failures,
                                                        solutions);
 }
 
-int64 Solver::GetTime(SearchLimit* limit) {
+int64 Solver::GetTimeLimit(SearchLimit* limit) {
   return reinterpret_cast<RegularLimit*>(limit)->wall_time();
+}
+
+int64 Solver::GetBranchLimit(SearchLimit* limit) {
+  return reinterpret_cast<RegularLimit*>(limit)->branches();
+}
+
+int64 Solver::GetFailureLimit(SearchLimit* limit) {
+  return reinterpret_cast<RegularLimit*>(limit)->failures();
+}
+
+int64 Solver::GetSolutionLimit(SearchLimit* limit) {
+  return reinterpret_cast<RegularLimit*>(limit)->solutions();
 }
 
 namespace {

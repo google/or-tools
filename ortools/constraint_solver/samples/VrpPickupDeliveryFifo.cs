@@ -147,7 +147,8 @@ public class VrpPickupDeliveryFifo {
           distanceDimension.CumulVar(pickupIndex),
           distanceDimension.CumulVar(deliveryIndex)));
     }
-    routing.SetPickupAndDeliveryPolicyOfAllVehicles(RoutingModel.FIFO);
+    routing.SetPickupAndDeliveryPolicyOfAllVehicles(
+      RoutingModel.PICKUP_AND_DELIVERY_FIFO);
     // [END pickup_delivery_constraint]
 
     // Setting first solution heuristic.

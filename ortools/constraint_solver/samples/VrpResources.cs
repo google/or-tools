@@ -82,7 +82,6 @@ public class VrpResources {
       in RoutingModel routing,
       in RoutingIndexManager manager,
       in Assignment solution) {
-    Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
     RoutingDimension timeDimension = routing.GetMutableDimension("Time");
     // Inspect solution.
     long totalTime = 0;

@@ -817,6 +817,10 @@ class LocalSearchOperator : public BaseObject {
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) = 0;
   virtual void Start(const Assignment* assignment) = 0;
   virtual void Reset() {}
+#ifndef SWIG
+  virtual const LocalSearchOperator* Self() const { return this; }
+#endif  // SWIG
+  virtual bool HasFragments() const { return false; }
 };
 
 // ----- Base operator class for operators manipulating variables -----
@@ -1172,6 +1176,7 @@ class BaseLns : public IntVarLocalSearchOperator {
   virtual bool NextFragment() = 0;
   void AppendToFragment(int index);
   int FragmentSize() const;
+  bool HasFragments() const override { return true; }
 
  protected:
   // This method should not be overridden. Override NextFragment() instead.
@@ -1461,8 +1466,7 @@ class LocalSearchFilter : public BaseObject {
   // Sample: supposing one wants to maintain a[0,1] + b[0,1] <= 1,
   // for the assignment (a,1), (b,0), the delta (b,1) will be rejected
   // but the delta (a,0) will be accepted.
-  virtual bool Accept(const Assignment* delta,
-                      const Assignment* deltadelta) = 0;
+  virtual bool Accept(Assignment* delta, Assignment* deltadelta) = 0;
 
   // Synchronizes the filter with the current solution, delta being the
   // difference with the solution passed to the previous call to Synchronize()
@@ -1501,7 +1505,7 @@ class LocalSearchFilterManager : public LocalSearchFilter {
   //   ((objective_ != delta->Objective()) ?
   //     objective_.Max() :
   //     min(objective_.Max(), delta->ObjectiveMax()))
-  bool Accept(const Assignment* delta, const Assignment* deltadelta) override;
+  bool Accept(Assignment* delta, Assignment* deltadelta) override;
   // Synchronizes all filters to assignment.
   void Synchronize(const Assignment* assignment,
                    const Assignment* delta) override;
@@ -1556,10 +1560,6 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
     return values_[index];
   }
   bool IsVarSynced(int index) const { return var_synced_[index]; }
-
-  void SetObjectiveWatcher(Solver::ObjectiveWatcher objective_callback) {
-    objective_callback_ = std::move(objective_callback);
-  }
 
  protected:
   virtual void OnSynchronize(const Assignment* delta) {}
@@ -1770,13 +1770,14 @@ class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
             double scaling_factor,
-            Solver::DisplayCallback display_callback, int period);
+            std::function<std::string()> display_callback, int period);
   ~SearchLog() override;
   void EnterSearch() override;
   void ExitSearch() override;
   bool AtSolution() override;
   void BeginFail() override;
   void NoMoreSolutions() override;
+  void AcceptUncheckedNeighbor() override;
   void ApplyDecision(Decision* const decision) override;
   void RefuteDecision(Decision* const decision) override;
   void OutputDecision();

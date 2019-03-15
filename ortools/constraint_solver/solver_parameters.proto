@@ -131,4 +131,9 @@ message ConstraintSolverParameters {
   // should only speed up the search without omitting any neighbors.
   //
   bool skip_locally_optimal_paths = 113;
+
+  //
+  // Control the behavior of local search.
+  //
+  int32 check_solution_period = 114;
 };

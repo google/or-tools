@@ -255,4 +255,3 @@ MATRIX_AS_JAVA_ARRAY(double, double, Double);
 %define REINTERPRET_CAST(CType, ptr)
 reinterpret_cast<CType*>(ptr)
 %enddef
-

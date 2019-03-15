@@ -446,10 +446,6 @@ namespace operations_research {
 
 // Assignment
 %unignore Assignment;
-// Ignored:
-%ignore Assignment::Load;
-%ignore Assignment::Save;
-// Methods:
 %rename (activate) Assignment::Activate;
 %rename (activateObjective) Assignment::ActivateObjective;
 %rename (activated) Assignment::Activated;
@@ -475,6 +471,7 @@ namespace operations_research {
 %rename (hasObjective) Assignment::HasObjective;
 %rename (intVarContainer) Assignment::IntVarContainer;
 %rename (intervalVarContainer) Assignment::IntervalVarContainer;
+%rename (load) Assignment::Load;
 %rename (mutableIntVarContainer) Assignment::MutableIntVarContainer;
 %rename (mutableIntervalVarContainer) Assignment::MutableIntervalVarContainer;
 %rename (mutableSequenceVarContainer) Assignment::MutableSequenceVarContainer;
@@ -490,6 +487,7 @@ namespace operations_research {
 %rename (performedMin) Assignment::PerformedMin;
 %rename (performedValue) Assignment::PerformedValue;
 %rename (restore) Assignment::Restore;
+%rename (save) Assignment::Save;
 %rename (size) Assignment::Size;
 %rename (sequenceVarContainer) Assignment::SequenceVarContainer;
 %rename (setBackwardSequence) Assignment::SetBackwardSequence;
@@ -524,7 +522,6 @@ namespace operations_research {
 %rename (unperformed) Assignment::Unperformed;
 
 // template AssignmentContainer<>
-%ignore AssignmentContainer::MutableElement;
 %ignore AssignmentContainer::MutableElementOrNull;
 %ignore AssignmentContainer::ElementPtrOrNull;
 %ignore AssignmentContainer::elements;
@@ -538,6 +535,7 @@ namespace operations_research {
 %rename (copy) AssignmentContainer::Copy;
 %rename (copyIntersection) AssignmentContainer::CopyIntersection;
 %rename (contains) AssignmentContainer::Contains;
+%rename (mutableElement) AssignmentContainer::MutableElement;
 %rename (size) AssignmentContainer::Size;
 %rename (store) AssignmentContainer::Store;
 %rename (restore) AssignmentContainer::Restore;
@@ -1304,20 +1302,18 @@ import java.util.function.Supplier;
 %rename (startProcessingIntegerVariable) PropagationMonitor::StartProcessingIntegerVariable;
 
 // IntVarLocalSearchHandler
-%ignore IntVarLocalSearchHandler;
-// Methods:
-//%rename (addToAssignment) IntVarLocalSearchHandler::AddToAssignment;
-//%rename (onAddVars) IntVarLocalSearchHandler::OnAddVars;
-//%rename (onRevertChanges) IntVarLocalSearchHandler::OnRevertChanges;
-//%rename (valueFromAssignent) IntVarLocalSearchHandler::ValueFromAssignent;
+%unignore IntVarLocalSearchHandler;
+%rename (addToAssignment) IntVarLocalSearchHandler::AddToAssignment;
+%rename (onAddVars) IntVarLocalSearchHandler::OnAddVars;
+%rename (onRevertChanges) IntVarLocalSearchHandler::OnRevertChanges;
+%rename (valueFromAssignent) IntVarLocalSearchHandler::ValueFromAssignent;
 
 // SequenceVarLocalSearchHandler
-%ignore SequenceVarLocalSearchHandler;
-// Methods:
-//%rename (addToAssignment) SequenceVarLocalSearchHandler::AddToAssignment;
-//%rename (onAddVars) SequenceVarLocalSearchHandler::OnAddVars;
-//%rename (onRevertChanges) SequenceVarLocalSearchHandler::OnRevertChanges;
-//%rename (valueFromAssignent) SequenceVarLocalSearchHandler::ValueFromAssignent;
+%unignore SequenceVarLocalSearchHandler;
+%rename (addToAssignment) SequenceVarLocalSearchHandler::AddToAssignment;
+%rename (onAddVars) SequenceVarLocalSearchHandler::OnAddVars;
+%rename (onRevertChanges) SequenceVarLocalSearchHandler::OnRevertChanges;
+%rename (valueFromAssignent) SequenceVarLocalSearchHandler::ValueFromAssignent;
 
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;

@@ -186,13 +186,13 @@ def main():
         delivery_index = manager.NodeToIndex(request[1])
         routing.AddPickupAndDelivery(pickup_index, delivery_index)
         routing.solver().Add(
-            routing.VehicleVar(pickup_index) ==
-            routing.VehicleVar(delivery_index))
+            routing.VehicleVar(pickup_index) == routing.VehicleVar(
+                delivery_index))
         routing.solver().Add(
             distance_dimension.CumulVar(pickup_index) <=
             distance_dimension.CumulVar(delivery_index))
     routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-        pywrapcp.RoutingModel.LIFO)
+        pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_LIFO)
     # [END pickup_delivery_constraint]
 
     # Setting first solution heuristic.
