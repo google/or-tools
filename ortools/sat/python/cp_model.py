@@ -1413,6 +1413,8 @@ class CpSolver(object):
     This method searches for all feasible solution of a given model.
     Then it feeds the solution to the callback.
 
+    Note that the model cannot contain an objective.
+
     Args:
       model: The model to solve.
       callback: The callback that will be called at each solution.

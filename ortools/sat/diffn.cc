@@ -665,10 +665,10 @@ bool NonOverlappingRectanglesPropagator::
       DetectPrecedences(true, y_line_for_reason, active_boxes, x_dim, y_dim));
   RETURN_IF_FALSE(
       DetectPrecedences(false, y_line_for_reason, active_boxes, x_dim, y_dim));
-  RETURN_IF_FALSE(
-      NotLast(false, y_line_for_reason, active_boxes, x_dim, y_dim));
-  RETURN_IF_FALSE(
-      NotLast(true, y_line_for_reason, active_boxes, x_dim, y_dim));
+  // RETURN_IF_FALSE(
+  //     NotLast(false, y_line_for_reason, active_boxes, x_dim, y_dim));
+  // RETURN_IF_FALSE(
+  //     NotLast(true, y_line_for_reason, active_boxes, x_dim, y_dim));
   return true;
 }
 

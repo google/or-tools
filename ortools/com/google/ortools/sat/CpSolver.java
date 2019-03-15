@@ -48,6 +48,8 @@ public class CpSolver {
    * <p>This method searches for all feasible solutions of a given model. Then it feeds the
    * solutions to the callback.
    *
+   * Note that the comde cannot have an objective.
+   *
    * @param model the model to solve
    * @param cb the callback that will be called at each solution
    * @return the status of the solve (FEASIBLE, INFEASIBLE...)
