@@ -93,7 +93,6 @@ struct DataModel {
 //! @param[in] solution Solution found by the solver.
 void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
                    const RoutingModel& routing, const Assignment& solution) {
-  LOG(INFO) << "Objective: " << solution.ObjectiveValue();
   int64 total_distance{0};
   for (int vehicle_id = 0; vehicle_id < data.num_vehicles; ++vehicle_id) {
     int64 index = routing.Start(vehicle_id);

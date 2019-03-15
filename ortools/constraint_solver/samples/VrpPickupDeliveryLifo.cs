@@ -69,8 +69,6 @@ public class VrpPickupDeliveryLifo {
       in RoutingModel routing,
       in RoutingIndexManager manager,
       in Assignment solution) {
-    Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
-    // Inspect solution.
     long totalDistance = 0;
     for (int i = 0; i < data.VehicleNumber; ++i) {
       Console.WriteLine("Route for Vehicle {0}:", i);
