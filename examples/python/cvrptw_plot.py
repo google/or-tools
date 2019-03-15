@@ -160,6 +160,9 @@ class Customers():
         # The number of seconds needed to 'unload' 1 unit of goods.
         self.service_time_per_dem = 300  # seconds
 
+    def set_manager(self, manager):
+        self.manager = manager
+
     def central_start_node(self, invert=False):
         """
         Return a random starting node, with probability weighted by distance
@@ -271,8 +274,11 @@ class Customers():
         """
         self.make_distance_mat(**kwargs)
 
-        def dist_return(a, b):
-            return (self.distmat[a][b])
+        def dist_return(from_index, to_index):
+            # Convert from routing variable Index to distance matrix NodeIndex.
+            from_node = self.manager.IndexToNode(from_index)
+            to_node = self.manager.IndexToNode(to_index)
+            return (self.distmat[from_node][to_node])
 
         return dist_return
 
@@ -285,8 +291,11 @@ class Customers():
                 index and the 'to' node index and returns the distance in km.
         """
 
-        def dem_return(a, b):
-            return (self.customers[a].demand)
+        def dem_return(from_index, to_index):
+            # Convert from routing variable Index to distance matrix NodeIndex.
+            from_node = self.manager.IndexToNode(from_index)
+            to_node = self.manager.IndexToNode(to_index)
+            return (self.customers[from_node].demand)
 
         return dem_return
 
@@ -432,7 +441,7 @@ def discrete_cmap(N, base_cmap=None):
     return base.from_list(cmap_name, color_list, N)
 
 
-def vehicle_output_string(routing, plan):
+def vehicle_output_string(manager, routing, plan):
     """
     Return a string displaying the output of the routing instance and
     assignment (plan).
@@ -464,9 +473,10 @@ def vehicle_output_string(routing, plan):
             while True:
                 load_var = capacity_dimension.CumulVar(order)
                 time_var = time_dimension.CumulVar(order)
+                node = manager.IndexToNode(order)
                 plan_output += \
-                    ' {order} Load({load}) Time({tmin}, {tmax}) -> '.format(
-                        order=order,
+                    ' {node} Load({load}) Time({tmin}, {tmax}) -> '.format(
+                        node=node,
                         load=plan.Value(load_var),
                         tmin=str(timedelta(seconds=plan.Min(time_var))),
                         tmax=str(timedelta(seconds=plan.Max(time_var))))
@@ -480,7 +490,7 @@ def vehicle_output_string(routing, plan):
     return (plan_output, dropped)
 
 
-def build_vehicle_route(routing, plan, customers, veh_number):
+def build_vehicle_route(manager, routing, plan, customers, veh_number):
     """
     Build a route for a vehicle by starting at the strat node and
     continuing to the end node.
@@ -498,12 +508,12 @@ def build_vehicle_route(routing, plan, customers, veh_number):
     if veh_used:
         route = []
         node = routing.Start(veh_number)  # Get the starting node index
-        route.append(customers.customers[routing.IndexToNode(node)])
+        route.append(customers.customers[manager.IndexToNode(node)])
         while not routing.IsEnd(node):
-            route.append(customers.customers[routing.IndexToNode(node)])
+            route.append(customers.customers[manager.IndexToNode(node)])
             node = plan.Value(routing.NextVar(node))
 
-        route.append(customers.customers[routing.IndexToNode(node)])
+        route.append(customers.customers[manager.IndexToNode(node)])
         return route
     else:
         return None
@@ -575,18 +585,6 @@ def main():
         min_tw=3,
         max_tw=6)
 
-    # Create callback fns for distances, demands, service and transit-times.
-    dist_fn = customers.return_dist_callback()
-    dem_fn = customers.return_dem_callback()
-    serv_time_fn = customers.make_service_time_call_callback()
-    transit_time_fn = customers.make_transit_time_callback()
-
-    def tot_time_fn(a, b):
-        """
-        The time function we want is both transit time and service time.
-        """
-        return serv_time_fn(a, b) + transit_time_fn(a, b)
-
     # Create a list of inhomgenious vehicle capacities as integer units.
     capacity = [50, 75, 100, 125, 150, 175, 200, 250]
 
@@ -604,8 +602,17 @@ def main():
     start_fn = vehicles.return_starting_callback(
         customers, sameStartFinish=False)
 
+    # Create the routing index manager.
+    manager = pywrapcp.RoutingIndexManager(
+        customers.number,  # int number
+        vehicles.number,  # int number
+        vehicles.starts,  # List of int start depot
+        vehicles.ends)  # List of int end depot
+
+    customers.set_manager(manager)
+
     # Set model parameters
-    model_parameters = pywrapcp.RoutingModel.DefaultModelParameters()
+    model_parameters = pywrapcp.DefaultRoutingModelParameters()
 
     # The solver parameters can be accessed from the model parameters. For example :
     #   model_parameters.solver_parameters.CopyFrom(
@@ -613,30 +620,46 @@ def main():
     #    model_parameters.solver_parameters.trace_propagation = True
 
     # Make the routing model instance.
-    routing = pywrapcp.RoutingModel(
-        customers.number,  # int number
-        vehicles.number,  # int number
-        vehicles.starts,  # List of int start depot
-        vehicles.ends,  # List of int end depot
-        model_parameters)
+    routing = pywrapcp.RoutingModel(manager, model_parameters)
 
-    parameters = routing.DefaultSearchParameters()
+    parameters = pywrapcp.DefaultRoutingSearchParameters()
     # Setting first solution heuristic (cheapest addition).
     parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+    # Routing: forbids use of TSPOpt neighborhood, (this is the default behaviour)
+    parameters.local_search_operators.use_tsp_opt = pywrapcp.BOOL_FALSE
     # Disabling Large Neighborhood Search, (this is the default behaviour)
-    parameters.local_search_operators.use_path_lns = False
-    parameters.local_search_operators.use_inactive_lns = False
-    # Routing: forbids use of TSPOpt neighborhood,
-    parameters.local_search_operators.use_tsp_opt = False
+    parameters.local_search_operators.use_path_lns = pywrapcp.BOOL_FALSE
+    parameters.local_search_operators.use_inactive_lns = pywrapcp.BOOL_FALSE
 
-    parameters.time_limit_ms = 10 * 1000  # 10 seconds
-    parameters.use_light_propagation = False
-    # parameters.log_search = True
+    parameters.time_limit.seconds = 10
+    parameters.use_full_propagation = True
+    #parameters.log_search = True
+
+    # Create callback fns for distances, demands, service and transit-times.
+    dist_fn = customers.return_dist_callback()
+    dist_fn_index = routing.RegisterTransitCallback(dist_fn)
+
+    dem_fn = customers.return_dem_callback()
+    dem_fn_index = routing.RegisterTransitCallback(dem_fn)
+
+    # Create and register a transit callback.
+    serv_time_fn = customers.make_service_time_call_callback()
+    transit_time_fn = customers.make_transit_time_callback()
+    def tot_time_fn(from_index, to_index):
+        """
+        The time function we want is both transit time and service time.
+        """
+        # Convert from routing variable Index to distance matrix NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        to_node = manager.IndexToNode(to_index)
+        return serv_time_fn(from_node, to_node) + transit_time_fn(from_node, to_node)
+
+    tot_time_fn_index = routing.RegisterTransitCallback(tot_time_fn)
 
     # Set the cost function (distance callback) for each arc, homogenious for
     # all vehicles.
-    routing.SetArcCostEvaluatorOfAllVehicles(dist_fn)
+    routing.SetArcCostEvaluatorOfAllVehicles(dist_fn_index)
 
     # Set vehicle costs for each vehicle, not homogenious.
     for veh in vehicles.vehicles:
@@ -645,14 +668,14 @@ def main():
     # Add a dimension for vehicle capacities
     null_capacity_slack = 0
     routing.AddDimensionWithVehicleCapacity(
-        dem_fn,  # demand callback
+        dem_fn_index,  # demand callback
         null_capacity_slack,
         capacity,  # capacity array
         True,
         'Capacity')
     # Add a dimension for time and a limit on the total time_horizon
     routing.AddDimension(
-        tot_time_fn,  # total time function callback
+        tot_time_fn_index,  # total time function callback
         customers.time_horizon,
         customers.time_horizon,
         True,
@@ -661,7 +684,7 @@ def main():
     time_dimension = routing.GetDimensionOrDie('Time')
     for cust in customers.customers:
         if cust.tw_open is not None:
-            time_dimension.CumulVar(routing.NodeToIndex(cust.index)).SetRange(
+            time_dimension.CumulVar(manager.NodeToIndex(cust.index)).SetRange(
                 cust.tw_open.seconds, cust.tw_close.seconds)
     """
      To allow the dropping of orders, we add disjunctions to all the customer
@@ -674,7 +697,7 @@ def main():
     non_depot.difference_update(vehicles.starts)
     non_depot.difference_update(vehicles.ends)
     penalty = 400000  # The cost for dropping a node from the plan.
-    nodes = [routing.AddDisjunction([int(c)], penalty) for c in non_depot]
+    nodes = [routing.AddDisjunction([manager.NodeToIndex(c)], penalty) for c in non_depot]
 
     # This is how you would implement partial routes if you already knew part
     # of a feasible solution for example:
@@ -693,15 +716,15 @@ def main():
 
     # The rest is all optional for saving, printing or plotting the solution.
     if assignment:
-        # save the assignment, (Google Protobuf format)
-        save_file_base = os.path.realpath(__file__).split('.')[0]
-        if routing.WriteAssignment(save_file_base + '_assignment.ass'):
-            print('succesfully wrote assignment to file ' + save_file_base +
-                  '_assignment.ass')
+        ## save the assignment, (Google Protobuf format)
+        #save_file_base = os.path.realpath(__file__).split('.')[0]
+        #if routing.WriteAssignment(save_file_base + '_assignment.ass'):
+        #    print('succesfully wrote assignment to file ' + save_file_base +
+        #          '_assignment.ass')
 
         print('The Objective Value is {0}'.format(assignment.ObjectiveValue()))
 
-        plan_output, dropped = vehicle_output_string(routing, assignment)
+        plan_output, dropped = vehicle_output_string(manager, routing, assignment)
         print(plan_output)
         print('dropped nodes: ' + ', '.join(dropped))
 
@@ -710,7 +733,7 @@ def main():
 
         vehicle_routes = {}
         for veh in range(vehicles.number):
-            vehicle_routes[veh] = build_vehicle_route(routing, assignment,
+            vehicle_routes[veh] = build_vehicle_route(manager, routing, assignment,
                                                       customers, veh)
 
         # Plotting of the routes in matplotlib.
@@ -721,6 +744,7 @@ def main():
         ax.plot(clon, clat, 'k.')
         # plot the routes as arrows
         plot_vehicle_routes(vehicle_routes, ax, customers, vehicles)
+        plt.show()
 
     else:
         print('No assignment')
