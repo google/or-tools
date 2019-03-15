@@ -1,3 +1,7 @@
+| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Reference manual](reference.md) |
+| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | -------------------------------- |
+
+
 <h1 id="ortools.sat.python">ortools.sat.python</h1>
 
 
