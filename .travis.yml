@@ -5,36 +5,36 @@ matrix:
   include:
     # Makefile builder
     - os: linux
-      dist: trusty
+      dist: xenial
       compiler: gcc
       env: BUILDER=make LANGUAGE=cc
     - os: linux
-      dist: trusty
+      dist: xenial
       compiler: gcc
       env: BUILDER=make LANGUAGE=python2
     - os: linux
-      dist: trusty
+      dist: xenial
       compiler: gcc
       env: BUILDER=make LANGUAGE=python3
     - os: linux
-      dist: trusty
+      dist: xenial
       compiler: gcc
       env: BUILDER=make LANGUAGE=java
     - os: linux
-      dist: trusty
+      dist: xenial
       compiler: gcc
       env: BUILDER=make LANGUAGE=dotnet
 
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       compiler: clang
       env: BUILDER=make LANGUAGE=cc
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       compiler: clang
       env: BUILDER=make LANGUAGE=python2
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       compiler: clang
       env: BUILDER=make LANGUAGE=python3
     - os: osx
@@ -42,30 +42,30 @@ matrix:
       compiler: clang
       env: BUILDER=make LANGUAGE=java
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       compiler: clang
       env: BUILDER=make LANGUAGE=dotnet
     # CMake Build Generator
     - os: linux
-      dist: trusty
+      dist: xenial
       compiler: gcc
       env: BUILDER=cmake
     - os: linux
-      dist: trusty
+      dist: xenial
       compiler: clang
       env: BUILDER=cmake
 
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       compiler: gcc
       env: BUILDER=cmake
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       compiler: clang
       env: BUILDER=cmake
     # Bazel builds and tests
     - os: linux
-      dist: trusty
+      dist: xenial
       addons:
         apt:
           sources:
@@ -77,7 +77,7 @@ matrix:
   # Jobs too long
   allow_failures:
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
       compiler: clang
       env: BUILDER=make LANGUAGE=dotnet
 

@@ -18,7 +18,7 @@ function installdotnetsdk(){
   # Need to upgrade to dpkg >= 1.17.5ubuntu5.8,
   # which fixes https://bugs.launchpad.net/ubuntu/+source/dpkg/+bug/1730627
   sudo apt-get install -yq apt-transport-https dpkg
-  wget -q https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
+  wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb
   sudo dpkg -i packages-microsoft-prod.deb
   # Install dotnet sdk 2.1
   sudo apt-get update -qq
@@ -36,11 +36,10 @@ if [ "${BUILDER}" == make ]; then
       installswig
     fi
     if [ "${LANGUAGE}" == python2 ]; then
-      pyenv global system 2.7
       python2.7 -m pip install -q virtualenv wheel six;
     elif [ "${LANGUAGE}" == python3 ]; then
-      pyenv global system 3.6
-      python3.6 -m pip install -q virtualenv wheel six
+      pyenv global system 3.7
+      python3.7 -m pip install -q virtualenv wheel six
     elif [ "${LANGUAGE}" == dotnet ]; then
       installdotnetsdk
     fi
@@ -71,8 +70,8 @@ fi
 if [ "${BUILDER}" == cmake ]; then
   if [ "${TRAVIS_OS_NAME}" == linux ]; then
     installswig
-    pyenv global system 3.6
-    python3.6 -m pip install -q virtualenv wheel six
+    pyenv global system 3.7
+    python3.7 -m pip install -q virtualenv wheel six
   elif [ "${TRAVIS_OS_NAME}" == osx ]; then
     brew update
     # see https://github.com/travis-ci/travis-ci/issues/10275
