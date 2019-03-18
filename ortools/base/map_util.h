@@ -100,7 +100,7 @@ bool InsertOrUpdate(Collection* const collection, const Key& key,
 // inserted, otherwise nothing happens. True indicates that an insert
 // took place, false indicates the key was already present.
 template <class Collection>
-bool InsertIfNotPresent(Collection* const collection, 
+bool InsertIfNotPresent(Collection* const collection,
                         const typename Collection::value_type& value) {
   std::pair<typename Collection::iterator, bool> ret =
       collection->insert(value);

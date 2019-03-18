@@ -132,11 +132,9 @@ class MathUtil {
       return static_cast<IntOut>(0);
     }
     return static_cast<IntOut>(x < 0 ? (x - 0.5) : (x + 0.5));
-  }  
-
-  static int64 FastInt64Round(double x) {
-    return Round<int64>(x);
   }
+
+  static int64 FastInt64Round(double x) { return Round<int64>(x); }
 };
 }  // namespace operations_research
 

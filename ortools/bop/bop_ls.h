@@ -203,7 +203,9 @@ class NonOrderedSetHasher {
   // Initializes the NonOrderedSetHasher to hash sets of integer in [0, n).
   void Initialize(int size) {
     hashes_.resize(size);
-    for (IntType i(0); i < size; ++i) hashes_[i] = random_.Rand64();
+    for (IntType i(0); i < size; ++i) {
+      hashes_[i] = random_.Rand64();
+    }
   }
 
   // Ignores the given set element in all subsequent hash computation. Note that

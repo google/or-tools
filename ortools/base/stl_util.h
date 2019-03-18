@@ -45,6 +45,7 @@ class Equiv {
   bool operator()(const T& a, const T& b) const {
     return !f_(b, a) && !f_(a, b);
   }
+
  private:
   LessFunc f_;
 };
@@ -53,14 +54,14 @@ class Equiv {
 // Sorts and removes duplicates from a sequence container.
 // If specified, the 'less_func' is used to compose an
 // equivalence comparator for the sorting and uniqueness tests.
-template<typename T, typename LessFunc>
+template <typename T, typename LessFunc>
 inline void STLSortAndRemoveDuplicates(T* v, const LessFunc& less_func) {
   std::sort(v->begin(), v->end(), less_func);
   v->erase(std::unique(v->begin(), v->end(),
                        gtl::internal::Equiv<LessFunc>(less_func)),
            v->end());
 }
-template<typename T>
+template <typename T>
 inline void STLSortAndRemoveDuplicates(T* v) {
   std::sort(v->begin(), v->end());
   v->erase(std::unique(v->begin(), v->end()), v->end());
@@ -88,29 +89,29 @@ inline void STLStableSortAndRemoveDuplicates(T* v) {
 
 // Remove every occurrence of element e in v. See
 //    http://en.wikipedia.org/wiki/Erase-remove_idiom.
-template<typename T, typename E>
+template <typename T, typename E>
 void STLEraseAllFromSequence(T* v, const E& e) {
   v->erase(std::remove(v->begin(), v->end(), e), v->end());
 }
-template<typename T, typename A, typename E>
+template <typename T, typename A, typename E>
 void STLEraseAllFromSequence(std::list<T, A>* c, const E& e) {
   c->remove(e);
 }
-template<typename T, typename A, typename E>
+template <typename T, typename A, typename E>
 void STLEraseAllFromSequence(std::forward_list<T, A>* c, const E& e) {
   c->remove(e);
 }
 
 // Remove each element e in v satisfying pred(e).
-template<typename T, typename P>
+template <typename T, typename P>
 void STLEraseAllFromSequenceIf(T* v, P pred) {
   v->erase(std::remove_if(v->begin(), v->end(), pred), v->end());
 }
-template<typename T, typename A, typename P>
+template <typename T, typename A, typename P>
 void STLEraseAllFromSequenceIf(std::list<T, A>* c, P pred) {
   c->remove_if(pred);
 }
-template<typename T, typename A, typename P>
+template <typename T, typename A, typename P>
 void STLEraseAllFromSequenceIf(std::forward_list<T, A>* c, P pred) {
   c->remove_if(pred);
 }
@@ -118,7 +119,7 @@ void STLEraseAllFromSequenceIf(std::forward_list<T, A>* c, P pred) {
 // Clears internal memory of an STL object by swapping the argument with a new,
 // empty object. STL clear()/reserve(0) does not always free internal memory
 // allocated.
-template<typename T>
+template <typename T>
 void STLClearObject(T* obj) {
   T tmp;
   tmp.swap(*obj);
@@ -140,8 +141,8 @@ void STLClearObject(std::deque<T, A>* obj) {
 //
 // Note: The name is misleading since the object is always cleared, regardless
 // of its size.
-template<typename T>
-inline void STLClearIfBig(T* obj, size_t limit = 1<<20) {
+template <typename T>
+inline void STLClearIfBig(T* obj, size_t limit = 1 << 20) {
   if (obj->capacity() >= limit) {
     STLClearObject(obj);
   } else {
@@ -175,7 +176,7 @@ inline void STLClearIfBig(std::deque<T, A>* obj, size_t limit = 1 << 20) {
 // insert a lot of items, the number of buckets is reset to the default to keep
 // subsequent clear operations cheap. Note that the default number of buckets is
 // 193 in the Gnu library implementation as of Jan '08.
-template<typename T>
+template <typename T>
 inline void STLClearHashIfBig(T* obj, size_t limit) {
   if (obj->bucket_count() >= limit) {
     T tmp;
@@ -185,28 +186,27 @@ inline void STLClearHashIfBig(T* obj, size_t limit) {
   }
 }
 
-// Reserves space in the given string only if the existing capacity is not
-// already enough. This is useful for strings because string::reserve() may
+// Reserves space in the given std::string only if the existing capacity is not
+// already enough. This is useful for strings because std::string::reserve() may
 // *shrink* the capacity in some cases, which is usually not what users want.
 // The behavior of this function is similar to that of vector::reserve() but for
-// string.
+// std::string.
 inline void STLStringReserveIfNeeded(std::string* s, size_t min_capacity) {
-  if (min_capacity > s->capacity())
-    s->reserve(min_capacity);
+  if (min_capacity > s->capacity()) s->reserve(min_capacity);
 }
 
 // Like str->resize(new_size), except any new characters added to "*str" as a
 // result of resizing may be left uninitialized, rather than being filled with
 // '0' bytes. Typically used when code is then going to overwrite the backing
-// store of the string with known data.
+// store of the std::string with known data.
 template <typename T, typename Traits, typename Alloc>
 inline void STLStringResizeUninitialized(std::basic_string<T, Traits, Alloc>* s,
                                          size_t new_size) {
   absl::strings_internal::STLStringResizeUninitialized(s, new_size);
 }
 
-// Returns true if the string implementation supports a resize where
-// the new characters added to the string are left untouched.
+// Returns true if the std::string implementation supports a resize where
+// the new characters added to the std::string are left untouched.
 //
 // (A better name might be "STLStringSupportsUninitializedResize", alluding to
 // the previous function.)
@@ -216,26 +216,26 @@ inline bool STLStringSupportsNontrashingResize(
   return absl::strings_internal::STLStringSupportsNontrashingResize(&s);
 }
 
-// Assigns the n bytes starting at ptr to the given string. This is intended to
-// be faster than string::assign() in SOME cases, however, it's actually slower
-// in some cases as well.
+// Assigns the n bytes starting at ptr to the given std::string. This is
+// intended to be faster than std::string::assign() in SOME cases, however, it's
+// actually slower in some cases as well.
 //
-// Just use string::assign directly unless you have benchmarks showing that this
-// function makes your code faster. (Even then, a future version of
-// string::assign() may be faster than this.)
+// Just use std::string::assign directly unless you have benchmarks showing that
+// this function makes your code faster. (Even then, a future version of
+// std::string::assign() may be faster than this.)
 inline void STLAssignToString(std::string* str, const char* ptr, size_t n) {
   STLStringResizeUninitialized(str, n);
   if (n == 0) return;
   memcpy(&*str->begin(), ptr, n);
 }
 
-// Appends the n bytes starting at ptr to the given std::string. This is intended to
-// be faster than string::append() in SOME cases, however, it's actually slower
-// in some cases as well.
+// Appends the n bytes starting at ptr to the given std::string. This is
+// intended to be faster than std::string::append() in SOME cases, however, it's
+// actually slower in some cases as well.
 //
-// Just use string::append directly unless you have benchmarks showing that this
-// function makes your code faster. (Even then, a future version of
-// string::append() may be faster than this.)
+// Just use std::string::append directly unless you have benchmarks showing that
+// this function makes your code faster. (Even then, a future version of
+// std::string::append() may be faster than this.)
 inline void STLAppendToString(std::string* str, const char* ptr, size_t n) {
   if (n == 0) return;
   size_t old_size = str->size();
@@ -243,20 +243,20 @@ inline void STLAppendToString(std::string* str, const char* ptr, size_t n) {
   memcpy(&*str->begin() + old_size, ptr, n);
 }
 
-// Returns a mutable char* pointing to a string's internal buffer, which may not
-// be null-terminated. Returns nullptr for an empty string. If not non-null,
-// writing through this pointer will modify the string.
+// Returns a mutable char* pointing to a std::string's internal buffer, which
+// may not be null-terminated. Returns nullptr for an empty std::string. If not
+// non-null, writing through this pointer will modify the std::string.
 //
 // string_as_array(&str)[i] is valid for 0 <= i < str.size() until the
-// next call to a string method that invalidates iterators.
+// next call to a std::string method that invalidates iterators.
 //
 // In C++11 you may simply use &str[0] to get a mutable char*.
 //
 // Prior to C++11, there was no standard-blessed way of getting a mutable
-// reference to a string's internal buffer. The requirement that string be
-// contiguous is officially part of the C++11 standard [string.require]/5.
-// According to Matt Austern, this should already work on all current C++98
-// implementations.
+// reference to a std::string's internal buffer. The requirement that
+// std::string be contiguous is officially part of the C++11 standard
+// [std::string.require]/5. According to Matt Austern, this should already work
+// on all current C++98 implementations.
 inline char* string_as_array(std::string* str) {
   // DO NOT USE const_cast<char*>(str->data())! See the unittest for why.
   return str->empty() ? nullptr : &*str->begin();
@@ -266,11 +266,10 @@ inline char* string_as_array(std::string* str) {
 // STL can return false when the maps/sets contain identical elements. This is
 // because it compares the internal hash tables which may be different if the
 // order of insertions and deletions differed.
-template<typename HashSet>
+template <typename HashSet>
 inline bool HashSetEquality(const HashSet& set_a, const HashSet& set_b) {
   if (set_a.size() != set_b.size()) return false;
-  for (typename HashSet::const_iterator i = set_a.begin();
-       i != set_a.end();
+  for (typename HashSet::const_iterator i = set_a.begin(); i != set_a.end();
        ++i)
     if (set_b.find(*i) == set_b.end()) return false;
   return true;
@@ -283,8 +282,8 @@ template <typename HashMap, typename BinaryPredicate>
 inline bool HashMapEquality(const HashMap& map_a, const HashMap& map_b,
                             BinaryPredicate mapped_type_equal) {
   if (map_a.size() != map_b.size()) return false;
-  for (typename HashMap::const_iterator i = map_a.begin();
-       i != map_a.end(); ++i) {
+  for (typename HashMap::const_iterator i = map_a.begin(); i != map_a.end();
+       ++i) {
     typename HashMap::const_iterator j = map_b.find(i->first);
     if (j == map_b.end()) return false;
     if (!mapped_type_equal(i->second, j->second)) return false;
@@ -311,7 +310,7 @@ inline bool HashMapEquality(const HashMap& a, const HashMap& b) {
 // Note: If you're calling this on an entire container, you probably want to
 // call STLDeleteElements(&container) instead (which also clears the container),
 // or use an ElementDeleter.
-template<typename ForwardIterator>
+template <typename ForwardIterator>
 void STLDeleteContainerPointers(ForwardIterator begin, ForwardIterator end) {
   while (begin != end) {
     auto temp = begin;
@@ -322,7 +321,7 @@ void STLDeleteContainerPointers(ForwardIterator begin, ForwardIterator end) {
 
 // Calls delete (non-array version) on BOTH items (pointers) in each pair in the
 // range [begin, end).
-template<typename ForwardIterator>
+template <typename ForwardIterator>
 void STLDeleteContainerPairPointers(ForwardIterator begin,
                                     ForwardIterator end) {
   while (begin != end) {
@@ -335,7 +334,7 @@ void STLDeleteContainerPairPointers(ForwardIterator begin,
 
 // Calls delete (non-array version) on the FIRST item (pointer) in each pair in
 // the range [begin, end).
-template<typename ForwardIterator>
+template <typename ForwardIterator>
 void STLDeleteContainerPairFirstPointers(ForwardIterator begin,
                                          ForwardIterator end) {
   while (begin != end) {
@@ -350,7 +349,7 @@ void STLDeleteContainerPairFirstPointers(ForwardIterator begin,
 //
 // Note: If you're calling this on an entire container, you probably want to
 // call STLDeleteValues(&container) instead, or use ValueDeleter.
-template<typename ForwardIterator>
+template <typename ForwardIterator>
 void STLDeleteContainerPairSecondPointers(ForwardIterator begin,
                                           ForwardIterator end) {
   while (begin != end) {
@@ -369,7 +368,7 @@ void STLDeleteContainerPairSecondPointers(ForwardIterator begin,
 // As an alternative to calling STLDeleteElements() directly, consider
 // ElementDeleter (defined below), which ensures that your container's elements
 // are deleted when the ElementDeleter goes out of scope.
-template<typename T>
+template <typename T>
 void STLDeleteElements(T* container) {
   if (!container) return;
   STLDeleteContainerPointers(container->begin(), container->end());
@@ -379,7 +378,7 @@ void STLDeleteElements(T* container) {
 // Given an STL container consisting of (key, value) pairs, STLDeleteValues
 // deletes all the "value" components and clears the container. Does nothing in
 // the case it's given a nullptr.
-template<typename T>
+template <typename T>
 void STLDeleteValues(T* v) {
   if (!v) return;
   (STLDeleteContainerPairSecondPointers)(v->begin(), v->end());
@@ -405,16 +404,12 @@ class BaseDeleter {
 // pointers when it goes out of scope.
 //
 // Clients should NOT use this class directly. Use ElementDeleter instead.
-template<typename STLContainer>
+template <typename STLContainer>
 class TemplatedElementDeleter : public BaseDeleter {
  public:
-  explicit TemplatedElementDeleter(STLContainer* ptr)
-      : container_ptr_(ptr) {
-  }
+  explicit TemplatedElementDeleter(STLContainer* ptr) : container_ptr_(ptr) {}
 
-  virtual ~TemplatedElementDeleter() {
-    STLDeleteElements(container_ptr_);
-  }
+  virtual ~TemplatedElementDeleter() { STLDeleteElements(container_ptr_); }
 
   TemplatedElementDeleter(const TemplatedElementDeleter&) = delete;
   void operator=(const TemplatedElementDeleter&) = delete;
@@ -438,14 +433,11 @@ class TemplatedElementDeleter : public BaseDeleter {
 // Since C++11, consider using containers of std::unique_ptr instead.
 class ElementDeleter {
  public:
-  template<typename STLContainer>
+  template <typename STLContainer>
   explicit ElementDeleter(STLContainer* ptr)
-      : deleter_(new TemplatedElementDeleter<STLContainer>(ptr)) {
-  }
+      : deleter_(new TemplatedElementDeleter<STLContainer>(ptr)) {}
 
-  ~ElementDeleter() {
-    delete deleter_;
-  }
+  ~ElementDeleter() { delete deleter_; }
 
   ElementDeleter(const ElementDeleter&) = delete;
   void operator=(const ElementDeleter&) = delete;
@@ -458,16 +450,12 @@ class ElementDeleter {
 // pointers when it goes out of scope.
 //
 // Clients should NOT use this class directly. Use ValueDeleter instead.
-template<typename STLContainer>
+template <typename STLContainer>
 class TemplatedValueDeleter : public BaseDeleter {
  public:
-  explicit TemplatedValueDeleter(STLContainer* ptr)
-      : container_ptr_(ptr) {
-  }
+  explicit TemplatedValueDeleter(STLContainer* ptr) : container_ptr_(ptr) {}
 
-  virtual ~TemplatedValueDeleter() {
-    STLDeleteValues(container_ptr_);
-  }
+  virtual ~TemplatedValueDeleter() { STLDeleteValues(container_ptr_); }
 
   TemplatedValueDeleter(const TemplatedValueDeleter&) = delete;
   void operator=(const TemplatedValueDeleter&) = delete;
@@ -487,14 +475,11 @@ class TemplatedValueDeleter : public BaseDeleter {
 //   return success;
 class ValueDeleter {
  public:
-  template<typename STLContainer>
+  template <typename STLContainer>
   explicit ValueDeleter(STLContainer* ptr)
-      : deleter_(new TemplatedValueDeleter<STLContainer>(ptr)) {
-  }
+      : deleter_(new TemplatedValueDeleter<STLContainer>(ptr)) {}
 
-  ~ValueDeleter() {
-    delete deleter_;
-  }
+  ~ValueDeleter() { delete deleter_; }
 
   ValueDeleter(const ValueDeleter&) = delete;
   void operator=(const ValueDeleter&) = delete;
@@ -508,11 +493,12 @@ class ValueDeleter {
 // templated and doesn't have a virtual destructor.
 //
 // New code should prefer ElementDeleter.
-template<typename STLContainer>
+template <typename STLContainer>
 class STLElementDeleter {
  public:
   STLElementDeleter(STLContainer* ptr) : container_ptr_(ptr) {}
   ~STLElementDeleter() { STLDeleteElements(container_ptr_); }
+
  private:
   STLContainer* container_ptr_;
 };
@@ -522,11 +508,12 @@ class STLElementDeleter {
 // this class is templated and doesn't have a virtual destructor.
 //
 // New code should prefer ValueDeleter.
-template<typename STLContainer>
+template <typename STLContainer>
 class STLValueDeleter {
  public:
   STLValueDeleter(STLContainer* ptr) : container_ptr_(ptr) {}
   ~STLValueDeleter() { STLDeleteValues(container_ptr_); }
+
  private:
   STLContainer* container_ptr_;
 };
@@ -604,7 +591,7 @@ struct Unordered<T, absl::void_t<typename T::hasher>,
 //
 // The form taking 4 arguments. All other forms call into this one.
 // Explicit comparator, append to output container.
-template<typename In1, typename In2, typename Out, typename Compare>
+template <typename In1, typename In2, typename Out, typename Compare>
 void STLSetDifference(const In1& a, const In2& b, Out* out, Compare compare) {
   static_assert(!gtl::stl_util_internal::Unordered<In1>::value,
                 "In1 must be an ordered set");
@@ -627,29 +614,29 @@ STLSetDifference(const In1& a, const In2& b, Out* out) {
   STLSetDifference(a, b, out, gtl::stl_util_internal::TransparentLess());
 }
 // Explicit comparator, explicit return type.
-template<typename Out, typename In1, typename In2, typename Compare>
+template <typename Out, typename In1, typename In2, typename Compare>
 Out STLSetDifferenceAs(const In1& a, const In2& b, Compare compare) {
   Out out;
   STLSetDifference(a, b, &out, compare);
   return out;
 }
 // Implicit comparator, explicit return type.
-template<typename Out, typename In1, typename In2>
+template <typename Out, typename In1, typename In2>
 Out STLSetDifferenceAs(const In1& a, const In2& b) {
   return STLSetDifferenceAs<Out>(a, b,
                                  gtl::stl_util_internal::TransparentLess());
 }
 // Explicit comparator, implicit return type.
-template<typename In1, typename In2, typename Compare>
+template <typename In1, typename In2, typename Compare>
 In1 STLSetDifference(const In1& a, const In2& b, Compare compare) {
   return STLSetDifferenceAs<In1>(a, b, compare);
 }
 // Implicit comparator, implicit return type.
-template<typename In1, typename In2>
+template <typename In1, typename In2>
 In1 STLSetDifference(const In1& a, const In2& b) {
   return STLSetDifference(a, b, gtl::stl_util_internal::TransparentLess());
 }
-template<typename In1>
+template <typename In1>
 In1 STLSetDifference(const In1& a, const In1& b) {
   return STLSetDifference(a, b, gtl::stl_util_internal::TransparentLess());
 }
@@ -668,7 +655,7 @@ In1 STLSetDifference(const In1& a, const In1& b) {
 // and "b".
 //
 // See std::set_union() for how set union is computed.
-template<typename In1, typename In2, typename Out, typename Compare>
+template <typename In1, typename In2, typename Out, typename Compare>
 void STLSetUnion(const In1& a, const In2& b, Out* out, Compare compare) {
   static_assert(!gtl::stl_util_internal::Unordered<In1>::value,
                 "In1 must be an ordered set");
@@ -685,29 +672,29 @@ void STLSetUnion(const In1& a, const In2& b, Out* out, Compare compare) {
 // overload resolution if 'out' is a function pointer, gracefully forcing
 // the 3-argument overload that treats the third argument as a comparator.
 template <typename In1, typename In2, typename Out>
-typename std::enable_if<!std::is_function<Out>::value, void>::type
-STLSetUnion(const In1& a, const In2& b, Out* out) {
+typename std::enable_if<!std::is_function<Out>::value, void>::type STLSetUnion(
+    const In1& a, const In2& b, Out* out) {
   return STLSetUnion(a, b, out, gtl::stl_util_internal::TransparentLess());
 }
-template<typename Out, typename In1, typename In2, typename Compare>
+template <typename Out, typename In1, typename In2, typename Compare>
 Out STLSetUnionAs(const In1& a, const In2& b, Compare compare) {
   Out out;
   STLSetUnion(a, b, &out, compare);
   return out;
 }
-template<typename Out, typename In1, typename In2>
+template <typename Out, typename In1, typename In2>
 Out STLSetUnionAs(const In1& a, const In2& b) {
   return STLSetUnionAs<Out>(a, b, gtl::stl_util_internal::TransparentLess());
 }
-template<typename In1, typename In2, typename Compare>
+template <typename In1, typename In2, typename Compare>
 In1 STLSetUnion(const In1& a, const In2& b, Compare compare) {
   return STLSetUnionAs<In1>(a, b, compare);
 }
-template<typename In1, typename In2>
+template <typename In1, typename In2>
 In1 STLSetUnion(const In1& a, const In2& b) {
   return STLSetUnion(a, b, gtl::stl_util_internal::TransparentLess());
 }
-template<typename In1>
+template <typename In1>
 In1 STLSetUnion(const In1& a, const In1& b) {
   return STLSetUnion(a, b, gtl::stl_util_internal::TransparentLess());
 }
@@ -727,7 +714,7 @@ In1 STLSetUnion(const In1& a, const In1& b) {
 // "out" must be distinct from both "a" and "b".
 //
 // See std::set_symmetric_difference() for how these elements are selected.
-template<typename In1, typename In2, typename Out, typename Compare>
+template <typename In1, typename In2, typename Out, typename Compare>
 void STLSetSymmetricDifference(const In1& a, const In2& b, Out* out,
                                Compare compare) {
   static_assert(!gtl::stl_util_internal::Unordered<In1>::value,
@@ -750,27 +737,27 @@ STLSetSymmetricDifference(const In1& a, const In2& b, Out* out) {
   return STLSetSymmetricDifference(a, b, out,
                                    gtl::stl_util_internal::TransparentLess());
 }
-template<typename Out, typename In1, typename In2, typename Compare>
+template <typename Out, typename In1, typename In2, typename Compare>
 Out STLSetSymmetricDifferenceAs(const In1& a, const In2& b, Compare comp) {
   Out out;
   STLSetSymmetricDifference(a, b, &out, comp);
   return out;
 }
-template<typename Out, typename In1, typename In2>
+template <typename Out, typename In1, typename In2>
 Out STLSetSymmetricDifferenceAs(const In1& a, const In2& b) {
   return STLSetSymmetricDifferenceAs<Out>(
       a, b, gtl::stl_util_internal::TransparentLess());
 }
-template<typename In1, typename In2, typename Compare>
+template <typename In1, typename In2, typename Compare>
 In1 STLSetSymmetricDifference(const In1& a, const In2& b, Compare comp) {
   return STLSetSymmetricDifferenceAs<In1>(a, b, comp);
 }
-template<typename In1, typename In2>
+template <typename In1, typename In2>
 In1 STLSetSymmetricDifference(const In1& a, const In2& b) {
   return STLSetSymmetricDifference(a, b,
                                    gtl::stl_util_internal::TransparentLess());
 }
-template<typename In1>
+template <typename In1>
 In1 STLSetSymmetricDifference(const In1& a, const In1& b) {
   return STLSetSymmetricDifference(a, b,
                                    gtl::stl_util_internal::TransparentLess());
@@ -790,7 +777,7 @@ In1 STLSetSymmetricDifference(const In1& a, const In1& b) {
 // "compare" if specified. "out" must be distinct from both "a" and "b".
 //
 // See std::set_intersection() for how set intersection is computed.
-template<typename In1, typename In2, typename Out, typename Compare>
+template <typename In1, typename In2, typename Out, typename Compare>
 void STLSetIntersection(const In1& a, const In2& b, Out* out, Compare compare) {
   static_assert(!gtl::stl_util_internal::Unordered<In1>::value,
                 "In1 must be an ordered set");
@@ -812,33 +799,33 @@ STLSetIntersection(const In1& a, const In2& b, Out* out) {
   return STLSetIntersection(a, b, out,
                             gtl::stl_util_internal::TransparentLess());
 }
-template<typename Out, typename In1, typename In2, typename Compare>
+template <typename Out, typename In1, typename In2, typename Compare>
 Out STLSetIntersectionAs(const In1& a, const In2& b, Compare compare) {
   Out out;
   STLSetIntersection(a, b, &out, compare);
   return out;
 }
-template<typename Out, typename In1, typename In2>
+template <typename Out, typename In1, typename In2>
 Out STLSetIntersectionAs(const In1& a, const In2& b) {
   return STLSetIntersectionAs<Out>(a, b,
                                    gtl::stl_util_internal::TransparentLess());
 }
-template<typename In1, typename In2, typename Compare>
+template <typename In1, typename In2, typename Compare>
 In1 STLSetIntersection(const In1& a, const In2& b, Compare compare) {
   return STLSetIntersectionAs<In1>(a, b, compare);
 }
-template<typename In1, typename In2>
+template <typename In1, typename In2>
 In1 STLSetIntersection(const In1& a, const In2& b) {
   return STLSetIntersection(a, b, gtl::stl_util_internal::TransparentLess());
 }
-template<typename In1>
+template <typename In1>
 In1 STLSetIntersection(const In1& a, const In1& b) {
   return STLSetIntersection(a, b, gtl::stl_util_internal::TransparentLess());
 }
 
 // Returns true iff every element in "b" is also in "a". Both containers
 // must be sorted by the specified comparator, or by '<' if none is given.
-template<typename In1, typename In2, typename Compare>
+template <typename In1, typename In2, typename Compare>
 bool STLIncludes(const In1& a, const In2& b, Compare compare) {
   static_assert(!gtl::stl_util_internal::Unordered<In1>::value,
                 "In1 must be an ordered set");
@@ -848,7 +835,7 @@ bool STLIncludes(const In1& a, const In2& b, Compare compare) {
   assert(std::is_sorted(b.begin(), b.end(), compare));
   return std::includes(a.begin(), a.end(), b.begin(), b.end(), compare);
 }
-template<typename In1, typename In2>
+template <typename In1, typename In2>
 bool STLIncludes(const In1& a, const In2& b) {
   return STLIncludes(a, b, gtl::stl_util_internal::TransparentLess());
 }
@@ -865,7 +852,7 @@ bool STLIncludes(const In1& a, const In2& b) {
 // sorted either by the specified comparator, or by '<' if no comparator is
 // given.
 // [Two elements a,b are considered equivalent if !(a < b) && !(b < a) ].
-template<typename InputIterator1, typename InputIterator2, typename Comp>
+template <typename InputIterator1, typename InputIterator2, typename Comp>
 bool SortedRangesHaveIntersection(InputIterator1 begin1, InputIterator1 end1,
                                   InputIterator2 begin2, InputIterator2 end2,
                                   Comp comparator) {
@@ -884,7 +871,7 @@ bool SortedRangesHaveIntersection(InputIterator1 begin1, InputIterator1 end1,
   }
   return false;
 }
-template<typename InputIterator1, typename InputIterator2>
+template <typename InputIterator1, typename InputIterator2>
 bool SortedRangesHaveIntersection(InputIterator1 begin1, InputIterator1 end1,
                                   InputIterator2 begin2, InputIterator2 end2) {
   return SortedRangesHaveIntersection(
@@ -919,22 +906,20 @@ bool SortedContainersHaveIntersection(const In1& in1, const In2& in2) {
 //   v.push_back("hi");
 //   LOG(INFO) << "Bytes allocated " << bytes;
 //
-template<typename T, typename Alloc = std::allocator<T> >
+template <typename T, typename Alloc = std::allocator<T>>
 class STLCountingAllocator : public Alloc {
  public:
   using Base = Alloc;
   using pointer = typename Alloc::pointer;
   using size_type = typename Alloc::size_type;
 
-  STLCountingAllocator() : bytes_used_(nullptr) { }
+  STLCountingAllocator() : bytes_used_(nullptr) {}
   explicit STLCountingAllocator(int64* b) : bytes_used_(b) {}
 
   // Constructor used for rebinding
-  template<typename U, typename B>
+  template <typename U, typename B>
   STLCountingAllocator(const STLCountingAllocator<U, B>& x)
-      : Alloc(x),
-        bytes_used_(x.bytes_used()) {
-  }
+      : Alloc(x), bytes_used_(x.bytes_used()) {}
 
   pointer allocate(size_type n,
                    std::allocator<void>::const_pointer hint = nullptr) {
@@ -950,7 +935,7 @@ class STLCountingAllocator : public Alloc {
   }
 
   // Rebind allows an std::allocator<T> to be used for a different type
-  template<typename U>
+  template <typename U>
   class rebind {
     using OtherA = typename Alloc::template rebind<U>::other;
 
@@ -964,18 +949,18 @@ class STLCountingAllocator : public Alloc {
   int64* bytes_used_;
 };
 
-template<typename A>
+template <typename A>
 class STLCountingAllocator<void, A> : public A {
  public:
   STLCountingAllocator() : bytes_used_(nullptr) {}
   explicit STLCountingAllocator(int64* b) : bytes_used_(b) {}
 
   // Constructor used for rebinding
-  template<typename U, typename B>
+  template <typename U, typename B>
   STLCountingAllocator(const STLCountingAllocator<U, B>& x)
       : A(x), bytes_used_(x.bytes_used()) {}
 
-  template<typename U>
+  template <typename U>
   class rebind {
     using OtherA = typename A::template rebind<U>::other;
 
@@ -983,6 +968,7 @@ class STLCountingAllocator<void, A> : public A {
     using other = STLCountingAllocator<U, OtherA>;
   };
   int64* bytes_used() const { return bytes_used_; }
+
  private:
   int64* bytes_used_;
 };
@@ -992,7 +978,7 @@ bool operator==(const STLCountingAllocator<T, A>& a,
                 const STLCountingAllocator<T, A>& b) {
   using Base = typename STLCountingAllocator<T, A>::Base;
   return static_cast<const Base&>(a) == static_cast<const Base&>(b) &&
-      a.bytes_used() == b.bytes_used();
+         a.bytes_used() == b.bytes_used();
 }
 
 template <typename T, typename A>

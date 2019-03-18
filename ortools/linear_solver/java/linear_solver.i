@@ -71,6 +71,20 @@ import java.lang.reflect.*;
     }
     return output;
   }
+
+  void setHint(const std::vector<operations_research::MPVariable*>& variables,
+               const std::vector<double>& values) {
+    if (variables.size() != values.size()) {
+      LOG(FATAL) << "Different number of variables and values when setting "
+          << "hint.";
+    }
+    std::vector<std::pair<const operations_research::MPVariable*, double> >
+        hint(variables.size());
+    for (int i = 0; i < variables.size(); ++i) {
+      hint[i] = std::make_pair(variables[i], values[i]);
+    }
+    $self->SetHint(hint);
+  }
 }
 
 // Add java code on MPSolver.
