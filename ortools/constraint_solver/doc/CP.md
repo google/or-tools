@@ -112,6 +112,56 @@ if __name__ == '__main__':
 ### Java code samples
 
 ```java
+import com.google.ortools.constraintsolver.DecisionBuilder;
+import com.google.ortools.constraintsolver.IntVar;
+import com.google.ortools.constraintsolver.Solver;
+import java.util.logging.Logger;
+
+/** Simple CP Program.*/
+public class SimpleCpProgram {
+  static { System.loadLibrary("jniortools"); }
+
+  private static final Logger logger = Logger.getLogger(SimpleCpProgram.class.getName());
+
+  public static void main(String[] args) throws Exception {
+    // Instantiate the solver.
+    Solver solver = new Solver("CpSimple");
+
+    // Create the variables.
+    final long numVals = 3;
+    final IntVar x = solver.makeIntVar(0, numVals - 1, "x");
+    final IntVar y = solver.makeIntVar(0, numVals - 1, "y");
+    final IntVar z = solver.makeIntVar(0, numVals - 1, "z");
+
+    // Constraint 0: x != y..
+    solver.addConstraint(solver.makeAllDifferent(new IntVar[]{x, y}));
+    logger.info("Number of constraints: " + solver.constraints());
+
+    // Solve the problem.
+    final DecisionBuilder db = solver.makePhase(
+        new IntVar[]{x, y, z},
+        Solver.CHOOSE_FIRST_UNBOUND,
+        Solver.ASSIGN_MIN_VALUE);
+
+    // Print solution on console.
+    int count = 0;
+    solver.newSearch(db);
+    while (solver.nextSolution()) {
+      ++count;
+      logger.info(String.format("Solution: %d\n x=%d y=%d z=%d"
+          , count
+          , x.value()
+          , y.value()
+          , z.value()));
+    }
+    solver.endSearch();
+    logger.info("Number of solutions found: " + solver.solutions());
+
+    logger.info(String.format(
+          "Advanced usage:\nProblem solved in %d ms\nMemory usage: %d bytes"
+          , solver.wallTime(), Solver.memoryUsage()));
+  }
+}
 ```
 
 ### .Net code samples

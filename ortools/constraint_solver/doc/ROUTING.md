@@ -151,6 +151,75 @@ if __name__ == '__main__':
 ### Java code samples
 
 ```java
+import static java.lang.Math.abs;
+
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.Assignment;
+import com.google.ortools.constraintsolver.RoutingIndexManager;
+import com.google.ortools.constraintsolver.RoutingModel;
+import com.google.ortools.constraintsolver.main;
+import java.util.logging.Logger;
+
+/** Minimal Routing example to showcase calling the solver.*/
+public class SimpleRoutingProgram {
+  static { System.loadLibrary("jniortools"); }
+
+  private static final Logger logger =
+      Logger.getLogger(SimpleRoutingProgram.class.getName());
+
+  public static void main(String[] args) throws Exception {
+    // Instantiate the data problem.
+    final int numLocation = 5;
+    final int numVehicles = 1;
+    final int depot = 0;
+
+    // Create Routing Index Manager
+    RoutingIndexManager manager = new RoutingIndexManager(numLocation, numVehicles, depot);
+
+    // Create Routing Model.
+    RoutingModel routing = new RoutingModel(manager);
+
+    // Create and register a transit callback.
+    final int transitCallbackIndex = routing.registerTransitCallback(
+        (long fromIndex, long toIndex) -> {
+          // Convert from routing variable Index to user NodeIndex.
+          int fromNode = manager.indexToNode(fromIndex);
+          int toNode = manager.indexToNode(toIndex);
+          return abs(toNode - fromNode);
+        });
+
+    // Define cost of each arc.
+    routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+
+    // Setting first solution heuristic.
+    RoutingSearchParameters searchParameters =
+        main.defaultRoutingSearchParameters()
+            .toBuilder()
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .build();
+
+    // Solve the problem.
+    Assignment solution = routing.solveWithParameters(searchParameters);
+
+    // Print solution on console.
+    logger.info("Objective: " + solution.objectiveValue());
+    // Inspect solution.
+    long index = routing.start(0);
+    logger.info("Route for Vehicle 0:");
+    long routeDistance = 0;
+    String route = "";
+    while (!routing.isEnd(index)) {
+      route += manager.indexToNode(index) + " -> ";
+      long previousIndex = index;
+      index = solution.value(routing.nextVar(index));
+      routeDistance += routing.getArcCostForVehicle(previousIndex, index, 0);
+    }
+    route += manager.indexToNode(index);
+    logger.info(route);
+    logger.info("Distance of the route: " + routeDistance + "m");
+  }
+}
 ```
 
 ### .Net code samples
