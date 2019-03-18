@@ -134,7 +134,7 @@ class SchedulingConstraintHelper {
   //   start-min     end-min          start-max     end-max
   //
   // Note that for tasks with variable durations, we don't necessarily have
-  // duration-min between the the XXX-min and XXX-max value.
+  // duration-min between the XXX-min and XXX-max value.
   IntegerValue DurationMin(int t) const;
   IntegerValue DurationMax(int t) const;
   IntegerValue StartMin(int t) const;

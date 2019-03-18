@@ -113,7 +113,7 @@ class TaskSet {
 // ============================================================================
 // Below are many of the known propagation techniques for the disjunctive, each
 // implemented in only one time direction and in its own propagator class. The
-// Disjunctive() model function above will instanciate the used ones (according
+// Disjunctive() model function above will instantiate the used ones (according
 // to the solver parameters) in both time directions.
 //
 // See Petr Vilim PhD "Global Constraints in Scheduling" for a description of

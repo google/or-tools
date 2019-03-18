@@ -3424,7 +3424,7 @@ bool ProcessSetPPC(PresolveContext* context, TimeLimit* time_limit) {
     if (ct->constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
         ct->constraint_case() == ConstraintProto::ConstraintCase::kAtMostOne) {
       // Because TransformIntoMaxCliques() can detect literal equivalence
-      // relation, we make sure the constraints are presolved before beeing
+      // relation, we make sure the constraints are presolved before being
       // inspected.
       if (PresolveOneConstraint(c, context)) {
         context->UpdateConstraintVariableUsage(c);

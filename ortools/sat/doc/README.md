@@ -7,7 +7,7 @@
 
 This document presents modeling recipes for the CP-SAT solver.
 
-Code samples are given in C++ and python. Each language have different
+Code samples are given in C++, Python, Java and C#. Each language have different
 requirements for the code samples.
 
 ## Searching for one (optimal) solution of a CP-SAT model
