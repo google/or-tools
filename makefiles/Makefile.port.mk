@@ -53,7 +53,7 @@ ifeq ($(SYSTEM),unix)
         /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64 \
         /usr/lib64/jvm/java-6-sun-1.6.0.26 \
         /usr/lib64/jvm/java-1.6.0-openjdk-1.6.0 \
-        /usr/local/buildtools/java/jdk-64
+        /usr/local/buildtools/java/jdk
     else
       NETPLATFORM = x86
       PORT = $(DISTRIBUTION)-32bit
