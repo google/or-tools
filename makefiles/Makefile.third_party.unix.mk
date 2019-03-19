@@ -22,7 +22,7 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.3.5
 PROTOBUF_TAG = 3.6.1
-ABSL_TAG = 93d155b
+ABSL_TAG = 7c7754f
 CBC_TAG = 2.9.9
 CGL_TAG = 0.59.10
 CLP_TAG = 1.16.11
@@ -379,7 +379,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_hash.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_sampler.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_force_sampling.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_leak_check.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_malloc_internal.a \
