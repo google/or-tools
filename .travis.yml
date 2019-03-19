@@ -80,6 +80,9 @@ matrix:
       osx_image: xcode10.1
       compiler: clang
       env: BUILDER=make LANGUAGE=dotnet
+    - os: linux
+      dist: xenial
+      env: BUILDER=bazel
 
 install:
   - ./.travis/install.sh
