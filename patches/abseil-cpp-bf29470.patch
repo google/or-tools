@@ -1,0 +1,90 @@
+diff --git a/CMake/AbseilHelpers.cmake b/CMake/AbseilHelpers.cmake
+index 6d26169..5e839c5 100644
+--- a/CMake/AbseilHelpers.cmake
++++ b/CMake/AbseilHelpers.cmake
+@@ -81,7 +81,11 @@ function(absl_cc_library)
+   )
+ 
+   if (NOT ABSL_CC_LIB_TESTONLY OR ABSL_RUN_TESTS)
+-    set(_NAME "${ABSL_CC_LIB_NAME}")
++    if (NOT ABSL_ENABLE_INSTALL)
++      set(_NAME "absl_${ABSL_CC_LIB_NAME}")
++    else()
++      set(_NAME "${ABSL_CC_LIB_NAME}")
++    endif()
+ 
+     # Check if this is a header-only library
+     # Note that as of February 2019, many popular OS's (for example, Ubuntu
+@@ -150,7 +154,7 @@ function(absl_cc_library)
+ 
+     # TODO currently we don't install googletest alongside abseil sources, so
+     # installed abseil can't be tested.
+-    if (NOT ABSL_CC_LIB_TESTONLY)
++    if (NOT ABSL_CC_LIB_TESTONLY AND ABSL_ENABLE_INSTALL)
+       install(TARGETS ${_NAME} EXPORT ${PROJECT_NAME}Targets
+             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e3bb8d0..7786ae7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -29,6 +29,11 @@ endif()
+ # if command can use IN_LIST
+ cmake_policy(SET CMP0057 NEW)
+ 
++# Enable MACOSX_RPATH by default.
++if(POLICY CMP0042)
++  cmake_policy (SET CMP0042 NEW)
++endif()
++
+ project(absl)
+ 
+ # when absl is included as subproject (i.e. using add_subdirectory(abseil-cpp))
+@@ -118,25 +123,28 @@ endif()
+ 
+ add_subdirectory(absl)
+ 
+-# install as a subdirectory only
+-install(EXPORT ${PROJECT_NAME}Targets
+-  NAMESPACE absl::
+-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
+-)
++# install rules
++if(ABSL_ENABLE_INSTALL)
++  # install as a subdirectory only
++  install(EXPORT ${PROJECT_NAME}Targets
++    NAMESPACE absl::
++    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
++  )
+ 
+-configure_package_config_file(
+-  CMake/abslConfig.cmake.in
+-  "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+-  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
+-)
++  configure_package_config_file(
++    CMake/abslConfig.cmake.in
++    "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
++    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake"
++  )
+ 
+-install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
+-)
++  install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
++    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
++  )
+ 
+-install(DIRECTORY absl
+-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+-  FILES_MATCHING
+-    PATTERN "*.inc"
+-    PATTERN "*.h"
+-)
++  install(DIRECTORY absl
++    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
++    FILES_MATCHING
++      PATTERN "*.inc"
++      PATTERN "*.h"
++  )
++endif()
