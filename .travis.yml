@@ -1,5 +1,7 @@
-sudo: required
 language: cpp
+cache:
+  ccache: true
+  pip: true
 
 matrix:
   include:
@@ -66,6 +68,7 @@ matrix:
     # Bazel builds and tests
     - os: linux
       dist: xenial
+      cache: false
       addons:
         apt:
           sources:

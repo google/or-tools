@@ -47,7 +47,7 @@ if [ "${BUILDER}" == make ]; then
     brew update
     # see https://github.com/travis-ci/travis-ci/issues/10275
     brew install gcc || brew link --overwrite gcc
-    brew install make
+    brew install make ccache
     if [ "${LANGUAGE}" != cc ]; then
       brew install swig
     fi
@@ -76,6 +76,7 @@ if [ "${BUILDER}" == cmake ]; then
     brew update
     # see https://github.com/travis-ci/travis-ci/issues/10275
     brew install gcc || brew link --overwrite gcc
+    brew install make ccache
     brew install swig
     brew upgrade python
   fi

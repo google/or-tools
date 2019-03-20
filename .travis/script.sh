@@ -59,6 +59,7 @@ if [ "${BUILDER}" == make ];then
       make test_fz --jobs=2
     fi
   elif [ "${TRAVIS_OS_NAME}" == osx ];then
+    export PATH="/usr/local/opt/ccache/libexec:$PATH"
     if [ "${LANGUAGE}" == dotnet ]; then
       # Installer changes path but won't be picked up in current terminal session
       # Need to explicitly add location
@@ -97,6 +98,16 @@ fi
 #############
 if [ "${BUILDER}" == cmake ];then
   if [ "${TRAVIS_OS_NAME}" == linux ];then
+    # Add clang support in ccache
+    if [[ "${CC}" == "clang" ]]; then
+      sudo ln -s ../../bin/ccache /usr/lib/ccache/clang
+      export CFLAGS="-Qunused-arguments $CFLAGS"
+    fi
+    if [[ "${CXX}" == "clang++" ]]; then
+      sudo ln -s ../../bin/ccache /usr/lib/ccache/clang++
+      export CXXFLAGS="-Qunused-arguments $CXXFLAGS"
+    fi
+
     export PATH="${HOME}"/swig/bin:"${PATH}"
     pyenv global system 3.7
     checkenv
@@ -104,6 +115,7 @@ if [ "${BUILDER}" == cmake ];then
     cmake --build build --target all -- --jobs=4
     cmake --build build --target test -- CTEST_OUTPUT_ON_FAILURE=1
   elif [ "${TRAVIS_OS_NAME}" == osx ];then
+    export PATH="/usr/local/opt/ccache/libexec:$PATH"
     checkenv
     cmake -H. -Bbuild || true
     cmake --build build --target all -- --jobs=4
@@ -112,6 +124,6 @@ if [ "${BUILDER}" == cmake ];then
 fi
 
 if [ "${BUILDER}" == bazel ]; then
-  bazel build --curses=no //...:all
-  bazel test -c opt --curses=no //...:all
+  bazel build --curses=no --copt='-Wno-sign-compare' //...:all
+  bazel test -c opt --curses=no --copt='-Wno-sign-compare' //...:all
 fi
