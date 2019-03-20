@@ -3,7 +3,7 @@
 help:
 	@echo "Tools to generate various deliveries for linux distros"
 	@echo "use NOCACHE=1 to \"docker build --no-cache\""
-	@echo "<distro>: debian-9, centos-7, ubuntu-14.04, ubuntu-16.04, ubuntu-18.04, ubuntu-18.10, all"
+	@echo "<distro>: debian-9, centos-7, ubuntu-16.04, ubuntu-18.04, ubuntu-18.10, all"
 	@echo "<language>: cc, java, dotnet, all"
 	@echo
 	@echo "usage:"
@@ -35,14 +35,16 @@ help:
 
 OR_TOOLS_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 OR_TOOLS_SHA1 := $(shell git rev-parse --verify HEAD)
-$(info branch: $(OR_TOOLS_BRANCH))
 include ../../Version.txt
 OR_TOOLS_PATCH := $(shell git rev-list --count HEAD)
 OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(OR_TOOLS_PATCH)
 ifdef PRE_RELEASE
 OR_TOOLS_VERSION := $(OR_TOOLS_VERSION)-beta
 endif
+$(info branch: $(OR_TOOLS_BRANCH))
+$(info SHA1: $(OR_TOOLS_SHA1))
 $(info version: $(OR_TOOLS_VERSION))
+
 DOCKER_RUN_CMD := docker run --rm -it --init
 ifdef NOCACHE
 DOCKER_BUILD_CMD := docker build --no-cache
@@ -96,20 +98,17 @@ export/python: | export
 .PHONY: docker \
 docker_centos-7 \
 docker_debian-9 \
-docker_ubuntu-14.04 \
 docker_ubuntu-16.04 \
 docker_ubuntu-18.04 \
 docker_ubuntu-18.10
 docker: \
 docker_centos-7 \
 docker_debian-9 \
-docker_ubuntu-14.04 \
 docker_ubuntu-16.04 \
 docker_ubuntu-18.04 \
 docker_ubuntu-18.10
 docker_centos-7: export/centos-7/docker.tar
 docker_debian-9: export/debian-9/docker.tar
-docker_ubuntu-14.04: export/ubuntu-14.04/docker.tar
 docker_ubuntu-16.04: export/ubuntu-16.04/docker.tar
 docker_ubuntu-18.04: export/ubuntu-18.04/docker.tar
 docker_ubuntu-18.10: export/ubuntu-18.10/docker.tar
@@ -128,13 +127,11 @@ export/%/docker.tar: %.Dockerfile ../Makefile.cc.java.dotnet ../../makefiles ../
 	docker save or-tools_$*:devel -o $@
 
 # Run container using devel docker image
-.PHONY: bash_centos-7 bash_debian-9 bash_ubuntu-14.04 bash_ubuntu-16.04 bash_ubuntu-18.04 bash_ubuntu-18.10
+.PHONY: bash_centos-7 bash_debian-9 bash_ubuntu-16.04 bash_ubuntu-18.04 bash_ubuntu-18.10
 bash_centos-7: export/centos-7/docker.tar
 	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools_centos-7:devel /bin/bash
 bash_debian-9: export/debian-9/docker.tar
 	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools_debian-9:devel /bin/bash
-bash_ubuntu-14.04: export/ubuntu-14.04/docker.tar
-	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools_ubuntu-14.04:devel /bin/bash
 bash_ubuntu-16.04: export/ubuntu-16.04/docker.tar
 	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools_ubuntu-16.04:devel /bin/bash
 bash_ubuntu-18.04: export/ubuntu-18.04/docker.tar
@@ -146,20 +143,17 @@ bash_ubuntu-18.10: export/ubuntu-18.10/docker.tar
 .PHONY: archives \
 archive_centos-7 \
 archive_debian-9 \
-archive_ubuntu-14.04 \
 archive_ubuntu-16.04 \
 archive_ubuntu-18.04 \
 archive_ubuntu-18.10
 archives: \
 archive_centos-7 \
 archive_debian-9 \
-archive_ubuntu-14.04 \
 archive_ubuntu-16.04 \
 archive_ubuntu-18.04 \
 archive_ubuntu-18.10
 archive_centos-7: export/archives/or-tools_centos-7_v$(OR_TOOLS_VERSION).tar.gz
 archive_debian-9: export/archives/or-tools_debian-9_v$(OR_TOOLS_VERSION).tar.gz
-archive_ubuntu-14.04: export/archives/or-tools_ubuntu-14.04_v$(OR_TOOLS_VERSION).tar.gz
 archive_ubuntu-16.04: export/archives/or-tools_ubuntu-16.04_v$(OR_TOOLS_VERSION).tar.gz
 archive_ubuntu-18.04: export/archives/or-tools_ubuntu-18.04_v$(OR_TOOLS_VERSION).tar.gz
 archive_ubuntu-18.10: export/archives/or-tools_ubuntu-18.10_v$(OR_TOOLS_VERSION).tar.gz
@@ -186,8 +180,6 @@ export/centos-7: | export
 	-mkdir $@
 export/debian-9: | export
 	-mkdir $@
-export/ubuntu-14.04: | export
-	-mkdir $@
 export/ubuntu-16.04: | export
 	-mkdir $@
 export/ubuntu-18.04: | export
@@ -203,7 +195,6 @@ export/ubuntu-18.10: | export
 .PHONY: \
 docker_centos-7_cc docker_centos-7_java docker_centos-7_dotnet \
 docker_debian-9_cc docker_debian-9_java docker_debian-9_dotnet \
-docker_ubuntu-14.04_cc docker_ubuntu-14.04_java docker_ubuntu-14.04_dotnet \
 docker_ubuntu-16.04_cc docker_ubuntu-16.04_java docker_ubuntu-16.04_dotnet \
 docker_ubuntu-18.04_cc docker_ubuntu-18.04_java docker_ubuntu-18.04_dotnet \
 docker_ubuntu-18.10_cc docker_ubuntu-18.10_java docker_ubuntu-18.10_dotnet
@@ -214,10 +205,6 @@ docker_centos-7_donet: export/centos-7/docker_dotnet.tar
 docker_debian-9_cc: export/debian-9/docker_cc.tar
 docker_debian-9_java: export/debian-9/docker_java.tar
 docker_debian-9_dotnet: export/debian-9/docker_dotnet.tar
-
-docker_ubuntu-14.04_cc: export/ubuntu-14.04/docker_cc.tar
-docker_ubuntu-14.04_java: export/ubuntu-14.04/docker_java.tar
-docker_ubuntu-14.04_dotnet: export/ubuntu-14.04/docker_dotnet.tar
 
 docker_ubuntu-16.04_cc: export/ubuntu-16.04/docker_cc.tar
 docker_ubuntu-16.04_java: export/ubuntu-16.04/docker_java.tar
@@ -261,14 +248,6 @@ bash_debian-9_java: export/debian-9/docker_java.tar
 bash_debian-9_dotnet: export/debian-9/docker_dotnet.tar
 	$(DOCKER_RUN_CMD) or-tools_debian-9:dotnet /bin/bash
 
-.PHONY: bash_ubuntu-14.04_cc bash_ubuntu-14.04_java bash_ubuntu-14.04_dotnet
-bash_ubuntu-14.04_cc: export/ubuntu-14.04/docker_cc.tar
-	$(DOCKER_RUN_CMD) or-tools_ubuntu-14.04:cc /bin/bash
-bash_ubuntu-14.04_java: export/ubuntu-14.04/docker_java.tar
-	$(DOCKER_RUN_CMD) or-tools_ubuntu-14.04:java /bin/bash
-bash_ubuntu-14.04_dotnet: export/ubuntu-14.04/docker_dotnet.tar
-	$(DOCKER_RUN_CMD) or-tools_ubuntu-14.04:dotnet /bin/bash
-
 .PHONY: bash_ubuntu-16.04_cc bash_ubuntu-16.04_java bash_ubuntu-16.04_dotnet
 bash_ubuntu-16.04_cc: export/ubuntu-16.04/docker_cc.tar
 	$(DOCKER_RUN_CMD) or-tools_ubuntu-16.04:cc /bin/bash
@@ -297,14 +276,12 @@ bash_ubuntu-18.10_dotnet: export/ubuntu-18.10/docker_dotnet.tar
 .PHONY: test_archives test_archives_cc test_archives_java test_archives_dotnet \
 test_centos-7 \
 test_debian-9 \
-test_ubuntu-14.04 \
 test_ubuntu-16.04 \
 test_ubuntu-18.04 \
 test_ubuntu-18.10
 test_archives: \
 test_centos-7 \
 test_debian-9 \
-test_ubuntu-14.04 \
 test_ubuntu-16.04 \
 test_ubuntu-18.04 \
 test_ubuntu-18.10
@@ -312,7 +289,6 @@ test_ubuntu-18.10
 test_archives_cc: \
 test_centos-7_cc \
 test_debian-9_cc \
-test_ubuntu-14.04_cc \
 test_ubuntu-16.04_cc \
 test_ubuntu-18.04_cc \
 test_ubuntu-18.10_cc
@@ -320,7 +296,6 @@ test_ubuntu-18.10_cc
 test_archives_java: \
 test_centos-7_java \
 test_debian-9_java \
-test_ubuntu-14.04_java \
 test_ubuntu-16.04_java \
 test_ubuntu-18.04_java \
 test_ubuntu-18.10_java
@@ -328,14 +303,12 @@ test_ubuntu-18.10_java
 test_archives_dotnet: \
 test_centos-7_dotnet \
 test_debian-9_dotnet \
-test_ubuntu-14.04_dotnet \
 test_ubuntu-16.04_dotnet \
 test_ubuntu-18.04_dotnet \
 test_ubuntu-18.10_dotnet
 
 test_centos-7: test_centos-7_cc test_centos-7_java test_centos-7_dotnet
 test_debian-9: test_debian-9_cc test_debian-9_java test_debian-9_dotnet
-test_ubuntu-14.04: test_ubuntu-14.04_cc test_ubuntu-14.04_java test_ubuntu-14.04_dotnet
 test_ubuntu-16.04: test_ubuntu-16.04_cc test_ubuntu-16.04_java test_ubuntu-16.04_dotnet
 test_ubuntu-18.04: test_ubuntu-18.04_cc test_ubuntu-18.04_java test_ubuntu-18.04_dotnet
 test_ubuntu-18.10: test_ubuntu-18.10_cc test_ubuntu-18.10_java test_ubuntu-18.10_dotnet
@@ -349,11 +322,6 @@ test_centos-7_dotnet: export/centos-7/test_dotnet.log
 test_debian-9_cc: export/debian-9/test_cc.log
 test_debian-9_java: export/debian-9/test_java.log
 test_debian-9_dotnet: export/debian-9/test_dotnet.log
-
-.PHONY: test_ubuntu-14.04_cc test_ubuntu-14.04_java test_ubuntu-14.04_dotnet
-test_ubuntu-14.04_cc: export/ubuntu-14.04/test_cc.log
-test_ubuntu-14.04_java: export/ubuntu-14.04/test_java.log
-test_ubuntu-14.04_dotnet: export/ubuntu-14.04/test_dotnet.log
 
 .PHONY: test_ubuntu-16.04_cc test_ubuntu-16.04_java test_ubuntu-16.04_dotnet
 test_ubuntu-16.04_cc: export/ubuntu-16.04/test_cc.log
