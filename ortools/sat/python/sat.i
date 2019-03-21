@@ -62,6 +62,7 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SolutionCallback::~SolutionCallback;
 %unignore operations_research::sat::SolutionCallback::BestObjectiveBound;
 %feature("nodirector") operations_research::sat::SolutionCallback::BestObjectiveBound;
+%unignore operations_research::sat::SolutionCallback::HasResponse;
 %unignore operations_research::sat::SolutionCallback::NumBinaryPropagations;
 %feature("nodirector") operations_research::sat::SolutionCallback::NumBinaryPropagations;
 %unignore operations_research::sat::SolutionCallback::NumBooleans;
@@ -91,4 +92,3 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
-

@@ -1511,13 +1511,13 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     Raises:
         RuntimeError: if 'lit' is not a boolean variable or its negation.
     """
-        if not self.Response().solution:
+        if not self.HasResponse():
             raise RuntimeError('Solve() has not be called.')
-        if isinstance(lit, numbers.Integral):
-            return bool(lit)
-        elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
+        if isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
             index = lit.Index()
             return self.SolutionBooleanValue(index)
+        elif isinstance(lit, numbers.Integral):
+            return bool(lit)
         else:
             raise TypeError(
                 'Cannot interpret %s as a boolean expression.' % lit)
@@ -1535,7 +1535,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     Raises:
         RuntimeError: if 'expression' is not a LinearExpression.
     """
-        if not self.Response().solution:
+        if not self.HasResponse():
             raise RuntimeError('Solve() has not be called.')
         if isinstance(expression, numbers.Integral):
             return expression
