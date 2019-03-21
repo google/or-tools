@@ -1569,6 +1569,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
             result = SatSolver::INFEASIBLE;
             break;
           }
+          if (parameters.stop_after_first_solution()) {
+            return SatSolver::LIMIT_REACHED;
+          }
         }
         sat_solver->Backtrack(0);
         sat_solver->SetAssumptionLevel(0);
@@ -1608,6 +1611,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     result = FindCores(assumptions, next_decision, model, &cores);
     if (result == SatSolver::FEASIBLE) {
       process_solution();
+      if (parameters.stop_after_first_solution()) {
+        return SatSolver::LIMIT_REACHED;
+      }
       if (cores.empty()) {
         // If not all assumptions were taken, continue with a lower stratified
         // bound. Otherwise we have an optimal solution.
@@ -1790,6 +1796,8 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   // New Booleans variable in the MIP model to represent X >= cte.
   std::map<std::pair<int, double>, int> created_var;
 
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
+
   // Start the algorithm.
   SatSolver::Status result;
   for (int iter = 0;; ++iter) {
@@ -1860,6 +1868,9 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     result = FindCores(assumptions, next_decision, model, &cores);
     if (result == SatSolver::FEASIBLE) {
       process_solution();
+      if (parameters.stop_after_first_solution()) {
+        return SatSolver::LIMIT_REACHED;
+      }
       if (cores.empty()) {
         // If not all assumptions were taken, continue with a lower stratified
         // bound. Otherwise we have an optimal solution.

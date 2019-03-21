@@ -582,11 +582,11 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
   if (!HasEnforcementLiteral(*ct)) {
     context->UpdateRuleStats("bool_and: non-reified.");
     for (const int literal : ct->bool_and().literals()) {
-      if (!context->LiteralIsFalse(literal)) {
-        context->SetLiteralToTrue(literal);
-      } else {
+      if (context->LiteralIsFalse(literal)) {
         context->is_unsat = true;
-        break;
+        return true;
+      } else {
+        context->SetLiteralToTrue(literal);
       }
     }
     return RemoveConstraint(ct, context);

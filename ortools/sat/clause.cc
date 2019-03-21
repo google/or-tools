@@ -109,17 +109,30 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
         LiteralIndex(literals[0].Index().value() ^ literals[1].Index().value() ^
                      false_literal.Index().value()));
     if (assignment.LiteralIsTrue(other_watched_literal)) {
-      *new_it++ = Watcher(it->clause, other_watched_literal);
+      *new_it = *it;
+      new_it->blocking_literal = other_watched_literal;
+      ++new_it;
       ++num_inspected_clause_literals_;
       continue;
     }
 
-    // Look for another literal to watch.
+    // Look for another literal to watch. We go through the list in a cyclic
+    // fashion from start. The first two literals can be ignored as they are the
+    // watched ones.
     {
-      int i = 2;
+      const int start = it->start_index;
       const int size = it->clause->Size();
+      DCHECK_GE(start, 2);
+
+      int i = start;
       while (i < size && assignment.LiteralIsFalse(literals[i])) ++i;
-      num_inspected_clause_literals_ += i;
+      num_inspected_clause_literals_ += i - start + 2;
+      if (i >= size) {
+        i = 2;
+        while (i < start && assignment.LiteralIsFalse(literals[i])) ++i;
+        num_inspected_clause_literals_ += i - 2;
+        if (i >= start) i = size;
+      }
       if (i < size) {
         // literal[i] is unassigned or true, it's now the new literal to watch.
         // Note that by convention, we always keep the two watched literals at
@@ -127,7 +140,8 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
         literals[0] = other_watched_literal;
         literals[1] = literals[i];
         literals[i] = false_literal;
-        AttachOnFalse(literals[1], other_watched_literal, it->clause);
+        watchers_on_false_[literals[1].Index()].emplace_back(
+            it->clause, other_watched_literal, i + 1);
         continue;
       }
     }

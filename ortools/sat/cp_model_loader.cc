@@ -343,6 +343,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
 
     ++num_half_inequalities;
     already_loaded_ct_.insert(inequality.ct);
+    is_half_encoding_ct_.insert(inequality.ct);
   }
 
   if (!inequalities.empty()) {
@@ -392,6 +393,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
 
       ++num_half_equalities;
       already_loaded_ct_.insert(equality.ct);
+      is_half_encoding_ct_.insert(equality.ct);
     }
 
     // Detect fully encoded variables and mark them as such.
@@ -751,6 +753,69 @@ void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
   const std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
   m->Add(StrictNonOverlappingRectangles(x_intervals, y_intervals));
+
+  IntervalsRepository* const repository = m->GetOrCreate<IntervalsRepository>();
+  // Cumulative using x_intervals.
+  {
+    std::vector<IntegerVariable> y_starts;
+    std::vector<IntegerVariable> y_sizes;
+    std::vector<IntegerVariable> y_ends;
+    int64 y_min_starts = kint64max;
+    int64 y_max_ends = kint64min;
+    for (const IntervalVariable& y_interval : y_intervals) {
+      y_starts.push_back(repository->StartVar(y_interval));
+      y_sizes.push_back(repository->SizeVar(y_interval));
+      y_ends.push_back(repository->EndVar(y_interval));
+      y_min_starts =
+          std::min(y_min_starts, m->Get(LowerBound(y_starts.back())));
+      y_max_ends = std::max(y_max_ends, m->Get(UpperBound(y_ends.back())));
+    }
+    IntegerVariable y_min_start =
+        m->Add(NewIntegerVariable(y_min_starts, y_max_ends));
+    m->Add(IsEqualToMinOf(y_min_start, y_starts));
+
+    IntegerVariable y_max_end =
+        m->Add(NewIntegerVariable(y_min_starts, y_max_ends));
+    m->Add(IsEqualToMaxOf(y_max_end, y_ends));
+
+    IntegerVariable y_capacity =
+        m->Add(NewIntegerVariable(0, CapSub(y_max_ends, y_min_starts)));
+    std::vector<int64> coeffs = {1, 1, -1};
+    m->Add(FixedWeightedSum({y_capacity, y_min_start, y_max_end}, coeffs, 0));
+
+    m->Add(Cumulative(x_intervals, y_sizes, y_capacity));
+  }
+
+  // Cumulative using y_intervals.
+  {
+    std::vector<IntegerVariable> x_starts;
+    std::vector<IntegerVariable> x_sizes;
+    std::vector<IntegerVariable> x_ends;
+    int64 x_min_starts = kint64max;
+    int64 x_max_ends = kint64min;
+    for (const IntervalVariable& x_interval : x_intervals) {
+      x_starts.push_back(repository->StartVar(x_interval));
+      x_sizes.push_back(repository->SizeVar(x_interval));
+      x_ends.push_back(repository->EndVar(x_interval));
+      x_min_starts =
+          std::min(x_min_starts, m->Get(LowerBound(x_starts.back())));
+      x_max_ends = std::max(x_max_ends, m->Get(UpperBound(x_ends.back())));
+    }
+    IntegerVariable x_min_start =
+        m->Add(NewIntegerVariable(x_min_starts, x_max_ends));
+    m->Add(IsEqualToMinOf(x_min_start, x_starts));
+
+    IntegerVariable x_max_end =
+        m->Add(NewIntegerVariable(x_min_starts, x_max_ends));
+    m->Add(IsEqualToMaxOf(x_max_end, x_ends));
+
+    IntegerVariable x_capacity =
+        m->Add(NewIntegerVariable(0, CapSub(x_max_ends, x_min_starts)));
+    std::vector<int64> coeffs = {1, 1, -1};
+    m->Add(FixedWeightedSum({x_capacity, x_min_start, x_max_end}, coeffs, 0));
+
+    m->Add(Cumulative(y_intervals, x_sizes, x_capacity));
+  }
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {

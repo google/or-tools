@@ -261,9 +261,25 @@ class LiteralWatchers : public SatPropagator {
   // when the corresponding literal becomes false.
   struct Watcher {
     Watcher() {}
-    Watcher(SatClause* c, Literal b) : clause(c), blocking_literal(b) {}
-    SatClause* clause;
+    Watcher(SatClause* c, Literal b, int i = 2)
+        : blocking_literal(b), start_index(i), clause(c) {}
+
+    // Optimization. A literal from the clause that sometimes allow to not even
+    // look at the clause memory when true.
     Literal blocking_literal;
+
+    // Optimization. An index in the clause. Instead of looking for another
+    // literal to watch from the start, we will start from here instead, and
+    // loop around if needed. This allows to avoid bad quadratric corner cases
+    // and lead to an "optimal" complexity. See "Optimal Implementation of
+    // Watched Literals and more General Techniques", Ian P. Gent.
+    //
+    // Note that ideally, this should be part of a SatClause, so it can be
+    // shared across watchers. However, since we have 32 bits for "free" here
+    // because of the struct alignment, we store it here instead.
+    int32 start_index;
+
+    SatClause* clause;
   };
   gtl::ITIVector<LiteralIndex, std::vector<Watcher>> watchers_on_false_;
 

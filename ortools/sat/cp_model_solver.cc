@@ -885,10 +885,6 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
   for (const auto& ct : model_proto.constraints()) {
-    // We linearize fully/partially encoded variable differently, so we just
-    // skip all these constraint that corresponds to these encoding.
-    if (mapping->ConstraintIsAlreadyLoaded(&ct)) continue;
-
     // Make sure the literal from a circuit constraint always have a view.
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
       for (const int ref : ct.circuit().literals()) {
@@ -943,13 +939,20 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     if (encoder->VariableIsFullyEncoded(var)) {
       if (AppendFullEncodingRelaxation(var, *m, &relaxation)) {
         ++num_full_encoding_relaxations;
+        continue;
       }
-    } else {
-      const int old = relaxation.linear_constraints.size();
-      AppendPartialGreaterThanEncodingRelaxation(var, *m, &relaxation);
-      if (relaxation.linear_constraints.size() > old) {
-        ++num_partial_encoding_relaxations;
-      }
+    }
+
+    // Even if the variable is fully encoded, sometimes not all its associated
+    // literal have a view (if they are not part of the original model for
+    // instance).
+    //
+    // TODO(user): Should we add them to the LP anyway? this isn't clear as
+    // we can sometimes create a lot of Booleans like this.
+    const int old = relaxation.linear_constraints.size();
+    AppendPartialGreaterThanEncodingRelaxation(var, *m, &relaxation);
+    if (relaxation.linear_constraints.size() > old) {
+      ++num_partial_encoding_relaxations;
     }
   }
 

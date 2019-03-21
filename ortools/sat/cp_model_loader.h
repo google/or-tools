@@ -118,7 +118,16 @@ class CpModelMapping {
   // constraints and the linear constraint of size 1 (encodings) are usually
   // loaded first.
   bool ConstraintIsAlreadyLoaded(const ConstraintProto* ct) const {
-    return gtl::ContainsKey(already_loaded_ct_, ct);
+    return already_loaded_ct_.contains(ct);
+  }
+
+  // Returns true if the given constraint is a "half-encoding" constraint. That
+  // is, if it is of the form (b => size 1 linear) but there is no (<=) side in
+  // the model. Such constraint are detected while we extract integer encoding
+  // and are cached here so that we can deal properly with them during the
+  // linear relaxation.
+  bool IsHalfEncodingConstraint(const ConstraintProto* ct) const {
+    return is_half_encoding_ct_.contains(ct);
   }
 
   // Note that both these functions returns positive reference or -1.
@@ -167,6 +176,7 @@ class CpModelMapping {
   // Set of constraints to ignore because they were already dealt with by
   // ExtractEncoding().
   absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
+  absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
 };
 
 // Calls one of the functions below.

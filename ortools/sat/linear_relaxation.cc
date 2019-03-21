@@ -258,8 +258,12 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,
   // Reified version.
   if (linearization_level < 2) return;
 
-  // We linearize reified constraints of size 1 together in a different way.
-  if (constraint_proto.linear().vars_size() <= 1) return;
+  // We linearize fully reified constraints of size 1 all together for a given
+  // variable. But we need to process half-reified ones.
+  if (!mapping->IsHalfEncodingConstraint(&constraint_proto) &&
+      constraint_proto.linear().vars_size() <= 1) {
+    return;
+  }
 
   // Compute the implied bounds on the linear expression.
   IntegerValue min_sum(0);
