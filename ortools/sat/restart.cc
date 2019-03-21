@@ -15,6 +15,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace sat {
@@ -34,8 +35,13 @@ void RestartPolicy::Reset() {
   trail_size_running_average_.Reset(parameters_.blocking_restart_window_size());
 
   // Compute the list of restart algorithms to cycle through.
-  strategies_.assign(parameters_.restart_algorithms().begin(),
-                     parameters_.restart_algorithms().end());
+  //
+  // TODO(user): for some reason, strategies_.assign() does not work as the
+  // returned type of the proto enum iterator is int ?!
+  strategies_.clear();
+  for (int i = 0; i < parameters_.restart_algorithms_size(); ++i) {
+    strategies_.push_back(parameters_.restart_algorithms(i));
+  }
   if (strategies_.empty()) {
     const std::vector<std::string> string_values = absl::StrSplit(
         parameters_.default_restart_algorithms(), ',', absl::SkipEmpty());
@@ -161,12 +167,19 @@ void RestartPolicy::OnConflict(int conflict_trail_index,
 std::string RestartPolicy::InfoString() const {
   std::string result =
       absl::StrFormat("  num restarts: %d\n", num_restarts_) +
-      absl::StrFormat("  conflict decision level avg: %f\n",
-                      dl_running_average_.GlobalAverage()) +
-      absl::StrFormat("  conflict lbd avg: %f\n",
-                      lbd_running_average_.GlobalAverage()) +
-      absl::StrFormat("  conflict trail size avg: %f\n",
-                      trail_size_running_average_.GlobalAverage());
+      absl::StrFormat(
+          "  current_strategy: %s\n",
+          ProtoEnumToString<SatParameters::RestartAlgorithm>(
+              strategies_[strategy_counter_ % strategies_.size()])) +
+      absl::StrFormat("  conflict decision level avg: %f window: %f\n",
+                      dl_running_average_.GlobalAverage(),
+                      dl_running_average_.WindowAverage()) +
+      absl::StrFormat("  conflict lbd avg: %f window: %f\n",
+                      lbd_running_average_.GlobalAverage(),
+                      lbd_running_average_.WindowAverage()) +
+      absl::StrFormat("  conflict trail size avg: %f window: %f\n",
+                      trail_size_running_average_.GlobalAverage(),
+                      trail_size_running_average_.WindowAverage());
   return result;
 }
 

@@ -94,44 +94,47 @@ bool NonOverlappingRectanglesBasePropagator::
   std::map<IntegerValue, std::vector<int>> event_to_overlapping_boxes;
   std::set<IntegerValue> events;
 
+  std::vector<int> active_boxes;
+
   for (int box = 0; box < num_boxes_; ++box) {
     if (cached_areas_[box] == 0) continue;
     const IntegerValue start_max = y_dim->StartMax(box);
     const IntegerValue end_min = y_dim->EndMin(box);
     if (start_max < end_min) {
       events.insert(start_max);
+      active_boxes.push_back(box);
     }
   }
 
-  for (int box = 0; box < num_boxes_; ++box) {
-    if (cached_areas_[box] == 0) continue;
+  if (active_boxes.size() < 2) return true;
+
+  for (const int box : active_boxes) {
     const IntegerValue start_max = y_dim->StartMax(box);
     const IntegerValue end_min = y_dim->EndMin(box);
 
-    if (start_max < end_min) {
-      for (const IntegerValue t : events) {
-        if (t < start_max) continue;
-        if (t >= end_min) break;
-        event_to_overlapping_boxes[t].push_back(box);
-      }
+    for (const IntegerValue t : events) {
+      if (t < start_max) continue;
+      if (t >= end_min) break;
+      event_to_overlapping_boxes[t].push_back(box);
     }
   }
 
-  std::set<IntegerValue> events_to_remove;
+  std::vector<IntegerValue> events_to_remove;
   std::vector<int> previous_overlapping_boxes;
   IntegerValue previous_event(-1);
   for (const auto& it : event_to_overlapping_boxes) {
     const IntegerValue current_event = it.first;
     const std::vector<int>& current_overlapping_boxes = it.second;
     if (current_overlapping_boxes.size() < 2) {
-      events_to_remove.insert(current_event);
+      events_to_remove.push_back(current_event);
+      continue;
     }
     if (!previous_overlapping_boxes.empty()) {
       if (std::includes(previous_overlapping_boxes.begin(),
                         previous_overlapping_boxes.end(),
                         current_overlapping_boxes.begin(),
                         current_overlapping_boxes.end())) {
-        events_to_remove.insert(current_event);
+        events_to_remove.push_back(current_event);
       }
     }
     previous_event = current_event;

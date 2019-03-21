@@ -348,6 +348,7 @@ cc_library(
         ":model",
         ":sat_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/port:proto_utils",
         "//ortools/util:bitset",
         "//ortools/util:running_stat",
         "@com_google_absl//absl/strings",

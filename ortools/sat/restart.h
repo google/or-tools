@@ -60,7 +60,7 @@ class RestartPolicy {
   int strategy_change_conflicts_;
 
   int strategy_counter_;
-  std::vector<int> strategies_;  // SatParameters::RestartAlgorithm
+  std::vector<SatParameters::RestartAlgorithm> strategies_;
 
   int luby_count_;
   int conflicts_until_next_restart_;

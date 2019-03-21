@@ -266,7 +266,7 @@ message SatParameters {
   // In the moving average restart algorithms, a restart is triggered if the
   // window average times this ratio is greater that the global average.
   optional double restart_dl_average_ratio = 63 [default = 1.0];
-  optional double restart_lbd_average_ratio = 71 [default = 0.8];
+  optional double restart_lbd_average_ratio = 71 [default = 1.0];
 
   // Block a moving restart algorithm if the trail size of the current conflict
   // is greater than the multiplier times the moving average of the trail size
