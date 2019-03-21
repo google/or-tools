@@ -1908,19 +1908,21 @@ namespace operations_research {
 %unignore Rev<bool>::SetValue;
 %template(RevBool) Rev<bool>;
 
-%rename (IntContainer) AssignmentContainer<IntVar, IntVarElement>;
-%rename (Element)
-    AssignmentContainer<IntVar, IntVarElement>::MutableElement(int);
-%unignore AssignmentContainer<IntVar, IntVarElement>::Size;
-%template (IntContainer) AssignmentContainer<IntVar, IntVarElement>;
-%rename (IntervalContainer)
-    AssignmentContainer<IntervalVar, IntervalVarElement>;
-%template (IntervalContainer)
-    AssignmentContainer<IntervalVar, IntervalVarElement>;
-%rename (SequenceContainer)
-    AssignmentContainer<SequenceVar, SequenceVarElement>;
-%template (SequenceContainer)
-    AssignmentContainer<SequenceVar, SequenceVarElement>;
+%define CONTAINERHELPER(type, typeElement, name)
+%rename (name) AssignmentContainer<type, typeElement>;
+%unignore AssignmentContainer<type, typeElement>::Contains;
+%rename (Element) AssignmentContainer<type, typeElement>::MutableElement(int);
+%unignore AssignmentContainer<type, typeElement>::Size;
+%unignore AssignmentContainer<type, typeElement>::Store;
+%unignore AssignmentContainer<type, typeElement>::Restore;
+%template (name) AssignmentContainer<type, typeElement>;
+%enddef
+
+CONTAINERHELPER(IntVar, IntVarElement, IntContainer)
+CONTAINERHELPER(IntervalVar, IntervalVarElement, IntervalContainer)
+CONTAINERHELPER(SequenceVar, SequenceVarElement, SequenceContainer)
+
+#undef CONTAINERHELPER
 
 }  // namespace operations_research
 
