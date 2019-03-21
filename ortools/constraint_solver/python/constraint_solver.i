@@ -1908,21 +1908,23 @@ namespace operations_research {
 %unignore Rev<bool>::SetValue;
 %template(RevBool) Rev<bool>;
 
-%define CONTAINERHELPER(type, typeElement, name)
-%rename (name) AssignmentContainer<type, typeElement>;
-%unignore AssignmentContainer<type, typeElement>::Contains;
-%rename (Element) AssignmentContainer<type, typeElement>::MutableElement(int);
-%unignore AssignmentContainer<type, typeElement>::Size;
-%unignore AssignmentContainer<type, typeElement>::Store;
-%unignore AssignmentContainer<type, typeElement>::Restore;
-%template (name) AssignmentContainer<type, typeElement>;
+#define PARENTHIZE(X...) X
+%define RENAME_ASSIGNMENT_CONTAINER(TYPE, NEW_NAME)
+%rename (NEW_NAME) TYPE;
+%unignore TYPE::Contains;
+%rename (Element) TYPE::MutableElement(int);
+%unignore TYPE::Size;
+%unignore TYPE::Store;
+%unignore TYPE::Restore;
+%template (NEW_NAME) TYPE;
 %enddef
 
-CONTAINERHELPER(IntVar, IntVarElement, IntContainer)
-CONTAINERHELPER(IntervalVar, IntervalVarElement, IntervalContainer)
-CONTAINERHELPER(SequenceVar, SequenceVarElement, SequenceContainer)
+RENAME_ASSIGNMENT_CONTAINER(PARENTHIZE(AssignmentContainer<IntVar, IntVarElement>), IntVarContainer)
+RENAME_ASSIGNMENT_CONTAINER(PARENTHIZE(AssignmentContainer<IntervalVar, IntervalVarElement>), IntervalVarContainer)
+RENAME_ASSIGNMENT_CONTAINER(PARENTHIZE(AssignmentContainer<SequenceVar, SequenceVarElement>), SequenceVarContainer)
 
-#undef CONTAINERHELPER
+#undef RENAME_ASSIGNMENT_CONTAINER
+#undef PARENTHIZE
 
 }  // namespace operations_research
 
