@@ -37,11 +37,10 @@ http_archive(
     url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
 )
 
-http_archive(
+git_repository(
     name = "com_google_absl",
-    sha256 = "fe4d9e424dc25ee57695509cf6c5a7dd582a7ac1ca1efb92713fb439b3e8b1c6",
-    urls = ["https://github.com/abseil/abseil-cpp/archive/20181200.zip"],
-    strip_prefix = "abseil-cpp-20181200",
+    commit = "bf29470",
+    remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
 http_archive(
