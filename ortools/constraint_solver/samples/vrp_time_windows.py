@@ -78,14 +78,12 @@ def print_solution(data, manager, routing, assignment):
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         while not routing.IsEnd(index):
             time_var = time_dimension.CumulVar(index)
-            slack_var = time_dimension.SlackVar(index)
-            plan_output += ' {0} Time({1},{2}) Slack({3},{4})-> '.format(
+            plan_output += '{0} Time({1},{2}) -> '.format(
                 manager.IndexToNode(index), assignment.Min(time_var),
-                assignment.Max(time_var), assignment.Min(slack_var),
-                assignment.Max(slack_var))
+                assignment.Max(time_var))
             index = assignment.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
-        plan_output += ' {0} Time({1},{2})\n'.format(
+        plan_output += '{0} Time({1},{2})\n'.format(
             manager.IndexToNode(index), assignment.Min(time_var),
             assignment.Max(time_var))
         plan_output += 'Time of the route: {}min\n'.format(

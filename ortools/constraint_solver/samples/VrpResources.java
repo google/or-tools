@@ -97,10 +97,8 @@ public class VrpResources {
       String route = "";
       while (!routing.isEnd(index)) {
         IntVar timeVar = timeDimension.cumulVar(index);
-        IntVar slackVar = timeDimension.slackVar(index);
         route += manager.indexToNode(index) + " Time(" + solution.min(timeVar) + ","
-            + solution.max(timeVar) + ") Slack(" + solution.min(slackVar) + ","
-            + solution.max(slackVar) + ") -> ";
+            + solution.max(timeVar) + ") -> ";
         index = solution.value(routing.nextVar(index));
       }
       IntVar timeVar = timeDimension.cumulVar(index);

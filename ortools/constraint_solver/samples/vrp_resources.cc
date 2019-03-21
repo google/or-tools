@@ -88,11 +88,9 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
     std::ostringstream route;
     while (routing.IsEnd(index) == false) {
       auto time_var = time_dimension.CumulVar(index);
-      auto slack_var = time_dimension.SlackVar(index);
       route << manager.IndexToNode(index).value() << " Time("
             << solution.Min(time_var) << ", " << solution.Max(time_var)
-            << ") Slack(" << solution.Min(slack_var) << ", "
-            << solution.Max(slack_var) << ") -> ";
+            << ") -> ";
       index = solution.Value(routing.NextVar(index));
     }
     auto time_var = time_dimension.CumulVar(index);

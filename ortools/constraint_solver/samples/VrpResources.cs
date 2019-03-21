@@ -90,13 +90,10 @@ public class VrpResources {
       var index = routing.Start(i);
       while (routing.IsEnd(index) == false) {
         var timeVar = timeDimension.CumulVar(index);
-        var slackVar = timeDimension.SlackVar(index);
-        Console.Write("{0} Time({1},{2}) Slack({3},{4}) -> ",
+        Console.Write("{0} Time({1},{2}) -> ",
             manager.IndexToNode(index),
             solution.Min(timeVar),
-            solution.Max(timeVar),
-            solution.Min(slackVar),
-            solution.Max(slackVar));
+            solution.Max(timeVar));
         index = solution.Value(routing.NextVar(index));
       }
       var endTimeVar = timeDimension.CumulVar(index);
