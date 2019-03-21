@@ -172,8 +172,6 @@ bool NonOverlappingRectanglesBasePropagator::
   return true;
 }
 
-// ----- Energy progagator -----
-
 NonOverlappingRectanglesEnergyPropagator::
     NonOverlappingRectanglesEnergyPropagator(
         const std::vector<IntervalVariable>& x,
@@ -231,7 +229,7 @@ void NonOverlappingRectanglesEnergyPropagator::SortNeighbors(int box) {
         max_span(box_x_min, box_x_max, other_x_min, other_x_max) *
         max_span(box_y_min, box_y_max, other_y_min, other_y_max);
   }
-  IncrementalSort(neighbors_.begin(), neighbors_.begin(), [this](int i, int j) {
+  std::sort(neighbors_.begin(), neighbors_.begin(), [this](int i, int j) {
     return cached_distance_to_bounding_box_[i] <
            cached_distance_to_bounding_box_[j];
   });
@@ -267,6 +265,14 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
     const int other_box = neighbors_[i];
     CHECK_GT(cached_areas_[other_box], 0);
 
+    if (x_.StartMin(other_box) >= area_max_x ||
+        x_.EndMax(other_box) <= area_min_x ||
+        y_.StartMin(other_box) >= area_max_y ||
+        y_.EndMax(other_box) <= area_min_y) {
+      // Strictly disjoint from the current bounding box. Let's stop here.
+      return true;
+    }
+
     // Update Bounding box.
     area_min_x = std::min(area_min_x, x_.StartMin(other_box));
     area_max_x = std::max(area_max_x, x_.EndMax(other_box));
@@ -295,61 +301,6 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
   }
   return true;
 }
-
-// Disjunctive based propagator
-
-namespace {
-
-// Specialized propagation on only two boxes that must intersect with the
-// given y_line_for_reason.
-bool PropagateTwoBoxes(int b1, int b2, SchedulingConstraintHelper* x_dim) {
-  // For each direction and each order, we test if the boxes can be disjoint.
-  const int state = (x_dim->EndMin(b1) <= x_dim->StartMax(b2)) +
-                    2 * (x_dim->EndMin(b2) <= x_dim->StartMax(b1));
-
-  const auto left_box_before_right_box = [](int left, int right,
-                                            SchedulingConstraintHelper* x_dim) {
-    // left box pushes right box.
-    const IntegerValue left_end_min = x_dim->EndMin(left);
-    if (left_end_min > x_dim->StartMin(right)) {
-      x_dim->ClearReason();
-      x_dim->AddReasonForBeingBefore(left, right);
-      x_dim->AddEndMinReason(left, left_end_min);
-      RETURN_IF_FALSE(x_dim->IncreaseStartMin(right, left_end_min));
-    }
-
-    // right box pushes left box.
-    const IntegerValue right_start_max = x_dim->StartMax(right);
-    if (right_start_max < x_dim->EndMax(left)) {
-      x_dim->ClearReason();
-      x_dim->AddReasonForBeingBefore(left, right);
-      x_dim->AddStartMaxReason(right, right_start_max);
-      RETURN_IF_FALSE(x_dim->DecreaseEndMax(left, right_start_max));
-    }
-
-    return true;
-  };
-
-  switch (state) {
-    case 0: {  // Conflict.
-      x_dim->ClearReason();
-      x_dim->AddReasonForBeingBefore(b1, b2);
-      x_dim->AddReasonForBeingBefore(b2, b1);
-      return x_dim->ReportConflict();
-    }
-    case 1: {  // b1 is left of b2.
-      return left_box_before_right_box(b1, b2, x_dim);
-    }
-    case 2: {  // b2 is left of b1.
-      return left_box_before_right_box(b2, b1, x_dim);
-    }
-    default: {  // Nothing to deduce.
-      return true;
-    }
-  }
-}
-
-}  // namespace
 
 NonOverlappingRectanglesFastPropagator::NonOverlappingRectanglesFastPropagator(
     const std::vector<IntervalVariable>& x,
@@ -412,7 +363,55 @@ void NonOverlappingRectanglesFastPropagator::RegisterWith(
   watcher->SetPropagatorPriority(id, 3);
 }
 
-// ----- slow disjunctive reasoning on overlapping boxes on one dimension -----
+// Specialized propagation on only two boxes that must intersect with the
+// given y_line_for_reason.
+bool NonOverlappingRectanglesFastPropagator::PropagateTwoBoxes(
+    int b1, int b2, SchedulingConstraintHelper* x_dim) {
+  // For each direction and each order, we test if the boxes can be disjoint.
+  const int state = (x_dim->EndMin(b1) <= x_dim->StartMax(b2)) +
+                    2 * (x_dim->EndMin(b2) <= x_dim->StartMax(b1));
+
+  const auto left_box_before_right_box = [](int left, int right,
+                                            SchedulingConstraintHelper* x_dim) {
+    // left box pushes right box.
+    const IntegerValue left_end_min = x_dim->EndMin(left);
+    if (left_end_min > x_dim->StartMin(right)) {
+      x_dim->ClearReason();
+      x_dim->AddReasonForBeingBefore(left, right);
+      x_dim->AddEndMinReason(left, left_end_min);
+      RETURN_IF_FALSE(x_dim->IncreaseStartMin(right, left_end_min));
+    }
+
+    // right box pushes left box.
+    const IntegerValue right_start_max = x_dim->StartMax(right);
+    if (right_start_max < x_dim->EndMax(left)) {
+      x_dim->ClearReason();
+      x_dim->AddReasonForBeingBefore(left, right);
+      x_dim->AddStartMaxReason(right, right_start_max);
+      RETURN_IF_FALSE(x_dim->DecreaseEndMax(left, right_start_max));
+    }
+
+    return true;
+  };
+
+  switch (state) {
+    case 0: {  // Conflict.
+      x_dim->ClearReason();
+      x_dim->AddReasonForBeingBefore(b1, b2);
+      x_dim->AddReasonForBeingBefore(b2, b1);
+      return x_dim->ReportConflict();
+    }
+    case 1: {  // b1 is left of b2.
+      return left_box_before_right_box(b1, b2, x_dim);
+    }
+    case 2: {  // b2 is left of b1.
+      return left_box_before_right_box(b2, b1, x_dim);
+    }
+    default: {  // Nothing to deduce.
+      return true;
+    }
+  }
+}
 
 NonOverlappingRectanglesSlowPropagator::NonOverlappingRectanglesSlowPropagator(
     const std::vector<IntervalVariable>& x,
@@ -437,7 +436,7 @@ bool NonOverlappingRectanglesSlowPropagator::Propagate() {
 
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       &x_, &y_, [this](const std::vector<int>& boxes) {
-        if (boxes.size() == 2) return true;
+        if (boxes.size() <= 2) return true;
         RETURN_IF_FALSE(forward_x_not_last_.Propagate());
         RETURN_IF_FALSE(backward_x_not_last_.Propagate());
         RETURN_IF_FALSE(backward_x_edge_finding_.Propagate());
@@ -448,7 +447,7 @@ bool NonOverlappingRectanglesSlowPropagator::Propagate() {
   // We can actually swap dimensions to propagate vertically.
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       &y_, &x_, [this](const std::vector<int>& boxes) {
-        if (boxes.size() == 2) return true;
+        if (boxes.size() <= 2) return true;
         RETURN_IF_FALSE(forward_y_not_last_.Propagate());
         RETURN_IF_FALSE(backward_y_not_last_.Propagate());
         RETURN_IF_FALSE(backward_y_edge_finding_.Propagate());

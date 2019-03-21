@@ -59,6 +59,7 @@ class NonOverlappingRectanglesBasePropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesBasePropagator);
 };
 
+// Propagates using a box energy reasoning.
 class NonOverlappingRectanglesEnergyPropagator
     : public NonOverlappingRectanglesBasePropagator {
  public:
@@ -84,6 +85,8 @@ class NonOverlappingRectanglesEnergyPropagator
   DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesEnergyPropagator);
 };
 
+// Embeds the overload checker and the detectable precedences propagators from
+// the disjunctive constraint.
 class NonOverlappingRectanglesFastPropagator
     : public NonOverlappingRectanglesBasePropagator {
  public:
@@ -100,6 +103,8 @@ class NonOverlappingRectanglesFastPropagator
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  bool PropagateTwoBoxes(int b1, int b2, SchedulingConstraintHelper* x_dim);
+
   DisjunctiveOverloadChecker x_overload_checker_;
   DisjunctiveOverloadChecker y_overload_checker_;
   DisjunctiveDetectablePrecedences forward_x_detectable_precedences_;
@@ -110,6 +115,8 @@ class NonOverlappingRectanglesFastPropagator
   DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesFastPropagator);
 };
 
+// Embeds the not last and edge finder propagators from the disjunctive
+// constraint.
 class NonOverlappingRectanglesSlowPropagator
     : public NonOverlappingRectanglesBasePropagator {
  public:
