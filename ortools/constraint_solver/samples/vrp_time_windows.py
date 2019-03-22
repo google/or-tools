@@ -138,25 +138,19 @@ def main():
         30,  # allow waiting time
         30,  # maximum time per vehicle
         False,  # Don't force start cumul to zero.
-        # This doesn't have any effect in this example,
-        # since the depot has a start window of (0, 0).
         time)
     time_dimension = routing.GetDimensionOrDie(time)
-    # Add time window constraints for each location except depot
-    # and 'copy' the slack var in the solution object (aka Assignment) to print it
+    # Add time window constraints for each location except depot.
     for location_idx, time_window in enumerate(data['time_windows']):
         if location_idx == 0:
             continue
         index = manager.NodeToIndex(location_idx)
         time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
-        routing.AddToAssignment(time_dimension.SlackVar(index))
-    # Add time window constraints for each vehicle start node
-    # and 'copy' the slack var in the solution object (aka Assignment) to print it
+    # Add time window constraints for each vehicle start node.
     for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         time_dimension.CumulVar(index).SetRange(data['time_windows'][0][0],
                                                 data['time_windows'][0][1])
-        routing.AddToAssignment(time_dimension.SlackVar(index))
     # [END time_windows_constraint]
 
     # Instantiate route start and end times to produce feasible times.

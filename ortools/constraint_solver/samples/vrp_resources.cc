@@ -149,23 +149,17 @@ void VrpTimeWindows() {
                        false,  // Don't force start cumul to zero
                        time);
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie(time);
-  // Add time window constraints for each location except depot
-  // and 'copy' the slack var in the solution object (aka Assignment) to print
-  // it
+  // Add time window constraints for each location except depot.
   for (int i = 1; i < data.time_windows.size(); ++i) {
     int64 index = manager.NodeToIndex(RoutingIndexManager::NodeIndex(i));
     time_dimension.CumulVar(index)->SetRange(data.time_windows[i].first,
                                              data.time_windows[i].second);
-    routing.AddToAssignment(time_dimension.SlackVar(index));
   }
-  // Add time window constraints for each vehicle start node
-  // and 'copy' the slack var in the solution object (aka Assignment) to print
-  // it
+  // Add time window constraints for each vehicle start node.
   for (int i = 0; i < data.num_vehicles; ++i) {
     int64 index = routing.Start(i);
     time_dimension.CumulVar(index)->SetRange(data.time_windows[0].first,
                                              data.time_windows[0].second);
-    routing.AddToAssignment(time_dimension.SlackVar(index));
   }
   // [END time_constraint]
 

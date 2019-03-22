@@ -152,24 +152,19 @@ public class VrpResources {
         false,  // start cumul to zero
         "Time");
     RoutingDimension timeDimension = routing.GetMutableDimension("Time");
-    // Add time window constraints for each location except depot
-    // and 'copy' the slack var in the solution object (aka Assignment) to print it
+    // Add time window constraints for each location except depot.
     for (int i = 1; i < data.TimeWindows.GetLength(0); ++i) {
       long index = manager.NodeToIndex(i);
       timeDimension.CumulVar(index).SetRange(
           data.TimeWindows[i, 0],
           data.TimeWindows[i, 1]);
-      routing.AddToAssignment(timeDimension.SlackVar(index));
     }
-    // Add time window constraints for each vehicle start node
-    // and 'copy' the slack var in the solution object (aka Assignment) to print
-    // it
+    // Add time window constraints for each vehicle start node.
     for (int i = 0; i < data.VehicleNumber; ++i) {
       long index = routing.Start(i);
       timeDimension.CumulVar(index).SetRange(
           data.TimeWindows[0, 0],
           data.TimeWindows[0, 1]);
-      routing.AddToAssignment(timeDimension.SlackVar(index));
     }
     // [END time_constraint]
 
