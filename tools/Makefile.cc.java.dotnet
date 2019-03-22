@@ -66,7 +66,7 @@ ifeq ($(SYSTEM),unix)
  -I$(INC_DIR) -I. $(ARCH) -Wno-deprecated \
  -DUSE_CBC -DUSE_CLP -DUSE_BOP -DUSE_GLOP
   LIB_PREFIX = lib
-  PRE_LIB = -Llib -Llib64
+  PRE_LIB = -Llib -Llib64 -framework CoreFoundation
   CBC_LNK = -lCbcSolver -lCbc -lOsiCbc -lCgl -lClpSolver -lClp -lOsiClp -lOsi -lCoinUtils
   ABSL_LNK = \
 -labsl_bad_any_cast_impl \
@@ -83,7 +83,6 @@ ifeq ($(SYSTEM),unix)
 -labsl_graphcycles_internal \
 -labsl_hash \
 -labsl_hashtablez_sampler \
--labsl_hashtablez_force_sampling \
 -labsl_int128 \
 -labsl_leak_check \
 -labsl_malloc_internal \
