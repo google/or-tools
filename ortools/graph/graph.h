@@ -1240,8 +1240,9 @@ class ListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
 DEFINE_RANGE_BASED_ARC_ITERATION(StaticGraph, Outgoing, DirectArcLimit(node));
 
 template <typename NodeIndexType, typename ArcIndexType>
-BeginEndWrapper<NodeIndexType const*> StaticGraph<NodeIndexType, ArcIndexType>::
-operator[](NodeIndexType node) const {
+BeginEndWrapper<NodeIndexType const*>
+    StaticGraph<NodeIndexType, ArcIndexType>::operator[](
+        NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -2234,8 +2235,9 @@ CompleteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
-IntegerRange<NodeIndexType> CompleteGraph<NodeIndexType, ArcIndexType>::
-operator[](NodeIndexType node) const {
+IntegerRange<NodeIndexType>
+    CompleteGraph<NodeIndexType, ArcIndexType>::operator[](
+        NodeIndexType node) const {
   DCHECK_LT(node, num_nodes_);
   return IntegerRange<NodeIndexType>(0, num_nodes_);
 }

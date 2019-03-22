@@ -230,21 +230,20 @@ message BopParameters {
   // The default is defined by default_solver_optimizer_sets (only one set).
   repeated BopSolverOptimizerSet solver_optimizer_sets = 26;
   optional string default_solver_optimizer_sets = 33
-      [default =
-           "methods:{type:LOCAL_SEARCH }                       "
-           "methods:{type:RANDOM_FIRST_SOLUTION }              "
-           "methods:{type:LINEAR_RELAXATION }                  "
-           "methods:{type:LP_FIRST_SOLUTION }                  "
-           "methods:{type:OBJECTIVE_FIRST_SOLUTION }           "
-           "methods:{type:USER_GUIDED_FIRST_SOLUTION }         "
-           "methods:{type:RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP } "
-           "methods:{type:RANDOM_VARIABLE_LNS_GUIDED_BY_LP }   "
-           "methods:{type:RELATION_GRAPH_LNS }                 "
-           "methods:{type:RELATION_GRAPH_LNS_GUIDED_BY_LP }    "
-           "methods:{type:RANDOM_CONSTRAINT_LNS }              "
-           "methods:{type:RANDOM_VARIABLE_LNS }                "
-           "methods:{type:SAT_CORE_BASED }                     "
-           "methods:{type:COMPLETE_LNS }                       "];
+      [default = "methods:{type:LOCAL_SEARCH }                       "
+                 "methods:{type:RANDOM_FIRST_SOLUTION }              "
+                 "methods:{type:LINEAR_RELAXATION }                  "
+                 "methods:{type:LP_FIRST_SOLUTION }                  "
+                 "methods:{type:OBJECTIVE_FIRST_SOLUTION }           "
+                 "methods:{type:USER_GUIDED_FIRST_SOLUTION }         "
+                 "methods:{type:RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP } "
+                 "methods:{type:RANDOM_VARIABLE_LNS_GUIDED_BY_LP }   "
+                 "methods:{type:RELATION_GRAPH_LNS }                 "
+                 "methods:{type:RELATION_GRAPH_LNS_GUIDED_BY_LP }    "
+                 "methods:{type:RANDOM_CONSTRAINT_LNS }              "
+                 "methods:{type:RANDOM_VARIABLE_LNS }                "
+                 "methods:{type:SAT_CORE_BASED }                     "
+                 "methods:{type:COMPLETE_LNS }                       "];
 
   // Use strong branching in the linear relaxation optimizer.
   // The strong branching is a what-if analysis on each variable v, i.e.

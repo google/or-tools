@@ -177,11 +177,13 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
           max_capacity + total_flow) {
         LOG(DFATAL) << "Input consistency error: max capacity + flow exceed "
                     << "precision";
+        return false;
       }
     }
   }
   if (total_supply != 0) {
     LOG(DFATAL) << "Input consistency error: unbalanced problem";
+    return false;
   }
   return true;
 }
@@ -210,6 +212,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckResult()
       }
       if (!ok) {
         LOG(DFATAL) << DebugString("CheckResult ", arc);
+        return false;
       }
     }
   }

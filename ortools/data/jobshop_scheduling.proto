@@ -38,11 +38,13 @@
 //    the weighted makespan.
 
 syntax = "proto3";
+
 option java_package = "com.google.ortools.data.jssp";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Data.Jssp";
 
 package operations_research.data.jssp;
+
 import "google/protobuf/wrappers.proto";
 
 // This message specifies a task inside a job.
@@ -120,7 +122,6 @@ message JobPrecedence {
   int32 second_job_index = 2;
   int64 min_delay = 3;
 }
-
 
 // The input of a problem.
 message JsspInputProblem {

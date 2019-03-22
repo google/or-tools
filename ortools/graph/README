@@ -28,6 +28,9 @@ Graph decompositions:
 - connectivity.h: Entry point for computing connected components in an
   undirected graph. (Does not need ebert_graph.h or digraph.h.)
 
+- strongly_connected_components.h: Entry point for computing the strongly
+  connected components of a directed graph, based on an algorithm of Tarjan.
+
 - cliques.h: Entry point for computing maximum cliques and clique covers in a
   directed graph, based on the Bron-Kerbosch algorithm. (Does not need
   ebert_graph.h or digraph.h.)
