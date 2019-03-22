@@ -6,86 +6,86 @@ import unittest
 
 from ortools.constraint_solver import pywrapcp
 
-class TestIntContainerAPI(unittest.TestCase):
+class TestIntVarContainerAPI(unittest.TestCase):
 
     def test_contains(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntContainer, 'Contains'),
-            dir(pywrapcp.IntContainer))
+            hasattr(pywrapcp.IntVarContainer, 'Contains'),
+            dir(pywrapcp.IntVarContainer))
 
     def test_element(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntContainer, 'Element'),
-            dir(pywrapcp.IntContainer))
+            hasattr(pywrapcp.IntVarContainer, 'Element'),
+            dir(pywrapcp.IntVarContainer))
 
     def test_size(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntContainer, 'Size'), dir(pywrapcp.IntContainer))
+            hasattr(pywrapcp.IntVarContainer, 'Size'), dir(pywrapcp.IntVarContainer))
 
     def test_store(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntContainer, 'Store'), dir(pywrapcp.IntContainer))
+            hasattr(pywrapcp.IntVarContainer, 'Store'), dir(pywrapcp.IntVarContainer))
 
     def test_restore(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntContainer, 'Restore'),
-            dir(pywrapcp.IntContainer))
+            hasattr(pywrapcp.IntVarContainer, 'Restore'),
+            dir(pywrapcp.IntVarContainer))
 
 
-class TestIntervalContainerAPI(unittest.TestCase):
+class TestIntervalVarContainerAPI(unittest.TestCase):
 
     def test_contains(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntervalContainer, 'Contains'),
-            dir(pywrapcp.IntervalContainer))
+            hasattr(pywrapcp.IntervalVarContainer, 'Contains'),
+            dir(pywrapcp.IntervalVarContainer))
 
     def test_element(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntervalContainer, 'Element'),
-            dir(pywrapcp.IntervalContainer))
+            hasattr(pywrapcp.IntervalVarContainer, 'Element'),
+            dir(pywrapcp.IntervalVarContainer))
 
     def test_size(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntervalContainer, 'Size'),
-            dir(pywrapcp.IntervalContainer))
+            hasattr(pywrapcp.IntervalVarContainer, 'Size'),
+            dir(pywrapcp.IntervalVarContainer))
 
     def test_store(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntervalContainer, 'Store'),
-            dir(pywrapcp.IntervalContainer))
+            hasattr(pywrapcp.IntervalVarContainer, 'Store'),
+            dir(pywrapcp.IntervalVarContainer))
 
     def test_restore(self):
         self.assertTrue(
-            hasattr(pywrapcp.IntervalContainer, 'Restore'),
-            dir(pywrapcp.IntervalContainer))
+            hasattr(pywrapcp.IntervalVarContainer, 'Restore'),
+            dir(pywrapcp.IntervalVarContainer))
 
 
-class TestSequenceContainerAPI(unittest.TestCase):
+class TestSequenceVarContainerAPI(unittest.TestCase):
 
     def test_contains(self):
         self.assertTrue(
-            hasattr(pywrapcp.SequenceContainer, 'Contains'),
-            dir(pywrapcp.SequenceContainer))
+            hasattr(pywrapcp.SequenceVarContainer, 'Contains'),
+            dir(pywrapcp.SequenceVarContainer))
 
     def test_element(self):
         self.assertTrue(
-            hasattr(pywrapcp.SequenceContainer, 'Element'),
-            dir(pywrapcp.SequenceContainer))
+            hasattr(pywrapcp.SequenceVarContainer, 'Element'),
+            dir(pywrapcp.SequenceVarContainer))
 
     def test_size(self):
         self.assertTrue(
-            hasattr(pywrapcp.SequenceContainer, 'Size'),
-            dir(pywrapcp.SequenceContainer))
+            hasattr(pywrapcp.SequenceVarContainer, 'Size'),
+            dir(pywrapcp.SequenceVarContainer))
 
     def test_store(self):
         self.assertTrue(
-            hasattr(pywrapcp.SequenceContainer, 'Store'),
-            dir(pywrapcp.SequenceContainer))
+            hasattr(pywrapcp.SequenceVarContainer, 'Store'),
+            dir(pywrapcp.SequenceVarContainer))
 
     def test_restore(self):
         self.assertTrue(
-            hasattr(pywrapcp.SequenceContainer, 'Restore'),
-            dir(pywrapcp.SequenceContainer))
+            hasattr(pywrapcp.SequenceVarContainer, 'Restore'),
+            dir(pywrapcp.SequenceVarContainer))
 
 
 if __name__ == '__main__':
