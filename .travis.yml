@@ -40,7 +40,9 @@ matrix:
       compiler: clang
       env: BUILDER=make LANGUAGE=python3
     - os: osx
-      osx_image: xcode10.1
+      # to get JDK 8
+      # https://docs.travis-ci.com/user/reference/osx/#jdk-and-macos
+      osx_image: xcode9.3
       compiler: clang
       env: BUILDER=make LANGUAGE=java
     - os: osx
