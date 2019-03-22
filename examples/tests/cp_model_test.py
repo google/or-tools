@@ -9,6 +9,20 @@ from ortools.sat.python import cp_model
 from ortools.sat.python import cp_model_helper
 
 
+class SolutionCounter(cp_model.CpSolverSolutionCallback):
+    """Print intermediate solutions."""
+
+    def __init__(self):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__solution_count = 0
+
+    def on_solution_callback(self):
+        self.__solution_count += 1
+
+    def solution_count(self):
+        return self.__solution_count
+
+
 class CpModelTest(object):
 
   def assertEqual(self, a, b):
@@ -507,13 +521,27 @@ class CpModelTest(object):
       not_x = x.Not()
     except:
       errors += 1
-    
+
     try:
       prod = x * y
     except:
       errors += 1
     self.assertEqual(errors, 2)
 
+  def testLinearizedBoolAndEqual(self):
+    print('testLinearizedBoolAndEqual')
+    model = cp_model.CpModel()
+    t = model.NewBoolVar('t');
+    a = model.NewBoolVar('a');
+    b = model.NewBoolVar('b');
+    model.AddBoolAnd([a, b]).OnlyEnforceIf(t)
+    model.Add(t == 1).OnlyEnforceIf([a, b]);
+
+    solver = cp_model.CpSolver()
+    solution_counter = SolutionCounter()
+    status = solver.SearchForAllSolutions(model, solution_counter)
+    self.assertEqual(status, cp_model.FEASIBLE)
+    self.assertEqual(4, solution_counter.solution_count())
 
 
 if __name__ == '__main__':
@@ -560,3 +588,4 @@ if __name__ == '__main__':
   cp_model_test.testRepr()
   cp_model_test.testDisplayBounds()
   cp_model_test.testIntegerExpressionErrors()
+  cp_model_test.testLinearizedBoolAndEqual()
