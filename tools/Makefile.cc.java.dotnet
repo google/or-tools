@@ -53,7 +53,7 @@ ifeq ($(SYSTEM),unix)
     LDFLAGS = \
 -Wl,-rpath,@loader_path \
 -Wl,-rpath,@loader_path/../lib \
--lz
+-lz -framework CoreFoundation
     PORT = MacOsX64
     ARCH = -DARCH_K8
     NETPLATFORM = x64
@@ -66,7 +66,7 @@ ifeq ($(SYSTEM),unix)
  -I$(INC_DIR) -I. $(ARCH) -Wno-deprecated \
  -DUSE_CBC -DUSE_CLP -DUSE_BOP -DUSE_GLOP
   LIB_PREFIX = lib
-  PRE_LIB = -Llib -Llib64 -framework CoreFoundation
+  PRE_LIB = -Llib -Llib64
   CBC_LNK = -lCbcSolver -lCbc -lOsiCbc -lCgl -lClpSolver -lClp -lOsiClp -lOsi -lCoinUtils
   ABSL_LNK = \
 -labsl_bad_any_cast_impl \
