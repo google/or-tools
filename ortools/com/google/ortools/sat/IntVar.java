@@ -44,15 +44,15 @@ public class IntVar implements Literal {
     return varBuilder.toString();
   }
 
+  /** Returns the name of the variable given upon creation. */
+  public String getName() {
+    return varBuilder.getName();
+  }
+
   /** Internal, returns the index of the variable in the underlying CpModelProto. */
   @Override
   public int getIndex() {
     return variableIndex;
-  }
-
-  /** Returns the name of the variable given upon creation. */
-  public String getName() {
-    return varBuilder.getName();
   }
 
   /** Returns the variable protobuf builder. */

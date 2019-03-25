@@ -341,6 +341,9 @@ class IntVar(LinearExpression):
     def Index(self):
         return self.__index
 
+    def Proto(self):
+        return self.__var
+
     def __str__(self):
         return self.__var.name
 

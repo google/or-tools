@@ -1216,5 +1216,9 @@ public class CpModel {
     return -index - 1;
   }
 
+  public CpModelProto.Builder builder() {
+    return modelBuilder;
+  }
+
   private final CpModelProto.Builder modelBuilder;
 }

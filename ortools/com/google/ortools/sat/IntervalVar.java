@@ -49,8 +49,14 @@ public class IntervalVar {
     return modelBuilder.getConstraints(constraintIndex).toString();
   }
 
-  int getIndex() {
+  /** Returns the index of the interval constraint in the model. */
+  public int getIndex() {
     return constraintIndex;
+  }
+
+  /** Returns the interval builder. */
+  public IntervalConstraintProto.Builder builder() {
+    return intervalBuilder;
   }
 
   /** Returns the name passed in the constructor. */

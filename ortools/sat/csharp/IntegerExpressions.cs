@@ -414,6 +414,11 @@ public class IntVar : IntegerExpression, ILiteral
     negation_ = null;
   }
 
+  public int Index
+  {
+    get  { return index_; }
+  }
+
   public override int GetIndex()
   {
     return index_;

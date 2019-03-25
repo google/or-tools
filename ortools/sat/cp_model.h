@@ -86,6 +86,8 @@ class BoolVar {
     return cp_model_->mutable_variables(index_);
   }
 
+  // Returns the index of the variable in the model. If the variable is the negation of 
+  // another variable v, its index is -v.index() - 1.
   int index() const { return index_; }
 
  private:
