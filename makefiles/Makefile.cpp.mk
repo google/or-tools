@@ -392,6 +392,7 @@ test_cc_sat_samples: \
  rcc_bool_or_sample_sat \
  rcc_channeling_sample_sat \
  rcc_cp_is_fun_sat \
+ rcc_earliness_tardiness_cost_sample_sat \
  rcc_interval_sample_sat \
  rcc_literal_sample_sat \
  rcc_no_overlap_sample_sat \
@@ -403,6 +404,7 @@ test_cc_sat_samples: \
  rcc_simple_sat_program \
  rcc_solve_and_print_intermediate_solutions_sample_sat \
  rcc_solve_with_time_limit_sample_sat \
+ rcc_step_function_sample_sat \
  rcc_stop_after_n_solutions_sample_sat
 
 .PHONY: check_cc_pimpl

@@ -406,6 +406,7 @@ test_java_sat_samples: \
  rjava_BoolOrSampleSat \
  rjava_ChannelingSampleSat \
  rjava_CpIsFunSat \
+ rjava_EarlinessTardinessCostSampleSat \
  rjava_IntervalSampleSat \
  rjava_LiteralSampleSat \
  rjava_NoOverlapSampleSat \
@@ -417,6 +418,7 @@ test_java_sat_samples: \
  rjava_SimpleSatProgram \
  rjava_SolveAndPrintIntermediateSolutionsSampleSat \
  rjava_SolveWithTimeLimitSampleSat \
+ rjava_StepFunctionSampleSat \
  rjava_StopAfterNSolutionsSampleSat
 
 .PHONY: check_java_pimpl

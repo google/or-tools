@@ -540,6 +540,7 @@ test_python_sat_samples: \
  rpy_bool_or_sample_sat \
  rpy_channeling_sample_sat \
  rpy_cp_is_fun_sat \
+ rpy_earliness_tardiness_cost_sample_sat \
  rpy_interval_sample_sat \
  rpy_literal_sample_sat \
  rpy_minimal_jobshop_sat \
@@ -553,6 +554,7 @@ test_python_sat_samples: \
  rpy_search_for_all_solutions_sample_sat \
  rpy_solve_and_print_intermediate_solutions_sample_sat \
  rpy_solve_with_time_limit_sample_sat \
+ rpy_step_function_sample_sat \
  rpy_stop_after_n_solutions_sample_sat
 
 .PHONY: check_python_pimpl

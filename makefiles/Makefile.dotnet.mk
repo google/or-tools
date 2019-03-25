@@ -474,6 +474,7 @@ test_dotnet_sat_samples:
 	$(MAKE) run SOURCE=ortools/sat/samples/BoolOrSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/ChannelingSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/CpIsFunSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/EarlinessTardinessCostSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/IntervalSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/LiteralSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/NoOverlapSampleSat.cs
@@ -485,6 +486,7 @@ test_dotnet_sat_samples:
 	$(MAKE) run SOURCE=ortools/sat/samples/SimpleSatProgram.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/SolveAndPrintIntermediateSolutionsSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/SolveWithTimeLimitSampleSat.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/StepFunctionSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/StopAfterNSolutionsSampleSat.cs
 
 .PHONY: check_dotnet_pimpl
