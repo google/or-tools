@@ -601,7 +601,7 @@ def steel_mill_slab_with_valid_slabs(problem, break_symmetries, output_proto):
     # Output model proto to file.
     if output_proto:
         output_file = open(output_proto, 'w')
-        output_file.write(str(model.ModelProto()))
+        output_file.write(str(model.Proto()))
         output_file.close()
 
     ### Solve model.
@@ -673,7 +673,7 @@ def steel_mill_slab_with_column_generation(problem, output_proto):
     # Output model proto to file.
     if output_proto:
         output_file = open(output_proto, 'w')
-        output_file.write(str(model.ModelProto()))
+        output_file.write(str(model.Proto()))
         output_file.close()
 
     ### Solve model.
