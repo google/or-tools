@@ -541,6 +541,9 @@ class LinearProgram {
     columns_are_known_to_be_clean_ = true;
   }
 
+  // If true, checks bound validity in debug mode.
+  void SetDcheckBounds(bool dcheck_bounds) { dcheck_bounds_ = dcheck_bounds; }
+
  private:
   // A helper function that updates the vectors integer_variables_list_,
   // binary_variables_list_, and non_binary_variables_list_.
@@ -627,6 +630,9 @@ class LinearProgram {
   // The index of the first slack variable added to the linear program by
   // LinearProgram::AddSlackVariablesForAllRows().
   ColIndex first_slack_variable_;
+
+  // If true, checks bounds in debug mode.
+  bool dcheck_bounds_ = true;
 
   friend void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
                     GlopParameters::ScalingAlgorithm scaling_method);

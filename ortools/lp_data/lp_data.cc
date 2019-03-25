@@ -245,7 +245,7 @@ void LinearProgram::SetConstraintName(RowIndex row, const std::string& name) {
 
 void LinearProgram::SetVariableBounds(ColIndex col, Fractional lower_bound,
                                       Fractional upper_bound) {
-  DebugCheckBoundsValid(lower_bound, upper_bound);
+  if (dcheck_bounds_) DebugCheckBoundsValid(lower_bound, upper_bound);
   variable_lower_bounds_[col] = lower_bound;
   variable_upper_bounds_[col] = upper_bound;
 }
@@ -300,7 +300,7 @@ bool LinearProgram::IsVariableBinary(ColIndex col) const {
 
 void LinearProgram::SetConstraintBounds(RowIndex row, Fractional lower_bound,
                                         Fractional upper_bound) {
-  DebugCheckBoundsValid(lower_bound, upper_bound);
+  if (dcheck_bounds_) DebugCheckBoundsValid(lower_bound, upper_bound);
   ResizeRowsIfNeeded(row);
   constraint_lower_bounds_[row] = lower_bound;
   constraint_upper_bounds_[row] = upper_bound;
