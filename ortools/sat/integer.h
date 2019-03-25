@@ -996,6 +996,12 @@ class GenericLiteralWatcher : public SatPropagator {
   // called again if they change one of their own watched variables.
   void NotifyThatPropagatorMayNotReachFixedPointInOnePass(int id);
 
+  // Whether we call a propagator even if its watched variables didn't change.
+  // This is only used when we are back to level zero. This was introduced for
+  // the LP propagator where we might need to continue an interrupted solve or
+  // add extra cuts at level zero.
+  void AlwaysCallAtLevelZero(int id);
+
   // Watches the corresponding quantity. The propagator with given id will be
   // called if it changes. Note that WatchLiteral() only trigger when the
   // literal becomes true.
@@ -1081,6 +1087,9 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<std::vector<int>> id_to_watch_indices_;
   std::vector<int> id_to_priority_;
   std::vector<int> id_to_idempotence_;
+
+  // Special propagators that needs to always be called at level zero.
+  std::vector<int> propagator_ids_to_call_at_level_zero_;
 
   std::vector<std::function<void(const std::vector<IntegerVariable>&)>>
       level_zero_modified_variable_callback_;

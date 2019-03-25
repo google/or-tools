@@ -212,6 +212,7 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
     watcher->WatchUpperBound(objective_cp_, watcher_id);
   }
   watcher->SetPropagatorPriority(watcher_id, 2);
+  watcher->AlwaysCallAtLevelZero(watcher_id);
 
   if (integer_variables_.size() >= 20) {  // Do not use on small subparts.
     auto* container = model->GetOrCreate<SearchHeuristicsVector>();

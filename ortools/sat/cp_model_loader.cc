@@ -753,50 +753,6 @@ void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
   const std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
   m->Add(StrictNonOverlappingRectangles(x_intervals, y_intervals));
-
-  // Add a cumulative relaxation. That is, on one direction, you do not enforce
-  // the rectangle aspect, allowing slices to move freely.
-  auto add_cumulative = [m](const std::vector<IntervalVariable>& x,
-                            const std::vector<IntervalVariable>& y) {
-    IntervalsRepository* const repository =
-        m->GetOrCreate<IntervalsRepository>();
-    std::vector<IntegerVariable> starts;
-    std::vector<IntegerVariable> sizes;
-    std::vector<IntegerVariable> ends;
-    int64 min_starts = kint64max;
-    int64 max_ends = kint64min;
-
-    for (const IntervalVariable& interval : y) {
-      starts.push_back(repository->StartVar(interval));
-      IntegerVariable s_var = repository->SizeVar(interval);
-      if (s_var == kNoIntegerVariable) {
-        s_var = m->Add(
-            ConstantIntegerVariable(repository->MinSize(interval).value()));
-      }
-      sizes.push_back(s_var);
-      ends.push_back(repository->EndVar(interval));
-      min_starts = std::min(min_starts, m->Get(LowerBound(starts.back())));
-      max_ends = std::max(max_ends, m->Get(UpperBound(ends.back())));
-    }
-    const IntegerVariable min_start_var =
-        m->Add(NewIntegerVariable(min_starts, max_ends));
-    m->Add(IsEqualToMinOf(min_start_var, starts));
-
-    const IntegerVariable max_end_var =
-        m->Add(NewIntegerVariable(min_starts, max_ends));
-    m->Add(IsEqualToMaxOf(max_end_var, ends));
-
-    const IntegerVariable capacity =
-        m->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts)));
-    const std::vector<int64> coeffs = {-1, -1, 1};
-    m->Add(WeightedSumGreaterOrEqual({capacity, min_start_var, max_end_var},
-                                     coeffs, 0));
-
-    m->Add(Cumulative(x, sizes, capacity));
-  };
-
-  add_cumulative(x_intervals, y_intervals);
-  add_cumulative(y_intervals, x_intervals);
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {

@@ -47,6 +47,8 @@ class NonOverlappingRectanglesBasePropagator : public PropagatorInterface {
   bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
       SchedulingConstraintHelper* x_dim, SchedulingConstraintHelper* y_dim,
       std::function<bool(const std::vector<int>& boxes)> inner_propagate);
+  std::vector<std::vector<int>> SplitDisjointBoxes(
+      std::vector<int> boxes, SchedulingConstraintHelper* x_dim);
 
   const int num_boxes_;
   SchedulingConstraintHelper x_;
@@ -76,8 +78,8 @@ class NonOverlappingRectanglesEnergyPropagator
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  void SortNeighbors(int box);
-  bool FailWhenEnergyIsTooLarge(int box);
+  void SortNeighbors(int box, const std::vector<int>& local_boxes);
+  bool FailWhenEnergyIsTooLarge(int box, const std::vector<int>& local_boxes);
 
   std::vector<int> neighbors_;
   std::vector<IntegerValue> cached_distance_to_bounding_box_;
@@ -145,6 +147,12 @@ class NonOverlappingRectanglesSlowPropagator
   DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesSlowPropagator);
 };
 
+// Add a cumulative relaxation. That is, on one direction, it does not enforce
+// the rectangle aspect, allowing vertical slices to move freely.
+void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x,
+                             const std::vector<IntervalVariable>& y,
+                             Model* model);
+
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
 // and (x + dx, y + dy) do not overlap.
 // If one box has a zero dimension, then it can be placed anywhere.
@@ -169,7 +177,11 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
         new NonOverlappingRectanglesSlowPropagator(
             x, y, false, model, model->GetOrCreate<IntegerTrail>());
     slow_constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+
     model->TakeOwnership(slow_constraint);
+
+    AddCumulativeRelaxation(x, y, model);
+    AddCumulativeRelaxation(y, x, model);
   };
 }
 
@@ -198,6 +210,9 @@ inline std::function<void(Model*)> StrictNonOverlappingRectangles(
             x, y, true, model, model->GetOrCreate<IntegerTrail>());
     slow_constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(slow_constraint);
+
+    AddCumulativeRelaxation(x, y, model);
+    AddCumulativeRelaxation(y, x, model);
   };
 }
 

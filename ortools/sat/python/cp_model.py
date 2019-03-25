@@ -1513,11 +1513,11 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     """
         if not self.HasResponse():
             raise RuntimeError('Solve() has not be called.')
-        if isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
+        if isinstance(lit, numbers.Integral):
+            return bool(lit)
+        elif isinstance(lit, IntVar) or isinstance(lit, _NotBooleanVariable):
             index = lit.Index()
             return self.SolutionBooleanValue(index)
-        elif isinstance(lit, numbers.Integral):
-            return bool(lit)
         else:
             raise TypeError(
                 'Cannot interpret %s as a boolean expression.' % lit)

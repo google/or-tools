@@ -79,11 +79,11 @@ class SolutionCallback {
 
   std::atomic<bool>* stopped() const { return &stopped_; }
 
-  bool HasResponse() const { return has_response_; }
-
   operations_research::sat::CpSolverResponse Response() const {
     return response_;
   }
+
+  bool HasResponse() const { return has_response_; }
 
  private:
   mutable CpSolverResponse response_;

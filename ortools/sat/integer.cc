@@ -1563,7 +1563,17 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
 }
 
 bool GenericLiteralWatcher::Propagate(Trail* trail) {
+  // Only once per call to Propagate(), if we are at level zero, we might want
+  // to call propagators even if the bounds didn't change.
   const int level = trail->CurrentDecisionLevel();
+  if (level == 0) {
+    for (const int id : propagator_ids_to_call_at_level_zero_) {
+      if (in_queue_[id]) continue;
+      in_queue_[id] = true;
+      queue_by_priority_[id_to_priority_[id]].push_back(id);
+    }
+  }
+
   UpdateCallingNeeds(trail);
 
   // Note that the priority may be set to -1 inside the loop in order to restart
@@ -1725,6 +1735,10 @@ void GenericLiteralWatcher::SetPropagatorPriority(int id, int priority) {
 void GenericLiteralWatcher::NotifyThatPropagatorMayNotReachFixedPointInOnePass(
     int id) {
   id_to_idempotence_[id] = false;
+}
+
+void GenericLiteralWatcher::AlwaysCallAtLevelZero(int id) {
+  propagator_ids_to_call_at_level_zero_.push_back(id);
 }
 
 void GenericLiteralWatcher::RegisterReversibleClass(int id,

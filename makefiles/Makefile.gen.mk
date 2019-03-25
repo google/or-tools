@@ -166,7 +166,8 @@ objs/util/cached_log.$O: ortools/util/cached_log.cc \
 
 objs/util/file_util.$O: ortools/util/file_util.cc ortools/util/file_util.h \
  ortools/base/file.h ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/status.h ortools/base/recordio.h | $(OBJ_DIR)/util
+ ortools/base/macros.h ortools/base/status.h ortools/base/recordio.h \
+ ortools/base/statusor.h | $(OBJ_DIR)/util
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Sfile_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sfile_util.$O
 
 objs/util/fp_utils.$O: ortools/util/fp_utils.cc ortools/util/fp_utils.h \
@@ -480,7 +481,7 @@ objs/lp_data/model_reader.$O: ortools/lp_data/model_reader.cc \
  ortools/util/fp_utils.h ortools/base/file.h ortools/base/status.h \
  ortools/lp_data/mps_reader.h ortools/base/commandlineflags.h \
  ortools/base/map_util.h ortools/lp_data/proto_utils.h \
- ortools/util/file_util.h ortools/base/recordio.h | $(OBJ_DIR)/lp_data
+ ortools/util/file_util.h ortools/base/recordio.h ortools/base/statusor.h | $(OBJ_DIR)/lp_data
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Smodel_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smodel_reader.$O
 
 objs/lp_data/mps_reader.$O: ortools/lp_data/mps_reader.cc \
@@ -666,7 +667,8 @@ objs/glop/lp_solver.$O: ortools/glop/lp_solver.cc ortools/glop/lp_solver.h \
  ortools/lp_data/matrix_scaler.h ortools/lp_data/proto_utils.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/util/file_util.h \
- ortools/base/file.h ortools/base/status.h ortools/base/recordio.h | $(OBJ_DIR)/glop
+ ortools/base/file.h ortools/base/status.h ortools/base/recordio.h \
+ ortools/base/statusor.h | $(OBJ_DIR)/glop
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sglop$Slp_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_solver.$O
 
 objs/glop/lu_factorization.$O: ortools/glop/lu_factorization.cc \
@@ -1548,7 +1550,7 @@ objs/sat/diffn.$O: ortools/sat/diffn.cc ortools/sat/diffn.h \
  ortools/sat/intervals.h ortools/sat/cp_constraints.h \
  ortools/sat/integer_expr.h ortools/sat/precedences.h \
  ortools/sat/theta_tree.h ortools/base/iterator_adaptors.h \
- ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/cumulative.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdiffn.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdiffn.$O
 
 objs/sat/disjunctive.$O: ortools/sat/disjunctive.cc \
@@ -3340,13 +3342,13 @@ objs/constraint_solver/routing_parameters.$O: \
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_parameters.$O
 
 objs/constraint_solver/routing_search.$O: \
- ortools/constraint_solver/routing_search.cc ortools/base/small_map.h \
+ ortools/constraint_solver/routing_search.cc ortools/base/map_util.h \
+ ortools/base/logging.h ortools/base/integral_types.h \
+ ortools/base/macros.h ortools/base/small_map.h \
  ortools/base/small_ordered_set.h ortools/base/stl_util.h \
- ortools/base/integral_types.h ortools/base/macros.h \
  ortools/constraint_solver/constraint_solveri.h \
  ortools/base/commandlineflags.h ortools/base/hash.h \
- ortools/base/basictypes.h ortools/base/logging.h ortools/base/map_util.h \
- ortools/base/sysinfo.h ortools/base/timer.h \
+ ortools/base/basictypes.h ortools/base/sysinfo.h ortools/base/timer.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/random.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \

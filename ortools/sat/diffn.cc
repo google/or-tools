@@ -19,6 +19,7 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/map_util.h"
+#include "ortools/sat/cumulative.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/sat_solver.h"
@@ -27,6 +28,47 @@
 
 namespace operations_research {
 namespace sat {
+
+void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x,
+                             const std::vector<IntervalVariable>& y,
+                             Model* model) {
+  IntervalsRepository* const repository =
+      model->GetOrCreate<IntervalsRepository>();
+  std::vector<IntegerVariable> starts;
+  std::vector<IntegerVariable> sizes;
+  std::vector<IntegerVariable> ends;
+  int64 min_starts = kint64max;
+  int64 max_ends = kint64min;
+
+  for (const IntervalVariable& interval : y) {
+    starts.push_back(repository->StartVar(interval));
+    IntegerVariable s_var = repository->SizeVar(interval);
+    if (s_var == kNoIntegerVariable) {
+      s_var = model->Add(
+          ConstantIntegerVariable(repository->MinSize(interval).value()));
+    }
+    sizes.push_back(s_var);
+    ends.push_back(repository->EndVar(interval));
+    min_starts = std::min(min_starts, model->Get(LowerBound(starts.back())));
+    max_ends = std::max(max_ends, model->Get(UpperBound(ends.back())));
+  }
+
+  const IntegerVariable min_start_var =
+      model->Add(NewIntegerVariable(min_starts, max_ends));
+  model->Add(IsEqualToMinOf(min_start_var, starts));
+
+  const IntegerVariable max_end_var =
+      model->Add(NewIntegerVariable(min_starts, max_ends));
+  model->Add(IsEqualToMaxOf(max_end_var, ends));
+
+  const IntegerVariable capacity =
+      model->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts)));
+  const std::vector<int64> coeffs = {-1, -1, 1};
+  model->Add(WeightedSumGreaterOrEqual({capacity, min_start_var, max_end_var},
+                                       coeffs, 0));
+
+  model->Add(Cumulative(x, sizes, capacity));
+}
 
 #define RETURN_IF_FALSE(f) \
   if (!(f)) return false;
@@ -79,6 +121,37 @@ IntegerValue NonOverlappingRectanglesBasePropagator::FindCanonicalValue(
   return candidate;
 }
 
+std::vector<std::vector<int>>
+NonOverlappingRectanglesBasePropagator::SplitDisjointBoxes(
+    std::vector<int> boxes, SchedulingConstraintHelper* x_dim) {
+  std::vector<std::vector<int>> result(1);
+  std::sort(boxes.begin(), boxes.end(), [x_dim](int a, int b) {
+    return x_dim->StartMin(a) < x_dim->StartMin(b);
+  });
+  result.back().push_back(boxes[0]);
+  IntegerValue current_max_end = x_dim->EndMax(boxes[0]);
+
+  for (int b = 1; b < boxes.size(); ++b) {
+    const int box = boxes[b];
+    if (x_dim->StartMin(box) < current_max_end) {
+      // Merge.
+      result.back().push_back(box);
+      current_max_end = std::max(current_max_end, x_dim->EndMax(box));
+    } else {
+      if (result.back().size() == 1) {
+        // Overwrite
+        result.back().clear();
+      } else {
+        result.push_back(std::vector<int>());
+      }
+      result.back().push_back(box);
+      current_max_end = x_dim->EndMax(box);
+    }
+  }
+
+  return result;
+}
+
 bool NonOverlappingRectanglesBasePropagator::
     FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
         SchedulingConstraintHelper* x_dim, SchedulingConstraintHelper* y_dim,
@@ -97,7 +170,7 @@ bool NonOverlappingRectanglesBasePropagator::
   std::vector<int> active_boxes;
 
   for (int box = 0; box < num_boxes_; ++box) {
-    if (cached_areas_[box] == 0) continue;
+    if (cached_areas_[box] == 0 && !strict_) continue;
     const IntegerValue start_max = y_dim->StartMax(box);
     const IntegerValue end_min = y_dim->EndMin(box);
     if (start_max < end_min) {
@@ -145,8 +218,19 @@ bool NonOverlappingRectanglesBasePropagator::
     event_to_overlapping_boxes.erase(event);
   }
 
+  std::set<std::vector<int>> reduced_overlapping_boxes;
   for (const auto& it : event_to_overlapping_boxes) {
-    const std::vector<int>& boxes = it.second;
+    std::vector<std::vector<int>> disjoint_boxes =
+        SplitDisjointBoxes(it.second, x_dim);
+    for (std::vector<int>& sub_boxes : disjoint_boxes) {
+      if (sub_boxes.size() > 1) {
+        std::sort(sub_boxes.begin(), sub_boxes.end());
+        reduced_overlapping_boxes.insert(sub_boxes);
+      }
+    }
+  }
+
+  for (const std::vector<int>& boxes : reduced_overlapping_boxes) {
     // Collect the common overlapping coordinates of all boxes.
     IntegerValue lb(kint64min);
     IntegerValue ub(kint64max);
@@ -189,9 +273,26 @@ NonOverlappingRectanglesEnergyPropagator::
 bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   FillCachedAreas();
 
+  std::vector<int> all_boxes;
   for (int box = 0; box < num_boxes_; ++box) {
     if (cached_areas_[box] == 0) continue;
-    RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box));
+    all_boxes.push_back(box);
+  }
+
+  if (all_boxes.empty()) return true;
+
+  const std::vector<std::vector<int>> x_split =
+      SplitDisjointBoxes(all_boxes, &x_);
+  for (const std::vector<int>& x_boxes : x_split) {
+    if (x_boxes.size() <= 1) continue;
+    const std::vector<std::vector<int>> y_split =
+        SplitDisjointBoxes(x_boxes, &y_);
+    for (const std::vector<int>& y_boxes : y_split) {
+      if (y_boxes.size() <= 1) continue;
+      for (const int box : y_boxes) {
+        RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box, y_boxes));
+      }
+    }
   }
 
   return true;
@@ -205,20 +306,21 @@ void NonOverlappingRectanglesEnergyPropagator::RegisterWith(
   watcher->SetPropagatorPriority(id, 2);
 }
 
-void NonOverlappingRectanglesEnergyPropagator::SortNeighbors(int box) {
+void NonOverlappingRectanglesEnergyPropagator::SortNeighbors(
+    int box, const std::vector<int>& local_boxes) {
   auto max_span = [](IntegerValue min_a, IntegerValue max_a, IntegerValue min_b,
                      IntegerValue max_b) {
     return std::max(max_a, max_b) - std::min(min_a, min_b) + 1;
   };
 
-  cached_distance_to_bounding_box_.resize(num_boxes_);
+  cached_distance_to_bounding_box_.assign(num_boxes_, IntegerValue(0));
   neighbors_.clear();
   const IntegerValue box_x_min = x_.StartMin(box);
   const IntegerValue box_x_max = x_.EndMax(box);
   const IntegerValue box_y_min = y_.StartMin(box);
   const IntegerValue box_y_max = y_.EndMax(box);
 
-  for (int other_box = 0; other_box < num_boxes_; ++other_box) {
+  for (const int other_box : local_boxes) {
     if (other_box == box) continue;
     if (cached_areas_[other_box] == 0) continue;
 
@@ -239,10 +341,10 @@ void NonOverlappingRectanglesEnergyPropagator::SortNeighbors(int box) {
 }
 
 bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
-    int box) {
+    int box, const std::vector<int>& local_boxes) {
   // Note that we only consider the smallest dimension of each boxes here.
 
-  SortNeighbors(box);
+  SortNeighbors(box, local_boxes);
   IntegerValue area_min_x = x_.StartMin(box);
   IntegerValue area_max_x = x_.EndMax(box);
   IntegerValue area_min_y = y_.StartMin(box);
@@ -267,14 +369,6 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
   for (int i = 0; i < neighbors_.size(); ++i) {
     const int other_box = neighbors_[i];
     CHECK_GT(cached_areas_[other_box], 0);
-
-    if (x_.StartMin(other_box) >= area_max_x ||
-        x_.EndMax(other_box) <= area_min_x ||
-        y_.StartMin(other_box) >= area_max_y ||
-        y_.EndMax(other_box) <= area_min_y) {
-      // Strictly disjoint from the current bounding box. Let's stop here.
-      return true;
-    }
 
     // Update Bounding box.
     area_min_x = std::min(area_min_x, x_.StartMin(other_box));
