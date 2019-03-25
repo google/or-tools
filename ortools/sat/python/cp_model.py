@@ -1217,6 +1217,7 @@ class CpModel(object):
         return str(self.__model)
 
     def Proto(self):
+        """Returns the underling CpModelProto."""
         return self.__model
 
     def Negated(self, index):

@@ -20,14 +20,23 @@ In Java, Python, and C#:
 -   To represent a interval from 0 to 10, just pass the two bounds (0, 10) as in
     `NewIntVar(0, 10, "x")`. A single value will be represented by twice the
     value as in [5, 5].
--   To create a fixed variable (constant), use the `NewConstant()` API.
+-   To create a variable with a single value domain, use the `NewConstant()` API
+    (or `newConstant()` in Java).
 -   To represent an enumerated list of values, for example {-5, -4, -3, 1, 3, 4,
-    5, 6}, you need to rewrite it as a list of intervals [-5, -3] U [1] U [3,
+    6, 6}, you need to rewrite it as a list of intervals [-5, -3] U [1] U [3,
     6], then flatten the list into a single list of integers. This gives `[-5,
     -3, 1, 1, 3, 6]` in python, or `new long[] {-5, -3, 1, 1, 3, 6}` in Java or
     C#.
+-   To create a variable with an enumerated domain, use the
+    `NewEnumeratedIntVar()` API as in:
+    -   Python: `model.NewEnumeratedIntVar([-5, -3, 1, 1, 3, 6], 'x')`
+    -   Java: `model.newEnumeratedIntVar(new long[] {-5, -3, 1, 1, 3, 6}, "x")`
+    -   C#: `model.NewEnumeratedIntVar(new long[] {-5, -3, 1, 1, 3, 6}, "x")`
 -   To exclude a single value, use int64min and int64max values as in [int64min,
-    4, 6, int64max].
+    4, 6, int64max]:
+    -   Python: `cp_model.INT_MIN` and `cp_model.INT_MAX`
+    -   Java: `Long.MIN_VALUE` and `Long.MAX_VALUE`
+    -   C#: `Int64.MinValue` and `Int64.MaxValue`
 
 In C++, domains use the Domain class.
 
@@ -38,6 +47,9 @@ In C++, domains use the Domain class.
 -   To represent an enumerated list of values, for instance {-5, -4, -3, 1, 3,
     4, 5, 6}, you can use `Domain::FromValues({-5, -4, -3, 1, 3, 4, 5, 6})` or
     `Domain::FromIntervals({{-5, -3}, {1, 1}, {3, 6}})`.
+-   To create a variable with an enumerated domain, build the enumerated domain,
+    and use it as in `cp_model.NewIntVar(Domain::FromIntervals({{-5, -3}, {1,
+    1}, {3, 6}})).WithName("x")`.
 -   To exclude a single value, use `Domain(5).Complement()`.
 
 ## Linear constraints
