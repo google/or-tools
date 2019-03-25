@@ -2879,6 +2879,9 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   int GetPath(int64 node) const { return paths_[node]; }
   int Rank(int64 node) const { return ranks_[node]; }
   bool IsDisabled() const { return status_ == DISABLED; }
+  const std::vector<int64>& GetNewSynchronizedUnperformedNodes() const {
+    return new_synchronized_unperformed_nodes_.PositionsSetAtLeastOnce();
+  }
 
  private:
   enum Status { UNKNOWN, ENABLED, DISABLED };
@@ -2902,6 +2905,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   std::vector<int64> node_path_starts_;
   std::vector<int64> starts_;
   std::vector<int> paths_;
+  SparseBitset<int64> new_synchronized_unperformed_nodes_;
   std::vector<int64> new_nexts_;
   std::vector<int> delta_touched_;
   SparseBitset<> touched_paths_;

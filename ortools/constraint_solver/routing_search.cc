@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/small_map.h"
 #include "ortools/base/small_ordered_set.h"
 #include "ortools/base/stl_util.h"
@@ -296,6 +297,7 @@ BasePathFilter::BasePathFilter(const std::vector<IntVar*>& nexts,
     : IntVarLocalSearchFilter(nexts, std::move(objective_callback)),
       node_path_starts_(next_domain_size, kUnassigned),
       paths_(nexts.size(), -1),
+      new_synchronized_unperformed_nodes_(nexts.size()),
       new_nexts_(nexts.size(), kUnassigned),
       touched_paths_(nexts.size()),
       touched_path_nodes_(next_domain_size),
@@ -424,6 +426,13 @@ void BasePathFilter::SynchronizeFullAssignment() {
   // needed).
   PropagateObjectiveValue(injected_objective_value_);
   ComputePathStarts(&starts_, &paths_);
+  for (int64 index = 0; index < Size(); index++) {
+    if (IsVarSynced(index) && Value(index) == index &&
+        node_path_starts_[index] != kUnassigned) {
+      // index was performed before and is now unperformed.
+      new_synchronized_unperformed_nodes_.Set(index);
+    }
+  }
   // Marking unactive nodes (which are not on a path).
   node_path_starts_.assign(node_path_starts_.size(), kUnassigned);
   // Marking nodes on a path and storing next values.
@@ -452,6 +461,7 @@ void BasePathFilter::OnSynchronize(const Assignment* delta) {
         DisableFiltering() ? BasePathFilter::DISABLED : BasePathFilter::ENABLED;
   }
   if (IsDisabled()) return;
+  new_synchronized_unperformed_nodes_.ClearAll();
   if (delta == nullptr || delta->Empty() || starts_.empty()) {
     SynchronizeFullAssignment();
     return;
@@ -471,6 +481,12 @@ void BasePathFilter::OnSynchronize(const Assignment* delta) {
       const int64 start = node_path_starts_[index];
       if (start != kUnassigned) {
         touched_paths_.Set(start);
+        if (Value(index) == index) {
+          // New unperformed node (its previous start isn't unassigned).
+          DCHECK_LT(index, new_nexts_.size());
+          new_synchronized_unperformed_nodes_.Set(index);
+          node_path_starts_[index] = kUnassigned;
+        }
       }
     }
   }
@@ -1033,6 +1049,13 @@ class PathCumulFilter : public BasePathFilter {
 
   void InitializeAcceptPath() override {
     cumul_cost_delta_ = total_current_cumul_cost_value_;
+    node_with_precedence_to_delta_min_max_cumuls_.clear();
+    // Cleaning up for the new delta.
+    delta_max_end_cumul_ = kint64min;
+    delta_paths_.clear();
+    delta_path_transits_.Clear();
+    lns_detected_ = false;
+    delta_nodes_with_precedences_and_changed_cumul_.ClearAll();
   }
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
@@ -1079,6 +1102,8 @@ class PathCumulFilter : public BasePathFilter {
     return !cumul_soft_lower_bounds_.empty();
   }
 
+  bool FilterPrecedences() const { return !node_index_to_precedences_.empty(); }
+
   int64 GetCumulSoftLowerBoundCost(int64 node, int64 cumul_value) const;
 
   int64 GetPathCumulSoftLowerBoundCost(const PathTransits& path_transits,
@@ -1098,6 +1123,18 @@ class PathCumulFilter : public BasePathFilter {
   bool PickupToDeliveryLimitsRespected(
       const PathTransits& path_transits, int path,
       const std::vector<int64>& min_path_cumuls) const;
+
+  // Computes the maximum cumul value of nodes along the path using
+  // [current|delta]_path_transits_, and stores the min/max cumul
+  // related to each node in the corresponding vector
+  // [current|delta]_[min|max]_node_cumuls_.
+  // The boolean is_delta indicates if the computations should take place on the
+  // "delta" or "current" members. When true, the nodes for which the min/max
+  // cumul has changed from the current value are marked in
+  // delta_nodes_with_precedences_and_changed_cumul_.
+  void StoreMinMaxCumulOfNodesOnPath(int path,
+                                     const std::vector<int64>& min_path_cumuls,
+                                     bool is_delta);
 
   // Compute the max start cumul value for a given path given an end cumul
   // value. Does not take time windows into account.
@@ -1128,15 +1165,25 @@ class PathCumulFilter : public BasePathFilter {
   bool has_nonzero_vehicle_span_cost_coefficients_;
   IntVar* const cost_var_;
   const std::vector<int64> vehicle_capacities_;
+  // node_index_to_precedences_[node_index] contains all NodePrecedence elements
+  // with node_index as either "first_node" or "second_node".
+  // This vector is empty if there are no precedences on the dimension_.
+  std::vector<std::vector<RoutingDimension::NodePrecedence>>
+      node_index_to_precedences_;
   // Data reflecting information on paths and cumul variables for the solution
   // to which the filter was synchronized.
   SupportedPathCumul current_min_start_;
   SupportedPathCumul current_max_end_;
   PathTransits current_path_transits_;
+  // Current min/max cumul values, indexed by node.
+  std::vector<std::pair<int64, int64>> current_min_max_node_cumuls_;
   // Data reflecting information on paths and cumul variables for the "delta"
   // solution (aka neighbor solution) being examined.
   PathTransits delta_path_transits_;
   int64 delta_max_end_cumul_;
+  SparseBitset<int64> delta_nodes_with_precedences_and_changed_cumul_;
+  absl::flat_hash_map<int64, std::pair<int64, int64>>
+      node_with_precedence_to_delta_min_max_cumuls_;
   // Note: small_ordered_set only support non-hash sets.
   gtl::small_ordered_set<std::set<int>> delta_paths_;
   const std::string name_;
@@ -1173,6 +1220,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       cost_var_(routing_model.CostVar()),
       vehicle_capacities_(dimension.vehicle_capacities()),
       delta_max_end_cumul_(kint64min),
+      delta_nodes_with_precedences_and_changed_cumul_(routing_model.Size()),
       name_(dimension.name()),
       optimizer_(&dimension),
       propagate_own_objective_value_(propagate_own_objective_value),
@@ -1248,6 +1296,19 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
     start_to_vehicle_[routing_model.Start(i)] = i;
     evaluators_[i] = &dimension.transit_evaluator(i);
   }
+
+  const std::vector<RoutingDimension::NodePrecedence>& node_precedences =
+      dimension.GetNodePrecedences();
+  if (!node_precedences.empty()) {
+    current_min_max_node_cumuls_.resize(cumuls_.size(), {-1, -1});
+    node_index_to_precedences_.resize(cumuls_.size());
+    for (const auto& node_precedence : node_precedences) {
+      node_index_to_precedences_[node_precedence.first_node].push_back(
+          node_precedence);
+      node_index_to_precedences_[node_precedence.second_node].push_back(
+          node_precedence);
+    }
+  }
 }
 
 int64 PathCumulFilter::GetCumulSoftCost(int64 node, int64 cumul_value) const {
@@ -1304,7 +1365,8 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
   cumul_cost_delta_ = 0;
   current_cumul_cost_values_.clear();
   if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost() ||
-      FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts()) {
+      FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts() ||
+      FilterPrecedences()) {
     InitializeSupportedPathCumul(&current_min_start_, kint64max);
     InitializeSupportedPathCumul(&current_max_end_, kint64min);
     current_path_transits_.Clear();
@@ -1327,6 +1389,9 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
       // Second pass: update cumul, transit and cost values.
       node = Start(r);
       int64 cumul = cumuls_[node]->Min();
+      std::vector<int64> min_path_cumuls;
+      min_path_cumuls.reserve(number_of_route_arcs + 1);
+      min_path_cumuls.push_back(cumul);
       int64 current_cumul_cost_value = 0;
       if (filter_with_optimizer) {
         const bool cumuls_optimized =
@@ -1350,6 +1415,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         cumul = GetNextValueFromForbiddenIntervals(cumul,
                                                    forbidden_intervals_[next]);
         cumul = std::max(cumuls_[next]->Min(), cumul);
+        min_path_cumuls.push_back(cumul);
         node = next;
         if (!filter_with_optimizer) {
           current_cumul_cost_value =
@@ -1358,6 +1424,10 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
               CapAdd(current_cumul_cost_value,
                      GetCumulPiecewiseLinearCost(node, cumul));
         }
+      }
+      if (FilterPrecedences()) {
+        StoreMinMaxCumulOfNodesOnPath(/*path=*/r, min_path_cumuls,
+                                      /*is_delta=*/false);
       }
       if (FilterSlackCost() && !filter_with_optimizer) {
         const int64 start =
@@ -1380,6 +1450,12 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
       }
       total_current_cumul_cost_value_ =
           CapAdd(total_current_cumul_cost_value_, current_cumul_cost_value);
+    }
+    if (FilterPrecedences()) {
+      // Update the min/max node cumuls of new unperformed nodes.
+      for (int64 node : GetNewSynchronizedUnperformedNodes()) {
+        current_min_max_node_cumuls_[node] = {-1, -1};
+      }
     }
     // Use the max of the path end cumul mins to compute the corresponding
     // maximum start cumul of each path; store the minimum of these.
@@ -1519,6 +1595,9 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
           &cumul_cost_delta)) {
     return false;
   }
+  if (FilterPrecedences()) {
+    StoreMinMaxCumulOfNodesOnPath(path, min_path_cumuls, /*is_delta=*/true);
+  }
   if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost() ||
       FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts()) {
     delta_paths_.insert(GetPath(path_start));
@@ -1532,15 +1611,52 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
 
 bool PathCumulFilter::FinalizeAcceptPath(Assignment* delta) {
   if ((!FilterSpanCost() && !FilterCumulSoftBounds() && !FilterSlackCost() &&
-       !FilterCumulSoftLowerBounds() && !FilterCumulPiecewiseLinearCosts()) ||
+       !FilterCumulSoftLowerBounds() && !FilterCumulPiecewiseLinearCosts() &&
+       !FilterPrecedences()) ||
       lns_detected_) {
-    // Cleaning up for the next delta.
-    delta_max_end_cumul_ = kint64min;
-    delta_paths_.clear();
-    delta_path_transits_.Clear();
-    lns_detected_ = false;
     PropagateObjectiveValue(injected_objective_value_);
     return true;
+  }
+  if (FilterPrecedences()) {
+    for (int64 node : delta_nodes_with_precedences_and_changed_cumul_
+                          .PositionsSetAtLeastOnce()) {
+      const std::pair<int64, int64> node_min_max_cumul_in_delta =
+          gtl::FindWithDefault(node_with_precedence_to_delta_min_max_cumuls_,
+                               node, {-1, -1});
+      // NOTE: This node was seen in delta, so its delta min/max cumul should be
+      // stored in the map.
+      DCHECK(node_min_max_cumul_in_delta.first >= 0 &&
+             node_min_max_cumul_in_delta.second >= 0);
+      for (const RoutingDimension::NodePrecedence& precedence :
+           node_index_to_precedences_[node]) {
+        const bool node_is_first = (precedence.first_node == node);
+        const int64 other_node =
+            node_is_first ? precedence.second_node : precedence.first_node;
+        if (GetNext(other_node) == kUnassigned ||
+            GetNext(other_node) == other_node) {
+          // The other node is unperformed, so the precedence constraint is
+          // inactive.
+          continue;
+        }
+        // max_cumul[second_node] should be greater or equal than
+        // min_cumul[first_node] + offset.
+        const std::pair<int64, int64>& other_min_max_cumul_in_delta =
+            gtl::FindWithDefault(node_with_precedence_to_delta_min_max_cumuls_,
+                                 other_node,
+                                 current_min_max_node_cumuls_[other_node]);
+
+        const int64 first_min_cumul = node_is_first
+                                          ? node_min_max_cumul_in_delta.first
+                                          : other_min_max_cumul_in_delta.first;
+        const int64 second_max_cumul = node_is_first
+                                           ? other_min_max_cumul_in_delta.second
+                                           : node_min_max_cumul_in_delta.second;
+
+        if (second_max_cumul < first_min_cumul + precedence.offset) {
+          return false;
+        }
+      }
+    }
   }
   int64 new_max_end = delta_max_end_cumul_;
   int64 new_min_start = kint64max;
@@ -1595,11 +1711,6 @@ bool PathCumulFilter::FinalizeAcceptPath(Assignment* delta) {
       }
     }
   }
-  // Cleaning up for the next delta.
-  delta_max_end_cumul_ = kint64min;
-  delta_paths_.clear();
-  delta_path_transits_.Clear();
-  lns_detected_ = false;
   // Filtering on objective value, including the injected part of it.
   accepted_objective_value_ =
       CapAdd(cumul_cost_delta_, CapProd(global_span_cost_coefficient_,
@@ -1690,6 +1801,43 @@ bool PathCumulFilter::PickupToDeliveryLimitsRespected(
     }
   }
   return true;
+}
+
+void PathCumulFilter::StoreMinMaxCumulOfNodesOnPath(
+    int path, const std::vector<int64>& min_path_cumuls, bool is_delta) {
+  const PathTransits& path_transits =
+      is_delta ? delta_path_transits_ : current_path_transits_;
+
+  const int path_size = path_transits.PathSize(path);
+  DCHECK_EQ(min_path_cumuls.size(), path_size);
+
+  int64 max_cumul = cumuls_[path_transits.Node(path, path_size - 1)]->Max();
+  for (int i = path_size - 1; i >= 0; i--) {
+    const int node_index = path_transits.Node(path, i);
+
+    if (i < path_size - 1) {
+      max_cumul = CapSub(max_cumul, path_transits.Transit(path, i));
+      max_cumul = std::min(cumuls_[node_index]->Max(), max_cumul);
+    }
+
+    if (is_delta && node_index_to_precedences_[node_index].empty()) {
+      // No need to update the delta cumul map for nodes without precedences.
+      continue;
+    }
+
+    std::pair<int64, int64>& min_max_cumuls =
+        is_delta ? node_with_precedence_to_delta_min_max_cumuls_[node_index]
+                 : current_min_max_node_cumuls_[node_index];
+    min_max_cumuls.first = min_path_cumuls[i];
+    min_max_cumuls.second = max_cumul;
+
+    if (is_delta && !routing_model_.IsEnd(node_index) &&
+        (min_max_cumuls.first !=
+             current_min_max_node_cumuls_[node_index].first ||
+         max_cumul != current_min_max_node_cumuls_[node_index].second)) {
+      delta_nodes_with_precedences_and_changed_cumul_.Set(node_index);
+    }
+  }
 }
 
 int64 PathCumulFilter::ComputePathMaxStartFromEndCumul(

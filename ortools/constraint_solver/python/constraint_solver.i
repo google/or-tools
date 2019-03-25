@@ -1919,9 +1919,15 @@ namespace operations_research {
 %template (NEW_NAME) TYPE;
 %enddef
 
-RENAME_ASSIGNMENT_CONTAINER(PARENTHIZE(AssignmentContainer<IntVar, IntVarElement>), IntVarContainer)
-RENAME_ASSIGNMENT_CONTAINER(PARENTHIZE(AssignmentContainer<IntervalVar, IntervalVarElement>), IntervalVarContainer)
-RENAME_ASSIGNMENT_CONTAINER(PARENTHIZE(AssignmentContainer<SequenceVar, SequenceVarElement>), SequenceVarContainer)
+RENAME_ASSIGNMENT_CONTAINER(
+    PARENTHIZE(AssignmentContainer<IntVar, IntVarElement>),
+    IntVarContainer)
+RENAME_ASSIGNMENT_CONTAINER(
+    PARENTHIZE(AssignmentContainer<IntervalVar, IntervalVarElement>),
+    IntervalVarContainer)
+RENAME_ASSIGNMENT_CONTAINER(
+    PARENTHIZE(AssignmentContainer<SequenceVar, SequenceVarElement>),
+    SequenceVarContainer)
 
 #undef RENAME_ASSIGNMENT_CONTAINER
 #undef PARENTHIZE

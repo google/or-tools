@@ -15,6 +15,7 @@
 // This file contains a protocol buffer definition for search limits.
 
 syntax = "proto3";
+
 option java_package = "com.google.ortools.constraintsolver";
 option java_multiple_files = true;
 // We set the outer classname to something other than 'SearchLimit', which is
@@ -34,4 +35,4 @@ message SearchLimitParameters {
   int64 solutions = 4;
   bool smart_time_check = 5;
   bool cumulative = 6;
-};
+}

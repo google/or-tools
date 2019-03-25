@@ -14,6 +14,7 @@
 // This file contains protocol buffers for all parameters of the CP solver.
 
 syntax = "proto3";
+
 option java_package = "com.google.ortools.constraintsolver";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
@@ -136,4 +137,4 @@ message ConstraintSolverParameters {
   // Control the behavior of local search.
   //
   int32 check_solution_period = 114;
-};
+}
