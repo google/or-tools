@@ -46,7 +46,7 @@ public class Constraint {
   }
 
   /** Returns the constraint builder. */
-  public ConstraintProto.Builder builder() {
+  public ConstraintProto.Builder getBuilder() {
     return constraintBuilder;
   }
 

@@ -55,7 +55,7 @@ public class IntervalVar {
   }
 
   /** Returns the interval builder. */
-  public IntervalConstraintProto.Builder builder() {
+  public IntervalConstraintProto.Builder getBuilder() {
     return intervalBuilder;
   }
 

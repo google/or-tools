@@ -56,7 +56,9 @@ public class IntVar implements Literal {
   }
 
   /** Returns the variable protobuf builder. */
-  public IntegerVariableProto.Builder builder() { return varBuilder; }
+  public IntegerVariableProto.Builder getBuilder() {
+    return varBuilder;
+  }
 
   /** Returns a short string describing the variable. */
   @Override

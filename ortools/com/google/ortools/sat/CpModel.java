@@ -110,7 +110,7 @@ public class CpModel {
   /** Adds {@code Or(literals) == true}. */
   public Constraint addBoolOr(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.builder().getBoolOrBuilder();
+    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
     for (Literal lit : literals) {
       boolOr.addLiterals(lit.getIndex());
     }
@@ -120,7 +120,7 @@ public class CpModel {
   /** Adds {@code And(literals) == true}. */
   public Constraint addBoolAnd(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.builder().getBoolAndBuilder();
+    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolAndBuilder();
     for (Literal lit : literals) {
       boolOr.addLiterals(lit.getIndex());
     }
@@ -130,7 +130,7 @@ public class CpModel {
   /** Adds {@code XOr(literals) == true}. */
   public Constraint addBoolXor(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
-    BoolArgumentProto.Builder boolOr = ct.builder().getBoolXorBuilder();
+    BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolXorBuilder();
     for (Literal lit : literals) {
       boolOr.addLiterals(lit.getIndex());
     }
@@ -147,7 +147,7 @@ public class CpModel {
   /** Adds {@code lb <= sum(vars) <= ub}. */
   public Constraint addLinearSum(IntVar[] vars, long lb, long ub) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (IntVar var : vars) {
       lin.addVars(var.getIndex());
       lin.addCoeffs(1);
@@ -163,7 +163,7 @@ public class CpModel {
    */
   public Constraint addLinearSumWithBounds(IntVar[] vars, long[] bounds) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (IntVar var : vars) {
       lin.addVars(var.getIndex());
       lin.addCoeffs(1);
@@ -204,7 +204,7 @@ public class CpModel {
   /** Adds {@code lb <= sum(vars[i] * coeffs[i]) <= ub}. */
   public Constraint addScalProd(IntVar[] vars, long[] coeffs, long lb, long ub) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (IntVar var : vars) {
       lin.addVars(var.getIndex());
     }
@@ -227,7 +227,7 @@ public class CpModel {
    */
   public Constraint addScalProdWithBounds(IntVar[] vars, long[] coeffs, long[] bounds) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (IntVar var : vars) {
       lin.addVars(var.getIndex());
     }
@@ -272,7 +272,7 @@ public class CpModel {
   /** Adds {@code var <= value}. */
   public Constraint addLessOrEqual(IntVar var, long value) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     lin.addVars(var.getIndex());
     lin.addCoeffs(1);
     lin.addDomain(java.lang.Long.MIN_VALUE);
@@ -288,7 +288,7 @@ public class CpModel {
   /** Adds {@code var >= value}. */
   public Constraint addGreaterOrEqual(IntVar var, long value) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     lin.addVars(var.getIndex());
     lin.addCoeffs(1);
     lin.addDomain(value);
@@ -299,7 +299,7 @@ public class CpModel {
   /** Adds {@code var == value}. */
   public Constraint addEquality(IntVar var, long value) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     lin.addVars(var.getIndex());
     lin.addCoeffs(1);
     lin.addDomain(value);
@@ -315,7 +315,7 @@ public class CpModel {
   /** Adds {@code a + offset == b}. */
   public Constraint addEqualityWithOffset(IntVar a, IntVar b, long offset) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     lin.addVars(a.getIndex());
     lin.addCoeffs(-1);
     lin.addVars(b.getIndex());
@@ -328,7 +328,7 @@ public class CpModel {
   /** Adds {@code var != value}. */
   public Constraint addDifferent(IntVar var, long value) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     lin.addVars(var.getIndex());
     lin.addCoeffs(1);
     if (value > java.lang.Long.MIN_VALUE) {
@@ -350,7 +350,7 @@ public class CpModel {
   /** Adds {@code a + offset != b} */
   public Constraint addDifferentWithOffset(IntVar a, IntVar b, long offset) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     lin.addVars(a.getIndex());
     lin.addCoeffs(-1);
     lin.addVars(b.getIndex());
@@ -369,7 +369,7 @@ public class CpModel {
   /** Adds {@code before + offset <= after}. */
   public Constraint addLessOrEqualWithOffset(IntVar before, IntVar after, long offset) {
     Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.builder().getLinearBuilder();
+    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     lin.addVars(before.getIndex());
     lin.addCoeffs(-1);
     lin.addVars(after.getIndex());
@@ -391,7 +391,7 @@ public class CpModel {
    */
   public Constraint addAllDifferent(IntVar[] variables) {
     Constraint ct = new Constraint(modelBuilder);
-    AllDifferentConstraintProto.Builder allDiff = ct.builder().getAllDiffBuilder();
+    AllDifferentConstraintProto.Builder allDiff = ct.getBuilder().getAllDiffBuilder();
     for (IntVar var : variables) {
       allDiff.addVars(var.getIndex());
     }
@@ -401,7 +401,7 @@ public class CpModel {
   /** Adds the element constraint: {@code variables[index] == target}. */
   public Constraint addElement(IntVar index, IntVar[] variables, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.builder().getElementBuilder();
+    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
     element.setIndex(index.getIndex());
     for (IntVar var : variables) {
       element.addVars(var.getIndex());
@@ -413,7 +413,7 @@ public class CpModel {
   /** Adds the element constraint: {@code values[index] == target}. */
   public Constraint addElement(IntVar index, long[] values, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.builder().getElementBuilder();
+    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
     element.setIndex(index.getIndex());
     for (long v : values) {
       element.addVars(indexFromConstant(v));
@@ -425,7 +425,7 @@ public class CpModel {
   /** Adds the element constraint: {@code values[index] == target}. */
   public Constraint addElement(IntVar index, int[] values, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.builder().getElementBuilder();
+    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
     element.setIndex(index.getIndex());
     for (long v : values) {
       element.addVars(indexFromConstant(v));
@@ -459,7 +459,7 @@ public class CpModel {
     }
 
     Constraint ct = new Constraint(modelBuilder);
-    CircuitConstraintProto.Builder circuit = ct.builder().getCircuitBuilder();
+    CircuitConstraintProto.Builder circuit = ct.getBuilder().getCircuitBuilder();
     for (int t : tails) {
       circuit.addTails(t);
     }
@@ -488,7 +488,7 @@ public class CpModel {
   public Constraint addAllowedAssignments(IntVar[] variables, long[][] tuplesList)
       throws WrongLength {
     Constraint ct = new Constraint(modelBuilder);
-    TableConstraintProto.Builder table = ct.builder().getTableBuilder();
+    TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
     for (IntVar var : variables) {
       table.addVars(var.getIndex());
     }
@@ -513,7 +513,7 @@ public class CpModel {
   public Constraint addAllowedAssignments(IntVar[] variables, int[][] tuplesList)
       throws WrongLength {
     Constraint ct = new Constraint(modelBuilder);
-    TableConstraintProto.Builder table = ct.builder().getTableBuilder();
+    TableConstraintProto.Builder table = ct.getBuilder().getTableBuilder();
     for (IntVar var : variables) {
       table.addVars(var.getIndex());
     }
@@ -546,7 +546,7 @@ public class CpModel {
       throws WrongLength {
     Constraint ct = addAllowedAssignments(variables, tuplesList);
     // Reverse the flag.
-    ct.builder().getTableBuilder().setNegated(true);
+    ct.getBuilder().getTableBuilder().setNegated(true);
     return ct;
   }
 
@@ -559,7 +559,7 @@ public class CpModel {
       throws WrongLength {
     Constraint ct = addAllowedAssignments(variables, tuplesList);
     // Reverse the flag.
-    ct.builder().getTableBuilder().setNegated(true);
+    ct.getBuilder().getTableBuilder().setNegated(true);
     return ct;
   }
 
@@ -597,7 +597,7 @@ public class CpModel {
   public Constraint addAutomaton(IntVar[] transitionVariables, long startingState,
       long[] finalStates, long[][] transitions) throws WrongLength {
     Constraint ct = new Constraint(modelBuilder);
-    AutomatonConstraintProto.Builder automaton = ct.builder().getAutomatonBuilder();
+    AutomatonConstraintProto.Builder automaton = ct.getBuilder().getAutomatonBuilder();
     for (IntVar var : transitionVariables) {
       automaton.addVars(var.getIndex());
     }
@@ -633,7 +633,7 @@ public class CpModel {
       throw new MismatchedArrayLengths("addInverse", "variables", "inverseVariables");
     }
     Constraint ct = new Constraint(modelBuilder);
-    InverseConstraintProto.Builder inverse = ct.builder().getInverseBuilder();
+    InverseConstraintProto.Builder inverse = ct.getBuilder().getInverseBuilder();
     for (IntVar var : variables) {
       inverse.addFDirect(var.getIndex());
     }
@@ -672,7 +672,7 @@ public class CpModel {
       throw new MismatchedArrayLengths("addReservoirConstraint", "times", "demands");
     }
     Constraint ct = new Constraint(modelBuilder);
-    ReservoirConstraintProto.Builder reservoir = ct.builder().getReservoirBuilder();
+    ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
     for (IntVar var : times) {
       reservoir.addTimes(var.getIndex());
     }
@@ -729,7 +729,7 @@ public class CpModel {
     }
 
     Constraint ct = new Constraint(modelBuilder);
-    ReservoirConstraintProto.Builder reservoir = ct.builder().getReservoirBuilder();
+    ReservoirConstraintProto.Builder reservoir = ct.getBuilder().getReservoirBuilder();
     for (IntVar var : times) {
       reservoir.addTimes(var.getIndex());
     }
@@ -766,7 +766,7 @@ public class CpModel {
   /** Adds {@code target == Min(vars)}. */
   public Constraint addMinEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMin = ct.builder().getIntMinBuilder();
+    IntegerArgumentProto.Builder intMin = ct.getBuilder().getIntMinBuilder();
     intMin.setTarget(target.getIndex());
     for (IntVar var : vars) {
       intMin.addVars(var.getIndex());
@@ -777,7 +777,7 @@ public class CpModel {
   /** Adds {@code target == Max(vars)}. */
   public Constraint addMaxEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMax = ct.builder().getIntMaxBuilder();
+    IntegerArgumentProto.Builder intMax = ct.getBuilder().getIntMaxBuilder();
     intMax.setTarget(target.getIndex());
     for (IntVar var : vars) {
       intMax.addVars(var.getIndex());
@@ -788,7 +788,7 @@ public class CpModel {
   /** Adds {@code target == num / denom}, rounded towards 0. */
   public Constraint addDivisionEquality(IntVar target, IntVar num, IntVar denom) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intDiv = ct.builder().getIntDivBuilder();
+    IntegerArgumentProto.Builder intDiv = ct.getBuilder().getIntDivBuilder();
     intDiv.setTarget(target.getIndex());
     intDiv.addVars(num.getIndex());
     intDiv.addVars(denom.getIndex());
@@ -798,7 +798,7 @@ public class CpModel {
   /** Adds {@code target == Abs(var)}. */
   public Constraint addAbsEquality(IntVar target, IntVar var) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMax = ct.builder().getIntMaxBuilder();
+    IntegerArgumentProto.Builder intMax = ct.getBuilder().getIntMaxBuilder();
     intMax.setTarget(target.getIndex());
     intMax.addVars(var.getIndex());
     intMax.addVars(-var.getIndex() - 1);
@@ -808,7 +808,7 @@ public class CpModel {
   /** Adds {@code target == var % mod}. */
   public Constraint addModuloEquality(IntVar target, IntVar var, IntVar mod) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMod = ct.builder().getIntModBuilder();
+    IntegerArgumentProto.Builder intMod = ct.getBuilder().getIntModBuilder();
     intMod.setTarget(target.getIndex());
     intMod.addVars(var.getIndex());
     intMod.addVars(mod.getIndex());
@@ -818,7 +818,7 @@ public class CpModel {
   /** Adds {@code target == var % mod}. */
   public Constraint addModuloEquality(IntVar target, IntVar var, long mod) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMod = ct.builder().getIntModBuilder();
+    IntegerArgumentProto.Builder intMod = ct.getBuilder().getIntModBuilder();
     intMod.setTarget(target.getIndex());
     intMod.addVars(var.getIndex());
     intMod.addVars(indexFromConstant(mod));
@@ -828,7 +828,7 @@ public class CpModel {
   /** Adds {@code target == Product(vars)}. */
   public Constraint addProductEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intProd = ct.builder().getIntProdBuilder();
+    IntegerArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
     intProd.setTarget(target.getIndex());
     for (IntVar var : vars) {
       intProd.addVars(var.getIndex());
@@ -965,7 +965,7 @@ public class CpModel {
    */
   public Constraint addNoOverlap(IntervalVar[] intervalVars) {
     Constraint ct = new Constraint(modelBuilder);
-    NoOverlapConstraintProto.Builder noOverlap = ct.builder().getNoOverlapBuilder();
+    NoOverlapConstraintProto.Builder noOverlap = ct.getBuilder().getNoOverlapBuilder();
     for (IntervalVar var : intervalVars) {
       noOverlap.addIntervals(var.getIndex());
     }
@@ -985,7 +985,7 @@ public class CpModel {
    */
   public Constraint addNoOverlap2D(IntervalVar[] xIntervals, IntervalVar[] yIntervals) {
     Constraint ct = new Constraint(modelBuilder);
-    NoOverlap2DConstraintProto.Builder noOverlap2d = ct.builder().getNoOverlap2DBuilder();
+    NoOverlap2DConstraintProto.Builder noOverlap2d = ct.getBuilder().getNoOverlap2DBuilder();
     for (IntervalVar x : xIntervals) {
       noOverlap2d.addXIntervals(x.getIndex());
     }
@@ -1012,7 +1012,7 @@ public class CpModel {
    */
   public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, IntVar capacity) {
     Constraint ct = new Constraint(modelBuilder);
-    CumulativeConstraintProto.Builder cumul = ct.builder().getCumulativeBuilder();
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
@@ -1030,7 +1030,7 @@ public class CpModel {
    */
   public Constraint addCumulative(IntervalVar[] intervals, long[] demands, IntVar capacity) {
     Constraint ct = new Constraint(modelBuilder);
-    CumulativeConstraintProto.Builder cumul = ct.builder().getCumulativeBuilder();
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
@@ -1057,7 +1057,7 @@ public class CpModel {
    */
   public Constraint addCumulative(IntervalVar[] intervals, IntVar[] demands, long capacity) {
     Constraint ct = new Constraint(modelBuilder);
-    CumulativeConstraintProto.Builder cumul = ct.builder().getCumulativeBuilder();
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
@@ -1075,7 +1075,7 @@ public class CpModel {
    */
   public Constraint addCumulative(IntervalVar[] intervals, long[] demands, long capacity) {
     Constraint ct = new Constraint(modelBuilder);
-    CumulativeConstraintProto.Builder cumul = ct.builder().getCumulativeBuilder();
+    CumulativeConstraintProto.Builder cumul = ct.getBuilder().getCumulativeBuilder();
     for (IntervalVar interval : intervals) {
       cumul.addIntervals(interval.getIndex());
     }
@@ -1216,7 +1216,8 @@ public class CpModel {
     return -index - 1;
   }
 
-  public CpModelProto.Builder builder() {
+  /** Returns the model builder. */
+  public CpModelProto.Builder getBuilder() {
     return modelBuilder;
   }
 
