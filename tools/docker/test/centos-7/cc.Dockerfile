@@ -1,9 +1,11 @@
-FROM centos:7
+FROM centos/devtoolset-7-toolchain-centos7
 LABEL maintainer="corentinl@google.com"
+
+USER root
 
 RUN yum -y update \
 && yum -y groupinstall 'Development Tools' \
-&& yum -y install zlib-devel \
+&& yum -y install which zlib-devel \
 && yum clean all \
 && rm -rf /var/cache/yum
 

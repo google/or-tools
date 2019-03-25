@@ -1,5 +1,7 @@
-FROM centos:7
+FROM centos/devtoolset-7-toolchain-centos7
 LABEL maintainer="corentinl@google.com"
+
+USER root
 
 RUN yum -y update \
 && yum -y groupinstall 'Development Tools' \

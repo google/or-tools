@@ -1,4 +1,11 @@
-FROM centos:7
+FROM centos/devtoolset-7-toolchain-centos7
+USER root
+
+#FROM centos:7
+#RUN yum -y update \
+#&& yum install -y centos-release-scl \
+#&& yum install -y devtoolset-7-gcc* \
+#&& scl enable devtoolset-7 bash
 
 #############
 ##  SETUP  ##
@@ -8,27 +15,13 @@ RUN yum -y update \
 && yum -y install \
  wget git pkg-config make autoconf libtool zlib-devel gawk gcc-c++ curl subversion \
  redhat-lsb-core pcre-devel which \
- java-1.8.0-openjdk  java-1.8.0-openjdk-devel \
 && yum clean all \
 && rm -rf /var/cache/yum
 
-# Install dotnet
-RUN rpm -Uvh "https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm" \
-&& yum -y update \
-&& yum -y install dotnet-sdk-2.1 \
-&& yum clean all \
-&& rm -rf /var/cache/yum
-
-# Install Mono
-#RUN rpm --import "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF" \
-#&& su -c 'curl https://download.mono-project.com/repo/centos7-stable.repo | tee /etc/yum.repos.d/mono-centos7-stable.repo'
-#&& yum -y update \
-#&& yum -y install mono-devel
-
-# Install CMake
-RUN wget "https://cmake.org/files/v3.8/cmake-3.8.2-Linux-x86_64.sh" \
-&& chmod 775 cmake-3.8.2-Linux-x86_64.sh \
-&& yes | ./cmake-3.8.2-Linux-x86_64.sh --prefix=/usr --exclude-subdir
+# Install CMake 3
+RUN yum -y install epel-release \
+&& yum install -y cmake3 \
+&& ln -s /usr/bin/cmake3 /usr/local/bin/cmake
 
 # Install Swig
 RUN wget "https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz" \
@@ -40,6 +33,19 @@ RUN wget "https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3
 && make install \
 && cd .. \
 && rm -rf swig-3.0.12
+
+# Install Java 8 SDK
+RUN yum -y update \
+&& yum -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel \
+&& yum clean all \
+&& rm -rf /var/cache/yum
+
+# Install dotnet
+RUN rpm -Uvh "https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm" \
+&& yum -y update \
+&& yum -y install dotnet-sdk-2.1 \
+&& yum clean all \
+&& rm -rf /var/cache/yum
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
