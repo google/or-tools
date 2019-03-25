@@ -41,7 +41,6 @@ public class StepFunctionSampleSat {
     //      -- ---            0
     // 0 ================ 20
     //
-
     IntVar expr = model.newIntVar(0, 3, "expr");
 
     // expr == 0 on [5, 6] U [8, 10]

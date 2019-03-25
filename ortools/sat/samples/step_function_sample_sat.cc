@@ -34,7 +34,6 @@ void StepFunctionSampleSat() {
   //      -- ---            0
   // 0 ================ 20
   //
-
   IntVar expr = cp_model.NewIntVar({0, 3});
 
   // expr == 0 on [5, 6] U [8, 10]

@@ -647,9 +647,8 @@ def step_function_sample_sat():
   # -- --      ---------   2
   #                        1
   #      -- ---            0
-  # 0==================20
+  # 0 ================ 20
   #
-
   expr = model.NewIntVar(0, 3, 'expr')
 
   # expr == 0 on [5, 6] U [8, 10]
@@ -715,7 +714,6 @@ void StepFunctionSampleSat() {
   //      -- ---            0
   // 0 ================ 20
   //
-
   IntVar expr = cp_model.NewIntVar({0, 3});
 
   // expr == 0 on [5, 6] U [8, 10]
@@ -798,7 +796,6 @@ public class StepFunctionSampleSat {
     //      -- ---            0
     // 0 ================ 20
     //
-
     IntVar expr = model.newIntVar(0, 3, "expr");
 
     // expr == 0 on [5, 6] U [8, 10]
@@ -900,9 +897,8 @@ public class StepFunctionSampleSat
     // -- --      ---------   2
     //                        1
     //      -- ---            0
-    // 0                  20
+    // 0 ================ 20
     //
-
     IntVar expr = model.NewIntVar(0, 3, "expr");
 
     // expr == 0 on [5, 6] U [8, 10]

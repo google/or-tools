@@ -339,9 +339,11 @@ class IntVar(LinearExpression):
         self.__negation = None
 
     def Index(self):
+        """Returns the index of the variable in the model."""
         return self.__index
 
     def Proto(self):
+        """Returns the variable protobuf."""
         return self.__var
 
     def __str__(self):
@@ -480,9 +482,11 @@ class Constraint(object):
         return self
 
     def Index(self):
+        """Returns the index of the constraint in the model."""
         return self.__index
 
-    def ConstraintProto(self):
+    def Proto(self):
+        """Returns the constraint protobuf."""
         return self.__constraint
 
 
@@ -518,7 +522,12 @@ class IntervalVar(object):
             self.__ct.name = name
 
     def Index(self):
+        """Returns the index of the interval constraint in the model."""
         return self.__index
+
+    def Proto(self):
+        """Returns the interval protobuf."""
+        return self.__ct.interval
 
     def __str__(self):
         return self.__ct.name
@@ -1207,7 +1216,7 @@ class CpModel(object):
     def __str__(self):
         return str(self.__model)
 
-    def ModelProto(self):
+    def Proto(self):
         return self.__model
 
     def Negated(self, index):
@@ -1400,14 +1409,14 @@ class CpSolver(object):
     def Solve(self, model):
         """Solves the given model and returns the solve status."""
         self.__solution = pywrapsat.SatHelper.SolveWithParameters(
-            model.ModelProto(), self.parameters)
+            model.Proto(), self.parameters)
         return self.__solution.status
 
     def SolveWithSolutionCallback(self, model, callback):
         """Solves a problem and pass each solution found to the callback."""
         self.__solution = (
             pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-                model.ModelProto(), self.parameters, callback))
+                model.Proto(), self.parameters, callback))
         return self.__solution.status
 
     def SearchForAllSolutions(self, model, callback):
@@ -1433,7 +1442,7 @@ class CpSolver(object):
         self.parameters.enumerate_all_solutions = True
         self.__solution = (
             pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
-                model.ModelProto(), self.parameters, callback))
+                model.Proto(), self.parameters, callback))
         # Restore parameters.
         self.parameters.enumerate_all_solutions = enumerate_all
         return self.__solution.status

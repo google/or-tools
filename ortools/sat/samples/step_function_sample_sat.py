@@ -53,9 +53,8 @@ def step_function_sample_sat():
     # -- --      ---------   2
     #                        1
     #      -- ---            0
-    # 0==================20
+    # 0 ================ 20
     #
-
     expr = model.NewIntVar(0, 3, 'expr')
 
     # expr == 0 on [5, 6] U [8, 10]

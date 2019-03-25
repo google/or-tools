@@ -56,12 +56,10 @@ public class IntervalVar
     return index_;
   }
 
-  public IntervalConstraintProto Proto
-  {
+  public IntervalConstraintProto Proto {
     get { return interval_; }
     set { interval_ = value; }
   }
-
 
   public override string ToString()
   {
