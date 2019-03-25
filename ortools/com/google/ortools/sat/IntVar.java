@@ -55,6 +55,9 @@ public class IntVar implements Literal {
     return varBuilder.getName();
   }
 
+  /** Returns the variable protobuf builder. */
+  public IntegerVariableProto.Builder builder() { return varBuilder; }
+
   /** Returns a short string describing the variable. */
   @Override
   public String getShortString() {

@@ -45,6 +45,7 @@ public class Constraint
   public ConstraintProto Proto
   {
     get { return constraint_; }
+    set { constraint_ = value; }
   }
 
   private int index_;

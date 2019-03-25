@@ -40,11 +40,13 @@ public class Constraint {
     }
   }
 
-  int getIndex() {
+  /** Returns the index of the constraint in the model. */
+  public int getIndex() {
     return constraintIndex;
   }
 
-  ConstraintProto.Builder builder() {
+  /** Returns the constraint builder. */
+  public ConstraintProto.Builder builder() {
     return constraintBuilder;
   }
 

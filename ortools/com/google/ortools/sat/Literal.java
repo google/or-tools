@@ -15,7 +15,7 @@ package com.google.ortools.sat;
 
 /** Interface to describe a boolean variable or its negation. */
 public interface Literal {
-  int getIndex();
+  public int getIndex();
 
   /** Returns the Boolean negation of the current literal. */
   public Literal not();

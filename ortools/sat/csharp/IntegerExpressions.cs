@@ -419,6 +419,12 @@ public class IntVar : IntegerExpression, ILiteral
     return index_;
   }
 
+  public IntegerVariableProto Proto
+  {
+    get { return var_; }
+    set { var_ = value; }
+  }
+
   public override string ToString()
   {
     return var_.ToString();
