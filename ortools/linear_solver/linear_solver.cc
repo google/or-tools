@@ -735,7 +735,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
 
   // Map the variables to their indices. This is needed to output the
   // variables in the order they were created, which in turn is needed to have
-  // repeatable results with ExportModelAsLpString and ExportModelAsMpsString.
+  // repeatable results with ExportModelAsLpFormat and ExportModelAsMpsFormat.
   // This step is needed as long as the variable indices are given by the
   // underlying solver at the time of model extraction.
   // TODO(user): remove this step.
