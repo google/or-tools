@@ -118,6 +118,7 @@ docker_ubuntu-18.10: export/ubuntu-18.10/docker.tar
 # before the image is built...
 export/%/docker.tar: %.Dockerfile ../Makefile.cc.java.dotnet ../../makefiles ../../ortools | export/%
 	-docker image rm -f or-tools_$*:devel 2>/dev/null
+	-rm -f export/$*/docker.tar
 	cp or-tools.snk export/$*/
 	$(DOCKER_BUILD_CMD) \
  -f $< \
