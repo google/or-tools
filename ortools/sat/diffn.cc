@@ -157,8 +157,6 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
 
   if (active_boxes_.empty()) return true;
 
-  // const std::vector<absl::Span<int>> x_split =
-  //     SplitDisjointBoxes({&active_boxes_[0], active_boxes_.size()}, &x_);
   const std::vector<absl::Span<int>> x_split =
       SplitDisjointBoxes(absl::MakeSpan(active_boxes_), &x_);
   for (absl::Span<int> x_boxes : x_split) {
@@ -324,9 +322,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   y_.Init(y_intervals);
 
   // Compute relevant events (line in the y dimension).
-  absl::flat_hash_map<IntegerValue, std::vector<int>>
-      event_to_overlapping_boxes;
-  std::set<IntegerValue> events;
+  event_to_overlapping_boxes_.clear();
+  events_.clear();
 
   std::vector<int> active_boxes;
 
@@ -338,7 +335,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     const IntegerValue start_max = y_.StartMax(box);
     const IntegerValue end_min = y_.EndMin(box);
     if (start_max < end_min) {
-      events.insert(start_max);
+      events_.insert(start_max);
       active_boxes.push_back(box);
     }
   }
@@ -351,10 +348,10 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
     const IntegerValue start_max = y_.StartMax(box);
     const IntegerValue end_min = y_.EndMin(box);
 
-    for (const IntegerValue t : events) {
+    for (const IntegerValue t : events_) {
       if (t < start_max) continue;
       if (t >= end_min) break;
-      event_to_overlapping_boxes[t].push_back(box);
+      event_to_overlapping_boxes_[t].push_back(box);
     }
   }
 
@@ -363,9 +360,9 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   std::vector<IntegerValue> events_to_remove;
   std::vector<int> previous_overlapping_boxes;
   IntegerValue previous_event(-1);
-  for (const IntegerValue current_event : events) {
+  for (const IntegerValue current_event : events_) {
     const std::vector<int>& current_overlapping_boxes =
-        event_to_overlapping_boxes[current_event];
+        event_to_overlapping_boxes_[current_event];
     if (current_overlapping_boxes.size() < 2) {
       events_to_remove.push_back(current_event);
       continue;
@@ -386,28 +383,27 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   }
 
   for (const IntegerValue event : events_to_remove) {
-    events.erase(event);
+    events_.erase(event);
   }
 
   // Split lists of boxes into disjoint set of boxes (w.r.t. overlap).
-  absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes;
-  std::vector<absl::Span<int>> boxes_to_propagate;
-  std::vector<absl::Span<int>> disjoint_boxes;
-  for (const IntegerValue event : events) {
-    disjoint_boxes = SplitDisjointBoxes(
-        absl::MakeSpan(event_to_overlapping_boxes[event]), &x_);
-    for (absl::Span<int> sub_boxes : disjoint_boxes) {
+  reduced_overlapping_boxes_.clear();
+  boxes_to_propagate_.clear();
+  for (const IntegerValue event : events_) {
+    disjoint_boxes_ = SplitDisjointBoxes(
+        absl::MakeSpan(event_to_overlapping_boxes_[event]), &x_);
+    for (absl::Span<int> sub_boxes : disjoint_boxes_) {
       if (sub_boxes.size() > 1) {
         // Boxes are sorted in a stable manner in the Split method.
-        const auto& insertion = reduced_overlapping_boxes.insert(sub_boxes);
-        if (insertion.second) boxes_to_propagate.push_back(sub_boxes);
+        const auto& insertion = reduced_overlapping_boxes_.insert(sub_boxes);
+        if (insertion.second) boxes_to_propagate_.push_back(sub_boxes);
       }
     }
   }
 
   // And finally propagate.
   // TODO(user): Sorting of boxes seems influential on the performance. Test.
-  for (const absl::Span<int> boxes : boxes_to_propagate) {
+  for (const absl::Span<int> boxes : boxes_to_propagate_) {
     std::vector<IntervalVariable> reduced_x;
     std::vector<IntervalVariable> reduced_y;
     for (const int box : boxes) {

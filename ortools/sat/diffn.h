@@ -90,6 +90,12 @@ class NonOverlappingRectanglesDisjunctivePropagator
   SchedulingConstraintHelper y_;
   const bool strict_;
   const bool slow_propagators_;
+  absl::flat_hash_map<IntegerValue, std::vector<int>>
+      event_to_overlapping_boxes_;
+  absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;
+  std::vector<absl::Span<int>> boxes_to_propagate_;
+  std::vector<absl::Span<int>> disjoint_boxes_;
+  std::set<IntegerValue> events_;
   DisjunctiveOverloadChecker overload_checker_;
   DisjunctiveDetectablePrecedences forward_detectable_precedences_;
   DisjunctiveDetectablePrecedences backward_detectable_precedences_;
