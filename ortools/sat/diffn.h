@@ -29,122 +29,79 @@
 namespace operations_research {
 namespace sat {
 
-// Non overlapping rectangles.
-class NonOverlappingRectanglesBasePropagator : public PropagatorInterface {
- public:
-  // The strict parameters indicates how to place zero width or zero height
-  // boxes. If strict is true, these boxes must not 'cross' another box, and are
-  // pushed by the other boxes.
-  NonOverlappingRectanglesBasePropagator(const std::vector<IntervalVariable>& x,
-                                         const std::vector<IntervalVariable>& y,
-                                         bool strict, Model* model,
-                                         IntegerTrail* integer_trail);
-  ~NonOverlappingRectanglesBasePropagator() override;
-
- protected:
-  void FillCachedAreas();
-  IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub);
-  bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-      SchedulingConstraintHelper* x_dim, SchedulingConstraintHelper* y_dim,
-      std::function<bool(const std::vector<int>& boxes)> inner_propagate);
-  std::vector<std::vector<int>> SplitDisjointBoxes(
-      std::vector<int> boxes, SchedulingConstraintHelper* x_dim);
-
-  const int num_boxes_;
-  SchedulingConstraintHelper x_;
-  SchedulingConstraintHelper y_;
-  const bool strict_;
-  IntegerTrail* integer_trail_;
-  std::vector<IntegerValue> cached_areas_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesBasePropagator);
-};
-
 // Propagates using a box energy reasoning.
-class NonOverlappingRectanglesEnergyPropagator
-    : public NonOverlappingRectanglesBasePropagator {
+class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
  public:
   // The strict parameters indicates how to place zero width or zero height
   // boxes. If strict is true, these boxes must not 'cross' another box, and are
   // pushed by the other boxes.
   NonOverlappingRectanglesEnergyPropagator(
       const std::vector<IntervalVariable>& x,
-      const std::vector<IntervalVariable>& y, bool strict, Model* model,
-      IntegerTrail* integer_trail);
+      const std::vector<IntervalVariable>& y, Model* model);
   ~NonOverlappingRectanglesEnergyPropagator() override;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  void SortNeighbors(int box, const std::vector<int>& local_boxes);
-  bool FailWhenEnergyIsTooLarge(int box, const std::vector<int>& local_boxes);
+  void SortBoxesIntoNeighbors(int box, absl::Span<int> local_boxes);
+  bool FailWhenEnergyIsTooLarge(int box, absl::Span<int> local_boxes);
 
+  SchedulingConstraintHelper x_;
+  SchedulingConstraintHelper y_;
+  std::vector<IntegerValue> cached_areas_;
   std::vector<int> neighbors_;
   std::vector<IntegerValue> cached_distance_to_bounding_box_;
+  std::vector<int> active_boxes_;
 
-  DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesEnergyPropagator);
+  NonOverlappingRectanglesEnergyPropagator(
+      const NonOverlappingRectanglesEnergyPropagator&) = delete;
+  NonOverlappingRectanglesEnergyPropagator& operator=(
+      const NonOverlappingRectanglesEnergyPropagator&) = delete;
 };
 
-// Embeds the overload checker and the detectable precedences propagators from
-// the disjunctive constraint.
-class NonOverlappingRectanglesFastPropagator
-    : public NonOverlappingRectanglesBasePropagator {
+// Non overlapping rectangles.
+class NonOverlappingRectanglesDisjunctivePropagator
+    : public PropagatorInterface {
  public:
   // The strict parameters indicates how to place zero width or zero height
   // boxes. If strict is true, these boxes must not 'cross' another box, and are
   // pushed by the other boxes.
-  NonOverlappingRectanglesFastPropagator(const std::vector<IntervalVariable>& x,
-                                         const std::vector<IntervalVariable>& y,
-                                         bool strict, Model* model,
-                                         IntegerTrail* integer_trail);
-  ~NonOverlappingRectanglesFastPropagator() override;
+  // The slow_propagators select which disjunctive algorithms to propagate.
+  NonOverlappingRectanglesDisjunctivePropagator(
+      const std::vector<IntervalVariable>& x,
+      const std::vector<IntervalVariable>& y, bool strict,
+      bool slow_propagators, Model* model);
+  ~NonOverlappingRectanglesDisjunctivePropagator() override;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateTwoBoxes(int b1, int b2, SchedulingConstraintHelper* x_dim);
+  bool FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
+      const std::vector<IntervalVariable>& x_intervals,
+      const std::vector<IntervalVariable>& y_intervals,
+      std::function<bool()> inner_propagate);
+  bool PropagateTwoBoxes();
 
-  DisjunctiveOverloadChecker x_overload_checker_;
-  DisjunctiveOverloadChecker y_overload_checker_;
-  DisjunctiveDetectablePrecedences forward_x_detectable_precedences_;
-  DisjunctiveDetectablePrecedences backward_x_detectable_precedences_;
-  DisjunctiveDetectablePrecedences forward_y_detectable_precedences_;
-  DisjunctiveDetectablePrecedences backward_y_detectable_precedences_;
+  const std::vector<IntervalVariable> x_intervals_;
+  const std::vector<IntervalVariable> y_intervals_;
+  SchedulingConstraintHelper x_;
+  SchedulingConstraintHelper y_;
+  const bool strict_;
+  const bool slow_propagators_;
+  DisjunctiveOverloadChecker overload_checker_;
+  DisjunctiveDetectablePrecedences forward_detectable_precedences_;
+  DisjunctiveDetectablePrecedences backward_detectable_precedences_;
+  DisjunctiveNotLast forward_not_last_;
+  DisjunctiveNotLast backward_not_last_;
+  DisjunctiveEdgeFinding forward_edge_finding_;
+  DisjunctiveEdgeFinding backward_edge_finding_;
 
-  DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesFastPropagator);
-};
-
-// Embeds the not last and edge finder propagators from the disjunctive
-// constraint.
-class NonOverlappingRectanglesSlowPropagator
-    : public NonOverlappingRectanglesBasePropagator {
- public:
-  // The strict parameters indicates how to place zero width or zero height
-  // boxes. If strict is true, these boxes must not 'cross' another box, and are
-  // pushed by the other boxes.
-  NonOverlappingRectanglesSlowPropagator(const std::vector<IntervalVariable>& x,
-                                         const std::vector<IntervalVariable>& y,
-                                         bool strict, Model* model,
-                                         IntegerTrail* integer_trail);
-  ~NonOverlappingRectanglesSlowPropagator() override;
-
-  bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
-
- private:
-  DisjunctiveNotLast forward_x_not_last_;
-  DisjunctiveNotLast backward_x_not_last_;
-  DisjunctiveNotLast forward_y_not_last_;
-  DisjunctiveNotLast backward_y_not_last_;
-  DisjunctiveEdgeFinding forward_x_edge_finding_;
-  DisjunctiveEdgeFinding backward_x_edge_finding_;
-  DisjunctiveEdgeFinding forward_y_edge_finding_;
-  DisjunctiveEdgeFinding backward_y_edge_finding_;
-
-  DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesSlowPropagator);
+  NonOverlappingRectanglesDisjunctivePropagator(
+      const NonOverlappingRectanglesDisjunctivePropagator&) = delete;
+  NonOverlappingRectanglesDisjunctivePropagator& operator=(
+      const NonOverlappingRectanglesDisjunctivePropagator&) = delete;
 };
 
 // Add a cumulative relaxation. That is, on one direction, it does not enforce
@@ -155,60 +112,31 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x,
 
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
 // and (x + dx, y + dy) do not overlap.
-// If one box has a zero dimension, then it can be placed anywhere.
+// If strict is true, and if one box has a zero dimension, it still cannot
+// intersect another box.
 inline std::function<void(Model*)> NonOverlappingRectangles(
     const std::vector<IntervalVariable>& x,
-    const std::vector<IntervalVariable>& y) {
+    const std::vector<IntervalVariable>& y, bool is_strict) {
   return [=](Model* model) {
+    GenericLiteralWatcher* const watcher =
+        model->GetOrCreate<GenericLiteralWatcher>();
+
     NonOverlappingRectanglesEnergyPropagator* energy_constraint =
-        new NonOverlappingRectanglesEnergyPropagator(
-            x, y, false, model, model->GetOrCreate<IntegerTrail>());
-    energy_constraint->RegisterWith(
-        model->GetOrCreate<GenericLiteralWatcher>());
+        new NonOverlappingRectanglesEnergyPropagator(x, y, model);
+
+    watcher->SetPropagatorPriority(energy_constraint->RegisterWith(watcher), 3);
     model->TakeOwnership(energy_constraint);
 
-    NonOverlappingRectanglesFastPropagator* fast_constraint =
-        new NonOverlappingRectanglesFastPropagator(
-            x, y, false, model, model->GetOrCreate<IntegerTrail>());
-    fast_constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    NonOverlappingRectanglesDisjunctivePropagator* fast_constraint =
+        new NonOverlappingRectanglesDisjunctivePropagator(
+            x, y, is_strict, /*slow_propagators=*/false, model);
+    watcher->SetPropagatorPriority(fast_constraint->RegisterWith(watcher), 3);
     model->TakeOwnership(fast_constraint);
 
-    NonOverlappingRectanglesSlowPropagator* slow_constraint =
-        new NonOverlappingRectanglesSlowPropagator(
-            x, y, false, model, model->GetOrCreate<IntegerTrail>());
-    slow_constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-
-    model->TakeOwnership(slow_constraint);
-
-    AddCumulativeRelaxation(x, y, model);
-    AddCumulativeRelaxation(y, x, model);
-  };
-}
-
-// Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
-// and (x + dx, y + dy) do not overlap.
-// If one box has a zero dimension, it still cannot intersect another box.
-inline std::function<void(Model*)> StrictNonOverlappingRectangles(
-    const std::vector<IntervalVariable>& x,
-    const std::vector<IntervalVariable>& y) {
-  return [=](Model* model) {
-    NonOverlappingRectanglesEnergyPropagator* energy_constraint =
-        new NonOverlappingRectanglesEnergyPropagator(
-            x, y, true, model, model->GetOrCreate<IntegerTrail>());
-    energy_constraint->RegisterWith(
-        model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(energy_constraint);
-
-    NonOverlappingRectanglesFastPropagator* fast_constraint =
-        new NonOverlappingRectanglesFastPropagator(
-            x, y, true, model, model->GetOrCreate<IntegerTrail>());
-    fast_constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(fast_constraint);
-
-    NonOverlappingRectanglesSlowPropagator* slow_constraint =
-        new NonOverlappingRectanglesSlowPropagator(
-            x, y, true, model, model->GetOrCreate<IntegerTrail>());
-    slow_constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    NonOverlappingRectanglesDisjunctivePropagator* slow_constraint =
+        new NonOverlappingRectanglesDisjunctivePropagator(
+            x, y, is_strict, /*slow_propagators=*/true, model);
+    watcher->SetPropagatorPriority(slow_constraint->RegisterWith(watcher), 4);
     model->TakeOwnership(slow_constraint);
 
     AddCumulativeRelaxation(x, y, model);

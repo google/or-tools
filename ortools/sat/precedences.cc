@@ -125,14 +125,13 @@ void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
 // permutation.
 void PrecedencesPropagator::ComputePrecedences(
     const std::vector<IntegerVariable>& vars,
-    const std::vector<bool>& to_consider,
     std::vector<IntegerPrecedences>* output) {
   tmp_sorted_vars_.clear();
   tmp_precedences_.clear();
   for (int index = 0; index < vars.size(); ++index) {
     const IntegerVariable var = vars[index];
     CHECK_NE(kNoIntegerVariable, var);
-    if (!to_consider[index] || var >= impacted_arcs_.size()) continue;
+    if (var >= impacted_arcs_.size()) continue;
     for (const ArcIndex arc_index : impacted_arcs_[var]) {
       const ArcInfo& arc = arcs_[arc_index];
       if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;

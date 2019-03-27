@@ -101,14 +101,15 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // Note that the IntegerVariable in the vector are also returned in
   // topological order for a more efficient propagation in
   // DisjunctivePrecedences::Propagate() where this is used.
+  //
+  // Important: For identical vars, the entry are sorted by index.
   struct IntegerPrecedences {
     int index;            // position in vars.
     IntegerVariable var;  // An IntegerVariable that is >= to vars[index].
     int arc_index;        // Used by AddPrecedenceReason().
-    IntegerValue offset;  // we have: input_vars[index] + offset <= var
+    IntegerValue offset;  // we have: vars[index] + offset <= var
   };
   void ComputePrecedences(const std::vector<IntegerVariable>& vars,
-                          const std::vector<bool>& to_consider,
                           std::vector<IntegerPrecedences>* output);
   void AddPrecedenceReason(int arc_index, IntegerValue min_offset,
                            std::vector<Literal>* literal_reason,

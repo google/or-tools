@@ -60,16 +60,23 @@ struct PresolveContext {
   // Returns true if this ref only appear in one constraint.
   bool VariableIsUniqueAndRemovable(int ref) const;
 
-  // Returns true iff the domain changed.
-  bool IntersectDomainWith(int ref, const Domain& domain);
+  // Returns false if the new domain is empty. Sets 'domain_modified' (if
+  // provided) to true iff the domain is modified otherwise does not change it.
+  ABSL_MUST_USE_RESULT bool IntersectDomainWith(
+      int ref, const Domain& domain, bool* domain_modified = nullptr);
 
-  // TODO(user): These function and IntersectDomainWith() can make the model
-  // UNSAT and leave the PresolveContext() in an unusable state. Either make
-  // sure that is not a problem until the client check for is_unsat, or use
-  // a construct like MUST_USE_RESULT to ensure that the client do not forget to
-  // test for empty domains.
-  void SetLiteralToFalse(int lit);
-  void SetLiteralToTrue(int lit);
+  // Returns false if the 'lit' doesn't have the desired value in the domain.
+  ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
+  ABSL_MUST_USE_RESULT bool SetLiteralToTrue(int lit);
+
+  // This function always return false. It is just a way to make a little bit
+  // more sure that we abort right away when infeasibility is detected.
+  ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat() {
+    DCHECK(!is_unsat);
+    is_unsat = true;
+    return false;
+  }
+  bool ModelIsUnsat() const { return is_unsat; }
 
   // Stores a description of a rule that was just applied to have a summary of
   // what the presolve did at the end.
@@ -151,9 +158,6 @@ struct PresolveContext {
   CpModelProto* working_model;
   CpModelProto* mapping_model;
 
-  // Initially false, and set to true on the first inconsistency.
-  bool is_unsat = false;
-
   // Indicate if we are enumerating all solutions. This disable some presolve
   // rules.
   bool enumerate_all_solutions = false;
@@ -172,6 +176,9 @@ struct PresolveContext {
 
  private:
   void AddVariableUsage(int c);
+
+  // Initially false, and set to true on the first inconsistency.
+  bool is_unsat = false;
 
   // The current domain of each variables.
   std::vector<Domain> domains;

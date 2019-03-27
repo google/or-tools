@@ -892,7 +892,7 @@ void SatSolver::ClearNewlyAddedBinaryClauses() {
 
 namespace {
 // Return the next value that is a multiple of interval.
-int NextMultipleOf(int64 value, int64 interval) {
+int64 NextMultipleOf(int64 value, int64 interval) {
   return interval * (1 + value / interval);
 }
 }  // namespace
@@ -1095,14 +1095,15 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
       parameters_->minimize_with_propagation_restart_period();
 
   // Variables used to show the search progress.
-  const int kDisplayFrequency = 10000;
-  int next_display = parameters_->log_search_progress()
-                         ? NextMultipleOf(num_failures(), kDisplayFrequency)
-                         : std::numeric_limits<int>::max();
+  const int64 kDisplayFrequency = 10000;
+  int64 next_display = parameters_->log_search_progress()
+                           ? NextMultipleOf(num_failures(), kDisplayFrequency)
+                           : std::numeric_limits<int64>::max();
 
   // Variables used to check the memory limit every kMemoryCheckFrequency.
-  const int kMemoryCheckFrequency = 10000;
-  int next_memory_check = NextMultipleOf(num_failures(), kMemoryCheckFrequency);
+  const int64 kMemoryCheckFrequency = 10000;
+  int64 next_memory_check =
+      NextMultipleOf(num_failures(), kMemoryCheckFrequency);
 
   // The max_number_of_conflicts is per solve but the counter is for the whole
   // solver.

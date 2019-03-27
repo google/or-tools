@@ -72,8 +72,11 @@ class TaskSet {
     optimized_restart_ = 0;
   }
   void AddEntry(const Entry& e);
-  void NotifyEntryIsNowLastIfPresent(const Entry& e);
   void RemoveEntryWithIndex(int index);
+
+  // Advanced usage, if the entry is present, this assumes that its start_min is
+  // >= the end min without it, and update the datastructure accordingly.
+  void NotifyEntryIsNowLastIfPresent(const Entry& e);
 
   // Advanced usage. Instead of calling many AddEntry(), it is more efficient to
   // call AddUnsortedEntry() instead, but then Sort() MUST be called just after
@@ -132,13 +135,16 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  bool PropagateSubwindow(IntegerValue global_window_end);
+
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
 
+  std::vector<TaskTime> window_;
+  std::vector<TaskTime> task_by_increasing_end_max_;
+
   ThetaLambdaTree<IntegerValue> theta_tree_;
   std::vector<int> task_to_event_;
-  std::vector<int> event_to_task_;
-  std::vector<IntegerValue> event_time_;
 };
 
 class DisjunctiveDetectablePrecedences : public PropagatorInterface {
@@ -152,6 +158,11 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  bool PropagateSubwindow(IntegerValue max_end_min);
+
+  std::vector<TaskTime> window_;
+  std::vector<TaskTime> task_by_increasing_start_max_;
+
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
   TaskSet task_set_;
@@ -167,6 +178,11 @@ class DisjunctiveNotLast : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  bool PropagateSubwindow();
+
+  std::vector<TaskTime> start_min_window_;
+  std::vector<TaskTime> start_max_window_;
+
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
   TaskSet task_set_;
@@ -207,7 +223,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
         integer_trail_(integer_trail),
         precedences_(precedences),
         task_set_(helper->NumTasks()),
-        task_is_currently_present_(helper->NumTasks()) {}
+        task_to_arc_index_(helper->NumTasks()) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -217,8 +233,11 @@ class DisjunctivePrecedences : public PropagatorInterface {
   IntegerTrail* integer_trail_;
   PrecedencesPropagator* precedences_;
 
+  std::vector<IntegerVariable> index_to_end_vars_;
+  std::vector<int> index_to_task_;
+  std::vector<IntegerValue> index_to_cached_shifted_start_min_;
+
   TaskSet task_set_;
-  std::vector<bool> task_is_currently_present_;
   std::vector<int> task_to_arc_index_;
   std::vector<PrecedencesPropagator::IntegerPrecedences> before_;
 };

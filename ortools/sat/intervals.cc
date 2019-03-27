@@ -51,12 +51,23 @@ IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
 
 SchedulingConstraintHelper::SchedulingConstraintHelper(
     const std::vector<IntervalVariable>& tasks, Model* model)
-    : trail_(model->GetOrCreate<Trail>()),
+    : repository_(model->GetOrCreate<IntervalsRepository>()),
+      trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       precedences_(model->GetOrCreate<PrecedencesPropagator>()),
-      current_time_direction_(true),
-      visible_intervals_(tasks.size(), true) {
-  auto* repository = model->GetOrCreate<IntervalsRepository>();
+      current_time_direction_(true) {
+  Init(tasks);
+}
+
+SchedulingConstraintHelper::SchedulingConstraintHelper(Model* model)
+    : repository_(model->GetOrCreate<IntervalsRepository>()),
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      precedences_(model->GetOrCreate<PrecedencesPropagator>()),
+      current_time_direction_(true) {}
+
+void SchedulingConstraintHelper::Init(
+    const std::vector<IntervalVariable>& tasks) {
   start_vars_.clear();
   end_vars_.clear();
   minus_end_vars_.clear();
@@ -65,22 +76,22 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
   fixed_durations_.clear();
   reason_for_presence_.clear();
   for (const IntervalVariable i : tasks) {
-    if (repository->IsOptional(i)) {
-      reason_for_presence_.push_back(repository->IsPresentLiteral(i).Index());
+    if (repository_->IsOptional(i)) {
+      reason_for_presence_.push_back(repository_->IsPresentLiteral(i).Index());
     } else {
       reason_for_presence_.push_back(kNoLiteralIndex);
     }
-    if (repository->SizeVar(i) == kNoIntegerVariable) {
+    if (repository_->SizeVar(i) == kNoIntegerVariable) {
       duration_vars_.push_back(kNoIntegerVariable);
-      fixed_durations_.push_back(repository->MinSize(i));
+      fixed_durations_.push_back(repository_->MinSize(i));
     } else {
-      duration_vars_.push_back(repository->SizeVar(i));
+      duration_vars_.push_back(repository_->SizeVar(i));
       fixed_durations_.push_back(IntegerValue(0));
     }
-    start_vars_.push_back(repository->StartVar(i));
-    end_vars_.push_back(repository->EndVar(i));
-    minus_start_vars_.push_back(NegationOf(repository->StartVar(i)));
-    minus_end_vars_.push_back(NegationOf(repository->EndVar(i)));
+    start_vars_.push_back(repository_->StartVar(i));
+    end_vars_.push_back(repository_->EndVar(i));
+    minus_start_vars_.push_back(NegationOf(repository_->StartVar(i)));
+    minus_end_vars_.push_back(NegationOf(repository_->EndVar(i)));
   }
 
   const int num_tasks = start_vars_.size();
@@ -112,7 +123,7 @@ void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
             task_by_decreasing_shifted_end_max_);
 }
 
-const std::vector<SchedulingConstraintHelper::TaskTime>&
+const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByIncreasingStartMin() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
@@ -124,7 +135,7 @@ SchedulingConstraintHelper::TaskByIncreasingStartMin() {
   return task_by_increasing_min_start_;
 }
 
-const std::vector<SchedulingConstraintHelper::TaskTime>&
+const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByIncreasingEndMin() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
@@ -136,7 +147,7 @@ SchedulingConstraintHelper::TaskByIncreasingEndMin() {
   return task_by_increasing_min_end_;
 }
 
-const std::vector<SchedulingConstraintHelper::TaskTime>&
+const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByDecreasingStartMax() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
@@ -149,7 +160,7 @@ SchedulingConstraintHelper::TaskByDecreasingStartMax() {
   return task_by_decreasing_max_start_;
 }
 
-const std::vector<SchedulingConstraintHelper::TaskTime>&
+const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByDecreasingEndMax() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
@@ -161,13 +172,18 @@ SchedulingConstraintHelper::TaskByDecreasingEndMax() {
   return task_by_decreasing_max_end_;
 }
 
-const std::vector<SchedulingConstraintHelper::TaskTime>&
+const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
   const int num_tasks = NumTasks();
+  bool is_sorted = true;
+  IntegerValue previous = kMinIntegerValue;
   for (int i = 0; i < num_tasks; ++i) {
     TaskTime& ref = task_by_increasing_shifted_start_min_[i];
     ref.time = ShiftedStartMin(ref.task_index);
+    is_sorted = is_sorted && ref.time >= previous;
+    previous = ref.time;
   }
+  if (is_sorted) return task_by_increasing_shifted_start_min_;
   IncrementalSort(task_by_increasing_shifted_start_min_.begin(),
                   task_by_increasing_shifted_start_min_.end());
   return task_by_increasing_shifted_start_min_;
@@ -269,12 +285,20 @@ bool SchedulingConstraintHelper::ReportConflict() {
   return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
 }
 
-void SchedulingConstraintHelper::WatchAllTasks(
-    int id, GenericLiteralWatcher* watcher) const {
+void SchedulingConstraintHelper::WatchAllTasks(int id,
+                                               GenericLiteralWatcher* watcher,
+                                               bool watch_start_max,
+                                               bool watch_end_max) const {
   const int num_tasks = start_vars_.size();
   for (int t = 0; t < num_tasks; ++t) {
-    watcher->WatchIntegerVariable(start_vars_[t], id);
-    watcher->WatchIntegerVariable(end_vars_[t], id);
+    watcher->WatchLowerBound(start_vars_[t], id);
+    watcher->WatchLowerBound(end_vars_[t], id);
+    if (watch_start_max) {
+      watcher->WatchUpperBound(start_vars_[t], id);
+    }
+    if (watch_end_max) {
+      watcher->WatchUpperBound(end_vars_[t], id);
+    }
     if (duration_vars_[t] != kNoIntegerVariable) {
       watcher->WatchLowerBound(duration_vars_[t], id);
     }
@@ -303,18 +327,6 @@ void SchedulingConstraintHelper::ImportOtherReasons(
   integer_reason_.insert(integer_reason_.end(),
                          other_helper.integer_reason_.begin(),
                          other_helper.integer_reason_.end());
-}
-
-void SchedulingConstraintHelper::SetAllIntervalsVisible() {
-  visible_intervals_.assign(NumTasks(), true);
-}
-
-void SchedulingConstraintHelper::SetVisibleIntervals(
-    const std::vector<int>& visible_intervals) {
-  visible_intervals_.assign(NumTasks(), false);
-  for (const int t : visible_intervals) {
-    visible_intervals_[t] = true;
-  }
 }
 
 }  // namespace sat

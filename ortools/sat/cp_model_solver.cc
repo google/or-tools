@@ -1880,10 +1880,20 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   return response;
 }
 
+void UpdateDomain(int64 new_lb, int64 new_ub,
+                  IntegerVariableProto* mutable_var) {
+  const Domain old_domain = ReadDomainFromProto(*mutable_var);
+  const Domain new_domain = old_domain.IntersectionWith(Domain(new_lb, new_ub));
+  CHECK(!new_domain.IsEmpty()) << "Invalid bounds.";
+
+  FillDomainInProto(new_domain, mutable_var);
+}
+
 CpSolverResponse SolveCpModelWithLNS(
     const CpModelProto& model_proto,
     const std::function<void(const CpSolverResponse&)>& observer,
-    int num_workers, int worker_id, WallTimer* wall_timer, Model* model) {
+    int num_workers, int worker_id, SharedBoundsManager* shared_bounds_manager,
+    WallTimer* wall_timer, Model* model) {
   SatParameters* parameters = model->GetOrCreate<SatParameters>();
   parameters->set_stop_after_first_solution(true);
   CpSolverResponse response;
@@ -1891,19 +1901,18 @@ CpSolverResponse SolveCpModelWithLNS(
   if (synchro != nullptr && synchro->f != nullptr) {
     response = synchro->f();
   } else {
-    response = SolveCpModelInternal(
-        model_proto, /*is_real_solve=*/true, observer,
-        /*shared_bounds_manager=*/nullptr, wall_timer, model);
+    response =
+        SolveCpModelInternal(model_proto, /*is_real_solve=*/true, observer,
+                             shared_bounds_manager, wall_timer, model);
   }
+  CpModelProto mutable_model_proto = model_proto;
   if (response.status() != CpSolverStatus::FEASIBLE) {
     return response;
   }
   const bool focus_on_decision_variables =
       parameters->lns_focus_on_decision_variables();
 
-  // TODO(user): Find a way to propagate the level zero bounds from the other
-  // worker inside this base LNS problem.
-  const NeighborhoodGeneratorHelper helper(&model_proto,
+  const NeighborhoodGeneratorHelper helper(&mutable_model_proto,
                                            focus_on_decision_variables);
 
   // For now we will just alternate between our possible neighborhoods.
@@ -1973,6 +1982,31 @@ CpSolverResponse SolveCpModelWithLNS(
                response.objective_value() == response.best_objective_bound();
       },
       [&](int64 seed) {
+        // Update the bounds on mutable model proto.
+        if (shared_bounds_manager != nullptr) {
+          std::vector<int> model_variables;
+          std::vector<int64> new_lower_bounds;
+          std::vector<int64> new_upper_bounds;
+          shared_bounds_manager->GetChangedBounds(worker_id, &model_variables,
+                                                  &new_lower_bounds,
+                                                  &new_upper_bounds);
+
+          for (int i = 0; i < model_variables.size(); ++i) {
+            const int var = model_variables[i];
+            const int64 new_lb = new_lower_bounds[i];
+            const int64 new_ub = new_upper_bounds[i];
+            if (VLOG_IS_ON(2)) {
+              const auto& domain = mutable_model_proto.variables(var).domain();
+              const int64 old_lb = domain.Get(0);
+              const int64 old_ub = domain.Get(domain.size() - 1);
+              VLOG(2) << "Variable: " << var << " old domain: [" << old_lb
+                      << ", " << old_ub << "] new domain: [" << new_lb << ", "
+                      << new_ub << "]";
+            }
+            UpdateDomain(new_lb, new_ub,
+                         mutable_model_proto.mutable_variables(var));
+          }
+        }
         AdaptiveParameterValue& difficulty =
             difficulties[seed % generators.size()];
         const double saved_difficulty = difficulty.value();
@@ -2284,8 +2318,8 @@ CpSolverResponse SolveCpModelParallel(
           // TODO(user,user): Provide a better diversification for different
           // seeds.
           thread_response = SolveCpModelWithLNS(
-              model_proto, solution_observer, num_search_workers,
-              worker_id + random_seed, wall_timer, &local_model);
+              model_proto, solution_observer, num_search_workers, worker_id,
+              shared_bounds_manager.get(), wall_timer, &local_model);
         } else {
           thread_response = SolveCpModelInternal(
               model_proto, true, solution_observer, shared_bounds_manager.get(),
@@ -2495,6 +2529,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     // seeds.
     const int random_seed = model->GetOrCreate<SatParameters>()->random_seed();
     response = SolveCpModelWithLNS(new_model, observer_function, 1, random_seed,
+                                   /*shared_bounds_manager=*/nullptr,
                                    &wall_timer, model);
   } else {  // Normal sequential run.
     response = SolveCpModelInternal(

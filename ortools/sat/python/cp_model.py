@@ -1496,6 +1496,10 @@ class CpSolver(object):
         """Returns some statistics on the solution found as a string."""
         return pywrapsat.SatHelper.SolverResponseStats(self.__solution)
 
+    def ResponseProto(self):
+        """Returns the response object."""
+        return self.__solution
+
 
 class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     """Solution callback.

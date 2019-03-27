@@ -125,8 +125,8 @@ class TimeTablingPerTask : public PropagatorInterface {
   RevRepository<IntegerValue> rev_repository_integer_value_;
 
   // Vector of tasks sorted by maximum starting (resp. minimum ending) time.
-  std::vector<SchedulingConstraintHelper::TaskTime> by_start_max_;
-  std::vector<SchedulingConstraintHelper::TaskTime> by_end_min_;
+  std::vector<TaskTime> by_start_max_;
+  std::vector<TaskTime> by_end_min_;
 
   // Tasks contained in the range [left_start_, right_start_) of by_start_max_
   // must be sorted and considered when building the profile. The state of these
