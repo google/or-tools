@@ -1880,14 +1880,23 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
   return response;
 }
 
-void UpdateDomain(int64 new_lb, int64 new_ub,
+namespace {
+
+// Returns false if the new domain is empty. Otherwise updates the domain in the
+// 'mutable_var' proto by intersecting the current domain with ['new_lb',
+// 'new_ub']
+bool UpdateDomain(int64 new_lb, int64 new_ub,
                   IntegerVariableProto* mutable_var) {
   const Domain old_domain = ReadDomainFromProto(*mutable_var);
   const Domain new_domain = old_domain.IntersectionWith(Domain(new_lb, new_ub));
-  CHECK(!new_domain.IsEmpty()) << "Invalid bounds.";
+  if (new_domain.IsEmpty()) {
+    return false;
+  }
 
   FillDomainInProto(new_domain, mutable_var);
+  return true;
 }
+}  // namespace
 
 CpSolverResponse SolveCpModelWithLNS(
     const CpModelProto& model_proto,
@@ -1983,6 +1992,7 @@ CpSolverResponse SolveCpModelWithLNS(
       },
       [&](int64 seed) {
         // Update the bounds on mutable model proto.
+        bool model_is_unsat = false;
         if (shared_bounds_manager != nullptr) {
           std::vector<int> model_variables;
           std::vector<int64> new_lower_bounds;
@@ -2003,8 +2013,10 @@ CpSolverResponse SolveCpModelWithLNS(
                       << ", " << old_ub << "] new domain: [" << new_lb << ", "
                       << new_ub << "]";
             }
-            UpdateDomain(new_lb, new_ub,
-                         mutable_model_proto.mutable_variables(var));
+            if (!UpdateDomain(new_lb, new_ub,
+                              mutable_model_proto.mutable_variables(var))) {
+              model_is_unsat = true;
+            }
           }
         }
         AdaptiveParameterValue& difficulty =
@@ -2039,7 +2051,9 @@ CpSolverResponse SolveCpModelWithLNS(
 
         // Presolve and solve the LNS fragment.
         CpSolverResponse local_response;
-        {
+        if (model_is_unsat) {
+          local_response.set_status(CpSolverStatus::INFEASIBLE);
+        } else {
           CpModelProto mapping_proto;
           std::vector<int> postsolve_mapping;
           PresolveOptions options;

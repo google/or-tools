@@ -1056,6 +1056,11 @@ class GenericLiteralWatcher : public SatPropagator {
     level_zero_modified_variable_callback_.push_back(cb);
   }
 
+  // Returns the id of the propagator we are currently calling. This is meant
+  // to be used from inside Propagate() in case a propagator was registered
+  // more than once at different priority for instance.
+  int GetCurrentId() const { return current_id_; }
+
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.
@@ -1090,6 +1095,9 @@ class GenericLiteralWatcher : public SatPropagator {
 
   // Special propagators that needs to always be called at level zero.
   std::vector<int> propagator_ids_to_call_at_level_zero_;
+
+  // The id of the propagator we just called.
+  int current_id_;
 
   std::vector<std::function<void(const std::vector<IntegerVariable>&)>>
       level_zero_modified_variable_callback_;

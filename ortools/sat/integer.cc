@@ -1594,6 +1594,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
     std::deque<int>& queue = queue_by_priority_[priority];
     while (!queue.empty()) {
       const int id = queue.front();
+      current_id_ = id;
       queue.pop_front();
 
       // Before we propagate, make sure any reversible structure are up to date.

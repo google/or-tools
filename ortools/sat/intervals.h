@@ -126,7 +126,7 @@ struct TaskTime {
 // code.
 class SchedulingConstraintHelper {
  public:
-  SchedulingConstraintHelper(Model* model);
+  explicit SchedulingConstraintHelper(Model* model);
 
   // All the functions below refer to a task by its index t in the tasks
   // vector given at construction.
@@ -236,6 +236,7 @@ class SchedulingConstraintHelper {
   // Returns the underlying integer variables.
   const std::vector<IntegerVariable>& StartVars() const { return start_vars_; }
   const std::vector<IntegerVariable>& EndVars() const { return end_vars_; }
+  const std::vector<IntervalVariable>& Intervals() const { return intervals_; }
 
   // Registers the given propagator id to be called if any of the tasks
   // in this class change.
@@ -283,6 +284,7 @@ class SchedulingConstraintHelper {
 
   // All the underlying variables of the tasks.
   // The vectors are indexed by the task index t.
+  std::vector<IntervalVariable> intervals_;
   std::vector<IntegerVariable> start_vars_;
   std::vector<IntegerVariable> end_vars_;
   std::vector<IntegerVariable> duration_vars_;

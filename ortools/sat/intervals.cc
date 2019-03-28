@@ -68,6 +68,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(Model* model)
 
 void SchedulingConstraintHelper::Init(
     const std::vector<IntervalVariable>& tasks) {
+  intervals_ = tasks;
   start_vars_.clear();
   end_vars_.clear();
   minus_end_vars_.clear();
