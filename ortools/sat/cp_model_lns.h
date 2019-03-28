@@ -133,9 +133,28 @@ class NeighborhoodGenerator {
   // Returns a short description of the generator.
   std::string name() const { return name_; }
 
+  // Uses UCB1 algorithm to compute the score (Multi armed bandit problem).
+  // Details are at
+  // https://lilianweng.github.io/lil-log/2018/01/23/the-multi-armed-bandit-problem-and-its-solutions.html.
+  // 'total_num_calls' should be the sum of calls across all generators part of
+  // the multi armed bandit problem.
+  // If the generator is called less than 10 times then the method returns
+  // inifinity as score in order to get more data about the generator
+  // performance.
+  double GetUCBScore(int64 total_num_calls) const;
+
+  // Updates the records using the current improvement in objective for the
+  // generator.
+  void AddSolveData(double objective_diff, double deterministic_time);
+
+  // Number of times this generator is called.
+  int64 num_calls() const { return num_calls_; }
+
  protected:
   const NeighborhoodGeneratorHelper& helper_;
   const std::string name_;
+  int64 num_calls_ = 0;
+  double current_average_ = 0.0;
 };
 
 // Pick a random subset of variables.

@@ -236,6 +236,9 @@ class SchedulingConstraintHelper {
   // Returns the underlying integer variables.
   const std::vector<IntegerVariable>& StartVars() const { return start_vars_; }
   const std::vector<IntegerVariable>& EndVars() const { return end_vars_; }
+  const std::vector<IntegerVariable>& DurationVars() const {
+    return duration_vars_;
+  }
   const std::vector<IntervalVariable>& Intervals() const { return intervals_; }
 
   // Registers the given propagator id to be called if any of the tasks

@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <functional>
 #include <limits>
 #include <map>
@@ -1964,6 +1965,7 @@ CpSolverResponse SolveCpModelWithLNS(
   int num_no_progress = 0;
 
   const int num_threads = std::max(1, parameters->lns_num_threads());
+  int64 total_num_calls = 0;
   OptimizeWithLNS(
       num_threads,
       [&]() {
@@ -2019,10 +2021,9 @@ CpSolverResponse SolveCpModelWithLNS(
             }
           }
         }
-        AdaptiveParameterValue& difficulty =
-            difficulties[seed % generators.size()];
-        const double saved_difficulty = difficulty.value();
         const int selected_generator = seed % generators.size();
+        AdaptiveParameterValue& difficulty = difficulties[selected_generator];
+        const double saved_difficulty = difficulty.value();
         Neighborhood neighborhood = generators[selected_generator]->Generate(
             response, num_workers * seed + worker_id, saved_difficulty);
         CpModelProto& local_problem = neighborhood.cp_model;
@@ -2071,63 +2072,82 @@ CpSolverResponse SolveCpModelWithLNS(
         }
 
         const bool neighborhood_is_reduced = neighborhood.is_reduced;
-        return
-            [neighborhood_is_reduced, &num_no_progress, &model_proto, &response,
-             &difficulty, local_response, &observer, limit, solution_info]() {
-              // TODO(user): This is not ideal in multithread because even
-              // though the saved_difficulty will be the same for all thread, we
-              // will Increase()/Decrease() the difficuty sequentially more than
-              // once.
-              if (local_response.status() == CpSolverStatus::OPTIMAL ||
-                  local_response.status() == CpSolverStatus::INFEASIBLE) {
-                if (neighborhood_is_reduced) {
-                  difficulty.Increase();
-                } else {
-                  // We solved the full model here.
-                  response = local_response;
-                }
-              } else {
-                difficulty.Decrease();
+        return [neighborhood_is_reduced, &num_no_progress, &model_proto,
+                &response, &difficulty, local_response, &observer, limit,
+                solution_info, &generators, selected_generator,
+                &total_num_calls]() {
+          // TODO(user): This is not ideal in multithread because even though
+          // the saved_difficulty will be the same for all thread, we will
+          // Increase()/Decrease() the difficuty sequentially more than once.
+          if (local_response.status() == CpSolverStatus::OPTIMAL ||
+              local_response.status() == CpSolverStatus::INFEASIBLE) {
+            if (neighborhood_is_reduced) {
+              difficulty.Increase();
+            } else {
+              // We solved the full model here.
+              response = local_response;
+            }
+          } else {
+            difficulty.Decrease();
+          }
+          // Update the generator record.
+          double objective_diff = 0.0;
+          if (local_response.status() == CpSolverStatus::OPTIMAL ||
+              local_response.status() == CpSolverStatus::FEASIBLE) {
+            objective_diff = std::abs(local_response.objective_value() -
+                                      response.objective_value());
+          }
+          total_num_calls++;
+          generators[selected_generator]->AddSolveData(
+              objective_diff, local_response.deterministic_time());
+          VLOG(2)
+              << generators[selected_generator]->name()
+              << ": [difficulty: " << difficulty.value()
+              << ", deterministic time: " << local_response.deterministic_time()
+              << ", status: " << CpSolverStatus_Name(local_response.status())
+              << ", num calls: " << generators[selected_generator]->num_calls()
+              << ", UCB1 Score: "
+              << generators[selected_generator]->GetUCBScore(total_num_calls)
+              << "]";
+          if (local_response.status() == CpSolverStatus::FEASIBLE ||
+              local_response.status() == CpSolverStatus::OPTIMAL) {
+            // If the objective are the same, we override the solution,
+            // otherwise we just ignore this local solution and increment
+            // num_no_progress.
+            double coeff = model_proto.objective().scaling_factor();
+            if (coeff == 0.0) coeff = 1.0;
+            if (local_response.objective_value() * coeff >=
+                response.objective_value() * coeff) {
+              if (local_response.objective_value() * coeff >
+                  response.objective_value() * coeff) {
+                return;
               }
-              if (local_response.status() == CpSolverStatus::FEASIBLE ||
-                  local_response.status() == CpSolverStatus::OPTIMAL) {
-                // If the objective are the same, we override the solution,
-                // otherwise we just ignore this local solution and increment
-                // num_no_progress.
-                double coeff = model_proto.objective().scaling_factor();
-                if (coeff == 0.0) coeff = 1.0;
-                if (local_response.objective_value() * coeff >=
-                    response.objective_value() * coeff) {
-                  if (local_response.objective_value() * coeff >
-                      response.objective_value() * coeff) {
-                    return;
-                  }
-                  ++num_no_progress;
-                } else {
-                  num_no_progress = 0;
-                }
+              ++num_no_progress;
+            } else {
+              num_no_progress = 0;
+            }
 
-                // Update the global response.
-                *(response.mutable_solution()) = local_response.solution();
-                response.set_objective_value(local_response.objective_value());
-                response.set_wall_time(limit->GetElapsedTime());
-                response.set_user_time(response.user_time() +
-                                       local_response.user_time());
-                response.set_deterministic_time(
-                    response.deterministic_time() +
-                    local_response.deterministic_time());
-                if (DEBUG_MODE || FLAGS_cp_model_check_intermediate_solutions) {
-                  CHECK(SolutionIsFeasible(
-                      model_proto,
-                      std::vector<int64>(local_response.solution().begin(),
-                                         local_response.solution().end())));
-                }
-                if (num_no_progress == 0) {  // Improving solution.
-                  response.set_solution_info(solution_info);
-                  observer(response);
-                }
-              }
-            };
+            // Update the global response.
+            *(response.mutable_solution()) = local_response.solution();
+            response.set_objective_value(local_response.objective_value());
+            response.set_wall_time(limit->GetElapsedTime());
+            response.set_user_time(response.user_time() +
+                                   local_response.user_time());
+            response.set_deterministic_time(
+                response.deterministic_time() +
+                local_response.deterministic_time());
+            if (DEBUG_MODE || FLAGS_cp_model_check_intermediate_solutions) {
+              CHECK(SolutionIsFeasible(
+                  model_proto,
+                  std::vector<int64>(local_response.solution().begin(),
+                                     local_response.solution().end())));
+            }
+            if (num_no_progress == 0) {  // Improving solution.
+              response.set_solution_info(solution_info);
+              observer(response);
+            }
+          }
+        };
       });
 
   if (response.status() == CpSolverStatus::FEASIBLE) {

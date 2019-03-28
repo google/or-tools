@@ -34,8 +34,8 @@ namespace sat {
 std::function<void(Model*)> Cumulative(
     const std::vector<IntervalVariable>& vars,
     const std::vector<IntegerVariable>& demand_vars,
-    const IntegerVariable& capacity) {
-  return [=](Model* model) {
+    const IntegerVariable& capacity, SchedulingConstraintHelper* helper) {
+  return [=](Model* model) mutable {
     if (vars.empty()) return;
 
     IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
@@ -123,9 +123,10 @@ std::function<void(Model*)> Cumulative(
     Trail* trail = model->GetOrCreate<Trail>();
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
-    SchedulingConstraintHelper* helper =
-        new SchedulingConstraintHelper(vars, model);
-    model->TakeOwnership(helper);
+    if (helper == nullptr) {
+      helper = new SchedulingConstraintHelper(vars, model);
+      model->TakeOwnership(helper);
+    }
 
     // Propagator responsible for applying Timetabling filtering rule. It
     // increases the minimum of the start variables, decrease the maximum of the

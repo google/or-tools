@@ -35,9 +35,9 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   // The strict parameters indicates how to place zero width or zero height
   // boxes. If strict is true, these boxes must not 'cross' another box, and are
   // pushed by the other boxes.
-  NonOverlappingRectanglesEnergyPropagator(
-      const std::vector<IntervalVariable>& x,
-      const std::vector<IntervalVariable>& y, Model* model);
+  NonOverlappingRectanglesEnergyPropagator(SchedulingConstraintHelper* x,
+                                           SchedulingConstraintHelper* y)
+      : x_(*x), y_(*y) {}
   ~NonOverlappingRectanglesEnergyPropagator() override;
 
   bool Propagate() final;
@@ -47,11 +47,26 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   void SortBoxesIntoNeighbors(int box, absl::Span<const int> local_boxes);
   bool FailWhenEnergyIsTooLarge(int box, absl::Span<const int> local_boxes);
 
-  SchedulingConstraintHelper x_;
-  SchedulingConstraintHelper y_;
+  SchedulingConstraintHelper& x_;
+  SchedulingConstraintHelper& y_;
 
   std::vector<int> active_boxes_;
   std::vector<IntegerValue> cached_areas_;
+
+  struct Dimension {
+    IntegerValue x_min;
+    IntegerValue x_max;
+    IntegerValue y_min;
+    IntegerValue y_max;
+
+    void TakeUnionWith(const Dimension& other) {
+      x_min = std::min(x_min, other.x_min);
+      y_min = std::min(y_min, other.y_min);
+      x_max = std::max(x_max, other.x_max);
+      y_max = std::max(y_max, other.y_max);
+    }
+  };
+  std::vector<Dimension> cached_dimensions_;
 
   struct Neighbor {
     int box;
@@ -76,14 +91,14 @@ class NonOverlappingRectanglesDisjunctivePropagator
   // boxes. If strict is true, these boxes must not 'cross' another box, and are
   // pushed by the other boxes.
   // The slow_propagators select which disjunctive algorithms to propagate.
-  NonOverlappingRectanglesDisjunctivePropagator(
-      const std::vector<IntervalVariable>& x,
-      const std::vector<IntervalVariable>& y, bool strict, Model* model);
+  NonOverlappingRectanglesDisjunctivePropagator(bool strict,
+                                                SchedulingConstraintHelper* x,
+                                                SchedulingConstraintHelper* y,
+                                                Model* model);
   ~NonOverlappingRectanglesDisjunctivePropagator() override;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher, int fast_priority,
-                    int slow_priority);
+  void Register(int fast_priority, int slow_priority);
 
  private:
   bool PropagateTwoBoxes();
@@ -91,8 +106,8 @@ class NonOverlappingRectanglesDisjunctivePropagator
       const SchedulingConstraintHelper& x, const SchedulingConstraintHelper& y,
       std::function<bool()> inner_propagate);
 
-  SchedulingConstraintHelper global_x_;
-  SchedulingConstraintHelper global_y_;
+  SchedulingConstraintHelper& global_x_;
+  SchedulingConstraintHelper& global_y_;
   SchedulingConstraintHelper x_;
   SchedulingConstraintHelper y_;
   const bool strict_;
@@ -127,9 +142,8 @@ class NonOverlappingRectanglesDisjunctivePropagator
 
 // Add a cumulative relaxation. That is, on one direction, it does not enforce
 // the rectangle aspect, allowing vertical slices to move freely.
-void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x,
-                             const std::vector<IntervalVariable>& y,
-                             Model* model);
+void AddCumulativeRelaxation(SchedulingConstraintHelper* x,
+                             SchedulingConstraintHelper* y, Model* model);
 
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
 // and (x + dx, y + dy) do not overlap.
@@ -139,22 +153,28 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     const std::vector<IntervalVariable>& x,
     const std::vector<IntervalVariable>& y, bool is_strict) {
   return [=](Model* model) {
-    GenericLiteralWatcher* const watcher =
-        model->GetOrCreate<GenericLiteralWatcher>();
+    SchedulingConstraintHelper* x_helper =
+        new SchedulingConstraintHelper(x, model);
+    SchedulingConstraintHelper* y_helper =
+        new SchedulingConstraintHelper(y, model);
+    model->TakeOwnership(x_helper);
+    model->TakeOwnership(y_helper);
 
     NonOverlappingRectanglesEnergyPropagator* energy_constraint =
-        new NonOverlappingRectanglesEnergyPropagator(x, y, model);
+        new NonOverlappingRectanglesEnergyPropagator(x_helper, y_helper);
+    GenericLiteralWatcher* const watcher =
+        model->GetOrCreate<GenericLiteralWatcher>();
     watcher->SetPropagatorPriority(energy_constraint->RegisterWith(watcher), 3);
     model->TakeOwnership(energy_constraint);
 
     NonOverlappingRectanglesDisjunctivePropagator* constraint =
-        new NonOverlappingRectanglesDisjunctivePropagator(x, y, is_strict,
-                                                          model);
-    constraint->RegisterWith(watcher, /*fast_priority=*/3, /*slow_priority=*/4);
+        new NonOverlappingRectanglesDisjunctivePropagator(is_strict, x_helper,
+                                                          y_helper, model);
+    constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
     model->TakeOwnership(constraint);
 
-    AddCumulativeRelaxation(x, y, model);
-    AddCumulativeRelaxation(y, x, model);
+    AddCumulativeRelaxation(x_helper, y_helper, model);
+    AddCumulativeRelaxation(y_helper, x_helper, model);
   };
 }
 

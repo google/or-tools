@@ -133,6 +133,26 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
   return FixGivenVariables(initial_solution, fixed_variables);
 }
 
+double NeighborhoodGenerator::GetUCBScore(int64 total_num_calls) const {
+  DCHECK_GE(total_num_calls, num_calls_);
+  if (num_calls_ <= 10) return std::numeric_limits<double>::infinity();
+  return current_average_ + sqrt((2 * log(total_num_calls)) / num_calls_);
+}
+
+void NeighborhoodGenerator::AddSolveData(double objective_diff,
+                                         double deterministic_time) {
+  double gain_per_time_unit = objective_diff / (1.0 + deterministic_time);
+  // TODO(user): Add more data.
+  // TODO(user): Weight more recent data.
+  num_calls_++;
+  // degrade the current average to forget old learnings.
+  if (num_calls_ <= 100) {
+    current_average_ += (gain_per_time_unit - current_average_) / num_calls_;
+  } else {
+    current_average_ = 0.9 * current_average_ + 0.1 * gain_per_time_unit;
+  }
+}
+
 namespace {
 
 void GetRandomSubset(int seed, double relative_size, std::vector<int>* base) {
