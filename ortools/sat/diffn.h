@@ -50,6 +50,9 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;
 
+  std::vector<absl::Span<int>> x_split_;
+  std::vector<absl::Span<int>> y_split_;
+
   std::vector<int> active_boxes_;
   std::vector<IntegerValue> cached_areas_;
 

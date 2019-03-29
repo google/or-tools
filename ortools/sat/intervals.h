@@ -239,6 +239,10 @@ class SchedulingConstraintHelper {
   const std::vector<IntegerVariable>& DurationVars() const {
     return duration_vars_;
   }
+
+  // TODO(user): This shouldn't be needed and this DOES NOT take care of the
+  // time direction. It is really just here to recover the initial interval
+  // used.
   const std::vector<IntervalVariable>& Intervals() const { return intervals_; }
 
   // Registers the given propagator id to be called if any of the tasks

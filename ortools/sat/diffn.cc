@@ -90,9 +90,10 @@ IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub) {
   return candidate;
 }
 
-std::vector<absl::Span<int>> SplitDisjointBoxes(
-    const SchedulingConstraintHelper& x, absl::Span<int> boxes) {
-  std::vector<absl::Span<int>> result;
+void SplitDisjointBoxes(const SchedulingConstraintHelper& x,
+                        absl::Span<int> boxes,
+                        std::vector<absl::Span<int>>* result) {
+  result->clear();
   std::sort(boxes.begin(), boxes.end(),
             [&x](int a, int b) { return x.StartMin(a) < x.StartMin(b); });
   int current_start = 0;
@@ -107,7 +108,7 @@ std::vector<absl::Span<int>> SplitDisjointBoxes(
       current_max_end = std::max(current_max_end, x.EndMax(box));
     } else {
       if (current_length > 1) {  // Ignore lists of size 1.
-        result.push_back({&boxes[current_start], current_length});
+        result->emplace_back(&boxes[current_start], current_length);
       }
       current_start = b;
       current_length = 1;
@@ -117,9 +118,8 @@ std::vector<absl::Span<int>> SplitDisjointBoxes(
 
   // Push last span.
   if (current_length > 1) {
-    result.push_back({&boxes[current_start], current_length});
+    result->emplace_back(&boxes[current_start], current_length);
   }
-  return result;
 }
 
 }  // namespace
@@ -153,12 +153,10 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   }
   if (active_boxes_.size() <= 1) return true;
 
-  const std::vector<absl::Span<int>> x_split =
-      SplitDisjointBoxes(x_, absl::MakeSpan(active_boxes_));
-  std::vector<absl::Span<int>> y_split;
-  for (absl::Span<int> x_boxes : x_split) {
-    y_split = SplitDisjointBoxes(y_, x_boxes);
-    for (absl::Span<int> y_boxes : y_split) {
+  SplitDisjointBoxes(x_, absl::MakeSpan(active_boxes_), &x_split_);
+  for (absl::Span<int> x_boxes : x_split_) {
+    SplitDisjointBoxes(y_, x_boxes, &y_split_);
+    for (absl::Span<int> y_boxes : y_split_) {
       for (const int box : y_boxes) {
         RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box, y_boxes));
       }
@@ -308,7 +306,10 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
   // Add boxes to the event lists they always overlap with.
   gtl::STLSortAndRemoveDuplicates(&events_time_);
-  events_overlapping_boxes_.assign(events_time_.size(), {});
+  events_overlapping_boxes_.resize(events_time_.size());
+  for (int i = 0; i < events_time_.size(); ++i) {
+    events_overlapping_boxes_[i].clear();
+  }
   for (const int box : active_boxes_) {
     const IntegerValue start_max = y.StartMax(box);
     const IntegerValue end_min = y.EndMin(box);
@@ -323,8 +324,12 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
   // Scan events chronologically to remove events where there is only one
   // mandatory box, or dominated events lists.
+  //
+  // Optimization: We do not resize the events_overlapping_boxes_ vector so that
+  // we do not free/realloc the memory of the inner vector from one propagate to
+  // the next. This save a bit more than 1%.
+  int new_size = 0;
   {
-    int new_size = 0;
     for (std::vector<int>& overlapping_boxes : events_overlapping_boxes_) {
       if (overlapping_boxes.size() < 2) {
         continue;  // Remove current event.
@@ -349,14 +354,14 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
       std::swap(events_overlapping_boxes_[new_size], overlapping_boxes);
       ++new_size;
     }
-    events_overlapping_boxes_.resize(new_size);
   }
 
   // Split lists of boxes into disjoint set of boxes (w.r.t. overlap).
   boxes_to_propagate_.clear();
   reduced_overlapping_boxes_.clear();
-  for (std::vector<int>& overlapping_boxes : events_overlapping_boxes_) {
-    disjoint_boxes_ = SplitDisjointBoxes(x, absl::MakeSpan(overlapping_boxes));
+  for (int i = 0; i < new_size; ++i) {
+    SplitDisjointBoxes(x, absl::MakeSpan(events_overlapping_boxes_[i]),
+                       &disjoint_boxes_);
     for (absl::Span<int> sub_boxes : disjoint_boxes_) {
       // Boxes are sorted in a stable manner in the Split method.
       // Note that we do not use reduced_overlapping_boxes_ directly so that

@@ -57,7 +57,8 @@ std::function<void(Model*)> Cumulative(
 std::function<void(Model*)> CumulativeTimeDecomposition(
     const std::vector<IntervalVariable>& vars,
     const std::vector<IntegerVariable>& demand_vars,
-    const IntegerVariable& capacity_var);
+    const IntegerVariable& capacity_var,
+    SchedulingConstraintHelper* helper = nullptr);
 
 }  // namespace sat
 }  // namespace operations_research
