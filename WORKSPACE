@@ -1,30 +1,41 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 
-http_archive(
+git_repository(
     name = "com_github_gflags_gflags",
-    sha256 = "19713a36c9f32b33df59d1c79b4958434cb005b5b47dc5400a7a4b078111d9b5",
-    strip_prefix = "gflags-2.2.2",
-    urls = ["https://github.com/gflags/gflags/archive/v2.2.2.zip"],
+    commit = "e171aa2",  # release v2.2.2
+    remote = "https://github.com/gflags/gflags.git",
 )
 
 git_repository(
     name = "com_github_glog_glog",
-    commit = "41f4bf9cbc3e8995d628b459f6a239df43c2b84a",
+    commit = "96a2f23",  # release v0.4.0
     remote = "https://github.com/google/glog.git",
 )
 
 git_repository(
+    name = "bazel_skylib",
+    commit = "3721d32",  # release 0.8.0
+    remote = "https://github.com/bazelbuild/bazel-skylib.git",
+)
+
+git_repository(
     name = "com_google_protobuf",
-    commit = "6973c3a",
+    commit = "f425b9f",
+#    commit = "6973c3a",  # release v7.3.1
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 
 git_repository(
     name = "com_google_protobuf_cc",
-    commit = "6973c3a",
+    commit = "f425b9f",
+#    commit = "6973c3a",  # release v7.3.1
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+# Load common dependencies.
+protobuf_deps()
 
 git_repository(
     name = "com_google_absl",
