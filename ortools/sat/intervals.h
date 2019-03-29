@@ -17,6 +17,7 @@
 #include <functional>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
@@ -126,16 +127,22 @@ struct TaskTime {
 // code.
 class SchedulingConstraintHelper {
  public:
-  explicit SchedulingConstraintHelper(Model* model);
-
   // All the functions below refer to a task by its index t in the tasks
   // vector given at construction.
   SchedulingConstraintHelper(const std::vector<IntervalVariable>& tasks,
                              Model* model);
 
+  // Temporary constructor.
+  // The class will not be usable until ResetFromSubset() is called.
+  //
+  // TODO(user): Remove this. It is a hack because the disjunctive class needs
+  // to fetch the maximum possible number of task at construction.
+  SchedulingConstraintHelper(int num_tasks, Model* model);
+
   // Resets the class to the same state as if it was constructed with
-  // the given set of tasks.
-  void Init(const std::vector<IntervalVariable>& tasks);
+  // the given subset of tasks from other.
+  void ResetFromSubset(const SchedulingConstraintHelper& other,
+                       absl::Span<const int> tasks);
 
   // Returns the number of task.
   int NumTasks() const { return start_vars_.size(); }
@@ -240,11 +247,6 @@ class SchedulingConstraintHelper {
     return duration_vars_;
   }
 
-  // TODO(user): This shouldn't be needed and this DOES NOT take care of the
-  // time direction. It is really just here to recover the initial interval
-  // used.
-  const std::vector<IntervalVariable>& Intervals() const { return intervals_; }
-
   // Registers the given propagator id to be called if any of the tasks
   // in this class change.
   void WatchAllTasks(int id, GenericLiteralWatcher* watcher,
@@ -272,6 +274,8 @@ class SchedulingConstraintHelper {
   void ImportOtherReasons(const SchedulingConstraintHelper& other_helper);
 
  private:
+  void InitSortedVectors();
+
   // Internal function for IncreaseStartMin()/DecreaseEndMax().
   bool PushIntervalBound(int t, IntegerLiteral lit);
 
@@ -284,22 +288,20 @@ class SchedulingConstraintHelper {
   // Import the reasons on the other helper into this helper.
   void ImportOtherReasons();
 
-  IntervalsRepository* repository_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
   PrecedencesPropagator* precedences_;
 
+  // The current direction of time, true for forward, false for backward.
+  bool current_time_direction_ = true;
+
   // All the underlying variables of the tasks.
   // The vectors are indexed by the task index t.
-  std::vector<IntervalVariable> intervals_;
   std::vector<IntegerVariable> start_vars_;
   std::vector<IntegerVariable> end_vars_;
   std::vector<IntegerVariable> duration_vars_;
   std::vector<IntegerValue> fixed_durations_;
   std::vector<LiteralIndex> reason_for_presence_;
-
-  // The current direction of time, true for forward, false for backward.
-  bool current_time_direction_;
 
   // The negation of the start/end variable so that SetTimeDirection()
   // can do its job in O(1) instead of calling NegationOf() on each entry.

@@ -30,7 +30,8 @@
 namespace operations_research {
 namespace sat {
 
-void AddCumulativeRelaxation(SchedulingConstraintHelper* x,
+void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
+                             SchedulingConstraintHelper* x,
                              SchedulingConstraintHelper* y, Model* model) {
   std::vector<IntegerVariable> sizes;
 
@@ -60,7 +61,7 @@ void AddCumulativeRelaxation(SchedulingConstraintHelper* x,
   model->Add(WeightedSumGreaterOrEqual({capacity, min_start_var, max_end_var},
                                        coeffs, 0));
 
-  model->Add(Cumulative(x->Intervals(), sizes, capacity, x));
+  model->Add(Cumulative(x_intervals, sizes, capacity, x));
 }
 
 namespace {
@@ -252,8 +253,8 @@ NonOverlappingRectanglesDisjunctivePropagator::
                                                   Model* model)
     : global_x_(*x),
       global_y_(*y),
-      x_(x->Intervals(), model),
-      y_(y->Intervals(), model),
+      x_(x->NumTasks(), model),
+      y_(y->NumTasks(), model),
       strict_(strict),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       overload_checker_(true, &x_),
@@ -374,19 +375,13 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   // And finally propagate.
   // TODO(user): Sorting of boxes seems influential on the performance. Test.
   for (const absl::Span<const int> boxes : boxes_to_propagate_) {
-    reduced_x_.clear();
-    reduced_y_.clear();
-    for (const int box : boxes) {
-      reduced_x_.push_back(x.Intervals()[box]);
-      reduced_y_.push_back(y.Intervals()[box]);
-    }
-    x_.Init(reduced_x_);
-    y_.Init(reduced_y_);
+    x_.ResetFromSubset(x, boxes);
+    y_.ResetFromSubset(y, boxes);
 
     // Collect the common overlapping coordinates of all boxes.
     IntegerValue lb(kint64min);
     IntegerValue ub(kint64max);
-    for (int i = 0; i < reduced_x_.size(); ++i) {
+    for (int i = 0; i < y_.NumTasks(); ++i) {
       lb = std::max(lb, y_.StartMax(i));
       ub = std::min(ub, y_.EndMin(i) - 1);
     }

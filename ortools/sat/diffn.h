@@ -122,9 +122,6 @@ class NonOverlappingRectanglesDisjunctivePropagator
   std::vector<IntegerValue> events_time_;
   std::vector<std::vector<int>> events_overlapping_boxes_;
 
-  std::vector<IntervalVariable> reduced_x_;
-  std::vector<IntervalVariable> reduced_y_;
-
   absl::flat_hash_set<absl::Span<int>> reduced_overlapping_boxes_;
   std::vector<absl::Span<int>> boxes_to_propagate_;
   std::vector<absl::Span<int>> disjoint_boxes_;
@@ -143,9 +140,10 @@ class NonOverlappingRectanglesDisjunctivePropagator
       const NonOverlappingRectanglesDisjunctivePropagator&) = delete;
 };
 
-// Add a cumulative relaxation. That is, on one direction, it does not enforce
+// Add a cumulative relaxation. That is, on one dimension, it does not enforce
 // the rectangle aspect, allowing vertical slices to move freely.
-void AddCumulativeRelaxation(SchedulingConstraintHelper* x,
+void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
+                             SchedulingConstraintHelper* x,
                              SchedulingConstraintHelper* y, Model* model);
 
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
@@ -176,8 +174,8 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
     model->TakeOwnership(constraint);
 
-    AddCumulativeRelaxation(x_helper, y_helper, model);
-    AddCumulativeRelaxation(y_helper, x_helper, model);
+    AddCumulativeRelaxation(x, x_helper, y_helper, model);
+    AddCumulativeRelaxation(y, y_helper, x_helper, model);
   };
 }
 

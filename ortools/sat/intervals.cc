@@ -51,24 +51,10 @@ IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
 
 SchedulingConstraintHelper::SchedulingConstraintHelper(
     const std::vector<IntervalVariable>& tasks, Model* model)
-    : repository_(model->GetOrCreate<IntervalsRepository>()),
-      trail_(model->GetOrCreate<Trail>()),
+    : trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      precedences_(model->GetOrCreate<PrecedencesPropagator>()),
-      current_time_direction_(true) {
-  Init(tasks);
-}
-
-SchedulingConstraintHelper::SchedulingConstraintHelper(Model* model)
-    : repository_(model->GetOrCreate<IntervalsRepository>()),
-      trail_(model->GetOrCreate<Trail>()),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      precedences_(model->GetOrCreate<PrecedencesPropagator>()),
-      current_time_direction_(true) {}
-
-void SchedulingConstraintHelper::Init(
-    const std::vector<IntervalVariable>& tasks) {
-  intervals_ = tasks;
+      precedences_(model->GetOrCreate<PrecedencesPropagator>()) {
+  auto* repository = model->GetOrCreate<IntervalsRepository>();
   start_vars_.clear();
   end_vars_.clear();
   minus_end_vars_.clear();
@@ -77,24 +63,63 @@ void SchedulingConstraintHelper::Init(
   fixed_durations_.clear();
   reason_for_presence_.clear();
   for (const IntervalVariable i : tasks) {
-    if (repository_->IsOptional(i)) {
-      reason_for_presence_.push_back(repository_->IsPresentLiteral(i).Index());
+    if (repository->IsOptional(i)) {
+      reason_for_presence_.push_back(repository->IsPresentLiteral(i).Index());
     } else {
       reason_for_presence_.push_back(kNoLiteralIndex);
     }
-    if (repository_->SizeVar(i) == kNoIntegerVariable) {
+    if (repository->SizeVar(i) == kNoIntegerVariable) {
       duration_vars_.push_back(kNoIntegerVariable);
-      fixed_durations_.push_back(repository_->MinSize(i));
+      fixed_durations_.push_back(repository->MinSize(i));
     } else {
-      duration_vars_.push_back(repository_->SizeVar(i));
+      duration_vars_.push_back(repository->SizeVar(i));
       fixed_durations_.push_back(IntegerValue(0));
     }
-    start_vars_.push_back(repository_->StartVar(i));
-    end_vars_.push_back(repository_->EndVar(i));
-    minus_start_vars_.push_back(NegationOf(repository_->StartVar(i)));
-    minus_end_vars_.push_back(NegationOf(repository_->EndVar(i)));
+    start_vars_.push_back(repository->StartVar(i));
+    end_vars_.push_back(repository->EndVar(i));
+    minus_start_vars_.push_back(NegationOf(repository->StartVar(i)));
+    minus_end_vars_.push_back(NegationOf(repository->EndVar(i)));
   }
 
+  InitSortedVectors();
+}
+
+SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
+                                                       Model* model)
+    : trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      precedences_(model->GetOrCreate<PrecedencesPropagator>()) {
+  start_vars_.resize(num_tasks);
+  CHECK_EQ(NumTasks(), num_tasks);
+}
+
+void SchedulingConstraintHelper::ResetFromSubset(
+    const SchedulingConstraintHelper& other, absl::Span<const int> tasks) {
+  current_time_direction_ = other.current_time_direction_;
+
+  const int num_tasks = tasks.size();
+  start_vars_.resize(num_tasks);
+  end_vars_.resize(num_tasks);
+  minus_end_vars_.resize(num_tasks);
+  minus_start_vars_.resize(num_tasks);
+  duration_vars_.resize(num_tasks);
+  fixed_durations_.resize(num_tasks);
+  reason_for_presence_.resize(num_tasks);
+  for (int i = 0; i < num_tasks; ++i) {
+    const int t = tasks[i];
+    start_vars_[i] = other.start_vars_[t];
+    end_vars_[i] = other.end_vars_[t];
+    minus_end_vars_[i] = other.minus_end_vars_[t];
+    minus_start_vars_[i] = other.minus_start_vars_[t];
+    duration_vars_[i] = other.duration_vars_[t];
+    fixed_durations_[i] = other.fixed_durations_[t];
+    reason_for_presence_[i] = other.reason_for_presence_[t];
+  }
+
+  InitSortedVectors();
+}
+
+void SchedulingConstraintHelper::InitSortedVectors() {
   const int num_tasks = start_vars_.size();
   task_by_increasing_min_start_.resize(num_tasks);
   task_by_increasing_min_end_.resize(num_tasks);
