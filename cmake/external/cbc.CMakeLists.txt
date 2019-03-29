@@ -9,7 +9,7 @@ project(cbc-download NONE)
 include(ExternalProject)
 ExternalProject_Add(cbc_project
   GIT_REPOSITORY https://github.com/Mizux/coinor-cbc
-  GIT_TAG "master"
+  GIT_TAG "097659fae0c9ce690e4108ad1fed1541488d083d"
   SOURCE_DIR "${CMAKE_BINARY_DIR}/cbc-src"
   BINARY_DIR "${CMAKE_BINARY_DIR}/cbc-build"
   UPDATE_COMMAND ""
