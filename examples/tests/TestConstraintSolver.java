@@ -26,6 +26,7 @@ import com.google.ortools.constraintsolver.SearchMonitor;
 import com.google.ortools.constraintsolver.SolutionCollector;
 import com.google.ortools.constraintsolver.Solver;
 import com.google.ortools.constraintsolver.main;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -35,6 +36,15 @@ import java.util.logging.Logger;
 public class TestConstraintSolver {
   static {
     System.loadLibrary("jniortools");
+  }
+
+  private static void gc() {
+    Object obj = new Object();
+    WeakReference ref = new WeakReference<Object>(obj);
+    obj = null;
+    while(ref.get() != null) {
+      System.gc();
+    }
   }
 
   private static final Logger logger = Logger.getLogger(TestConstraintSolver.class.getName());
@@ -258,7 +268,7 @@ public class TestConstraintSolver {
         0,  // branch period
         new SearchCount(count));
     if (enableGC) {
-      System.gc(); // verify SearchCount is kept alive
+      gc();
     }
     runSearchLog(searchlog);
     logger.info("count:" + count.intValue());
@@ -278,7 +288,7 @@ public class TestConstraintSolver {
         var, // IntVar to monitor
         new SearchCount(count));
     if (enableGC) {
-      System.gc(); // verify SearchCount is kept alive
+      gc();
     }
     runSearchLog(searchlog);
     if (count.intValue() != 1) throw new AssertionError("count != 1"); ;
@@ -296,7 +306,7 @@ public class TestConstraintSolver {
         objective, // objective var to monitor
         new SearchCount(count));
     if (enableGC) {
-      System.gc(); // verify SearchCount is kept alive
+      gc();
     }
     runSearchLog(searchlog);
     if (count.intValue() != 1) throw new AssertionError("count != 1"); ;
@@ -324,7 +334,7 @@ public class TestConstraintSolver {
         (Solver s) -> { call.setValue("Apply"); },
         (Solver s) -> { call.setValue("Refute"); });
     if (enableGC) {
-      System.gc(); // verify SearchCount is kept alive
+      gc();
     }
 
     decision.apply(solver);
@@ -347,7 +357,7 @@ public class TestConstraintSolver {
           if (!s.model_name().equals(model_name)) {throw new AssertionError("Solver ill formed");}
         });
     if (enableGC) {
-      System.gc(); // verify SearchCount is kept alive
+      gc(); // verify SearchCount is kept alive
     }
 
     decision.apply(solver);
