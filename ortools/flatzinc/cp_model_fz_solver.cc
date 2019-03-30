@@ -93,6 +93,7 @@ struct CpModelProtoWithMapping {
   // Mapping from flatzinc variables to CpModelProto variables.
   absl::flat_hash_map<fz::IntegerVariable*, int> fz_var_to_index;
   absl::flat_hash_map<int64, int> constant_value_to_index;
+  absl::flat_hash_map<std::pair<int, int>, int> start_size_pair_to_interval;
 };
 
 int CpModelProtoWithMapping::LookupConstant(int64 value) {
@@ -137,18 +138,29 @@ std::vector<int> CpModelProtoWithMapping::CreateIntervals(
     const std::vector<int>& starts, const std::vector<int>& durations) {
   std::vector<int> intervals;
   for (int i = 0; i < starts.size(); ++i) {
-    intervals.push_back(proto.constraints_size());
-    auto* interval = proto.add_constraints()->mutable_interval();
-    interval->set_start(starts[i]);
-    interval->set_size(durations[i]);
+    const int start_var = starts[i];
+    const int size_var = durations[i];
+    int interval_index = -1;
+    const std::pair<int, int> p = std::make_pair(start_var, size_var);
+    if (gtl::ContainsKey(start_size_pair_to_interval, p)) {
+      interval_index = start_size_pair_to_interval[p];
+    } else {
+      interval_index = proto.constraints_size();
 
-    interval->set_end(proto.variables_size());
-    auto* end_var = proto.add_variables();
-    const auto start_var = proto.variables(starts[i]);
-    const auto duration_var = proto.variables(durations[i]);
-    end_var->add_domain(start_var.domain(0) + duration_var.domain(0));
-    end_var->add_domain(start_var.domain(start_var.domain_size() - 1) +
-                        duration_var.domain(duration_var.domain_size() - 1));
+      auto* interval = proto.add_constraints()->mutable_interval();
+      interval->set_start(starts[i]);
+      interval->set_size(durations[i]);
+
+      interval->set_end(proto.variables_size());
+      auto* end_var = proto.add_variables();
+      const auto start_var = proto.variables(starts[i]);
+      const auto duration_var = proto.variables(durations[i]);
+      end_var->add_domain(start_var.domain(0) + duration_var.domain(0));
+      end_var->add_domain(start_var.domain(start_var.domain_size() - 1) +
+                          duration_var.domain(duration_var.domain_size() - 1));
+      start_size_pair_to_interval[p] = interval_index;
+    }
+    intervals.push_back(interval_index);
   }
   return intervals;
 }
