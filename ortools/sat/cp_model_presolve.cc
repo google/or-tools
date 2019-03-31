@@ -2245,12 +2245,20 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
   // Filter absent intervals.
   int new_size = 0;
   bool changed = false;
+  int removed_zero_demands = 0;
   for (int i = 0; i < proto.intervals_size(); ++i) {
     if (context->working_model->constraints(proto.intervals(i))
             .constraint_case() ==
         ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
       continue;
     }
+    const int demand_ref = proto.demands(i);
+    const int64 demand_max = context->MaxOf(demand_ref);
+    if (demand_max == 0) {
+      removed_zero_demands++;
+      continue;
+    }
+
     ct->mutable_cumulative()->set_intervals(new_size, proto.intervals(i));
     ct->mutable_cumulative()->set_demands(new_size, proto.demands(i));
     new_size++;
@@ -2259,6 +2267,10 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
     changed = true;
     ct->mutable_cumulative()->mutable_intervals()->Truncate(new_size);
     ct->mutable_cumulative()->mutable_demands()->Truncate(new_size);
+  }
+
+  if (removed_zero_demands > 0) {
+    context->UpdateRuleStats("cumulative: removed null demands");
   }
 
   if (HasEnforcementLiteral(*ct)) return changed;
