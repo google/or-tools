@@ -132,11 +132,12 @@ ifeq ($(PLATFORM),LINUX)
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_ARCH = linux.x86_64.gnu.opt
-    SCIP_LNK = \
- $(UNIX_SCIP_DIR)/lib/static/libscip.a \
- $(UNIX_SCIP_DIR)/lib/libscipopt.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+ #   SCIP_LNK = \
+ # $(UNIX_SCIP_DIR)/lib/static/libscip.a \
+ # $(UNIX_SCIP_DIR)/lib/libscipopt.a \
+ # $(UNIX_SCIP_DIR)/lib/libsoplex.a \
+ # $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+    SCIP_LNK = --force-link $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a --force-link $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a --force-link $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a --force-link $(UNIX_SCIP_DIR)/lib/static/libtpitny.$(SCIP_ARCH).a
   endif
   ifdef UNIX_GUROBI_DIR
     ifeq ($(PTRLENGTH),64)
