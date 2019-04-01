@@ -952,7 +952,14 @@ class Solver {
   // Current memory usage in bytes
   static int64 MemoryUsage();
 
-  // The wall_time() in ms since the creation of the solver.
+  // The 'absolute time' as seen by the solver. Unless a user-provided clock
+  // was injected via SetClock() (eg. for unit tests), this is a real walltime,
+  // shifted so that it was 0 at construction. All so-called "walltime" limits
+  // are relative to this time.
+  absl::Time Now() const;
+
+  // DEPRECATED: Use Now() instead.
+  // Time elapsed, in ms since the creation of the solver.
   int64 wall_time() const;
 
   // The number of branches explored since the creation of the solver.

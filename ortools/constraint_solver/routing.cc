@@ -295,7 +295,8 @@ RoutingModel::PackCumulsOfGlobalOptimizerDimensionsFromAssignment(
   packed_assignment->CopyIntersection(original_assignment);
 
   DecisionBuilder* restore_and_pack =
-      solver_->Compose(solver_->MakeRestoreAssignment(packed_assignment),
+      solver_->Compose(solver_->MakeRestoreAssignment(preassignment_),
+                       solver_->MakeRestoreAssignment(packed_assignment),
                        solver_->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
                            dimensions_for_global_optimizer_, nullptr,
                            /*optimize_and_pack=*/true)));

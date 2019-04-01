@@ -33,6 +33,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
@@ -3922,16 +3923,26 @@ class RegularLimit : public SearchLimit {
   void ExitSearch() override;
   void UpdateLimits(int64 time, int64 branches, int64 failures,
                     int64 solutions);
-  int64 wall_time() const { return wall_time_; }
+  absl::Duration duration_limit() const { return duration_limit_; }
+  int64 wall_time() const {
+    return duration_limit_ == absl::InfiniteDuration()
+               ? kint64max
+               : absl::ToInt64Milliseconds(duration_limit());
+  }
   int64 branches() const { return branches_; }
   int64 failures() const { return failures_; }
   int64 solutions() const { return solutions_; }
   int ProgressPercent() override;
   std::string DebugString() const override;
 
+  absl::Time AbsoluteSolverDeadline() const {
+    return solver_time_at_limit_start_ + duration_limit_;
+  }
+
   void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kSearchLimitExtension);
-    visitor->VisitIntegerArgument(ModelVisitor::kTimeLimitArgument, wall_time_);
+    visitor->VisitIntegerArgument(ModelVisitor::kTimeLimitArgument,
+                                  wall_time());
     visitor->VisitIntegerArgument(ModelVisitor::kBranchesLimitArgument,
                                   branches_);
     visitor->VisitIntegerArgument(ModelVisitor::kFailuresLimitArgument,
@@ -3947,15 +3958,15 @@ class RegularLimit : public SearchLimit {
 
  private:
   bool CheckTime();
-  int64 TimeDelta();
+  absl::Duration TimeElapsed();
   static int64 GetPercent(int64 value, int64 offset, int64 total) {
     return (total > 0 && total < kint64max) ? 100 * (value - offset) / total
                                             : -1;
   }
 
-  int64 wall_time_;
-  int64 wall_time_offset_;
-  int64 last_time_delta_;
+  absl::Duration duration_limit_;
+  absl::Time solver_time_at_limit_start_;
+  absl::Duration last_time_elapsed_;
   int64 check_count_;
   int64 next_check_;
   bool smart_time_check_;
@@ -3979,9 +3990,10 @@ RegularLimit::RegularLimit(Solver* const s, int64 time, int64 branches,
                            int64 failures, int64 solutions,
                            bool smart_time_check, bool cumulative)
     : SearchLimit(s),
-      wall_time_(time),
-      wall_time_offset_(0),
-      last_time_delta_(-1),
+      duration_limit_(time == kint64max ? absl::InfiniteDuration()
+                                        : absl::Milliseconds(time)),
+      solver_time_at_limit_start_(s->Now()),
+      last_time_elapsed_(absl::ZeroDuration()),
       check_count_(0),
       next_check_(0),
       smart_time_check_(smart_time_check),
@@ -3998,7 +4010,7 @@ RegularLimit::~RegularLimit() {}
 void RegularLimit::Copy(const SearchLimit* const limit) {
   const RegularLimit* const regular =
       reinterpret_cast<const RegularLimit* const>(limit);
-  wall_time_ = regular->wall_time_;
+  duration_limit_ = regular->duration_limit_;
   branches_ = regular->branches_;
   failures_ = regular->failures_;
   solutions_ = regular->solutions_;
@@ -4008,7 +4020,7 @@ void RegularLimit::Copy(const SearchLimit* const limit) {
 
 SearchLimit* RegularLimit::MakeClone() const {
   Solver* const s = solver();
-  return s->MakeLimit(wall_time_, branches_, failures_, solutions_,
+  return s->MakeLimit(wall_time(), branches_, failures_, solutions_,
                       smart_time_check_);
 }
 
@@ -4027,8 +4039,8 @@ int RegularLimit::ProgressPercent() {
                       GetPercent(s->failures(), failures_offset_, failures_));
   progress = std::max(
       progress, GetPercent(s->solutions(), solutions_offset_, solutions_));
-  if (wall_time_ < kint64max) {
-    progress = std::max(progress, (100 * TimeDelta()) / wall_time_);
+  if (duration_limit() != absl::InfiniteDuration()) {
+    progress = std::max(progress, (100 * TimeElapsed()) / duration_limit());
   }
   return progress;
 }
@@ -4037,8 +4049,8 @@ void RegularLimit::Init() {
   Solver* const s = solver();
   branches_offset_ = s->branches();
   failures_offset_ = s->failures();
-  wall_time_offset_ = s->wall_time();
-  last_time_delta_ = -1;
+  solver_time_at_limit_start_ = s->Now();
+  last_time_elapsed_ = absl::ZeroDuration();
   solutions_offset_ = s->solutions();
   check_count_ = 0;
   next_check_ = 0;
@@ -4050,14 +4062,15 @@ void RegularLimit::ExitSearch() {
     Solver* const s = solver();
     branches_ -= s->branches() - branches_offset_;
     failures_ -= s->failures() - failures_offset_;
-    wall_time_ -= s->wall_time() - wall_time_offset_;
+    duration_limit_ -= s->Now() - solver_time_at_limit_start_;
     solutions_ -= s->solutions() - solutions_offset_;
   }
 }
 
 void RegularLimit::UpdateLimits(int64 time, int64 branches, int64 failures,
                                 int64 solutions) {
-  wall_time_ = time;
+  duration_limit_ =
+      time == kint64max ? absl::InfiniteDuration() : absl::Milliseconds(time);
   branches_ = branches;
   failures_ = failures;
   solutions_ = solutions;
@@ -4065,30 +4078,32 @@ void RegularLimit::UpdateLimits(int64 time, int64 branches, int64 failures,
 
 std::string RegularLimit::DebugString() const {
   return absl::StrFormat(
-      "RegularLimit(crossed = %i, wall_time = %d, "
+      "RegularLimit(crossed = %i, duration_limit = %s, "
       "branches = %d, failures = %d, solutions = %d cumulative = %s",
-      crossed(), wall_time_, branches_, failures_, solutions_,
-      (cumulative_ ? "true" : "false"));
+      crossed(), absl::FormatDuration(duration_limit()), branches_, failures_,
+      solutions_, (cumulative_ ? "true" : "false"));
 }
 
-bool RegularLimit::CheckTime() { return TimeDelta() >= wall_time_; }
+bool RegularLimit::CheckTime() { return TimeElapsed() >= duration_limit(); }
 
-int64 RegularLimit::TimeDelta() {
+absl::Duration RegularLimit::TimeElapsed() {
   const int64 kMaxSkip = 100;
   const int64 kCheckWarmupIterations = 100;
   ++check_count_;
-  if (wall_time_ != kint64max && next_check_ <= check_count_) {
+  if (duration_limit() != absl::InfiniteDuration() &&
+      next_check_ <= check_count_) {
     Solver* const s = solver();
-    int64 time_delta = s->wall_time() - wall_time_offset_;
+    absl::Duration elapsed = s->Now() - solver_time_at_limit_start_;
     if (smart_time_check_ && check_count_ > kCheckWarmupIterations &&
-        time_delta > 0) {
-      // TODO(user): Fix potential overflow.
-      int64 approximate_calls = (wall_time_ * check_count_) / time_delta;
-      next_check_ = check_count_ + std::min(kMaxSkip, approximate_calls);
+        elapsed > absl::ZeroDuration()) {
+      const int64 estimated_check_count_at_limit = MathUtil::FastInt64Round(
+          check_count_ * absl::FDivDuration(duration_limit_, elapsed));
+      next_check_ =
+          std::min(check_count_ + kMaxSkip, estimated_check_count_at_limit);
     }
-    last_time_delta_ = time_delta;
+    last_time_elapsed_ = elapsed;
   }
-  return last_time_delta_;
+  return last_time_elapsed_;
 }
 }  // namespace
 

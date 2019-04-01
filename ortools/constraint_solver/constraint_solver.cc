@@ -1487,7 +1487,13 @@ std::string Solver::DebugString() const {
 
 int64 Solver::MemoryUsage() { return GetProcessMemoryUsage(); }
 
-int64 Solver::wall_time() const { return timer_->GetInMs(); }
+int64 Solver::wall_time() const {
+  return absl::ToInt64Milliseconds(timer_->GetDuration());
+}
+
+absl::Time Solver::Now() const {
+  return absl::FromUnixSeconds(0) + timer_->GetDuration();
+}
 
 int64 Solver::solutions() const { return TopLevelSearch()->solution_counter(); }
 

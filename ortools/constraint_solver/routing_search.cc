@@ -1870,7 +1870,7 @@ std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
     IntVarLocalSearchFilter* lp_cumul_filter =
         MakeGlobalLPCumulFilter(dimension, objective_callback);
     filters.push_back(lp_cumul_filter);
-    if (objective_callback != nullptr) {
+    if (filter_objective) {
       objective_callback = [lp_cumul_filter](int64 value) {
         return lp_cumul_filter->InjectObjectiveValue(value);
       };
@@ -2366,7 +2366,7 @@ class LPCumulFilter : public IntVarLocalSearchFilter {
 
  private:
   GlobalDimensionCumulOptimizer optimizer_;
-  const IntVar* const objective_;
+  IntVar* const objective_;
   int64 synchronized_cost_without_transit_;
   int64 delta_cost_without_transit_;
   SparseBitset<int64> delta_touched_;
@@ -2424,6 +2424,11 @@ bool LPCumulFilter::Accept(Assignment* delta, Assignment* deltadelta) {
       CapAdd(injected_objective_value_, delta_cost_without_transit_);
   PropagateObjectiveValue(new_objective_value);
 
+  if (!delta->HasObjective()) {
+    delta->AddObjective(objective_);
+  }
+  delta->SetObjectiveMin(new_objective_value);
+
   return new_objective_value <= objective_max;
 }
 
@@ -2437,8 +2442,8 @@ void LPCumulFilter::OnSynchronize(const Assignment* delta) {
   if (!optimizer_.ComputeCumulCostWithoutFixedTransits(
           [this](int64 index) { return Value(index); },
           &synchronized_cost_without_transit_)) {
-    LOG(DFATAL)
-        << "Infeasible LP problem when calling LPCumulFilter::OnSynchronize().";
+    // TODO(user): This should only happen if the LP solver times out.
+    // DCHECK the fail wasn't due to an infeasible model.
     synchronized_cost_without_transit_ = 0;
   }
   PropagateObjectiveValue(
