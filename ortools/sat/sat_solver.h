@@ -320,13 +320,13 @@ class SatSolver {
     if (num_processed_fixed_variables_ < trail_->Index()) {
       ProcessNewlyFixedVariables();
     }
-    clauses_propagator_.DeleteDetachedClauses();
+    clauses_propagator_->DeleteDetachedClauses();
 
     // Note(user): Putting the binary clauses first help because the presolver
     // currently process the clauses in order.
     binary_implication_graph_->ExtractAllBinaryClauses(out);
-    for (SatClause* clause : clauses_propagator_.AllClausesInCreationOrder()) {
-      if (!clauses_propagator_.IsRemovable(clause)) {
+    for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
+      if (!clauses_propagator_->IsRemovable(clause)) {
         out->AddClause(clause->AsSpan());
       }
     }
@@ -375,7 +375,7 @@ class SatSolver {
 
   void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
     drat_proof_handler_ = drat_proof_handler;
-    clauses_propagator_.SetDratProofHandler(drat_proof_handler_);
+    clauses_propagator_->SetDratProofHandler(drat_proof_handler_);
   }
 
   // This function is here to deal with the case where a SAT/CP model is found
@@ -674,8 +674,8 @@ class SatSolver {
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
   BinaryImplicationGraph* binary_implication_graph_;
-  LiteralWatchers clauses_propagator_;
-  PbConstraints pb_constraints_;
+  LiteralWatchers* clauses_propagator_;
+  PbConstraints* pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().
   std::vector<SatPropagator*> propagators_;

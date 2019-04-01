@@ -986,10 +986,10 @@ UpperBoundedLinearConstraint* PbConstraints::ReasonPbConstraint(
 void PbConstraints::ComputeNewLearnedConstraintLimit() {
   const int num_constraints = constraints_.size();
   target_number_of_learned_constraint_ =
-      num_constraints + parameters_.pb_cleanup_increment();
+      num_constraints + parameters_->pb_cleanup_increment();
   num_learned_constraint_before_cleanup_ =
       static_cast<int>(target_number_of_learned_constraint_ /
-                       parameters_.pb_cleanup_ratio()) -
+                       parameters_->pb_cleanup_ratio()) -
       num_constraints;
 }
 
@@ -1065,7 +1065,7 @@ void PbConstraints::DeleteSomeLearnedConstraintIfNeeded() {
 
 void PbConstraints::BumpActivity(UpperBoundedLinearConstraint* constraint) {
   if (!constraint->is_learned()) return;
-  const double max_activity = parameters_.max_clause_activity_value();
+  const double max_activity = parameters_->max_clause_activity_value();
   constraint->set_activity(constraint->activity() +
                            constraint_activity_increment_);
   if (constraint->activity() > max_activity) {
@@ -1081,7 +1081,7 @@ void PbConstraints::RescaleActivities(double scaling_factor) {
 }
 
 void PbConstraints::UpdateActivityIncrement() {
-  const double decay = parameters_.clause_activity_decay();
+  const double decay = parameters_->clause_activity_decay();
   constraint_activity_increment_ *= 1.0 / decay;
 }
 

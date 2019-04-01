@@ -151,7 +151,7 @@ struct ClauseInfo {
 // information.
 class LiteralWatchers : public SatPropagator {
  public:
-  LiteralWatchers();
+  explicit LiteralWatchers(Model* model);
   ~LiteralWatchers() override;
 
   // Must be called before adding clauses refering to such variables.
@@ -289,7 +289,7 @@ class LiteralWatchers : public SatPropagator {
   // Indicates if the corresponding watchers_on_false_ list need to be
   // cleaned. The boolean is_clean_ is just used in DCHECKs.
   SparseBitset<LiteralIndex> needs_cleaning_;
-  bool is_clean_;
+  bool is_clean_ = true;
 
   int64 num_inspected_clauses_;
   int64 num_inspected_clause_literals_;

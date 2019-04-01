@@ -39,6 +39,8 @@ SatSolver::SatSolver() : SatSolver(new Model()) { owned_model_.reset(model_); }
 SatSolver::SatSolver(Model* model)
     : model_(model),
       binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+      clauses_propagator_(model->GetOrCreate<LiteralWatchers>()),
+      pb_constraints_(model->GetOrCreate<PbConstraints>()),
       track_binary_clauses_(false),
       trail_(model->GetOrCreate<Trail>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
@@ -51,14 +53,7 @@ SatSolver::SatSolver(Model* model)
       problem_is_pure_sat_(true),
       drat_proof_handler_(nullptr),
       stats_("SatSolver") {
-  // TODO(user): move these 2 classes in the Model so that everyone can access
-  // them if needed and we don't have the wiring here.
-  trail_->RegisterPropagator(&clauses_propagator_);
-  trail_->RegisterPropagator(&pb_constraints_);
   InitializePropagators();
-
-  // TODO(user): use the model parameters directly in pb_constraints_.
-  pb_constraints_.SetParameters(*parameters_);
 }
 
 SatSolver::~SatSolver() { IF_STATS_ENABLED(LOG(INFO) << stats_.StatString()); }
@@ -70,10 +65,10 @@ void SatSolver::SetNumVariables(int num_variables) {
 
   num_variables_ = num_variables;
   binary_implication_graph_->Resize(num_variables);
-  clauses_propagator_.Resize(num_variables);
+  clauses_propagator_->Resize(num_variables);
   trail_->Resize(num_variables);
   decision_policy_->IncreaseNumVariables(num_variables);
-  pb_constraints_.Resize(num_variables);
+  pb_constraints_->Resize(num_variables);
   same_reason_identifier_.Resize(num_variables);
 
   // The +1 is a bit tricky, it is because in
@@ -99,13 +94,13 @@ double SatSolver::deterministic_time() const {
   // guess.
   return 1e-8 * (8.0 * trail_->NumberOfEnqueues() +
                  1.0 * binary_implication_graph_->num_inspections() +
-                 4.0 * clauses_propagator_.num_inspected_clauses() +
-                 1.0 * clauses_propagator_.num_inspected_clause_literals() +
+                 4.0 * clauses_propagator_->num_inspected_clauses() +
+                 1.0 * clauses_propagator_->num_inspected_clause_literals() +
 
                  // Here there is a factor 2 because of the untrail.
-                 20.0 * pb_constraints_.num_constraint_lookups() +
-                 2.0 * pb_constraints_.num_threshold_updates() +
-                 1.0 * pb_constraints_.num_inspected_constraint_literals());
+                 20.0 * pb_constraints_->num_constraint_lookups() +
+                 2.0 * pb_constraints_->num_threshold_updates() +
+                 1.0 * pb_constraints_->num_inspected_constraint_literals());
 }
 
 const SatParameters& SatSolver::parameters() const {
@@ -116,8 +111,6 @@ const SatParameters& SatSolver::parameters() const {
 void SatSolver::SetParameters(const SatParameters& parameters) {
   SCOPED_TIME_STAT(&stats_);
   *parameters_ = parameters;
-
-  pb_constraints_.SetParameters(parameters);
   restart_->Reset();
   time_limit_->ResetLimitFromParameters(parameters);
 }
@@ -212,7 +205,7 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals) {
   if (parameters_->treat_binary_clauses_separately() && literals.size() == 2) {
     AddBinaryClauseInternal(literals[0], literals[1]);
   } else {
-    if (!clauses_propagator_.AddClause(literals, trail_)) {
+    if (!clauses_propagator_->AddClause(literals, trail_)) {
       return SetModelUnsat();
     }
   }
@@ -272,7 +265,7 @@ bool SatSolver::AddLinearConstraintInternal(
 
   // TODO(user): If this constraint forces all its literal to false (when rhs is
   // zero for instance), we still add it. Optimize this?
-  const bool result = pb_constraints_.AddConstraint(cst, rhs, trail_);
+  const bool result = pb_constraints_->AddConstraint(cst, rhs, trail_);
   InitializePropagators();
   return result;
 }
@@ -364,14 +357,14 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     --num_learned_clause_before_cleanup_;
 
     SatClause* clause =
-        clauses_propagator_.AddRemovableClause(literals, trail_);
+        clauses_propagator_->AddRemovableClause(literals, trail_);
 
     // BumpClauseActivity() must be called after clauses_info_[clause] has
     // been created or it will have no effect.
-    (*clauses_propagator_.mutable_clauses_info())[clause].lbd = lbd;
+    (*clauses_propagator_->mutable_clauses_info())[clause].lbd = lbd;
     BumpClauseActivity(clause);
   } else {
-    CHECK(clauses_propagator_.AddClause(literals, trail_));
+    CHECK(clauses_propagator_->AddClause(literals, trail_));
   }
   return lbd;
 }
@@ -398,8 +391,8 @@ UpperBoundedLinearConstraint* SatSolver::ReasonPbConstraintOrNull(
   // It is important to deal properly with "SameReasonAs" variables here.
   var = trail_->ReferenceVarWithSameReason(var);
   const AssignmentInfo& info = trail_->Info(var);
-  if (trail_->AssignmentType(var) == pb_constraints_.PropagatorId()) {
-    return pb_constraints_.ReasonPbConstraint(info.trail_index);
+  if (trail_->AssignmentType(var) == pb_constraints_->PropagatorId()) {
+    return pb_constraints_->ReasonPbConstraint(info.trail_index);
   }
   return nullptr;
 }
@@ -407,8 +400,8 @@ UpperBoundedLinearConstraint* SatSolver::ReasonPbConstraintOrNull(
 SatClause* SatSolver::ReasonClauseOrNull(BooleanVariable var) const {
   DCHECK(trail_->Assignment().VariableIsAssigned(var));
   const AssignmentInfo& info = trail_->Info(var);
-  if (trail_->AssignmentType(var) == clauses_propagator_.PropagatorId()) {
-    return clauses_propagator_.ReasonClause(info.trail_index);
+  if (trail_->AssignmentType(var) == clauses_propagator_->PropagatorId()) {
+    return clauses_propagator_->ReasonClause(info.trail_index);
   }
   return nullptr;
 }
@@ -571,7 +564,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // Decay the activities.
   decision_policy_->UpdateVariableActivityIncrement();
   UpdateClauseActivityIncrement();
-  pb_constraints_.UpdateActivityIncrement();
+  pb_constraints_->UpdateActivityIncrement();
 
   // Hack from Glucose that seems to perform well.
   const int period = parameters_->glucose_decay_increment_period();
@@ -588,7 +581,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // in its resolution were clauses.
   bool compute_pb_conflict = false;
   if (parameters_->use_pb_resolution()) {
-    compute_pb_conflict = (pb_constraints_.ConflictingConstraint() != nullptr);
+    compute_pb_conflict = (pb_constraints_->ConflictingConstraint() != nullptr);
     if (!compute_pb_conflict) {
       for (Literal lit : reason_used_to_infer_the_conflict_) {
         if (ReasonPbConstraintOrNull(lit.Variable()) != nullptr) {
@@ -604,7 +597,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   if (compute_pb_conflict) {
     pb_conflict_.ClearAndResize(num_variables_.value());
     Coefficient initial_slack(-1);
-    if (pb_constraints_.ConflictingConstraint() == nullptr) {
+    if (pb_constraints_->ConflictingConstraint() == nullptr) {
       // Generic clause case.
       Coefficient num_literals(0);
       for (Literal literal : trail_->FailingClause()) {
@@ -614,8 +607,8 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
       pb_conflict_.AddToRhs(num_literals - 1);
     } else {
       // We have a pseudo-Boolean conflict, so we start from there.
-      pb_constraints_.ConflictingConstraint()->AddToConflict(&pb_conflict_);
-      pb_constraints_.ClearConflictingConstraint();
+      pb_constraints_->ConflictingConstraint()->AddToConflict(&pb_conflict_);
+      pb_constraints_->ClearConflictingConstraint();
       initial_slack =
           pb_conflict_.ComputeSlackForTrailPrefix(*trail_, max_trail_index + 1);
     }
@@ -646,11 +639,11 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
       // Use the PB conflict.
       // Note that we don't need to call InitializePropagators() since when we
       // are here, we are sure we have at least one pb constraint.
-      DCHECK_GT(pb_constraints_.NumberOfConstraints(), 0);
+      DCHECK_GT(pb_constraints_->NumberOfConstraints(), 0);
       CHECK_LT(pb_backjump_level, CurrentDecisionLevel());
       Backtrack(pb_backjump_level);
-      CHECK(pb_constraints_.AddLearnedConstraint(cst, pb_conflict_.Rhs(),
-                                                 trail_));
+      CHECK(pb_constraints_->AddLearnedConstraint(cst, pb_conflict_.Rhs(),
+                                                  trail_));
       CHECK_GT(trail_->Index(), last_decision_or_backtrack_trail_index_);
       counters_.num_learned_pb_literals += cst.size();
       return false;
@@ -753,12 +746,12 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
       parameters_->subsumption_during_conflict_analysis()) {
     for (SatClause* clause : subsumed_clauses_) {
       DCHECK(ClauseSubsumption(learned_conflict_, clause));
-      if (!clauses_propagator_.IsRemovable(clause)) {
+      if (!clauses_propagator_->IsRemovable(clause)) {
         is_redundant = false;
       }
-      clauses_propagator_.LazyDetach(clause);
+      clauses_propagator_->LazyDetach(clause);
     }
-    clauses_propagator_.CleanUpWatchers();
+    clauses_propagator_->CleanUpWatchers();
     counters_.num_subsumed_clauses += subsumed_clauses_.size();
   }
 
@@ -939,7 +932,7 @@ void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
     const BooleanVariable var = (*trail_)[trail_index].Variable();
     SatClause* clause = ReasonClauseOrNull(var);
     if (clause != nullptr) {
-      clauses_propagator_.mutable_clauses_info()->erase(clause);
+      clauses_propagator_->mutable_clauses_info()->erase(clause);
     }
     for (const Literal l : trail_->Reason(var)) {
       const AssignmentInfo& info = trail_->Info(l.Variable());
@@ -981,7 +974,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
           counters_.minimization_num_true++;
           counters_.minimization_num_removed_literals += clause->Size();
           Backtrack(0);
-          clauses_propagator_.Detach(clause);
+          clauses_propagator_->Detach(clause);
           return;
         }
 
@@ -996,7 +989,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
           // TODO(user): do not do that if it make us keep too many clauses?
           KeepAllClauseUsedToInfer(literal.Variable());
           Backtrack(0);
-          clauses_propagator_.Detach(clause);
+          clauses_propagator_->Detach(clause);
           return;
         } else {
           // Simplify. Note(user): we could only keep in clause the literals
@@ -1045,7 +1038,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   if (parameters_->treat_binary_clauses_separately() && candidate.size() == 2) {
     counters_.minimization_num_removed_literals += clause->Size() - 2;
     AddBinaryClauseInternal(candidate[0], candidate[1]);
-    clauses_propagator_.Detach(clause);
+    clauses_propagator_->Detach(clause);
 
     // This is needed in the corner case where this was the first binary clause
     // of the problem so that PropagationIsDone() returns true on the newly
@@ -1059,9 +1052,9 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
 
   // TODO(user): If the watched literal didn't change, we could just rewrite
   // the clause while keeping the two watched literals at the beginning.
-  clauses_propagator_.Detach(clause);
+  clauses_propagator_->Detach(clause);
   clause->Rewrite(candidate);
-  clauses_propagator_.Attach(clause, trail_);
+  clauses_propagator_->Attach(clause, trail_);
 }
 
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
@@ -1078,14 +1071,14 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     LOG(INFO) << "Initial memory usage: " << MemoryUsage();
     LOG(INFO) << "Number of variables: " << num_variables_;
     LOG(INFO) << "Number of clauses (size > 2): "
-              << clauses_propagator_.num_clauses();
+              << clauses_propagator_->num_clauses();
     LOG(INFO) << "Number of binary clauses: "
               << binary_implication_graph_->NumberOfImplications();
     LOG(INFO) << "Number of linear constraints: "
-              << pb_constraints_.NumberOfConstraints();
+              << pb_constraints_->NumberOfConstraints();
     LOG(INFO) << "Number of fixed variables: " << trail_->Index();
     LOG(INFO) << "Number of watched clauses: "
-              << clauses_propagator_.num_watched_clauses();
+              << clauses_propagator_->num_watched_clauses();
     LOG(INFO) << "Parameters: " << ProtobufShortDebugString(*parameters_);
   }
 
@@ -1201,21 +1194,21 @@ void SatSolver::MinimizeSomeClauses(int decisions_budget) {
   const int64 target_num_branches = counters_.num_branches + decisions_budget;
   while (counters_.num_branches < target_num_branches &&
          (time_limit_ == nullptr || !time_limit_->LimitReached())) {
-    SatClause* to_minimize = clauses_propagator_.NextClauseToMinimize();
+    SatClause* to_minimize = clauses_propagator_->NextClauseToMinimize();
     if (to_minimize != nullptr) {
       TryToMinimizeClause(to_minimize);
       if (is_model_unsat_) return;
     } else {
       if (to_minimize == nullptr) {
         VLOG(1) << "Minimized all clauses, restarting from first one.";
-        clauses_propagator_.ResetToMinimizeIndex();
+        clauses_propagator_->ResetToMinimizeIndex();
       }
       break;
     }
   }
 
   block_clause_deletion_ = false;
-  clauses_propagator_.DeleteDetachedClauses();
+  clauses_propagator_->DeleteDetachedClauses();
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
@@ -1295,7 +1288,7 @@ void SatSolver::BumpReasonActivities(const std::vector<Literal>& literals) {
         if (pb_constraint != nullptr) {
           // TODO(user): Because one pb constraint may propagate many literals,
           // this may bias the constraint activity... investigate other policy.
-          pb_constraints_.BumpActivity(pb_constraint);
+          pb_constraints_->BumpActivity(pb_constraint);
         }
       }
     }
@@ -1307,15 +1300,15 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
   // that we will keep a clause forever, we don't need to create its Info. More
   // than the speed, this allows to limit as much as possible the activity
   // rescaling.
-  auto it = clauses_propagator_.mutable_clauses_info()->find(clause);
-  if (it == clauses_propagator_.mutable_clauses_info()->end()) return;
+  auto it = clauses_propagator_->mutable_clauses_info()->find(clause);
+  if (it == clauses_propagator_->mutable_clauses_info()->end()) return;
 
   // Check if the new clause LBD is below our threshold to keep this clause
   // indefinitely. Note that we use a +1 here because the LBD of a newly learned
   // clause decrease by 1 just after the backjump.
   const int new_lbd = ComputeLbd(*clause);
   if (new_lbd + 1 <= parameters_->clause_cleanup_lbd_bound()) {
-    clauses_propagator_.mutable_clauses_info()->erase(clause);
+    clauses_propagator_->mutable_clauses_info()->erase(clause);
     return;
   }
 
@@ -1347,7 +1340,7 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
 void SatSolver::RescaleClauseActivities(double scaling_factor) {
   SCOPED_TIME_STAT(&stats_);
   clause_activity_increment_ *= scaling_factor;
-  for (auto& entry : *clauses_propagator_.mutable_clauses_info()) {
+  for (auto& entry : *clauses_propagator_->mutable_clauses_info()) {
     entry.second.activity *= scaling_factor;
   }
 }
@@ -1442,9 +1435,9 @@ std::string SatSolver::StatusString(Status status) const {
              binary_implication_graph_->num_minimization(),
              binary_implication_graph_->num_literals_removed()) +
          absl::StrFormat("  num inspected clauses: %d\n",
-                         clauses_propagator_.num_inspected_clauses()) +
+                         clauses_propagator_->num_inspected_clauses()) +
          absl::StrFormat("  num inspected clause_literals: %d\n",
-                         clauses_propagator_.num_inspected_clause_literals()) +
+                         clauses_propagator_->num_inspected_clause_literals()) +
          absl::StrFormat(
              "  num learned literals: %d  (avg: %.1f /clause)\n",
              counters_.num_literals_learned,
@@ -1466,11 +1459,11 @@ std::string SatSolver::StatusString(Status status) const {
          absl::StrFormat("  minimization_num_removed_literals: %d\n",
                          counters_.minimization_num_removed_literals) +
          absl::StrFormat("  pb num threshold updates: %d\n",
-                         pb_constraints_.num_threshold_updates()) +
+                         pb_constraints_->num_threshold_updates()) +
          absl::StrFormat("  pb num constraint lookups: %d\n",
-                         pb_constraints_.num_constraint_lookups()) +
+                         pb_constraints_->num_constraint_lookups()) +
          absl::StrFormat("  pb num inspected constraint literals: %d\n",
-                         pb_constraints_.num_inspected_constraint_literals()) +
+                         pb_constraints_->num_inspected_constraint_literals()) +
          restart_->InfoString() +
          absl::StrFormat("  deterministic time: %f\n", deterministic_time());
 }
@@ -1481,9 +1474,9 @@ std::string SatSolver::RunningStatisticsString() const {
       "%6.2fs, mem:%s, fails:%d, depth:%d, clauses:%d, tmp:%d, bin:%u, "
       "restarts:%d, vars:%d",
       time_in_s, MemoryUsage(), counters_.num_failures, CurrentDecisionLevel(),
-      clauses_propagator_.num_clauses() -
-          clauses_propagator_.num_removable_clauses(),
-      clauses_propagator_.num_removable_clauses(),
+      clauses_propagator_->num_clauses() -
+          clauses_propagator_->num_removable_clauses(),
+      clauses_propagator_->num_removable_clauses(),
       binary_implication_graph_->NumberOfImplications(),
       restart_->NumRestarts(),
       num_variables_.value() - num_processed_fixed_variables_);
@@ -1522,13 +1515,13 @@ void SatSolver::ProcessNewlyFixedVariables() {
   // We remove the clauses that are always true and the fixed literals from the
   // others. Note that none of the clause should be all false because we should
   // have detected a conflict before this is called.
-  for (SatClause* clause : clauses_propagator_.AllClausesInCreationOrder()) {
+  for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
     if (!clause->IsAttached()) continue;
 
     const size_t old_size = clause->Size();
     if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_->Assignment())) {
       // The clause is always true, detach it.
-      clauses_propagator_.LazyDetach(clause);
+      clauses_propagator_->LazyDetach(clause);
       ++num_detached_clauses;
       continue;
     }
@@ -1547,14 +1540,14 @@ void SatSolver::ProcessNewlyFixedVariables() {
       // it is safe to do that because this clause can't be used as a reason
       // since we are at level zero and the clause is not satisfied.
       AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral());
-      clauses_propagator_.LazyDetach(clause);
+      clauses_propagator_->LazyDetach(clause);
       ++num_binary;
       continue;
     }
   }
 
   // Note that we will only delete the clauses during the next database cleanup.
-  clauses_propagator_.CleanUpWatchers();
+  clauses_propagator_->CleanUpWatchers();
   if (num_detached_clauses > 0 || num_binary > 0) {
     VLOG(1) << trail_->Index() << " fixed variables at level 0. "
             << "Detached " << num_detached_clauses << " clauses. " << num_binary
@@ -1604,9 +1597,9 @@ void SatSolver::InitializePropagators() {
   if (binary_implication_graph_->NumberOfImplications() > 0) {
     propagators_.push_back(binary_implication_graph_);
   }
-  propagators_.push_back(&clauses_propagator_);
-  if (pb_constraints_.NumberOfConstraints() > 0) {
-    propagators_.push_back(&pb_constraints_);
+  propagators_.push_back(clauses_propagator_);
+  if (pb_constraints_->NumberOfConstraints() > 0) {
+    propagators_.push_back(pb_constraints_);
   }
   for (int i = 0; i < external_propagators_.size(); ++i) {
     propagators_.push_back(external_propagators_[i]);
@@ -2408,7 +2401,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   // that appear in clauses_info can potentially be removed.
   typedef std::pair<SatClause*, ClauseInfo> Entry;
   std::vector<Entry> entries;
-  auto& clauses_info = *clauses_propagator_.mutable_clauses_info();
+  auto& clauses_info = *(clauses_propagator_->mutable_clauses_info());
   for (auto& entry : clauses_info) {
     if (ClauseIsUsedAsReason(entry.first)) continue;
     if (entry.second.protected_during_next_cleanup) {
@@ -2459,14 +2452,14 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
     for (const Entry& entry : entries) {
       SatClause* clause = entry.first;
       counters_.num_literals_forgotten += clause->Size();
-      clauses_propagator_.LazyDetach(clause);
+      clauses_propagator_->LazyDetach(clause);
     }
-    clauses_propagator_.CleanUpWatchers();
+    clauses_propagator_->CleanUpWatchers();
 
     // TODO(user): If the need arise, we could avoid this linear scan on the
     // full list of clauses by not keeping the clauses from clauses_info there.
     if (!block_clause_deletion_) {
-      clauses_propagator_.DeleteDetachedClauses();
+      clauses_propagator_->DeleteDetachedClauses();
     }
   }
 

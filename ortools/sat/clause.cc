@@ -48,13 +48,14 @@ void RemoveIf(Container c, Predicate p) {
 
 // ----- LiteralWatchers -----
 
-LiteralWatchers::LiteralWatchers()
+LiteralWatchers::LiteralWatchers(Model* model)
     : SatPropagator("LiteralWatchers"),
-      is_clean_(true),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),
       num_watched_clauses_(0),
-      stats_("LiteralWatchers") {}
+      stats_("LiteralWatchers") {
+  model->GetOrCreate<Trail>()->RegisterPropagator(this);
+}
 
 LiteralWatchers::~LiteralWatchers() {
   gtl::STLDeleteElements(&clauses_);
