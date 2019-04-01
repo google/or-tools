@@ -643,8 +643,6 @@ void RevisedSimplex::UseSingletonColumnInInitialBasis(RowToColMapping* basis) {
 
       // Use this variable in the initial basis.
       (*basis)[row] = col;
-      variables_info_.Update(col, VariableStatus::BASIC);
-      variable_values_.Set(col, new_value);
       continue;
     }
 
@@ -1040,8 +1038,6 @@ Status RevisedSimplex::CreateInitialBasis() {
                   << "to be scaled. Skipping Bixby's algorithm.";
         }
       } else if (parameters_.initial_basis() == GlopParameters::TRIANGULAR) {
-        const RowToColMapping basis_copy = basis;
-
         // Note the use of num_cols_ here because this algorithm
         // benefits from treating fixed slack columns like any other column.
         if (parameters_.use_dual_simplex()) {
@@ -1053,19 +1049,14 @@ Status RevisedSimplex::CreateInitialBasis() {
         }
 
         const Status status = InitializeFirstBasis(basis);
-
-        // Check that the upper bound on the condition number of LU is below
-        // 1e50. We have chosen an arbitrarily high threshold, because the
-        // purpose of this code is to just revert to the "safe" basis on large
-        // problematic problem when we observed an "infinity" condition number
-        // (on cond11.mps).
-        if (status.ok() &&
-            basis_factorization_
-                    .ComputeInfinityNormConditionNumberUpperBound() < 1e50) {
+        if (status.ok()) {
           return status;
         } else {
           VLOG(1) << "Reverting to all slack basis.";
-          basis = basis_copy;
+
+          for (RowIndex row(0); row < num_rows_; ++row) {
+            basis[row] = SlackColIndex(row);
+          }
         }
       }
     }
@@ -1087,13 +1078,35 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
     if (basis_[row] == kInvalidCol) {
       basis_[row] = SlackColIndex(row);
     }
-    variables_info_.Update(basis_[row], VariableStatus::BASIC);
   }
 
   GLOP_RETURN_IF_ERROR(basis_factorization_.Initialize());
   PermuteBasis();
+
+  // Test that the upper bound on the condition number of basis is not too high.
+  // The number was not computed by any rigorous analysis, we just prefer to
+  // revert to the all slack basis if the condition number of our heuristic
+  // first basis seems bad. See for instance on cond11.mps, where we get an
+  // infinity upper bound.
+  const Fractional condition_number_ub =
+      basis_factorization_.ComputeInfinityNormConditionNumberUpperBound();
+  if (condition_number_ub > 1e25) {
+    const std::string error_message =
+        absl::StrCat("The matrix condition number upper bound is too high: ",
+                     condition_number_ub);
+    VLOG(1) << error_message;
+    return Status(Status::ERROR_LU, error_message);
+  }
+
+  // Everything is okay, finish the initialization.
+  for (RowIndex row(0); row < num_rows_; ++row) {
+    variables_info_.Update(basis_[row], VariableStatus::BASIC);
+  }
   DCHECK(BasisIsConsistent());
 
+  // TODO(user): Maybe return an error status if this is too high. Note however
+  // that if we want to do that, we need to reset variables_info_ to a
+  // consistent state.
   variable_values_.RecomputeBasicVariableValues();
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   DCHECK_LE(variable_values_.ComputeMaximumPrimalResidual(), tolerance);
