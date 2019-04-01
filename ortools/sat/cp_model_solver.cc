@@ -2100,12 +2100,12 @@ CpSolverResponse SolveCpModelWithLNS(
           total_num_calls++;
           generators[selected_generator]->AddSolveData(
               objective_diff, local_response.deterministic_time());
-          // TODO(user): Print the status in a better format.
           VLOG(2)
               << generators[selected_generator]->name()
               << ": [difficulty: " << difficulty.value()
               << ", deterministic time: " << local_response.deterministic_time()
-              << ", status: " << local_response.status()
+              << ", status: "
+              << ProtoEnumToString<CpSolverStatus>(local_response.status())
               << ", num calls: " << generators[selected_generator]->num_calls()
               << ", UCB1 Score: "
               << generators[selected_generator]->GetUCBScore(total_num_calls)
