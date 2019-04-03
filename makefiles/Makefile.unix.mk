@@ -98,7 +98,7 @@ ifdef UNIX_GLPK_DIR
 endif
 # This is needed to find scip include files.
 ifdef UNIX_SCIP_DIR
-  SCIP_INC = -I$(UNIX_SCIP_DIR)/src -DUSE_SCIP
+  SCIP_INC = -I$(UNIX_SCIP_DIR)/src -DUSE_SCIP -DNO_CONFIG_HEADER
   SCIP_SWIG = $(SCIP_INC)
 endif
 ifdef UNIX_GUROBI_DIR
@@ -137,7 +137,7 @@ ifeq ($(PLATFORM),LINUX)
  # $(UNIX_SCIP_DIR)/lib/libscipopt.a \
  # $(UNIX_SCIP_DIR)/lib/libsoplex.a \
  # $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
-    SCIP_LNK = --force-link $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a --force-link $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a --force-link $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a --force-link $(UNIX_SCIP_DIR)/lib/static/libtpitny.$(SCIP_ARCH).a
+    SCIP_LNK = $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libtpinone.$(SCIP_ARCH).a
   endif
   ifdef UNIX_GUROBI_DIR
     ifeq ($(PTRLENGTH),64)
