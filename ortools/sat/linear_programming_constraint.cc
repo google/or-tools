@@ -1728,7 +1728,7 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   }
 
   if (selected_index == -1) return kNoLiteralIndex;
-  const IntegerVariable var = this->integer_variables_[selected_index];
+  const IntegerVariable var = integer_variables_[selected_index];
 
   // If ceil(value) is current upper bound, try var == upper bound first.
   // Guarding with >= prevents numerical problems.
@@ -1738,9 +1738,10 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   const IntegerValue value_ceil(
       std::ceil(this->GetSolutionValue(var) - kCpEpsilon));
   if (value_ceil >= ub) {
-    return integer_encoder_
-        ->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(var, ub))
-        .Index();
+    const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(var, ub));
+    CHECK(!trail_->Assignment().LiteralIsAssigned(result));
+    return result.Index();
   }
 
   // If floor(value) is current lower bound, try var == lower bound first.
@@ -1749,24 +1750,26 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   const IntegerValue value_floor(
       std::floor(this->GetSolutionValue(var) + kCpEpsilon));
   if (value_floor <= lb) {
-    return integer_encoder_
-        ->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(var, lb))
-        .Index();
+    const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
+        IntegerLiteral::LowerOrEqual(var, lb));
+    CHECK(!trail_->Assignment().LiteralIsAssigned(result))
+        << " " << lb << " " << ub;
+    return result.Index();
   }
 
   // Here lb < value_floor <= value_ceil < ub.
   // Try the most promising split between var <= floor or var >= ceil.
   if (sum_cost_down_[selected_index] / num_cost_down_[selected_index] <
       sum_cost_up_[selected_index] / num_cost_up_[selected_index]) {
-    return integer_encoder_
-        ->GetOrCreateAssociatedLiteral(
-            IntegerLiteral::LowerOrEqual(var, value_floor))
-        .Index();
+    const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
+        IntegerLiteral::LowerOrEqual(var, value_floor));
+    CHECK(!trail_->Assignment().LiteralIsAssigned(result));
+    return result.Index();
   } else {
-    return integer_encoder_
-        ->GetOrCreateAssociatedLiteral(
-            IntegerLiteral::GreaterOrEqual(var, value_ceil))
-        .Index();
+    const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(var, value_ceil));
+    CHECK(!trail_->Assignment().LiteralIsAssigned(result));
+    return result.Index();
   }
 }
 

@@ -43,8 +43,11 @@ struct Neighborhood {
 // Thread-safe.
 class NeighborhoodGeneratorHelper {
  public:
-  NeighborhoodGeneratorHelper(CpModelProto const* model,
+  NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
                               bool focus_on_decision_variables);
+
+  // Updates private variables using the current 'model_proto_'.
+  void UpdateHelperData(bool focus_on_decision_variables);
 
   // Returns the LNS fragment where the given variables are fixed to the value
   // they take in the given solution.

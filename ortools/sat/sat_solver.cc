@@ -187,7 +187,7 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
       &tmp_pb_constraint_);
 }
 
-bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals) {
+bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
 
@@ -321,7 +321,14 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
       return SetModelUnsat();
     }
   }
-  if (!Propagate()) return SetModelUnsat();
+
+  // Tricky: The PropagationIsDone() condition shouldn't change anything for a
+  // pure SAT problem, however in the CP-SAT context, calling Propagate() can
+  // tigger computation (like the LP) even if no domain changed since the last
+  // call. We do not want to do that.
+  if (!PropagationIsDone() && !Propagate()) {
+    return SetModelUnsat();
+  }
   return true;
 }
 

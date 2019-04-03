@@ -194,7 +194,7 @@ SatClause* LiteralWatchers::ReasonClause(int trail_index) const {
   return reasons_[trail_index];
 }
 
-bool LiteralWatchers::AddClause(const std::vector<Literal>& literals,
+bool LiteralWatchers::AddClause(absl::Span<const Literal> literals,
                                 Trail* trail) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
@@ -999,7 +999,7 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
 // ----- SatClause -----
 
 // static
-SatClause* SatClause::Create(const std::vector<Literal>& literals) {
+SatClause* SatClause::Create(absl::Span<const Literal> literals) {
   CHECK_GE(literals.size(), 2);
   SatClause* clause = reinterpret_cast<SatClause*>(
       ::operator new(sizeof(SatClause) + literals.size() * sizeof(Literal)));

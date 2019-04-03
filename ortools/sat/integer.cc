@@ -205,6 +205,7 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerLiteral(literal, new_lit);
+  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
   return literal;
 }
 
@@ -218,9 +219,25 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
     }
   }
 
+  // Check for trivial true/false literal to avoid creating variable for no
+  // reasons.
+  const Domain& domain = (*domains_)[var];
+  if (!domain.Contains(value.value())) {
+    AssociateToIntegerEqualValue(GetFalseLiteral(), var, value);
+    return GetFalseLiteral();
+  }
+  if (value == domain.Min() && value == domain.Max()) {
+    AssociateToIntegerEqualValue(GetTrueLiteral(), var, value);
+    return GetTrueLiteral();
+  }
+
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerEqualValue(literal, var, value);
+
+  // TODO(user): on some problem the check below fail. We should probably
+  // make sure that we don't create extra fixed Boolean variable for no reason.
+  // CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
   return literal;
 }
 

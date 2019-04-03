@@ -25,8 +25,13 @@ namespace operations_research {
 namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
-    CpModelProto const* model, bool focus_on_decision_variables)
-    : model_proto_(*model) {
+    CpModelProto const* model_proto, bool focus_on_decision_variables)
+    : model_proto_(*model_proto) {
+  UpdateHelperData(focus_on_decision_variables);
+}
+
+void NeighborhoodGeneratorHelper::UpdateHelperData(
+    bool focus_on_decision_variables) {
   var_to_constraint_.resize(model_proto_.variables_size());
   constraint_to_var_.resize(model_proto_.constraints_size());
   for (int ct_index = 0; ct_index < model_proto_.constraints_size();
@@ -114,8 +119,9 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   }
 
   // TODO(user): force better objective? Note that this is already done when the
-  // hint above is sucessfully loaded (i.e. if it passes the presolve correctly)
-  // since the solver will try to find better solution than the current one.
+  // hint above is successfully loaded (i.e. if it passes the presolve
+  // correctly) since the solver will try to find better solution than the
+  // current one.
   return neighborhood;
 }
 

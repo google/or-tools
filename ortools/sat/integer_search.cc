@@ -34,9 +34,11 @@ LiteralIndex AtMinValue(IntegerVariable var, Model* model) {
   const IntegerValue lb = integer_trail->LowerBound(var);
   DCHECK_LE(lb, integer_trail->UpperBound(var));
   if (lb == integer_trail->UpperBound(var)) return kNoLiteralIndex;
-  return integer_encoder
-      ->GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(var, lb))
-      .Index();
+
+  const Literal result = integer_encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::LowerOrEqual(var, lb));
+  CHECK(!model->GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(result));
+  return result.Index();
 }
 
 LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model) {
@@ -245,8 +247,10 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
   SatDecisionPolicy* decision_policy = model->GetOrCreate<SatDecisionPolicy>();
   return [sat_solver, trail, decision_policy] {
     const bool all_assigned = trail->Index() == sat_solver->NumVariables();
-    return all_assigned ? kNoLiteralIndex
-                        : decision_policy->NextBranch().Index();
+    if (all_assigned) return kNoLiteralIndex;
+    const Literal result = decision_policy->NextBranch();
+    CHECK(!sat_solver->Assignment().LiteralIsAssigned(result));
+    return result.Index();
   };
 }
 

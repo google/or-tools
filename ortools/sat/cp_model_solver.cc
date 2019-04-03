@@ -984,12 +984,12 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     relaxation.linear_constraints.resize(new_size);
   }
 
-  VLOG(2) << "num_full_encoding_relaxations: " << num_full_encoding_relaxations;
-  VLOG(2) << "num_partial_encoding_relaxations: "
+  VLOG(3) << "num_full_encoding_relaxations: " << num_full_encoding_relaxations;
+  VLOG(3) << "num_partial_encoding_relaxations: "
           << num_partial_encoding_relaxations;
-  VLOG(2) << relaxation.linear_constraints.size()
+  VLOG(3) << relaxation.linear_constraints.size()
           << " constraints in the LP relaxation.";
-  VLOG(2) << relaxation.cut_generators.size() << " cuts generators.";
+  VLOG(3) << relaxation.cut_generators.size() << " cuts generators.";
 
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
@@ -1134,7 +1134,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   // constraints have been added.
   for (auto* lp_constraint : lp_constraints) {
     lp_constraint->RegisterWith(m);
-    VLOG(2) << "LP constraint: " << lp_constraint->DimensionString() << ".";
+    VLOG(3) << "LP constraint: " << lp_constraint->DimensionString() << ".";
   }
 
   VLOG(2) << top_level_cp_terms.size()
@@ -1287,19 +1287,19 @@ CpSolverResponse SolveCpModelInternal(
       Trail* trail = model->GetOrCreate<Trail>();
       const int old_num_fixed = trail->Index();
       if (trail->Index() > old_num_fixed) {
-        VLOG(2) << "Constraint fixed " << trail->Index() - old_num_fixed
+        VLOG(3) << "Constraint fixed " << trail->Index() - old_num_fixed
                 << " Boolean variable(s): " << ProtobufDebugString(ct);
       }
     }
     if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
-      VLOG(2) << "UNSAT during extraction (after adding '"
+      VLOG(3) << "UNSAT during extraction (after adding '"
               << ConstraintCaseName(ct.constraint_case()) << "'). "
               << ProtobufDebugString(ct);
       break;
     }
   }
   if (num_ignored_constraints > 0) {
-    VLOG(2) << num_ignored_constraints << " constraints were skipped.";
+    VLOG(3) << num_ignored_constraints << " constraints were skipped.";
   }
   if (!unsupported_types.empty()) {
     VLOG(1) << "There is unsuported constraints types in this model: ";
@@ -1531,32 +1531,55 @@ CpSolverResponse SolveCpModelInternal(
     status =
         SolveProblemWithPortfolioSearch(decision_policies, {no_restart}, model);
     if (status == SatSolver::Status::FEASIBLE) {
-      solution_info = "hint";
-      solution_observer(*model);
-      CHECK(SolutionIsFeasible(model_proto,
-                               std::vector<int64>(response.solution().begin(),
-                                                  response.solution().end())));
-      if (!model_proto.has_objective()) {
-        if (parameters.enumerate_all_solutions()) {
-          model->Add(
-              ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
-        } else {
-          return response;
+      bool hint_is_valid = true;
+      if (model_proto.has_objective() && parameters.optimize_with_core()) {
+        // We need to fix the lower bound of the objective variable.
+        // If linearization_level = 0, the objective_var is not linked with
+        // the model. We recompute its value from scratch.
+        int64 objective_value = 0;
+        for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
+          objective_value += model_proto.objective().coeffs(i) *
+                             model->Get(LowerBound(mapping->Integer(
+                                 model_proto.objective().vars(i))));
         }
-      } else {
         IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-        const IntegerValue current_internal_objective =
-            integer_trail->LowerBound(objective_var);
-        // Restrict the objective.
-        model->GetOrCreate<SatSolver>()->Backtrack(0);
         if (!integer_trail->Enqueue(
-                IntegerLiteral::LowerOrEqual(objective_var,
-                                             current_internal_objective - 1),
+                IntegerLiteral::GreaterOrEqual(objective_var,
+                                               IntegerValue(objective_value)),
                 {}, {})) {
-          response.set_best_objective_bound(response.objective_value());
-          response.set_status(CpSolverStatus::OPTIMAL);
-          fill_response_statistics();
-          return response;
+          hint_is_valid = false;
+          model->GetOrCreate<SatSolver>()->Backtrack(0);
+        }
+      }
+      if (hint_is_valid) {
+        solution_info = "hint";
+        solution_observer(*model);
+        num_solutions++;
+        CHECK(SolutionIsFeasible(
+            model_proto, std::vector<int64>(response.solution().begin(),
+                                            response.solution().end())));
+        if (!model_proto.has_objective()) {
+          if (parameters.enumerate_all_solutions()) {
+            model->Add(
+                ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
+          } else {
+            return response;
+          }
+        } else {
+          IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+          IntegerValue current_internal_objective =
+              integer_trail->LowerBound(objective_var);
+          // Restrict the objective.
+          model->GetOrCreate<SatSolver>()->Backtrack(0);
+          if (!integer_trail->Enqueue(
+                  IntegerLiteral::LowerOrEqual(objective_var,
+                                               current_internal_objective - 1),
+                  {}, {})) {
+            response.set_best_objective_bound(response.objective_value());
+            response.set_status(CpSolverStatus::OPTIMAL);
+            fill_response_statistics();
+            return response;
+          }
         }
       }
     }
@@ -1584,8 +1607,8 @@ CpSolverResponse SolveCpModelInternal(
   } else {
     // Optimization problem.
     const CpObjectiveProto& obj = model_proto.objective();
-    VLOG(2) << obj.vars_size() << " terms in the proto objective.";
-    VLOG(2) << "Initial num_bool: " << model->Get<SatSolver>()->NumVariables();
+    VLOG(3) << obj.vars_size() << " terms in the proto objective.";
+    VLOG(3) << "Initial num_bool: " << model->Get<SatSolver>()->NumVariables();
 
     if (parameters.optimize_with_core()) {
       std::vector<IntegerVariable> linear_vars;
@@ -1594,12 +1617,15 @@ CpSolverResponse SolveCpModelInternal(
                              &linear_vars, &linear_coeffs);
       if (parameters.optimize_with_max_hs()) {
         status = MinimizeWithHittingSetAndLazyEncoding(
-            VLOG_IS_ON(2), objective_var, linear_vars, linear_coeffs,
+            VLOG_IS_ON(3), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
       } else {
         status = MinimizeWithCoreAndLazyEncoding(
-            VLOG_IS_ON(2), objective_var, linear_vars, linear_coeffs,
+            VLOG_IS_ON(3), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
+      }
+      if (num_solutions > 0 && status == SatSolver::INFEASIBLE) {
+        status = SatSolver::FEASIBLE;
       }
     } else {
       if (parameters.binary_search_num_conflicts() >= 0) {
@@ -1922,8 +1948,8 @@ CpSolverResponse SolveCpModelWithLNS(
   const bool focus_on_decision_variables =
       parameters->lns_focus_on_decision_variables();
 
-  const NeighborhoodGeneratorHelper helper(&mutable_model_proto,
-                                           focus_on_decision_variables);
+  NeighborhoodGeneratorHelper helper(&mutable_model_proto,
+                                     focus_on_decision_variables);
 
   // For now we will just alternate between our possible neighborhoods.
   //
@@ -1983,18 +2009,7 @@ CpSolverResponse SolveCpModelWithLNS(
           }
         }
 
-        // If we didn't see any progress recently, bump the time limit.
-        // TODO(user): Tune the logic and expose the parameters.
-        if (num_no_progress > 100) {
-          deterministic_time *= 1.1;
-          num_no_progress = 0;
-        }
-        return limit->LimitReached() ||
-               response.objective_value() == response.best_objective_bound();
-      },
-      [&](int64 seed) {
         // Update the bounds on mutable model proto.
-        bool model_is_unsat = false;
         if (shared_bounds_manager != nullptr) {
           std::vector<int> model_variables;
           std::vector<int64> new_lower_bounds;
@@ -2007,20 +2022,35 @@ CpSolverResponse SolveCpModelWithLNS(
             const int var = model_variables[i];
             const int64 new_lb = new_lower_bounds[i];
             const int64 new_ub = new_upper_bounds[i];
-            if (VLOG_IS_ON(2)) {
+            if (VLOG_IS_ON(3)) {
               const auto& domain = mutable_model_proto.variables(var).domain();
               const int64 old_lb = domain.Get(0);
               const int64 old_ub = domain.Get(domain.size() - 1);
-              VLOG(2) << "Variable: " << var << " old domain: [" << old_lb
+              VLOG(3) << "Variable: " << var << " old domain: [" << old_lb
                       << ", " << old_ub << "] new domain: [" << new_lb << ", "
                       << new_ub << "]";
             }
             if (!UpdateDomain(new_lb, new_ub,
                               mutable_model_proto.mutable_variables(var))) {
-              model_is_unsat = true;
+              // Model is unsat.
+              return true;
             }
           }
+          if (!model_variables.empty()) {
+            helper.UpdateHelperData(focus_on_decision_variables);
+          }
         }
+
+        // If we didn't see any progress recently, bump the time limit.
+        // TODO(user): Tune the logic and expose the parameters.
+        if (num_no_progress > 100) {
+          deterministic_time *= 1.1;
+          num_no_progress = 0;
+        }
+        return limit->LimitReached() ||
+               response.objective_value() == response.best_objective_bound();
+      },
+      [&](int64 seed) {
         const int selected_generator = seed % generators.size();
         AdaptiveParameterValue& difficulty = difficulties[selected_generator];
         const double saved_difficulty = difficulty.value();
@@ -2052,24 +2082,21 @@ CpSolverResponse SolveCpModelWithLNS(
 
         // Presolve and solve the LNS fragment.
         CpSolverResponse local_response;
-        if (model_is_unsat) {
-          local_response.set_status(CpSolverStatus::INFEASIBLE);
-        } else {
-          CpModelProto mapping_proto;
-          std::vector<int> postsolve_mapping;
-          PresolveOptions options;
-          options.log_info = VLOG_IS_ON(2);
-          options.parameters = *local_model.GetOrCreate<SatParameters>();
-          options.time_limit = local_model.GetOrCreate<TimeLimit>();
-          PresolveCpModel(options, &local_problem, &mapping_proto,
-                          &postsolve_mapping);
-          local_response = SolveCpModelInternal(
-              local_problem, /*is_real_solve=*/true,
-              [](const CpSolverResponse& response) {},
-              /*shared_bounds_manager=*/nullptr, wall_timer, &local_model);
-          PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
-                            wall_timer, &local_response);
-        }
+
+        CpModelProto mapping_proto;
+        std::vector<int> postsolve_mapping;
+        PresolveOptions options;
+        options.log_info = VLOG_IS_ON(3);
+        options.parameters = *local_model.GetOrCreate<SatParameters>();
+        options.time_limit = local_model.GetOrCreate<TimeLimit>();
+        PresolveCpModel(options, &local_problem, &mapping_proto,
+                        &postsolve_mapping);
+        local_response = SolveCpModelInternal(
+            local_problem, /*is_real_solve=*/true,
+            [](const CpSolverResponse& response) {},
+            /*shared_bounds_manager=*/nullptr, wall_timer, &local_model);
+        PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
+                          wall_timer, &local_response);
 
         const bool neighborhood_is_reduced = neighborhood.is_reduced;
         return [neighborhood_is_reduced, &num_no_progress, &model_proto,

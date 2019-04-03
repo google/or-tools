@@ -52,7 +52,7 @@ class SatClause {
   // treated separatly and never constructed. In practice, we do use
   // BinaryImplicationGraph for the clause of size 2, so this is mainly used for
   // size at least 3.
-  static SatClause* Create(const std::vector<Literal>& literals);
+  static SatClause* Create(absl::Span<const Literal> literals);
 
   // Non-sized delete because this is a tail-padded class.
   void operator delete(void* p) {
@@ -168,7 +168,7 @@ class LiteralWatchers : public SatPropagator {
   SatClause* ReasonClause(int trail_index) const;
 
   // Adds a new clause and perform initial propagation for this clause only.
-  bool AddClause(const std::vector<Literal>& literals, Trail* trail);
+  bool AddClause(absl::Span<const Literal> literals, Trail* trail);
 
   // Same as AddClause() for a removable clause. This is only called on learned
   // conflict, so this should never have all its literal at false (CHECKED).

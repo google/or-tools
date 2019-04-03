@@ -512,7 +512,7 @@ class SatSolver {
 
   // Add a problem clause. The clause is assumed to be "cleaned", that is no
   // duplicate variables (not strictly required) and not empty.
-  bool AddProblemClauseInternal(const std::vector<Literal>& literals);
+  bool AddProblemClauseInternal(absl::Span<const Literal> literals);
 
   // This is used by all the Add*LinearConstraint() functions. It detects
   // infeasible/trivial constraints or clause constraints and takes the proper
