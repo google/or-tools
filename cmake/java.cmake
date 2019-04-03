@@ -9,3 +9,7 @@ find_package(JNI REQUIRED)
 if(NOT TARGET ortools::ortools)
   message(FATAL_ERROR "Java: missing ortools TARGET")
 endif()
+
+if(BUILD_TESTING)
+  add_subdirectory(examples/java)
+endif()

@@ -15,7 +15,7 @@ set_target_properties(${NAME} PROPERTIES
 #  absl::hash absl::meta absl::memory absl::strings absl::str_format
 #  gflags::gflags glog::glog
 #  protobuf::libprotobuf
-#  Cbc::Cbc
+#  Coin::Cbc
 #  ${PROJECT_NAME}::proto)
 target_include_directories(${NAME} PRIVATE
 	${PROJECT_SOURCE_DIR}
@@ -28,7 +28,7 @@ target_include_directories(${NAME} PRIVATE
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_INCLUDE_DIRECTORIES>
+	$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_options(${NAME} PRIVATE
 	$<TARGET_PROPERTY:absl::hash,INTERFACE_COMPILE_OPTIONS>
@@ -39,7 +39,7 @@ target_compile_options(${NAME} PRIVATE
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_OPTIONS>
-	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_COMPILE_OPTIONS>
+	$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_OPTIONS>
 	)
 target_compile_definitions(${NAME} PRIVATE
@@ -51,13 +51,13 @@ target_compile_definitions(${NAME} PRIVATE
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_DEFINITIONS>
-	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_COMPILE_DEFINITIONS>
+	$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_DEFINITIONS>
 	)
 add_dependencies(${NAME}
   absl::hash absl::meta absl::memory absl::strings absl::str_format
   gflags::gflags glog::glog
 	protobuf::libprotobuf
-  Cbc::Cbc
+  Coin::Cbc
   ${PROJECT_NAME}::proto)
 add_library(${PROJECT_NAME}::graph ALIAS ${NAME})

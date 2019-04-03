@@ -15,7 +15,6 @@ set_target_properties(${NAME} PROPERTIES
 #  absl::strings
 #  gflags::gflags glog::glog
 #  protobuf::libprotobuf
-#  Cbc::Cbc
 #  ${PROJECT_NAME}::proto)
 target_include_directories(${NAME} PRIVATE
 	${PROJECT_SOURCE_DIR}
@@ -24,14 +23,12 @@ target_include_directories(${NAME} PRIVATE
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_options(${NAME} PRIVATE
 	$<TARGET_PROPERTY:absl::strings,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_OPTIONS>
-	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_OPTIONS>
 	)
 target_compile_definitions(${NAME} PRIVATE
@@ -39,13 +36,11 @@ target_compile_definitions(${NAME} PRIVATE
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_DEFINITIONS>
-	$<TARGET_PROPERTY:Cbc::Cbc,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_DEFINITIONS>
 	)
 add_dependencies(${NAME}
   absl::strings
   gflags::gflags glog::glog
 	protobuf::libprotobuf
-  Cbc::Cbc
   ${PROJECT_NAME}::proto)
 add_library(${PROJECT_NAME}::data ALIAS ${NAME})

@@ -198,4 +198,7 @@ if(BUILD_TESTING)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
   # run the tests within the virtualenv
   add_test(pytest_venv ${VENV_BIN_DIR}/python ${VENV_DIR}/test.py)
+
+  add_subdirectory(examples/python)
+  add_subdirectory(examples/notebook)
 endif()

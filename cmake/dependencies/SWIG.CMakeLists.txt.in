@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 3.5)
+
+project(SWIG NONE)
+
+include(ExternalProject)
+
+ExternalProject_Add(SWIG_project
+  TMP_DIR "@CMAKE_CURRENT_BINARY_DIR@/${PROJECT_NAME}/tmp"
+  STAMP_DIR "@CMAKE_CURRENT_BINARY_DIR@/${PROJECT_NAME}/stamp"
+  DOWNLOAD_DIR "@CMAKE_CURRENT_BINARY_DIR@/${PROJECT_NAME}/download"
+  SOURCE_DIR "@CMAKE_CURRENT_BINARY_DIR@/${PROJECT_NAME}/source"
+  BUILD_IN_SOURCE 1
+
+  URL "https://superb-dca2.dl.sourceforge.net/project/swig/swigwin/swigwin-3.0.12/swigwin-3.0.12.zip"
+  LOG_DOWNLOAD TRUE
+
+  UPDATE_COMMAND ""
+  LOG_UPDATE TRUE
+
+  PATCH_COMMAND ""
+  LOG_PATCH TRUE
+
+  CONFIGURE_COMMAND ""
+  LOG_CONFIGURE TRUE
+
+  BUILD_COMMAND ""
+  LOG_BUILD TRUE
+
+  INSTALL_COMMAND ""
+  LOG_INSTALL TRUE
+
+  TEST_COMMAND ""
+  LOG_TEST TRUE
+)
