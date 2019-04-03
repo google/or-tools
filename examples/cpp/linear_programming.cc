@@ -20,9 +20,9 @@
 
 namespace operations_research {
 void RunLinearProgrammingExample() {
-  putenv("GRB_LICENSE_FILE=/Users/dimitargueorguiev/git/gurobi.lic");
+  putenv("GRB_LICENSE_FILE=./gurobi.lic");
   MPSolver solver("LinearProgrammingExample",
-                  MPSolver::GUROBI_LINEAR_PROGRAMMING);
+                  MPSolver::GLOP_LINEAR_PROGRAMMING);
   const double infinity = solver.infinity();
   // x and y are continuous non-negative variables.
   MPVariable* const x = solver.MakeNumVar(0.0, infinity, "x");

@@ -41,13 +41,13 @@ void RunIntegerProgrammingExample(
   c1->SetCoefficient(x, 1);
   c1->SetCoefficient(y, 0);
 
-  SOSConstraint* const c2 = solver.MakeSOSConstraint(MPSolver::SOS1);
-  c2->SetCoefficient(x, 1);
-  c2->SetCoefficient(y, 1);
+  //SOSConstraint* const c2 = solver.MakeSOSConstraint(MPSolver::SOS1);
+  //c2->SetCoefficient(x, 1);
+  //c2->SetCoefficient(y, 1);
 
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
-  LOG(INFO) << "Number of SOS constraints = " << solver.NumSOSConstraints();
+  //LOG(INFO) << "Number of SOS constraints = " << solver.NumSOSConstraints();
 
   const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
@@ -79,10 +79,10 @@ void RunAllExamples() {
   LOG(INFO) << "---- Integer programming example with SCIP ----";
   RunIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
 #endif
-#if defined(USE_GUROBI)
-  LOG(INFO) << "---- Integer programming example with Gurobi ----";
-  RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
-#endif  // USE_GUROBI
+//#if defined(USE_GUROBI)
+//  LOG(INFO) << "---- Integer programming example with Gurobi ----";
+//  RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
+//#endif  // USE_GUROBI
 #if defined(USE_CPLEX)
   LOG(INFO) << "---- Integer programming example with CPLEX ----";
   RunIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
@@ -93,7 +93,7 @@ void RunAllExamples() {
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
-  //operations_research::RunAllExamples();
-  RunIntegerProgrammingExample(operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
+  operations_research::RunAllExamples();
+  //RunIntegerProgrammingExample(operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
   return EXIT_SUCCESS;
 }
