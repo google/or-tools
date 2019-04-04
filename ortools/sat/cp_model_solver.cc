@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
+#include "glog/vlog_is_on.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "absl/synchronization/notification.h"
@@ -1554,7 +1555,6 @@ CpSolverResponse SolveCpModelInternal(
       if (hint_is_valid) {
         solution_info = "hint";
         solution_observer(*model);
-        num_solutions++;
         CHECK(SolutionIsFeasible(
             model_proto, std::vector<int64>(response.solution().begin(),
                                             response.solution().end())));
@@ -1598,11 +1598,30 @@ CpSolverResponse SolveCpModelInternal(
       if (!parameters.enumerate_all_solutions()) break;
       model->Add(ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
     }
-    if (num_solutions > 0) {
-      if (status == SatSolver::Status::INFEASIBLE) {
-        response.set_all_solutions_were_found(true);
+
+    // Fill solution status.
+    switch (status) {
+      case SatSolver::LIMIT_REACHED: {
+        response.set_status(num_solutions > 0 ? CpSolverStatus::FEASIBLE
+                                              : CpSolverStatus::UNKNOWN);
+        break;
       }
-      status = SatSolver::Status::FEASIBLE;
+      case SatSolver::FEASIBLE: {
+        response.set_status(CpSolverStatus::FEASIBLE);
+        break;
+      }
+      case SatSolver::INFEASIBLE: {
+        if (num_solutions > 0) {
+          CHECK(parameters.enumerate_all_solutions());
+          response.set_all_solutions_were_found(true);
+          response.set_status(CpSolverStatus::FEASIBLE);
+        } else {
+          response.set_status(CpSolverStatus::INFEASIBLE);
+        }
+        break;
+      }
+      default:
+        LOG(FATAL) << "Unexpected SatSolver::Status " << status;
     }
   } else {
     // Optimization problem.
@@ -1624,9 +1643,6 @@ CpSolverResponse SolveCpModelInternal(
             VLOG_IS_ON(3), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
       }
-      if (num_solutions > 0 && status == SatSolver::INFEASIBLE) {
-        status = SatSolver::FEASIBLE;
-      }
     } else {
       if (parameters.binary_search_num_conflicts() >= 0) {
         RestrictObjectiveDomainWithBinarySearch(objective_var, next_decision,
@@ -1635,45 +1651,51 @@ CpSolverResponse SolveCpModelInternal(
       status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           /*log_info=*/false, objective_var, next_decision, solution_observer,
           model);
-      if (num_solutions > 0 && status == SatSolver::INFEASIBLE) {
-        status = SatSolver::FEASIBLE;
-      }
     }
 
-    if (status == SatSolver::LIMIT_REACHED) {
-      model->GetOrCreate<SatSolver>()->Backtrack(0);
-      if (num_solutions == 0) {
-        response.set_objective_value(
-            ScaleObjectiveValue(obj, model->Get(UpperBound(objective_var))));
+    switch (status) {
+      case SatSolver::LIMIT_REACHED: {
+        model->GetOrCreate<SatSolver>()->Backtrack(0);
+        // Set the best objective bound as the level zero lower bound of the
+        // objective variable.
+        response.set_best_objective_bound(
+            ScaleObjectiveValue(obj, model->Get(LowerBound(objective_var))));
+        if (num_solutions == 0) {
+          // No solution found, we set the best objective value as the level
+          // zero upper bound of the objective variable.
+          response.set_objective_value(
+              ScaleObjectiveValue(obj, model->Get(UpperBound(objective_var))));
+          response.set_status(CpSolverStatus::UNKNOWN);
+        } else {
+          response.set_status(CpSolverStatus::FEASIBLE);
+        }
+        break;
       }
-      response.set_best_objective_bound(
-          ScaleObjectiveValue(obj, model->Get(LowerBound(objective_var))));
-    } else if (status == SatSolver::FEASIBLE) {
-      // Optimal!
-      response.set_best_objective_bound(response.objective_value());
+      case SatSolver::FEASIBLE: {
+        // This means that the optimization procedure found the optimal
+        // solution.
+        CHECK_GT(num_solutions, 0);
+        response.set_status(CpSolverStatus::OPTIMAL);
+        response.set_best_objective_bound(response.objective_value());
+        break;
+      }
+      case SatSolver::INFEASIBLE: {
+        if (num_solutions > 0) {
+          // Happens when the main search procedure did not find a solution, but
+          // the hinting or the binary search did.
+          response.set_status(CpSolverStatus::OPTIMAL);
+          response.set_best_objective_bound(response.objective_value());
+        } else {
+          response.set_status(CpSolverStatus::INFEASIBLE);
+        }
+        break;
+      }
+      default:
+        LOG(FATAL) << "Unexpected SatSolver::Status " << status;
     }
   }
 
   // Fill response.
-  switch (status) {
-    case SatSolver::LIMIT_REACHED: {
-      response.set_status(num_solutions != 0 ? CpSolverStatus::FEASIBLE
-                                             : CpSolverStatus::UNKNOWN);
-      break;
-    }
-    case SatSolver::FEASIBLE: {
-      response.set_status(model_proto.has_objective()
-                              ? CpSolverStatus::OPTIMAL
-                              : CpSolverStatus::FEASIBLE);
-      break;
-    }
-    case SatSolver::INFEASIBLE: {
-      response.set_status(CpSolverStatus::INFEASIBLE);
-      break;
-    }
-    default:
-      LOG(FATAL) << "Unexpected SatSolver::Status " << status;
-  }
   fill_response_statistics();
   return response;
 }
