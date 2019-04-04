@@ -62,9 +62,9 @@ DEFINE_INT_TYPE(IntegerValue, int64);
 // this range on both side so that we can usally take care of integer overflow
 // by simply doing "saturated arithmetic" and if one of the bound overflow, the
 // two bounds will "cross" each others and we will get an empty range.
-const IntegerValue kMaxIntegerValue(
+constexpr IntegerValue kMaxIntegerValue(
     std::numeric_limits<IntegerValue::ValueType>::max() - 1);
-const IntegerValue kMinIntegerValue(-kMaxIntegerValue);
+constexpr IntegerValue kMinIntegerValue(-kMaxIntegerValue);
 
 inline double ToDouble(IntegerValue value) {
   const double kInfinity = std::numeric_limits<double>::infinity();
