@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "ortools/constraint_solver/routing_neighborhoods.h"
+#include <algorithm>
 
 namespace operations_research {
 
@@ -877,8 +878,9 @@ RelocateSubtrip::RelocateSubtrip(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64)> start_empty_path_class,
     const RoutingIndexPairs& pairs)
-    : PathOperator(vars, secondary_vars, 2, false,
-                   std::move(start_empty_path_class)) {
+    : PathWithPreviousNodesOperator(vars, secondary_vars,
+                                    /*number_of_base_nodes*/ 2,
+                                    std::move(start_empty_path_class)) {
   is_first_node_.resize(number_of_nexts_, false);
   is_second_node_.resize(number_of_nexts_, false);
   pair_of_node_.resize(number_of_nexts_, -1);
@@ -892,47 +894,121 @@ RelocateSubtrip::RelocateSubtrip(
       pair_of_node_[node] = pair_index;
     }
   }
-  opened_pairs_set_.resize(pairs.size(), false);
+  opened_pairs_bitset_.resize(pairs.size(), false);
+}
+
+bool RelocateSubtrip::RelocateSubTripFromPickup(const int64 chain_first_node,
+                                                const int64 insertion_node) {
+  if (IsPathEnd(insertion_node)) return false;
+  if (Prev(chain_first_node) == insertion_node)
+    return false;  // Skip null move.
+
+  int num_opened_pairs = 0;
+  // Split chain into subtrip and rejected nodes.
+  rejected_nodes_ = {Prev(chain_first_node)};
+  subtrip_nodes_ = {insertion_node};
+  int current = chain_first_node;
+  do {
+    if (current == insertion_node) {
+      // opened_pairs_bitset_ must be all false when we leave this function.
+      opened_pairs_bitset_.assign(opened_pairs_bitset_.size(), false);
+      return false;
+    }
+    const int pair = pair_of_node_[current];
+    if (is_second_node_[current] && !opened_pairs_bitset_[pair]) {
+      rejected_nodes_.push_back(current);
+    } else {
+      subtrip_nodes_.push_back(current);
+      if (is_first_node_[current]) {
+        ++num_opened_pairs;
+        opened_pairs_bitset_[pair] = true;
+      } else if (is_second_node_[current]) {
+        --num_opened_pairs;
+        opened_pairs_bitset_[pair] = false;
+      }
+    }
+    current = Next(current);
+  } while (num_opened_pairs != 0 && !IsPathEnd(current));
+  DCHECK_EQ(num_opened_pairs, 0);
+  rejected_nodes_.push_back(current);
+  subtrip_nodes_.push_back(Next(insertion_node));
+
+  // Set new paths.
+  const int64 rejected_path = Path(chain_first_node);
+  for (int i = 1; i < rejected_nodes_.size(); ++i) {
+    SetNext(rejected_nodes_[i - 1], rejected_nodes_[i], rejected_path);
+  }
+  const int64 insertion_path = Path(insertion_node);
+  for (int i = 1; i < subtrip_nodes_.size(); ++i) {
+    SetNext(subtrip_nodes_[i - 1], subtrip_nodes_[i], insertion_path);
+  }
+  return true;
+}
+
+bool RelocateSubtrip::RelocateSubTripFromDelivery(const int64 chain_last_node,
+                                                  const int64 insertion_node) {
+  if (IsPathEnd(insertion_node)) return false;
+
+  // opened_pairs_bitset_ should be all false.
+  DCHECK(std::none_of(opened_pairs_bitset_.begin(), opened_pairs_bitset_.end(),
+                      [](bool value) { return value; }));
+  int num_opened_pairs = 0;
+  // Split chain into subtrip and rejected nodes. Store nodes in reverse order.
+  rejected_nodes_ = {Next(chain_last_node)};
+  subtrip_nodes_ = {Next(insertion_node)};
+  int current = chain_last_node;
+  do {
+    if (current == insertion_node) {
+      opened_pairs_bitset_.assign(opened_pairs_bitset_.size(), false);
+      return false;
+    }
+    const int pair = pair_of_node_[current];
+    if (is_first_node_[current] && !opened_pairs_bitset_[pair]) {
+      rejected_nodes_.push_back(current);
+    } else {
+      subtrip_nodes_.push_back(current);
+      if (is_second_node_[current]) {
+        ++num_opened_pairs;
+        opened_pairs_bitset_[pair] = true;
+      } else if (is_first_node_[current]) {
+        --num_opened_pairs;
+        opened_pairs_bitset_[pair] = false;
+      }
+    }
+    current = Prev(current);
+  } while (num_opened_pairs != 0 && !IsPathStart(current));
+  DCHECK_EQ(num_opened_pairs, 0);
+  if (current == insertion_node) return false;  // Skip null move.
+  rejected_nodes_.push_back(current);
+  subtrip_nodes_.push_back(insertion_node);
+
+  // TODO(user): either remove those std::reverse() and adapt the loops
+  // below, or refactor the loops into a function that also DCHECKs the path.
+  std::reverse(rejected_nodes_.begin(), rejected_nodes_.end());
+  std::reverse(subtrip_nodes_.begin(), subtrip_nodes_.end());
+
+  // Set new paths.
+  const int64 rejected_path = Path(chain_last_node);
+  for (int i = 1; i < rejected_nodes_.size(); ++i) {
+    SetNext(rejected_nodes_[i - 1], rejected_nodes_[i], rejected_path);
+  }
+  const int64 insertion_path = Path(insertion_node);
+  for (int i = 1; i < subtrip_nodes_.size(); ++i) {
+    SetNext(subtrip_nodes_[i - 1], subtrip_nodes_[i], insertion_path);
+  }
+  return true;
 }
 
 bool RelocateSubtrip::MakeNeighbor() {
-  // We iterate on two nodes, one is the beginning of the subtrip,
-  // the other is the position after which to insert.
-  // If the first node cannot be the beginning of a subtrip, do not move.
-  const int prev_chain = BaseNode(0);
-  if (IsPathEnd(prev_chain)) return false;
-  const int insertion_node = BaseNode(1);
-  if (IsPathEnd(insertion_node)) return false;
-  if (prev_chain == insertion_node) return false;
-
-  // We are looking for the shortest chain such that all pickup/delivery pairs
-  // appearing in the chain have both pickup and delivery inside the chain.
-  // If there is none (other that the empty chain), do not move.
-  // Obviously, the chain should not contain the insertion node.
-  int current = Next(prev_chain);
-  if (IsPathEnd(current)) return false;
-  if (!is_first_node_[current]) return false;
-  int chain_end = current;
-  opened_pairs_set_.assign(opened_pairs_set_.size(), false);
-  int num_opened_pairs = 0;
-  do {
-    if (current == insertion_node) return false;
-    if (is_first_node_[current] || is_second_node_[current]) {
-      const int pair = pair_of_node_[current];
-      if (opened_pairs_set_[pair]) {
-        --num_opened_pairs;
-        opened_pairs_set_[pair] = false;
-      } else {
-        ++num_opened_pairs;
-        opened_pairs_set_[pair] = true;
-      }
-    }
-    chain_end = current;
-    current = Next(current);
-  } while (num_opened_pairs != 0 && !IsPathEnd(current));
-  if (num_opened_pairs != 0) return false;
-
-  return MoveChain(prev_chain, chain_end, insertion_node);
+  if (IsPathEnd(BaseNode(0))) return false;
+  if (IsPathEnd(BaseNode(1))) return false;
+  if (is_first_node_[BaseNode(0)]) {
+    return RelocateSubTripFromPickup(BaseNode(0), BaseNode(1));
+  } else if (is_second_node_[BaseNode(0)]) {
+    return RelocateSubTripFromDelivery(BaseNode(0), BaseNode(1));
+  } else {
+    return false;
+  }
 }
 
 }  // namespace operations_research

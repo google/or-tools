@@ -61,7 +61,8 @@ class DimensionCumulOptimizerCore {
   // Sets the constraints for all nodes on "vehicle"'s route according to
   // "next_accessor". If optimize_costs is true, also sets the objective
   // coefficients for the LP.
-  void SetRouteCumulConstraints(
+  // Returns false if some infeasibility was detected, true otherwise.
+  bool SetRouteCumulConstraints(
       int vehicle, const std::function<int64(int64)>& next_accessor,
       int64 cumul_offset, bool optimize_costs,
       glop::LinearProgram* linear_program, int64* route_transit_cost,

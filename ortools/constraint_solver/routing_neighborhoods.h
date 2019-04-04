@@ -502,9 +502,17 @@ bool PairNodeSwapActiveOperator<swap_first>::MakeNeighbor() {
   }
 }
 
-// Tries to move subtrips to other parts of paths.
-// A subtrip is a minimal subpath that splits no pickup and delivery pair.
-class RelocateSubtrip : public PathOperator {
+// Tries to move subtrips after an insertion node.
+// A subtrip is a subsequence that contains only matched pickup and delivery
+// nodes, or pickup-only nodes, i.e. it cannot contain a pickup without a
+// corresponding delivery or vice-versa.
+// For a given subtrip given by path indices i_1 ... i_k, we call 'rejected' the
+// nodes with indices i_1 < j < i_k that are not in the subtrip.
+// If the base_node is a pickup, this operator selects the smallest subtrip
+// starting at base_node such that rejected nodes are only deliveries.
+// If the base_node is a delivery, it selects the smallest subtrip ending at
+// base_node such that rejected nodes are only pickups.
+class RelocateSubtrip : public PathWithPreviousNodesOperator {
  public:
   RelocateSubtrip(const std::vector<IntVar*>& vars,
                   const std::vector<IntVar*>& secondary_vars,
@@ -515,12 +523,20 @@ class RelocateSubtrip : public PathOperator {
   bool MakeNeighbor() override;
 
  private:
+  // Relocates the subtrip starting at chain_first_node. It must be a pickup.
+  bool RelocateSubTripFromPickup(int64 chain_first_node, int64 insertion_node);
+  // Relocates the subtrip ending at chain_first_node. It must be a delivery.
+  bool RelocateSubTripFromDelivery(int64 chain_last_node, int64 insertion_node);
   std::vector<bool> is_first_node_;
   std::vector<bool> is_second_node_;
   std::vector<int> pair_of_node_;
-  std::vector<bool> opened_pairs_set_;
-  static const int kSubtripStart = 0;
-  static const int kNodeToInsertAfter = 1;
+  // Represents the set of pairs that have been opened during a call to
+  // MakeNeighbor(). This vector must be all false before and after calling
+  // RelocateSubTripFromPickup() and RelocateSubTripFromDelivery().
+  std::vector<bool> opened_pairs_bitset_;
+
+  std::vector<int64> rejected_nodes_;
+  std::vector<int64> subtrip_nodes_;
 };
 
 }  // namespace operations_research

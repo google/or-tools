@@ -12,9 +12,12 @@
 // limitations under the License.
 
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
+#include <numeric>
 
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/glop/lp_solver.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 
@@ -99,11 +102,11 @@ bool DimensionCumulOptimizerCore::OptimizeSingleRoute(
   const int64 cumul_offset =
       dimension_->GetLocalOptimizerOffsetForVehicle(vehicle);
   int64 cost_offset = 0;
-  SetRouteCumulConstraints(
-      vehicle, next_accessor, cumul_offset,
-      /*optimize_cost*/ cumul_values != nullptr || cost != nullptr,
-      linear_program, transit_cost, &cost_offset);
-  if (!FinalizeAndSolve(linear_program, lp_solver)) {
+  if (!SetRouteCumulConstraints(
+          vehicle, next_accessor, cumul_offset,
+          /*optimize_cost*/ cumul_values != nullptr || cost != nullptr,
+          linear_program, transit_cost, &cost_offset) ||
+      !FinalizeAndSolve(linear_program, lp_solver)) {
     return false;
   }
 
@@ -133,9 +136,12 @@ bool DimensionCumulOptimizerCore::Optimize(
   for (int vehicle = 0; vehicle < dimension()->model()->vehicles(); vehicle++) {
     int64 route_transit_cost = 0;
     int64 route_cost_offset = 0;
-    SetRouteCumulConstraints(vehicle, next_accessor, cumul_offset,
-                             optimize_costs, linear_program,
-                             &route_transit_cost, &route_cost_offset);
+    if (!SetRouteCumulConstraints(vehicle, next_accessor, cumul_offset,
+                                  optimize_costs, linear_program,
+                                  &route_transit_cost, &route_cost_offset)) {
+      return false;
+    }
+
     total_transit_cost = CapAdd(total_transit_cost, route_transit_cost);
     total_cost_offset = CapAdd(total_cost_offset, route_cost_offset);
   }
@@ -169,9 +175,11 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
 
   const int64 cumul_offset = dimension_->GetGlobalOptimizerOffset();
   for (int vehicle = 0; vehicle < dimension()->model()->vehicles(); vehicle++) {
-    SetRouteCumulConstraints(vehicle, next_accessor, cumul_offset,
-                             /*optimize_costs*/ true, linear_program, nullptr,
-                             nullptr);
+    if (!SetRouteCumulConstraints(vehicle, next_accessor, cumul_offset,
+                                  /*optimize_costs*/ true, linear_program,
+                                  nullptr, nullptr)) {
+      return false;
+    }
   }
   SetGlobalConstraints(/*optimize_costs*/ true, linear_program);
 
@@ -240,182 +248,222 @@ void DimensionCumulOptimizerCore::InitOptimizer(
   min_start_cumul_ = linear_program->CreateNewVariable();
 }
 
-void DimensionCumulOptimizerCore::SetRouteCumulConstraints(
+bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     int vehicle, const std::function<int64(int64)>& next_accessor,
     int64 cumul_offset, bool optimize_costs,
     glop::LinearProgram* linear_program, int64* route_transit_cost,
     int64* route_cost_offset) {
-  current_route_cumul_variables_.clear();
-  std::vector<glop::ColIndex> slacks;
-  int64 fixed_transit = 0;
-  int64 total_fixed_transit = 0;
-  if (route_cost_offset != nullptr) {
-    *route_cost_offset = 0;
-  }
-
-  const std::function<int64(int64, int64)>& transit_accessor =
-      dimension_->transit_evaluator(vehicle);
-
   RoutingModel* const model = dimension_->model();
-  std::vector<int64> visited_pickup_index_for_pair;
-  const bool dimension_has_pickup_delivery_limits =
-      dimension_->HasPickupToDeliveryLimits();
-  if (dimension_has_pickup_delivery_limits) {
-    visited_pickup_index_for_pair.resize(
-        model->GetPickupAndDeliveryPairs().size(), -1);
+  // Extract the vehicle's path from next_accessor.
+  std::vector<int64> path;
+  {
+    int node = model->Start(vehicle);
+    path.push_back(node);
+    while (!model->IsEnd(node)) {
+      node = next_accessor(node);
+      path.push_back(node);
+    }
+    DCHECK_GE(path.size(), 2);
+  }
+  const int path_size = path.size();
+  // Extract cumul min/max and fixed transits from CP.
+  std::vector<int64> cumul_min(path_size);
+  std::vector<int64> cumul_max(path_size);
+  for (int pos = 0; pos < path_size; ++pos) {
+    const IntVar* cumul = dimension_->CumulVar(path[pos]);
+    cumul_min[pos] = cumul->Min();
+    cumul_min[pos] = std::max<int64>(0, CapSub(cumul_min[pos], cumul_offset));
+    cumul_max[pos] = cumul->Max();
+    cumul_max[pos] =
+        (cumul_max[pos] == kint64max)
+            ? kint64max
+            : std::max<int64>(0, CapSub(cumul_max[pos], cumul_offset));
+  }
+  std::vector<int64> fixed_transit(path_size - 1);
+  {
+    const std::function<int64(int64, int64)>& transit_accessor =
+        dimension_->transit_evaluator(vehicle);
+    for (int pos = 1; pos < path_size; ++pos) {
+      fixed_transit[pos - 1] = transit_accessor(path[pos - 1], path[pos]);
+    }
+  }
+  // Refine cumul bounds using cumul[i] + fixed_transit[i] <= cumul[i+1].
+  for (int pos = 1; pos < path_size; ++pos) {
+    cumul_min[pos] = std::max(
+        cumul_min[pos], CapAdd(cumul_min[pos - 1], fixed_transit[pos - 1]));
+  }
+  for (int pos = path_size - 2; pos >= 0; --pos) {
+    // If cumul_max[pos+1] is kint64max, it will be translated to
+    // double +infinity, so it must not constrain cumul_max[pos].
+    if (cumul_max[pos + 1] < kint64max) {
+      cumul_max[pos] = std::min(cumul_max[pos],
+                                CapSub(cumul_max[pos + 1], fixed_transit[pos]));
+    }
   }
 
-  int current = model->Start(vehicle);
-  while (true) {
-    const glop::ColIndex cumul = linear_program->CreateNewVariable();
-    index_to_cumul_variable_[current] = cumul;
-    IntVar* const cp_cumul = dimension_->CumulVar(current);
+  // LP Model variables, current_route_cumul_variables_ and lp_slacks.
+  // Create LP variables for cumuls.
+  std::vector<glop::ColIndex>& lp_cumuls = current_route_cumul_variables_;
+  lp_cumuls.assign(path_size, glop::kInvalidCol);
+  for (int pos = 0; pos < path_size; ++pos) {
+    const glop::ColIndex lp_cumul = linear_program->CreateNewVariable();
+    index_to_cumul_variable_[path[pos]] = lp_cumul;
+    lp_cumuls[pos] = lp_cumul;
+    const double lp_cumul_min = cumul_min[pos];
+    const double lp_cumul_max =
+        (cumul_max[pos] == kint64max) ? glop::kInfinity : cumul_max[pos];
+    if (lp_cumul_min <= lp_cumul_max) {
+      linear_program->SetVariableBounds(lp_cumul, lp_cumul_min, lp_cumul_max);
+    } else {
+      // The linear_program would not be feasible, and it cannot handle the
+      // lp_cumul_min > lp_cumul_max case, so we must detect infeasibility here.
+      return false;
+    }
+  }
+  // Create LP variables for slacks.
+  std::vector<glop::ColIndex> lp_slacks(path_size - 1, glop::kInvalidCol);
+  for (int pos = 0; pos < path_size - 1; ++pos) {
+    const IntVar* cp_slack = dimension_->SlackVar(path[pos]);
+    const double lp_slack_max =
+        (cp_slack->Max() == kint64max) ? glop::kInfinity : cp_slack->Max();
+    lp_slacks[pos] = linear_program->CreateNewVariable();
+    linear_program->SetVariableBounds(lp_slacks[pos], cp_slack->Min(),
+                                      lp_slack_max);
+  }
 
-    // Handle potential precision errors due to infinite upper bound.
-    const double cumul_max =
-        (cp_cumul->Max() == kint64max)
-            ? glop::kInfinity
-            : std::max(Zero(), CapSub(cp_cumul->Max(), cumul_offset));
-    const double cumul_min =
-        std::max(Zero(), CapSub(cp_cumul->Min(), cumul_offset));
-    linear_program->SetVariableBounds(cumul, cumul_min, cumul_max);
-
-    if (optimize_costs && dimension_->HasCumulVarSoftUpperBound(current) &&
-        dimension_->GetCumulVarSoftUpperBoundCoefficient(current) > 0) {
-      // cumul - bound <= soft_ub_cost
-      int64 bound = dimension_->GetCumulVarSoftUpperBound(current);
+  // LP Model constraints and costs.
+  // Add all path constraints to LP:
+  // cumul[i] + fixed_transit[i] + slack[i] == cumul[i+1]
+  // <=> fixed_transit[i] == cumul[i+1] - cumul[i] - slack[i].
+  for (int pos = 0; pos < path_size - 1; ++pos) {
+    const glop::RowIndex ct = linear_program->CreateNewConstraint();
+    linear_program->SetConstraintBounds(ct, fixed_transit[pos],
+                                        fixed_transit[pos]);
+    linear_program->SetCoefficient(ct, lp_cumuls[pos + 1], 1);
+    linear_program->SetCoefficient(ct, lp_cumuls[pos], -1);
+    linear_program->SetCoefficient(ct, lp_slacks[pos], -1);
+  }
+  if (route_cost_offset != nullptr) *route_cost_offset = 0;
+  if (optimize_costs) {
+    // Add soft upper bounds.
+    for (int pos = 0; pos < path_size; ++pos) {
+      if (!dimension_->HasCumulVarSoftUpperBound(path[pos])) continue;
       const int64 coef =
-          dimension_->GetCumulVarSoftUpperBoundCoefficient(current);
+          dimension_->GetCumulVarSoftUpperBoundCoefficient(path[pos]);
+      if (coef == 0) continue;
+      int64 bound = dimension_->GetCumulVarSoftUpperBound(path[pos]);
       if (bound < cumul_offset && route_cost_offset != nullptr) {
         // Add coef * (cumul_offset - bound) to the cost offset.
         *route_cost_offset = CapAdd(*route_cost_offset,
                                     CapProd(CapSub(cumul_offset, bound), coef));
       }
-      bound = std::max(Zero(), CapSub(bound, cumul_offset));
-      glop::ColIndex soft_ub_cost = linear_program->CreateNewVariable();
-      glop::RowIndex ct = linear_program->CreateNewConstraint();
+      bound = std::max<int64>(0, CapSub(bound, cumul_offset));
+      if (cumul_max[pos] <= bound) continue;  // constraint is never violated.
+      const glop::ColIndex soft_ub_diff = linear_program->CreateNewVariable();
+      linear_program->SetObjectiveCoefficient(soft_ub_diff, coef);
+      // cumul - soft_ub_diff <= bound.
+      const glop::RowIndex ct = linear_program->CreateNewConstraint();
       linear_program->SetConstraintBounds(ct, -glop::kInfinity, bound);
-      linear_program->SetCoefficient(ct, cumul, 1);
-      linear_program->SetCoefficient(ct, soft_ub_cost, -1);
-      linear_program->SetObjectiveCoefficient(soft_ub_cost, coef);
+      linear_program->SetCoefficient(ct, lp_cumuls[pos], 1);
+      linear_program->SetCoefficient(ct, soft_ub_diff, -1);
     }
-    if (optimize_costs && dimension_->HasCumulVarSoftLowerBound(current) &&
-        dimension_->GetCumulVarSoftLowerBoundCoefficient(current) > 0) {
-      // bound - cumul <= soft_lb_cost
-      const int64 bound = std::max(
-          Zero(),
-          CapSub(dimension_->GetCumulVarSoftLowerBound(current), cumul_offset));
+    // Add soft lower bounds.
+    for (int pos = 0; pos < path_size; ++pos) {
+      if (!dimension_->HasCumulVarSoftLowerBound(path[pos])) continue;
       const int64 coef =
-          dimension_->GetCumulVarSoftLowerBoundCoefficient(current);
-      glop::ColIndex soft_lb_cost = linear_program->CreateNewVariable();
-      glop::RowIndex ct = linear_program->CreateNewConstraint();
+          dimension_->GetCumulVarSoftLowerBoundCoefficient(path[pos]);
+      if (coef == 0) continue;
+      const int64 bound = std::max<int64>(
+          0, CapSub(dimension_->GetCumulVarSoftLowerBound(path[pos]),
+                    cumul_offset));
+      if (cumul_min[pos] >= bound) continue;  // constraint is never violated.
+      const glop::ColIndex soft_lb_diff = linear_program->CreateNewVariable();
+      linear_program->SetObjectiveCoefficient(soft_lb_diff, coef);
+      // bound - cumul <= soft_lb_diff
+      const glop::RowIndex ct = linear_program->CreateNewConstraint();
       linear_program->SetConstraintBounds(ct, bound, glop::kInfinity);
-      linear_program->SetCoefficient(ct, cumul, 1);
-      linear_program->SetCoefficient(ct, soft_lb_cost, 1);
-      linear_program->SetObjectiveCoefficient(soft_lb_cost, coef);
-    }
-    if (!slacks.empty()) {
-      // cumul = prev_cumul + prev_slack + transit
-      glop::RowIndex ct = linear_program->CreateNewConstraint();
-      linear_program->SetConstraintBounds(ct, fixed_transit, fixed_transit);
-      linear_program->SetCoefficient(ct, cumul, 1);
-      linear_program->SetCoefficient(ct, current_route_cumul_variables_.back(),
-                                     -1);
-      linear_program->SetCoefficient(ct, slacks.back(), -1);
-    }
-    current_route_cumul_variables_.push_back(cumul);
-    if (!model->IsEnd(current)) {
-      IntVar* const cp_slack = dimension_->SlackVar(current);
-      glop::ColIndex slack = linear_program->CreateNewVariable();
-      // Handle potential precision errors due to infinite upper bound.
-      const double slack_max =
-          (cp_slack->Max() == kint64max) ? glop::kInfinity : cp_slack->Max();
-      linear_program->SetVariableBounds(slack, cp_slack->Min(), slack_max);
-      slacks.push_back(slack);
-
-      if (dimension_has_pickup_delivery_limits) {
-        const std::vector<std::pair<int, int>>& pickup_index_pairs =
-            model->GetPickupIndexPairs(current);
-        const std::vector<std::pair<int, int>>& delivery_index_pairs =
-            model->GetDeliveryIndexPairs(current);
-        if (!pickup_index_pairs.empty()) {
-          // The current node is a pickup. We verify that it belongs to a single
-          // pickup index pair and that it's not a delivery, and store the
-          // index.
-          DCHECK(delivery_index_pairs.empty());
-          DCHECK_EQ(pickup_index_pairs.size(), 1);
-          visited_pickup_index_for_pair[pickup_index_pairs[0].first] = current;
-        } else if (!delivery_index_pairs.empty()) {
-          // The node is a delivery. We verify that it belongs to a single
-          // delivery pair, and set the limit with its pickup if one has been
-          // visited for this pair.
-          DCHECK_EQ(delivery_index_pairs.size(), 1);
-          const int pair_index = delivery_index_pairs[0].first;
-          const int64 pickup_index = visited_pickup_index_for_pair[pair_index];
-          if (pickup_index >= 0) {
-            const int64 limit = dimension_->GetPickupToDeliveryLimitForPair(
-                pair_index, model->GetPickupIndexPairs(pickup_index)[0].second,
-                delivery_index_pairs[0].second);
-            if (limit < kint64max) {
-              // delivery_cumul - pickup_cumul <= limit.
-              glop::RowIndex ct = linear_program->CreateNewConstraint();
-              linear_program->SetConstraintBounds(ct, -glop::kInfinity, limit);
-              linear_program->SetCoefficient(ct, cumul, 1);
-              linear_program->SetCoefficient(
-                  ct, index_to_cumul_variable_[pickup_index], -1);
-            }
-          }
-        }
-      }
-      const int64 next_current = next_accessor(current);
-      fixed_transit = transit_accessor(current, next_current);
-      total_fixed_transit = CapAdd(total_fixed_transit, fixed_transit);
-      current = next_current;
-    } else {
-      break;
+      linear_program->SetCoefficient(ct, lp_cumuls[pos], 1);
+      linear_program->SetCoefficient(ct, soft_lb_diff, 1);
     }
   }
-  DCHECK_GE(current_route_cumul_variables_.size(), 2);
-
+  // Add pickup and delivery limits.
+  if (dimension_->HasPickupToDeliveryLimits()) {
+    // TODO(user): visited_pickup_index_for_pair is typically larger than
+    // paths, there should be some gain in maintaining it to 'all -1'
+    // instead of allocating/assigning a new vector at each call.
+    std::vector<int64> visited_pickup_index_for_pair(
+        model->GetPickupAndDeliveryPairs().size(), -1);
+    for (int pos = 0; pos < path_size - 1; ++pos) {
+      const std::vector<std::pair<int, int>>& pickup_index_pairs =
+          model->GetPickupIndexPairs(path[pos]);
+      const std::vector<std::pair<int, int>>& delivery_index_pairs =
+          model->GetDeliveryIndexPairs(path[pos]);
+      if (!pickup_index_pairs.empty()) {
+        // The current node is a pickup. We verify that it belongs to a single
+        // pickup index pair and that it's not a delivery, and store the index.
+        DCHECK(delivery_index_pairs.empty());
+        DCHECK_EQ(pickup_index_pairs.size(), 1);
+        visited_pickup_index_for_pair[pickup_index_pairs[0].first] = path[pos];
+      } else if (!delivery_index_pairs.empty()) {
+        // The node is a delivery. We verify that it belongs to a single
+        // delivery pair, and set the limit with its pickup if one has been
+        // visited for this pair.
+        DCHECK_EQ(delivery_index_pairs.size(), 1);
+        const int pair_index = delivery_index_pairs[0].first;
+        const int64 pickup_index = visited_pickup_index_for_pair[pair_index];
+        if (pickup_index < 0) continue;
+        const int64 limit = dimension_->GetPickupToDeliveryLimitForPair(
+            pair_index, model->GetPickupIndexPairs(pickup_index)[0].second,
+            delivery_index_pairs[0].second);
+        if (limit < kint64max) {
+          // delivery_cumul - pickup_cumul <= limit.
+          glop::RowIndex ct = linear_program->CreateNewConstraint();
+          linear_program->SetConstraintBounds(ct, -glop::kInfinity, limit);
+          linear_program->SetCoefficient(ct, lp_cumuls[pos], 1);
+          linear_program->SetCoefficient(
+              ct, index_to_cumul_variable_[pickup_index], -1);
+        }
+      }
+    }
+  }
+  // Add span bound constraint.
   const int64 span_bound = dimension_->GetSpanUpperBoundForVehicle(vehicle);
   if (span_bound < kint64max) {
     // end_cumul - start_cumul <= bound
     glop::RowIndex ct = linear_program->CreateNewConstraint();
     linear_program->SetConstraintBounds(ct, -glop::kInfinity, span_bound);
-    linear_program->SetCoefficient(ct, current_route_cumul_variables_.back(),
-                                   1);
-    linear_program->SetCoefficient(ct, current_route_cumul_variables_.front(),
-                                   -1);
+    linear_program->SetCoefficient(ct, lp_cumuls.back(), 1);
+    linear_program->SetCoefficient(ct, lp_cumuls.front(), -1);
   }
-  const int64 span_cost = dimension_->GetSpanCostCoefficientForVehicle(vehicle);
-  if (optimize_costs && span_cost > 0) {
-    linear_program->SetObjectiveCoefficient(
-        current_route_cumul_variables_.back(), span_cost);
-    linear_program->SetObjectiveCoefficient(
-        current_route_cumul_variables_.front(), -span_cost);
+  // Add span cost.
+  const int64 span_cost_coef =
+      dimension_->GetSpanCostCoefficientForVehicle(vehicle);
+  if (optimize_costs && span_cost_coef > 0) {
+    linear_program->SetObjectiveCoefficient(lp_cumuls.back(), span_cost_coef);
+    linear_program->SetObjectiveCoefficient(lp_cumuls.front(), -span_cost_coef);
   }
   if (optimize_costs && dimension_->global_span_cost_coefficient() > 0) {
     // min_start_cumul_ <= cumuls[start]
     glop::RowIndex ct = linear_program->CreateNewConstraint();
     linear_program->SetConstraintBounds(ct, -glop::kInfinity, 0);
     linear_program->SetCoefficient(ct, min_start_cumul_, 1);
-    linear_program->SetCoefficient(ct, current_route_cumul_variables_.front(),
-                                   -1);
-
+    linear_program->SetCoefficient(ct, lp_cumuls.front(), -1);
     // max_end_cumul_ >= cumuls[end]
     ct = linear_program->CreateNewConstraint();
     linear_program->SetConstraintBounds(ct, 0, glop::kInfinity);
     linear_program->SetCoefficient(ct, max_end_cumul_, 1);
-    linear_program->SetCoefficient(ct, current_route_cumul_variables_.back(),
-                                   -1);
+    linear_program->SetCoefficient(ct, lp_cumuls.back(), -1);
   }
   if (route_transit_cost != nullptr) {
-    if (span_cost > 0) {
-      *route_transit_cost = CapProd(total_fixed_transit, span_cost);
+    if (span_cost_coef > 0) {
+      const int64 total_fixed_transit = std::accumulate(
+          fixed_transit.begin(), fixed_transit.end(), 0, CapAdd);
+      *route_transit_cost = CapProd(total_fixed_transit, span_cost_coef);
     } else {
       *route_transit_cost = 0;
     }
   }
+  return true;
 }
 
 void DimensionCumulOptimizerCore::SetGlobalConstraints(
