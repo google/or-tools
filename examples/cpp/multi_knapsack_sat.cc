@@ -12,21 +12,22 @@
 // limitations under the License.
 
 // Solve a scaled constrained two dimensional knapsack problem.
-// Each bin must be filled with items with min and max weights, and min and max volumes.
-// As is a knapsack, the objective is to maximize total value.
+// Each bin must be filled with items with min and max weights, and min and max
+// volumes. As is a knapsack, the objective is to maximize total value. It turns
+// out that the objective is to maximize weights.
 //
-// Data is for 1 bin and 10 items. Scaling is done my having m bins and m copies of each items.
+// Data is for 1 bin and 10 items. Scaling is done my having m bins and m copies
+// of each items.
 
-#include <string>
 #include <vector>
 
-#include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
-#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 DEFINE_int32(size, 16, "scaling factor of the model");
-DEFINE_string(params, "", "Sat paramters");
+DEFINE_string(params, "", "Sat parameters");
 
 namespace operations_research {
 namespace sat {
@@ -36,10 +37,11 @@ static const int kWeightMax = 22000;
 static const int kVolumeMin = 1156;
 static const int kVolumeMax = 1600;
 
-// data for a single bin problem
+// Data for a single bin problem
 static const int kItemsWeights[] = {1008, 2087, 5522, 5250,  5720,
                                     4998, 275,  3145, 12580, 382};
-static const int kItemsVolumes[] = {281, 307, 206, 111, 275, 79, 23, 65, 261, 40};
+static const int kItemsVolumes[] = {281, 307, 206, 111, 275,
+                                    79,  23,  65,  261, 40};
 static const int kNumItems = 10;
 
 void MultiKnapsackSat(int scaling, const std::string& params) {
@@ -74,43 +76,41 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   for (int b = 0; b < num_bins; ++b) {
     IntVar bin_weight = builder.NewIntVar({kWeightMin, kWeightMax});
     bin_weights.push_back(bin_weight);
-    builder.AddEquality(
-        LinearExpr::BooleanScalProd(items_in_bins[b], weights), bin_weight);
+    builder.AddEquality(LinearExpr::BooleanScalProd(items_in_bins[b], weights),
+                        bin_weight);
     builder.AddLinearConstraint(
         LinearExpr::BooleanScalProd(items_in_bins[b], volumes),
         {kVolumeMin, kVolumeMax});
   }
 
-  // Each is selected at most one time.
+  // Each item is selected at most one time.
   for (int i = 0; i < num_items; ++i) {
-    std::vector<BoolVar>  copies(num_bins);
+    std::vector<BoolVar> bin_contain_item(num_bins);
     for (int b = 0; b < num_bins; ++b) {
-      copies[b] = items_in_bins[b][i];
+      bin_contain_item[b] = items_in_bins[b][i];
     }
-    builder.AddEquality(LinearExpr::BooleanSum(copies), selected_items[i]);
+    builder.AddEquality(LinearExpr::BooleanSum(bin_contain_item),
+                        selected_items[i]);
   }
 
-  // Symmetry breaking. Weights are decreasing accross bins.
-  // for (int b = 0; b + 1 < num_bins; ++b) {
-  //   builder.AddGreaterOrEqual(bin_weights[b], bin_weights[b + 1]);
-  // }
-
-  // Maximize value.
+  // Maximize the sums of weights.
   builder.Maximize(LinearExpr::Sum(bin_weights));
 
   // And solve.
-  Model model;
-  if (!params.empty()) {
-    model.Add(NewSatParameters(params));
-  }
-  const CpSolverResponse response = SolveWithModel(builder.Build(), &model);
+  SatParameters sat_parameters;
+  sat_parameters.set_log_search_progress(true);
+  sat_parameters.MergeFromString(params);
+  const CpSolverResponse response =
+      SolveWithParameters(builder.Build(), params);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
+  absl::SetFlag(&FLAGS_logtostderr, true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::sat::MultiKnapsackSat(FLAGS_size, FLAGS_params);
   return EXIT_SUCCESS;
