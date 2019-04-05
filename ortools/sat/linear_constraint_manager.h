@@ -39,7 +39,9 @@ namespace sat {
 // which constraint should go into the current LP.
 class LinearConstraintManager {
  public:
-  LinearConstraintManager() {}
+  explicit LinearConstraintManager(Model* model)
+      : sat_parameters_(*model->GetOrCreate<SatParameters>()),
+        integer_trail_(*model->GetOrCreate<IntegerTrail>()) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -75,18 +77,40 @@ class LinearConstraintManager {
     return lp_constraints_;
   }
 
-  void SetParameters(const SatParameters& params) { sat_parameters_ = params; }
-
   int num_cuts() const { return num_cuts_; }
+  int64 num_shortened_constraints() const { return num_shortened_constraints_; }
+  int64 num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
+
+  // Visible for testing.
+  //
+  // Apply basic inprocessing simplification rules:
+  //  - remove fixed variable
+  //  - reduce large coefficient (i.e. coeff strenghtenning or big-M reduction).
+  // This uses level-zero bounds.
+  void SimplifyConstraint(ConstraintIndex index);
 
  private:
   // Removes the marked constraints from the LP.
   void RemoveMarkedConstraints();
 
-  SatParameters sat_parameters_;
+  // Important: before modifying a constraint in equiv_constraints_, one
+  // must call RemoveConstraintFromEquivTable() and when done, call
+  // NotifyConstraintChanged().
+  //
+  // TODO(user): That might be a bit slow and brittle. Redesign the equiv map
+  // so that we compare actual constraints (so we never merge different ones),
+  // and we don't need to keep duplicate of the constraints in memory.
+  void RemoveConstraintFromEquivTable(ConstraintIndex ct_index);
+  void NotifyConstraintChanged(ConstraintIndex ct_index);
+
+  const SatParameters& sat_parameters_;
+  const IntegerTrail& integer_trail_;
 
   // Set at true by Add() and at false by ChangeLp().
   bool some_lp_constraint_bounds_changed_ = false;
+
+  // Optimization to avoid calling SimplifyConstraint() when not needed.
+  int64 last_simplification_timestamp_ = -1;
 
   // TODO(user): Merge all the constraint related info in a struct and store
   // a vector of struct instead. The global list of constraint.
@@ -123,8 +147,12 @@ class LinearConstraintManager {
       return hash;
     }
   };
-  absl::flat_hash_map<Terms, int, TermsHash> equiv_constraints_;
+  absl::flat_hash_map<Terms, ConstraintIndex, TermsHash> equiv_constraints_;
+
   int64 num_merged_constraints_ = 0;
+  int64 num_shortened_constraints_ = 0;
+  int64 num_splitted_constraints_ = 0;
+  int64 num_coeff_strenghtening_ = 0;
 
   int num_cuts_ = 0;
   std::map<std::string, int> type_to_num_cuts_;

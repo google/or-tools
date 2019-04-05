@@ -57,6 +57,15 @@ LinearConstraintManager::~LinearConstraintManager() {
   if (num_merged_constraints_ > 0) {
     VLOG(2) << "num_merged_constraints: " << num_merged_constraints_;
   }
+  if (num_shortened_constraints_ > 0) {
+    VLOG(2) << "num_shortened_constraints: " << num_shortened_constraints_;
+  }
+  if (num_splitted_constraints_ > 0) {
+    VLOG(2) << "num_splitted_constraints: " << num_splitted_constraints_;
+  }
+  if (num_coeff_strenghtening_ > 0) {
+    VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
+  }
   for (const auto entry : type_to_num_cuts_) {
     VLOG(1) << "Added " << entry.second << " cuts of type '" << entry.first
             << "'.";
@@ -86,6 +95,7 @@ void LinearConstraintManager::RemoveMarkedConstraints() {
 // we regenerate identical cuts for some reason.
 //
 // TODO(user): Also compute GCD and divide by it.
+// TODO(user): Call SimplifyConstraint() too.
 void LinearConstraintManager::Add(const LinearConstraint& ct) {
   LinearConstraint canonicalized = ct;
   const Terms terms = CanonicalizeConstraintAndGetTerms(&canonicalized);
@@ -109,13 +119,28 @@ void LinearConstraintManager::Add(const LinearConstraint& ct) {
     ++num_merged_constraints_;
   } else {
     constraint_l2_norms_.push_back(ComputeL2Norm(canonicalized));
-    equiv_constraints_[terms] = constraints_.size();
+    equiv_constraints_[terms] = ConstraintIndex(constraints_.size());
     constraint_is_in_lp_.push_back(false);
     constraint_is_cut_.push_back(false);
     constraint_inactive_count_.push_back(0);
     constraint_permanently_removed_.push_back(false);
     constraints_.push_back(std::move(canonicalized));
   }
+}
+
+void LinearConstraintManager::RemoveConstraintFromEquivTable(
+    ConstraintIndex ct_index) {
+  const Terms terms =
+      CanonicalizeConstraintAndGetTerms(&constraints_[ct_index]);
+  equiv_constraints_.erase(terms);
+}
+
+void LinearConstraintManager::NotifyConstraintChanged(
+    ConstraintIndex ct_index) {
+  const Terms terms =
+      CanonicalizeConstraintAndGetTerms(&constraints_[ct_index]);
+  equiv_constraints_[terms] = ct_index;
+  constraint_l2_norms_[ct_index] = ComputeL2Norm(constraints_[ct_index]);
 }
 
 // Same as Add(), but logs some information about the newly added constraint.
@@ -144,6 +169,140 @@ void LinearConstraintManager::AddCut(
           << " violation=" << violation << " eff=" << violation / l2_norm;
 }
 
+void LinearConstraintManager::SimplifyConstraint(ConstraintIndex ct_index) {
+  LinearConstraint& ct = constraints_[ct_index];
+
+  IntegerValue min_sum(0);
+  IntegerValue max_sum(0);
+  IntegerValue max_magnitude(0);
+  int new_size = 0;
+  const int num_terms = ct.vars.size();
+  for (int i = 0; i < num_terms; ++i) {
+    const IntegerVariable var = ct.vars[i];
+    const IntegerValue coeff = ct.coeffs[i];
+    const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+    const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+
+    // For now we do not change ct, but just compute its new_size if we where
+    // to remove a fixed term.
+    if (lb == ub) continue;
+    ++new_size;
+
+    max_magnitude = std::max(max_magnitude, IntTypeAbs(coeff));
+    if (coeff > 0.0) {
+      min_sum += coeff * lb;
+      max_sum += coeff * ub;
+    } else {
+      min_sum += coeff * ub;
+      max_sum += coeff * lb;
+    }
+  }
+
+  // Shorten the constraint if needed.
+  if (new_size < num_terms) {
+    ++num_shortened_constraints_;
+    RemoveConstraintFromEquivTable(ct_index);
+
+    new_size = 0;
+    for (int i = 0; i < num_terms; ++i) {
+      const IntegerVariable var = ct.vars[i];
+      const IntegerValue coeff = ct.coeffs[i];
+      const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+      const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+      if (lb == ub) {
+        const IntegerValue rhs_adjust = lb * coeff;
+        if (ct.lb > kMinIntegerValue) ct.lb -= rhs_adjust;
+        if (ct.ub < kMaxIntegerValue) ct.ub -= rhs_adjust;
+        continue;
+      }
+      ct.vars[new_size] = var;
+      ct.coeffs[new_size] = coeff;
+      ++new_size;
+    }
+    ct.vars.resize(new_size);
+    ct.coeffs.resize(new_size);
+
+    NotifyConstraintChanged(ct_index);
+  }
+
+  // Relax the bound if needed, note that this doesn't require a change to
+  // the equiv map.
+  if (min_sum >= ct.lb) ct.lb = kMinIntegerValue;
+  if (max_sum <= ct.ub) ct.ub = kMaxIntegerValue;
+
+  // Clear constraints that are always true.
+  // We rely on the deletion code to remove them eventually.
+  if (ct.lb == kMinIntegerValue && ct.ub == kMaxIntegerValue) {
+    RemoveConstraintFromEquivTable(ct_index);
+    ct.vars.clear();
+    ct.coeffs.clear();
+    constraint_l2_norms_[ct_index] = 0.0;
+    return;
+  }
+
+  // TODO(user): Split constraint in two if it is boxed and there is possible
+  // reduction?
+  //
+  // TODO(user): Make sure there cannot be any overflow. They should't, but
+  // I am not sure all the generated cuts are safe regarding min/max sum
+  // computation. We should check this.
+  if (ct.ub != kMaxIntegerValue && max_magnitude > max_sum - ct.ub) {
+    if (ct.lb != kMinIntegerValue) {
+      ++num_splitted_constraints_;
+    } else {
+      ++num_coeff_strenghtening_;
+      RemoveConstraintFromEquivTable(ct_index);
+
+      const int num_terms = ct.vars.size();
+      const IntegerValue target = max_sum - ct.ub;
+      for (int i = 0; i < num_terms; ++i) {
+        const IntegerValue coeff = ct.coeffs[i];
+        if (coeff > target) {
+          const IntegerVariable var = ct.vars[i];
+          const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+          ct.coeffs[i] = target;
+          ct.ub -= (coeff - target) * ub;
+        } else if (coeff < -target) {
+          const IntegerVariable var = ct.vars[i];
+          const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+          ct.coeffs[i] = -target;
+          ct.ub += (-target - coeff) * lb;
+        }
+      }
+
+      NotifyConstraintChanged(ct_index);
+    }
+  }
+
+  if (ct.lb != kMinIntegerValue && max_magnitude > ct.lb - min_sum) {
+    if (ct.ub != kMaxIntegerValue) {
+      ++num_splitted_constraints_;
+    } else {
+      ++num_coeff_strenghtening_;
+      RemoveConstraintFromEquivTable(ct_index);
+
+      const int num_terms = ct.vars.size();
+      const IntegerValue target = ct.lb - min_sum;
+      for (int i = 0; i < num_terms; ++i) {
+        const IntegerValue coeff = ct.coeffs[i];
+        if (coeff > target) {
+          const IntegerVariable var = ct.vars[i];
+          const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+          ct.coeffs[i] = target;
+          ct.lb -= (coeff - target) * lb;
+        } else if (coeff < -target) {
+          const IntegerVariable var = ct.vars[i];
+          const IntegerValue ub = integer_trail_.LevelZeroUpperBound(var);
+          ct.coeffs[i] = -target;
+          ct.lb += (-target - coeff) * ub;
+        }
+      }
+
+      NotifyConstraintChanged(ct_index);
+    }
+  }
+}
+
 bool LinearConstraintManager::ChangeLp(
     const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
   const int old_num_constraints = lp_constraints_.size();
@@ -152,11 +311,18 @@ bool LinearConstraintManager::ChangeLp(
   std::vector<double> new_constraints_efficacies;
   std::vector<double> new_constraints_orthogonalities;
 
+  const bool simplify_constraints =
+      integer_trail_.num_level_zero_enqueues() > last_simplification_timestamp_;
+  last_simplification_timestamp_ = integer_trail_.num_level_zero_enqueues();
+
   // We keep any constraints that is already present, and otherwise, we add the
   // ones that are currently not satisfied by at least "tolerance".
   const double tolerance = 1e-6;
   for (ConstraintIndex i(0); i < constraints_.size(); ++i) {
     if (constraint_permanently_removed_[i]) continue;
+
+    // Inprocessing of the constraint.
+    if (simplify_constraints) SimplifyConstraint(i);
 
     // TODO(user,user): Use constraint status from GLOP for constraints
     // already in LP.
@@ -179,6 +345,7 @@ bool LinearConstraintManager::ChangeLp(
       new_constraints_orthogonalities.push_back(1.0);
     }
   }
+
   // Remove constraints in a batch to avoid changing the LP too frequently.
   if (constraints_removal_list_.size() >=
       sat_parameters_.constraint_removal_batch_size()) {

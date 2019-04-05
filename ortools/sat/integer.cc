@@ -1166,6 +1166,7 @@ bool IntegerTrail::EnqueueInternal(
 
   // Special case for level zero.
   if (integer_search_levels_.empty()) {
+    ++num_level_zero_enqueues_;
     vars_[i_lit.var].current_bound = i_lit.bound;
     integer_trail_[i_lit.var.value()].bound = i_lit.bound;
 

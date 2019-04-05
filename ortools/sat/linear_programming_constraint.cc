@@ -42,7 +42,8 @@ const double LinearProgrammingConstraint::kLpEpsilon = 1e-6;
 // TODO(user): make SatParameters singleton too, otherwise changing them after
 // a constraint was added will have no effect on this class.
 LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
-    : sat_parameters_(*(model->GetOrCreate<SatParameters>())),
+    : constraint_manager_(model),
+      sat_parameters_(*(model->GetOrCreate<SatParameters>())),
       model_(model),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -116,7 +117,6 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Fill integer_lp_.
   integer_lp_.clear();
   infinity_norms_.clear();
-  constraint_manager_.SetParameters(sat_parameters_);
   const auto& all_constraints = constraint_manager_.AllConstraints();
   for (const auto index : constraint_manager_.LpConstraints()) {
     const LinearConstraint& ct = all_constraints[index];
@@ -1168,9 +1168,12 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
 
   gtl::ITIVector<ColIndex, IntegerValue> reduced_costs;
   IntegerValue rc_ub;
-  CHECK(ComputeNewLinearConstraint(
-      /*use_constraint_status=*/false, integer_multipliers, &reduced_costs,
-      &rc_ub));
+  if (!ComputeNewLinearConstraint(
+          /*use_constraint_status=*/false, integer_multipliers, &reduced_costs,
+          &rc_ub)) {
+    VLOG(1) << "Issue while computing the exact LP reason. Aborting.";
+    return true;
+  }
 
   // The "objective constraint" behave like if the unscaled cp multiplier was
   // 1.0, so we will multiply it by this number and add it to reduced_costs.
@@ -1215,9 +1218,12 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
 
   gtl::ITIVector<ColIndex, IntegerValue> dense_new_constraint;
   IntegerValue new_constraint_ub;
-  CHECK(ComputeNewLinearConstraint(
-      /*use_constraint_status=*/false, integer_multipliers,
-      &dense_new_constraint, &new_constraint_ub));
+  if (!ComputeNewLinearConstraint(
+          /*use_constraint_status=*/false, integer_multipliers,
+          &dense_new_constraint, &new_constraint_ub)) {
+    VLOG(1) << "Isse while computing the exact dual ray reason. Aborting.";
+    return false;
+  }
 
   AdjustNewLinearConstraint(&integer_multipliers, &dense_new_constraint,
                             &new_constraint_ub);

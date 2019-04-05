@@ -1287,6 +1287,11 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
 // list.
 //
 // This operation is similar to coefficient strengthening in the MIP world.
+//
+// TODO(user): If the constraint is boxed, split it in two if enforcement
+// literals can be extracted this way. This would just be better for the CP
+// propagation, and for the LP it will improve the relaxation at the cost of
+// an extra row in the matrix, but this should still be better.
 void ExtractEnforcementLiteralFromLinearConstraint(ConstraintProto* ct,
                                                    PresolveContext* context) {
   if (context->ModelIsUnsat()) return;

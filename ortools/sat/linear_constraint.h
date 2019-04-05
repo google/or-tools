@@ -58,10 +58,11 @@ struct LinearConstraint {
     for (int i = 0; i < vars.size(); ++i) {
       const IntegerValue coeff =
           VariableIsPositive(vars[i]) ? coeffs[i] : -coeffs[i];
-      absl::StrAppend(&result, coeff.value(), "*X", vars[i].value() / 2, " ");
+      absl::StrAppend(&result, i > 0 ? " " : "", coeff.value(), "*X",
+                      vars[i].value() / 2);
     }
     if (ub.value() < kMaxIntegerValue) {
-      absl::StrAppend(&result, "<= ", ub.value());
+      absl::StrAppend(&result, " <= ", ub.value());
     }
     return result;
   }

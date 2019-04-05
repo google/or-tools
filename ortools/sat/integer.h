@@ -692,6 +692,9 @@ class IntegerTrail : public SatPropagator {
   // doesn't change since we directly update the "fixed" bounds.
   int64 num_enqueues() const { return num_enqueues_; }
 
+  // Same as num_enqueues but only count the level zero changes.
+  int64 num_level_zero_enqueues() const { return num_level_zero_enqueues_; }
+
   // All the registered bitsets will be set to one each time a LbVar is
   // modified. It is up to the client to clear it if it wants to be notified
   // with the newly modified variables.
@@ -907,6 +910,7 @@ class IntegerTrail : public SatPropagator {
   std::vector<int> boolean_trail_index_to_integer_one_;
 
   int64 num_enqueues_ = 0;
+  int64 num_level_zero_enqueues_ = 0;
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
