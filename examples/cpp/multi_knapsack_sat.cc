@@ -37,8 +37,8 @@ static const int kVolumeMin = 1156;
 static const int kVolumeMax = 1600;
 
 // data for a single bin problem
-static const int kItemsValues[] = {1008, 2087, 5522, 5250, 5720, 4998, 275, 3145, 12580, 382};
-static const int kItemsWeights[] = {1008, 2087, 5522, 5250, 5720, 4998, 275, 3145, 12580, 382};
+static const int kItemsWeights[] = {1008, 2087, 5522, 5250,  5720,
+                                    4998, 275,  3145, 12580, 382};
 static const int kItemsVolumes[] = {281, 307, 206, 111, 275, 79, 23, 65, 261, 40};
 static const int kNumItems = 10;
 
@@ -61,21 +61,21 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   }
 
   // Fill up scaled values, weights, volumes;
-  std::vector<int64> values(num_items);
   std::vector<int64> weights(num_items);
   std::vector<int64> volumes(num_items);
   for (int i = 0; i < num_items; ++i) {
     const int index = i % kNumItems;
-    values[i] = kItemsValues[index];
     weights[i] = kItemsWeights[index];
     volumes[i] = kItemsVolumes[index];
   }
 
   // Constraints per bins.
+  std::vector<IntVar> bin_weights;
   for (int b = 0; b < num_bins; ++b) {
-    builder.AddLinearConstraint(
-        LinearExpr::BooleanScalProd(items_in_bins[b], weights),
-        {kWeightMin, kWeightMax});
+    IntVar bin_weight = builder.NewIntVar({kWeightMin, kWeightMax});
+    bin_weights.push_back(bin_weight);
+    builder.AddEquality(
+        LinearExpr::BooleanScalProd(items_in_bins[b], weights), bin_weight);
     builder.AddLinearConstraint(
         LinearExpr::BooleanScalProd(items_in_bins[b], volumes),
         {kVolumeMin, kVolumeMax});
@@ -90,16 +90,21 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
     builder.AddEquality(LinearExpr::BooleanSum(copies), selected_items[i]);
   }
 
+  // Symmetry breaking. Weights are decreasing accross bins.
+  // for (int b = 0; b + 1 < num_bins; ++b) {
+  //   builder.AddGreaterOrEqual(bin_weights[b], bin_weights[b + 1]);
+  // }
+
   // Maximize value.
-  builder.Maximize(LinearExpr::BooleanScalProd(selected_items, values));
+  builder.Maximize(LinearExpr::Sum(bin_weights));
 
   // And solve.
   Model model;
   if (!params.empty()) {
     model.Add(NewSatParameters(params));
   }
-  const CpSolverResponse response = SolveWithModel(builder, &model);
-  LOG(INFO) << CpSolverResponseStats(response);  
+  const CpSolverResponse response = SolveWithModel(builder.Build(), &model);
+  LOG(INFO) << CpSolverResponseStats(response);
 }
 
 }  // namespace sat

@@ -81,7 +81,7 @@ void SolveWithTimeLimitSampleSat() {
   model.Add(NewSatParameters(parameters));
 
   // Solve.
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
@@ -281,7 +281,7 @@ void SolveAndPrintIntermediateSolutionsSampleSat() {
     num_solutions++;
   }));
 
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
 
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
@@ -533,7 +533,7 @@ void SearchAllSolutionsSampleSat() {
   SatParameters parameters;
   parameters.set_enumerate_all_solutions(true);
   model.Add(NewSatParameters(parameters));
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
 
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
@@ -787,7 +787,7 @@ void StopAfterNSolutionsSampleSat() {
       LOG(INFO) << "Stop search after " << kSolutionLimit << " solutions.";
     }
   }));
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
   CHECK_EQ(num_solutions, kSolutionLimit);
 }

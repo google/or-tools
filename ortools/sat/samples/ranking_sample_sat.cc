@@ -124,7 +124,7 @@ void RankingSampleSat() {
   cp_model.Minimize(objective);
 
   // Solving part.
-  const CpSolverResponse response = Solve(cp_model);
+  const CpSolverResponse response = Solve(cp_model.Build());
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::OPTIMAL) {

@@ -339,7 +339,7 @@ void Solve(const JsspInputProblem& problem) {
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
 
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   // Check cost, recompute it from scratch.

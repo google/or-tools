@@ -92,7 +92,7 @@ void GolombRuler(int size) {
         << FLAGS_params;
   }
   model.Add(NewSatParameters(parameters));
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
 
   if (response.status() == CpSolverStatus::OPTIMAL) {
     const int64 result = SolutionIntegerValue(response, ticks.back());

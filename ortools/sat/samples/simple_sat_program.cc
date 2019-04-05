@@ -35,7 +35,7 @@ void SimpleSatProgram() {
 
   // Solving part.
   // [START solve]
-  const CpSolverResponse response = Solve(cp_model);
+  const CpSolverResponse response = Solve(cp_model.Build());
   LOG(INFO) << CpSolverResponseStats(response);
   // [END solve]
 

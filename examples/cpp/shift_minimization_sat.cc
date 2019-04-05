@@ -294,7 +294,7 @@ void LoadAndSolve(const std::string& file_name) {
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
 
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 }  // namespace sat

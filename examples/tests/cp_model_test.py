@@ -559,6 +559,21 @@ class CpModelTest(object):
         self.assertEqual(4, solution_counter.solution_count())
 
 
+    def testSequentialSolve(self):
+        print('testSequentialSolve')
+        model = cp_model.CpModel()
+        t = model.NewBoolVar('t')
+        a = model.NewBoolVar('a')
+        b = model.NewBoolVar('b')
+        model.AddBoolAnd([a, b]).OnlyEnforceIf(t)
+        model.Add(t == 1).OnlyEnforceIf([a, b])
+
+        solver = cp_model.CpSolver()
+        status1 = solver.Solve(model)
+        status2 = solver.Solve(model)
+        self.assertEqual(status1, status2)
+
+
 if __name__ == '__main__':
     cp_model_test = CpModelTest()
     cp_model_test.testCreateIntegerVariable()
@@ -604,3 +619,4 @@ if __name__ == '__main__':
     cp_model_test.testDisplayBounds()
     cp_model_test.testIntegerExpressionErrors()
     cp_model_test.testLinearizedBoolAndEqual()
+    cp_model_test.testSequentialSolve()

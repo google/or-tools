@@ -207,7 +207,7 @@ void Solve(const std::vector<int64>& durations,
   }));
 
   // Solve.
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 

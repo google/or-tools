@@ -105,9 +105,21 @@ DEFINE_double(max_drat_time_in_seconds, std::numeric_limits<double>::infinity(),
 DEFINE_bool(cp_model_check_intermediate_solutions, false,
             "When true, all intermediate solutions found by the solver will be "
             "checked. This can be expensive, therefore it is off by default.");
+DECLARE_bool(log_prefix);
+DECLARE_bool(logtostderr);
 
 namespace operations_research {
 namespace sat {
+
+void FixFlagsAndEnvironmentForSwig() {
+  static bool initialized = false;
+  if (!initialized) {
+    google::InitGoogleLogging("swig_helper");
+    initialized = true;
+  }
+  FLAGS_logtostderr = true;
+  FLAGS_log_prefix = false;
+}
 
 namespace {
 
@@ -1216,12 +1228,15 @@ CpSolverResponse SolveCpModelInternal(
         external_solution_observer,
     SharedBoundsManager* shared_bounds_manager, WallTimer* wall_timer,
     Model* model) {
+  const bool log_search =
+      model->GetOrCreate<SatParameters>()->log_search_progress() ||
+      VLOG_IS_ON(1);
   const bool worker_is_in_parallel_search = model->Get<WorkerInfo>() != nullptr;
   const bool is_lns = model->GetOrCreate<SatParameters>()->use_lns();
 
-  if (!worker_is_in_parallel_search && is_real_solve && !is_lns) {
-    VLOG(1) << absl::StrFormat("*** starting to load the model at %.2fs",
-                               wall_timer->Get());
+  if (!worker_is_in_parallel_search && is_real_solve && !is_lns && log_search) {
+    LOG(INFO) << absl::StrFormat("*** starting to load the model at %.2fs",
+                                 wall_timer->Get());
   }
   // Initialize a default invalid response.
   CpSolverResponse response;
@@ -1475,7 +1490,7 @@ CpSolverResponse SolveCpModelInternal(
 
     // Watch improved objective best bounds in regular search, or core based
     // search. It should be disabled for LNS.
-    RegisterObjectiveBestBoundExport(model_proto, VLOG_IS_ON(1), objective_var,
+    RegisterObjectiveBestBoundExport(model_proto, log_search, objective_var,
                                      wall_timer, model);
   }
 
@@ -1495,9 +1510,9 @@ CpSolverResponse SolveCpModelInternal(
                                           model);
   }
 
-  if (!worker_is_in_parallel_search && is_real_solve && !is_lns) {
-    VLOG(1) << absl::StrFormat("*** starting sequential search at %.2fs",
-                               wall_timer->Get());
+  if (!worker_is_in_parallel_search && is_real_solve && !is_lns && log_search) {
+    LOG(INFO) << absl::StrFormat("*** starting sequential search at %.2fs",
+                                 wall_timer->Get());
   }
 
   // Load solution hint.
@@ -2248,6 +2263,9 @@ CpSolverResponse SolveCpModelParallel(
   absl::Notification first_solution_found_or_search_finished;
 
   const int num_search_workers = params.num_search_workers();
+  const bool log_search =
+      model->GetOrCreate<SatParameters>()->log_search_progress() ||
+      VLOG_IS_ON(1);
 
   // Collect per-worker parameters and names.
   std::vector<SatParameters> worker_parameters;
@@ -2259,8 +2277,7 @@ CpSolverResponse SolveCpModelParallel(
     worker_names.push_back(worker_name);
     worker_parameters.push_back(local_params);
   }
-
-  VLOG(1) << absl::StrFormat(
+  LOG_IF(INFO, log_search) << absl::StrFormat(
       "*** starting parallel search at %.2fs with %i workers: [ %s ]",
       wall_timer->Get(), num_search_workers, absl::StrJoin(worker_names, ", "));
 
@@ -2274,7 +2291,8 @@ CpSolverResponse SolveCpModelParallel(
         const SatParameters local_params = worker_parameters[worker_id];
 
         pool.Schedule([&model_proto, stopped, local_params, &best_response,
-                       &mutex, worker_name, worker_id, wall_timer]() {
+                       &mutex, worker_name, worker_id, wall_timer,
+                       log_search]() {
           Model local_model;
           local_model.Add(NewSatParameters(local_params));
           local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
@@ -2295,8 +2313,8 @@ CpSolverResponse SolveCpModelParallel(
           }
           if (local_response.status() != CpSolverStatus::UNKNOWN) {
             CHECK_EQ(local_response.status(), best_response.status());
-            VLOG(1) << absl::StrFormat("#1      %6.2fs  %s", wall_timer->Get(),
-                                       worker_name);
+            LOG_IF(INFO, log_search) << absl::StrFormat(
+                "#1      %6.2fs  %s", wall_timer->Get(), worker_name);
             *stopped = true;
           }
         });
@@ -2373,7 +2391,8 @@ CpSolverResponse SolveCpModelParallel(
                      set_objective_best_bound, stopped, local_params, worker_id,
                      &mutex, &best_response, num_search_workers, random_seed,
                      wall_timer, &first_solution_found_or_search_finished,
-                     &shared_bounds_manager, maximize, worker_name]() {
+                     &shared_bounds_manager, maximize, worker_name,
+                     log_search]() {
         Model local_model;
         local_model.Add(NewSatParameters(local_params));
         local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
@@ -2415,11 +2434,11 @@ CpSolverResponse SolveCpModelParallel(
         // called.
         {
           absl::MutexLock lock(&mutex);
-          VLOG(1) << "*** worker '" << worker_name
-                  << "' terminates with status "
-                  << ProtoEnumToString<CpSolverStatus>(thread_response.status())
-                  << " and an objective value of "
-                  << thread_response.objective_value();
+          LOG_IF(INFO, log_search)
+              << "*** worker '" << worker_name << "' terminates with status "
+              << ProtoEnumToString<CpSolverStatus>(thread_response.status())
+              << " and an objective value of "
+              << thread_response.objective_value();
 
           MergeOptimizationSolution(thread_response, maximize, &best_response);
 
@@ -2485,6 +2504,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // TODO(user): Support solution hint, but then the first TODO will make it
   // automatic.
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  const bool log_search = params.log_search_progress() || VLOG_IS_ON(1);
   if (!model_proto.has_objective() && !model_proto.has_solution_hint() &&
       !params.enumerate_all_solutions() && !params.use_lns()) {
     bool is_pure_sat = true;
@@ -2507,23 +2527,23 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
   // Starts by expanding some constraints if needed.
-  VLOG(1) << absl::StrFormat("*** starting model expansion at %.2fs",
-                             wall_timer.Get());
+  LOG_IF(INFO, log_search) << absl::StrFormat(
+      "*** starting model expansion at %.2fs", wall_timer.Get());
   CpModelProto new_model = model_proto;  // Copy.
   PresolveOptions options;
-  options.log_info = VLOG_IS_ON(1);
+  options.log_info = log_search;
   ExpandCpModel(&new_model, options);
 
   // Presolve?
   std::function<void(CpSolverResponse * response)> postprocess_solution;
   if (params.cp_model_presolve()) {
-    VLOG(1) << absl::StrFormat("*** starting model presolve at %.2fs",
-                               wall_timer.Get());
+    LOG_IF(INFO, log_search) << absl::StrFormat(
+        "*** starting model presolve at %.2fs", wall_timer.Get());
     // Do the actual presolve.
     CpModelProto mapping_proto;
     std::vector<int> postsolve_mapping;
     PresolveOptions options;
-    options.log_info = VLOG_IS_ON(1);
+    options.log_info = log_search;
     options.parameters = *model->GetOrCreate<SatParameters>();
     options.time_limit = model->GetOrCreate<TimeLimit>();
     const bool ok = PresolveCpModel(options, &new_model, &mapping_proto,
@@ -2534,7 +2554,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       response.set_status(CpSolverStatus::MODEL_INVALID);
       return response;
     }
-    VLOG(1) << CpModelStats(new_model);
+    LOG_IF(INFO, log_search) << CpModelStats(new_model);
     postprocess_solution = [&model_proto, mapping_proto, postsolve_mapping,
                             &wall_timer](CpSolverResponse* response) {
       // Note that it is okay to use the initial model_proto in the postsolve
@@ -2562,8 +2582,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   int num_solutions = 0;
   std::function<void(const CpSolverResponse&)> observer_function =
       [&model_proto, &observers, &num_solutions, &wall_timer, &user_timer,
-       &postprocess_solution](const CpSolverResponse& response) {
-        if (VLOG_IS_ON(1)) {
+       &postprocess_solution, log_search](const CpSolverResponse& response) {
+        if (log_search) {
           if (model_proto.has_objective()) {
             const bool maximize =
                 model_proto.objective().scaling_factor() < 0.0;

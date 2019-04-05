@@ -164,7 +164,7 @@ void FirstModel(int num_teams) {
     model.Add(NewSatParameters(FLAGS_params));
   }
 
-  const CpSolverResponse response = SolveWithModel(builder, &model);
+  const CpSolverResponse response = SolveWithModel(builder.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::OPTIMAL ||
@@ -309,7 +309,7 @@ void SecondModel(int num_teams) {
     model.Add(NewSatParameters(FLAGS_params));
   }
 
-  const CpSolverResponse response = SolveWithModel(builder, &model);
+  const CpSolverResponse response = SolveWithModel(builder.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 

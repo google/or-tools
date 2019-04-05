@@ -88,7 +88,7 @@ void CPIsFunSat() {
   parameters.set_enumerate_all_solutions(true);
   model.Add(NewSatParameters(parameters));
 
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
   // [END solve]
 }

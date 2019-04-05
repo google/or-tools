@@ -116,7 +116,7 @@ void CostasHard(const int dim) {
   if (!FLAGS_params.empty()) {
     model.Add(NewSatParameters(FLAGS_params));
   }
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
     std::vector<int64> costas_matrix;
@@ -183,7 +183,7 @@ void CostasBool(const int dim) {
   if (!FLAGS_params.empty()) {
     model.Add(NewSatParameters(FLAGS_params));
   }
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
     std::vector<int64> costas_matrix;
@@ -265,7 +265,7 @@ void CostasBoolSoft(const int dim) {
   if (!FLAGS_params.empty()) {
     model.Add(NewSatParameters(FLAGS_params));
   }
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
 
   if (response.status() == CpSolverStatus::OPTIMAL) {
     std::vector<int64> costas_matrix;

@@ -20,6 +20,7 @@
 #include "ortools/base/int_type.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/time_limit.h"
 
@@ -33,12 +34,11 @@ namespace sat {
 // CutGenerator should:
 // - Only look at the lp_values positions that corresponds to its 'vars' or
 //   their negation.
-// - Only return cuts in term of the same variables or their negation.
+// - Only add cuts in term of the same variables or their negation.
 struct CutGenerator {
-  std::string type;
   std::vector<IntegerVariable> vars;
-  std::function<std::vector<LinearConstraint>(
-      const gtl::ITIVector<IntegerVariable, double>& lp_values)>
+  std::function<void(const gtl::ITIVector<IntegerVariable, double>& lp_values,
+                     LinearConstraintManager* manager)>
       generate_cuts;
 };
 

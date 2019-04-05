@@ -72,7 +72,7 @@ void MagicSquare(int size) {
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
 
-  const CpSolverResponse response = SolveWithModel(builder, &model);
+  const CpSolverResponse response = SolveWithModel(builder.Build(), &model);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
     for (int n = 0; n < size; ++n) {

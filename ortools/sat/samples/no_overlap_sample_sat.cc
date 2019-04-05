@@ -67,7 +67,7 @@ void NoOverlapSampleSat() {
 
   // Solving part.
   Model model;
-  const CpSolverResponse response = SolveWithModel(cp_model, &model);
+  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::OPTIMAL) {

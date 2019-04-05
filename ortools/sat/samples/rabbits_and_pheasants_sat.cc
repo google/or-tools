@@ -27,7 +27,7 @@ void RabbitsAndPheasantsSat() {
   cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);
   cp_model.AddEquality(LinearExpr::ScalProd({rabbits, pheasants}, {4, 2}), 56);
 
-  const CpSolverResponse response = Solve(cp_model);
+  const CpSolverResponse response = Solve(cp_model.Build());
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
     // Get the value of x in the solution.

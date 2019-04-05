@@ -536,7 +536,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
       return;
     }
 
-    VLOG(2) << " num_slack: " << num_slack;
+    VLOG(3) << " num_slack: " << num_slack;
     cut = ConvertToLinearConstraint(dense_cut, cut_ub);
   }
 
@@ -689,14 +689,7 @@ bool LinearProgrammingConstraint::Propagate() {
           (trail_->CurrentDecisionLevel() == 0 ||
            !sat_parameters_.only_add_cuts_at_level_zero())) {
         for (const CutGenerator& generator : cut_generators_) {
-          // TODO(user): Change api so cuts can directly be added to the manager
-          // and we don't need this intermediate vector.
-          std::vector<LinearConstraint> cuts =
-              generator.generate_cuts(expanded_lp_solution_);
-          for (const LinearConstraint& cut : cuts) {
-            constraint_manager_.AddCut(cut, generator.type,
-                                       expanded_lp_solution_);
-          }
+          generator.generate_cuts(expanded_lp_solution_, &constraint_manager_);
         }
       }
 
@@ -1336,7 +1329,8 @@ void AddIncomingAndOutgoingCutsIfNeeded(
     int num_nodes, const std::vector<int>& s, const std::vector<int>& tails,
     const std::vector<int>& heads, const std::vector<IntegerVariable>& vars,
     const std::vector<double>& var_lp_values, int64 rhs_lower_bound,
-    std::vector<LinearConstraint>* cuts) {
+    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    LinearConstraintManager* manager) {
   LinearConstraint incoming;
   LinearConstraint outgoing;
   double sum_incoming = 0.0;
@@ -1426,10 +1420,10 @@ void AddIncomingAndOutgoingCutsIfNeeded(
   }
 
   if (sum_incoming < rhs_lower_bound - 1e-6) {
-    cuts->push_back(std::move(incoming));
+    manager->AddCut(incoming, "Circuit", lp_values);
   }
   if (sum_outgoing < rhs_lower_bound - 1e-6) {
-    cuts->push_back(std::move(outgoing));
+    manager->AddCut(outgoing, "Circuit", lp_values);
   }
 }
 
@@ -1443,10 +1437,10 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     const std::vector<IntegerVariable>& vars) {
   CutGenerator result;
   result.vars = vars;
-  result.type = "StronglyConnectedGraph";
   result.generate_cuts =
-      [num_nodes, tails, heads,
-       vars](const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+      [num_nodes, tails, heads, vars](
+          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
         int num_arcs_in_lp_solution = 0;
         std::vector<double> var_lp_values;
         std::vector<std::vector<int>> graph(num_nodes);
@@ -1463,23 +1457,21 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
             graph[tails[i]].push_back(heads[i]);
           }
         }
-        std::vector<LinearConstraint> cuts;
         std::vector<std::vector<int>> components;
         FindStronglyConnectedComponents(num_nodes, graph, &components);
-        if (components.size() == 1) return cuts;
+        if (components.size() == 1) return;
 
         VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
                 << " sccs:" << components.size();
         for (const std::vector<int>& component : components) {
           if (component.size() == 1) continue;
-          AddIncomingAndOutgoingCutsIfNeeded(num_nodes, component, tails, heads,
-                                             vars, var_lp_values,
-                                             /*rhs_lower_bound=*/1, &cuts);
+          AddIncomingAndOutgoingCutsIfNeeded(
+              num_nodes, component, tails, heads, vars, var_lp_values,
+              /*rhs_lower_bound=*/1, lp_values, manager);
 
           // In this case, the cuts for each component are the same.
           if (components.size() == 2) break;
         }
-        return cuts;
       };
   return result;
 }
@@ -1496,10 +1488,10 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
 
   CutGenerator result;
   result.vars = vars;
-  result.type = "CVRP";
   result.generate_cuts =
-      [num_nodes, tails, heads, total_demands, demands, capacity,
-       vars](const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+      [num_nodes, tails, heads, total_demands, demands, capacity, vars](
+          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
         int num_arcs_in_lp_solution = 0;
         std::vector<double> var_lp_values;
         std::vector<std::vector<int>> graph(num_nodes);
@@ -1510,10 +1502,9 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
             graph[tails[i]].push_back(heads[i]);
           }
         }
-        std::vector<LinearConstraint> cuts;
         std::vector<std::vector<int>> components;
         FindStronglyConnectedComponents(num_nodes, graph, &components);
-        if (components.size() == 1) return cuts;
+        if (components.size() == 1) return;
 
         VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
                 << " sccs:" << components.size();
@@ -1534,12 +1525,11 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
 
           AddIncomingAndOutgoingCutsIfNeeded(
               num_nodes, component, tails, heads, vars, var_lp_values,
-              /*rhs_lower_bound=*/min_num_vehicles, &cuts);
+              /*rhs_lower_bound=*/min_num_vehicles, lp_values, manager);
 
           // In this case, the cuts for each component are the same.
           if (components.size() == 2) break;
         }
-        return cuts;
       };
   return result;
 }

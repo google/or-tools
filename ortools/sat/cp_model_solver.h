@@ -72,6 +72,9 @@ std::function<SatParameters(Model*)> NewSatParameters(
 std::function<SatParameters(Model*)> NewSatParameters(
     const SatParameters& parameters);
 
+// used by or-tools non C++ ports to bridge with the C++ layer.
+void FixFlagsAndEnvironmentForSwig();
+
 }  // namespace sat
 }  // namespace operations_research
 

@@ -54,7 +54,7 @@ void ChannelingSampleSat() {
               << " y=" << SolutionIntegerValue(r, y)
               << " b=" << SolutionBooleanValue(r, b);
   }));
-  SolveWithModel(cp_model, &model);
+  SolveWithModel(cp_model.Build(), &model);
 }
 
 }  // namespace sat

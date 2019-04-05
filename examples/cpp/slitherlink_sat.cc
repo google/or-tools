@@ -217,7 +217,7 @@ void SlitherLink(const std::vector<std::vector<int>> &data) {
     builder.AddEquality(vertical_arcs[2 * right_arc + 1], 0);
   }
 
-  const CpSolverResponse response = Solve(builder);
+  const CpSolverResponse response = Solve(builder.Build());
 
   std::vector<std::vector<bool>> h_arcs(num_rows + 1);
   for (int y = 0; y < num_rows + 1; ++y) {

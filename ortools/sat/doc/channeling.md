@@ -144,7 +144,7 @@ void ChannelingSampleSat() {
               << " y=" << SolutionIntegerValue(r, y)
               << " b=" << SolutionBooleanValue(r, b);
   }));
-  SolveWithModel(cp_model, &model);
+  SolveWithModel(cp_model.Build(), &model);
 }
 
 }  // namespace sat
@@ -475,7 +475,7 @@ void BinpackingProblemSat() {
   cp_model.Maximize(LinearExpr::BooleanSum(slacks));
 
   // Solving part.
-  const CpSolverResponse response = Solve(cp_model);
+  const CpSolverResponse response = Solve(cp_model.Build());
   LOG(INFO) << CpSolverResponseStats(response);
 }
 

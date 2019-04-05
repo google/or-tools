@@ -41,6 +41,7 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -679,6 +680,8 @@ class CpModelBuilder {
 
   // TODO(user) : add MapDomain?
 
+  const CpModelProto& Build() const { return Proto(); }
+
   const CpModelProto& Proto() const { return cp_model_; }
   CpModelProto* MutableProto() { return &cp_model_; }
 
@@ -705,11 +708,21 @@ class CpModelBuilder {
 };
 
 // Solves the current cp_model and returns an instance of CpSolverResponse.
-CpSolverResponse Solve(CpModelBuilder cp_model);
+CpSolverResponse Solve(const CpModelProto& model_proto);
 
 // Solves the current cp_model within the given model, and returns an
 // instance of CpSolverResponse.
-CpSolverResponse SolveWithModel(CpModelBuilder cp_model, Model* model);
+CpSolverResponse SolveWithModel(const CpModelProto& model_proto, Model* model);
+
+// Solves the current cp_model with the give sat parameters, and returns an
+// instance of CpSolverResponse.
+CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
+                                     const SatParameters& params);
+
+// Solves the current cp_model with the given sat parameters as std::string in
+// JSon format, and returns an instance of CpSolverResponse.
+CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
+                                     const std::string& params);
 
 // Evaluates the value of an linear expression in a solver response.
 int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);

@@ -398,7 +398,7 @@ class NetworkRoutingSolver {
     parameters.set_enumerate_all_solutions(true);
     model.Add(NewSatParameters(parameters));
 
-    SolveWithModel(cp_model, &model);
+    SolveWithModel(cp_model.Build(), &model);
   }
 
   // This method will fill the all_paths_ data structure. all_paths
@@ -643,7 +643,7 @@ class NetworkRoutingSolver {
       }
       num_solutions++;
     }));
-    const CpSolverResponse response = SolveWithModel(cp_model, &model);
+    const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
     return response.objective_value();
   }
 
