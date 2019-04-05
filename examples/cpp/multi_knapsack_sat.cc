@@ -101,7 +101,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   sat_parameters.set_log_search_progress(true);
   sat_parameters.MergeFromString(params);
   const CpSolverResponse response =
-      SolveWithParameters(builder.Build(), params);
+      SolveWithParameters(builder.Build(), sat_parameters);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
