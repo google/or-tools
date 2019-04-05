@@ -827,6 +827,7 @@ cc_library(
     deps = [
         ":integer",
         ":linear_constraint",
+        ":linear_constraint_manager",
         ":model",
         "//ortools/algorithms:knapsack_solver_for_cuts",
         "//ortools/base",
