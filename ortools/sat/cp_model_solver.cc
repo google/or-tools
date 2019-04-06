@@ -105,22 +105,9 @@ DEFINE_double(max_drat_time_in_seconds, std::numeric_limits<double>::infinity(),
 DEFINE_bool(cp_model_check_intermediate_solutions, false,
             "When true, all intermediate solutions found by the solver will be "
             "checked. This can be expensive, therefore it is off by default.");
-DECLARE_bool(log_prefix);
-DECLARE_bool(logtostderr);
 
 namespace operations_research {
 namespace sat {
-
-void FixFlagsAndEnvironmentForSwig() {
-  static bool initialized = false;
-  if (!initialized) {
-    google::InitGoogleLogging("swig_helper");
-    initialized = true;
-  }
-  FLAGS_logtostderr = true;
-  FLAGS_log_prefix = false;
-}
-
 namespace {
 
 // =============================================================================

@@ -11,23 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_LOGGING_H_
-#define OR_TOOLS_BASE_LOGGING_H_
+#include "ortools/base/logging.h"
 
-#include <cassert>
-
-#if defined(_MSC_VER)
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#endif
-
-#include "glog/logging.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/macros.h"
 
-#define QCHECK CHECK
-#define ABSL_DIE_IF_NULL CHECK_NOTNULL
+DECLARE_bool(log_prefix);
+DECLARE_bool(logtostderr);
 
-void FixFlagsAndEnvironmentForSwig();
-
-#endif  // OR_TOOLS_BASE_LOGGING_H_
+void FixFlagsAndEnvironmentForSwig() {
+  static bool initialized = false;
+  if (!initialized) {
+    google::InitGoogleLogging("swig_helper");
+    initialized = true;
+  }
+  FLAGS_logtostderr = true;
+  FLAGS_log_prefix = false;
+}

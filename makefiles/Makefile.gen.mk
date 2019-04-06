@@ -41,6 +41,7 @@ BASE_DEPS = \
 BASE_LIB_OBJS = \
  $(OBJ_DIR)/base/bitmap.$O \
  $(OBJ_DIR)/base/file.$O \
+ $(OBJ_DIR)/base/logging.$O \
  $(OBJ_DIR)/base/random.$O \
  $(OBJ_DIR)/base/recordio.$O \
  $(OBJ_DIR)/base/sysinfo.$O \
@@ -51,6 +52,11 @@ objs/base/bitmap.$O: ortools/base/bitmap.cc ortools/base/bitmap.h \
  ortools/base/basictypes.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/macros.h | $(OBJ_DIR)/base
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Sbitmap.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sbitmap.$O
+
+objs/base/logging.$O: ortools/base/logging.cc ortools/base/logging.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/base/macros.h ortools/base/status.h | $(OBJ_DIR)/base
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Slogging.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Slogging.$O
 
 objs/base/file.$O: ortools/base/file.cc ortools/base/file.h \
  ortools/base/integral_types.h ortools/base/logging.h \
@@ -3610,4 +3616,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
