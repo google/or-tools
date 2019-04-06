@@ -9,6 +9,9 @@ cc_library(
         "logging.h",
         "macros.h",
     ],
+    srcs = [
+        "logging.cc",
+    ],
     deps = [
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",

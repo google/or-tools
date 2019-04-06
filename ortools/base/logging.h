@@ -21,13 +21,13 @@
 #endif
 
 #include "glog/logging.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 
 #define QCHECK CHECK
 #define ABSL_DIE_IF_NULL CHECK_NOTNULL
 
+// used by or-tools non C++ ports to bridge with the C++ layer.
 void FixFlagsAndEnvironmentForSwig();
 
 #endif  // OR_TOOLS_BASE_LOGGING_H_
