@@ -28,9 +28,9 @@
 #include <map>
 #include <string>  // for std::string
 #include <vector>  // for vector
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
-
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"

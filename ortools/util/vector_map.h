@@ -17,6 +17,7 @@
 #define OR_TOOLS_UTIL_VECTOR_MAP_H_
 
 #include <vector>
+
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/map_util.h"
 

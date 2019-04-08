@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "ortools/lp_data/sparse.h"
+
 #include <algorithm>
 
 #include "absl/strings/str_format.h"

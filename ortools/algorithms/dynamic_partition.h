@@ -32,6 +32,7 @@
 
 #include <string>
 #include <vector>
+
 #include "ortools/base/logging.h"
 
 namespace operations_research {

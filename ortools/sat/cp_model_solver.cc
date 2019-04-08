@@ -108,6 +108,7 @@ DEFINE_bool(cp_model_check_intermediate_solutions, false,
 
 namespace operations_research {
 namespace sat {
+
 namespace {
 
 // =============================================================================

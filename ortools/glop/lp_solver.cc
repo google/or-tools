@@ -17,13 +17,12 @@
 #include <stack>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/timer.h"
-
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/timer.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"

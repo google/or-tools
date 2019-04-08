@@ -35,6 +35,7 @@
 #define OR_TOOLS_SAT_CP_MODEL_H_
 
 #include <string>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"

@@ -15,6 +15,7 @@
 #define OR_TOOLS_BASE_MAP_UTIL_H_
 
 #include <utility>
+
 #include "ortools/base/logging.h"
 
 namespace gtl {

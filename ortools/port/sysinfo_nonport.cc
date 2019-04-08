@@ -11,9 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/port/sysinfo.h"
-
 #include "ortools/base/sysinfo.h"
+#include "ortools/port/sysinfo.h"
 
 namespace operations_research {
 namespace sysinfo {

@@ -59,6 +59,7 @@
 #define OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_
 
 #include <stddef.h>
+
 #include <initializer_list>
 #include <string>
 #include <type_traits>

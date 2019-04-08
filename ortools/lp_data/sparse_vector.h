@@ -241,17 +241,17 @@ class SparseVector {
   // WARNING: BOTH vectors (the current and the destination) MUST be "clean",
   // i.e. sorted and without duplicates.
   // Performs the operation accumulator_vector += multiplier * this, removing
-  // a given index which must be in both vectors, and pruning new entries that
-  // are zero with a relative precision of 2 * std::numeric_limits::epsilon().
+  // a given index which must be in both vectors, and pruning new entries whose
+  // absolute value are under the given drop_tolerance.
   void AddMultipleToSparseVectorAndDeleteCommonIndex(
       Fractional multiplier, Index removed_common_index,
-      SparseVector* accumulator_vector) const;
+      Fractional drop_tolerance, SparseVector* accumulator_vector) const;
 
   // Same as AddMultipleToSparseVectorAndDeleteCommonIndex() but instead of
   // deleting the common index, leave it unchanged.
   void AddMultipleToSparseVectorAndIgnoreCommonIndex(
       Fractional multiplier, Index removed_common_index,
-      SparseVector* accumulator_vector) const;
+      Fractional drop_tolerance, SparseVector* accumulator_vector) const;
 
   // Applies the index permutation to all entries: index = index_perm[index];
   void ApplyIndexPermutation(const IndexPermutation& index_perm);
@@ -396,7 +396,7 @@ class SparseVector {
   // and AddMultipleToSparseVectorAndIgnoreCommonIndex() which is shared.
   void AddMultipleToSparseVectorInternal(
       bool delete_common_index, Fractional multiplier, Index common_index,
-      SparseVector* accumulator_vector) const;
+      Fractional drop_tolerance, SparseVector* accumulator_vector) const;
 };
 
 // --------------------------------------------------------
@@ -859,24 +859,24 @@ template <typename IndexType, typename IteratorType>
 void SparseVector<IndexType, IteratorType>::
     AddMultipleToSparseVectorAndDeleteCommonIndex(
         Fractional multiplier, Index removed_common_index,
-        SparseVector* accumulator_vector) const {
+        Fractional drop_tolerance, SparseVector* accumulator_vector) const {
   AddMultipleToSparseVectorInternal(true, multiplier, removed_common_index,
-                                    accumulator_vector);
+                                    drop_tolerance, accumulator_vector);
 }
 
 template <typename IndexType, typename IteratorType>
 void SparseVector<IndexType, IteratorType>::
     AddMultipleToSparseVectorAndIgnoreCommonIndex(
         Fractional multiplier, Index removed_common_index,
-        SparseVector* accumulator_vector) const {
+        Fractional drop_tolerance, SparseVector* accumulator_vector) const {
   AddMultipleToSparseVectorInternal(false, multiplier, removed_common_index,
-                                    accumulator_vector);
+                                    drop_tolerance, accumulator_vector);
 }
 
 template <typename IndexType, typename IteratorType>
 void SparseVector<IndexType, IteratorType>::AddMultipleToSparseVectorInternal(
     bool delete_common_index, Fractional multiplier, Index common_index,
-    SparseVector* accumulator_vector) const {
+    Fractional drop_tolerance, SparseVector* accumulator_vector) const {
   // DCHECK that the input is correct.
   DCHECK(IsCleanedUp());
   DCHECK(accumulator_vector->IsCleanedUp());
@@ -912,10 +912,10 @@ void SparseVector<IndexType, IteratorType>::AddMultipleToSparseVectorInternal(
         const Fractional a_coeff_mul = multiplier * a.GetCoefficient(ia);
         const Fractional b_coeff = b.GetCoefficient(ib);
         const Fractional sum = a_coeff_mul + b_coeff;
-        // We use the factor 2.0 because the error can be slightly greater than
-        // 1ulp, and we don't want to leave such near zero entries.
-        if (fabs(sum) > 2.0 * std::numeric_limits<Fractional>::epsilon() *
-                            std::max(fabs(a_coeff_mul), fabs(b_coeff))) {
+
+        // We do not want to leave near-zero entries.
+        // TODO(user): expose the tolerance used here.
+        if (std::abs(sum) > drop_tolerance) {
           c.MutableIndex(ic) = index_a;
           c.MutableCoefficient(ic) = sum;
           ++ic;

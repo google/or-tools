@@ -16,6 +16,7 @@
 
 #include <random>
 #include <string>
+
 #include "ortools/base/basictypes.h"
 
 namespace operations_research {

@@ -14,9 +14,8 @@
 #ifndef OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 #define OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 
-#include "ortools/base/integral_types.h"
-
 #include "absl/base/casts.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/util/bitset.h"
 
 namespace operations_research {

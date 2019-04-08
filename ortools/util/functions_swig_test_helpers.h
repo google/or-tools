@@ -24,6 +24,7 @@
 #include <functional>
 #include <string>
 #include <utility>
+
 #include "ortools/base/integral_types.h"
 
 namespace operations_research {

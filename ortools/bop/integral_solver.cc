@@ -14,7 +14,9 @@
 #include "ortools/bop/integral_solver.h"
 
 #include <math.h>
+
 #include <vector>
+
 #include "ortools/bop/bop_solver.h"
 #include "ortools/lp_data/lp_decomposer.h"
 

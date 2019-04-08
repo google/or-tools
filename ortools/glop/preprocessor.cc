@@ -1573,6 +1573,7 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
     // column r.col where the coefficient will be left unchanged.
     r.deleted_row_as_column.AddMultipleToSparseVectorAndIgnoreCommonIndex(
         -r.coeff[MODIFIED] / r.coeff[DELETED], ColToRowIndex(r.col),
+        parameters_.drop_tolerance(),
         transpose->mutable_column(RowToColIndex(r.row[MODIFIED])));
 
     // We also need to correct the objective value of the variables involved in
@@ -1589,9 +1590,7 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
         // the numerical error in the formula above, we have a really low
         // objective instead. The logic is the same as in
         // AddMultipleToSparseVectorAndIgnoreCommonIndex().
-        if (std::abs(new_objective) >
-            std::numeric_limits<Fractional>::epsilon() * 2.0 *
-                std::abs(lp->objective_coefficients()[col])) {
+        if (std::abs(new_objective) > parameters_.drop_tolerance()) {
           lp->SetObjectiveCoefficient(col, new_objective);
         } else {
           lp->SetObjectiveCoefficient(col, 0.0);
@@ -3002,15 +3001,22 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
       break;
     }
     r.column[DELETED].AddMultipleToSparseVectorAndDeleteCommonIndex(
-        substitution_factor, row, lp->GetMutableSparseColumn(r.col[MODIFIED]));
+        substitution_factor, row, parameters_.drop_tolerance(),
+        lp->GetMutableSparseColumn(r.col[MODIFIED]));
 
     // Apply similar operations on the objective coefficients.
     // Note that the offset is being updated by
     // SubtractColumnMultipleFromConstraintBound() below.
-    lp->SetObjectiveCoefficient(
-        r.col[MODIFIED],
-        r.objective_coefficient[MODIFIED] +
-            substitution_factor * r.objective_coefficient[DELETED]);
+    {
+      const Fractional new_objective =
+          r.objective_coefficient[MODIFIED] +
+          substitution_factor * r.objective_coefficient[DELETED];
+      if (std::abs(new_objective) > parameters_.drop_tolerance()) {
+        lp->SetObjectiveCoefficient(r.col[MODIFIED], new_objective);
+      } else {
+        lp->SetObjectiveCoefficient(r.col[MODIFIED], 0.0);
+      }
+    }
 
     // Carry over the constant factor of the substitution as well.
     // TODO(user): rename that method to reflect the fact that it also updates

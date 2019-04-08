@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "ortools/sat/cp_model.h"
+
 #include "absl/strings/str_format.h"
 #include "ortools/base/map_util.h"
 #include "ortools/sat/cp_model.pb.h"

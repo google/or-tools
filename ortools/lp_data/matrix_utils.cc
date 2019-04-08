@@ -12,7 +12,9 @@
 // limitations under the License.
 
 #include "ortools/lp_data/matrix_utils.h"
+
 #include <algorithm>
+
 #include "ortools/base/hash.h"
 
 namespace operations_research {

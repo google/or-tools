@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "ortools/glop/lu_factorization.h"
+
 #include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {

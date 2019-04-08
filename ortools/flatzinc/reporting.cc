@@ -14,8 +14,8 @@
 #include "ortools/flatzinc/reporting.h"
 
 #include <iostream>  // NOLINT
-
 #include <string>
+
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/integral_types.h"

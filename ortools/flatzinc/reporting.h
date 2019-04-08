@@ -15,6 +15,7 @@
 #define OR_TOOLS_FLATZINC_REPORTING_H_
 
 #include <string>
+
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/constraint_solver/constraint_solver.h"

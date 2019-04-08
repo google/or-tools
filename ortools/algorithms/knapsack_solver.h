@@ -58,6 +58,7 @@
 #define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 
 #include <math.h>
+
 #include <memory>
 #include <string>
 #include <vector>

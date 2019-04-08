@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "ortools/glop/initial_basis.h"
+
 #include <queue>
 
 #include "ortools/glop/markowitz.h"
