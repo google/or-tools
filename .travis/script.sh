@@ -133,6 +133,7 @@ fi
 ##  CMAKE  ##
 #############
 if [ "${BUILDER}" == cmake ];then
+  export CMAKE_BUILD_PARALLEL_LEVEL=4
   if [ "${TRAVIS_OS_NAME}" == linux ];then
     echo 'travis_fold:start:env'
     # Add clang support in ccache
@@ -144,7 +145,7 @@ if [ "${BUILDER}" == cmake ];then
       sudo ln -s ../../bin/ccache /usr/lib/ccache/clang++
       export CXXFLAGS="-Qunused-arguments $CXXFLAGS"
     fi
-    export PATH="${HOME}"/swig/bin:"${PATH}"
+    export PATH="${HOME}/swig/bin:${PATH}"
     pyenv global system 3.7
     checkenv
     echo 'travis_fold:end:env'
@@ -155,19 +156,22 @@ if [ "${BUILDER}" == cmake ];then
     echo 'travis_fold:end:env'
   fi
 
-    echo 'travis_fold:start:configure'
-    cmake -H. -Bbuild || true
-    echo 'travis_fold:end:configure'
+  echo 'travis_fold:start:configure'
+  cmake -H. -Bbuild -DBUILD_DEPS:BOOL=ON
+  echo 'travis_fold:end:configure'
 
-    echo 'travis_fold:start:build'
-    cmake --build build --target all -- --jobs=4
-    echo 'travis_fold:end:build'
+  echo 'travis_fold:start:build'
+  cmake --build build --target all
+  echo 'travis_fold:end:build'
 
-    echo 'travis_fold:start:test'
-    cmake --build build --target test -- CTEST_OUTPUT_ON_FAILURE=1
-    echo 'travis_fold:end:test'
+  echo 'travis_fold:start:test'
+  cmake --build build --target test -- CTEST_OUTPUT_ON_FAILURE=1
+  echo 'travis_fold:end:test'
 fi
 
+#############
+##  BAZEL  ##
+#############
 if [ "${BUILDER}" == bazel ]; then
   echo 'travis_fold:start:build'
   bazel build --curses=no --copt='-Wno-sign-compare' //...:all
