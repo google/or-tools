@@ -114,6 +114,8 @@ void LPSolver::SetParameters(const GlopParameters& parameters) {
 
 const GlopParameters& LPSolver::GetParameters() const { return parameters_; }
 
+GlopParameters* LPSolver::GetMutableParameters() { return &parameters_; }
+
 ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);

@@ -196,20 +196,22 @@ Status EnteringVariable::DualChooseEnteringColumn(
       }
     }
 
-    // Update harris_ratio.
-    harris_ratio = std::min(harris_ratio,
-                            top.ratio + harris_tolerance / top.coeff_magnitude);
-
-    // If the dual infeasibility is too high, the harris_ratio can be
-    // negative. In this case we set it to 0.0, allowing any infeasible
-    // position to enter the basis. This is quite important because its helps
-    // in the choice of a stable pivot.
-    harris_ratio = std::max(harris_ratio, 0.0);
-
     // TODO(user): We want to maximize both the ratio (objective improvement)
     // and the coeff_magnitude (stable pivot), so we have to make some
-    // trade-offs.
+    // trade-offs. Investigate alternative strategies.
     if (top.coeff_magnitude >= best_coeff) {
+      // Update harris_ratio. Note that because we process ratio in order, the
+      // harris ratio can only get smaller if the coeff_magnitude is bigger
+      // than the one of the best coefficient.
+      harris_ratio = std::min(
+          harris_ratio, top.ratio + harris_tolerance / top.coeff_magnitude);
+
+      // If the dual infeasibility is too high, the harris_ratio can be
+      // negative. In this case we set it to 0.0, allowing any infeasible
+      // position to enter the basis. This is quite important because its
+      // helps in the choice of a stable pivot.
+      harris_ratio = std::max(harris_ratio, 0.0);
+
       if (top.coeff_magnitude == best_coeff && top.ratio == *step) {
         DCHECK_NE(*entering_col, kInvalidCol);
         equivalent_entering_choices_.push_back(top.col);
