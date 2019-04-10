@@ -184,6 +184,15 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
     return;
   }
 
+  absl::flat_hash_set<std::vector<int64>> prefixes;
+  std::vector<int64> prefix(n);
+  for (const std::vector<int64>& tuple : tuples) {
+    prefix = tuple;
+    prefix.pop_back();
+    prefixes.insert(tuple);
+  }
+  const bool prefix_is_key = prefixes.size() == tuples.size();
+
   // Compress tuples.
   const int64 any_value = kint64min;
   std::vector<int64> domain_sizes;
@@ -252,6 +261,37 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
       model->Add(FullyEncodeVariable(vars[i]));
       ProcessOneColumn(active_tuple_literals, active_values,
                        GetEncoding(vars[i], model), any_tuple_literals, model);
+    }
+  }
+
+  if (prefix_is_key) {
+    std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
+    for (int i = 0; i < n; ++i) {
+      model->Add(FullyEncodeVariable(vars[i]));
+      encodings[i] = GetEncoding(vars[i], model);
+    }
+
+    std::vector<Literal> clause;
+    for (int j = 0; j < tuples.size(); ++j) {
+      clause.clear();
+      bool tuple_is_valid = true;
+      for (int i = 0; i + 1 < n; ++i) {
+        const int64 v = tuples[j][i];
+        if (v == any_value) continue;
+        if (!gtl::ContainsKey(encodings[i], IntegerValue(v))) {
+          tuple_is_valid = false;
+          break;
+        }
+        clause.push_back(
+            gtl::FindOrDie(encodings[i], IntegerValue(v)).Negated());
+      }
+      const IntegerValue target_value = IntegerValue(tuples[j][n - 1]);
+      if (tuple_is_valid && gtl::ContainsKey(encodings[n - 1], target_value)) {
+        const Literal target_literal =
+            gtl::FindOrDie(encodings[n - 1], target_value);
+        clause.push_back(target_literal);
+        model->Add(ClauseConstraint(clause));
+      }
     }
   }
 }
