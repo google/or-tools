@@ -26,10 +26,8 @@
 namespace operations_research {
 namespace sat {
 
-LiteralIndex AtMinValue(IntegerVariable var, Model* model) {
-  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-
+LiteralIndex AtMinValue(IntegerVariable var, IntegerTrail* integer_trail,
+                        IntegerEncoder* integer_encoder) {
   DCHECK(!integer_trail->IsCurrentlyIgnored(var));
   const IntegerValue lb = integer_trail->LowerBound(var);
   DCHECK_LE(lb, integer_trail->UpperBound(var));
@@ -37,7 +35,6 @@ LiteralIndex AtMinValue(IntegerVariable var, Model* model) {
 
   const Literal result = integer_encoder->GetOrCreateAssociatedLiteral(
       IntegerLiteral::LowerOrEqual(var, lb));
-  CHECK(!model->GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(result));
   return result.Index();
 }
 
@@ -133,12 +130,14 @@ LiteralIndex SplitDomainUsingBestSolutionValue(IntegerVariable var,
 // which seems expensive. Improve.
 std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
-  return [/*copy*/ vars, model]() {
-    IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  return [/*copy*/ vars, integer_trail, integer_encoder]() {
     for (const IntegerVariable var : vars) {
       // Note that there is no point trying to fix a currently ignored variable.
       if (integer_trail->IsCurrentlyIgnored(var)) continue;
-      const LiteralIndex decision = AtMinValue(var, model);
+      const LiteralIndex decision =
+          AtMinValue(var, integer_trail, integer_encoder);
       if (decision != kNoLiteralIndex) return decision;
     }
     return kNoLiteralIndex;
@@ -147,8 +146,9 @@ std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
 
 std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
-  return [/*copy */ vars, model]() {
-    IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  return [/*copy */ vars, integer_trail, integer_encoder]() {
     IntegerVariable candidate = kNoIntegerVariable;
     IntegerValue candidate_lb;
     for (const IntegerVariable var : vars) {
@@ -161,7 +161,7 @@ std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
       }
     }
     if (candidate == kNoIntegerVariable) return kNoLiteralIndex;
-    return AtMinValue(candidate, model);
+    return AtMinValue(candidate, integer_trail, integer_encoder);
   };
 }
 
@@ -315,8 +315,12 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
   value_selection_weight.push_back(1);
 
   // Min value.
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_encoder = model->GetOrCreate<IntegerEncoder>();
   value_selection_heuristics.push_back(
-      [model](IntegerVariable var) { return AtMinValue(var, model); });
+      [integer_trail, integer_encoder](IntegerVariable var) {
+        return AtMinValue(var, integer_trail, integer_encoder);
+      });
   value_selection_weight.push_back(1);
 
   // Special case: Don't change the decision value.
@@ -328,8 +332,6 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
                                            value_selection_weight.end());
 
   int policy_index = 0;
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   int val_policy_index = 0;
   return [=]() mutable {
     if (sat_solver->CurrentDecisionLevel() == 0) {
@@ -355,7 +357,7 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
 
     // Decode the decision and get the variable.
     for (const IntegerLiteral l :
-         encoder->GetAllIntegerLiterals(Literal(current_decision))) {
+         integer_encoder->GetAllIntegerLiterals(Literal(current_decision))) {
       if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
 
       // Try the selected policy.

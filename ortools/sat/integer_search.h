@@ -25,7 +25,8 @@ namespace sat {
 
 // Returns decision corresponding to var at its lower bound. Returns
 // kNoLiteralIndex if the variable is fixed.
-LiteralIndex AtMinValue(IntegerVariable var, Model* model);
+LiteralIndex AtMinValue(IntegerVariable var, IntegerTrail* integer_trail,
+                        IntegerEncoder* integer_encoder);
 
 // Returns decision corresponding to var >= lb + max(1, (ub - lb) / 2). It also
 // CHECKs that the variable is not fixed.
