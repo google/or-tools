@@ -615,6 +615,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
   for (RowIndex row(0); row < num_rows; ++row) {
     const auto status = simplex_.GetConstraintStatus(row);
     if (status == glop::ConstraintStatus::BASIC) continue;
+    if (status == glop::ConstraintStatus::FREE) continue;
 
     // TODO(user): Do not consider just one constraint, but take linear
     // combination of a small number of constraints. There is a lot of
