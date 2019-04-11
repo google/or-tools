@@ -10,7 +10,7 @@ endif()
 include(utils)
 set_version(VERSION)
 
-project(ortools LANGUAGES CXX VERSION ${VERSION})
+project(ortools VERSION ${VERSION} LANGUAGES CXX)
 message(STATUS "version: ${PROJECT_VERSION}")
 
 # Default Build Type to be Release
