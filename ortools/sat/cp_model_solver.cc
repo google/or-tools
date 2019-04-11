@@ -1173,15 +1173,6 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
   };
 }
 
-struct SynchronizationFunction {
-  std::function<CpSolverResponse()> f;
-};
-
-void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
-                                Model* model) {
-  model->GetOrCreate<SynchronizationFunction>()->f = std::move(f);
-}
-
 #if !defined(__PORTABLE_PLATFORM__)
 // TODO(user): Support it on android.
 std::function<SatParameters(Model*)> NewSatParameters(
@@ -1208,27 +1199,45 @@ std::function<SatParameters(Model*)> NewSatParameters(
 }
 
 namespace {
+
+// Returns a valid response with valid objective bounds.
+CpSolverResponse GetDefaultResponse(const CpModelProto& model_proto) {
+  CpSolverResponse response;
+  response.set_status(CpSolverStatus::UNKNOWN);
+  if (model_proto.has_objective()) {
+    const double kInfinity = std::numeric_limits<double>::infinity();
+    const bool maximize = model_proto.objective().scaling_factor() < 0.0;
+    if (maximize) {
+      response.set_objective_value(-kInfinity);
+      response.set_best_objective_bound(kInfinity);
+    } else {
+      response.set_objective_value(kInfinity);
+      response.set_best_objective_bound(-kInfinity);
+    }
+  }
+  return response;
+}
+
 // Because we also use this function for postsolve, we call it with
 // is_real_solve set to true and avoid doing non-useful work in this case.
 CpSolverResponse SolveCpModelInternal(
     const CpModelProto& model_proto, bool is_real_solve,
+    bool log_sequential_search,
     const std::function<void(const CpSolverResponse&)>&
         external_solution_observer,
+    SharedResponseManager* shared_response_manager,
     SharedBoundsManager* shared_bounds_manager, WallTimer* wall_timer,
     Model* model) {
   const bool log_search =
       model->GetOrCreate<SatParameters>()->log_search_progress() ||
       VLOG_IS_ON(1);
-  const bool worker_is_in_parallel_search = model->Get<WorkerInfo>() != nullptr;
-  const bool is_lns = model->GetOrCreate<SatParameters>()->use_lns();
-
-  if (!worker_is_in_parallel_search && is_real_solve && !is_lns && log_search) {
+  if (log_search && log_sequential_search) {
     LOG(INFO) << absl::StrFormat("*** starting to load the model at %.2fs",
                                  wall_timer->Get());
   }
-  // Initialize a default invalid response.
-  CpSolverResponse response;
-  response.set_status(CpSolverStatus::MODEL_INVALID);
+
+  // Initialize a default response.
+  CpSolverResponse response = GetDefaultResponse(model_proto);
 
   auto fill_response_statistics = [&response, model, wall_timer]() {
     auto* sat_solver = model->Get<SatSolver>();
@@ -1427,6 +1436,9 @@ CpSolverResponse SolveCpModelInternal(
 
   // TODO(user): remove argument as it isn't used. Pass solution info instead?
   std::string solution_info;
+  if (model->GetOrCreate<WorkerInfo>() != nullptr) {
+    solution_info = model->GetOrCreate<WorkerInfo>()->worker_name;
+  }
   const auto solution_observer = [&model_proto, &response, &num_solutions,
                                   &model, &solution_info,
                                   &external_solution_observer, objective_var,
@@ -1440,53 +1452,19 @@ CpSolverResponse SolveCpModelInternal(
     external_solution_observer(response);
   };
 
-  // Objective bounds reporting and sharing.
-  ObjectiveSynchronizationHelper* helper =
-      model->GetOrCreate<ObjectiveSynchronizationHelper>();
-
-  if (!is_lns && model_proto.has_objective()) {
-    // Detect sequential mode, register callbacks in that case.
-    if (!worker_is_in_parallel_search) {
-      model->GetOrCreate<WorkerInfo>()->worker_id = 0;
-      auto* integer_trail = model->Get<IntegerTrail>();
-      const CpObjectiveProto& obj = model_proto.objective();
-
-      helper->get_external_best_objective = [&response, integer_trail, &obj,
-                                             objective_var]() {
-        return response.status() != CpSolverStatus::MODEL_INVALID
-                   ? response.objective_value()
-                   : ScaleObjectiveValue(
-                         obj, integer_trail->LevelZeroUpperBound(objective_var)
-                                      .value() +
-                                  1);
-      };
-
-      helper->get_external_best_bound = [&response, integer_trail, &obj,
-                                         objective_var]() {
-        return response.status() != CpSolverStatus::MODEL_INVALID
-                   ? response.best_objective_bound()
-                   : ScaleObjectiveValue(
-                         obj, integer_trail->LevelZeroLowerBound(objective_var)
-                                  .value());
-      };
-
-      helper->set_external_best_bound =
-          [&response](double objective_value, double objective_best_bound) {
-            response.set_best_objective_bound(objective_best_bound);
-          };
-    }
-
+  if (shared_response_manager != nullptr && model_proto.has_objective()) {
     // Watch improved objective best bounds in regular search, or core based
     // search. It should be disabled for LNS.
     RegisterObjectiveBestBoundExport(model_proto, log_search, objective_var,
-                                     wall_timer, model);
-  }
+                                     wall_timer, shared_response_manager,
+                                     model);
 
-  // Import objective bounds.
-  // TODO(user): Support bounds import in LNS and Core based search.
-  if (model->GetOrCreate<SatParameters>()->share_objective_bounds() &&
-      worker_is_in_parallel_search && model_proto.has_objective()) {
-    RegisterObjectiveBoundsImport(model);
+    // Import objective bounds.
+    // TODO(user): Support objective bounds import in LNS and Core based
+    // search.
+    if (model->GetOrCreate<SatParameters>()->share_objective_bounds()) {
+      RegisterObjectiveBoundsImport(shared_response_manager, model);
+    }
   }
 
   // Level zero variable bounds sharing.
@@ -1498,7 +1476,7 @@ CpSolverResponse SolveCpModelInternal(
                                           model);
   }
 
-  if (!worker_is_in_parallel_search && is_real_solve && !is_lns && log_search) {
+  if (log_search && log_sequential_search) {
     LOG(INFO) << absl::StrFormat("*** starting sequential search at %.2fs",
                                  wall_timer->Get());
   }
@@ -1556,8 +1534,10 @@ CpSolverResponse SolveCpModelInternal(
         }
       }
       if (hint_is_valid) {
-        solution_info = "hint";
+        const int old_size = solution_info.size();
+        solution_info += " [hint] ";
         solution_observer(*model);
+        solution_info.resize(old_size);
         CHECK(SolutionIsFeasible(
             model_proto, std::vector<int64>(response.solution().begin(),
                                             response.solution().end())));
@@ -1591,7 +1571,6 @@ CpSolverResponse SolveCpModelInternal(
         old_conflict_limit);
   }
 
-  solution_info = "";
   if (!model_proto.has_objective()) {
     while (true) {
       status = SolveIntegerProblemWithLazyEncoding(
@@ -1740,7 +1719,9 @@ void PostsolveResponse(const CpModelProto& model_proto,
     postsolve_model.Add(operations_research::sat::NewSatParameters(params));
   }
   const CpSolverResponse postsolve_response = SolveCpModelInternal(
-      mapping_proto, false, [](const CpSolverResponse&) {},
+      mapping_proto, /*is_real_solve=*/false, /*log_sequential_search=*/false,
+      [](const CpSolverResponse&) {},
+      /*shared_response_manager=*/nullptr,
       /*shared_bounds_manager=*/nullptr, wall_timer, &postsolve_model);
   CHECK_EQ(postsolve_response.status(), CpSolverStatus::FEASIBLE);
 
@@ -1765,6 +1746,7 @@ void PostsolveResponse(const CpModelProto& model_proto,
   }
 }
 
+// TODO(user): Uniformize this function with the other one.
 CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
                                    WallTimer* wall_timer, Model* model) {
   std::unique_ptr<SatSolver> solver(new SatSolver());
@@ -1953,26 +1935,32 @@ bool UpdateDomain(int64 new_lb, int64 new_ub,
 CpSolverResponse SolveCpModelWithLNS(
     const CpModelProto& model_proto,
     const std::function<void(const CpSolverResponse&)>& observer,
-    int num_workers, int worker_id, SharedBoundsManager* shared_bounds_manager,
-    WallTimer* wall_timer, Model* model) {
+    int num_workers, int worker_id,
+    SharedResponseManager* shared_response_manager,
+    SharedBoundsManager* shared_bounds_manager, WallTimer* wall_timer,
+    Model* model) {
   SatParameters* parameters = model->GetOrCreate<SatParameters>();
-  parameters->set_stop_after_first_solution(true);
+
   CpSolverResponse response;
-  auto* synchro = model->Get<SynchronizationFunction>();
-  if (synchro != nullptr && synchro->f != nullptr) {
-    response = synchro->f();
-  } else {
-    response =
-        SolveCpModelInternal(model_proto, /*is_real_solve=*/true, observer,
-                             shared_bounds_manager, wall_timer, model);
+  if (shared_response_manager != nullptr) {
+    response = shared_response_manager->GetBestResponse();
+  }
+  if (response.solution().empty()) {
+    parameters->set_stop_after_first_solution(true);
+    response = SolveCpModelInternal(model_proto, /*is_real_solve=*/true,
+                                    /*log_sequential_search=*/false, observer,
+                                    /*shared_response_manager=*/nullptr,
+                                    /*shared_bounds_manager=*/nullptr,
+                                    wall_timer, model);
+    shared_response_manager->MergeIntoBestResponse(response);
   }
   CpModelProto mutable_model_proto = model_proto;
   if (response.status() != CpSolverStatus::FEASIBLE) {
     return response;
   }
+
   const bool focus_on_decision_variables =
       parameters->lns_focus_on_decision_variables();
-
   NeighborhoodGeneratorHelper helper(&mutable_model_proto,
                                      focus_on_decision_variables);
 
@@ -2013,7 +2001,7 @@ CpSolverResponse SolveCpModelWithLNS(
 
   TimeLimit* limit = model->GetOrCreate<TimeLimit>();
   double deterministic_time = 0.1;
-  int num_no_progress = 0;
+  int num_consecutive_not_fully_solved = 0;
 
   const int num_threads = std::max(1, parameters->lns_num_threads());
   int64 total_num_calls = 0;
@@ -2021,17 +2009,8 @@ CpSolverResponse SolveCpModelWithLNS(
       num_threads,
       [&]() {
         // Synchronize with external world.
-        auto* synchro = model->Get<SynchronizationFunction>();
-        if (synchro != nullptr && synchro->f != nullptr) {
-          const CpSolverResponse candidate_response = synchro->f();
-          if (!candidate_response.solution().empty()) {
-            double coeff = model_proto.objective().scaling_factor();
-            if (coeff == 0.0) coeff = 1.0;
-            if (candidate_response.objective_value() * coeff <
-                response.objective_value() * coeff) {
-              response = candidate_response;
-            }
-          }
+        if (shared_response_manager != nullptr) {
+          response = shared_response_manager->GetBestResponse();
         }
 
         // Update the bounds on mutable model proto.
@@ -2068,9 +2047,9 @@ CpSolverResponse SolveCpModelWithLNS(
 
         // If we didn't see any progress recently, bump the time limit.
         // TODO(user): Tune the logic and expose the parameters.
-        if (num_no_progress > 100) {
+        if (num_consecutive_not_fully_solved > 100) {
           deterministic_time *= 1.1;
-          num_no_progress = 0;
+          num_consecutive_not_fully_solved = 0;
         }
         return limit->LimitReached() ||
                response.objective_value() == response.best_objective_bound();
@@ -2118,30 +2097,31 @@ CpSolverResponse SolveCpModelWithLNS(
                         &postsolve_mapping);
         local_response = SolveCpModelInternal(
             local_problem, /*is_real_solve=*/true,
+            /*log_sequential_search=*/false,
             [](const CpSolverResponse& response) {},
+            /*shared_response_manager=*/nullptr,
             /*shared_bounds_manager=*/nullptr, wall_timer, &local_model);
         PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
-                          wall_timer, &local_response);
+                          wall_timer, &local_response);  // Should be mutable?
+        local_response.set_solution_info(
+            absl::StrCat(local_response.solution_info(), " ", solution_info));
 
         const bool neighborhood_is_reduced = neighborhood.is_reduced;
-        return [neighborhood_is_reduced, &num_no_progress, &model_proto,
-                &response, &difficulty, local_response, &observer, limit,
-                solution_info, &generators, selected_generator,
-                &total_num_calls]() {
+        return [neighborhood_is_reduced, &num_consecutive_not_fully_solved,
+                &model_proto, &response, &difficulty, local_response, &observer,
+                &generators, selected_generator, &total_num_calls]() {
           // TODO(user): This is not ideal in multithread because even though
           // the saved_difficulty will be the same for all thread, we will
           // Increase()/Decrease() the difficuty sequentially more than once.
           if (local_response.status() == CpSolverStatus::OPTIMAL ||
               local_response.status() == CpSolverStatus::INFEASIBLE) {
-            if (neighborhood_is_reduced) {
-              difficulty.Increase();
-            } else {
-              // We solved the full model here.
-              response = local_response;
-            }
+            num_consecutive_not_fully_solved = 0;
+            difficulty.Increase();
           } else {
+            ++num_consecutive_not_fully_solved;
             difficulty.Decrease();
           }
+
           // Update the generator record.
           double objective_diff = 0.0;
           if (local_response.status() == CpSolverStatus::OPTIMAL ||
@@ -2162,47 +2142,34 @@ CpSolverResponse SolveCpModelWithLNS(
               << ", UCB1 Score: "
               << generators[selected_generator]->GetUCBScore(total_num_calls)
               << "]";
-          if (local_response.status() == CpSolverStatus::FEASIBLE ||
-              local_response.status() == CpSolverStatus::OPTIMAL) {
-            // If the objective are the same, we override the solution,
-            // otherwise we just ignore this local solution and increment
-            // num_no_progress.
-            double coeff = model_proto.objective().scaling_factor();
-            if (coeff == 0.0) coeff = 1.0;
-            if (local_response.objective_value() * coeff >=
-                response.objective_value() * coeff) {
-              if (local_response.objective_value() * coeff >
-                  response.objective_value() * coeff) {
-                return;
-              }
-              ++num_no_progress;
-            } else {
-              num_no_progress = 0;
-            }
 
-            // Update the global response.
-            *(response.mutable_solution()) = local_response.solution();
-            response.set_objective_value(local_response.objective_value());
-            response.set_wall_time(limit->GetElapsedTime());
-            response.set_user_time(response.user_time() +
-                                   local_response.user_time());
-            response.set_deterministic_time(
-                response.deterministic_time() +
-                local_response.deterministic_time());
-            if (DEBUG_MODE || FLAGS_cp_model_check_intermediate_solutions) {
-              CHECK(SolutionIsFeasible(
-                  model_proto,
-                  std::vector<int64>(local_response.solution().begin(),
-                                     local_response.solution().end())));
-            }
-            if (num_no_progress == 0) {  // Improving solution.
-              response.set_solution_info(solution_info);
-              observer(response);
+          // Call the observer if we have a solution.
+          //
+          // TODO(user): depending on the problem, the bound sharing may or
+          // may not restrict the objective though. Uniformize the behavior.
+          if (local_response.status() == CpSolverStatus::OPTIMAL ||
+              local_response.status() == CpSolverStatus::FEASIBLE) {
+            if (neighborhood_is_reduced) {
+              CpSolverResponse globally_valid_solution =
+                  GetDefaultResponse(model_proto);
+              globally_valid_solution.set_status(CpSolverStatus::FEASIBLE);
+              *globally_valid_solution.mutable_solution() =
+                  local_response.solution();
+              globally_valid_solution.set_solution_info(
+                  local_response.solution_info());
+              globally_valid_solution.set_objective_value(
+                  local_response.objective_value());
+              observer(globally_valid_solution);
+            } else {
+              // We solved the full model here.
+              observer(local_response);
             }
           }
         };
       });
 
+  // TODO(user): move in MergeOptimizationSolution(), but only do that for
+  // optimization problem.
   if (response.status() == CpSolverStatus::FEASIBLE) {
     if (response.objective_value() == response.best_objective_bound()) {
       response.set_status(CpSolverStatus::OPTIMAL);
@@ -2217,9 +2184,9 @@ CpSolverResponse SolveCpModelWithLNS(
 CpSolverResponse SolveCpModelParallel(
     const CpModelProto& model_proto,
     const std::function<void(const CpSolverResponse&)>& observer,
-    WallTimer* wall_timer, Model* model) {
+    SharedResponseManager* shared_response_manager, WallTimer* wall_timer,
+    Model* model) {
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
-  const int random_seed = params.random_seed();
   CHECK(!params.enumerate_all_solutions())
       << "Enumerating all solutions in parallel is not supported.";
 
@@ -2231,20 +2198,6 @@ CpSolverResponse SolveCpModelParallel(
     stopped = model->GetOrCreate<TimeLimit>()->ExternalBooleanAsLimit();
   }
 
-  const bool maximize = model_proto.objective().scaling_factor() < 0.0;
-
-  CpSolverResponse best_response;
-  if (model_proto.has_objective()) {
-    const double kInfinity = std::numeric_limits<double>::infinity();
-    if (maximize) {
-      best_response.set_objective_value(-kInfinity);
-      best_response.set_best_objective_bound(kInfinity);
-    } else {
-      best_response.set_objective_value(kInfinity);
-      best_response.set_best_objective_bound(-kInfinity);
-    }
-  }
-
   absl::Mutex mutex;
 
   // In the LNS threads, we wait for this notification before starting work.
@@ -2254,6 +2207,12 @@ CpSolverResponse SolveCpModelParallel(
   const bool log_search =
       model->GetOrCreate<SatParameters>()->log_search_progress() ||
       VLOG_IS_ON(1);
+
+  std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
+  if (model->GetOrCreate<SatParameters>()->share_level_zero_bounds()) {
+    shared_bounds_manager =
+        absl::make_unique<SharedBoundsManager>(num_search_workers, model_proto);
+  }
 
   // Collect per-worker parameters and names.
   std::vector<SatParameters> worker_parameters;
@@ -2269,79 +2228,6 @@ CpSolverResponse SolveCpModelParallel(
       "*** starting parallel search at %.2fs with %i workers: [ %s ]",
       wall_timer->Get(), num_search_workers, absl::StrJoin(worker_names, ", "));
 
-  if (!model_proto.has_objective()) {
-    {
-      ThreadPool pool("Parallel_search", num_search_workers);
-      pool.StartWorkers();
-
-      for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
-        const std::string worker_name = worker_names[worker_id];
-        const SatParameters local_params = worker_parameters[worker_id];
-
-        pool.Schedule([&model_proto, stopped, local_params, &best_response,
-                       &mutex, worker_name, worker_id, wall_timer,
-                       log_search]() {
-          Model local_model;
-          local_model.Add(NewSatParameters(local_params));
-          local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-              stopped);
-
-          // Stores info that will be used for logs in the local model.
-          WorkerInfo* worker_info = local_model.GetOrCreate<WorkerInfo>();
-          worker_info->worker_name = worker_name;
-          worker_info->worker_id = worker_id;
-
-          const CpSolverResponse local_response = SolveCpModelInternal(
-              model_proto, true, [](const CpSolverResponse& response) {},
-              /*shared_bounds_manager=*/nullptr, wall_timer, &local_model);
-
-          absl::MutexLock lock(&mutex);
-          if (best_response.status() == CpSolverStatus::UNKNOWN) {
-            best_response = local_response;
-          }
-          if (local_response.status() != CpSolverStatus::UNKNOWN) {
-            CHECK_EQ(local_response.status(), best_response.status());
-            LOG_IF(INFO, log_search) << absl::StrFormat(
-                "#1      %6.2fs  %s", wall_timer->Get(), worker_name);
-            *stopped = true;
-          }
-        });
-      }
-    }  // for the dtor of the threadpool (join workers) before returning.
-    return best_response;
-  }
-
-  // Optimization problem.
-  const auto get_objective_value = [&mutex, &best_response]() {
-    absl::MutexLock lock(&mutex);
-    return best_response.objective_value();
-  };
-  const auto get_objective_best_bound = [&mutex, &best_response]() {
-    absl::MutexLock lock(&mutex);
-    return best_response.best_objective_bound();
-  };
-  const auto set_objective_best_bound = [&mutex, maximize, &best_response](
-                                            double objective_value,
-                                            double objective_best_bound) {
-    // Broadcast a best bound improving solution.
-    absl::MutexLock lock(&mutex);
-    CpSolverResponse lb_response;
-    lb_response.set_status(CpSolverStatus::UNKNOWN);
-    lb_response.set_objective_value(objective_value);
-    lb_response.set_best_objective_bound(objective_best_bound);
-    CHECK(!MergeOptimizationSolution(lb_response, maximize, &best_response));
-  };
-  const auto solution_synchronization = [&mutex, &best_response]() {
-    absl::MutexLock lock(&mutex);
-    return best_response;
-  };
-
-  std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
-  if (model->GetOrCreate<SatParameters>()->share_level_zero_bounds()) {
-    shared_bounds_manager = absl::make_unique<SharedBoundsManager>(
-        num_search_workers, model_proto);
-  }
-
   {
     ThreadPool pool("Parallel_search", num_search_workers);
     pool.StartWorkers();
@@ -2350,37 +2236,25 @@ CpSolverResponse SolveCpModelParallel(
       const std::string worker_name = worker_names[worker_id];
       const SatParameters local_params = worker_parameters[worker_id];
 
-      const auto solution_observer = [maximize, worker_name, &mutex,
-                                      &best_response, &observer,
+      const auto solution_observer = [worker_name, &mutex, &observer,
                                       &first_solution_found_or_search_finished](
                                          const CpSolverResponse& r) {
+        observer(r);
+
+        // TODO(user): remove?
         absl::MutexLock lock(&mutex);
 
-        // Check is the new solution is actually improving upon the best
-        // solution found so far.
-        if (MergeOptimizationSolution(r, maximize, &best_response)) {
-          // Checks that r is not a pure best-bound improving solution.
-          CHECK_EQ(r.status(), CpSolverStatus::FEASIBLE);
-
-          best_response.set_solution_info(
-              absl::StrCat(worker_name, " ", r.solution_info()));
-          observer(best_response);
-
-          // We have potentially displayed the improving solution, and updated
-          // the best_response. We can awaken sleeping LNS threads.
-          if (!first_solution_found_or_search_finished.HasBeenNotified()) {
-            first_solution_found_or_search_finished.Notify();
-          }
+        // We have found a solution, We can awaken sleeping LNS threads.
+        if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+          first_solution_found_or_search_finished.Notify();
         }
       };
 
-      pool.Schedule([&model_proto, solution_observer, solution_synchronization,
-                     get_objective_value, get_objective_best_bound,
-                     set_objective_best_bound, stopped, local_params, worker_id,
-                     &mutex, &best_response, num_search_workers, random_seed,
-                     wall_timer, &first_solution_found_or_search_finished,
-                     &shared_bounds_manager, maximize, worker_name,
-                     log_search]() {
+      pool.Schedule([&model_proto, solution_observer, stopped, local_params,
+                     worker_id, &mutex, num_search_workers, wall_timer,
+                     &first_solution_found_or_search_finished,
+                     &shared_response_manager, &shared_bounds_manager,
+                     worker_name, log_search]() {
         Model local_model;
         local_model.Add(NewSatParameters(local_params));
         local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
@@ -2391,18 +2265,6 @@ CpSolverResponse SolveCpModelParallel(
         worker_info->worker_name = worker_name;
         worker_info->worker_id = worker_id;
 
-        SetSynchronizationFunction(std::move(solution_synchronization),
-                                   &local_model);
-
-        ObjectiveSynchronizationHelper* helper =
-            local_model.GetOrCreate<ObjectiveSynchronizationHelper>();
-        helper->get_external_best_objective = std::move(get_objective_value);
-        helper->get_external_best_bound = std::move(get_objective_best_bound);
-        if (local_model.GetOrCreate<SatParameters>()
-                ->share_objective_bounds()) {
-          helper->set_external_best_bound = std::move(set_objective_best_bound);
-        }
-        helper->parallel_mode = true;
         CpSolverResponse thread_response;
         if (local_params.use_lns()) {
           first_solution_found_or_search_finished.WaitForNotification();
@@ -2410,29 +2272,32 @@ CpSolverResponse SolveCpModelParallel(
           // seeds.
           thread_response = SolveCpModelWithLNS(
               model_proto, solution_observer, num_search_workers, worker_id,
-              shared_bounds_manager.get(), wall_timer, &local_model);
+              shared_response_manager, shared_bounds_manager.get(), wall_timer,
+              &local_model);
         } else {
           thread_response = SolveCpModelInternal(
-              model_proto, true, solution_observer, shared_bounds_manager.get(),
-              wall_timer, &local_model);
+              model_proto, /*is_real_solve=*/true,
+              /*log_sequential_search=*/false, solution_observer,
+              shared_response_manager, shared_bounds_manager.get(), wall_timer,
+              &local_model);
         }
 
         // Process final solution. Decide which worker has the 'best'
         // solution. Note that the solution observer may or may not have been
         // called.
         {
-          absl::MutexLock lock(&mutex);
           LOG_IF(INFO, log_search)
               << "*** worker '" << worker_name << "' terminates with status "
               << ProtoEnumToString<CpSolverStatus>(thread_response.status())
               << " and an objective value of "
               << thread_response.objective_value();
 
-          MergeOptimizationSolution(thread_response, maximize, &best_response);
+          shared_response_manager->MergeIntoBestResponse(thread_response);
 
           // TODO(user): For now we assume that each worker only terminate when
           // the time limit is reached or when the problem is solved, so we just
           // abort all other threads and return.
+          absl::MutexLock lock(&mutex);
           *stopped = true;
           if (!first_solution_found_or_search_finished.HasBeenNotified()) {
             first_solution_found_or_search_finished.Notify();
@@ -2441,7 +2306,7 @@ CpSolverResponse SolveCpModelParallel(
       });
     }
   }  // for the dtor of the threadpool (join workers) before returning.
-  return best_response;
+  return shared_response_manager->GetBestResponse();
 }
 
 #endif  // __PORTABLE_PLATFORM__
@@ -2566,42 +2431,56 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     };
   }
 
+  SharedResponseManager shared_response_manager(new_model);
+
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
   int num_solutions = 0;
   std::function<void(const CpSolverResponse&)> observer_function =
       [&model_proto, &observers, &num_solutions, &wall_timer, &user_timer,
-       &postprocess_solution, log_search](const CpSolverResponse& response) {
+       &shared_response_manager, &postprocess_solution,
+       log_search](const CpSolverResponse& response) {
+        // We don't do anything if the solution is not improving and we are
+        // solving an optimization problem. Otherwise, we do display and forward
+        // any solution we found.
+        if (!shared_response_manager.MergeIntoBestResponse(response) &&
+            model_proto.has_objective()) {
+          return;
+        }
+        CpSolverResponse best_response =
+            shared_response_manager.GetBestResponse();
+
+        ++num_solutions;
         if (log_search) {
           if (model_proto.has_objective()) {
             const bool maximize =
                 model_proto.objective().scaling_factor() < 0.0;
-            LogNewSolution(absl::StrCat(++num_solutions), wall_timer.Get(),
-                           maximize ? response.objective_value()
-                                    : response.best_objective_bound(),
-                           maximize ? response.best_objective_bound()
-                                    : response.objective_value(),
-                           response.solution_info());
+            LogNewSolution(absl::StrCat(num_solutions), wall_timer.Get(),
+                           maximize ? best_response.objective_value()
+                                    : best_response.best_objective_bound(),
+                           maximize ? best_response.best_objective_bound()
+                                    : best_response.objective_value(),
+                           best_response.solution_info());
           } else {
-            LogNewSatSolution(absl::StrCat(++num_solutions), wall_timer.Get(),
-                              response.solution_info());
+            LogNewSatSolution(absl::StrCat(num_solutions), wall_timer.Get(),
+                              best_response.solution_info());
           }
         }
 
         if (observers.empty()) return;
-        CpSolverResponse copy = response;
-        postprocess_solution(&copy);
-        if (!copy.solution().empty()) {
+        postprocess_solution(&best_response);
+        if (!best_response.solution().empty()) {
           if (DEBUG_MODE || FLAGS_cp_model_check_intermediate_solutions) {
             CHECK(SolutionIsFeasible(
-                model_proto, std::vector<int64>(copy.solution().begin(),
-                                                copy.solution().end())));
+                model_proto,
+                std::vector<int64>(best_response.solution().begin(),
+                                   best_response.solution().end())));
           }
         }
 
-        copy.set_wall_time(wall_timer.Get());
-        copy.set_user_time(user_timer.Get());
+        best_response.set_wall_time(wall_timer.Get());
+        best_response.set_user_time(user_timer.Get());
         for (const auto& observer : observers) {
-          observer(copy);
+          observer(best_response);
         }
       };
 
@@ -2613,21 +2492,27 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #else   // __PORTABLE_PLATFORM__
   if (params.num_search_workers() > 1) {
     response =
-        SolveCpModelParallel(new_model, observer_function, &wall_timer, model);
+        SolveCpModelParallel(new_model, observer_function,
+                             &shared_response_manager, &wall_timer, model);
 #endif  // __PORTABLE_PLATFORM__
   } else if (params.use_lns() && new_model.has_objective() &&
              !params.enumerate_all_solutions()) {
     // TODO(user,user): Provide a better diversification for different
     // seeds.
     const int random_seed = model->GetOrCreate<SatParameters>()->random_seed();
-    response = SolveCpModelWithLNS(new_model, observer_function, 1, random_seed,
-                                   /*shared_bounds_manager=*/nullptr,
-                                   &wall_timer, model);
-  } else {  // Normal sequential run.
+    response = SolveCpModelWithLNS(
+        new_model, observer_function, 1, random_seed, &shared_response_manager,
+        /*shared_bounds_manager=*/nullptr, &wall_timer, model);
+  } else {
+    // Normal sequential run.
     response = SolveCpModelInternal(
-        new_model, /*is_real_solve=*/true, observer_function,
+        new_model, /*is_real_solve=*/true, /*log_sequential_search=*/true,
+        observer_function, &shared_response_manager,
         /*shared_bounds_manager=*/nullptr, &wall_timer, model);
   }
+
+  shared_response_manager.MergeIntoBestResponse(response);
+  response = shared_response_manager.GetBestResponse();
 
   postprocess_solution(&response);
   if (!response.solution().empty()) {

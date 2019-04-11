@@ -525,6 +525,8 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
             {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
             {SatSolverRestartPolicy(model)}, model);
       } else {
+        // TODO(user): We might want to restart if external info is available.
+        // Code a custom restart for this?
         auto no_restart = []() { return false; };
         return SolveProblemWithPortfolioSearch(
             {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
@@ -627,12 +629,6 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
   const ObjectiveSynchronizationHelper* helper =
       model->Get<ObjectiveSynchronizationHelper>();
-  const bool synchronize_objective =
-      solver->AssumptionLevel() == 0 && helper != nullptr &&
-      helper->get_external_best_objective != nullptr &&
-      helper->objective_var != kNoIntegerVariable &&
-      model->GetOrCreate<SatParameters>()->share_objective_bounds() &&
-      model->GetOrCreate<ObjectiveSynchronizationHelper>()->parallel_mode;
 
   // Note that it is important to do the level-zero propagation if it wasn't
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
@@ -660,35 +656,6 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
         return solver->UnsatStatus();
       }
       policy_index = (policy_index + 1) % num_policies;
-    }
-
-    // Check external objective, and restart if a better one is supplied.
-    // This code has to be run before the level_zero_propagate_callbacks are
-    // triggered, as one of them will actually import the new objective bounds.
-    // TODO(user): Maybe do not check this at each decision.
-    // TODO(user): Move restart code to the restart part?
-    if (synchronize_objective) {
-      const double external_bound = helper->get_external_best_objective();
-      CHECK(helper->get_external_best_bound != nullptr);
-      const double external_best_bound = helper->get_external_best_bound();
-      IntegerValue current_objective_upper_bound(
-          integer_trail->UpperBound(helper->objective_var));
-      IntegerValue current_objective_lower_bound(
-          integer_trail->LowerBound(helper->objective_var));
-      IntegerValue new_objective_upper_bound(
-          std::isfinite(external_bound)
-              ? helper->UnscaledObjective(external_bound) - 1
-              : current_objective_upper_bound.value());
-      IntegerValue new_objective_lower_bound(
-          std::isfinite(external_best_bound)
-              ? helper->UnscaledObjective(external_best_bound)
-              : current_objective_lower_bound.value());
-      if (new_objective_upper_bound < current_objective_upper_bound ||
-          new_objective_lower_bound > current_objective_lower_bound) {
-        if (!solver->RestoreSolverToAssumptionLevel()) {
-          return solver->UnsatStatus();
-        }
-      }
     }
 
     if (solver->CurrentDecisionLevel() == 0) {

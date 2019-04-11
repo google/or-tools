@@ -29,6 +29,35 @@
 namespace operations_research {
 namespace sat {
 
+// Manages the gobal best solution kept by the solver.
+//
+// TODO(user): Add two int64 fieds inner_objective_lb/ub and use them instead of
+// the one in best_response. This way all the code can assume minimization and
+// not care about the offset and scaling. These should only be used for final
+// reporting and display! Moreover, that allow to share the currrent objective
+// upper bound, that is only valid by assuming we want to find a better
+// objective.
+class SharedResponseManager {
+ public:
+  explicit SharedResponseManager(const CpModelProto& proto);
+
+  double GetObjectiveValue();
+  double GetObjectiveBestBound();
+  CpSolverResponse GetBestResponse();
+
+  // TODO(user): Simple objective update probably do not need to go through
+  // this function, same for solution update.
+  bool MergeIntoBestResponse(const CpSolverResponse& response);
+
+  // This never changes after construction, so it is thread-safe to access it.
+  bool IsMaximize() const { return is_maximize_; }
+
+ private:
+  bool is_maximize_ = false;  // const.
+  CpSolverResponse best_response_;
+  absl::Mutex mutex_;
+};
+
 // This class manages a pool of lower and upper bounds on a set of variables in
 // a parallel context.
 class SharedBoundsManager {
@@ -78,16 +107,17 @@ void RegisterVariableBoundsLevelZeroExport(
 //
 // Currently, standard search works fine with it.
 // LNS search and Core based search do not support it
-void RegisterObjectiveBoundsImport(Model* model);
+void RegisterObjectiveBoundsImport(
+    SharedResponseManager* shared_response_manager, Model* model);
 
 // Registers a callback that will report improving objective best bound.
 //
 // TODO(user): A solver can also improve the objective upper bound without
 // finding a solution and we should maybe share this as well.
-void RegisterObjectiveBestBoundExport(const CpModelProto& model_proto,
-                                      bool log_progress,
-                                      IntegerVariable objective_var,
-                                      WallTimer* wall_timer, Model* model);
+void RegisterObjectiveBestBoundExport(
+    const CpModelProto& model_proto, bool log_progress,
+    IntegerVariable objective_var, WallTimer* wall_timer,
+    SharedResponseManager* shared_response_manager, Model* model);
 
 // Stores information on the worker in the parallel context.
 struct WorkerInfo {

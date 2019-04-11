@@ -87,6 +87,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_loader",
+        ":cp_model_search",
         ":cp_model_utils",
         ":integer",
         ":integer_search",

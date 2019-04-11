@@ -398,6 +398,9 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 
 // TODO(user): Better stats in the multi thread case.
 //                Should we cumul conflicts, branches... ?
+//
+// TODO(user): Rename and make sure this also work for pure feasibility problem.
+// We do not want to special case this too much by calling other functions.
 bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
                                CpSolverResponse* best) {
   // In all cases, we always update the best objective bound similarly.
@@ -420,7 +423,7 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
           maximize ? response.objective_value() > best->objective_value()
                    : response.objective_value() < best->objective_value();
       // TODO(user): return OPTIMAL if objective is tight.
-      if (is_improving) {
+      if (is_improving || best->status() == CpSolverStatus::UNKNOWN) {
         // Overwrite solution and fix best_objective_bound.
         *best = response;
         return true;
@@ -429,6 +432,15 @@ bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
         // The new solution has a worse objective value, but a better
         // best_objective_bound.
         return true;
+      }
+
+      // We still override an equivalent solution, but return false.
+      //
+      // TODO(user): this is needed for feasibility (enumerate all solution),
+      // but might also add diversity to the LNS starting solution.
+      if (response.objective_value() == best->objective_value() &&
+          best->status() != CpSolverStatus::OPTIMAL) {
+        *best = response;
       }
       return false;
     }

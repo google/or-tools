@@ -188,14 +188,12 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 
 // Store relationship between the CpSolverResponse objective and the internal
 // IntegerVariable the solver tries to minimize.
+//
+// TODO(user): This belongs to the CpModelMapping class, move there.
 struct ObjectiveSynchronizationHelper {
   double scaling_factor = 1.0;
   double offset = 0.0;
   IntegerVariable objective_var = kNoIntegerVariable;
-  std::function<double()> get_external_best_objective = nullptr;
-  std::function<double()> get_external_best_bound = nullptr;
-  std::function<void(double, double)> set_external_best_bound = nullptr;
-  bool parallel_mode = false;
 
   int64 UnscaledObjective(double value) const {
     return static_cast<int64>(std::round(value / scaling_factor - offset));

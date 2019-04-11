@@ -14,9 +14,9 @@
 #include "ortools/sat/synchronization.h"
 
 #include "absl/container/flat_hash_set.h"
-#include "absl/strings/str_join.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
+#include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
@@ -26,7 +26,44 @@
 namespace operations_research {
 namespace sat {
 
-SharedBoundsManager::SharedBoundsManager(int num_workers, const CpModelProto& model_proto)
+SharedResponseManager::SharedResponseManager(const CpModelProto& proto) {
+  best_response_.set_status(CpSolverStatus::UNKNOWN);
+  if (proto.has_objective()) {
+    const double kInfinity = std::numeric_limits<double>::infinity();
+    is_maximize_ = proto.objective().scaling_factor() < 0.0;
+    if (is_maximize_) {
+      best_response_.set_objective_value(-kInfinity);
+      best_response_.set_best_objective_bound(kInfinity);
+    } else {
+      best_response_.set_objective_value(kInfinity);
+      best_response_.set_best_objective_bound(-kInfinity);
+    }
+  }
+}
+
+double SharedResponseManager::GetObjectiveValue() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return best_response_.objective_value();
+}
+
+double SharedResponseManager::GetObjectiveBestBound() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return best_response_.best_objective_bound();
+}
+
+CpSolverResponse SharedResponseManager::GetBestResponse() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return best_response_;
+}
+
+bool SharedResponseManager::MergeIntoBestResponse(
+    const CpSolverResponse& response) {
+  absl::MutexLock mutex_lock(&mutex_);
+  return MergeOptimizationSolution(response, is_maximize_, &best_response_);
+}
+
+SharedBoundsManager::SharedBoundsManager(int num_workers,
+                                         const CpModelProto& model_proto)
     : num_workers_(num_workers),
       num_variables_(model_proto.variables_size()),
       changed_variables_per_workers_(num_workers),
@@ -44,8 +81,7 @@ SharedBoundsManager::SharedBoundsManager(int num_workers, const CpModelProto& mo
 
 void SharedBoundsManager::ReportPotentialNewBounds(
     const CpModelProto& model_proto, int worker_id,
-    const std::string& worker_name,
-    const std::vector<int>& variables,
+    const std::string& worker_name, const std::vector<int>& variables,
     const std::vector<int64>& new_lower_bounds,
     const std::vector<int64>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
@@ -70,7 +106,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
       if (changed_ub) {
         upper_bounds_[var] = new_ub;
       }
-      
+
       for (int j = 0; j < num_workers_; ++j) {
         if (worker_id == j) continue;
         changed_variables_per_workers_[j].Set(var);
@@ -78,9 +114,8 @@ void SharedBoundsManager::ReportPotentialNewBounds(
       if (VLOG_IS_ON(2)) {
         const IntegerVariableProto& var_proto = model_proto.variables(var);
         const std::string& var_name =
-            var_proto.name().empty()
-                ? absl::StrCat("anonymous_var(", var, ")")
-                : absl::StrCat(var_proto.name(), "(", var, ")");
+            var_proto.name().empty() ? absl::StrCat("anonymous_var(", var, ")")
+                                     : var_proto.name();
         LOG(INFO) << "  '" << worker_name << "' exports new bounds for "
                   << var_name << ": from [" << old_lb << ", " << old_ub
                   << "] to [" << new_lb << ", " << new_ub << "]";
@@ -175,9 +210,9 @@ void RegisterVariableBoundsLevelZeroImport(
                                             &new_upper_bounds);
     bool new_bounds_have_been_imported = false;
     for (int i = 0; i < model_variables.size(); ++i) {
+      const int model_var = model_variables[i];
       // This can happen if a boolean variables is forced to have an
       // integer view in one thread, and not in another thread.
-      const int model_var = model_variables[i];
       if (!mapping->IsInteger(model_var)) continue;
       const IntegerVariable var = mapping->Integer(model_var);
       const IntegerValue new_lb(new_lower_bounds[i]);
@@ -195,7 +230,7 @@ void RegisterVariableBoundsLevelZeroImport(
         const std::string& var_name =
             var_proto.name().empty()
                 ? absl::StrCat("anonymous_var(", model_var, ")")
-                : absl::StrCat(var_proto.name(), "(", model_var, ")");
+                : var_proto.name();
         LOG(INFO) << "  '" << worker_info->worker_name
                   << "' imports new bounds for " << var_name << ": from ["
                   << old_lb << ", " << old_ub << "] to [" << new_lb << ", "
@@ -223,50 +258,46 @@ void RegisterVariableBoundsLevelZeroImport(
       import_level_zero_bounds);
 }
 
-void RegisterObjectiveBestBoundExport(const CpModelProto& model_proto,
-                                      bool log_progress,
-                                      IntegerVariable objective_var,
-                                      WallTimer* wall_timer, Model* model) {
+void RegisterObjectiveBestBoundExport(
+    const CpModelProto& model_proto, bool log_progress,
+    IntegerVariable objective_var, WallTimer* wall_timer,
+    SharedResponseManager* shared_response_manager, Model* model) {
+  auto* integer_trail = model->Get<IntegerTrail>();
+  auto* worker_info = model->GetOrCreate<WorkerInfo>();
+  const CpObjectiveProto& obj = model_proto.objective();
   const auto broadcast_objective_lower_bound =
-      [&model_proto, objective_var, wall_timer, model,
-       log_progress](const std::vector<IntegerVariable>& unused) {
-        auto* integer_trail = model->Get<IntegerTrail>();
-        const CpObjectiveProto& obj = model_proto.objective();
+      [obj, objective_var, wall_timer, integer_trail, worker_info, log_progress,
+       shared_response_manager](const std::vector<IntegerVariable>& unused) {
         const double new_best_bound = ScaleObjectiveValue(
             obj, integer_trail->LevelZeroLowerBound(objective_var).value());
-        const double new_objective_value = ScaleObjectiveValue(
-            obj, integer_trail->LevelZeroUpperBound(objective_var).value());
-
-        const ObjectiveSynchronizationHelper* const helper =
-            model->GetOrCreate<ObjectiveSynchronizationHelper>();
-        const double current_best_bound = helper->get_external_best_bound();
+        const double current_best_bound =
+            shared_response_manager->GetObjectiveBestBound();
         const double current_objective_value =
-            helper->get_external_best_objective();
+            shared_response_manager->GetObjectiveValue();
 
-        // TODO(lperron): Unit test this lambda.
-        if ((helper->scaling_factor >= 0 &&  // Unset -> = 0.0 -> minimize.
-             new_best_bound > current_best_bound) ||
-            (helper->scaling_factor < 0 &&
-             new_best_bound < current_best_bound)) {
+        // TODO(user): we currently display "inf" for the objective if the first
+        // update is a bound update. This will go away when I refactor the code
+        // to not depend on the objective scaling/offset and stay with int64
+        // internally.
+        CpSolverResponse response;
+        response.set_status(CpSolverStatus::UNKNOWN);
+        const double kInfinity = std::numeric_limits<double>::infinity();
+        if (shared_response_manager->IsMaximize() &&
+            new_best_bound < current_best_bound) {
+          response.set_objective_value(-kInfinity);
+          response.set_best_objective_bound(new_best_bound);
+          shared_response_manager->MergeIntoBestResponse(response);
           if (log_progress) {
-            const WorkerInfo* const worker_info =
-                model->GetOrCreate<WorkerInfo>();
-            const double reported_objective_value =
-                std::isfinite(current_objective_value) ? current_objective_value
-                                                       : new_objective_value;
-            if (new_best_bound > current_best_bound) {  // minimization.
-              LogNewSolution("ObjLb", wall_timer->Get(), new_best_bound,
-                             reported_objective_value,
-                             worker_info->worker_name);
-            } else {
-              LogNewSolution("ObjUb", wall_timer->Get(),
-                             reported_objective_value, new_best_bound,
-                             worker_info->worker_name);
-            }
+            LogNewSolution("ObjUb", wall_timer->Get(), current_objective_value,
+                           new_best_bound, worker_info->worker_name);
           }
-          if (helper->set_external_best_bound) {
-            helper->set_external_best_bound(current_objective_value,
-                                            new_best_bound);
+        } else if (new_best_bound > current_best_bound) {
+          response.set_objective_value(kInfinity);
+          response.set_best_objective_bound(new_best_bound);
+          shared_response_manager->MergeIntoBestResponse(response);
+          if (log_progress) {
+            LogNewSolution("ObjLb", wall_timer->Get(), new_best_bound,
+                           current_objective_value, worker_info->worker_name);
           }
         }
       };
@@ -275,19 +306,19 @@ void RegisterObjectiveBestBoundExport(const CpModelProto& model_proto,
           broadcast_objective_lower_bound);
 }
 
-void RegisterObjectiveBoundsImport(Model* model) {
-  SatSolver* const solver = model->GetOrCreate<SatSolver>();
-  const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
-  const ObjectiveSynchronizationHelper* const helper =
-      model->GetOrCreate<ObjectiveSynchronizationHelper>();
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-  const auto import_objective_bounds = [model, solver, worker_info,
-                                        integer_trail, helper]() {
+void RegisterObjectiveBoundsImport(
+    SharedResponseManager* shared_response_manager, Model* model) {
+  auto* solver = model->GetOrCreate<SatSolver>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* worker_info = model->GetOrCreate<WorkerInfo>();
+  auto* helper = model->GetOrCreate<ObjectiveSynchronizationHelper>();
+  const auto import_objective_bounds = [solver, integer_trail, worker_info,
+                                        helper, shared_response_manager]() {
     if (solver->AssumptionLevel() != 0) return true;
+    const double external_bound = shared_response_manager->GetObjectiveValue();
+    const double external_best_bound =
+        shared_response_manager->GetObjectiveBestBound();
 
-    CHECK(helper->get_external_best_bound != nullptr);
-    const double external_bound = helper->get_external_best_objective();
-    const double external_best_bound = helper->get_external_best_bound();
     const IntegerValue current_objective_upper_bound(
         integer_trail->UpperBound(helper->objective_var));
     const IntegerValue current_objective_lower_bound(
