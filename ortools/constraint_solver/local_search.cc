@@ -2915,7 +2915,7 @@ class FindOneNeighbor : public DecisionBuilder {
   FindOneNeighbor(Assignment* const assignment, SolutionPool* const pool,
                   LocalSearchOperator* const ls_operator,
                   DecisionBuilder* const sub_decision_builder,
-                  const SearchLimit* const limit,
+                  const RegularLimit* const limit,
                   const std::vector<LocalSearchFilter*>& filters);
   ~FindOneNeighbor() override {}
   Decision* Next(Solver* const solver) override;
@@ -2931,8 +2931,8 @@ class FindOneNeighbor : public DecisionBuilder {
   SolutionPool* const pool_;
   LocalSearchOperator* const ls_operator_;
   DecisionBuilder* const sub_decision_builder_;
-  SearchLimit* limit_;
-  const SearchLimit* const original_limit_;
+  RegularLimit* limit_;
+  const RegularLimit* const original_limit_;
   bool neighbor_found_;
   std::vector<LocalSearchFilter*> filters_;
   int solution_count_;
@@ -2948,7 +2948,7 @@ FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
                                  SolutionPool* const pool,
                                  LocalSearchOperator* const ls_operator,
                                  DecisionBuilder* const sub_decision_builder,
-                                 const SearchLimit* const limit,
+                                 const RegularLimit* const limit,
                                  const std::vector<LocalSearchFilter*>& filters)
     : assignment_(assignment),
       reference_assignment_(new Assignment(assignment_)),
@@ -2971,11 +2971,11 @@ FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
   if (nullptr == limit) {
     limit_ = solver->MakeLimit(kint64max, kint64max, kint64max, 1);
   } else {
-    limit_ = limit->MakeClone();
+    limit_ = limit->MakeIdenticalClone();
     // TODO(user): Support skipping neighborhood checks for limits accepting
     // more than one solution (e.g. best accept). For now re-enabling systematic
     // checks.
-    if (Solver::GetSolutionLimit(limit_) != 1) {
+    if (limit_->solutions() != 1) {
       VLOG(1) << "Disabling neighbor-check skipping outside of first accept.";
       check_period_ = 1;
     }
@@ -3205,7 +3205,7 @@ class LocalSearchPhaseParameters : public BaseObject {
   LocalSearchPhaseParameters(SolutionPool* const pool,
                              LocalSearchOperator* ls_operator,
                              DecisionBuilder* sub_decision_builder,
-                             SearchLimit* const limit,
+                             RegularLimit* const limit,
                              const std::vector<LocalSearchFilter*>& filters)
       : solution_pool_(pool),
         ls_operator_(ls_operator),
@@ -3222,14 +3222,14 @@ class LocalSearchPhaseParameters : public BaseObject {
   DecisionBuilder* sub_decision_builder() const {
     return sub_decision_builder_;
   }
-  SearchLimit* limit() const { return limit_; }
+  RegularLimit* limit() const { return limit_; }
   const std::vector<LocalSearchFilter*>& filters() const { return filters_; }
 
  private:
   SolutionPool* const solution_pool_;
   LocalSearchOperator* const ls_operator_;
   DecisionBuilder* const sub_decision_builder_;
-  SearchLimit* const limit_;
+  RegularLimit* const limit_;
   std::vector<LocalSearchFilter*> filters_;
 };
 
@@ -3243,7 +3243,7 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     LocalSearchOperator* const ls_operator,
-    DecisionBuilder* const sub_decision_builder, SearchLimit* const limit) {
+    DecisionBuilder* const sub_decision_builder, RegularLimit* const limit) {
   return MakeLocalSearchPhaseParameters(MakeDefaultSolutionPool(), ls_operator,
                                         sub_decision_builder, limit,
                                         std::vector<LocalSearchFilter*>());
@@ -3251,7 +3251,7 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     LocalSearchOperator* const ls_operator,
-    DecisionBuilder* const sub_decision_builder, SearchLimit* const limit,
+    DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
     const std::vector<LocalSearchFilter*>& filters) {
   return MakeLocalSearchPhaseParameters(MakeDefaultSolutionPool(), ls_operator,
                                         sub_decision_builder, limit, filters);
@@ -3267,7 +3267,7 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     SolutionPool* const pool, LocalSearchOperator* const ls_operator,
-    DecisionBuilder* const sub_decision_builder, SearchLimit* const limit) {
+    DecisionBuilder* const sub_decision_builder, RegularLimit* const limit) {
   return MakeLocalSearchPhaseParameters(pool, ls_operator, sub_decision_builder,
                                         limit,
                                         std::vector<LocalSearchFilter*>());
@@ -3275,7 +3275,7 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     SolutionPool* const pool, LocalSearchOperator* const ls_operator,
-    DecisionBuilder* const sub_decision_builder, SearchLimit* const limit,
+    DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
     const std::vector<LocalSearchFilter*>& filters) {
   return RevAlloc(new LocalSearchPhaseParameters(
       pool, ls_operator, sub_decision_builder, limit, filters));
@@ -3361,7 +3361,7 @@ class LocalSearch : public DecisionBuilder {
   LocalSearch(Assignment* const assignment, SolutionPool* const pool,
               LocalSearchOperator* const ls_operator,
               DecisionBuilder* const sub_decision_builder,
-              SearchLimit* const limit,
+              RegularLimit* const limit,
               const std::vector<LocalSearchFilter*>& filters);
   // TODO(user): find a way to not have to pass vars here: redundant with
   // variables in operators
@@ -3369,20 +3369,20 @@ class LocalSearch : public DecisionBuilder {
               DecisionBuilder* const first_solution,
               LocalSearchOperator* const ls_operator,
               DecisionBuilder* const sub_decision_builder,
-              SearchLimit* const limit,
+              RegularLimit* const limit,
               const std::vector<LocalSearchFilter*>& filters);
   LocalSearch(const std::vector<IntVar*>& vars, SolutionPool* const pool,
               DecisionBuilder* const first_solution,
               DecisionBuilder* const first_solution_sub_decision_builder,
               LocalSearchOperator* const ls_operator,
               DecisionBuilder* const sub_decision_builder,
-              SearchLimit* const limit,
+              RegularLimit* const limit,
               const std::vector<LocalSearchFilter*>& filters);
   LocalSearch(const std::vector<SequenceVar*>& vars, SolutionPool* const pool,
               DecisionBuilder* const first_solution,
               LocalSearchOperator* const ls_operator,
               DecisionBuilder* const sub_decision_builder,
-              SearchLimit* const limit,
+              RegularLimit* const limit,
               const std::vector<LocalSearchFilter*>& filters);
   ~LocalSearch() override;
   Decision* Next(Solver* const solver) override;
@@ -3401,7 +3401,7 @@ class LocalSearch : public DecisionBuilder {
   DecisionBuilder* const sub_decision_builder_;
   std::vector<NestedSolveDecision*> nested_decisions_;
   int nested_decision_index_;
-  SearchLimit* const limit_;
+  RegularLimit* const limit_;
   const std::vector<LocalSearchFilter*> filters_;
   bool has_started_;
 };
@@ -3409,7 +3409,7 @@ class LocalSearch : public DecisionBuilder {
 LocalSearch::LocalSearch(Assignment* const assignment, SolutionPool* const pool,
                          LocalSearchOperator* const ls_operator,
                          DecisionBuilder* const sub_decision_builder,
-                         SearchLimit* const limit,
+                         RegularLimit* const limit,
                          const std::vector<LocalSearchFilter*>& filters)
     : assignment_(nullptr),
       pool_(pool),
@@ -3435,7 +3435,7 @@ LocalSearch::LocalSearch(const std::vector<IntVar*>& vars,
                          DecisionBuilder* const first_solution,
                          LocalSearchOperator* const ls_operator,
                          DecisionBuilder* const sub_decision_builder,
-                         SearchLimit* const limit,
+                         RegularLimit* const limit,
                          const std::vector<LocalSearchFilter*>& filters)
     : assignment_(nullptr),
       pool_(pool),
@@ -3461,7 +3461,7 @@ LocalSearch::LocalSearch(
     DecisionBuilder* const first_solution,
     DecisionBuilder* const first_solution_sub_decision_builder,
     LocalSearchOperator* const ls_operator,
-    DecisionBuilder* const sub_decision_builder, SearchLimit* const limit,
+    DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
     const std::vector<LocalSearchFilter*>& filters)
     : assignment_(nullptr),
       pool_(pool),
@@ -3487,7 +3487,7 @@ LocalSearch::LocalSearch(const std::vector<SequenceVar*>& vars,
                          DecisionBuilder* const first_solution,
                          LocalSearchOperator* const ls_operator,
                          DecisionBuilder* const sub_decision_builder,
-                         SearchLimit* const limit,
+                         RegularLimit* const limit,
                          const std::vector<LocalSearchFilter*>& filters)
     : assignment_(nullptr),
       pool_(pool),

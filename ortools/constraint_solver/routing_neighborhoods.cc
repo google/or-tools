@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "ortools/constraint_solver/routing_neighborhoods.h"
+
 #include <algorithm>
 
 namespace operations_research {

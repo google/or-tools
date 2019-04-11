@@ -1012,6 +1012,10 @@ class PathCumulFilter : public BasePathFilter {
       paths_.clear();
       transits_.clear();
     }
+    void ClearPath(int path) {
+      paths_[path].clear();
+      transits_[path].clear();
+    }
     int AddPaths(int num_paths) {
       const int first_path = paths_.size();
       paths_.resize(first_path + num_paths);
@@ -1429,6 +1433,14 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         StoreMinMaxCumulOfNodesOnPath(/*path=*/r, min_path_cumuls,
                                       /*is_delta=*/false);
       }
+      if (number_of_route_arcs == 1 &&
+          !routing_model_.AreEmptyRouteCostsConsideredForVehicle(vehicle)) {
+        // This is an empty route (single start->end arc) which we don't take
+        // into account for costs.
+        current_cumul_cost_values_[Start(r)] = 0;
+        current_path_transits_.ClearPath(r);
+        continue;
+      }
       if (FilterSlackCost() && !filter_with_optimizer) {
         const int64 start =
             ComputePathMaxStartFromEndCumul(current_path_transits_, r, cumul);
@@ -1472,6 +1484,8 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
   // Initialize this before considering any deltas (neighbor).
   delta_max_end_cumul_ = kint64min;
   lns_detected_ = false;
+
+  DCHECK_GE(current_max_end_.cumul_value, current_min_start_.cumul_value);
   synchronized_objective_value_ =
       CapAdd(total_current_cumul_cost_value_,
              CapProd(global_span_cost_coefficient_,
@@ -1498,7 +1512,10 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   const int64 capacity = vehicle_capacities_[vehicle];
   const bool filter_with_optimizer =
       FilterWithDimensionCumulOptimizerForVehicle(vehicle);
-  if (!filter_with_optimizer) {
+  const bool filter_vehicle_costs =
+      !routing_model_.IsEnd(GetNext(node)) ||
+      routing_model_.AreEmptyRouteCostsConsideredForVehicle(vehicle);
+  if (!filter_with_optimizer && filter_vehicle_costs) {
     cumul_cost_delta = CapAdd(GetCumulSoftCost(node, cumul),
                               GetCumulPiecewiseLinearCost(node, cumul));
   }
@@ -1539,7 +1556,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
     cumul = std::max(cumuls_[next]->Min(), cumul);
     min_path_cumuls.push_back(cumul);
     node = next;
-    if (!filter_with_optimizer) {
+    if (!filter_with_optimizer && filter_vehicle_costs) {
       cumul_cost_delta =
           CapAdd(cumul_cost_delta, GetCumulSoftCost(node, cumul));
       cumul_cost_delta =
@@ -1575,16 +1592,19 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
         }
         min_total_slack = std::max(min_total_slack, min_total_break);
       }
-      cumul_cost_delta = CapAdd(
-          cumul_cost_delta,
-          CapProd(vehicle_span_cost_coefficients_[vehicle], min_total_slack));
+      if (filter_vehicle_costs) {
+        cumul_cost_delta = CapAdd(
+            cumul_cost_delta,
+            CapProd(vehicle_span_cost_coefficients_[vehicle], min_total_slack));
+      }
     }
     if (CapAdd(total_transit, min_total_slack) >
         vehicle_span_upper_bounds_[vehicle]) {
       return false;
     }
   }
-  if (FilterCumulSoftLowerBounds() && !filter_with_optimizer) {
+  if (FilterCumulSoftLowerBounds() && !filter_with_optimizer &&
+      filter_vehicle_costs) {
     cumul_cost_delta =
         CapAdd(cumul_cost_delta,
                GetPathCumulSoftLowerBoundCost(delta_path_transits_, path));
@@ -1598,12 +1618,20 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   if (FilterPrecedences()) {
     StoreMinMaxCumulOfNodesOnPath(path, min_path_cumuls, /*is_delta=*/true);
   }
+  if (!filter_vehicle_costs) {
+    // If this route's costs should't be taken into account, reset the
+    // cumul_cost_delta and delta_path_transits_ for this path.
+    cumul_cost_delta = 0;
+    delta_path_transits_.ClearPath(path);
+  }
   if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost() ||
       FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts()) {
     delta_paths_.insert(GetPath(path_start));
-    delta_max_end_cumul_ = std::max(delta_max_end_cumul_, cumul);
     cumul_cost_delta =
         CapSub(cumul_cost_delta, current_cumul_cost_values_[path_start]);
+    if (filter_vehicle_costs) {
+      delta_max_end_cumul_ = std::max(delta_max_end_cumul_, min_end);
+    }
   }
   cumul_cost_delta_ = CapAdd(cumul_cost_delta_, cumul_cost_delta);
   return true;

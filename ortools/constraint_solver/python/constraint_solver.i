@@ -56,7 +56,7 @@
 namespace operations_research {
 class AssignmentProto;
 class ConstraintSolverParameters;
-class SearchLimitParameters;
+class RegularLimitParameters;
 }  // namespace operations_research
 
 %{
@@ -922,7 +922,7 @@ namespace operations_research {
 %rename (ConstantRestart) Solver::MakeConstantRestart;
 
 // Solver: Search Limits.
-%unignore Solver::SearchLimitParameters;  // search_limit.proto
+%unignore Solver::RegularLimitParameters;  // search_limit.proto
 %rename (Limit) Solver::MakeLimit;
 %rename (TimeLimit) Solver::MakeTimeLimit;
 %rename (BranchesLimit) Solver::MakeBranchesLimit;
@@ -1879,8 +1879,8 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.solver_parameters_pb2,
                  ConstraintSolverParameters,
                  operations_research::ConstraintSolverParameters)
 PY_PROTO_TYPEMAP(ortools.constraint_solver.search_limit_pb2,
-                 SearchLimitParameters,
-                 operations_research::SearchLimitParameters)
+                 RegularLimitParameters,
+                 operations_research::RegularLimitParameters)
 
 %include "ortools/constraint_solver/constraint_solver.h"
 

@@ -770,6 +770,16 @@ class RoutingModel {
     return quadratic_cost_factor_of_vehicle_;
   }
 
+  void ConsiderEmptyRouteCostsForVehicle(bool consider_costs, int vehicle) {
+    DCHECK_LT(vehicle, vehicles_);
+    consider_empty_route_costs_[vehicle] = consider_costs;
+  }
+
+  bool AreEmptyRouteCostsConsideredForVehicle(int vehicle) const {
+    DCHECK_LT(vehicle, vehicles_);
+    return consider_empty_route_costs_[vehicle];
+  }
+
 // Search
 // Gets/sets the evaluator used during the search. Only relevant when
 // RoutingSearchParameters.first_solution_strategy = EVALUATOR_STRATEGY.
@@ -980,6 +990,9 @@ class RoutingModel {
   bool IsStart(int64 index) const;
   // Returns true if 'index' represents the last node of a route.
   bool IsEnd(int64 index) const { return index >= Size(); }
+  // Returns the vehicle of the given start/end index, and -1 if the given index
+  // is not a vehicle start/end.
+  int VehicleIndex(int index) const { return index_to_vehicle_[index]; }
   // Assignment inspection
   // Returns the variable index of the node directly after the node
   // corresponding to 'index' in 'assignment'.
@@ -1000,6 +1013,11 @@ class RoutingModel {
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
   // Returns the active variable of the node corresponding to index.
   IntVar* ActiveVar(int64 index) const { return active_[index]; }
+  // Returns the variable specifying whether or not costs are considered for
+  // vehicle.
+  IntVar* VehicleCostsConsideredVar(int vehicle) const {
+    return vehicle_costs_considered_[vehicle];
+  }
   // Returns the vehicle variable of the node corresponding to index. Note that
   // VehicleVar(index) == -1 is equivalent to ActiveVar(index) == 0.
   IntVar* VehicleVar(int64 index) const { return vehicle_vars_[index]; }
@@ -1362,10 +1380,10 @@ class RoutingModel {
   // TODO(user): Document each auxiliary method.
   Assignment* GetOrCreateAssignment();
   Assignment* GetOrCreateTmpAssignment();
-  SearchLimit* GetOrCreateLimit();
-  SearchLimit* GetOrCreateLocalSearchLimit();
-  SearchLimit* GetOrCreateLargeNeighborhoodSearchLimit();
-  SearchLimit* GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
+  RegularLimit* GetOrCreateLimit();
+  RegularLimit* GetOrCreateLocalSearchLimit();
+  RegularLimit* GetOrCreateLargeNeighborhoodSearchLimit();
+  RegularLimit* GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
   LocalSearchOperator* CreateInsertionOperator();
   LocalSearchOperator* CreateMakeInactiveOperator();
   void CreateNeighborhoodOperators(const RoutingSearchParameters& parameters);
@@ -1374,6 +1392,7 @@ class RoutingModel {
   const std::vector<LocalSearchFilter*>& GetOrCreateLocalSearchFilters();
   const std::vector<LocalSearchFilter*>& GetOrCreateFeasibilityFilters();
   DecisionBuilder* CreateSolutionFinalizer(SearchLimit* lns_limit);
+  DecisionBuilder* CreateFinalizerForMinimizedAndMaximizedVariables();
   void CreateFirstSolutionDecisionBuilders(
       const RoutingSearchParameters& search_parameters);
   DecisionBuilder* GetFirstSolutionDecisionBuilder(
@@ -1414,6 +1433,7 @@ class RoutingModel {
   std::vector<IntVar*> nexts_;
   std::vector<IntVar*> vehicle_vars_;
   std::vector<IntVar*> active_;
+  std::vector<IntVar*> vehicle_costs_considered_;
   // is_bound_to_end_[i] will be true iff the path starting at var #i is fully
   // bound and reaches the end of a route, i.e. either:
   // - IsEnd(i) is true
@@ -1435,6 +1455,15 @@ class RoutingModel {
   std::vector<int64> linear_cost_factor_of_vehicle_;
   std::vector<int64> quadratic_cost_factor_of_vehicle_;
   bool vehicle_amortized_cost_factors_set_;
+  // consider_empty_route_costs_[vehicle] determines if "vehicle" should be
+  // taken into account for costs (arc costs, span costs, etc.) even when the
+  // route of the vehicle is empty (i.e. goes straight from its start to its
+  // end).
+  // NOTE1: A vehicle's fixed cost is added iff the vehicle serves nodes on its
+  // route, regardless of this variable's value.
+  // NOTE2: The default value for this boolean is 'false' for all vehicles, i.e.
+  // by default empty routes will not contribute to the cost.
+  std::vector<bool> consider_empty_route_costs_;
 #ifndef SWIG
   gtl::ITIVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
@@ -1530,10 +1559,10 @@ class RoutingModel {
   std::unique_ptr<SweepArranger> sweep_arranger_;
 #endif
 
-  SearchLimit* limit_ = nullptr;
-  SearchLimit* ls_limit_ = nullptr;
-  SearchLimit* lns_limit_ = nullptr;
-  SearchLimit* first_solution_lns_limit_ = nullptr;
+  RegularLimit* limit_ = nullptr;
+  RegularLimit* ls_limit_ = nullptr;
+  RegularLimit* lns_limit_ = nullptr;
+  RegularLimit* first_solution_lns_limit_ = nullptr;
 
   double lp_scheduling_time_limit_seconds_ = 0;
 
@@ -2058,8 +2087,7 @@ class RoutingDimension {
   // Sets up the cost variables related to the global span and per-vehicle span
   // costs (only for the "slack" part of the latter).
   void SetupGlobalSpanCost(std::vector<IntVar*>* cost_elements) const;
-  void SetupSlackAndDependentTransitCosts(
-      std::vector<IntVar*>* cost_elements) const;
+  void SetupSlackAndDependentTransitCosts() const;
   // Finalize the model of the dimension.
   void CloseModel(bool use_light_propagation);
 

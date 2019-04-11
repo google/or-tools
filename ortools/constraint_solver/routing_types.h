@@ -17,6 +17,7 @@
 #include <functional>
 #include <utility>
 #include <vector>
+
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 

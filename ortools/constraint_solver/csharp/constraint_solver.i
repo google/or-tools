@@ -37,7 +37,7 @@ using System.Collections.Generic;
 // before the %{ #include ".../constraint_solver.h" %}.
 namespace operations_research {
 class ConstraintSolverParameters;
-class SearchLimitParameters;
+class RegularLimitParameters;
 }  // namespace operations_research
 
 %module(directors="1") operations_research;
@@ -946,11 +946,11 @@ PROTO_INPUT(operations_research::ConstraintSolverParameters,
 PROTO2_RETURN(operations_research::ConstraintSolverParameters,
               Google.OrTools.ConstraintSolver.ConstraintSolverParameters)
 
-PROTO_INPUT(operations_research::SearchLimitParameters,
-            Google.OrTools.ConstraintSolver.SearchLimitParameters,
+PROTO_INPUT(operations_research::RegularLimitParameters,
+            Google.OrTools.ConstraintSolver.RegularLimitParameters,
             proto)
-PROTO2_RETURN(operations_research::SearchLimitParameters,
-              Google.OrTools.ConstraintSolver.SearchLimitParameters)
+PROTO2_RETURN(operations_research::RegularLimitParameters,
+              Google.OrTools.ConstraintSolver.RegularLimitParameters)
 
 PROTO_INPUT(operations_research::CpModel,
             Google.OrTools.ConstraintSolver.CpModel,

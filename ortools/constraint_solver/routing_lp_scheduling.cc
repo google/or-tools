@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
+
 #include <numeric>
 
 #include "ortools/constraint_solver/routing.h"
@@ -99,13 +100,17 @@ bool DimensionCumulOptimizerCore::OptimizeSingleRoute(
     std::vector<int64>* cumul_values, int64* cost, int64* transit_cost) {
   InitOptimizer(linear_program);
 
+  const RoutingModel* const model = dimension()->model();
+  const bool optimize_vehicle_costs =
+      (cumul_values != nullptr || cost != nullptr) &&
+      (!model->IsEnd(next_accessor(model->Start(vehicle))) ||
+       model->AreEmptyRouteCostsConsideredForVehicle(vehicle));
   const int64 cumul_offset =
       dimension_->GetLocalOptimizerOffsetForVehicle(vehicle);
   int64 cost_offset = 0;
-  if (!SetRouteCumulConstraints(
-          vehicle, next_accessor, cumul_offset,
-          /*optimize_cost*/ cumul_values != nullptr || cost != nullptr,
-          linear_program, transit_cost, &cost_offset) ||
+  if (!SetRouteCumulConstraints(vehicle, next_accessor, cumul_offset,
+                                optimize_vehicle_costs, linear_program,
+                                transit_cost, &cost_offset) ||
       !FinalizeAndSolve(linear_program, lp_solver)) {
     return false;
   }
@@ -129,27 +134,33 @@ bool DimensionCumulOptimizerCore::Optimize(
   // If both "cumul_values" and "cost" parameters are null, we don't try to
   // optimize the cost and stop at the first feasible solution.
   const bool optimize_costs = (cumul_values != nullptr) || (cost != nullptr);
+  bool has_vehicles_being_optimized = false;
 
   const int64 cumul_offset = dimension_->GetGlobalOptimizerOffset();
   int64 total_transit_cost = 0;
   int64 total_cost_offset = 0;
-  for (int vehicle = 0; vehicle < dimension()->model()->vehicles(); vehicle++) {
+  const RoutingModel* model = dimension()->model();
+  for (int vehicle = 0; vehicle < model->vehicles(); vehicle++) {
     int64 route_transit_cost = 0;
     int64 route_cost_offset = 0;
+    const bool optimize_vehicle_costs =
+        optimize_costs &&
+        (!model->IsEnd(next_accessor(model->Start(vehicle))) ||
+         model->AreEmptyRouteCostsConsideredForVehicle(vehicle));
     if (!SetRouteCumulConstraints(vehicle, next_accessor, cumul_offset,
-                                  optimize_costs, linear_program,
+                                  optimize_vehicle_costs, linear_program,
                                   &route_transit_cost, &route_cost_offset)) {
       return false;
     }
-
     total_transit_cost = CapAdd(total_transit_cost, route_transit_cost);
     total_cost_offset = CapAdd(total_cost_offset, route_cost_offset);
+    has_vehicles_being_optimized |= optimize_vehicle_costs;
   }
   if (transit_cost != nullptr) {
     *transit_cost = total_transit_cost;
   }
 
-  SetGlobalConstraints(optimize_costs, linear_program);
+  SetGlobalConstraints(has_vehicles_being_optimized, linear_program);
 
   if (!FinalizeAndSolve(linear_program, lp_solver)) {
     return false;
@@ -174,14 +185,20 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
   InitOptimizer(linear_program);
 
   const int64 cumul_offset = dimension_->GetGlobalOptimizerOffset();
-  for (int vehicle = 0; vehicle < dimension()->model()->vehicles(); vehicle++) {
+  const RoutingModel* model = dimension()->model();
+  bool has_vehicles_being_optimized = false;
+  for (int vehicle = 0; vehicle < model->vehicles(); vehicle++) {
+    const bool optimize_vehicle_costs =
+        !model->IsEnd(next_accessor(model->Start(vehicle))) ||
+        model->AreEmptyRouteCostsConsideredForVehicle(vehicle);
     if (!SetRouteCumulConstraints(vehicle, next_accessor, cumul_offset,
-                                  /*optimize_costs*/ true, linear_program,
+                                  optimize_vehicle_costs, linear_program,
                                   nullptr, nullptr)) {
       return false;
     }
+    has_vehicles_being_optimized |= optimize_vehicle_costs;
   }
-  SetGlobalConstraints(/*optimize_costs*/ true, linear_program);
+  SetGlobalConstraints(has_vehicles_being_optimized, linear_program);
 
   if (!FinalizeAndSolve(linear_program, lp_solver)) {
     return false;
@@ -202,7 +219,6 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
       linear_program->SetObjectiveCoefficient(variable, 0);
     }
   }
-  const RoutingModel* model = dimension_->model();
   for (int vehicle = 0; vehicle < model->vehicles(); vehicle++) {
     linear_program->SetObjectiveCoefficient(
         index_to_cumul_variable_[model->End(vehicle)], 1);
@@ -388,11 +404,11 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   }
   // Add pickup and delivery limits.
   if (dimension_->HasPickupToDeliveryLimits()) {
-    // TODO(user): visited_pickup_index_for_pair is typically larger than
-    // paths, there should be some gain in maintaining it to 'all -1'
-    // instead of allocating/assigning a new vector at each call.
-    std::vector<int64> visited_pickup_index_for_pair(
-        model->GetPickupAndDeliveryPairs().size(), -1);
+    // visited_pickup_index_for_pair_ must be all -1.
+    DCHECK(std::all_of(visited_pickup_index_for_pair_.begin(),
+                       visited_pickup_index_for_pair_.end(),
+                       [](int64 node) { return node == -1; }));
+    std::vector<int64> visited_pairs;
     for (int pos = 0; pos < path_size - 1; ++pos) {
       const std::vector<std::pair<int, int>>& pickup_index_pairs =
           model->GetPickupIndexPairs(path[pos]);
@@ -403,14 +419,15 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         // pickup index pair and that it's not a delivery, and store the index.
         DCHECK(delivery_index_pairs.empty());
         DCHECK_EQ(pickup_index_pairs.size(), 1);
-        visited_pickup_index_for_pair[pickup_index_pairs[0].first] = path[pos];
+        visited_pickup_index_for_pair_[pickup_index_pairs[0].first] = path[pos];
+        visited_pairs.push_back(pickup_index_pairs[0].first);
       } else if (!delivery_index_pairs.empty()) {
         // The node is a delivery. We verify that it belongs to a single
         // delivery pair, and set the limit with its pickup if one has been
         // visited for this pair.
         DCHECK_EQ(delivery_index_pairs.size(), 1);
         const int pair_index = delivery_index_pairs[0].first;
-        const int64 pickup_index = visited_pickup_index_for_pair[pair_index];
+        const int64 pickup_index = visited_pickup_index_for_pair_[pair_index];
         if (pickup_index < 0) continue;
         const int64 limit = dimension_->GetPickupToDeliveryLimitForPair(
             pair_index, model->GetPickupIndexPairs(pickup_index)[0].second,
@@ -424,6 +441,9 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
               ct, index_to_cumul_variable_[pickup_index], -1);
         }
       }
+    }
+    for (const int64 pair : visited_pairs) {
+      visited_pickup_index_for_pair_[pair] = -1;
     }
   }
   // Add span bound constraint.
@@ -455,7 +475,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     linear_program->SetCoefficient(ct, lp_cumuls.back(), -1);
   }
   if (route_transit_cost != nullptr) {
-    if (span_cost_coef > 0) {
+    if (optimize_costs && span_cost_coef > 0) {
       const int64 total_fixed_transit = std::accumulate(
           fixed_transit.begin(), fixed_transit.end(), 0, CapAdd);
       *route_transit_cost = CapProd(total_fixed_transit, span_cost_coef);

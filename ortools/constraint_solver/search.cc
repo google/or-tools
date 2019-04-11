@@ -3906,85 +3906,7 @@ void SearchLimit::TopPeriodicCheck() {
   }
 }
 
-namespace {
 // ----- Regular Limit -----
-
-// Usual limit based on wall_time, number of explored branches and
-// number of failures in the search tree
-class RegularLimit : public SearchLimit {
- public:
-  RegularLimit(Solver* const s, int64 time, int64 branches, int64 failures,
-               int64 solutions, bool smart_time_check, bool cumulative);
-  ~RegularLimit() override;
-  void Copy(const SearchLimit* const limit) override;
-  SearchLimit* MakeClone() const override;
-  bool Check() override;
-  void Init() override;
-  void ExitSearch() override;
-  void UpdateLimits(int64 time, int64 branches, int64 failures,
-                    int64 solutions);
-  absl::Duration duration_limit() const { return duration_limit_; }
-  int64 wall_time() const {
-    return duration_limit_ == absl::InfiniteDuration()
-               ? kint64max
-               : absl::ToInt64Milliseconds(duration_limit());
-  }
-  int64 branches() const { return branches_; }
-  int64 failures() const { return failures_; }
-  int64 solutions() const { return solutions_; }
-  int ProgressPercent() override;
-  std::string DebugString() const override;
-
-  absl::Time AbsoluteSolverDeadline() const {
-    return solver_time_at_limit_start_ + duration_limit_;
-  }
-
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitExtension(ModelVisitor::kSearchLimitExtension);
-    visitor->VisitIntegerArgument(ModelVisitor::kTimeLimitArgument,
-                                  wall_time());
-    visitor->VisitIntegerArgument(ModelVisitor::kBranchesLimitArgument,
-                                  branches_);
-    visitor->VisitIntegerArgument(ModelVisitor::kFailuresLimitArgument,
-                                  failures_);
-    visitor->VisitIntegerArgument(ModelVisitor::kSolutionLimitArgument,
-                                  solutions_);
-    visitor->VisitIntegerArgument(ModelVisitor::kSmartTimeCheckArgument,
-                                  smart_time_check_);
-    visitor->VisitIntegerArgument(ModelVisitor::kCumulativeArgument,
-                                  cumulative_);
-    visitor->EndVisitExtension(ModelVisitor::kObjectiveExtension);
-  }
-
- private:
-  bool CheckTime();
-  absl::Duration TimeElapsed();
-  static int64 GetPercent(int64 value, int64 offset, int64 total) {
-    return (total > 0 && total < kint64max) ? 100 * (value - offset) / total
-                                            : -1;
-  }
-
-  absl::Duration duration_limit_;
-  absl::Time solver_time_at_limit_start_;
-  absl::Duration last_time_elapsed_;
-  int64 check_count_;
-  int64 next_check_;
-  bool smart_time_check_;
-  int64 branches_;
-  int64 branches_offset_;
-  int64 failures_;
-  int64 failures_offset_;
-  int64 solutions_;
-  int64 solutions_offset_;
-  // If cumulative if false, then the limit applies to each search
-  // independently. If it's true, the limit applies globally to all search for
-  // which this monitor is used.
-  // When cumulative is true, the offset fields have two different meanings
-  // depending on context:
-  // - within a search, it's an offset to be subtracted from the current value
-  // - outside of search, it's the amount consumed in previous searches
-  bool cumulative_;
-};
 
 RegularLimit::RegularLimit(Solver* const s, int64 time, int64 branches,
                            int64 failures, int64 solutions,
@@ -4018,7 +3940,9 @@ void RegularLimit::Copy(const SearchLimit* const limit) {
   cumulative_ = regular->cumulative_;
 }
 
-SearchLimit* RegularLimit::MakeClone() const {
+SearchLimit* RegularLimit::MakeClone() const { return MakeIdenticalClone(); }
+
+RegularLimit* RegularLimit::MakeIdenticalClone() const {
   Solver* const s = solver();
   return s->MakeLimit(wall_time(), branches_, failures_, solutions_,
                       smart_time_check_);
@@ -4084,6 +4008,21 @@ std::string RegularLimit::DebugString() const {
       solutions_, (cumulative_ ? "true" : "false"));
 }
 
+void RegularLimit::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitExtension(ModelVisitor::kSearchLimitExtension);
+  visitor->VisitIntegerArgument(ModelVisitor::kTimeLimitArgument, wall_time());
+  visitor->VisitIntegerArgument(ModelVisitor::kBranchesLimitArgument,
+                                branches_);
+  visitor->VisitIntegerArgument(ModelVisitor::kFailuresLimitArgument,
+                                failures_);
+  visitor->VisitIntegerArgument(ModelVisitor::kSolutionLimitArgument,
+                                solutions_);
+  visitor->VisitIntegerArgument(ModelVisitor::kSmartTimeCheckArgument,
+                                smart_time_check_);
+  visitor->VisitIntegerArgument(ModelVisitor::kCumulativeArgument, cumulative_);
+  visitor->EndVisitExtension(ModelVisitor::kObjectiveExtension);
+}
+
 bool RegularLimit::CheckTime() { return TimeElapsed() >= duration_limit(); }
 
 absl::Duration RegularLimit::TimeElapsed() {
@@ -4105,50 +4044,49 @@ absl::Duration RegularLimit::TimeElapsed() {
   }
   return last_time_elapsed_;
 }
-}  // namespace
 
-SearchLimit* Solver::MakeTimeLimit(int64 time_in_ms) {
+RegularLimit* Solver::MakeTimeLimit(int64 time_in_ms) {
   return MakeLimit(time_in_ms, kint64max, kint64max, kint64max);
 }
 
-SearchLimit* Solver::MakeBranchesLimit(int64 branches) {
+RegularLimit* Solver::MakeBranchesLimit(int64 branches) {
   return MakeLimit(kint64max, branches, kint64max, kint64max);
 }
 
-SearchLimit* Solver::MakeFailuresLimit(int64 failures) {
+RegularLimit* Solver::MakeFailuresLimit(int64 failures) {
   return MakeLimit(kint64max, kint64max, failures, kint64max);
 }
 
-SearchLimit* Solver::MakeSolutionsLimit(int64 solutions) {
+RegularLimit* Solver::MakeSolutionsLimit(int64 solutions) {
   return MakeLimit(kint64max, kint64max, kint64max, solutions);
 }
 
-SearchLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
-                               int64 solutions) {
+RegularLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
+                                int64 solutions) {
   return MakeLimit(time, branches, failures, solutions, false);
 }
 
-SearchLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
-                               int64 solutions, bool smart_time_check) {
+RegularLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
+                                int64 solutions, bool smart_time_check) {
   return MakeLimit(time, branches, failures, solutions, smart_time_check,
                    false);
 }
 
-SearchLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
-                               int64 solutions, bool smart_time_check,
-                               bool cumulative) {
+RegularLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
+                                int64 solutions, bool smart_time_check,
+                                bool cumulative) {
   return RevAlloc(new RegularLimit(this, time, branches, failures, solutions,
                                    smart_time_check, cumulative));
 }
 
-SearchLimit* Solver::MakeLimit(const SearchLimitParameters& proto) {
+RegularLimit* Solver::MakeLimit(const RegularLimitParameters& proto) {
   return MakeLimit(proto.time(), proto.branches(), proto.failures(),
                    proto.solutions(), proto.smart_time_check(),
                    proto.cumulative());
 }
 
-SearchLimitParameters Solver::MakeDefaultSearchLimitParameters() const {
-  SearchLimitParameters proto;
+RegularLimitParameters Solver::MakeDefaultRegularLimitParameters() const {
+  RegularLimitParameters proto;
   proto.set_time(kint64max);
   proto.set_branches(kint64max);
   proto.set_failures(kint64max);
@@ -4224,28 +4162,6 @@ class ORLimit : public SearchLimit {
 SearchLimit* Solver::MakeLimit(SearchLimit* const limit_1,
                                SearchLimit* const limit_2) {
   return RevAlloc(new ORLimit(limit_1, limit_2));
-}
-
-void Solver::UpdateLimits(int64 time, int64 branches, int64 failures,
-                          int64 solutions, SearchLimit* limit) {
-  reinterpret_cast<RegularLimit*>(limit)->UpdateLimits(time, branches, failures,
-                                                       solutions);
-}
-
-int64 Solver::GetTimeLimit(SearchLimit* limit) {
-  return reinterpret_cast<RegularLimit*>(limit)->wall_time();
-}
-
-int64 Solver::GetBranchLimit(SearchLimit* limit) {
-  return reinterpret_cast<RegularLimit*>(limit)->branches();
-}
-
-int64 Solver::GetFailureLimit(SearchLimit* limit) {
-  return reinterpret_cast<RegularLimit*>(limit)->failures();
-}
-
-int64 Solver::GetSolutionLimit(SearchLimit* limit) {
-  return reinterpret_cast<RegularLimit*>(limit)->solutions();
 }
 
 namespace {

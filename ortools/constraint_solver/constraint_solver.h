@@ -133,9 +133,10 @@ class LocalSearchMonitor;
 class Queue;
 class RevBitMatrix;
 class RevBitSet;
+class RegularLimit;
+class RegularLimitParameters;
 class Search;
 class SearchLimit;
-class SearchLimitParameters;
 class SearchMonitor;
 class SequenceVar;
 class SequenceVarAssignment;
@@ -2202,55 +2203,44 @@ class Solver {
 
   // Creates a search limit that constrains the running time given in
   // milliseconds.
-  SearchLimit* MakeTimeLimit(int64 time_in_ms);
+  RegularLimit* MakeTimeLimit(int64 time_in_ms);
 
   // Creates a search limit that constrains the number of branches
   // explored in the search tree.
-  SearchLimit* MakeBranchesLimit(int64 branches);
+  RegularLimit* MakeBranchesLimit(int64 branches);
 
   // Creates a search limit that constrains the number of failures
   // that can happen when exploring the search tree.
-  SearchLimit* MakeFailuresLimit(int64 failures);
+  RegularLimit* MakeFailuresLimit(int64 failures);
 
   // Creates a search limit that constrains the number of solutions found
   // during the search.
-  SearchLimit* MakeSolutionsLimit(int64 solutions);
+  RegularLimit* MakeSolutionsLimit(int64 solutions);
 
   // Limits the search with the 'time', 'branches', 'failures' and
   // 'solutions' limits.
-  SearchLimit* MakeLimit(int64 time, int64 branches, int64 failures,
-                         int64 solutions);
+  RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
+                          int64 solutions);
   // Version reducing calls to wall timer by estimating number of remaining
   // calls.
-  SearchLimit* MakeLimit(int64 time, int64 branches, int64 failures,
-                         int64 solutions, bool smart_time_check);
+  RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
+                          int64 solutions, bool smart_time_check);
   // Creates a search limit which can either apply cumulatively or
   // search-by-search.
-  SearchLimit* MakeLimit(int64 time, int64 branches, int64 failures,
-                         int64 solutions, bool smart_time_check,
-                         bool cumulative);
+  RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
+                          int64 solutions, bool smart_time_check,
+                          bool cumulative);
   // Creates a search limit from its protobuf description
-  SearchLimit* MakeLimit(const SearchLimitParameters& proto);
+  RegularLimit* MakeLimit(const RegularLimitParameters& proto);
 
-  // Creates a search limit proto containing default values.
-  SearchLimitParameters MakeDefaultSearchLimitParameters() const;
+  // Creates a regular limit proto containing default values.
+  RegularLimitParameters MakeDefaultRegularLimitParameters() const;
 
   // Creates a search limit that is reached when either of the underlying limit
   // is reached. That is, the returned limit is more stringent than both
   // argument limits.
   SearchLimit* MakeLimit(SearchLimit* const limit_1,
                          SearchLimit* const limit_2);
-
-  void UpdateLimits(int64 time, int64 branches, int64 failures, int64 solutions,
-                    SearchLimit* limit);
-  // Returns the 'time' limit of the search limit.
-  static int64 GetTimeLimit(SearchLimit* limit);
-  // Returns the 'branch' limit of the search limit.
-  static int64 GetBranchLimit(SearchLimit* limit);
-  // Return the 'failure' limit of the search limit.
-  static int64 GetFailureLimit(SearchLimit* limit);
-  // Returns the 'solutions' limit of the search limit.
-  static int64 GetSolutionLimit(SearchLimit* limit);
 
   // Callback-based search limit. Search stops when limiter returns true; if
   // this happens at a leaf the corresponding solution will be rejected.
@@ -2725,10 +2715,10 @@ class Solver {
       DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       LocalSearchOperator* const ls_operator,
-      DecisionBuilder* const sub_decision_builder, SearchLimit* const limit);
+      DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       LocalSearchOperator* const ls_operator,
-      DecisionBuilder* const sub_decision_builder, SearchLimit* const limit,
+      DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
       const std::vector<LocalSearchFilter*>& filters);
 
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
@@ -2736,10 +2726,10 @@ class Solver {
       DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       SolutionPool* const pool, LocalSearchOperator* const ls_operator,
-      DecisionBuilder* const sub_decision_builder, SearchLimit* const limit);
+      DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       SolutionPool* const pool, LocalSearchOperator* const ls_operator,
-      DecisionBuilder* const sub_decision_builder, SearchLimit* const limit,
+      DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
       const std::vector<LocalSearchFilter*>& filters);
 
   // Local Search Filters
@@ -4254,6 +4244,71 @@ class SearchLimit : public SearchMonitor {
 
   bool crossed_;
   DISALLOW_COPY_AND_ASSIGN(SearchLimit);
+};
+
+// ----- Regular Limit -----
+
+// Usual limit based on wall_time, number of explored branches and
+// number of failures in the search tree
+class RegularLimit : public SearchLimit {
+ public:
+  RegularLimit(Solver* const s, int64 time, int64 branches, int64 failures,
+               int64 solutions, bool smart_time_check, bool cumulative);
+  ~RegularLimit() override;
+  void Copy(const SearchLimit* const limit) override;
+  SearchLimit* MakeClone() const override;
+  RegularLimit* MakeIdenticalClone() const;
+  bool Check() override;
+  void Init() override;
+  void ExitSearch() override;
+  void UpdateLimits(int64 time, int64 branches, int64 failures,
+                    int64 solutions);
+  absl::Duration duration_limit() const { return duration_limit_; }
+  int64 wall_time() const {
+    return duration_limit_ == absl::InfiniteDuration()
+               ? kint64max
+               : absl::ToInt64Milliseconds(duration_limit());
+  }
+  int64 branches() const { return branches_; }
+  int64 failures() const { return failures_; }
+  int64 solutions() const { return solutions_; }
+  int ProgressPercent() override;
+  std::string DebugString() const override;
+
+  absl::Time AbsoluteSolverDeadline() const {
+    return solver_time_at_limit_start_ + duration_limit_;
+  }
+
+  void Accept(ModelVisitor* const visitor) const override;
+
+ private:
+  bool CheckTime();
+  absl::Duration TimeElapsed();
+  static int64 GetPercent(int64 value, int64 offset, int64 total) {
+    return (total > 0 && total < kint64max) ? 100 * (value - offset) / total
+                                            : -1;
+  }
+
+  absl::Duration duration_limit_;
+  absl::Time solver_time_at_limit_start_;
+  absl::Duration last_time_elapsed_;
+  int64 check_count_;
+  int64 next_check_;
+  bool smart_time_check_;
+  int64 branches_;
+  int64 branches_offset_;
+  int64 failures_;
+  int64 failures_offset_;
+  int64 solutions_;
+  int64 solutions_offset_;
+  // If cumulative if false, then the limit applies to each search
+  // independently. If it's true, the limit applies globally to all search for
+  // which this monitor is used.
+  // When cumulative is true, the offset fields have two different meanings
+  // depending on context:
+  // - within a search, it's an offset to be subtracted from the current value
+  // - outside of search, it's the amount consumed in previous searches
+  bool cumulative_;
 };
 
 // ---------- Interval Var ----------

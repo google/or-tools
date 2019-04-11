@@ -12,10 +12,11 @@
 // limitations under the License.
 
 #include <stddef.h>
+
 #include <string>
 #include <vector>
-#include "absl/container/flat_hash_map.h"
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/file.h"

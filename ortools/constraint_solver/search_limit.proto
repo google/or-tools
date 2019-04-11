@@ -28,7 +28,7 @@ package operations_research;
 
 // A search limit
 // The default values for int64 fields is the maxima value, i.e., 2^63-1
-message SearchLimitParameters {
+message RegularLimitParameters {
   int64 time = 1;
   int64 branches = 2;
   int64 failures = 3;

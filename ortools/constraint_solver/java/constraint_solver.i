@@ -31,7 +31,7 @@
 // before the %{ #include ".../constraint_solver.h" %}.
 namespace operations_research {
 class ConstraintSolverParameters;
-class SearchLimitParameters;
+class RegularLimitParameters;
 }  // namespace operations_research
 
 
@@ -647,7 +647,7 @@ namespace operations_research {
 %unignore Solver;
 %typemap(javaimports) Solver %{
 import com.google.ortools.constraintsolver.ConstraintSolverParameters;
-import com.google.ortools.constraintsolver.SearchLimitParameters;
+import com.google.ortools.constraintsolver.RegularLimitParameters;
 
 // Used to wrap DisplayCallback (std::function<std::string()>)
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/Supplier.html
@@ -845,7 +845,7 @@ import java.lang.Runnable;
 %rename (makeDecision) Solver::MakeDecision;
 %rename (makeDecisionBuilderFromAssignment) Solver::MakeDecisionBuilderFromAssignment;
 %rename (makeDefaultPhase) Solver::MakeDefaultPhase;
-%rename (makeDefaultSearchLimitParameters) Solver::MakeDefaultSearchLimitParameters;
+%rename (makeDefaultRegularLimitParameters) Solver::MakeDefaultRegularLimitParameters;
 %rename (makeDefaultSolutionPool) Solver::MakeDefaultSolutionPool;
 %rename (makeDelayedConstraintInitialPropagateCallback) Solver::MakeDelayedConstraintInitialPropagateCallback;
 %rename (makeDelayedPathCumul) Solver::MakeDelayedPathCumul;
@@ -1537,11 +1537,11 @@ PROTO_INPUT(operations_research::ConstraintSolverParameters,
 PROTO2_RETURN(operations_research::ConstraintSolverParameters,
               com.google.ortools.constraintsolver.ConstraintSolverParameters)
 
-PROTO_INPUT(operations_research::SearchLimitParameters,
-            com.google.ortools.constraintsolver.SearchLimitParameters,
+PROTO_INPUT(operations_research::RegularLimitParameters,
+            com.google.ortools.constraintsolver.RegularLimitParameters,
             proto)
-PROTO2_RETURN(operations_research::SearchLimitParameters,
-              com.google.ortools.constraintsolver.SearchLimitParameters)
+PROTO2_RETURN(operations_research::RegularLimitParameters,
+              com.google.ortools.constraintsolver.RegularLimitParameters)
 
 namespace operations_research {
 

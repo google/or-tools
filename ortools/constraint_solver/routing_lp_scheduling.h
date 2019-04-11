@@ -28,7 +28,9 @@ namespace operations_research {
 class DimensionCumulOptimizerCore {
  public:
   explicit DimensionCumulOptimizerCore(const RoutingDimension* dimension)
-      : dimension_(dimension) {}
+      : dimension_(dimension),
+        visited_pickup_index_for_pair_(
+            dimension->model()->GetPickupAndDeliveryPairs().size(), -1) {}
 
   // In the OptimizeSingleRoute() and Optimize() methods, if both "cumul_values"
   // and "cost" parameters are null, we don't optimize the cost and stop at the
@@ -89,6 +91,7 @@ class DimensionCumulOptimizerCore {
   std::vector<glop::ColIndex> index_to_cumul_variable_;
   glop::ColIndex max_end_cumul_;
   glop::ColIndex min_start_cumul_;
+  std::vector<int64> visited_pickup_index_for_pair_;
 };
 
 // Class used to compute optimal values for dimension cumuls of routes,
