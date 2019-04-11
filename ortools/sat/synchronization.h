@@ -33,12 +33,13 @@ namespace sat {
 // a parallel context.
 class SharedBoundsManager {
  public:
-  SharedBoundsManager(int num_workers, int num_variables);
+  SharedBoundsManager(int num_workers, const CpModelProto& model_proto);
 
   // Reports a set of locally improved variable bounds to the shared bounds
   // manager. The manager will compare these bounds changes against its
   // global state, and incorporate the improving ones.
-  void ReportPotentialNewBounds(int worker_id,
+  void ReportPotentialNewBounds(const CpModelProto& model_proto, int worker_id,
+                                const std::string& worker_name,
                                 const std::vector<int>& variables,
                                 const std::vector<int64>& new_lower_bounds,
                                 const std::vector<int64>& new_upper_bounds);

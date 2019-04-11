@@ -14,6 +14,7 @@
 #include "ortools/sat/synchronization.h"
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_join.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -25,58 +26,65 @@
 namespace operations_research {
 namespace sat {
 
-SharedBoundsManager::SharedBoundsManager(int num_workers, int num_variables)
+SharedBoundsManager::SharedBoundsManager(int num_workers, const CpModelProto& model_proto)
     : num_workers_(num_workers),
-      num_variables_(num_variables),
+      num_variables_(model_proto.variables_size()),
       changed_variables_per_workers_(num_workers),
-      lower_bounds_(num_variables, kint64min),
-      upper_bounds_(num_variables, kint64max) {
+      lower_bounds_(num_variables_, kint64min),
+      upper_bounds_(num_variables_, kint64max) {
   for (int i = 0; i < num_workers_; ++i) {
     changed_variables_per_workers_[i].ClearAndResize(num_variables_);
+  }
+  for (int i = 0; i < num_variables_; ++i) {
+    lower_bounds_[i] = model_proto.variables(i).domain(0);
+    const int domain_size = model_proto.variables(i).domain_size();
+    upper_bounds_[i] = model_proto.variables(i).domain(domain_size - 1);
   }
 }
 
 void SharedBoundsManager::ReportPotentialNewBounds(
-    int worker_id, const std::vector<int>& variables,
+    const CpModelProto& model_proto, int worker_id,
+    const std::string& worker_name,
+    const std::vector<int>& variables,
     const std::vector<int64>& new_lower_bounds,
     const std::vector<int64>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
   {
     absl::MutexLock mutex_lock(&mutex_);
-    int modified_domains = 0;
-    int fixed_domains = 0;
     for (int i = 0; i < variables.size(); ++i) {
       const int var = variables[i];
       if (var >= num_variables_) continue;
+      const int64 old_lb = lower_bounds_[var];
+      const int64 old_ub = upper_bounds_[var];
       const int64 new_lb = new_lower_bounds[i];
       const int64 new_ub = new_upper_bounds[i];
+      const bool changed_lb = new_lb > old_lb;
+      const bool changed_ub = new_ub < old_ub;
       CHECK_GE(var, 0);
-      bool changed = false;
-      if (lower_bounds_[var] < new_lb) {
-        changed = true;
+      if (!changed_lb && !changed_ub) continue;
+
+      if (changed_lb) {
         lower_bounds_[var] = new_lb;
       }
-      if (upper_bounds_[var] > new_ub) {
-        changed = true;
+      if (changed_ub) {
         upper_bounds_[var] = new_ub;
       }
-      if (changed) {
-        if (lower_bounds_[var] == upper_bounds_[var]) {
-          fixed_domains++;
-        } else {
-          modified_domains++;
-        }
-        for (int j = 0; j < num_workers_; ++j) {
-          if (worker_id == j) continue;
-          changed_variables_per_workers_[j].Set(var);
-        }
+      
+      for (int j = 0; j < num_workers_; ++j) {
+        if (worker_id == j) continue;
+        changed_variables_per_workers_[j].Set(var);
       }
-    }
-    if (fixed_domains > 0 || modified_domains > 0) {
-      VLOG(2) << "Worker " << worker_id << ": fixed domains=" << fixed_domains
-              << ", modified domains=" << modified_domains << " out of "
-              << variables.size() << " events";
+      if (VLOG_IS_ON(2)) {
+        const IntegerVariableProto& var_proto = model_proto.variables(var);
+        const std::string& var_name =
+            var_proto.name().empty()
+                ? absl::StrCat("anonymous_var(", var, ")")
+                : absl::StrCat(var_proto.name(), "(", var, ")");
+        LOG(INFO) << "  '" << worker_name << "' exports new bounds for "
+                  << var_name << ": from [" << old_lb << ", " << old_ub
+                  << "] to [" << new_lb << ", " << new_ub << "]";
+      }
     }
   }
 }
@@ -127,8 +135,6 @@ void RegisterVariableBoundsLevelZeroExport(
           } else {
             visited_variables.insert(model_var);
           }
-          const IntegerVariableProto& var_proto =
-              model_proto.variables(model_var);
           const int64 new_lb =
               integer_trail->LevelZeroLowerBound(positive_var).value();
           const int64 new_ub =
@@ -138,19 +144,11 @@ void RegisterVariableBoundsLevelZeroExport(
           model_variables.push_back(model_var);
           new_lower_bounds.push_back(new_lb);
           new_upper_bounds.push_back(new_ub);
-          if (!var_proto.name().empty()) {
-            VLOG(2) << worker_info->worker_name << " write " << var_proto.name()
-                    << "(" << model_var << ")[" << new_lb << ", " << new_ub
-                    << "]";
-          } else {
-            VLOG(2) << worker_info->worker_name << " write anonymous_var("
-                    << model_var << ")[" << new_lb << ", " << new_ub << "]";
-          }
         }
         if (!model_variables.empty()) {
           shared_bounds_manager->ReportPotentialNewBounds(
-              worker_info->worker_id, model_variables, new_lower_bounds,
-              new_upper_bounds);
+              model_proto, worker_info->worker_id, worker_info->worker_name,
+              model_variables, new_lower_bounds, new_upper_bounds);
         }
       };
 
@@ -162,44 +160,67 @@ void RegisterVariableBoundsLevelZeroImport(
     const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
     Model* model) {
   CHECK(shared_bounds_manager != nullptr);
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
+  CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
 
-  const auto& import_lower_bounds = [&model_proto, shared_bounds_manager,
-                                     model]() {
-    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-    const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
-    CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
+  const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
+                                          model, integer_trail, worker_info,
+                                          mapping]() {
     std::vector<int> model_variables;
     std::vector<int64> new_lower_bounds;
     std::vector<int64> new_upper_bounds;
     shared_bounds_manager->GetChangedBounds(worker_info->worker_id,
                                             &model_variables, &new_lower_bounds,
                                             &new_upper_bounds);
+    bool new_bounds_have_been_imported = false;
     for (int i = 0; i < model_variables.size(); ++i) {
       // This can happen if a boolean variables is forced to have an
       // integer view in one thread, and not in another thread.
-      if (!mapping->IsInteger(model_variables[i])) continue;
-      const IntegerVariable var = mapping->Integer(model_variables[i]);
+      const int model_var = model_variables[i];
+      if (!mapping->IsInteger(model_var)) continue;
+      const IntegerVariable var = mapping->Integer(model_var);
       const IntegerValue new_lb(new_lower_bounds[i]);
       const IntegerValue new_ub(new_upper_bounds[i]);
-      VLOG(2) << worker_info->worker_name << " read "
-              << model_proto.variables(model_variables[i]).name() << "["
-              << new_lb << ", " << new_ub << "]";
-      if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, new_lb),
+      const IntegerValue old_lb = integer_trail->LowerBound(var);
+      const IntegerValue old_ub = integer_trail->UpperBound(var);
+      const bool changed_lb = new_lb > old_lb;
+      const bool changed_ub = new_ub < old_ub;
+      if (!changed_lb && !changed_ub) continue;
+
+      new_bounds_have_been_imported = true;
+      if (VLOG_IS_ON(2)) {
+        const IntegerVariableProto& var_proto =
+            model_proto.variables(model_var);
+        const std::string& var_name =
+            var_proto.name().empty()
+                ? absl::StrCat("anonymous_var(", model_var, ")")
+                : absl::StrCat(var_proto.name(), "(", model_var, ")");
+        LOG(INFO) << "  '" << worker_info->worker_name
+                  << "' imports new bounds for " << var_name << ": from ["
+                  << old_lb << ", " << old_ub << "] to [" << new_lb << ", "
+                  << new_ub << "]";
+      }
+
+      if (changed_lb &&
+          !integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, new_lb),
                                   {}, {})) {
         return false;
       }
-      if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
+      if (changed_ub &&
+          !integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
                                   {})) {
         return false;
       }
     }
-    if (!model->GetOrCreate<SatSolver>()->FinishPropagation()) {
+    if (new_bounds_have_been_imported &&
+        !model->GetOrCreate<SatSolver>()->FinishPropagation()) {
       return false;
     }
     return true;
   };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
-      import_lower_bounds);
+      import_level_zero_bounds);
 }
 
 void RegisterObjectiveBestBoundExport(const CpModelProto& model_proto,
@@ -222,7 +243,7 @@ void RegisterObjectiveBestBoundExport(const CpModelProto& model_proto,
         const double current_objective_value =
             helper->get_external_best_objective();
 
-        // TODO(user): Unit test this lambda.
+        // TODO(lperron): Unit test this lambda.
         if ((helper->scaling_factor >= 0 &&  // Unset -> = 0.0 -> minimize.
              new_best_bound > current_best_bound) ||
             (helper->scaling_factor < 0 &&
@@ -255,17 +276,18 @@ void RegisterObjectiveBestBoundExport(const CpModelProto& model_proto,
 }
 
 void RegisterObjectiveBoundsImport(Model* model) {
-  const auto import_objective_bounds = [model]() {
-    SatSolver* const solver = model->GetOrCreate<SatSolver>();
+  SatSolver* const solver = model->GetOrCreate<SatSolver>();
+  const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
+  const ObjectiveSynchronizationHelper* const helper =
+      model->GetOrCreate<ObjectiveSynchronizationHelper>();
+  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  const auto import_objective_bounds = [model, solver, worker_info,
+                                        integer_trail, helper]() {
     if (solver->AssumptionLevel() != 0) return true;
 
-    const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
-    const ObjectiveSynchronizationHelper* const helper =
-        model->GetOrCreate<ObjectiveSynchronizationHelper>();
     CHECK(helper->get_external_best_bound != nullptr);
     const double external_bound = helper->get_external_best_objective();
     const double external_best_bound = helper->get_external_best_bound();
-    IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
     const IntegerValue current_objective_upper_bound(
         integer_trail->UpperBound(helper->objective_var));
     const IntegerValue current_objective_lower_bound(
@@ -278,21 +300,23 @@ void RegisterObjectiveBoundsImport(Model* model) {
         std::isfinite(external_best_bound)
             ? helper->UnscaledObjective(external_best_bound)
             : current_objective_lower_bound.value());
-    if (new_objective_upper_bound < current_objective_upper_bound ||
-        new_objective_lower_bound > current_objective_lower_bound) {
-      if (new_objective_upper_bound < new_objective_lower_bound) {
-        return false;
-      }
-      VLOG(1) << worker_info->worker_name << " imports objective bounds ["
-              << helper->ScaledObjective(
-                     std::max(new_objective_lower_bound.value(),
-                              current_objective_lower_bound.value()))
-              << ", "
-              << helper->ScaledObjective(
-                     std::min(new_objective_upper_bound.value(),
-                              current_objective_upper_bound.value()))
-              << "]";
+    if (new_objective_upper_bound < new_objective_lower_bound) {
+      return false;
     }
+    if (new_objective_upper_bound >= current_objective_upper_bound &&
+        new_objective_lower_bound <= current_objective_lower_bound) {
+      return true;
+    }
+    VLOG(1) << "  '" << worker_info->worker_name
+            << "' imports objective bounds: external ["
+            << helper->ScaledObjective(new_objective_lower_bound.value())
+            << ", "
+            << helper->ScaledObjective(new_objective_upper_bound.value())
+            << "], internal ["
+            << helper->ScaledObjective(current_objective_lower_bound.value())
+            << ", "
+            << helper->ScaledObjective(current_objective_upper_bound.value())
+            << "]";
     if (new_objective_upper_bound < current_objective_upper_bound &&
         !integer_trail->Enqueue(
             IntegerLiteral::LowerOrEqual(helper->objective_var,
@@ -310,6 +334,7 @@ void RegisterObjectiveBoundsImport(Model* model) {
     if (!solver->FinishPropagation()) {
       return false;
     }
+
     return true;
   };
 

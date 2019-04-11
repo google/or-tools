@@ -2339,7 +2339,7 @@ CpSolverResponse SolveCpModelParallel(
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (model->GetOrCreate<SatParameters>()->share_level_zero_bounds()) {
     shared_bounds_manager = absl::make_unique<SharedBoundsManager>(
-        num_search_workers, model_proto.variables_size());
+        num_search_workers, model_proto);
   }
 
   {
