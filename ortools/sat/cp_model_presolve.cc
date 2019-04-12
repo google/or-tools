@@ -911,7 +911,16 @@ bool PresolveIntDiv(ConstraintProto* ct, PresolveContext* context) {
 
   const int64 divisor = context->MinOf(ref_div);
   if (divisor == 1) {
-    context->UpdateRuleStats("TODO int_div: rewrite to equality");
+    LinearConstraintProto* const lin =
+        context->working_model->add_constraints()->mutable_linear();
+    lin->add_vars(ref_x);
+    lin->add_coeffs(1);
+    lin->add_vars(target);
+    lin->add_coeffs(-1);
+    lin->add_domain(0);
+    lin->add_domain(0);
+    context->UpdateRuleStats("int_div: rewrite to equality");
+    return RemoveConstraint(ct, context);
   }
   bool domain_modified = false;
   if (context->IntersectDomainWith(target,
@@ -924,6 +933,21 @@ bool PresolveIntDiv(ConstraintProto* ct, PresolveContext* context) {
   } else {
     // Model is unsat.
     return false;
+  }
+
+  // Linearize if everything is positive.
+  if (context->MinOf(target) >= 0 && context->MinOf(ref_x) >= 0) {
+    LinearConstraintProto* const lin =
+        context->working_model->add_constraints()->mutable_linear();
+    lin->add_vars(ref_x);
+    lin->add_coeffs(1);
+    lin->add_vars(target);
+    lin->add_coeffs(-divisor);
+    lin->add_domain(0);
+    lin->add_domain(divisor - 1);
+    context->UpdateRuleStats(
+        "int_div: linearize positive division with a constant divisor");
+    return RemoveConstraint(ct, context);
   }
 
   // TODO(user): reduce the domain of X by introducing an
