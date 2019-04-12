@@ -990,7 +990,7 @@ public class CpModel {
       noOverlap2d.addXIntervals(x.getIndex());
     }
     for (IntervalVar y : yIntervals) {
-      noOverlap2d.addXIntervals(y.getIndex());
+      noOverlap2d.addYIntervals(y.getIndex());
     }
     return ct;
   }
