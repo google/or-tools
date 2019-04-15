@@ -1977,8 +1977,12 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
             LocalSolve(local_problem, wall_timer, &local_model);
         PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
                           wall_timer, &local_response);
+        if (local_response.solution_info().empty()) {
+          local_response.set_solution_info(solution_info);
+        } else {
         local_response.set_solution_info(
             absl::StrCat(local_response.solution_info(), " ", solution_info));
+        }
 
         const bool neighborhood_is_reduced = neighborhood.is_reduced;
         return [neighborhood_is_reduced, &num_consecutive_not_fully_solved,
