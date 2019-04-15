@@ -34,7 +34,6 @@ before_build:
   - git config --global user.email "ci@appveyor.com"
   - git config --global user.name "CI"
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
-  - cmake --version
   - set PATH=C:\Python36-x64;%PATH%
   - tools\win\which.exe python.exe
   - python -V
@@ -44,6 +43,8 @@ before_build:
   - set "JAVA_HOME=C:\Program Files\Java\jdk11"
   - set "PATH=C:\Program Files\Java\jdk11\bin;%PATH%"
   - java -version
+  - if "%BUILDER%"=="cmake" set CMAKE_BUILD_PARALLEL_LEVEL=4
+  - if "%BUILDER%"=="cmake" cmake --version
   - if "%BUILDER%"=="cmake" cmake -H. -Bbuild -DCMAKE_BUILD_TYPE:STRING=Release -DBUILD_DEPS:BOOL=ON -G "%CMAKE_GENERATOR%" || VER>NUL
   - if "%BUILDER%"=="make" del "C:\Program Files\Git\usr\bin\sh.exe"
   - if "%BUILDER%"=="make" tools\make.exe detect
