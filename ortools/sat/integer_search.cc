@@ -255,18 +255,15 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
 }
 
 std::function<LiteralIndex()> PseudoCost(Model* model) {
-  const ObjectiveSynchronizationHelper* helper =
-      model->Get<ObjectiveSynchronizationHelper>();
+  auto* objective = model->Get<ObjectiveDefinition>();
   const bool has_objective =
-      helper != nullptr && helper->objective_var != kNoIntegerVariable;
-
+      objective != nullptr && objective->objective_var != kNoIntegerVariable;
   if (!has_objective) {
     return []() { return kNoLiteralIndex; };
   }
 
   PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
-
-  return [=]() {
+  return [pseudo_costs, model]() {
     const IntegerVariable chosen_var = pseudo_costs->GetBestDecisionVar();
 
     if (chosen_var == kNoIntegerVariable) return kNoLiteralIndex;
@@ -627,8 +624,13 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
   if (num_policies == 0) return SatSolver::FEASIBLE;
   CHECK_EQ(num_policies, restart_policies.size());
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
-  const ObjectiveSynchronizationHelper* helper =
-      model->Get<ObjectiveSynchronizationHelper>();
+
+  // This is needed for recording the pseudo-costs.
+  IntegerVariable objective_var = kNoIntegerVariable;
+  {
+    const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
+    if (objective != nullptr) objective_var = kNoIntegerVariable;
+  }
 
   // Note that it is important to do the level-zero propagation if it wasn't
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
@@ -676,9 +678,9 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
         GetBoundChanges(decision, model);
     IntegerValue current_obj_lb = kMinIntegerValue;
     IntegerValue current_obj_ub = kMaxIntegerValue;
-    if (helper != nullptr && helper->objective_var != kNoIntegerVariable) {
-      current_obj_lb = integer_trail->LowerBound(helper->objective_var);
-      current_obj_ub = integer_trail->UpperBound(helper->objective_var);
+    if (objective_var != kNoIntegerVariable) {
+      current_obj_lb = integer_trail->LowerBound(objective_var);
+      current_obj_ub = integer_trail->UpperBound(objective_var);
     }
     const int old_level = solver->CurrentDecisionLevel();
 
@@ -695,12 +697,10 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
 
     // Update the pseudo costs.
-    if (solver->CurrentDecisionLevel() > old_level && helper != nullptr &&
-        helper->objective_var != kNoIntegerVariable) {
-      const IntegerValue new_obj_lb =
-          integer_trail->LowerBound(helper->objective_var);
-      const IntegerValue new_obj_ub =
-          integer_trail->UpperBound(helper->objective_var);
+    if (solver->CurrentDecisionLevel() > old_level &&
+        objective_var != kNoIntegerVariable) {
+      const IntegerValue new_obj_lb = integer_trail->LowerBound(objective_var);
+      const IntegerValue new_obj_ub = integer_trail->UpperBound(objective_var);
       const IntegerValue objective_bound_change =
           (new_obj_lb - current_obj_lb) + (current_obj_ub - new_obj_ub);
       pseudo_costs->UpdateCost(bound_changes, objective_bound_change);

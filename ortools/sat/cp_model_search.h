@@ -53,15 +53,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
                                         const CpModelProto& cp_model,
                                         const int worker_id, std::string* name);
 
-// This method updates a given response with a new incoming response.
-// It returns true if the response is strictly improving upon the 'best' one.
-//
-// TODO(user): Separate in two, 1 method for maintaining the best
-// intermediate solution, and one for cumulating the search statistics in
-// a final solution.
-bool MergeOptimizationSolution(const CpSolverResponse& response, bool maximize,
-                               CpSolverResponse* best);
-
 }  // namespace sat
 }  // namespace operations_research
 

@@ -20,6 +20,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_join.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -93,6 +94,100 @@ void ProcessOneColumn(
   }
 }
 
+void AddRegularPositiveTable(
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples,
+    const std::vector<absl::flat_hash_set<int64>> values_per_var,
+    int64 any_value, Model* model) {
+  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  const int n = vars.size();
+  std::vector<Literal> tuple_literals;
+  tuple_literals.reserve(tuples.size());
+  if (tuples.size() == 2) {
+    tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
+    tuple_literals.emplace_back(tuple_literals[0].Negated());
+  } else if (tuples.size() > 2) {
+    for (int i = 0; i < tuples.size(); ++i) {
+      tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
+    }
+    model->Add(ClauseConstraint(tuple_literals));
+  }
+
+  // Fully encode the variables using all the values appearing in the tuples.
+  std::vector<Literal> active_tuple_literals;
+  std::vector<IntegerValue> active_values;
+  std::vector<Literal> any_tuple_literals;
+  for (int i = 0; i < n; ++i) {
+    active_tuple_literals.clear();
+    active_values.clear();
+    any_tuple_literals.clear();
+    const int64 first = tuples[0][i];
+    bool all_equals = true;
+
+    for (int j = 0; j < tuple_literals.size(); ++j) {
+      const int64 v = tuples[j][i];
+
+      if (v != first) {
+        all_equals = false;
+      }
+
+      if (v == any_value) {
+        any_tuple_literals.push_back(tuple_literals[j]);
+      } else {
+        active_tuple_literals.push_back(tuple_literals[j]);
+        active_values.push_back(IntegerValue(v));
+      }
+    }
+
+    if (all_equals && any_tuple_literals.empty() && first != any_value) {
+      model->Add(Equality(vars[i], first));
+    } else if (!active_tuple_literals.empty()) {
+      const std::vector<int64> reached_values(values_per_var[i].begin(),
+                                              values_per_var[i].end());
+      integer_trail->UpdateInitialDomain(vars[i],
+                                         Domain::FromValues(reached_values));
+      model->Add(FullyEncodeVariable(vars[i]));
+      ProcessOneColumn(active_tuple_literals, active_values,
+                       GetEncoding(vars[i], model), any_tuple_literals, model);
+    }
+  }
+}
+
+void AddFullyPrefixedPositiveTable(
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples,
+    const std::vector<absl::flat_hash_set<int64>> values_per_var,
+    int64 any_value, Model* model) {
+  const int n = vars.size();
+  std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
+  for (int i = 0; i < n; ++i) {
+    model->Add(FullyEncodeVariable(vars[i]));
+    encodings[i] = GetEncoding(vars[i], model);
+  }
+
+  std::vector<Literal> clause;
+  for (int j = 0; j < tuples.size(); ++j) {
+    clause.clear();
+    bool tuple_is_valid = true;
+    for (int i = 0; i + 1 < n; ++i) {
+      const int64 v = tuples[j][i];
+      if (v == any_value) continue;
+      if (!encodings[i].contains(IntegerValue(v))) {
+        tuple_is_valid = false;
+        break;
+      }
+      clause.push_back(gtl::FindOrDie(encodings[i], IntegerValue(v)).Negated());
+    }
+    const IntegerValue target_value = IntegerValue(tuples[j][n - 1]);
+    if (tuple_is_valid && encodings[n - 1].contains(target_value)) {
+      const Literal target_literal =
+          gtl::FindOrDie(encodings[n - 1], target_value);
+      clause.push_back(target_literal);
+      model->Add(ClauseConstraint(clause));
+    }
+  }
+}
+
 }  // namespace
 
 void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
@@ -147,26 +242,17 @@ void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
 void AddTableConstraint(const std::vector<IntegerVariable>& vars,
                         std::vector<std::vector<int64>> tuples, Model* model) {
   const int n = vars.size();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   // Compute the set of possible values for each variable (from the table).
   std::vector<absl::flat_hash_set<int64>> values_per_var(n);
-  for (const std::vector<int64>& tuple : tuples) {
-    for (int i = 0; i < n; ++i) {
-      values_per_var[i].insert(tuple[i]);
-    }
-  }
-
-  // Filter each values_per_var entries using the current variable domain.
-  for (int i = 0; i < n; ++i) {
-    FilterValues(vars[i], model, &values_per_var[i]);
-  }
-
-  // Remove unreachable tuples.
   int index = 0;
   while (index < tuples.size()) {
     bool remove = false;
     for (int i = 0; i < n; ++i) {
-      if (!gtl::ContainsKey(values_per_var[i], tuples[index][i])) {
+      const int64 value = tuples[index][i];
+      if (!values_per_var[i].contains(value) /* cached */ &&
+          !integer_trail->InitialVariableDomain(vars[i]).Contains(value)) {
         remove = true;
         break;
       }
@@ -175,6 +261,9 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
       tuples[index] = tuples.back();
       tuples.pop_back();
     } else {
+      for (int i = 0; i < n; ++i) {
+        values_per_var[i].insert(tuples[index][i]);
+      }
       index++;
     }
   }
@@ -189,9 +278,21 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
   for (const std::vector<int64>& tuple : tuples) {
     prefix = tuple;
     prefix.pop_back();
-    prefixes.insert(tuple);
+    prefixes.insert(prefix);
+  }
+  double prefix_space_size = 1.0;
+  for (int i = 0; i + 1 < n; ++i) {
+    prefix_space_size *= values_per_var[i].size();
   }
   const bool prefix_is_key = prefixes.size() == tuples.size();
+  const bool prefix_is_covering_domain = prefixes.size() == prefix_space_size;
+
+  if (prefix_is_key && !prefix_is_covering_domain) {
+    VLOG(2) << "tuples = " << prefixes.size()
+            << " space = " << prefix_space_size << " | " << n;
+  } else if (prefix_is_key && prefix_is_covering_domain) {
+    VLOG(2) << "prefix = " << prefixes.size() << " | " << n;
+  }
 
   // Compress tuples.
   const int64 any_value = kint64min;
@@ -206,93 +307,17 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
   // selected because these variables are just used by this constraint, so
   // only the information "can't be selected" is important.
   //
-  // TODO(user): If a value in one column is unique, we don't need to create a
-  // new BooleanVariable corresponding to this line since we can use the one
+  // TODO(user): If a value in one column is unique, we don't need to create
+  // a new BooleanVariable corresponding to this line since we can use the one
   // corresponding to this value in that column.
   //
   // Note that if there is just one tuple, there is no need to create such
   // variables since they are not used.
-  std::vector<Literal> tuple_literals;
-  tuple_literals.reserve(tuples.size());
-  if (tuples.size() == 2) {
-    tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
-    tuple_literals.emplace_back(tuple_literals[0].Negated());
-  } else if (tuples.size() > 2) {
-    for (int i = 0; i < tuples.size(); ++i) {
-      tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
-    }
-    model->Add(ClauseConstraint(tuple_literals));
-  }
-
-  // Fully encode the variables using all the values appearing in the tuples.
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  std::vector<Literal> active_tuple_literals;
-  std::vector<IntegerValue> active_values;
-  std::vector<Literal> any_tuple_literals;
-  for (int i = 0; i < n; ++i) {
-    active_tuple_literals.clear();
-    active_values.clear();
-    any_tuple_literals.clear();
-    const int64 first = tuples[0][i];
-    bool all_equals = true;
-
-    for (int j = 0; j < tuple_literals.size(); ++j) {
-      const int64 v = tuples[j][i];
-
-      if (v != first) {
-        all_equals = false;
-      }
-
-      if (v == any_value) {
-        any_tuple_literals.push_back(tuple_literals[j]);
-      } else {
-        active_tuple_literals.push_back(tuple_literals[j]);
-        active_values.push_back(IntegerValue(v));
-      }
-    }
-
-    if (all_equals && any_tuple_literals.empty() && first != any_value) {
-      model->Add(Equality(vars[i], first));
-    } else if (!active_tuple_literals.empty()) {
-      const std::vector<int64> reached_values(values_per_var[i].begin(),
-                                              values_per_var[i].end());
-      integer_trail->UpdateInitialDomain(vars[i],
-                                         Domain::FromValues(reached_values));
-      model->Add(FullyEncodeVariable(vars[i]));
-      ProcessOneColumn(active_tuple_literals, active_values,
-                       GetEncoding(vars[i], model), any_tuple_literals, model);
-    }
-  }
-
-  if (prefix_is_key) {
-    std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
-    for (int i = 0; i < n; ++i) {
-      model->Add(FullyEncodeVariable(vars[i]));
-      encodings[i] = GetEncoding(vars[i], model);
-    }
-
-    std::vector<Literal> clause;
-    for (int j = 0; j < tuples.size(); ++j) {
-      clause.clear();
-      bool tuple_is_valid = true;
-      for (int i = 0; i + 1 < n; ++i) {
-        const int64 v = tuples[j][i];
-        if (v == any_value) continue;
-        if (!gtl::ContainsKey(encodings[i], IntegerValue(v))) {
-          tuple_is_valid = false;
-          break;
-        }
-        clause.push_back(
-            gtl::FindOrDie(encodings[i], IntegerValue(v)).Negated());
-      }
-      const IntegerValue target_value = IntegerValue(tuples[j][n - 1]);
-      if (tuple_is_valid && gtl::ContainsKey(encodings[n - 1], target_value)) {
-        const Literal target_literal =
-            gtl::FindOrDie(encodings[n - 1], target_value);
-        clause.push_back(target_literal);
-        model->Add(ClauseConstraint(clause));
-      }
-    }
+  if (prefix_is_key && prefix_is_covering_domain) {
+    AddFullyPrefixedPositiveTable(vars, tuples, values_per_var, any_value,
+                                  model);
+  } else {
+    AddRegularPositiveTable(vars, tuples, values_per_var, any_value, model);
   }
 }
 

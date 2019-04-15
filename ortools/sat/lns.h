@@ -41,6 +41,12 @@ namespace sat {
 // The two templated types should behave like:
 // - StopFunction: std::function<bool()>
 // - SolveNeighborhoodFunction: std::function<std::function<void()>(int seed)>
+//
+// TODO(user): As the improving solution become more difficult to find, we
+// should trigger a lot more parallel LNS than the number of threads, so that we
+// have a better utilization. For this, add a simple mecanism so that we always
+// have num_threads working LNS, and do the barrier sync at the end when all the
+// LNS task have been executed.
 template <class StopFunction, class SolveNeighborhoodFunction>
 void OptimizeWithLNS(int num_threads, StopFunction stop_function,
                      SolveNeighborhoodFunction generate_and_solve_function);
@@ -51,6 +57,12 @@ void OptimizeWithLNS(int num_threads, StopFunction stop_function,
 // Note(user): The current logic work well in practice, but has no theoretical
 // foundation. So it might be possible to use better formulas depending on the
 // situation.
+//
+// TODO(user): In multithread, we get Increase()/Decrease() signal from
+// different thread potentially working on different difficulty. The class need
+// to be updated to properly handle this case. Increase()/Decrease() should take
+// in the difficulty at which the signal was computed, and the update formula
+// should be changed accordingly.
 class AdaptiveParameterValue {
  public:
   // Initial value is in [0.0, 1.0], both 0.0 and 1.0 are valid.

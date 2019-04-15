@@ -26,40 +26,225 @@
 namespace operations_research {
 namespace sat {
 
-SharedResponseManager::SharedResponseManager(const CpModelProto& proto) {
-  best_response_.set_status(CpSolverStatus::UNKNOWN);
-  if (proto.has_objective()) {
-    const double kInfinity = std::numeric_limits<double>::infinity();
-    is_maximize_ = proto.objective().scaling_factor() < 0.0;
-    if (is_maximize_) {
-      best_response_.set_objective_value(-kInfinity);
-      best_response_.set_best_objective_bound(kInfinity);
+SharedResponseManager::SharedResponseManager(bool log_updates,
+                                             const CpModelProto* proto,
+                                             const WallTimer* wall_timer)
+    : log_updates_(log_updates),
+      model_proto_(*proto),
+      wall_timer_(*wall_timer) {}
+
+void SharedResponseManager::UpdateInnerObjectiveBounds(
+    const std::string& worker_info, IntegerValue lb, IntegerValue ub) {
+  CHECK(model_proto_.has_objective());
+
+  absl::MutexLock mutex_lock(&mutex_);
+  bool change = false;
+  if (lb > inner_objective_lower_bound_) {
+    change = true;
+    inner_objective_lower_bound_ = lb.value();
+  }
+  if (ub < inner_objective_upper_bound_) {
+    change = true;
+    inner_objective_upper_bound_ = ub.value();
+  }
+  if (log_updates_ && change) {
+    const CpObjectiveProto& obj = model_proto_.objective();
+    double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
+    double new_ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
+    if (model_proto_.objective().scaling_factor() < 0) {
+      std::swap(new_lb, new_ub);
+    }
+    LogNewSolution("Bound", wall_timer_.Get(), new_lb, new_ub, worker_info);
+  }
+}
+
+// Invariant: the status always start at UNKNOWN and can only evolve as follow:
+// UNKNOWN -> FEASIBLE -> OPTIMAL
+// UNKNOWN -> INFEASIBLE
+void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
+    const std::string& worker_info) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (best_response_.status() == CpSolverStatus::FEASIBLE ||
+      best_response_.status() == CpSolverStatus::OPTIMAL) {
+    // We also use this status to indicate that we enumerated all solutions to
+    // a feasible problem.
+    best_response_.set_status(CpSolverStatus::OPTIMAL);
+    if (!model_proto_.has_objective()) {
+      best_response_.set_all_solutions_were_found(true);
+    }
+  } else {
+    best_response_.set_status(CpSolverStatus::INFEASIBLE);
+  }
+  if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
+}
+
+IntegerValue SharedResponseManager::GetInnerObjectiveLowerBound() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return IntegerValue(inner_objective_lower_bound_);
+}
+
+IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return IntegerValue(inner_objective_upper_bound_);
+}
+
+int SharedResponseManager::AddSolutionCallback(
+    std::function<void(const CpSolverResponse&)> callback) {
+  absl::MutexLock mutex_lock(&mutex_);
+  const int id = next_callback_id_++;
+  callbacks_.emplace_back(id, std::move(callback));
+  return id;
+}
+
+void SharedResponseManager::UnregisterCallback(int callback_id) {
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int i = 0; i < callbacks_.size(); ++i) {
+    if (callbacks_[i].first == callback_id) {
+      callbacks_.erase(callbacks_.begin() + i);
+      return;
+    }
+  }
+  LOG(DFATAL) << "Callback id " << callback_id << " not registered.";
+}
+
+CpSolverResponse SharedResponseManager::GetResponse() {
+  absl::MutexLock mutex_lock(&mutex_);
+  FillObjectiveValuesInBestResponse();
+  return best_response_;
+}
+
+void SharedResponseManager::FillObjectiveValuesInBestResponse() {
+  if (!model_proto_.has_objective()) return;
+  const CpObjectiveProto& obj = model_proto_.objective();
+
+  if (best_response_.status() == CpSolverStatus::INFEASIBLE) {
+    best_response_.clear_objective_value();
+    best_response_.clear_best_objective_bound();
+    return;
+  }
+
+  // Set the objective value.
+  // If we don't have any solution, we use our inner bound.
+  if (best_response_.status() == CpSolverStatus::UNKNOWN) {
+    best_response_.set_objective_value(
+        ScaleObjectiveValue(obj, inner_objective_upper_bound_));
+  } else {
+    best_response_.set_objective_value(
+        ScaleObjectiveValue(obj, best_solution_objective_value_));
+  }
+
+  // Update the best bound in the response.
+  // If we are at optimal, we set it to the objective value.
+  if (best_response_.status() == CpSolverStatus::OPTIMAL) {
+    best_response_.set_best_objective_bound(best_response_.objective_value());
+  } else {
+    best_response_.set_best_objective_bound(
+        ScaleObjectiveValue(obj, inner_objective_lower_bound_));
+  }
+}
+
+void SharedResponseManager::NewSolution(const CpSolverResponse& response,
+                                        Model* model) {
+  absl::MutexLock mutex_lock(&mutex_);
+  CHECK_NE(best_response_.status(), CpSolverStatus::INFEASIBLE);
+
+  int64 objective_value = 0;
+  if (model_proto_.has_objective()) {
+    const CpObjectiveProto& obj = model_proto_.objective();
+    auto& repeated_field_values = response.solution().empty()
+                                      ? response.solution_lower_bounds()
+                                      : response.solution();
+    for (int i = 0; i < obj.vars_size(); ++i) {
+      int64 coeff = obj.coeffs(i);
+      const int ref = obj.vars(i);
+      const int var = PositiveRef(ref);
+      if (!RefIsPositive(ref)) coeff = -coeff;
+      objective_value += coeff * repeated_field_values[var];
+    }
+
+    // Ignore any non-strictly improving solution.
+    // We also perform some basic checks on the inner bounds.
+    CHECK_GE(objective_value, inner_objective_lower_bound_);
+    if (objective_value > inner_objective_upper_bound_) return;
+
+    CHECK_LT(objective_value, best_solution_objective_value_);
+    CHECK_NE(best_response_.status(), CpSolverStatus::OPTIMAL);
+    best_solution_objective_value_ = objective_value;
+
+    // Update the new bound.
+    inner_objective_upper_bound_ = objective_value - 1;
+  }
+
+  // Note that the objective will be filled by
+  // FillObjectiveValuesInBestResponse().
+  best_response_.set_status(CpSolverStatus::FEASIBLE);
+  best_response_.set_solution_info(response.solution_info());
+  *best_response_.mutable_solution() = response.solution();
+  *best_response_.mutable_solution_lower_bounds() =
+      response.solution_lower_bounds();
+  *best_response_.mutable_solution_upper_bounds() =
+      response.solution_upper_bounds();
+
+  // Mark model as OPTIMAL if the inner bound crossed.
+  if (model_proto_.has_objective() &&
+      inner_objective_lower_bound_ > inner_objective_upper_bound_) {
+    best_response_.set_status(CpSolverStatus::OPTIMAL);
+  }
+
+  // Logging.
+  ++num_solutions_;
+  if (log_updates_) {
+    std::string solution_info = response.solution_info();
+    if (model != nullptr) {
+      absl::StrAppend(&solution_info,
+                      " num_bool:", model->Get<SatSolver>()->NumVariables());
+    }
+
+    if (model_proto_.has_objective()) {
+      const CpObjectiveProto& obj = model_proto_.objective();
+      double lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
+      double ub = ScaleObjectiveValue(obj, objective_value);
+      if (model_proto_.objective().scaling_factor() < 0) {
+        std::swap(lb, ub);
+      }
+      LogNewSolution(absl::StrCat(num_solutions_), wall_timer_.Get(), lb, ub,
+                     solution_info);
     } else {
-      best_response_.set_objective_value(kInfinity);
-      best_response_.set_best_objective_bound(-kInfinity);
+      LogNewSatSolution(absl::StrCat(num_solutions_), wall_timer_.Get(),
+                        solution_info);
+    }
+  }
+
+  // Call callbacks.
+  // Note that we cannot call function that try to get the mutex_ here.
+  if (!callbacks_.empty()) {
+    FillObjectiveValuesInBestResponse();
+    SetStatsFromModelInternal(model);
+    for (const auto& pair : callbacks_) {
+      pair.second(best_response_);
     }
   }
 }
 
-double SharedResponseManager::GetObjectiveValue() {
+void SharedResponseManager::SetStatsFromModel(Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
-  return best_response_.objective_value();
+  SetStatsFromModelInternal(model);
 }
 
-double SharedResponseManager::GetObjectiveBestBound() {
-  absl::MutexLock mutex_lock(&mutex_);
-  return best_response_.best_objective_bound();
-}
-
-CpSolverResponse SharedResponseManager::GetBestResponse() {
-  absl::MutexLock mutex_lock(&mutex_);
-  return best_response_;
-}
-
-bool SharedResponseManager::MergeIntoBestResponse(
-    const CpSolverResponse& response) {
-  absl::MutexLock mutex_lock(&mutex_);
-  return MergeOptimizationSolution(response, is_maximize_, &best_response_);
+void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
+  if (model == nullptr) return;
+  auto* sat_solver = model->Get<SatSolver>();
+  auto* integer_trail = model->Get<IntegerTrail>();
+  best_response_.set_num_booleans(sat_solver->NumVariables());
+  best_response_.set_num_branches(sat_solver->num_branches());
+  best_response_.set_num_conflicts(sat_solver->num_failures());
+  best_response_.set_num_binary_propagations(sat_solver->num_propagations());
+  best_response_.set_num_integer_propagations(
+      integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
+  auto* time_limit = model->Get<TimeLimit>();
+  best_response_.set_wall_time(time_limit->GetElapsedTime());
+  best_response_.set_deterministic_time(
+      time_limit->GetElapsedDeterministicTime());
 }
 
 SharedBoundsManager::SharedBoundsManager(int num_workers,
@@ -259,47 +444,16 @@ void RegisterVariableBoundsLevelZeroImport(
 }
 
 void RegisterObjectiveBestBoundExport(
-    const CpModelProto& model_proto, bool log_progress,
-    IntegerVariable objective_var, WallTimer* wall_timer,
+    IntegerVariable objective_var,
     SharedResponseManager* shared_response_manager, Model* model) {
+  std::string worker_name = model->GetOrCreate<WorkerInfo>()->worker_name;
   auto* integer_trail = model->Get<IntegerTrail>();
-  auto* worker_info = model->GetOrCreate<WorkerInfo>();
-  const CpObjectiveProto& obj = model_proto.objective();
   const auto broadcast_objective_lower_bound =
-      [obj, objective_var, wall_timer, integer_trail, worker_info, log_progress,
+      [worker_name, objective_var, integer_trail,
        shared_response_manager](const std::vector<IntegerVariable>& unused) {
-        const double new_best_bound = ScaleObjectiveValue(
-            obj, integer_trail->LevelZeroLowerBound(objective_var).value());
-        const double current_best_bound =
-            shared_response_manager->GetObjectiveBestBound();
-        const double current_objective_value =
-            shared_response_manager->GetObjectiveValue();
-
-        // TODO(user): we currently display "inf" for the objective if the first
-        // update is a bound update. This will go away when I refactor the code
-        // to not depend on the objective scaling/offset and stay with int64
-        // internally.
-        CpSolverResponse response;
-        response.set_status(CpSolverStatus::UNKNOWN);
-        const double kInfinity = std::numeric_limits<double>::infinity();
-        if (shared_response_manager->IsMaximize() &&
-            new_best_bound < current_best_bound) {
-          response.set_objective_value(-kInfinity);
-          response.set_best_objective_bound(new_best_bound);
-          shared_response_manager->MergeIntoBestResponse(response);
-          if (log_progress) {
-            LogNewSolution("ObjUb", wall_timer->Get(), current_objective_value,
-                           new_best_bound, worker_info->worker_name);
-          }
-        } else if (new_best_bound > current_best_bound) {
-          response.set_objective_value(kInfinity);
-          response.set_best_objective_bound(new_best_bound);
-          shared_response_manager->MergeIntoBestResponse(response);
-          if (log_progress) {
-            LogNewSolution("ObjLb", wall_timer->Get(), new_best_bound,
-                           current_objective_value, worker_info->worker_name);
-          }
-        }
+        shared_response_manager->UpdateInnerObjectiveBounds(
+            worker_name, integer_trail->LevelZeroLowerBound(objective_var),
+            integer_trail->LevelZeroUpperBound(objective_var));
       };
   model->GetOrCreate<GenericLiteralWatcher>()
       ->RegisterLevelZeroModifiedVariablesCallback(
@@ -311,62 +465,48 @@ void RegisterObjectiveBoundsImport(
   auto* solver = model->GetOrCreate<SatSolver>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* worker_info = model->GetOrCreate<WorkerInfo>();
-  auto* helper = model->GetOrCreate<ObjectiveSynchronizationHelper>();
+  auto* objective = model->GetOrCreate<ObjectiveDefinition>();
   const auto import_objective_bounds = [solver, integer_trail, worker_info,
-                                        helper, shared_response_manager]() {
+                                        objective, shared_response_manager]() {
     if (solver->AssumptionLevel() != 0) return true;
-    const double external_bound = shared_response_manager->GetObjectiveValue();
-    const double external_best_bound =
-        shared_response_manager->GetObjectiveBestBound();
+    bool propagate = false;
 
-    const IntegerValue current_objective_upper_bound(
-        integer_trail->UpperBound(helper->objective_var));
-    const IntegerValue current_objective_lower_bound(
-        integer_trail->LowerBound(helper->objective_var));
-    const IntegerValue new_objective_upper_bound(
-        std::isfinite(external_bound)
-            ? helper->UnscaledObjective(external_bound) - 1
-            : current_objective_upper_bound.value());
-    const IntegerValue new_objective_lower_bound(
-        std::isfinite(external_best_bound)
-            ? helper->UnscaledObjective(external_best_bound)
-            : current_objective_lower_bound.value());
-    if (new_objective_upper_bound < new_objective_lower_bound) {
-      return false;
+    const IntegerValue external_lb =
+        shared_response_manager->GetInnerObjectiveLowerBound();
+    const IntegerValue current_lb =
+        integer_trail->LowerBound(objective->objective_var);
+    if (external_lb > current_lb) {
+      if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(
+                                      objective->objective_var, external_lb),
+                                  {}, {})) {
+        return false;
+      }
+      propagate = true;
     }
-    if (new_objective_upper_bound >= current_objective_upper_bound &&
-        new_objective_lower_bound <= current_objective_lower_bound) {
-      return true;
+
+    const IntegerValue external_ub =
+        shared_response_manager->GetInnerObjectiveUpperBound();
+    const IntegerValue current_ub =
+        integer_trail->UpperBound(objective->objective_var);
+    if (external_ub < current_ub) {
+      if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(
+                                      objective->objective_var, external_ub),
+                                  {}, {})) {
+        return false;
+      }
+      propagate = true;
     }
-    VLOG(1) << "  '" << worker_info->worker_name
+
+    if (!propagate) return true;
+
+    VLOG(1) << "'" << worker_info->worker_name
             << "' imports objective bounds: external ["
-            << helper->ScaledObjective(new_objective_lower_bound.value())
-            << ", "
-            << helper->ScaledObjective(new_objective_upper_bound.value())
-            << "], internal ["
-            << helper->ScaledObjective(current_objective_lower_bound.value())
-            << ", "
-            << helper->ScaledObjective(current_objective_upper_bound.value())
-            << "]";
-    if (new_objective_upper_bound < current_objective_upper_bound &&
-        !integer_trail->Enqueue(
-            IntegerLiteral::LowerOrEqual(helper->objective_var,
-                                         new_objective_upper_bound),
-            {}, {})) {
-      return false;
-    }
-    if (new_objective_lower_bound > current_objective_lower_bound &&
-        !integer_trail->Enqueue(
-            IntegerLiteral::GreaterOrEqual(helper->objective_var,
-                                           new_objective_lower_bound),
-            {}, {})) {
-      return false;
-    }
-    if (!solver->FinishPropagation()) {
-      return false;
-    }
+            << objective->ScaleIntegerObjective(external_lb) << ", "
+            << objective->ScaleIntegerObjective(external_ub) << "], current ["
+            << objective->ScaleIntegerObjective(current_lb) << ", "
+            << objective->ScaleIntegerObjective(current_ub) << "]";
 
-    return true;
+    return solver->FinishPropagation();
   };
 
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(

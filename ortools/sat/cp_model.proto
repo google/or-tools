@@ -506,7 +506,9 @@ enum CpSolverStatus {
   // The problem has been proven infeasible.
   INFEASIBLE = 3;
 
-  // An optimal feasible solution has been found.
+  // An optimal feasible solution has been found. This is also used to indicate
+  // that all solutions where found if this was asked for a satisfiability
+  // problem.
   OPTIMAL = 4;
 }
 
@@ -548,6 +550,8 @@ message CpSolverResponse {
   // This will be true iff the solver was asked to find all solutions to a
   // satisfiability problem (or all optimal solutions to an optimization
   // problem), and it was successful in doing so.
+  //
+  // TODO(user): Remove as we also use the OPTIMAL vs FEASIBLE status for that.
   bool all_solutions_were_found = 5;
 
   // Some statistics about the solve.

@@ -186,24 +186,19 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
 // search decision.
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 
-// Store relationship between the CpSolverResponse objective and the internal
-// IntegerVariable the solver tries to minimize.
-//
-// TODO(user): This belongs to the CpModelMapping class, move there.
-struct ObjectiveSynchronizationHelper {
+// For an optimization problem, this contains the internal integer objective
+// to minimize and information on how to display it correctly in the logs.
+struct ObjectiveDefinition {
   double scaling_factor = 1.0;
   double offset = 0.0;
   IntegerVariable objective_var = kNoIntegerVariable;
 
-  int64 UnscaledObjective(double value) const {
-    return static_cast<int64>(std::round(value / scaling_factor - offset));
-  }
-  double ScaledObjective(int64 value) const {
-    return (value + offset) * scaling_factor;
+  double ScaleIntegerObjective(IntegerValue value) const {
+    return (ToDouble(value) + offset) * scaling_factor;
   }
 };
 
-// Callbacks that be called when the search goes back to level 0.
+// Callbacks that will be called when the search goes back to level 0.
 // Callbacks should return false if the propagation fails.
 struct LevelZeroCallbackHelper {
   std::vector<std::function<bool()>> callbacks;
