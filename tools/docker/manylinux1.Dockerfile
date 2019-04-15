@@ -1,4 +1,4 @@
-FROM henriquegemignani/manylinux:x86_64
+FROM quay.io/pypa/manylinux2010_x86_64:latest
 
 RUN yum -y update \
 && yum -y install \
@@ -53,7 +53,7 @@ RUN curl --location-trusted \
 && rm -rf swig-3.0.12
 
 # Update auditwheel to support manylinux2010
-RUN /opt/_internal/cpython-3.6.7/bin/pip install auditwheel==2.0.0rc1
+#RUN /opt/_internal/cpython-3.6.8/bin/pip install auditwheel==2.0.0
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
