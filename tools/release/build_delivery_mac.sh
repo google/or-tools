@@ -37,6 +37,7 @@ command -v javac
 command -v javac | xargs echo "javac: " | tee -a build.log
 command -v jar
 command -v jar | xargs echo "jar: " | tee -a build.log
+java -version 2>&1 | head -n 1 | grep 1.8
 # C#
 command -v dotnet
 command -v dotnet | xargs echo "dotnet: " | tee -a build.log

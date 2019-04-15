@@ -85,7 +85,7 @@ ifeq ($(SYSTEM),unix)
     ifeq ($(wildcard /usr/libexec/java_home),)
       JAVA_HOME = \\\# /usr/libexec/java_home could not be found on your system. Set this variable to the path to jdk to build the java files.
     else
-      JAVA_HOME = $(shell /usr/libexec/java_home)
+      JAVA_HOME ?= $(shell /usr/libexec/java_home)
     endif
     MAC_MIN_VERSION = 10.9
   endif # ($(OS),Darwin)
