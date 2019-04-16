@@ -20,7 +20,7 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.2
-GLOG_TAG = 0.3.5
+GLOG_TAG = 0.4.0
 PROTOBUF_TAG = 3.7.1
 ABSL_TAG = bf29470
 CBC_TAG = 2.10.1
