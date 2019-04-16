@@ -1379,7 +1379,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
     for (int r = 0; r < NumPaths(); ++r) {
       int64 node = Start(r);
       const int vehicle = start_to_vehicle_[Start(r)];
-      const bool filter_with_optimizer =
+      bool filter_with_optimizer =
           FilterWithDimensionCumulOptimizerForVehicle(vehicle);
 
       // First pass: evaluating route length to reserve memory to store route
@@ -1398,12 +1398,18 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
       min_path_cumuls.push_back(cumul);
       int64 current_cumul_cost_value = 0;
       if (filter_with_optimizer) {
-        const bool cumuls_optimized =
+        // NOTE(user): If for some reason the optimizer did not manage to
+        // compute the optimized cumul values for this solution, we do the rest
+        // of the synchronization without the optimizer.
+        // TODO(user): Return a status from the optimizer to detect the
+        // reason behind the failure. The only admissible failures here are
+        // because of LP timeout.
+        filter_with_optimizer =
             optimizer_.ComputeRouteCumulCostWithoutFixedTransits(
                 vehicle, [this](int64 node) { return Value(node); },
                 &current_cumul_cost_value);
-        DCHECK(cumuls_optimized);
-      } else {
+      }
+      if (!filter_with_optimizer) {
         current_cumul_cost_value = GetCumulSoftCost(node, cumul);
         current_cumul_cost_value = CapAdd(
             current_cumul_cost_value, GetCumulPiecewiseLinearCost(node, cumul));
@@ -2278,6 +2284,8 @@ class VehicleBreaksFilter : public BasePathFilter {
   DisjunctivePropagator::Tasks tasks_;
   // Used to check whether propagation changed a vector.
   std::vector<int64> old_start_min_;
+  std::vector<int64> old_start_max_;
+  std::vector<int64> old_end_min_;
   std::vector<int64> old_end_max_;
   std::vector<int> start_to_vehicle_;
 };
@@ -2300,7 +2308,10 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
   const int vehicle = start_to_vehicle_[path_start];
   if (!dimension_.VehicleHasBreakIntervals(vehicle)) return true;
   tasks_.start_min.clear();
+  tasks_.start_max.clear();
   tasks_.duration_min.clear();
+  tasks_.duration_max.clear();
+  tasks_.end_min.clear();
   tasks_.end_max.clear();
   tasks_.is_preemptible.clear();
   tasks_.forbidden_intervals.clear();
@@ -2308,17 +2319,21 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
   int64 group_delay = 0LL;
   int64 current = path_start;
   while (true) {
-    // Add tasks from visits.
+    const int64 cumul_min = dimension_.CumulVar(current)->Min();
+    const int64 cumul_max = dimension_.CumulVar(current)->Max();
+    // Tasks from visits. Visits start before the group_delay at Cumul(current),
+    // end at Cumul() + visit_duration.
     const bool node_is_last = model_.IsEnd(current);
     const int64 visit_duration =
         node_is_last
             ? 0LL
             : dimension_.GetNodeVisitTransitsOfVehicle(vehicle)[current];
-    tasks_.start_min.push_back(
-        CapSub(dimension_.CumulVar(current)->Min(), group_delay));
+    tasks_.start_min.push_back(CapSub(cumul_min, group_delay));
+    tasks_.start_max.push_back(CapSub(cumul_max, group_delay));
     tasks_.duration_min.push_back(CapAdd(group_delay, visit_duration));
-    tasks_.end_max.push_back(
-        CapAdd(dimension_.CumulVar(current)->Max(), visit_duration));
+    tasks_.duration_max.push_back(CapAdd(group_delay, visit_duration));
+    tasks_.end_min.push_back(CapAdd(cumul_min, visit_duration));
+    tasks_.end_max.push_back(CapAdd(cumul_max, visit_duration));
     tasks_.is_preemptible.push_back(false);
     tasks_.forbidden_intervals.push_back(
         &(dimension_.forbidden_intervals()[current]));
@@ -2326,20 +2341,23 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
         tasks_.forbidden_intervals.back()->NumIntervals() > 0;
     if (node_is_last) break;
 
-    // Add tasks from transits.
+    // Tasks from transits. Transit starts after the visit,
+    // but before the next group_delay.
     const int next = GetNext(current);
-    tasks_.start_min.push_back(
-        CapAdd(CapAdd(tasks_.start_min.back(), group_delay), visit_duration));
     group_delay = dimension_.GetGroupDelay(vehicle, current, next);
+    tasks_.start_min.push_back(CapAdd(cumul_min, visit_duration));
+    tasks_.start_max.push_back(CapAdd(cumul_max, visit_duration));
     tasks_.duration_min.push_back(
         CapSub(CapSub(dimension_.transit_evaluator(vehicle)(current, next),
                       visit_duration),
                group_delay));
+    tasks_.duration_max.push_back(kint64max);
+    tasks_.end_min.push_back(
+        CapSub(dimension_.CumulVar(next)->Min(), group_delay));
     tasks_.end_max.push_back(
         CapSub(dimension_.CumulVar(next)->Max(), group_delay));
     tasks_.is_preemptible.push_back(true);
     tasks_.forbidden_intervals.push_back(nullptr);
-
     current = next;
   }
   tasks_.num_chain_tasks = tasks_.start_min.size();
@@ -2347,22 +2365,36 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
   for (IntervalVar* interval : dimension_.GetBreakIntervalsOfVehicle(vehicle)) {
     if (!interval->MustBePerformed()) continue;
     tasks_.start_min.push_back(interval->StartMin());
+    tasks_.start_max.push_back(interval->StartMax());
     tasks_.duration_min.push_back(interval->DurationMin());
+    tasks_.duration_max.push_back(interval->DurationMax());
+    tasks_.end_min.push_back(interval->EndMin());
     tasks_.end_max.push_back(interval->EndMax());
     tasks_.is_preemptible.push_back(false);
     tasks_.forbidden_intervals.push_back(nullptr);
   }
-  // Reduce bounds until failure or fixed point is reached.
+  // Add side constraints.
   if (!has_forbidden_intervals) tasks_.forbidden_intervals.clear();
-
+  tasks_.distance_duration.clear();
+  if (dimension_.HasBreakDistanceDurationOfVehicle(vehicle)) {
+    tasks_.distance_duration =
+        dimension_.GetBreakDistanceDurationOfVehicle(vehicle);
+  }
+  // Reduce bounds until failure or fixed point is reached.
+  // We set a maximum amount of iterations to avoid slow propagation.
   bool is_feasible = true;
-  while (true) {
+  int maximum_num_iterations = 8;
+  while (--maximum_num_iterations >= 0) {
     old_start_min_ = tasks_.start_min;
+    old_start_max_ = tasks_.start_max;
+    old_end_min_ = tasks_.end_min;
     old_end_max_ = tasks_.end_max;
     is_feasible = disjunctive_propagator_.Propagate(&tasks_);
+    if (!is_feasible) break;
     // If fixed point reached, stop.
     if ((old_start_min_ == tasks_.start_min) &&
-        (old_end_max_ == tasks_.end_max)) {
+        (old_start_max_ == tasks_.start_max) &&
+        (old_end_min_ == tasks_.end_min) && (old_end_max_ == tasks_.end_max)) {
       break;
     }
   }

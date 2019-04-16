@@ -24,7 +24,6 @@ namespace operations_research {
 
 // Utility class used in Local/GlobalDimensionCumulOptimizer to set the LP
 // constraints and solve the problem.
-// TODO(b/124220005): Add time limits to the Optimize() methods.
 class DimensionCumulOptimizerCore {
  public:
   explicit DimensionCumulOptimizerCore(const RoutingDimension* dimension)

@@ -167,6 +167,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
+#include "absl/time/time.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/commandlineflags.h"
@@ -959,7 +960,7 @@ class RoutingModel {
   // Returns the assignment resulting from allocating these packed cumuls with
   // the solver, and nullptr if these cumuls could not be set by the solver.
   const Assignment* PackCumulsOfGlobalOptimizerDimensionsFromAssignment(
-      const Assignment* original_assignment);
+      const Assignment* original_assignment, absl::Duration duration_limit);
 #ifndef SWIG
   // TODO(user): Revisit if coordinates are added to the RoutingModel class.
   void SetSweepArranger(SweepArranger* sweep_arranger) {
@@ -1109,7 +1110,16 @@ class RoutingModel {
   Solver* solver() const { return solver_.get(); }
 
   // Returns true if the search limit has been crossed.
-  bool CheckLimit() { return limit_->Check(); }
+  bool CheckLimit() {
+    DCHECK(limit_ != nullptr);
+    return limit_->Check();
+  }
+
+  // Returns the time left in the search limit.
+  absl::Duration RemainingTime() const {
+    DCHECK(limit_ != nullptr);
+    return limit_->AbsoluteSolverDeadline() - solver_->Now();
+  }
 
   // Sizes and indices
   // Returns the number of nodes in the model.
@@ -1130,10 +1140,6 @@ class RoutingModel {
   bool IsMatchingModel() const;
 
 #ifndef SWIG
-  // Returns the glop parameters for local/global LPs.
-  glop::GlopParameters GetGlopParametersForLocalLP() const;
-  glop::GlopParameters GetGlopParametersForGlobalLP() const;
-
   // Sets the callback returning the variable to use for the Tabu Search
   // metaheuristic.
   using GetTabuVarsCallback =
@@ -1288,8 +1294,7 @@ class RoutingModel {
   // On the other hand, when transits on a route can be negative, no assumption
   // can be made on the cumuls of nodes wrt the start cumuls, and the offset is
   // therefore set to 0.
-  void StoreDimensionsForDimensionCumulOptimizers(
-      const RoutingSearchParameters& parameters);
+  void StoreDimensionsForDimensionCumulOptimizers();
 
   void ComputeCostClasses(const RoutingSearchParameters& parameters);
   void ComputeVehicleClasses();
@@ -1564,8 +1569,6 @@ class RoutingModel {
   RegularLimit* lns_limit_ = nullptr;
   RegularLimit* first_solution_lns_limit_ = nullptr;
 
-  double lp_scheduling_time_limit_seconds_ = 0;
-
   typedef std::pair<int64, int64> CacheKey;
   typedef absl::flat_hash_map<CacheKey, int64> TransitCallbackCache;
   typedef absl::flat_hash_map<CacheKey, StateDependentTransit>
@@ -1616,10 +1619,14 @@ class DisjunctivePropagator {
   struct Tasks {
     int num_chain_tasks = 0;
     std::vector<int64> start_min;
+    std::vector<int64> start_max;
     std::vector<int64> duration_min;
+    std::vector<int64> duration_max;
+    std::vector<int64> end_min;
     std::vector<int64> end_max;
     std::vector<bool> is_preemptible;
     std::vector<const SortedDisjointIntervalList*> forbidden_intervals;
+    std::vector<std::pair<int64, int64>> distance_duration;
   };
 
   // Computes new bounds for all tasks, returns false if infeasible.
@@ -1638,6 +1645,7 @@ class DisjunctivePropagator {
   bool DetectablePrecedencesWithChain(Tasks* tasks);
   // Tasks might have holes in their domain, this enforces such holes.
   bool ForbiddenIntervals(Tasks* tasks);
+  bool DistanceDuration(Tasks* tasks);
 
  private:
   // The main algorithm uses Vilim's theta tree data structure.
@@ -1676,14 +1684,16 @@ class GlobalVehicleBreaksConstraint : public Constraint {
  private:
   void PropagateNode(int node);
   void PropagateVehicle(int vehicle);
+  void PropagateMaxBreakDistance(int vehicle);
+
   const RoutingModel* model_;
   const RoutingDimension* const dimension_;
   std::vector<Demon*> vehicle_demons_;
 
   // This translates pruning information to solver variables.
   // This class should have been an interface + subclasses,
-  // but that would force pointers in the tasks_ vector,
-  // which means dynamic allocation. Here tasks_'s reserved size will
+  // but that would force pointers in the user's task vector,
+  // which means dynamic allocation. Here such a vector's reserved size will
   // adjust to usage and eventually no more dynamic allocation will be made.
   class TaskTranslator {
    public:
@@ -1699,6 +1709,25 @@ class GlobalVehicleBreaksConstraint : public Constraint {
         start_->SetMin(CapAdd(group_delay_, value));
       } else if (interval_ != nullptr) {
         interval_->SetStartMin(value);
+      }
+    }
+    void SetStartMax(int64 value) {
+      if (start_ != nullptr) {
+        start_->SetMax(CapAdd(group_delay_, value));
+      } else if (interval_ != nullptr) {
+        interval_->SetStartMax(value);
+      }
+    }
+    void SetDurationMin(int64 value) {
+      if (interval_ != nullptr) {
+        interval_->SetDurationMin(value);
+      }
+    }
+    void SetEndMin(int64 value) {
+      if (start_ != nullptr) {
+        start_->SetMin(CapSub(value, duration_min_));
+      } else if (interval_ != nullptr) {
+        interval_->SetEndMin(value);
       }
     }
     void SetEndMax(int64 value) {
@@ -1722,6 +1751,9 @@ class GlobalVehicleBreaksConstraint : public Constraint {
   // This is used to restrict bounds of tasks.
   DisjunctivePropagator disjunctive_propagator_;
   DisjunctivePropagator::Tasks tasks_;
+
+  std::vector<IntVar*> cumuls_;
+  std::vector<int64> fixed_transits_;
 };
 
 class TypeIncompatibilityChecker {
@@ -1939,6 +1971,12 @@ class RoutingDimension {
   // [CumulVar(node) - delay, CumulVar(node) + node_visit_transits[node]).
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   std::vector<int64> node_visit_transits);
+  // With breaks supposed to be consecutive, this forces the distance between
+  // breaks of size at least minimum_break_duration to be at least distance.
+  // This supposes that the time until route start and after route end are
+  // infinite breaks.
+  void SetBreakDistanceDurationOfVehicle(int64 distance, int64 duration,
+                                         int vehicle);
 #if !defined(SWIGPYTHON)
   void SetBreakIntervalsOfVehicle(
       std::vector<IntervalVar*> breaks, int vehicle,
@@ -1946,11 +1984,19 @@ class RoutingDimension {
       std::function<int64(int64 from_index, int64 to_index)> group_delay);
   // Returns true if the vehicle has break intervals.
   bool VehicleHasBreakIntervals(int vehicle) const;
+  // Returns true iff some break distance constraint was set for this vehicle.
+  bool HasBreakDistanceDurationOfVehicle(int vehicle) const;
   // Returns the break intervals set by SetBreakIntervalsOfVehicle().
   const std::vector<IntervalVar*>& GetBreakIntervalsOfVehicle(
       int vehicle) const;
   // Returns the amount of visit transit set by SetBreakIntervalsOfVehicle().
   const std::vector<int64>& GetNodeVisitTransitsOfVehicle(int vehicle) const;
+  // Returns the pairs (distance, duration) specified by break distance
+  // constraints.
+  // clang-format off
+  const std::vector<std::pair<int64, int64> >&
+      GetBreakDistanceDurationOfVehicle(int vehicle) const;
+  // clang-format on
 #endif  // !defined(SWIGPYTHON)
 
   // Returns the parent in the dependency tree if any or nullptr otherwise.
@@ -2142,6 +2188,8 @@ class RoutingDimension {
   std::vector<std::vector<int64> > vehicle_node_visit_transits_;
   std::vector<std::function<int64(int64 from_index, int64 to_index)> >
       vehicle_group_delays_;
+  std::vector<std::vector<std::pair<int64, int64> > >
+      vehicle_break_distance_duration_;
   // clang-format on
 
   std::vector<IntVar*> slacks_;

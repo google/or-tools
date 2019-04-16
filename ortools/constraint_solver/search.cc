@@ -4000,6 +4000,12 @@ void RegularLimit::UpdateLimits(int64 time, int64 branches, int64 failures,
   solutions_ = solutions;
 }
 
+bool RegularLimit::IsUncheckedSolutionLimitReached() {
+  Solver* const s = solver();
+  return s->solutions() + s->unchecked_solutions() - solutions_offset_ >=
+         solutions_;
+}
+
 std::string RegularLimit::DebugString() const {
   return absl::StrFormat(
       "RegularLimit(crossed = %i, duration_limit = %s, "

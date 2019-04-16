@@ -282,7 +282,13 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 
 const Assignment*
 RoutingModel::PackCumulsOfGlobalOptimizerDimensionsFromAssignment(
-    const Assignment* original_assignment) {
+    const Assignment* original_assignment, absl::Duration duration_limit) {
+  RegularLimit* const limit = GetOrCreateLimit();
+  const int64 time_limit_ms =
+      absl::time_internal::IsInfiniteDuration(duration_limit)
+          ? kint64max
+          : absl::ToInt64Milliseconds(duration_limit);
+  limit->UpdateLimits(time_limit_ms, kint64max, kint64max, kint64max);
   CHECK(closed_);
   if (original_assignment == nullptr ||
       dimensions_for_global_optimizer_.empty()) {
@@ -301,7 +307,8 @@ RoutingModel::PackCumulsOfGlobalOptimizerDimensionsFromAssignment(
       solver_->MakeRestoreAssignment(packed_assignment));
   decision_builders.push_back(
       solver_->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
-          dimensions_for_global_optimizer_, nullptr,
+          dimensions_for_global_optimizer_,
+          GetOrCreateLargeNeighborhoodSearchLimit(),
           /*optimize_and_pack=*/true)));
   decision_builders.push_back(
       CreateFinalizerForMinimizedAndMaximizedVariables());
@@ -309,7 +316,7 @@ RoutingModel::PackCumulsOfGlobalOptimizerDimensionsFromAssignment(
   DecisionBuilder* restore_pack_and_finalize =
       solver_->Compose(decision_builders);
   solver_->Solve(restore_pack_and_finalize,
-                 packed_dimensions_assignment_collector_);
+                 packed_dimensions_assignment_collector_, limit);
 
   if (packed_dimensions_assignment_collector_->solution_count() != 1) {
     LOG(ERROR) << "The given assignment is not valid for this model, or cannot "
@@ -2052,7 +2059,7 @@ void RoutingModel::CloseModelWithParameters(
 
   // Store the dimensions for local/global cumul optimizers, along with their
   // offsets.
-  StoreDimensionsForDimensionCumulOptimizers(parameters);
+  StoreDimensionsForDimensionCumulOptimizers();
 
   // Keep this out of SetupSearch as this contains static search objects.
   // This will allow calling SetupSearch multiple times with different search
@@ -4290,14 +4297,7 @@ bool AllTransitsPositive(const RoutingDimension& dimension) {
 }
 }  // namespace
 
-void RoutingModel::StoreDimensionsForDimensionCumulOptimizers(
-    const RoutingSearchParameters& parameters) {
-  if (parameters.has_lns_time_limit()) {
-    lp_scheduling_time_limit_seconds_ = absl::ToDoubleSeconds(
-        util_time::DecodeGoogleApiProto(parameters.lns_time_limit())
-            .ValueOrDie());
-  }
-
+void RoutingModel::StoreDimensionsForDimensionCumulOptimizers() {
   Assignment* packed_dimensions_collector_assignment =
       solver_->MakeAssignment();
   for (RoutingDimension* dimension : dimensions_) {
@@ -5582,7 +5582,10 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   // Energy-based reasoning.
   // Fill internal vectors with route and breaks information.
   tasks_.start_min.clear();
+  tasks_.start_max.clear();
   tasks_.duration_min.clear();
+  tasks_.duration_max.clear();
+  tasks_.end_min.clear();
   tasks_.end_max.clear();
   tasks_.is_preemptible.clear();
   tasks_.forbidden_intervals.clear();
@@ -5591,33 +5594,43 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   int64 group_delay = 0;
   current = model_->Start(vehicle);
   while (true) {
-    // Tasks from visits.
-    const bool node_is_last = current == model_->End(vehicle);
-    const int64 visit_duration = node_is_last ? 0 : node_visit_transit[current];
-    tasks_.start_min.push_back(
-        CapSub(dimension_->CumulVar(current)->Min(), group_delay));
+    const int64 cumul_min = dimension_->CumulVar(current)->Min();
+    const int64 cumul_max = dimension_->CumulVar(current)->Max();
+    // Tasks from visits. Visits start before the group_delay at Cumul(current),
+    // end at Cumul() + visit_duration.
+    const bool node_is_last = model_->IsEnd(current);
+    const int64 visit_duration =
+        node_is_last ? 0LL : node_visit_transit[current];
+    tasks_.start_min.push_back(CapSub(cumul_min, group_delay));
+    tasks_.start_max.push_back(CapSub(cumul_max, group_delay));
     tasks_.duration_min.push_back(CapAdd(group_delay, visit_duration));
-    tasks_.end_max.push_back(
-        CapAdd(dimension_->CumulVar(current)->Max(), visit_duration));
+    tasks_.duration_max.push_back(CapAdd(group_delay, visit_duration));
+    tasks_.end_min.push_back(CapAdd(cumul_min, visit_duration));
+    tasks_.end_max.push_back(CapAdd(cumul_max, visit_duration));
     tasks_.is_preemptible.push_back(false);
     task_translators_.emplace_back(dimension_->CumulVar(current),
                                    visit_duration, group_delay);
     if (node_is_last) break;
 
-    // Tasks from transits.
+    // Tasks from transits. Transit starts after the visit,
+    // but before the next group_delay.
     const bool next_is_bound = model_->NextVar(current)->Bound();
     const int next =
         next_is_bound ? model_->NextVar(current)->Min() : model_->End(vehicle);
-    tasks_.start_min.push_back(
-        CapAdd(CapAdd(tasks_.start_min.back(), group_delay), visit_duration));
     group_delay =
         next_is_bound ? dimension_->GetGroupDelay(vehicle, current, next) : 0;
-    DCHECK_GE(group_delay, 0);
+    tasks_.start_min.push_back(CapAdd(cumul_min, visit_duration));
+    tasks_.start_max.push_back(CapAdd(cumul_max, visit_duration));
     tasks_.duration_min.push_back(std::max<int64>(
         0, CapSub(CapSub(dimension_->FixedTransitVar(current)->Min(),
                          visit_duration),
                   group_delay)));
-    DCHECK_GE(tasks_.duration_min.back(), 0);
+    tasks_.duration_max.push_back(std::max<int64>(
+        0, CapSub(CapSub(dimension_->FixedTransitVar(current)->Max(),
+                         visit_duration),
+                  group_delay)));
+    tasks_.end_min.push_back(
+        CapSub(dimension_->CumulVar(next)->Min(), group_delay));
     tasks_.end_max.push_back(
         CapSub(dimension_->CumulVar(next)->Max(), group_delay));
     tasks_.is_preemptible.push_back(true);
@@ -5629,10 +5642,18 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   for (IntervalVar* interval : break_intervals) {
     if (!interval->MustBePerformed()) continue;
     tasks_.start_min.push_back(interval->StartMin());
+    tasks_.start_max.push_back(interval->StartMax());
     tasks_.duration_min.push_back(interval->DurationMin());
+    tasks_.duration_max.push_back(interval->DurationMax());
+    tasks_.end_min.push_back(interval->EndMin());
     tasks_.end_max.push_back(interval->EndMax());
     tasks_.is_preemptible.push_back(false);
     task_translators_.emplace_back(interval);
+  }
+  tasks_.distance_duration.clear();
+  if (dimension_->HasBreakDistanceDurationOfVehicle(vehicle)) {
+    tasks_.distance_duration =
+        dimension_->GetBreakDistanceDurationOfVehicle(vehicle);
   }
   if (!disjunctive_propagator_.Propagate(&tasks_)) solver()->Fail();
 
@@ -5640,22 +5661,28 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   const int num_tasks = tasks_.start_min.size();
   for (int task = 0; task < num_tasks; ++task) {
     task_translators_[task].SetStartMin(tasks_.start_min[task]);
+    task_translators_[task].SetStartMax(tasks_.start_max[task]);
+    task_translators_[task].SetDurationMin(tasks_.duration_min[task]);
+    task_translators_[task].SetEndMin(tasks_.end_min[task]);
     task_translators_[task].SetEndMax(tasks_.end_max[task]);
   }
 }
 
 bool DisjunctivePropagator::Propagate(Tasks* tasks) {
   DCHECK_LE(tasks->num_chain_tasks, tasks->start_min.size());
+  DCHECK_EQ(tasks->start_min.size(), tasks->start_max.size());
   DCHECK_EQ(tasks->start_min.size(), tasks->duration_min.size());
+  DCHECK_EQ(tasks->start_min.size(), tasks->duration_max.size());
+  DCHECK_EQ(tasks->start_min.size(), tasks->end_min.size());
   DCHECK_EQ(tasks->start_min.size(), tasks->end_max.size());
   DCHECK_EQ(tasks->start_min.size(), tasks->is_preemptible.size());
   // Do forward deductions, then backward deductions.
   // Interleave Precedences() that is O(n).
   return Precedences(tasks) && EdgeFinding(tasks) && Precedences(tasks) &&
          DetectablePrecedencesWithChain(tasks) && ForbiddenIntervals(tasks) &&
-         Precedences(tasks) && MirrorTasks(tasks) && EdgeFinding(tasks) &&
-         Precedences(tasks) && DetectablePrecedencesWithChain(tasks) &&
-         MirrorTasks(tasks);
+         Precedences(tasks) && DistanceDuration(tasks) && Precedences(tasks) &&
+         MirrorTasks(tasks) && EdgeFinding(tasks) && Precedences(tasks) &&
+         DetectablePrecedencesWithChain(tasks) && MirrorTasks(tasks);
 }
 
 bool DisjunctivePropagator::Precedences(Tasks* tasks) {
@@ -5677,24 +5704,64 @@ bool DisjunctivePropagator::Precedences(Tasks* tasks) {
     time = CapSub(time, tasks->duration_min[task]);
     if (time < tasks->start_min[task]) return false;
   }
+  const int num_tasks = tasks->start_min.size();
+  for (int task = 0; task < num_tasks; ++task) {
+    // Enforce start + duration <= end.
+    tasks->end_min[task] =
+        std::max(tasks->end_min[task],
+                 CapAdd(tasks->start_min[task], tasks->duration_min[task]));
+    tasks->start_max[task] =
+        std::min(tasks->start_max[task],
+                 CapSub(tasks->end_max[task], tasks->duration_min[task]));
+    tasks->duration_max[task] =
+        std::min(tasks->duration_max[task],
+                 CapSub(tasks->end_max[task], tasks->start_min[task]));
+    if (!tasks->is_preemptible[task]) {
+      // Enforce start + duration == end for nonpreemptibles.
+      tasks->end_max[task] =
+          std::min(tasks->end_max[task],
+                   CapAdd(tasks->start_max[task], tasks->duration_max[task]));
+      tasks->start_min[task] =
+          std::max(tasks->start_min[task],
+                   CapSub(tasks->end_min[task], tasks->duration_max[task]));
+      tasks->duration_min[task] =
+          std::max(tasks->duration_min[task],
+                   CapSub(tasks->end_min[task], tasks->start_max[task]));
+    }
+    if (tasks->duration_min[task] > tasks->duration_max[task]) return false;
+    if (tasks->end_min[task] > tasks->end_max[task]) return false;
+    if (tasks->start_min[task] > tasks->start_max[task]) return false;
+  }
   return true;
 }
 
 bool DisjunctivePropagator::MirrorTasks(Tasks* tasks) {
-  // For all tasks, start_min := -end_max and end_max := -start_min.
   const int num_tasks = tasks->start_min.size();
+  // For all tasks, start_min := -end_max and end_max := -start_min.
   for (int task = 0; task < num_tasks; ++task) {
     const int64 t = -tasks->start_min[task];
     tasks->start_min[task] = -tasks->end_max[task];
     tasks->end_max[task] = t;
+  }
+  // For all tasks, start_max := -end_min and end_min := -start_max.
+  for (int task = 0; task < num_tasks; ++task) {
+    const int64 t = -tasks->start_max[task];
+    tasks->start_max[task] = -tasks->end_min[task];
+    tasks->end_min[task] = t;
   }
   // In the mirror problem, tasks linked by precedences are in reversed order.
   const int num_chain_tasks = tasks->num_chain_tasks;
   if (num_chain_tasks > 0) {
     std::reverse(tasks->start_min.begin(),
                  tasks->start_min.begin() + num_chain_tasks);
+    std::reverse(tasks->start_max.begin(),
+                 tasks->start_max.begin() + num_chain_tasks);
     std::reverse(tasks->duration_min.begin(),
                  tasks->duration_min.begin() + num_chain_tasks);
+    std::reverse(tasks->duration_max.begin(),
+                 tasks->duration_max.begin() + num_chain_tasks);
+    std::reverse(tasks->end_min.begin(),
+                 tasks->end_min.begin() + num_chain_tasks);
     std::reverse(tasks->end_max.begin(),
                  tasks->end_max.begin() + num_chain_tasks);
     std::reverse(tasks->is_preemptible.begin(),
@@ -6023,6 +6090,128 @@ void TypeIncompatibilityConstraint::InitialPropagate() {
   for (int vehicle = 0; vehicle < model_.vehicles(); vehicle++) {
     CheckIncompatibilitiesOnVehicle(vehicle);
   }
+}
+
+bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
+  if (tasks->distance_duration.empty()) return true;
+  if (tasks->num_chain_tasks == 0) return true;
+  const int route_start = 0;
+  const int route_end = tasks->num_chain_tasks - 1;
+  const int num_tasks = tasks->start_min.size();
+  for (int i = 0; i < tasks->distance_duration.size(); ++i) {
+    const int64 max_distance = tasks->distance_duration[i].first;
+    const int64 minimum_break_duration = tasks->distance_duration[i].second;
+
+    // This is a sweeping algorithm that looks whether the union of intervals
+    // defined by breaks and route start/end is (-infty, +infty).
+    // Those intervals are:
+    // - route start: (-infty, start_max + distance]
+    // - route end: [end_min, +infty)
+    // - breaks: [start_min, end_max + distance) if their duration_max
+    //   is >= min_duration, empty set otherwise.
+    // If sweeping finds that a time point can be covered by only one interval,
+    // it will force the corresponding break or route start/end to cover this
+    // point, which can force a break to be above minimum_break_duration.
+
+    // We suppose break tasks are ordered, end(task_n) <= start(task_{n+1})
+    for (int task = tasks->num_chain_tasks + 1; task < num_tasks; ++task) {
+      tasks->start_min[task] =
+          std::max(tasks->start_min[task], tasks->end_min[task - 1]);
+    }
+    for (int task = num_tasks - 2; task >= tasks->num_chain_tasks; --task) {
+      tasks->end_max[task] =
+          std::min(tasks->end_max[task], tasks->start_max[task + 1]);
+    }
+    // Initial state: start at -inf with route_start in task_set.
+    // Sweep over profile, looking for time points where the number of
+    // covering breaks is <= 1. If it is 0, fail, otherwise force the
+    // unique break to cover it.
+    // Route start and end get a special treatment, not sure generalizing
+    // would be better.
+    int64 xor_active_tasks = route_start;
+    int num_active_tasks = 1;
+    int64 previous_time = kint64min;
+    const int64 route_start_time = tasks->end_max[route_start] + max_distance;
+    const int64 route_end_time = tasks->start_min[route_end];
+    int index_break_by_smin = tasks->num_chain_tasks;
+    int index_break_by_emax = tasks->num_chain_tasks;
+    while (index_break_by_emax < num_tasks) {
+      // Find next time point among start/end of covering intervals.
+      int64 current_time =
+          CapAdd(tasks->end_max[index_break_by_emax], max_distance);
+      if (index_break_by_smin < num_tasks) {
+        current_time =
+            std::min(current_time, tasks->start_min[index_break_by_smin]);
+      }
+      if (previous_time < route_start_time && route_start_time < current_time) {
+        current_time = route_start_time;
+      }
+      if (previous_time < route_end_time && route_end_time < current_time) {
+        current_time = route_end_time;
+      }
+      // If num_active_tasks was 1, the unique active task must cover from
+      // previous_time to current_time.
+      if (num_active_tasks == 1) {
+        // xor_active_tasks is the unique task that can cover [previous_time,
+        // current_time).
+        if (xor_active_tasks != route_end) {
+          tasks->end_min[xor_active_tasks] = std::max(
+              tasks->end_min[xor_active_tasks], current_time - max_distance);
+          if (xor_active_tasks != route_start) {
+            tasks->duration_min[xor_active_tasks] =
+                std::max(tasks->duration_min[xor_active_tasks],
+                         std::max(minimum_break_duration,
+                                  current_time - max_distance - previous_time));
+          }
+        }
+      }
+      // Process covering intervals that start or end at current_time.
+      while (index_break_by_smin < num_tasks &&
+             current_time == tasks->start_min[index_break_by_smin]) {
+        if (tasks->duration_max[index_break_by_smin] >=
+            minimum_break_duration) {
+          xor_active_tasks ^= index_break_by_smin;
+          ++num_active_tasks;
+        }
+        ++index_break_by_smin;
+      }
+      while (index_break_by_emax < num_tasks &&
+             current_time ==
+                 CapAdd(tasks->end_max[index_break_by_emax], max_distance)) {
+        if (tasks->duration_max[index_break_by_emax] >=
+            minimum_break_duration) {
+          xor_active_tasks ^= index_break_by_emax;
+          --num_active_tasks;
+        }
+        ++index_break_by_emax;
+      }
+      if (current_time == route_start_time) {
+        xor_active_tasks ^= route_start;
+        --num_active_tasks;
+      }
+      if (current_time == route_end_time) {
+        xor_active_tasks ^= route_end;
+        ++num_active_tasks;
+      }
+      // If num_active_tasks becomes 1, the unique active task must cover from
+      // current_time.
+      if (num_active_tasks <= 0) return false;
+      if (num_active_tasks == 1) {
+        if (xor_active_tasks != route_start) {
+          // xor_active_tasks is the unique task that can cover from
+          // current_time to the next time point.
+          tasks->start_max[xor_active_tasks] =
+              std::min(tasks->start_max[xor_active_tasks], current_time);
+          if (xor_active_tasks != route_end) {
+            tasks->duration_min[xor_active_tasks] = std::max(
+                tasks->duration_min[xor_active_tasks], minimum_break_duration);
+          }
+        }
+      }
+      previous_time = current_time;
+    }
+  }
+  return true;
 }
 
 void RoutingDimension::CloseModel(bool use_light_propagation) {
@@ -6379,7 +6568,11 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
   for (IntervalVar* const interval : breaks) {
     model_->AddIntervalToAssignment(interval);
     model_->AddVariableMinimizedByFinalizer(interval->SafeStartExpr(0)->Var());
+    model_->AddVariableMinimizedByFinalizer(
+        interval->SafeDurationExpr(0)->Var());
   }
+  model_->AddVariableMinimizedByFinalizer(CumulVar(model_->End(vehicle)));
+  model_->AddVariableMaximizedByFinalizer(CumulVar(model_->Start(vehicle)));
   DCHECK_LE(0, vehicle);
   DCHECK_LT(vehicle, model_->vehicles());
   if (vehicle_node_visit_transits_.empty()) {
@@ -6412,6 +6605,29 @@ const std::vector<int64>& RoutingDimension::GetNodeVisitTransitsOfVehicle(
   DCHECK_LE(0, vehicle);
   DCHECK_LT(vehicle, vehicle_node_visit_transits_.size());
   return vehicle_node_visit_transits_[vehicle];
+}
+
+void RoutingDimension::SetBreakDistanceDurationOfVehicle(int64 distance,
+                                                         int64 duration,
+                                                         int vehicle) {
+  DCHECK_LE(0, vehicle);
+  DCHECK_LT(vehicle, model_->vehicles());
+  if (vehicle_break_distance_duration_.empty()) {
+    vehicle_break_distance_duration_.resize(model_->vehicles());
+  }
+  vehicle_break_distance_duration_[vehicle].emplace_back(distance, duration);
+}
+
+const std::vector<std::pair<int64, int64>>&
+RoutingDimension::GetBreakDistanceDurationOfVehicle(int vehicle) const {
+  DCHECK_LE(0, vehicle);
+  DCHECK_LT(vehicle, vehicle_break_distance_duration_.size());
+  return vehicle_break_distance_duration_[vehicle];
+}
+
+bool RoutingDimension::HasBreakDistanceDurationOfVehicle(int vehicle) const {
+  return (vehicle < vehicle_break_distance_duration_.size()) &&
+         !vehicle_break_distance_duration_[vehicle].empty();
 }
 
 void RoutingDimension::SetPickupToDeliveryLimitFunctionForPair(

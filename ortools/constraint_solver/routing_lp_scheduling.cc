@@ -15,6 +15,7 @@
 
 #include <numeric>
 
+#include "absl/time/time.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/lp_data/lp_types.h"
@@ -22,28 +23,23 @@
 
 namespace operations_research {
 
+namespace {
+
 // The following sets of parameters give the fastest response time without
 // impacting solutions found negatively.
-// TODO(user): Adapt this time limit for every LP solve once the model has
-// absolute limits.
-glop::GlopParameters RoutingModel::GetGlopParametersForLocalLP() const {
+glop::GlopParameters GetGlopParametersForLocalLP() {
   glop::GlopParameters parameters;
   parameters.set_use_dual_simplex(true);
   parameters.set_use_preprocessing(false);
-  if (lp_scheduling_time_limit_seconds_ > 0) {
-    parameters.set_max_time_in_seconds(lp_scheduling_time_limit_seconds_);
-  }
+  return parameters;
+}
+glop::GlopParameters GetGlopParametersForGlobalLP() {
+  glop::GlopParameters parameters;
+  parameters.set_use_dual_simplex(true);
   return parameters;
 }
 
-glop::GlopParameters RoutingModel::GetGlopParametersForGlobalLP() const {
-  glop::GlopParameters parameters;
-  parameters.set_use_dual_simplex(true);
-  if (lp_scheduling_time_limit_seconds_ > 0) {
-    parameters.set_max_time_in_seconds(lp_scheduling_time_limit_seconds_);
-  }
-  return parameters;
-}
+}  // namespace
 
 LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
     const RoutingDimension* dimension)
@@ -53,8 +49,7 @@ LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
   const int vehicles = dimension->model()->vehicles();
   lp_solver_.resize(vehicles);
   linear_program_.resize(vehicles);
-  const glop::GlopParameters parameters =
-      dimension->model()->GetGlopParametersForLocalLP();
+  const glop::GlopParameters parameters = GetGlopParametersForLocalLP();
   for (int vehicle = 0; vehicle < vehicles; ++vehicle) {
     lp_solver_[vehicle] = absl::make_unique<glop::LPSolver>();
     lp_solver_[vehicle]->SetParameters(parameters);
@@ -523,6 +518,11 @@ void DimensionCumulOptimizerCore::SetGlobalConstraints(
 
 bool DimensionCumulOptimizerCore::FinalizeAndSolve(
     glop::LinearProgram* linear_program, glop::LPSolver* lp_solver) {
+  // Set the time limit of the LP solver based on the model's remaining time.
+  const absl::Duration duration_limit = dimension()->model()->RemainingTime();
+  lp_solver->GetMutableParameters()->set_max_time_in_seconds(
+      absl::ToDoubleSeconds(duration_limit));
+
   // Because we construct the lp one constraint at a time and we never call
   // SetCoefficient() on the same variable twice for a constraint, we know that
   // the columns do not contain duplicates and are already ordered by constraint
@@ -566,7 +566,7 @@ void DimensionCumulOptimizerCore::SetCumulValuesFromLP(
 GlobalDimensionCumulOptimizer::GlobalDimensionCumulOptimizer(
     const RoutingDimension* dimension)
     : optimizer_core_(dimension) {
-  lp_solver_.SetParameters(dimension->model()->GetGlopParametersForGlobalLP());
+  lp_solver_.SetParameters(GetGlopParametersForGlobalLP());
 }
 
 bool GlobalDimensionCumulOptimizer::ComputeCumulCostWithoutFixedTransits(

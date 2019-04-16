@@ -2935,8 +2935,8 @@ class FindOneNeighbor : public DecisionBuilder {
   const RegularLimit* const original_limit_;
   bool neighbor_found_;
   std::vector<LocalSearchFilter*> filters_;
-  int solution_count_;
-  int check_period_;
+  int64 solutions_since_last_check_;
+  int64 check_period_;
   Assignment last_checked_assignment_;
   bool has_checked_assignment_ = false;
 };
@@ -2959,7 +2959,7 @@ FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
       original_limit_(limit),
       neighbor_found_(false),
       filters_(filters),
-      solution_count_(0),
+      solutions_since_last_check_(0),
       check_period_(
           assignment_->solver()->parameters().check_solution_period()),
       last_checked_assignment_(assignment) {
@@ -3041,7 +3041,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
             ls_operator_, has_neighbor, delta, deltadelta);
       }
 
-      if (has_neighbor) {
+      if (has_neighbor && !solver->IsUncheckedSolutionLimitReached()) {
         solver->neighbors_ += 1;
         // All filters must be called for incrementality reasons.
         // Empty deltas must also be sent to incremental filters; can be needed
@@ -3068,12 +3068,14 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
           assignment_copy->CopyIntersection(reference_assignment_.get());
           assignment_copy->CopyIntersection(delta);
           solver->GetLocalSearchMonitor()->BeginAcceptNeighbor(ls_operator_);
-          const bool check_solution = (solution_count_ == 0) ||
+          const bool check_solution = (solutions_since_last_check_ == 0) ||
                                       !solver->UseFastLocalSearch() ||
                                       // LNS deltas need to be restored
                                       !delta->AreAllElementsBound();
-          if (has_checked_assignment_) solution_count_++;
-          if (solution_count_ >= check_period_) solution_count_ = 0;
+          if (has_checked_assignment_) solutions_since_last_check_++;
+          if (solutions_since_last_check_ >= check_period_) {
+            solutions_since_last_check_ = 0;
+          }
           const bool accept =
               !check_solution || solver->SolveAndCommit(restore);
           solver->GetLocalSearchMonitor()->EndAcceptNeighbor(ls_operator_,
@@ -3112,6 +3114,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
               // TODO(user): support the case were limit_ accepts more than
               // one solution (e.g. best accept).
               AcceptUncheckedNeighbor(solver->ParentSearch());
+              solver->IncrementUncheckedSolutionCounter();
               pool_->RegisterNewSolution(assignment_);
               SynchronizeAll(solver);
               // NOTE: SynchronizeAll() sets neighbor_found_ to false, force it
@@ -3127,7 +3130,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
             VLOG(1) << "Imperfect filtering detected, backtracking to last "
                        "checked solution and checking all solutions.";
             check_period_ = 1;
-            solution_count_ = 0;
+            solutions_since_last_check_ = 0;
             pool_->RegisterNewSolution(&last_checked_assignment_);
             SynchronizeAll(solver);
             assignment_->CopyIntersection(&last_checked_assignment_);

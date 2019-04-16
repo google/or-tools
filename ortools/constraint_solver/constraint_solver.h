@@ -969,6 +969,9 @@ class Solver {
   // The number of solutions found since the start of the search.
   int64 solutions() const;
 
+  // The number of unchecked solutions found by local search.
+  int64 unchecked_solutions() const;
+
   // The number of demons executed during search for a given priority.
   int64 demon_runs(DemonPriority p) const { return demon_runs_[p]; }
 
@@ -2975,6 +2978,8 @@ class Solver {
   void reset_action_on_fail();
   void set_action_on_fail(Action a);
   void set_variable_to_clean_on_fail(IntVar* v);
+  void IncrementUncheckedSolutionCounter();
+  bool IsUncheckedSolutionLimitReached();
 
   void InternalSaveValue(int* valptr);
   void InternalSaveValue(int64* valptr);
@@ -3672,6 +3677,10 @@ class SearchMonitor : public BaseObject {
   // After accepting an unchecked neighbor during local search.
   virtual void AcceptUncheckedNeighbor();
 
+  // Returns true if the limit of solutions has been reached including
+  // unchecked solutions.
+  virtual bool IsUncheckedSolutionLimitReached() { return false; }
+
   Solver* solver() const { return solver_; }
 
   // Periodic call to check limits in long running methods.
@@ -4272,6 +4281,7 @@ class RegularLimit : public SearchLimit {
   int64 branches() const { return branches_; }
   int64 failures() const { return failures_; }
   int64 solutions() const { return solutions_; }
+  bool IsUncheckedSolutionLimitReached() override;
   int ProgressPercent() override;
   std::string DebugString() const override;
 
