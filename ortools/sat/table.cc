@@ -314,7 +314,8 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
     }
   }
 
-  if (prefixes_are_all_different && num_prefix_tuples < max_num_prefix_tuples) {
+  if (prefixes_are_all_different && num_prefix_tuples < max_num_prefix_tuples &&
+      max_num_prefix_tuples < 4 * num_prefix_tuples) {
     // If we have a table of 'unique prefix' => value tuples.
     // This table will likely not be negated, as the density of tuples will be
     // less than 1 / size of the domain of the last variable.
