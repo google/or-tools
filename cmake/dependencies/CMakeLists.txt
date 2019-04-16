@@ -118,7 +118,7 @@ if(BUILD_CoinUtils)
     REPOSITORY
       "https://github.com/Mizux/CoinUtils.git"
     TAG
-      "master"
+      "stable/2.11"
   )
 endif()
 
@@ -132,7 +132,7 @@ if(BUILD_Osi)
     REPOSITORY
       "https://github.com/Mizux/Osi.git"
     TAG
-      "master"
+      "stable/0.108"
   )
 endif()
 
@@ -146,7 +146,7 @@ if(BUILD_Clp)
     REPOSITORY
       "https://github.com/Mizux/Clp.git"
     TAG
-      "master"
+      "stable/1.17"
   )
 endif()
 
@@ -160,7 +160,7 @@ if(BUILD_Cgl)
     REPOSITORY
       "https://github.com/Mizux/Cgl.git"
     TAG
-      "master"
+      "stable/0.60"
   )
 endif()
 
@@ -174,6 +174,6 @@ if(BUILD_Cbc)
     REPOSITORY
       "https://github.com/Mizux/Cbc.git"
     TAG
-      "master"
+      "stable/2.10"
   )
 endif()
