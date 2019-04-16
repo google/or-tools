@@ -992,8 +992,6 @@ class ScalingPreprocessor : public Preprocessor {
 // ToMinimizationPreprocessor
 // --------------------------------------------------------
 // Changes the problem from maximization to minimization (if applicable).
-// As of 2015/09/03 this is not used by Glop, but will be used by Glip.
-// The preprocessor is kept here, because it could be used by Glop too.
 class ToMinimizationPreprocessor : public Preprocessor {
  public:
   explicit ToMinimizationPreprocessor(const GlopParameters* parameters)
