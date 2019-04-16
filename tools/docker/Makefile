@@ -28,7 +28,7 @@ help:
 	@echo -e "\t${BOLD}archive_<distro>${RESET}: Build OR-Tools archive for the specified ${BOLD}<distro>${RESET}."
 	@echo -e "\t${BOLD}docker_<distro>_<lang>${RESET}: Build test image containing or-tools archive and ${BOLD}<lang>${RESET} prerequisites."
 	@echo -e "\t${BOLD}test_<distro>_<lang>${RESET}: Test OR-Tools archive for the specified ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
-	@echo -e "\t${BOLD}bash_<distro>_<lang>${RESET}: Run container using the ${BOLD}docker_<distro>_<lang>${RESET} image."
+	@echo -e "\t${BOLD}bash_<distro>_<lang>${RESET}: Run a container using the ${BOLD}docker_<distro>_<lang>${RESET} image."
 	@echo -e "\t${BOLD}test_<distro>${RESET}: Test OR-Tools archive for all specified language for the specified ${BOLD}<distro>${RESET}."
 	@echo
 	@echo -e "\t${BOLD}test_<distro>_<language>${RESET}: Test OR-Tools archive on ${BOLD}<distro>${RESET} distro for ${BOLD}<lang>${RESET} language."
@@ -95,15 +95,15 @@ test_delivery: test_archives
 ###############
 ###  PYTHON  ##
 ###############
-
-.PHONY: python
-python: manylinux1-pypi
+.PHONY: docker_python
+docker_python: export/python/docker.tar
 
 export/python/build-manylinux1.sh: build-manylinux1.sh | export/python
 	cp $< $@
 
-export/python/docker.tar: manylinux1.Dockerfile export/python/build-manylinux1.sh ../../makefiles | export/python
+export/python/docker.tar: manylinux1.Dockerfile export/python/build-manylinux1.sh ../../makefiles
 	-docker image rm -f or-tools:python 2>/dev/null
+	-rm -f $@
 	$(DOCKER_BUILD_CMD) \
  -f $< \
  --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
@@ -111,13 +111,14 @@ export/python/docker.tar: manylinux1.Dockerfile export/python/build-manylinux1.s
  -t or-tools:python export/python
 	docker save or-tools:python -o $@
 
-manylinux1-pypi: export/python/docker.tar
-	docker load -i $<
-	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools:python /bin/bash -c \
-		"/root/build/build-manylinux1.sh /root/src /root/build /export"
-
 bash_python: export/python/docker.tar
 	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools:python /bin/bash
+
+.PHONY: python
+python: export/python/docker.tar
+	docker load -i $<
+	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools:python /bin/bash -c \
+		"/root/build/build-manylinux1.sh /root/src /root/build /export/python"
 
 export/python: | export
 	-mkdir $@
@@ -150,7 +151,7 @@ export/%/docker_devel.tar: %.Dockerfile ../Makefile.cc.java.dotnet ../../makefil
  -t or-tools_$*:devel export/$*
 	docker save or-tools_$*:devel -o $@
 
-# Run container using devel docker image
+# Run a container using devel docker image
 targets = $(addprefix bash_, $(DISTROS))
 .PHONY: $(targets)
 $(targets): bash_%: export/%/docker_devel.tar
@@ -212,7 +213,7 @@ export/%/docker_dotnet.tar: test/%/dotnet.Dockerfile export/archives/or-tools_%_
 	$(DOCKER_BUILD_CMD) -f $< -t or-tools_$*:dotnet export/archives
 	docker save or-tools_$*:dotnet -o $@
 
-# Run container using <language> docker image
+# Run a container using <language> docker image
 targets = $(addsuffix _cc, $(addprefix bash_, $(DISTROS)))
 .PHONY: $(targets)
 $(targets): bash_%_cc: export/%/docker_cc.tar
@@ -265,8 +266,8 @@ test_archives: $(targets)
 ##  CLEAN  ##
 #############
 targets = $(addprefix clean_, $(DISTROS))
-.PHONY: clean $(targets)
-clean: $(targets)
+.PHONY: clean $(targets) clean_python
+clean: $(targets) clean_python
 $(targets): clean_%:
 	-rm -f export/$*/test_dotnet.log
 	-rm -f export/$*/test_java.log
@@ -274,12 +275,16 @@ $(targets): clean_%:
 	-rm -f export/archives/or-tools_flatzinc_$*_v*.tar.gz
 	-rm -f export/archives/or-tools_$*_v*.tar.gz
 
+clean_python:
+	-rm -f export/python/ortools-*.whl
+
 targets = $(addprefix distclean_, $(DISTROS))
-.PHONY: distclean $(targets)
-distclean: $(targets) | export
+.PHONY: distclean $(targets) distclean_python
+distclean: $(targets) distclean_python | export
 	-docker container rm $$(docker container ls -f status=exited -q)
 #	-docker image rm $$(docker image ls --all -q)
 	docker image prune --force
+	rmdir export/archives
 	rmdir export
 $(targets): distclean_%: clean_%
 	-docker image rm -f or-tools_$*:dotnet 2>/dev/null
@@ -292,6 +297,12 @@ $(targets): distclean_%: clean_%
 	-rm -f export/$*/docker_devel.tar
 	-rm -f export/$*/or-tools.snk
 	-rmdir export/$*
+
+distclean_python: clean_python
+	-docker image rm -f or-tools:python 2>/dev/null
+	-rm -f export/python/docker.tar
+	-rm -f export/python/build-manylinux*.sh
+	-rmdir export/python
 
 ##########################
 ##  MINIZINC CHALLENGE  ##
