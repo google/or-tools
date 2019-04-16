@@ -5,6 +5,7 @@ platform: x64
 
 environment:
   MSBUILD_FLAGS: /verbosity:minimal /maxcpucount
+  APPVEYOR_SAVE_CACHE_ON_ERROR: true
   matrix:
 # Makefile
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
@@ -29,6 +30,10 @@ environment:
 
 matrix:
   fast_finish: false
+
+cache:
+  - dependencies\install -> makefiles\Makefile.third_party.win.mk
+  - build\dependencies\install -> cmake\dependencies
 
 before_build:
   - git config --global user.email "ci@appveyor.com"
