@@ -46,19 +46,6 @@ absl::flat_hash_map<IntegerValue, Literal> GetEncoding(IntegerVariable var,
   return encoding;
 }
 
-void FilterValues(IntegerVariable var, Model* model,
-                  absl::flat_hash_set<int64>* values) {
-  const Domain domain = model->Get<IntegerTrail>()->InitialVariableDomain(var);
-  for (auto it = values->begin(); it != values->end();) {
-    const int64 v = *it;
-    auto copy = it++;
-    // TODO(user): quadratic! improve.
-    if (!domain.Contains(v)) {
-      values->erase(copy);
-    }
-  }
-}
-
 // Add the implications and clauses to link one column of a table to the Literal
 // controling if the lines are possible or not. The column has the given values,
 // and the Literal of the column variable can be retrieved using the encoding
@@ -74,15 +61,15 @@ void ProcessOneColumn(
       value_to_list_of_line_literals;
 
   // If a value is false (i.e not possible), then the tuple with this value
-  // is false too (i.e not possible).
+  // is false too (i.e not possible). Conversely, if the tuple is selected,
+  // the value must be selected.
   for (int i = 0; i < values.size(); ++i) {
     const IntegerValue v = values[i];
-    if (!gtl::ContainsKey(encoding, v)) {
+    if (!encoding.contains(v)) {
       model->Add(ClauseConstraint({line_literals[i].Negated()}));
     } else {
       value_to_list_of_line_literals[v].push_back(line_literals[i]);
-      model->Add(Implication(gtl::FindOrDie(encoding, v).Negated(),
-                             line_literals[i].Negated()));
+      model->Add(Implication(line_literals[i], gtl::FindOrDie(encoding, v)));
     }
   }
 
@@ -93,109 +80,6 @@ void ProcessOneColumn(
     clause.insert(clause.end(), tuples_with_any.begin(), tuples_with_any.end());
     clause.push_back(gtl::FindOrDie(encoding, entry.first).Negated());
     model->Add(ClauseConstraint(clause));
-  }
-}
-
-void AddPositiveTable(
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<std::vector<int64>>& tuples,
-    const std::vector<absl::flat_hash_set<int64>> values_per_var,
-    int64 any_value, bool prefix_mode, Model* model) {
-  const int n = vars.size();
-
-  // Domains have be propagated. Fully encode variables.
-  std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
-  for (int i = 0; i < n; ++i) {
-    if (values_per_var.size() > 1) {
-      model->Add(FullyEncodeVariable(vars[i]));
-      encodings[i] = GetEncoding(vars[i], model);
-    }
-  }
-
-  // Create one Boolean variable per tuple to indicate if it can still be
-  // selected or not. Note that we don't enforce exactly one tuple to be
-  // selected because these variables are just used by this constraint, so
-  // only the information "can't be selected" is important.
-  //
-  // TODO(user): If a value in one column is unique, we don't need to create
-  // a new BooleanVariable corresponding to this line since we can use the one
-  // corresponding to this value in that column.
-  //
-  // Note that if there is just one tuple, there is no need to create such
-  // variables since they are not used.
-  std::vector<Literal> tuple_literals;
-  tuple_literals.reserve(tuples.size());
-  if (tuples.size() == 1) {
-    tuple_literals.push_back(Literal(kTrueLiteralIndex));
-  } else if (tuples.size() == 2) {
-    tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
-    tuple_literals.emplace_back(tuple_literals[0].Negated());
-  } else if (tuples.size() > 2) {
-    for (int i = 0; i < tuples.size(); ++i) {
-      tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
-    }
-    model->Add(ClauseConstraint(tuple_literals));
-  }
-
-  // Fully encode the variables using all the values appearing in the tuples.
-  std::vector<Literal> active_tuple_literals;
-  std::vector<IntegerValue> active_values;
-  std::vector<Literal> any_tuple_literals;
-  for (int i = 0; i < n; ++i) {
-    if (values_per_var[i].size() == 1) continue;
-
-    active_tuple_literals.clear();
-    active_values.clear();
-    any_tuple_literals.clear();
-    for (int j = 0; j < tuple_literals.size(); ++j) {
-      const int64 v = tuples[j][i];
-
-      if (v == any_value) {
-        any_tuple_literals.push_back(tuple_literals[j]);
-      } else {
-        active_tuple_literals.push_back(tuple_literals[j]);
-        active_values.push_back(IntegerValue(v));
-      }
-    }
-
-    if (!active_tuple_literals.empty()) {
-      ProcessOneColumn(active_tuple_literals, active_values,
-                       GetEncoding(vars[i], model), any_tuple_literals, model);
-    }
-  }
-
-  if (prefix_mode) {
-    // For each tuple, we add a clause prefix => last value.
-    std::vector<Literal> clause;
-    for (int j = 0; j < tuples.size(); ++j) {
-      clause.clear();
-      bool tuple_is_valid = true;
-      for (int i = 0; i + 1 < n; ++i) {
-        // Ignore fixed variables.
-        if (values_per_var[i].size() == 1) continue;
-
-        const int64 v = tuples[j][i];
-        // Ignored 'any' created during compression.
-        if (v == any_value) continue;
-
-        // Check the validity of the tuple.
-        const IntegerValue value(v);
-        if (!encodings[i].contains(value)) {
-          tuple_is_valid = false;
-          break;
-        }
-        clause.push_back(gtl::FindOrDie(encodings[i], value).Negated());
-      }
-
-      // Add the target of the implication.
-      const IntegerValue target_value = IntegerValue(tuples[j][n - 1]);
-      if (tuple_is_valid && encodings[n - 1].contains(target_value)) {
-        const Literal target_literal =
-            gtl::FindOrDie(encodings[n - 1], target_value);
-        clause.push_back(target_literal);
-        model->Add(ClauseConstraint(clause));
-      }
-    }
   }
 }
 
@@ -298,7 +182,7 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
     max_num_prefix_tuples *= values_per_var[i].size();
   }
   // Detect if prefix tuples are all different.
-  const bool prefix_are_all_different = num_prefix_tuples == num_valid_tuples;
+  const bool prefixes_are_all_different = num_prefix_tuples == num_valid_tuples;
 
   // Compress tuples.
   const int64 any_value = kint64min;
@@ -315,7 +199,7 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
     if (num_valid_tuples != num_original_tuples) {
       absl::StrAppend(&message, ", valid tuples = ", num_valid_tuples);
     }
-    if (prefix_are_all_different) {
+    if (prefixes_are_all_different) {
       if (num_prefix_tuples < max_num_prefix_tuples) {
         absl::StrAppend(&message, ", partial prefix = ", num_prefix_tuples, "/",
                         max_num_prefix_tuples);
@@ -331,16 +215,112 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
     }
     LOG(INFO) << message;
   }
-  AddPositiveTable(vars, tuples, values_per_var, any_value,
-                   prefix_are_all_different, model);
+  // Domains have be propagated. Fully encode variables.
+  std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
+  for (int i = 0; i < n; ++i) {
+    const std::vector<int64> reached_values(values_per_var[i].begin(),
+                                            values_per_var[i].end());
+    integer_trail->UpdateInitialDomain(vars[i],
+                                       Domain::FromValues(reached_values));    
+    if (values_per_var.size() > 1) {
+      model->Add(FullyEncodeVariable(vars[i]));
+      encodings[i] = GetEncoding(vars[i], model);
+    }
+  }
 
-  if (prefix_are_all_different && num_prefix_tuples < max_num_prefix_tuples) {
+  // Create one Boolean variable per tuple to indicate if it can still be
+  // selected or not. Note that we don't enforce exactly one tuple to be
+  // selected because these variables are just used by this constraint, so
+  // only the information "can't be selected" is important.
+  //
+  // TODO(user): If a value in one column is unique, we don't need to create
+  // a new BooleanVariable corresponding to this line since we can use the one
+  // corresponding to this value in that column.
+  //
+  // Note that if there is just one tuple, there is no need to create such
+  // variables since they are not used.
+  std::vector<Literal> tuple_literals;
+  tuple_literals.reserve(tuples.size());
+  if (tuples.size() == 1) {
+    tuple_literals.push_back(Literal(kTrueLiteralIndex));
+  } else if (tuples.size() == 2) {
+    tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
+    tuple_literals.emplace_back(tuple_literals[0].Negated());
+  } else if (tuples.size() > 2) {
+    for (int i = 0; i < tuples.size(); ++i) {
+      tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
+    }
+    model->Add(ClauseConstraint(tuple_literals));
+  }
+
+  // Fully encode the variables using all the values appearing in the tuples.
+  std::vector<Literal> active_tuple_literals;
+  std::vector<IntegerValue> active_values;
+  std::vector<Literal> any_tuple_literals;
+  for (int i = 0; i < n; ++i) {
+    if (values_per_var[i].size() == 1) continue;
+
+    active_tuple_literals.clear();
+    active_values.clear();
+    any_tuple_literals.clear();
+    for (int j = 0; j < tuple_literals.size(); ++j) {
+      const int64 v = tuples[j][i];
+
+      if (v == any_value) {
+        any_tuple_literals.push_back(tuple_literals[j]);
+      } else {
+        active_tuple_literals.push_back(tuple_literals[j]);
+        active_values.push_back(IntegerValue(v));
+      }
+    }
+
+    if (!active_tuple_literals.empty()) {
+      ProcessOneColumn(active_tuple_literals, active_values, encodings[i],
+                       any_tuple_literals, model);
+    }
+  }
+
+  if (prefixes_are_all_different) {
+    // For each tuple, we add a clause prefix => last value.
+    std::vector<Literal> clause;
+    for (int j = 0; j < tuples.size(); ++j) {
+      clause.clear();
+      bool tuple_is_valid = true;
+      for (int i = 0; i + 1 < n; ++i) {
+        // Ignore fixed variables.
+        if (values_per_var[i].size() == 1) continue;
+
+        const int64 v = tuples[j][i];
+        // Ignored 'any' created during compression.
+        if (v == any_value) continue;
+
+        // Check the validity of the tuple.
+        const IntegerValue value(v);
+        if (!encodings[i].contains(value)) {
+          tuple_is_valid = false;
+          break;
+        }
+        clause.push_back(gtl::FindOrDie(encodings[i], value).Negated());
+      }
+
+      // Add the target of the implication.
+      const IntegerValue target_value = IntegerValue(tuples[j][n - 1]);
+      if (tuple_is_valid && encodings[n - 1].contains(target_value)) {
+        const Literal target_literal =
+            gtl::FindOrDie(encodings[n - 1], target_value);
+        clause.push_back(target_literal);
+        model->Add(ClauseConstraint(clause));
+      }
+    }
+  }
+
+  if (prefixes_are_all_different && num_prefix_tuples < max_num_prefix_tuples) {
     // If we have a table of 'unique prefix' => value tuples.
     // This table will likely not be negated, as the density of tuples will be
     // less than 1 / size of the domain of the last variable.
     // Still, just on the prefix part, it can be close to complete.
     // For each missing prefix, we can add their negation as a valid clause.
-    // For this, we negate the prefix tuples, and add a negative table
+    // For this, we complement the prefix tuples, and add a negative table
     // constraint on these.
     std::vector<std::vector<int64>> var_domains(n - 1);
     for (int j = 0; j + 1 < n; ++j) {
@@ -356,7 +336,7 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
         tmp_tuple[j] = var_domains[j][index % var_domains[j].size()];
         index /= var_domains[j].size();
       }
-      if (!gtl::ContainsKey(prefixes, tmp_tuple)) {
+      if (!prefixes.contains(tmp_tuple)) {
         negated_tuples.push_back(tmp_tuple);
       }
     }
@@ -426,7 +406,7 @@ void AddNegatedTableConstraint(const std::vector<IntegerVariable>& vars,
       const int64 value = tuple[i];
       if (value == any_value) continue;
       if (!mapping[i].empty()) {  // Variable is fully encoded.
-        if (gtl::ContainsKey(mapping[i], value)) {
+        if (mapping[i].contains(value)) {
           clause.push_back(gtl::FindOrDie(mapping[i], value).Negated());
         } else {
           add_tuple = false;
