@@ -128,20 +128,15 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
 // Model-based API, for now we just provide a basic algorithm that minimizes a
 // given IntegerVariable by solving a sequence of decision problem.
 //
+// This keep solving the problem as long as fixed_search() do not return
+// kNoLiteralIndex and hence lazily encode new variables. See the doc of
+// SolveIntegerProblemWithLazyEncoding() for more details.
+//
 // The "observer" function will be called each time a new feasible solution is
 // found.
-SatSolver::Status MinimizeIntegerVariableWithLinearScan(
-    IntegerVariable objective_var,
-    const std::function<void(const Model&)>& feasible_solution_observer,
-    Model* model);
-
-// Same as MinimizeIntegerVariableWithLinearScan() but keep solving the problem
-// as long as next_decision() do not return kNoLiteralIndex and hence lazily
-// encode new variables. See the doc of SolveIntegerProblemWithLazyEncoding()
-// for more details.
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     bool log_info, IntegerVariable objective_var,
-    const std::function<LiteralIndex()>& next_decision,
+    const std::function<LiteralIndex()>& fixed_search,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
 
@@ -149,7 +144,7 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
 // domain of objective_var.
 void RestrictObjectiveDomainWithBinarySearch(
     IntegerVariable objective_var,
-    const std::function<LiteralIndex()>& next_decision,
+    const std::function<LiteralIndex()>& fixed_search,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
 
@@ -161,7 +156,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     bool log_info, IntegerVariable objective_var,
     const std::vector<IntegerVariable>& variables,
     const std::vector<IntegerValue>& coefficients,
-    const std::function<LiteralIndex()>& next_decision,
+    const std::function<LiteralIndex()>& fixed_search,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
 
@@ -183,7 +178,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     bool log_info, IntegerVariable objective_var,
     std::vector<IntegerVariable> variables,
     std::vector<IntegerValue> coefficients,
-    const std::function<LiteralIndex()>& next_decision,
+    const std::function<LiteralIndex()>& fixed_search,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
 

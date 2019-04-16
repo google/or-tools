@@ -1441,12 +1441,16 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
       vars.push_back(var);
       values.push_back(IntegerValue(model_proto.solution_hint().values(i)));
     }
-    std::vector<std::function<LiteralIndex()>> decision_policies = {
+
+    SearchHeuristics& search_heuristics =
+        *model->GetOrCreate<SearchHeuristics>();
+    search_heuristics.policy_index = 0;
+    search_heuristics.decision_policies = {
         SequentialSearch({FollowHint(vars, values, model),
                           SatSolverHeuristic(model), next_decision})};
     auto no_restart = []() { return false; };
-    const SatSolver::Status status =
-        SolveProblemWithPortfolioSearch(decision_policies, {no_restart}, model);
+    search_heuristics.restart_policies = {no_restart};
+    const SatSolver::Status status = ResetAndSolveIntegerProblem({}, model);
 
     if (status == SatSolver::Status::FEASIBLE) {
       bool hint_is_valid = true;
@@ -1507,9 +1511,9 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
 
   SatSolver::Status status;
   if (!model_proto.has_objective()) {
+    ConfigureSearchHeuristics(next_decision, model);
     while (true) {
-      status = SolveIntegerProblemWithLazyEncoding(
-          /*assumptions=*/{}, next_decision, model);
+      status = ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
       if (status != SatSolver::Status::FEASIBLE) break;
       solution_observer(*model);
       if (!parameters.enumerate_all_solutions()) break;
@@ -1980,8 +1984,8 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
         if (local_response.solution_info().empty()) {
           local_response.set_solution_info(solution_info);
         } else {
-        local_response.set_solution_info(
-            absl::StrCat(local_response.solution_info(), " ", solution_info));
+          local_response.set_solution_info(
+              absl::StrCat(local_response.solution_info(), " ", solution_info));
         }
 
         const bool neighborhood_is_reduced = neighborhood.is_reduced;

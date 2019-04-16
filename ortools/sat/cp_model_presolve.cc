@@ -936,7 +936,8 @@ bool PresolveIntDiv(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Linearize if everything is positive.
-  if (context->MinOf(target) >= 0 && context->MinOf(ref_x) >= 0) {
+  if (context->MinOf(target) >= 0 && context->MinOf(ref_x) >= 0 &&
+      divisor > 1) {
     LinearConstraintProto* const lin =
         context->working_model->add_constraints()->mutable_linear();
     lin->add_vars(ref_x);

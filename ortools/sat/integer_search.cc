@@ -487,64 +487,60 @@ std::function<bool()> SatSolverRestartPolicy(Model* model) {
   return [policy]() { return policy->ShouldRestart(); };
 }
 
-SatSolver::Status SolveIntegerProblemWithLazyEncoding(
-    const std::vector<Literal>& assumptions,
-    const std::function<LiteralIndex()>& next_decision, Model* model) {
-  if (model->GetOrCreate<TimeLimit>()->LimitReached()) {
-    return SatSolver::LIMIT_REACHED;
-  }
-  SatSolver* const solver = model->GetOrCreate<SatSolver>();
-  if (!solver->ResetWithGivenAssumptions(assumptions)) {
-    return solver->UnsatStatus();
-  }
+void ConfigureSearchHeuristics(
+    const std::function<LiteralIndex()>& fixed_search, Model* model) {
+  SearchHeuristics& heuristics = *model->GetOrCreate<SearchHeuristics>();
+  heuristics.policy_index = 0;
+  heuristics.decision_policies.clear();
+  heuristics.restart_policies.clear();
+
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   switch (parameters.search_branching()) {
     case SatParameters::AUTOMATIC_SEARCH: {
-      std::function<LiteralIndex()> search;
+      std::function<LiteralIndex()> decision_policy;
       if (parameters.randomize_search()) {
-        search = SequentialSearch(
-            {RandomizeOnRestartHeuristic(model), next_decision});
+        decision_policy = RandomizeOnRestartHeuristic(model);
       } else {
-        search = SequentialSearch({SatSolverHeuristic(model), next_decision});
+        decision_policy = SatSolverHeuristic(model);
       }
+      decision_policy = SequentialSearch({decision_policy, fixed_search});
       if (parameters.exploit_integer_lp_solution() ||
           parameters.exploit_all_lp_solution()) {
-        search = ExploitLpSolution(search, model);
+        decision_policy = ExploitLpSolution(decision_policy, model);
       }
-      return SolveProblemWithPortfolioSearch(
-          {search}, {SatSolverRestartPolicy(model)}, model);
+      heuristics.decision_policies = {decision_policy};
+      heuristics.restart_policies = {SatSolverRestartPolicy(model)};
+      return;
     }
     case SatParameters::FIXED_SEARCH: {
-      // Not all Boolean might appear in next_decision(), so once there is no
+      // Not all Boolean might appear in fixed_search(), so once there is no
       // decision left, we fix all Booleans that are still undecided.
+      heuristics.decision_policies = {
+          SequentialSearch({fixed_search, SatSolverHeuristic(model)})};
+
       if (parameters.randomize_search()) {
-        return SolveProblemWithPortfolioSearch(
-            {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
-            {SatSolverRestartPolicy(model)}, model);
-      } else {
-        // TODO(user): We might want to restart if external info is available.
-        // Code a custom restart for this?
-        auto no_restart = []() { return false; };
-        return SolveProblemWithPortfolioSearch(
-            {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
-            {no_restart}, model);
+        heuristics.restart_policies = {SatSolverRestartPolicy(model)};
+        return;
       }
+
+      // TODO(user): We might want to restart if external info is available.
+      // Code a custom restart for this?
+      auto no_restart = []() { return false; };
+      heuristics.restart_policies = {no_restart};
+      return;
     }
     case SatParameters::PORTFOLIO_SEARCH: {
-      auto incomplete_portfolio = AddModelHeuristics({next_decision}, model);
-      auto portfolio = CompleteHeuristics(
-          incomplete_portfolio,
-          SequentialSearch({SatSolverHeuristic(model), next_decision}));
+      heuristics.decision_policies = CompleteHeuristics(
+          AddModelHeuristics({fixed_search}, model),
+          SequentialSearch({SatSolverHeuristic(model), fixed_search}));
       if (parameters.exploit_integer_lp_solution()) {
-        for (auto& ref : portfolio) {
+        for (auto& ref : heuristics.decision_policies) {
           ref = ExploitLpSolution(ref, model);
         }
       }
-      auto default_restart_policy = SatSolverRestartPolicy(model);
-      auto restart_policies = std::vector<std::function<bool()>>(
-          portfolio.size(), default_restart_policy);
-      return SolveProblemWithPortfolioSearch(portfolio, restart_policies,
-                                             model);
+      heuristics.restart_policies.assign(heuristics.decision_policies.size(),
+                                         SatSolverRestartPolicy(model));
+      return;
     }
     case SatParameters::LP_SEARCH: {
       // Fill portfolio with pseudocost heuristics.
@@ -553,36 +549,36 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
            *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
         lp_heuristics.push_back(ct->LPReducedCostAverageBranching());
       }
-      if (lp_heuristics.empty()) {  // Revert to automatic search.
-        return SolveProblemWithPortfolioSearch(
-            {SequentialSearch({next_decision, SatSolverHeuristic(model)})},
-            {SatSolverRestartPolicy(model)}, model);
+      if (lp_heuristics.empty()) {  // Revert to fixed search.
+        heuristics.decision_policies = {SequentialSearch(
+            {fixed_search, SatSolverHeuristic(model)})},
+        heuristics.restart_policies = {SatSolverRestartPolicy(model)};
+        return;
       }
-      auto portfolio = CompleteHeuristics(
+      heuristics.decision_policies = CompleteHeuristics(
           lp_heuristics,
-          SequentialSearch({SatSolverHeuristic(model), next_decision}));
-      auto default_restart_policy = SatSolverRestartPolicy(model);
-      auto restart_policies = std::vector<std::function<bool()>>(
-          portfolio.size(), default_restart_policy);
-      return SolveProblemWithPortfolioSearch(portfolio, restart_policies,
-                                             model);
+          SequentialSearch({SatSolverHeuristic(model), fixed_search}));
+      heuristics.restart_policies.assign(heuristics.decision_policies.size(),
+                                         SatSolverRestartPolicy(model));
+      return;
     }
     case SatParameters::PSEUDO_COST_SEARCH: {
       std::function<LiteralIndex()> search = SequentialSearch(
-          {PseudoCost(model), SatSolverHeuristic(model), next_decision});
-      search = IntegerValueSelectionHeuristic(search, model);
-      return SolveProblemWithPortfolioSearch(
-          {search}, {SatSolverRestartPolicy(model)}, model);
+          {PseudoCost(model), SatSolverHeuristic(model), fixed_search});
+      heuristics.decision_policies = {
+          IntegerValueSelectionHeuristic(search, model)};
+      heuristics.restart_policies = {SatSolverRestartPolicy(model)};
+      return;
     }
     case SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH: {
       std::function<LiteralIndex()> search =
-          SequentialSearch({RandomizeOnRestartHeuristic(model), next_decision});
-      return SolveProblemWithPortfolioSearch(
-          {search},
-          {RestartEveryKFailures(10, model->GetOrCreate<SatSolver>())}, model);
+          SequentialSearch({RandomizeOnRestartHeuristic(model), fixed_search});
+      heuristics.decision_policies = {search};
+      heuristics.restart_policies = {
+          RestartEveryKFailures(10, model->GetOrCreate<SatSolver>())};
+      return;
     }
   }
-  return SatSolver::LIMIT_REACHED;
 }
 
 std::vector<std::function<LiteralIndex()>> AddModelHeuristics(
@@ -617,24 +613,26 @@ void SolutionDetails::LoadFromTrail(const IntegerTrail& integer_trail) {
   solution_count++;
 }
 
-SatSolver::Status SolveProblemWithPortfolioSearch(
-    std::vector<std::function<LiteralIndex()>> decision_policies,
-    std::vector<std::function<bool()>> restart_policies, Model* model) {
-  const int num_policies = decision_policies.size();
-  if (num_policies == 0) return SatSolver::FEASIBLE;
-  CHECK_EQ(num_policies, restart_policies.size());
-  SatSolver* const solver = model->GetOrCreate<SatSolver>();
+SatSolver::Status SolveIntegerProblem(Model* model) {
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
+  if (time_limit->LimitReached()) return SatSolver::LIMIT_REACHED;
+
+  SearchHeuristics& heuristics = *model->GetOrCreate<SearchHeuristics>();
+  const int num_policies = heuristics.decision_policies.size();
+  CHECK_NE(num_policies, 0);
+  CHECK_EQ(num_policies, heuristics.restart_policies.size());
 
   // This is needed for recording the pseudo-costs.
   IntegerVariable objective_var = kNoIntegerVariable;
   {
     const ObjectiveDefinition* objective = model->Get<ObjectiveDefinition>();
-    if (objective != nullptr) objective_var = kNoIntegerVariable;
+    if (objective != nullptr) objective_var = objective->objective_var;
   }
 
   // Note that it is important to do the level-zero propagation if it wasn't
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
   // the solver is in a "propagated" state.
+  SatSolver* const solver = model->GetOrCreate<SatSolver>();
   if (!solver->FinishPropagation()) return solver->UnsatStatus();
 
   // Create and initialize pseudo costs.
@@ -645,19 +643,17 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
 
   // Main search loop.
-  int policy_index = 0;
-  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
   const int64 old_num_conflicts = solver->num_failures();
   const int64 conflict_limit =
       model->GetOrCreate<SatParameters>()->max_number_of_conflicts();
   while (!time_limit->LimitReached() &&
          (solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
-    if (restart_policies[policy_index]()) {
+    if (heuristics.restart_policies[heuristics.policy_index]()) {
       if (!solver->RestoreSolverToAssumptionLevel()) {
         return solver->UnsatStatus();
       }
-      policy_index = (policy_index + 1) % num_policies;
+      heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
     }
 
     if (solver->CurrentDecisionLevel() == 0) {
@@ -671,7 +667,8 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
     }
 
     // Get next decision, try to enqueue.
-    const LiteralIndex decision = decision_policies[policy_index]();
+    const LiteralIndex decision =
+        heuristics.decision_policies[heuristics.policy_index]();
 
     // Record the changelist and objective bounds for updating pseudo costs.
     const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
@@ -712,8 +709,15 @@ SatSolver::Status SolveProblemWithPortfolioSearch(
   return SatSolver::Status::LIMIT_REACHED;
 }
 
-// Shortcut when there is no assumption, and we consider all variables in
-// order for the search decision.
+SatSolver::Status ResetAndSolveIntegerProblem(
+    const std::vector<Literal>& assumptions, Model* model) {
+  SatSolver* const solver = model->GetOrCreate<SatSolver>();
+  if (!solver->ResetWithGivenAssumptions(assumptions)) {
+    return solver->UnsatStatus();
+  }
+  return SolveIntegerProblem(model);
+}
+
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
   const IntegerVariable num_vars =
       model->GetOrCreate<IntegerTrail>()->NumIntegerVariables();
@@ -721,11 +725,16 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
   for (IntegerVariable var(0); var < num_vars; ++var) {
     all_variables.push_back(var);
   }
-  return SolveIntegerProblemWithLazyEncoding(
-      {}, FirstUnassignedVarAtItsMinHeuristic(all_variables, model), model);
+
+  SearchHeuristics& heuristics = *model->GetOrCreate<SearchHeuristics>();
+  heuristics.policy_index = 0;
+  heuristics.decision_policies = {SequentialSearch(
+      {SatSolverHeuristic(model),
+       FirstUnassignedVarAtItsMinHeuristic(all_variables, model)})};
+  heuristics.restart_policies = {SatSolverRestartPolicy(model)};
+  return ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
 }
 
-// Logging helper.
 void LogNewSolution(const std::string& event_or_solution_count,
                     double time_in_seconds, double obj_lb, double obj_ub,
                     const std::string& solution_info) {
