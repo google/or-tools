@@ -78,7 +78,18 @@
       "thread": "cpp",
       "tuple": "cpp",
       "unordered_map": "cpp",
-      "unordered_set": "cpp"
+      "unordered_set": "cpp",
+      "__errc": "cpp",
+      "__node_handle": "cpp",
+      "any": "cpp",
+      "cfenv": "cpp",
+      "cinttypes": "cpp",
+      "clocale": "cpp",
+      "csetjmp": "cpp",
+      "fstream": "cpp",
+      "future": "cpp",
+      "new": "cpp",
+      "valarray": "cpp"
     },
 		"C_Cpp.clang_format_fallbackStyle": "Google",
 		"C_Cpp.default.includePath": [
