@@ -221,7 +221,7 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
     const std::vector<int64> reached_values(values_per_var[i].begin(),
                                             values_per_var[i].end());
     integer_trail->UpdateInitialDomain(vars[i],
-                                       Domain::FromValues(reached_values));    
+                                       Domain::FromValues(reached_values));
     if (values_per_var.size() > 1) {
       model->Add(FullyEncodeVariable(vars[i]));
       encodings[i] = GetEncoding(vars[i], model);
