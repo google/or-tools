@@ -1017,6 +1017,22 @@ cc_library(
 )
 
 cc_library(
+    name = "rins",
+    srcs = ["rins.cc"],
+    hdrs = ["rins.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_loader",
+        ":integer",
+        ":linear_programming_constraint",
+        ":model",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
+
+cc_library(
     name = "lns",
     hdrs = ["lns.h"],
     visibility = ["//visibility:public"],
