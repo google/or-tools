@@ -139,26 +139,25 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
   // Remove invalid tuples along the way.
   std::vector<absl::flat_hash_set<int64>> values_per_var(n);
   int index = 0;
-  while (index < tuples.size()) {
-    bool remove = false;
+  for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
+    bool keep = true;
     for (int i = 0; i < n; ++i) {
-      const int64 value = tuples[index][i];
+      const int64 value = tuples[tuple_index][i];
       if (!values_per_var[i].contains(value) /* cached */ &&
           !integer_trail->InitialVariableDomain(vars[i]).Contains(value)) {
-        remove = true;
+        keep = false;
         break;
       }
     }
-    if (remove) {
-      tuples[index] = tuples.back();
-      tuples.pop_back();
-    } else {
+    if (keep) {
+      std::swap(tuples[tuple_index], tuples[index]);
       for (int i = 0; i < n; ++i) {
         values_per_var[i].insert(tuples[index][i]);
       }
       index++;
     }
   }
+  tuples.resize(index);
   const int num_valid_tuples = tuples.size();
 
   if (tuples.empty()) {
@@ -169,6 +168,8 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
   // Detect the case when the first n-1 columns are all different.
   // This encodes the implication table (tuple of size n - 1) implies value.
   absl::flat_hash_set<std::vector<int64>> prefixes;
+  // We cannot use absl::Span() as the tuples will be compressed after this
+  // step.
   std::vector<int64> prefix(n);
   for (const std::vector<int64>& tuple : tuples) {
     prefix = tuple;
@@ -177,9 +178,10 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
   }
   const int num_prefix_tuples = prefixes.size();
   // Compute the maximum number of such prefix tuples.
-  double max_num_prefix_tuples = 1.0;
+  int64 max_num_prefix_tuples = 1;
   for (int i = 0; i + 1 < n; ++i) {
-    max_num_prefix_tuples *= values_per_var[i].size();
+    max_num_prefix_tuples =
+        CapProd(max_num_prefix_tuples, values_per_var[i].size());
   }
   // Detect if prefix tuples are all different.
   const bool prefixes_are_all_different = num_prefix_tuples == num_valid_tuples;
@@ -213,9 +215,10 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
       absl::StrAppend(&message,
                       ", compressed tuples = ", num_compressed_tuples);
     }
-    LOG(INFO) << message;
+    VLOG(2) << message;
   }
-  // Domains have be propagated. Fully encode variables.
+
+  // The variable domains have been computed. Fully encode variables.
   std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
   for (int i = 0; i < n; ++i) {
     const std::vector<int64> reached_values(values_per_var[i].begin(),
@@ -226,6 +229,11 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
       model->Add(FullyEncodeVariable(vars[i]));
       encodings[i] = GetEncoding(vars[i], model);
     }
+  }
+
+  if (tuples.size() == 1) {
+    // Nothing more to do.
+    return;
   }
 
   // Create one Boolean variable per tuple to indicate if it can still be
@@ -241,9 +249,7 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
   // variables since they are not used.
   std::vector<Literal> tuple_literals;
   tuple_literals.reserve(tuples.size());
-  if (tuples.size() == 1) {
-    tuple_literals.push_back(Literal(kTrueLiteralIndex));
-  } else if (tuples.size() == 2) {
+  if (tuples.size() == 2) {
     tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
     tuple_literals.emplace_back(tuple_literals[0].Negated());
   } else if (tuples.size() > 2) {
@@ -281,11 +287,12 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
   }
 
   if (prefixes_are_all_different) {
+    // This is optional propagation wise, but it should lead
+    // to better explanation.
     // For each tuple, we add a clause prefix => last value.
     std::vector<Literal> clause;
     for (int j = 0; j < tuples.size(); ++j) {
       clause.clear();
-      bool tuple_is_valid = true;
       for (int i = 0; i + 1 < n; ++i) {
         // Ignore fixed variables.
         if (values_per_var[i].size() == 1) continue;
@@ -294,28 +301,25 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
         // Ignored 'any' created during compression.
         if (v == any_value) continue;
 
-        // Check the validity of the tuple.
         const IntegerValue value(v);
-        if (!encodings[i].contains(value)) {
-          tuple_is_valid = false;
-          break;
-        }
+        CHECK(encodings[i].contains(value));
         clause.push_back(gtl::FindOrDie(encodings[i], value).Negated());
       }
 
       // Add the target of the implication.
       const IntegerValue target_value = IntegerValue(tuples[j][n - 1]);
-      if (tuple_is_valid && encodings[n - 1].contains(target_value)) {
-        const Literal target_literal =
-            gtl::FindOrDie(encodings[n - 1], target_value);
-        clause.push_back(target_literal);
-        model->Add(ClauseConstraint(clause));
-      }
+      CHECK(encodings[n - 1].contains(target_value));
+      const Literal target_literal =
+          gtl::FindOrDie(encodings[n - 1], target_value);
+      clause.push_back(target_literal);
+      model->Add(ClauseConstraint(clause));
     }
   }
 
+  // This is optional, as it will not propagate more.
+  // It seems to give better explanation though.
   if (prefixes_are_all_different && num_prefix_tuples < max_num_prefix_tuples &&
-      max_num_prefix_tuples < 4 * num_prefix_tuples) {
+      max_num_prefix_tuples <= 2 * num_prefix_tuples) {
     // If we have a table of 'unique prefix' => value tuples.
     // This table will likely not be negated, as the density of tuples will be
     // less than 1 / size of the domain of the last variable.
@@ -343,7 +347,7 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
     }
     std::vector<IntegerVariable> prefix_vars = vars;
     prefix_vars.pop_back();
-    VLOG(2) << " . add negated table with " << negated_tuples.size()
+    VLOG(2) << " - add negated table with " << negated_tuples.size()
             << " tuples";
     AddNegatedTableConstraint(prefix_vars, negated_tuples, model);
   }
