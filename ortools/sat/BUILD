@@ -845,6 +845,7 @@ cc_library(
         ":boolean_problem",
         ":boolean_problem_cc_proto",
         ":cp_model_cc_proto",
+        ":cp_model_utils",
         ":integer",
         ":sat_base",
         ":sat_solver",
