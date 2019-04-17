@@ -14,11 +14,13 @@
 #include "ortools/sat/cp_model_lns.h"
 
 #include <numeric>
+#include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/rins.h"
 #include "ortools/util/random_engine.h"
 
 namespace operations_research {
@@ -135,6 +137,15 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
     if (!relaxed_variables_set[i]) {
       fixed_variables.push_back(i);
     }
+  }
+  return FixGivenVariables(initial_solution, fixed_variables);
+}
+
+Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
+    const CpSolverResponse& initial_solution) const {
+  std::vector<int> fixed_variables;
+  for (const int i : active_variables_) {
+    fixed_variables.push_back(i);
   }
   return FixGivenVariables(initial_solution, fixed_variables);
 }
@@ -443,43 +454,37 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   Neighborhood neighborhood;
   neighborhood.cp_model = helper_.ModelProto();
 
-  const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
-  const int target_size =
-      num_model_vars - std::ceil(difficulty * num_active_vars);
-  if (target_size == num_active_vars) {
-    neighborhood.is_reduced = false;
-    return neighborhood;
-  }
-
-  auto* mapping = model_.Get<CpModelMapping>();
-  auto* lp_dispatcher = model_.Get<LinearProgrammingDispatcher>();
-
-  if (lp_dispatcher == nullptr) {
-    neighborhood.is_reduced = false;
-    return neighborhood;
-  }
-
-  std::vector<int> fixed_variables;
+  SharedRINSNeighborhoodManager* rins_manager =
+      model_->Mutable<SharedRINSNeighborhoodManager>();
+  std::vector<int> all_vars;
   for (int i = 0; i < num_model_vars; ++i) {
-    if (!helper_.IsActive(i)) continue;
-    if (mapping->IsInteger(i)) {
-      const IntegerVariable var = mapping->Integer(i);
-      const IntegerVariable positive_var = PositiveVariable(var);
-      LinearProgrammingConstraint* lp =
-          gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
-      if (lp == nullptr) continue;
-      const double lp_value = (lp->GetSolutionValue(positive_var));
+    all_vars.push_back(i);
+  }
+  if (rins_manager == nullptr) {
+    // TODO(user): Support skipping this neighborhood instead of going
+    // through solving process for the trivial model.
+    return helper_.FixAllVariables(initial_solution);
+  }
+  absl::optional<RINSNeighborhood> rins_neighborhood_opt =
+      rins_manager->GetUnexploredNeighborhood();
 
-      if (std::abs(lp_value - initial_solution.solution(i)) < 1e-4) {
-        // Fix this var.
-        fixed_variables.push_back(i);
-        if (fixed_variables.size() >= target_size) break;
-      }
-    }
+  if (!rins_neighborhood_opt.has_value()) {
+    return helper_.FixAllVariables(initial_solution);
   }
 
-  return helper_.FixGivenVariables(initial_solution, fixed_variables);
+  // Fix the variables in the local model.
+  for (const std::pair<int, int64> fixed_var :
+       rins_neighborhood_opt.value().fixed_vars) {
+    int var = fixed_var.first;
+    int64 value = fixed_var.second;
+    if (!helper_.IsActive(var)) continue;
+    neighborhood.cp_model.mutable_variables(var)->clear_domain();
+    neighborhood.cp_model.mutable_variables(var)->add_domain(value);
+    neighborhood.cp_model.mutable_variables(var)->add_domain(value);
+    neighborhood.is_reduced = true;
+  }
+  return neighborhood;
 }
 
 }  // namespace sat

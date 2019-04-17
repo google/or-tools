@@ -19,6 +19,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/pseudo_costs.h"
+#include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/util.h"
@@ -646,6 +647,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   const int64 old_num_conflicts = solver->num_failures();
   const int64 conflict_limit =
       model->GetOrCreate<SatParameters>()->max_number_of_conflicts();
+  int64 num_decisions_without_rins = 0;
   while (!time_limit->LimitReached() &&
          (solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
@@ -705,6 +707,17 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
     solver->AdvanceDeterministicTime(time_limit);
     if (!solver->ReapplyAssumptionsIfNeeded()) return solver->UnsatStatus();
+    if (model->GetOrCreate<SolutionDetails>()->solution_count > 0 &&
+        model->Get<SharedRINSNeighborhoodManager>() != nullptr) {
+      num_decisions_without_rins++;
+      // TODO(user): Experiment more around dynamically changing the
+      // threshold for trigerring RINS. Alternatively expose this as parameter
+      // so this can be tuned later.
+      if (num_decisions_without_rins >= 100) {
+        num_decisions_without_rins = 0;
+        AddRINSNeighborhood(model);
+      }
+    }
   }
   return SatSolver::Status::LIMIT_REACHED;
 }

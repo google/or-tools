@@ -1105,6 +1105,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/probing.h \
  $(SRC_DIR)/ortools/sat/pseudo_costs.h \
  $(SRC_DIR)/ortools/sat/restart.h \
+ $(SRC_DIR)/ortools/sat/rins.h \
  $(SRC_DIR)/ortools/sat/sat_base.h \
  $(SRC_DIR)/ortools/sat/sat_decision.h \
  $(SRC_DIR)/ortools/sat/sat_solver.h \
@@ -1162,6 +1163,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/probing.$O \
  $(OBJ_DIR)/sat/pseudo_costs.$O \
  $(OBJ_DIR)/sat/restart.$O \
+ $(OBJ_DIR)/sat/rins.$O \
  $(OBJ_DIR)/sat/sat_decision.$O \
  $(OBJ_DIR)/sat/sat_solver.$O \
  $(OBJ_DIR)/sat/simplification.$O \
@@ -1999,6 +2001,14 @@ objs/sat/restart.$O: ortools/sat/restart.cc ortools/sat/restart.h \
  ortools/base/basictypes.h ortools/util/running_stat.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Srestart.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Srestart.$O
+
+objs/sat/rins.$O: ortools/sat/rins.cc ortools/sat/rins.h \
+ ortools/sat/model.h ortools/base/logging.h ortools/base/integral_types.h \
+ ortools/base/macros.h ortools/base/map_util.h ortools/base/typeid.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/bitset.h \
+ ortools/base/basictypes.h ortools/util/running_stat.h \
+ ortools/port/proto_utils.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Srins.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Srins.$O
 
 objs/sat/sat_decision.$O: ortools/sat/sat_decision.cc \
  ortools/sat/sat_decision.h ortools/base/integral_types.h \

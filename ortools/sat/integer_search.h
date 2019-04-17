@@ -113,14 +113,6 @@ LiteralIndex SplitAroundGivenValue(IntegerVariable positive_var,
 // does not appear in the LP, this method returns kNoLiteralIndex.
 LiteralIndex SplitAroundLpValue(IntegerVariable var, Model* model);
 
-struct SolutionDetails {
-  int64 solution_count = 0;
-  gtl::ITIVector<IntegerVariable, IntegerValue> best_solution;
-
-  // Loads the solution in best_solution using lower bounds from integer trail.
-  void LoadFromTrail(const IntegerTrail& integer_trail);
-};
-
 // Returns decision corresponding to var <= best_solution[var]. If no solution
 // has been found, this method returns kNoLiteralIndex. This was suggested in
 // paper: "Solution-Based Phase Saving for CP" (2018) by Emir Demirovic,

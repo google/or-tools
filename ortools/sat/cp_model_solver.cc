@@ -71,6 +71,7 @@
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/probing.h"
+#include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
@@ -1873,7 +1874,7 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
     // TODO(user): Only do it if we have a linear relaxation.
     generators.push_back(
         absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
-            &helper, *model, "rins"));
+            &helper, model, "rins"));
   }
 
   // The "optimal" difficulties do not have to be the same for different
@@ -2080,6 +2081,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         absl::make_unique<SharedBoundsManager>(num_search_workers, model_proto);
   }
 
+  // Note: This is shared only if the rins is enabled in the global parameters.
+  std::unique_ptr<SharedRINSNeighborhoodManager> rins_manager;
+  if (model->GetOrCreate<SatParameters>()->use_rins_lns()) {
+    rins_manager = absl::make_unique<SharedRINSNeighborhoodManager>(
+        model_proto.variables_size());
+  }
+
   // Collect per-worker parameters and names.
   std::vector<SatParameters> worker_parameters;
   std::vector<std::string> worker_names;
@@ -2121,11 +2129,16 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                    num_search_workers, wall_timer,
                    &first_solution_found_or_search_finished,
                    &shared_response_manager, &shared_bounds_manager,
-                   worker_name]() {
+                   worker_name, &rins_manager]() {
       Model local_model;
       local_model.Add(NewSatParameters(local_params));
       local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
           stopped);
+
+      // Add shared neighborhood only if RINS is enabled in global parameters.
+      if (rins_manager != nullptr) {
+        local_model.Register<SharedRINSNeighborhoodManager>(rins_manager.get());
+      }
 
       // Stores info that will be used for logs in the local model.
       WorkerInfo* worker_info = local_model.GetOrCreate<WorkerInfo>();

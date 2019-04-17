@@ -61,6 +61,10 @@ class NeighborhoodGeneratorHelper {
       const CpSolverResponse& initial_solution,
       const std::vector<int>& relaxed_variables) const;
 
+  // Returns a trivial model by fixing all active variables to the initial
+  // solution values.
+  Neighborhood FixAllVariables(const CpSolverResponse& initial_solution) const;
+
   // Indicates if the variable can be frozen. It happens if the variable is non
   // constant, and if it is a decision variable, or if
   // focus_on_decision_variables is false.
@@ -239,14 +243,14 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit RelaxationInducedNeighborhoodGenerator(
-      NeighborhoodGeneratorHelper const* helper, const Model& model,
+      NeighborhoodGeneratorHelper const* helper, Model* model,
       const std::string& name)
       : NeighborhoodGenerator(name, helper), model_(model) {}
 
   Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 
-  const Model& model_;
+  const Model* model_;
 };
 
 }  // namespace sat

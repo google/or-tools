@@ -122,6 +122,15 @@ class Model {
     return new_t;
   }
 
+  // Register a non-owned class that will be "singleton" in the model.
+  // It is an error to call this on an already registered class.
+  template <typename T>
+  void Register(T* non_owned_class) {
+    const size_t type_id = gtl::FastTypeId<T>();
+    CHECK(!gtl::ContainsKey(singletons_, type_id));
+    singletons_[type_id] = non_owned_class;
+  }
+
  private:
   // We want to call the constructor T(model*) if it exists or just T() if
   // it doesn't. For this we use some template "magic":
