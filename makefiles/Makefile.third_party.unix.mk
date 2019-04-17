@@ -112,19 +112,12 @@ endif
 .PHONY: build_third_party
 build_third_party: \
  Makefile.local \
- archives_directory \
  install_deps_directories \
  build_gflags \
  build_glog \
  build_protobuf \
  build_absl \
  build_cbc
-
-.PHONY: archives_directory
-archives_directory: dependencies/archives
-
-dependencies/archives:
-	$(MKDIR_P) dependencies$Sarchives
 
 .PHONY: install_deps_directories
 install_deps_directories: \
@@ -773,12 +766,6 @@ SWIG_BINARY = $(shell $(WHICH) $(UNIX_SWIG_BINARY))
 clean_third_party:
 	-$(DEL) Makefile.local
 	-$(DEL) dependencies/check.log
-	-$(DELREC) dependencies/archives/Cbc*
-	-$(DELREC) dependencies/archives/Cgl*
-	-$(DELREC) dependencies/archives/Clp*
-	-$(DELREC) dependencies/archives/Osi*
-	-$(DELREC) dependencies/archives/CoinUtils*
-	-$(DELREC) dependencies/archives
 	-$(DELREC) dependencies/sources/gflags*
 	-$(DELREC) dependencies/sources/glog*
 	-$(DELREC) dependencies/sources/protobuf*

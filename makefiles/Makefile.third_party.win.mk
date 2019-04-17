@@ -125,7 +125,6 @@ endif
 .PHONY: build_third_party
 build_third_party: \
  Makefile.local \
- archives_directory \
  install_deps_directories \
  install_zlib \
  install_gflags \
@@ -143,12 +142,6 @@ download_third_party: \
  dependencies/sources/Cbc-$(CBC_TAG)/configure
 
 # Directories
-.PHONY: archives_directory
-archives_directory: dependencies/archives
-
-dependencies/archives:
-	$(MKDIR_P) dependencies$Sarchives
-
 .PHONY: install_deps_directories
 install_deps_directories: \
  dependencies/install/bin \
