@@ -144,12 +144,11 @@
 #include <utility>
 #include <vector>
 
-#include "ortools/base/commandlineflags.h"
-
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
@@ -978,6 +977,9 @@ class MPConstraint {
   // For more info see: http://tinyurl.com/lazy-constraints.
   void set_is_lazy(bool laziness) { is_lazy_ = laziness; }
 
+  const MPVariable* indicator_variable() const { return indicator_variable_; }
+  bool indicator_value() const { return indicator_value_; }
+
   // Returns the index of the constraint in the MPSolver::constraints_.
   int index() const { return index_; }
 
@@ -1020,6 +1022,7 @@ class MPConstraint {
         ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
         is_lazy_(false),
+        indicator_variable_(nullptr),
         dual_value_(0.0),
         interface_(interface_in) {}
 
@@ -1048,6 +1051,12 @@ class MPConstraint {
   // underlying Linear Programming solver only if it is violated.
   // By default this parameter is 'false'.
   bool is_lazy_;
+
+  // If given, this constraint is only active if `indicator_variable_`'s value
+  // is equal to `indicator_value_`.
+  const MPVariable* indicator_variable_;
+  bool indicator_value_;
+
   double dual_value_;
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
@@ -1265,6 +1274,13 @@ class MPSolverInterface {
 
   // Adds a linear constraint.
   virtual void AddRowConstraint(MPConstraint* const ct) = 0;
+
+  // Adds an indicator constraint. Returns true if the feature is supported by
+  // the underlying solver.
+  virtual bool AddIndicatorConstraint(MPConstraint* const ct) {
+    LOG(ERROR) << "Solver doesn't support indicator constraints.";
+    return false;
+  }
 
   // Add a variable.
   virtual void AddVariable(MPVariable* const var) = 0;

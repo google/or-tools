@@ -23,23 +23,21 @@
 #include <cstddef>
 #include <utility>
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h"
-
-#include "ortools/port/file.h"
-
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/canonical_errors.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 //#include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_validator.h"
+#include "ortools/port/file.h"
 #include "ortools/util/fp_utils.h"
 
 DEFINE_bool(verify_solution, false,
@@ -465,7 +463,7 @@ struct NamedOptimizationProblemType {
 };
 }  // namespace
 
-const NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
+constexpr NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
     {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
 #if defined(USE_GLPK)
     {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
@@ -601,8 +599,7 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
     objective->SetCoefficient(variable, var_proto.objective_coefficient());
   }
 
-  for (int i = 0; i < input_model.constraint_size(); ++i) {
-    const MPConstraintProto& ct_proto = input_model.constraint(i);
+  for (const MPConstraintProto& ct_proto : input_model.constraint()) {
     if (ct_proto.lower_bound() == -infinity() &&
         ct_proto.upper_bound() == infinity()) {
       continue;
@@ -617,6 +614,47 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
                          ct_proto.coefficient(j));
     }
   }
+
+  for (const MPGeneralConstraintProto& general_constraint :
+       input_model.general_constraint()) {
+    if (general_constraint.has_indicator_constraint()) {
+      const auto& proto =
+          general_constraint.indicator_constraint().constraint();
+      if (proto.lower_bound() == -infinity() &&
+          proto.upper_bound() == infinity()) {
+        continue;
+      }
+
+      const int constraint_index = NumConstraints();
+      MPConstraint* const constraint = new MPConstraint(
+          constraint_index, proto.lower_bound(), proto.upper_bound(),
+          clear_names ? "" : proto.name(), interface_.get());
+      if (constraint_name_to_index_) {
+        gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
+                         constraint_index);
+      }
+      constraints_.push_back(constraint);
+      constraint_is_extracted_.push_back(false);
+
+      constraint->set_is_lazy(proto.is_lazy());
+      for (int j = 0; j < proto.var_index_size(); ++j) {
+        constraint->SetCoefficient(variables_[proto.var_index(j)],
+                                   proto.coefficient(j));
+      }
+
+      MPVariable* const variable =
+          variables_[general_constraint.indicator_constraint().var_index()];
+      constraint->indicator_variable_ = variable;
+      constraint->indicator_value_ =
+          general_constraint.indicator_constraint().var_value();
+
+      if (!interface_->AddIndicatorConstraint(constraint)) {
+        *error_message = "Solver doesn't support indicator constraints.";
+        return MPSOLVER_MODEL_INVALID;
+      }
+    }
+  }
+
   objective->SetOptimizationDirection(input_model.maximize());
   if (input_model.has_objective_offset()) {
     objective->SetOffset(input_model.objective_offset());
@@ -747,7 +785,20 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   // Constraints
   for (int i = 0; i < constraints_.size(); ++i) {
     MPConstraint* const constraint = constraints_[i];
-    MPConstraintProto* const constraint_proto = output_model->add_constraint();
+    MPConstraintProto* constraint_proto;
+    if (constraint->indicator_variable() != nullptr) {
+      MPGeneralConstraintProto* const general_constraint_proto =
+          output_model->add_general_constraint();
+      general_constraint_proto->set_name(constraint->name());
+      MPIndicatorConstraint* const indicator_constraint_proto =
+          general_constraint_proto->mutable_indicator_constraint();
+      indicator_constraint_proto->set_var_index(
+          constraint->indicator_variable()->index());
+      indicator_constraint_proto->set_var_value(constraint->indicator_value());
+      constraint_proto = indicator_constraint_proto->mutable_constraint();
+    } else {
+      constraint_proto = output_model->add_constraint();
+    }
     constraint_proto->set_name(constraint->name());
     constraint_proto->set_lower_bound(constraint->lb());
     constraint_proto->set_upper_bound(constraint->ub());
@@ -1217,32 +1268,38 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       continue;
     }
     // Check bounds.
-    if (constraint.lb() != -infinity()) {
-      if (activity < constraint.lb() - tolerance) {
-        ++num_errors;
-        max_observed_error =
-            std::max(max_observed_error, constraint.lb() - activity);
-        LOG_IF(ERROR, log_errors) << "Activity " << activity << " too low for "
-                                  << PrettyPrintConstraint(constraint);
-      } else if (inaccurate_activity < constraint.lb() - tolerance) {
-        LOG_IF(WARNING, log_errors)
-            << "Activity " << activity << ", computed with the (inaccurate)"
-            << " standard sum of its terms, is too low for "
-            << PrettyPrintConstraint(constraint);
+    if (constraint.indicator_variable() == nullptr ||
+        std::round(constraint.indicator_variable()->solution_value()) ==
+            constraint.indicator_value()) {
+      if (constraint.lb() != -infinity()) {
+        if (activity < constraint.lb() - tolerance) {
+          ++num_errors;
+          max_observed_error =
+              std::max(max_observed_error, constraint.lb() - activity);
+          LOG_IF(ERROR, log_errors)
+              << "Activity " << activity << " too low for "
+              << PrettyPrintConstraint(constraint);
+        } else if (inaccurate_activity < constraint.lb() - tolerance) {
+          LOG_IF(WARNING, log_errors)
+              << "Activity " << activity << ", computed with the (inaccurate)"
+              << " standard sum of its terms, is too low for "
+              << PrettyPrintConstraint(constraint);
+        }
       }
-    }
-    if (constraint.ub() != infinity()) {
-      if (activity > constraint.ub() + tolerance) {
-        ++num_errors;
-        max_observed_error =
-            std::max(max_observed_error, activity - constraint.ub());
-        LOG_IF(ERROR, log_errors) << "Activity " << activity << " too high for "
-                                  << PrettyPrintConstraint(constraint);
-      } else if (inaccurate_activity > constraint.ub() + tolerance) {
-        LOG_IF(WARNING, log_errors)
-            << "Activity " << activity << ", computed with the (inaccurate)"
-            << " standard sum of its terms, is too high for "
-            << PrettyPrintConstraint(constraint);
+      if (constraint.ub() != infinity()) {
+        if (activity > constraint.ub() + tolerance) {
+          ++num_errors;
+          max_observed_error =
+              std::max(max_observed_error, activity - constraint.ub());
+          LOG_IF(ERROR, log_errors)
+              << "Activity " << activity << " too high for "
+              << PrettyPrintConstraint(constraint);
+        } else if (inaccurate_activity > constraint.ub() + tolerance) {
+          LOG_IF(WARNING, log_errors)
+              << "Activity " << activity << ", computed with the (inaccurate)"
+              << " standard sum of its terms, is too high for "
+              << PrettyPrintConstraint(constraint);
+        }
       }
     }
   }

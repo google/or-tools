@@ -65,6 +65,7 @@ class GurobiInterface : public MPSolverInterface {
 
   // Adds Constraint incrementally.
   void AddRowConstraint(MPConstraint* const ct) override;
+  bool AddIndicatorConstraint(MPConstraint* const ct) override;
   // Adds variable incrementally.
   void AddVariable(MPVariable* const var) override;
   // Changes a coefficient in a constraint.
@@ -164,10 +165,7 @@ class GurobiInterface : public MPSolverInterface {
   MPSolver::BasisStatus TransformGRBConstraintBasisStatus(
       int gurobi_basis_status, int constraint_index) const;
 
-  void CheckedGurobiCall(int err) const {
-    CHECK_EQ(0, err) << "Fatal error with code " << err << ", due to "
-                     << GRBgeterrormsg(env_);
-  };
+  void CheckedGurobiCall(int err) const;
 
   int SolutionCount() const;
 
@@ -175,7 +173,21 @@ class GurobiInterface : public MPSolverInterface {
   GRBenv* env_;
   bool mip_;
   int current_solution_index_;
+  MPCallback* callback_ = nullptr;
 };
+
+namespace {
+
+void CheckedGurobiCall(int err, GRBenv* const env) {
+  CHECK_EQ(0, err) << "Fatal error with code " << err << ", due to "
+                   << GRBgeterrormsg(env);
+}
+
+}  // namespace
+
+void GurobiInterface::CheckedGurobiCall(int err) const {
+  ::operations_research::CheckedGurobiCall(err, env_);
+}
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
@@ -269,6 +281,11 @@ void GurobiInterface::SetConstraintBounds(int index, double lb, double ub) {
 
 void GurobiInterface::AddRowConstraint(MPConstraint* const ct) {
   sync_status_ = MUST_RELOAD;
+}
+
+bool GurobiInterface::AddIndicatorConstraint(MPConstraint* const ct) {
+  sync_status_ = MUST_RELOAD;
+  return !IsContinuous();
 }
 
 void GurobiInterface::AddVariable(MPVariable* const ct) {
@@ -455,7 +472,7 @@ void GurobiInterface::ExtractNewVariables() {
   const int total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
     int num_new_variables = total_num_vars - last_variable_index_;
-    std::unique_ptr<double[]> obj_coefs(new double[num_new_variables]);
+    std::unique_ptr<double[]> obj_coeffs(new double[num_new_variables]);
     std::unique_ptr<double[]> lb(new double[num_new_variables]);
     std::unique_ptr<double[]> ub(new double[num_new_variables]);
     std::unique_ptr<char[]> ctype(new char[num_new_variables]);
@@ -470,11 +487,11 @@ void GurobiInterface::ExtractNewVariables() {
       if (!var->name().empty()) {
         colname[j] = var->name().c_str();
       }
-      obj_coefs[j] = solver_->objective_->GetCoefficient(var);
+      obj_coeffs[j] = solver_->objective_->GetCoefficient(var);
     }
 
     CheckedGurobiCall(GRBaddvars(model_, num_new_variables, 0, nullptr, nullptr,
-                                 nullptr, obj_coefs.get(), lb.get(), ub.get(),
+                                 nullptr, obj_coeffs.get(), lb.get(), ub.get(),
                                  ctype.get(),
                                  const_cast<char**>(colname.get())));
   }
@@ -501,7 +518,7 @@ void GurobiInterface::ExtractNewConstraints() {
 
     max_row_length = std::max(1, max_row_length);
     std::unique_ptr<int[]> col_indices(new int[max_row_length]);
-    std::unique_ptr<double[]> coefs(new double[max_row_length]);
+    std::unique_ptr<double[]> coeffs(new double[max_row_length]);
 
     // Add each new constraint.
     for (int row = last_constraint_index_; row < total_num_rows; ++row) {
@@ -513,14 +530,30 @@ void GurobiInterface::ExtractNewConstraints() {
         const int var_index = entry.first->index();
         CHECK(variable_is_extracted(var_index));
         col_indices[col] = var_index;
-        coefs[col] = entry.second;
+        coeffs[col] = entry.second;
         col++;
       }
       char* const name =
           ct->name().empty() ? nullptr : const_cast<char*>(ct->name().c_str());
-      CheckedGurobiCall(GRBaddrangeconstr(model_, size, col_indices.get(),
-                                          coefs.get(), ct->lb(), ct->ub(),
-                                          name));
+      if (ct->indicator_variable() != nullptr) {
+        if (ct->lb() > -std::numeric_limits<double>::infinity()) {
+          CheckedGurobiCall(GRBaddgenconstrIndicator(
+              model_, name, ct->indicator_variable()->index(),
+              ct->indicator_value(), size, col_indices.get(), coeffs.get(),
+              ct->ub() == ct->lb() ? GRB_EQUAL : GRB_GREATER_EQUAL, ct->lb()));
+        }
+        if (ct->ub() < std::numeric_limits<double>::infinity() &&
+            ct->lb() != ct->ub()) {
+          CheckedGurobiCall(GRBaddgenconstrIndicator(
+              model_, name, ct->indicator_variable()->index(),
+              ct->indicator_value(), size, col_indices.get(), coeffs.get(),
+              GRB_LESS_EQUAL, ct->ub()));
+        }
+      } else {
+        CheckedGurobiCall(GRBaddrangeconstr(model_, size, col_indices.get(),
+                                            coeffs.get(), ct->lb(), ct->ub(),
+                                            name));
+      }
     }
   }
   CheckedGurobiCall(GRBupdatemodel(model_));

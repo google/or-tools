@@ -15,6 +15,7 @@
 #define OR_TOOLS_LINEAR_SOLVER_MODEL_VALIDATOR_H_
 
 #include <string>
+
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {

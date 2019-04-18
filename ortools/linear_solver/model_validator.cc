@@ -15,8 +15,10 @@
 
 #include <cmath>
 #include <limits>
+
 #include "absl/strings/str_cat.h"
 #include "ortools/base/accurate_sum.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
 
@@ -129,6 +131,27 @@ std::string FindErrorInSolutionHint(
   return std::string();
 }
 
+std::string GetCroppedConstraintError(const MPConstraintProto& constraint,
+                                      int constraint_index,
+                                      const std::string& error,
+                                      int max_printed_vars) {
+  MPConstraintProto constraint_light = constraint;
+  std::string suffix_str;
+  if (constraint.var_index_size() > max_printed_vars) {
+    constraint_light.mutable_var_index()->Truncate(max_printed_vars);
+    absl::StrAppend(&suffix_str,
+                    " (var_index cropped; size=", constraint.var_index_size(),
+                    ").");
+  }
+  if (constraint.coefficient_size() > max_printed_vars) {
+    constraint_light.mutable_coefficient()->Truncate(max_printed_vars);
+    absl::StrAppend(&suffix_str, " (coefficient cropped; size=",
+                    constraint.coefficient_size(), ").");
+  }
+  return absl::StrCat("In constraint #", constraint_index, ": ", error,
+                      ". Constraint proto: ",
+                      ProtobufShortDebugString(constraint_light), suffix_str);
+}
 }  // namespace
 
 std::string FindErrorInMPModelProto(const MPModelProto& model) {
@@ -163,24 +186,54 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
     error = FindErrorInMPConstraint(constraint, &variable_appears);
     if (!error.empty()) {
       // Constraint protos can be huge, theoretically. So we guard against that.
-      MPConstraintProto constraint_light = constraint;
-      std::string suffix_str;
-      if (constraint.var_index_size() > kMaxNumVarsInPrintedConstraint) {
-        constraint_light.mutable_var_index()->Truncate(
-            kMaxNumVarsInPrintedConstraint);
-        absl::StrAppend(&suffix_str, " (var_index cropped; size=",
-                        constraint.var_index_size(), ").");
+      return GetCroppedConstraintError(constraint, i, error,
+                                       kMaxNumVarsInPrintedConstraint);
+    }
+  }
+
+  // Validate general constraints.
+  for (int i = 0; i < model.general_constraint_size(); ++i) {
+    const MPGeneralConstraintProto& gen_constraint =
+        model.general_constraint(i);
+    switch (gen_constraint.general_constraint_case()) {
+      case MPGeneralConstraintProto::kIndicatorConstraint: {
+        if (!gen_constraint.indicator_constraint().has_var_index()) {
+          return absl::StrCat("In general constraint #", i,
+                              ": var_index is required.");
+        }
+        const int var_index = gen_constraint.indicator_constraint().var_index();
+        if (var_index < 0 || var_index >= num_vars) {
+          return absl::StrCat("In general constraint #", i,
+                              ": var_index=", var_index, " is out of bounds.");
+        }
+        if (!model.variable(var_index).is_integer() ||
+            model.variable(var_index).lower_bound() < 0 ||
+            model.variable(var_index).upper_bound() > 1) {
+          return absl::StrCat("In general constraint #", i,
+                              ": var_index=", var_index, " is not Boolean.");
+        }
+        const int var_value = gen_constraint.indicator_constraint().var_value();
+        if (var_value < 0 || var_value > 1) {
+          return absl::StrCat("In general constraint #", i,
+                              ": var_value=", var_value, " is invalid.");
+        }
+        const MPConstraintProto& constraint =
+            gen_constraint.indicator_constraint().constraint();
+        error = FindErrorInMPConstraint(constraint, &variable_appears);
+        if (!error.empty()) {
+          // Constraint protos can be huge, theoretically. So we guard against
+          // that.
+          return absl::StrCat(
+              "In general constraint #", i, ": ",
+              GetCroppedConstraintError(constraint, i, error,
+                                        kMaxNumVarsInPrintedConstraint));
+        }
+        break;
       }
-      if (constraint.coefficient_size() > kMaxNumVarsInPrintedConstraint) {
-        constraint_light.mutable_coefficient()->Truncate(
-            kMaxNumVarsInPrintedConstraint);
-        absl::StrAppend(&suffix_str, " (coefficient cropped; size=",
-                        constraint.coefficient_size(), ").");
+      default: {
+        return absl::StrCat("Unknown general constraint type ",
+                            gen_constraint.general_constraint_case());
       }
-      return absl::StrCat(
-          "In constraint #", i, ": ", error,
-          ". Constraint proto: ", ProtobufShortDebugString(constraint_light),
-          suffix_str);
     }
   }
 

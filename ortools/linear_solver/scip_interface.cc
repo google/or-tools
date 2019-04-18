@@ -14,7 +14,9 @@
 #if defined(USE_SCIP)
 
 #include <stddef.h>
+
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,6 +53,7 @@ class SCIPInterface : public MPSolverInterface {
   void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   void AddRowConstraint(MPConstraint* ct) override;
+  bool AddIndicatorConstraint(MPConstraint* ct) override;
   void AddVariable(MPVariable* var) override;
   void SetCoefficient(MPConstraint* constraint, const MPVariable* variable,
                       double new_value, double old_value) override;
@@ -369,6 +372,11 @@ void SCIPInterface::AddRowConstraint(MPConstraint* ct) {
   sync_status_ = MUST_RELOAD;
 }
 
+bool SCIPInterface::AddIndicatorConstraint(MPConstraint* ct) {
+  sync_status_ = MUST_RELOAD;
+  return true;
+}
+
 void SCIPInterface::AddVariable(MPVariable* var) { sync_status_ = MUST_RELOAD; }
 
 void SCIPInterface::ExtractNewVariables() {
@@ -426,7 +434,7 @@ void SCIPInterface::ExtractNewConstraints() {
       }
     }
     std::unique_ptr<SCIP_VAR*[]> vars(new SCIP_VAR*[max_row_length]);
-    std::unique_ptr<double[]> coefs(new double[max_row_length]);
+    std::unique_ptr<double[]> coeffs(new double[max_row_length]);
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
@@ -437,29 +445,75 @@ void SCIPInterface::ExtractNewConstraints() {
         const int var_index = entry.first->index();
         DCHECK(variable_is_extracted(var_index));
         vars[j] = scip_variables_[var_index];
-        coefs[j] = entry.second;
+        coeffs[j] = entry.second;
         j++;
       }
       SCIP_CONS* scip_constraint = nullptr;
       const bool is_lazy = ct->is_lazy();
-      // See
-      // http://scip.zib.de/doc/html/cons__linear_8h.php#aa7aed137a4130b35b168812414413481
-      // for an explanation of the parameters.
-      RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
-          scip_, &scip_constraint, ct->name().empty() ? "" : ct->name().c_str(),
-          size, vars.get(), coefs.get(), ct->lb(), ct->ub(),
-          !is_lazy,  // 'initial' parameter.
-          true,      // 'separate' parameter.
-          true,      // 'enforce' parameter.
-          true,      // 'check' parameter.
-          true,      // 'propagate' parameter.
-          false,     // 'local' parameter.
-          false,     // 'modifiable' parameter.
-          false,     // 'dynamic' parameter.
-          is_lazy,   // 'removable' parameter.
-          false));   // 'stickingatnode' parameter.
-      RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
-      scip_constraints_.push_back(scip_constraint);
+      if (ct->indicator_variable() != nullptr) {
+        const int ind_index = ct->indicator_variable()->index();
+        DCHECK(variable_is_extracted(ind_index));
+        SCIP_VAR* ind_var = scip_variables_[ind_index];
+        if (ct->indicator_value() == 0) {
+          RETURN_IF_SCIP_ERROR(
+              SCIPgetNegatedVar(scip_, scip_variables_[ind_index], &ind_var));
+        }
+
+        if (ct->ub() < std::numeric_limits<double>::infinity()) {
+          RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
+              scip_, &scip_constraint, ct->name().c_str(), ind_var, size,
+              vars.get(), coeffs.get(), ct->ub(),
+              /*initial=*/!is_lazy,
+              /*separate=*/true,
+              /*enforce=*/true,
+              /*check=*/true,
+              /*propagate=*/true,
+              /*local=*/false,
+              /*dynamic=*/false,
+              /*removable=*/is_lazy,
+              /*stickingatnode=*/false));
+          RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
+          scip_constraints_.push_back(scip_constraint);
+        }
+        if (ct->lb() > -std::numeric_limits<double>::infinity()) {
+          for (int i = 0; i < size; ++i) {
+            coeffs[i] *= -1;
+          }
+          RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
+              scip_, &scip_constraint, ct->name().c_str(), ind_var, size,
+              vars.get(), coeffs.get(), -ct->lb(),
+              /*initial=*/!is_lazy,
+              /*separate=*/true,
+              /*enforce=*/true,
+              /*check=*/true,
+              /*propagate=*/true,
+              /*local=*/false,
+              /*dynamic=*/false,
+              /*removable=*/is_lazy,
+              /*stickingatnode=*/false));
+          RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
+          scip_constraints_.push_back(scip_constraint);
+        }
+      } else {
+        // See
+        // http://scip.zib.de/doc/html/cons__linear_8h.php#aa7aed137a4130b35b168812414413481
+        // for an explanation of the parameters.
+        RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
+            scip_, &scip_constraint, ct->name().c_str(), size, vars.get(),
+            coeffs.get(), ct->lb(), ct->ub(),
+            /*initial=*/!is_lazy,
+            /*separate=*/true,
+            /*enforce=*/true,
+            /*check=*/true,
+            /*propagate=*/true,
+            /*local=*/false,
+            /*modifiable=*/false,
+            /*dynamic=*/false,
+            /*removable=*/is_lazy,
+            /*stickingatnode=*/false));
+        RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
+        scip_constraints_.push_back(scip_constraint);
+      }
     }
   }
 }

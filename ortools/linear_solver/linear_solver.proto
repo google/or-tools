@@ -99,6 +99,34 @@ message MPConstraintProto {
   optional bool is_lazy = 5 [default = false];
 }
 
+// General constraints. See each individual proto type for more information.
+message MPGeneralConstraintProto {
+  // The name of the constraint.
+  optional string name = 1 [default = ""];
+
+  oneof general_constraint {
+    MPIndicatorConstraint indicator_constraint = 2;
+  }
+}
+
+// Indicator constraints encode the activation or deactivation of linear
+// constraints given the value of one Boolean variable in the model. For
+// example:
+//     y = 0 => 2 * x1 + 3 * x2 >= 42
+// The 2 * x1 + 3 * x2 >= 42 constraint is only active if the variable y is
+// equal to 0.
+message MPIndicatorConstraint {
+  // Variable index (w.r.t. the "variable" field of MPModelProto) of the Boolean
+  // variable used as indicator.
+  optional int32 var_index = 1;
+
+  // Value the above variable should take. Must be 0 or 1.
+  optional int32 var_value = 2;
+
+  // The constraint activated by the indicator variable.
+  optional MPConstraintProto constraint = 3;
+}
+
 // This message encodes a partial (or full) assignment of the variables of a
 // MPModelProto problem. The indices in var_index should be unique and valid
 // variable indices of the associated problem.
@@ -120,6 +148,10 @@ message MPModelProto {
 
   // All the constraints appearing in the model.
   repeated MPConstraintProto constraint = 4;
+
+  // All the general constraints appearing in the model. Note that not all
+  // solvers support all types of general constraints.
+  repeated MPGeneralConstraintProto general_constraint = 7;
 
   // Name of the model.
   optional string name = 5 [default = ""];
