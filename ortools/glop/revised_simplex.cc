@@ -85,7 +85,7 @@ RevisedSimplex::RevisedSimplex()
       variable_name_(),
       direction_(),
       error_(),
-      basis_factorization_(matrix_with_slack_, basis_),
+      basis_factorization_(matrix_with_slack_, compact_matrix_, basis_),
       variables_info_(compact_matrix_, lower_bound_, upper_bound_),
       variable_values_(compact_matrix_, basis_, variables_info_,
                        basis_factorization_),
@@ -284,7 +284,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
 
     // TODO(user): We should also confirm the PRIMAL_UNBOUNDED or DUAL_UNBOUNDED
     // status by checking with the other phase I that the problem is really
-    // DUAL_INFEASIBLE or PRIMAL_INFEASIBLE. For instace we currently report
+    // DUAL_INFEASIBLE or PRIMAL_INFEASIBLE. For instance we currently report
     // PRIMAL_UNBOUNDED with the primal on the problem l30.mps instead of
     // OPTIMAL and the dual does not have issues on this problem.
     if (problem_status_ == ProblemStatus::DUAL_UNBOUNDED) {
@@ -1383,7 +1383,7 @@ void RevisedSimplex::CorrectErrorsOnVariableValues() {
   // problem by extending each basic variable bound with a random value. See how
   // bound_perturbation_ is used in ComputeHarrisRatioAndLeavingCandidates().
   //
-  // Note that the perturbation is currenlty only reset to zero at the end of
+  // Note that the perturbation is currently only reset to zero at the end of
   // the algorithm.
   //
   // TODO(user): This is currently disabled because the improvement is unclear.

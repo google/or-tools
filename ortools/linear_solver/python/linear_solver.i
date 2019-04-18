@@ -46,6 +46,8 @@ class MPSolutionResponse;
 
 %{
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/model_exporter.h"
+#include "ortools/linear_solver/model_exporter_swig_helper.h"
 %}
 
 typedef int64_t int64;
@@ -81,20 +83,6 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 }
 
 %extend MPSolver {
-  // Change a (bool, std::string*) outputs to a python std::string (empty if bool=false).
-  std::string ExportModelAsLpFormat(bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
-    return output;
-  }
-  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
-      return "";
-    }
-    return output;
-  }
-
   // Change the API of LoadModelFromProto() to simply return the error message:
   // it will always be empty iff the model was valid.
   std::string LoadModelFromProto(const MPModelProto& input_model) {
@@ -365,7 +353,15 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolverParameters::SCALING_OFF;
 %unignore operations_research::MPSolverParameters::SCALING_ON;
 
+// Expose the model exporters.
+%rename (ModelExportOptions) operations_research::MPModelExportOptions;
+%rename (ModelExportOptions) operations_research::MPModelExportOptions::MPModelExportOptions;
+%rename (ExportModelAsLpFormat) operations_research::ExportModelAsLpFormatReturnString;
+%rename (ExportModelAsMpsFormat) operations_research::ExportModelAsMpsFormatReturnString;
+
 %include "ortools/linear_solver/linear_solver.h"
+%include "ortools/linear_solver/model_exporter.h"
+%include "ortools/linear_solver/model_exporter_swig_helper.h"
 
 %unignoreall
 

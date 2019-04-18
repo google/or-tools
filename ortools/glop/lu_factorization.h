@@ -103,8 +103,8 @@ class LuFactorization {
   // or a ScatteredColumn as input. non_zeros will either be cleared or set to
   // the non zeros of the result. Important: the output x must be of the correct
   // size and all zero.
-  void RightSolveLForSparseColumn(const SparseColumn& b,
-                                  ScatteredColumn* x) const;
+  void RightSolveLForColumnView(const CompactSparseMatrix::ColumnView& b,
+                                ScatteredColumn* x) const;
   void RightSolveLForScatteredColumn(const ScatteredColumn& b,
                                      ScatteredColumn* x) const;
 

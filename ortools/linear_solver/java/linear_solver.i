@@ -50,6 +50,7 @@ typedef uint64_t uint64;
 
 %{
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/model_exporter.h"
 %}
 
 %typemap(javaimports) SWIGTYPE %{
@@ -58,18 +59,20 @@ import java.lang.reflect.*;
 
 
 %extend operations_research::MPSolver {
-  std::string exportModelAsLpFormat(bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
-    return output;
+  std::string exportModelAsLpFormat(
+      const operations_research::MPModelExportOptions& options =
+          operations_research::MPModelExportOptions()) {
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return ExportModelAsLpFormat(model, options).value_or("");
   }
 
-  std::string exportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
-      return "";
-    }
-    return output;
+  std::string exportModelAsMpsFormat(
+      const operations_research::MPModelExportOptions& options =
+          operations_research::MPModelExportOptions()) {
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return ExportModelAsMpsFormat(model, options).value_or("");
   }
 
   void setHint(const std::vector<operations_research::MPVariable*>& variables,
@@ -315,6 +318,17 @@ import java.lang.reflect.*;
 %unignore operations_research::MPSolverParameters::SCALING_OFF;  // no test
 %unignore operations_research::MPSolverParameters::SCALING_ON;  // no test
 
+// Expose the model exporters.
+%unignore operations_research::MPModelExportOptions;
+%unignore operations_research::MPModelExportOptions::MPModelExportOptions;
+%typemap(javaclassmodifiers) operations_research::MPModelExportOptions
+    "public final class";
+%rename (Obfuscate) operations_research::MPModelExportOptions::obfuscate;
+%rename (LogInvalidNames) operations_research::MPModelExportOptions::log_invalid_names;
+%rename (ShowUnusedVariables) operations_research::MPModelExportOptions::show_unused_variables;
+%rename (MaxLineLength) operations_research::MPModelExportOptions::max_line_length;
+
 %include "ortools/linear_solver/linear_solver.h"
+%include "ortools/linear_solver/model_exporter.h"
 
 %unignoreall

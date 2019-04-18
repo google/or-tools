@@ -23,7 +23,7 @@ namespace glop {
 const RowIndex kNonPivotal(-1);
 
 // Specialization of SparseVectorEntry and SparseColumnIterator for the
-// SparseColumn class. In addtion to index(), it also provides row() for better
+// SparseColumn class. In addition to index(), it also provides row() for better
 // readability on the client side.
 class SparseColumnEntry : public SparseVectorEntry<RowIndex> {
  public:

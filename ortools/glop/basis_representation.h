@@ -145,7 +145,9 @@ class EtaFactorization {
 // every 'refactorization_period' updates.
 class BasisFactorization {
  public:
-  BasisFactorization(const MatrixView& matrix, const RowToColMapping& basis);
+  BasisFactorization(const MatrixView& matrix,
+                     const CompactSparseMatrix& compact_matrix,
+                     const RowToColMapping& basis);
   virtual ~BasisFactorization();
 
   // Sets the parameters for this component.
@@ -183,7 +185,7 @@ class BasisFactorization {
   ABSL_MUST_USE_RESULT Status Initialize();
 
   // Return the number of rows in the basis.
-  RowIndex GetNumberOfRows() const { return matrix_.num_rows(); }
+  RowIndex GetNumberOfRows() const { return compact_matrix_.num_rows(); }
 
   // Clears eta factorization and refactorizes LU.
   // Nothing happens if this is called on an already refactorized basis.
@@ -305,6 +307,7 @@ class BasisFactorization {
 
   // References to the basis subpart of the linear program matrix.
   const MatrixView& matrix_;
+  const CompactSparseMatrix& compact_matrix_;
   const RowToColMapping& basis_;
 
   // Middle form product update factorization and scratchpad_ used to construct

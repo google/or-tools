@@ -80,6 +80,14 @@ std::vector<double> ScaleContinuousVariables(double scaling,
   for (MPConstraintProto& mp_constraint : *mp_model->mutable_constraint()) {
     ScaleConstraint(var_scaling, &mp_constraint);
   }
+  for (MPGeneralConstraintProto& general_constraint :
+       *mp_model->mutable_general_constraint()) {
+    CHECK_EQ(general_constraint.general_constraint_case(),
+             MPGeneralConstraintProto::kIndicatorConstraint);
+    ScaleConstraint(var_scaling,
+                    general_constraint.mutable_indicator_constraint()
+                        ->mutable_constraint());
+  }
   return var_scaling;
 }
 
@@ -301,6 +309,22 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   // Add the constraints. We scale each of them individually.
   for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {
     scaler.AddConstraint(mp_model, mp_constraint, cp_model);
+  }
+  for (const MPGeneralConstraintProto& general_constraint :
+       mp_model.general_constraint()) {
+    CHECK_EQ(general_constraint.general_constraint_case(),
+             MPGeneralConstraintProto::kIndicatorConstraint);
+    const MPIndicatorConstraint indicator_constraint =
+        general_constraint.indicator_constraint();
+    const MPConstraintProto& mp_constraint = indicator_constraint.constraint();
+    ConstraintProto* ct =
+        scaler.AddConstraint(mp_model, mp_constraint, cp_model);
+    if (ct == nullptr) continue;
+
+    // Add the indicator.
+    const int var = indicator_constraint.var_index();
+    const int value = indicator_constraint.var_value();
+    ct->add_enforcement_literal(value == 1 ? var : NegatedRef(var));
   }
 
   double max_relative_coeff_error = scaler.max_relative_coeff_error;

@@ -698,13 +698,11 @@ IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
 
 namespace {
 
-class TypeIncompatibilityFilter : public BasePathFilter {
+class TypeRegulationsFilter : public BasePathFilter {
  public:
-  explicit TypeIncompatibilityFilter(const RoutingModel& model);
-  ~TypeIncompatibilityFilter() override {}
-  std::string DebugString() const override {
-    return "TypeIncompatibilityFilter";
-  }
+  explicit TypeRegulationsFilter(const RoutingModel& model);
+  ~TypeRegulationsFilter() override {}
+  std::string DebugString() const override { return "TypeRegulationsFilter"; }
 
  private:
   void OnSynchronizePathFromStart(int64 start) override;
@@ -720,14 +718,17 @@ class TypeIncompatibilityFilter : public BasePathFilter {
   // incompatibilities.
   std::vector<std::vector<int>> hard_incompatibility_type_counts_per_vehicle_;
   // Used to verify the temporal incompatibilities.
-  const TypeIncompatibilityChecker temporal_incompatibility_checker_;
+  TypeIncompatibilityChecker temporal_incompatibility_checker_;
+  TypeRequirementChecker requirement_checker_;
 };
 
-TypeIncompatibilityFilter::TypeIncompatibilityFilter(const RoutingModel& model)
+TypeRegulationsFilter::TypeRegulationsFilter(const RoutingModel& model)
     : BasePathFilter(model.Nexts(), model.Size() + model.vehicles(), nullptr),
       routing_model_(model),
       start_to_vehicle_(model.Size(), -1),
-      temporal_incompatibility_checker_(model) {
+      temporal_incompatibility_checker_(model,
+                                        /*check_hard_incompatibilities*/ false),
+      requirement_checker_(model) {
   const int num_vehicles = model.vehicles();
   const bool has_hard_type_incompatibilities =
       model.HasHardTypeIncompatibilities();
@@ -745,7 +746,7 @@ TypeIncompatibilityFilter::TypeIncompatibilityFilter(const RoutingModel& model)
   }
 }
 
-void TypeIncompatibilityFilter::OnSynchronizePathFromStart(int64 start) {
+void TypeRegulationsFilter::OnSynchronizePathFromStart(int64 start) {
   if (!routing_model_.HasHardTypeIncompatibilities()) return;
 
   const int vehicle = start_to_vehicle_[start];
@@ -767,8 +768,9 @@ void TypeIncompatibilityFilter::OnSynchronizePathFromStart(int64 start) {
   }
 }
 
-bool TypeIncompatibilityFilter::HardIncompatibilitiesRespected(
-    int vehicle, int64 chain_start, int64 chain_end) {
+bool TypeRegulationsFilter::HardIncompatibilitiesRespected(int vehicle,
+                                                           int64 chain_start,
+                                                           int64 chain_end) {
   if (!routing_model_.HasHardTypeIncompatibilities()) return true;
 
   std::vector<int> new_type_counts =
@@ -817,25 +819,23 @@ bool TypeIncompatibilityFilter::HardIncompatibilitiesRespected(
   return true;
 }
 
-bool TypeIncompatibilityFilter::AcceptPath(int64 path_start, int64 chain_start,
-                                           int64 chain_end) {
+bool TypeRegulationsFilter::AcceptPath(int64 path_start, int64 chain_start,
+                                       int64 chain_end) {
   const int vehicle = start_to_vehicle_[path_start];
   CHECK_GE(vehicle, 0);
+  const auto next_accessor = [this](int64 node) { return GetNext(node); };
   return HardIncompatibilitiesRespected(vehicle, chain_start, chain_end) &&
-         temporal_incompatibility_checker_
-             .TemporalIncompatibilitiesRespectedOnVehicle(
-                 vehicle,
-                 /*next_accessor*/ [this](int64 node) {
-                   return GetNext(node);
-                 });
+         temporal_incompatibility_checker_.CheckVehicle(vehicle,
+                                                        next_accessor) &&
+         requirement_checker_.CheckVehicle(vehicle, next_accessor);
 }
 
 }  // namespace
 
-IntVarLocalSearchFilter* MakeTypeIncompatibilityFilter(
+IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
     const RoutingModel& routing_model) {
   return routing_model.solver()->RevAlloc(
-      new TypeIncompatibilityFilter(routing_model));
+      new TypeRegulationsFilter(routing_model));
 }
 
 namespace {

@@ -14,62 +14,14 @@
 #include "ortools/lp_data/model_reader.h"
 
 #include "ortools/base/file.h"
-#include "ortools/lp_data/mps_reader.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/util/file_util.h"
 
 namespace operations_research {
 namespace glop {
 
-bool LoadLinearProgramFromMps(const std::string& input_file_path,
-                              const std::string& forced_mps_format,
-                              LinearProgram* linear_program) {
-  LinearProgram linear_program_fixed;
-  LinearProgram linear_program_free;
-  MPSReader mps_reader;
-  mps_reader.set_log_errors(forced_mps_format == "free" ||
-                            forced_mps_format == "fixed");
-  bool fixed_read = forced_mps_format != "free" &&
-                    mps_reader.LoadFileWithMode(input_file_path, false,
-                                                &linear_program_fixed);
-  const bool free_read =
-      forced_mps_format != "fixed" &&
-      mps_reader.LoadFileWithMode(input_file_path, true, &linear_program_free);
-  if (!fixed_read && !free_read) {
-    LOG(ERROR) << "Error while parsing the mps file '" << input_file_path
-               << "' Use the --forced_mps_format flags to see the errors.";
-    return false;
-  }
-  if (fixed_read && free_read) {
-    if (linear_program_fixed.name() != linear_program_free.name()) {
-      VLOG(1) << "Name of the model differs between fixed and free forms. "
-              << "Fallbacking to free form.";
-      fixed_read = false;
-    }
-  }
-  if (!fixed_read) {
-    VLOG(1) << "Read file in free format.";
-    linear_program->PopulateFromLinearProgram(linear_program_free);
-  } else {
-    VLOG(1) << "Read file in fixed format.";
-    linear_program->PopulateFromLinearProgram(linear_program_fixed);
-    if (free_read) {
-      // TODO(user): Dump() take ages on large program, so we need an efficient
-      // comparison function between two linear programs. Using
-      // GetProblemStats() for now.
-      if (linear_program_free.GetProblemStats() !=
-          linear_program_fixed.GetProblemStats()) {
-        LOG(ERROR) << "Could not decide if '" << input_file_path
-                   << "' is in fixed or free format.";
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 bool LoadLinearProgramFromModelOrRequest(const std::string& input_file_path,
-
                                          LinearProgram* linear_program) {
   MPModelProto model_proto;
   MPModelRequest request_proto;

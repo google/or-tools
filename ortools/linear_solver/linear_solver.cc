@@ -32,7 +32,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-//#include "ortools/base/status_macros.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
@@ -1368,16 +1368,29 @@ bool MPSolver::ExportModelAsLpFormat(bool obfuscate,
                                      std::string* model_str) const {
   MPModelProto proto;
   ExportModelToProto(&proto);
-  MPModelProtoExporter exporter(proto);
-  return exporter.ExportModelAsLpFormat(obfuscate, model_str);
+  MPModelExportOptions options;
+  options.obfuscate = obfuscate;
+  const auto status_or =
+      operations_research::ExportModelAsLpFormat(proto, options);
+  *model_str = status_or.value_or("");
+  return status_or.ok();
 }
 
 bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
                                       std::string* model_str) const {
+//   if (fixed_format) {
+//     LOG_EVERY_N_SEC(WARNING, 10)
+//         << "Fixed format is deprecated. Using free format instead.";
+//   
+
   MPModelProto proto;
   ExportModelToProto(&proto);
-  MPModelProtoExporter exporter(proto);
-  return exporter.ExportModelAsMpsFormat(fixed_format, obfuscate, model_str);
+  MPModelExportOptions options;
+  options.obfuscate = obfuscate;
+  const auto status_or =
+      operations_research::ExportModelAsMpsFormat(proto, options);
+  *model_str = status_or.value_or("");
+  return status_or.ok();
 }
 
 void MPSolver::SetHint(

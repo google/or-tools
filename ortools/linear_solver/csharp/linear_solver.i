@@ -38,6 +38,7 @@
 %{
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/model_exporter.h"
 %}
 
 
@@ -147,17 +148,19 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, MpDoubleVector);
 %unignore operations_research::MPSolver::ExportModelAsMpsFormat(bool, bool);
 %extend operations_research::MPSolver {
   std::string ExportModelAsLpFormat(bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
-    return output;
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscated;
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return ExportModelAsLpFormat(model, options).value_or("");
   }
 
   std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
-    std::string output;
-    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
-      return "";
-    }
-    return output;
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscated;
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return ExportModelAsMpsFormat(model, options).value_or("");
   }
 }
 
@@ -258,5 +261,6 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, MpDoubleVector);
 %unignore operations_research::MPSolverParameters::SCALING_ON;  // no test
 
 %include "ortools/linear_solver/linear_solver.h"
+%include "ortools/linear_solver/model_exporter.h"
 
 %unignoreall

@@ -680,18 +680,28 @@ class RoutingModel {
     return pickup_delivery_disjunctions_;
   }
 #endif  // SWIG
-  // Set the node visit types and incompatibilities between the types.
-  // Two nodes with "hard" incompatible types cannot share the same route at
-  // all, while with a "temporal" incompatibility they can't be on the same
-  // route at the same time.
+  // Set the node visit types and incompatibilities/requirements between the
+  // types (see below).
   // NOTE: The visit type of a node must be positive, and all nodes belonging to
   // the same pickup/delivery pair must have the same type (or no type at all).
-  // NOTE: These incompatibilities are only handled when each node index appears
-  // in at most one pickup/delivery pair, i.e. when the same node isn't a pickup
-  // and/or delivery in multiple pickup/delivery pairs.
+  // NOTE: Before adding any incompatibilities and/or requirements on types:
+  //       1) All corresponding node types must have been set.
+  //       2) CloseVisitTypes() must be called so all containers are resized
+  //          accordingly.
+  // NOTE: These incompatibilities and requirements are only handled when each
+  // node index appears in at most one pickup/delivery pair, i.e. when the same
+  // node isn't a pickup and/or delivery in multiple pickup/delivery pairs.
   // TODO(user): Support multiple visit types per node?
   void SetVisitType(int64 index, int type);
   int GetVisitType(int64 index) const;
+  // This function should be called once all node visit types have been set and
+  // prior to adding any incompatibilities/requirements.
+  void CloseVisitTypes();
+  int GetNumberOfVisitTypes() const { return num_visit_types_; }
+  // Incompatibilities:
+  // Two nodes with "hard" incompatible types cannot share the same route at
+  // all, while with a "temporal" incompatibility they can't be on the same
+  // route at the same time.
   void AddHardTypeIncompatibility(int type1, int type2);
   void AddTemporalTypeIncompatibility(int type1, int type2);
   // Returns visit types incompatible with a given type.
@@ -699,20 +709,42 @@ class RoutingModel {
       int type) const;
   const absl::flat_hash_set<int>& GetTemporalTypeIncompatibilitiesOfType(
       int type) const;
-  // Returns types incompatible with a given node index.
-  const absl::flat_hash_set<int>& GetHardTypeIncompatibilitiesOfNode(
-      int64 index) const;
-  const absl::flat_hash_set<int>& GetTemporalTypeIncompatibilitiesOfNode(
-      int64 index) const;
   // Returns true iff any hard (resp. temporal) type incompatibilities have been
   // added to the model.
   bool HasHardTypeIncompatibilities() const {
-    return !hard_incompatible_types_per_type_index_.empty();
+    return has_hard_type_incompatibilities_;
   }
   bool HasTemporalTypeIncompatibilities() const {
-    return !temporal_incompatible_types_per_type_index_.empty();
+    return has_temporal_type_incompatibilities_;
   }
-  int GetNumberOfVisitTypes() const { return num_visit_types_; }
+  // Requirements:
+  // If type_D temporally depends on type_R, any non-delivery node_D of type_D
+  // requires at least one non-delivered node of type_R on its vehicle at the
+  // time node_D is visited.
+  // NOTE: As of 2019-04, cycles in the requirement graph are not supported,
+  // and lead to the dependent nodes being skipped if possible (otherwise
+  // the model is considered infeasible).
+  // The following function specifies that "dependent_type" requires at least
+  // one of the types in "required_type_alternatives".
+  void AddTemporalRequiredTypeAlternatives(
+      int dependent_type, absl::flat_hash_set<int> required_type_alternatives);
+  // clang-format off
+  // Returns all sets of requirement alternatives for the given type.
+  const std::vector<absl::flat_hash_set<int> >&
+      GetTemporalRequiredTypeAlternativesOfType(int type) const;
+  // clang-format on
+  // Returns true iff any type requirements have been added to the model.
+  bool HasTemporalTypeRequirements() const {
+    return has_temporal_type_requirements_;
+  }
+
+  // Returns true iff the model has any incompatibilities or requirements set
+  // on node types.
+  bool HasTypeRegulations() const {
+    return HasTemporalTypeIncompatibilities() ||
+           HasHardTypeIncompatibilities() || HasTemporalTypeRequirements();
+  }
+
   // Get the "unperformed" penalty of a node. This is only well defined if the
   // node is only part of a single Disjunction involving only itself, and that
   // disjunction has a penalty. In all other cases, including forced active
@@ -1320,15 +1352,6 @@ class RoutingModel {
   // Sets up pickup and delivery sets.
   void AddPickupAndDeliverySetsInternal(const std::vector<int64>& pickups,
                                         const std::vector<int64>& deliveries);
-  // Setup/access type incompatibilities.
-  // clang-format off
-  void AddTypeIncompatibilityInternal(int type1, int type2,
-                                      std::vector<absl::flat_hash_set<int> >*
-                                          incompatible_types_per_type_index);
-  const absl::flat_hash_set<int>& GetTypeIncompatibilitiesOfTypeInternal(
-      int type, const std::vector<absl::flat_hash_set<int> >&
-                    incompatible_types_per_type_index) const;
-  // clang-format on
   // Returns the cost variable related to the soft same vehicle constraint of
   // index 'vehicle_index'.
   IntVar* CreateSameVehicleCost(int vehicle_index);
@@ -1513,12 +1536,15 @@ class RoutingModel {
   // clang-format off
   std::vector<absl::flat_hash_set<int> >
       hard_incompatible_types_per_type_index_;
+  bool has_hard_type_incompatibilities_;
   std::vector<absl::flat_hash_set<int> >
       temporal_incompatible_types_per_type_index_;
+  bool has_temporal_type_incompatibilities_;
+
+  std::vector<std::vector<absl::flat_hash_set<int> > >
+      temporal_required_type_alternatives_per_type_index_;
+  bool has_temporal_type_requirements_;
   // clang-format on
-  // Empty set used in Get[Hard|Temporal]TypeIncompatibilities() when the given
-  // type has no incompatibilities.
-  const absl::flat_hash_set<int> empty_incompatibilities_;
   int num_visit_types_;
   // Two indices are equivalent if they correspond to the same node (as given to
   // the constructors taking a RoutingIndexManager).
@@ -1756,32 +1782,68 @@ class GlobalVehicleBreaksConstraint : public Constraint {
   std::vector<int64> fixed_transits_;
 };
 
-class TypeIncompatibilityChecker {
+class TypeRegulationsChecker {
  public:
-  explicit TypeIncompatibilityChecker(const RoutingModel& model);
+  explicit TypeRegulationsChecker(const RoutingModel& model);
+  virtual ~TypeRegulationsChecker() {}
 
-  bool TemporalIncompatibilitiesRespectedOnVehicle(
-      int vehicle, const std::function<int64(int64)>& next_accessor) const;
+  bool CheckVehicle(int vehicle,
+                    const std::function<int64(int64)>& next_accessor);
 
-  bool AllIncompatibilitiesRespectedOnVehicle(
-      int vehicle, const std::function<int64(int64)>& next_accessor) const;
-
- private:
+ protected:
   enum PickupDeliveryStatus { PICKUP, DELIVERY, NONE };
+  struct NodeCount {
+    int non_pickup_delivery = 0;
+    int pickup = 0;
+    int delivery = 0;
+  };
 
-  // NOTE(user): As temporal incompatibilities are always verified when
-  // calling this function, we only pass 1 boolean indicating whether or not
-  // hard incompatibilities are also respected.
-  bool IncompatibilitiesRespectedOnVehicle(
-      int vehicle, const std::function<int64(int64)>& next_accessor,
-      bool check_hard_incompatibilities) const;
+  // Returns the number of pickups and fixed nodes from counts_of_type_["type"].
+  int GetNonDeliveryCount(int type) const;
+  // Same as above, but substracting the number of deliveries of "type".
+  int GetNonDeliveredCount(int type) const;
+
+  virtual bool HasRegulationsToCheck() const = 0;
+  virtual bool CheckTypeRegulations(int type) const = 0;
 
   const RoutingModel& model_;
+
+ private:
   std::vector<PickupDeliveryStatus> pickup_delivery_status_of_node_;
+  std::vector<NodeCount> counts_of_type_;
 };
 
-// The following constraint ensures that incompatibilities between types are
-// respected.
+// Checker for type incompatibilities.
+class TypeIncompatibilityChecker : public TypeRegulationsChecker {
+ public:
+  TypeIncompatibilityChecker(const RoutingModel& model,
+                             bool check_hard_incompatibilities);
+  ~TypeIncompatibilityChecker() override {}
+
+ private:
+  bool HasRegulationsToCheck() const override;
+  bool CheckTypeRegulations(int type) const override;
+  // NOTE(user): As temporal incompatibilities are always verified with this
+  // checker, we only store 1 boolean indicating whether or not hard
+  // incompatibilities are also verified.
+  bool check_hard_incompatibilities_;
+};
+
+// Checker for type requirements.
+class TypeRequirementChecker : public TypeRegulationsChecker {
+ public:
+  explicit TypeRequirementChecker(const RoutingModel& model)
+      : TypeRegulationsChecker(model) {}
+  ~TypeRequirementChecker() override {}
+
+ private:
+  bool HasRegulationsToCheck() const override;
+  bool CheckTypeRegulations(int type) const override;
+};
+
+// The following constraint ensures that incompatibilities and requirements
+// between types are respected.
+//
 // It verifies both "hard" and "temporal" incompatibilities.
 // Two nodes with hard incompatible types cannot be served by the same vehicle
 // at all, while with a temporal incompatibility they can't be on the same route
@@ -1791,19 +1853,24 @@ class TypeIncompatibilityChecker {
 // non-pickup/delivery node n of type T3, the configuration
 // p1 --> d1 --> n --> p2 --> d2 is acceptable, whereas any configurations
 // with p1 --> p2 --> d1 --> ..., or p1 --> n --> d1 --> ... is not feasible.
-class TypeIncompatibilityConstraint : public Constraint {
+//
+// It also verifies temporal type requirements.
+// In the above example, if T1 is a requirement for T2, p2 must be visited
+// between p1 and d1.
+class TypeRegulationsConstraint : public Constraint {
  public:
-  explicit TypeIncompatibilityConstraint(const RoutingModel& model);
+  explicit TypeRegulationsConstraint(const RoutingModel& model);
 
   void Post() override;
   void InitialPropagate() override;
 
  private:
-  void PropagateNodeIncompatibilities(int node);
-  void CheckIncompatibilitiesOnVehicle(int vehicle);
+  void PropagateNodeRegulations(int node);
+  void CheckRegulationsOnVehicle(int vehicle);
 
   const RoutingModel& model_;
-  const TypeIncompatibilityChecker incompatibility_checker_;
+  TypeIncompatibilityChecker incompatibility_checker_;
+  TypeRequirementChecker requirement_checker_;
   std::vector<Demon*> vehicle_demons_;
 };
 
@@ -3028,7 +3095,7 @@ IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
 IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
     const RoutingModel& routing_model,
     Solver::ObjectiveWatcher objective_callback);
-IntVarLocalSearchFilter* MakeTypeIncompatibilityFilter(
+IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
     const RoutingModel& routing_model);
 std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
     const RoutingDimension& dimension,

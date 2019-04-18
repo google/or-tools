@@ -50,6 +50,18 @@ cc_library(
 )
 
 cc_library(
+    name = "status_macros",
+    hdrs = [
+        "status_macros.h",
+    ],
+    deps = [
+        ":base",
+        ":status",
+        ":statusor",
+    ],
+)
+
+cc_library(
     name = "int128",
     hdrs = [
         "int128.h",

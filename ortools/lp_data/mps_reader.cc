@@ -13,26 +13,10 @@
 
 #include "ortools/lp_data/mps_reader.h"
 
-#include <algorithm>
-#include <cmath>
-#include <fstream>
-#include <memory>
-#include <utility>
-
 #include "absl/strings/match.h"
-#include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
-#include "ortools/base/filelineiter.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"  // for FindOrNull, FindWithDefault
 #include "ortools/base/status.h"
-#include "ortools/lp_data/lp_print_utils.h"
-
-ABSL_FLAG(bool, mps_free_form, false, "Read MPS files in free form.");
-ABSL_FLAG(bool, mps_stop_after_first_error, true,
-          "Stop after the first error.");
+//#include "ortools/base/status_builder.h"
 
 namespace operations_research {
 namespace glop {
@@ -40,12 +24,11 @@ namespace glop {
 const int MPSReader::kNumFields = 6;
 const int MPSReader::kFieldStartPos[kNumFields] = {1, 4, 14, 24, 39, 49};
 const int MPSReader::kFieldLength[kNumFields] = {2, 8, 8, 12, 8, 12};
+const int MPSReader::kSpacePos[12] = {12, 13, 22, 23, 36, 37,
+                                      38, 47, 48, 61, 62, 63};
 
 MPSReader::MPSReader()
-    : free_form_(absl::GetFlag(FLAGS_mps_free_form)),
-      data_(nullptr),
-      problem_name_(""),
-      parse_success_(true),
+    : free_form_(true),
       fields_(kNumFields),
       section_(UNKNOWN_SECTION),
       section_name_to_id_map_(),
@@ -54,10 +37,8 @@ MPSReader::MPSReader()
       integer_type_names_set_(),
       line_num_(0),
       line_(),
-      has_lazy_constraints_(false),
       in_integer_section_(false),
-      num_unconstrained_rows_(0),
-      log_errors_(true) {
+      num_unconstrained_rows_(0) {
   section_name_to_id_map_["*"] = COMMENT;
   section_name_to_id_map_["NAME"] = NAME;
   section_name_to_id_map_["ROWS"] = ROWS;
@@ -66,6 +47,7 @@ MPSReader::MPSReader()
   section_name_to_id_map_["RHS"] = RHS;
   section_name_to_id_map_["RANGES"] = RANGES;
   section_name_to_id_map_["BOUNDS"] = BOUNDS;
+  section_name_to_id_map_["INDICATORS"] = INDICATORS;
   section_name_to_id_map_["ENDATA"] = ENDATA;
   row_name_to_id_map_["E"] = EQUALITY;
   row_name_to_id_map_["L"] = LESS_THAN;
@@ -87,10 +69,7 @@ MPSReader::MPSReader()
 
 void MPSReader::Reset() {
   fields_.resize(kNumFields);
-  parse_success_ = true;
-  problem_name_.clear();
   line_num_ = 0;
-  has_lazy_constraints_ = false;
   in_integer_section_ = false;
   num_unconstrained_rows_ = 0;
   objective_name_.clear();
@@ -98,18 +77,35 @@ void MPSReader::Reset() {
 
 void MPSReader::DisplaySummary() {
   if (num_unconstrained_rows_ > 0) {
-    LOG(INFO) << "There are " << num_unconstrained_rows_ + 1
-              << " unconstrained rows. The first of them (" << objective_name_
-              << ") was used as the objective.";
+    VLOG(1) << "There are " << num_unconstrained_rows_ + 1
+            << " unconstrained rows. The first of them (" << objective_name_
+            << ") was used as the objective.";
   }
 }
 
-void MPSReader::SplitLineIntoFields() {
+bool MPSReader::IsFixedFormat() {
+  for (const int i : kSpacePos) {
+    if (i >= line_.length()) break;
+    if (line_[i] != ' ') return false;
+  }
+  return true;
+}
+
+util::Status MPSReader::SplitLineIntoFields() {
   if (free_form_) {
     fields_ = absl::StrSplit(line_, absl::ByAnyChar(" \t"), absl::SkipEmpty());
-    DCHECK_GE(kNumFields, fields_.size());
+    if (fields_.size() > kNumFields) {
+      return InvalidArgumentError("Found too many fields.");
+    }
   } else {
-    int length = line_.length();
+    // Note: the name should also comply with the fixed format guidelines
+    // (maximum 8 characters) but in practice there are many problem files in
+    // our netlib archive that are in fixed format and have a long name. We
+    // choose to ignore these cases and treat them as fixed format anyway.
+    if (section_ != NAME && !IsFixedFormat()) {
+      return InvalidArgumentError("Line is not in fixed format.");
+    }
+    const int length = line_.length();
     for (int i = 0; i < kNumFields; ++i) {
       if (kFieldStartPos[i] < length) {
         fields_[i] = line_.substr(kFieldStartPos[i], kFieldLength[i]);
@@ -119,6 +115,7 @@ void MPSReader::SplitLineIntoFields() {
       }
     }
   }
+  return util::OkStatus();
 }
 
 std::string MPSReader::GetFirstWord() const {
@@ -126,54 +123,9 @@ std::string MPSReader::GetFirstWord() const {
     return std::string("");
   }
   const int first_space_pos = line_.find(' ');
-  std::string first_word = line_.substr(0, first_space_pos);
+  const std::string first_word = line_.substr(0, first_space_pos);
   return first_word;
 }
-
-bool MPSReader::LoadFile(const std::string& file_name, LinearProgram* data) {
-  if (data == nullptr) {
-    LOG(ERROR) << "Serious programming error: NULL LinearProgram pointer "
-               << "passed as argument.";
-    return false;
-  }
-  Reset();
-  data_ = data;
-  data_->Clear();
-  for (const std::string& line :
-       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
-    ProcessLine(line);
-  }
-  data->CleanUp();
-  DisplaySummary();
-  return parse_success_;
-}
-
-// TODO(user): Ideally have a method to compare instances of LinearProgram
-// and have method which reads in both modes, compares the programs and checks
-// that either both modes succeeded and led to the same program, or one mode
-// failed or both modes failed (cf. what is done in linear_solver/solve.cc
-// using protos).
-bool MPSReader::LoadFileWithMode(const std::string& file_name, bool free_form,
-                                 LinearProgram* data) {
-  free_form_ = free_form;
-  if (LoadFile(file_name, data)) {
-    free_form_ = absl::GetFlag(FLAGS_mps_free_form);
-    return true;
-  }
-  free_form_ = absl::GetFlag(FLAGS_mps_free_form);
-  return false;
-}
-
-bool MPSReader::LoadFileAndTryFreeFormOnFail(const std::string& file_name,
-                                             LinearProgram* data) {
-  if (!LoadFileWithMode(file_name, false, data)) {
-    LOG(INFO) << "Trying to read as an MPS free-format file.";
-    return LoadFileWithMode(file_name, true, data);
-  }
-  return true;
-}
-
-std::string MPSReader::GetProblemName() const { return problem_name_; }
 
 bool MPSReader::IsCommentOrBlank() const {
   const char* line = line_.c_str();
@@ -188,389 +140,42 @@ bool MPSReader::IsCommentOrBlank() const {
   return true;
 }
 
-void MPSReader::ProcessLine(const std::string& line) {
-  ++line_num_;
-  if (!parse_success_ && absl::GetFlag(FLAGS_mps_stop_after_first_error))
-    return;
-  line_ = line;
-  if (IsCommentOrBlank()) {
-    return;  // Skip blank lines and comments.
-  }
-  if (!free_form_ && line_.find('\t') != std::string::npos) {
-    if (log_errors_) {
-      LOG(ERROR) << "Line " << line_num_ << ": contains tab "
-                 << "(Line contents: " << line_ << ").";
-    }
-    parse_success_ = false;
-  }
-  std::string section;
-  if (line[0] != '\0' && line[0] != ' ') {
-    section = GetFirstWord();
-    section_ =
-        gtl::FindWithDefault(section_name_to_id_map_, section, UNKNOWN_SECTION);
-    if (section_ == UNKNOWN_SECTION) {
-      if (log_errors_) {
-        LOG(ERROR) << "At line " << line_num_
-                   << ": Unknown section: " << section
-                   << ". (Line contents: " << line_ << ").";
-      }
-      parse_success_ = false;
-      return;
-    }
-    if (section_ == COMMENT) {
-      return;
-    }
-    if (section_ == NAME) {
-      SplitLineIntoFields();
-      if (free_form_) {
-        if (fields_.size() >= 2) {
-          problem_name_ = fields_[1];
-        }
-      } else {
-        if (fields_.size() >= 3) {
-          problem_name_ = fields_[2];
-        }
-      }
-      // NOTE(user): The name may differ between fixed and free forms. In
-      // fixed form, the name has at most 8 characters, and starts at a specific
-      // position in the NAME line. For MIPLIB2010 problems (eg, air04, glass4),
-      // the name in fixed form ends up being preceded with a whitespace.
-      // TODO(user,user): Return an error for fixed form if the problem name
-      // does not fit.
-      data_->SetName(problem_name_);
-    }
-    return;
-  }
-  SplitLineIntoFields();
-  switch (section_) {
-    case NAME:
-      if (log_errors_) {
-        LOG(ERROR) << "At line " << line_num_ << ": Second NAME field"
-                   << ". (Line contents: " << line_ << ").";
-      }
-      parse_success_ = false;
-      break;
-    case ROWS:
-      ProcessRowsSection();
-      break;
-    case LAZYCONS:
-      if (!has_lazy_constraints_) {
-        LOG(WARNING) << "LAZYCONS section detected. It will be handled as an "
-                        "extension of the ROWS section.";
-        has_lazy_constraints_ = true;
-      }
-      ProcessRowsSection();
-      break;
-    case COLUMNS:
-      ProcessColumnsSection();
-      break;
-    case RHS:
-      ProcessRhsSection();
-      break;
-    case RANGES:
-      ProcessRangesSection();
-      break;
-    case BOUNDS:
-      ProcessBoundsSection();
-      break;
-    case SOS:
-      ProcessSosSection();
-      break;
-    case ENDATA:  // Do nothing.
-      break;
-    default:
-      if (log_errors_) {
-        LOG(ERROR) << "At line " << line_num_
-                   << ": Unknown section: " << section
-                   << ". (Line contents: " << line_ << ").";
-      }
-      parse_success_ = false;
-      break;
-  }
-}
-
-double MPSReader::GetDoubleFromString(const std::string& param) {
+util::StatusOr<double> MPSReader::GetDoubleFromString(const std::string& str) {
   double result;
-  if (!absl::SimpleAtod(param, &result)) {
-    if (log_errors_) {
-      LOG(ERROR) << "At line " << line_num_
-                 << ": Failed to convert std::string to double. String = "
-                 << param << ". (Line contents = '" << line_ << "')."
-                 << " free_form_ = " << free_form_;
-    }
-    parse_success_ = false;
+  if (!absl::SimpleAtod(str, &result)) {
+    return InvalidArgumentError(
+        absl::StrCat("Failed to convert \"", str, "\" to double."));
+  }
+  if (std::isnan(result)) {
+    return InvalidArgumentError("Found NaN value.");
   }
   return result;
 }
 
-void MPSReader::ProcessRowsSection() {
-  std::string row_type_name = fields_[0];
-  std::string row_name = fields_[1];
-  MPSRowType row_type = gtl::FindWithDefault(row_name_to_id_map_, row_type_name,
-                                             UNKNOWN_ROW_TYPE);
-  if (row_type == UNKNOWN_ROW_TYPE) {
-    if (log_errors_) {
-      LOG(ERROR) << "At line " << line_num_ << ": Unknown row type "
-                 << row_type_name << ". (Line contents = " << line_ << ").";
-    }
-    parse_success_ = false;
-    return;
+util::StatusOr<bool> MPSReader::GetBoolFromString(const std::string& str) {
+  int result;
+  if (!absl::SimpleAtoi(str, &result) || result < 0 || result > 1) {
+    return InvalidArgumentError(
+        absl::StrCat("Failed to convert \"", str, "\" to bool."));
   }
-
-  // The first NONE constraint is used as the objective.
-  if (objective_name_.empty() && row_type == NONE) {
-    row_type = OBJECTIVE;
-    objective_name_ = row_name;
-  } else {
-    if (row_type == NONE) {
-      ++num_unconstrained_rows_;
-    }
-    RowIndex row = data_->FindOrCreateConstraint(row_name);
-
-    // The initial row range is [0, 0]. We encode the type in the range by
-    // setting one of the bound to +/- infinity.
-    switch (row_type) {
-      case LESS_THAN:
-        data_->SetConstraintBounds(row, -kInfinity,
-                                   data_->constraint_upper_bounds()[row]);
-        break;
-      case GREATER_THAN:
-        data_->SetConstraintBounds(row, data_->constraint_lower_bounds()[row],
-                                   kInfinity);
-        break;
-      case NONE:
-        data_->SetConstraintBounds(row, -kInfinity, kInfinity);
-        break;
-      case EQUALITY:
-      default:
-        break;
-    }
+  if (std::isnan(result)) {
+    return InvalidArgumentError("Found NaN value.");
   }
+  return result;
 }
 
-void MPSReader::ProcessColumnsSection() {
-  // Take into account the INTORG and INTEND markers.
-  if (line_.find("'MARKER'") != std::string::npos) {
-    if (line_.find("'INTORG'") != std::string::npos) {
-      VLOG(2) << "Entering integer marker.\n" << line_;
-      CHECK(!in_integer_section_);
-      in_integer_section_ = true;
-    } else if (line_.find("'INTEND'") != std::string::npos) {
-      VLOG(2) << "Leaving integer marker.\n" << line_;
-      CHECK(in_integer_section_);
-      in_integer_section_ = false;
-    }
-    return;
-  }
-  const int start_index = free_form_ ? 0 : 1;
-  const std::string& column_name = GetField(start_index, 0);
-  const std::string& row1_name = GetField(start_index, 1);
-  const std::string& row1_value = GetField(start_index, 2);
-  const ColIndex col = data_->FindOrCreateVariable(column_name);
-  is_binary_by_default_.resize(col + 1, false);
-  if (in_integer_section_) {
-    data_->SetVariableType(col, LinearProgram::VariableType::INTEGER);
-    // The default bounds for integer variables are [0, 1].
-    data_->SetVariableBounds(col, 0.0, 1.0);
-    is_binary_by_default_[col] = true;
-  } else {
-    data_->SetVariableBounds(col, 0.0, kInfinity);
-  }
-  StoreCoefficient(col, row1_name, row1_value);
-  if (fields_.size() - start_index >= 4) {
-    const std::string& row2_name = GetField(start_index, 3);
-    const std::string& row2_value = GetField(start_index, 4);
-    StoreCoefficient(col, row2_name, row2_value);
-  }
+util::Status MPSReader::ProcessSosSection() {
+  return InvalidArgumentError("Section SOS currently not supported.");
 }
 
-void MPSReader::ProcessRhsSection() {
-  const int start_index = free_form_ ? 0 : 2;
-  const int offset = start_index + GetFieldOffset();
-  // const std::string& rhs_name = fields_[0]; is not used
-  const std::string& row1_name = GetField(offset, 0);
-  const std::string& row1_value = GetField(offset, 1);
-  StoreRightHandSide(row1_name, row1_value);
-  if (fields_.size() - start_index >= 4) {
-    const std::string& row2_name = GetField(offset, 2);
-    const std::string& row2_value = GetField(offset, 3);
-    StoreRightHandSide(row2_name, row2_value);
-  }
+util::Status MPSReader::InvalidArgumentError(const std::string& error_message) {
+  return util::InvalidArgumentError(error_message);
 }
 
-void MPSReader::ProcessRangesSection() {
-  const int start_index = free_form_ ? 0 : 2;
-  const int offset = start_index + GetFieldOffset();
-  // const std::string& range_name = fields_[0]; is not used
-  const std::string& row1_name = GetField(offset, 0);
-  const std::string& row1_value = GetField(offset, 1);
-  StoreRange(row1_name, row1_value);
-  if (fields_.size() - start_index >= 4) {
-    const std::string& row2_name = GetField(offset, 2);
-    const std::string& row2_value = GetField(offset, 3);
-    StoreRange(row2_name, row2_value);
-  }
-}
-
-void MPSReader::ProcessBoundsSection() {
-  std::string bound_type_mnemonic = fields_[0];
-  std::string bound_row_name = fields_[1];
-  std::string column_name = fields_[2];
-  std::string bound_value;
-  if (fields_.size() >= 4) {
-    bound_value = fields_[3];
-  }
-  StoreBound(bound_type_mnemonic, column_name, bound_value);
-}
-
-void MPSReader::ProcessSosSection() {
-  LOG(ERROR) << "At line " << line_num_
-             << "Section SOS currently not supported."
-             << ". (Line contents: " << line_ << ").";
-  parse_success_ = false;
-}
-
-void MPSReader::StoreCoefficient(ColIndex col, const std::string& row_name,
-                                 const std::string& row_value) {
-  if (row_name.empty() || row_name == "$") {
-    return;
-  }
-  const Fractional value(GetDoubleFromString(row_value));
-  if (value == 0.0) return;
-  if (row_name == objective_name_) {
-    data_->SetObjectiveCoefficient(col, value);
-  } else {
-    const RowIndex row = data_->FindOrCreateConstraint(row_name);
-    data_->SetCoefficient(row, col, value);
-  }
-}
-
-void MPSReader::StoreRightHandSide(const std::string& row_name,
-                                   const std::string& row_value) {
-  if (row_name.empty()) {
-    return;
-  }
-  if (row_name != objective_name_) {
-    RowIndex row = data_->FindOrCreateConstraint(row_name);
-    const Fractional value = GetDoubleFromString(row_value);
-
-    // The row type is encoded in the bounds, so at this point we have either
-    // (-kInfinity, 0.0], [0.0, 0.0] or [0.0, kInfinity). We use the right
-    // hand side to change any finite bound.
-    const Fractional lower_bound =
-        (data_->constraint_lower_bounds()[row] == -kInfinity) ? -kInfinity
-                                                              : value;
-    const Fractional upper_bound =
-        (data_->constraint_upper_bounds()[row] == kInfinity) ? kInfinity
-                                                             : value;
-    data_->SetConstraintBounds(row, lower_bound, upper_bound);
-  }
-}
-
-void MPSReader::StoreRange(const std::string& row_name,
-                           const std::string& range_value) {
-  if (row_name.empty()) {
-    return;
-  }
-  const RowIndex row = data_->FindOrCreateConstraint(row_name);
-  const Fractional range(GetDoubleFromString(range_value));
-
-  Fractional lower_bound = data_->constraint_lower_bounds()[row];
-  Fractional upper_bound = data_->constraint_upper_bounds()[row];
-  if (lower_bound == upper_bound) {
-    if (range < 0.0) {
-      lower_bound += range;
-    } else {
-      upper_bound += range;
-    }
-  }
-  if (lower_bound == -kInfinity) {
-    lower_bound = upper_bound - fabs(range);
-  }
-  if (upper_bound == kInfinity) {
-    upper_bound = lower_bound + fabs(range);
-  }
-  data_->SetConstraintBounds(row, lower_bound, upper_bound);
-}
-
-void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
-                           const std::string& column_name,
-                           const std::string& bound_value) {
-  const BoundTypeId bound_type_id = gtl::FindWithDefault(
-      bound_name_to_id_map_, bound_type_mnemonic, UNKNOWN_BOUND_TYPE);
-  if (bound_type_id == UNKNOWN_BOUND_TYPE) {
-    parse_success_ = false;
-    if (log_errors_) {
-      LOG(ERROR) << "At line " << line_num_ << ": Unknown bound type "
-                 << bound_type_mnemonic << ". (Line contents = " << line_
-                 << ").";
-    }
-    return;
-  }
-  const ColIndex col = data_->FindOrCreateVariable(column_name);
-  if (integer_type_names_set_.count(bound_type_mnemonic) != 0) {
-    data_->SetVariableType(col, LinearProgram::VariableType::INTEGER);
-  }
-  // Resize the is_binary_by_default_ in case it is the first time this column
-  // is encountered.
-  is_binary_by_default_.resize(col + 1, false);
-  // Check that "binary by default" implies "integer".
-  DCHECK(!is_binary_by_default_[col] || data_->IsVariableInteger(col));
-  Fractional lower_bound = data_->variable_lower_bounds()[col];
-  Fractional upper_bound = data_->variable_upper_bounds()[col];
-  // If a variable is binary by default, its status is reset if any bound
-  // is set on it. We take care to restore the default bounds for general
-  // integer variables.
-  if (is_binary_by_default_[col]) {
-    lower_bound = Fractional(0.0);
-    upper_bound = kInfinity;
-  }
-  switch (bound_type_id) {
-    case LOWER_BOUND:
-      lower_bound = Fractional(GetDoubleFromString(bound_value));
-      // LI with the value 0.0 specifies general integers with no upper bound.
-      if (bound_type_mnemonic == "LI" && lower_bound == 0.0) {
-        upper_bound = kInfinity;
-      }
-      break;
-    case UPPER_BOUND:
-      upper_bound = Fractional(GetDoubleFromString(bound_value));
-      break;
-    case FIXED_VARIABLE: {
-      const Fractional value(GetDoubleFromString(bound_value));
-      lower_bound = value;
-      upper_bound = value;
-      break;
-    }
-    case FREE_VARIABLE:
-      lower_bound = -kInfinity;
-      upper_bound = +kInfinity;
-      break;
-    case NEGATIVE:
-      lower_bound = -kInfinity;
-      upper_bound = Fractional(0.0);
-      break;
-    case POSITIVE:
-      lower_bound = Fractional(0.0);
-      upper_bound = +kInfinity;
-      break;
-    case BINARY:
-      lower_bound = Fractional(0.0);
-      upper_bound = Fractional(1.0);
-      break;
-    case UNKNOWN_BOUND_TYPE:
-    default:
-      if (log_errors_) {
-        LOG(ERROR) << "At line " << line_num_
-                   << "Serious error: unknown bound type " << column_name << " "
-                   << bound_type_mnemonic << " " << bound_value
-                   << ". (Line contents: " << line_ << ").";
-      }
-      parse_success_ = false;
-  }
-  is_binary_by_default_[col] = false;
-  data_->SetVariableBounds(col, lower_bound, upper_bound);
-}
+// util::Status MPSReader::AppendLineToError(const util::Status& status) {
+//   return util::StatusBuilder(status, GTL_LOC).SetAppend()
+//          << " Line " << line_num_ << ": \"" << line_ << "\".";
+// }
 
 }  // namespace glop
 }  // namespace operations_research

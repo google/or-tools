@@ -1071,7 +1071,7 @@ void TriangularMatrix::PermutedComputeRowsToConsider(
   // A few notes:
   // - By construction, if the matrix can be permuted into a lower triangular
   //   form, there is no cycle. This code does nothing to test for cycles, but
-  //   there is a DCHECK() to detect them during debuging.
+  //   there is a DCHECK() to detect them during debugging.
   // - This version uses sentinels (kInvalidRow) on nodes_to_explore_ to know
   //   when a node has been explored (i.e. when the recursive dfs goes back in
   //   the call stack). This is faster than an alternate implementation that

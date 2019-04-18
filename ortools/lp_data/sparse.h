@@ -285,7 +285,7 @@ class CompactSparseMatrix {
  public:
   CompactSparseMatrix() {}
 
-  // Convenient constructor for tests.
+  // Convenient constructors for tests.
   // TODO(user): If this is needed in production code, it can be done faster.
   explicit CompactSparseMatrix(const SparseMatrix& matrix) {
     PopulateFromMatrixView(MatrixView(matrix));
@@ -370,7 +370,11 @@ class CompactSparseMatrix {
     Fractional EntryCoefficient(EntryIndex i) const {
       return coefficients_[i.value()];
     }
+    Fractional GetFirstCoefficient() const {
+      return EntryCoefficient(EntryIndex(0));
+    }
     RowIndex EntryRow(EntryIndex i) const { return rows_[i.value()]; }
+    RowIndex GetFirstRow() const { return EntryRow(EntryIndex(0)); }
 
    private:
     const EntryIndex num_entries_;
@@ -381,7 +385,7 @@ class CompactSparseMatrix {
   ColumnView column(ColIndex col) const {
     DCHECK_LT(col, num_cols_);
 
-    // Note that the start may be equals to row.size() if the last columns
+    // Note that the start may be equal to row.size() if the last columns
     // are empty, it is why we don't use &row[start].
     const EntryIndex start = starts_[col];
     return ColumnView(starts_[col + 1] - start, rows_.data() + start.value(),

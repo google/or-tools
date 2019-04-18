@@ -656,6 +656,9 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
       cache_callbacks_(false),
       vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       vehicle_pickup_delivery_policy_(vehicles_, PICKUP_AND_DELIVERY_NO_ORDER),
+      has_hard_type_incompatibilities_(false),
+      has_temporal_type_incompatibilities_(false),
+      has_temporal_type_requirements_(false),
       num_visit_types_(0),
       starts_(vehicles_),
       ends_(vehicles_),
@@ -1873,9 +1876,9 @@ void RoutingModel::CloseModelWithParameters(
         solver_->MakeIsDifferentCstCt(vehicle_vars_[i], -1, active_[i]));
   }
 
-  if (HasTemporalTypeIncompatibilities() || HasHardTypeIncompatibilities()) {
+  if (HasTypeRegulations()) {
     solver_->AddConstraint(
-        solver_->RevAlloc(new TypeIncompatibilityConstraint(*this)));
+        solver_->RevAlloc(new TypeRegulationsConstraint(*this)));
   }
 
   // Associate first and "logical" last nodes
@@ -3654,69 +3657,59 @@ int RoutingModel::GetVisitType(int64 index) const {
   return index_to_visit_type_[index];
 }
 
-void RoutingModel::AddTypeIncompatibilityInternal(
-    int type1, int type2,
-    std::vector<absl::flat_hash_set<int>>* incompatible_types_per_type_index) {
-  // Resizing incompatible_types_per_type_index if necessary (first
-  // incompatibility or new type).
-  num_visit_types_ = std::max(num_visit_types_, std::max(type1, type2) + 1);
-  if (incompatible_types_per_type_index->size() < num_visit_types_) {
-    incompatible_types_per_type_index->resize(num_visit_types_);
-  }
-  (*incompatible_types_per_type_index)[type1].insert(type2);
-  (*incompatible_types_per_type_index)[type2].insert(type1);
+void RoutingModel::CloseVisitTypes() {
+  hard_incompatible_types_per_type_index_.resize(num_visit_types_);
+  temporal_incompatible_types_per_type_index_.resize(num_visit_types_);
+  temporal_required_type_alternatives_per_type_index_.resize(num_visit_types_);
 }
 
 void RoutingModel::AddHardTypeIncompatibility(int type1, int type2) {
-  AddTypeIncompatibilityInternal(type1, type2,
-                                 &hard_incompatible_types_per_type_index_);
+  DCHECK_LT(std::max(type1, type2),
+            hard_incompatible_types_per_type_index_.size());
+  has_hard_type_incompatibilities_ = true;
+
+  hard_incompatible_types_per_type_index_[type1].insert(type2);
+  hard_incompatible_types_per_type_index_[type2].insert(type1);
 }
 
 void RoutingModel::AddTemporalTypeIncompatibility(int type1, int type2) {
-  AddTypeIncompatibilityInternal(type1, type2,
-                                 &temporal_incompatible_types_per_type_index_);
-}
+  DCHECK_LT(std::max(type1, type2),
+            temporal_incompatible_types_per_type_index_.size());
+  has_temporal_type_incompatibilities_ = true;
 
-const absl::flat_hash_set<int>&
-RoutingModel::GetTypeIncompatibilitiesOfTypeInternal(
-    int type, const std::vector<absl::flat_hash_set<int>>&
-                  incompatible_types_per_type_index) const {
-  CHECK_GE(type, 0);
-  if (type >= incompatible_types_per_type_index.size()) {
-    // No incompatibilities added for this type.
-    return empty_incompatibilities_;
-  }
-  return incompatible_types_per_type_index[type];
+  temporal_incompatible_types_per_type_index_[type1].insert(type2);
+  temporal_incompatible_types_per_type_index_[type2].insert(type1);
 }
 
 const absl::flat_hash_set<int>&
 RoutingModel::GetHardTypeIncompatibilitiesOfType(int type) const {
-  return GetTypeIncompatibilitiesOfTypeInternal(
-      type, hard_incompatible_types_per_type_index_);
+  DCHECK_GE(type, 0);
+  DCHECK_LT(type, hard_incompatible_types_per_type_index_.size());
+  return hard_incompatible_types_per_type_index_[type];
 }
 
 const absl::flat_hash_set<int>&
 RoutingModel::GetTemporalTypeIncompatibilitiesOfType(int type) const {
-  return GetTypeIncompatibilitiesOfTypeInternal(
-      type, temporal_incompatible_types_per_type_index_);
+  DCHECK_GE(type, 0);
+  DCHECK_LT(type, temporal_incompatible_types_per_type_index_.size());
+  return temporal_incompatible_types_per_type_index_[type];
 }
 
-const absl::flat_hash_set<int>&
-RoutingModel::GetHardTypeIncompatibilitiesOfNode(int64 index) const {
-  const int type = GetVisitType(index);
-  return type == kUnassigned
-             ? empty_incompatibilities_
-             : GetTypeIncompatibilitiesOfTypeInternal(
-                   type, hard_incompatible_types_per_type_index_);
+void RoutingModel::AddTemporalRequiredTypeAlternatives(
+    int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
+  DCHECK_LT(dependent_type,
+            temporal_required_type_alternatives_per_type_index_.size());
+  has_temporal_type_requirements_ = true;
+
+  temporal_required_type_alternatives_per_type_index_[dependent_type].push_back(
+      std::move(required_type_alternatives));
 }
 
-const absl::flat_hash_set<int>&
-RoutingModel::GetTemporalTypeIncompatibilitiesOfNode(int64 index) const {
-  const int type = GetVisitType(index);
-  return type == kUnassigned
-             ? empty_incompatibilities_
-             : GetTypeIncompatibilitiesOfTypeInternal(
-                   type, temporal_incompatible_types_per_type_index_);
+const std::vector<absl::flat_hash_set<int>>&
+RoutingModel::GetTemporalRequiredTypeAlternativesOfType(int type) const {
+  DCHECK_GE(type, 0);
+  DCHECK_LT(type, temporal_required_type_alternatives_per_type_index_.size());
+  return temporal_required_type_alternatives_per_type_index_[type];
 }
 
 int64 RoutingModel::UnperformedPenalty(int64 var_index) const {
@@ -4218,8 +4211,8 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
       filters_.push_back(MakePickupDeliveryFilter(
           *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
     }
-    if (HasTemporalTypeIncompatibilities() || HasHardTypeIncompatibilities()) {
-      filters_.push_back(MakeTypeIncompatibilityFilter(*this));
+    if (HasTypeRegulations()) {
+      filters_.push_back(MakeTypeRegulationsFilter(*this));
     }
     filters_.push_back(MakeVehicleVarFilter(*this));
 
@@ -4250,8 +4243,8 @@ RoutingModel::GetOrCreateFeasibilityFilters() {
       feasibility_filters_.push_back(MakePickupDeliveryFilter(
           *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
     }
-    if (HasTemporalTypeIncompatibilities() || HasHardTypeIncompatibilities()) {
-      feasibility_filters_.push_back(MakeTypeIncompatibilityFilter(*this));
+    if (HasTypeRegulations()) {
+      feasibility_filters_.push_back(MakeTypeRegulationsFilter(*this));
     }
     feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
 
@@ -5920,14 +5913,13 @@ bool DisjunctivePropagator::ForbiddenIntervals(Tasks* tasks) {
   return true;
 }
 
-TypeIncompatibilityChecker::TypeIncompatibilityChecker(
-    const RoutingModel& model)
-    : model_(model) {
-  if (!model.HasTemporalTypeIncompatibilities() &&
-      !model.HasHardTypeIncompatibilities()) {
+TypeRegulationsChecker::TypeRegulationsChecker(const RoutingModel& model)
+    : model_(model),
+      pickup_delivery_status_of_node_(model.Size()),
+      counts_of_type_(model.GetNumberOfVisitTypes()) {
+  if (!model.HasTypeRegulations()) {
     return;
   }
-  pickup_delivery_status_of_node_.resize(model.Size());
   for (int node_index = 0; node_index < model.Size(); node_index++) {
     const std::vector<std::pair<int, int>>& pickup_index_pairs =
         model.GetPickupIndexPairs(node_index);
@@ -5950,50 +5942,25 @@ TypeIncompatibilityChecker::TypeIncompatibilityChecker(
   }
 }
 
-bool TypeIncompatibilityChecker::TemporalIncompatibilitiesRespectedOnVehicle(
-    int vehicle, const std::function<int64(int64)>& next_accessor) const {
-  return IncompatibilitiesRespectedOnVehicle(
-      vehicle, next_accessor, /*check_hard_incompatibilities=*/true);
-}
-
-bool TypeIncompatibilityChecker::AllIncompatibilitiesRespectedOnVehicle(
-    int vehicle, const std::function<int64(int64)>& next_accessor) const {
-  return IncompatibilitiesRespectedOnVehicle(
-      vehicle, next_accessor, /*check_hard_incompatibilities=*/true);
-}
-
-// TODO(user): Remove the check_hard_incompatibilities boolean and always
-// check both incompatibilities to simplify the code.
-bool TypeIncompatibilityChecker::IncompatibilitiesRespectedOnVehicle(
-    int vehicle, const std::function<int64(int64)>& next_accessor,
-    bool check_hard_incompatibilities) const {
-  if (!model_.HasTemporalTypeIncompatibilities() &&
-      (!check_hard_incompatibilities ||
-       !model_.HasHardTypeIncompatibilities())) {
+bool TypeRegulationsChecker::CheckVehicle(
+    int vehicle, const std::function<int64(int64)>& next_accessor) {
+  if (!HasRegulationsToCheck()) {
     return true;
   }
-  struct NodeCount {
-    int non_pickup_delivery = 0;
-    int pickup = 0;
-    int delivery = 0;
-  };
+
   // Accumulates the count of types before the current node.
-  std::vector<NodeCount> counts_of_type(model_.GetNumberOfVisitTypes());
+  counts_of_type_.assign(model_.GetNumberOfVisitTypes(), NodeCount());
 
   for (int64 current = model_.Start(vehicle); !model_.IsEnd(current);
        current = next_accessor(current)) {
-    if (model_.GetTemporalTypeIncompatibilitiesOfNode(current).empty() &&
-        (!check_hard_incompatibilities ||
-         model_.GetHardTypeIncompatibilitiesOfNode(current).empty())) {
+    const int type = model_.GetVisitType(current);
+    if (type < 0) {
       continue;
     }
-    const int type = model_.GetVisitType(current);
-    // If the node had no type, its incompatibilities would have been empty.
-    DCHECK_GE(type, 0);
-    DCHECK_LT(type, counts_of_type.size());
+    DCHECK_LT(type, counts_of_type_.size());
     const PickupDeliveryStatus pickup_delivery_status =
         pickup_delivery_status_of_node_[current];
-    NodeCount& counts = counts_of_type[type];
+    NodeCount& counts = counts_of_type_[type];
     if (pickup_delivery_status == DELIVERY) {
       // The node is a delivery.
       if (counts.pickup <= counts.delivery) {
@@ -6005,28 +5972,8 @@ bool TypeIncompatibilityChecker::IncompatibilitiesRespectedOnVehicle(
       continue;
     }
     // The node is either a pickup or a "fixed" (non-pickup/delivery) node.
-    // Verify incompatibilities.
-
-    for (int incompatible_type :
-         model_.GetTemporalTypeIncompatibilitiesOfNode(current)) {
-      const NodeCount& incompatible_counts = counts_of_type[incompatible_type];
-      const int non_delivered_count =
-          incompatible_counts.pickup - incompatible_counts.delivery;
-      if (non_delivered_count + incompatible_counts.non_pickup_delivery > 0) {
-        return false;
-      }
-    }
-    if (check_hard_incompatibilities) {
-      for (int incompatible_type :
-           model_.GetHardTypeIncompatibilitiesOfNode(current)) {
-        const NodeCount& incompatible_counts =
-            counts_of_type[incompatible_type];
-        if (incompatible_counts.non_pickup_delivery +
-                incompatible_counts.pickup >
-            0) {
-          return false;
-        }
-      }
+    if (!CheckTypeRegulations(type)) {
+      return false;
     }
     // Update count of type based on whether it is a pickup or not.
     int& count = pickup_delivery_status == NONE ? counts.non_pickup_delivery
@@ -6036,14 +5983,75 @@ bool TypeIncompatibilityChecker::IncompatibilitiesRespectedOnVehicle(
   return true;
 }
 
-TypeIncompatibilityConstraint::TypeIncompatibilityConstraint(
-    const RoutingModel& model)
+int TypeRegulationsChecker::GetNonDeliveryCount(int type) const {
+  const NodeCount& counts = counts_of_type_[type];
+  return counts.non_pickup_delivery + counts.pickup;
+}
+
+int TypeRegulationsChecker::GetNonDeliveredCount(int type) const {
+  return GetNonDeliveryCount(type) - counts_of_type_[type].delivery;
+}
+
+TypeIncompatibilityChecker::TypeIncompatibilityChecker(
+    const RoutingModel& model, bool check_hard_incompatibilities)
+    : TypeRegulationsChecker(model),
+      check_hard_incompatibilities_(check_hard_incompatibilities) {}
+
+bool TypeIncompatibilityChecker::HasRegulationsToCheck() const {
+  return model_.HasTemporalTypeIncompatibilities() ||
+         (check_hard_incompatibilities_ &&
+          model_.HasHardTypeIncompatibilities());
+}
+
+// TODO(user): Remove the check_hard_incompatibilities_ boolean and always
+// check both incompatibilities to simplify the code?
+bool TypeIncompatibilityChecker::CheckTypeRegulations(int type) const {
+  for (int incompatible_type :
+       model_.GetTemporalTypeIncompatibilitiesOfType(type)) {
+    if (GetNonDeliveredCount(incompatible_type) > 0) {
+      return false;
+    }
+  }
+  if (check_hard_incompatibilities_) {
+    for (int incompatible_type :
+         model_.GetHardTypeIncompatibilitiesOfType(type)) {
+      if (GetNonDeliveryCount(incompatible_type) > 0) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+bool TypeRequirementChecker::HasRegulationsToCheck() const {
+  return model_.HasTemporalTypeRequirements();
+}
+
+bool TypeRequirementChecker::CheckTypeRegulations(int type) const {
+  for (const absl::flat_hash_set<int>& requirement_alternatives :
+       model_.GetTemporalRequiredTypeAlternativesOfType(type)) {
+    bool has_one_of_alternatives = false;
+    for (const int type_alternative : requirement_alternatives) {
+      if (GetNonDeliveredCount(type_alternative) > 0) {
+        has_one_of_alternatives = true;
+        break;
+      }
+    }
+    if (!has_one_of_alternatives) {
+      return false;
+    }
+  }
+  return true;
+}
+
+TypeRegulationsConstraint::TypeRegulationsConstraint(const RoutingModel& model)
     : Constraint(model.solver()),
       model_(model),
-      incompatibility_checker_(model),
+      incompatibility_checker_(model, /*check_hard_incompatibilities*/ true),
+      requirement_checker_(model),
       vehicle_demons_(model.vehicles()) {}
 
-void TypeIncompatibilityConstraint::PropagateNodeIncompatibilities(int node) {
+void TypeRegulationsConstraint::PropagateNodeRegulations(int node) {
   DCHECK_LT(node, model_.Size());
   if (!model_.VehicleVar(node)->Bound() || !model_.NextVar(node)->Bound()) {
     // Vehicle var or Next var not bound.
@@ -6055,40 +6063,38 @@ void TypeIncompatibilityConstraint::PropagateNodeIncompatibilities(int node) {
   EnqueueDelayedDemon(vehicle_demons_[vehicle]);
 }
 
-void TypeIncompatibilityConstraint::CheckIncompatibilitiesOnVehicle(
-    int vehicle) {
-  if (!incompatibility_checker_.AllIncompatibilitiesRespectedOnVehicle(
-          vehicle, /*next_accessor*/ [this, vehicle](int64 node) {
-            if (model_.NextVar(node)->Bound()) {
-              return model_.NextVar(node)->Value();
-            }
-            // Node not bound, skip to the end of the vehicle.
-            return model_.End(vehicle);
-          })) {
+void TypeRegulationsConstraint::CheckRegulationsOnVehicle(int vehicle) {
+  const auto next_accessor = [this, vehicle](int64 node) {
+    if (model_.NextVar(node)->Bound()) {
+      return model_.NextVar(node)->Value();
+    }
+    // Node not bound, skip to the end of the vehicle.
+    return model_.End(vehicle);
+  };
+  if (!incompatibility_checker_.CheckVehicle(vehicle, next_accessor) ||
+      !requirement_checker_.CheckVehicle(vehicle, next_accessor)) {
     model_.solver()->Fail();
   }
 }
 
-void TypeIncompatibilityConstraint::Post() {
+void TypeRegulationsConstraint::Post() {
   for (int vehicle = 0; vehicle < model_.vehicles(); vehicle++) {
     vehicle_demons_[vehicle] = MakeDelayedConstraintDemon1(
-        solver(), this,
-        &TypeIncompatibilityConstraint::CheckIncompatibilitiesOnVehicle,
-        "CheckIncompatibilitiesOnVehicle", vehicle);
+        solver(), this, &TypeRegulationsConstraint::CheckRegulationsOnVehicle,
+        "CheckRegulationsOnVehicle", vehicle);
   }
   for (int node = 0; node < model_.Size(); node++) {
     Demon* node_demon = MakeConstraintDemon1(
-        solver(), this,
-        &TypeIncompatibilityConstraint::PropagateNodeIncompatibilities,
-        "PropagateNodeIncompatibilities", node);
+        solver(), this, &TypeRegulationsConstraint::PropagateNodeRegulations,
+        "PropagateNodeRegulations", node);
     model_.NextVar(node)->WhenBound(node_demon);
     model_.VehicleVar(node)->WhenBound(node_demon);
   }
 }
 
-void TypeIncompatibilityConstraint::InitialPropagate() {
+void TypeRegulationsConstraint::InitialPropagate() {
   for (int vehicle = 0; vehicle < model_.vehicles(); vehicle++) {
-    CheckIncompatibilitiesOnVehicle(vehicle);
+    CheckRegulationsOnVehicle(vehicle);
   }
 }
 

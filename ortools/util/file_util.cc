@@ -19,10 +19,18 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 
 using ::google::protobuf::TextFormat;
+
+util::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
+  std::string contents;
+  RETURN_IF_ERROR(file::GetContents(filename, &contents, file::Defaults()));
+  // Note that gzipped files are currently not supported.
+  return contents;
+}
 
 bool ReadFileToProto(absl::string_view filename,
                      google::protobuf::Message* proto) {

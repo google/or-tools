@@ -595,7 +595,7 @@ class RevisedSimplex {
   // The compact version of matrix_with_slack_.
   CompactSparseMatrix compact_matrix_;
 
-  // The tranpose of compact_matrix_, it may be empty if it is not needed.
+  // The transpose of compact_matrix_, it may be empty if it is not needed.
   CompactSparseMatrix transposed_matrix_;
 
   // Stop the algorithm and report feasibility if:

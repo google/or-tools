@@ -14,16 +14,12 @@
 #ifndef OR_TOOLS_LP_DATA_MODEL_READER_H_
 #define OR_TOOLS_LP_DATA_MODEL_READER_H_
 
-#include "ortools/linear_solver/linear_solver.pb.h"
+#include <string>
+
 #include "ortools/lp_data/lp_data.h"
 
 namespace operations_research {
 namespace glop {
-
-// Helper function to read data from mps files into LinearProgram.
-bool LoadLinearProgramFromMps(const std::string& input_file_path,
-                              const std::string& forced_mps_format,
-                              LinearProgram* linear_program);
 
 // Helper function to read data from model files into LinearProgram.
 bool LoadLinearProgramFromModelOrRequest(const std::string& input_file_path,

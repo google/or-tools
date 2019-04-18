@@ -21,8 +21,12 @@
 #include "google/protobuf/message.h"
 #include "ortools/base/file.h"
 #include "ortools/base/recordio.h"
+#include "ortools/base/statusor.h"
 
 namespace operations_research {
+
+// Reads a file, optionally gzipped, to a std::string.
+util::StatusOr<std::string> ReadFileToString(absl::string_view filename);
 
 // Reads a proto from a file. Supports the following formats: binary, text,
 // JSON, all of those optionally gzipped. Returns false on failure.

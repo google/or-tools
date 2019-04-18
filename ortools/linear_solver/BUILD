@@ -106,6 +106,7 @@ cc_library(
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/types:optional",
         "//ortools/base:status",
+        "//ortools/base:status_macros",
         "//ortools/base:stl_util",
         "@com_google_absl//absl/strings",
         "//ortools/base:timer",
