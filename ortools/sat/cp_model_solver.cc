@@ -1279,6 +1279,9 @@ void LoadCpModel(const CpModelProto& model_proto,
   // so this might take more time than wanted.
   if (parameters.cp_model_probing_level() > 1) {
     ProbeBooleanVariables(/*deterministic_time_limit=*/1.0, model);
+    if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
+      return;
+    }
     if (!model->GetOrCreate<BinaryImplicationGraph>()
              ->ComputeTransitiveReduction()) {
       sat_solver->NotifyThatModelIsUnsat();
@@ -1400,16 +1403,15 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
 
   // Initialize the search strategy function.
   auto* mapping = model->Get<CpModelMapping>();
-  std::function<LiteralIndex()> next_decision = ConstructSearchStrategy(
+  std::function<LiteralIndex()> fixed_search = ConstructSearchStrategy(
       model_proto, mapping->GetVariableMapping(), objective_var, model);
   if (VLOG_IS_ON(3)) {
-    next_decision = InstrumentSearchStrategy(
-        model_proto, mapping->GetVariableMapping(), next_decision, model);
+    fixed_search = InstrumentSearchStrategy(
+        model_proto, mapping->GetVariableMapping(), fixed_search, model);
   }
 
-  // TODO(user): remove argument from the lambda API since it isn't used.
   const auto solution_observer = [&model_proto, &model, &solution_info,
-                                  &shared_response_manager](const Model&) {
+                                  &shared_response_manager]() {
     CpSolverResponse response;
     FillSolutionInResponse(model_proto, *model, &response);
     response.set_solution_info(solution_info);
@@ -1448,7 +1450,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
     search_heuristics.policy_index = 0;
     search_heuristics.decision_policies = {
         SequentialSearch({FollowHint(vars, values, model),
-                          SatSolverHeuristic(model), next_decision})};
+                          SatSolverHeuristic(model), fixed_search})};
     auto no_restart = []() { return false; };
     search_heuristics.restart_policies = {no_restart};
     const SatSolver::Status status = ResetAndSolveIntegerProblem({}, model);
@@ -1477,7 +1479,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
       if (hint_is_valid) {
         const int old_size = solution_info.size();
         solution_info += "[hint]";
-        solution_observer(*model);
+        solution_observer();
         solution_info.resize(old_size);
 
         if (!model_proto.has_objective()) {
@@ -1511,12 +1513,12 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
   }
 
   SatSolver::Status status;
+  ConfigureSearchHeuristics(fixed_search, model);
   if (!model_proto.has_objective()) {
-    ConfigureSearchHeuristics(next_decision, model);
     while (true) {
       status = ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
       if (status != SatSolver::Status::FEASIBLE) break;
-      solution_observer(*model);
+      solution_observer();
       if (!parameters.enumerate_all_solutions()) break;
       model->Add(ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
     }
@@ -1537,21 +1539,20 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
                              &linear_vars, &linear_coeffs);
       if (parameters.optimize_with_max_hs()) {
         status = MinimizeWithHittingSetAndLazyEncoding(
-            VLOG_IS_ON(3), objective_var, linear_vars, linear_coeffs,
-            next_decision, solution_observer, model);
+            objective_var, linear_vars, linear_coeffs, solution_observer,
+            model);
       } else {
-        status = MinimizeWithCoreAndLazyEncoding(
-            VLOG_IS_ON(3), objective_var, linear_vars, linear_coeffs,
-            next_decision, solution_observer, model);
+        status = MinimizeWithCoreAndLazyEncoding(objective_var, linear_vars,
+                                                 linear_coeffs,
+                                                 solution_observer, model);
       }
     } else {
       if (parameters.binary_search_num_conflicts() >= 0) {
-        RestrictObjectiveDomainWithBinarySearch(objective_var, next_decision,
+        RestrictObjectiveDomainWithBinarySearch(objective_var,
                                                 solution_observer, model);
       }
       status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-          /*log_info=*/false, objective_var, next_decision, solution_observer,
-          model);
+          objective_var, solution_observer, model);
     }
 
     // The search is done in both case.
@@ -1980,6 +1981,9 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
                         &postsolve_mapping);
         CpSolverResponse local_response =
             LocalSolve(local_problem, wall_timer, &local_model);
+
+        // TODO(user): we actually do not need to postsolve if the solution is
+        // not going to be used...
         PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
                           wall_timer, &local_response);
         if (local_response.solution_info().empty()) {

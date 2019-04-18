@@ -33,12 +33,29 @@ glop::GlopParameters GetGlopParametersForLocalLP() {
   parameters.set_use_preprocessing(false);
   return parameters;
 }
+
 glop::GlopParameters GetGlopParametersForGlobalLP() {
   glop::GlopParameters parameters;
   parameters.set_use_dual_simplex(true);
   return parameters;
 }
 
+bool SetVariableBounds(glop::LinearProgram* linear_program,
+                       const glop::ColIndex index, int64 min, int64 max) {
+  // When variable upper bounds are greater than this threshold, precision
+  // issues arise in GLOP. In this case we are just going to suppose that these
+  // high bound values are infinite and not set the upper bound.
+  const int64 kMaxValue = 1e10;
+  const double lp_min = min;
+  const double lp_max = (max > kMaxValue) ? glop::kInfinity : max;
+  if (lp_min <= lp_max) {
+    linear_program->SetVariableBounds(index, lp_min, lp_max);
+    return true;
+  }
+  // The linear_program would not be feasible, and it cannot handle the
+  // lp_min > lp_max case, so we must detect infeasibility here.
+  return false;
+}
 }  // namespace
 
 LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
@@ -320,14 +337,8 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     const glop::ColIndex lp_cumul = linear_program->CreateNewVariable();
     index_to_cumul_variable_[path[pos]] = lp_cumul;
     lp_cumuls[pos] = lp_cumul;
-    const double lp_cumul_min = cumul_min[pos];
-    const double lp_cumul_max =
-        (cumul_max[pos] == kint64max) ? glop::kInfinity : cumul_max[pos];
-    if (lp_cumul_min <= lp_cumul_max) {
-      linear_program->SetVariableBounds(lp_cumul, lp_cumul_min, lp_cumul_max);
-    } else {
-      // The linear_program would not be feasible, and it cannot handle the
-      // lp_cumul_min > lp_cumul_max case, so we must detect infeasibility here.
+    if (!SetVariableBounds(linear_program, lp_cumul, cumul_min[pos],
+                           cumul_max[pos])) {
       return false;
     }
   }
@@ -335,11 +346,11 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   std::vector<glop::ColIndex> lp_slacks(path_size - 1, glop::kInvalidCol);
   for (int pos = 0; pos < path_size - 1; ++pos) {
     const IntVar* cp_slack = dimension_->SlackVar(path[pos]);
-    const double lp_slack_max =
-        (cp_slack->Max() == kint64max) ? glop::kInfinity : cp_slack->Max();
     lp_slacks[pos] = linear_program->CreateNewVariable();
-    linear_program->SetVariableBounds(lp_slacks[pos], cp_slack->Min(),
-                                      lp_slack_max);
+    if (!SetVariableBounds(linear_program, lp_slacks[pos], cp_slack->Min(),
+                           cp_slack->Max())) {
+      return false;
+    }
   }
 
   // LP Model constraints and costs.
@@ -529,6 +540,7 @@ bool DimensionCumulOptimizerCore::FinalizeAndSolve(
   // so we do not need to call linear_program->CleanUp() which can be costly.
   // Note that the assumptions are DCHECKed() in the call below.
   linear_program->NotifyThatColumnsAreClean();
+  VLOG(2) << linear_program->Dump();
   const glop::ProblemStatus status = lp_solver->Solve(*linear_program);
   if (status != glop::ProblemStatus::OPTIMAL &&
       status != glop::ProblemStatus::IMPRECISE) {

@@ -791,6 +791,7 @@ cc_library(
         ":linear_constraint_manager",
         ":model",
         "//ortools/base",
+        "//ortools/base:int128",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",

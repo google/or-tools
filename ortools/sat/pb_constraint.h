@@ -22,7 +22,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"

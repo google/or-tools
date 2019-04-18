@@ -89,9 +89,10 @@ SatSolver::Status SolveIntegerProblem(Model* model);
 SatSolver::Status ResetAndSolveIntegerProblem(
     const std::vector<Literal>& assumptions, Model* model);
 
-// Mainly used for tests. This configures the model SearchHeuristics with a
-// simple default heuristic and then call ResetAndSolveIntegerProblem()
-// without any assumptions.
+// Only used in tests. Move to a test utility file.
+//
+// This configures the model SearchHeuristics with a simple default heuristic
+// and then call ResetAndSolveIntegerProblem() without any assumptions.
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 
 // Returns decision corresponding to var at its lower bound. Returns

@@ -18,7 +18,9 @@
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/numeric/int128.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/int128.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -331,7 +333,8 @@ bool LinearProgrammingConstraint::SolveLp() {
 
   const auto status = simplex_.Solve(lp_data_, time_limit_);
   if (!status.ok()) {
-    VLOG(1) << "The LP solver encountered an error: " << status.error_message();
+    LOG(WARNING) << "The LP solver encountered an error: "
+                 << status.error_message();
     simplex_.ClearStateForNextSolve();
     return false;
   }
@@ -878,6 +881,66 @@ bool LinearProgrammingConstraint::PossibleOverflow(
   return false;
 }
 
+namespace {
+absl::int128 FloorRatio128(absl::int128 x, IntegerValue positive_div) {
+  absl::int128 div128(positive_div.value());
+  absl::int128 result = x / div128;
+  if (result * div128 > x) return result - 1;
+  return result;
+}
+
+}  // namespace
+
+void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
+                                                  int max_pow) {
+  // Compute the min/max possible partial sum.
+  double sum_min = std::min(0.0, ToDouble(-constraint->ub));
+  double sum_max = std::max(0.0, ToDouble(-constraint->ub));
+  const int size = constraint->vars.size();
+  for (int i = 0; i < size; ++i) {
+    const IntegerVariable var = constraint->vars[i];
+    const double coeff = ToDouble(constraint->coeffs[i]);
+    const double prod1 = coeff * ToDouble(integer_trail_->LowerBound(var));
+    const double prod2 = coeff * ToDouble(integer_trail_->UpperBound(var));
+    sum_min += std::min(0.0, std::min(prod1, prod2));
+    sum_max += std::max(0.0, std::max(prod1, prod2));
+  }
+  const double max_value = std::max(sum_max, -sum_min);
+
+  const IntegerValue divisor(std::ceil(std::ldexp(max_value, -max_pow)));
+  if (divisor <= 1) return;
+
+  // To be correct, we need to shift all variable so that they are positive.
+  //
+  // TODO(user): This code is tricky and similar to the one to generate cuts.
+  // Test and may reduce the duplication? note however that here we use int128
+  // to deal with potential overflow.
+  int new_size = 0;
+  absl::int128 adjust = 0;
+  for (int i = 0; i < size; ++i) {
+    const IntegerValue old_coeff = constraint->coeffs[i];
+    const IntegerValue new_coeff = FloorRatio(old_coeff, divisor);
+
+    // Compute the rhs adjustement.
+    const absl::int128 remainder =
+        absl::int128(old_coeff.value()) -
+        absl::int128(new_coeff.value()) * absl::int128(divisor.value());
+    adjust +=
+        remainder *
+        absl::int128(integer_trail_->LowerBound(constraint->vars[i]).value());
+
+    if (new_coeff == 0) continue;
+    constraint->vars[new_size] = constraint->vars[i];
+    constraint->coeffs[new_size] = new_coeff;
+    ++new_size;
+  }
+  constraint->vars.resize(new_size);
+  constraint->coeffs.resize(new_size);
+
+  constraint->ub = IntegerValue(static_cast<int64>(
+      FloorRatio128(absl::int128(constraint->ub.value()) - adjust, divisor)));
+}
+
 // TODO(user): combine this with RelaxLinearReason() to avoid the extra
 // magnitude vector and the weird precondition of RelaxLinearReason().
 void LinearProgrammingConstraint::SetImpliedLowerBoundReason(
@@ -1194,12 +1257,8 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   new_constraint.vars.push_back(objective_cp_);
   new_constraint.coeffs.push_back(-obj_scale);
   DivideByGCD(&new_constraint);
-
-  // Check for possible overflow in IntegerSumLE::Propagate().
-  if (PossibleOverflow(new_constraint)) {
-    VLOG(2) << "Overflow during exact LP reasoning.";
-    return true;
-  }
+  PreventOverflow(&new_constraint);
+  CHECK(!PossibleOverflow(new_constraint));
 
   IntegerSumLE* cp_constraint =
       new IntegerSumLE({}, new_constraint.vars, new_constraint.coeffs,
@@ -1231,10 +1290,9 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
   LinearConstraint new_constraint =
       ConvertToLinearConstraint(dense_new_constraint, new_constraint_ub);
   DivideByGCD(&new_constraint);
-  if (PossibleOverflow(new_constraint)) {
-    VLOG(2) << "Overflow during exact LP reasoning.";
-    return true;
-  }
+  PreventOverflow(&new_constraint);
+  CHECK(!PossibleOverflow(new_constraint));
+
   const IntegerValue implied_lb = GetImpliedLowerBound(new_constraint);
   if (implied_lb <= new_constraint.ub) {
     VLOG(1) << "LP exact dual ray not infeasible,"

@@ -245,6 +245,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // constraint.
   bool PossibleOverflow(const LinearConstraint& constraint);
 
+  // Reduce the coefficient of the constraint so that we cannot have overflow
+  // in the propagation of the given linear constraint. Note that we may loose
+  // some strength by doing so.
+  //
+  // We make sure that any partial sum involving any variable value in their
+  // domain do not exceed 2 ^ max_pow.
+  void PreventOverflow(LinearConstraint* constraint, int max_pow = 62);
+
   // Fills integer_reason_ with the reason for the implied lower bound of the
   // given linear expression. We relax the reason if we have some slack.
   void SetImpliedLowerBoundReason(const LinearConstraint& terms,
