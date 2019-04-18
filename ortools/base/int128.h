@@ -172,8 +172,8 @@ inline int128 operator/(int128 lhs, int128 rhs) {
 
   uint128 quotient = 0;
   uint128 remainder = 0;
-  DivModImpl(UnsignedAbsoluteValue(lhs), UnsignedAbsoluteValue(rhs),
-             &quotient, &remainder);
+  DivModImpl(UnsignedAbsoluteValue(lhs), UnsignedAbsoluteValue(rhs), &quotient,
+             &remainder);
   if ((Int128High64(lhs) < 0) != (Int128High64(rhs) < 0)) quotient = -quotient;
   return MakeInt128(BitCastToSigned(Uint128High64(quotient)),
                     ::absl::Uint128Low64(quotient));
@@ -186,3 +186,5 @@ inline bool operator>(int128 lhs, int128 rhs) {
 }
 
 }  // namespace absl
+
+#endif  // OR_TOOLS_BASE_INT128_H_
