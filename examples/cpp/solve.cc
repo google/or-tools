@@ -27,8 +27,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/lp_data/lp_data.h"
-#include "ortools/lp_data/model_reader.h"
+#include "ortools/lp_data/mps_reader.h"
 #include "ortools/lp_data/proto_utils.h"
 #include "ortools/util/file_util.h"
 
@@ -37,6 +36,8 @@ DEFINE_string(solver, "glop",
               "The solver to use: bop, cbc, clp, glop, glpk_lp, glpk_mip, "
               "gurobi_lp, gurobi_mip, scip, knapsack.");
 
+DEFINE_int32(num_threads, 1,
+             "Number of threads to use by the underlying solver.");
 DEFINE_string(params_file, "",
               "Solver specific parameters file. "
               "If this flag is set, the --params flag is ignored.");
@@ -44,8 +45,6 @@ DEFINE_string(params, "", "Solver specific parameters");
 DEFINE_int64(time_limit_ms, 0,
              "If strictly positive, specifies a limit in ms on the solving "
              "time. Otherwise, no time limit will be imposed.");
-DEFINE_string(forced_mps_format, "",
-              "Set to force the mps format to use: free, fixed");
 
 DEFINE_string(output_csv, "",
               "If non-empty, write the returned solution in csv format with "
@@ -77,10 +76,12 @@ static const char kUsageStr[] =
 namespace operations_research {
 namespace {
 
-void Run() {
+// Returns false if an error was encountered.
+// More details should be available in the logs.
+bool Run() {
   // Create the solver and set its parameters.
   MPSolver::OptimizationProblemType type;
-  QCHECK(MPSolver::ParseSolverType(FLAGS_solver, &type))
+  CHECK(MPSolver::ParseSolverType(FLAGS_solver, &type))
       << "Unsupported --solver: " << FLAGS_solver;
 
   // Load the problem into an MPModelProto.
@@ -88,11 +89,8 @@ void Run() {
   MPModelRequest request_proto;
   if (absl::EndsWith(FLAGS_input, ".mps") ||
       absl::EndsWith(FLAGS_input, ".mps.gz")) {
-    glop::LinearProgram linear_program;
-    CHECK(glop::LoadLinearProgramFromMps(FLAGS_input, FLAGS_forced_mps_format,
-                                         &linear_program))
-        << "Failed to parse mps file " << FLAGS_input;
-    LinearProgramToMPModelProto(linear_program, &model_proto);
+    CHECK_OK(glop::MPSReader().ParseFile(FLAGS_input, &model_proto))
+        << "Error while parsing the mps file '" << FLAGS_input << "'.";
   } else {
     ReadFileToProto(FLAGS_input, &model_proto);
     ReadFileToProto(FLAGS_input, &request_proto);
@@ -130,6 +128,14 @@ void Run() {
 
   // Create the solver, we use the name of the model as the solver name.
   MPSolver solver(model_proto.name(), type);
+  const util::Status set_num_threads_status =
+      solver.SetNumThreads(FLAGS_num_threads);
+  if (set_num_threads_status.ok()) {
+    LOG(INFO) << "Set number of threads to " << FLAGS_num_threads << ".";
+  } else {
+    LOG(ERROR) << "Failed to set number of threads due to: "
+               << set_num_threads_status.message() << ". Using 1 as default.";
+  }
   solver.EnableOutput();
   if (!FLAGS_params_file.empty()) {
     std::string file_contents;
@@ -166,8 +172,10 @@ void Run() {
   if (FLAGS_time_limit_ms >= 0) {
     solver.set_time_limit(FLAGS_time_limit_ms);
   }
-  CHECK_EQ(MPSOLVER_MODEL_IS_VALID, status)
-      << MPSolverResponseStatus_Name(status) << ": " << error_message;
+  if (status != MPSOLVER_MODEL_IS_VALID) {
+    LOG(ERROR) << MPSolverResponseStatus_Name(status) << ": " << error_message;
+    return false;
+  }
   printf("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
          solver.NumVariables());
 
@@ -235,7 +243,9 @@ void Run() {
     absl::PrintF("%-12s: %d\n", "Nodes", solver.nodes());
   }
   printf("%-12s: %-6.4g\n", "Time", absl::ToDoubleSeconds(solving_time));
+  return true;
 }
+
 }  // namespace
 }  // namespace operations_research
 
