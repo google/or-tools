@@ -18,7 +18,6 @@
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/numeric/int128.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/int128.h"
 #include "ortools/base/int_type_indexed_vector.h"
@@ -882,6 +881,7 @@ bool LinearProgrammingConstraint::PossibleOverflow(
 }
 
 namespace {
+
 absl::int128 FloorRatio128(absl::int128 x, IntegerValue positive_div) {
   absl::int128 div128(positive_div.value());
   absl::int128 result = x / div128;
