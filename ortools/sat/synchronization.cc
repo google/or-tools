@@ -47,6 +47,16 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     change = true;
     inner_objective_upper_bound_ = ub.value();
   }
+  if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
+    if (best_response_.status() == CpSolverStatus::FEASIBLE ||
+        best_response_.status() == CpSolverStatus::OPTIMAL) {
+      best_response_.set_status(CpSolverStatus::OPTIMAL);
+    } else {
+      best_response_.set_status(CpSolverStatus::INFEASIBLE);
+    }
+    if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
+    return;
+  }
   if (log_updates_ && change) {
     const CpObjectiveProto& obj = model_proto_.objective();
     double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);

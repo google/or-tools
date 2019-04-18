@@ -143,8 +143,12 @@ void RestrictObjectiveDomainWithBinarySearch(
 
 // Same as MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
 // a core-based approach instead. Note that the given objective_var is just used
-// for reporting the lower-bound and do not need to be linked with its linear
-// representation.
+// for reporting the lower-bound/upper-bound and do not need to be linked with
+// its linear representation.
+//
+// Unlike MinimizeIntegerVariableWithLinearScanAndLazyEncoding() this function
+// just return the last solver status. In particular if it is INFEASIBLE but
+// feasible_solution_observer() was called, it means we are at OPTIMAL.
 SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     IntegerVariable objective_var,
     const std::vector<IntegerVariable>& variables,

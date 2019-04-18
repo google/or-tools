@@ -219,6 +219,10 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
   }
 
   // The variable domains have been computed. Fully encode variables.
+  // Note that in some corner cases (like duplicate vars), as we call
+  // UpdateInitialDomain(), the domain of other variable could become more
+  // restricted that values_per_var. For now, we do not try to reach a fixed
+  // point here.
   std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
   for (int i = 0; i < n; ++i) {
     const std::vector<int64> reached_values(values_per_var[i].begin(),
@@ -293,6 +297,7 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
     std::vector<Literal> clause;
     for (int j = 0; j < tuples.size(); ++j) {
       clause.clear();
+      bool tuple_is_valid = true;
       for (int i = 0; i + 1 < n; ++i) {
         // Ignore fixed variables.
         if (values_per_var[i].size() == 1) continue;
@@ -302,13 +307,17 @@ void AddTableConstraint(const std::vector<IntegerVariable>& vars,
         if (v == any_value) continue;
 
         const IntegerValue value(v);
-        CHECK(encodings[i].contains(value));
+        if (!encodings[i].contains(value)) {
+          tuple_is_valid = false;
+          break;
+        }
         clause.push_back(gtl::FindOrDie(encodings[i], value).Negated());
       }
+      if (!tuple_is_valid) continue;
 
       // Add the target of the implication.
       const IntegerValue target_value = IntegerValue(tuples[j][n - 1]);
-      CHECK(encodings[n - 1].contains(target_value));
+      if (!encodings[n - 1].contains(target_value)) continue;
       const Literal target_literal =
           gtl::FindOrDie(encodings[n - 1], target_value);
       clause.push_back(target_literal);

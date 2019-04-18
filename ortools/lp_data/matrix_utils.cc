@@ -39,13 +39,13 @@ bool AreColumnsProportional(const SparseColumn& a, const SparseColumn& b,
     const Fractional coeff_a = a.EntryCoefficient(i);
     const Fractional coeff_b = b.EntryCoefficient(i);
     if (multiple == 0.0) {
-      a_is_larger = fabs(coeff_a) > fabs(coeff_b);
+      a_is_larger = std::abs(coeff_a) > std::abs(coeff_b);
       multiple = a_is_larger ? coeff_a / coeff_b : coeff_b / coeff_a;
     } else {
       if (a_is_larger) {
-        if (fabs(coeff_a / coeff_b - multiple) > tolerance) return false;
+        if (std::abs(coeff_a / coeff_b - multiple) > tolerance) return false;
       } else {
-        if (fabs(coeff_b / coeff_a - multiple) > tolerance) return false;
+        if (std::abs(coeff_b / coeff_a - multiple) > tolerance) return false;
       }
     }
   }
@@ -54,10 +54,10 @@ bool AreColumnsProportional(const SparseColumn& a, const SparseColumn& b,
 
 // A column index together with its fingerprint. See ComputeFingerprint().
 struct ColumnFingerprint {
-  ColumnFingerprint(ColIndex _col, int32 _hash, double _value)
+  ColumnFingerprint(ColIndex _col, int64 _hash, double _value)
       : col(_col), hash(_hash), value(_value) {}
   ColIndex col;
-  int32 hash;
+  int64 hash;
   double value;
 
   // This order has the property that if AreProportionalCandidates() is true for
@@ -78,7 +78,7 @@ struct ColumnFingerprint {
 bool AreProportionalCandidates(ColumnFingerprint a, ColumnFingerprint b,
                                Fractional tolerance) {
   if (a.hash != b.hash) return false;
-  return fabs(a.value - b.value) < tolerance;
+  return std::abs(a.value - b.value) < tolerance;
 }
 
 // The fingerprint of a column has two parts:
@@ -86,16 +86,16 @@ bool AreProportionalCandidates(ColumnFingerprint a, ColumnFingerprint b,
 // - A double value which should be the same for two proportional columns
 //   modulo numerical errors.
 ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn& column) {
-  int32 non_zero_pattern_hash = 0;
+  int64 non_zero_pattern_hash = 0;
   Fractional min_abs = std::numeric_limits<Fractional>::max();
   Fractional max_abs = 0.0;
   Fractional sum = 0.0;
   for (const SparseColumn::Entry e : column) {
     non_zero_pattern_hash =
-        Hash32NumWithSeed(e.row().value(), non_zero_pattern_hash);
+        util_hash::Hash(e.row().value(), non_zero_pattern_hash);
     sum += e.coefficient();
-    min_abs = std::min(min_abs, fabs(e.coefficient()));
-    max_abs = std::max(max_abs, fabs(e.coefficient()));
+    min_abs = std::min(min_abs, std::abs(e.coefficient()));
+    max_abs = std::max(max_abs, std::abs(e.coefficient()));
   }
 
   // The two scaled values are in [0, 1].
@@ -104,7 +104,8 @@ ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn& column) {
   DCHECK_NE(0.0, max_abs);
   const double inverse_dynamic_range = min_abs / max_abs;
   const double scaled_average =
-      fabs(sum) / (static_cast<double>(column.num_entries().value()) * max_abs);
+      std::abs(sum) /
+      (static_cast<double>(column.num_entries().value()) * max_abs);
   return ColumnFingerprint(col, non_zero_pattern_hash,
                            inverse_dynamic_range + scaled_average);
 }
@@ -172,8 +173,10 @@ ColMapping FindProportionalColumnsUsingSimpleAlgorithm(
   const ColIndex num_cols = matrix.num_cols();
   ColMapping mapping(num_cols, kInvalidCol);
   for (ColIndex col_a(0); col_a < num_cols; ++col_a) {
+    if (matrix.column(col_a).IsEmpty()) continue;
     if (mapping[col_a] != kInvalidCol) continue;
     for (ColIndex col_b(col_a + 1); col_b < num_cols; ++col_b) {
+      if (matrix.column(col_b).IsEmpty()) continue;
       if (mapping[col_b] != kInvalidCol) continue;
       if (AreColumnsProportional(matrix.column(col_a), matrix.column(col_b),
                                  tolerance)) {

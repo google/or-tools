@@ -1085,29 +1085,6 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
   }
 }
 
-namespace {
-void LogSolveInfo(SatSolver::Status result, const SatSolver& sat_solver,
-                  const WallTimer& wall_timer, const UserTimer& user_timer,
-                  int64 objective, int64 best_bound) {
-  printf("status: %s\n", result == SatSolver::FEASIBLE
-                             ? "OPTIMAL"
-                             : SatStatusString(result).c_str());
-  if (objective < kint64max) {
-    absl::PrintF("objective: %d\n", objective);
-  } else {
-    printf("objective: NA\n");
-  }
-  absl::PrintF("best_bound: %d\n", best_bound);
-  printf("booleans: %d\n", sat_solver.NumVariables());
-  absl::PrintF("conflicts: %d\n", sat_solver.num_failures());
-  absl::PrintF("branches: %d\n", sat_solver.num_branches());
-  absl::PrintF("propagations: %d\n", sat_solver.num_propagations());
-  printf("walltime: %f\n", wall_timer.Get());
-  printf("usertime: %f\n", user_timer.Get());
-  printf("deterministic_time: %f\n", sat_solver.deterministic_time());
-}
-}  // namespace
-
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     IntegerVariable objective_var,
     const std::function<void()>& feasible_solution_observer, Model* model) {
@@ -1119,13 +1096,12 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   // Simple linear scan algorithm to find the optimal.
   SatSolver::Status result;
   bool model_is_feasible = false;
-  IntegerValue objective(kint64max);
   while (true) {
     result = ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
     if (result != SatSolver::FEASIBLE) break;
 
     // The objective is the current lower bound of the objective_var.
-    objective = integer_trail->LowerBound(objective_var);
+    const IntegerValue objective = integer_trail->LowerBound(objective_var);
 
     // We have a solution!
     model_is_feasible = true;
@@ -1308,8 +1284,6 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
   // This will be called each time a feasible solution is found. Returns false
   // if a conflict was detected while trying to constrain the objective to a
   // smaller value.
-  int num_solutions = 0;
-  IntegerValue best_objective = integer_trail->UpperBound(objective_var);
   const auto process_solution = [&]() {
     // We don't assume that objective_var is linked with its linear term, so
     // we recompute the objective here.
@@ -1318,14 +1292,8 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       objective +=
           coefficients[i] * IntegerValue(model->Get(LowerBound(variables[i])));
     }
+    if (objective > integer_trail->UpperBound(objective_var)) return true;
 
-    // The situation is tricky when best_objective is an externally provided
-    // bound, but we don't have any solution lower or equal to this bound yet.
-    if (objective > best_objective) return true;
-    if (objective >= best_objective && num_solutions > 0) return true;
-
-    ++num_solutions;
-    best_objective = objective;
     if (feasible_solution_observer != nullptr) {
       feasible_solution_observer();
     }
@@ -1427,8 +1395,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     if (!integer_trail->Enqueue(
             IntegerLiteral::GreaterOrEqual(objective_var, implied_objective_lb),
             {}, {})) {
-      result = SatSolver::INFEASIBLE;
-      break;
+      return SatSolver::INFEASIBLE;
     }
 
     // No assumptions with the current stratified_threshold? use the new one.
@@ -1453,33 +1420,25 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       model->Add(WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
                                          -objective_offset.value()));
 
-      result = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
+      return MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           objective_var, feasible_solution_observer, model);
-      break;
     }
 
     // Display the progress.
-    const IntegerValue objective_lb = integer_trail->LowerBound(objective_var);
     if (VLOG_IS_ON(1)) {
-      const int64 lb = objective_lb.value();
-      const int64 ub = best_objective.value();
+      const int64 lb = integer_trail->LowerBound(objective_var).value();
+      const int64 ub = integer_trail->UpperBound(objective_var).value();
       const int gap =
           lb == ub
               ? 0
               : static_cast<int>(std::ceil(
                     100.0 * (ub - lb) / std::max(std::abs(ub), std::abs(lb))));
-      VLOG(1) << absl::StrCat("unscaled_objective:[", lb, ",", ub,
+      VLOG(1) << absl::StrCat("unscaled_next_obj_range:[", lb, ",", ub,
                               "]"
                               " gap:",
                               gap, "%", " assumptions:", term_indices.size(),
                               " strat:", stratified_threshold.value(),
                               " depth:", max_depth);
-    }
-
-    // Abort if we have a solution and a gap of zero.
-    if (objective_lb == best_objective && num_solutions > 0) {
-      result = SatSolver::FEASIBLE;
-      break;
     }
 
     // Bulk cover optimization.
@@ -1528,10 +1487,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
           VLOG(1) << "cover_opt var:" << var << " domain:["
                   << integer_trail->LevelZeroLowerBound(var) << "," << best
                   << "]";
-          if (!process_solution()) {
-            result = SatSolver::INFEASIBLE;
-            break;
-          }
+          if (!process_solution()) return SatSolver::INFEASIBLE;
           if (parameters.stop_after_first_solution()) {
             return SatSolver::LIMIT_REACHED;
           }
@@ -1544,8 +1500,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
           // order to abort early if the optimal is proved.
           if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, best),
                                       {}, {})) {
-            result = SatSolver::INFEASIBLE;
-            break;
+            return SatSolver::INFEASIBLE;
           }
         } else if (result != SatSolver::FEASIBLE) {
           break;
@@ -1573,7 +1528,10 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     std::vector<std::vector<Literal>> cores;
     result = FindCores(assumptions, model, &cores);
     if (result == SatSolver::FEASIBLE) {
-      process_solution();
+      if (!process_solution()) return SatSolver::INFEASIBLE;
+
+      // TODO(user): We actually do not know if this solution was not out of
+      // the requested objective bound.
       if (parameters.stop_after_first_solution()) {
         return SatSolver::LIMIT_REACHED;
       }
@@ -1670,10 +1628,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     }
   }
 
-  // Returns FEASIBLE if we found the optimal.
-  return num_solutions > 0 && result == SatSolver::INFEASIBLE
-             ? SatSolver::FEASIBLE
-             : result;
+  return result;
 }
 
 // TODO(user): take the MPModelRequest or MPModelProto directly, so that we can
@@ -1690,8 +1645,6 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
 
   // This will be called each time a feasible solution is found.
-  int num_solutions = 0;
-  IntegerValue best_objective = integer_trail->UpperBound(objective_var);
   const auto process_solution = [&]() {
     // We don't assume that objective_var is linked with its linear term, so
     // we recompute the objective here.
@@ -1700,12 +1653,22 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
       objective +=
           coefficients[i] * IntegerValue(model->Get(Value(variables[i])));
     }
-    if (objective >= best_objective) return;
-    ++num_solutions;
-    best_objective = objective;
+    if (objective > integer_trail->UpperBound(objective_var)) return true;
+
     if (feasible_solution_observer != nullptr) {
       feasible_solution_observer();
     }
+
+    // Constrain objective_var. This has a better result when objective_var is
+    // used in an LP relaxation for instance.
+    sat_solver->Backtrack(0);
+    sat_solver->SetAssumptionLevel(0);
+    if (!integer_trail->Enqueue(
+            IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {},
+            {})) {
+      return false;
+    }
+    return true;
   };
 
   // This is the "generalized" hitting set problem we will solve. Each time
@@ -1812,9 +1775,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
         --iter;  // "false" iteration, the lower bound does not increase.
         continue;
       } else {
-        result =
-            num_solutions > 0 ? SatSolver::FEASIBLE : SatSolver::INFEASIBLE;
-        break;
+        return SatSolver::INFEASIBLE;
       }
     }
 
@@ -1823,7 +1784,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     std::vector<std::vector<Literal>> cores;
     result = FindCores(assumptions, model, &cores);
     if (result == SatSolver::FEASIBLE) {
-      process_solution();
+      if (!process_solution()) return SatSolver::INFEASIBLE;
       if (parameters.stop_after_first_solution()) {
         return SatSolver::LIMIT_REACHED;
       }
@@ -1888,10 +1849,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     }
   }
 
-  // Returns FEASIBLE if we found the optimal.
-  return num_solutions > 0 && result == SatSolver::INFEASIBLE
-             ? SatSolver::FEASIBLE
-             : result;
+  return result;
 #else   // !__PORTABLE_PLATFORM__ && (USE_CBC || USE_SCIP)
   LOG(FATAL) << "Not supported.";
 #endif  // __PORTABLE_PLATFORM || (!USE_CBC && !USE_SCIP)
