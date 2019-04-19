@@ -390,6 +390,7 @@ test_java_constraint_solver_samples: \
  rjava_VrpResources \
  rjava_VrpStartsEnds \
  rjava_VrpTimeWindows \
+ rjava_VrpWithTimeLimit
 
 .PHONY: test_java_graph_samples # Build and Run all Java Graph Samples (located in ortools/graph/samples)
 test_java_graph_samples: \

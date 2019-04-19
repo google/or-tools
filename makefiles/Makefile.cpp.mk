@@ -385,6 +385,7 @@ test_cc_constraint_solver_samples: \
  rcc_vrp_resources \
  rcc_vrp_starts_ends \
  rcc_vrp_time_windows \
+ rcc_vrp_with_time_limit
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \

@@ -457,6 +457,7 @@ test_dotnet_constraint_solver_samples:
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpResources.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpStartsEnds.cs
 	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpTimeWindows.cs
+	$(MAKE) run SOURCE=ortools/constraint_solver/samples/VrpWithTimeLimit.cs
 
 .PHONY: test_dotnet_graph_samples # Build and Run all .Net LP Samples (located in ortools/graph/samples)
 test_dotnet_graph_samples: ;
