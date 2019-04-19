@@ -225,7 +225,7 @@ void SCIPInterface::DeleteSCIP() {
 #define RETURN_IF_ALREADY_IN_ERROR_STATE                                 \
   do {                                                                   \
     if (!status_.ok()) {                                                 \
-      VLOG_EVERY_N_SEC(1, 10) << "Early abort: SCIP is in error state."; \
+      LOG_EVERY_N(INFO, 10) << "Early abort: SCIP is in error state."; \
       return;                                                            \
     }                                                                    \
   } while (false)

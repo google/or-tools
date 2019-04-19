@@ -18,6 +18,10 @@
 
 namespace util {
 
+inline Status InternalError(const std::string& message) {
+  return Status(error::INTERNAL, message);
+}
+
 inline Status InvalidArgumentError(const std::string& message) {
   return Status(error::INVALID_ARGUMENT, message);
 }
