@@ -27,15 +27,23 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 %ignoreall
 
 %unignore operations_research;
-%unignore operations_research::RoutingIndexManager;
-%unignore operations_research::RoutingIndexManager::IndexToNode;
-%unignore operations_research::RoutingIndexManager::NodeToIndex;
-%unignore operations_research::RoutingIndexManager::RoutingIndexManager(
+
+namespace operations_research {
+
+%unignore RoutingIndexManager;
+%unignore RoutingIndexManager::IndexToNode;
+%unignore RoutingIndexManager::NodeToIndex;
+%unignore RoutingIndexManager::RoutingIndexManager(
     int, int, NodeIndex);
-%unignore operations_research::RoutingIndexManager::RoutingIndexManager(
+%unignore RoutingIndexManager::RoutingIndexManager(
     int, int, const std::vector<NodeIndex>&,
     const std::vector<NodeIndex>&);
-%unignore operations_research::RoutingIndexManager::~RoutingIndexManager;
+%rename (GetNumberOfNodes) RoutingIndexManager::num_nodes;
+%rename (GetNumberOfVehicles) RoutingIndexManager::num_vehicles;
+%rename (GetNumberOfIndices) RoutingIndexManager::num_indices;
+%unignore RoutingIndexManager::~RoutingIndexManager;
+
+}  // namespace operations_research
 
 %include "ortools/constraint_solver/routing_index_manager.h"
 
