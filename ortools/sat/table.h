@@ -17,6 +17,7 @@
 #include <functional>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
@@ -28,14 +29,14 @@ namespace sat {
 // Enforces that the given tuple of variables is equal to one of the given
 // tuples. All the tuples must have the same size as var.size(), this is
 // Checked.
-void AddTableConstraint(const std::vector<IntegerVariable>& vars,
+void AddTableConstraint(absl::Span<const IntegerVariable> vars,
                         std::vector<std::vector<int64>> tuples, Model* model);
 
 // Enforces that none of the given tuple appear.
 //
 // TODO(user): we could propagate more than what we currently do which is simply
 // adding one clause per tuples.
-void AddNegatedTableConstraint(const std::vector<IntegerVariable>& vars,
+void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
                                std::vector<std::vector<int64>> tuples,
                                Model* model);
 
@@ -54,7 +55,7 @@ std::function<void(Model*)> LiteralTableConstraint(
 // regexps.
 //
 // This method is exposed for testing purposes.
-void CompressTuples(const std::vector<int64>& domain_sizes, int64 any_value,
+void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
                     std::vector<std::vector<int64>>* tuples);
 
 // Given an automaton defined by a set of 3-tuples:
