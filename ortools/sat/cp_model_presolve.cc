@@ -709,6 +709,36 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   }
   const int target_ref = ct->int_max().target();
 
+  // Recognized abs() encoding.
+  if (ct->int_max().vars_size() == 2 &&
+      NegatedRef(ct->int_max().vars(0)) == ct->int_max().vars(1)) {
+    const int var = PositiveRef(ct->int_max().vars(0));
+
+    // abs(x) == constant -> reduce domain.
+    bool changed = false;
+    if (context->IsFixed(target_ref)) {
+      const int64 value = context->MaxOf(target_ref);
+      if (value < 0) {
+        return context->NotifyThatModelIsUnsat();
+      }
+      Domain reduced_domain = Domain::FromValues({-value, value});
+      context->UpdateRuleStats(
+          "int_max: propagate domain of abs(x) == constant");
+      if (!context->IntersectDomainWith(var, reduced_domain)) {
+        return true;
+      }
+      return RemoveConstraint(ct, context);
+    }
+
+    if (context->MinOf(target_ref) < 0) {
+      changed = true;
+      context->UpdateRuleStats("int_max: propagate abs(x) >= 0");
+      if (!context->IntersectDomainWith(target_ref, {0, kint64max})) {
+        return true;
+      }
+    }
+  }
+
   // Pass 1, compute the infered min of the target, and remove duplicates.
   int64 target_min = context->MinOf(target_ref);
   int64 target_max = kint64min;
@@ -792,8 +822,8 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     return MarkConstraintAsFalse(ct, context);
   }
   if (new_size == 1) {
-    // Convert to an equality. Note that we create a new constraint otherwise it
-    // might not be processed again.
+    // Convert to an equality. Note that we create a new constraint otherwise
+    // it might not be processed again.
     context->UpdateRuleStats("int_max: converted to equality");
     ConstraintProto* new_ct = context->working_model->add_constraints();
     *new_ct = *ct;  // copy name and potential reification.
