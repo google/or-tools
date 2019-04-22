@@ -3974,7 +3974,7 @@ void RemoveUnusedEquivalentVariables(PresolveContext* context) {
                                         &domain_modified)) {
         return;
       }
-      if (domain_modified) {
+      if (domain_modified && VLOG_IS_ON(1)) {
         LOG(WARNING) << "Domain of " << r.representative
                      << " was not fully propagated using the affine relation "
                      << "(var = " << var
