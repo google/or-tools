@@ -426,6 +426,7 @@ check_cc_pimpl: \
 
 .PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
 test_cc_tests: \
+ rcc_lp_test \
  rcc_boolean_test \
  rcc_bug_fz1 \
  rcc_cpp11_test \

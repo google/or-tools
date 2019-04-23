@@ -436,10 +436,10 @@ check_java_pimpl: \
 
 .PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
 test_java_tests: \
+ rjava_TestLinearSolver \
  rjava_TestConstraintSolver \
- rjava_TestRouting \
- rjava_TestSat \
- rjava_TestLp
+ rjava_TestRoutingSolver \
+ rjava_TestSatSolver \
 
 .PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)
 test_java_contrib: \
@@ -537,6 +537,8 @@ detect_java:
 	@echo JAVA_BIN = $(JAVA_BIN)
 	@echo JAVAFLAGS = $(JAVAFLAGS)
 	@echo JAVA_OR_TOOLS_LIBS = $(JAVA_OR_TOOLS_LIBS)
+	@echo SWIG_BINARY = $(SWIG_BINARY)
+	@echo SWIG_INC = $(SWIG_INC)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

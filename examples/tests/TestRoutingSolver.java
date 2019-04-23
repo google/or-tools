@@ -22,9 +22,7 @@ import com.google.ortools.constraintsolver.main;
 
 /** Tests the Routing java interface. */
 public class TestRouting {
-  static {
-    System.loadLibrary("jniortools");
-  }
+  static { System.loadLibrary("jniortools"); }
 
   private static final Logger logger = Logger.getLogger(TestRouting.class.getName());
 

@@ -582,6 +582,7 @@ check_python_pimpl: \
 
 .PHONY: test_python_tests # Run all Python Tests (located in examples/tests)
 test_python_tests: \
+ rpy_lp_test \
  rpy_cp_model_test \
  rpy_test_cp_api \
  rpy_test_routing_api \

@@ -15,13 +15,14 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
+import java.util.logging.Logger;
 import java.util.Random;
 
 /** Tests the CP-SAT java interface. */
-public class TestSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
+public class TestSatSolver {
+  static { System.loadLibrary("jniortools"); }
+
+  private static final Logger logger = Logger.getLogger(TestSatSolver.class.getName());
 
   static void testCrashInPresolve() {
     System.out.println("testCrashInPresolve");

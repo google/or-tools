@@ -75,6 +75,57 @@ def RunLinearExampleCppStyleAPI(optimization_problem_type):
   SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
 
 
+def RunMixedIntegerExampleCppStyleAPI(optimization_problem_type):
+  """Example of simple mixed integer program with the C++ style API."""
+  solver = pywraplp.Solver('RunMixedIntegerExampleCppStyle',
+                           optimization_problem_type)
+  infinity = solver.infinity()
+  # x1 and x2 are integer non-negative variables.
+  x1 = solver.IntVar(0.0, infinity, 'x1')
+  x2 = solver.IntVar(0.0, infinity, 'x2')
+
+  # Maximize x1 + 10 * x2.
+  objective = solver.Objective()
+  objective.SetCoefficient(x1, 1)
+  objective.SetCoefficient(x2, 10)
+  objective.SetMaximization()
+
+  # x1 + 7 * x2 <= 17.5.
+  c0 = solver.Constraint(-infinity, 17.5, 'c0')
+  c0.SetCoefficient(x1, 1)
+  c0.SetCoefficient(x2, 7)
+
+  # x1 <= 3.5.
+  c1 = solver.Constraint(-infinity, 3.5, 'c1')
+  c1.SetCoefficient(x1, 1)
+  c1.SetCoefficient(x2, 0)
+
+  SolveAndPrint(solver, [x1, x2], [c0, c1])
+
+
+def RunBooleanExampleCppStyleAPI(optimization_problem_type):
+  """Example of simple boolean program with the C++ style API."""
+  solver = pywraplp.Solver('RunBooleanExampleCppStyle',
+                           optimization_problem_type)
+  infinity = solver.infinity()
+  # x1 and x2 are integer non-negative variables.
+  x1 = solver.BoolVar('x1')
+  x2 = solver.BoolVar('x2')
+
+  # Minimize 2 * x1 + x2.
+  objective = solver.Objective()
+  objective.SetCoefficient(x1, 2)
+  objective.SetCoefficient(x2, 1)
+  objective.SetMinimization()
+
+  # 1 <= x1 + 2 * x2 <= 3.
+  c0 = solver.Constraint(1, 3, 'c0')
+  c0.SetCoefficient(x1, 1)
+  c0.SetCoefficient(x2, 2)
+
+  SolveAndPrint(solver, [x1, x2], [c0])
+
+
 def SolveAndPrint(solver, variable_list, constraint_list):
   """Solve the problem and print the solution."""
   print(('Number of variables = %d' % solver.NumVariables()))
@@ -114,18 +165,24 @@ def main():
   all_names_and_problem_types = (
       list(linear_solver_pb2.MPModelRequest.SolverType.items()))
   for name, problem_type in all_names_and_problem_types:
-    # Skip non-LP problem types.
-    if not name.endswith('LINEAR_PROGRAMMING'):
-      continue
-    # Skip problem types that aren't supported by the current binary.
     if not pywraplp.Solver.SupportsProblemType(problem_type):
       continue
-    print(('\n------ Linear programming example with %s ------' % name))
-    print('\n*** Natural language API ***')
-    RunLinearExampleNaturalLanguageAPI(problem_type)
-    print('\n*** C++ style API ***')
-    RunLinearExampleCppStyleAPI(problem_type)
-
+    if name.endswith('LINEAR_PROGRAMMING'):
+      print(('\n------ Linear programming example with %s ------' % name))
+      print('\n*** Natural language API ***')
+      RunLinearExampleNaturalLanguageAPI(problem_type)
+      print('\n*** C++ style API ***')
+      RunLinearExampleCppStyleAPI(problem_type)
+    elif name.endswith('MIXED_INTEGER_PROGRAMMING'):
+      print(('\n------ Mixed Integer programming example with %s ------' % name))
+      print('\n*** C++ style API ***')
+      RunMixedIntegerExampleCppStyleAPI(problem_type)
+    elif name.endswith('INTEGER_PROGRAMMING'):
+      print(('\n------ Boolean programming example with %s ------' % name))
+      print('\n*** C++ style API ***')
+      RunBooleanExampleCppStyleAPI(problem_type)
+    else:
+        print('ERROR: %s unsupported' % name)
 
 if __name__ == '__main__':
   main()
