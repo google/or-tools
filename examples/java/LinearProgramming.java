@@ -12,6 +12,7 @@
 // limitations under the License.
 
 import com.google.ortools.linearsolver.MPConstraint;
+import com.google.ortools.linearsolver.MPModelExportOptions;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
@@ -72,7 +73,8 @@ public class LinearProgramming {
     System.out.println("Number of constraints = " + solver.numConstraints());
 
     if (printModel) {
-      String model = solver.exportModelAsLpFormat(false);
+      MPModelExportOptions options = new MPModelExportOptions();
+      String model = solver.exportModelAsLpFormat(options);
       System.out.println(model);
     }
 
