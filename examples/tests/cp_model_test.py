@@ -555,7 +555,7 @@ class CpModelTest(object):
         solver = cp_model.CpSolver()
         solution_counter = SolutionCounter()
         status = solver.SearchForAllSolutions(model, solution_counter)
-        self.assertEqual(status, cp_model.FEASIBLE)
+        self.assertEqual(status, cp_model.OPTIMAL)
         self.assertEqual(4, solution_counter.solution_count())
 
 
