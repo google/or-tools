@@ -111,7 +111,7 @@ def main():
     # Print solution on console.
     # [START print_solution]
     if solution:
-        print_solution(data, manager, routing, solution)
+        print_solution(manager, routing, solution)
     # [END print_solution]
 
 
