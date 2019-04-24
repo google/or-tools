@@ -254,6 +254,13 @@ cc_library(
 )
 
 cc_library(
+    name = "protobuf_util",
+    hdrs = [
+        "protobuf_util.h",
+    ],
+)
+
+cc_library(
     name = "stl_util",
     hdrs = [
         "stl_util.h",
