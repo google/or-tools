@@ -987,9 +987,6 @@ util::StatusOr<bool> MPSReaderAux::GetBoolFromString(const std::string& str) {
     return InvalidArgumentError(
         absl::StrCat("Failed to convert \"", str, "\" to bool."));
   }
-  if (std::isnan(result)) {
-    return InvalidArgumentError("Found NaN value.");
-  }
   return result;
 }
 
