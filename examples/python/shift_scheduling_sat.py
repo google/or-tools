@@ -378,6 +378,7 @@ def solve_shift_scheduling(params, output_proto):
 
     # Solve the model.
     solver = cp_model.CpSolver()
+    solver.parameters.num_search_workers = 8
     if params:
         text_format.Merge(params, solver.parameters)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
