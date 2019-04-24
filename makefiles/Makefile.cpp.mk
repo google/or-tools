@@ -480,7 +480,7 @@ test_cc_cpp: \
 #	$(MAKE) run SOURCE=examples/cpp/frequency_assignment_problem.cc  # Need data file
 #	$(MAKE) run SOURCE=examples/cpp/pdptw.cc ARGS="--pdp_file examples/data/pdptw/LC1_2_1.txt" # Fails on windows...
 	$(MAKE) run SOURCE=examples/cpp/shift_minimization_sat.cc  ARGS="--input examples/data/shift_scheduling/minimization/data_1_23_40_66.dat"
-	$(MAKE) run \
+	$(MAKE) run DEBUG=-DNDEBUG\
  SOURCE=examples/cpp/solve.cc \
  ARGS="--input examples/data/tests/test2.mps"
 
