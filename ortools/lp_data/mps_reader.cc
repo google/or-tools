@@ -21,9 +21,9 @@
 namespace operations_research {
 namespace glop {
 
-class MPSReaderAux {
+class MPSReaderImpl {
  public:
-  MPSReaderAux();
+  MPSReaderImpl();
 
   // Parses instance from a file. We currently support LinearProgram and
   // MpModelProto for the Data type, but it should be easy to add more.
@@ -225,7 +225,7 @@ class MPSReaderAux {
   // be removed in the preprocessor).
   int num_unconstrained_rows_;
 
-  DISALLOW_COPY_AND_ASSIGN(MPSReaderAux);
+  DISALLOW_COPY_AND_ASSIGN(MPSReaderImpl);
 };
 
 // Data templates.
@@ -418,8 +418,8 @@ class DataWrapper<MPModelProto> {
 };
 
 template <class Data>
-util::Status MPSReaderAux::ParseFile(const std::string& file_name, Data* data,
-				     MPSReader::Form form) {
+util::Status MPSReaderImpl::ParseFile(const std::string& file_name, Data* data,
+                                      MPSReader::Form form) {
   if (data == nullptr) {
     return util::InvalidArgumentError("NULL pointer passed as argument.");
   }
@@ -446,8 +446,8 @@ util::Status MPSReaderAux::ParseFile(const std::string& file_name, Data* data,
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::ProcessLine(const std::string& line,
-                                    DataWrapper* data) {
+util::Status MPSReaderImpl::ProcessLine(const std::string& line,
+                                        DataWrapper* data) {
   ++line_num_;
   line_ = line;
   if (IsCommentOrBlank()) {
@@ -524,7 +524,8 @@ util::Status MPSReaderAux::ProcessLine(const std::string& line,
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::ProcessRowsSection(bool is_lazy, DataWrapper* data) {
+util::Status MPSReaderImpl::ProcessRowsSection(bool is_lazy,
+                                               DataWrapper* data) {
   if (fields_.size() < 2) {
     return InvalidArgumentError("Not enough fields in ROWS section.");
   }
@@ -570,7 +571,7 @@ util::Status MPSReaderAux::ProcessRowsSection(bool is_lazy, DataWrapper* data) {
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::ProcessColumnsSection(DataWrapper* data) {
+util::Status MPSReaderImpl::ProcessColumnsSection(DataWrapper* data) {
   // Take into account the INTORG and INTEND markers.
   if (line_.find("'MARKER'") != std::string::npos) {
     if (line_.find("'INTORG'") != std::string::npos) {
@@ -619,7 +620,7 @@ util::Status MPSReaderAux::ProcessColumnsSection(DataWrapper* data) {
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::ProcessRhsSection(DataWrapper* data) {
+util::Status MPSReaderImpl::ProcessRhsSection(DataWrapper* data) {
   const int start_index = free_form_ ? 0 : 2;
   const int offset = start_index + GetFieldOffset();
   if (fields_.size() < offset + 2) {
@@ -638,7 +639,7 @@ util::Status MPSReaderAux::ProcessRhsSection(DataWrapper* data) {
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::ProcessRangesSection(DataWrapper* data) {
+util::Status MPSReaderImpl::ProcessRangesSection(DataWrapper* data) {
   const int start_index = free_form_ ? 0 : 2;
   const int offset = start_index + GetFieldOffset();
   if (fields_.size() < offset + 2) {
@@ -657,7 +658,7 @@ util::Status MPSReaderAux::ProcessRangesSection(DataWrapper* data) {
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::ProcessBoundsSection(DataWrapper* data) {
+util::Status MPSReaderImpl::ProcessBoundsSection(DataWrapper* data) {
   if (fields_.size() < 3) {
     return InvalidArgumentError("Not enough fields in BOUNDS section.");
   }
@@ -672,7 +673,7 @@ util::Status MPSReaderAux::ProcessBoundsSection(DataWrapper* data) {
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::ProcessIndicatorsSection(DataWrapper* data) {
+util::Status MPSReaderImpl::ProcessIndicatorsSection(DataWrapper* data) {
   // TODO(user): Enforce section order. This section must come after
   // anything related to constraints, or we'll have partial data inside the
   // indicator constraints.
@@ -701,14 +702,16 @@ util::Status MPSReaderAux::ProcessIndicatorsSection(DataWrapper* data) {
   RETURN_IF_ERROR(data->CreateIndicatorConstraint(row_name, col, value));
 
   // RETURN_IF_ERROR(
-  //     AppendLineToError(data->CreateIndicatorConstraint(row_name, col, value)));
+  //     AppendLineToError(data->CreateIndicatorConstraint(row_name, col,
+  //     value)));
   return util::OkStatus();
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::StoreCoefficient(int col, const std::string& row_name,
-                                         const std::string& row_value,
-                                         DataWrapper* data) {
+util::Status MPSReaderImpl::StoreCoefficient(int col,
+                                             const std::string& row_name,
+                                             const std::string& row_value,
+                                             DataWrapper* data) {
   if (row_name.empty() || row_name == "$") {
     return util::OkStatus();
   }
@@ -728,9 +731,9 @@ util::Status MPSReaderAux::StoreCoefficient(int col, const std::string& row_name
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::StoreRightHandSide(const std::string& row_name,
-                                           const std::string& row_value,
-                                           DataWrapper* data) {
+util::Status MPSReaderImpl::StoreRightHandSide(const std::string& row_name,
+                                               const std::string& row_value,
+                                               DataWrapper* data) {
   if (row_name.empty()) return util::OkStatus();
 
   if (row_name != objective_name_) {
@@ -751,9 +754,9 @@ util::Status MPSReaderAux::StoreRightHandSide(const std::string& row_name,
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::StoreRange(const std::string& row_name,
-                                   const std::string& range_value,
-                                   DataWrapper* data) {
+util::Status MPSReaderImpl::StoreRange(const std::string& row_name,
+                                       const std::string& range_value,
+                                       DataWrapper* data) {
   if (row_name.empty()) return util::OkStatus();
 
   const int row = data->FindOrCreateConstraint(row_name);
@@ -780,10 +783,10 @@ util::Status MPSReaderAux::StoreRange(const std::string& row_name,
 }
 
 template <class DataWrapper>
-util::Status MPSReaderAux::StoreBound(const std::string& bound_type_mnemonic,
-                                   const std::string& column_name,
-                                   const std::string& bound_value,
-                                   DataWrapper* data) {
+util::Status MPSReaderImpl::StoreBound(const std::string& bound_type_mnemonic,
+                                       const std::string& column_name,
+                                       const std::string& bound_value,
+                                       DataWrapper* data) {
   const BoundTypeId bound_type_id = gtl::FindWithDefault(
       bound_name_to_id_map_, bound_type_mnemonic, UNKNOWN_BOUND_TYPE);
   if (bound_type_id == UNKNOWN_BOUND_TYPE) {
@@ -850,13 +853,13 @@ util::Status MPSReaderAux::StoreBound(const std::string& bound_type_mnemonic,
   return util::OkStatus();
 }
 
-const int MPSReaderAux::kNumFields = 6;
-const int MPSReaderAux::kFieldStartPos[kNumFields] = {1, 4, 14, 24, 39, 49};
-const int MPSReaderAux::kFieldLength[kNumFields] = {2, 8, 8, 12, 8, 12};
-const int MPSReaderAux::kSpacePos[12] = {12, 13, 22, 23, 36, 37,
-                                      38, 47, 48, 61, 62, 63};
+const int MPSReaderImpl::kNumFields = 6;
+const int MPSReaderImpl::kFieldStartPos[kNumFields] = {1, 4, 14, 24, 39, 49};
+const int MPSReaderImpl::kFieldLength[kNumFields] = {2, 8, 8, 12, 8, 12};
+const int MPSReaderImpl::kSpacePos[12] = {12, 13, 22, 23, 36, 37,
+                                          38, 47, 48, 61, 62, 63};
 
-MPSReaderAux::MPSReaderAux()
+MPSReaderImpl::MPSReaderImpl()
     : free_form_(true),
       fields_(kNumFields),
       section_(UNKNOWN_SECTION),
@@ -896,7 +899,7 @@ MPSReaderAux::MPSReaderAux()
   integer_type_names_set_.insert("UI");
 }
 
-void MPSReaderAux::Reset() {
+void MPSReaderImpl::Reset() {
   fields_.resize(kNumFields);
   line_num_ = 0;
   in_integer_section_ = false;
@@ -904,7 +907,7 @@ void MPSReaderAux::Reset() {
   objective_name_.clear();
 }
 
-void MPSReaderAux::DisplaySummary() {
+void MPSReaderImpl::DisplaySummary() {
   if (num_unconstrained_rows_ > 0) {
     VLOG(1) << "There are " << num_unconstrained_rows_ + 1
             << " unconstrained rows. The first of them (" << objective_name_
@@ -912,7 +915,7 @@ void MPSReaderAux::DisplaySummary() {
   }
 }
 
-bool MPSReaderAux::IsFixedFormat() {
+bool MPSReaderImpl::IsFixedFormat() {
   for (const int i : kSpacePos) {
     if (i >= line_.length()) break;
     if (line_[i] != ' ') return false;
@@ -920,7 +923,7 @@ bool MPSReaderAux::IsFixedFormat() {
   return true;
 }
 
-util::Status MPSReaderAux::SplitLineIntoFields() {
+util::Status MPSReaderImpl::SplitLineIntoFields() {
   if (free_form_) {
     fields_ = absl::StrSplit(line_, absl::ByAnyChar(" \t"), absl::SkipEmpty());
     if (fields_.size() > kNumFields) {
@@ -947,7 +950,7 @@ util::Status MPSReaderAux::SplitLineIntoFields() {
   return util::OkStatus();
 }
 
-std::string MPSReaderAux::GetFirstWord() const {
+std::string MPSReaderImpl::GetFirstWord() const {
   if (line_[0] == ' ') {
     return std::string("");
   }
@@ -956,7 +959,7 @@ std::string MPSReaderAux::GetFirstWord() const {
   return first_word;
 }
 
-bool MPSReaderAux::IsCommentOrBlank() const {
+bool MPSReaderImpl::IsCommentOrBlank() const {
   const char* line = line_.c_str();
   if (*line == '*') {
     return true;
@@ -969,7 +972,8 @@ bool MPSReaderAux::IsCommentOrBlank() const {
   return true;
 }
 
-util::StatusOr<double> MPSReaderAux::GetDoubleFromString(const std::string& str) {
+util::StatusOr<double> MPSReaderImpl::GetDoubleFromString(
+    const std::string& str) {
   double result;
   if (!absl::SimpleAtod(str, &result)) {
     return InvalidArgumentError(
@@ -981,7 +985,7 @@ util::StatusOr<double> MPSReaderAux::GetDoubleFromString(const std::string& str)
   return result;
 }
 
-util::StatusOr<bool> MPSReaderAux::GetBoolFromString(const std::string& str) {
+util::StatusOr<bool> MPSReaderImpl::GetBoolFromString(const std::string& str) {
   int result;
   if (!absl::SimpleAtoi(str, &result) || result < 0 || result > 1) {
     return InvalidArgumentError(
@@ -990,33 +994,32 @@ util::StatusOr<bool> MPSReaderAux::GetBoolFromString(const std::string& str) {
   return result;
 }
 
-util::Status MPSReaderAux::ProcessSosSection() {
+util::Status MPSReaderImpl::ProcessSosSection() {
   return InvalidArgumentError("Section SOS currently not supported.");
 }
 
-util::Status MPSReaderAux::InvalidArgumentError(const std::string& error_message) {
+util::Status MPSReaderImpl::InvalidArgumentError(
+    const std::string& error_message) {
   return util::InvalidArgumentError(error_message);
 }
 
-// Parses instance from a file.
-util::Status MPSReader::ParseFile(const std::string& file_name,
-				  LinearProgram* data,
-				  Form form) {
-  MPSReaderAux aux_reader;
-  return aux_reader.ParseFile(file_name, data, form);
-}
-
-util::Status MPSReader::ParseFile(const std::string& file_name,
-				  MPModelProto* data,
-				  Form form) {
-  MPSReaderAux aux_reader;
-  return aux_reader.ParseFile(file_name, data, form);
-}
-
-// util::Status MPSReaderAux::AppendLineToError(const util::Status& status) {
+// util::Status MPSReaderImpl::AppendLineToError(const util::Status& status) {
 //   return util::StatusBuilder(status, GTL_LOC).SetAppend()
 //          << " Line " << line_num_ << ": \"" << line_ << "\".";
 // }
+
+// Parses instance from a file.
+util::Status MPSReader::ParseFile(const std::string& file_name,
+                                  LinearProgram* data, Form form) {
+  MPSReaderImpl aux_reader;
+  return aux_reader.ParseFile(file_name, data, form);
+}
+
+util::Status MPSReader::ParseFile(const std::string& file_name,
+                                  MPModelProto* data, Form form) {
+  MPSReaderImpl aux_reader;
+  return aux_reader.ParseFile(file_name, data, form);
+}
 
 }  // namespace glop
 }  // namespace operations_research
