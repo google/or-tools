@@ -463,7 +463,12 @@ struct NamedOptimizationProblemType {
 };
 }  // namespace
 
-constexpr NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
+#if defined(_MSC_VER)
+const
+#else
+constexpr
+#endif
+NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
     {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
 #if defined(USE_GLPK)
     {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
