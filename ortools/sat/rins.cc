@@ -21,33 +21,12 @@ namespace operations_research {
 namespace sat {
 
 bool SharedRINSNeighborhoodManager::AddNeighborhood(
-    const absl::flat_hash_map<IntegerVariable, IntegerValue>& fixed_vars,
-    const Model& model) {
-  auto* mapping = model.Get<CpModelMapping>();
-  if (mapping == nullptr) {
-    return false;
-  }
-
+    const RINSNeighborhood& rins_neighborhood) {
   // Don't store this neighborhood if the current storage is already too large.
   // TODO(user): Consider instead removing one of the older neighborhoods.
-  if (total_num_fixed_vars_ + fixed_vars.size() > max_fixed_vars()) {
+  if (total_num_fixed_vars_ + rins_neighborhood.fixed_vars.size() >
+      max_fixed_vars()) {
     return false;
-  }
-
-  RINSNeighborhood rins_neighborhood;
-  // TODO(user): Use GetProtoVariableFromIntegerVariable instead and change
-  // the api to take a list of fixed vars instead of a hash map.
-  for (int i = 0; i < num_model_vars_; ++i) {
-    if (mapping->IsInteger(i)) {
-      const IntegerVariable var = mapping->Integer(i);
-      if (fixed_vars.contains(var)) {
-        rins_neighborhood.fixed_vars.push_back(
-            {i, fixed_vars.find(var)->second.value()});
-      } else if (fixed_vars.contains(NegationOf(var))) {
-        rins_neighborhood.fixed_vars.push_back(
-            {i, -fixed_vars.find(var)->second.value()});
-      }
-    }
   }
 
   absl::MutexLock lock(&mutex_);
@@ -75,40 +54,41 @@ SharedRINSNeighborhoodManager::GetUnexploredNeighborhood() {
 
 void AddRINSNeighborhood(Model* model) {
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-  absl::flat_hash_map<IntegerVariable, IntegerValue> fixed_vars;
-  auto* solution_details = model->GetOrCreate<SolutionDetails>();
+  auto* solution_details = model->Get<SolutionDetails>();
+  const RINSVariables& rins_vars = *model->GetOrCreate<RINSVariables>();
 
-  const int size = solution_details->best_solution.size();
-  for (IntegerVariable var(0); var < size; ++var) {
-    auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
+  if (solution_details == nullptr) return;
 
-    const IntegerVariable positive_var = PositiveVariable(var);
+  RINSNeighborhood rins_neighborhood;
+
+  for (const RINSVariable& rins_var : rins_vars.vars) {
+    const IntegerVariable positive_var = rins_var.positive_var;
 
     if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
 
     // TODO(user): Perform caching to make this more efficient.
-    LinearProgrammingConstraint* lp =
-        gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+    LinearProgrammingConstraint* lp = rins_var.lp;
     if (lp == nullptr || !lp->HasSolution()) continue;
+    if (positive_var >= solution_details->best_solution.size()) continue;
 
     const IntegerValue best_solution_value =
-        solution_details->best_solution[var];
+        solution_details->best_solution[positive_var];
     if (std::abs(best_solution_value.value() -
                  lp->GetSolutionValue(positive_var)) < 1e-4) {
-      if (best_solution_value >= integer_trail->LowerBound(var) ||
-          best_solution_value <= integer_trail->UpperBound(var)) {
-        fixed_vars[positive_var] = best_solution_value;
+      if (best_solution_value >= integer_trail->LowerBound(positive_var) ||
+          best_solution_value <= integer_trail->UpperBound(positive_var)) {
+        rins_neighborhood.fixed_vars.push_back(
+            {rins_var, best_solution_value.value()});
       } else {
         // The last lp_solution might not always be up to date.
         VLOG(2) << "RINS common value out of bounds: " << best_solution_value
-                << " LB: " << integer_trail->LowerBound(var)
-                << " UB: " << integer_trail->UpperBound(var);
+                << " LB: " << integer_trail->LowerBound(positive_var)
+                << " UB: " << integer_trail->UpperBound(positive_var);
       }
     }
   }
-  VLOG(2) << "RINS Fixed: " << fixed_vars.size() << "/" << size;
-  model->Mutable<SharedRINSNeighborhoodManager>()->AddNeighborhood(fixed_vars,
-                                                                   *model);
+  model->Mutable<SharedRINSNeighborhoodManager>()->AddNeighborhood(
+      rins_neighborhood);
 }
 
 }  // namespace sat

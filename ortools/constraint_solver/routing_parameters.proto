@@ -78,7 +78,7 @@ message RoutingSearchParameters {
   double cheapest_insertion_neighbors_ratio = 21;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 26
+  // Next ID: 27
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -162,6 +162,9 @@ message RoutingSearchParameters {
     // therefore not be moved, and (A, B) and (C,D) are pairs of nodes):
     //   1 -> [C] ->  [D] -> 2 -> 3, 4 -> [A] -> [B] -> 5
     OptionalBoolean use_exchange_pair = 22;
+    // Operator which exchanges subtrips associated to two pairs of nodes,
+    // see use_relocate_subtrip for a definition of subtrips.
+    OptionalBoolean use_exchange_subtrip = 26;
     // Operator which cross exchanges the starting chains of 2 paths, including
     // exchanging the whole paths.
     // First and last nodes are not moved.

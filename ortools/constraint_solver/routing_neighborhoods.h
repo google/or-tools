@@ -527,8 +527,8 @@ class RelocateSubtrip : public PathWithPreviousNodesOperator {
   bool RelocateSubTripFromPickup(int64 chain_first_node, int64 insertion_node);
   // Relocates the subtrip ending at chain_first_node. It must be a delivery.
   bool RelocateSubTripFromDelivery(int64 chain_last_node, int64 insertion_node);
-  std::vector<bool> is_first_node_;
-  std::vector<bool> is_second_node_;
+  std::vector<bool> is_pickup_node_;
+  std::vector<bool> is_delivery_node_;
   std::vector<int> pair_of_node_;
   // Represents the set of pairs that have been opened during a call to
   // MakeNeighbor(). This vector must be all false before and after calling
@@ -537,6 +537,59 @@ class RelocateSubtrip : public PathWithPreviousNodesOperator {
 
   std::vector<int64> rejected_nodes_;
   std::vector<int64> subtrip_nodes_;
+};
+
+class ExchangeSubtrip : public PathWithPreviousNodesOperator {
+ public:
+  ExchangeSubtrip(const std::vector<IntVar*>& vars,
+                  const std::vector<IntVar*>& secondary_vars,
+                  std::function<int(int64)> start_empty_path_class,
+                  const RoutingIndexPairs& pairs);
+
+  std::string DebugString() const override { return "ExchangeSubtrip"; }
+  bool MakeNeighbor() override;
+
+ private:
+  // Try to extract a subtrip from base_node (see below) and check that the move
+  // will be canonical.
+  // Given a pickup/delivery pair, this operator could generate the same move
+  // twice, the first time with base_node == pickup, the second time with
+  // base_node == delivery. This happens only when no nodes in the subtrip
+  // remain in the original path, i.e. when rejects is empty after
+  // chain extraction. In that case, we keep only a canonical move out of the
+  // two possibilities, the move where base_node is a pickup.
+  bool ExtractChainsAndCheckCanonical(int64 base_node,
+                                      std::vector<int64>* rejects,
+                                      std::vector<int64>* subtrip);
+  // Reads the path from base_node forward, collecting subtrip nodes in
+  // subtrip and non-subtrip nodes in rejects.
+  // Non-subtrip nodes will be unmatched delivery nodes.
+  // base_node must be a pickup, and remaining/extracted_nodes must be empty.
+  // Returns true if such chains could be extracted.
+  bool ExtractChainsFromPickup(int64 base_node, std::vector<int64>* rejects,
+                               std::vector<int64>* subtrip);
+  // Reads the path from base_node backward, collecting subtrip nodes in
+  // subtrip and non-subtrip nodes in rejects.
+  // Non-subtrip nodes will be unmatched pickup nodes.
+  // base_node must be a delivery, and remaining/extracted_nodes must be empty.
+  // Returns true if such chains could be extracted.
+  bool ExtractChainsFromDelivery(int64 base_node, std::vector<int64>* rejects,
+                                 std::vector<int64>* subtrip);
+  void SetPath(const std::vector<int64>& path, int path_id);
+
+  // Precompute some information about nodes.
+  std::vector<bool> is_pickup_node_;
+  std::vector<bool> is_delivery_node_;
+  std::vector<int> pair_of_node_;
+  // Represents the set of opened pairs during ExtractChainsFromXXX().
+  std::vector<bool> opened_pairs_set_;
+  // Keep internal structures under hand to avoid reallocation.
+  std::vector<int64> rejects0_;
+  std::vector<int64> subtrip0_;
+  std::vector<int64> rejects1_;
+  std::vector<int64> subtrip1_;
+  std::vector<int64> path0_;
+  std::vector<int64> path1_;
 };
 
 }  // namespace operations_research

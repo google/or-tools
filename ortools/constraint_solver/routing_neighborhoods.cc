@@ -882,16 +882,16 @@ RelocateSubtrip::RelocateSubtrip(
     : PathWithPreviousNodesOperator(vars, secondary_vars,
                                     /*number_of_base_nodes*/ 2,
                                     std::move(start_empty_path_class)) {
-  is_first_node_.resize(number_of_nexts_, false);
-  is_second_node_.resize(number_of_nexts_, false);
+  is_pickup_node_.resize(number_of_nexts_, false);
+  is_delivery_node_.resize(number_of_nexts_, false);
   pair_of_node_.resize(number_of_nexts_, -1);
   for (int pair_index = 0; pair_index < pairs.size(); ++pair_index) {
     for (const int node : pairs[pair_index].first) {
-      is_first_node_[node] = true;
+      is_pickup_node_[node] = true;
       pair_of_node_[node] = pair_index;
     }
     for (const int node : pairs[pair_index].second) {
-      is_second_node_[node] = true;
+      is_delivery_node_[node] = true;
       pair_of_node_[node] = pair_index;
     }
   }
@@ -916,14 +916,14 @@ bool RelocateSubtrip::RelocateSubTripFromPickup(const int64 chain_first_node,
       return false;
     }
     const int pair = pair_of_node_[current];
-    if (is_second_node_[current] && !opened_pairs_bitset_[pair]) {
+    if (is_delivery_node_[current] && !opened_pairs_bitset_[pair]) {
       rejected_nodes_.push_back(current);
     } else {
       subtrip_nodes_.push_back(current);
-      if (is_first_node_[current]) {
+      if (is_pickup_node_[current]) {
         ++num_opened_pairs;
         opened_pairs_bitset_[pair] = true;
-      } else if (is_second_node_[current]) {
+      } else if (is_delivery_node_[current]) {
         --num_opened_pairs;
         opened_pairs_bitset_[pair] = false;
       }
@@ -964,14 +964,14 @@ bool RelocateSubtrip::RelocateSubTripFromDelivery(const int64 chain_last_node,
       return false;
     }
     const int pair = pair_of_node_[current];
-    if (is_first_node_[current] && !opened_pairs_bitset_[pair]) {
+    if (is_pickup_node_[current] && !opened_pairs_bitset_[pair]) {
       rejected_nodes_.push_back(current);
     } else {
       subtrip_nodes_.push_back(current);
-      if (is_second_node_[current]) {
+      if (is_delivery_node_[current]) {
         ++num_opened_pairs;
         opened_pairs_bitset_[pair] = true;
-      } else if (is_first_node_[current]) {
+      } else if (is_pickup_node_[current]) {
         --num_opened_pairs;
         opened_pairs_bitset_[pair] = false;
       }
@@ -1003,13 +1003,186 @@ bool RelocateSubtrip::RelocateSubTripFromDelivery(const int64 chain_last_node,
 bool RelocateSubtrip::MakeNeighbor() {
   if (IsPathEnd(BaseNode(0))) return false;
   if (IsPathEnd(BaseNode(1))) return false;
-  if (is_first_node_[BaseNode(0)]) {
+  if (is_pickup_node_[BaseNode(0)]) {
     return RelocateSubTripFromPickup(BaseNode(0), BaseNode(1));
-  } else if (is_second_node_[BaseNode(0)]) {
+  } else if (is_delivery_node_[BaseNode(0)]) {
     return RelocateSubTripFromDelivery(BaseNode(0), BaseNode(1));
   } else {
     return false;
   }
+}
+
+ExchangeSubtrip::ExchangeSubtrip(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64)> start_empty_path_class,
+    const RoutingIndexPairs& pairs)
+    : PathWithPreviousNodesOperator(vars, secondary_vars, 2,
+                                    std::move(start_empty_path_class)) {
+  is_pickup_node_.resize(number_of_nexts_, false);
+  is_delivery_node_.resize(number_of_nexts_, false);
+  pair_of_node_.resize(number_of_nexts_, -1);
+  for (int pair_index = 0; pair_index < pairs.size(); ++pair_index) {
+    for (const int node : pairs[pair_index].first) {
+      is_pickup_node_[node] = true;
+      pair_of_node_[node] = pair_index;
+    }
+    for (const int node : pairs[pair_index].second) {
+      is_delivery_node_[node] = true;
+      pair_of_node_[node] = pair_index;
+    }
+  }
+  opened_pairs_set_.resize(pairs.size(), false);
+}
+
+void ExchangeSubtrip::SetPath(const std::vector<int64>& path, int path_id) {
+  for (int i = 1; i < path.size(); ++i) {
+    SetNext(path[i - 1], path[i], path_id);
+  }
+}
+
+namespace {
+bool VectorContains(const std::vector<int64>& values, int64 target) {
+  return std::find(values.begin(), values.end(), target) != values.end();
+}
+}  // namespace
+
+bool ExchangeSubtrip::MakeNeighbor() {
+  if (IsPathEnd(BaseNode(0)) || IsPathEnd(BaseNode(1))) return false;
+  if (pair_of_node_[BaseNode(0)] == -1) return false;
+  if (pair_of_node_[BaseNode(1)] == -1) return false;
+  // Break symmetry: a move generated from (BaseNode(0), BaseNode(1)) is the
+  // same as from (BaseNode(1), BaseNode(1)): no need to do it twice.
+  if (BaseNode(0) >= BaseNode(1)) return false;
+  rejects0_.clear();
+  subtrip0_.clear();
+  if (!ExtractChainsAndCheckCanonical(BaseNode(0), &rejects0_, &subtrip0_)) {
+    return false;
+  }
+  rejects1_.clear();
+  subtrip1_.clear();
+  if (!ExtractChainsAndCheckCanonical(BaseNode(1), &rejects1_, &subtrip1_)) {
+    return false;
+  }
+
+  // If paths intersect, skip the move.
+  if (Path(BaseNode(0)) == Path(BaseNode(1))) {
+    if (VectorContains(rejects0_, subtrip1_.front())) return false;
+    if (VectorContains(rejects1_, subtrip0_.front())) return false;
+    if (VectorContains(subtrip0_, subtrip1_.front())) return false;
+    if (VectorContains(subtrip1_, subtrip0_.front())) return false;
+  }
+
+  // Assemble the new paths.
+  path0_ = {Prev(subtrip0_.front())};
+  path1_ = {Prev(subtrip1_.front())};
+  const int64 last0 = Next(subtrip0_.back());
+  const int64 last1 = Next(subtrip1_.back());
+  const bool concatenated01 = last0 == subtrip1_.front();
+  const bool concatenated10 = last1 == subtrip0_.front();
+
+  if (is_delivery_node_[BaseNode(0)]) std::swap(subtrip1_, rejects0_);
+  path0_.insert(path0_.end(), subtrip1_.begin(), subtrip1_.end());
+  path0_.insert(path0_.end(), rejects0_.begin(), rejects0_.end());
+  path0_.push_back(last0);
+
+  if (is_delivery_node_[BaseNode(1)]) std::swap(subtrip0_, rejects1_);
+  path1_.insert(path1_.end(), subtrip0_.begin(), subtrip0_.end());
+  path1_.insert(path1_.end(), rejects1_.begin(), rejects1_.end());
+  path1_.push_back(last1);
+
+  // When the trips are concatenated, bypass the regular extremities.
+  if (concatenated01) {
+    path0_.pop_back();
+    path1_.front() = path0_.back();
+  } else if (concatenated10) {
+    path1_.pop_back();
+    path0_.front() = path1_.back();
+  }
+
+  // Change the paths. Since SetNext() modifies Path() values,
+  // record path_id0 and path_id11 before calling SetPath();
+  const int64 path0_id = Path(BaseNode(0));
+  const int64 path1_id = Path(BaseNode(1));
+  SetPath(path0_, path0_id);
+  SetPath(path1_, path1_id);
+  return true;
+}
+
+bool ExchangeSubtrip::ExtractChainsAndCheckCanonical(
+    int64 base_node, std::vector<int64>* rejects, std::vector<int64>* subtrip) {
+  const bool extracted =
+      is_pickup_node_[base_node]
+          ? ExtractChainsFromPickup(base_node, rejects, subtrip)
+          : ExtractChainsFromDelivery(base_node, rejects, subtrip);
+  if (!extracted) return false;
+  // Check canonicality.
+  return !is_delivery_node_[base_node] ||
+         pair_of_node_[subtrip->front()] != pair_of_node_[subtrip->back()] ||
+         !rejects->empty();
+}
+
+bool ExchangeSubtrip::ExtractChainsFromPickup(int64 base_node,
+                                              std::vector<int64>* rejects,
+                                              std::vector<int64>* subtrip) {
+  DCHECK(is_pickup_node_[base_node]);
+  DCHECK(rejects->empty());
+  DCHECK(subtrip->empty());
+  // Iterate from base_node forwards while maintaining the set of opened pairs.
+  // A pair is opened by a pickup, closed with the corresponding delivery.
+  opened_pairs_set_.assign(opened_pairs_set_.size(), false);
+  int num_opened_pairs = 0;
+  int current = base_node;
+  do {
+    const int pair = pair_of_node_[current];
+    if (is_delivery_node_[current] && !opened_pairs_set_[pair]) {
+      rejects->push_back(current);
+    } else {
+      subtrip->push_back(current);
+      if (is_pickup_node_[current]) {
+        ++num_opened_pairs;
+        opened_pairs_set_[pair] = true;
+      } else if (is_delivery_node_[current]) {
+        --num_opened_pairs;
+        opened_pairs_set_[pair] = false;
+      }
+    }
+    current = Next(current);
+  } while (num_opened_pairs != 0 && !IsPathEnd(current));
+  return num_opened_pairs == 0;
+}
+
+bool ExchangeSubtrip::ExtractChainsFromDelivery(int64 base_node,
+                                                std::vector<int64>* rejects,
+                                                std::vector<int64>* subtrip) {
+  DCHECK(is_delivery_node_[base_node]);
+  DCHECK(rejects->empty());
+  DCHECK(subtrip->empty());
+  // Iterate from base_node backwards while maintaining the set of opened pairs.
+  // A pair is opened by a delivery, closed with the corresponding pickup.
+  opened_pairs_set_.assign(opened_pairs_set_.size(), false);
+  int num_opened_pairs = 0;
+  int current = base_node;
+  do {
+    const int pair = pair_of_node_[current];
+    if (is_pickup_node_[current] && !opened_pairs_set_[pair]) {
+      rejects->push_back(current);
+    } else {
+      subtrip->push_back(current);
+      if (is_delivery_node_[current]) {
+        ++num_opened_pairs;
+        opened_pairs_set_[pair] = true;
+      } else if (is_pickup_node_[current]) {
+        --num_opened_pairs;
+        opened_pairs_set_[pair] = false;
+      }
+    }
+    current = Prev(current);
+  } while (num_opened_pairs != 0 && !IsPathStart(current));
+  if (num_opened_pairs != 0) return false;
+  std::reverse(rejects->begin(), rejects->end());
+  std::reverse(subtrip->begin(), subtrip->end());
+  return true;
 }
 
 }  // namespace operations_research

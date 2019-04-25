@@ -1011,14 +1011,12 @@ util::Status MPSReaderImpl::InvalidArgumentError(
 // Parses instance from a file.
 util::Status MPSReader::ParseFile(const std::string& file_name,
                                   LinearProgram* data, Form form) {
-  MPSReaderImpl aux_reader;
-  return aux_reader.ParseFile(file_name, data, form);
+  return MPSReaderImpl().ParseFile(file_name, data, form);
 }
 
 util::Status MPSReader::ParseFile(const std::string& file_name,
                                   MPModelProto* data, Form form) {
-  MPSReaderImpl aux_reader;
-  return aux_reader.ParseFile(file_name, data, form);
+  return MPSReaderImpl().ParseFile(file_name, data, form);
 }
 
 }  // namespace glop

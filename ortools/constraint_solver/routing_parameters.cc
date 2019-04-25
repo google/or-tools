@@ -61,6 +61,7 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "  use_relocate_neighbors: BOOL_FALSE"
       "  use_exchange: BOOL_TRUE"
       "  use_exchange_pair: BOOL_TRUE"
+      "  use_exchange_subtrip: BOOL_TRUE"
       "  use_cross: BOOL_TRUE"
       "  use_cross_exchange: BOOL_FALSE"
       "  use_relocate_expensive_chain: BOOL_TRUE"

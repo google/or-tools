@@ -141,6 +141,29 @@ class MinPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(MinPropagator);
 };
 
+// An abs constraint of the form target = Abs(var).
+//   1/ target <= MAX(var, -var).
+//   2/ abs_var >= 0 if lb(var) < 0 and ub(var) > 0, (vars).
+//      abs_var >= lb(var) if lb(var) >= 0
+//      abs_var >= -ub(var) if ub(var) <= 0
+class AbsPropagator : public PropagatorInterface {
+ public:
+  AbsPropagator(const IntegerVariable var, IntegerVariable abs_var,
+                IntegerTrail* integer_trail);
+
+  bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  const IntegerVariable var_;
+  const IntegerVariable abs_var_;
+  IntegerTrail* integer_trail_;
+
+  std::vector<IntegerLiteral> integer_reason_;
+
+  DISALLOW_COPY_AND_ASSIGN(AbsPropagator);
+};
+
 // Propagates a * b = c. Basic version, we don't extract any special cases, and
 // we only propagates the bounds.
 //
@@ -539,6 +562,18 @@ inline std::function<void(Model*)> IsEqualToMaxOf(
 
     MinPropagator* constraint = new MinPropagator(
         negated_vars, NegationOf(max_var), model->GetOrCreate<IntegerTrail>());
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+// Expresses the fact that an existing integer variable is equal to the absolute
+// value of another integer variable: abs_var == abs(var).
+inline std::function<void(Model*)> IsEqualToAbsOf(IntegerVariable abs_var,
+                                                  IntegerVariable var) {
+  return [=](Model* model) {
+    AbsPropagator* constraint =
+        new AbsPropagator(var, abs_var, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

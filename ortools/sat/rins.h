@@ -14,10 +14,13 @@
 #ifndef OR_TOOLS_SAT_RINS_H_
 #define OR_TOOLS_SAT_RINS_H_
 
+#include <vector>
+
 #include "absl/container/flat_hash_map.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/optional.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 
 namespace operations_research {
@@ -33,8 +36,24 @@ struct SolutionDetails {
   void LoadFromTrail(const IntegerTrail& integer_trail);
 };
 
+// Collection of useful data for RINS for a given variable.
+struct RINSVariable {
+  IntegerVariable positive_var = kNoIntegerVariable;
+  LinearProgrammingConstraint* lp = nullptr;
+  int model_var;
+
+  bool operator==(const RINSVariable other) const {
+    return (positive_var == other.positive_var && lp == other.lp &&
+            model_var == other.model_var);
+  }
+};
+
+struct RINSVariables {
+  std::vector<RINSVariable> vars;
+};
+
 struct RINSNeighborhood {
-  std::vector<std::pair</*var*/ int, /*value*/ int64>> fixed_vars;
+  std::vector<std::pair<RINSVariable, /*value*/ int64>> fixed_vars;
 };
 
 // Shared object to pass around generated RINS neighborhoods across workers.
@@ -45,9 +64,7 @@ class SharedRINSNeighborhoodManager {
 
   // Model will be used to get the CpModelMapping for translation. Returns
   // true for success.
-  bool AddNeighborhood(
-      const absl::flat_hash_map<IntegerVariable, IntegerValue>& fixed_vars,
-      const Model& model);
+  bool AddNeighborhood(const RINSNeighborhood& neighborhood);
 
   // Returns an unexplored RINS neighborhood if any, otherwise returns nullopt.
   // TODO(user): This also deletes the returned neighborhood. Consider having

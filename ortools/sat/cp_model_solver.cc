@@ -648,13 +648,15 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
 
 // Add a linear relaxation of the CP constraint to the set of linear
 // constraints. The highest linearization_level is, the more types of constraint
-// we encode. At level zero, we only encode non-reified linear constraints.
+// we encode. This method should be called only for linearization_level > 0.
 //
 // TODO(user): In full generality, we could encode all the constraint as an LP.
+// TODO(user,user): Add unit tests for this method.
 void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               const ConstraintProto& ct, Model* m,
                               int linearization_level,
                               LinearRelaxation* relaxation) {
+  DCHECK_GT(linearization_level, 0);
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
     if (linearization_level < 2) return;
@@ -682,16 +684,19 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       }
       return;
     }
+
+    // Andi(e_i) => Andj(x_j)
+    // <=> num_rhs_terms <= Sum_j(x_j) + num_rhs_terms * Sum_i(~e_i)
+    int num_literals = ct.bool_and().literals_size();
+    LinearConstraintBuilder lc(m, IntegerValue(num_literals), kMaxIntegerValue);
     for (const int ref : ct.bool_and().literals()) {
-      // Same as the clause linearization above.
-      LinearConstraintBuilder lc(m, IntegerValue(1), kMaxIntegerValue);
-      for (const int enforcement_ref : ct.enforcement_literal()) {
-        CHECK(lc.AddLiteralTerm(mapping->Literal(NegatedRef(enforcement_ref)),
-                                IntegerValue(1)));
-      }
       CHECK(lc.AddLiteralTerm(mapping->Literal(ref), IntegerValue(1)));
-      relaxation->linear_constraints.push_back(lc.Build());
     }
+    for (const int enforcement_ref : ct.enforcement_literal()) {
+      CHECK(lc.AddLiteralTerm(mapping->Literal(NegatedRef(enforcement_ref)),
+                              IntegerValue(num_literals)));
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kAtMostOne) {
     if (HasEnforcementLiteral(ct)) return;
@@ -1408,6 +1413,26 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
   if (VLOG_IS_ON(3)) {
     fixed_search = InstrumentSearchStrategy(
         model_proto, mapping->GetVariableMapping(), fixed_search, model);
+  }
+
+  if (model->Get<SharedRINSNeighborhoodManager>() != nullptr) {
+    // Cache the relavant data for RINS variables.
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
+    auto* rins_vars = model->GetOrCreate<RINSVariables>();
+    IntegerVariable size = integer_trail->NumIntegerVariables();
+    for (IntegerVariable positive_var(0); positive_var < size;
+         positive_var += 2) {
+      RINSVariable rins_var;
+      rins_var.positive_var = positive_var;
+      rins_var.model_var =
+          mapping->GetProtoVariableFromIntegerVariable(positive_var);
+      rins_var.lp = gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
+
+      if (rins_var.lp != nullptr) {
+        rins_vars->vars.push_back(rins_var);
+      }
+    }
   }
 
   const auto solution_observer = [&model_proto, &model, &solution_info,

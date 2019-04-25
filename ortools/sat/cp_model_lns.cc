@@ -474,9 +474,9 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   }
 
   // Fix the variables in the local model.
-  for (const std::pair<int, int64> fixed_var :
+  for (const std::pair<RINSVariable, int64> fixed_var :
        rins_neighborhood_opt.value().fixed_vars) {
-    int var = fixed_var.first;
+    int var = fixed_var.first.model_var;
     int64 value = fixed_var.second;
     if (!helper_.IsActive(var)) continue;
     neighborhood.cp_model.mutable_variables(var)->clear_domain();

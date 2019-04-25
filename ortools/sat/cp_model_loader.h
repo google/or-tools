@@ -131,11 +131,11 @@ class CpModelMapping {
   }
 
   // Note that both these functions returns positive reference or -1.
-  int GetProtoVariableFromBooleanVariable(BooleanVariable var) {
+  int GetProtoVariableFromBooleanVariable(BooleanVariable var) const {
     if (var.value() >= reverse_boolean_map_.size()) return -1;
     return reverse_boolean_map_[var];
   }
-  int GetProtoVariableFromIntegerVariable(IntegerVariable var) {
+  int GetProtoVariableFromIntegerVariable(IntegerVariable var) const {
     if (var.value() >= reverse_integer_map_.size()) return -1;
     return reverse_integer_map_[var];
   }

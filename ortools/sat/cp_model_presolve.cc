@@ -717,16 +717,17 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     // abs(x) == constant -> reduce domain.
     bool changed = false;
     if (context->IsFixed(target_ref)) {
-      const int64 value = context->MaxOf(target_ref);
-      if (value < 0) {
+      const int64 target_value = context->MaxOf(target_ref);
+      if (target_value < 0) {
         return context->NotifyThatModelIsUnsat();
       }
-      Domain reduced_domain = Domain::FromValues({-value, value});
-      context->UpdateRuleStats(
-          "int_max: propagate domain of abs(x) == constant");
+      const Domain reduced_domain =
+          Domain::FromValues({-target_value, target_value});
       if (!context->IntersectDomainWith(var, reduced_domain)) {
         return true;
       }
+      context->UpdateRuleStats(
+          "int_max: propagate domain of abs(x) == constant");
       return RemoveConstraint(ct, context);
     }
 
@@ -822,8 +823,8 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     return MarkConstraintAsFalse(ct, context);
   }
   if (new_size == 1) {
-    // Convert to an equality. Note that we create a new constraint otherwise
-    // it might not be processed again.
+    // Convert to an equality. Note that we create a new constraint otherwise it
+    // might not be processed again.
     context->UpdateRuleStats("int_max: converted to equality");
     ConstraintProto* new_ct = context->working_model->add_constraints();
     *new_ct = *ct;  // copy name and potential reification.
@@ -966,6 +967,9 @@ bool PresolveIntDiv(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Linearize if everything is positive.
+  // TODO(user,user): Deal with other cases where there is no change of
+  // sign.We can also deal with target = cte, div variable.
+
   if (context->MinOf(target) >= 0 && context->MinOf(ref_x) >= 0 &&
       divisor > 1) {
     LinearConstraintProto* const lin =

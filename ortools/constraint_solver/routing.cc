@@ -609,6 +609,15 @@ LocalSearchOperator* MakeRelocateSubtrip(
       vars, secondary_vars, std::move(start_empty_path_class), pairs));
 }
 
+LocalSearchOperator* MakeExchangeSubtrip(
+    Solver* const solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64)> start_empty_path_class,
+    const RoutingModel::IndexPairs& pairs) {
+  return solver->RevAlloc(new ExchangeSubtrip(
+      vars, secondary_vars, std::move(start_empty_path_class), pairs));
+}
+
 // Evaluators
 template <class A, class B>
 static int64 ReturnZero(A a, B b) {
@@ -3974,6 +3983,10 @@ void RoutingModel::CreateNeighborhoodOperators(
       solver_.get(), nexts_,
       CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
       vehicle_start_class_callback_, pickup_delivery_pairs_);
+  local_search_operators_[EXCHANGE_SUBTRIP] = MakeExchangeSubtrip(
+      solver_.get(), nexts_,
+      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
+      vehicle_start_class_callback_, pickup_delivery_pairs_);
 
   CP_ROUTING_ADD_OPERATOR2(EXCHANGE, Exchange);
   CP_ROUTING_ADD_OPERATOR2(CROSS, Cross);
@@ -4020,6 +4033,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(EXCHANGE_PAIR, exchange_pair, operators);
     CP_ROUTING_PUSH_OPERATOR(NODE_PAIR_SWAP, node_pair_swap_active, operators);
     CP_ROUTING_PUSH_OPERATOR(RELOCATE_SUBTRIP, relocate_subtrip, operators);
+    CP_ROUTING_PUSH_OPERATOR(EXCHANGE_SUBTRIP, exchange_subtrip, operators);
   }
   if (vehicles_ > 1) {
     if (GetNumOfSingletonNodes() > 0) {
@@ -5949,7 +5963,8 @@ bool TypeRegulationsChecker::CheckVehicle(
   }
 
   // Accumulates the count of types before the current node.
-  counts_of_type_.assign(model_.GetNumberOfVisitTypes(), NodeCount());
+  counts_of_type_.assign(model_.GetNumberOfVisitTypes(),
+			 TypeRegulationsChecker::NodeCount());
 
   for (int64 current = model_.Start(vehicle); !model_.IsEnd(current);
        current = next_accessor(current)) {

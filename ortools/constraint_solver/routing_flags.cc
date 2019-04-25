@@ -39,6 +39,8 @@ DEFINE_bool(routing_no_relocate_subtrip, false,
             "Routing: forbids use of RelocateSubtrips neighborhood.");
 DEFINE_bool(routing_no_exchange, false,
             "Routing: forbids use of Exchange neighborhood.");
+DEFINE_bool(routing_no_exchange_subtrip, false,
+            "Routing: forbids use of ExchangeSubtrips neighborhood.");
 DEFINE_bool(routing_no_cross, false,
             "Routing: forbids use of Cross neighborhood.");
 DEFINE_bool(routing_no_2opt, false,
@@ -211,6 +213,8 @@ void AddLocalSearchNeighborhoodOperatorsFromFlags(
       ToOptionalBoolean(!FLAGS_routing_no_relocate_neighbors));
   local_search_operators->set_use_relocate_subtrip(
       ToOptionalBoolean(!FLAGS_routing_no_relocate_subtrip));
+  local_search_operators->set_use_exchange_subtrip(
+      ToOptionalBoolean(!FLAGS_routing_no_exchange_subtrip));
   local_search_operators->set_use_exchange(
       ToOptionalBoolean(!FLAGS_routing_no_exchange));
   local_search_operators->set_use_cross(
