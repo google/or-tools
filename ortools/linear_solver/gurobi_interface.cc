@@ -32,6 +32,8 @@
 
 extern "C" {
 #include "gurobi_c.h"
+int __stdcall GRBisqp(GRBenv**, const char*, const char*, const char*, int,
+                      const char*);
 }
 
 DEFINE_int32(num_gurobi_threads, 4, "Number of threads available for Gurobi.");

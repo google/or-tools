@@ -691,7 +691,6 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
   const int64 size = Size();
   index_to_pickup_index_pairs_.resize(size);
   index_to_delivery_index_pairs_.resize(size);
-
   index_to_visit_type_.resize(index_manager.num_indices(), kUnassigned);
 
   index_to_vehicle_.resize(index_manager.num_indices(), kUnassigned);
@@ -1847,10 +1846,16 @@ void RoutingModel::CloseModelWithParameters(
         nexts_, active_, vehicle_vars_, zero_transit));
   }
 
-  // Nodes which are not in a disjunction are mandatory.
+  // Nodes which are not in a disjunction are mandatory, and those with a
+  // trivially infeasible type are necessarily unperformed
   for (int i = 0; i < size; ++i) {
     if (GetDisjunctionIndices(i).empty() && active_[i]->Max() != 0) {
       active_[i]->SetValue(1);
+    }
+    const int type = GetVisitType(i);
+    if (type != kUnassigned &&
+        gtl::ContainsKey(trivially_infeasible_visit_types_, type)) {
+      active_[i]->SetValue(0);
     }
   }
 
@@ -3708,8 +3713,14 @@ void RoutingModel::AddTemporalRequiredTypeAlternatives(
     int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
   DCHECK_LT(dependent_type,
             temporal_required_type_alternatives_per_type_index_.size());
-  has_temporal_type_requirements_ = true;
 
+  if (required_type_alternatives.empty()) {
+    // The dependent_type requires an infeasible (empty) set of types.
+    trivially_infeasible_visit_types_.insert(dependent_type);
+    return;
+  }
+
+  has_temporal_type_requirements_ = true;
   temporal_required_type_alternatives_per_type_index_[dependent_type].push_back(
       std::move(required_type_alternatives));
 }

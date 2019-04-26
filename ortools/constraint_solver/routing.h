@@ -1544,6 +1544,7 @@ class RoutingModel {
 
   std::vector<std::vector<absl::flat_hash_set<int> > >
       temporal_required_type_alternatives_per_type_index_;
+  absl::flat_hash_set<int> trivially_infeasible_visit_types_;
   bool has_temporal_type_requirements_;
   // clang-format on
   int num_visit_types_;

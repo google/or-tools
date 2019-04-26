@@ -69,6 +69,12 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
                                                 const Model& model,
                                                 LinearRelaxation* relaxation);
 
+// Adds linearization of different types of constraints.
+void TryToLinearizeConstraint(const CpModelProto& model_proto,
+                              const ConstraintProto& ct, Model* model,
+                              int linearization_level,
+                              LinearRelaxation* relaxation);
+
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.
 // A linear constraint lb <= ax <= ub with enforcement literals {ei} is relaxed
