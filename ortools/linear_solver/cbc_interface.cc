@@ -383,10 +383,10 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // Special way to set the relative MIP gap parameter as it cannot be set
   // through callCbc.
   model.setAllowableFractionGap(relative_mip_gap_);
-  // Num threads.
-  model.setNumberThreads(num_threads_);
   // NOTE: Trailing space is required to avoid buffer overflow in cbc.
-  int return_status = callCbc("-solve ", model);
+  int return_status = num_threads_ == 1 ?
+    callCbc("-solve ", model) :
+    callCbc(absl::StrCat("-threads ", num_threads_, " -solve "), model);
   const int kBadReturnStatus = 777;
   CHECK_NE(kBadReturnStatus, return_status);  // Should never happen according
                                               // to the CBC source
