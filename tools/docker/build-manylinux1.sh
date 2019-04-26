@@ -187,8 +187,17 @@ do
     # supported by pip
     FILE=(${EXPORT_ROOT}/*-${PYTAG}-*.whl)
     unzip "$FILE" -d /tmp
-    sed -i 's/manylinux2010/manylinux1/' /tmp/ortools-*.dist-info/WHEEL
-    rm -f $FILE
+    FILE_TO_PATCH=$(ls /tmp/ortools-*.dist-info/WHEEL)
+    RECORD_FILE=$(ls /tmp/ortools-*.dist-info/RECORD)
+    # Save old hash and size, in order to look them up in RECORD
+    OLD_HASH=$(sha256sum ${FILE_TO_PATCH} | cut -c -64 | xxd -r -p | base64 | tr +/ -_ | cut -c -43)
+    OLD_SIZE=$(wc -c < ${FILE_TO_PATCH})
+    sed -i 's/manylinux2010/manylinux1/' ${FILE_TO_PATCH}
+    NEW_HASH=$(sha256sum ${FILE_TO_PATCH} | cut -c -64 | xxd -r -p | base64 | tr +/ -_ | cut -c -43)
+    NEW_SIZE=$(wc -c < ${FILE_TO_PATCH})
+    # Update RECORD file with the new hash and size
+    sed -i "s/${OLD_HASH},${OLD_SIZE}/${NEW_HASH},${NEW_SIZE}/" ${RECORD_FILE}
+    rm -f "$FILE"
 
     WHEEL_FILE=${FILE//manylinux2010/manylinux1}
     (cd /tmp; zip -r ${WHEEL_FILE} ortools ortools-*; rm -r ortools*)
