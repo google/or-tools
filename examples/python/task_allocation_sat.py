@@ -273,6 +273,7 @@ def main():
     # Create a solver and solve the problem.
     solver = cp_model.CpSolver()
     # Uses the portfolion of heuristics.
+    solver.parameters.log_search_progress = True
     solver.parameters.num_search_workers = 6
     status = solver.Solve(model)
 
