@@ -48,7 +48,7 @@ before_build:
   - set "JAVA_HOME=C:\Program Files\Java\jdk11"
   - set "PATH=C:\Program Files\Java\jdk11\bin;%PATH%"
   - java -version
-  - if "%BUILDER%"=="cmake" set CMAKE_BUILD_PARALLEL_LEVEL=4
+  - set CMAKE_BUILD_PARALLEL_LEVEL=4
   - if "%BUILDER%"=="cmake" cmake --version
   - if "%BUILDER%"=="cmake" cmake -H. -Bbuild -DCMAKE_BUILD_TYPE:STRING=Release -DBUILD_DEPS:BOOL=ON -G "%CMAKE_GENERATOR%" || VER>NUL
   - if "%BUILDER%"=="make" del "C:\Program Files\Git\usr\bin\sh.exe"
@@ -56,9 +56,8 @@ before_build:
 
 build_script:
   - if "%BUILDER%"=="cmake" cmake --build build --config Release --target ALL_BUILD -- %MSBUILD_FLAGS%
-  - if "%BUILDER%"=="make" tools\make.exe third_party
   - if "%BUILDER%"=="make" tools\make.exe help_%LANGUAGE%
-  - if "%BUILDER%"=="make" tools\make.exe %LANGUAGE%
+  - if "%BUILDER%"=="make" ( tools\make.exe %LANGUAGE% || ( tools\make.exe third_party && tools\make.exe %LANGUAGE% ) )
   - if "%BUILDER%"=="make" tools\make.exe test_%LANGUAGE%
   - if "%LANGUAGE%"=="cc" tools\make.exe test_fz
 
