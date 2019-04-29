@@ -19,7 +19,7 @@ make clean_python
 echo Cleaning Python...DONE | tee -a test.log
 
 echo Rebuild Python2.7 pypi archive... | tee -a test.log
-make pypi_archive UNIX_PYTHON_VER=2.7
+make python_package UNIX_PYTHON_VER=2.7
 echo Rebuild Python2.7 pypi archive...DONE | tee -a test.log
 
 echo Creating Python2.7 venv... | tee -a test.log
@@ -53,7 +53,7 @@ make clean_python
 echo Cleaning Python...DONE | tee -a test.log
 
 echo Rebuild Python3.7 pypi archive... | tee -a test.log
-make pypi_archive UNIX_PYTHON_VER=3.7
+make python_package UNIX_PYTHON_VER=3.7
 echo Rebuild Python3.7 pypi archive...DONE | tee -a test.log
 
 echo Creating Python3.7 venv... | tee -a test.log

@@ -89,10 +89,10 @@ REM echo make python2.7: DONE | tee.exe -a build.log
 REM make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
 REM echo make test_python2.7: DONE | tee.exe -a build.log
 echo Rebuild Python2.7 pypi archive... | tee.exe -a build.log
-make.exe pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
+make.exe python_package WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
 echo Rebuild Python2.7 pypi archive...DONE | tee.exe -a build.log
 echo Test Python2.7 pypi archive... | tee.exe -a build.log
-make.exe test_pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
+make.exe test_python_package WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
 echo Test Python2.7 pypi archive...DONE | tee.exe -a build.log
 
 set TEMP_DIR=temp_python27
@@ -110,10 +110,10 @@ REM echo make python3.5: DONE | tee.exe -a build.log
 REM make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
 REM echo make test_python3.5: DONE | tee.exe -a build.log
 echo Rebuild Python3.5 pypi archive... | tee.exe -a build.log
-make.exe pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
+make.exe python_package WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
 echo Rebuild Python3.5 pypi archive...DONE | tee.exe -a build.log
 echo Test Python3.5 pypi archive... | tee.exe -a build.log
-make.exe test_pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
+make.exe test_python_package WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
 echo Test Python3.5 pypi archive...DONE | tee.exe -a build.log
 
 set TEMP_DIR=temp_python35
@@ -131,10 +131,10 @@ REM echo make python3.6: DONE | tee.exe -a build.log
 REM make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
 REM echo make test_python3.6: DONE | tee.exe -a build.log
 echo Rebuild Python3.6 pypi archive... | tee.exe -a build.log
-make.exe pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe python_package WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
 echo Rebuild Python3.6 pypi archive...DONE | tee.exe -a build.log
 echo Test Python3.6 pypi archive... | tee.exe -a build.log
-make.exe test_pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe test_python_package WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
 echo Test Python3.6 pypi archive...DONE | tee.exe -a build.log
 
 set TEMP_DIR=temp_python36
@@ -152,10 +152,10 @@ REM echo make python3.7: DONE | tee.exe -a build.log
 REM make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
 REM echo make test_python3.7: DONE | tee.exe -a build.log
 echo Rebuild Python3.7 pypi archive... | tee.exe -a build.log
-make.exe pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
+make.exe python_package WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
 echo Rebuild Python3.7 pypi archive...DONE | tee.exe -a build.log
 echo Test Python3.7 pypi archive... | tee.exe -a build.log
-make.exe test_pypi_archive WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
+make.exe test_python_package WINDOWS_PATH_TO_PYTHON=c:\python37-64 || exit 1
 echo Test Python3.7 pypi archive...DONE | tee.exe -a build.log
 
 set TEMP_DIR=temp_python37
