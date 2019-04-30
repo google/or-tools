@@ -78,7 +78,7 @@ message SatParameters {
   // A number between 0 and 1 that indicates the proportion of branching
   // variables that are selected randomly instead of choosing the first variable
   // from the given variable_ordering strategy.
-  optional double random_branches_ratio = 32 [default = 0];
+  optional double random_branches_ratio = 32 [default = 0.0];
 
   // Whether we use the ERWA (Exponential Recency Weighted Average) heuristic as
   // described in "Learning Rate Based Branching Heuristic for SAT solvers",
@@ -369,7 +369,7 @@ message SatParameters {
 
   // The maximum "deterministic" time limit to spend in probing. A value of
   // zero will disable the probing.
-  optional double presolve_probing_deterministic_time_limit = 57 [default = 30];
+  optional double presolve_probing_deterministic_time_limit = 57 [default = 30.0];
 
   // Whether we use an heuristic to detect some basic case of blocked clause
   // in the SAT presolve.
