@@ -12,7 +12,6 @@
 # limitations under the License.
 """Code sample to demonstrate how an interval can span across a break."""
 
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -53,14 +52,15 @@ def SchedulingWithCalendarSampleSat():
     start = model.NewEnumeratedIntVar([8, 12, 14, 15], 'start')
     duration = model.NewIntVar(3, 4, 'duration')
     end = model.NewIntVar(8, 18, 'end')
-    interval = model.NewIntervalVar(start, duration, end, 'interval')
+    unused_interval = model.NewIntervalVar(start, duration, end, 'interval')
 
     # We have 2 states (spanning across lunch or not)
     across = model.NewBoolVar('across')
-    model.AddLinearConstraintWithBounds(
-      [(start, 1)], [8, 10, 14, 15]).OnlyEnforceIf(across.Not())
-    model.AddLinearConstraintWithBounds([(start, 1)], [11, 12]).OnlyEnforceIf(
-      across)
+    model.AddLinearConstraintWithBounds([(start, 1)],
+                                        [8, 10, 14, 15]).OnlyEnforceIf(
+                                            across.Not())
+    model.AddLinearConstraintWithBounds([(start, 1)],
+                                        [11, 12]).OnlyEnforceIf(across)
     model.Add(duration == 3).OnlyEnforceIf(across.Not())
     model.Add(duration == 4).OnlyEnforceIf(across)
 
