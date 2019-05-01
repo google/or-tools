@@ -563,6 +563,20 @@ class CpModel(object):
         self.__constant_map = {}
         self.__optional_constant_map = {}
 
+    # Domains
+
+    def DomainFromValues(self, values):
+        """Builds a suitable domain from a list of values."""
+        return pywrapsat.SatHelper.DomainFromValues(values)
+
+    def DomainFromIntervals(self, intervals):
+        starts = []
+        ends = []
+        for interval in intervals:
+            starts.append(interval[0])
+            ends.append(interval[1])
+        return pywrapsat.SatHelper.DomainFromStartsAndEnds(starts, ends)
+
     # Integer variable.
 
     def NewIntVar(self, lb, ub, name):

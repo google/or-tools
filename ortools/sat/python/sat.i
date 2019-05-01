@@ -20,6 +20,7 @@
 
 // std::function utilities.
 %include "ortools/util/python/functions.i"
+%include "ortools/util/python/vector.i"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
@@ -56,6 +57,8 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SatHelper::ModelStats;
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
 %unignore operations_research::sat::SatHelper::ValidateModel;
+%unignore operations_research::sat::SatHelper::DomainFromValues;
+%unignore operations_research::sat::SatHelper::DomainFromStartsAndEnds;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
@@ -93,4 +96,3 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
-

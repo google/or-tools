@@ -37,6 +37,18 @@ class CpModelTest(object):
         if not a:
             print('Error:', msg)
 
+    def testDomainFromValues(self):
+        print('testDomainFromValues')
+        model = cp_model.CpModel()
+        d = model.DomainFromValues([0, 1, 2, -2, 5, 4])
+        self.assertEqual(d, [-2, -2, 0, 2, 4, 5])
+
+    def testDomainFromIntervals(self):
+        print('testDomainFromValues')
+        model = cp_model.CpModel()
+        d = model.DomainFromIntervals([(0, 3), (5, 5), (-1, 1)])
+        self.assertEqual(d, [-1, 3, 5, 5])
+
     def testCreateIntegerVariable(self):
         print('testCreateIntegerVariable')
         model = cp_model.CpModel()
@@ -576,6 +588,8 @@ class CpModelTest(object):
 
 if __name__ == '__main__':
     cp_model_test = CpModelTest()
+    cp_model_test.testDomainFromValues()
+    cp_model_test.testDomainFromIntervals()
     cp_model_test.testCreateIntegerVariable()
     cp_model_test.testNegation()
     cp_model_test.testLinear()
