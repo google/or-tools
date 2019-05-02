@@ -160,7 +160,7 @@ namespace Google.OrTools.Sat
         }
         else
         {
-          return response_.Solution[index] == 0;
+          return response_.Solution[-index - 1] == 0;
         }
       }
       else
