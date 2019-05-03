@@ -44,23 +44,22 @@ def SchedulingWithCalendarSampleSat():
     # The data is the following:
     #   Work starts at 8h, ends at 18h, with a lunch break between 13h and 14h.
     #   We need to schedule a task that needs 3 hours of processing time.
-    #   Total duration can be 3 or 4 (if it span across the lunch break.
+    #   Total duration can be 3 or 4 (if it spans the lunch break).
     #
-    # Because the duration is at least 3, work cannot start after 15h.
+    # Because the duration is at least 3 hours, work cannot start after 15h.
     # Because of the break, work cannot start at 13h.
 
-    start = model.NewEnumeratedIntVar([8, 12, 14, 15], 'start')
+    start = model.NewIntVarFromIntervals([(8, 12), (14, 15)], 'start')
     duration = model.NewIntVar(3, 4, 'duration')
     end = model.NewIntVar(8, 18, 'end')
     unused_interval = model.NewIntervalVar(start, duration, end, 'interval')
 
     # We have 2 states (spanning across lunch or not)
     across = model.NewBoolVar('across')
-    model.AddLinearConstraintWithBounds([(start, 1)],
-                                        [8, 10, 14, 15]).OnlyEnforceIf(
-                                            across.Not())
-    model.AddLinearConstraintWithBounds([(start, 1)],
-                                        [11, 12]).OnlyEnforceIf(across)
+    non_spanning_hours = model.DomainFromValues([8, 9, 10, 14, 15])
+    model.AddSumConstraintWithBounds([start], non_spanning_hours).OnlyEnforceIf(
+        across.Not())
+    model.AddSumConstraint([start], 11, 12).OnlyEnforceIf(across)
     model.Add(duration == 3).OnlyEnforceIf(across.Not())
     model.Add(duration == 4).OnlyEnforceIf(across)
 
@@ -74,7 +73,7 @@ def SchedulingWithCalendarSampleSat():
     # Force the solver to follow the decision strategy exactly.
     solver.parameters.search_branching = cp_model.FIXED_SEARCH
 
-    # Search and print out all solutions.
+    # Search and print all solutions.
     solution_printer = VarArraySolutionPrinter([start, duration, across])
     solver.SearchForAllSolutions(model, solution_printer)
 

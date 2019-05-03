@@ -210,8 +210,7 @@ class SatHelper {
   // Builds a flattened list of intervals from two parallel vectors of starts
   // and ends.
   static std::vector<int64> DomainFromStartsAndEnds(
-      const std::vector<int64>& starts,
-      const std::vector<int64>& ends) {
+      const std::vector<int64>& starts, const std::vector<int64>& ends) {
     std::vector<ClosedInterval> input;
     for (int i = 0; i < starts.size(); ++i) {
       ClosedInterval tmp;

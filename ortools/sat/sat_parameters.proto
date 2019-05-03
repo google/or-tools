@@ -369,7 +369,8 @@ message SatParameters {
 
   // The maximum "deterministic" time limit to spend in probing. A value of
   // zero will disable the probing.
-  optional double presolve_probing_deterministic_time_limit = 57 [default = 30.0];
+  optional double presolve_probing_deterministic_time_limit = 57
+      [default = 30.0];
 
   // Whether we use an heuristic to detect some basic case of blocked clause
   // in the SAT presolve.

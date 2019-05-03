@@ -22,16 +22,19 @@ In Java, Python, and C#:
     value as in [5, 5].
 -   To create a variable with a single value domain, use the `NewConstant()` API
     (or `newConstant()` in Java).
--   To represent an enumerated list of values, for example {-5, -4, -3, 1, 3, 4,
-    6, 6}, you need to rewrite it as a list of intervals [-5, -3] U [1] U [3,
-    6], then flatten the list into a single list of integers. This gives `[-5,
-    -3, 1, 1, 3, 6]` in python, or `new long[] {-5, -3, 1, 1, 3, 6}` in Java or
-    C#.
 -   To create a variable with an enumerated domain, use the
-    `NewEnumeratedIntVar()` API as in:
-    -   Python: `model.NewEnumeratedIntVar([-5, -3, 1, 1, 3, 6], 'x')`
-    -   Java: `model.newEnumeratedIntVar(new long[] {-5, -3, 1, 1, 3, 6}, "x")`
-    -   C#: `model.NewEnumeratedIntVar(new long[] {-5, -3, 1, 1, 3, 6}, "x")`
+    `NewIntVarFromValues()` API as in:
+    -   Python: `model.NewIntVarFromValues([-5, -4, -3, 1, 3, 4], 'x')`
+    -   Java: `model.newIntVarFromValues(new long[] {-5, -4, -3, 1, 3, 4}, "x")`
+    -   C#: `model.NewIntVarFromValues(new long[] {-5, -4, -3, 1, 3, 4}, "x")`
+-   You can also create an enumerated domain by passing intervals instead of a
+    list of values by using the `NewIntVarFromIntervals` method. Note that the
+    Java and C# versions use a single one dimension integer array for
+    convenience. The following code samples build integer variables with domain
+    {-5, -4, -3, 1, 2, 3, .., 99, 100}:
+    -   Python: `model.NewIntVarFromIntervals([[-5, -3], [1, 100]], 'x')`
+    -   Java: `model.newIntVarFromIntervals(new long[] {-5, -3, 1, 100}, "x")`
+    -   C#: `model.NewIntVarFromIntervals(new long[] {-5, -3, 1, 100}, "x")`
 -   To exclude a single value, use int64min and int64max values as in [int64min,
     4, 6, int64max]:
     -   Python: `cp_model.INT_MIN` and `cp_model.INT_MAX`
@@ -52,23 +55,38 @@ In C++, domains use the Domain class.
     1}, {3, 6}})).WithName("x")`.
 -   To exclude a single value, use `Domain(5).Complement()`.
 
+
 ## Linear constraints
 
 In **C++** and **Java**, the model supports linear constraints as in:
 
     x <= y + 3 (also ==, !=, <, >=, >).
 
-as well as domain constraints as in:
+These are available through specific methods of the cp_model like
+`cp_model.AddEquality(x, 3)` in C++, `cp_model.addGreaterThan(x, 10)` in java.
+
+**Python** and **C\#** CP-SAT APIs support general linear arithmetic operators
+(+, *, -, ==, >=, >, <, <=, !=). You need to use the Add method of the cp_model
+as in `cp_model.Add(x != 3)`.
+
+In all language, you can use more advanced domains in linear constraints of the
+form:
 
     sum(ai * xi) in domain
+    sum(xi) in domain
 
-where domain uses the same encoding as integer variables. These are available
-through specific methods of the cp_model like `cp_model.AddEquality(x, 3)` in
-C++, `cp_model.addGreaterThan(x, 10)` in java.
+In Python, Java, and C#, the model class contains two methods to build these
+domains, similar from the IntVarFromValues and IntVarFromIntervals.
 
-**Python** and **C\#** CP-SAT APIs support general linear arithmetic (+, *, -,
-==, >=, >, <, <=, !=). You need to use the Add method of the cp_model as in
-`cp_model.Add(x != 3)`.
+-   Python: `model.DomainFromValues([-5, -4, -3, 1, 3, 4])`
+-   Java: `model.domainFromValues(new long[] {-5, -4, -3, 1, 3, 4})`
+-   C#: `model.DomainFromValues(new long[] {-5, -4, -3, 1, 3, 4})`
+-   Python: `model.DomainrFromIntervals([[-5, -3], [1, 100]])`
+-   Java: `model.domainFromIntervals(new long[] {-5, -3, 1, 100})`
+-   C#: `model.DomainFromIntervals(new long[] {-5, -3, 1, 100})`
+
+In C++, you can reuse the Domain class.
+
 
 ## Rabbits and Pheasants examples
 
@@ -665,13 +683,16 @@ def step_function_sample_sat():
 
   # expr == 0 on [5, 6] U [8, 10]
   b0 = model.NewBoolVar('b0')
-  model.AddLinearConstraintWithBounds([(x, 1)], [5, 6, 8, 10]).OnlyEnforceIf(b0)
+  model.AddSumConstraintWithBounds(
+      [x], model.DomainFromIntervals([(5, 6), (8, 10)])).OnlyEnforceIf(b0)
   model.Add(expr == 0).OnlyEnforceIf(b0)
 
   # expr == 2 on [0, 1] U [3, 4] U [11, 20]
   b2 = model.NewBoolVar('b2')
-  model.AddLinearConstraintWithBounds([(x, 1)],
-                                      [0, 1, 3, 4, 11, 20]).OnlyEnforceIf(b2)
+  model.AddSumConstraintWithBounds([x],
+                                   model.DomainFromIntervals([
+                                       (0, 1), (3, 4), (11, 20)
+                                   ])).OnlyEnforceIf(b2)
   model.Add(expr == 2).OnlyEnforceIf(b2)
 
   # expr == 3 when x == 7

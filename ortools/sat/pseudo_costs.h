@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "ortools/sat/integer.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -43,14 +44,14 @@ class PseudoCosts {
   // Returns the pseudo cost of given variable. Currently used for testing only.
   double GetCost(IntegerVariable var) const {
     CHECK_LT(var, pseudo_costs_.size());
-    return pseudo_costs_[var];
+    return pseudo_costs_[var].CurrentAverage();
   }
 
   // Returns the number of recordings of given variable. Currently used for
   // testing only.
   int GetRecordings(IntegerVariable var) const {
-    CHECK_LT(var, num_recordings_.size());
-    return num_recordings_[var];
+    CHECK_LT(var, pseudo_costs_.size());
+    return pseudo_costs_[var].NumRecords();
   }
 
  private:
@@ -70,8 +71,7 @@ class PseudoCosts {
 
   double initial_cost_ = 0.0;
 
-  gtl::ITIVector<IntegerVariable, double> pseudo_costs_;
-  gtl::ITIVector<IntegerVariable, int> num_recordings_;
+  gtl::ITIVector<IntegerVariable, IncrementalAverage> pseudo_costs_;
 };
 
 // Returns extracted information to update pseudo costs from the given

@@ -19,6 +19,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -27,15 +28,14 @@ PseudoCosts::PseudoCosts(Model* model)
     : integer_trail_(*model->GetOrCreate<IntegerTrail>()),
       parameters_(*model->GetOrCreate<SatParameters>()) {
   const int num_vars = integer_trail_.NumIntegerVariables().value();
-  pseudo_costs_.resize(num_vars, 0.0);
-  num_recordings_.resize(num_vars, 0);
+  pseudo_costs_.resize(num_vars);
 }
 
 void PseudoCosts::InitializeCosts(double initial_value) {
   if (pseudo_costs_initialized_) return;
   VLOG(1) << "Initializing pseudo costs";
   for (int i = 0; i < pseudo_costs_.size(); ++i) {
-    pseudo_costs_[IntegerVariable(i)] = initial_value;
+    pseudo_costs_[IntegerVariable(i)].Reset(initial_value);
   }
   pseudo_costs_initialized_ = true;
 }
@@ -44,12 +44,10 @@ void PseudoCosts::UpdateCostForVar(IntegerVariable var, double new_cost) {
   if (var >= pseudo_costs_.size()) {
     // Create space for new variable and its negation.
     const int new_size = std::max(var, NegationOf(var)).value() + 1;
-    pseudo_costs_.resize(new_size, initial_cost_);
-    num_recordings_.resize(new_size, 0);
+    pseudo_costs_.resize(new_size, IncrementalAverage(initial_cost_));
   }
   CHECK_LT(var, pseudo_costs_.size());
-  num_recordings_[var]++;
-  pseudo_costs_[var] += (new_cost - pseudo_costs_[var]) / num_recordings_[var];
+  pseudo_costs_[var].AddData(new_cost);
 }
 
 void PseudoCosts::UpdateCost(
@@ -96,15 +94,15 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
     const IntegerValue lb = integer_trail_.LowerBound(positive_var);
     const IntegerValue ub = integer_trail_.UpperBound(positive_var);
     if (lb >= ub) continue;
-    if (num_recordings_[positive_var] + num_recordings_[negative_var] <
+    if (GetRecordings(positive_var) + GetRecordings(negative_var) <
         parameters_.pseudo_cost_reliability_threshold()) {
       continue;
     }
 
     // TODO(user): Experiment with different ways to merge the costs.
     const double current_merged_cost =
-        std::min(pseudo_costs_[positive_var], epsilon) *
-        std::min(pseudo_costs_[negative_var], epsilon);
+        std::min(GetCost(positive_var), epsilon) *
+        std::min(GetCost(negative_var), epsilon);
 
     if (current_merged_cost > best_cost) {
       chosen_var = positive_var;
@@ -114,7 +112,7 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
 
   // Pick the direction with best pseudo cost.
   if (chosen_var != kNoIntegerVariable &&
-      pseudo_costs_[chosen_var] < pseudo_costs_[NegationOf(chosen_var)]) {
+      GetCost(chosen_var) < GetCost(NegationOf(chosen_var))) {
     chosen_var = NegationOf(chosen_var);
   }
   return chosen_var;

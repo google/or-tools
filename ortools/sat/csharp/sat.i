@@ -18,9 +18,11 @@ using System.Collections;
 %}
 
 %include "stdint.i"
+%include "std_vector.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/proto.i"
+%include "ortools/util/csharp/vector.i"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
@@ -48,6 +50,9 @@ PROTO_INPUT(operations_research::sat::CpSolverResponse,
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               Google.OrTools.Sat.CpSolverResponse);
 
+%template(SatInt64Vector) std::vector<int64>;
+VECTOR_AS_CSHARP_ARRAY(int64, int64, long, SatInt64Vector);
+
 %ignoreall
 
 // SatParameters are proto2, thus not compatible with C# Protobufs.
@@ -62,6 +67,8 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %unignore operations_research::sat::SatHelper::ModelStats;
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
 %unignore operations_research::sat::SatHelper::ValidateModel;
+%unignore operations_research::sat::SatHelper::DomainFromValues;
+%unignore operations_research::sat::SatHelper::DomainFromStartsAndEnds;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;

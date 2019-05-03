@@ -98,7 +98,7 @@ def RankingSampleSat():
         start = model.NewIntVar(0, horizon, 'start_%i' % t)
         duration = t + 1
         end = model.NewIntVar(0, horizon, 'end_%i' % t)
-        if t < num_tasks / 2:
+        if t < num_tasks // 2:
             interval = model.NewIntervalVar(start, duration, end,
                                             'interval_%i' % t)
             presence = True

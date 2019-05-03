@@ -97,6 +97,27 @@ inline void RandomizeDecisionHeuristic(URBG* random,
                                                                       : 0.0);
 }
 
+// Manages incremental averages.
+class IncrementalAverage {
+ public:
+  // Initializes the average with 'initial_average' and number of records to 0.
+  explicit IncrementalAverage(double initial_average)
+      : average_(initial_average) {}
+  IncrementalAverage() {}
+
+  // Sets the number of records to 0 and average to 'reset_value'.
+  void Reset(double reset_value);
+
+  double CurrentAverage() const { return average_; }
+  int64 NumRecords() const { return num_records_; }
+
+  void AddData(double new_record);
+
+ private:
+  double average_ = 0.0;
+  int64 num_records_ = 0;
+};
+
 }  // namespace sat
 }  // namespace operations_research
 

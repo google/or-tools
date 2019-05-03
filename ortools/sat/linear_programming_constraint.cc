@@ -28,6 +28,7 @@
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/status.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -338,6 +339,11 @@ bool LinearProgrammingConstraint::SolveLp() {
     }
     simplex_.ClearStateForNextSolve();
     return false;
+  }
+  UpdateDegeneracyData();
+  if (average_degeneracy_.CurrentAverage() >= 1000.0) {
+    VLOG(1) << "High average degeneracy: "
+            << average_degeneracy_.CurrentAverage();
   }
 
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
@@ -651,9 +657,11 @@ bool LinearProgrammingConstraint::Propagate() {
   // Put an iteration limit on the work we do in the simplex for this call. Note
   // that because we are "incremental", even if we don't solve it this time we
   // will make progress towards a solve in the lower node of the tree search.
-  //
-  // TODO(user): Put more at the root, and less afterwards?
-  parameters.set_max_number_of_iterations(500);
+  if (trail_->CurrentDecisionLevel() == 0) {
+    parameters.set_max_number_of_iterations(2000);
+  } else {
+    parameters.set_max_number_of_iterations(500);
+  }
   if (sat_parameters_.use_exact_lp_reason()) {
     parameters.set_change_status_to_imprecise(false);
     parameters.set_primal_feasibility_tolerance(1e-7);
@@ -1322,6 +1330,21 @@ void LinearProgrammingConstraint::FillReducedCostsReason() {
   }
 
   integer_trail_->RemoveLevelZeroBounds(&integer_reason_);
+}
+
+void LinearProgrammingConstraint::UpdateDegeneracyData() {
+  const int num_vars = integer_variables_.size();
+  int num_non_basic_with_zero_rc = 0;
+  for (int i = 0; i < num_vars; i++) {
+    const double rc = simplex_.GetReducedCost(glop::ColIndex(i));
+    if (rc != 0.0) continue;
+    if (simplex_.GetVariableStatus(glop::ColIndex(i)) ==
+        glop::VariableStatus::BASIC) {
+      continue;
+    }
+    num_non_basic_with_zero_rc++;
+  }
+  average_degeneracy_.AddData(num_non_basic_with_zero_rc);
 }
 
 void LinearProgrammingConstraint::FillDualRayReason() {

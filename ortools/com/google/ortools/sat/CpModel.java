@@ -62,6 +62,40 @@ public class CpModel {
     modelBuilder = CpModelProto.newBuilder();
   }
 
+  // Domains
+
+  /** Create a flattened list of intervals from a list of integer values.*/
+  public long[] domainFromValues(long[] values) {
+    return SatHelper.domainFromValues(values);
+  }
+
+  /** Create a flattened list of intervals from a list of integer values.*/
+  public long[] domainFromValues(int[] values) {
+    return SatHelper.domainFromValues(toLongArray(values));
+  }
+
+  /** Consolidate a flattened list of intervals. */
+  public long[] domainFromIntervals(long[] bounds) {
+    long[] starts = new long[bounds.length / 2];
+    long[] ends = new long[bounds.length / 2];
+    for (int i = 0; i < bounds.length / 2; ++i) {
+      starts[i] = bounds[2 * i];
+      ends[i] = bounds[2 * i + 1];
+    }
+    return SatHelper.domainFromStartsAndEnds(starts, ends);
+  }
+
+  /** Consolidate a flattened list of intervals. */
+  public long[] domainFromIntervals(int[] bounds) {
+    long[] starts = new long[bounds.length / 2];
+    long[] ends = new long[bounds.length / 2];
+    for (int i = 0; i < bounds.length / 2; ++i) {
+      starts[i] = bounds[2 * i];
+      ends[i] = bounds[2 * i + 1];
+    }
+    return SatHelper.domainFromStartsAndEnds(starts, ends);
+  }
+
   // Integer variables.
 
   /** Creates an integer variable with domain [lb, ub]. */
@@ -70,16 +104,25 @@ public class CpModel {
   }
 
   /**
-   * Creates an integer variable with an enumerated domain.
+   * Creates an integer variable with an array of values.
    *
-   * @param bounds a flattened list of disjoint intervals
+   * @param values a list of integer values
    * @param name the name of the variable
-   * @return a variable whose domain is the union of [bounds[2 * i] .. bounds[2 * i + 1]]
-   *     <p>To create a variable with enumerated domain [1, 2, 3, 5, 7, 8], pass in the array [1, 3,
-   *     5, 5, 7, 8].
+   * @return a variable whose domain is the set of values passed as argument.
    */
-  public IntVar newEnumeratedIntVar(long[] bounds, String name) {
-    return new IntVar(modelBuilder, bounds, name);
+  public IntVar newIntVarFromValues(long[] values, String name) {
+    return new IntVar(modelBuilder, domainFromValues(values), name);
+  }
+
+  /**
+   * Creates an integer variable with an array of values.
+   *
+   * @param values a list of integer values
+   * @param name the name of the variable
+   * @return a variable whose domain is the set of values passed as argument.
+   */
+  public IntVar newIntVarFromValues(int[] values, String name) {
+    return new IntVar(modelBuilder, domainFromValues(values), name);
   }
 
   /**
@@ -91,8 +134,21 @@ public class CpModel {
    *     <p>To create a variable with enumerated domain [1, 2, 3, 5, 7, 8], pass in the array [1, 3,
    *     5, 5, 7, 8].
    */
-  public IntVar newEnumeratedIntVar(int[] bounds, String name) {
-    return new IntVar(modelBuilder, toLongArray(bounds), name);
+  public IntVar newIntVarFromIntervals(long[] bounds, String name) {
+    return new IntVar(modelBuilder, domainFromIntervals(bounds), name);
+  }
+
+  /**
+   * Creates an integer variable with an enumerated domain.
+   *
+   * @param bounds a flattened list of disjoint intervals
+   * @param name the name of the variable
+   * @return a variable whose domain is the union of [bounds[2 * i] .. bounds[2 * i + 1]]
+   *     <p>To create a variable with enumerated domain [1, 2, 3, 5, 7, 8], pass in the array [1, 3,
+   *     5, 5, 7, 8].
+   */
+  public IntVar newIntVarFromIntervals(int[] bounds, String name) {
+    return new IntVar(modelBuilder, domainFromIntervals(bounds), name);
   }
 
   /** Creates a Boolean variable with the given name. */

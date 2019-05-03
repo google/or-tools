@@ -55,5 +55,15 @@ int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
   return target_prefix_size;
 }
 
+void IncrementalAverage::Reset(double reset_value) {
+  num_records_ = 0;
+  average_ = reset_value;
+}
+
+void IncrementalAverage::AddData(double new_record) {
+  num_records_++;
+  average_ += (new_record - average_) / num_records_;
+}
+
 }  // namespace sat
 }  // namespace operations_research

@@ -29,6 +29,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/time_limit.h"
 
@@ -147,6 +148,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Tie-breaking is done using the variable natural order.
   std::function<LiteralIndex()> LPReducedCostAverageBranching();
 
+  // Average number of nonbasic variables with zero reduced costs.
+  double average_degeneracy() const {
+    return average_degeneracy_.CurrentAverage();
+  }
+
  private:
   // Reinitialize the LP from a potentially new set of constraints.
   // This fills all data structure and properly rescale the underlying LP.
@@ -196,6 +202,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // false in the case that the problem is not provably infeasible with exact
   // computations, true otherwise.
   bool FillExactDualRayReason();
+
+  // Computes number of non basic variables with zero reduced costs and updates
+  // 'average_degeneracy_'.
+  void UpdateDegeneracyData();
 
   // From a set of row multipliers (at LP scale), scale them back to the CP
   // world and then make them integer (eventually multiplying them by a new
@@ -377,6 +387,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<double> sum_cost_down_;
   std::vector<int> num_cost_up_;
   std::vector<int> num_cost_down_;
+
+  // Defined as average number of nonbasic variables with zero reduced costs.
+  IncrementalAverage average_degeneracy_;
 };
 
 // A class that stores which LP propagator is associated to each variable.

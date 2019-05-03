@@ -15,6 +15,7 @@ namespace Google.OrTools.Sat
 {
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 /// <summary>
 ///  Wrapper class around the cp_model proto.
@@ -39,6 +40,22 @@ public class CpModel
     return -index - 1;
   }
 
+  // Domains
+
+  public long[] DomainFromValues(long[] values) {
+    return SatHelper.DomainFromValues(values);
+  }
+
+  public long[] DomainFromIntervals(long[] bounds) {
+    long[] starts = new long[bounds.Length / 2];
+    long[] ends = new long[bounds.Length / 2];
+    for (int i = 0; i < bounds.Length / 2; ++i) {
+      starts[i] = bounds[2 * i];
+      ends[i] = bounds[2 * i + 1];
+    }
+    return SatHelper.DomainFromStartsAndEnds(starts, ends);
+  }
+
   // Integer variables and constraints.
 
   public IntVar NewIntVar(long lb, long ub, string name)
@@ -47,9 +64,14 @@ public class CpModel
     return new IntVar(model_, bounds, name);
   }
 
-  public IntVar NewEnumeratedIntVar(IEnumerable<long> bounds, string name)
+  public IntVar NewIntVarFromValues(IEnumerable<long> values, string name)
   {
-    return new IntVar(model_, bounds, name);
+    return new IntVar(model_, DomainFromValues(values.ToArray()), name);
+  }
+
+  public IntVar NewIntVarFromIntervals(IEnumerable<long> bounds, string name)
+  {
+    return new IntVar(model_, DomainFromIntervals(bounds.ToArray()), name);
   }
 
   // Constants (named or not).
@@ -125,6 +147,24 @@ public class CpModel
     }
     lin.Domain.Add(lb);
     lin.Domain.Add(ub);
+    ct.Proto.Linear = lin;
+    return ct;
+  }
+
+  public Constraint AddLinearSumWithBounds(
+      IEnumerable<IntVar> variables, IEnumerable<long> bounds)
+  {
+    Constraint ct = new Constraint(model_);
+    LinearConstraintProto lin = new LinearConstraintProto();
+    foreach (IntVar var in variables)
+    {
+      lin.Vars.Add(var.Index);
+      lin.Coeffs.Add(1);
+    }
+    foreach (long b in bounds)
+    {
+      lin.Domain.Add(b);
+    }
     ct.Proto.Linear = lin;
     return ct;
   }

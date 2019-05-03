@@ -16,6 +16,7 @@
 %include "ortools/base/base.i"
 
 %include "ortools/util/java/proto.i"
+%include "ortools/util/java/vector.i"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
@@ -56,6 +57,8 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (modelStats) operations_research::sat::SatHelper::ModelStats;
 %rename (solverResponseStats) operations_research::sat::SatHelper::SolverResponseStats;
 %rename (validateModel) operations_research::sat::SatHelper::ValidateModel;
+%rename (domainFromValues) operations_research::sat::SatHelper::DomainFromValues;
+%rename (domainFromStartsAndEnds) operations_research::sat::SatHelper::DomainFromStartsAndEnds;
 
 // We use directors for the solution callback.
 %feature("director") operations_research::sat::SolutionCallback;
