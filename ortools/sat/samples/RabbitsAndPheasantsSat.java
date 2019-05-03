@@ -32,9 +32,9 @@ public class RabbitsAndPheasantsSat {
     IntVar r = model.newIntVar(0, 100, "r");
     IntVar p = model.newIntVar(0, 100, "p");
     // 20 heads.
-    model.addLinearSumEqual(new IntVar[] {r, p}, 20);
+    model.addSumEqual(new IntVar[] {r, p}, 20);
     // 56 legs.
-    model.addScalProdEqual(new IntVar[] {r, p}, new long[] {4, 2}, 56);
+    model.addLinearExpressionEqual(new IntVar[] {r, p}, new long[] {4, 2}, 56);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

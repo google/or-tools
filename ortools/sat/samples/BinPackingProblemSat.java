@@ -65,7 +65,7 @@ public class BinPackingProblemSat {
       for (int i = 0; i < numItems; ++i) {
         vars[i] = x[i][b];
       }
-      model.addScalProdEqual(vars, sizes, load[b]);
+      model.addLinearExpressionEqual(vars, sizes, load[b]);
     }
 
     // Place all items.
@@ -74,7 +74,7 @@ public class BinPackingProblemSat {
       for (int b = 0; b < numBins; ++b) {
         vars[b] = x[i][b];
       }
-      model.addLinearSumEqual(vars, items[i][1]);
+      model.addSumEqual(vars, items[i][1]);
     }
 
     // Links load and slack.

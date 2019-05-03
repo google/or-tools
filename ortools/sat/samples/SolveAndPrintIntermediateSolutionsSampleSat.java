@@ -70,7 +70,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
 
     // Maximize a linear combination of variables.
     // [START objective]
-    model.maximizeScalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3});
+    model.maximizeLinearExpression(new IntVar[] {x, y, z}, new int[] {1, 2, 3});
     // [END objective]
 
     // Create a solver and solve the model.

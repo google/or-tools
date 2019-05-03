@@ -95,6 +95,40 @@ public class CpModel
     return new IntVar(model_, bounds, name);
   }
 
+  public Constraint AddSumConstraint(IEnumerable<IntVar> vars, long lb,
+                                     long ub)
+  {
+    Constraint ct = new Constraint(model_);
+    LinearConstraintProto lin = new LinearConstraintProto();
+    foreach (IntVar var in vars)
+    {
+      lin.Vars.Add(var.Index);
+      lin.Coeffs.Add(1L);
+    }
+    lin.Domain.Add(lb);
+    lin.Domain.Add(ub);
+    ct.Proto.Linear = lin;
+    return ct;
+  }
+
+  public Constraint AddSumInDomain(
+      IEnumerable<IntVar> variables, IEnumerable<long> bounds)
+  {
+    Constraint ct = new Constraint(model_);
+    LinearConstraintProto lin = new LinearConstraintProto();
+    foreach (IntVar var in variables)
+    {
+      lin.Vars.Add(var.Index);
+      lin.Coeffs.Add(1);
+    }
+    foreach (long b in bounds)
+    {
+      lin.Domain.Add(b);
+    }
+    ct.Proto.Linear = lin;
+    return ct;
+  }
+
   public Constraint AddLinearConstraint(IEnumerable<Tuple<IntVar, long>> terms,
                                         long lb, long ub)
   {
@@ -151,25 +185,7 @@ public class CpModel
     return ct;
   }
 
-  public Constraint AddLinearSumWithBounds(
-      IEnumerable<IntVar> variables, IEnumerable<long> bounds)
-  {
-    Constraint ct = new Constraint(model_);
-    LinearConstraintProto lin = new LinearConstraintProto();
-    foreach (IntVar var in variables)
-    {
-      lin.Vars.Add(var.Index);
-      lin.Coeffs.Add(1);
-    }
-    foreach (long b in bounds)
-    {
-      lin.Domain.Add(b);
-    }
-    ct.Proto.Linear = lin;
-    return ct;
-  }
-
-  public Constraint AddLinearConstraintWithBounds(
+  public Constraint AddLinearExpressionInDomain(
       IEnumerable<Tuple<IntVar, long>> terms, IEnumerable<long> bounds)
   {
     Constraint ct = new Constraint(model_);
@@ -187,9 +203,9 @@ public class CpModel
     return ct;
   }
 
-  public Constraint AddLinearConstraintWithBounds(IEnumerable<IntVar> vars,
-                                                  IEnumerable<long> coeffs,
-                                                  IEnumerable<long> bounds)
+  public Constraint AddLinearExpressionInDomain(IEnumerable<IntVar> vars,
+                                                IEnumerable<long> coeffs,
+                                                IEnumerable<long> bounds)
   {
     Constraint ct = new Constraint(model_);
     LinearConstraintProto lin = new LinearConstraintProto();
@@ -209,9 +225,9 @@ public class CpModel
     return ct;
   }
 
-  public Constraint AddLinearConstraintWithBounds(IEnumerable<IntVar> vars,
-                                                  IEnumerable<int> coeffs,
-                                                  IEnumerable<long> bounds)
+  public Constraint AddLinearExpressionInDomain(IEnumerable<IntVar> vars,
+                                                IEnumerable<int> coeffs,
+                                                IEnumerable<long> bounds)
   {
     Constraint ct = new Constraint(model_);
     LinearConstraintProto lin = new LinearConstraintProto();
@@ -227,22 +243,6 @@ public class CpModel
     {
       lin.Domain.Add(b);
     }
-    ct.Proto.Linear = lin;
-    return ct;
-  }
-
-  public Constraint AddSumConstraint(IEnumerable<IntVar> vars, long lb,
-                                     long ub)
-  {
-    Constraint ct = new Constraint(model_);
-    LinearConstraintProto lin = new LinearConstraintProto();
-    foreach (IntVar var in vars)
-    {
-      lin.Vars.Add(var.Index);
-      lin.Coeffs.Add(1L);
-    }
-    lin.Domain.Add(lb);
-    lin.Domain.Add(ub);
     ct.Proto.Linear = lin;
     return ct;
   }

@@ -57,7 +57,7 @@ def SchedulingWithCalendarSampleSat():
     # We have 2 states (spanning across lunch or not)
     across = model.NewBoolVar('across')
     non_spanning_hours = model.DomainFromValues([8, 9, 10, 14, 15])
-    model.AddSumConstraintWithBounds([start], non_spanning_hours).OnlyEnforceIf(
+    model.AddSumInDomain([start], non_spanning_hours).OnlyEnforceIf(
         across.Not())
     model.AddSumConstraint([start], 11, 12).OnlyEnforceIf(across)
     model.Add(duration == 3).OnlyEnforceIf(across.Not())

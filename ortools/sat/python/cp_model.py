@@ -582,7 +582,7 @@ class CpModel(object):
         A flattened list of intervals representing the set of values.
 
     This method build a flattened domain suitable to be used in
-    AddSumConstraintWithBounds and AddLinearConstraintWithBounds.
+    AddSumInDomain and AddLinearExpressionInDomain.
     """
         return pywrapsat.SatHelper.DomainFromValues(values)
 
@@ -596,7 +596,7 @@ class CpModel(object):
         A flattened list of intervals representing the union of the intervals.
 
     This method build a flattened domain suitable to be used in
-    AddSumConstraintWithBounds and AddLinearConstraintWithBounds.
+    AddSumInDomain and AddLinearExpressionInDomain.
     """
         starts = []
         ends = []
@@ -636,21 +636,8 @@ class CpModel(object):
 
     # Integer constraints.
 
-    def AddLinearConstraint(self, terms, lb, ub):
-        """Add the constraints lb <= sum(terms) <= ub, where term = (var, coef)."""
-        ct = Constraint(self.__model.constraints)
-        model_ct = self.__model.constraints[ct.Index()]
-        for t in terms:
-            if not isinstance(t[0], IntVar):
-                raise TypeError('Wrong argument' + str(t))
-            cp_model_helper.AssertIsInt64(t[1])
-            model_ct.linear.vars.append(t[0].Index())
-            model_ct.linear.coeffs.append(t[1])
-        model_ct.linear.domain.extend([lb, ub])
-        return ct
-
     def AddSumConstraint(self, variables, lb, ub):
-        """Add the constraints lb <= sum(variables) <= ub."""
+        """Add lb <= sum(variables) <= ub."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         for v in variables:
@@ -659,8 +646,8 @@ class CpModel(object):
         model_ct.linear.domain.extend([lb, ub])
         return ct
 
-    def AddLinearConstraintWithBounds(self, terms, bounds):
-        """Add the constraints sum(terms) in bounds, where term = (var, coef)."""
+    def AddLinearConstraint(self, terms, lb, ub):
+        """Add lb <= sum(terms) <= ub, where term = (var, coef)."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         for t in terms:
@@ -669,11 +656,24 @@ class CpModel(object):
             cp_model_helper.AssertIsInt64(t[1])
             model_ct.linear.vars.append(t[0].Index())
             model_ct.linear.coeffs.append(t[1])
-        model_ct.linear.domain.extend(bounds)
+        model_ct.linear.domain.extend([lb, ub])
         return ct
 
-    def AddSumConstraintWithBounds(self, variables, bounds):
-        """Add the constraints sum(variables) in bounds."""
+    def AddLinearExpressionInDomain(self, terms, domain):
+        """Add sum(terms) in domain, where term = (var, coef)."""
+        ct = Constraint(self.__model.constraints)
+        model_ct = self.__model.constraints[ct.Index()]
+        for t in terms:
+            if not isinstance(t[0], IntVar):
+                raise TypeError('Wrong argument' + str(t))
+            cp_model_helper.AssertIsInt64(t[1])
+            model_ct.linear.vars.append(t[0].Index())
+            model_ct.linear.coeffs.append(t[1])
+        model_ct.linear.domain.extend(domain)
+        return ct
+
+    def AddSumInDomain(self, variables, domain):
+        """Add the constraints sum(variables) in domain."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         for var in variables:
@@ -681,7 +681,7 @@ class CpModel(object):
                 raise TypeError('Wrong argument' + str(var))
             model_ct.linear.vars.append(var.Index())
             model_ct.linear.coeffs.append(1)
-        model_ct.linear.domain.extend(bounds)
+        model_ct.linear.domain.extend(domain)
         return ct
 
     def Add(self, ct):
@@ -689,7 +689,7 @@ class CpModel(object):
         if isinstance(ct, LinearInequality):
             coeffs_map, constant = ct.Expression().GetVarValueMap()
             bounds = [cp_model_helper.CapSub(x, constant) for x in ct.Bounds()]
-            return self.AddLinearConstraintWithBounds(
+            return self.AddLinearExpressionInDomain(
                 iteritems(coeffs_map), bounds)
         elif ct and isinstance(ct, bool):
             pass  # Nothing to do, was already evaluated to true.

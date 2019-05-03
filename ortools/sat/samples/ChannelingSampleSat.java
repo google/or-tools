@@ -41,7 +41,7 @@ public class ChannelingSampleSat {
 
     // Create our two half-reified constraints.
     // First, b implies (y == 10 - x).
-    model.addLinearSumEqual(new IntVar[] {x, y}, 10).onlyEnforceIf(b);
+    model.addSumEqual(new IntVar[] {x, y}, 10).onlyEnforceIf(b);
     // Second, not(b) implies y == 0.
     model.addEquality(y, 0).onlyEnforceIf(b.not());
 

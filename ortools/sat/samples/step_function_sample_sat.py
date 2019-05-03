@@ -59,17 +59,14 @@ def step_function_sample_sat():
 
     # expr == 0 on [5, 6] U [8, 10]
     b0 = model.NewBoolVar('b0')
-    model.AddSumConstraintWithBounds([x],
-                                     model.DomainFromIntervals(
-                                         [(5, 6), (8, 10)])).OnlyEnforceIf(b0)
+    model.AddSumInDomain([x], model.DomainFromIntervals(
+                                  [(5, 6), (8, 10)])).OnlyEnforceIf(b0)
     model.Add(expr == 0).OnlyEnforceIf(b0)
 
     # expr == 2 on [0, 1] U [3, 4] U [11, 20]
     b2 = model.NewBoolVar('b2')
-    model.AddSumConstraintWithBounds([x],
-                                     model.DomainFromIntervals(
-                                         [(0, 1), (3, 4),
-                                          (11, 20)])).OnlyEnforceIf(b2)
+    model.AddSumInDomain([x], model.DomainFromIntervals(
+                                  [(0, 1), (3, 4), (11, 20)])).OnlyEnforceIf(b2)
     model.Add(expr == 2).OnlyEnforceIf(b2)
 
     # expr == 3 when x == 7

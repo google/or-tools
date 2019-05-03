@@ -47,7 +47,7 @@ public class EarlinessTardinessCostSampleSat {
 
     // First segment: s1 == earlinessCost * (earlinessDate - x).
     IntVar s1 = model.newIntVar(-largeConstant, largeConstant, "s1");
-    model.addScalProdEqual(
+    model.addLinearExpressionEqual(
         new IntVar[] {s1, x}, new long[] {1, earlinessCost}, earlinessCost* earlinessDate);
 
     // Second segment.
@@ -55,7 +55,7 @@ public class EarlinessTardinessCostSampleSat {
 
     // Third segment: s3 == latenessCost * (x - latenessDate).
     IntVar s3 = model.newIntVar(-largeConstant, largeConstant, "s3");
-    model.addScalProdEqual(
+    model.addLinearExpressionEqual(
         new IntVar[] {s3, x}, new long[] {1, -latenessCost}, -latenessCost* latenessDate);
 
     // Link together expr and x through s1, s2, and s3.
