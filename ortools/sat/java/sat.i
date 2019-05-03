@@ -88,7 +88,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (min) operations_research::Domain::Min;
 %rename (max) operations_research::Domain::Max;
 %unignore operations_research::Domain::flattenedIntervals;
-%unignore operations_research::Domain::fromIntervals;
+%unignore operations_research::Domain::fromIntervals(const std::vector<int64>& flat_intervals);
 %extend operations_research::Domain {
   std::vector<int64> flattenedIntervals() {
     std::vector<int64> result;
