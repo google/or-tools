@@ -96,8 +96,8 @@ This software suite is composed of the following components:
 
 This software suite has been tested under:
 - Ubuntu 16.04 and up (64-bit);
-- Mac OSX El Capitan with Xcode 7.x (64-bit);
-- Microsoft Windows with Visual Studio 2015 and 2017 (64-bit).
+- Apple macOS Mojave with Xcode 7.x (64-bit);
+- Microsoft Windows with Visual Studio 2017 (64-bit).
 
 OR-Tools currently builds with a Makefile, but also provides Bazel and CMake support.
 
