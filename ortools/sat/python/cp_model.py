@@ -26,6 +26,8 @@ from ortools.sat import sat_parameters_pb2
 from ortools.sat.python import cp_model_helper
 from ortools.sat import pywrapsat
 
+Domain = pywrapsat.Domain
+
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See ../samples/*.py for examples.
@@ -336,12 +338,12 @@ class IntVar(LinearExpression):
   model is feasible, or optimal if you provided an objective function.
   """
 
-    def __init__(self, model, bounds, name):
+    def __init__(self, model, domain, name):
         """See CpModel.NewIntVar below."""
         self.__model = model
         self.__index = len(model.variables)
         self.__var = model.variables.add()
-        self.__var.domain.extend(bounds)
+        self.__var.domain.extend(domain.FlattenedIntervals())
         self.__var.name = name
         self.__negation = None
 
@@ -570,50 +572,17 @@ class CpModel(object):
         self.__constant_map = {}
         self.__optional_constant_map = {}
 
-    # Domains
-
-    def DomainFromValues(self, values):
-        """Build a suitable domain from a list of values.
-
-    Args:
-        values: a list of integer values.
-
-    Returns:
-        A flattened list of intervals representing the set of values.
-
-    This method build a flattened domain suitable to be used in
-    AddSumInDomain and AddLinearExpressionInDomain.
-    """
-        return pywrapsat.SatHelper.DomainFromValues(values)
-
-    def DomainFromIntervals(self, intervals):
-        """Build a suitable domain from a list of tuples (start, end).
-
-    Args:
-        intervals: a list of intervals (start, end) inclusive.
-
-    Returns:
-        A flattened list of intervals representing the union of the intervals.
-
-    This method build a flattened domain suitable to be used in
-    AddSumInDomain and AddLinearExpressionInDomain.
-    """
-        starts = []
-        ends = []
-        for interval in intervals:
-            starts.append(interval[0])
-            ends.append(interval[1])
-        return pywrapsat.SatHelper.DomainFromStartsAndEnds(starts, ends)
-
     # Integer variable.
 
     def NewIntVar(self, lb, ub, name):
         """Create an integer variable with domain [lb, ub]."""
-        return IntVar(self.__model, [lb, ub], name)
+        domain = pywrapsat.Domain(lb, ub)
+        return IntVar(self.__model, domain, name)
 
     def NewIntVarFromValues(self, values, name):
         """Create an integer variable with domain {values}."""
-        return IntVar(self.__model, self.DomainFromValues(values), name)
+        domain = pywrapsat.Domain.FromValues(values)
+        return IntVar(self.__model, domain, name)
 
     def NewIntVarFromIntervals(self, intervals, name):
         """Create an integer variable from a list of intervals.
@@ -628,11 +597,24 @@ class CpModel(object):
     To create a variable with domain [1, 2, 3, 5, 7, 8], pass in the
     array [(1, 3), (5, 5), (7, 8)].
     """
-        return IntVar(self.__model, self.DomainFromIntervals(intervals), name)
+        domain = pywrapsat.Domain.FromIntervals(intervals)
+        return IntVar(self.__model, domain, name)
+
+    def NewIntVarFromDomain(self, domain, name):
+        """Create an integer variable from a list of intervals.
+
+    Args:
+        domain: A instance of the Domain class.
+        name: The name of the variable.
+
+    Returns:
+        a variable whose domain is the given domain.
+    """
+        return IntVar(self.__model, domain, name)
 
     def NewBoolVar(self, name):
         """Creates a 0-1 variable with the given name."""
-        return IntVar(self.__model, [0, 1], name)
+        return IntVar(self.__model, pywrapsat.Domain(0, 1), name)
 
     # Integer constraints.
 
@@ -669,7 +651,7 @@ class CpModel(object):
             cp_model_helper.AssertIsInt64(t[1])
             model_ct.linear.vars.append(t[0].Index())
             model_ct.linear.coeffs.append(t[1])
-        model_ct.linear.domain.extend(domain)
+        model_ct.linear.domain.extend(domain.FlattenedIntervals())
         return ct
 
     def AddSumInDomain(self, variables, domain):
@@ -681,7 +663,7 @@ class CpModel(object):
                 raise TypeError('Wrong argument' + str(var))
             model_ct.linear.vars.append(var.Index())
             model_ct.linear.coeffs.append(1)
-        model_ct.linear.domain.extend(domain)
+        model_ct.linear.domain.extend(domain.FlattenedIntervals())
         return ct
 
     def Add(self, ct):
@@ -690,7 +672,8 @@ class CpModel(object):
             coeffs_map, constant = ct.Expression().GetVarValueMap()
             bounds = [cp_model_helper.CapSub(x, constant) for x in ct.Bounds()]
             return self.AddLinearExpressionInDomain(
-                iteritems(coeffs_map), bounds)
+                iteritems(coeffs_map),
+                pywrapsat.Domain.FromFlatIntervals(bounds))
         elif ct and isinstance(ct, bool):
             pass  # Nothing to do, was already evaluated to true.
         elif not ct and isinstance(ct, bool):

@@ -22,7 +22,6 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/sigint.h"
-#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -194,37 +193,6 @@ class SatHelper {
   static std::string ValidateModel(
       const operations_research::sat::CpModelProto& model_proto) {
     return ValidateCpModel(model_proto);
-  }
-
-  // Builds a flattened list of intervals from a set of values.
-  static std::vector<int64> DomainFromValues(const std::vector<int64>& values) {
-    Domain domain(Domain::FromValues(values));
-    std::vector<int64> result;
-    for (const auto& interval : domain) {
-      result.push_back(interval.start);
-      result.push_back(interval.end);
-    }
-    return result;
-  }
-
-  // Builds a flattened list of intervals from two parallel vectors of starts
-  // and ends.
-  static std::vector<int64> DomainFromStartsAndEnds(
-      const std::vector<int64>& starts, const std::vector<int64>& ends) {
-    std::vector<ClosedInterval> input;
-    for (int i = 0; i < starts.size(); ++i) {
-      ClosedInterval tmp;
-      tmp.start = starts[i];
-      tmp.end = ends[i];
-      input.push_back(tmp);
-    }
-    Domain domain(Domain::FromIntervals(input));
-    std::vector<int64> result;
-    for (const auto& interval : domain) {
-      result.push_back(interval.start);
-      result.push_back(interval.end);
-    }
-    return result;
   }
 };
 

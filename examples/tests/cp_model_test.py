@@ -40,14 +40,14 @@ class CpModelTest(object):
     def testDomainFromValues(self):
         print('testDomainFromValues')
         model = cp_model.CpModel()
-        d = model.DomainFromValues([0, 1, 2, -2, 5, 4])
-        self.assertEqual(d, [-2, -2, 0, 2, 4, 5])
+        d = cp_model.Domain.FromValues([0, 1, 2, -2, 5, 4])
+        self.assertEqual(d.FlattenedIntervals(), [-2, -2, 0, 2, 4, 5])
 
     def testDomainFromIntervals(self):
-        print('testDomainFromValues')
+        print('testDomainFromIntervals')
         model = cp_model.CpModel()
-        d = model.DomainFromIntervals([(0, 3), (5, 5), (-1, 1)])
-        self.assertEqual(d, [-1, 3, 5, 5])
+        d = cp_model.Domain.FromIntervals([(0, 3), (5, 5), (-1, 1)])
+        self.assertEqual(d.FlattenedIntervals(), [-1, 3, 5, 5])
 
     def testCreateIntegerVariable(self):
         print('testCreateIntegerVariable')

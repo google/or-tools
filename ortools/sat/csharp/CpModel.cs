@@ -40,59 +40,43 @@ public class CpModel
     return -index - 1;
   }
 
-  // Domains
-
-  public long[] DomainFromValues(long[] values) {
-    return SatHelper.DomainFromValues(values);
-  }
-
-  public long[] DomainFromIntervals(long[] bounds) {
-    long[] starts = new long[bounds.Length / 2];
-    long[] ends = new long[bounds.Length / 2];
-    for (int i = 0; i < bounds.Length / 2; ++i) {
-      starts[i] = bounds[2 * i];
-      ends[i] = bounds[2 * i + 1];
-    }
-    return SatHelper.DomainFromStartsAndEnds(starts, ends);
-  }
-
   // Integer variables and constraints.
 
   public IntVar NewIntVar(long lb, long ub, string name)
   {
-    long[] bounds = { lb, ub };
-    return new IntVar(model_, bounds, name);
+    return new IntVar(model_, new Domain(lb, ub), name);
   }
 
   public IntVar NewIntVarFromValues(IEnumerable<long> values, string name)
   {
-    return new IntVar(model_, DomainFromValues(values.ToArray()), name);
+    return new IntVar(model_, Domain.FromValues(values.ToArray()), name);
   }
 
   public IntVar NewIntVarFromIntervals(IEnumerable<long> bounds, string name)
   {
-    return new IntVar(model_, DomainFromIntervals(bounds.ToArray()), name);
+    return new IntVar(model_, Domain.FromIntervals(bounds.ToArray()), name);
   }
 
+  public IntVar NewIntVarFromDomain(Domain domain, string name)
+  {
+    return new IntVar(model_, domain, name);
+  }
   // Constants (named or not).
 
   // TODO: Cache constant.
   public IntVar NewConstant(long value)
   {
-    long[] bounds = { value, value };
-    return new IntVar(model_, bounds, String.Format("{0}", value));
+    return new IntVar(model_, new Domain(value), String.Format("{0}", value));
   }
 
   public IntVar NewConstant(long value, string name)
   {
-    long[] bounds = { value, value };
-    return new IntVar(model_, bounds, name);
+    return new IntVar(model_, new Domain(value), name);
   }
 
   public IntVar NewBoolVar(string name)
   {
-    long[] bounds = { 0L, 1L };
-    return new IntVar(model_, bounds, name);
+    return new IntVar(model_, new Domain(0, 1), name);
   }
 
   public Constraint AddSumConstraint(IEnumerable<IntVar> vars, long lb,
@@ -112,7 +96,7 @@ public class CpModel
   }
 
   public Constraint AddSumInDomain(
-      IEnumerable<IntVar> variables, IEnumerable<long> bounds)
+      IEnumerable<IntVar> variables, Domain domain)
   {
     Constraint ct = new Constraint(model_);
     LinearConstraintProto lin = new LinearConstraintProto();
@@ -121,7 +105,7 @@ public class CpModel
       lin.Vars.Add(var.Index);
       lin.Coeffs.Add(1);
     }
-    foreach (long b in bounds)
+    foreach (long b in domain.FlattenedIntervals())
     {
       lin.Domain.Add(b);
     }
@@ -186,7 +170,7 @@ public class CpModel
   }
 
   public Constraint AddLinearExpressionInDomain(
-      IEnumerable<Tuple<IntVar, long>> terms, IEnumerable<long> bounds)
+      IEnumerable<Tuple<IntVar, long>> terms, Domain domain)
   {
     Constraint ct = new Constraint(model_);
     LinearConstraintProto lin = new LinearConstraintProto();
@@ -195,7 +179,7 @@ public class CpModel
       lin.Vars.Add(term.Item1.Index);
       lin.Coeffs.Add(term.Item2);
     }
-    foreach (long b in bounds)
+    foreach (long b in domain.FlattenedIntervals())
     {
       lin.Domain.Add(b);
     }

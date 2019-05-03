@@ -21,6 +21,7 @@ import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.CpObjectiveProto;
 import com.google.ortools.sat.CumulativeConstraintProto;
 import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.Domain;
 import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.IntegerVariableProto;
@@ -62,45 +63,11 @@ public class CpModel {
     modelBuilder = CpModelProto.newBuilder();
   }
 
-  // Domains
-
-  /** Create a flattened list of intervals from a list of integer values.*/
-  public long[] domainFromValues(long[] values) {
-    return SatHelper.domainFromValues(values);
-  }
-
-  /** Create a flattened list of intervals from a list of integer values.*/
-  public long[] domainFromValues(int[] values) {
-    return SatHelper.domainFromValues(toLongArray(values));
-  }
-
-  /** Consolidate a flattened list of intervals. */
-  public long[] domainFromIntervals(long[] bounds) {
-    long[] starts = new long[bounds.length / 2];
-    long[] ends = new long[bounds.length / 2];
-    for (int i = 0; i < bounds.length / 2; ++i) {
-      starts[i] = bounds[2 * i];
-      ends[i] = bounds[2 * i + 1];
-    }
-    return SatHelper.domainFromStartsAndEnds(starts, ends);
-  }
-
-  /** Consolidate a flattened list of intervals. */
-  public long[] domainFromIntervals(int[] bounds) {
-    long[] starts = new long[bounds.length / 2];
-    long[] ends = new long[bounds.length / 2];
-    for (int i = 0; i < bounds.length / 2; ++i) {
-      starts[i] = bounds[2 * i];
-      ends[i] = bounds[2 * i + 1];
-    }
-    return SatHelper.domainFromStartsAndEnds(starts, ends);
-  }
-
   // Integer variables.
 
   /** Creates an integer variable with domain [lb, ub]. */
   public IntVar newIntVar(long lb, long ub, String name) {
-    return new IntVar(modelBuilder, lb, ub, name);
+    return new IntVar(modelBuilder, new Domain(lb, ub), name);
   }
 
   /**
@@ -111,7 +78,7 @@ public class CpModel {
    * @return a variable whose domain is the set of values passed as argument.
    */
   public IntVar newIntVarFromValues(long[] values, String name) {
-    return new IntVar(modelBuilder, domainFromValues(values), name);
+    return new IntVar(modelBuilder, Domain.fromValues(values), name);
   }
 
   /**
@@ -122,7 +89,7 @@ public class CpModel {
    * @return a variable whose domain is the set of values passed as argument.
    */
   public IntVar newIntVarFromValues(int[] values, String name) {
-    return new IntVar(modelBuilder, domainFromValues(values), name);
+    return new IntVar(modelBuilder, Domain.fromValues(toLongArray(values)), name);
   }
 
   /**
@@ -135,7 +102,7 @@ public class CpModel {
    *     5, 5, 7, 8].
    */
   public IntVar newIntVarFromIntervals(long[] bounds, String name) {
-    return new IntVar(modelBuilder, domainFromIntervals(bounds), name);
+    return new IntVar(modelBuilder, Domain.fromIntervals(bounds), name);
   }
 
   /**
@@ -148,17 +115,28 @@ public class CpModel {
    *     5, 5, 7, 8].
    */
   public IntVar newIntVarFromIntervals(int[] bounds, String name) {
-    return new IntVar(modelBuilder, domainFromIntervals(bounds), name);
+    return new IntVar(modelBuilder, Domain.fromIntervals(toLongArray(bounds)), name);
+  }
+
+  /**
+   * Creates an integer variable with given domain.
+   *
+   * @param domain an instance of the Domain class.
+   * @param name the name of the variable
+   * @return a variable with the given domain.
+   */
+  public IntVar newIntVarFromDomain(Domain domain, String name) {
+    return new IntVar(modelBuilder, domain, name);
   }
 
   /** Creates a Boolean variable with the given name. */
   public IntVar newBoolVar(String name) {
-    return new IntVar(modelBuilder, 0, 1, name);
+    return new IntVar(modelBuilder, new Domain(0, 1), name);
   }
 
   /** Creates a constant variable. */
   public IntVar newConstant(long value) {
-    return newIntVar(value, value, ""); // bounds and name.
+    return new IntVar(modelBuilder, new Domain(value), ""); // bounds and name.
   }
 
   // Boolean Constraints.
@@ -218,26 +196,17 @@ public class CpModel {
    * list of intervals similar to the one for enumerated integer
    * variables.
    */
-  public Constraint addSumInDomain(IntVar[] vars, long[] domain) {
+  public Constraint addSumInDomain(IntVar[] vars, Domain domain) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (IntVar var : vars) {
       lin.addVars(var.getIndex());
       lin.addCoeffs(1);
     }
-    for (long b : domain) {
+    for (long b : domain.flattenedIntervals()) {
       lin.addDomain(b);
     }
     return ct;
-  }
-
-  /**
-   * Add {@code sum(vars) in domain}, where domain is a flattened
-   * list of intervals similar to the one for enumerated integer
-   * variables.
-   */
-  public Constraint addSumInDomain(IntVar[] vars, int[] domain) {
-    return addSumInDomain(vars, toLongArray(domain));
   }
 
   /** Add {@code sum(vars) == value}. */
@@ -284,7 +253,7 @@ public class CpModel {
    * a flattened list of intervals similar to the one for enumerated
    * integer variables.
    */
-  public Constraint addLinearExpressionInDomain(IntVar[] vars, long[] coeffs, long[] domain) {
+  public Constraint addLinearExpressionInDomain(IntVar[] vars, long[] coeffs, Domain domain) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (IntVar var : vars) {
@@ -293,7 +262,7 @@ public class CpModel {
     for (long c : coeffs) {
       lin.addCoeffs(c);
     }
-    for (long b : domain) {
+    for (long b : domain.flattenedIntervals()) {
       lin.addDomain(b);
     }
     return ct;

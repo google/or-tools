@@ -26,7 +26,12 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
+#include "ortools/util/sorted_interval_list.h"
 %}
+
+%pythoncode {
+import numbers
+}
 
 %module(directors="1") operations_research_sat
 
@@ -54,8 +59,6 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SatHelper::ModelStats;
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
 %unignore operations_research::sat::SatHelper::ValidateModel;
-%unignore operations_research::sat::SatHelper::DomainFromValues;
-%unignore operations_research::sat::SatHelper::DomainFromStartsAndEnds;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
@@ -90,7 +93,58 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SolutionCallback::WallTime;
 %feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
 
+%unignore operations_research::ClosedInterval;
+%unignore operations_research::Domain;
+%unignore operations_research::Domain::Domain;
+%unignore operations_research::Domain::AllValues;
+%unignore operations_research::Domain::FromValues;
+%unignore operations_research::Domain::IsEmpty;
+%unignore operations_research::Domain::Size;
+%unignore operations_research::Domain::Min;
+%unignore operations_research::Domain::Max;
+%unignore operations_research::Domain::FlattenedIntervals;
+%unignore operations_research::Domain::FromFlatIntervals;
+%extend operations_research::Domain {
+  std::vector<int64> FlattenedIntervals() {
+    std::vector<int64> result;
+    for (const auto& ci : self->intervals()) {
+      result.push_back(ci.start);
+      result.push_back(ci.end);
+    }
+    return result;
+  }
+
+  static Domain FromFlatIntervals(const std::vector<int64>& flat_intervals) {
+    std::vector<operations_research::ClosedInterval> intervals;
+    const int length = flat_intervals.size() / 2;
+    for (int i = 0; i < length; ++i) {
+      operations_research::ClosedInterval ci;
+      ci.start = flat_intervals[2 * i];
+      ci.end = flat_intervals[2 * i + 1];
+      intervals.push_back(ci);
+    }
+    return operations_research::Domain::FromIntervals(intervals);
+  }
+
+  %pythoncode {
+    @staticmethod
+    def FromIntervals(intervals):
+      flat_intervals = []
+      for interval in intervals:
+        if isinstance(interval, numbers.Integral):
+          flat_intervals.append(interval)
+          flat_intervals.append(interval)
+        elif len(interval) == 1:
+          flat_intervals.append(interval[0])
+          flat_intervals.append(interval[0])
+        else:
+          flat_intervals.append(interval[0])
+          flat_intervals.append(interval[1])
+      return Domain.FromFlatIntervals(flat_intervals)
+  } // %pythoncode
+}
+
 %include "ortools/sat/swig_helper.h"
+%include "ortools/util/sorted_interval_list.h"
 
 %unignoreall
-

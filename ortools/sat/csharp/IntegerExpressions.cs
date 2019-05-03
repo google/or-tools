@@ -404,12 +404,12 @@ public class SumArray : IntegerExpression
 
 public class IntVar : IntegerExpression, ILiteral
 {
-  public IntVar(CpModelProto model, IEnumerable<long> bounds, string name) {
+  public IntVar(CpModelProto model, Domain domain, string name) {
     model_ = model;
     index_ = model.Variables.Count;
     var_ = new IntegerVariableProto();
     var_.Name = name;
-    var_.Domain.Add(bounds);
+    var_.Domain.Add(domain.FlattenedIntervals());
     model.Variables.Add(var_);
     negation_ = null;
   }

@@ -22,6 +22,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
+#include "ortools/util/sorted_interval_list.h"
 %}
 
 typedef int64_t int64;
@@ -57,8 +58,6 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (modelStats) operations_research::sat::SatHelper::ModelStats;
 %rename (solverResponseStats) operations_research::sat::SatHelper::SolverResponseStats;
 %rename (validateModel) operations_research::sat::SatHelper::ValidateModel;
-%rename (domainFromValues) operations_research::sat::SatHelper::DomainFromValues;
-%rename (domainFromStartsAndEnds) operations_research::sat::SatHelper::DomainFromStartsAndEnds;
 
 // We use directors for the solution callback.
 %feature("director") operations_research::sat::SolutionCallback;
@@ -79,6 +78,41 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (userTime) operations_research::sat::SolutionCallback::UserTime;
 %rename (wallTime) operations_research::sat::SolutionCallback::WallTime;
 
+%unignore operations_research::ClosedInterval;
+%unignore operations_research::Domain;
+%unignore operations_research::Domain::Domain;
+%rename (allValues) operations_research::Domain::AllValues;
+%rename (fromValues) operations_research::Domain::FromValues;
+%rename (isEmpty) operations_research::Domain::IsEmpty;
+%rename (size)  operations_research::Domain::Size;
+%rename (min) operations_research::Domain::Min;
+%rename (max) operations_research::Domain::Max;
+%unignore operations_research::Domain::flattenedIntervals;
+%unignore operations_research::Domain::fromIntervals;
+%extend operations_research::Domain {
+  std::vector<int64> flattenedIntervals() {
+    std::vector<int64> result;
+    for (const auto& ci : self->intervals()) {
+      result.push_back(ci.start);
+      result.push_back(ci.end);
+    }
+    return result;
+  }
+
+  static Domain fromIntervals(const std::vector<int64>& flat_intervals) {
+    std::vector<operations_research::ClosedInterval> intervals;
+    const int length = flat_intervals.size() / 2;
+    for (int i = 0; i < length; ++i) {
+      operations_research::ClosedInterval ci;
+      ci.start = flat_intervals[2 * i];
+      ci.end = flat_intervals[2 * i + 1];
+      intervals.push_back(ci);
+    }
+    return operations_research::Domain::FromIntervals(intervals);
+  }
+}
+
 %include "ortools/sat/swig_helper.h"
+%include "ortools/util/sorted_interval_list.h"
 
 %unignoreall

@@ -14,26 +14,17 @@
 package com.google.ortools.sat;
 
 import com.google.ortools.sat.CpModelProto;
+import com.google.ortools.sat.Domain;
 import com.google.ortools.sat.IntegerVariableProto;
 
 /** An integer variable. */
 public class IntVar implements Literal {
-  IntVar(CpModelProto.Builder builder, long lb, long ub, String name) {
+  IntVar(CpModelProto.Builder builder, Domain domain, String name) {
     this.modelBuilder = builder;
     this.variableIndex = modelBuilder.getVariablesCount();
     this.varBuilder = modelBuilder.addVariablesBuilder();
     this.varBuilder.setName(name);
-    this.varBuilder.addDomain(lb);
-    this.varBuilder.addDomain(ub);
-    this.negation_ = null;
-  }
-
-  IntVar(CpModelProto.Builder builder, long[] bounds, String name) {
-    this.modelBuilder = builder;
-    this.variableIndex = modelBuilder.getVariablesCount();
-    this.varBuilder = modelBuilder.addVariablesBuilder();
-    this.varBuilder.setName(name);
-    for (long b : bounds) {
+    for (long b : domain.flattenedIntervals()) {
       this.varBuilder.addDomain(b);
     }
     this.negation_ = null;
