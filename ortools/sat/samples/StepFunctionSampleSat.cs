@@ -60,7 +60,7 @@ public class StepFunctionSampleSat
     ILiteral b0 = model.NewBoolVar("b0");
     model.AddLinearSumWithBounds(
         new IntVar[] {x},
-        model.DomainFromIntervals(new long[] {5, 6, 8, 10})).OnlyEnforceIf(b0);
+        model.DomainFromValues(new long[] {5, 6, 8, 9, 10})).OnlyEnforceIf(b0);
     model.Add(expr == 0).OnlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
