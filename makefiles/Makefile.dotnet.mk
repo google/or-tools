@@ -265,6 +265,8 @@ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
  -dllimport "$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
  -outdir $(GEN_PATH)$Sortools$Ssat \
  $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc
 
 $(OBJ_DIR)/swig/sat_csharp_wrap.$O: \
  $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc \
