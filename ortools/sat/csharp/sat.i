@@ -35,6 +35,9 @@ typedef uint64_t uint64;
 
 %module(directors="1") operations_research_sat
 
+/* allow partial c# classes */
+%typemap(csclassmodifiers) SWIGTYPE "public partial class"
+
 PROTO_INPUT(operations_research::sat::CpModelProto,
             Google.OrTools.Sat.CpModelProto,
             model_proto);

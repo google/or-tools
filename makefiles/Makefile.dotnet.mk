@@ -323,6 +323,7 @@ $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(SRC_DIR)/ortools/sat/csharp/Constraints.cs \
  $(SRC_DIR)/ortools/sat/csharp/CpModel.cs \
  $(SRC_DIR)/ortools/sat/csharp/CpSolver.cs \
+ $(SRC_DIR)/ortools/sat/csharp/IntArrayHelper.cs \
  $(SRC_DIR)/ortools/sat/csharp/IntegerExpressions.cs \
  $(SRC_DIR)/ortools/sat/csharp/IntervalVariables.cs \
  $(SRC_DIR)/ortools/sat/csharp/SearchHelpers.cs \
