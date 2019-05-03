@@ -19,6 +19,8 @@ using System.Collections;
 
 %include "stdint.i"
 %include "std_vector.i"
+%include "std_common.i"
+%include "std_string.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/proto.i"
