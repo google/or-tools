@@ -375,6 +375,8 @@ $(GEN_DIR)/ortools/sat/pywrapsat.py: \
  -o $(GEN_PATH)$Sortools$Ssat$Ssat_python_wrap.cc \
  -module pywrapsat \
  $(SRC_DIR)/ortools/sat$Spython$Ssat.i
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Ssat$Ssat_python_wrap.cc
 
 $(GEN_DIR)/ortools/sat/sat_python_wrap.cc: \
  $(GEN_DIR)/ortools/sat/pywrapsat.py
