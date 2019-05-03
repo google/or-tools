@@ -184,6 +184,8 @@ $(GEN_DIR)/ortools/sat/sat_java_wrap.cc: \
  -module main \
  -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Ssat \
  $(SRC_DIR)$Sortools$Ssat$Sjava$Ssat.i
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Ssat$Ssat_java_wrap.cc
 
 $(OBJ_DIR)/swig/sat_java_wrap.$O: \
  $(GEN_DIR)/ortools/sat/sat_java_wrap.cc \
