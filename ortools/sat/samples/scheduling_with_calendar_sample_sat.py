@@ -49,7 +49,8 @@ def SchedulingWithCalendarSampleSat():
     # Because the duration is at least 3 hours, work cannot start after 15h.
     # Because of the break, work cannot start at 13h.
 
-    start = model.NewIntVarFromIntervals([(8, 12), (14, 15)], 'start')
+    start = model.NewIntVarFromDomain(
+        cp_model.Domain.FromIntervals([(8, 12), (14, 15)]), 'start')
     duration = model.NewIntVar(3, 4, 'duration')
     end = model.NewIntVar(8, 18, 'end')
     unused_interval = model.NewIntervalVar(start, duration, end, 'interval')

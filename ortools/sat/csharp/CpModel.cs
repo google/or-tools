@@ -47,16 +47,6 @@ public class CpModel
     return new IntVar(model_, new Domain(lb, ub), name);
   }
 
-  public IntVar NewIntVarFromValues(IEnumerable<long> values, string name)
-  {
-    return new IntVar(model_, Domain.FromValues(values.ToArray()), name);
-  }
-
-  public IntVar NewIntVarFromIntervals(IEnumerable<long> bounds, string name)
-  {
-    return new IntVar(model_, Domain.FromIntervals(bounds.ToArray()), name);
-  }
-
   public IntVar NewIntVarFromDomain(Domain domain, string name)
   {
     return new IntVar(model_, domain, name);

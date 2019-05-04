@@ -71,54 +71,6 @@ public class CpModel {
   }
 
   /**
-   * Creates an integer variable with an array of values.
-   *
-   * @param values a list of integer values
-   * @param name the name of the variable
-   * @return a variable whose domain is the set of values passed as argument.
-   */
-  public IntVar newIntVarFromValues(long[] values, String name) {
-    return new IntVar(modelBuilder, Domain.fromValues(values), name);
-  }
-
-  /**
-   * Creates an integer variable with an array of values.
-   *
-   * @param values a list of integer values
-   * @param name the name of the variable
-   * @return a variable whose domain is the set of values passed as argument.
-   */
-  public IntVar newIntVarFromValues(int[] values, String name) {
-    return new IntVar(modelBuilder, Domain.fromValues(toLongArray(values)), name);
-  }
-
-  /**
-   * Creates an integer variable with an enumerated domain.
-   *
-   * @param bounds a flattened list of disjoint intervals
-   * @param name the name of the variable
-   * @return a variable whose domain is the union of [bounds[2 * i] .. bounds[2 * i + 1]]
-   *     <p>To create a variable with enumerated domain [1, 2, 3, 5, 7, 8], pass in the array [1, 3,
-   *     5, 5, 7, 8].
-   */
-  public IntVar newIntVarFromIntervals(long[] bounds, String name) {
-    return new IntVar(modelBuilder, Domain.fromIntervals(bounds), name);
-  }
-
-  /**
-   * Creates an integer variable with an enumerated domain.
-   *
-   * @param bounds a flattened list of disjoint intervals
-   * @param name the name of the variable
-   * @return a variable whose domain is the union of [bounds[2 * i] .. bounds[2 * i + 1]]
-   *     <p>To create a variable with enumerated domain [1, 2, 3, 5, 7, 8], pass in the array [1, 3,
-   *     5, 5, 7, 8].
-   */
-  public IntVar newIntVarFromIntervals(int[] bounds, String name) {
-    return new IntVar(modelBuilder, Domain.fromIntervals(toLongArray(bounds)), name);
-  }
-
-  /**
    * Creates an integer variable with given domain.
    *
    * @param domain an instance of the Domain class.

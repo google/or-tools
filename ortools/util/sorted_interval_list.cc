@@ -134,6 +134,32 @@ Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
   return result;
 }
 
+Domain Domain::FromIntervals(const std::vector<std::vector<int64>>& intervals) {
+  Domain result;
+  for (const std::vector<int64>& interval : intervals) {
+    if (interval.size() == 1) {
+      result.intervals_.push_back({interval[0], interval[0]});
+    } else {
+      result.intervals_.push_back({interval[0], interval[1]});
+    }
+  }
+  std::sort(result.intervals_.begin(), result.intervals_.end());
+  UnionOfSortedIntervals(&result.intervals_);
+  return result;
+}
+
+Domain Domain::FromFlatIntervals(const std::vector<int64>& flat_intervals) {
+  Domain result;
+  const int new_size = flat_intervals.size() / 2;
+  for (int i = 0; i < new_size; ++i) {
+    result.intervals_.push_back(
+        {flat_intervals[2 * i], flat_intervals[2 * i + 1]});
+  }
+  std::sort(result.intervals_.begin(), result.intervals_.end());
+  UnionOfSortedIntervals(&result.intervals_);
+  return result;
+}
+
 bool Domain::IsEmpty() const { return intervals_.empty(); }
 
 int64 Domain::Size() const {
@@ -344,6 +370,15 @@ Domain Domain::InverseMultiplicationBy(const int64 coeff) const {
   result.intervals_.shrink_to_fit();
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
   return coeff > 0 ? result : result.Negation();
+}
+
+std::vector<int64> Domain::FlattenedIntervals() const {
+  std::vector<int64> result;
+  for (const ClosedInterval& interval : intervals_) {
+    result.push_back(interval.start);
+    result.push_back(interval.end);
+  }
+  return result;
 }
 
 bool Domain::operator<(const Domain& other) const {

@@ -579,37 +579,16 @@ class CpModel(object):
         domain = pywrapsat.Domain(lb, ub)
         return IntVar(self.__model, domain, name)
 
-    def NewIntVarFromValues(self, values, name):
-        """Create an integer variable with domain {values}."""
-        domain = pywrapsat.Domain.FromValues(values)
-        return IntVar(self.__model, domain, name)
-
-    def NewIntVarFromIntervals(self, intervals, name):
-        """Create an integer variable from a list of intervals.
-
-    Args:
-        intervals: A list of intervals (start, end) inclusive.
-        name: The name of the variable.
-
-    Returns:
-        a variable whose domain is the union of the intervals.
-
-    To create a variable with domain [1, 2, 3, 5, 7, 8], pass in the
-    array [(1, 3), (5, 5), (7, 8)].
-    """
-        domain = pywrapsat.Domain.FromIntervals(intervals)
-        return IntVar(self.__model, domain, name)
-
     def NewIntVarFromDomain(self, domain, name):
         """Create an integer variable from a list of intervals.
 
-    Args:
-        domain: A instance of the Domain class.
-        name: The name of the variable.
+        Args:
+            domain: A instance of the Domain class.
+            name: The name of the variable.
 
-    Returns:
-        a variable whose domain is the given domain.
-    """
+        Returns:
+            a variable whose domain is the given domain.
+        """
         return IntVar(self.__model, domain, name)
 
     def NewBoolVar(self, name):

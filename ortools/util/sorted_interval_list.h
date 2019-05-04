@@ -84,6 +84,11 @@ class Domain {
   // Creates a domain from the union of an unsorted list of intervals.
   static Domain FromIntervals(absl::Span<const ClosedInterval> intervals);
 
+  // Used in non-C++ languages. Do not use directly.
+  static Domain FromIntervals(const std::vector<std::vector<int64>>& intervals);
+  static Domain FromFlatIntervals(const std::vector<int64>& flat_intervals);
+  std::vector<int64> FlattenedIntervals() const;
+
   // Returns true if this is the empty set.
   bool IsEmpty() const;
 

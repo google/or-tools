@@ -78,39 +78,20 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (userTime) operations_research::sat::SolutionCallback::UserTime;
 %rename (wallTime) operations_research::sat::SolutionCallback::WallTime;
 
-%unignore operations_research::ClosedInterval;
 %unignore operations_research::Domain;
 %unignore operations_research::Domain::Domain;
 %rename (allValues) operations_research::Domain::AllValues;
+%rename (complement) operations_research::Domain::Complement;
+%rename (flattenedIntervals) operations_research::Domain::FlattenedIntervals;
+%rename (fromFlatIntervals) operations_research::Domain::FromFlatIntervals;
+%rename (fromIntervals) operations_research::Domain::FromIntervals;
 %rename (fromValues) operations_research::Domain::FromValues;
 %rename (isEmpty) operations_research::Domain::IsEmpty;
 %rename (size)  operations_research::Domain::Size;
-%rename (min) operations_research::Domain::Min;
 %rename (max) operations_research::Domain::Max;
-%unignore operations_research::Domain::flattenedIntervals;
-%unignore operations_research::Domain::fromIntervals(const std::vector<int64>& flat_intervals);
-%extend operations_research::Domain {
-  std::vector<int64> flattenedIntervals() {
-    std::vector<int64> result;
-    for (const auto& ci : self->intervals()) {
-      result.push_back(ci.start);
-      result.push_back(ci.end);
-    }
-    return result;
-  }
-
-  static Domain fromIntervals(const std::vector<int64>& flat_intervals) {
-    std::vector<operations_research::ClosedInterval> intervals;
-    const int length = flat_intervals.size() / 2;
-    for (int i = 0; i < length; ++i) {
-      operations_research::ClosedInterval ci;
-      ci.start = flat_intervals[2 * i];
-      ci.end = flat_intervals[2 * i + 1];
-      intervals.push_back(ci);
-    }
-    return operations_research::Domain::FromIntervals(intervals);
-  }
-}
+%rename (min) operations_research::Domain::Min;
+%rename (negation) operations_research::Domain::Negation;
+%rename (size) operations_research::Domain::Size;
 
 %include "ortools/sat/swig_helper.h"
 %include "ortools/util/sorted_interval_list.h"

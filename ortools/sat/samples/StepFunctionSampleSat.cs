@@ -67,7 +67,7 @@ public class StepFunctionSampleSat
     ILiteral b2 = model.NewBoolVar("b2");
     model.AddSumInDomain(
         new IntVar[] {x},
-        Domain.FromIntervals(new long[] {0, 1, 3, 4, 11, 20})).OnlyEnforceIf(
+        Domain.FromFlatIntervals(new long[] {0, 1, 3, 4, 11, 20})).OnlyEnforceIf(
             b2);
     model.Add(expr == 2).OnlyEnforceIf(b2);
 

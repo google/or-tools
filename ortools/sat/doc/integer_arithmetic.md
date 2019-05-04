@@ -644,81 +644,80 @@ from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-  """Print intermediate solutions."""
+    """Print intermediate solutions."""
 
-  def __init__(self, variables):
-    cp_model.CpSolverSolutionCallback.__init__(self)
-    self.__variables = variables
-    self.__solution_count = 0
+    def __init__(self, variables):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
 
-  def on_solution_callback(self):
-    self.__solution_count += 1
-    for v in self.__variables:
-      print('%s=%i' % (v, self.Value(v)), end=' ')
-    print()
+    def on_solution_callback(self):
+        self.__solution_count += 1
+        for v in self.__variables:
+            print('%s=%i' % (v, self.Value(v)), end=' ')
+        print()
 
-  def solution_count(self):
-    return self.__solution_count
+    def solution_count(self):
+        return self.__solution_count
 
 
 def step_function_sample_sat():
-  """Encode the step function."""
+    """Encode the step function."""
 
-  # Model.
-  model = cp_model.CpModel()
+    # Model.
+    model = cp_model.CpModel()
 
-  # Declare our primary variable.
-  x = model.NewIntVar(0, 20, 'x')
+    # Declare our primary variable.
+    x = model.NewIntVar(0, 20, 'x')
 
-  # Create the expression variable and implement the step function
-  # Note it is not defined for x == 2.
-  #
-  #        -               3
-  # -- --      ---------   2
-  #                        1
-  #      -- ---            0
-  # 0 ================ 20
-  #
-  expr = model.NewIntVar(0, 3, 'expr')
+    # Create the expression variable and implement the step function
+    # Note it is not defined for x == 2.
+    #
+    #        -               3
+    # -- --      ---------   2
+    #                        1
+    #      -- ---            0
+    # 0 ================ 20
+    #
+    expr = model.NewIntVar(0, 3, 'expr')
 
-  # expr == 0 on [5, 6] U [8, 10]
-  b0 = model.NewBoolVar('b0')
-  model.AddSumConstraintWithBounds(
-      [x], model.DomainFromIntervals([(5, 6), (8, 10)])).OnlyEnforceIf(b0)
-  model.Add(expr == 0).OnlyEnforceIf(b0)
+    # expr == 0 on [5, 6] U [8, 10]
+    b0 = model.NewBoolVar('b0')
+    model.AddSumInDomain([x], cp_model.Domain.FromIntervals(
+                                  [(5, 6), (8, 10)])).OnlyEnforceIf(b0)
+    model.Add(expr == 0).OnlyEnforceIf(b0)
 
-  # expr == 2 on [0, 1] U [3, 4] U [11, 20]
-  b2 = model.NewBoolVar('b2')
-  model.AddSumConstraintWithBounds([x],
-                                   model.DomainFromIntervals([
-                                       (0, 1), (3, 4), (11, 20)
-                                   ])).OnlyEnforceIf(b2)
-  model.Add(expr == 2).OnlyEnforceIf(b2)
+    # expr == 2 on [0, 1] U [3, 4] U [11, 20]
+    b2 = model.NewBoolVar('b2')
+    model.AddSumInDomain([x], cp_model.Domain.FromIntervals(
+                                  [(0, 1), (3, 4), (11, 20)])).OnlyEnforceIf(b2)
+    model.Add(expr == 2).OnlyEnforceIf(b2)
 
-  # expr == 3 when x == 7
-  b3 = model.NewBoolVar('b3')
-  model.Add(x == 7).OnlyEnforceIf(b3)
-  model.Add(expr == 3).OnlyEnforceIf(b3)
+    # expr == 3 when x == 7
+    b3 = model.NewBoolVar('b3')
+    model.Add(x == 7).OnlyEnforceIf(b3)
+    model.Add(expr == 3).OnlyEnforceIf(b3)
 
-  # At least one bi is true. (we could use a sum == 1).
-  model.AddBoolOr([b0, b2, b3])
+    # At least one bi is true. (we could use a sum == 1).
+    model.AddBoolOr([b0, b2, b3])
 
-  # Search for x values in increasing order.
-  model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
-                            cp_model.SELECT_MIN_VALUE)
+    # Search for x values in increasing order.
+    model.AddDecisionStrategy([x], cp_model.CHOOSE_FIRST,
+                              cp_model.SELECT_MIN_VALUE)
 
-  # Create a solver and solve with a fixed search.
-  solver = cp_model.CpSolver()
+    # Create a solver and solve with a fixed search.
+    solver = cp_model.CpSolver()
 
-  # Force the solver to follow the decision strategy exactly.
-  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    # Force the solver to follow the decision strategy exactly.
+    solver.parameters.search_branching = cp_model.FIXED_SEARCH
 
-  # Search and print out all solutions.
-  solution_printer = VarArraySolutionPrinter([x, expr])
-  solver.SearchForAllSolutions(model, solution_printer)
+    # Search and print out all solutions.
+    solution_printer = VarArraySolutionPrinter([x, expr])
+    solver.SearchForAllSolutions(model, solution_printer)
 
 
 step_function_sample_sat()
+
 ```
 
 ### C++ code
@@ -800,18 +799,20 @@ int main() {
 ### Java code
 
 ```java
-import com.google.ortools.sat.DecisionStrategyProto;
-import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
+import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.Domain;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
+import com.google.ortools.sat.SatParameters;
 
 /** Link integer constraints together. */
 public class StepFunctionSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
+  static {
+    System.loadLibrary("jniortools");
+  }
 
   public static void main(String[] args) throws Exception {
     // Create the CP-SAT model.
@@ -833,14 +834,15 @@ public class StepFunctionSampleSat {
 
     // expr == 0 on [5, 6] U [8, 10]
     Literal b0 = model.newBoolVar("b0");
-    model.addLinearSumWithBounds(new IntVar[] {x}, new long[] {5, 6, 8, 10}).onlyEnforceIf(b0);
+    model.addSumInDomain(new IntVar[] {x},
+                         Domain.fromValues(new long[] {5, 6, 8, 9, 10})).onlyEnforceIf(b0);
     model.addEquality(expr, 0).onlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
     Literal b2 = model.newBoolVar("b2");
-    model
-        .addLinearSumWithBounds(new IntVar[] {x}, new long[] {0, 1, 3, 4, 11, 20})
-        .onlyEnforceIf(b2);
+    model.addSumInDomain(
+        new IntVar[] {x},
+        Domain.fromIntervals(new long[][] {{0, 1}, {3, 4}, {11, 20}})).onlyEnforceIf(b2);
     model.addEquality(expr, 2).onlyEnforceIf(b2);
 
     // expr == 3 when x = 7
@@ -852,8 +854,7 @@ public class StepFunctionSampleSat {
     model.addBoolOr(new Literal[] {b0, b2, b3});
 
     // Search for x values in increasing order.
-    model.addDecisionStrategy(
-        new IntVar[] {x},
+    model.addDecisionStrategy(new IntVar[] {x},
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
@@ -864,24 +865,22 @@ public class StepFunctionSampleSat {
     solver.getParameters().setSearchBranching(SatParameters.SearchBranching.FIXED_SEARCH);
 
     // Solve the problem with the printer callback.
-    solver.searchAllSolutions(
-        model,
-        new CpSolverSolutionCallback() {
-          public CpSolverSolutionCallback init(IntVar[] variables) {
-            variableArray = variables;
-            return this;
-          }
+    solver.searchAllSolutions(model, new CpSolverSolutionCallback() {
+      public CpSolverSolutionCallback init(IntVar[] variables) {
+        variableArray = variables;
+        return this;
+      }
 
-          @Override
-          public void onSolutionCallback() {
-            for (IntVar v : variableArray) {
-              System.out.printf("%s=%d ", v.getName(), value(v));
-            }
-            System.out.println();
-          }
+      @Override
+      public void onSolutionCallback() {
+        for (IntVar v : variableArray) {
+          System.out.printf("%s=%d ", v.getName(), value(v));
+        }
+        System.out.println();
+      }
 
-          private IntVar[] variableArray;
-        }.init(new IntVar[] {x, expr}));
+      private IntVar[] variableArray;
+    }.init(new IntVar[] {x, expr}));
   }
 }
 ```
@@ -936,18 +935,17 @@ public class StepFunctionSampleSat
 
     // expr == 0 on [5, 6] U [8, 10]
     ILiteral b0 = model.NewBoolVar("b0");
-    model.AddLinearConstraintWithBounds(
+    model.AddSumInDomain(
         new IntVar[] {x},
-        new long[] {1},
-        new long[] {5, 6, 8, 10}).OnlyEnforceIf(b0);
+        Domain.FromValues(new long[] {5, 6, 8, 9, 10})).OnlyEnforceIf(b0);
     model.Add(expr == 0).OnlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
     ILiteral b2 = model.NewBoolVar("b2");
-    model.AddLinearConstraintWithBounds(
+    model.AddSumInDomain(
         new IntVar[] {x},
-        new long[] {1},
-        new long[] {0, 1, 3, 4, 11, 20}).OnlyEnforceIf(b2);
+        Domain.FromFlatIntervals(new long[] {0, 1, 3, 4, 11, 20})).OnlyEnforceIf(
+            b2);
     model.Add(expr == 2).OnlyEnforceIf(b2);
 
     // expr == 3 when x == 7

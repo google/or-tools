@@ -57,7 +57,9 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               Google.OrTools.Sat.CpSolverResponse);
 
 %template(SatInt64Vector) std::vector<int64>;
+%template(SatInt64VectorVector) std::vector<std::vector<int64> >;
 VECTOR_AS_CSHARP_ARRAY(int64, int64, long, SatInt64Vector);
+MATRIX_AS_CSHARP_ARRAY(int64, int64, long, SatInt64VectorVector);
 
 %ignoreall
 
@@ -105,39 +107,20 @@ VECTOR_AS_CSHARP_ARRAY(int64, int64, long, SatInt64Vector);
 %unignore operations_research::sat::SolutionCallback::WallTime;
 %feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
 
-%unignore operations_research::ClosedInterval;
 %unignore operations_research::Domain;
 %unignore operations_research::Domain::Domain;
 %unignore operations_research::Domain::AllValues;
+%unignore operations_research::Domain::Complement;
+%unignore operations_research::Domain::FlattenedIntervals;
+%unignore operations_research::Domain::FromFlatIntervals;
+%unignore operations_research::Domain::FromIntervals(
+    const std::vector<std::vector<int64>>& intervals);
 %unignore operations_research::Domain::FromValues;
 %unignore operations_research::Domain::IsEmpty;
-%unignore operations_research::Domain::Size;
-%unignore operations_research::Domain::Min;
 %unignore operations_research::Domain::Max;
-%unignore operations_research::Domain::FlattenedIntervals;
-%unignore operations_research::Domain::FromIntervals(const std::vector<int64>& flat_intervals);
-%extend operations_research::Domain {
-  std::vector<int64> FlattenedIntervals() {
-    std::vector<int64> result;
-    for (const auto& ci : self->intervals()) {
-      result.push_back(ci.start);
-      result.push_back(ci.end);
-    }
-    return result;
-  }
-
-  static Domain FromIntervals(const std::vector<int64>& flat_intervals) {
-    std::vector<operations_research::ClosedInterval> intervals;
-    const int length = flat_intervals.size() / 2;
-    for (int i = 0; i < length; ++i) {
-      operations_research::ClosedInterval ci;
-      ci.start = flat_intervals[2 * i];
-      ci.end = flat_intervals[2 * i + 1];
-      intervals.push_back(ci);
-    }
-    return operations_research::Domain::FromIntervals(intervals);
-  }
-}
+%unignore operations_research::Domain::Min;
+%unignore operations_research::Domain::Negation;
+%unignore operations_research::Domain::Size;
 
 %include "ortools/sat/swig_helper.h"
 %include "ortools/util/sorted_interval_list.h"
