@@ -93,20 +93,19 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SolutionCallback::WallTime;
 %feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
 
-%unignore operations_research::ClosedInterval;
 %unignore operations_research::Domain;
 %unignore operations_research::Domain::Domain;
 %unignore operations_research::Domain::AllValues;
-%unignore operations_research::Domain::FromValues;
-%unignore operations_research::Domain::IsEmpty;
-%unignore operations_research::Domain::Size;
-%unignore operations_research::Domain::Min;
-%unignore operations_research::Domain::Max;
+%unignore operations_research::Domain::Complement;
 %unignore operations_research::Domain::FlattenedIntervals;
 %unignore operations_research::Domain::FromFlatIntervals;
 %rename (FromIntervals) operations_research::Domain::FromVectorIntervals;
-%unignore operations_research::Domain::Complement;
+%unignore operations_research::Domain::FromValues;
+%unignore operations_research::Domain::IsEmpty;
+%unignore operations_research::Domain::Max;
+%unignore operations_research::Domain::Min;
 %unignore operations_research::Domain::Negation;
+%unignore operations_research::Domain::Size;
 
 %include "ortools/sat/swig_helper.h"
 %include "ortools/util/sorted_interval_list.h"

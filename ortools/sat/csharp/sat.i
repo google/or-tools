@@ -108,9 +108,9 @@ MATRIX_AS_CSHARP_ARRAY(int64, int64, long, SatInt64VectorVector);
 %feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
 
 %unignore operations_research::Domain;
-%unignore operations_research::Domain::Domain;
 %unignore operations_research::Domain::AllValues;
 %unignore operations_research::Domain::Complement;
+%unignore operations_research::Domain::Domain;
 %unignore operations_research::Domain::FlattenedIntervals;
 %unignore operations_research::Domain::FromFlatIntervals;
 %rename (FromIntervals) operations_research::Domain::FromVectorIntervals;

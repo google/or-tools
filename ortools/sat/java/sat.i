@@ -87,10 +87,10 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (fromIntervals) operations_research::Domain::FromVectorIntervals;
 %rename (fromValues) operations_research::Domain::FromValues;
 %rename (isEmpty) operations_research::Domain::IsEmpty;
-%rename (size)  operations_research::Domain::Size;
 %rename (max) operations_research::Domain::Max;
 %rename (min) operations_research::Domain::Min;
 %rename (negation) operations_research::Domain::Negation;
+%rename (size)  operations_research::Domain::Size;
 %rename (size) operations_research::Domain::Size;
 
 %include "ortools/sat/swig_helper.h"
