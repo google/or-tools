@@ -340,7 +340,7 @@ bool LinearProgrammingConstraint::SolveLp() {
     simplex_.ClearStateForNextSolve();
     return false;
   }
-  UpdateDegeneracyData();
+  average_degeneracy_.AddData(CalculateDegeneracy());
   if (average_degeneracy_.CurrentAverage() >= 1000.0) {
     VLOG(1) << "High average degeneracy: "
             << average_degeneracy_.CurrentAverage();
@@ -1332,19 +1332,18 @@ void LinearProgrammingConstraint::FillReducedCostsReason() {
   integer_trail_->RemoveLevelZeroBounds(&integer_reason_);
 }
 
-void LinearProgrammingConstraint::UpdateDegeneracyData() {
-  const int num_vars = integer_variables_.size();
+int64 LinearProgrammingConstraint::CalculateDegeneracy() const {
+  const glop::ColIndex num_vars = simplex_.GetProblemNumCols();
   int num_non_basic_with_zero_rc = 0;
-  for (int i = 0; i < num_vars; i++) {
-    const double rc = simplex_.GetReducedCost(glop::ColIndex(i));
+  for (glop::ColIndex i(0); i < num_vars; ++i) {
+    const double rc = simplex_.GetReducedCost(i);
     if (rc != 0.0) continue;
-    if (simplex_.GetVariableStatus(glop::ColIndex(i)) ==
-        glop::VariableStatus::BASIC) {
+    if (simplex_.GetVariableStatus(i) == glop::VariableStatus::BASIC) {
       continue;
     }
     num_non_basic_with_zero_rc++;
   }
-  average_degeneracy_.AddData(num_non_basic_with_zero_rc);
+  return num_non_basic_with_zero_rc;
 }
 
 void LinearProgrammingConstraint::FillDualRayReason() {

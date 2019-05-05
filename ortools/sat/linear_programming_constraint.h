@@ -203,9 +203,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // computations, true otherwise.
   bool FillExactDualRayReason();
 
-  // Computes number of non basic variables with zero reduced costs and updates
-  // 'average_degeneracy_'.
-  void UpdateDegeneracyData();
+  // Returns number of non basic variables with zero reduced costs.
+  int64 CalculateDegeneracy() const;
 
   // From a set of row multipliers (at LP scale), scale them back to the CP
   // world and then make them integer (eventually multiplying them by a new

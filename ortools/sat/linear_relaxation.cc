@@ -286,78 +286,20 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     relaxation->at_most_ones.push_back(at_most_one);
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
     if (HasEnforcementLiteral(ct)) return;
-    // Case X = max(X_1, X_2, ..., X_N)
-    // Part 1: Encode X >= max(X_1, X_2, ..., X_N)
-    const int target = ct.int_max().target();
-    for (const int var : ct.int_max().vars()) {
-      // This deal with the corner case X = max(X, Y, Z, ..) !
-      // Note that this can be presolved into X >= Y, X >= Z, ...
-      if (target == var) continue;
-      LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-      lc.AddTerm(mapping->Integer(var), IntegerValue(1));
-      lc.AddTerm(mapping->Integer(target), IntegerValue(-1));
-      relaxation->linear_constraints.push_back(lc.Build());
-    }
+    const IntegerVariable target = mapping->Integer(ct.int_max().target());
+    const std::vector<IntegerVariable> vars =
+        mapping->Integers(ct.int_max().vars());
+    AppendMaxRelaxation(target, vars, linearization_level, model, relaxation);
 
-    // TODO(user): Check the coefficient of target in the objective to avoid
-    // the second part.
-
-    // Part 2: Encode upper bound on X.
-    // NOTE(user) for size = 2, we can do this with 1 less variable.
-    if (ct.int_max().vars_size() == 2 || linearization_level >= 2) {
-      const int positive_target = PositiveRef(target);
-      // TODO(user): We can get tighter bound on max target value by going
-      // through all the constraint vars.
-      const int64 max_target_value =
-          RefIsPositive(target)
-              ? model_proto.variables(positive_target)
-                    .domain(
-                        model_proto.variables(positive_target).domain_size() -
-                        1)
-              : -model_proto.variables(positive_target).domain(0);
-
-      // For each X_i, we encode y_i => X <= X_i. And at least one of the y_i
-      // is true. Note that the correct y_i will be chosen because of the first
-      // part in linearlization (X >= X_i).
-      // TODO(user): Only lower bound is needed, experiment.
-      LinearConstraintBuilder lc_exactly_one(model, IntegerValue(1),
-                                             IntegerValue(1));
-      for (const int var : ct.int_max().vars()) {
-        if (target == var) continue;
-        // y => X <= X_i.
-        // <=> max_term_value * y + X - X_i <= max_term_value.
-        // where max_tern_value is X_ub - X_i_lb.
-        IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
-        const int positive_var = PositiveRef(var);
-        const int64 min_var_value =
-            RefIsPositive(var)
-                ? model_proto.variables(positive_var).domain(0)
-                : -model_proto.variables(positive_var)
-                       .domain(
-                           model_proto.variables(positive_var).domain_size() -
-                           1);
-        int64 max_term_value = max_target_value - min_var_value;
-        LinearConstraintBuilder lc(model, kMinIntegerValue,
-                                   IntegerValue(max_term_value));
-        lc.AddTerm(mapping->Integer(target), IntegerValue(1));
-        lc.AddTerm(mapping->Integer(var), IntegerValue(-1));
-        lc.AddTerm(y, IntegerValue(max_term_value));
-        relaxation->linear_constraints.push_back(lc.Build());
-
-        lc_exactly_one.AddTerm(y, IntegerValue(1));
-      }
-      relaxation->linear_constraints.push_back(lc_exactly_one.Build());
-    }
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMin) {
     if (HasEnforcementLiteral(ct)) return;
-    const int target = ct.int_min().target();
-    for (const int var : ct.int_min().vars()) {
-      if (target == var) continue;
-      LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-      lc.AddTerm(mapping->Integer(target), IntegerValue(1));
-      lc.AddTerm(mapping->Integer(var), IntegerValue(-1));
-      relaxation->linear_constraints.push_back(lc.Build());
-    }
+    const IntegerVariable negative_target =
+        NegationOf(mapping->Integer(ct.int_min().target()));
+    const std::vector<IntegerVariable> negative_vars =
+        NegationOf(mapping->Integers(ct.int_min().vars()));
+    AppendMaxRelaxation(negative_target, negative_vars, linearization_level,
+                        model, relaxation);
+
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kIntProd) {
     if (HasEnforcementLiteral(ct)) return;
@@ -438,6 +380,54 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
 
     relaxation->linear_constraints.push_back(constraint.Build());
+  }
+}
+
+void AppendMaxRelaxation(IntegerVariable target,
+                         const std::vector<IntegerVariable>& vars,
+                         int linearization_level, Model* model,
+                         LinearRelaxation* relaxation) {
+  // Case X = max(X_1, X_2, ..., X_N)
+  // Part 1: Encode X >= max(X_1, X_2, ..., X_N)
+  for (const IntegerVariable var : vars) {
+    // This deal with the corner case X = max(X, Y, Z, ..) !
+    // Note that this can be presolved into X >= Y, X >= Z, ...
+    if (target == var) continue;
+    LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+    lc.AddTerm(var, IntegerValue(1));
+    lc.AddTerm(target, IntegerValue(-1));
+    relaxation->linear_constraints.push_back(lc.Build());
+  }
+
+  // Part 2: Encode upper bound on X.
+  // NOTE(user) for size = 2, we can do this with 1 less variable.
+  if (vars.size() == 2 || linearization_level >= 2) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    const IntegerValue max_target_value = integer_trail->UpperBound(target);
+
+    // For each X_i, we encode y_i => X <= X_i. And at least one of the y_i
+    // is true. Note that the correct y_i will be chosen because of the first
+    // part in linearlization (X >= X_i).
+    // TODO(user): Only lower bound is needed, experiment.
+    LinearConstraintBuilder lc_exactly_one(model, IntegerValue(1),
+                                           IntegerValue(1));
+    for (const IntegerVariable var : vars) {
+      if (target == var) continue;
+      // y => X <= X_i.
+      // <=> max_term_value * y + X - X_i <= max_term_value.
+      // where max_tern_value is X_ub - X_i_lb.
+      IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
+      const IntegerValue min_var_value = integer_trail->LowerBound(var);
+      const IntegerValue max_term_value = max_target_value - min_var_value;
+      LinearConstraintBuilder lc(model, kMinIntegerValue, max_term_value);
+      lc.AddTerm(target, IntegerValue(1));
+      lc.AddTerm(var, IntegerValue(-1));
+      lc.AddTerm(y, max_term_value);
+      relaxation->linear_constraints.push_back(lc.Build());
+
+      lc_exactly_one.AddTerm(y, IntegerValue(1));
+    }
+    relaxation->linear_constraints.push_back(lc_exactly_one.Build());
   }
 }
 
