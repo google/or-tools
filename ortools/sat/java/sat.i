@@ -84,7 +84,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (complement) operations_research::Domain::Complement;
 %rename (flattenedIntervals) operations_research::Domain::FlattenedIntervals;
 %rename (fromFlatIntervals) operations_research::Domain::FromFlatIntervals;
-%rename (fromIntervals) operations_research::Domain::FromIntervals;
+%rename (fromIntervals) operations_research::Domain::FromVectorIntervals;
 %rename (fromValues) operations_research::Domain::FromValues;
 %rename (isEmpty) operations_research::Domain::IsEmpty;
 %rename (size)  operations_research::Domain::Size;

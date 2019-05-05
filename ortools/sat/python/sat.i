@@ -104,8 +104,7 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::Domain::Max;
 %unignore operations_research::Domain::FlattenedIntervals;
 %unignore operations_research::Domain::FromFlatIntervals;
-%unignore operations_research::Domain::FromIntervals(
-    const std::vector<std::vector<int64>>& intervals);
+%rename (FromIntervals) operations_research::Domain::FromVectorIntervals;
 %unignore operations_research::Domain::Complement;
 %unignore operations_research::Domain::Negation;
 

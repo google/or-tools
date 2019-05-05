@@ -113,8 +113,7 @@ MATRIX_AS_CSHARP_ARRAY(int64, int64, long, SatInt64VectorVector);
 %unignore operations_research::Domain::Complement;
 %unignore operations_research::Domain::FlattenedIntervals;
 %unignore operations_research::Domain::FromFlatIntervals;
-%unignore operations_research::Domain::FromIntervals(
-    const std::vector<std::vector<int64>>& intervals);
+%rename (FromIntervals) operations_research::Domain::FromVectorIntervals;
 %unignore operations_research::Domain::FromValues;
 %unignore operations_research::Domain::IsEmpty;
 %unignore operations_research::Domain::Max;

@@ -134,7 +134,8 @@ Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
   return result;
 }
 
-Domain Domain::FromIntervals(const std::vector<std::vector<int64>>& intervals) {
+Domain Domain::FromVectorIntervals(
+    const std::vector<std::vector<int64>>& intervals) {
   Domain result;
   for (const std::vector<int64>& interval : intervals) {
     if (interval.size() == 1) {

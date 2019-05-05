@@ -85,7 +85,7 @@ class Domain {
   static Domain FromIntervals(absl::Span<const ClosedInterval> intervals);
 
   // Used in non-C++ languages. Do not use directly.
-  static Domain FromIntervals(const std::vector<std::vector<int64>>& intervals);
+  static Domain FromVectorIntervals(const std::vector<std::vector<int64>>& intervals);
   static Domain FromFlatIntervals(const std::vector<int64>& flat_intervals);
   std::vector<int64> FlattenedIntervals() const;
 
