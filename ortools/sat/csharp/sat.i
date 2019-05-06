@@ -36,9 +36,6 @@ typedef uint64_t uint64;
 
 %module(directors="1") operations_research_sat
 
-/* allow partial c# classes */
-%typemap(csclassmodifiers) SWIGTYPE "public partial class"
-
 PROTO_INPUT(operations_research::sat::CpModelProto,
             Google.OrTools.Sat.CpModelProto,
             model_proto);
@@ -57,7 +54,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %template(SatInt64Vector) std::vector<int64>;
 %template(SatInt64VectorVector) std::vector<std::vector<int64> >;
 VECTOR_AS_CSHARP_ARRAY(int64, int64, long, SatInt64Vector);
-MATRIX_AS_CSHARP_ARRAY(int64, int64, long, SatInt64VectorVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, SatInt64VectorVector);
 
 %ignoreall
 

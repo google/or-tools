@@ -132,7 +132,7 @@ module FSharp =
       | MultidimensionBranchAndBound -> 5
       | MultidimensionSCIP -> 6
 
-  let knapsackSolve (name: string) (solverAlgorithm:KnapsackSolverAlgorithm) (profits:int64 list) (weights:int64 list) (capacities:int64 list) =
+  let knapsackSolve (name: string) (solverAlgorithm:KnapsackSolverAlgorithm) (profits:int64 list) (weights:int64 [,]) (capacities:int64 list) =
     // extract the specific algorithm so its Id can be used to create solver
     let algorithm =
       match solverAlgorithm with
@@ -154,17 +154,11 @@ module FSharp =
     let solver = new KnapsackSolver(enum<KnapsackSolver.SolverType>(algorithm), name)
 
     // transform lists to compatible structures for C++ Solver
-    let profits = new KInt64Vector( List.toArray profits )
+    let profit_array = List.toArray profits
 
-    let weights =
-      let tempVector = new KInt64VectorVector(1)
-      let tempWeights = new KInt64Vector(List.toArray weights)
-      tempVector.Add(tempWeights)
-      tempVector
+    let capacity_array = List.toArray capacities
 
-    let capacities = new KInt64Vector (List.toArray capacities)
-
-    solver.Init(profits, weights, capacities)
+    solver.Init(profit_array, weights, capacity_array)
     solver
 
   type SolverOpts = {

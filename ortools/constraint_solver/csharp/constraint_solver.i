@@ -139,14 +139,14 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 // we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
 %template(CpIntVectorVector) std::vector<std::vector<int> >;
 VECTOR_AS_CSHARP_ARRAY(int, int, int, CpIntVector);
-MATRIX_AS_CSHARP_ARRAY(int, int, int, CpIntVectorVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, CpIntVectorVector);
 
 %template(CpInt64Vector) std::vector<int64>;
 // IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
 // we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
 %template(CpInt64VectorVector) std::vector<std::vector<int64> >;
 VECTOR_AS_CSHARP_ARRAY(int64, int64, long, CpInt64Vector);
-MATRIX_AS_CSHARP_ARRAY(int64, int64, long, CpInt64VectorVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, CpInt64VectorVector);
 
 // Types in Proxy class:
 // Solver.cs:

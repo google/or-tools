@@ -310,7 +310,6 @@ $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)/$(OR_TOOLS_NATIVE_ASS
 $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(LIB_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX) \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj \
- $(SRC_DIR)/ortools/algorithms/csharp/IntArrayHelper.cs \
  $(SRC_DIR)/ortools/constraint_solver/csharp/IntVarArrayHelper.cs \
  $(SRC_DIR)/ortools/constraint_solver/csharp/IntervalVarArrayHelper.cs \
  $(SRC_DIR)/ortools/constraint_solver/csharp/IntArrayHelper.cs \
@@ -325,7 +324,6 @@ $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(SRC_DIR)/ortools/sat/csharp/Constraints.cs \
  $(SRC_DIR)/ortools/sat/csharp/CpModel.cs \
  $(SRC_DIR)/ortools/sat/csharp/CpSolver.cs \
- $(SRC_DIR)/ortools/sat/csharp/IntArrayHelper.cs \
  $(SRC_DIR)/ortools/sat/csharp/IntegerExpressions.cs \
  $(SRC_DIR)/ortools/sat/csharp/IntervalVariables.cs \
  $(SRC_DIR)/ortools/sat/csharp/SearchHelpers.cs \
