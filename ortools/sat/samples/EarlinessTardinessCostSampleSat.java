@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.SatParameters;
 
 /** Encode the piecewise linear expression. */
@@ -47,16 +48,18 @@ public class EarlinessTardinessCostSampleSat {
 
     // First segment: s1 == earlinessCost * (earlinessDate - x).
     IntVar s1 = model.newIntVar(-largeConstant, largeConstant, "s1");
-    model.addLinearExpressionEqual(
-        new IntVar[] {s1, x}, new long[] {1, earlinessCost}, earlinessCost* earlinessDate);
+    model.addEquality(
+        LinearExpr.ScalProd(new IntVar[] {s1, x}, new long[] {1, earlinessCost}),
+        earlinessCost* earlinessDate);
 
     // Second segment.
     IntVar s2 = model.newConstant(0);
 
     // Third segment: s3 == latenessCost * (x - latenessDate).
     IntVar s3 = model.newIntVar(-largeConstant, largeConstant, "s3");
-    model.addLinearExpressionEqual(
-        new IntVar[] {s3, x}, new long[] {1, -latenessCost}, -latenessCost* latenessDate);
+    model.addEquality(
+        LinearExpr.ScalProd(new IntVar[] {s3, x}, new long[] {1, -latenessCost}),
+        -latenessCost* latenessDate);
 
     // Link together expr and x through s1, s2, and s3.
     model.addMaxEquality(expr, new IntVar[] {s1, s2, s3});

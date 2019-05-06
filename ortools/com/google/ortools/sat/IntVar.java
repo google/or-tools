@@ -17,7 +17,7 @@ import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.IntegerVariableProto;
 
 /** An integer variable. */
-public class IntVar implements Literal {
+public class IntVar implements Literal, LinearExpr {
   IntVar(CpModelProto.Builder builder, Domain domain, String name) {
     this.modelBuilder = builder;
     this.variableIndex = modelBuilder.getVariablesCount();
@@ -48,6 +48,21 @@ public class IntVar implements Literal {
   /** Returns the variable protobuf builder. */
   public IntegerVariableProto.Builder getBuilder() {
     return varBuilder;
+  }
+
+  // LinearExpr interface.
+  public int numElements() {
+    return 1;
+  }
+
+  public IntVar getVariable(int index) {
+    assert(index == 0);
+    return this;
+  }
+
+  public long getCoefficient(int index) {
+    assert(index == 0);
+    return 1;
   }
 
   /** Returns a short string describing the variable. */
