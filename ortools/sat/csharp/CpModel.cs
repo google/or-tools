@@ -127,9 +127,9 @@ namespace Google.OrTools.Sat
         case BoundedLinearExpression.Type.VarDiffCst:
           {
             return AddLinearExpressionInDomain(
-                lin.Left,
-                Domain.FromFlatIntervals(new long[] { Int64.MinValue, -1, 1,
-                                                      Int64.MaxValue }));
+               lin.Left,
+               Domain.FromFlatIntervals(
+                   new long[] { Int64.MinValue, lin.Lb - 1, lin.Lb + 1, Int64.MaxValue }));
           }
       }
       return null;

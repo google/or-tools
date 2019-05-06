@@ -575,8 +575,7 @@ class CpModel(object):
 
     def NewIntVar(self, lb, ub, name):
         """Create an integer variable with domain [lb, ub]."""
-        domain = Domain(lb, ub)
-        return IntVar(self.__model, domain, name)
+        return IntVar(self.__model, Domain(lb, ub), name)
 
     def NewIntVarFromDomain(self, domain, name):
         """Create an integer variable from a list of intervals.
