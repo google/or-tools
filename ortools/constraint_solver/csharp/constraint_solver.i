@@ -137,9 +137,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %template(CpIntVector) std::vector<int>;
 // IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
 // we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
-%template(CpIntVectorVector) std::vector<std::vector<int> >;
 VECTOR_AS_CSHARP_ARRAY(int, int, int, CpIntVector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, CpIntVectorVector);
 
 %template(CpInt64Vector) std::vector<int64>;
 // IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
