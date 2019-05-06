@@ -11,9 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cmath>
-
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include "absl/strings/match.h"
@@ -342,6 +341,11 @@ void Solve(const JsspInputProblem& problem) {
   const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
+  // Abort if we don't have any solution.
+  if (response.status() != CpSolverStatus::OPTIMAL &&
+      response.status() != CpSolverStatus::FEASIBLE)
+    return;
+
   // Check cost, recompute it from scratch.
   int64 final_cost = 0;
   if (problem.makespan_cost_per_time_unit() != 0) {
@@ -365,8 +369,11 @@ void Solve(const JsspInputProblem& problem) {
       final_cost += (end - late_due_date) * late_penalty;
     }
   }
+
   // TODO(user): Support alternative cost in check.
-  CHECK_EQ(response.objective_value(), final_cost);
+  const double tolerance = 1e-6;
+  CHECK_GE(response.objective_value(), final_cost - tolerance);
+  CHECK_LE(response.objective_value(), final_cost + tolerance);
 }
 
 }  // namespace sat
