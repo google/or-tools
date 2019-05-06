@@ -112,8 +112,8 @@ namespace Google.OrTools.Tests {
         IntVar v1 = model.NewIntVar(-10, 10, "v1");
         IntVar v2 = model.NewIntVar(-10, 10, "v2");
         IntVar v3 = model.NewIntVar(-100000, 100000, "v3");
-        model.AddLinearConstraint(new[] {v1, v2}, new[] {1, 1}, -1000000, 100000);
-        model.AddLinearConstraint(new[] {v1, v2, v3}, new[] {1, 2, -1}, 0, 100000);
+        model.AddLinearConstraint(v1 + v2, -1000000, 100000);
+        model.AddLinearConstraint(v1 + 2 * v2 - v3, 0, 100000);
         model.Maximize(v3);
         //Console.WriteLine("model = " + model.Model.ToString());
 
@@ -132,7 +132,7 @@ namespace Google.OrTools.Tests {
         CpModel model = new CpModel();
         IntVar v1 = model.NewIntVar(-10, 10, "v1");
         IntVar v2 = model.NewIntVar(-10, 10, "v2");
-        model.AddLinearConstraint(new[] {v1, v2}, new[] {1, 1}, -1000000, 100000);
+        model.AddLinearConstraint(v1 + v2, -1000000, 100000);
         model.Maximize(v1 - 2 * v2);
         //Console.WriteLine("model = " + model.Model.ToString());
 
@@ -266,4 +266,3 @@ namespace Google.OrTools.Tests {
       }
   }
 } // namespace Google.OrTools.Tests
-
