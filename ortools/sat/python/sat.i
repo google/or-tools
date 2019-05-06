@@ -17,10 +17,10 @@
 
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
+%import "ortools/util/python/vector.i"
 
 // std::function utilities.
 %include "ortools/util/python/functions.i"
-%import "ortools/util/python/vector.i"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
@@ -32,6 +32,9 @@
 %pythoncode {
 import numbers
 }
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 %module(directors="1") operations_research_sat
 
@@ -97,6 +100,7 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::Domain::Domain;
 %unignore operations_research::Domain::AllValues;
 %unignore operations_research::Domain::Complement;
+%unignore operations_research::Domain::Contains;
 %unignore operations_research::Domain::FlattenedIntervals;
 %unignore operations_research::Domain::FromFlatIntervals;
 %rename (FromIntervals) operations_research::Domain::FromVectorIntervals;
@@ -111,3 +115,4 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %include "ortools/util/sorted_interval_list.h"
 
 %unignoreall
+

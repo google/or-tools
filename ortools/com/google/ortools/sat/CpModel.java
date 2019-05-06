@@ -21,7 +21,6 @@ import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.CpObjectiveProto;
 import com.google.ortools.sat.CumulativeConstraintProto;
 import com.google.ortools.sat.DecisionStrategyProto;
-import com.google.ortools.sat.Domain;
 import com.google.ortools.sat.ElementConstraintProto;
 import com.google.ortools.sat.IntegerArgumentProto;
 import com.google.ortools.sat.IntegerVariableProto;
@@ -93,7 +92,7 @@ public class CpModel {
 
   // Boolean Constraints.
 
-  /** Add {@code Or(literals) == true}. */
+  /** Adds {@code Or(literals) == true}. */
   public Constraint addBoolOr(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolOrBuilder();
@@ -103,7 +102,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code And(literals) == true}. */
+  /** Adds {@code And(literals) == true}. */
   public Constraint addBoolAnd(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolAndBuilder();
@@ -113,7 +112,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code XOr(literals) == true}. */
+  /** Adds {@code XOr(literals) == true}. */
   public Constraint addBoolXor(Literal[] literals) {
     Constraint ct = new Constraint(modelBuilder);
     BoolArgumentProto.Builder boolOr = ct.getBuilder().getBoolXorBuilder();
@@ -123,7 +122,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code a => b}. */
+  /** Adds {@code a => b}. */
   public Constraint addImplication(Literal a, Literal b) {
     return addBoolOr(new Literal[] {a.not(), b});
   }
@@ -144,9 +143,8 @@ public class CpModel {
   }
 
   /**
-   * Add {@code sum(vars) in domain}, where domain is a flattened
-   * list of intervals similar to the one for enumerated integer
-   * variables.
+   * Add {@code sum(vars) in domain}, where domain is a flattened list of intervals similar to the
+   * one for enumerated integer variables.
    */
   public Constraint addSumInDomain(IntVar[] vars, Domain domain) {
     Constraint ct = new Constraint(modelBuilder);
@@ -201,9 +199,8 @@ public class CpModel {
   }
 
   /**
-   * Add {@code sum(vars[i] * coeffs[i]) in domain}, where domain is
-   * a flattened list of intervals similar to the one for enumerated
-   * integer variables.
+   * Add {@code sum(vars[i] * coeffs[i]) in domain}, where domain is a flattened list of intervals
+   * similar to the one for enumerated integer variables.
    */
   public Constraint addLinearExpressionInDomain(IntVar[] vars, long[] coeffs, Domain domain) {
     Constraint ct = new Constraint(modelBuilder);
@@ -249,7 +246,7 @@ public class CpModel {
     return addLinearExpressionEqual(vars, toLongArray(coeffs), target);
   }
 
-  /** Add {@code var <= value}. */
+  /** Adds {@code var <= value}. */
   public Constraint addLessOrEqual(IntVar var, long value) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
@@ -260,12 +257,12 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code before <= after}. */
+  /** Adds {@code before <= after}. */
   public Constraint addLessOrEqual(IntVar before, IntVar after) {
     return addLessOrEqualWithOffset(before, after, 0);
   }
 
-  /** Add {@code var >= value}. */
+  /** Adds {@code var >= value}. */
   public Constraint addGreaterOrEqual(IntVar var, long value) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
@@ -276,7 +273,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code var == value}. */
+  /** Adds {@code var == value}. */
   public Constraint addEquality(IntVar var, long value) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
@@ -287,12 +284,12 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code a == b}. */
+  /** Adds {@code a == b}. */
   public Constraint addEquality(IntVar a, IntVar b) {
     return addEqualityWithOffset(a, b, 0);
   }
 
-  /** Add {@code a + offset == b}. */
+  /** Adds {@code a + offset == b}. */
   public Constraint addEqualityWithOffset(IntVar a, IntVar b, long offset) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
@@ -305,7 +302,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code var != value}. */
+  /** Adds {@code var != value}. */
   public Constraint addDifferent(IntVar var, long value) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
@@ -322,12 +319,12 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code a != b}. */
+  /** Adds {@code a != b}. */
   public Constraint addDifferent(IntVar a, IntVar b) {
     return addDifferentWithOffset(a, b, 0);
   }
 
-  /** Add {@code a + offset != b} */
+  /** Adds {@code a + offset != b} */
   public Constraint addDifferentWithOffset(IntVar a, IntVar b, long offset) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
@@ -346,7 +343,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code before + offset <= after}. */
+  /** Adds {@code before + offset <= after}. */
   public Constraint addLessOrEqualWithOffset(IntVar before, IntVar after, long offset) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
@@ -362,7 +359,7 @@ public class CpModel {
   // Integer constraints.
 
   /**
-   * Add {@code AllDifferent(variables)}.
+   * Adds {@code AllDifferent(variables)}.
    *
    * <p>This constraint forces all variables to have different values.
    *
@@ -378,7 +375,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add the element constraint: {@code variables[index] == target}. */
+  /** Adds the element constraint: {@code variables[index] == target}. */
   public Constraint addElement(IntVar index, IntVar[] variables, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
     ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
@@ -390,7 +387,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add the element constraint: {@code values[index] == target}. */
+  /** Adds the element constraint: {@code values[index] == target}. */
   public Constraint addElement(IntVar index, long[] values, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
     ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
@@ -402,7 +399,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add the element constraint: {@code values[index] == target}. */
+  /** Adds the element constraint: {@code values[index] == target}. */
   public Constraint addElement(IntVar index, int[] values, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
     ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
@@ -415,9 +412,9 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Circuit(tails, heads, literals)}.
+   * Adds {@code Circuit(tails, heads, literals)}.
    *
-   * <p>Add a circuit constraint from a sparse list of arcs that encode the graph.
+   * <p>Adds a circuit constraint from a sparse list of arcs that encode the graph.
    *
    * <p>A circuit is a unique Hamiltonian path in a subgraph of the total graph. In case a node 'i'
    * is not in the path, then there must be a loop arc {@code 'i -> i'} associated with a true
@@ -453,7 +450,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code AllowedAssignments(variables, tuplesList)}.
+   * Adds {@code AllowedAssignments(variables, tuplesList)}.
    *
    * <p>An AllowedAssignments constraint is a constraint on an array of variables that forces, when
    * all variables are fixed to a single value, that the corresponding list of values is equal to
@@ -486,7 +483,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code AllowedAssignments(variables, tuplesList)}.
+   * Adds {@code AllowedAssignments(variables, tuplesList)}.
    *
    * @see #addAllowedAssignments(IntVar[], long[][]) addAllowedAssignments
    */
@@ -511,7 +508,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code ForbiddenAssignments(variables, tuplesList)}.
+   * Adds {@code ForbiddenAssignments(variables, tuplesList)}.
    *
    * <p>A ForbiddenAssignments constraint is a constraint on an array of variables where the list of
    * impossible combinations is provided in the tuples list.
@@ -531,7 +528,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code ForbiddenAssignments(variables, tuplesList)}.
+   * Adds {@code ForbiddenAssignments(variables, tuplesList)}.
    *
    * @see #addForbiddenAssignments(IntVar[], long[][]) addForbiddenAssignments
    */
@@ -544,7 +541,7 @@ public class CpModel {
   }
 
   /**
-   * Add an automaton constraint.
+   * Adds an automaton constraint.
    *
    * <p>An automaton constraint takes a list of variables (of size n), an initial state, a set of
    * final states, and a set of transitions. A transition is a triplet ('tail', 'transition',
@@ -597,7 +594,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Inverse(variables, inverseVariables)}.
+   * Adds {@code Inverse(variables, inverseVariables)}.
    *
    * <p>An inverse constraint enforces that if 'variables[i]' is assigned a value 'j', then
    * inverseVariables[j] is assigned a value 'i'. And vice versa.
@@ -624,7 +621,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Reservoir(times, demands, minLevel, maxLevel)}.
+   * Adds {@code Reservoir(times, demands, minLevel, maxLevel)}.
    *
    * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any non
    * negative time , it must be between minLevel and maxLevel. Furthermore, this constraints expect
@@ -665,7 +662,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Reservoir(times, demands, minLevel, maxLevel)}.
+   * Adds {@code Reservoir(times, demands, minLevel, maxLevel)}.
    *
    * @see #addReservoirConstraint(IntVar[], long[], long, long) Reservoir
    */
@@ -675,7 +672,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
+   * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
    *
    * <p>Maintains a reservoir level within bounds. The water level starts at 0, and at any non
    * negative time , it must be between minLevel and maxLevel. Furthermore, this constraints expect
@@ -725,7 +722,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
+   * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
    *
    * @see #addReservoirConstraintWithActive(IntVar[], long[], actives, long, long) Reservoir
    */
@@ -735,7 +732,7 @@ public class CpModel {
         times, toLongArray(demands), actives, minLevel, maxLevel);
   }
 
-  /** Add {@code var == i + offset <=> booleans[i] == true for all i in [0, booleans.length)}. */
+  /** Adds {@code var == i + offset <=> booleans[i] == true for all i in [0, booleans.length)}. */
   public void addMapDomain(IntVar var, Literal[] booleans, long offset) {
     for (int i = 0; i < booleans.length; ++i) {
       addEquality(var, offset + i).onlyEnforceIf(booleans[i]);
@@ -743,7 +740,7 @@ public class CpModel {
     }
   }
 
-  /** Add {@code target == Min(vars)}. */
+  /** Adds {@code target == Min(vars)}. */
   public Constraint addMinEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
     IntegerArgumentProto.Builder intMin = ct.getBuilder().getIntMinBuilder();
@@ -754,7 +751,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code target == Max(vars)}. */
+  /** Adds {@code target == Max(vars)}. */
   public Constraint addMaxEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
     IntegerArgumentProto.Builder intMax = ct.getBuilder().getIntMaxBuilder();
@@ -765,7 +762,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code target == num / denom}, rounded towards 0. */
+  /** Adds {@code target == num / denom}, rounded towards 0. */
   public Constraint addDivisionEquality(IntVar target, IntVar num, IntVar denom) {
     Constraint ct = new Constraint(modelBuilder);
     IntegerArgumentProto.Builder intDiv = ct.getBuilder().getIntDivBuilder();
@@ -775,7 +772,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code target == Abs(var)}. */
+  /** Adds {@code target == Abs(var)}. */
   public Constraint addAbsEquality(IntVar target, IntVar var) {
     Constraint ct = new Constraint(modelBuilder);
     IntegerArgumentProto.Builder intMax = ct.getBuilder().getIntMaxBuilder();
@@ -785,7 +782,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code target == var % mod}. */
+  /** Adds {@code target == var % mod}. */
   public Constraint addModuloEquality(IntVar target, IntVar var, IntVar mod) {
     Constraint ct = new Constraint(modelBuilder);
     IntegerArgumentProto.Builder intMod = ct.getBuilder().getIntModBuilder();
@@ -795,7 +792,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code target == var % mod}. */
+  /** Adds {@code target == var % mod}. */
   public Constraint addModuloEquality(IntVar target, IntVar var, long mod) {
     Constraint ct = new Constraint(modelBuilder);
     IntegerArgumentProto.Builder intMod = ct.getBuilder().getIntModBuilder();
@@ -805,7 +802,7 @@ public class CpModel {
     return ct;
   }
 
-  /** Add {@code target == Product(vars)}. */
+  /** Adds {@code target == Product(vars)}. */
   public Constraint addProductEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
     IntegerArgumentProto.Builder intProd = ct.getBuilder().getIntProdBuilder();
@@ -936,7 +933,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code NoOverlap(intervalVars)}.
+   * Adds {@code NoOverlap(intervalVars)}.
    *
    * <p>A NoOverlap constraint ensures that all present intervals do not overlap in time.
    *
@@ -953,7 +950,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code NoOverlap2D(xIntervals, yIntervals)}.
+   * Adds {@code NoOverlap2D(xIntervals, yIntervals)}.
    *
    * <p>A NoOverlap2D constraint ensures that all present rectangles do not overlap on a plan. Each
    * rectangle is aligned with the X and Y axis, and is defined by two intervals which represent its
@@ -976,7 +973,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Cumulative(intervals, demands, capacity)}.
+   * Adds {@code Cumulative(intervals, demands, capacity)}.
    *
    * <p>This constraint enforces that:
    *
@@ -1004,7 +1001,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Cumulative(intervals, demands, capacity)} with fixed demands.
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
    *
    * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
@@ -1022,7 +1019,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Cumulative(intervals, demands, capacity)} with fixed demands.
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands.
    *
    * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
@@ -1031,7 +1028,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Cumulative(intervals, demands, capacity)} with fixed capacity.
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed capacity.
    *
    * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
@@ -1049,7 +1046,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Cumulative(intervals, demands, capacity)} with fixed demands and fixed capacity.
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands and fixed capacity.
    *
    * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
@@ -1067,7 +1064,7 @@ public class CpModel {
   }
 
   /**
-   * Add {@code Cumulative(intervals, demands, capacity)} with fixed demands and fixed capacity.
+   * Adds {@code Cumulative(intervals, demands, capacity)} with fixed demands and fixed capacity.
    *
    * @see #addCumulative(IntervalVar[], IntVar[], IntVar) AddCumulative
    */
@@ -1077,14 +1074,14 @@ public class CpModel {
 
   // Objective.
 
-  /** Add a minimization objective of a single variable. */
+  /** Adds a minimization objective of a single variable. */
   public void minimize(IntVar var) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     obj.addVars(var.getIndex());
     obj.addCoeffs(1);
   }
 
-  /** Add a minimization objective of a sum of variables. */
+  /** Adds a minimization objective of a sum of variables. */
   public void minimizeSum(IntVar[] vars) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     for (IntVar var : vars) {
@@ -1093,7 +1090,7 @@ public class CpModel {
     }
   }
 
-  /** Add a minimization objective of a scalar product of variables. */
+  /** Adds a minimization objective of a scalar product of variables. */
   public void minimizeLinearExpression(IntVar[] vars, long[] coeffs) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     for (IntVar var : vars) {
@@ -1104,12 +1101,12 @@ public class CpModel {
     }
   }
 
-  /** Add a minimization objective of a scalar product of variables. */
+  /** Adds a minimization objective of a scalar product of variables. */
   public void minimizeLinearExpression(IntVar[] vars, int[] coeffs) {
     minimizeLinearExpression(vars, toLongArray(coeffs));
   }
 
-  /** Add a maximization objective of a single variable. */
+  /** Adds a maximization objective of a single variable. */
   public void maximize(IntVar var) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     obj.addVars(negated(var.getIndex()));
@@ -1117,7 +1114,7 @@ public class CpModel {
     obj.setScalingFactor(-1.0);
   }
 
-  /** Add a maximization objective of a sum of variables. */
+  /** Adds a maximization objective of a sum of variables. */
   public void maximizeSum(IntVar[] vars) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     for (IntVar var : vars) {
@@ -1127,7 +1124,7 @@ public class CpModel {
     obj.setScalingFactor(-1.0);
   }
 
-  /** Add a maximization objective of a scalar product of variables. */
+  /** Adds a maximization objective of a scalar product of variables. */
   public void maximizeLinearExpression(IntVar[] vars, long[] coeffs) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
     for (IntVar var : vars) {
@@ -1139,14 +1136,14 @@ public class CpModel {
     obj.setScalingFactor(-1.0);
   }
 
-  /** Add a maximization objective of a scalar product of variables. */
+  /** Adds a maximization objective of a scalar product of variables. */
   public void maximizeLinearExpression(IntVar[] vars, int[] coeffs) {
     maximizeLinearExpression(vars, toLongArray(coeffs));
   }
 
   // DecisionStrategy
 
-  /** Add {@code DecisionStrategy(variables, varStr, domStr)}. */
+  /** Adds {@code DecisionStrategy(variables, varStr, domStr)}. */
   public void addDecisionStrategy(IntVar[] variables,
       DecisionStrategyProto.VariableSelectionStrategy varStr,
       DecisionStrategyProto.DomainReductionStrategy domStr) {
@@ -1158,12 +1155,12 @@ public class CpModel {
     ds.setDomainReductionStrategy(domStr);
   }
 
-  /** Return some statistics on model as a string. */
+  /** Returns some statistics on model as a string. */
   public String modelStats() {
     return SatHelper.modelStats(model());
   }
 
-  /** Return a non empty string explaining the issue if the model is invalid. */
+  /** Returns a non empty string explaining the issue if the model is invalid. */
   public String validate() {
     return SatHelper.validateModel(model());
   }
@@ -1196,7 +1193,7 @@ public class CpModel {
     return -index - 1;
   }
 
-  /** Return the model builder. */
+  /** Returns the model builder. */
   public CpModelProto.Builder getBuilder() {
     return modelBuilder;
   }

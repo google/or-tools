@@ -944,7 +944,7 @@ public class RankingSampleSat {
       vars[numTasks] = ranks[i];
       coefs[numTasks] = -1;
       // ranks == sum(precedences) - 1;
-      model.addScalProdEqual(vars, coefs, 1);
+      model.addLinearExpressionEqual(vars, coefs, 1);
     }
   }
 
@@ -1009,7 +1009,7 @@ public class RankingSampleSat {
     }
     objectiveVars[numTasks] = makespan;
     objectiveCoefs[numTasks] = 2;
-    model.minimizeScalProd(objectiveVars, objectiveCoefs);
+    model.minimizeLinearExpression(objectiveVars, objectiveCoefs);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
@@ -1246,17 +1246,18 @@ def SchedulingWithCalendarSampleSat():
   # Because the duration is at least 3 hours, work cannot start after 15h.
   # Because of the break, work cannot start at 13h.
 
-  start = model.NewIntVarFromIntervals([(8, 12), (14, 15)], 'start')
+  start = model.NewIntVarFromDomain(
+      cp_model.Domain.FromIntervals([(8, 12), (14, 15)]), 'start')
   duration = model.NewIntVar(3, 4, 'duration')
   end = model.NewIntVar(8, 18, 'end')
   unused_interval = model.NewIntervalVar(start, duration, end, 'interval')
 
   # We have 2 states (spanning across lunch or not)
   across = model.NewBoolVar('across')
-  non_spanning_hours = model.DomainFromValues([8, 9, 10, 14, 15])
-  model.AddSumConstraintWithBounds([start], non_spanning_hours).OnlyEnforceIf(
+  non_spanning_hours = cp_model.Domain.FromValues([8, 9, 10, 14, 15])
+  model.AddLinearExpressionInDomain(start, non_spanning_hours).OnlyEnforceIf(
       across.Not())
-  model.AddSumConstraint([start], 11, 12).OnlyEnforceIf(across)
+  model.AddLinearConstraint(start, 11, 12).OnlyEnforceIf(across)
   model.Add(duration == 3).OnlyEnforceIf(across.Not())
   model.Add(duration == 4).OnlyEnforceIf(across)
 

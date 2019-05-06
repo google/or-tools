@@ -71,7 +71,7 @@ class CpModelTest(object):
         model = cp_model.CpModel()
         x = model.NewIntVar(-10, 10, 'x')
         y = model.NewIntVar(-10, 10, 'y')
-        model.AddLinearConstraint([(x, 1), (y, 2)], 0, 10)
+        model.AddLinearConstraint(x + 2 * y, 0, 10)
         model.Minimize(y)
         solver = cp_model.CpSolver()
         self.assertEqual(cp_model_pb2.OPTIMAL, solver.Solve(model))
@@ -270,7 +270,7 @@ class CpModelTest(object):
         x = model.NewIntVar(-10, 10, 'x')
         y = model.NewIntVar(-10, 10, 'y')
         b = model.NewBoolVar('b')
-        model.AddLinearConstraint([(x, 1), (y, 2)], 0, 10).OnlyEnforceIf(
+        model.AddLinearConstraint(x + 2 * y, 0, 10).OnlyEnforceIf(
             b.Not())
         model.Minimize(y)
         self.assertEqual(1, len(model.Proto().constraints))

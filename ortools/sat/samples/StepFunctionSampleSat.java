@@ -46,15 +46,16 @@ public class StepFunctionSampleSat {
 
     // expr == 0 on [5, 6] U [8, 10]
     Literal b0 = model.newBoolVar("b0");
-    model.addSumInDomain(new IntVar[] {x},
-                         Domain.fromValues(new long[] {5, 6, 8, 9, 10})).onlyEnforceIf(b0);
+    model.addSumInDomain(new IntVar[] {x}, Domain.fromValues(new long[] {5, 6, 8, 9, 10}))
+        .onlyEnforceIf(b0);
     model.addEquality(expr, 0).onlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
     Literal b2 = model.newBoolVar("b2");
-    model.addSumInDomain(
-        new IntVar[] {x},
-        Domain.fromIntervals(new long[][] {{0, 1}, {3, 4}, {11, 20}})).onlyEnforceIf(b2);
+    model
+        .addSumInDomain(
+            new IntVar[] {x}, Domain.fromIntervals(new long[][] {{0, 1}, {3, 4}, {11, 20}}))
+        .onlyEnforceIf(b2);
     model.addEquality(expr, 2).onlyEnforceIf(b2);
 
     // expr == 3 when x = 7

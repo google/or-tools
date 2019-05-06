@@ -3,6 +3,8 @@
 
 # Using the CP-SAT solver
 
+
+
 ## Documentation structure
 
 This document presents modeling recipes for the CP-SAT solver.

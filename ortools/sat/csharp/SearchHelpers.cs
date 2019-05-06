@@ -19,9 +19,9 @@ namespace Google.OrTools.Sat
 
   public class CpSolverSolutionCallback : SolutionCallback
   {
-    public long Value(IntegerExpression e)
+    public long Value(LinearExpression e)
     {
-      List<IntegerExpression> exprs = new List<IntegerExpression>();
+      List<LinearExpression> exprs = new List<LinearExpression>();
       List<long> coeffs = new List<long>();
       exprs.Add(e);
       coeffs.Add(1L);
@@ -29,7 +29,7 @@ namespace Google.OrTools.Sat
 
       while (exprs.Count > 0)
       {
-        IntegerExpression expr = exprs[0];
+        LinearExpression expr = exprs[0];
         exprs.RemoveAt(0);
         long coeff = coeffs[0];
         coeffs.RemoveAt(0);
@@ -48,7 +48,7 @@ namespace Google.OrTools.Sat
         {
           SumArray a = (SumArray)expr;
           constant += coeff * a.Constant;
-          foreach (IntegerExpression sub in a.Expressions)
+          foreach (LinearExpression sub in a.Expressions)
           {
             exprs.Add(sub);
             coeffs.Add(coeff);
@@ -89,31 +89,31 @@ namespace Google.OrTools.Sat
     }
   }
 
-public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
-{
+  public class ObjectiveSolutionPrinter : CpSolverSolutionCallback
+  {
     private DateTime _startTime;
     private int _solutionCount;
 
     public ObjectiveSolutionPrinter()
     {
-        _startTime = DateTime.Now;
+      _startTime = DateTime.Now;
     }
 
     public override void OnSolutionCallback()
     {
-        var currentTime = DateTime.Now;
-        var objective = ObjectiveValue();
-        var objectiveBound = BestObjectiveBound();
-        var objLb = Math.Min(objective, objectiveBound);
-        var objUb = Math.Max(objective, objectiveBound);
-        var time = currentTime - _startTime;
+      var currentTime = DateTime.Now;
+      var objective = ObjectiveValue();
+      var objectiveBound = BestObjectiveBound();
+      var objLb = Math.Min(objective, objectiveBound);
+      var objUb = Math.Max(objective, objectiveBound);
+      var time = currentTime - _startTime;
 
-        Console.WriteLine(value: $"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objLb}, {objUb}]");
+      Console.WriteLine(value: $"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objLb}, {objUb}]");
 
-        _solutionCount++;
+      _solutionCount++;
     }
 
     public int solutionCount() => _solutionCount;
-}
+  }
 
 }  // namespace Google.OrTools.Sat

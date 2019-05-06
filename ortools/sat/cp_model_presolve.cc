@@ -715,7 +715,6 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     const int var = PositiveRef(ct->int_max().vars(0));
 
     // abs(x) == constant -> reduce domain.
-    bool changed = false;
     if (context->IsFixed(target_ref)) {
       const int64 target_value = context->MaxOf(target_ref);
       if (target_value < 0) {
@@ -732,7 +731,6 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     }
 
     if (context->MinOf(target_ref) < 0) {
-      changed = true;
       context->UpdateRuleStats("int_max: propagate abs(x) >= 0");
       if (!context->IntersectDomainWith(target_ref, {0, kint64max})) {
         return true;

@@ -73,8 +73,7 @@ public class CpIsFunSat {
     model.addAllDifferent(letters);
 
     // CP + IS + FUN = TRUE
-    model.addLinearExpressionEqual(
-        new IntVar[] {c, p, i, s, f, u, n, t, r, u, e},
+    model.addLinearExpressionEqual(new IntVar[] {c, p, i, s, f, u, n, t, r, u, e},
         new long[] {
             base, 1, base, 1, base * base, base, 1, -base * base * base, -base * base, -base, -1},
         0);

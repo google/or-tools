@@ -189,7 +189,7 @@ public class ChannelingSampleSat {
 
     // Create our two half-reified constraints.
     // First, b implies (y == 10 - x).
-    model.addLinearSumEqual(new IntVar[] {x, y}, 10).onlyEnforceIf(b);
+    model.addSumEqual(new IntVar[] {x, y}, 10).onlyEnforceIf(b);
     // Second, not(b) implies y == 0.
     model.addEquality(y, 0).onlyEnforceIf(b.not());
 
@@ -336,11 +336,10 @@ variables together:
 ```python
 """Solves a binpacking problem using the CP-SAT solver."""
 
-from __future__ import absolute_import
-from __future__ import division
 from __future__ import print_function
 
 from ortools.sat.python import cp_model
+
 
 
 def BinpackingProblemSat():
@@ -545,7 +544,7 @@ public class BinPackingProblemSat {
       for (int i = 0; i < numItems; ++i) {
         vars[i] = x[i][b];
       }
-      model.addScalProdEqual(vars, sizes, load[b]);
+      model.addLinearExpressionEqual(vars, sizes, load[b]);
     }
 
     // Place all items.
@@ -554,7 +553,7 @@ public class BinPackingProblemSat {
       for (int b = 0; b < numBins; ++b) {
         vars[b] = x[i][b];
       }
-      model.addLinearSumEqual(vars, items[i][1]);
+      model.addSumEqual(vars, items[i][1]);
     }
 
     // Links load and slack.

@@ -25,7 +25,6 @@ from ortools.sat import cp_model_pb2
 from ortools.sat import sat_parameters_pb2
 from ortools.sat.python import cp_model_helper
 from ortools.sat import pywrapsat
-
 Domain = pywrapsat.Domain
 
 # The classes below allow linear expressions to be expressed naturally with the
@@ -91,7 +90,7 @@ def DisplayBounds(bounds):
 
 
 def ShortName(model, i):
-    """Return a short name of an integer variable, or its negation."""
+    """Returns a short name of an integer variable, or its negation."""
     if i < 0:
         return 'Not(%s)' % ShortName(model, -i - 1)
     v = model.variables[i]
@@ -348,11 +347,11 @@ class IntVar(LinearExpression):
         self.__negation = None
 
     def Index(self):
-        """Return the index of the variable in the model."""
+        """Returns the index of the variable in the model."""
         return self.__index
 
     def Proto(self):
-        """Return the variable protobuf."""
+        """Returns the variable protobuf."""
         return self.__var
 
     def __str__(self):
@@ -365,7 +364,7 @@ class IntVar(LinearExpression):
         return self.__var.name
 
     def Not(self):
-        """Return the negation of a Boolean variable.
+        """Returns the negation of a Boolean variable.
 
     This method implements the logical negation of a Boolean variable.
     It is only valid of the variable has a Boolean domain (0 or 1).
@@ -458,7 +457,7 @@ class Constraint(object):
         self.__constraint = constraints.add()
 
     def OnlyEnforceIf(self, boolvar):
-        """Add an enforcement literal to the constraint.
+        """Adds an enforcement literal to the constraint.
 
     Args:
         boolvar: A boolean literal or a list of boolean literals.
@@ -491,11 +490,11 @@ class Constraint(object):
         return self
 
     def Index(self):
-        """Return the index of the constraint in the model."""
+        """Returns the index of the constraint in the model."""
         return self.__index
 
     def Proto(self):
-        """Return the constraint protobuf."""
+        """Returns the constraint protobuf."""
         return self.__constraint
 
 
@@ -531,11 +530,11 @@ class IntervalVar(object):
             self.__ct.name = name
 
     def Index(self):
-        """Return the index of the interval constraint in the model."""
+        """Returns the index of the interval constraint in the model."""
         return self.__index
 
     def Proto(self):
-        """Return the interval protobuf."""
+        """Returns the interval protobuf."""
         return self.__ct.interval
 
     def __str__(self):
@@ -576,83 +575,63 @@ class CpModel(object):
 
     def NewIntVar(self, lb, ub, name):
         """Create an integer variable with domain [lb, ub]."""
-        domain = pywrapsat.Domain(lb, ub)
+        domain = Domain(lb, ub)
         return IntVar(self.__model, domain, name)
 
     def NewIntVarFromDomain(self, domain, name):
         """Create an integer variable from a list of intervals.
 
-        Args:
-            domain: A instance of the Domain class.
-            name: The name of the variable.
+    Args:
+        domain: A instance of the Domain class.
+        name: The name of the variable.
 
-        Returns:
-            a variable whose domain is the given domain.
-        """
+    Returns:
+        a variable whose domain is the given domain.
+    """
         return IntVar(self.__model, domain, name)
 
     def NewBoolVar(self, name):
         """Creates a 0-1 variable with the given name."""
-        return IntVar(self.__model, pywrapsat.Domain(0, 1), name)
+        return IntVar(self.__model, Domain(0, 1), name)
 
-    # Integer constraints.
+    # Linear constraints.
 
-    def AddSumConstraint(self, variables, lb, ub):
-        """Add lb <= sum(variables) <= ub."""
-        ct = Constraint(self.__model.constraints)
-        model_ct = self.__model.constraints[ct.Index()]
-        for v in variables:
-            model_ct.linear.vars.append(v.Index())
-            model_ct.linear.coeffs.append(1)
-        model_ct.linear.domain.extend([lb, ub])
-        return ct
+    def AddLinearConstraint(self, linear_expr, lb, ub):
+        """Adds the constraint: lb <= linear_expr <= ub."""
+        return self.AddLinearExpressionInDomain(linear_expr, Domain(lb, ub))
 
-    def AddLinearConstraint(self, terms, lb, ub):
-        """Add lb <= sum(terms) <= ub, where term = (var, coef)."""
-        ct = Constraint(self.__model.constraints)
-        model_ct = self.__model.constraints[ct.Index()]
-        for t in terms:
-            if not isinstance(t[0], IntVar):
-                raise TypeError('Wrong argument' + str(t))
-            cp_model_helper.AssertIsInt64(t[1])
-            model_ct.linear.vars.append(t[0].Index())
-            model_ct.linear.coeffs.append(t[1])
-        model_ct.linear.domain.extend([lb, ub])
-        return ct
-
-    def AddLinearExpressionInDomain(self, terms, domain):
-        """Add sum(terms) in domain, where term = (var, coef)."""
-        ct = Constraint(self.__model.constraints)
-        model_ct = self.__model.constraints[ct.Index()]
-        for t in terms:
-            if not isinstance(t[0], IntVar):
-                raise TypeError('Wrong argument' + str(t))
-            cp_model_helper.AssertIsInt64(t[1])
-            model_ct.linear.vars.append(t[0].Index())
-            model_ct.linear.coeffs.append(t[1])
-        model_ct.linear.domain.extend(domain.FlattenedIntervals())
-        return ct
-
-    def AddSumInDomain(self, variables, domain):
-        """Add the constraints sum(variables) in domain."""
-        ct = Constraint(self.__model.constraints)
-        model_ct = self.__model.constraints[ct.Index()]
-        for var in variables:
-            if not isinstance(var, IntVar):
-                raise TypeError('Wrong argument' + str(var))
-            model_ct.linear.vars.append(var.Index())
-            model_ct.linear.coeffs.append(1)
-        model_ct.linear.domain.extend(domain.FlattenedIntervals())
-        return ct
+    def AddLinearExpressionInDomain(self, linear_expr, domain):
+        """Add the constraint: linear_expr in domain."""
+        if isinstance(linear_expr, LinearExpression):
+            ct = Constraint(self.__model.constraints)
+            model_ct = self.__model.constraints[ct.Index()]
+            coeffs_map, constant = linear_expr.GetVarValueMap()
+            for t in iteritems(coeffs_map):
+                if not isinstance(t[0], IntVar):
+                    raise TypeError('Wrong argument' + str(t))
+                cp_model_helper.AssertIsInt64(t[1])
+                model_ct.linear.vars.append(t[0].Index())
+                model_ct.linear.coeffs.append(t[1])
+            model_ct.linear.domain.extend([
+                cp_model_helper.CapSub(x, constant)
+                for x in domain.FlattenedIntervals()
+            ])
+            return ct
+        elif isinstance(linear_expr, numbers.Integral):
+            if not domain.Contains(linear_expr):
+                return self.AddBoolOr([])  # Evaluate to false.
+            # Nothing to do otherwise.
+        else:
+            raise TypeError(
+                'Not supported: CpModel.AddLinearExpressionInDomain(' +
+                str(linear_expr) + ' ' + str(domain) + ')')
 
     def Add(self, ct):
-        """Add a LinearInequality to the model."""
+        """Adds a LinearInequality to the model."""
         if isinstance(ct, LinearInequality):
-            coeffs_map, constant = ct.Expression().GetVarValueMap()
-            bounds = [cp_model_helper.CapSub(x, constant) for x in ct.Bounds()]
-            return self.AddLinearExpressionInDomain(
-                iteritems(coeffs_map),
-                pywrapsat.Domain.FromFlatIntervals(bounds))
+            return self.AddLinearExpressionInDomain(ct.Expression(),
+                                                    Domain.FromFlatIntervals(
+                                                        ct.Bounds()))
         elif ct and isinstance(ct, bool):
             pass  # Nothing to do, was already evaluated to true.
         elif not ct and isinstance(ct, bool):
@@ -660,8 +639,10 @@ class CpModel(object):
         else:
             raise TypeError('Not supported: CpModel.Add(' + str(ct) + ')')
 
+    # General Integer Constraints.
+
     def AddAllDifferent(self, variables):
-        """Add AllDifferent(variables).
+        """Adds AllDifferent(variables).
 
     This constraint forces all variables to have different values.
 
@@ -678,7 +659,7 @@ class CpModel(object):
         return ct
 
     def AddElement(self, index, variables, target):
-        """Add the element constraint: variables[index] == target."""
+        """Adds the element constraint: variables[index] == target."""
 
         if not variables:
             raise ValueError('AddElement expects a non empty variables array')
@@ -692,9 +673,9 @@ class CpModel(object):
         return ct
 
     def AddCircuit(self, arcs):
-        """Add Circuit(arcs).
+        """Adds Circuit(arcs).
 
-    Add a circuit constraint from a sparse list of arcs that encode the graph.
+    Adds a circuit constraint from a sparse list of arcs that encode the graph.
 
     A circuit is a unique Hamiltonian path in a subgraph of the total
     graph. In case a node 'i' is not in the path, then there must be a
@@ -727,7 +708,7 @@ class CpModel(object):
         return ct
 
     def AddAllowedAssignments(self, variables, tuples_list):
-        """Add AllowedAssignments(variables, tuples_list).
+        """Adds AllowedAssignments(variables, tuples_list).
 
     An AllowedAssignments constraint is a constraint on an array of variables
     that forces, when all variables are fixed to a single value, that the
@@ -767,7 +748,7 @@ class CpModel(object):
         return ct
 
     def AddForbiddenAssignments(self, variables, tuples_list):
-        """Add AddForbiddenAssignments(variables, [tuples_list]).
+        """Adds AddForbiddenAssignments(variables, [tuples_list]).
 
     A ForbiddenAssignments constraint is a constraint on an array of variables
     where the list of impossible combinations is provided in the tuples list.
@@ -799,7 +780,7 @@ class CpModel(object):
 
     def AddAutomaton(self, transition_variables, starting_state, final_states,
                      transition_triples):
-        """Add an automaton constraint.
+        """Adds an automaton constraint.
 
     An automaton constraint takes a list of variables (of size n), an initial
     state, a set of final states, and a set of transitions. A transition is a
@@ -871,7 +852,7 @@ class CpModel(object):
         return ct
 
     def AddInverse(self, variables, inverse_variables):
-        """Add Inverse(variables, inverse_variables).
+        """Adds Inverse(variables, inverse_variables).
 
     An inverse constraint enforces that if 'variables[i]' is assigned a value
     'j', then inverse_variables[j] is assigned a value 'i'. And vice versa.
@@ -904,7 +885,7 @@ class CpModel(object):
         return ct
 
     def AddReservoirConstraint(self, times, demands, min_level, max_level):
-        """Add Reservoir(times, demands, min_level, max_level).
+        """Adds Reservoir(times, demands, min_level, max_level).
 
     Maintains a reservoir level within bounds. The water level starts at 0, and
     at any time >= 0, it must be between min_level and max_level. Furthermore,
@@ -948,7 +929,7 @@ class CpModel(object):
 
     def AddReservoirConstraintWithActive(self, times, demands, actives,
                                          min_level, max_level):
-        """Add Reservoir(times, demands, actives, min_level, max_level).
+        """Adds Reservoir(times, demands, actives, min_level, max_level).
 
     Maintain a reservoir level within bounds. The water level starts at 0, and
     at
@@ -998,7 +979,7 @@ class CpModel(object):
         return ct
 
     def AddMapDomain(self, var, bool_var_array, offset=0):
-        """Add var == i + offset <=> bool_var_array[i] == true for all i."""
+        """Adds var == i + offset <=> bool_var_array[i] == true for all i."""
 
         for i, bool_var in enumerate(bool_var_array):
             b_index = bool_var.Index()
@@ -1019,7 +1000,7 @@ class CpModel(object):
                 model_ct.linear.domain.extend([offset + i + 1, INT_MAX])
 
     def AddImplication(self, a, b):
-        """Add a => b."""
+        """Adds a => b."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_or.literals.append(self.GetOrMakeBooleanIndex(b))
@@ -1027,7 +1008,7 @@ class CpModel(object):
         return ct
 
     def AddBoolOr(self, literals):
-        """Add Or(literals) == true."""
+        """Adds Or(literals) == true."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_or.literals.extend(
@@ -1035,7 +1016,7 @@ class CpModel(object):
         return ct
 
     def AddBoolAnd(self, literals):
-        """Add And(literals) == true."""
+        """Adds And(literals) == true."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_and.literals.extend(
@@ -1043,7 +1024,7 @@ class CpModel(object):
         return ct
 
     def AddBoolXOr(self, literals):
-        """Add XOr(literals) == true."""
+        """Adds XOr(literals) == true."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_xor.literals.extend(
@@ -1051,7 +1032,7 @@ class CpModel(object):
         return ct
 
     def AddMinEquality(self, target, variables):
-        """Add target == Min(variables)."""
+        """Adds target == Min(variables)."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_min.vars.extend(
@@ -1060,7 +1041,7 @@ class CpModel(object):
         return ct
 
     def AddMaxEquality(self, target, args):
-        """Add target == Max(variables)."""
+        """Adds target == Max(variables)."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_max.vars.extend([self.GetOrMakeIndex(x) for x in args])
@@ -1068,7 +1049,7 @@ class CpModel(object):
         return ct
 
     def AddDivisionEquality(self, target, num, denom):
-        """Add target == num // denom."""
+        """Adds target == num // denom."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_div.vars.extend(
@@ -1078,7 +1059,7 @@ class CpModel(object):
         return ct
 
     def AddAbsEquality(self, target, var):
-        """Add target == Abs(var)."""
+        """Adds target == Abs(var)."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         index = self.GetOrMakeIndex(var)
@@ -1087,7 +1068,7 @@ class CpModel(object):
         return ct
 
     def AddModuloEquality(self, target, var, mod):
-        """Add target = var % mod."""
+        """Adds target = var % mod."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_mod.vars.extend(
@@ -1097,7 +1078,7 @@ class CpModel(object):
         return ct
 
     def AddProdEquality(self, target, args):
-        """Add target == PROD(args)."""
+        """Adds target == PROD(args)."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_prod.vars.extend([self.GetOrMakeIndex(x) for x in args])
@@ -1164,7 +1145,7 @@ class CpModel(object):
                            is_present_index, name)
 
     def AddNoOverlap(self, interval_vars):
-        """Add NoOverlap(interval_vars).
+        """Adds NoOverlap(interval_vars).
 
     A NoOverlap constraint ensures that all present intervals do not overlap
     in time.
@@ -1182,7 +1163,7 @@ class CpModel(object):
         return ct
 
     def AddNoOverlap2D(self, x_intervals, y_intervals):
-        """Add NoOverlap2D(x_intervals, y_intervals).
+        """Adds NoOverlap2D(x_intervals, y_intervals).
 
     A NoOverlap2D constraint ensures that all present rectangles do not overlap
     on a plan. Each rectangle is aligned with the X and Y axis, and is defined
@@ -1204,7 +1185,7 @@ class CpModel(object):
         return ct
 
     def AddCumulative(self, intervals, demands, capacity):
-        """Add Cumulative(intervals, demands, capacity).
+        """Adds Cumulative(intervals, demands, capacity).
 
     This constraint enforces that:
       for all t:
@@ -1237,14 +1218,14 @@ class CpModel(object):
         return str(self.__model)
 
     def Proto(self):
-        """Return the underling CpModelProto."""
+        """Returns the underling CpModelProto."""
         return self.__model
 
     def Negated(self, index):
         return -index - 1
 
     def GetOrMakeIndex(self, arg):
-        """Return the index of a variables, its negation, or a number."""
+        """Returns the index of a variables, its negation, or a number."""
         if isinstance(arg, IntVar):
             return arg.Index()
         elif (isinstance(arg, _ProductCst) and
@@ -1258,7 +1239,7 @@ class CpModel(object):
                 'NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
 
     def GetOrMakeBooleanIndex(self, arg):
-        """Return an index from a boolean expression."""
+        """Returns an index from a boolean expression."""
         if isinstance(arg, IntVar):
             self.AssertIsBooleanVariable(arg)
             return arg.Index()
@@ -1338,7 +1319,7 @@ class CpModel(object):
         return self.__model.HasField('objective')
 
     def AddDecisionStrategy(self, variables, var_strategy, domain_strategy):
-        """Add a search strategy to the model.
+        """Adds a search strategy to the model.
 
     Args:
       variables: a list of variables this strategy will assign.
@@ -1356,11 +1337,11 @@ class CpModel(object):
         strategy.domain_reduction_strategy = domain_strategy
 
     def ModelStats(self):
-        """Return some statistics on the model as a string."""
+        """Returns some statistics on the model as a string."""
         return pywrapsat.SatHelper.ModelStats(self.__model)
 
     def Validate(self):
-        """Return a string explaining the issue is the model is not valid."""
+        """Returns a string explaining the issue is the model is not valid."""
         return pywrapsat.SatHelper.ValidateModel(self.__model)
 
     def AssertIsBooleanVariable(self, x):
@@ -1428,13 +1409,13 @@ class CpSolver(object):
         self.parameters = sat_parameters_pb2.SatParameters()
 
     def Solve(self, model):
-        """Solve the given model and Return the solve status."""
+        """Solves the given model and returns the solve status."""
         self.__solution = pywrapsat.SatHelper.SolveWithParameters(
             model.Proto(), self.parameters)
         return self.__solution.status
 
     def SolveWithSolutionCallback(self, model, callback):
-        """Solve a problem and pass each solution found to the callback."""
+        """Solves a problem and pass each solution found to the callback."""
         self.__solution = (
             pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
                 model.Proto(), self.parameters, callback))
@@ -1469,55 +1450,55 @@ class CpSolver(object):
         return self.__solution.status
 
     def Value(self, expression):
-        """Return the value of an linear expression after solve."""
+        """Returns the value of an linear expression after solve."""
         if not self.__solution:
             raise RuntimeError('Solve() has not be called.')
         return EvaluateLinearExpression(expression, self.__solution)
 
     def BooleanValue(self, literal):
-        """Return the boolean value of a literal after solve."""
+        """Returns the boolean value of a literal after solve."""
         if not self.__solution:
             raise RuntimeError('Solve() has not be called.')
         return EvaluateBooleanExpression(literal, self.__solution)
 
     def ObjectiveValue(self):
-        """Return the value of objective after solve."""
+        """Returns the value of objective after solve."""
         return self.__solution.objective_value
 
     def BestObjectiveBound(self):
-        """Return the best lower (upper) bound found when min(max)imizing."""
+        """Returns the best lower (upper) bound found when min(max)imizing."""
         return self.__solution.best_objective_bound
 
     def StatusName(self, status):
-        """Return the name of the status returned by Solve()."""
+        """Returns the name of the status returned by Solve()."""
         return cp_model_pb2.CpSolverStatus.Name(status)
 
     def NumBooleans(self):
-        """Return the number of boolean variables managed by the SAT solver."""
+        """Returns the number of boolean variables managed by the SAT solver."""
         return self.__solution.num_booleans
 
     def NumConflicts(self):
-        """Return the number of conflicts since the creation of the solver."""
+        """Returns the number of conflicts since the creation of the solver."""
         return self.__solution.num_conflicts
 
     def NumBranches(self):
-        """Return the number of search branches explored by the solver."""
+        """Returns the number of search branches explored by the solver."""
         return self.__solution.num_branches
 
     def WallTime(self):
-        """Return the wall time in seconds since the creation of the solver."""
+        """Returns the wall time in seconds since the creation of the solver."""
         return self.__solution.wall_time
 
     def UserTime(self):
-        """Return the user time in seconds since the creation of the solver."""
+        """Returns the user time in seconds since the creation of the solver."""
         return self.__solution.user_time
 
     def ResponseStats(self):
-        """Return some statistics on the solution found as a string."""
+        """Returns some statistics on the solution found as a string."""
         return pywrapsat.SatHelper.SolverResponseStats(self.__solution)
 
     def ResponseProto(self):
-        """Return the response object."""
+        """Returns the response object."""
         return self.__solution
 
 
@@ -1537,7 +1518,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         self.on_solution_callback()
 
     def BooleanValue(self, lit):
-        """Return the boolean value of a boolean literal.
+        """Returns the boolean value of a boolean literal.
 
     Args:
         lit: A boolean variable or its negation.
