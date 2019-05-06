@@ -14,7 +14,7 @@
 package com.google.ortools.sat;
 
 /** the substraction of two linear expressions. Used internally. */
-class Difference implements LinearExpr {
+final class Difference implements LinearExpr {
   private LinearExpr left;
   private LinearExpr right;
 

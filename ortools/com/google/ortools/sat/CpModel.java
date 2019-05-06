@@ -30,13 +30,14 @@ import com.google.ortools.sat.NoOverlap2DConstraintProto;
 import com.google.ortools.sat.NoOverlapConstraintProto;
 import com.google.ortools.sat.ReservoirConstraintProto;
 import com.google.ortools.sat.TableConstraintProto;
+import com.google.ortools.util.Domain;
 
 /**
  * Main modeling class.
  *
  * <p>Proposes a factory to create all modeling objects understood by the SAT solver.
  */
-public class CpModel {
+public final class CpModel {
   static class CpModelException extends Exception {
     public CpModelException(String methodName, String msg) {
       // Call constructor of parent Exception
@@ -129,9 +130,7 @@ public class CpModel {
 
   // Linear constraints.
 
-  /**
-   * Adds {@code expr in domain}.
-   */
+  /** Adds {@code expr in domain}. */
   public Constraint addLinearExpressionInDomain(LinearExpr expr, Domain domain) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
@@ -172,14 +171,13 @@ public class CpModel {
 
   /** Adds {@code left <= right}. */
   public Constraint addLessOrEqual(LinearExpr left, LinearExpr right) {
-    return addLinearExpressionInDomain(new Difference(left, right), 
-                                              new Domain(Long.MIN_VALUE, 0));
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, 0));
   }
 
   /** Adds {@code left + offset <= right}. */
   public Constraint addLessOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(new Difference(left, right), 
-                                       new Domain(Long.MIN_VALUE, -offset));
+    return addLinearExpressionInDomain(
+        new Difference(left, right), new Domain(Long.MIN_VALUE, -offset));
   }
 
   /** Adds {@code expr >= value}. */
@@ -191,29 +189,31 @@ public class CpModel {
   public Constraint addGreaterOrEqual(LinearExpr left, LinearExpr right) {
     return addLinearExpressionInDomain(new Difference(left, right), new Domain(0, Long.MAX_VALUE));
   }
-  
+
   /** Adds {@code left + offset >= right}. */
   public Constraint addGreaterOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
-    return addLinearExpressionInDomain(new Difference(left, right), 
-                                       new Domain(-offset, Long.MAX_VALUE));
+    return addLinearExpressionInDomain(
+        new Difference(left, right), new Domain(-offset, Long.MAX_VALUE));
   }
-  
+
   /** Adds {@code expr != value}. */
   public Constraint addDifferent(LinearExpr expr, long value) {
-    return addLinearExpressionInDomain(expr, Domain.fromFlatIntervals(
-        new long[] {Long.MIN_VALUE, value - 1, value + 1, Long.MAX_VALUE}));
+    return addLinearExpressionInDomain(expr,
+        Domain.fromFlatIntervals(
+            new long[] {Long.MIN_VALUE, value - 1, value + 1, Long.MAX_VALUE}));
   }
 
   /** Adds {@code left != right}. */
   public Constraint addDifferent(IntVar left, IntVar right) {
-    return addLinearExpressionInDomain(new Difference(left, right), Domain.fromFlatIntervals(
-        new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
+    return addLinearExpressionInDomain(new Difference(left, right),
+        Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
   }
 
   /** Adds {@code left + offset != right}. */
   public Constraint addDifferentWithOffset(IntVar left, IntVar right, long offset) {
-    return addLinearExpressionInDomain(new Difference(left, right), Domain.fromFlatIntervals(
-        new long[] {Long.MIN_VALUE, -offset - 1, -offset + 1, Long.MAX_VALUE}));
+    return addLinearExpressionInDomain(new Difference(left, right),
+        Domain.fromFlatIntervals(
+            new long[] {Long.MIN_VALUE, -offset - 1, -offset + 1, Long.MAX_VALUE}));
   }
 
   // Integer constraints.

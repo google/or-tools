@@ -14,7 +14,7 @@
 package com.google.ortools.sat;
 
 /** A linear expression interface that can be parsed. */
-public class SumOfVariables implements LinearExpr {
+public final class SumOfVariables implements LinearExpr {
   private IntVar[] variables;
 
   public SumOfVariables(IntVar[] variables) {

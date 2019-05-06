@@ -16,13 +16,13 @@
 %include "ortools/base/base.i"
 
 %include "ortools/util/java/proto.i"
-%include "ortools/util/java/vector.i"
+
+%import "ortools/util/java/sorted_interval_list.i"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
-#include "ortools/util/sorted_interval_list.h"
 %}
 
 typedef int64_t int64;
@@ -78,23 +78,6 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (userTime) operations_research::sat::SolutionCallback::UserTime;
 %rename (wallTime) operations_research::sat::SolutionCallback::WallTime;
 
-// Wrap the domain class here.
-%unignore operations_research::Domain;
-%unignore operations_research::Domain::Domain;
-%rename (allValues) operations_research::Domain::AllValues;
-%rename (complement) operations_research::Domain::Complement;
-%rename (contains) operations_research::Domain::Contains;
-%rename (flattenedIntervals) operations_research::Domain::FlattenedIntervals;
-%rename (fromFlatIntervals) operations_research::Domain::FromFlatIntervals;
-%rename (fromIntervals) operations_research::Domain::FromVectorIntervals;
-%rename (fromValues) operations_research::Domain::FromValues;
-%rename (isEmpty) operations_research::Domain::IsEmpty;
-%rename (max) operations_research::Domain::Max;
-%rename (min) operations_research::Domain::Min;
-%rename (negation) operations_research::Domain::Negation;
-%rename (size) operations_research::Domain::Size;
-
 %include "ortools/sat/swig_helper.h"
-%include "ortools/util/sorted_interval_list.h"
 
 %unignoreall

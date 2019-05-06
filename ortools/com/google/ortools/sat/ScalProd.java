@@ -14,7 +14,7 @@
 package com.google.ortools.sat;
 
 /** A linear expression interface that can be parsed. */
-public class ScalProd implements LinearExpr {
+public final class ScalProd implements LinearExpr {
   private IntVar[] variables;
   private long[] coefficients;
 

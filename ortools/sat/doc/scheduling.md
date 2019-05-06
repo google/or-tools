@@ -872,6 +872,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
+import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.Literal;
 import java.util.ArrayList;
 import java.util.List;
@@ -944,7 +945,7 @@ public class RankingSampleSat {
       vars[numTasks] = ranks[i];
       coefs[numTasks] = -1;
       // ranks == sum(precedences) - 1;
-      model.addLinearExpressionEqual(vars, coefs, 1);
+      model.addEquality(LinearExpr.scalProd(vars, coefs), 1);
     }
   }
 
@@ -1009,7 +1010,7 @@ public class RankingSampleSat {
     }
     objectiveVars[numTasks] = makespan;
     objectiveCoefs[numTasks] = 2;
-    model.minimizeLinearExpression(objectiveVars, objectiveCoefs);
+    model.minimize(LinearExpr.scalProd(objectiveVars, objectiveCoefs));
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

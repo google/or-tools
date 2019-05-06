@@ -195,19 +195,43 @@ $(OBJ_DIR)/swig/sat_java_wrap.$O: \
  -c $(GEN_PATH)$Sortools$Ssat$Ssat_java_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_java_wrap.$O
 
+$(GEN_DIR)/ortools/util/util_java_wrap.cc: \
+ $(SRC_DIR)/ortools/util/java/sorted_interval_list.i \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(UTIL_DEPS) \
+ | $(GEN_DIR)/ortools/util $(GEN_DIR)/com/google/ortools/util
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java \
+ -o $(GEN_PATH)$Sortools$Sutil$Sutil_java_wrap.cc \
+ -package com.google.ortools.util \
+ -module main \
+ -outdir $(GEN_PATH)$Scom$Sgoogle$Sortools$Sutil \
+ $(SRC_DIR)$Sortools$Sutil$Sjava$Ssorted_interval_list.i
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Sutil$Sutil_java_wrap.cc
+
+$(OBJ_DIR)/swig/util_java_wrap.$O: \
+ $(GEN_DIR)/ortools/util/util_java_wrap.cc \
+ $(UTIL_DEPS) \
+ | $(OBJ_DIR)/swig
+	$(CCC) $(JNIFLAGS) $(JAVA_INC) \
+ -c $(GEN_PATH)$Sortools$Sutil$Sutil_java_wrap.cc \
+ $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sutil_java_wrap.$O
+
 $(JAVA_OR_TOOLS_NATIVE_LIBS): \
  $(OR_TOOLS_LIBS) \
  $(OBJ_DIR)/swig/constraint_solver_java_wrap.$O \
  $(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O \
  $(OBJ_DIR)/swig/graph_java_wrap.$O \
  $(OBJ_DIR)/swig/linear_solver_java_wrap.$O \
- $(OBJ_DIR)/swig/sat_java_wrap.$O
+ $(OBJ_DIR)/swig/sat_java_wrap.$O \
+ $(OBJ_DIR)/swig/util_java_wrap.$O
 	$(DYNAMIC_LD) $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT) \
  $(OBJ_DIR)$Sswig$Sconstraint_solver_java_wrap.$O \
  $(OBJ_DIR)$Sswig$Sknapsack_solver_java_wrap.$O \
  $(OBJ_DIR)$Sswig$Sgraph_java_wrap.$O \
  $(OBJ_DIR)$Sswig$Slinear_solver_java_wrap.$O \
  $(OBJ_DIR)$Sswig$Ssat_java_wrap.$O \
+ $(OBJ_DIR)$Sswig$Sutil_java_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(OR_TOOLS_LDFLAGS)
 
@@ -520,6 +544,7 @@ clean_java:
 	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*java_wrap*
 	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*java_wrap*
 	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*java_wrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*java_wrap*
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_java_wrap.$O
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
 	-$(DEL) $(LIB_DIR)$S*.jar

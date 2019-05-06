@@ -25,22 +25,21 @@ public interface LinearExpr {
   long getCoefficient(int index);
 
   /** Creates a sum expression. */
-  static LinearExpr Sum(IntVar[] variables) {
+  static LinearExpr sum(IntVar[] variables) {
     return new SumOfVariables(variables);
   }
 
   /** Creates a scalar product. */
-  static LinearExpr ScalProd(IntVar[] variables, long[] coefficients) {
+  static LinearExpr scalProd(IntVar[] variables, long[] coefficients) {
     return new ScalProd(variables, coefficients);
   }
 
   /** Creates a scalar product. */
-  static LinearExpr ScalProd(IntVar[] variables, int[] coefficients) {
+  static LinearExpr scalProd(IntVar[] variables, int[] coefficients) {
     long[] tmp = new long[coefficients.length];
     for (int i = 0; i < coefficients.length; ++i) {
       tmp[i] = coefficients[i];
     }
     return new ScalProd(variables, tmp);
   }
-
 }

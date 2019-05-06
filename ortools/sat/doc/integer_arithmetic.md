@@ -55,7 +55,6 @@ In C++, domains use the Domain class.
     1}, {3, 6}})).WithName("x")`.
 -   To exclude a single value, use `Domain(5).Complement()`.
 
-
 ## Linear constraints
 
 In **C++** and **Java**, the model supports linear constraints as in:
@@ -175,6 +174,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /**
  * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many rabbits and
@@ -191,9 +191,9 @@ public class RabbitsAndPheasantsSat {
     IntVar r = model.newIntVar(0, 100, "r");
     IntVar p = model.newIntVar(0, 100, "p");
     // 20 heads.
-    model.addSumEqual(new IntVar[] {r, p}, 20);
+    model.addEquality(LinearExpr.sum(new IntVar[] {r, p}), 20);
     // 56 legs.
-    model.addLinearExpressionEqual(new IntVar[] {r, p}, new long[] {4, 2}, 56);
+    model.addEquality(LinearExpr.scalProd(new IntVar[] {r, p}, new long[] {4, 2}), 56);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
@@ -441,6 +441,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Encode the piecewise linear expression. */
 public class EarlinessTardinessCostSampleSat {
@@ -469,16 +470,18 @@ public class EarlinessTardinessCostSampleSat {
 
     // First segment: s1 == earlinessCost * (earlinessDate - x).
     IntVar s1 = model.newIntVar(-largeConstant, largeConstant, "s1");
-    model.addLinearExpressionEqual(
-        new IntVar[] {s1, x}, new long[] {1, earlinessCost}, earlinessCost * earlinessDate);
+    model.addEquality(
+        LinearExpr.scalProd(new IntVar[] {s1, x}, new long[] {1, earlinessCost}),
+        earlinessCost * earlinessDate);
 
     // Second segment.
     IntVar s2 = model.newConstant(0);
 
     // Third segment: s3 == latenessCost * (x - latenessDate).
     IntVar s3 = model.newIntVar(-largeConstant, largeConstant, "s3");
-    model.addLinearExpressionEqual(
-        new IntVar[] {s3, x}, new long[] {1, -latenessCost}, -latenessCost * latenessDate);
+    model.addEquality(
+        LinearExpr.scalProd(new IntVar[] {s3, x}, new long[] {1, -latenessCost}),
+        -latenessCost * latenessDate);
 
     // Link together expr and x through s1, s2, and s3.
     model.addMaxEquality(expr, new IntVar[] {s1, s2, s3});
@@ -804,9 +807,9 @@ import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
-import com.google.ortools.sat.Domain;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
+import com.google.ortools.util.Domain;
 
 /** Link integer constraints together. */
 public class StepFunctionSampleSat {
@@ -834,15 +837,15 @@ public class StepFunctionSampleSat {
     // expr == 0 on [5, 6] U [8, 10]
     Literal b0 = model.newBoolVar("b0");
     model
-        .addSumInDomain(new IntVar[] {x}, Domain.fromValues(new long[] {5, 6, 8, 9, 10}))
+        .addLinearExpressionInDomain(x, Domain.fromValues(new long[] {5, 6, 8, 9, 10}))
         .onlyEnforceIf(b0);
     model.addEquality(expr, 0).onlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
     Literal b2 = model.newBoolVar("b2");
     model
-        .addSumInDomain(
-            new IntVar[] {x}, Domain.fromIntervals(new long[][] {{0, 1}, {3, 4}, {11, 20}}))
+        .addLinearExpressionInDomain(
+            x, Domain.fromIntervals(new long[][] {{0, 1}, {3, 4}, {11, 20}}))
         .onlyEnforceIf(b2);
     model.addEquality(expr, 2).onlyEnforceIf(b2);
 

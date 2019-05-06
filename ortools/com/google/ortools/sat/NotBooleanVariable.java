@@ -17,7 +17,7 @@ package com.google.ortools.sat;
  * The negation of a boolean variable. This class should not be used directly, Literal must be used
  * instead.
  */
-public class NotBooleanVariable implements Literal {
+public final class NotBooleanVariable implements Literal {
   public NotBooleanVariable(IntVar boolvar) {
     boolVar = boolvar;
   }
