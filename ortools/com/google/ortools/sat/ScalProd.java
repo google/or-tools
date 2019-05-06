@@ -15,22 +15,25 @@ package com.google.ortools.sat;
 
 /** A linear expression interface that can be parsed. */
 public final class ScalProd implements LinearExpr {
-  private IntVar[] variables;
-  private long[] coefficients;
+  private final IntVar[] variables;
+  private final long[] coefficients;
 
   public ScalProd(IntVar[] variables, long[] coefficients) {
     this.variables = variables;
     this.coefficients = coefficients;
   }
 
+  @Override
   public int numElements() {
     return variables.length;
   }
 
+  @Override
   public IntVar getVariable(int index) {
     return variables[index];
   }
 
+  @Override
   public long getCoefficient(int index) {
     return coefficients[index];
   }

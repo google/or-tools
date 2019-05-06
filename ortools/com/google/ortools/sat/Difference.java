@@ -15,18 +15,20 @@ package com.google.ortools.sat;
 
 /** the substraction of two linear expressions. Used internally. */
 final class Difference implements LinearExpr {
-  private LinearExpr left;
-  private LinearExpr right;
+  private final LinearExpr left;
+  private final LinearExpr right;
 
   public Difference(LinearExpr left, LinearExpr right) {
     this.left = left;
     this.right = right;
   }
 
+  @Override
   public int numElements() {
     return left.numElements() + right.numElements();
   }
 
+  @Override
   public IntVar getVariable(int index) {
     if (index < left.numElements()) {
       return left.getVariable(index);
@@ -35,6 +37,7 @@ final class Difference implements LinearExpr {
     }
   }
 
+  @Override
   public long getCoefficient(int index) {
     if (index < left.numElements()) {
       return left.getCoefficient(index);

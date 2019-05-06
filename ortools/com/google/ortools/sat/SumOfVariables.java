@@ -15,20 +15,23 @@ package com.google.ortools.sat;
 
 /** A linear expression interface that can be parsed. */
 public final class SumOfVariables implements LinearExpr {
-  private IntVar[] variables;
+  private final IntVar[] variables;
 
   public SumOfVariables(IntVar[] variables) {
     this.variables = variables;
   }
 
+  @Override
   public int numElements() {
     return variables.length;
   }
 
+  @Override
   public IntVar getVariable(int index) {
     return variables[index];
   }
 
+  @Override
   public long getCoefficient(int index) {
     return 1;
   }

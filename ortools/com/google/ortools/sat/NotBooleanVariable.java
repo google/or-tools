@@ -18,8 +18,8 @@ package com.google.ortools.sat;
  * instead.
  */
 public final class NotBooleanVariable implements Literal {
-  public NotBooleanVariable(IntVar boolvar) {
-    boolVar = boolvar;
+  public NotBooleanVariable(IntVar boolVar) {
+    this.boolVar = boolVar;
   }
 
   /** Internal: returns the index in the literal in the underlying CpModelProto. */

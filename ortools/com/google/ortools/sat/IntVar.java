@@ -52,17 +52,20 @@ public final class IntVar implements Literal, LinearExpr {
   }
 
   // LinearExpr interface.
+  @Override
   public int numElements() {
     return 1;
   }
 
+  @Override
   public IntVar getVariable(int index) {
-    assert(index == 0);
+    assert (index == 0);
     return this;
   }
 
+  @Override
   public long getCoefficient(int index) {
-    assert(index == 0);
+    assert (index == 0);
     return 1;
   }
 
