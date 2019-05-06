@@ -15,6 +15,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 import java.util.logging.Logger;
 import java.util.Random;
 
@@ -34,7 +35,7 @@ public class TestSatSolver {
 
     // Create a linear constraint which enforces that only x or y can be greater
     // than 0.
-    model.addSumConstraint(new IntVar[] { x, y }, 0, 1);
+    model.addLinearConstraint(LinearExpr.Sum(new IntVar[] { x, y }), 0, 1);
 
     // Create the objective variable
     IntVar obj = model.newIntVar(0, 3, "obj");
