@@ -1,9 +1,5 @@
 # ortools.sat.python.cp_model
-Propose a natural language on top of cp_model_pb2 python proto.
-
-This file implements a easy-to-use API on top of the cp_model_pb2 protobuf
-defined in ../ .
-
+Methods for building and solving CP-SAT models.
 ## DisplayBounds
 ```python
 DisplayBounds(bounds)
@@ -43,7 +39,7 @@ LinearExpression.GetVarValueMap(self)
 Scan the expression, and return a list of (var_coef_map, constant).
 ## IntVar
 ```python
-IntVar(self, model, bounds, name)
+IntVar(self, model, domain, name)
 ```
 An integer variable.
 
@@ -172,32 +168,29 @@ Returns the interval protobuf.
 ```python
 CpModel(self)
 ```
-Wrapper class around the cp_model proto.
+Methods for building a CP model.
 
-This class provides two types of methods:
-  - NewXXX to create integer, boolean, or interval variables.
-  - AddXXX to create new constraints and add them to the model.
+Methods beginning with:
+* ```New``` create integer, boolean, or interval variables.
+* ```Add``` create new constraints and add them to the model.
 
 ### NewIntVar
 ```python
 CpModel.NewIntVar(self, lb, ub, name)
 ```
-Creates an integer variable with domain [lb, ub].
-### NewEnumeratedIntVar
+Create an integer variable with domain [lb, ub].
+### NewIntVarFromDomain
 ```python
-CpModel.NewEnumeratedIntVar(self, bounds, name)
+CpModel.NewIntVarFromDomain(self, domain, name)
 ```
-Creates an integer variable with an enumerated domain.
+Create an integer variable from a list of intervals.
 
 Args:
-    bounds: A flattened list of disjoint intervals.
+    domain: A instance of the Domain class.
     name: The name of the variable.
 
 Returns:
-    a variable whose domain is union[bounds[2*i]..bounds[2*i + 1]].
-
-To create a variable with domain [1, 2, 3, 5, 7, 8], pass in the
-array [1, 3, 5, 5, 7, 8].
+    a variable whose domain is the given domain.
 
 ### NewBoolVar
 ```python
@@ -206,19 +199,14 @@ CpModel.NewBoolVar(self, name)
 Creates a 0-1 variable with the given name.
 ### AddLinearConstraint
 ```python
-CpModel.AddLinearConstraint(self, terms, lb, ub)
+CpModel.AddLinearConstraint(self, linear_expr, lb, ub)
 ```
-Adds the constraints lb <= sum(terms) <= ub, where term = (var, coef).
-### AddSumConstraint
+Adds the constraint: lb <= linear_expr <= ub.
+### AddLinearExpressionInDomain
 ```python
-CpModel.AddSumConstraint(self, variables, lb, ub)
+CpModel.AddLinearExpressionInDomain(self, linear_expr, domain)
 ```
-Adds the constraints lb <= sum(variables) <= ub.
-### AddLinearConstraintWithBounds
-```python
-CpModel.AddLinearConstraintWithBounds(self, terms, bounds)
-```
-Adds the constraints sum(terms) in bounds, where term = (var, coef).
+Add the constraint: linear_expr in domain.
 ### Add
 ```python
 CpModel.Add(self, ct)
@@ -763,6 +751,11 @@ Returns the user time in seconds since the creation of the solver.
 CpSolver.ResponseStats(self)
 ```
 Returns some statistics on the solution found as a string.
+### ResponseProto
+```python
+CpSolver.ResponseProto(self)
+```
+Returns the response object.
 ## CpSolverSolutionCallback
 ```python
 CpSolverSolutionCallback(self)
