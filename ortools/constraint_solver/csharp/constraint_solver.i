@@ -28,7 +28,6 @@ using System.Collections.Generic;
 %include "std_string.i"
 
 %include "ortools/base/base.i"
-%include "ortools/util/csharp/tuple_set.i"
 %include "ortools/util/csharp/vector.i"
 %include "ortools/util/csharp/proto.i"
 
@@ -145,6 +144,9 @@ VECTOR_AS_CSHARP_ARRAY(int, int, int, CpIntVector);
 %template(CpInt64VectorVector) std::vector<std::vector<int64> >;
 VECTOR_AS_CSHARP_ARRAY(int64, int64, long, CpInt64Vector);
 JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, CpInt64VectorVector);
+
+// TupleSet depends on the previous typemaps
+%include "ortools/util/csharp/tuple_set.i"
 
 // Types in Proxy class:
 // Solver.cs:
