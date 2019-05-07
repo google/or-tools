@@ -2,7 +2,7 @@
 set -x
 set -e
 
-if [ -n $DOTNET_SNK ]; then
+if [ ! -f "$DOTNET_SNK" ]; then
   echo "DOTNET_SNK: not found !" | tee build.log
   exit 1
 fi
