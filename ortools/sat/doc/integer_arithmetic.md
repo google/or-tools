@@ -13,79 +13,95 @@ The CP-SAT solver can express integer variables and constraints.
 ## Integer variables
 
 Integer variables can take on 64 bit signed integer values. When creating them,
-a domain must be given. The format of this domain is not uniform across languages.
+a domain must be given.
 
-In Java, Python, and C#:
+### Interval domain
 
--   To represent a interval from 0 to 10, just pass the two bounds (0, 10) as in
-    `NewIntVar(0, 10, "x")`. A single value will be represented by twice the
-    value as in [5, 5].
--   To create a variable with a single value domain, use the `NewConstant()` API
-    (or `newConstant()` in Java).
--   To create a variable with an enumerated domain, use the
-    `NewIntVarFromValues()` API as in:
-    -   Python: `model.NewIntVarFromValues([-5, -4, -3, 1, 3, 4], 'x')`
-    -   Java: `model.newIntVarFromValues(new long[] {-5, -4, -3, 1, 3, 4}, "x")`
-    -   C#: `model.NewIntVarFromValues(new long[] {-5, -4, -3, 1, 3, 4}, "x")`
--   You can also create an enumerated domain by passing intervals instead of a
-    list of values by using the `NewIntVarFromIntervals` method. Note that the
-    Java and C# versions use a single one dimension integer array for
-    convenience. The following code samples build integer variables with domain
-    {-5, -4, -3, 1, 2, 3, .., 99, 100}:
-    -   Python: `model.NewIntVarFromIntervals([[-5, -3], [1, 100]], 'x')`
-    -   Java: `model.newIntVarFromIntervals(new long[] {-5, -3, 1, 100}, "x")`
-    -   C#: `model.NewIntVarFromIntervals(new long[] {-5, -3, 1, 100}, "x")`
--   To exclude a single value, use int64min and int64max values as in [int64min,
-    4, 6, int64max]:
-    -   Python: `cp_model.INT_MIN` and `cp_model.INT_MAX`
-    -   Java: `Long.MIN_VALUE` and `Long.MAX_VALUE`
-    -   C#: `Int64.MinValue` and `Int64.MaxValue`
+To create a single contiguous integer domain, just call the `NewIntVar` method
+with the two bounds of the domain.
 
-In C++, domains use the Domain class.
+-   **C++**: `IntVar x = model.NewIntVar({0, 10}).WithName("x");`
+-   **Python**: `x = model.NewIntVar(0, 10, 'x')`
+-   **Java**: `IntVar x = model.newIntVar(0, 10, "x");`
+-   **C#**: `IntVar x = model.NewIntVar(0, 10, "x");`
 
--   To represent a interval from 0 to 10, just pass a domain `{0, 10}` or
-    `Domain(0, 10)` as in `NewIntVar({0, 10})`.
--   To represent a single value (5), create a domain `{5, 5}` or `Domain(5)`.
--   To create a fixed variable (constant), use the `NewConstant()` API.
--   To represent an enumerated list of values, for instance {-5, -4, -3, 1, 3,
-    4, 5, 6}, you can use `Domain::FromValues({-5, -4, -3, 1, 3, 4, 5, 6})` or
-    `Domain::FromIntervals({{-5, -3}, {1, 1}, {3, 6}})`.
--   To create a variable with an enumerated domain, build the enumerated domain,
-    and use it as in `cp_model.NewIntVar(Domain::FromIntervals({{-5, -3}, {1,
-    1}, {3, 6}})).WithName("x")`.
--   To exclude a single value, use `Domain(5).Complement()`.
+### Non contiguous domain
+
+An instance of the Domain class is needed to create a variable with a
+non-contiguous domain. These domain instances can be created using a list of
+discrete values:
+
+-   **C++**: `model.NewIntVar(Domain::FromValues({1, 3, 4, 6});`
+-   **Python**: `model.NewIntVarFromDomain(cp_model.Domain.FromValues([1, 3, 4,
+    6]), 'x')`
+-   **Java**: `model.newIntVarFromDomain(Domain.fromValues(new long[] {1, 3, 4,
+    6}), "x");`
+-   **C#**: `model.NewIntVarFromDomain(Domain.FromValues(new long[] {1, 3, 4,
+    6}), "x");`
+
+They can also be created using a list of intervals.
+
+-   **C++**: `model.NewIntVar(Domain::FromIntervals({{1, 2}, {4, 6}});`
+-   **Python**: `model.NewIntVarFromDomain(cp_model.Domain.FromIntervals([[1,
+    2], [4, 6]]), 'x')`
+-   **Java**: `model.newIntVarFromDomain(Domain.fromIntervals(new long[][] {{1,
+    2}, {4, 6}}), "x");`
+-   **C#**: `model.NewIntVarFromDomain(Domain.FromIntervals(new long[][] { new
+    long[] {1, 2}, new long[] { 4, 6} }), "x");`
+
+### Boolean variables
+
+To create a Boolean variable, use the `NewBoolVar` API. Please note that type is
+not the same.
+
+-   **C++**: `BoolVar x = model.NewBoolVar().WithName("x");`
+-   **Python**: `x = model.NewBoolVar('x')`
+-   **Java**: `Literal x = model.newBoolVar("x");`
+-   **C#**: `ILiteral x = model.NewBoolVar("x");`
+
+### Other methods
+
+To exclude a single value, use int64min and int64max values as in `[[int64min,
+-3], [-1, int64max]]`, or use the `Complement` method.
+
+To create a variable with a single value domain, use the `NewConstant()` API (or
+`newConstant()` in Java).
 
 ## Linear constraints
 
-In **C++** and **Java**, the model supports linear constraints as in:
+### C++ and Java linear constraints and linear expressions
 
-    x <= y + 3 (also ==, !=, <, >=, >).
+**C++** and **Java** APIs do not use arithmetic operators (+, \*, -, <=...).
+Linear constraints are created using method of the model factory like
+`cp_model.AddEquality(x, 3)` in C++, `cp_model.addGreaterOrEqual(x, 10)` in
+java.
 
-These are available through specific methods of the cp_model like
-`cp_model.AddEquality(x, 3)` in C++, `cp_model.addGreaterThan(x, 10)` in java.
+Furthermore, helper methods can be used to create sums and scalar products like
+`LinearExpr::Sum({x, y, z})` in C++, and `LinearExpr.scalProd(new IntVar[] {x,
+y, z}, new long[] {1, 2, 3})` in java.
 
-**Python** and **C\#** CP-SAT APIs support general linear arithmetic operators
-(+, *, -, ==, >=, >, <, <=, !=). You need to use the Add method of the cp_model
-as in `cp_model.Add(x != 3)`.
+### Python and C\# linear constraints and linear expressions
 
-In all language, you can use more advanced domains in linear constraints of the
-form:
+**Python** and **C\#** CP-SAT APIs support general linear arithmetic (+, *, -,
+==, >=, >, <, <=, !=). You need to use the Add method of the cp_model as in
+`cp_model.Add(x + y != 3)`.
 
-    sum(ai * xi) in domain
-    sum(xi) in domain
+### Generic linear constraint
 
-In Python, Java, and C#, the model class contains two methods to build these
-domains, similar from the IntVarFromValues and IntVarFromIntervals.
+in **all languages**, the cp_model factory offer a generic method to constrain a
+linear expression to be in a domain. This is used in the step function examples
+below.
 
--   Python: `model.DomainFromValues([-5, -4, -3, 1, 3, 4])`
--   Java: `model.domainFromValues(new long[] {-5, -4, -3, 1, 3, 4})`
--   C#: `model.DomainFromValues(new long[] {-5, -4, -3, 1, 3, 4})`
--   Python: `model.DomainrFromIntervals([[-5, -3], [1, 100]])`
--   Java: `model.domainFromIntervals(new long[] {-5, -3, 1, 100})`
--   C#: `model.DomainFromIntervals(new long[] {-5, -3, 1, 100})`
+### Limitations
 
-In C++, you can reuse the Domain class.
+-   Everything needs to be linear. Multiplying two variables is not supported
+    with these API, and `model.AddProductEquality()` must be used.
 
+-   In C++, there is a typing issue when using and array of Boolean variables in
+    a sum or a scalar product. Use the `LinearExpr.BooleanSum()` method instead.
+
+-   In python, the python construct `sum()` is supported. But `min()`, `max()`
+    or any `numpy` constructs like `np.unique()` are not.
 
 ## Rabbits and Pheasants examples
 
