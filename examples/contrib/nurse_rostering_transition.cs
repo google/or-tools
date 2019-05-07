@@ -87,21 +87,22 @@ public class NurseRostering
     // For TransitionConstraint
     IntTupleSet transition_tuples = new IntTupleSet(3);
     // state, input, next state
-    transition_tuples.InsertAll(new int[,] { {1,1,2},
-                                             {1,2,3},
-                                             {1,3,1},
-                                             {2,1,4},
-                                             {2,2,4},
-                                             {2,3,1},
-                                             {3,1,4},
-                                             {3,2,5},
-                                             {3,3,1},
-                                             {4,1,6},
-                                             {4,2,6},
-                                             {4,3,1},
-                                             {5,1,6},
-                                             {5,3,1},
-                                             {6,3,1} });
+    transition_tuples.InsertAll(new long[][] {
+        new long[] {1,1,2},
+        new long[] {1,2,3},
+        new long[] {1,3,1},
+        new long[] {2,1,4},
+        new long[] {2,2,4},
+        new long[] {2,3,1},
+        new long[] {3,1,4},
+        new long[] {3,2,5},
+        new long[] {3,3,1},
+        new long[] {4,1,6},
+        new long[] {4,2,6},
+        new long[] {4,3,1},
+        new long[] {5,1,6},
+        new long[] {5,3,1},
+        new long[] {6,3,1} });
 
     string[] days = {"d","n","o"}; // for presentation
 
