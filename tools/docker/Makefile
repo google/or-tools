@@ -280,7 +280,7 @@ clean_python:
 
 targets = $(addprefix distclean_, $(DISTROS))
 .PHONY: distclean $(targets) distclean_python
-distclean: $(targets) distclean_python | export
+distclean: $(targets) distclean_python | export/archives
 	-docker container rm $$(docker container ls -f status=exited -q)
 #	-docker image rm $$(docker image ls --all -q)
 	docker image prune --force
