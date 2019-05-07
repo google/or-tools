@@ -12,24 +12,24 @@ The CP-SAT solver can express integer variables and constraints.
 
 ## Integer variables
 
-Integer variables can take on 64 bit signed integer values. When creating them,
-a domain must be given.
+Integer variables can take on 64-bit signed integer values. When creating them,
+a domain must be provided.
 
 ### Interval domain
 
 To create a single contiguous integer domain, just call the `NewIntVar` method
-with the two bounds of the domain.
+with the lower and upper bounds. For instance, to create a variable that can
+take on any value between 0 and 10, inclusive:
 
 -   **C++**: `IntVar x = model.NewIntVar({0, 10}).WithName("x");`
 -   **Python**: `x = model.NewIntVar(0, 10, 'x')`
 -   **Java**: `IntVar x = model.newIntVar(0, 10, "x");`
 -   **C#**: `IntVar x = model.NewIntVar(0, 10, "x");`
 
-### Non contiguous domain
+### Non-contiguous domain
 
-An instance of the Domain class is needed to create a variable with a
-non-contiguous domain. These domain instances can be created using a list of
-discrete values:
+An instance of the Domain class is needed to create variables with 
+non-contiguous domains. Here, the variable can be any of 1, 3, 4, or 6:
 
 -   **C++**: `model.NewIntVar(Domain::FromValues({1, 3, 4, 6});`
 -   **Python**: `model.NewIntVarFromDomain(cp_model.Domain.FromValues([1, 3, 4,
@@ -39,7 +39,8 @@ discrete values:
 -   **C#**: `model.NewIntVarFromDomain(Domain.FromValues(new long[] {1, 3, 4,
     6}), "x");`
 
-They can also be created using a list of intervals.
+Variables can also be created using a list of intervals. Below, the variable
+created is constrained to be 1, 2, 4, 5, or 6:
 
 -   **C++**: `model.NewIntVar(Domain::FromIntervals({{1, 2}, {4, 6}});`
 -   **Python**: `model.NewIntVarFromDomain(cp_model.Domain.FromIntervals([[1,
@@ -47,12 +48,13 @@ They can also be created using a list of intervals.
 -   **Java**: `model.newIntVarFromDomain(Domain.fromIntervals(new long[][] {{1,
     2}, {4, 6}}), "x");`
 -   **C#**: `model.NewIntVarFromDomain(Domain.FromIntervals(new long[][] { new
-    long[] {1, 2}, new long[] { 4, 6} }), "x");`
+    long[] {1, 2}, new long[] {4, 6} }), "x");`
 
 ### Boolean variables
 
-To create a Boolean variable, use the `NewBoolVar` API. Please note that type is
-not the same.
+To create a Boolean variable, use the `NewBoolVar` method. Please note that
+Boolean variables are typed differently than integer variables, and that this
+type is not uniform across languages.
 
 -   **C++**: `BoolVar x = model.NewBoolVar().WithName("x");`
 -   **Python**: `x = model.NewBoolVar('x')`
@@ -61,8 +63,8 @@ not the same.
 
 ### Other methods
 
-To exclude a single value, use int64min and int64max values as in `[[int64min,
--3], [-1, int64max]]`, or use the `Complement` method.
+To exclude a single value, use ranges combined with int64min and int64max
+values, e.g., `[[int64min, -3], [-1, int64max]]`, or use the `Complement` method.
 
 To create a variable with a single value domain, use the `NewConstant()` API (or
 `newConstant()` in Java).
@@ -72,35 +74,35 @@ To create a variable with a single value domain, use the `NewConstant()` API (or
 ### C++ and Java linear constraints and linear expressions
 
 **C++** and **Java** APIs do not use arithmetic operators (+, \*, -, <=...).
-Linear constraints are created using method of the model factory like
-`cp_model.AddEquality(x, 3)` in C++, `cp_model.addGreaterOrEqual(x, 10)` in
-java.
+Linear constraints are created using a method of the model factory, such as 
+`cp_model.AddEquality(x, 3)` in C++, or `cp_model.addGreaterOrEqual(x, 10)` in
+Java.
 
 Furthermore, helper methods can be used to create sums and scalar products like
 `LinearExpr::Sum({x, y, z})` in C++, and `LinearExpr.scalProd(new IntVar[] {x,
-y, z}, new long[] {1, 2, 3})` in java.
+y, z}, new long[] {1, 2, 3})` in Java.
 
 ### Python and C\# linear constraints and linear expressions
 
-**Python** and **C\#** CP-SAT APIs support general linear arithmetic (+, *, -,
-==, >=, >, <, <=, !=). You need to use the Add method of the cp_model as in
+**Python** and **C\#** CP-SAT APIs support general linear arithmetic (+, \*, -,
+==, >=, >, <, <=, !=). You need to use the Add method of the cp_model, as in
 `cp_model.Add(x + y != 3)`.
 
 ### Generic linear constraint
 
-in **all languages**, the cp_model factory offer a generic method to constrain a
+in **all languages**, the cp_model factory offers a generic method to constrain a
 linear expression to be in a domain. This is used in the step function examples
 below.
 
 ### Limitations
 
--   Everything needs to be linear. Multiplying two variables is not supported
-    with these API, and `model.AddProductEquality()` must be used.
+-   Everything must be linear. Multiplying two variables is not supported
+    with this API; instead, `model.AddProductEquality()` must be used.
 
--   In C++, there is a typing issue when using and array of Boolean variables in
+-   In C++, there is a typing issue when using an array of Boolean variables in
     a sum or a scalar product. Use the `LinearExpr.BooleanSum()` method instead.
 
--   In python, the python construct `sum()` is supported. But `min()`, `max()`
+-   The Python construct `sum()` is supported, but `min()`, `max()`
     or any `numpy` constructs like `np.unique()` are not.
 
 ## Rabbits and Pheasants examples
