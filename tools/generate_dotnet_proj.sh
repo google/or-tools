@@ -35,13 +35,13 @@ if [[ $(dirname "$FILE") == examples/tests ]] ; then
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
-    <PackageReference Include="${OR_TOOLS_PKG}" Version="${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}*" />
+    <PackageReference Include="${OR_TOOLS_PKG}" Version="${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.*" />
 EOF
 )
 else
   declare -r PACKABLE="<IsPackable>true</IsPackable>"
   DEPS=$(cat <<EOF
-    <PackageReference Include="${OR_TOOLS_PKG}" Version="${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}*" />
+    <PackageReference Include="${OR_TOOLS_PKG}" Version="${OR_TOOLS_MAJOR}.${OR_TOOLS_MINOR}.*" />
 EOF
 )
 fi

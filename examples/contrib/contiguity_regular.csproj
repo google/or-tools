@@ -17,6 +17,6 @@
 
   <ItemGroup>
     <Compile Include="contiguity_regular.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.1*" />
+    <PackageReference Include="Google.OrTools" Version="7.1.*" />
   </ItemGroup>
 </Project>
