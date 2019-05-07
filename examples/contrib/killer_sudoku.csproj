@@ -17,6 +17,6 @@
 
   <ItemGroup>
     <Compile Include="killer_sudoku.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.0*" />
+    <PackageReference Include="Google.OrTools" Version="7.1*" />
   </ItemGroup>
 </Project>

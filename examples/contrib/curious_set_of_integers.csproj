@@ -17,6 +17,6 @@
 
   <ItemGroup>
     <Compile Include="curious_set_of_integers.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.0*" />
+    <PackageReference Include="Google.OrTools" Version="7.1*" />
   </ItemGroup>
 </Project>
