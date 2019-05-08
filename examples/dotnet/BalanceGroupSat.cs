@@ -73,14 +73,14 @@ public class BalanceGroupSat
         foreach (var @group in allGroups)
         {
             var itemsInGroup = allItems.Select(x => itemInGroup[x, @group]).ToArray();
-            model.AddSumConstraint(itemsInGroup, numItemsPerGroup, numItemsPerGroup);
+            model.AddLinearConstraint(itemsInGroup.Sum(), numItemsPerGroup, numItemsPerGroup);
         }
 
         //# One item must belong to exactly one group.
         foreach (var item in allItems)
         {
             var groupsForItem = allGroups.Select(x => itemInGroup[item, x]).ToArray();
-            model.AddSumConstraint(groupsForItem, 1, 1);
+            model.AddLinearConstraint(groupsForItem.Sum(), 1, 1);
         }
 
         // The deviation of the sum of each items in a group against the average.
