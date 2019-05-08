@@ -43,6 +43,7 @@ PYCP_LIBS = $(LIB_DIR)/_pywrapcp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYLP_LIBS = $(LIB_DIR)/_pywraplp.$(SWIG_PYTHON_LIB_SUFFIX)
 PYSAT_LIBS = $(LIB_DIR)/_pywrapsat.$(SWIG_PYTHON_LIB_SUFFIX)
 PYDATA_LIBS = $(LIB_DIR)/_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX)
+PYSORTED_INTERVAL_LIST_LIBS = $(LIB_DIR)/_sorted_interval_list.$(SWIG_PYTHON_LIB_SUFFIX)
 PYTHON_OR_TOOLS_LIBS = \
  $(GEN_DIR)/ortools/__init__.py \
  $(PYALGORITHMS_LIBS) \
@@ -50,7 +51,8 @@ PYTHON_OR_TOOLS_LIBS = \
  $(PYCP_LIBS) \
  $(PYLP_LIBS) \
  $(PYSAT_LIBS) \
- $(PYDATA_LIBS)
+ $(PYDATA_LIBS) \
+ $(PYSORTED_INTERVAL_LIST_LIBS)
 
 # Main target
 .PHONY: python # Build Python OR-Tools.
@@ -375,8 +377,6 @@ $(GEN_DIR)/ortools/sat/pywrapsat.py: \
  -o $(GEN_PATH)$Sortools$Ssat$Ssat_python_wrap.cc \
  -module pywrapsat \
  $(SRC_DIR)/ortools/sat$Spython$Ssat.i
-	$(SED) -i -e 's/< long long >/< int64 >/g' \
- $(GEN_PATH)$Sortools$Ssat$Ssat_python_wrap.cc
 
 $(GEN_DIR)/ortools/sat/sat_python_wrap.cc: \
  $(GEN_DIR)/ortools/sat/pywrapsat.py
@@ -453,6 +453,51 @@ ifeq ($(SYSTEM),win)
 	copy $(LIB_DIR)$S_pywraprcpsp.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\data\\_pywraprcpsp.pyd
 else
 	cp $(PYDATA_LIBS) $(GEN_PATH)/ortools/data
+endif
+
+# sorted_interval_list
+ifeq ($(PLATFORM),MACOSX)
+PYSORTED_INTERVAL_LIST_LDFLAGS = -install_name @rpath/_sorted_interval_list.$(SWIG_PYTHON_LIB_SUFFIX) #
+endif
+
+$(GEN_DIR)/ortools/util/sorted_interval_list.py: \
+ $(SRC_DIR)/ortools/util/sorted_interval_list.h \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SRC_DIR)/ortools/util/python/vector.i \
+ $(SRC_DIR)/ortools/util/python/sorted_interval_list.i \
+ $(UTIL_DEPS) \
+ | $(GEN_DIR)/ortools/util
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) \
+ -o $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_python_wrap.cc \
+ -module sorted_interval_list \
+ $(SRC_DIR)$Sortools$Sutil$Spython$Ssorted_interval_list.i
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_python_wrap.cc
+
+$(GEN_DIR)/ortools/util/sorted_interval_list_python_wrap.cc: \
+ $(GEN_DIR)/ortools/util/sorted_interval_list.py
+
+$(OBJ_DIR)/swig/sorted_interval_list_python_wrap.$O: \
+ $(GEN_DIR)/ortools/util/sorted_interval_list_python_wrap.cc \
+ $(UTIL_DEPS) \
+ | $(OBJ_DIR)/swig
+	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) \
+ -c $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_python_wrap.cc \
+ $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssorted_interval_list_python_wrap.$O
+
+$(PYSORTED_INTERVAL_LIST_LIBS): $(OBJ_DIR)/swig/sorted_interval_list_python_wrap.$O $(OR_TOOLS_LIBS)
+	$(DYNAMIC_LD) \
+ $(PYSORTED_INTERVAL_LIST_LDFLAGS) \
+ $(LD_OUT)$(LIB_DIR)$S_sorted_interval_list.$(SWIG_PYTHON_LIB_SUFFIX) \
+ $(OBJ_DIR)$Sswig$Ssorted_interval_list_python_wrap.$O \
+ $(OR_TOOLS_LNK) \
+ $(SYS_LNK) \
+ $(PYTHON_LNK) \
+ $(PYTHON_LDFLAGS)
+ifeq ($(SYSTEM),win)
+	copy $(LIB_DIR)$S_sorted_interval_list.$(SWIG_PYTHON_LIB_SUFFIX) $(GEN_PATH)\\ortools\\util\\_pywraputil.pyd
+else
+	cp $(PYSORTED_INTERVAL_LIST_LIBS) $(GEN_PATH)/ortools/util
 endif
 
 #######################
@@ -824,8 +869,8 @@ clean_python:
 	-$(DEL) ortools$Sutil$S*.pyc
 	-$(DELREC) ortools$Sutil$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_pywrap*
-	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_PYTHON_LIB_SUFFIX)
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
+	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
 	-$(DELREC) temp_python*
 
@@ -1010,11 +1055,12 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/data: $(PYDATA_LIBS) | $(PYPI_ARCHIVE_T
 	$(COPY) $(GEN_PATH)$Sortools$Sdata$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sdata
 	$(COPY) $(GEN_PATH)$Sortools$Sdata$S_pywraprcpsp.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sdata
 
-$(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/util: | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
+$(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/util: $(PYUTIL_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil$S__init__.py
 	$(COPY) $(GEN_PATH)$Sortools$Sutil$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
+	$(COPY) $(GEN_PATH)$Sortools$Sutil$S_sorted_interval_list.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs

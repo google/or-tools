@@ -25,7 +25,9 @@ from ortools.sat import cp_model_pb2
 from ortools.sat import sat_parameters_pb2
 from ortools.sat.python import cp_model_helper
 from ortools.sat import pywrapsat
-Domain = pywrapsat.Domain
+from ortools.util import sorted_interval_list
+
+Domain = sorted_interval_list.Domain
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
