@@ -18,17 +18,14 @@ using System.Collections;
 %}
 
 %include "stdint.i"
-%include "std_vector.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/proto.i"
-%include "ortools/util/csharp/vector.i"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
-#include "ortools/util/sorted_interval_list.h"
 %}
 
 typedef int64_t int64;
@@ -50,11 +47,6 @@ PROTO_INPUT(operations_research::sat::CpSolverResponse,
 
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               Google.OrTools.Sat.CpSolverResponse);
-
-%template(SatInt64Vector) std::vector<int64>;
-%template(SatInt64VectorVector) std::vector<std::vector<int64> >;
-VECTOR_AS_CSHARP_ARRAY(int64, int64, long, SatInt64Vector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, SatInt64VectorVector);
 
 %ignoreall
 
@@ -102,22 +94,6 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, SatInt64VectorVector);
 %unignore operations_research::sat::SolutionCallback::WallTime;
 %feature("nodirector") operations_research::sat::SolutionCallback::WallTime;
 
-%unignore operations_research::Domain;
-%unignore operations_research::Domain::Domain;
-%unignore operations_research::Domain::AllValues;
-%unignore operations_research::Domain::Complement;
-%unignore operations_research::Domain::Contains;
-%unignore operations_research::Domain::FlattenedIntervals;
-%unignore operations_research::Domain::FromFlatIntervals;
-%rename (FromIntervals) operations_research::Domain::FromVectorIntervals;
-%unignore operations_research::Domain::FromValues;
-%unignore operations_research::Domain::IsEmpty;
-%unignore operations_research::Domain::Max;
-%unignore operations_research::Domain::Min;
-%unignore operations_research::Domain::Negation;
-%unignore operations_research::Domain::Size;
-
 %include "ortools/sat/swig_helper.h"
-%include "ortools/util/sorted_interval_list.h"
 
 %unignoreall

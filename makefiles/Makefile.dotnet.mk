@@ -255,7 +255,6 @@ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/base/base.i \
  $(SRC_DIR)/ortools/sat/csharp/sat.i \
  $(SRC_DIR)/ortools/sat/swig_helper.h \
- $(SRC_DIR)/ortools/util/csharp/proto.i \
  $(SAT_DEPS) \
  | $(GEN_DIR)/ortools/sat $(GEN_DIR)/ortools/sat
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
@@ -265,8 +264,6 @@ $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc: \
  -dllimport "$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
  -outdir $(GEN_PATH)$Sortools$Ssat \
  $(SRC_DIR)$Sortools$Ssat$Scsharp$Ssat.i
-	$(SED) -i -e 's/< long long >/< int64 >/g' \
- $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc
 
 $(OBJ_DIR)/swig/sat_csharp_wrap.$O: \
  $(GEN_DIR)/ortools/sat/sat_csharp_wrap.cc \
@@ -274,6 +271,29 @@ $(OBJ_DIR)/swig/sat_csharp_wrap.$O: \
 	$(CCC) $(CFLAGS) \
  -c $(GEN_PATH)$Sortools$Ssat$Ssat_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_csharp_wrap.$O
+
+$(GEN_DIR)/ortools/util/sorted_interval_list_csharp_wrap.cc: \
+ $(SRC_DIR)/ortools/base/base.i \
+ $(SRC_DIR)/ortools/util/csharp/sorted_interval_list.i \
+ $(SRC_DIR)/ortools/util/csharp/proto.i \
+ $(UTIL_DEPS) \
+ |  $(GEN_DIR)/ortools/util
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp \
+ -o $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_csharp_wrap.cc \
+ -module operations_research_util \
+ -namespace $(OR_TOOLS_ASSEMBLY_NAME).Util \
+ -dllimport "$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX)" \
+ -outdir $(GEN_PATH)$Sortools$Sutil \
+ $(SRC_DIR)$Sortools$Sutil$Scsharp$Ssorted_interval_list.i
+	$(SED) -i -e 's/< long long >/< int64 >/g' \
+ $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_csharp_wrap.cc
+
+$(OBJ_DIR)/swig/sorted_interval_list_csharp_wrap.$O: \
+ $(GEN_DIR)/ortools/util/sorted_interval_list_csharp_wrap.cc \
+ | $(OBJ_DIR)/swig
+	$(CCC) $(CFLAGS) \
+ -c $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_csharp_wrap.cc \
+ $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssorted_interval_list_csharp_wrap.$O 
 
 ifneq ($(DOTNET_SNK),)
 $(DOTNET_ORTOOLS_SNK): | $(BIN_DIR)
@@ -290,6 +310,7 @@ $(LIB_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX): \
  $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
  $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O \
  $(OBJ_DIR)/swig/graph_csharp_wrap.$O \
+ $(OBJ_DIR)/swig/sorted_interval_list_csharp_wrap.$O \
  | $(LIB_DIR)
 	$(DYNAMIC_LD) \
  $(LD_OUT)$(LIB_DIR)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX) \
@@ -298,6 +319,7 @@ $(LIB_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX): \
  $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O \
  $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O \
+ $(OBJ_DIR)/swig/sorted_interval_list_csharp_wrap.$O \
  $(OR_TOOLS_LNK) \
  $(OR_TOOLS_LDFLAGS)
 
@@ -693,6 +715,8 @@ clean_dotnet:
 	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.cs
 	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*csharp_wrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.cs
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*csharp_wrap*
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_csharp_wrap.$O
 	-$(DEL) $(LIB_DIR)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).*
 	-$(DEL) $(BIN_DIR)$S$(OR_TOOLS_ASSEMBLY_NAME).*
