@@ -21,7 +21,7 @@
 // std::function utilities.
 %include "ortools/util/python/functions.i"
 
-// Domain class.
+// import the domain class.
 %import "ortools/util/python/sorted_interval_list.i"
 
 %{
