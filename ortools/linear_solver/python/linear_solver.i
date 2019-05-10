@@ -91,6 +91,22 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     return error_message;
   }
 
+  std::string ExportModelAsLpFormat(bool obfuscated) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscated;
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return ExportModelAsLpFormat(model, options).value_or("");
+  }
+
+  std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
+    operations_research::MPModelExportOptions options;
+    options.obfuscate = obfuscated;
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return ExportModelAsMpsFormat(model, options).value_or("");
+  }
+
   %pythoncode {
   def Add(self, constraint, name=''):
     if isinstance(constraint, bool):
@@ -245,6 +261,8 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %unignore operations_research::MPSolver::NextSolution;
+%unignore operations_research::MPSolver::ExportModelAsLpFormat;
+%unignore operations_research::MPSolver::ExportModelAsMpsFormat;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %unignore operations_research::MPSolver::ComputeConstraintActivities;
