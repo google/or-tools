@@ -300,6 +300,7 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Sgraph$S*.java \
  $(GEN_PATH)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
 	"$(JAR_BIN)" cvf $(LIB_DIR)$Scom.google.ortools.jar -C $(CLASS_DIR) com$Sgoogle$Sortools$S
+	"$(JAR_BIN)" cvf $(LIB_DIR)$Scom.google.ortools-sources.jar -C $(GEN_DIR) com
 
 ###################
 ##  Java SOURCE  ##
