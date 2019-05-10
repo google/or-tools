@@ -104,7 +104,7 @@ def ShortName(model, i):
         return '[%s]' % DisplayBounds(v.domain)
 
 
-class LinearExpression(object):
+class LinearExpr(object):
     """Holds an integer linear expression.
 
   An linear expression is built from integer constants and variables.
@@ -122,7 +122,23 @@ class LinearExpression(object):
   Linear expressions can also be used to specify the objective of the model.
 
       model.Minimize(x + 2 * y + z)
+
+  For very large arrays, and to stay in line with
+  other languages, special class methods are offered.
+
+      model.Minimize(cp_model.LinearExpr.Sum(expressions))
+      model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) >= 0)
   """
+
+    @classmethod
+    def Sum(cls, expressions):
+        """Create the expression sum(expressions)."""
+        return _SumArray(expressions)
+
+    @classmethod
+    def ScalProd(cls, expressions, coefficients):
+        """Create the expression sum(expressions[i] * coefficients[i])."""
+        return _ScalProd(expressions, coefficients)
 
     def GetVarValueMap(self):
         """Scan the expression, and return a list of (var_coef_map, constant)."""
@@ -135,8 +151,12 @@ class LinearExpression(object):
                 to_process.append((expr.Expression(),
                                    coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
-                for e in expr.Array():
+                for e in expr.Expressions():
                     to_process.append((e, coef))
+                constant += expr.Constant() * coef
+            elif isinstance(expr, _ScalProd):
+                for e, c in zip(expr.Expressions(), expr.Coefficients()):
+                    to_process.append((e, coef * c))
                 constant += expr.Constant() * coef
             elif isinstance(expr, IntVar):
                 coeffs[expr] += coef
@@ -153,7 +173,7 @@ class LinearExpression(object):
 
     def __abs__(self):
         raise NotImplementedError(
-            'calling abs() on a LinearExpression is not supported, '
+            'calling abs() on a linear expression is not supported, '
             'please use cp_model.AddAbsEquality')
 
     def __add__(self, expr):
@@ -185,17 +205,17 @@ class LinearExpression(object):
 
     def __div__(self, _):
         raise NotImplementedError(
-            'calling / on a LinearExpression is not supported, '
+            'calling / on a linear expression is not supported, '
             'please use cp_model.AddDivisionEquality')
 
     def __truediv__(self, _):
         raise NotImplementedError(
-            'calling // on a LinearExpression is not supported, '
+            'calling // on a linear expression is not supported, '
             'please use cp_model.AddDivisionEquality')
 
     def __mod__(self, _):
         raise NotImplementedError(
-            'calling %% on a LinearExpression is not supported, '
+            'calling %% on a linear expression is not supported, '
             'please use cp_model.AddModuloEquality')
 
     def __neg__(self):
@@ -263,8 +283,8 @@ class LinearExpression(object):
             return LinearInequality(self - arg, [INT_MIN, -1, 1, INT_MAX])
 
 
-class _ProductCst(LinearExpression):
-    """Represents the product of a LinearExpression by a constant."""
+class _ProductCst(LinearExpr):
+    """Represents the product of a LinearExpr by a constant."""
 
     def __init__(self, expr, coef):
         cp_model_helper.AssertIsInt64(coef)
@@ -292,40 +312,102 @@ class _ProductCst(LinearExpression):
         return self.__expr
 
 
-class _SumArray(LinearExpression):
-    """Represents the sum of a list of LinearExpression and a constant."""
+class _SumArray(LinearExpr):
+    """Represents the sum of a list of LinearExpr and a constant."""
 
-    def __init__(self, array):
-        self.__array = []
+    def __init__(self, expressions):
+        self.__expressions = []
         self.__constant = 0
-        for x in array:
+        for x in expressions:
             if isinstance(x, numbers.Integral):
                 cp_model_helper.AssertIsInt64(x)
                 self.__constant += x
-            elif isinstance(x, LinearExpression):
-                self.__array.append(x)
+            elif isinstance(x, LinearExpr):
+                self.__expressions.append(x)
             else:
                 raise TypeError('Not an linear expression: ' + str(x))
 
     def __str__(self):
         if self.__constant == 0:
-            return '({})'.format(' + '.join(map(str, self.__array)))
+            return '({})'.format(' + '.join(map(str, self.__expressions)))
         else:
-            return '({} + {})'.format(' + '.join(map(str, self.__array)),
+            return '({} + {})'.format(' + '.join(map(str, self.__expressions)),
                                       self.__constant)
 
     def __repr__(self):
-        return 'SumArray({}, {})'.format(', '.join(map(repr, self.__array)),
-                                         self.__constant)
+        return 'SumArray({}, {})'.format(', '.join(
+            map(repr, self.__expressions)), self.__constant)
 
-    def Array(self):
-        return self.__array
+    def Expressions(self):
+        return self.__expressions
 
     def Constant(self):
         return self.__constant
 
 
-class IntVar(LinearExpression):
+class _ScalProd(LinearExpr):
+    """Represents the scalar product of expressions with constants and a constant."""
+
+    def __init__(self, expressions, coefficients):
+        self.__expressions = []
+        self.__coefficients = []
+        self.__constant = 0
+        if len(expressions) != len(coefficients):
+            raise TypeError(
+                'In the LinearExpr.ScalProd method, the expression array and the '
+                ' coefficient array must have the same length.')
+        for e, c in zip(expressions, coefficients):
+            cp_model_helper.AssertIsInt64(c)
+            if c == 0:
+                continue
+            if isinstance(e, numbers.Integral):
+                cp_model_helper.AssertIsInt64(e)
+                self.__constant += e * c
+            elif isinstance(e, LinearExpr):
+                self.__expressions.append(e)
+                self.__coefficients.append(c)
+            else:
+                raise TypeError('Not an linear expression: ' + str(e))
+
+    def __str__(self):
+        output = None
+        for expr, coeff in zip(self.__expressions, self.__coefficients):
+            if not output and coeff == 1:
+                output = str(expr)
+            elif not output and coeff == -1:
+                output = '-' + str(expr)
+            elif not output:
+                output = '{} * {}'.format(coeff, str(expr))
+            elif coeff == 1:
+                output += ' + {}'.format(str(expr))
+            elif coeff == -1:
+                output += ' - {}'.format(str(expr))
+            elif coeff > 1:
+                output += ' + {} * {}'.format(coeff, str(expr))
+            elif coeff < -1:
+                output += ' - {} * {}'.format(-coeff, str(expr))
+        if self.__constant > 0:
+            output += ' + {}'.format(self.__constant)
+        elif self.__constant < 0:
+            output += ' - {}'.format(-self.__constant)
+        return output
+
+    def __repr__(self):
+        return 'ScalProd([{}], [{}], {})'.format(', '.join(
+            map(repr, self.__expressions)), ', '.join(
+                map(repr, self.__coefficients)), self.__constant)
+
+    def Expressions(self):
+        return self.__expressions
+
+    def Coefficients(self):
+        return self.__coefficients
+
+    def Constant(self):
+        return self.__constant
+
+
+class IntVar(LinearExpr):
     """An integer variable.
 
   An IntVar is an object that can take on any integer value within defined
@@ -383,7 +465,7 @@ class IntVar(LinearExpression):
         return self.__negation
 
 
-class _NotBooleanVariable(LinearExpression):
+class _NotBooleanVariable(LinearExpr):
     """Negation of a boolean variable."""
 
     def __init__(self, boolvar):
@@ -603,7 +685,7 @@ class CpModel(object):
 
     def AddLinearExpressionInDomain(self, linear_expr, domain):
         """Add the constraint: linear_expr in domain."""
-        if isinstance(linear_expr, LinearExpression):
+        if isinstance(linear_expr, LinearExpr):
             ct = Constraint(self.__model.constraints)
             model_ct = self.__model.constraints[ct.Index()]
             coeffs_map, constant = linear_expr.GetVarValueMap()
@@ -1286,7 +1368,7 @@ class CpModel(object):
             else:
                 self.__model.objective.vars.append(self.Negated(obj.Index()))
                 self.__model.objective.scaling_factor = -1
-        elif isinstance(obj, LinearExpression):
+        elif isinstance(obj, LinearExpr):
             coeffs_map, constant = obj.GetVarValueMap()
             self.__model.ClearField('objective')
             if minimize:
@@ -1356,7 +1438,7 @@ class CpModel(object):
                 'TypeError: ' + str(x) + ' is not a boolean variable')
 
 
-def EvaluateLinearExpression(expression, solution):
+def EvaluateLinearExpr(expression, solution):
     """Evaluate an linear expression against a solution."""
     if isinstance(expression, numbers.Integral):
         return expression
@@ -1367,8 +1449,12 @@ def EvaluateLinearExpression(expression, solution):
         if isinstance(expr, _ProductCst):
             to_process.append((expr.Expression(), coef * expr.Coefficient()))
         elif isinstance(expr, _SumArray):
-            for e in expr.Array():
+            for e in expr.Expressions():
                 to_process.append((e, coef))
+            value += expr.Constant() * coef
+        elif isinstance(expr, _ScalProd):
+            for e, c in zip(expr.Expressions(), expr.Coefficients()):
+                to_process.append((e, coef * c))
             value += expr.Constant() * coef
         elif isinstance(expr, IntVar):
             value += coef * solution.solution[expr.Index()]
@@ -1435,7 +1521,9 @@ class CpSolver(object):
       callback: The callback that will be called at each solution.
 
     Returns:
-      The status of the solve (FEASIBLE, INFEASIBLE...).
+      The status of the solve: FEASIBLE if some solutions have been found,
+      INFEASIBLE if the solver has proved there are no solution, and OPTIMAL
+      if all solutions have been found.
     """
         if model.HasObjective():
             raise TypeError('Search for all solutions is only defined on '
@@ -1454,7 +1542,7 @@ class CpSolver(object):
         """Returns the value of an linear expression after solve."""
         if not self.__solution:
             raise RuntimeError('Solve() has not be called.')
-        return EvaluateLinearExpression(expression, self.__solution)
+        return EvaluateLinearExpr(expression, self.__solution)
 
     def BooleanValue(self, literal):
         """Returns the boolean value of a literal after solve."""
@@ -1552,7 +1640,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         against the current solution.
 
     Raises:
-        RuntimeError: if 'expression' is not a LinearExpression.
+        RuntimeError: if 'expression' is not a LinearExpr.
     """
         if not self.HasResponse():
             raise RuntimeError('Solve() has not be called.')
@@ -1566,9 +1654,13 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
                 to_process.append((expr.Expression(),
                                    coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
-                for e in expr.Array():
+                for e in expr.Expressions():
                     to_process.append((e, coef))
                     value += expr.Constant() * coef
+            elif isinstance(expr, _ScalProd):
+                for e, c in zip(expr.Expressions(), expr.Coefficients()):
+                    to_process.append((e, coef * c))
+                value += expr.Constant() * coef
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
