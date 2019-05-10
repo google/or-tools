@@ -28,9 +28,6 @@ using System.Collections;
 #include "ortools/sat/swig_helper.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 %module(directors="1") operations_research_sat
 
 PROTO_INPUT(operations_research::sat::CpModelProto,

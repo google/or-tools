@@ -739,8 +739,8 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Pass 1, compute the infered min of the target, and remove duplicates.
-  int64 target_min = context->MinOf(target_ref);
-  int64 target_max = kint64min;
+  int64 infered_min = kint64min;
+  int64 infered_max = kint64min;
   bool contains_target_ref = false;
   std::set<int> used_ref;
   int new_size = 0;
@@ -749,12 +749,12 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     if (gtl::ContainsKey(used_ref, ref)) continue;
     if (gtl::ContainsKey(used_ref, NegatedRef(ref)) ||
         ref == NegatedRef(target_ref)) {
-      target_min = std::max(target_min, int64{0});
+      infered_min = std::max(infered_min, int64{0});
     }
     used_ref.insert(ref);
     ct->mutable_int_max()->set_vars(new_size++, ref);
-    target_min = std::max(target_min, context->MinOf(ref));
-    target_max = std::max(target_max, context->MaxOf(ref));
+    infered_min = std::max(infered_min, context->MinOf(ref));
+    infered_max = std::max(infered_max, context->MaxOf(ref));
   }
   if (new_size < ct->int_max().vars_size()) {
     context->UpdateRuleStats("int_max: removed dup");
@@ -777,24 +777,65 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
     return RemoveConstraint(ct, context);
   }
 
+  // Compute the infered target_domain.
+  Domain infered_domain;
+  for (const int ref : ct->int_max().vars()) {
+    infered_domain = infered_domain.UnionWith(
+        context->DomainOf(ref).IntersectionWith({infered_min, infered_max}));
+  }
+
   // Update the target domain.
   bool domain_reduced = false;
   if (!HasEnforcementLiteral(*ct)) {
-    Domain infered_domain;
-    for (const int ref : ct->int_max().vars()) {
-      infered_domain = infered_domain.UnionWith(
-          context->DomainOf(ref).IntersectionWith({target_min, target_max}));
-    }
     if (!context->IntersectDomainWith(target_ref, infered_domain,
                                       &domain_reduced)) {
       return true;
     }
   }
 
+  // If the target is only used here and if
+  // infered_domain ∩ [kint64min, target_ub] ⊂ target_domain
+  // then the constraint is really max(...) <= target_ub and we can simplify it.
+  if (context->VariableIsUniqueAndRemovable(target_ref)) {
+    const Domain target_domain = context->DomainOf(target_ref);
+    if (infered_domain.IntersectionWith(Domain(kint64min, target_domain.Max()))
+            .IsIncludedIn(context->DomainOf(target_ref))) {
+      if (infered_domain.Max() <= target_domain.Max()) {
+        // The constraint is always satisfiable.
+        context->UpdateRuleStats("int_max: always true");
+      } else if (ct->enforcement_literal().empty()) {
+        // The constraint just restrict the upper bound of its variable.
+        for (const int ref : ct->int_max().vars()) {
+          context->UpdateRuleStats("int_max: lower than constant");
+          if (!context->IntersectDomainWith(
+                  ref, Domain(kint64min, target_domain.Max()))) {
+            return false;
+          }
+        }
+      } else {
+        // We simply transform this into n reified constraints
+        // enforcement => [var_i <= target_domain.Max()].
+        context->UpdateRuleStats("int_max: reified lower than constant");
+        for (const int ref : ct->int_max().vars()) {
+          ConstraintProto* new_ct = context->working_model->add_constraints();
+          *(new_ct->mutable_enforcement_literal()) = ct->enforcement_literal();
+          ct->mutable_linear()->add_vars(ref);
+          ct->mutable_linear()->add_coeffs(1);
+          ct->mutable_linear()->add_domain(kint64min);
+          ct->mutable_linear()->add_domain(target_domain.Max());
+        }
+      }
+
+      // In all cases we delete the original constraint.
+      *(context->mapping_model->add_constraints()) = *ct;
+      return RemoveConstraint(ct, context);
+    }
+  }
+
   // Pass 2, update the argument domains. Filter them eventually.
   new_size = 0;
   const int size = ct->int_max().vars_size();
-  target_max = context->MaxOf(target_ref);
+  const int64 target_max = context->MaxOf(target_ref);
   for (const int ref : ct->int_max().vars()) {
     if (!HasEnforcementLiteral(*ct)) {
       if (!context->IntersectDomainWith(ref, Domain(kint64min, target_max),
@@ -802,7 +843,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
         return true;
       }
     }
-    if (context->MaxOf(ref) >= target_min) {
+    if (context->MaxOf(ref) >= infered_min) {
       ct->mutable_int_max()->set_vars(new_size++, ref);
     }
   }

@@ -1090,21 +1090,17 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     const std::function<void()>& feasible_solution_observer, Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
 
   // Simple linear scan algorithm to find the optimal.
-  SatSolver::Status result;
-  bool model_is_feasible = false;
   while (true) {
-    result = ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
-    if (result != SatSolver::FEASIBLE) break;
+    const SatSolver::Status result = SolveIntegerProblem(model);
+    if (result != SatSolver::FEASIBLE) return result;
 
     // The objective is the current lower bound of the objective_var.
     const IntegerValue objective = integer_trail->LowerBound(objective_var);
 
     // We have a solution!
-    model_is_feasible = true;
     if (feasible_solution_observer != nullptr) {
       feasible_solution_observer();
     }
@@ -1117,20 +1113,9 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     if (!integer_trail->Enqueue(
             IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {},
             {})) {
-      result = SatSolver::INFEASIBLE;
-      break;
+      return SatSolver::INFEASIBLE;
     }
   }
-
-  CHECK_NE(result, SatSolver::FEASIBLE);
-  if (result == SatSolver::INFEASIBLE && model_is_feasible) {
-    // We proved the optimal and use the FEASIBLE value for this.
-    result = SatSolver::FEASIBLE;
-  } else {
-    sat_solver->Backtrack(0);
-  }
-
-  return result;
 }
 
 void RestrictObjectiveDomainWithBinarySearch(

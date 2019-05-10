@@ -17,6 +17,7 @@
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 
 namespace operations_research {
@@ -380,8 +381,38 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
 
     relaxation->linear_constraints.push_back(constraint.Build());
+  } else if (ct.constraint_case() ==
+             ConstraintProto::ConstraintCase::kInterval) {
+    if (linearization_level < 3) return;
+    if (HasEnforcementLiteral(ct)) return;
+    const IntegerVariable start = mapping->Integer(ct.interval().start());
+    const IntegerVariable size = mapping->Integer(ct.interval().size());
+    const IntegerVariable end = mapping->Integer(ct.interval().end());
+    LinearConstraintBuilder lc(model, IntegerValue(0), IntegerValue(0));
+    lc.AddTerm(start, IntegerValue(1));
+    lc.AddTerm(size, IntegerValue(1));
+    lc.AddTerm(end, IntegerValue(-1));
+    relaxation->linear_constraints.push_back(lc.Build());
   }
 }
+
+namespace {
+// Adds enforcing_var => target <= bounding_var to relaxation.
+void AppendEnforcedUpperBound(const IntegerVariable enforcing_var,
+                              const IntegerVariable target,
+                              const IntegerVariable bounding_var, Model* model,
+                              LinearRelaxation* relaxation) {
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const IntegerValue max_target_value = integer_trail->UpperBound(target);
+  const IntegerValue min_var_value = integer_trail->LowerBound(bounding_var);
+  const IntegerValue max_term_value = max_target_value - min_var_value;
+  LinearConstraintBuilder lc(model, kMinIntegerValue, max_term_value);
+  lc.AddTerm(target, IntegerValue(1));
+  lc.AddTerm(bounding_var, IntegerValue(-1));
+  lc.AddTerm(enforcing_var, max_term_value);
+  relaxation->linear_constraints.push_back(lc.Build());
+}
+}  // namespace
 
 void AppendMaxRelaxation(IntegerVariable target,
                          const std::vector<IntegerVariable>& vars,
@@ -400,11 +431,14 @@ void AppendMaxRelaxation(IntegerVariable target,
   }
 
   // Part 2: Encode upper bound on X.
-  // NOTE(user) for size = 2, we can do this with 1 less variable.
-  if (vars.size() == 2 || linearization_level >= 2) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    const IntegerValue max_target_value = integer_trail->UpperBound(target);
-
+  // For size = 2, we do this with 1 less variable.
+  if (vars.size() == 2) {
+    IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
+    AppendEnforcedUpperBound(y, target, vars[0], model, relaxation);
+    AppendEnforcedUpperBound(NegationOf(y), target, vars[1], model, relaxation);
+    return;
+  }
+  if (linearization_level >= 2) {
     // For each X_i, we encode y_i => X <= X_i. And at least one of the y_i
     // is true. Note that the correct y_i will be chosen because of the first
     // part in linearlization (X >= X_i).
@@ -417,13 +451,7 @@ void AppendMaxRelaxation(IntegerVariable target,
       // <=> max_term_value * y + X - X_i <= max_term_value.
       // where max_tern_value is X_ub - X_i_lb.
       IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
-      const IntegerValue min_var_value = integer_trail->LowerBound(var);
-      const IntegerValue max_term_value = max_target_value - min_var_value;
-      LinearConstraintBuilder lc(model, kMinIntegerValue, max_term_value);
-      lc.AddTerm(target, IntegerValue(1));
-      lc.AddTerm(var, IntegerValue(-1));
-      lc.AddTerm(y, max_term_value);
-      relaxation->linear_constraints.push_back(lc.Build());
+      AppendEnforcedUpperBound(y, target, var, model, relaxation);
 
       lc_exactly_one.AddTerm(y, IntegerValue(1));
     }

@@ -127,10 +127,14 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
 
 // Model-based API, for now we just provide a basic algorithm that minimizes a
 // given IntegerVariable by solving a sequence of decision problem by using
-// SolveIntegerProblem().
+// SolveIntegerProblem(). Returns the status of the last solved decision
+// problem.
 //
 // The feasible_solution_observer function will be called each time a new
 // feasible solution is found.
+//
+// Note that this function will resume the search from the current state of the
+// solver, and it is up to the client to backtrack to the root node if needed.
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     IntegerVariable objective_var,
     const std::function<void()>& feasible_solution_observer, Model* model);
