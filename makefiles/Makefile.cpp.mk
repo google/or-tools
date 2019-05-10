@@ -345,6 +345,7 @@ rcc_%: $(BIN_DIR)/%$E FORCE
 
 .PHONY: test_cc_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
 test_cc_algorithms_samples: \
+ rcc_knapsack \
  rcc_simple_knapsack_program
 
 .PHONY: test_cc_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)

@@ -541,6 +541,7 @@ rpy_%: ortools/sat/samples/%.py $(PYTHON_OR_TOOLS_LIBS) FORCE
 
 .PHONY: test_python_algorithms_samples # Run all Python Algorithms Samples (located in ortools/algorithms/samples)
 test_python_algorithms_samples: \
+ rpy_knapsack \
  rpy_simple_knapsack_program
 
 .PHONY: test_python_constraint_solver_samples # Run all Python CP Samples (located in ortools/constraint_solver/samples)
@@ -620,7 +621,6 @@ check_python_pimpl: \
 # rpy_nqueens_cp \
 # rpy_nqueens_sat \
 # rpy_integer_programming \
-# rpy_knapsack \
 # rpy_max_flow \
 # rpy_min_cost_flow \
 # rpy_assignment \
@@ -783,7 +783,6 @@ test_python_python: \
  rpy_jobshop_ft06_distance_sat \
  rpy_jobshop_ft06_sat \
  rpy_jobshop_with_maintenance_sat \
- rpy_knapsack \
  rpy_linear_assignment_api \
  rpy_linear_programming \
  rpy_magic_sequence_distribute \

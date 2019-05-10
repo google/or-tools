@@ -396,6 +396,7 @@ rjava_%: $(LIB_DIR)/%$J FORCE
 
 .PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
 test_java_algorithms_samples: \
+ rjava_Knapsack
 
 .PHONY: test_java_constraint_solver_samples # Build and Run all Java CP Samples (located in ortools/constraint_solver/samples)
 test_java_constraint_solver_samples: \
@@ -457,8 +458,7 @@ check_java_pimpl: \
  test_java_sat_samples \
  \
  rjava_LinearProgramming \
- rjava_IntegerProgramming \
- rjava_Knapsack
+ rjava_IntegerProgramming
 
 .PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
 test_java_tests: \

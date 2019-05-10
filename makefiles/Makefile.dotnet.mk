@@ -459,7 +459,8 @@ endif
 ##  .NET Examples/Samples  ##
 #############################
 .PHONY: test_dotnet_algorithms_samples # Build and Run all .Net LP Samples (located in ortools/algorithms/samples)
-test_dotnet_algorithms_samples: ;
+test_dotnet_algorithms_samples:
+	$(MAKE) run SOURCE=ortools/algorithms/samples/Knapsack.cs
 
 .PHONY: test_dotnet_constraint_solver_samples # Build and Run all .Net CP Samples (located in ortools/constraint_solver/samples)
 test_dotnet_constraint_solver_samples:

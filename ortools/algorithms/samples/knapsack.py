@@ -10,17 +10,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Bi-dimensional knapsack problem."""
+# [START program]
+"""A simple knapsack problem."""
 
+# [START import]
+from __future__ import print_function
 from ortools.algorithms import pywrapknapsack_solver
+# [END import]
 
 
 def main():
     # Create the solver.
+    # [START solver]
     solver = pywrapknapsack_solver.KnapsackSolver(
-        pywrapknapsack_solver.KnapsackSolver.
-        KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER, 'test')
-    profits = [
+        pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+        'KnapsackExample')
+    # [END solver]
+
+    # [START data]
+    values = [
         360, 83, 59, 130, 431, 67, 230, 52, 93, 125, 670, 892, 600, 38, 48, 147,
         78, 256, 63, 17, 120, 164, 432, 35, 92, 110, 22, 42, 50, 323, 514, 28,
         87, 73, 78, 15, 26, 78, 210, 36, 85, 189, 274, 43, 33, 10, 19, 389, 276,
@@ -32,13 +40,18 @@ def main():
         3, 86, 66, 31, 65, 0, 79, 20, 65, 52, 13
     ]]
     capacities = [850]
-    optimal_profit = 7534
-    solver.Init(profits, weights, capacities)
-    computed_profit = solver.Solve()
+    # [END data]
 
-    print((
-        'optimal profit = ' + str(computed_profit) + '/' + str(optimal_profit)))
+    # [START solver]
+    solver.Init(values, weights, capacities)
+    computed_profit = solver.Solve()
+    # [END solver]
+
+    # [START solve]
+    print('optimal profit = ' + str(computed_profit))
+    # [END solve]
 
 
 if __name__ == '__main__':
     main()
+# [END program]
