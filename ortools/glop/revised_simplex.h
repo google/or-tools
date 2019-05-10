@@ -446,11 +446,6 @@ class RevisedSimplex {
                                   Fractional* step_length,
                                   Fractional* target_bound);
 
-  // Updates the primal phase-I costs of the given basic variables. Such
-  // variable has a cost of +1/-1 if it is primal-infeasible and of 0 otherwise.
-  template <typename Rows>
-  void UpdatePrimalPhaseICosts(const Rows& rows);
-
   // Chooses the leaving variable for the primal phase-I algorithm. The
   // algorithm follows more or less what is described in Istvan Maros's book in
   // chapter 9.6 and what is done for the dual phase-I algorithm which was

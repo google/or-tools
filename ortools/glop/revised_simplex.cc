@@ -87,7 +87,7 @@ RevisedSimplex::RevisedSimplex()
       error_(),
       basis_factorization_(matrix_with_slack_, compact_matrix_, basis_),
       variables_info_(compact_matrix_, lower_bound_, upper_bound_),
-      variable_values_(compact_matrix_, basis_, variables_info_,
+      variable_values_(parameters_, compact_matrix_, basis_, variables_info_,
                        basis_factorization_),
       dual_edge_norms_(basis_factorization_),
       primal_edge_norms_(matrix_with_slack_, compact_matrix_, variables_info_,
@@ -1719,34 +1719,6 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
   return Status::OK();
 }
 
-template <typename Rows>
-void RevisedSimplex::UpdatePrimalPhaseICosts(const Rows& rows) {
-  SCOPED_TIME_STAT(&function_stats_);
-  bool objective_changed = false;
-  const Fractional tolerance = parameters_.primal_feasibility_tolerance();
-  for (RowIndex row : rows) {
-    const ColIndex col = basis_[row];
-    const Fractional value = variable_values_.Get(col);
-
-    // The primal simplex will try to minimize the cost (hence the primal
-    // infeasibility).
-    Fractional cost = 0.0;
-    if (value > upper_bound_[col] + tolerance) {
-      cost = 1.0;
-    } else if (value < lower_bound_[col] - tolerance) {
-      cost = -1.0;
-    }
-    if (objective_[col] != cost) {
-      objective_changed = true;
-    }
-    objective_[col] = cost;
-  }
-  // If the objective changed, the reduced costs need to be recomputed.
-  if (objective_changed) {
-    reduced_costs_.ResetForNewObjective();
-  }
-}
-
 namespace {
 
 // Store a row with its ratio, coefficient magnitude and target bound. This is
@@ -2352,8 +2324,9 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     // Initialize the primal phase-I objective.
     // Note that this temporarily erases the problem objective.
     objective_.AssignToZero(num_cols_);
-    UpdatePrimalPhaseICosts(
-        util::IntegerRange<RowIndex>(RowIndex(0), num_rows_));
+    variable_values_.UpdatePrimalPhaseICosts(
+        util::IntegerRange<RowIndex>(RowIndex(0), num_rows_), &objective_);
+    reduced_costs_.ResetForNewObjective();
   }
 
   while (true) {
@@ -2369,8 +2342,11 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       if (feasibility_phase_) {
         // Since the variable values may have been recomputed, we need to
         // recompute the primal infeasible variables and update their costs.
-        UpdatePrimalPhaseICosts(
-            util::IntegerRange<RowIndex>(RowIndex(0), num_rows_));
+        if (variable_values_.UpdatePrimalPhaseICosts(
+                util::IntegerRange<RowIndex>(RowIndex(0), num_rows_),
+                &objective_)) {
+          reduced_costs_.ResetForNewObjective();
+        }
       }
 
       // Computing the objective at each iteration takes time, so we just
@@ -2387,7 +2363,10 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     } else if (feasibility_phase_) {
       // Note that direction_.non_zeros contains the positions of the basic
       // variables whose values were updated during the last iteration.
-      UpdatePrimalPhaseICosts(direction_.non_zeros);
+      if (variable_values_.UpdatePrimalPhaseICosts(direction_.non_zeros,
+                                                   &objective_)) {
+        reduced_costs_.ResetForNewObjective();
+      }
     }
 
     Fractional reduced_cost = 0.0;
@@ -2914,8 +2893,6 @@ void RevisedSimplex::PropagateParameters() {
   dual_edge_norms_.SetParameters(parameters_);
   primal_edge_norms_.SetParameters(parameters_);
   update_row_.SetParameters(parameters_);
-  variable_values_.SetBoundTolerance(
-      parameters_.primal_feasibility_tolerance());
 }
 
 void RevisedSimplex::DisplayIterationInfo() const {
