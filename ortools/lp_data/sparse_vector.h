@@ -452,7 +452,7 @@ class SparseVectorEntry {
 // An iterator over the elements of a sparse data structure that stores the
 // elements in parallel arrays for indices and coefficients. The iterator is
 // built as a wrapper over a sparse vector entry class; the concrete entry class
-// is provided through the template argument EntryType and it must eiter be
+// is provided through the template argument EntryType and it must either be
 // derived from SparseVectorEntry or it must provide the same public and
 // protected interface.
 template <typename EntryType>

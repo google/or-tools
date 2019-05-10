@@ -359,10 +359,16 @@ class CompactSparseMatrix {
 
   // Class to iterate on the entries of a given column with the same interface
   // as for SparseColumn.
-  //
-  // TODO(user): Also add the 'for (ColumnView::Entry e : view) {}' iterator.
   class ColumnView {
    public:
+    // Clients should pass Entry by value rather than by reference.
+    // This is because SparseColumnEntry is small (2 pointers and an index) and
+    // previous profiling of this type of use showed no performance penalty
+    // (see cl/51057736).
+    // Example: for(const Entry e : column_view)
+    typedef SparseColumnEntry Entry;
+    typedef SparseVectorIterator<Entry> Iterator;
+
     ColumnView(EntryIndex num_entries, const RowIndex* const rows,
                const Fractional* const coefficients)
         : num_entries_(num_entries), rows_(rows), coefficients_(coefficients) {}
@@ -375,6 +381,14 @@ class CompactSparseMatrix {
     }
     RowIndex EntryRow(EntryIndex i) const { return rows_[i.value()]; }
     RowIndex GetFirstRow() const { return EntryRow(EntryIndex(0)); }
+
+    Iterator begin() const {
+      return Iterator(this->rows_, this->coefficients_, EntryIndex(0));
+    }
+
+    Iterator end() const {
+      return Iterator(this->rows_, this->coefficients_, num_entries_);
+    }
 
    private:
     const EntryIndex num_entries_;
