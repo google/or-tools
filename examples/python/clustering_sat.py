@@ -101,7 +101,7 @@ def main():
     # Redundant constraints on total sum of neighborss.
     model.Add(sum(obj_vars) == num_groups * group_size * (group_size - 1) // 2)
 
-    # Minimize weighted sum of arcs. Because this s
+    # Minimize weighted sum of arcs.
     model.Minimize(
         sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
@@ -112,6 +112,24 @@ def main():
 
     status = solver.Solve(model)
     print(solver.ResponseStats())
+
+    visited = set()
+    for g in range(num_groups):
+        for n in range(num_nodes):
+            if not n in visited:
+                visited.add(n)
+                output = str(n)
+                for o in range(n + 1, num_nodes):
+                    if solver.BooleanValue(neighbors[n, o]):
+                        visited.add(o)
+                        output += ' ' + str(o)
+                print('Group', g, ':', output)
+                break
+    
+                
+
+        
+
 
 
 if __name__ == '__main__':
