@@ -535,30 +535,9 @@ RAW_DATA = [[
     0, -24.0124188
 ]]
 
-
-class ObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
-
-    def __init__(self):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__solution_count = 0
-        self.__start_time = time.time()
-
-    def on_solution_callback(self):
-        """Called at each new solution."""
-        current_time = time.time()
-        objective = self.ObjectiveValue()
-        print('Solution %i, time = %f s, objective = [%i, %i]' %
-              (self.__solution_count, current_time - self.__start_time,
-               objective, self.BestObjectiveBound()))
-        self.__solution_count += 1
-
-    def solution_count(self):
-        return self.__solution_count
-
-
 def solve_qubo():
     """Solve the Qubo problem."""
+
     # Constraint programming engine
     model = cp_model.CpModel()
 
@@ -569,40 +548,39 @@ def solve_qubo():
     obj_vars = []
     obj_coeffs = []
 
-    for i in all_vars:
+    for i in range(num_vars - 1):
         x_i = variables[i]
-        for j in all_vars:
-            if i == j:
-                coeff = int((RAW_DATA[i][i] + RAW_DATA[i][-1]) * 1000.0)
-                obj_vars.append(x_i)
-                obj_coeffs.append(coeff)
-            elif RAW_DATA[i][j]:
-                x_j = variables[j]
-                coeff = int(RAW_DATA[i][j] * 1000.0)
-                var = model.NewBoolVar('')
-                model.AddBoolOr([x_i.Not(), x_j.Not(), var])
-                model.AddBoolOr([var.Not(), x_i])
-                model.AddBoolOr([var.Not(), x_j])
-                obj_vars.append(var)
-                obj_coeffs.append(coeff)
+        for j in range(i + 1, num_vars):
+            x_j = variables[j]
+            coeff = int((RAW_DATA[i][j] + RAW_DATA[j][i]) * 1000.0)
+            if coeff == 0.0:
+                continue
+            var = model.NewBoolVar('')
+            model.AddBoolOr([x_i.Not(), x_j.Not(), var])
+            model.AddImplication(var, x_i)
+            model.AddImplication(var, x_j)
+            obj_vars.append(var)
+            obj_coeffs.append(coeff)
+
+    for i in all_vars:
+        self_coeff = int((RAW_DATA[i][i] + RAW_DATA[i][-1]) * 1000.0)
+        if self_coeff != 0.0:
+            obj_vars.append(variables[i])
+            obj_coeffs.append(self_coeff)
+
 
     model.Minimize(
         sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+    # Patch the scaling factor of the objective.
+    model.Proto().objective.scaling_factor = 1.0 / 1000.0
     print(model.ModelStats())
 
     ### Solve model.
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 8
-    solution_printer = ObjectiveSolutionPrinter()
-    status = solver.SolveWithSolutionCallback(model, solution_printer)
-
-    print()
-    print('Statistics')
-    print('  - status          : %s' % solver.StatusName(status))
-    print('  - conflicts       : %i' % solver.NumConflicts())
-    print('  - branches        : %i' % solver.NumBranches())
-    print('  - wall time       : %f s' % solver.WallTime())
-    print('  - solutions found : %i' % solution_printer.solution_count())
+    solver.parameters.log_search_progress = True
+    solver.Solve(model)
+    print(solver.ResponseStats())
 
 
 if __name__ == '__main__':
