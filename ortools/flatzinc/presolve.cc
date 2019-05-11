@@ -2411,7 +2411,7 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
                                                         std::string* log) {
   if (ct->arguments[1].HasOneValue() &&
       gtl::ContainsKey(abs_map_, ct->arguments[0].Var())) {
-    log->append("remove abs from constraint");
+    log->append("remove abs from reified constraint");
     ct->arguments[0].variables[0] = abs_map_[ct->arguments[0].Var()];
     const int64 value = ct->arguments[1].Value();
     if (value == 0) {
@@ -2422,6 +2422,28 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
       ct->arguments[1] = Argument::Interval(-value, value);
       // set_in_reif does not implement reification.
       ct->RemoveTargetVariable();
+      return CONSTRAINT_REWRITTEN;
+    }
+  }
+  return NOT_CHANGED;
+}
+
+// Remove abs from int_le.
+// Input : int_le(x, 0, b) or int_le(x,c) with x == abs(y)
+// Output: int_eq(y, 0, b) or set_in(y, [-c, c], b)
+Presolver::RuleStatus Presolver::RemoveAbsFromIntLe(Constraint *ct,
+                                                    std::string *log) {
+  if (ct->arguments[1].HasOneValue() &&
+      gtl::ContainsKey(abs_map_, ct->arguments[0].Var())) {
+    log->append("remove abs from constraint");
+    ct->arguments[0].variables[0] = abs_map_[ct->arguments[0].Var()];
+    const int64 value = ct->arguments[1].Value();
+    if (value == 0) {
+      ct->type = "int_eq";
+      return CONSTRAINT_REWRITTEN;
+    } else {
+      ct->type = "set_in";
+      ct->arguments[1] = Argument::Interval(-value, value);
       return CONSTRAINT_REWRITTEN;
     }
   }
@@ -3043,6 +3065,7 @@ void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
     CALL_TYPE(index, ct, "int_eq_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_ne_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_le_reif", RemoveAbsFromIntLeReif);
+    CALL_TYPE(index, ct, "int_le", RemoveAbsFromIntLe);
     CALL_TYPE(index, ct, "int_le_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_lt_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_ge_reif", PropagateReifiedComparisons);

@@ -102,14 +102,13 @@ def main():
     model.Add(sum(obj_vars) == num_groups * group_size * (group_size - 1) // 2)
 
     # Minimize weighted sum of arcs. Because this s
-    model.Maximize(
+    model.Minimize(
         sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = True
     solver.parameters.num_search_workers = 8
-    solver.max_time_in_seconds = 30
 
     status = solver.Solve(model)
     print(solver.ResponseStats())
