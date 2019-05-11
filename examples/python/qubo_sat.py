@@ -551,10 +551,10 @@ def solve_qubo():
     for i in range(num_vars - 1):
         x_i = variables[i]
         for j in range(i + 1, num_vars):
-            x_j = variables[j]
             coeff = int((RAW_DATA[i][j] + RAW_DATA[j][i]) * 1000.0)
             if coeff == 0.0:
                 continue
+            x_j = variables[j]
             var = model.NewBoolVar('')
             model.AddBoolOr([x_i.Not(), x_j.Not(), var])
             model.AddImplication(var, x_i)

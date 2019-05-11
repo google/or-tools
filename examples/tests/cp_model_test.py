@@ -25,7 +25,7 @@ class SolutionCounter(cp_model.CpSolverSolutionCallback):
 
 class CpModelTest(object):
     def assertEqual(self, a, b):
-        if isinstance(a, cp_model.LinearExpression) and hasattr(
+        if isinstance(a, cp_model.LinearExpr) and hasattr(
                 a.__class__, 'Index'):
             if a.Index() != b.Index():
                 print('Error: ' + repr(a) + ' != ' + repr(b) + '|' +
@@ -375,7 +375,8 @@ class CpModelTest(object):
             z = abs(x)
         except NotImplementedError as e:
             self.assertEqual(
-                'LinearExpression.__abs__, please use cp_model.AddAbsEquality',
+                'calling abs() on a linear expression is not supported, '
+                'please use cp_model.AddAbsEquality',
                 str(e))
             passed = True
         self.assertTrue(passed, 'abs() did not raise an error')
