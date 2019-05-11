@@ -86,7 +86,7 @@ def main():
             obj_coeffs.append(distance_matrix[n1][n2] + distance_matrix[n2][n1])
 
     # Number of neighborss:
-    for n in all_nodes:
+    for n in range(num_nodes):
         model.Add(sum(neighbors[m, n] for m in range(n)) + 
                   sum(neighbors[n, m] for m in range(n + 1, num_nodes)) ==
                   group_size - 1)
