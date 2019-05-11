@@ -125,11 +125,6 @@ def main():
                         output += ' ' + str(o)
                 print('Group', g, ':', output)
                 break
-    
-                
-
-        
-
 
 
 if __name__ == '__main__':
