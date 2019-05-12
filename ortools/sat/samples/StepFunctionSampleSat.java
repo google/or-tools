@@ -1,4 +1,4 @@
-x// Copyright 2010-2018 Google LLC
+// Copyright 2010-2018 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,10 +15,10 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.DecisionStrategyProto;
-import com.google.ortools.sat.Domain;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 import com.google.ortools.sat.SatParameters;
+import com.google.ortools.util.Domain;
 
 /** Link integer constraints together. */
 public class StepFunctionSampleSat {
@@ -46,15 +46,16 @@ public class StepFunctionSampleSat {
 
     // expr == 0 on [5, 6] U [8, 10]
     Literal b0 = model.newBoolVar("b0");
-    model.addSumInDomain(new IntVar[] {x},
-                         Domain.fromValues(new long[] {5, 6, 8, 9, 10})).onlyEnforceIf(b0);
+    model.addLinearExpressionInDomain(x, Domain.fromValues(new long[] {5, 6, 8, 9, 10}))
+        .onlyEnforceIf(b0);
     model.addEquality(expr, 0).onlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
     Literal b2 = model.newBoolVar("b2");
-    model.addSumInDomain(
-        new IntVar[] {x},
-        Domain.fromIntervals(new long[][] {{0, 1}, {3, 4}, {11, 20}})).onlyEnforceIf(b2);
+    model
+        .addLinearExpressionInDomain(
+            x, Domain.fromIntervals(new long[][] {{0, 1}, {3, 4}, {11, 20}}))
+        .onlyEnforceIf(b2);
     model.addEquality(expr, 2).onlyEnforceIf(b2);
 
     // expr == 3 when x = 7
