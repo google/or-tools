@@ -69,6 +69,13 @@ SED = sed
 TAR = tar
 TOUCH = touch
 WHICH = which
+GREP = grep
+AWK = awk
+DPKG = dpkg
+DPKGLIST = dpkg -l
+STDERR_OFF = 2> /dev/null
+STDOUT_AND_STDERR_OFF = 2>&1 > /dev/null
+INSTALL = sudo apt-get install
 
 CMAKE := $(shell $(WHICH) cmake)
 ifeq ($(CMAKE),)
