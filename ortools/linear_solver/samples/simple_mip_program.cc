@@ -66,9 +66,9 @@ void simple_mip_program() {
 
   // [START print_solution]
   LOG(INFO) << "Solution:";
+  LOG(INFO) << "Objective value = " << objective->Value();
   LOG(INFO) << "x = " << x->solution_value();
   LOG(INFO) << "y = " << y->solution_value();
-  LOG(INFO) << "Optimal objective value = " << objective->Value();
   // [END print_solution]
 
   // [START advanced]

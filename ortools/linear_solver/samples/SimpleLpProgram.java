@@ -13,10 +13,12 @@
 
 // Minimal example to call the GLOP solver.
 // [START program]
+// [START import]
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+// [END import]
 
 /** Minimal Linear Programming example to showcase calling the solver.*/
 public class SimpleLpProgram {
@@ -25,30 +27,47 @@ public class SimpleLpProgram {
   }
 
   public static void main(String[] args) throws Exception {
+    // [START solver]
     // Create the linear solver with the GLOP backend.
-    MPSolver solver =
-        new MPSolver("SimpleLpProgram", MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+    MPSolver solver = new MPSolver(
+        "SimpleLpProgram", MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+    // [END solver]
 
+    // [START variables]
     // Create the variables x and y.
     MPVariable x = solver.makeNumVar(0.0, 1.0, "x");
     MPVariable y = solver.makeNumVar(0.0, 2.0, "y");
 
+    System.out.println("Number of variables = " + solver.numVariables());
+    // [END variables]
+
+    // [START constraints]
     // Create a linear constraint, 0 <= x + y <= 2.
     MPConstraint ct = solver.makeConstraint(0.0, 2.0, "ct");
     ct.setCoefficient(x, 1);
     ct.setCoefficient(y, 1);
 
+    System.out.println("Number of constraints = " + solver.numConstraints());
+    // [END constraints]
+
+    // [START objective]
     // Create the objective function, 3 * x + y.
     MPObjective objective = solver.objective();
     objective.setCoefficient(x, 3);
     objective.setCoefficient(y, 1);
     objective.setMaximization();
+    // [END objective]
 
-    // Call the solver and display the results.
+    // [START solve]
     solver.solve();
+    // [END solve]
+
+    // [START print_solution]
     System.out.println("Solution:");
+    System.out.println("Objective value = " + objective.value());
     System.out.println("x = " + x.solutionValue());
     System.out.println("y = " + y.solutionValue());
+    // [END print_solution]
   }
 }
 // [END program]
