@@ -78,6 +78,13 @@ class CpModelTest(object):
         self.assertEqual(10, solver.Value(x))
         self.assertEqual(-5, solver.Value(y))
 
+    def testCstLeVar(self):
+        print('testCstLeVar')
+        model = cp_model.CpModel()
+        x = model.NewIntVar(-10, 10, 'x')
+        model.Add(3 <= x)
+        print(model.Proto())
+
     def testLinearNonEqual(self):
         print('testLinearNonEqual')
         model = cp_model.CpModel()
@@ -520,7 +527,7 @@ class CpModelTest(object):
             str(x != y),
             '(x + -y) in [-9223372036854775808..-1, 1..9223372036854775807]')
         self.assertEqual('0 <= x <= 10',
-                         str(cp_model.LinearInequality(x, [0, 10])))
+                         str(cp_model.BoundedLinearExpression(x, [0, 10])))
         print(str(model))
 
     def testRepr(self):
@@ -594,6 +601,7 @@ if __name__ == '__main__':
     cp_model_test.testCreateIntegerVariable()
     cp_model_test.testNegation()
     cp_model_test.testLinear()
+    cp_model_test.testCstLeVar()
     cp_model_test.testLinearNonEqual()
     cp_model_test.testEq()
     cp_model_test.testGe()

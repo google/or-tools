@@ -226,43 +226,43 @@ class LinearExpr(object):
             return False
         if isinstance(arg, numbers.Integral):
             cp_model_helper.AssertIsInt64(arg)
-            return LinearInequality(self, [arg, arg])
+            return BoundedLinearExpression(self, [arg, arg])
         else:
-            return LinearInequality(self - arg, [0, 0])
+            return BoundedLinearExpression(self - arg, [0, 0])
 
     def __ge__(self, arg):
         if isinstance(arg, numbers.Integral):
             cp_model_helper.AssertIsInt64(arg)
-            return LinearInequality(self, [arg, INT_MAX])
+            return BoundedLinearExpression(self, [arg, INT_MAX])
         else:
-            return LinearInequality(self - arg, [0, INT_MAX])
+            return BoundedLinearExpression(self - arg, [0, INT_MAX])
 
     def __le__(self, arg):
         if isinstance(arg, numbers.Integral):
             cp_model_helper.AssertIsInt64(arg)
-            return LinearInequality(self, [INT_MIN, arg])
+            return BoundedLinearExpression(self, [INT_MIN, arg])
         else:
-            return LinearInequality(self - arg, [INT_MIN, 0])
+            return BoundedLinearExpression(self - arg, [INT_MIN, 0])
 
     def __lt__(self, arg):
         if isinstance(arg, numbers.Integral):
             cp_model_helper.AssertIsInt64(arg)
             if arg == INT_MIN:
                 raise ArithmeticError('< INT_MIN is not supported')
-            return LinearInequality(
+            return BoundedLinearExpression(
                 self, [INT_MIN, cp_model_helper.CapInt64(arg - 1)])
         else:
-            return LinearInequality(self - arg, [INT_MIN, -1])
+            return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
     def __gt__(self, arg):
         if isinstance(arg, numbers.Integral):
             cp_model_helper.AssertIsInt64(arg)
             if arg == INT_MAX:
                 raise ArithmeticError('> INT_MAX is not supported')
-            return LinearInequality(
+            return BoundedLinearExpression(
                 self, [cp_model_helper.CapInt64(arg + 1), INT_MAX])
         else:
-            return LinearInequality(self - arg, [1, INT_MAX])
+            return BoundedLinearExpression(self - arg, [1, INT_MAX])
 
     def __ne__(self, arg):
         if arg is None:
@@ -270,17 +270,17 @@ class LinearExpr(object):
         if isinstance(arg, numbers.Integral):
             cp_model_helper.AssertIsInt64(arg)
             if arg == INT_MAX:
-                return LinearInequality(self, [INT_MIN, INT_MAX - 1])
+                return BoundedLinearExpression(self, [INT_MIN, INT_MAX - 1])
             elif arg == INT_MIN:
-                return LinearInequality(self, [INT_MIN + 1, INT_MAX])
+                return BoundedLinearExpression(self, [INT_MIN + 1, INT_MAX])
             else:
-                return LinearInequality(self, [
+                return BoundedLinearExpression(self, [
                     INT_MIN,
                     cp_model_helper.CapInt64(arg - 1),
                     cp_model_helper.CapInt64(arg + 1), INT_MAX
                 ])
         else:
-            return LinearInequality(self - arg, [INT_MIN, -1, 1, INT_MAX])
+            return BoundedLinearExpression(self - arg, [INT_MIN, -1, 1, INT_MAX])
 
 
 class _ProductCst(LinearExpr):
@@ -481,7 +481,7 @@ class _NotBooleanVariable(LinearExpr):
         return 'not(%s)' % str(self.__boolvar)
 
 
-class LinearInequality(object):
+class BoundedLinearExpression(object):
     """Represents a linear constraint: lb <= expression <= ub.
 
   The only use of this class is to be added to the CpModel through
@@ -710,8 +710,8 @@ class CpModel(object):
                 str(linear_expr) + ' ' + str(domain) + ')')
 
     def Add(self, ct):
-        """Adds a LinearInequality to the model."""
-        if isinstance(ct, LinearInequality):
+        """Adds a BoundedLinearExpression to the model."""
+        if isinstance(ct, BoundedLinearExpression):
             return self.AddLinearExpressionInDomain(ct.Expression(),
                                                     Domain.FromFlatIntervals(
                                                         ct.Bounds()))
