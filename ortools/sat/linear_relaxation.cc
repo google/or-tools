@@ -397,8 +397,8 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
 }
 
 namespace {
-// Adds enforcing_var => target <= bounding_var to relaxation.
-void AppendEnforcedUpperBound(const IntegerVariable enforcing_var,
+// Adds enforcing_lit => target <= bounding_var to relaxation.
+void AppendEnforcedUpperBound(const Literal enforcing_lit,
                               const IntegerVariable target,
                               const IntegerVariable bounding_var, Model* model,
                               LinearRelaxation* relaxation) {
@@ -409,7 +409,7 @@ void AppendEnforcedUpperBound(const IntegerVariable enforcing_var,
   LinearConstraintBuilder lc(model, kMinIntegerValue, max_term_value);
   lc.AddTerm(target, IntegerValue(1));
   lc.AddTerm(bounding_var, IntegerValue(-1));
-  lc.AddTerm(enforcing_var, max_term_value);
+  CHECK(lc.AddLiteralTerm(enforcing_lit, max_term_value));
   relaxation->linear_constraints.push_back(lc.Build());
 }
 }  // namespace
@@ -432,10 +432,14 @@ void AppendMaxRelaxation(IntegerVariable target,
 
   // Part 2: Encode upper bound on X.
   // For size = 2, we do this with 1 less variable.
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   if (vars.size() == 2) {
     IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
-    AppendEnforcedUpperBound(y, target, vars[0], model, relaxation);
-    AppendEnforcedUpperBound(NegationOf(y), target, vars[1], model, relaxation);
+    const Literal y_lit =
+        encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
+    AppendEnforcedUpperBound(y_lit, target, vars[0], model, relaxation);
+    AppendEnforcedUpperBound(y_lit.Negated(), target, vars[1], model,
+                             relaxation);
     return;
   }
   if (linearization_level >= 2) {
@@ -451,9 +455,11 @@ void AppendMaxRelaxation(IntegerVariable target,
       // <=> max_term_value * y + X - X_i <= max_term_value.
       // where max_tern_value is X_ub - X_i_lb.
       IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
-      AppendEnforcedUpperBound(y, target, var, model, relaxation);
+      const Literal y_lit =
+          encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
+      AppendEnforcedUpperBound(y_lit, target, var, model, relaxation);
 
-      lc_exactly_one.AddTerm(y, IntegerValue(1));
+      CHECK(lc_exactly_one.AddLiteralTerm(y_lit, IntegerValue(1)));
     }
     relaxation->linear_constraints.push_back(lc_exactly_one.Build());
   }
