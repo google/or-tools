@@ -54,7 +54,7 @@ void run() {
   // [END solve]
 
   // [START print_solution]
-  std::cout << "Solution:" << std::endl;
+  LOG(INFO) << "Solution:" << std::endl;
   LOG(INFO) << "Objective value = " << objective->Value();
   LOG(INFO) << "x = " << x->solution_value();
   LOG(INFO) << "y = " << y->solution_value();

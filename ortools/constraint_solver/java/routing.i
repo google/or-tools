@@ -63,19 +63,34 @@ import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 %}
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore RoutingModel::AddHardTypeIncompatibility;
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name);
+%ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
+%ignore RoutingModel::AddTemporalRequiredTypeAlternatives;
+%ignore RoutingModel::AddTemporalTypeIncompatibility;
+%ignore RoutingModel::CloseVisitTypes;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetDeliveryIndexPairs;
 %ignore RoutingModel::GetDimensions;
 %ignore RoutingModel::GetDimensionsWithSoftAndSpanCosts;
 %ignore RoutingModel::GetDimensionsWithSoftOrSpanCosts;
+%ignore RoutingModel::GetHardTypeIncompatibilitiesOfType;
+%ignore RoutingModel::GetNumberOfVisitTypes;
 %ignore RoutingModel::GetPerfectBinaryDisjunctions;
 %ignore RoutingModel::GetPickupIndexPairs;
-%ignore RoutingModel::GetTypeIncompatibilities;
+%ignore RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType;
+%ignore RoutingModel::GetTemporalRequiredTypeAlternativesOfType;
+%ignore RoutingModel::GetTemporalTypeIncompatibilitiesOfType;
+%ignore RoutingModel::GetVisitType;
+%ignore RoutingModel::HasHardTypeIncompatibilities;
+%ignore RoutingModel::HasSameVehicleTypeRequirements;
+%ignore RoutingModel::HasTemporalTypeIncompatibilities;
+%ignore RoutingModel::HasTemporalTypeRequirements;
+%ignore RoutingModel::HasTypeRegulations;
 %ignore RoutingModel::MakeStateDependentTransit;
 %ignore RoutingModel::RegisterStateDependentTransitCallback;
 %ignore RoutingModel::SolveWithParameters(
@@ -86,6 +101,7 @@ import java.util.function.LongUnaryOperator;
       const RoutingSearchParameters& search_parameters,
       std::vector<const Assignment*>* solutions);
 %ignore RoutingModel::TransitCallback;
+%ignore RoutingModel::SetVisitType;
 %ignore RoutingModel::StateDependentTransitCallback;
 %ignore RoutingModel::UnaryTransitCallbackOrNull;
 %rename (activeVar) RoutingModel::ActiveVar;
@@ -106,7 +122,6 @@ import java.util.function.LongUnaryOperator;
 %rename (addSearchMonitor) RoutingModel::AddSearchMonitor;
 %rename (addSoftSameVehicleConstraint) RoutingModel::AddSoftSameVehicleConstraint;
 %rename (addToAssignment) RoutingModel::AddToAssignment;
-%rename (addTypeIncompatibility) RoutingModel::AddTypeIncompatibility;
 %rename (addVariableMaximizedByFinalizer) RoutingModel::AddVariableMaximizedByFinalizer;
 %rename (addVariableMinimizedByFinalizer) RoutingModel::AddVariableMinimizedByFinalizer;
 %rename (addVectorDimension) RoutingModel::AddVectorDimension;
@@ -148,7 +163,6 @@ import java.util.function.LongUnaryOperator;
 %rename (getPickupAndDeliveryPolicyOfVehicle) RoutingModel::GetPickupAndDeliveryPolicyOfVehicle;
 %rename (getPrimaryConstrainedDimension) RoutingModel::GetPrimaryConstrainedDimension;
 %rename (getSameVehicleIndicesOfIndex) RoutingModel::GetSameVehicleIndicesOfIndex;
-%rename (getTypeIncompatibilities) RoutingModel::GetTypeIncompatibilities;
 %rename (getVehicleClassIndexOfVehicle) RoutingModel::GetVehicleClassIndexOfVehicle;
 %rename (getVehicleClassesCount) RoutingModel::GetVehicleClassesCount;
 %rename (getVisitType) RoutingModel::GetVisitType;

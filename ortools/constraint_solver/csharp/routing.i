@@ -81,19 +81,32 @@ namespace operations_research {
 %}
 // Ignored:
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore RoutingModel::AddHardTypeIncompatibility;
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
     bool fix_start_cumul_to_zero,
     const std::string& name);
+%ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
+%ignore RoutingModel::AddTemporalRequiredTypeAlternatives;
+%ignore RoutingModel::AddTemporalTypeIncompatibility;
+%ignore RoutingModel::CloseVisitTypes;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetDeliveryIndexPairs;
 %ignore RoutingModel::GetDimensions;
 %ignore RoutingModel::GetDimensionsWithSoftAndSpanCosts;
 %ignore RoutingModel::GetDimensionsWithSoftOrSpanCosts;
+%ignore RoutingModel::GetHardTypeIncompatibilitiesOfType;
 %ignore RoutingModel::GetPerfectBinaryDisjunctions;
 %ignore RoutingModel::GetPickupIndexPairs;
-%ignore RoutingModel::GetTypeIncompatibilities;
+%ignore RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType;
+%ignore RoutingModel::GetTemporalRequiredTypeAlternativesOfType;
+%ignore RoutingModel::GetTemporalTypeIncompatibilitiesOfType;
+%ignore RoutingModel::HasHardTypeIncompatibilities;
+%ignore RoutingModel::HasSameVehicleTypeRequirements;
+%ignore RoutingModel::HasTemporalTypeIncompatibilities;
+%ignore RoutingModel::HasTemporalTypeRequirements;
+%ignore RoutingModel::HasTypeRegulations;
 %ignore RoutingModel::MakeStateDependentTransit;
 %ignore RoutingModel::RegisterStateDependentTransitCallback;
 %ignore RoutingModel::StateDependentTransitCallback;
