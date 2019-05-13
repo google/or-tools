@@ -85,7 +85,7 @@
 %enddef  // PY_LIST_OUTPUT_TYPEMAP
 
 PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
-PY_LIST_OUTPUT_TYPEMAP(int64, SwigPyIntOrLong_Check, PyInt_FromLong);
+PY_LIST_OUTPUT_TYPEMAP(int64, SwigPyIntOrLong_Check, PyLong_FromLongLong);
 PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 
 // Add conversion list(tuple(int)) -> std::vector<std::vector>.
