@@ -27,9 +27,6 @@ using System.Collections;
 #include "ortools/util/sorted_interval_list.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 %module(directors="1") operations_research_util
 
 %template(UtilInt64Vector) std::vector<int64>;
